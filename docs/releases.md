@@ -170,6 +170,17 @@ generation — and the modal fills instantly with a "Reused saved notes" hint.
 A failed or empty agent run is never written, so it cannot overwrite a good
 entry. Cache hits record no session, because no LLM call happens.
 
+A saved draft that never made it out with a release is also surfaced
+explicitly (#0641): the panel shows a **Saved AI draft not yet released** card
+below the notes field with the draft's age, how far `main` has moved (and
+which commits), the saved text, and a **Use these notes** button that drops it
+into the editor. `GET /api/release/notes/unpushed` returns the newest cached
+entry whose generation HEAD is not reachable from the latest release tag: a
+cut that succeeds tags that commit, so the draft retires from the card, while
+a failed cut — or a `repoos.toml`/source tweak between attempts — keeps it. No
+new storage: the card is a read over the existing `release-notes.json` entries
+plus `git merge-base`/`git rev-list`.
+
 Notes are committed into the tag, so keep them reasonable in size — GitHub caps
 a release body at ~125,000 characters. The commit list fed to the model is
 capped at 300 subjects, so a long history can't run away with the prompt.
@@ -351,6 +362,7 @@ yet.
 | `POST /api/release`      | `{ version, confirmTag, notes? }` → starts a run; `409` if one is already running |
 | `POST /api/release/notes` | `{ version? }` → starts the AI draft detached (#0605) and returns `202` with `{ run }`; synchronous short-circuits stay instant: `200` + `{ notes, sinceTag, commitCount, truncated, cached, cachedAt }` when there's nothing to summarize or a cached draft hits for this commit context, `400` when no agent is enabled. A second POST while the run is in flight returns the same run with `202` instead of starting a duplicate agent; never cuts a release |
 | `GET /api/release/notes/run` | `ReleaseNotesRun` — the draft run's `state` (`idle`/`running`/`succeeded`/`failed`), `startedAt`, `error`, commit-context `key`, and the `notes` draft when succeeded (in-memory, resets on restart) |
+| `GET /api/release/notes/unpushed` | The newest cached draft whose generation HEAD is not reachable from the latest release tag, or `null`: `{ notes, createdAt, head, headShort, sinceTag, commitsBehind, commits, currentHead, currentHeadShort }` (#0641) |
 
 `confirmTag` must exactly equal `tagPrefix + version` — a guard against a
 malformed request cutting the wrong tag.
