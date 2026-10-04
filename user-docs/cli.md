@@ -247,6 +247,25 @@ repoos check --changed main      # fast pre-review pass over changed paths
 repoos check --print-plan        # print the resolved plan as [[check.steps]]
 ```
 
+### `repoos outline <file>`
+
+Prints a compact map of a source file — top-level and exported functions,
+classes, interfaces, types, enums and constants with their `start-end` line
+numbers; for `.vue`, the template/script/style block ranges plus script symbols;
+for `.css`, its top-level selectors and at-rules. Run it once before reading a
+large file, then read only the range you need (`offset`/`limit`) instead of the
+whole file.
+
+Supported: `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.vue`, `.css`.
+Anything else prints one clear line saying so. `--json` emits the same data as
+JSON.
+
+```bash
+repoos outline src/server/server.ts
+repoos outline src/ui-app/src/components/TaskDrawer.vue
+repoos outline src/ui-app/src/style.css --json
+```
+
 ### `repoos shot`
 
 Captures screenshots of a task's managed preview so a UI change leaves visual
