@@ -1067,6 +1067,23 @@ onBeforeUnmount(() => {
           </div>
         </section>
 
+        <!-- Outcome of the most recent successful run (survives until the next
+             one); shown above "Published to" so the current state is visible without scrolling, like a failure. -->
+        <section v-if="message && !error" class="rel-outcome rel-outcome--ok" aria-live="polite">
+          <div class="rel-outcome-line">
+            <strong>{{ message }}</strong>
+            <span v-if="lastRunDuration" class="rel-outcome-span">took {{ lastRunDuration }}</span>
+          </div>
+          <a
+            v-if="status.workflowUrl"
+            class="rel-link"
+            :href="status.workflowUrl"
+            target="_blank"
+            rel="noreferrer"
+            >Watch the build ↗</a
+          >
+        </section>
+
         <!-- Most recent run failed: shown ABOVE "Published to" until the next
              successful release, so a failure is visible without scrolling. -->
         <section v-if="error && !confirmOpen" class="rel-outcome rel-outcome--fail" role="alert">
@@ -1173,23 +1190,6 @@ onBeforeUnmount(() => {
               </ul>
             </article>
           </div>
-        </section>
-
-        <!-- Outcome of the most recent successful run (survives until the next
-             one); a failure is promoted above "Published to" instead. -->
-        <section v-if="message && !error" class="rel-outcome rel-outcome--ok" aria-live="polite">
-          <div class="rel-outcome-line">
-            <strong>{{ message }}</strong>
-            <span v-if="lastRunDuration" class="rel-outcome-span">took {{ lastRunDuration }}</span>
-          </div>
-          <a
-            v-if="status.workflowUrl"
-            class="rel-link"
-            :href="status.workflowUrl"
-            target="_blank"
-            rel="noreferrer"
-            >Watch the build ↗</a
-          >
         </section>
 
         <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
