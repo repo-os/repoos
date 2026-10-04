@@ -16,6 +16,7 @@
  * (surfaced as `?refresh=1` on GET /api/models) bypasses it.
  */
 import { spawn, type ChildProcess } from "node:child_process";
+import { writeChildStdin } from "./child-stdin.js";
 import { resolveBinary, KNOWN_AGENTS } from "./detect.js";
 
 /** Default ceiling on the `opencode models` probe, ms. A hung CLI is SIGKILLed. */
@@ -305,7 +306,8 @@ function listCodexModels(bin: string, opts: ListModelsOptions): Promise<CodexPro
     proc.on("close", () =>
       done({ models: [], error: `${bin} app-server closed before returning models` }),
     );
-    proc.stdin?.write(
+    writeChildStdin(
+      proc,
       [
         JSON.stringify({
           id: 1,
@@ -319,6 +321,13 @@ function listCodexModels(bin: string, opts: ListModelsOptions): Promise<CodexPro
         }),
         "",
       ].join("\n"),
+      {
+        command: `${bin} app-server`,
+        // A child that exits before reading closes the pipe; the write then
+        // EPIPEs. Report it as a failed probe instead of an uncaught throw.
+        onError: () =>
+          done({ models: [], error: `${bin} app-server closed its stdin before reading` }),
+      },
     );
   });
 }
