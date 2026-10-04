@@ -46,3 +46,4 @@ Covers: hotfix close-out recovery and git lock tolerance in the publish path. De
 - 2026-10-04T08:58:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-04T09:47:24Z · status active→review
 - 2026-10-04T09:47:24Z · note: review without checks by hello@repoos.org
+- 2026-10-04T09:47:24Z · note: shots: skipped — the diff (6 changed paths) touches no [[preview.paths]] globs — no UI change to capture
