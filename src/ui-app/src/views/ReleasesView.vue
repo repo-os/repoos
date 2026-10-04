@@ -5,6 +5,7 @@ import { Bug, Check, Copy, FileClock, RotateCcw, Sparkles, X } from "lucide-vue-
 import { copyToClipboard } from "../lib/clipboard";
 import ActivityIndicator from "../components/ActivityIndicator.vue";
 import Button from "../components/ui/button.vue";
+import ConfirmDialog from "../components/ConfirmDialog.vue";
 import Dialog from "../components/ui/dialog/root.vue";
 import DialogClose from "../components/ui/dialog/close.vue";
 import DialogContent from "../components/ui/dialog/content.vue";
@@ -163,6 +164,22 @@ const notesRun = ref<ReleaseNotesRun | null>(null);
  * whether to reuse it for a retry after a failed cut.
  */
 const unpushedNotes = ref<UnpushedReleaseNotes | null>(null);
+/**
+ * A pending replace-notes confirmation, or null. Generate and "Use these
+ * notes" both can discard operator text, so each asks through the shared
+ * designed dialog rather than a native `confirm()` (AGENTS.md).
+ */
+const pendingNotesReplace = ref<"generate" | "use-saved" | null>(null);
+const notesReplaceTitle = computed(() =>
+  pendingNotesReplace.value === "use-saved"
+    ? "Replace notes with the saved draft?"
+    : "Replace notes with an AI draft?",
+);
+const notesReplaceDesc = computed(() =>
+  pendingNotesReplace.value === "use-saved"
+    ? "The saved draft from the last generate replaces what you've typed in the release notes field."
+    : "The AI draft replaces what you've typed in the release notes field. You can edit it afterwards.",
+);
 /**
  * The draft run this page session owns: set while a run is observed running
  * (live or via reopening during one). Only runs this session watched may
@@ -470,16 +487,30 @@ const showUnpushedCard = computed(() => {
 function useUnpushedNotes(): void {
   const saved = unpushedNotes.value;
   if (!saved) return;
-  if (
-    notes.value.trim() &&
-    notes.value.trim() !== saved.notes.trim() &&
-    !confirm("Replace the release notes you've typed with the saved draft?")
-  ) {
+  if (notes.value.trim() && notes.value.trim() !== saved.notes.trim()) {
+    pendingNotesReplace.value = "use-saved";
     return;
   }
+  applyUnpushedNotes(saved);
+}
+
+/** Place the saved draft in the editor and say where it came from. */
+function applyUnpushedNotes(saved: UnpushedReleaseNotes): void {
   notes.value = saved.notes;
   notesError.value = "";
   notesHint.value = `Reused the saved draft from ${relativeTime(saved.createdAt) || "earlier"}.`;
+}
+
+/** Run the confirmed replace, then close the dialog. */
+function confirmNotesReplace(): void {
+  const action = pendingNotesReplace.value;
+  pendingNotesReplace.value = null;
+  if (action === "use-saved") {
+    const saved = unpushedNotes.value;
+    if (saved) applyUnpushedNotes(saved);
+  } else if (action === "generate") {
+    void runGenerateNotes();
+  }
 }
 
 /**
@@ -548,6 +579,10 @@ function applyNotesRun(next: ReleaseNotesRun, atOpen = false): void {
     return;
   }
   generatingNotes.value = false;
+  // A terminal run may have written (or retired) a cache entry, so the
+  // unpushed card must track the newest one — otherwise a fresh draft B would
+  // leave the card showing the older draft A. Refresh on the transition (#0641).
+  void loadUnpushedNotes();
   const live = prev?.state === "running";
   const owned =
     !!next.key && next.key === observedNotesKey.value && next.key !== placedNotesKey.value;
@@ -565,7 +600,6 @@ function applyNotesRun(next: ReleaseNotesRun, atOpen = false): void {
     // the server keeps its last terminal run forever, so a stale failure is
     // about a draft context that no longer exists (#0630 review).
     notesError.value = next.error || "The agent returned no release notes.";
-    void loadUnpushedNotes();
   } else if (
     atOpen &&
     next.state === "succeeded" &&
@@ -635,12 +669,16 @@ function cutNext(): void {
  */
 async function generateNotes(): Promise<void> {
   if (generatingNotes.value || running.value) return;
-  if (
-    notes.value.trim() &&
-    !confirm("Replace the release notes you've typed with an AI-generated draft?")
-  ) {
+  if (notes.value.trim()) {
+    pendingNotesReplace.value = "generate";
     return;
   }
+  await runGenerateNotes();
+}
+
+/** The actual draft request, once any replace confirmation has been settled. */
+async function runGenerateNotes(): Promise<void> {
+  if (generatingNotes.value || running.value) return;
   generatingNotes.value = true;
   notesError.value = "";
   notesHint.value = "";
@@ -669,6 +707,7 @@ async function generateNotes(): Promise<void> {
         const age = result.cachedAt ? relativeTime(result.cachedAt) : "";
         notesHint.value = `Reused saved notes${age ? ` (${age})` : ""} — no new AI run.`;
       }
+      void loadUnpushedNotes();
     } else if (result.run === undefined) {
       notesError.value = result.sinceTag
         ? `No commits since ${result.sinceTag} to draft from.`
@@ -1339,6 +1378,20 @@ onBeforeUnmount(() => {
         </Dialog>
       </template>
     </template>
+
+    <ConfirmDialog
+      :open="pendingNotesReplace !== null"
+      :title="notesReplaceTitle"
+      confirm-label="Replace notes"
+      @update:open="
+        (v) => {
+          if (!v) pendingNotesReplace = null;
+        }
+      "
+      @confirm="confirmNotesReplace"
+    >
+      {{ notesReplaceDesc }}
+    </ConfirmDialog>
   </div>
 </template>
 
