@@ -5,11 +5,11 @@ type: feature
 status: inbox
 priority: medium
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-04T16:32:02Z"
-updated_at: "2026-10-04T16:32:02Z"
+updated_at: "2026-10-04T16:33:18Z"
 ---
 ## Problem
 40% of repoos check runs by engineer agents (181 of 456) had no edit or write since the previous check (upper bound: some follow bun run fmt, which changes files without an edit call). Full runs are slow (opencode-measured p90 about 185s for check, 88s for build). 141 of 203 sessions also ran bun run build by hand even though the check builds.
@@ -25,8 +25,9 @@ Re-running repoos check on a tree whose relevant inputs have not changed returns
 - Tests: hit, miss on edit, miss on config change, never caches a failure, close-out bypass.
 
 ## Notes for AI
-Design risk is correctness, not speed: a stale cache hit that lets a broken tree through the gate is worse than the time saved. Prefer excluding a step to caching it unsafely. Ties into #0xxx auto-format/summary task only by sharing check output; keep independent.
+Design risk is correctness, not speed: a stale cache hit that lets a broken tree through the gate is worse than the time saved. Prefer excluding a step to caching it unsafely. Shares check output with #0651 (auto-format and failed-steps summary); keep the two independent.
 
 ## Activity
 
 - 2026-10-04T16:32:02Z · created · unknown
+- 2026-10-04T16:33:18Z · body: section Notes for AI
