@@ -54,6 +54,13 @@ const visibleRoles = computed(() =>
 );
 
 const days = computed(() => stats.value?.days ?? []);
+
+/**
+ * Most recent errored sessions in the selected window (newest first). The CTO's
+ * provider credit/auth failures used to be anonymous; the panel now names the
+ * role, trigger and truncated reason (#0649).
+ */
+const recentFailures = computed(() => stats.value?.recentFailures ?? []);
 </script>
 
 <template>
@@ -150,6 +157,25 @@ const days = computed(() => stats.value?.days ?? []);
 
       <div v-if="stats.costSource === 'mixed'" class="usage-legend">
         * mixed cost sources — estimates &amp; credits shown alongside USD
+      </div>
+
+      <div v-if="recentFailures.length" class="usage-failures">
+        <div class="usage-subtitle">recent failures</div>
+        <ul class="usage-failure-list">
+          <li v-for="f in recentFailures" :key="f.sessionId" class="usage-failure">
+            <span class="usage-failure-role">{{ f.sessionType }}</span>
+            <span class="usage-failure-agent">
+              {{ f.codingAgent }}<template v-if="f.model"> · {{ f.model }}</template>
+            </span>
+            <span class="usage-failure-trigger" :title="f.trigger ?? ''">
+              {{ f.trigger ?? "—" }}
+            </span>
+            <span class="usage-failure-reason" :title="f.errorReason ?? ''">
+              {{ f.errorReason ?? "no reason recorded" }}
+            </span>
+            <span class="usage-failure-elapsed">{{ fmtElapsed(f.elapsedMs) }}</span>
+          </li>
+        </ul>
       </div>
     </template>
     <div v-else>No AI usage recorded yet.</div>
@@ -332,5 +358,54 @@ const days = computed(() => stats.value?.days ?? []);
   margin-top: 6px;
   font-size: 10px;
   color: var(--txt-faint);
+}
+.usage-failures {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+.usage-failure-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+.usage-failure {
+  display: grid;
+  grid-template-columns: 72px 150px 150px minmax(0, 1fr) 48px;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 11px;
+  color: var(--txt-dim);
+}
+.usage-failure-role {
+  color: var(--red);
+  text-transform: capitalize;
+}
+.usage-failure-agent,
+.usage-failure-trigger,
+.usage-failure-reason {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.usage-failure-agent,
+.usage-failure-trigger {
+  color: var(--txt-faint);
+}
+.usage-failure-elapsed {
+  text-align: right;
+  color: var(--txt-faint);
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .usage-failure {
+    grid-template-columns: 1fr;
+    gap: 1px;
+  }
+  .usage-failure-elapsed {
+    text-align: left;
+  }
 }
 </style>

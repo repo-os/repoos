@@ -428,6 +428,13 @@ export interface RepoOSConfig {
   /** When true, RepoOS automatically selects and starts ready tasks up to maxActiveTasks. */
   autoEngineeringMode?: boolean;
   /**
+   * When true (the default), the CTO monitor skips its model call while the
+   * board is healthy — no stuck tasks, a fresh build and a normal process
+   * check. Set false to run a full CTO pass whenever the material signal
+   * changes, healthy or not.
+   */
+  ctoSkipHealthy?: boolean;
+  /**
    * When true (off by default), a task's session is analysed only after it
    * reaches `done`, and a `New Skill Suggestion: …` task is created only for a
    * high-bar reusable procedure corroborated by at least two independent
