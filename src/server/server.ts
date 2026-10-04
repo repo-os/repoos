@@ -2325,8 +2325,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Initialize route handlers that need runtime configuration
   initInfoHandlers(loadedHash || "", tunnelReadiness);
-  setIconRenderer((size: number, color?: string, theme?: "light" | "dark") =>
-    renderPwaIcon(size, color, theme),
+  const pwaIconName = projectDisplayName(config.root);
+  setIconRenderer((size: number, color?: string, theme?: "light" | "dark", maskable?: boolean) =>
+    renderPwaIcon(pwaIconName, size, color, theme, maskable),
   );
 
   // Create and register all routes with the router
