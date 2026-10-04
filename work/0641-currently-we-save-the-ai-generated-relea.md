@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+review_cli_override: cursor
 created_at: "2026-10-04T02:00:15Z"
-updated_at: "2026-10-04T02:01:09Z"
+updated_at: "2026-10-04T02:20:10Z"
 ---
 ## Problem
 When an AI release-notes generation succeeds but the subsequent release cut fails, the user has no visibility into whether those previously generated notes are available for reuse. The user just encountered this after a failed release (only updated `repoos.toml` and tried again on a remote runner). Without a quick reference, the user must guess whether to regenerate notes or reuse existing ones.
@@ -54,3 +55,4 @@ Currently we save the AI generated release notes, but it's a black box to the us
 - 2026-10-04T02:00:15Z · created · hello@repoos.org
 - 2026-10-04T02:00:15Z · screenshots
 - 2026-10-04T02:01:09Z · status draft→inbox, title, area, body
+- 2026-10-04T02:20:10Z · review_cli_override
