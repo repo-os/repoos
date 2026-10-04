@@ -919,18 +919,70 @@ function safeRepoFile(root: string, urlPath: string): string | null {
  */
 let activeLogger: Logger | null = null;
 let fatalHandlersRegistered = false;
+
+/** Structured record written for a process-level uncaught error (#0646). */
+export interface FatalErrorRecord {
+  /** Index signature so the record is accepted as a logger context. */
+  [key: string]: unknown;
+  /** Which event fired: `uncaughtException` or `unhandledRejection`. */
+  origin: string;
+  error: string;
+  name?: string;
+  code?: string;
+  syscall?: string;
+  string: string;
+  stack?: string;
+}
+
+/**
+ * A `write` failing with EPIPE is a child that closed its stdin before the
+ * write landed — normal churn (an `ssh` dropping, an app-server exiting), not
+ * a reason to kill the control plane (#0646). Every other uncaught error keeps
+ * the historical log-and-exit behaviour.
+ */
+export function isBenignEpipe(err: unknown): boolean {
+  const e = err as NodeJS.ErrnoException | null | undefined;
+  return !!e && e.code === "EPIPE" && e.syscall === "write";
+}
+
+/**
+ * Every legible field of a thrown value, including a non-`Error` object. Bun
+ * throws plain objects for stream failures, which is why the old handler only
+ * recorded `String(err)` and lost the origin (#0646).
+ */
+export function describeFatalError(err: unknown, origin: string): FatalErrorRecord {
+  const e = err as Partial<NodeJS.ErrnoException> | null | undefined;
+  return {
+    origin,
+    error: err instanceof Error ? err.message : String(err),
+    name: err instanceof Error ? err.name : typeof e?.name === "string" ? e.name : undefined,
+    code: typeof e?.code === "string" ? e.code : undefined,
+    syscall: typeof e?.syscall === "string" ? e.syscall : undefined,
+    string: String(err),
+    // A non-Error throw has no `.stack`; capture the handler's own stack so the
+    // log at least pins the crash to here instead of saying `stack: undefined`.
+    stack: err instanceof Error ? err.stack : new Error(String(err)).stack,
+  };
+}
+
 function registerFatalHandlersOnce(): void {
   if (fatalHandlersRegistered) return;
   fatalHandlersRegistered = true;
-  const logFatal = (message: string, err: unknown) => {
-    activeLogger?.system("fatal", message, {
-      error: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack : undefined,
-    });
+  const logFatal = (message: string, err: unknown, origin: string) => {
+    const record = describeFatalError(err, origin);
+    if (isBenignEpipe(err)) {
+      // Do not exit: a child closing its stdin early must not take the server
+      // down. Log at error so it stays visible, then keep serving (#0646).
+      activeLogger?.system("error", message, record);
+      return;
+    }
+    activeLogger?.system("fatal", message, record);
     if (process.env.VITEST !== "true") process.exit(1);
   };
-  process.on("uncaughtException", (err) => logFatal("Uncaught exception", err));
-  process.on("unhandledRejection", (reason) => logFatal("Unhandled promise rejection", reason));
+  process.on("uncaughtException", (err, origin) => logFatal("Uncaught exception", err, origin));
+  process.on("unhandledRejection", (reason) =>
+    logFatal("Unhandled promise rejection", reason, "unhandledRejection"),
+  );
 }
 
 export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {

@@ -34,6 +34,7 @@
  */
 
 import { spawn } from "node:child_process";
+import { writeChildStdin } from "../core/child-stdin.js";
 import { randomBytes } from "node:crypto";
 import { createConnection } from "node:net";
 import {
@@ -864,7 +865,14 @@ function runLocalWithStdin(
       timedOut = true;
       child.kill("SIGKILL");
     }, opts.timeoutMs);
-    child.stdin?.end(stdin);
+    writeChildStdin(child, stdin, {
+      command: cmd,
+      end: true,
+      onError: (e) => {
+        output += `\n[stdin error: ${e.message}]\n`;
+        done(null);
+      },
+    });
   });
 }
 
