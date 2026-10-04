@@ -319,6 +319,26 @@ worktree/branch, and marks the task `done`.
 If a job fails here (rare — validation already passed), main was NOT touched; the repo
 lock guarantees that. Safe to just retry.
 
+#### Close-out outcome events (#0640)
+
+When a job reaches a terminal, reportable state the orchestrator records a durable
+outcome and the server pushes it over SSE for the notices bell:
+
+- `succeeded` — `cleanup` finished and the task is `done`.
+- `failed` — a genuine gate/merge failure; the task stays `review`, retryable.
+- `timedOut` — the budget was exhausted (`TIMEOUT_REASON_PREFIX` in
+  `integration-orchestrator.ts`). Recorded as a `failed` job (retryable) but
+  reported distinctly, because the advice differs from a real gate failure.
+
+A user cancel (`Stop MTD`) records nothing — it is not an outcome. Events are
+appended to `.repoos/close-out-outcomes.json` (`src/server/close-out-outcome.ts`,
+capped, deduped by `taskId + finishedAt`), served newest-first from
+`GET /api/close-out/outcomes`, and emitted as the `close-out.outcome` SSE frame.
+The notices bell consumes both: SSE for the live path, the list endpoint to
+backfill a tab closed while the run happened. The client dedupe id is
+`<kind>:<taskId>:<finishedAt>`, so a retry that later succeeds is a new notice and
+a dismissed one never resurrects.
+
 #### The worktree-cleanup invariant (#0512)
 
 > **What is tested is what is committed, and nothing uncommitted is ever deleted.**

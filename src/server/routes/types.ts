@@ -10,6 +10,7 @@ import type { CloseOutLock } from "../done.js";
 import type { RootLock } from "../repo-lock.js";
 import type { ReloadManager } from "../reload.js";
 import type { JobCoordinator } from "../integration-job.js";
+import type { CloseOutOutcomeStore } from "../close-out-outcome.js";
 import type { Logger } from "../../core/logger.js";
 import type { DoneStep } from "../done.js";
 import type { RemoteValidator } from "../remote-validation.js";
@@ -50,6 +51,13 @@ export interface RouteContext {
   closeOutLock: CloseOutLock;
   rootLock: RootLock;
   jobCoordinator: JobCoordinator;
+  /**
+   * Durable close-out outcomes (#0640). Shared so the `GET /api/close-out/
+   * outcomes` route reads the same in-memory mirror the orchestrator records
+   * into — a disk-write failure is reported and the event still backfills.
+   * Optional so route tests can build a partial context.
+   */
+  closeOutOutcomes?: CloseOutOutcomeStore;
   /** Remote Validation Runner (docs/remote-validation.md). Undefined when not configured. */
   remoteValidator?: RemoteValidator;
   /**

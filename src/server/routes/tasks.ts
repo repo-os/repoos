@@ -110,6 +110,7 @@ import {
 } from "../../core/task-dependencies.js";
 import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
+import { createCloseOutOutcomeStore } from "../close-out-outcome.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
 import { computeMergeConflict } from "../merge-conflict.js";
@@ -2524,6 +2525,19 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
       queueLength: allJobs.length,
     },
   });
+};
+
+/**
+ * Durable close-out outcomes (#0640), newest first — the notices bell's
+ * backstop for a tab that was closed while a Move to done ran. The live path
+ * is the `close-out.outcome` SSE event; this hydrates on load and reconnect.
+ */
+export const getCloseOutOutcomes: RouteHandler = (ctx, _req, res) => {
+  // Prefer the server's shared instance: it mirrors recorded events in memory,
+  // so a failed disk write is still backfilled for the life of the process.
+  const store =
+    ctx.closeOutOutcomes ?? createCloseOutOutcomeStore(ctx.config.root, ctx.config.cacheDir);
+  return json(res, 200, { ok: true, outcomes: store.list() });
 };
 
 export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {

@@ -355,6 +355,7 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
   branch: "branch",
   "assigned-to": "assignedTo",
   "needs-input": "needsInput",
+  "needs-merge": "needsMerge",
   questions: "questions",
   section: "section",
 };
@@ -405,7 +406,7 @@ function shotsSectionContent(raw: string): string {
 export function cmdUpdate(args: string[]): void {
   const [id, ...rest] = args;
   const usage =
-    '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--questions "Question one\\nQuestion two"] [--clear-questions] [--shots "<JSON list>"|- | --section "<heading>" --section-body ...] [--force]';
+    '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--needs-merge true|false] [--questions "Question one\\nQuestion two"] [--clear-questions] [--shots "<JSON list>"|- | --section "<heading>" --section-body ...] [--force]';
   if (!id) {
     console.error(c.red(usage));
     process.exitCode = 1;
@@ -479,13 +480,18 @@ export function cmdUpdate(args: string[]): void {
       process.exitCode = 1;
       return;
     }
-    if (field === "needsInput") {
+    if (field === "needsInput" || field === "needsMerge") {
       if (raw !== "true" && raw !== "false") {
-        console.error(c.red(`  --needs-input must be true or false`));
+        console.error(
+          c.red(
+            `  --${field === "needsInput" ? "needs-input" : "needs-merge"} must be true or false`,
+          ),
+        );
         process.exitCode = 1;
         return;
       }
-      patch.needsInput = raw === "true";
+      if (field === "needsInput") patch.needsInput = raw === "true";
+      else patch.needsMerge = raw === "true";
     } else if (field === "questions") {
       patch.questions = parseQuestions(raw);
     } else if (field === "dependsOn") {

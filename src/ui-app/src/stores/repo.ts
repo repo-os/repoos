@@ -5,6 +5,7 @@ import type { DeclaredShot } from "../../../core/shot-plan.js";
 import { checkUiBuild, isstaleDismissed, showStaleUi, uiRecoveryState } from "../lib/uiRecovery";
 import { useUiStore, type PendingScreenshot } from "./ui";
 import { useNotificationsStore, type NotificationType } from "./notifications";
+import { useNoticesStore } from "./notices";
 import { describeCloseOutFailure } from "../lib/closeOutFailure";
 import { builtInRunNotice } from "../lib/builtInRunNotice";
 import { retryCountFrom } from "../lib/retryHints";
@@ -1279,6 +1280,9 @@ export const useRepoStore = defineStore("repo", () => {
       void reconcileVersion();
       void fetchRunning();
       void fetchQueued();
+      // A close-out outcome that fired while this tab was disconnected is not
+      // replayed (#0640); pull the durable list so the bell can catch up.
+      void useNoticesStore().pollCloseOutOutcomes();
       return;
     }
     if (e.type === "build.available") {
@@ -1294,6 +1298,14 @@ export const useRepoStore = defineStore("repo", () => {
       restarting.value = false;
       const reason = typeof e.reason === "string" && e.reason ? `: ${e.reason}` : "";
       pushToast(`Restart failed${reason} — the server kept running the current build`, "error");
+      return;
+    }
+    if (e.type === "close-out.outcome") {
+      // A Move to done finished (#0640). The notices store owns the bell feed,
+      // dedupe and dismiss state; hand it the durable outcome verbatim. The
+      // list endpoint backfills the same events on load/reconnect, so this is
+      // only the live path.
+      useNoticesStore().ingestCloseOutOutcome(e.outcome);
       return;
     }
     if (e.type === "built-in.run") {
@@ -2041,6 +2053,7 @@ export const useRepoStore = defineStore("repo", () => {
       "task-check.done",
       "built-in.run",
       "repo.status",
+      "close-out.outcome",
     ]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;

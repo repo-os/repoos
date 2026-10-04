@@ -84,6 +84,7 @@ export default defineConfig({
           { text: "Built-in agents", link: "/built-in-agents" },
           { text: "Coding harness compatibility", link: "/coding-harness-compatibility" },
           { text: "Review and close-out", link: "/review-and-close-out" },
+          { text: "Notices and notifications", link: "/notifications" },
           { text: "Checks before merge", link: "/check" },
           { text: "Tunnels", link: "/tunnels" },
         ],
