@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/context-pack-rank-likely-implementation-
 created_at: "2026-10-04T15:14:59Z"
-updated_at: "2026-10-04T17:02:24Z"
+updated_at: "2026-10-04T17:02:46Z"
 review_passes: 2
 merge_conflict_retry_count: 1
 ---
@@ -61,3 +61,4 @@ Caveats: the pack is the last cached one per task, not necessarily the first; "f
 - 2026-10-04T16:20:49Z · status active→review
 - 2026-10-04T17:02:24Z · status review→active
 - 2026-10-04T17:02:24Z · note: sent back after worktree changed post-handoff
+- 2026-10-04T17:02:46Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
