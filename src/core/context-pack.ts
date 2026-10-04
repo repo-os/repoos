@@ -10,8 +10,9 @@
  * generation cost.
  *
  * Zero runtime deps — `node:fs`, `node:path`, `node:crypto` only. File
- * relevance uses deterministic rules (area mapping, symbol references, import
- * graph, test proximity) rather than an extra LLM call.
+ * relevance is the lexical TF-IDF scorer in `keyword-rank.ts`, combined with
+ * deterministic rules (area mapping, symbol references, import graph, test
+ * proximity) — never an extra LLM call.
  */
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
@@ -20,6 +21,11 @@ import { join, relative, extname } from "node:path";
 import type { RepoOSConfig, Task } from "./types.js";
 import { parseTaskAreas } from "./areas.js";
 import type { BootstrapResult } from "./bootstrap.js";
+import {
+  buildFileLexicalIndex,
+  scoreTaskKeywordRelevance,
+  type FileLexicalIndex,
+} from "./keyword-rank.js";
 
 /** Maximum byte size of a context pack before relevance-ranked truncation. */
 const PACK_BYTE_BUDGET = 24 * 1024;
@@ -102,7 +108,7 @@ export interface ContextPack {
 }
 
 /** A single file entry in the repo map. */
-interface MapEntry {
+export interface MapEntry {
   /** Repo-relative path. */
   path: string;
   /** File size in bytes. */
@@ -111,10 +117,21 @@ interface MapEntry {
   imports: string[];
   /** Last modification time (ms since epoch). */
   mtimeMs: number;
+  /** Per-file lexical index for keyword relevance (#0650). */
+  lexical: FileLexicalIndex;
 }
 
+/**
+ * Repo-map format version. Bumped whenever the cached shape changes so an
+ * older on-disk map (without the lexical index) is rebuilt instead of served
+ * with fields that are silently missing.
+ */
+const REPO_MAP_INDEX_VERSION = 2;
+
 /** Cached file map for the whole repository. */
-interface RepoMap {
+export interface RepoMap {
+  /** Format version — see `REPO_MAP_INDEX_VERSION`. */
+  indexVersion: number;
   /** Hash that produced this map. */
   headHash: string;
   /** Generation timestamp. */
@@ -139,7 +156,7 @@ interface CacheInputs {
 }
 
 /** Relevance-ranked file entry in the pack. */
-interface RelevantFile {
+export interface RelevantFile {
   path: string;
   reason: string;
   rank: number;
@@ -228,6 +245,7 @@ function walkSourceFiles(dir: string, root: string, skip: Set<string>, acc: MapE
     } else if (st.isFile() && isSourceFile(entry)) {
       let content = "";
       let imports: string[] = [];
+      const relPath = relative(root, full).split("\\").join("/");
       try {
         content = readFileSync(full, "utf8");
         imports = extractImports(content);
@@ -235,10 +253,11 @@ function walkSourceFiles(dir: string, root: string, skip: Set<string>, acc: MapE
         /* unreadable — skip */
       }
       acc.push({
-        path: relative(root, full).split("\\").join("/"),
+        path: relPath,
         size: st.size,
         imports,
         mtimeMs: st.mtimeMs,
+        lexical: buildFileLexicalIndex(relPath, content),
       });
     }
   }
@@ -255,7 +274,9 @@ export function buildRepoMap(config: RepoOSConfig): { map: RepoMap; cacheHit: bo
   if (existsSync(path)) {
     try {
       const cached: RepoMap = JSON.parse(readFileSync(path, "utf8"));
-      if (cached.headHash === hash) return { map: cached, cacheHit: true };
+      if (cached.headHash === hash && cached.indexVersion === REPO_MAP_INDEX_VERSION) {
+        return { map: cached, cacheHit: true };
+      }
     } catch {
       /* corrupt cache — rebuild */
     }
@@ -268,6 +289,7 @@ export function buildRepoMap(config: RepoOSConfig): { map: RepoMap; cacheHit: bo
   }
 
   const map: RepoMap = {
+    indexVersion: REPO_MAP_INDEX_VERSION,
     headHash: hash,
     generatedAt: new Date().toISOString(),
     files,
@@ -515,8 +537,10 @@ function extractFileReferences(body: string): string[] {
  *
  * Each file gets a relevance rank (higher = more relevant). The pack includes
  * files sorted by rank, capped by the byte budget.
+ *
+ * Exported for the #0650 recall evaluation (`scripts/context-pack-eval.ts`).
  */
-function rankFiles(config: RepoOSConfig, task: Task, repoMap: RepoMap): RelevantFile[] {
+export function rankFiles(config: RepoOSConfig, task: Task, repoMap: RepoMap): RelevantFile[] {
   const scores = new Map<string, { score: number; reasons: string[] }>();
   const add = (path: string, score: number, reason: string) => {
     if (!scores.has(path)) {
@@ -526,6 +550,21 @@ function rankFiles(config: RepoOSConfig, task: Task, repoMap: RepoMap): Relevant
     entry.score += score;
     if (!entry.reasons.includes(reason)) entry.reasons.push(reason);
   };
+
+  // 0. Keyword relevance — the primary signal (#0650). TF-IDF over the task
+  // text against each file's content, plus path and exported-name boosts so a
+  // term that names the file outranks a passing comment mention. The title is
+  // weighted above the body: task bodies carry generic process boilerplate
+  // that dilutes the signal (see `DEFAULT_BODY_WEIGHT`).
+  const keywordScores = scoreTaskKeywordRelevance(
+    repoMap.files.map((f) => f.lexical),
+    task.title,
+    task.body,
+  );
+  for (const [, ks] of keywordScores) {
+    const top = ks.matchedTerms.slice(0, 4).join(", ");
+    add(ks.path, ks.score, `keyword relevance: ${top}`);
+  }
 
   // 1. Area-based: files in mapped directories. #0583: a task can carry
   // several areas; map each through `parseTaskAreas` (which also splits the
@@ -557,18 +596,27 @@ function rankFiles(config: RepoOSConfig, task: Task, repoMap: RepoMap): Relevant
     }
   }
 
-  // 3. Import proximity: files connected to already-scored files
+  // 3. Import proximity: expand from the strongest seeds only. Keyword
+  // scoring touches nearly every file, so expanding from the entire scored
+  // set would be O(files × imports × files); the top seeds keep it bounded.
+  const IMPORT_SEED_LIMIT = 30;
+  const byPath = new Map(repoMap.files.map((f) => [f.path, f]));
   const scoredPaths = new Set(scores.keys());
-  let pendingPaths = new Set(scoredPaths);
+  const seeds = [...scores.entries()]
+    .sort((a, b) => b[1].score - a[1].score)
+    .slice(0, IMPORT_SEED_LIMIT)
+    .map(([path]) => path);
+  let pendingPaths = new Set(seeds);
   for (let hop = 0; hop < 2; hop++) {
     const next = new Set<string>();
     for (const sp of pendingPaths) {
-      const entry = repoMap.files.find((f) => f.path === sp);
+      const entry = byPath.get(sp);
       if (!entry) continue;
       for (const imp of entry.imports) {
         // Resolve relative import to an absolute repo path (best-effort)
+        const suffix = imp.replace(/^\.\//, "").replace(/\.\.\//g, "");
         for (const f of repoMap.files) {
-          if (f.path.endsWith(imp.replace(/^\.\//, "").replace(/\.\.\//g, ""))) {
+          if (f.path.endsWith(suffix)) {
             if (!scoredPaths.has(f.path)) {
               next.add(f.path);
               add(f.path, 4 - hop, `imported by ${sp}`);
@@ -621,7 +669,7 @@ function rankFiles(config: RepoOSConfig, task: Task, repoMap: RepoMap): Relevant
     });
   }
 
-  result.sort((a, b) => b.rank - a.rank);
+  result.sort((a, b) => b.rank - a.rank || a.path.localeCompare(b.path));
   return result;
 }
 
