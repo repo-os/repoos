@@ -13,7 +13,7 @@ review_model_override: composer-2.5
 hotfix: true
 hotfix_target: branch
 created_at: "2026-10-04T05:04:17Z"
-updated_at: "2026-10-04T05:11:21Z"
+updated_at: "2026-10-04T05:18:57Z"
 ---
 ## Problem
 The "add screenshots" buttons do not work on an installed PWA on macOS. The issue affects both the New Task and New Input panels.
@@ -39,6 +39,40 @@ None specified.
 
 The add screenshots buttons don't seem to work on an installed pwa on this machine (macos). I tried on both new task and new input panels.
 
+## Shots
+```json
+[
+  {
+    "label": "New task panel: screenshot dropzone (file picker now opens)",
+    "target": "default",
+    "route": "/",
+    "highlight": ".shot-dropzone",
+    "steps": [
+      {
+        "click": ".new-btn"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  },
+  {
+    "label": "New input panel: screenshot dropzone (file picker now opens)",
+    "target": "default",
+    "route": "/inputs",
+    "highlight": ".shot-dropzone",
+    "steps": [
+      {
+        "click": ".new-btn"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-04T05:04:17Z · created · hello@repoos.org
@@ -48,3 +82,4 @@ The add screenshots buttons don't seem to work on an installed pwa on this machi
 - 2026-10-04T05:05:47Z · status inbox→ready
 - 2026-10-04T05:11:20Z · branch, hotfix, hotfix_target
 - 2026-10-04T05:11:21Z · status ready→active
+- 2026-10-04T05:18:57Z · body: section Shots
