@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-04T16:36:26Z"
-updated_at: "2026-10-04T16:45:56Z"
+updated_at: "2026-10-04T16:45:57Z"
 ---
 ## Problem
 Engineer agents re-read files constantly (analysis of 234 engineer sessions, 2026-10-05): 38% of reads (1,004 of 2,647) were of a file already read in the same session, about 4.2MB re-read. Hot files: TaskDrawer.vue 167 reads, agents.ts 120, server.ts 94, style.css 92, stores/repo.ts 76, config.ts 64. Reads average 5.8KB of output (the largest per-call average of any tool), usually 200-400 line windows, and all of it stays in context and is re-billed as cache reads on every later turn. Agents have no cheap way to learn a file's structure, so they read a big window to find the part they want.
@@ -27,9 +27,10 @@ repoos outline <file> prints a compact map of the file: exported/top-level funct
 - Tests cover each file type, nested/exported symbols and the unsupported case, plus an assertion that the mission contains the read-by-range line.
 
 ## Notes for AI
-Success metric: re-read rate in sessions after this ships versus the 38% baseline, and the share of read calls with offset/limit ranges. Not a duplicate of the context-pack ranking work (which ranks likely files); this is per-file structure. Check whether pi/opencode can expose it as a custom tool or MCP server later; the CLI plus an AGENTS.md note is the first step.
+Success metrics, measured on engineer sessions after this ships versus the 2026-10-05 baseline (234 sessions): (1) re-read rate, 38% of reads were of an already-read file; (2) share of read output bytes from reads over 20KB, 31% (137 reads; 30% of reads had no offset/limit and averaged 10KB; TaskDrawer.vue and built-in-agents.ts at 58KB were read whole repeatedly); (3) share of read calls using offset/limit. A separate output-cap task was considered and deferred: no known pi/opencode setting for it, and avoiding big reads is cheaper than truncating them. Not a duplicate of the context-pack ranking work (which ranks likely files); this is per-file structure. Check whether pi/opencode can expose outline as a custom tool or MCP server later; the CLI plus the AGENTS.md note plus the mission line is the first step.
 
 ## Activity
 
 - 2026-10-04T16:36:26Z · created · unknown
 - 2026-10-04T16:45:56Z · body: section Acceptance criteria
+- 2026-10-04T16:45:57Z · body: section Notes for AI
