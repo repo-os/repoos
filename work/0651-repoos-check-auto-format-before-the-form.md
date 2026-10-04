@@ -2,14 +2,14 @@
 id: "0651"
 title: "repoos check: auto-format before the format check, and end with a failed-steps summary + rerun hint"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-04T16:32:00Z"
-updated_at: "2026-10-04T16:56:44Z"
+updated_at: "2026-10-04T17:42:51Z"
 ---
 ## Problem
 Engineer agents lose turns in the check-gate loop (analysis of 234 engineer sessions, 2026-10-05): repoos check ran 477 times in 215 sessions; 130 sessions ran it more than once; roughly a third of runs failed. 13 runs in 11 sessions failed only on formatting (check-fmt:check only reports; it never reformats). Agents also pipe the check through tail/grep, miss the failing step, and rerun it (one session ran the same check 4 times).
@@ -32,3 +32,4 @@ Format step is kind="format" in check-plan.ts / repoos.toml (check-fmt:check). d
 
 - 2026-10-04T16:32:00Z · created · unknown
 - 2026-10-04T16:56:44Z · priority
+- 2026-10-04T17:42:51Z · status inbox→ready
