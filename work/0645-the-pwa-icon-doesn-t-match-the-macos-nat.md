@@ -2,14 +2,14 @@
 id: "0645"
 title: Sync PWA icon with macOS native dock icon (light/dark)
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, macos]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-04T07:30:08Z"
-updated_at: "2026-10-04T07:30:21Z"
+updated_at: "2026-10-04T07:30:35Z"
 ---
 ## Problem
 The web PWA icon does not match the macOS native application dock icon. The macOS icon also provides separate light and dark variants, while the PWA currently lacks that parity.
@@ -48,3 +48,4 @@ The PWA icon doesn't match the macos native app dock icon. Can you fix it so the
 - 2026-10-04T07:30:08Z · created · hello@repoos.org
 - 2026-10-04T07:30:09Z · screenshots
 - 2026-10-04T07:30:21Z · status draft→inbox, title, area, body
+- 2026-10-04T07:30:35Z · status inbox→ready
