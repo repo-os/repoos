@@ -1033,10 +1033,15 @@
   font-weight: 600;
   cursor: pointer;
 }
-.side-git-actions {
+.side-git-sec-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.side-git-sec-head h3 {
+  margin: 0;
 }
 a.side-git-commit-btn {
   text-decoration: none;
