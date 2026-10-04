@@ -203,6 +203,12 @@ These run as part of a task's life. They're what the `pm`, `engineer`, and
   the repo; never edits files or changes task state.
 - **cto** — an optional always-on board monitor. Off by default; watches for
   stuck tasks, stale reviews and broken builds, and reports rather than acts.
+  While the board is healthy it makes no model call at all: it only runs the
+  agent when something needs attention, or when the material board signal
+  changes. Every CTO run records what triggered it, and a failed run records a
+  truncated reason, so provider credit/auth failures show up on the Tokens
+  panel instead of disappearing. Tune this with `ctoSkipHealthy` on the
+  Settings page — see [Configuration](/configuration#agents).
 
 When you assign a task to an agent from the UI, RepoOS creates a dedicated git
 worktree and branch for that task and runs the agent there. A task can override
