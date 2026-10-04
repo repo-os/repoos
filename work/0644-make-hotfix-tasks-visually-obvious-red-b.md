@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-04T09:23:15Z"
-review_passes: 1
 id: "0644"
 title: "Make hotfix tasks visually obvious: red badge, red outline, drawer banner"
 type: feature
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -13,6 +11,7 @@ branch: feat/make-hotfix-tasks-visually-obvious-red-b
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-04T06:43:13Z"
+updated_at: "2026-10-04T07:50:49Z"
 ---
 ## Problem
 Hotfix tasks are easy to miss. On the board card the only indicator is a plain unstyled `hotfix` word (`.tc-hotfix` in `TaskCard.vue` has no CSS and uses a native `title` tooltip). The task drawer shows nothing at all, even though `task.hotfix` and `task.hotfixTarget` are available. A hotfix runs in the main checkout, skips preview and the review report, and blocks the checkout, so it should be unmistakable.
@@ -80,6 +79,3 @@ Covers: hotfix visibility on card and drawer. Deferred: changing hotfix behaviou
 - 2026-10-04T07:24:06Z · status inbox→ready
 - 2026-10-04T07:24:09Z · status ready→active, branch
 - 2026-10-04T07:50:49Z · body: section Shots
-- 2026-10-04T09:22:16Z · status active→review
-- 2026-10-04T09:22:28Z · note: shots: failed — capture of Hotfix card on the board: red outline and HOTFIX badge on "default" failed: waitFor: Timeout 5000ms exceeded.
-
