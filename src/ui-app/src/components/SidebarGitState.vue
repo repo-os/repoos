@@ -402,7 +402,16 @@ onBeforeUnmount(() => {
       <section v-if="statusNote" class="side-git-pop-note">{{ statusNote }}</section>
 
       <section v-if="files.length" class="side-git-pop-sec">
-        <h3>Changed files</h3>
+        <div class="side-git-sec-head">
+          <h3>Changed files</h3>
+          <RouterLink
+            class="side-git-commit-btn"
+            to="/repo/working-diff"
+            data-test-id="side-git-view-diff"
+            @click="closeNow"
+            >View diff</RouterLink
+          >
+        </div>
         <ul class="side-git-files">
           <li v-for="f in shownFiles" :key="f.path">
             <span
@@ -440,19 +449,9 @@ onBeforeUnmount(() => {
         <RouterLink class="side-git-history" to="/repo?tab=history" @click="closeNow"
           >View history</RouterLink
         >
-        <span class="side-git-actions">
-          <RouterLink
-            v-if="dirtyCount > 0 && live"
-            class="side-git-commit-btn"
-            to="/repo/working-diff"
-            data-test-id="side-git-view-diff"
-            @click="closeNow"
-            >View diff</RouterLink
-          >
-          <button v-if="canCommit" type="button" class="side-git-commit-btn" @click="openCommit">
-            Commit
-          </button>
-        </span>
+        <button v-if="canCommit" type="button" class="side-git-commit-btn" @click="openCommit">
+          Commit
+        </button>
       </footer>
     </div>
   </Teleport>
