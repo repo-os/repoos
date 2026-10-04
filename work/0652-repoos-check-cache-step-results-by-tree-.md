@@ -2,14 +2,14 @@
 id: "0652"
 title: "repoos check: cache step results by tree hash so unchanged reruns return instantly"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/repoos-check-cache-step-results-by-tree-
 created_at: "2026-10-04T16:32:02Z"
-updated_at: "2026-10-04T23:19:43Z"
+updated_at: "2026-10-04T23:24:47Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -39,3 +39,4 @@ Design risk is correctness, not speed: a stale cache hit that lets a broken tree
 - 2026-10-04T23:18:49Z · status active→review
 - 2026-10-04T23:18:50Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-04T23:19:43Z · status review→active
+- 2026-10-04T23:24:47Z · status active→review
