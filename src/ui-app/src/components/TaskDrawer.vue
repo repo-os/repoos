@@ -20,6 +20,7 @@ import {
   MessageSquare,
   Bot,
   Diff,
+  Expand,
   ShieldCheck,
   Coins,
   Bug,
@@ -2970,6 +2971,15 @@ const taskDiffStats = computed(() => {
 });
 
 /**
+ * #0647 — the worktree has edits that aren't committed on the branch yet, so
+ * the branch is dirty. The Changes tab's patch already carries them: `getDiff`
+ * diffs the merge-base against the *working tree*, so staged and unstaged
+ * edits land in the same patch as the commits. This only decides whether to
+ * offer the shortcut to the full-screen diff — it is never a second renderer.
+ */
+const worktreeDirty = computed(() => !!ui.active?.git?.dirty);
+
+/**
  * A diff this size is almost never the task's own change — it's main having
  * drifted out from under the branch since it was cut. Thresholds are
  * deliberately generous (most real task diffs are well under this) so the
@@ -3063,11 +3073,21 @@ watch(
   { immediate: true },
 );
 
-function openFullDiff(file: DiffFile): void {
+/**
+ * Open the full-screen diff view (`DiffView`) for the active task and close the
+ * drawer behind it. The per-file expand buttons pass that file so the view
+ * lands on it; #0647's dirty-worktree button passes nothing, and `DiffView`
+ * falls back to the first file in the patch. One navigation, two callers.
+ */
+function openFullDiff(file?: DiffFile): void {
   if (!ui.active) return;
   const taskId = ui.active.id;
   ui.close();
-  router.push({ name: "diff", params: { taskId }, query: { file: file.filename } });
+  router.push({
+    name: "diff",
+    params: { taskId },
+    query: file ? { file: file.filename } : {},
+  });
 }
 
 async function sendTurn(): Promise<void> {
@@ -5144,6 +5164,29 @@ watch(
               <div v-else class="diff-stats-loading">
                 <ActivityIndicator size="sm" label="Loading diff…" />
                 Loading changes…
+              </div>
+              <!-- #0647: a dirty worktree means part of what you see below is
+                   not on the branch yet. The patch already includes those
+                   edits, so this is navigation to the same full-screen diff
+                   the per-file expand buttons open — nothing is re-rendered
+                   here, and the row only exists while files are actually
+                   uncommitted. -->
+              <div v-if="worktreeDirty" class="diff-dirty">
+                <span class="diff-dirty-text">
+                  This worktree has uncommitted changes. They are in this diff, but not on the
+                  branch yet.
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="diff-dirty-btn"
+                  data-test-id="changes-view-diff"
+                  title="Open the full-screen diff view"
+                  @click="openFullDiff()"
+                >
+                  <Expand class="size-3.5" />
+                  View diff
+                </Button>
               </div>
               <div v-if="diffLooksLikeDrift" class="diff-stat-warning">
                 This diff looks much bigger than the task — main has likely drifted since the branch
