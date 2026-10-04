@@ -2,14 +2,14 @@
 id: "0643"
 title: Make branch-mode hotfix close-out survive a failed publish and index.lock contention
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [server, core]
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-04T06:43:06Z"
-updated_at: "2026-10-04T06:43:06Z"
+updated_at: "2026-10-04T07:28:19Z"
 ---
 ## Problem
 Observed on #0642 (2026-10-04). Move to done on a branch-mode hotfix failed at publish with `could not merge to main: error: Unable to create .git/index.lock: File exists`, and every retry then failed in the sync phase with `feature branch hotfix/… worktree not found`.
@@ -39,3 +39,4 @@ Covers: hotfix close-out recovery and git lock tolerance in the publish path. De
 ## Activity
 
 - 2026-10-04T06:43:06Z · created · unknown
+- 2026-10-04T07:28:19Z · status inbox→ready
