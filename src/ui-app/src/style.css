@@ -5846,6 +5846,25 @@
 .shot-row img {
   cursor: pointer;
 }
+/* Expand over delete, same 28px square (#0627 follow-up). */
+.shot-row-actions {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: auto;
+}
+.shot-row-actions .shot-expand,
+.shot-row-actions .ff-pending-file-remove {
+  width: 28px;
+  height: 28px;
+  margin-left: 0;
+  border-radius: 6px;
+}
+.shot-row-actions .shot-expand-icon {
+  width: 14px;
+  height: 14px;
+}
 .shot-row-text {
   display: flex;
   flex: 1;
