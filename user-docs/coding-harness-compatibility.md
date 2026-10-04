@@ -27,15 +27,15 @@ model-selection check is not certification of the complete adapter contract.
 | Harness | CLI id | Binary | Supported range | Newest certified | Notes |
 | --- | --- | --- | --- | --- | --- |
 | **OpenCode** | `opencode` | `opencode` | `>=2.0.0 <3.0.0` | **2.0.11** (2026-09-22) | Full 8-seam certification. Use `--standalone` for isolated probes. |
-| **Claude Code** | `claude code` | `claude` | `>=2.0.0 <3.0.0` | **2.1.267** (2026-09-22) | Full 8-seam certification. Requires `--verbose` with stream-json. |
-| **Codex** | `codex` | `codex` | `>=0.100.0 <1.0.0` | **0.155.0** (2026-09-22) | `codex exec --json --approve-for-me`; `--approve-for-me` precedes `resume` subcommand. |
+| **Claude Code** | `claude code` | `claude` | `>=2.0.0 <3.0.0` | **2.1.285** (2026-10-04) | Full 8-seam certification. Requires `--verbose` with stream-json. |
+| **Codex** | `codex` | `codex` | `>=0.100.0 <1.0.0` | **0.160.0** (2026-10-04) | `codex exec --json --approve-for-me`; `--approve-for-me` precedes `resume` subcommand. |
 | **Cursor Agent** | `cursor` | `cursor-agent` | `>=2026.0.0 <2027.0.0` | **2026.10.1** (2026-10-02) | Stream-json mode; `-f/--force` bypasses approval prompts. |
-| **Kiro** | `kiro` | `kiro-cli` | `>=2.0.0 <3.0.0` | **2.23.0** (2026-09-22) | Plain-text output; session-continuation and structured-events skipped (captured post-run). |
-| **Antigravity** | `antigravity` | `agy` | `>=1.0.0 <2.0.0` | **1.2.8** (2026-09-22) | Gemini-backed; `--dangerously-skip-permissions` for unattended work. |
-| **GitHub Copilot** | `github copilot` | `copilot` | `>=1.0.0 <2.0.0` | **1.0.87** (2026-09-22) | `--output-format json` JSONL; `--no-ask-user --yolo` for headless. |
+| **Kiro** | `kiro` | `kiro-cli` | `>=2.0.0 <3.0.0` | **2.27.1** (2026-10-04) | Plain-text output; session-continuation and structured-events skipped (captured post-run). |
+| **Antigravity** | `antigravity` | `agy` | `>=1.0.0 <2.0.0` | **1.2.16** (2026-10-04) | Gemini-backed; `--dangerously-skip-permissions` for unattended work. |
+| **GitHub Copilot** | `github copilot` | `copilot` | `>=1.0.0 <2.0.0` | **1.0.91** (2026-10-04) | `--output-format json` JSONL; `--no-ask-user --yolo` for headless. |
 | **Qwen Code** | `qwen code` | `qwen` | `>=0.1.0 <1.0.0` | Pending | Claude-compatible interface; `--yolo` for headless. Requires `--auth-type` configured. |
 | **Crush** | `crush` | `crush` | `>=0.97.0 <0.98.0` | Pending | Plain-text headless runs; session-continuation and structured-events skipped (session id and usage captured post-run via `crush session list` / `session show --json`). Pre-1.0, so the range is narrow. |
-| **pi** | `pi` | `pi` | `>=0.99.0 <1.0.0` | **0.99.2** (2026-10-02) | Strict JSONL event stream (`--mode json`) with a session header and usage, documented `--session` resume, and no approval prompts in a non-interactive run. Pre-1.0, so the range is narrow. |
+| **pi** | `pi` | `pi` | `>=1.0.0 <2.0.0` | **1.0.0** (2026-10-04) | Strict JSONL event stream (`--mode json`) with a session header and usage, documented `--session` resume, and no approval prompts in a non-interactive run. |
 
 This table is derived from `src/core/agent-compatibility.json`. Update that manifest
 and add contract evidence together when certifying a release. Do not silently
