@@ -13,6 +13,7 @@ import DialogDescription from "../components/ui/dialog/description.vue";
 import DialogOverlay from "../components/ui/dialog/overlay.vue";
 import DialogTitle from "../components/ui/dialog/title.vue";
 import { api, JSON_OPTS } from "../api";
+import { parseAnsi, stripAnsi } from "../lib/ansi";
 import FailedTestsList from "../components/FailedTestsList.vue";
 import { nextReleaseVersion } from "../releases";
 
@@ -852,7 +853,7 @@ async function pollRun(): Promise<void> {
         const lines = latest.message.split("\n").filter((l) => l.trim());
         error.value =
           lines.length > 1 ? failureSummary(latest.phase, latest.message) : latest.message;
-        runLog.value = lines.length > 1 ? latest.message : "";
+        runLog.value = lines.length > 1 ? stripAnsi(latest.message) : "";
       }
       // A terminal cut changes what is "unpushed": success retires the draft,
       // failure promotes the freshly generated one. Refresh the card (#0641).
@@ -903,6 +904,30 @@ async function sendToDebugger(): Promise<void> {
 }
 
 /** Live elapsed time while a release runs. */
+const PHASE_STEPS: { phase: ReleasePhase; label: string }[] = [
+  { phase: "preparing", label: "Preparing the release" },
+  { phase: "committing", label: "Committing the version bump" },
+  { phase: "building", label: "Building" },
+  { phase: "checking", label: "Running checks" },
+  { phase: "pushing_main", label: "Pushing main" },
+  { phase: "tagging", label: "Creating the tag" },
+  { phase: "pushing_tag", label: "Pushing the tag" },
+];
+
+/** "Step 4 of 7 · Running checks" for the live run's current phase. */
+const phaseHeading = computed(() => {
+  const idx = PHASE_STEPS.findIndex((p) => p.phase === run.value?.phase);
+  if (idx < 0) return "Release in progress";
+  return `Step ${idx + 1} of ${PHASE_STEPS.length} · ${PHASE_STEPS[idx].label}`;
+});
+
+/** Latest streamed output, ANSI colors parsed, trimmed to its recent tail. */
+const progressOutput = computed(() => {
+  const raw = run.value?.message ?? "";
+  const tail = raw.trimEnd().split("\n").slice(-9).join("\n");
+  return parseAnsi(tail.trimEnd());
+});
+
 function elapsed(): string {
   if (!run.value?.startedAt) return "";
   return `${formatSpan(now.value - new Date(run.value.startedAt).getTime())} elapsed`;
@@ -1205,17 +1230,30 @@ onBeforeUnmount(() => {
                 </div>
               </dl>
 
-              <div v-if="running && run" class="release-progress" aria-live="polite">
-                <strong>{{ run.message }}</strong>
-                <span>{{ elapsed() }}</span>
-                <small v-if="run.phase === 'building'"
-                  >Rebuilding so the check runs against fresh output.</small
-                >
-                <small v-else-if="run.phase === 'checking'"
-                  >Full verification usually takes a few minutes.</small
-                >
-                <small>You can leave this page — progress shows here when you return.</small>
-              </div>
+              <template v-if="running && run">
+                <h3 class="release-progress-heading">{{ phaseHeading }}</h3>
+                <div class="release-progress" aria-live="polite">
+                  <span>{{ elapsed() }}</span>
+                  <small v-if="run.phase === 'building'"
+                    >Rebuilding so the check runs against fresh output.</small
+                  >
+                  <small v-else-if="run.phase === 'checking'"
+                    >Full verification usually takes a few minutes.</small
+                  >
+                  <small>You can leave this page — progress shows here when you return.</small>
+                </div>
+                <!-- Output goes LAST and has a fixed height, so streaming text never
+                     shifts the heading, timer, or hints above it. -->
+                <pre class="release-progress-output" aria-label="Latest output"><span
+                  v-for="(seg, i) in progressOutput"
+                  :key="i"
+                  :style="{
+                    color: seg.color ? `var(--${seg.color})` : undefined,
+                    fontWeight: seg.bold ? 700 : undefined,
+                    opacity: seg.dim ? 0.7 : undefined,
+                  }"
+                  >{{ seg.text }}</span></pre>
+              </template>
 
               <div v-if="error && !running" class="release-drawer-error" role="alert">
                 <strong>{{ error }}</strong>

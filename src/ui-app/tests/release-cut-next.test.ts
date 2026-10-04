@@ -283,7 +283,9 @@ describe("Cut Next shortcut (#0590)", () => {
 
     // Mid-run the page button doubles as the way back in.
     let panel = await openPanel();
-    expect(panel.querySelector(".release-progress")?.textContent).toContain("Running checks");
+    expect(panel.querySelector(".release-progress-output")?.textContent).toContain(
+      "Running checks",
+    );
 
     // Closing mid-run keeps the state; reopening shows the same live run.
     button(panel, "Close")!.click();
@@ -292,7 +294,9 @@ describe("Cut Next shortcut (#0590)", () => {
 
     runState = { ...runState, phase: "tagging", message: "Pushing the tag…" };
     panel = await openPanel();
-    expect(panel.querySelector(".release-progress")?.textContent).toContain("Pushing the tag");
+    expect(panel.querySelector(".release-progress-output")?.textContent).toContain(
+      "Pushing the tag",
+    );
   });
 
   it("clears the form only after a successful cut, not on close (#0621)", async () => {
@@ -352,7 +356,7 @@ describe("Cut Next shortcut (#0590)", () => {
     await flushPromises();
     // The run started; the panel is still open with live progress (fields
     // hidden while running), not reset.
-    expect(panel.querySelector(".release-progress")?.textContent).toContain("Committing");
+    expect(panel.querySelector(".release-progress-output")?.textContent).toContain("Committing");
     expect(panel.querySelector("#rel-version")).toBeNull();
 
     // A later poll observes the finished run: the panel closes, and the form

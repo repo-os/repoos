@@ -11683,6 +11683,30 @@
   color: var(--txt);
   font-size: 13px;
 }
+.release-drawer .release-progress-heading {
+  margin: 16px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt);
+}
+.release-drawer .release-progress-heading + .release-progress {
+  margin-top: 8px;
+}
+.release-drawer .release-progress-output {
+  margin: 10px 0 0;
+  height: 14.5em;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--txt-dim);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .release-drawer .release-progress span,
 .release-drawer .release-progress small {
   color: var(--txt-dim);
