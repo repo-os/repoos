@@ -1,16 +1,17 @@
 ---
-updated_at: "2026-10-04T17:04:55Z"
-review_passes: 3
 id: "0650"
 title: "Context pack: rank Likely Implementation Files by task-text keyword relevance (recall 30% to 55%+)"
 type: feature
-status: review
+status: done
 priority: medium
 area: core
+merged_commit: 61039f94598fc652be583afd46d75ab14d52f26f
 assigned_to: ai
 created_by: ""
 branch: feat/context-pack-rank-likely-implementation-
 created_at: "2026-10-04T15:14:59Z"
+updated_at: "2026-10-04T17:48:09Z"
+review_passes: 3
 merge_conflict_retry_count: 1
 ---
 ## Problem
@@ -64,4 +65,4 @@ Caveats: the pack is the last cached one per task, not necessarily the first; "f
 - 2026-10-04T17:02:46Z · status active→review
 - 2026-10-04T17:02:46Z · note: review without checks by hello@repoos.org
 - 2026-10-04T17:02:47Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-
+- 2026-10-04T17:48:09Z · status review→done, release:success
