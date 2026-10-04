@@ -12,7 +12,10 @@ const repo = useRepoStore();
 
 const taskId = computed(() => (route.params.taskId as string) || "");
 const commitSha = computed(() => (route.params.sha as string) || "");
-const isCommitDiff = computed(() => Boolean(commitSha.value));
+// The repo root checkout's uncommitted edits (sidebar git popover) reuse the
+// commit-diff plumbing: a repo-level patch plus per-file before/after.
+const isWorkingDiff = computed(() => route.name === "working-diff");
+const isCommitDiff = computed(() => Boolean(commitSha.value) || isWorkingDiff.value);
 const targetFile = computed(() => (route.query.file as string) ?? "");
 
 const commitDiff = ref<{ patch: string; truncated: boolean } | null>(null);
@@ -22,7 +25,9 @@ onMounted(async () => {
   if (isCommitDiff.value) {
     try {
       const data = await api<{ ok: boolean; patch?: string; truncated?: boolean }>(
-        `/api/repo/commits/${encodeURIComponent(commitSha.value)}`,
+        isWorkingDiff.value
+          ? "/api/repo/working-diff"
+          : `/api/repo/commits/${encodeURIComponent(commitSha.value)}`,
       );
       commitDiff.value = { patch: data.patch ?? "", truncated: Boolean(data.truncated) };
     } catch (err) {
@@ -352,13 +357,17 @@ watch(
     fileContentsLoading.value = true;
     try {
       const path = encodeURIComponent(filename);
-      if (commitMode && sha) {
+      if (commitMode) {
         const contents = await api<{
           before: string;
           after: string;
           existsBefore: boolean;
           existsAfter: boolean;
-        }>(`/api/repo/commits/${encodeURIComponent(sha)}/file?path=${path}`);
+        }>(
+          isWorkingDiff.value
+            ? `/api/repo/working-diff/file?path=${path}`
+            : `/api/repo/commits/${encodeURIComponent(sha)}/file?path=${path}`,
+        );
         if (!contents.existsBefore && !contents.existsAfter) {
           fullFileNotice.value = "Full file contents are not available for this path.";
         } else {
@@ -544,8 +553,8 @@ onBeforeUnmount(() => {
 function switchFile(filename: string): void {
   if (isCommitDiff.value) {
     router.replace({
-      name: "commit-diff",
-      params: { sha: commitSha.value },
+      name: isWorkingDiff.value ? "working-diff" : "commit-diff",
+      params: isWorkingDiff.value ? {} : { sha: commitSha.value },
       query: { file: filename },
     });
     return;

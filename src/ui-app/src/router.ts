@@ -39,6 +39,12 @@ export const router = createRouter({
       meta: { fullscreen: true },
     },
     {
+      path: "/repo/working-diff",
+      name: "working-diff",
+      component: () => import("./views/DiffView.vue"),
+      meta: { fullscreen: true },
+    },
+    {
       path: "/repo/commits/:sha",
       name: "commit-diff",
       component: () => import("./views/DiffView.vue"),

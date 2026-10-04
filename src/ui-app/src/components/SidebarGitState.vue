@@ -329,7 +329,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="row side-git">
+  <!-- Hovering anywhere on the row opens the popover (not just the icon); it
+       still anchors to the icon, so it opens in the same place. -->
+  <div class="row side-git" @mouseenter="onEnter" @mouseleave="onLeave">
     <span class="side-git-branch" :class="{ warn: branchWarn }" :title="branchTitle">
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="7" cy="5.5" r="2.4" stroke="currentColor" stroke-width="1.8" />
@@ -356,8 +358,6 @@ onBeforeUnmount(() => {
         :aria-expanded="open"
         :aria-controls="open ? POPOVER_ID : undefined"
         aria-label="Git state details: changed files and recent commits"
-        @mouseenter="onEnter"
-        @mouseleave="onLeave"
         @pointerdown="notePointer"
         @focus="onFocus"
         @focusout="scheduleClose()"
@@ -440,9 +440,19 @@ onBeforeUnmount(() => {
         <RouterLink class="side-git-history" to="/repo?tab=history" @click="closeNow"
           >View history</RouterLink
         >
-        <button v-if="canCommit" type="button" class="side-git-commit-btn" @click="openCommit">
-          Commit
-        </button>
+        <span class="side-git-actions">
+          <RouterLink
+            v-if="dirtyCount > 0 && live"
+            class="side-git-commit-btn"
+            to="/repo/working-diff"
+            data-test-id="side-git-view-diff"
+            @click="closeNow"
+            >View diff</RouterLink
+          >
+          <button v-if="canCommit" type="button" class="side-git-commit-btn" @click="openCommit">
+            Commit
+          </button>
+        </span>
       </footer>
     </div>
   </Teleport>
