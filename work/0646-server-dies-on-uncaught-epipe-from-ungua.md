@@ -2,7 +2,7 @@
 id: "0646"
 title: Server dies on uncaught EPIPE from unguarded child stdin writes; log EPIPE with context
 type: bug
-status: ready
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -44,3 +44,4 @@ Discovered 2026-10-04 while diagnosing why the 7171 server kept dying. Initial t
 - 2026-10-04T08:58:35Z · review_model_override
 - 2026-10-04T08:58:36Z · status inbox→ready
 - 2026-10-04T09:06:22Z · branch, hotfix, hotfix_target
+- 2026-10-04T09:06:22Z · status ready→active
