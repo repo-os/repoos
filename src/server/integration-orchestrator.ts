@@ -23,6 +23,7 @@ import { spawn } from "node:child_process";
 import { notifyGitMutation } from "../core/git-activity.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator, JobPhase } from "./integration-job.js";
+import type { CloseOutOutcome, CloseOutOutcomeEvent } from "./close-out-outcome.js";
 import type { RepositoryLock, RootLock } from "./repo-lock.js";
 import type { Logger } from "../core/logger.js";
 import {
@@ -720,7 +721,28 @@ export class CloseOutOrchestrator {
     /** Records the MTD merge-gate `repoos check` run for the Debug tab (0310). */
     private taskChecks?: TaskCheckManager,
     private onTaskCheckEvent?: TaskCheckListener,
+    /**
+     * Fired once when a job reaches a terminal, REPORTABLE outcome — success,
+     * genuine failure, or timeout (#0640). A user cancel is deliberately not
+     * reported. Used by the server to record the durable outcome event and
+     * push it over SSE; observation must never disturb the close-out.
+     */
+    private onOutcome?: (event: CloseOutOutcomeEvent) => void,
   ) {}
+
+  /** Report a finished close-out, swallowing observer errors (#0640). */
+  private emitOutcome(
+    taskId: string,
+    outcome: CloseOutOutcome,
+    reason: string,
+    finishedAt: string,
+  ): void {
+    try {
+      this.onOutcome?.({ taskId, outcome, finishedAt, reason });
+    } catch {
+      /* observing outcomes must never break the close-out itself */
+    }
+  }
 
   /**
    * Whether the task is, on disk, already `done`. The live index is an
@@ -913,7 +935,7 @@ export class CloseOutOrchestrator {
       this.coordinator.removeJob(job.taskId);
       return { ok: true };
     }
-    this.coordinator.updateJob(job.taskId, {
+    const recorded = this.coordinator.updateJob(job.taskId, {
       phase: PHASE_FAILED,
       failedPhase,
       reason,
@@ -922,6 +944,15 @@ export class CloseOutOrchestrator {
       this.config.root,
       this.config.cacheDir ?? ".repoos",
       job.taskId,
+    );
+    // A budget-exhausted close-out is recorded as a `failed` job (so it stays
+    // retryable) but reported as a distinct `timedOut` outcome (#0640): the
+    // bell's advice differs from a real gate failure.
+    this.emitOutcome(
+      job.taskId,
+      reason?.startsWith(TIMEOUT_REASON_PREFIX) ? "timedOut" : "failed",
+      reason ?? "",
+      recorded?.failedAt ?? new Date().toISOString(),
     );
     onRecorded?.();
     return { ok: false, reason };
@@ -1140,6 +1171,9 @@ export class CloseOutOrchestrator {
           console.warn(`Cleanup warning for task ${job.taskId}: ${cleanRes.reason}`);
         }
         job = this.coordinator.updateJob(job.taskId, { phase: "done" })!;
+        // The one success path: the merge landed and cleanup ran. Record the
+        // durable outcome the notices bell shows (#0640).
+        this.emitOutcome(job.taskId, "succeeded", "", new Date().toISOString());
         this.logger?.integration(job.taskId, "info", "close-out complete — published to main");
       }
 

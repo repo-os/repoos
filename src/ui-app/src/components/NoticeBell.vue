@@ -142,6 +142,12 @@ function timeOf(iso: string): string {
   return relTime(iso);
 }
 
+/** The exact local time, shown in the styled tooltip on hover/focus. */
+function fullTime(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
+}
+
 // Recompute the measured position when the popover opens.
 watch(open, (o) => {
   if (o) void nextTick(measure);
@@ -195,7 +201,12 @@ watch(open, (o) => {
           <ul v-if="shownNotices.length" class="notice-list">
             <li v-for="n in shownNotices" :key="n.id" class="notice-row">
               <span class="notice-dot" :style="{ background: noticeColor(n.kind) }"></span>
-              <button type="button" class="notice-body" @click="follow(n)">
+              <button
+                type="button"
+                class="notice-body"
+                :data-tip="fullTime(n.createdAt)"
+                @click="follow(n)"
+              >
                 <span class="notice-title" :class="{ unread: !n.read }">{{ n.title }}</span>
                 <span v-if="n.detail" class="notice-detail">{{ n.detail }}</span>
                 <span class="notice-time">{{ timeOf(n.createdAt) }}</span>

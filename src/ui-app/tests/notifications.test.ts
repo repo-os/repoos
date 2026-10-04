@@ -108,6 +108,9 @@ describe("notifications store defaults + persistence", () => {
       releaseNotesReady: false,
       releaseSucceeded: false,
       releaseFailed: false,
+      closeOutSucceeded: false,
+      closeOutFailed: false,
+      closeOutTimedOut: false,
     });
     expect(n.isActive).toBe(false);
   });
@@ -298,8 +301,11 @@ describe("notify() gating", () => {
 });
 
 describe("NOTIFICATION_TYPE_LABELS", () => {
-  it("covers every monitorable type — task attention + release kinds (0606)", () => {
+  it("covers every monitorable type — task attention, release kinds (0606) and close-out kinds (#0640)", () => {
     expect(Object.keys(NOTIFICATION_TYPE_LABELS).sort()).toEqual([
+      "closeOutFailed",
+      "closeOutSucceeded",
+      "closeOutTimedOut",
       "needsInput",
       "paused",
       "releaseFailed",

@@ -560,6 +560,18 @@ export interface BoardUsageStats {
   days: DailyUsage[];
 }
 
+/** How a close-out (Move to done) ended (#0640). Mirrors the server's
+ *  `src/server/close-out-outcome.ts`; the UI never imports server code. */
+export type CloseOutOutcome = "succeeded" | "failed" | "timedOut";
+
+export interface CloseOutOutcomeEvent {
+  taskId: string;
+  outcome: CloseOutOutcome;
+  /** When the close-out FINISHED (server time, ISO-8601 UTC). */
+  finishedAt: string;
+  reason: string;
+}
+
 export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
   /** Background PM enrichment of a new input reached its terminal outcome
@@ -654,6 +666,9 @@ export type RepoEvent =
       at: string;
     }
   | { type: "integration"; pipeline: IntegrationPipelineSnapshot }
+  /** A close-out (Move to done) run ended (#0640): succeeded, failed, or hit
+   *  its wall-clock budget. Feeds the notices bell; a user cancel emits none. */
+  | { type: "close-out.outcome"; outcome: CloseOutOutcomeEvent; at: string }
   | { type: "test-run.started"; at: string }
   | { type: "test-run.output"; chunk: string; at: string }
   | { type: "test-run.done"; code: number | null; at: string }

@@ -1,6 +1,7 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { api } from "../api";
+import type { CloseOutOutcome, CloseOutOutcomeEvent } from "../types";
 import { useNotificationsStore } from "./notifications";
 
 /**
@@ -23,7 +24,13 @@ import { useNotificationsStore } from "./notifications";
  */
 
 /** The notice kinds the UI knows today. A string, extended per source. */
-export type NoticeKind = "releaseNotesReady" | "releaseSucceeded" | "releaseFailed";
+export type NoticeKind =
+  | "releaseNotesReady"
+  | "releaseSucceeded"
+  | "releaseFailed"
+  | "closeOutSucceeded"
+  | "closeOutFailed"
+  | "closeOutTimedOut";
 
 export interface NoticeItem {
   /** Stable per event: `<kind>:<eventKey>`. Dedupe + dismissed/read keys. */
@@ -46,6 +53,9 @@ export const NOTICE_KIND_LABELS: Record<NoticeKind, string> = {
   releaseNotesReady: "Release notes ready",
   releaseSucceeded: "Release succeeded",
   releaseFailed: "Release failed",
+  closeOutSucceeded: "Move to done landed",
+  closeOutFailed: "Move to done failed",
+  closeOutTimedOut: "Move to done timed out",
 };
 
 /** Dot / accent color per kind — CSS tokens only (hardcoded-colors guard). */
@@ -53,6 +63,11 @@ export const NOTICE_KIND_COLOR: Record<NoticeKind, string> = {
   releaseNotesReady: "var(--violet)",
   releaseSucceeded: "var(--green)",
   releaseFailed: "var(--red)",
+  closeOutSucceeded: "var(--green)",
+  closeOutFailed: "var(--red)",
+  // Amber, not red: a timeout is retryable and its advice differs from a
+  // real gate failure.
+  closeOutTimedOut: "var(--amber)",
 };
 
 /** Max live notices kept in the feed. Oldest are dropped by createdAt. */
@@ -80,6 +95,44 @@ function firstLine(message: string, max = 160): string {
     .find(Boolean);
   if (!line) return "";
   return line.length > max ? `${line.slice(0, max - 1)}…` : line;
+}
+
+/** Notice kind for a close-out outcome. */
+const CLOSE_OUT_KIND: Record<CloseOutOutcome, NoticeKind> = {
+  succeeded: "closeOutSucceeded",
+  failed: "closeOutFailed",
+  timedOut: "closeOutTimedOut",
+};
+
+/**
+ * The budget from a timeout reason, e.g.
+ * `close-out timed out after 6m — increase closeOut.timeoutMs …` → "6m".
+ * `null` when the reason has no recognizable budget, so the title degrades to
+ * plain "timed out" rather than showing a stray fragment.
+ */
+function budgetFromTimeoutReason(reason: string): string | null {
+  const m = reason.match(/timed out after (\S+?)\s*[—–-]/);
+  return m ? m[1] : null;
+}
+
+/** Title naming the task, e.g. "Move to done: #0633 landed". */
+function closeOutTitle(o: CloseOutOutcomeEvent): string {
+  const base = `Move to done: #${o.taskId}`;
+  if (o.outcome === "succeeded") return `${base} landed`;
+  if (o.outcome === "failed") return `${base} failed`;
+  const budget = budgetFromTimeoutReason(o.reason);
+  return budget ? `${base} timed out after ${budget}` : `${base} timed out`;
+}
+
+/** Short detail: the first reason line; success names where the work landed. */
+function closeOutDetail(o: CloseOutOutcomeEvent): string {
+  if (o.outcome === "succeeded") return "Merged and published to main.";
+  return (
+    firstLine(o.reason) ||
+    (o.outcome === "timedOut"
+      ? "Increase closeOut.timeoutMs or retry when the runner is less loaded."
+      : "See the task for details.")
+  );
 }
 
 /** Shape of the server's `GET /api/release/run` payload. */
@@ -191,6 +244,41 @@ export const useNoticesStore = defineStore("notices", () => {
     return notice;
   }
 
+  /**
+   * Absorb one durable close-out outcome (#0640). Identity is
+   * `<kind>:<taskId>:<finishedAt>` — the server's terminal finish time — so a
+   * poll and an SSE delivery of the same run collapse to one notice, the same
+   * run re-fetched after a reload stays dismissed/read, and a later retry with
+   * a new finish time becomes its own notice.
+   */
+  function ingestCloseOutOutcome(outcome: CloseOutOutcomeEvent | null): NoticeItem | null {
+    if (!outcome || !outcome.taskId || !outcome.finishedAt) return null;
+    const kind = CLOSE_OUT_KIND[outcome.outcome];
+    if (!kind) return null;
+    const id = `${kind}:${outcome.taskId}:${outcome.finishedAt}`;
+
+    const existing = notices.value.find((n) => n.id === id);
+    if (existing) return null; // same finished run — already shown
+    const marker = markers.value[id] ?? {};
+    if (marker.dismissed) return null; // a still-listed event the user dismissed
+
+    const notice: NoticeItem = {
+      id,
+      kind,
+      title: closeOutTitle(outcome),
+      detail: closeOutDetail(outcome),
+      link: `/work?task=${outcome.taskId}`,
+      createdAt: outcome.finishedAt,
+      read: !!marker.read,
+      dismissed: false,
+    };
+    notices.value = [notice, ...notices.value].slice(0, MAX_NOTICES);
+    // Only a genuinely fresh event rings/pushes; a marker-read notice recreated
+    // after a reload stays silent, exactly like release notices.
+    if (!notice.read) void fireChannels(kind, notice.title, notice.detail);
+    return notice;
+  }
+
   /** Ring/push for a newly created notice, best-effort and never throws. */
   async function fireChannels(kind: NoticeKind, title: string, body: string): Promise<void> {
     try {
@@ -248,6 +336,20 @@ export const useNoticesStore = defineStore("notices", () => {
     }
   }
 
+  /**
+   * Recover close-out outcomes this tab may have missed while closed or
+   * disconnected (#0640). The server's list is the durable source of truth,
+   * newest first; ingest oldest-first so the newest lands at the feed head.
+   */
+  async function pollCloseOutOutcomes(): Promise<void> {
+    try {
+      const res = await api<{ outcomes: CloseOutOutcomeEvent[] }>("/api/close-out/outcomes");
+      for (const outcome of [...(res.outcomes ?? [])].reverse()) ingestCloseOutOutcome(outcome);
+    } catch {
+      // Server restarting or unreachable: keep what we have and try later.
+    }
+  }
+
   function schedule(delay: number): void {
     pollTimer = setTimeout(() => void tick(), delay);
   }
@@ -270,20 +372,25 @@ export const useNoticesStore = defineStore("notices", () => {
     if (polling) return;
     polling = true;
     void pollReleaseRun();
+    void pollCloseOutOutcomes();
     schedule(RELEASE_RUN_POLL_MS_IDLE);
 
-    // A tab regaining focus tends to precede finished release work: poll on
-    // focus/visibility so the badge is current without waiting a full tick.
+    // A tab regaining focus tends to precede finished release/close-out work:
+    // poll on focus/visibility so the badge is current without waiting a tick.
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
   }
 
   function onFocus(): void {
     void pollReleaseRun();
+    void pollCloseOutOutcomes();
   }
 
   function onVisibility(): void {
-    if (document.visibilityState === "visible") void pollReleaseRun();
+    if (document.visibilityState === "visible") {
+      void pollReleaseRun();
+      void pollCloseOutOutcomes();
+    }
   }
 
   function stop(): void {
@@ -304,6 +411,8 @@ export const useNoticesStore = defineStore("notices", () => {
     stop,
     pollReleaseRun,
     ingestReleaseRun,
+    pollCloseOutOutcomes,
+    ingestCloseOutOutcome,
     dismiss,
     dismissAll,
     markRead,

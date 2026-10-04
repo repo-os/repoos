@@ -48,6 +48,7 @@ import {
 import { isStoryPmWorking, listStoryDefinitions } from "../core/story-definition-files.js";
 import { patchTaskFile } from "./write.js";
 import { taskDependencyBlockers } from "../core/task-dependencies.js";
+import type { CloseOutOutcomeEvent } from "./close-out-outcome.js";
 
 export type RepoEvent =
   | { type: "task.created"; task: Task; at: string }
@@ -178,6 +179,13 @@ export type RepoEvent =
   | { type: "system.stats"; stats: SystemStats }
   /** Live snapshot of the integration pipeline for the pinned status bar (0207). */
   | { type: "integration"; pipeline: IntegrationSnapshot }
+  /**
+   * A close-out (Move to done) run ended (#0640): succeeded, failed, or hit
+   * its wall-clock budget. Carries the durable outcome event so the notices
+   * bell can show it live; the same event is available from
+   * GET /api/close-out/outcomes after a reload. A user cancel emits nothing.
+   */
+  | { type: "close-out.outcome"; outcome: CloseOutOutcomeEvent; at: string }
   /** Full-suite test run (Control page): started, a raw stdout/stderr chunk, or exited. */
   | { type: "test-run.started"; at: string }
   | { type: "test-run.output"; chunk: string; at: string }
