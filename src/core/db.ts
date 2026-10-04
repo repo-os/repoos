@@ -243,6 +243,17 @@ const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_telegram_link_invites_email ON telegram_link_invites(email);
     `,
   },
+  {
+    // Why a run happened and why it failed (#0649). `trigger` is recorded on
+    // every session that sets it (timer/event/manual + the event reason);
+    // `errorReason` carries the CLI's truncated error text for errored runs,
+    // so provider credit/auth failures are visible instead of anonymous.
+    version: 7,
+    up: `
+      ALTER TABLE sessions ADD COLUMN trigger TEXT;
+      ALTER TABLE sessions ADD COLUMN errorReason TEXT;
+    `,
+  },
 ];
 
 /** Singleton database instance. */
@@ -272,6 +283,10 @@ export interface SessionRecord {
   costSource: string;
   status: string;
   lastActivityAt: string;
+  /** What triggered the run ("timer"/"manual"/"event: …"), or null when unset. */
+  trigger: string | null;
+  /** Truncated failure text for an errored session, or null when the run succeeded. */
+  errorReason: string | null;
 }
 
 /** Aggregation: per-task total stats. */
@@ -351,6 +366,11 @@ export interface BoardStats {
   roles: TaskRoleStats[];
   /** Per-day board totals (server's local time). */
   days: DailyTotals[];
+  /**
+   * The most recent errored sessions within the range (newest first, capped),
+   * so provider credit/auth failures are visible instead of anonymous (#0649).
+   */
+  recentFailures: SessionRecord[];
 }
 
 /**
@@ -458,6 +478,8 @@ export class RepoOSDb {
     costSource?: string;
     status?: string;
     lastActivityAt: string;
+    trigger?: string | null;
+    errorReason?: string | null;
   }): void {
     if (!this.available || !this.db) return;
     try {
@@ -466,8 +488,9 @@ export class RepoOSDb {
           sessionId, sessionType, taskId, agent, model, codingAgent,
           startedAt, endedAt, elapsedMs, inputTokens, outputTokens, totalTokens,
           cacheReadTokens, cacheCreationTokens, turns,
-          costUsd, costSource, status, lastActivityAt, updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          costUsd, costSource, status, lastActivityAt, trigger, errorReason,
+          updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         ON CONFLICT(sessionId) DO UPDATE SET
           -- A per-task cli/model override (or an agent switch mid-session) is
           -- resolved by the time the agent actually runs, so a later upsert
@@ -489,6 +512,8 @@ export class RepoOSDb {
           costSource = excluded.costSource,
           status = excluded.status,
           lastActivityAt = excluded.lastActivityAt,
+          trigger = COALESCE(excluded.trigger, trigger),
+          errorReason = COALESCE(excluded.errorReason, errorReason),
           updatedAt = datetime('now')
       `);
 
@@ -512,6 +537,8 @@ export class RepoOSDb {
         session.costSource ?? "none",
         session.status ?? "active",
         session.lastActivityAt,
+        session.trigger ?? null,
+        session.errorReason ?? null,
       );
     } catch {
       // Operation failed — continue gracefully
@@ -835,6 +862,7 @@ export class RepoOSDb {
         mostExpensiveTask: null,
         roles: [],
         days: [],
+        recentFailures: [],
       };
     }
 
@@ -905,6 +933,15 @@ export class RepoOSDb {
             ? sourceRows[0].costSource
             : "none";
 
+      // The most recent errored sessions in range (newest first, capped), so
+      // the Tokens panel can show why runs failed — the CTO's provider
+      // credit/auth failures were previously anonymous (#0649).
+      const recentFailures = this.db
+        .prepare(
+          `SELECT * FROM sessions WHERE status = 'errored' ${startedFilterAnd} ORDER BY startedAt DESC LIMIT 8`,
+        )
+        .all(...startedArgs) as SessionRecord[];
+
       return {
         totalSessions: summary.totalSessions || 0,
         totalElapsedMs: summary.totalElapsedMs || 0,
@@ -915,6 +952,7 @@ export class RepoOSDb {
         mostExpensiveTask,
         roles: this.getSessionTypeStats(range),
         days: this.getDailyTotals(range),
+        recentFailures,
       };
     } catch {
       return {
@@ -927,6 +965,7 @@ export class RepoOSDb {
         mostExpensiveTask: null,
         roles: [],
         days: [],
+        recentFailures: [],
       };
     }
   }
@@ -989,6 +1028,7 @@ export function getBoardStats(repoRoot: string): BoardStats {
       mostExpensiveTask: null,
       roles: [],
       days: [],
+      recentFailures: [],
     }
   );
 }

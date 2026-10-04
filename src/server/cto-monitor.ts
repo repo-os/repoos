@@ -31,6 +31,22 @@ const AUTOMATIC_NUDGE_IDLE_MS = 5 * 60 * 1000;
 const AUTOMATIC_NUDGE_COOLDOWN_MS = 60 * 60 * 1000;
 const AUTOMATIC_NUDGE_MARKER = "CTO nudge: sent engineer a completion reminder";
 
+/** A built board digest plus the structural verdict used to gate model calls. */
+interface BuiltDigest {
+  /** Rendered digest handed to the CTO prompt. */
+  text: string;
+  /** Structural, minute-free signal compared for idempotence. */
+  material: string;
+  /** True when nothing in the digest needs the model's attention. */
+  healthy: boolean;
+}
+
+/** One health check's verdict: a boolean plus the human-readable label. */
+interface HealthSignal {
+  healthy: boolean;
+  label: string;
+}
+
 /** Simple hash for idempotence checks (not cryptographic). */
 function simpleHash(text: string): string {
   let hash = 0;
@@ -50,8 +66,12 @@ export class CTOMonitor {
   private timer: ReturnType<typeof setInterval> | null = null;
   private eventQueue: string[] = [];
   private eventDebounce: ReturnType<typeof setTimeout> | null = null;
-  private lastDigestHash: string = "";
-  private lastCheckTime: number = 0;
+  /**
+   * Hash of the last *material* board signal we ran (or deliberately skipped)
+   * on. Structural, not rendered: idle-minute counters change every minute but
+   * are not material, so they must not retrigger a run (#0649).
+   */
+  private lastMaterialHash: string = "";
   /** Cleared as soon as the worktree becomes active again: one nudge per idle stretch. */
   private nudgedIdleTasks = new Set<string>();
 
@@ -85,12 +105,18 @@ export class CTOMonitor {
     this.eventQueue.push(reason);
     if (this.eventDebounce) clearTimeout(this.eventDebounce);
     this.eventDebounce = setTimeout(() => {
-      void this.checkNow("event");
+      const detail = this.eventQueue.join("; ");
       this.eventQueue = [];
+      void this.checkNow("event", detail);
     }, 2000);
   }
 
-  async checkNow(reason: string = "manual"): Promise<void> {
+  /**
+   * `kind` names the trigger (timer | event | manual); `detail` carries the
+   * event reason(s). Both are recorded on the run so the Tokens view shows why
+   * a CTO pass happened, not just that it did (#0649).
+   */
+  async checkNow(kind: string = "manual", detail?: string): Promise<void> {
     if (!this.cto.enabled()) return;
 
     // This is deliberately independent of the CTO's longer report turn: an
@@ -99,20 +125,37 @@ export class CTOMonitor {
 
     if (this.cto.isRunning()) return;
 
-    const digest = this.buildDigest();
-    if (!digest) return;
+    const built = this.buildDigest();
+    if (!built) return;
 
-    // Idempotence: skip if digest is identical to last run and nothing new happened
-    const digestHash = simpleHash(digest);
-    const timeSinceLastCheck = Date.now() - this.lastCheckTime;
-    if (digestHash === this.lastDigestHash && timeSinceLastCheck < 60_000) {
-      // Same digest within 1 minute — no need to run again
+    const materialHash = simpleHash(built.material);
+
+    // Deterministic pre-check: a healthy board costs a tick, never a model
+    // call. Record the material hash so the next material change re-runs.
+    if (this.shouldSkipHealthy() && built.healthy) {
+      this.lastMaterialHash = materialHash;
       return;
     }
 
-    this.lastDigestHash = digestHash;
-    this.lastCheckTime = Date.now();
-    await this.cto.run(digest);
+    // Idempotence on the structural signal (task ids + stuck kinds + counts),
+    // not the rendered text: an unchanged board with an idle-minute counter
+    // ticking must not rerun the model. This replaces the old
+    // identical-within-60s check, which both reran on cosmetic text changes
+    // and gave up on a genuinely unchanged board after a minute.
+    if (materialHash === this.lastMaterialHash) return;
+
+    this.lastMaterialHash = materialHash;
+    await this.cto.run(built.text, this.triggerLabel(kind, detail));
+  }
+
+  private shouldSkipHealthy(): boolean {
+    // Default on; an explicit false is the only way to opt out.
+    return this.config.ctoSkipHealthy !== false;
+  }
+
+  private triggerLabel(kind: string, detail?: string): string {
+    const trimmed = detail?.trim();
+    return kind === "event" && trimmed ? `event: ${trimmed}` : kind;
   }
 
   /**
@@ -182,7 +225,7 @@ export class CTOMonitor {
     return last > 0 && now - last < AUTOMATIC_NUDGE_COOLDOWN_MS;
   }
 
-  private buildDigest(): string | null {
+  private buildDigest(): BuiltDigest | null {
     const tasks = this.index.getTasks();
     const lines: string[] = [];
 
@@ -210,22 +253,52 @@ export class CTOMonitor {
     }
     lines.push("");
 
+    const build = this.buildHealth();
+    const processes = this.processHealth();
     lines.push("## Build and Process Health");
     lines.push("");
-    lines.push(`- Build marker: ${this.checkBuildStaleness()}`);
-    lines.push(`- Zombie processes: ${this.checkZombieProcesses()}`);
+    lines.push(`- Build marker: ${build.label}`);
+    lines.push(`- Zombie processes: ${processes.label}`);
     lines.push("");
 
-    return lines.join("\n") || null;
+    const healthy = stuckTasks.length === 0 && build.healthy && processes.healthy;
+
+    // The material signal is what a run is *for*: task identities and why
+    // each is stuck, the board counts, and a boolean build/process verdict.
+    // It deliberately excludes the rendered text — including the per-minute
+    // idle counters in describeStuckSignal — so a board that is unchanged in
+    // substance never re-triggers a model call (#0649).
+    const material = [
+      `counts=${counts.inbox},${counts.ready},${counts.active},${counts.review},${counts.done}`,
+      ...stuckTasks.map((t) => `${t.id}:${this.stuckKind(t)}`),
+      `build=${build.healthy ? "ok" : "bad"}`,
+      `proc=${processes.healthy ? "ok" : "bad"}`,
+    ].join("|");
+
+    return { text: lines.join("\n"), material, healthy };
   }
 
-  private checkBuildStaleness(): string {
+  /**
+   * A stable, minute-free stuck classification — the structural reason a task
+   * is stuck, not how long it has been that way.
+   */
+  private stuckKind(task: Task): string {
+    if (task.status === "active") return "active-idle";
+    if (task.status === "review") return "review-stale";
+    if (task.body.includes("::handoff::") && task.status !== "done") return "handoff-no-done";
+    return "unknown";
+  }
+
+  private buildHealth(): HealthSignal {
     try {
       const srcDir = join(this.config.root, "src");
       const distDir = join(this.config.root, "dist");
 
       if (!existsSync(srcDir) || !existsSync(distDir)) {
-        return "src or dist directory missing — cannot check staleness";
+        return {
+          healthy: false,
+          label: "src or dist directory missing — cannot check staleness",
+        };
       }
 
       const srcStat = statSync(srcDir);
@@ -235,15 +308,18 @@ export class CTOMonitor {
 
       if (distTime < srcTime) {
         const staleSec = Math.round((srcTime - distTime) / 1000);
-        return `⚠️ stale — src updated ${staleSec}s ago, dist needs rebuild`;
+        return {
+          healthy: false,
+          label: `⚠️ stale — src updated ${staleSec}s ago, dist needs rebuild`,
+        };
       }
-      return "✓ fresh";
+      return { healthy: true, label: "✓ fresh" };
     } catch {
-      return "? unable to check staleness";
+      return { healthy: false, label: "? unable to check staleness" };
     }
   }
 
-  private checkZombieProcesses(): string {
+  private processHealth(): HealthSignal {
     try {
       // Check for lingering serve processes or agent processes that should have exited
       // Use ps to find processes with "serve" or "bun" or "node" in their command
@@ -254,7 +330,7 @@ export class CTOMonitor {
           stdio: ["pipe", "pipe", "pipe"],
         });
       } catch {
-        return "? unable to check processes";
+        return { healthy: false, label: "? unable to check processes" };
       }
 
       const lines = psOutput
@@ -262,18 +338,21 @@ export class CTOMonitor {
         .split("\n")
         .filter((l) => l.length > 0);
       if (lines.length === 0) {
-        return "✓ no stale processes detected";
+        return { healthy: true, label: "✓ no stale processes detected" };
       }
 
       // Simple heuristic: if we have more than 2 serve/node processes running,
       // there may be zombies. This is a conservative check.
       const staleCount = Math.max(0, lines.length - 2);
       if (staleCount > 0) {
-        return `⚠️ possibly stale — ${staleCount} extra process(es) running`;
+        return {
+          healthy: false,
+          label: `⚠️ possibly stale — ${staleCount} extra process(es) running`,
+        };
       }
-      return "✓ processes look normal";
+      return { healthy: true, label: "✓ processes look normal" };
     } catch {
-      return "? unable to check processes";
+      return { healthy: false, label: "? unable to check processes" };
     }
   }
 
