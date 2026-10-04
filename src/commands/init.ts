@@ -196,7 +196,9 @@ repo itself is the source of truth. This file tells AI agents how to operate.
 For a RepoOS-managed task runner:
 
 1. Read this file, your assigned task under \`${workDir}/\`, and relevant
-   project docs under \`${docsDir}/\`.
+   project docs under \`${docsDir}/\`. Before reading a large file, run
+   \`repoos outline <path>\` to get its symbols with line numbers, then read
+   only the range you need instead of the whole file.
 2. Work in the task branch and dedicated worktree RepoOS assigned. The server
    owns activation and worktree setup; do not claim another task or edit its
    frontmatter directly.

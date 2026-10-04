@@ -909,6 +909,10 @@ describe("server-owned handoff mission (#0094)", () => {
       const [run] = spawns(fx);
       const mission = run.args[1];
       expect(mission).toContain("Task #0001");
+      // #0653: large files are read by range via `repoos outline`, not whole.
+      expect(mission).toContain("repoos outline <file>");
+      expect(mission).toContain("read only the ranges you need with offset/limit");
+      expect(mission).toContain("never cat or read the whole file");
       expect(mission).toContain("Do not run git add/commit");
       expect(mission).toContain("do not edit the main checkout");
       expect(mission).toContain("commits only source, work, docs, and config files");

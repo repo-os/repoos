@@ -105,6 +105,17 @@ const GROUPS: readonly CommandGroup[] = [
     ],
   },
   {
+    name: "Code",
+    commands: [
+      {
+        name: "outline",
+        usage: "outline <file> [--json]",
+        desc: "Print a file's symbols and line ranges (read ranges, not whole files)",
+        flags: "--json",
+      },
+    ],
+  },
+  {
     name: "Health",
     commands: [
       {
@@ -195,6 +206,7 @@ const EXAMPLES: readonly Example[] = [
   { cmd: 'repoos note 0012 "Handle the reviewer\'s suggestions before the next review"' },
   { cmd: 'repoos update 0012 --title "New title" --area web,core' },
   { cmd: "repoos list ready" },
+  { cmd: "repoos outline src/server/agents.ts", comment: "then read only the range you need" },
   { cmd: "repoos doctor", comment: "passing checks are hidden; --verbose shows all" },
   { cmd: "repoos shot", comment: "screenshot the task preview for the current worktree" },
   { cmd: "repoos shot /repo/commits/abc123", comment: "capture one route" },
