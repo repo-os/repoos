@@ -5300,6 +5300,33 @@
   font-weight: 600;
   color: var(--txt);
 }
+/* #0647 — the Changes tab's dirty-worktree row. Sits directly under the
+ * changed-files stats because it qualifies them: part of the diff is not on
+ * the branch yet. Reuses the .diff-stats surface so it reads as part of the
+ * same summary block rather than as a separate banner. */
+.diff-dirty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel-solid);
+}
+.diff-dirty-text {
+  flex: 1;
+  /* Keep the sentence on one line for as long as the drawer allows before the
+   * button wraps under it. */
+  min-width: 180px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--txt-dim);
+}
+.diff-dirty-btn {
+  flex: none;
+}
 .md-loading {
   display: flex;
   align-items: center;

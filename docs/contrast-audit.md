@@ -150,6 +150,16 @@ themes × light/dark). Triage:
 2. Convert `hardcode-ok`-annotated literals in component styles to tokens over
    time — the annotations are honest triage, not a blessing.
 3. Widen screen coverage (fullscreen `DiffView`, release/deployment pages).
+4. **Dirty-worktree UI is not reached** (#0647). The fixture's one uncommitted
+   change lives in the repo root, and `worktreeStatus` deliberately reports
+   `dirty: false` when a task's branch resolves to the root checkout
+   (`realPath === realRoot`, `src/core/git.ts`) — otherwise the whole repo's
+   dirt would mark every task dirty. So a screen state gated on
+   `task.git.dirty` (the Changes tab's uncommitted-changes row) never renders in
+   the matrix and is **not** contrast-gated. Add a fixture task with a real
+   *linked* worktree holding an uncommitted edit to close this; until then,
+   verify such text against the token pairs by hand rather than trusting a green
+   run.
 
 ## Running it
 
