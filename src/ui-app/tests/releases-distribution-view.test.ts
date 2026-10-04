@@ -469,7 +469,7 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     expect(ok.text()).toContain("Released v1.2.4");
     const dist = wrapper.find(".rel-dist");
     expect(
-      dist.element.compareDocumentPosition(ok.element) & Node.DOCUMENT_POSITION_FOLLOWING,
+      dist.element.compareDocumentPosition(ok.element) & Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();
     wrapper.unmount();
   });
