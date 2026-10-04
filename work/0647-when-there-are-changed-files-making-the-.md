@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/add-diff-button-for-dirty-changed-files-
 cli_override: opencode
 created_at: "2026-10-04T11:35:24Z"
-updated_at: "2026-10-04T11:39:04Z"
+updated_at: "2026-10-04T11:46:46Z"
 ---
 ## Problem
 When a branch has changed/dirty files, there's no quick way to see that diff from the task panel. The full-screen diff functionality already exists in the changes tab of the task panel, but it isn't reused here.
@@ -43,6 +43,26 @@ When there are changed files making the branch dirty let's add a diff button her
 
 ![Screenshot-2026-10-04-at-19.14.48](/api/tasks/0647/attachments/screenshot-1.png)
 
+## Shots
+```json
+[
+  {
+    "label": "Changes tab - code-changes summary; the dirty-worktree View diff button sits directly under these stats while files are uncommitted",
+    "target": "default",
+    "route": "/work?task=0647",
+    "highlight": ".changes-summary[aria-label=\"Code changes summary\"]",
+    "steps": [
+      {
+        "click": "[data-test-id=task-tab-changes]"
+      },
+      {
+        "waitMs": 600
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-04T11:35:24Z · created · hello@repoos.org
@@ -52,3 +72,4 @@ When there are changed files making the branch dirty let's add a diff button her
 - 2026-10-04T11:37:26Z · model_override
 - 2026-10-04T11:37:29Z · status inbox→ready
 - 2026-10-04T11:39:04Z · status ready→active, branch
+- 2026-10-04T11:46:46Z · body: section Shots
