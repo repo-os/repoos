@@ -13,6 +13,7 @@ import DialogDescription from "../components/ui/dialog/description.vue";
 import DialogOverlay from "../components/ui/dialog/overlay.vue";
 import DialogTitle from "../components/ui/dialog/title.vue";
 import { api, JSON_OPTS } from "../api";
+import FailedTestsList from "../components/FailedTestsList.vue";
 import { nextReleaseVersion } from "../releases";
 
 interface ReleaseStatus {
@@ -53,6 +54,9 @@ interface ReleaseRun {
   message: string;
   startedAt: string | null;
   updatedAt: string | null;
+  failedTests?: string[];
+  tldr?: string | null;
+  tldrPending?: boolean;
 }
 
 /** One configured `[[distribution]]` destination and its live version state. */
@@ -237,6 +241,8 @@ function stopPolling(): void {
  */
 function tickStopIfNeeded(): void {
   if (run.value?.state === "running" || notesRun.value?.state === "running") return;
+  // The Debugger's tl;dr lands after the failure does — keep polling for it.
+  if (run.value?.state === "failed" && run.value.tldrPending) return;
   if (generatingNotes.value) return; // a POST may be in flight — don't drop polling
   stopPolling();
 }
@@ -814,6 +820,8 @@ async function pollRun(): Promise<void> {
       return;
     }
     running.value = false;
+    // The Debugger's tl;dr lands after the failure does — keep polling for it.
+    if (latest.state === "failed" && latest.tldrPending) startPolling();
     // Apply the outcome once — on the first observation (a finished run from
     // before this page load owns the "survives until the next one" banner), on
     // a watched running→terminal transition, or when the terminal run is a
@@ -1038,6 +1046,15 @@ onBeforeUnmount(() => {
              successful release, so a failure is visible without scrolling. -->
         <section v-if="error && !confirmOpen" class="rel-outcome rel-outcome--fail" role="alert">
           <strong>{{ error }}</strong>
+          <div v-if="run?.state === 'failed' && (run.tldr || run.tldrPending)" class="rel-tldr">
+            <span class="rel-tldr-label">tl;dr</span>
+            <span v-if="run.tldr">{{ run.tldr }}</span>
+            <span v-else class="rel-dim">Debugger is working out what happened…</span>
+          </div>
+          <div v-if="run?.state === 'failed' && run.failedTests?.length" class="rel-failed-tests">
+            <span class="rel-tldr-label">Failed tests</span>
+            <FailedTestsList :tests="run.failedTests" />
+          </div>
           <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
           <div class="rel-debugger">
             <Button
@@ -1202,6 +1219,21 @@ onBeforeUnmount(() => {
 
               <div v-if="error && !running" class="release-drawer-error" role="alert">
                 <strong>{{ error }}</strong>
+                <div
+                  v-if="run?.state === 'failed' && (run.tldr || run.tldrPending)"
+                  class="rel-tldr"
+                >
+                  <span class="rel-tldr-label">tl;dr</span>
+                  <span v-if="run.tldr">{{ run.tldr }}</span>
+                  <span v-else class="rel-dim">Debugger is working out what happened…</span>
+                </div>
+                <div
+                  v-if="run?.state === 'failed' && run.failedTests?.length"
+                  class="rel-failed-tests"
+                >
+                  <span class="rel-tldr-label">Failed tests</span>
+                  <FailedTestsList :tests="run.failedTests" />
+                </div>
                 <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
                 <div class="rel-debugger">
                   <Button
@@ -1644,6 +1676,35 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 
+.rel-tldr {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel-solid);
+  color: var(--txt);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.rel-tldr-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.rel-dim {
+  color: var(--txt-dim);
+}
+.rel-failed-tests {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+}
 .rel-log {
   max-width: 100%;
   max-height: 260px;

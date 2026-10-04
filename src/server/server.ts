@@ -404,6 +404,7 @@ import {
   generateBugReport,
   postCopyInspectorOpen,
   postOpenInEditor,
+  postOpenTestInEditor,
 } from "./routes/index.js";
 
 function findCloudflared(): string | null {
@@ -2819,6 +2820,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("PUT", "/api/config/raw", writeRawConfig);
   router.register("POST", "/api/dev/copy-inspector/open", postCopyInspectorOpen);
   router.register("POST", "/api/dev/open-in-editor", postOpenInEditor);
+  router.register("POST", "/api/dev/open-test-in-editor", postOpenTestInEditor);
 
   // Model routes
   router.register("GET", "/api/models", listModels);

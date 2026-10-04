@@ -14,7 +14,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { postOpenInEditor } from "../../server/routes/copy-inspector.js";
+import { postOpenInEditor, postOpenTestInEditor } from "../../server/routes/copy-inspector.js";
 import type { RouteContext } from "../../server/routes/types.js";
 import type { RepoOSConfig } from "../../core/types.js";
 
@@ -54,6 +54,7 @@ function configFor(root: string, over: Partial<RepoOSConfig> = {}): RepoOSConfig
 async function invoke(
   body: unknown,
   config: RepoOSConfig,
+  handler: typeof postOpenInEditor = postOpenInEditor,
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   // `readBody` iterates the request; a one-chunk async iterator is enough.
   const req = {
@@ -71,7 +72,7 @@ async function invoke(
       payload = p;
     },
   };
-  await postOpenInEditor(
+  await handler(
     { config } as unknown as RouteContext,
     req as unknown as IncomingMessage,
     res as unknown as ServerResponse,
@@ -133,5 +134,35 @@ describe("POST /api/dev/open-in-editor", () => {
     const result = await invoke({ file: "work/0636-task.md" }, config);
 
     expect(result.status).toBe(400);
+  });
+});
+
+describe("POST /api/dev/open-test-in-editor", () => {
+  it("resolves a vitest-relative test name under src/ui-app and reaches the launch step", async () => {
+    const root = fixture();
+    mkdirSync(join(root, "src", "ui-app", "tests"), { recursive: true });
+    writeFileSync(join(root, "src", "ui-app", "tests", "foo.test.ts"), "", "utf8");
+    const result = await invoke(
+      { test: "tests/foo.test.ts > suite > does a thing" },
+      configFor(root),
+      postOpenTestInEditor,
+    );
+    expect(result.status).toBe(500); // missing editor binary: got past resolution
+  });
+
+  it("refuses non-test files and unknown tests", async () => {
+    const root = fixture();
+    const notTest = await invoke(
+      { test: "src/ui-app/Foo.vue > x" },
+      configFor(root),
+      postOpenTestInEditor,
+    );
+    expect(notTest.status).toBe(400);
+    const missing = await invoke(
+      { test: "tests/nope.test.ts > x" },
+      configFor(root),
+      postOpenTestInEditor,
+    );
+    expect(missing.status).toBe(404);
   });
 });
