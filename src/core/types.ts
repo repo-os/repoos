@@ -1022,6 +1022,14 @@ export interface CheckStepConfig {
   command?: string;
   /** Repo-relative directory to run in. Defaults to the repo root. */
   cwd?: string;
+  /**
+   * Command that FIXES what this step checks, run by `repoos check --fix`
+   * before the step and by handoff auto-format (#0651). A `kind = "format"`
+   * step defaults to the package.json `fmt` script (the conventional
+   * counterpart of `fmt:check`); a raw `command` step has no fix unless one is
+   * declared here. Always safe to run twice.
+   */
+  fix?: string;
   /** Per-step timeout in milliseconds. Defaults to 600000 (10 min). */
   timeoutMs?: number;
   /**

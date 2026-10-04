@@ -157,6 +157,9 @@ whenChanged = ["package.json"]
 [[check.steps]]
 name = "check-fmt:check"
 kind = "format"
+# `repoos check --fix` and handoff auto-format run this before the check; the
+# close-out gate never does, so an unformatted merge candidate still fails.
+fix = "bun run fmt"
 requires = ["bun"]
 
 [[check.steps]]

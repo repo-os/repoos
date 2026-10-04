@@ -366,6 +366,90 @@ kind = "tests"
   });
 });
 
+describe("runCheckPlan — --fix runs the format fixer before the check (#0651)", () => {
+  /**
+   * A fake `bun` whose `run fmt` marks the tree formatted and whose
+   * `run fmt:check` passes only after that — so a format-only violation is
+   * reproducible without invoking a real formatter.
+   */
+  function formatFixture(toml: string): Fixture {
+    const f = fixture(toml);
+    const marker = join(f.root, ".formatted");
+    const script = join(f.binDir, "bun");
+    writeFileSync(
+      script,
+      `#!/bin/sh\nprintf 'bun %s\\n' "$*" >> "${f.log}"\n` +
+        `case "$*" in\n` +
+        `  "run fmt") touch "${marker}"; exit 0 ;;\n` +
+        `  "run fmt:check") [ -f "${marker}" ] && exit 0 || exit 1 ;;\n` +
+        `  *) exit 0 ;;\n` +
+        `esac\n`,
+    );
+    chmodSync(script, 0o755);
+    writeFileSync(
+      join(f.root, "package.json"),
+      JSON.stringify({ name: "x", scripts: { fmt: "oxfmt", "fmt:check": "oxfmt --check" } }),
+    );
+    writeFileSync(join(f.root, "bun.lock"), "");
+    return f;
+  }
+
+  const FIX_TOML = `[check]
+version = 1
+
+[[check.steps]]
+name = "check-fmt:check"
+kind = "format"
+fix = "bun run fmt"
+`;
+
+  it("turns a format-only violation green, and still fails it without --fix", async () => {
+    const f = formatFixture(FIX_TOML);
+
+    // Close-out mode (no --fix): the committed tree is unformatted → the gate
+    // must still fail, so the fixer never weakens the merge gate.
+    const strict = await runCheckPlan(planFor(f.root), { repoRoot: f.root, profile: "full" });
+    expect(strict[0].status).toBe("failed");
+
+    // Pre-review with --fix: the fixer runs first, then the check passes.
+    const fixed = await runCheckPlan(planFor(f.root), { repoRoot: f.root, fix: true });
+    expect(fixed[0].status).toBe("passed");
+    // The strict run above logged its (failing) check first; the fix run then
+    // logs `fmt` before `fmt:check`, which is what makes the second pass.
+    expect(commandsRun(f)).toEqual(["bun run fmt:check", "bun run fmt", "bun run fmt:check"]);
+  });
+
+  it("derives the fixer from the fmt script when the step omits `fix`", async () => {
+    const f = formatFixture(`[check]
+version = 1
+
+[[check.steps]]
+name = "check-fmt:check"
+kind = "format"
+`);
+    const fixed = await runCheckPlan(planFor(f.root), { repoRoot: f.root, fix: true });
+    expect(fixed[0].status).toBe("passed");
+    expect(commandsRun(f)).toEqual(["bun run fmt", "bun run fmt:check"]);
+  });
+
+  it("a raw command step with no explicit fix never gets a fixer invented for it", async () => {
+    const f = fixture(
+      `[check]
+version = 1
+
+[[check.steps]]
+name = "check-fmt:check"
+command = "cargo fmt --check"
+requires = ["cargo"]
+`,
+      { bins: ["cargo"] },
+    );
+    const fixed = await runCheckPlan(planFor(f.root), { repoRoot: f.root, fix: true });
+    expect(fixed[0].status).toBe("passed");
+    expect(commandsRun(f)).toEqual(["cargo fmt --check"]);
+  });
+});
+
 describe("runCheckPlan — every outcome is distinguishable", () => {
   it("a command that exits non-zero is a failure that names the exit code", async () => {
     const f = fixture(`[check]
