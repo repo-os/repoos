@@ -152,6 +152,43 @@ describe("trusted server-side handoff", () => {
     }
   });
 
+  it("auto-formats the worktree before the commit gate, so the fix is committed (#0651)", async () => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      writeFileSync(
+        join(fx.worktree, "repoos.toml"),
+        '[check]\nversion = 1\n\n[[check.steps]]\nname = "check-fmt:check"\nkind = "format"\n',
+      );
+      writeFileSync(
+        join(fx.worktree, "package.json"),
+        JSON.stringify({
+          name: "x",
+          scripts: { fmt: "format-me", "fmt:check": "format-me --check" },
+        }),
+      );
+      writeFileSync(join(fx.worktree, "bun.lock"), "");
+      fx.config.check = { steps: [{ name: "check-fmt:check", kind: "format" }] };
+      // A fixer that leaves a visible artifact, so the assertion proves the
+      // formatted tree was what got committed.
+      writeFileSync(
+        join(fx.bin, "bun"),
+        '#!/bin/sh\nprintf "formatted\\n" > "$PWD/formatted.txt"\n',
+        { mode: 0o755 },
+      );
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+      expect(result).toMatchObject({ ok: true, step: "done" });
+      // The fixer's output is on the branch, and nothing is left dirty.
+      expect(readFileSync(join(fx.worktree, "formatted.txt"), "utf8")).toBe("formatted\n");
+      expect(git(fx.worktree, ["status", "--porcelain"])).toBe("");
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
   it("records the underspecified handoff note without replacing an unrelated needs_input reason", async () => {
     const fx = makeFixture(0, "needs_input: true\nneeds_input_reason: dev-error\n");
     const oldPath = process.env.PATH ?? "";
