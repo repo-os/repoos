@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-04T08:07:24Z"
+review_passes: 2
 id: "0645"
 title: Sync PWA icon with macOS native dock icon (light/dark)
 type: feature
@@ -9,9 +11,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/sync-pwa-icon-with-macos-native-dock-ico
 created_at: "2026-10-04T07:30:08Z"
-updated_at: "2026-10-04T08:03:54Z"
 review_rounds: 1
-review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -79,3 +79,4 @@ The PWA icon doesn't match the macos native app dock icon. Can you fix it so the
 - 2026-10-04T07:52:02Z · status review→active
 - 2026-10-04T07:57:10Z · body: section Shots
 - 2026-10-04T08:03:54Z · status active→review
+
