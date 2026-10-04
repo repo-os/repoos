@@ -36,3 +36,4 @@ The mission is already per-task (the context pack comes first and varies), so pu
 - 2026-10-04T17:42:48Z · status inbox→ready
 - 2026-10-04T23:01:41Z · status ready→active, branch
 - 2026-10-04T23:11:37Z · status active→review
+- 2026-10-04T23:11:37Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
