@@ -173,16 +173,6 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
       >
         <CircleAlert class="done-error-ico" aria-hidden="true" />
         <span ref="msgEl" class="done-error-msg clamped">{{ displayLine }}</span>
-        <ChevronDown class="done-error-chev" aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        class="done-error-icon-btn"
-        title="Dismiss this error"
-        aria-label="Dismiss error"
-        @click="emit('dismiss')"
-      >
-        <X class="size-3.5" />
       </button>
     </div>
     <div v-else class="done-error-static">
