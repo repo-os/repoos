@@ -1,17 +1,39 @@
 ---
 id: "0645"
-title: The PWA icon doesn't match the macos native app dock icon…
+title: Sync PWA icon with macOS native dock icon (light/dark)
 type: feature
-status: draft
+status: inbox
 priority: p2
-area: general
+area: [web, macos]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-04T07:30:08Z"
-updated_at: "2026-10-04T07:30:09Z"
+updated_at: "2026-10-04T07:30:21Z"
 ---
-The PWA icon doesn't match the macos native app dock icon. Can you fix it so they match? (and ideally have both a light and dark version just like the macos icon does).
+## Problem
+The web PWA icon does not match the macOS native application dock icon. The macOS icon also provides separate light and dark variants, while the PWA currently lacks that parity.
+
+## Desired UX
+The PWA manifest/icon assets should match the macOS native dock icon styling, with both a light and a dark version available just like the macOS icon.
+
+## Acceptance criteria
+- [ ] PWA icon matches the macOS native dock icon design
+- [ ] PWA includes both light and dark icon variants
+- [ ] The light/dark variants are used appropriately in the PWA manifest
+
+## Notes for AI
+- Assumption: "match" means visual/style parity with the macOS dock icon, not necessarily identical pixel dimensions.
+- Do not change the macOS native app icon itself unless required for parity.
+- Touch PWA manifest/assets (e.g. manifest, icon files) rather than macOS app bundle unless needed.
+- If a new area is needed beyond web/macos, note it here; proposed area fits.
+
+## Scope
+- In scope: PWA icon assets and manifest updates for light/dark parity with macOS.
+- Deferred: Any redesign of the macOS dock icon itself; broader branding updates outside PWA/macOS.
+
+## Related
+- macOS native app icon assets (reference for design parity)
 
 ## Original prompt
 
@@ -25,3 +47,4 @@ The PWA icon doesn't match the macos native app dock icon. Can you fix it so the
 
 - 2026-10-04T07:30:08Z · created · hello@repoos.org
 - 2026-10-04T07:30:09Z · screenshots
+- 2026-10-04T07:30:21Z · status draft→inbox, title, area, body
