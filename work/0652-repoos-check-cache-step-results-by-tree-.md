@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/repoos-check-cache-step-results-by-tree-
 created_at: "2026-10-04T16:32:02Z"
-updated_at: "2026-10-04T23:18:49Z"
+updated_at: "2026-10-04T23:18:50Z"
 ---
 ## Problem
 40% of repoos check runs by engineer agents (181 of 456) had no edit or write since the previous check (upper bound: some follow bun run fmt, which changes files without an edit call). Full runs are slow (opencode-measured p90 about 185s for check, 88s for build). 141 of 203 sessions also ran bun run build by hand even though the check builds.
@@ -35,3 +35,4 @@ Design risk is correctness, not speed: a stale cache hit that lets a broken tree
 - 2026-10-04T17:42:53Z · status inbox→ready
 - 2026-10-04T23:01:46Z · status ready→active, branch
 - 2026-10-04T23:18:49Z · status active→review
+- 2026-10-04T23:18:50Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
