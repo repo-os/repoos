@@ -1032,7 +1032,6 @@
   font-size: 10.5px;
   font-weight: 600;
   cursor: pointer;
-  text-decoration: none;
 }
 .side-git-sec-head {
   display: flex;
@@ -1043,6 +1042,11 @@
 }
 .side-git-sec-head h3 {
   margin: 0;
+}
+@layer base {
+  a.side-git-commit-btn {
+    text-decoration: none;
+  }
 }
 .side-git-commit-btn:hover {
   background: color-mix(in srgb, var(--txt) 8%, var(--panel-solid));
