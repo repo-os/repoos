@@ -5082,20 +5082,23 @@ watch(
                     <span class="shot-row-key">steps</span>{{ row.stepsText }}
                   </span>
                 </div>
-                <ScreenshotExpandButton :name="row.title" @click="openShotsViewer(i)" />
-                <!-- #0627: per-shot delete, confirm through the shared dialog.
-                     Same remove button the pending-attachment rows use. -->
-                <button
-                  v-if="canManageShots"
-                  type="button"
-                  class="ff-pending-file-remove"
-                  data-test-id="shot-delete"
-                  aria-label="Delete shot"
-                  :disabled="deleteShotBusy"
-                  @click="deleteShotTarget = row.meta"
-                >
-                  <Trash2 class="size-3.5" />
-                </button>
+                <!-- Stacked: expand on top, delete below, both the same size. -->
+                <div class="shot-row-actions">
+                  <ScreenshotExpandButton :name="row.title" @click="openShotsViewer(i)" />
+                  <!-- #0627: per-shot delete, confirm through the shared dialog.
+                       Same remove button the pending-attachment rows use. -->
+                  <button
+                    v-if="canManageShots"
+                    type="button"
+                    class="ff-pending-file-remove"
+                    data-test-id="shot-delete"
+                    aria-label="Delete shot"
+                    :disabled="deleteShotBusy"
+                    @click="deleteShotTarget = row.meta"
+                  >
+                    <Trash2 class="size-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           </section>
