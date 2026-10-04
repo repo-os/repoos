@@ -163,7 +163,13 @@ function fmtAgo(iso: string): string {
       <template v-else>No remote hosts configured.</template>
     </div>
 
-    <div v-for="(h, index) in hosts" :key="h.host" class="rr-host" :data-health="health(h).cls">
+    <div
+      v-for="(h, index) in hosts"
+      :key="h.host"
+      class="rr-host"
+      :data-health="health(h).cls"
+      :data-running="(h.activeRuns ?? []).length > 0 || undefined"
+    >
       <div class="rr-host-head">
         <span class="rr-host-name mono">{{ h.user }}@{{ h.host }}</span>
         <span v-for="cap in [h.os, ...h.labels].filter(Boolean)" :key="cap" class="rr-cap">{{
@@ -366,6 +372,25 @@ function fmtAgo(iso: string): string {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.rr-host[data-running] {
+  border-color: var(--cyan);
+  animation: rr-pulse 2s ease-in-out infinite;
+}
+@keyframes rr-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 14px 1px var(--cyan-dim);
+    border-color: var(--cyan);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rr-host[data-running] {
+    animation: none;
+  }
 }
 .rr-host-head {
   display: flex;
