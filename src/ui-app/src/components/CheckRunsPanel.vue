@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { RefreshCw } from "lucide-vue-next";
 import { api } from "../api";
 import Button from "./ui/button.vue";
+import FailedTestsList from "./FailedTestsList.vue";
 import type { CheckRunRow } from "../types";
 
 /**
@@ -26,6 +27,19 @@ const columns: { key: SortKey; label: string; cls?: string }[] = [
 ];
 
 const runs = ref<CheckRunRow[]>([]);
+/** Failed rows the user has expanded to see their failing tests / detail. */
+const expanded = ref<Set<number>>(new Set());
+
+function isExpandable(r: CheckRunRow): boolean {
+  return r.outcome === "fail" && (r.failedTests.length > 0 || !!r.detail || !!r.failedStep);
+}
+
+function toggleRow(r: CheckRunRow): void {
+  const next = new Set(expanded.value);
+  if (next.has(r.id)) next.delete(r.id);
+  else next.add(r.id);
+  expanded.value = next;
+}
 const loading = ref(true);
 const error = ref("");
 
@@ -175,11 +189,6 @@ function scopeLabel(r: CheckRunRow): string {
   return "full";
 }
 
-function outcomeTitle(r: CheckRunRow): string | undefined {
-  if (r.failedTests.length === 0) return r.detail ?? undefined;
-  return `Failed tests:\n${r.failedTests.join("\n")}`;
-}
-
 function outcomeLabel(r: CheckRunRow): string {
   if (r.outcome === "pass") return "passed";
   if (r.outcome === "cancelled") return "cancelled";
@@ -236,44 +245,63 @@ function outcomeLabel(r: CheckRunRow): string {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="r in sorted" :key="r.id" :data-outcome="r.outcome">
-            <td class="cr-time" :title="fmtTime(r.startedAt)">
-              {{ fmtTime(r.startedAt) }}
-              <span class="cr-ago">{{ fmtAgo(r.startedAt) }}</span>
-            </td>
-            <td class="cr-task">
-              <span v-if="r.taskId" class="mono">#{{ r.taskId }}</span>
-              <span v-else class="cr-dim">—</span>
-            </td>
-            <td>{{ PHASE_LABEL[r.phase] }}</td>
-            <td class="cr-machine-cell">
-              <span
-                v-if="r.machine"
-                class="mono"
-                :class="{ 'cr-remote': r.remote }"
-                :title="r.remote ? 'remote validation host' : 'this machine'"
-                >{{ r.machine }}</span
-              >
-              <span v-else class="cr-dim" title="never reached a machine">not run</span>
-            </td>
-            <td
-              class="cr-scope"
-              :title="r.skippedSteps.length ? `skipped: ${r.skippedSteps.join(', ')}` : undefined"
+          <template v-for="r in sorted" :key="r.id">
+            <tr
+              :data-outcome="r.outcome"
+              :class="{ 'cr-expandable': isExpandable(r) }"
+              :aria-expanded="isExpandable(r) ? expanded.has(r.id) : undefined"
+              :tabindex="isExpandable(r) ? 0 : undefined"
+              @click="isExpandable(r) && toggleRow(r)"
+              @keydown.enter="isExpandable(r) && toggleRow(r)"
+              @keydown.space.prevent="isExpandable(r) && toggleRow(r)"
             >
-              {{ scopeLabel(r) }}
-              <span v-if="r.skippedSteps.length" class="cr-skipped"
-                >{{ r.skippedSteps.length }} skipped</span
+              <td class="cr-time" :title="fmtTime(r.startedAt)">
+                {{ fmtTime(r.startedAt) }}
+                <span class="cr-ago">{{ fmtAgo(r.startedAt) }}</span>
+              </td>
+              <td class="cr-task">
+                <span v-if="r.taskId" class="mono">#{{ r.taskId }}</span>
+                <span v-else class="cr-dim">—</span>
+              </td>
+              <td>{{ PHASE_LABEL[r.phase] }}</td>
+              <td class="cr-machine-cell">
+                <span
+                  v-if="r.machine"
+                  class="mono"
+                  :class="{ 'cr-remote': r.remote }"
+                  :title="r.remote ? 'remote validation host' : 'this machine'"
+                  >{{ r.machine }}</span
+                >
+                <span v-else class="cr-dim" title="never reached a machine">not run</span>
+              </td>
+              <td
+                class="cr-scope"
+                :title="r.skippedSteps.length ? `skipped: ${r.skippedSteps.join(', ')}` : undefined"
               >
-            </td>
-            <td :data-outcome="r.outcome" class="cr-outcome">
-              <span
-                :title="outcomeTitle(r)"
-                :class="{ 'cr-failed-step': r.failedStep && r.outcome === 'fail' }"
-                >{{ outcomeLabel(r) }}</span
-              >
-            </td>
-            <td class="cr-dur">{{ fmtDuration(r.durationMs) }}</td>
-          </tr>
+                {{ scopeLabel(r) }}
+                <span v-if="r.skippedSteps.length" class="cr-skipped"
+                  >{{ r.skippedSteps.length }} skipped</span
+                >
+              </td>
+              <td :data-outcome="r.outcome" class="cr-outcome">
+                <span :class="{ 'cr-failed-step': r.failedStep && r.outcome === 'fail' }"
+                  >{{ isExpandable(r) ? (expanded.has(r.id) ? "▾ " : "▸ ") : ""
+                  }}{{ outcomeLabel(r) }}</span
+                >
+              </td>
+              <td class="cr-dur">{{ fmtDuration(r.durationMs) }}</td>
+            </tr>
+            <tr v-if="isExpandable(r) && expanded.has(r.id)" class="cr-detail-row">
+              <td :colspan="columns.length">
+                <FailedTestsList v-if="r.failedTests.length" :tests="r.failedTests" />
+                <p v-else class="cr-detail-text">
+                  Failed in <span class="mono">{{ r.failedStep }}</span
+                  ><template v-if="r.detail"> — {{ r.detail }}</template
+                  ><template v-else> (no individual tests were recorded).</template>
+                </p>
+              </td>
+            </tr>
+          </template>
         </tbody>
       </table>
     </div>
@@ -433,6 +461,22 @@ function outcomeLabel(r: CheckRunRow): string {
 }
 .cr-outcome[data-outcome="fail"] span {
   color: var(--red);
+}
+.cr-expandable {
+  cursor: pointer;
+}
+.cr-expandable:hover td {
+  background: var(--panel-solid);
+}
+.cr-detail-row td {
+  padding: 8px 10px 12px 28px;
+  background: var(--panel-solid);
+}
+.cr-detail-text {
+  margin: 0;
+  font-size: 12px;
+  color: var(--txt-dim);
+  overflow-wrap: anywhere;
 }
 .cr-failed-step {
   font-family: var(--mono);

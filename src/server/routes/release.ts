@@ -16,6 +16,7 @@ import {
 } from "../distribution.js";
 import {
   extractOneShotReportText,
+  debuggerAgent,
   pmCommand,
   recordOneShotSession,
   resolveEngineer,
@@ -23,6 +24,10 @@ import {
   runPrompt,
 } from "../agents.js";
 import type { Agent, RepoOSConfig } from "../../core/types.js";
+import { getCheckStore } from "../../core/check-store.js";
+import { extractFailedTests } from "../../core/check-failure-summary.js";
+import { sanitizeTldrAnswer } from "../debug-tldr.js";
+import { redactSecrets } from "./debugger.js";
 import { readBuildMeta } from "../../core/build.js";
 import { compareSemver } from "../../core/agent-updates.js";
 import {
@@ -136,6 +141,12 @@ export interface ReleaseRun {
   message: string;
   startedAt: string | null;
   updatedAt: string | null;
+  /** Failing tests (`file > suite > test`) when a failed run's checks recorded any. */
+  failedTests?: string[];
+  /** Debugger's one-line "what happened / what to do" for a failed run. */
+  tldr?: string | null;
+  /** True while the Debugger is still writing the tl;dr. */
+  tldrPending?: boolean;
 }
 
 /**
@@ -235,6 +246,7 @@ function updateRun(
   phase: ReleasePhase | null,
   message: string,
   state: ReleaseRun["state"] = "running",
+  extra: Pick<ReleaseRun, "failedTests" | "tldrPending"> = {},
 ): void {
   run = {
     state,
@@ -242,7 +254,79 @@ function updateRun(
     message,
     startedAt: run.startedAt ?? new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    ...extra,
   };
+}
+
+/**
+ * The failing tests behind a failed release: the check history rows this run
+ * wrote (release phase, newest first, since the run started), falling back to
+ * parsing the captured output when the store has none.
+ */
+function releaseFailedTests(config: RepoOSConfig, startedAt: string | null, output: string) {
+  const since = startedAt ? Date.parse(startedAt) : 0;
+  try {
+    const rows = getCheckStore(config.root, config.cacheDir).list({ limit: 20 });
+    const seen = new Set<string>();
+    for (const r of rows) {
+      if (r.phase !== "release" || r.outcome !== "fail") continue;
+      if (Date.parse(r.startedAt) < since - 5000) continue;
+      for (const t of r.failedTests) seen.add(t);
+    }
+    if (seen.size) return [...seen];
+  } catch {
+    /* fall through to the output */
+  }
+  return extractFailedTests(output);
+}
+
+function releaseTldrPrompt(phase: ReleasePhase | null, output: string, tests: string[]): string {
+  return [
+    "You are the Debugger for RepoOS. A release cut just failed and the human is looking",
+    "at raw logs. Write the ONE-LINE tl;dr for the failure panel.",
+    "",
+    "Answer with EXACTLY ONE sentence of plain text and nothing else: no markdown,",
+    "no quotes, no preamble. Name what happened and the concrete next action, e.g.:",
+    '"serve-reaper.test.ts failed under load — likely a flake, cut again; if it repeats, fix the test."',
+    "Keep it under 160 characters. If it looks like a known flake (timeouts, memory",
+    "pressure) say retrying is reasonable; if it looks like a real regression, say what to fix.",
+    "",
+    `Failed during: ${phase ?? "the run"}`,
+    `Failed tests: ${tests.length ? tests.join("; ") : "(none recorded)"}`,
+    "",
+    "Release output tail (secrets redacted):",
+    redactSecrets(output).slice(-RELEASE_TLDR_LOG_CHARS),
+  ].join("\n");
+}
+const RELEASE_TLDR_LOG_CHARS = 4000;
+
+/** Detached: write the Debugger's tl;dr onto the failed run when it arrives. */
+async function writeReleaseTldr(
+  config: RepoOSConfig,
+  startedAt: string | null,
+  phase: ReleasePhase | null,
+  output: string,
+  tests: string[],
+): Promise<void> {
+  const settle = (tldr: string | null): void => {
+    // A newer run (or a retry) owns the state now — never stamp it.
+    if (run.startedAt !== startedAt || run.state !== "failed") return;
+    run = { ...run, tldr, tldrPending: false };
+  };
+  try {
+    const state = config.builtInAgents?.debugger ?? {};
+    const agent = debuggerAgent({
+      cli: typeof state.cli === "string" && state.cli.trim() ? state.cli.trim() : undefined,
+      model: typeof state.model === "string" && state.model.trim() ? state.model.trim() : undefined,
+    });
+    const result = await runPrompt(agent, releaseTldrPrompt(phase, output, tests), {
+      cwd: config.root,
+    });
+    recordOneShotSession(config.root, agent, result, { sessionType: "debugger", taskId: null });
+    settle(result.ok ? sanitizeTldrAnswer(agent.cli, result.output ?? "") : null);
+  } catch {
+    settle(null);
+  }
 }
 
 export const getRelease: RouteHandler = async (ctx, _req, res) =>
@@ -303,9 +387,14 @@ export const runRelease: RouteHandler = async (ctx, req, res) => {
   )
     // Keep the phase that was in flight when it failed, so the UI can say
     // "failed during checking" rather than a bare "failed".
-    .then((result) =>
-      updateRun(result.ok ? null : run.phase, result.output, result.ok ? "succeeded" : "failed"),
-    )
+    .then((result) => {
+      if (result.ok) return updateRun(null, result.output, "succeeded");
+      const startedAt = run.startedAt;
+      const phase = run.phase;
+      const failedTests = releaseFailedTests(ctx.config, startedAt, result.output);
+      updateRun(phase, result.output, "failed", { failedTests, tldrPending: true });
+      void writeReleaseTldr(ctx.config, startedAt, phase, result.output, failedTests);
+    })
     .catch(() =>
       updateRun(
         null,
