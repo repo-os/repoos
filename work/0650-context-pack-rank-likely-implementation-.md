@@ -1,7 +1,7 @@
 ---
+updated_at: "2026-10-04T16:56:11Z"
+review_passes: 2
 merge_conflict_retry_count: 1
-updated_at: "2026-10-04T16:21:31Z"
-review_passes: 1
 id: "0650"
 title: "Context pack: rank Likely Implementation Files by task-text keyword relevance (recall 30% to 55%+)"
 type: feature
@@ -59,5 +59,6 @@ Caveats: the pack is the last cached one per task, not necessarily the first; "f
 - 2026-10-04T16:07:25Z · note: Tuning (#0650): title/body field sweep on a 250-task sample, combined ranker: bodyWeight 1.0=47.6%, 0.5=59.0%, 0.2=63.9%, 0.05=73.6% (full corpus), 0.0=78.7%; field-weight scale 1x/3x/6x moved recall under 1 point so it is the path>export>body ratio that matters, not magnitude. generationMs: warmed pack generation ~31ms vs 84ms mean over the cached population (repo-map token index cached on HEAD; import-proximity expansion bounded to the top 30 seeds).
 - 2026-10-04T16:07:27Z · note: Unrelated unblock (#0650): repoos check's css-layers guard was red on main (a.side-git-commit-btn at src/ui-app/src/style.css:1039, from the sidebar git popover, guard commit e8de77266 predates it). Folded text-decoration:none into .side-git-commit-btn and removed the bare-element selector so the gate can pass; no visual change.
 - 2026-10-04T16:20:49Z · status active→review
+
 
 
