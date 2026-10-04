@@ -130,7 +130,7 @@ import {
   PathGuardError,
   type TaskPatch,
 } from "./write.js";
-import { renderInstanceIcon } from "./icons.js";
+import { renderPwaIcon } from "./icons.js";
 import {
   AgentRunner,
   deriveBranch,
@@ -862,37 +862,6 @@ function serveStaticUi(res: ServerResponse, uiDir: string, urlPath: string): boo
   });
   res.end(readFileSync(abs));
   return true;
-}
-
-/** Per-instance PWA manifest so multiple RepoOS installs are distinguishable. */
-function manifestFor(root: string): string {
-  const name = projectDisplayName(root);
-  return JSON.stringify(
-    {
-      id: "/",
-      name: `RepoOS · ${name}`,
-      short_name: `RepoOS · ${name}`,
-      description: `Repo-native task tracking for ${name}`,
-      start_url: "/",
-      scope: "/",
-      display: "standalone",
-      orientation: "portrait-primary",
-      background_color: "#070a12",
-      theme_color: "#070a12",
-      icons: [
-        { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-        { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-        {
-          src: "/icons/icon-512.png",
-          sizes: "512x512",
-          type: "image/png",
-          purpose: "maskable",
-        },
-      ],
-    },
-    null,
-    2,
-  );
 }
 
 /** Guard against path traversal when serving repo doc files. */
@@ -2408,8 +2377,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Initialize route handlers that need runtime configuration
   initInfoHandlers(loadedHash || "", tunnelReadiness);
-  setIconRenderer((size: number, color?: string) =>
-    renderInstanceIcon(projectDisplayName(config.root), size, color),
+  const pwaIconName = projectDisplayName(config.root);
+  setIconRenderer((size: number, color?: string, theme?: "light" | "dark", maskable?: boolean) =>
+    renderPwaIcon(pwaIconName, size, color, theme, maskable),
   );
 
   // Create and register all routes with the router
