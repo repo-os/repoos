@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-04T09:48:02Z"
+review_passes: 1
 id: "0643"
 title: Make branch-mode hotfix close-out survive a failed publish and index.lock contention
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/make-branch-mode-hotfix-close-out-surviv
 created_at: "2026-10-04T06:43:06Z"
-updated_at: "2026-10-04T09:47:24Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-04T08:06:00.141Z: repoos check failed: ✗ UI smoke test failed: Console errors (1): Failed to preconnect to https://fonts.googleapis.com/. Error: The Internet connection appears to be offline. · error: script \"smoke\" exited with code 1 · ⏭ user-docs-build — skipped — no changed path matches user-docs/** · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches tele… (truncated)"
 ---
@@ -47,3 +48,4 @@ Covers: hotfix close-out recovery and git lock tolerance in the publish path. De
 - 2026-10-04T09:47:24Z · status active→review
 - 2026-10-04T09:47:24Z · note: review without checks by hello@repoos.org
 - 2026-10-04T09:47:24Z · note: shots: skipped — the diff (6 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+
