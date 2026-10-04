@@ -2518,6 +2518,96 @@
   box-shadow: 0 0 6px var(--red);
   animation: tcpulse 1.1s ease-in-out infinite;
 }
+/* Shared hotfix badge (#0644): a red pill on the board card and the task
+   drawer. `main` is the riskier variant, so it gets a full-strength red ring
+   and a pulsing dot while the branch variant stays a quiet tinted pill.
+   `data-tip` is served by the global styled tooltip (lib/tooltip.ts), which
+   shows on hover and keyboard focus — never the native browser bubble. */
+.hotfix-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--red-border-tint);
+  background: var(--red-tint);
+  color: var(--txt);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: help;
+}
+.hotfix-badge:hover,
+.hotfix-badge:focus-visible {
+  border-color: var(--red);
+  outline: none;
+}
+.hotfix-badge:focus-visible {
+  box-shadow: 0 0 0 2px var(--red-border-tint);
+}
+.hotfix-badge--main {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px var(--red-border-tint);
+}
+.hotfix-badge--main::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 6px var(--red);
+  animation: tcpulse 1.1s ease-in-out infinite;
+}
+/* Hotfix notes (#0644): the drawer banner and the Review/Preview annotations.
+   Same red-tinted language as the badge, with a pulsing dot so it reads as an
+   alert rather than ordinary prose. */
+.hotfix-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--red-border-tint);
+  background: var(--red-tint);
+  border-radius: 10px;
+  color: var(--txt);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.hotfix-note::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 6px var(--red);
+  animation: tcpulse 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hotfix-badge--main::before,
+  .hotfix-note::before {
+    animation: none;
+  }
+}
+/* The drawer banner sits directly under the header, above the quickbar. */
+.hotfix-banner {
+  margin: 0 22px 12px;
+}
+/* Review tab marker: "skipped" for a hotfix. Red on the tab strip's own
+   surface (no red tint behind it), so it stays readable in light and dark. */
+.tab-hotfix-skip {
+  margin-left: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--red);
+}
 .tc-btn {
   display: inline-flex;
   align-items: center;
@@ -12346,4 +12436,27 @@
   border-top: 1px solid var(--border);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* Hotfix board card (#0644): a red-tinted outline in every column so a task
+   that runs in the main checkout, skips preview/review, and blocks that
+   checkout never blends into the board. Declared at the end of the sheet and
+   with `[data-ui-theme]` variants so it outranks the per-theme `:hover`
+   border rules above (gen z / jelly), which would otherwise erase the
+   outline on hover. Done is history, so its cue is quieter. */
+.task-card.hotfix,
+[data-ui-theme] .task-card.hotfix {
+  border-color: var(--red-border-tint);
+}
+.task-card.hotfix:hover,
+[data-ui-theme] .task-card.hotfix:hover {
+  border-color: var(--red);
+}
+.task-card.hotfix.hotfix-done,
+[data-ui-theme] .task-card.hotfix.hotfix-done {
+  border-color: var(--red-tint);
+}
+.task-card.hotfix.hotfix-done:hover,
+[data-ui-theme] .task-card.hotfix.hotfix-done:hover {
+  border-color: var(--red-border-tint);
 }

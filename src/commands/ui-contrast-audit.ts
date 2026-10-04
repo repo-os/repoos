@@ -689,7 +689,8 @@ export function judgeSample(s: ProbeSample): JudgeResult {
  * Two throwaway tasks so the board has cards and the drawer has content to
  * audit. `inbox`/`done` only: no active or review task means no job recovery
  * or preview auto-launch touches this fixture (same reasoning as the smoke
- * fixture in ui-smoke.ts).
+ * fixture in ui-smoke.ts). Task A is a `main` hotfix so the red badge, card
+ * outline, drawer banner and Review-tab marker are contrast-gated too (#0644).
  */
 const FIXTURE_TASK_A = `---
 id: "0001"
@@ -701,6 +702,8 @@ area: web
 assigned_to: ai
 created_by: human
 branch: "main"
+hotfix: true
+hotfix_target: main
 created_at: "2026-09-01T00:00:00Z"
 updated_at: "2026-09-01T00:00:00Z"
 ---
