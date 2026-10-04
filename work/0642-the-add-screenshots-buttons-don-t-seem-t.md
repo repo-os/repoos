@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-10-04T05:04:17Z"
-updated_at: "2026-10-04T05:05:37Z"
+updated_at: "2026-10-04T05:05:39Z"
 ---
 ## Problem
 The "add screenshots" buttons do not work on an installed PWA on macOS. The issue affects both the New Task and New Input panels.
@@ -41,3 +42,4 @@ The add screenshots buttons don't seem to work on an installed pwa on this machi
 - 2026-10-04T05:04:17Z · created · hello@repoos.org
 - 2026-10-04T05:04:31Z · status draft→inbox, title, area, type, body
 - 2026-10-04T05:05:37Z · review_cli_override
+- 2026-10-04T05:05:39Z · review_model_override
