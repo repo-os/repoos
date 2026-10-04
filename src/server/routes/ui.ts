@@ -9,34 +9,126 @@ function colorFromUrl(req: { url?: string }): string | null {
   return c && /^#[0-9a-f]{6}$/i.test(c) ? c.toLowerCase() : null;
 }
 
+/** Read the icon theme from the `theme` query param, defaulting to dark. */
+function themeFromUrl(req: { url?: string }): "light" | "dark" {
+  const url = req.url ? new URL(req.url, "http://localhost") : null;
+  return url?.searchParams.get("theme") === "light" ? "light" : "dark";
+}
+
+/** True when the request asks for the edge-to-edge maskable artwork. */
+function maskableFromUrl(req: { url?: string }): boolean {
+  const url = req.url ? new URL(req.url, "http://localhost") : null;
+  return url?.searchParams.get("maskable") === "1";
+}
+
+/**
+ * Build an `/icons/*.png` URL. The color is URL-encoded so `#` is not treated
+ * as a URL fragment, and `maskable` selects the edge-to-edge artwork.
+ */
+function iconSrc(
+  size: number,
+  color: string | null,
+  theme: "light" | "dark",
+  maskable = false,
+): string {
+  const params = new URLSearchParams();
+  if (color) params.set("c", color);
+  params.set("theme", theme);
+  if (maskable) params.set("maskable", "1");
+  return `/icons/icon-${size}.png?${params.toString()}`;
+}
+
+/** A web app manifest icon entry, including the appearance `media` member. */
+export interface PwaManifestIcon {
+  src: string;
+  sizes: string;
+  type: string;
+  media?: string;
+  purpose?: string;
+}
+
+/** The RepoOS web app manifest shape. */
+export interface PwaManifest {
+  id: string;
+  name: string;
+  short_name: string;
+  description: string;
+  start_url: string;
+  scope: string;
+  display: string;
+  orientation: string;
+  background_color: string;
+  theme_color: string;
+  icons: PwaManifestIcon[];
+}
+
+/**
+ * Per-instance PWA manifest. Each size ships a light and a dark variant wired
+ * to `prefers-color-scheme` (the `media` member), so the installed-app icon
+ * tracks the OS appearance the way the macOS dock icon does. The optional
+ * chosen repo color is baked into the icon URLs (#0280).
+ */
+export function buildPwaManifest(name: string, color: string | null): PwaManifest {
+  return {
+    id: "/",
+    name: `RepoOS · ${name}`,
+    short_name: `RepoOS · ${name}`,
+    description: `Repo-native task tracking for ${name}`,
+    start_url: "/",
+    scope: "/",
+    display: "standalone",
+    orientation: "portrait-primary",
+    background_color: "#070a12",
+    theme_color: "#070a12",
+    icons: [
+      {
+        src: iconSrc(192, color, "light"),
+        sizes: "192x192",
+        type: "image/png",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        src: iconSrc(192, color, "dark"),
+        sizes: "192x192",
+        type: "image/png",
+        media: "(prefers-color-scheme: dark)",
+      },
+      {
+        src: iconSrc(512, color, "light"),
+        sizes: "512x512",
+        type: "image/png",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        src: iconSrc(512, color, "dark"),
+        sizes: "512x512",
+        type: "image/png",
+        media: "(prefers-color-scheme: dark)",
+      },
+      // Maskable installs follow the OS appearance too, and use the
+      // edge-to-edge artwork (the native AppIcon variant).
+      {
+        src: iconSrc(512, color, "light", true),
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        src: iconSrc(512, color, "dark", true),
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+  };
+}
+
 export const serveManifest: RouteHandler = (ctx, req, res) => {
   const { config } = ctx;
-  const name = projectDisplayName(config.root);
-  const c = colorFromUrl(req);
-  const suffix = c ? `?c=${c}` : "";
   const manifest = JSON.stringify(
-    {
-      id: "/",
-      name: `RepoOS · ${name}`,
-      short_name: `RepoOS · ${name}`,
-      description: `Repo-native task tracking for ${name}`,
-      start_url: "/",
-      scope: "/",
-      display: "standalone",
-      orientation: "portrait-primary",
-      background_color: "#070a12",
-      theme_color: "#070a12",
-      icons: [
-        { src: `/icons/icon-192.png${suffix}`, sizes: "192x192", type: "image/png" },
-        { src: `/icons/icon-512.png${suffix}`, sizes: "512x512", type: "image/png" },
-        {
-          src: `/icons/icon-512.png${suffix}`,
-          sizes: "512x512",
-          type: "image/png",
-          purpose: "maskable",
-        },
-      ],
-    },
+    buildPwaManifest(projectDisplayName(config.root), colorFromUrl(req)),
     null,
     2,
   );
@@ -62,10 +154,16 @@ export const serveStaticFile: RouteHandler = (ctx, _req, res, params) => {
   }
 };
 
-// Icon rendering function - will be called from main server with SVG generation logic
-let renderIconFn: ((size: number, color?: string) => Buffer) | null = null;
+// Icon rendering function - will be called from main server with the repo's
+// name-derived artwork. Takes an explicit light/dark theme and maskable flag
+// (#0645).
+let renderIconFn:
+  | ((size: number, color?: string, theme?: "light" | "dark", maskable?: boolean) => Buffer)
+  | null = null;
 
-export function setIconRenderer(fn: (size: number, color?: string) => Buffer) {
+export function setIconRenderer(
+  fn: (size: number, color?: string, theme?: "light" | "dark", maskable?: boolean) => Buffer,
+) {
   renderIconFn = fn;
 }
 
@@ -82,7 +180,7 @@ export const serveIcon: RouteHandler = (_ctx, req, res, params) => {
     return;
   }
   const color = colorFromUrl(req);
-  const png = renderIconFn(size, color ?? undefined);
+  const png = renderIconFn(size, color ?? undefined, themeFromUrl(req), maskableFromUrl(req));
   res.writeHead(200, {
     "Content-Type": "image/png",
     "Cache-Control": "max-age=86400",
