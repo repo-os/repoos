@@ -61,6 +61,22 @@ const REPORT_KEYS = ["at", "agent", "cli", "model", "state"];
 
 const now = (): string => new Date().toISOString();
 
+const ERROR_REASON_CHARS = 2000;
+
+/**
+ * Keep a recorded trigger/error reason bounded. Never a bare empty string — an
+ * unset reason stays null so the session row distinguishes "no reason" from
+ * "truncated to nothing".
+ */
+function truncateReason(reason: string | null | undefined): string | null {
+  if (reason === null || reason === undefined) return null;
+  const trimmed = reason.trim();
+  if (!trimmed) return null;
+  return trimmed.length > ERROR_REASON_CHARS
+    ? `${trimmed.slice(0, ERROR_REASON_CHARS)}…[truncated]`
+    : trimmed;
+}
+
 export function ctoMission(config: RepoOSConfig, agent: Agent, boardDigest: string): string {
   const role = agent.instructions?.trim();
   const parts: string[] = [];
@@ -202,7 +218,10 @@ export class CTOManager {
     return { ok: true };
   }
 
-  async run(boardDigest: string): Promise<{ ok: boolean; reason?: string; report?: CTOReport }> {
+  async run(
+    boardDigest: string,
+    trigger: string = "manual",
+  ): Promise<{ ok: boolean; reason?: string; report?: CTOReport }> {
     if (this.runs.size > 0) {
       return { ok: false, reason: "a CTO run is already in progress" };
     }
@@ -239,7 +258,11 @@ export class CTOManager {
       // Persist the in-memory lines (including the interrupted marker appended
       // by `interrupt()`) so a user-initiated stop survives reload/restart.
       this.persistSession();
-      this.recordRun(agent, result, now(), false, "cancelled");
+      this.recordRun(agent, result, now(), false, {
+        statusOverride: "cancelled",
+        trigger,
+        errorReason: "cancelled",
+      });
       this.emit({ type: "cto", state: "cancelled", at: now() });
       return { ok: false, reason: "CTO run cancelled" };
     }
@@ -265,7 +288,10 @@ export class CTOManager {
         : `✗ CTO run failed: ${result.error ?? "no report"}`,
     );
     this.persistSession();
-    this.recordRun(agent, result, report.at, state === "ok");
+    this.recordRun(agent, result, report.at, state === "ok", {
+      trigger,
+      errorReason: state === "ok" ? null : (result.error ?? "unknown error"),
+    });
     this.emit({
       type: "cto",
       state: state === "ok" ? "ready" : "failed",
@@ -317,7 +343,11 @@ export class CTOManager {
       // Persist the in-memory lines (including the interrupted marker appended
       // by `interrupt()`) so a user-initiated stop survives reload/restart.
       this.persistSession();
-      this.recordRun(agent, result, now(), false, "cancelled");
+      this.recordRun(agent, result, now(), false, {
+        statusOverride: "cancelled",
+        trigger: "manual",
+        errorReason: "cancelled",
+      });
       this.emit({ type: "cto", state: "cancelled", at: now() });
       return { ok: false, reason: "CTO run cancelled" };
     }
@@ -325,14 +355,17 @@ export class CTOManager {
     if (!result.ok) {
       this.appendMarker(`✗ the CTO could not answer: ${result.error ?? "unknown error"}`);
       this.persistSession();
-      this.recordRun(agent, result, now(), false);
+      this.recordRun(agent, result, now(), false, {
+        trigger: "manual",
+        errorReason: result.error ?? "unknown error",
+      });
       this.emit({ type: "cto", state: "failed", at: now() });
       return { ok: false, reason: result.error ?? "the CTO failed to answer" };
     }
 
     const completedAt = now();
     this.persistSession();
-    this.recordRun(agent, result, completedAt, true);
+    this.recordRun(agent, result, completedAt, true, { trigger: "manual" });
     this.emit({ type: "cto", state: "ready", at: completedAt });
     return { ok: true };
   }
@@ -565,7 +598,7 @@ ${body}
     result: PromptResult,
     completedAt: string,
     success: boolean,
-    statusOverride?: string,
+    opts: { statusOverride?: string; trigger?: string | null; errorReason?: string | null } = {},
   ): void {
     if (!this.db) return;
     try {
@@ -590,8 +623,10 @@ ${body}
         turns: result.turns ?? undefined,
         costUsd: result.costUsd ?? undefined,
         costSource,
-        status: statusOverride ?? (success ? "finished" : "errored"),
+        status: opts.statusOverride ?? (success ? "finished" : "errored"),
         lastActivityAt: completedAt,
+        trigger: truncateReason(opts.trigger),
+        errorReason: truncateReason(opts.errorReason),
       });
     } catch {
       // Database recording is best-effort and must never crash.

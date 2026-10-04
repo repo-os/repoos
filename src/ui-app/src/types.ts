@@ -512,6 +512,10 @@ export interface SessionUsage {
   costUsd: number | null;
   costSource: string;
   status: string;
+  /** What triggered the run ("timer"/"manual"/"event: …"), or null when unset. */
+  trigger: string | null;
+  /** Truncated failure text for an errored session, or null when the run succeeded. */
+  errorReason: string | null;
 }
 
 /** Aggregated usage totals for a task, incl. role breakdown (0230). */
@@ -558,6 +562,8 @@ export interface BoardUsageStats {
   costSource: string;
   roles: RoleUsage[];
   days: DailyUsage[];
+  /** Most recent errored sessions in range (newest first), for the failures list. */
+  recentFailures: SessionUsage[];
 }
 
 /** How a close-out (Move to done) ended (#0640). Mirrors the server's
