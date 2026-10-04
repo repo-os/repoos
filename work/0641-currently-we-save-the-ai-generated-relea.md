@@ -11,7 +11,7 @@ branch: feat/surface-unpushed-ai-release-notes-below-
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-04T02:00:15Z"
-updated_at: "2026-10-04T02:40:55Z"
+updated_at: "2026-10-04T02:47:16Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -69,6 +69,33 @@ Currently we save the AI generated release notes, but it's a black box to the us
         "waitMs": 800
       }
     ]
+  },
+  {
+    "label": "Confirm dialog before replacing typed notes with the saved draft",
+    "target": "default",
+    "route": "/releases",
+    "highlight": ".cc-modal",
+    "steps": [
+      {
+        "click": "[data-test-id=\"cut-release-open\"]"
+      },
+      {
+        "waitMs": 600
+      },
+      {
+        "fill": "#rel-notes",
+        "text": "my own draft in progress"
+      },
+      {
+        "click": "[data-test-id=\"unpushed-release-notes\"] button"
+      },
+      {
+        "waitFor": ".cc-modal"
+      },
+      {
+        "waitMs": 200
+      }
+    ]
   }
 ]
 ```
@@ -86,3 +113,4 @@ Currently we save the AI generated release notes, but it's a black box to the us
 - 2026-10-04T02:40:15Z · status active→review
 - 2026-10-04T02:40:26Z · note: shots: failed — capture of Release panel: saved-but-unreleased AI draft card below the notes field on "default" failed: click: Timeout 5000ms exceeded.
 - 2026-10-04T02:40:55Z · status review→active
+- 2026-10-04T02:47:16Z · body: section Shots
