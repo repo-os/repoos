@@ -11,7 +11,9 @@ import { join } from "node:path";
 import {
   AgentRunner,
   type AgentHandoffRequest,
+  deterministicSessionId,
   extractUsage,
+  freshSessionId,
   HANDOFF_READY_SIGNAL,
   PREVIEW_REQUEST_SIGNAL,
   promptCommand,
@@ -29,7 +31,7 @@ const path = require("path");
 const args = process.argv.slice(2);
 fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: process.cwd(), agent: process.env.REPOOS_AGENT || "", task: process.env.REPOOS_TASK_ID || "", api: process.env.REPOOS_API_URL || "" }) + "\\n");
 if (path.basename(process.argv[1]) === "pi") {
-  process.stdout.write(JSON.stringify({ type: "session", version: 3, id: "sess-pi" }) + "\\n");
+  if (process.env.REPOOS_FAKEBIN_PI_NO_SESSION_HEADER !== "1") process.stdout.write(JSON.stringify({ type: "session", version: 3, id: "sess-pi" }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "turn_start" }) + "\\n");
   const split = process.env.REPOOS_FAKEBIN_PI_SPLIT_HANDOFF === "1";
   const wantsHandoff = process.env.REPOOS_FAKEBIN_PI_HANDOFF === "1" || split;
@@ -204,6 +206,7 @@ afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_PI_SPLIT_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_PI_EXIT_MID;
   delete process.env.REPOOS_FAKEBIN_PI_NO_BLOCK;
+  delete process.env.REPOOS_FAKEBIN_PI_NO_SESSION_HEADER;
   delete process.env.REPOOS_FAKEBIN_FAIL;
 });
 
@@ -593,7 +596,10 @@ describe("pi driver", () => {
       runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
       await waitFor(() => !runner.isRunning("0001"), "pi turn exit");
 
-      expect(runner.output("0001")!.sessionId).toBe("sess-pi");
+      // The launch pinned RepoOS's deterministic id; pi's own `session` header
+      // ("sess-pi") is only a backfill when no id was chosen, so it must NOT
+      // overwrite the stable one.
+      expect(runner.output("0001")!.sessionId).toBe(deterministicSessionId("0001", "engineer"));
       const texts = runner
         .output("0001")!
         .lines.filter((line) => (line as { type?: string }).type === "text")
@@ -605,9 +611,74 @@ describe("pi driver", () => {
 
       const [run] = spawns(fx);
       expect(run.args).toEqual(expect.arrayContaining(["--mode", "json"]));
+      expect(run.args).toEqual(
+        expect.arrayContaining(["--session-id", deterministicSessionId("0001", "engineer")]),
+      );
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("resumes the deterministic session id on a follow-up turn", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "pi turn exit");
+
+      const id = deterministicSessionId("0001", "engineer");
+      const sent = runner.send("0001", "keep going", agent("pi"));
+      expect(sent.ok).toBe(true);
+      await waitFor(() => !runner.isRunning("0001"), "pi resume exit");
+
+      const resume = spawns(fx)[1]!;
+      expect(resume.args).toContain("--session");
+      expect(resume.args[resume.args.indexOf("--session") + 1]).toBe(id);
+      expect(resume.args).not.toContain("--session-id");
+      expect(resume.args).not.toContain("--continue");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("pins a distinct id on an explicit fresh launch and resumes it, not the ordinary id", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_PI_NO_SESSION_HEADER = "1";
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin, freshSession: true });
+      await waitFor(() => !runner.isRunning("0001"), "pi fresh launch exit");
+
+      const ordinary = deterministicSessionId("0001", "engineer");
+      const fresh = runner.output("0001")!.sessionId;
+      // The chosen id was recorded BEFORE spawn even though pi emitted no
+      // session header, and it is a fresh id — never the ordinary task id it
+      // replaced (which would reopen the reset conversation).
+      expect(fresh).toBeDefined();
+      expect(fresh).not.toBe(ordinary);
+      expect(fresh!.startsWith(`${ordinary}-f`)).toBe(true);
+
+      const [launch] = spawns(fx);
+      expect(launch.args[launch.args.indexOf("--session-id") + 1]).toBe(fresh);
+
+      const sent = runner.send("0001", "keep going", agent("pi"));
+      expect(sent.ok).toBe(true);
+      await waitFor(() => !runner.isRunning("0001"), "pi fresh resume exit");
+      const resume = spawns(fx)[1]!;
+      expect(resume.args[resume.args.indexOf("--session") + 1]).toBe(fresh);
+      expect(resume.args).not.toContain(ordinary);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      delete process.env.REPOOS_FAKEBIN_PI_NO_SESSION_HEADER;
       fx.clean();
     }
   });
