@@ -18,45 +18,48 @@ git-status:
 status:
     #!/usr/bin/env bash
     set -uo pipefail
+    source scripts/just-ui.sh
 
-    echo "== port 7171 =="
+    section "port 7171"
     pids=$(lsof -nP -iTCP:7171 -sTCP:LISTEN -t 2>/dev/null)
     if [ -z "$pids" ]; then
-        echo "  nothing listening on 7171"
+        warn "nothing listening on 7171"
     else
         count=$(echo "$pids" | wc -l | tr -d ' ')
         if [ "$count" -gt 1 ]; then
-            echo "  CONFLICT: $count processes listening on 7171"
+            fail "CONFLICT: $count processes listening on 7171"
         else
-            echo "  1 process listening on 7171"
+            ok "1 process listening"
         fi
-        lsof -nP -iTCP:7171 -sTCP:LISTEN
+        lsof -nP -iTCP:7171 -sTCP:LISTEN | tail -n +2 | awk '{printf "%s pid %s (%s) %s\n", $1, $2, $3, $9}' | indent_dim
     fi
 
-    echo
-    echo "== http check =="
+    section "http"
     code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://127.0.0.1:7171/api/system/logs 2>/dev/null)
     if [ "$code" = "200" ]; then
-        echo "  alive: http://127.0.0.1:7171 responded 200"
+        ok "alive: http://127.0.0.1:7171 responded 200"
     elif [ "$code" = "401" ]; then
-        echo "  alive: http://127.0.0.1:7171 responded 401 (auth is on; the server is up)"
+        ok "alive: http://127.0.0.1:7171 responded 401 ${_d}(auth is on)${_r}"
     else
-        echo "  not responding (got: ${code:-none})"
+        fail "not responding (got: ${code:-none})"
     fi
 
-    echo
-    echo "== other repoos server processes =="
-    pgrep -fl "dist/cli/index.js serve" || echo "  none found via pgrep"
-
-    echo
-    echo "== git =="
-    branch=$(git branch --show-current)
-    echo "  branch: $branch"
-    if [ -n "$(git status --porcelain)" ]; then
-        echo "  dirty: yes"
-        git status --short
+    section "other repoos servers"
+    procs=$(pgrep -fl "dist/cli/index.js serve" | sed -E 's#/Users/[^/]+/#~/#g')
+    if [ -n "$procs" ]; then
+        echo "$procs" | indent_dim
     else
-        echo "  dirty: no"
+        note "none found"
+    fi
+
+    section "git"
+    branch=$(git branch --show-current)
+    kv branch "$branch"
+    if [ -n "$(git status --porcelain)" ]; then
+        kv dirty "${_ylw}yes${_r}"
+        git status --short | indent_dim
+    else
+        kv dirty "${_grn}no${_r}"
     fi
 
 # Auth-less dev server for agents/browser tooling. Applies the [preview.*] overlay
@@ -322,12 +325,13 @@ serve:
 kill:
     #!/usr/bin/env bash
     set -uo pipefail
-    bun dist/cli/index.js stop || true
+    source scripts/just-ui.sh
+    bun dist/cli/index.js stop 2>&1 | indent_dim || true
     # Fallback: kill any stale process on the configured port that the lock missed
     port=$(bun -p "const fs=require('fs'); try { const t=fs.readFileSync('repoos.toml','utf8'); const m=t.match(/servePort\s*=\s*(\d+)/); m ? m[1] : '7171' } catch { '7171' }" 2>/dev/null || echo 7171)
     pids=$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null || true)
     if [ -n "$pids" ]; then
-        echo "killing stale process(es) on port $port: $pids"
+        warn "killing stale process(es) on port $port: $pids"
         echo "$pids" | xargs kill
     fi
 
@@ -338,8 +342,8 @@ kill:
     deadline=$((SECONDS + 15))
     while lsof -nP -iTCP:"$port" -sTCP:LISTEN -t >/dev/null 2>&1; do
         if (( SECONDS >= deadline )); then
-            echo "ERROR: port $port is still in use 15s after stopping the server"
-            lsof -nP -iTCP:"$port" -sTCP:LISTEN || true
+            fail "port $port is still in use 15s after stopping the server"
+            lsof -nP -iTCP:"$port" -sTCP:LISTEN | indent_dim || true
             exit 1
         fi
         sleep 0.2
@@ -351,6 +355,7 @@ restart:
     #!/usr/bin/env bash
     set -euo pipefail
 
+    source scripts/just-ui.sh
     started_at=$SECONDS
     port=$(bun -p "const fs=require('fs'); try { const t=fs.readFileSync('repoos.toml','utf8'); const m=t.match(/servePort\s*=\s*(\d+)/); m ? m[1] : '7171' } catch { '7171' }" 2>/dev/null || echo 7171)
 
@@ -358,20 +363,20 @@ restart:
     # auto-reloads (spawns a replacement and hands over); building first made it
     # start that handover just as `just kill` terminated it, so the two restarts
     # raced for the port and one lost with "bind failed".
-    echo "==> [1/4] stopping the current server"
-    just kill
-    echo "==> [2/4] building RepoOS"
-    bun run build
-    echo "==> [3/4] starting RepoOS on port $port"
+    echo
+    step 1 4 "Stopping the current server"
+    just --quiet kill
+    step 2 4 "Building RepoOS"
+    bun run --silent build 2>&1 | indent_dim
+    step 3 4 "Starting RepoOS on port $port"
     mkdir -p .repoos/logs
     nohup bun dist/cli/index.js serve --host 127.0.0.1 --quiet > .repoos/logs/server.out 2>&1 < /dev/null &
     server_pid=$!
-    echo "    server pid: $server_pid"
-    echo "==> [4/4] waiting for http://127.0.0.1:$port/api/health"
+    note "pid $server_pid"
+    step 4 4 "Waiting for /api/health"
     deadline=$((SECONDS + 60))
     while (( SECONDS < deadline )); do
         if health=$(curl -fsS --max-time 2 "http://127.0.0.1:$port/api/health" 2>/dev/null); then
-            echo
             echo "$health" | bun -e '
               const h = JSON.parse(await Bun.stdin.text());
               const rows = [
@@ -381,19 +386,20 @@ restart:
                 ["build", String(h.buildHash).slice(0, 12) + " @ " + h.buildAt],
                 ["started", h.serverStartedAt],
               ];
-              for (const [k, v] of rows) console.log("    " + k.padEnd(8) + v);
-              if (h.buildAvailableHash) console.log("    note    newer build available (" + String(h.buildAvailableHash).slice(0, 12) + ")");
-            ' 2>/dev/null || echo "    health: $health"
-            echo "==> RepoOS ready in $((SECONDS - started_at))s"
+              const tty = process.stdout.isTTY && !process.env.NO_COLOR;
+              const d = (s) => (tty ? "\x1b[2m" + s + "\x1b[0m" : s);
+              for (const [k, v] of rows) console.log("  " + d(String(k).padEnd(10)) + " " + v);
+              if (h.buildAvailableHash) console.log("  " + d("note".padEnd(10)) + " newer build available (" + String(h.buildAvailableHash).slice(0, 12) + ")");
+            ' 2>/dev/null || note "health: $health"
+            printf '\n%s%s✔ RepoOS ready%s %sin %ss · http://127.0.0.1:%s%s\n' "$_b" "$_grn" "$_r" "$_d" "$((SECONDS - started_at))" "$port" "$_r"
             exit 0
         fi
-        printf "."
         sleep 1
     done
     echo
-    echo "ERROR: RepoOS did not become ready within 60s"
-    echo "Last server log:"
-    tail -40 .repoos/logs/server.out || true
+    fail "RepoOS did not become ready within 60s"
+    note "Last server log:"
+    tail -40 .repoos/logs/server.out | indent_dim || true
     exit 1
 
 # run the repoos.org landing page locally (standalone sibling project — own package.json) `just landing-dev`
