@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-04T09:35:16Z"
+review_passes: 1
 id: "0646"
 title: Server dies on uncaught EPIPE from unguarded child stdin writes; log EPIPE with context
 type: bug
@@ -13,7 +15,6 @@ review_model_override: composer-2.5
 hotfix: true
 hotfix_target: branch
 created_at: "2026-10-04T08:56:04Z"
-updated_at: "2026-10-04T09:34:15Z"
 last_check_failure: "repoos check at 2026-10-04T09:28:21.577Z: the worktree changed while the gate was running (HEAD moved from c2d834d6 to 3c40e4ed) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 ---
 ## Problem
@@ -48,3 +49,4 @@ Discovered 2026-10-04 while diagnosing why the 7171 server kept dying. Initial t
 - 2026-10-04T09:06:22Z · status ready→active
 - 2026-10-04T09:34:14Z · status active→review
 - 2026-10-04T09:34:15Z · note: shots: skipped — the diff (0 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+
