@@ -2,14 +2,14 @@
 id: "0653"
 title: "repoos outline <file>: print a file's symbols with line numbers so agents read ranges, not whole files"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/repoos-outline-file-print-a-file-s-symbo
 created_at: "2026-10-04T16:36:26Z"
-updated_at: "2026-10-04T17:48:54Z"
+updated_at: "2026-10-04T18:21:09Z"
 ---
 ## Problem
 Engineer agents re-read files constantly (analysis of 234 engineer sessions, 2026-10-05): 38% of reads (1,004 of 2,647) were of a file already read in the same session, about 4.2MB re-read. Hot files: TaskDrawer.vue 167 reads, agents.ts 120, server.ts 94, style.css 92, stores/repo.ts 76, config.ts 64. Reads average 5.8KB of output (the largest per-call average of any tool), usually 200-400 line windows, and all of it stays in context and is re-billed as cache reads on every later turn. Agents have no cheap way to learn a file's structure, so they read a big window to find the part they want.
@@ -37,3 +37,4 @@ Success metrics, measured on engineer sessions after this ships versus the 2026-
 - 2026-10-04T16:56:46Z · priority
 - 2026-10-04T17:42:44Z · status inbox→ready
 - 2026-10-04T17:48:54Z · status ready→active, branch
+- 2026-10-04T18:21:09Z · status active→review
