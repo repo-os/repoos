@@ -2,7 +2,7 @@
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
-status: review
+status: active
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -284,3 +284,4 @@ error: script "test" exited with code 1
 - 2026-10-05T17:57:17Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-05T17:58:32Z · status review→active
 - 2026-10-05T18:03:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-05T18:03:54Z · status review→active
