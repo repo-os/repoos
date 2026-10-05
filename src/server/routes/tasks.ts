@@ -1370,6 +1370,56 @@ export const getTaskOutput: RouteHandler = (ctx, _req, res, params) => {
   });
 };
 
+/**
+ * #0684: per-task agent override fields that the `/start` and `/message`
+ * action bodies accept but do not apply. Both handlers resolve the engineer
+ * with `resolveAgentForTask(config, task)`, which reads only the task's
+ * persisted `agentOverride`/`cliOverride`/`modelOverride` — a body override is
+ * parsed as an unknown property and dropped, so the run launches on the
+ * configured default while the caller believes it named a CLI/model (the field
+ * report's driver "believed for ~2 hours that two tasks were running on Cursor
+ * when they were on DeepSeek"). Rejecting beats ignoring: the only supported
+ * way to change a task's engineer assignment is `PATCH /api/tasks/:id`.
+ *
+ * Returns the offending field names, empty when the body carries none.
+ */
+const IGNORED_OVERRIDE_FIELDS = [
+  "agentOverride",
+  "cliOverride",
+  "modelOverride",
+  "pmAgentOverride",
+  "pmCliOverride",
+  "pmModelOverride",
+  "reviewAgentOverride",
+  "reviewCliOverride",
+  "reviewModelOverride",
+] as const;
+
+function ignoredOverrideFieldNames(body: unknown): string[] {
+  if (!body || typeof body !== "object") return [];
+  const record = body as Record<string, unknown>;
+  return IGNORED_OVERRIDE_FIELDS.filter((f) => record[f] !== undefined);
+}
+
+/**
+ * #0684: reject a `start`/`message` body that carries a per-task override the
+ * route will ignore, naming the endpoint that does apply it. Returns true when
+ * a 400 was written (the caller must return immediately).
+ */
+function rejectIgnoredOverrides(res: ServerResponse, id: string, body: unknown): boolean {
+  const fields = ignoredOverrideFieldNames(body);
+  if (fields.length === 0) return false;
+  const list = fields.map((f) => `"${f}"`).join(", ");
+  json(res, 400, {
+    error:
+      `POST /api/tasks/${id}/start and /message do not apply agent overrides — ` +
+      `${list} would be silently ignored. Set them on the task with ` +
+      `PATCH /api/tasks/${id} { ${fields.join(", ")} }, or edit them from the ` +
+      `task drawer's agent picker, then start the run.`,
+  });
+  return true;
+}
+
 // Task actions: start, pause, message, done, sync
 export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   const { config, index, runner, previews, reviews, syncTaskBranch, onServerStatusChange, logger } =
@@ -1418,7 +1468,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       mode?: unknown;
       instruction?: unknown;
       overrideDependencies?: unknown;
+      [key: string]: unknown;
     };
+    // #0684: refuse overrides this route will not apply rather than accepting
+    // (200) and silently dropping them — see rejectIgnoredOverrides.
+    if (rejectIgnoredOverrides(res, id, body)) return;
     const blockers = taskDependencyBlockers(config.root, existing, index.getTasks());
     if (blockers.length && body?.overrideDependencies !== true) {
       const reason = blockers
@@ -1885,7 +1939,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: "No enabled engineer agent is configured on the Agents page",
       });
     }
-    const body = (await readBody(req)) as { text?: unknown };
+    const body = (await readBody(req)) as { text?: unknown; [key: string]: unknown };
+    // #0684: the engineer message route resolves the agent from the task's
+    // persisted overrides only — reject a body override instead of dropping it.
+    if (rejectIgnoredOverrides(res, id, body)) return;
     const text = typeof body?.text === "string" ? body.text.trim() : "";
     if (!text) {
       return json(res, 400, { error: "message text is required" });

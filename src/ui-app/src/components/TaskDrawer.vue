@@ -121,6 +121,7 @@ import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { reportPredatesLatestHandoff } from "../lib/reviewFreshness";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
+import { resolveEffectiveAgent } from "../lib/effective-agent";
 import CopyableNumber from "./CopyableNumber.vue";
 import PmChatSurface from "./PmChatSurface.vue";
 import AreaPicker from "./AreaPicker.vue";
@@ -3228,6 +3229,25 @@ const baseAgent = computed(() => {
   return list.find((a) => a.enabled && a.name === "engineer") ?? null;
 });
 
+/**
+ * The agent the engineer run will ACTUALLY use, resolved by the shared
+ * `resolveEffectiveAgent` helper (the same logic the server's
+ * `resolveAgentForTask` applies, and the board card's robot toggle shows).
+ *
+ * Shown in the run header so "which agent is coding this" is never a guess
+ * (the field report's driver believed two tasks ran on Cursor when they ran on
+ * DeepSeek, #0684).
+ */
+const effectiveEngineer = computed(() => {
+  const t = ui.active;
+  if (!t) return null;
+  return resolveEffectiveAgent(
+    config.agents ?? [],
+    { agentOverride: t.agentOverride, cliOverride: t.cliOverride, modelOverride: t.modelOverride },
+    "engineer",
+  );
+});
+
 /** Draft overrides for the agent tab. These are the values the user is editing
  *  but haven't saved yet. They are initialized from the task's current overrides
  *  (or the base agent's defaults when none are set). */
@@ -4088,6 +4108,14 @@ watch(
           >
             <ActivityIndicator />
             {{ autoRepairRetryHint ? autoRepairRetryHint.label : "agent coding" }}
+            <span
+              v-if="effectiveEngineer"
+              class="drawer-run-agent"
+              title="Effective agent for this run"
+            >
+              {{ effectiveEngineer.name }} · {{ effectiveEngineer.cli }} ·
+              {{ effectiveEngineer.model }}
+            </span>
           </span>
           <!-- 0381: PM at work on this task — a draft flesh-out OR a live PM
                chat turn (the flag is the same server-side registry). Cleared

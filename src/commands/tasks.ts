@@ -30,7 +30,11 @@ export const TYPE_USAGE = TASK_TYPES.join("|");
 export const UPDATE_USAGE =
   '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] ' +
   `[--priority ${PRIORITY_USAGE}] [--type ${TYPE_USAGE}] [--body "..."|-] [--branch b] ` +
-  '[--assigned-to ai|human] [--needs-input true|false] [--needs-merge true|false] [--questions "Question one\\nQuestion two"] [--clear-questions] [--shots "<JSON list>"|- | --section "<heading>" --section-body ...] [--force]';
+  '[--assigned-to ai|human] [--needs-input true|false] [--needs-merge true|false] [--questions "Question one\\nQuestion two"] [--clear-questions] ' +
+  "[--agent <name>] [--cli <cli>] [--model <model>] " +
+  "[--pm-agent <name>] [--pm-cli <cli>] [--pm-model <model>] " +
+  "[--review-agent <name>] [--review-cli <cli>] [--review-model <model>] " +
+  '[--shots "<JSON list>"|- | --section "<heading>" --section-body ...] [--force]';
 
 export const NEW_USAGE =
   '  Usage: repoos new "Task title" [--ai] ' +
@@ -426,6 +430,20 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
   "needs-merge": "needsMerge",
   questions: "questions",
   section: "section",
+  // #0684: per-task agent overrides, the same fields `PATCH /api/tasks/:id`
+  // applies. Without these the only way to pin an engineer/model to a task was
+  // a raw API call — and sending them to `/start` or `/message` was silently
+  // ignored. An empty string clears the override back to the role default
+  // (patchTaskFile treats a blank as null).
+  agent: "agentOverride",
+  cli: "cliOverride",
+  model: "modelOverride",
+  "pm-agent": "pmAgentOverride",
+  "pm-cli": "pmCliOverride",
+  "pm-model": "pmModelOverride",
+  "review-agent": "reviewAgentOverride",
+  "review-cli": "reviewCliOverride",
+  "review-model": "reviewModelOverride",
 };
 
 /** Section headings a full `--body` replace must not silently drop (#0613). */
