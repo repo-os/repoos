@@ -147,7 +147,12 @@ only way back is to unarchive it (from the Archived list in the UI, or
 
 Edits a task's metadata or body: `--title`, `--area`, `--story`,
 `--depends-on`, `--priority`, `--type`, `--body`, `--branch`, `--assigned-to`,
-`--needs-input`, `--needs-merge`.
+`--needs-input`, `--needs-merge`, and per-role agent pins (`--agent`, `--cli`,
+`--model`, plus `--pm-*` and `--review-*` variants). These write the same
+fields as `PATCH /api/tasks/<id>` and are what engineer/reviewer runs read.
+`POST /api/tasks/<id>/start` and `/message` reject override fields in the
+request body (HTTP 400); PM chat routes still accept `cliOverride` /
+`modelOverride` for a single turn. See [Running with agents](/running-with-agents#2-choose-agents-per-role).
 
 ```bash
 repoos update 0615 --depends-on 0542,0538
