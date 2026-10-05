@@ -2,7 +2,7 @@
 id: "0682"
 title: "Config and git hygiene: stable repoos.toml writes, auto-commit config/bookkeeping writes, init .gitignore covers attachments"
 type: bug
-status: active
+status: review
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -41,4 +41,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T17:17:01Z · body: section Story context
 - 2026-10-05T18:04:06Z · status inbox→ready
 - 2026-10-05T18:04:14Z · status ready→active, branch
-- 2026-10-05T18:45:35Z · note: shots: skipped — the diff (7 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-05T18:45:35Z · status active→review
