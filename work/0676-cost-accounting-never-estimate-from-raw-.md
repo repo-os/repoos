@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/cost-accounting-never-estimate-from-raw-
 created_at: "2026-10-05T16:58:34Z"
-updated_at: "2026-10-05T18:04:12Z"
+updated_at: "2026-10-05T18:15:32Z"
 ---
 ## Problem
 
@@ -40,6 +40,24 @@ This task is part of the story **Field report: first agent-driven project run (o
 ## Docs follow-up
 The playbook page `user-docs/running-with-agents.md` (landed on main) describes the CURRENT behaviour that this task changes. When this task lands, update the page: section 6, the bullet 'trust provider-reported usage only; treat any estimate as unknown'. In short: it becomes simply true of the product; reword accordingly. Keep the page accurate rather than aspirational; if this task is declined, leave the page as is. (This replaces the open task 0689, which is being removed.)
 
+## Shots
+```json
+[
+  {
+    "label": "Dashboard AI usage panel: cost shows unknown when nothing was reported, totals exclude estimates",
+    "target": "default",
+    "route": "/",
+    "highlight": ".usage-panel"
+  },
+  {
+    "label": "Model providers tab: a provider key is read from a harness login store too",
+    "target": "default",
+    "route": "/agents?tab=providers",
+    "highlight": ".mp-panel"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-05T16:58:34Z · created · unknown
@@ -48,3 +66,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:32:21Z · body: section Docs follow-up
 - 2026-10-05T18:04:02Z · status inbox→ready
 - 2026-10-05T18:04:12Z · status ready→active, branch
+- 2026-10-05T18:15:32Z · body: section Shots
