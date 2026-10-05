@@ -16,9 +16,13 @@ first, then come back here.
   ("works at 375px wide", "browser console is clean", "tests cover the empty
   case").
 - Encode the order with `dependsOn`. The sequencing judgment belongs **here**,
-  at planning time. Once the graph is right, "which task next?" is almost
-  mechanical: priority first, then the longest chain of work it unblocks, then
-  age.
+  at planning time. Once the graph is right, auto-engineering picks the next
+  tasks deterministically: priority first, then how much downstream work each
+  candidate unblocks (its critical-path weight), then creation order. Held tasks
+  (`hold: true` or a `hold` tag) stay ready but are skipped. With
+  `autoEngineering.pmVeto` enabled, a PM pass runs only when there are more
+  eligible tasks than open slots **and** two candidates would collide (same
+  area or a declared shared path); it may reorder or defer, never invent work.
 - Put the context agents need where they will read it: an index file in your docs
   directory with a reading order, a short block of hard rules in `AGENTS.md` that
   points at it, and a glossary of your domain words. Keep reference code and

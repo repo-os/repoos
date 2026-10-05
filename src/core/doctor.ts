@@ -451,6 +451,7 @@ export function findConfigValueProblems(parsed: Record<string, unknown>): string
   for (const key of [
     "strictBuild",
     "autoEngineeringMode",
+    "autoEngineering.pmVeto",
     "skillSuggestions",
     "ntfyEnabled",
     "tunnel.enabled",
