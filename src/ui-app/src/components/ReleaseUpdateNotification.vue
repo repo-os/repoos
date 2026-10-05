@@ -157,7 +157,10 @@ function showDetails(): void {
   font-size: 12px;
 }
 .release-update-copy span {
-  color: var(--txt-dim);
+  /* Use the full-contrast text token, not --txt-dim: the banner background is
+     a violet-tinted panel mix, and gruvbox-light's --txt-dim only reaches
+     4.39:1 on it (the rendered contrast audit caught this). */
+  color: var(--txt);
   font-size: 11px;
 }
 .release-update-arrow {

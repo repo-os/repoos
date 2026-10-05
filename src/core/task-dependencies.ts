@@ -88,8 +88,13 @@ function dependencyMergeState(
   root: string,
   upstream: Task,
   base: string | null,
-): "merged" | "waiting" | "cancelled" {
+): "merged" | "waiting" | "archived" | "cancelled" {
   if (wasExplicitlyAbandoned(upstream)) return "cancelled";
+  // An archived task is parked, not delivered (#0657): even a task archived
+  // after it went done cannot satisfy a dependency, because the human has
+  // explicitly set it aside. Surfaced as its own state so the dependent shows
+  // WHY it is blocked rather than a bare "Blocked by #x".
+  if (upstream.isArchived) return "archived";
   if (upstream.status !== "done") return "waiting";
   const commit =
     upstream.mergedCommit ?? (upstream.branch ? branchCommit(root, upstream.branch) : null);

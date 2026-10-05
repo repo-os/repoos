@@ -737,6 +737,13 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     /** #0507: which UI affordance asked, for the activity/progress record. */
     origin?: unknown;
   };
+  // #0657: archiving has side-effect guards (live run/review/preview/close-out)
+  // that a bare PATCH would skip. Force callers through the action routes.
+  if (body.archived !== undefined || body.archiveDetail !== undefined) {
+    return json(res, 400, {
+      error: `Use POST /api/tasks/${id}/archive or /unarchive to change a task's archived state`,
+    });
+  }
   if (body.section !== undefined && body.section !== null) {
     const section: unknown = body.section;
     if (!isSectionPatch(section)) {
@@ -1338,6 +1345,7 @@ export const getTaskOutput: RouteHandler = (ctx, _req, res, params) => {
 export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   const { config, index, runner, previews, reviews, syncTaskBranch, onServerStatusChange, logger } =
     ctx;
+  const { jobCoordinator } = ctx;
   const id = params.param1;
   const action = params.param2;
   let existing = index.getTask(id);
@@ -1370,6 +1378,13 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: `Only ready or paused tasks can be started (#${id} is ${existing.status})`,
       });
     }
+    // #0657: an archived task is parked, not runnable. Unarchive first so the
+    // board never shows a hidden task consuming an agent slot.
+    if (existing.isArchived) {
+      return json(res, 400, {
+        error: `Task #${id} is archived — unarchive it before starting work`,
+      });
+    }
     const body = (await readBody(req)) as {
       mode?: unknown;
       instruction?: unknown;
@@ -1381,7 +1396,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         .map((blocker) =>
           blocker.state === "cancelled"
             ? `Blocked by cancelled task #${blocker.id}; needs a human`
-            : `Blocked by #${blocker.id}`,
+            : blocker.state === "archived"
+              ? `Blocked by archived task #${blocker.id}; unarchive it to unblock`
+              : `Blocked by #${blocker.id}`,
         )
         .join("; ");
       return json(res, 409, { ok: false, error: reason, reason, blockedBy: blockers });
@@ -1923,6 +1940,67 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       task: index.getTask(updated.id),
       stopped: stopRes.stopped,
       reason: stopRes.reason,
+    });
+  }
+
+  // Archive / unarchive (#0657). Deliberately NOT a status transition: the
+  // status, branch and worktree are all preserved, so an archived-from-review
+  // task restores to the Review column unchanged. Archiving is refused while
+  // any background machinery is holding the task (a live agent, an in-flight
+  // review, a running preview, or a queued/running close-out), because hiding
+  // a half-stopped run from the watchdog and dispatch would orphan it with no
+  // one left to surface it. The user must stop work first.
+  if (action === "archive") {
+    if (existing.isArchived) {
+      return json(res, 400, { error: `Task #${id} is already archived` });
+    }
+    if (runner.isRunning(id)) {
+      return json(res, 409, {
+        error: `Task #${id} has a live agent run — stop work before archiving`,
+      });
+    }
+    if (reviews.isRunning(id)) {
+      return json(res, 409, {
+        error: `Task #${id} has an in-progress review — stop work before archiving`,
+      });
+    }
+    if (previews.get(id)) {
+      return json(res, 409, {
+        error: `Task #${id} has a running preview — stop it before archiving`,
+      });
+    }
+    if (jobCoordinator.getJob(id)) {
+      return json(res, 409, {
+        error: `Task #${id} is in the close-out pipeline — wait for it to finish or cancel it before archiving`,
+      });
+    }
+    const body = (await readBody(req)) as { detail?: unknown };
+    const detail = typeof body?.detail === "string" ? body.detail.trim() : "";
+    const updated = patchTaskFile(config, existing.absPath, {
+      archived: true,
+      archiveDetail: detail || null,
+    });
+    index.applyFileChange(updated.absPath);
+    return json(res, 200, { ok: true, task: index.getTask(updated.id) });
+  }
+
+  if (action === "unarchive") {
+    if (!existing.isArchived) {
+      return json(res, 400, { error: `Task #${id} is not archived` });
+    }
+    // The branch/worktree may have been removed while the task was shelved
+    // (a later GC, or a manual cleanup). Unarchive still restores the status;
+    // it just warns that resuming will need a fresh worktree. Never repairs
+    // the branch here — unarchive has no other side effects.
+    const worktreeMissing = !!existing.branch && !existing.git?.worktreeExists;
+    const updated = patchTaskFile(config, existing.absPath, { archived: false });
+    index.applyFileChange(updated.absPath);
+    return json(res, 200, {
+      ok: true,
+      task: index.getTask(updated.id),
+      warning: worktreeMissing
+        ? `Task #${id}'s worktree is gone; starting work will re-create it from the branch.`
+        : undefined,
     });
   }
 

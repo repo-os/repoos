@@ -277,6 +277,7 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
         questions: input.questions?.length ? input.questions : undefined,
         needsMerge: false,
         noSourceChange: false,
+        isArchived: false,
         priority: input.priority ?? "p2",
         // #0583: one canonical shape at both write and read time. Comma
         // string or list input, legacy "a + b" — parseTaskAreas handles all;

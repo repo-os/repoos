@@ -456,6 +456,31 @@ describe("TaskWatchdog", () => {
     fx.clean();
   });
 
+  it("never surfaces an archived active task, even when stale (#0657)", async () => {
+    const fx = makeFx(10_000);
+    // Mark the active task archived in-place: the same stale shape the test
+    // above surfaces, but parked.
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8").replace(
+        "branch: feat/x\n",
+        "branch: feat/x\nis_archived: true\n",
+      ),
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+    await watchdog.checkNow();
+
+    const task = parseTaskAt(fx);
+    expect(task.status).toBe("active");
+    expect(task.needsInput).toBe(false);
+    expect(readFileSync(fx.taskPath, "utf8")).not.toContain("watchdog:");
+    fx.clean();
+  });
+
   it("surfaces an active task whose agent never started → ready, with the reason recorded (acceptance 2)", async () => {
     const fx = makeFx(10_000); // went active 10s ago, past the 1s threshold
     const index = new LiveIndex(fx.config);

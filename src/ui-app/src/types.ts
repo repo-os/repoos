@@ -83,6 +83,11 @@ export interface Task {
   debugTldrAt?: string;
   /** True when the task branch has drifted from main. Layered on `review`. */
   needsMerge: boolean;
+  /** True when the task is shelved (#0657). Orthogonal to `status`. Optional on
+   *  this client type so partial test fixtures need not set it. */
+  isArchived?: boolean;
+  /** Optional free-text reason the task was archived; absent when none was given. */
+  archiveDetail?: string;
   priority: string;
   area: string;
   /** Parsed area list (#0583); `area` is the comma-joined display form. */
@@ -167,7 +172,7 @@ export interface Task {
 
 export interface DependencyBlocker {
   id: string;
-  state: "waiting" | "cancelled";
+  state: "waiting" | "archived" | "cancelled";
 }
 
 /** One persisted screenshot attached to a task (0123). */
@@ -290,6 +295,10 @@ export interface BoardTask {
   /** When `debugTldr` was generated (ISO-8601 UTC). */
   debugTldrAt?: string;
   needsMerge: boolean;
+  /** True when the task is shelved (#0657). Orthogonal to `status`. */
+  isArchived?: boolean;
+  /** Optional free-text reason the task was archived; absent when none was given. */
+  archiveDetail?: string;
   priority: string;
   area: string;
   /** The parsed area list (#0583) — one chip per entry in the UI. */

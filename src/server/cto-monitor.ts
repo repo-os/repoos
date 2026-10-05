@@ -167,6 +167,9 @@ export class CTOMonitor {
     const now = Date.now();
     const activeIds = new Set<string>();
     for (const task of this.index.getTasks("active")) {
+      // Archived tasks are parked (#0657): never nudge them, even if their
+      // underlying status is active.
+      if (task.isArchived) continue;
       activeIds.add(task.id);
       if (hasRecentWorktreeActivity(this.config.root, task.branch, AUTOMATIC_NUDGE_IDLE_MS, now)) {
         this.nudgedIdleTasks.delete(task.id);
@@ -226,7 +229,10 @@ export class CTOMonitor {
   }
 
   private buildDigest(): BuiltDigest | null {
-    const tasks = this.index.getTasks();
+    // Archived tasks are parked (#0657): they must not appear in the digest's
+    // stuck list or count as work in progress. The status counts below come
+    // from `index.counts()`, which already excludes them.
+    const tasks = this.index.getTasks().filter((task) => !task.isArchived);
     const lines: string[] = [];
 
     lines.push("## Task Status Summary");
