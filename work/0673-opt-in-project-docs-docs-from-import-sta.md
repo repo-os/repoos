@@ -136,3 +136,4 @@ error: script "test" exited with code 1
 - 2026-10-05T17:20:34Z · cli_override, model_override
 - 2026-10-05T17:20:35Z · model_override
 - 2026-10-05T17:57:07Z · status active→review
+- 2026-10-05T17:57:07Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
