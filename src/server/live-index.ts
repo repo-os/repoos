@@ -110,6 +110,8 @@ export type RepoEvent =
       note: string;
       at: string;
     }
+  /** Policy auto-approval recorded and close-out enqueued (#0686). */
+  | { type: "task.autoApproved"; id: string; rule: string; at: string }
   | {
       type: "preview";
       id: string;
