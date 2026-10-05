@@ -75,6 +75,15 @@ Pure logic, no transport. Everything else calls into this.
   which holds `{ hash, version }` and is deterministic across rebuilds) plus
   `readBuildStamp()`, the single reader for the build timestamp in the
   gitignored `dist/.build-stamp.json`.
+- `storage/` — the seam attachment bytes live behind (#0658). `types.ts` defines
+  the minimal `StorageProvider` (put/get/list/remove by `namespace`+`name`);
+  `local.ts` is the reference implementation storing under
+  `<baseDir>/.attachments/` — exactly today's gitignored directories, just named
+  behind the interface; `registry.ts` maps provider ids to factories (local is
+  the default and always-available fallback) so a later cloud/Neon backend
+  (#0660) plugs in without touching callers. Task-screenshot and input-attachment
+  storage/retrieval both go through it; `.attachments` trees stay gitignored and
+  are never committed.
 
 ### src/cli + src/commands — one-shot commands
 
