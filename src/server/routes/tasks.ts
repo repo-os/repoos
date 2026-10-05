@@ -1994,7 +1994,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: `Task #${id} has a running preview — stop it before archiving`,
       });
     }
-    if (jobCoordinator.getJob(id)) {
+    // Job files persist after close-out ends, so only a job that has not reached
+    // a terminal phase counts: a finished (`done`) or `failed` job leaves the
+    // task free to be parked.
+    const closeOutJob = jobCoordinator.getJob(id);
+    if (closeOutJob && closeOutJob.phase !== "done" && closeOutJob.phase !== "failed") {
       return json(res, 409, {
         error: `Task #${id} is in the close-out pipeline — wait for it to finish or cancel it before archiving`,
       });
