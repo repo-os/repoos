@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-10-05T23:03:43Z"
 review_passes: 2
 id: "0687"
@@ -68,4 +69,5 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T22:46:40Z · status active→review
 - 2026-10-05T22:48:02Z · status review→active
 - 2026-10-05T23:02:52Z · status active→review
+
 
