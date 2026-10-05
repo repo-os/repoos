@@ -2,14 +2,14 @@
 id: "0657"
 title: "Archive task: park a task without changing its status, keep its worktree, and restore it later"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
 created_by: ""
 branch: feat/archive-task-park-a-task-without-changin
 created_at: "2026-10-05T04:14:23Z"
-updated_at: "2026-10-05T06:17:56Z"
+updated_at: "2026-10-05T06:34:27Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -82,3 +82,4 @@ Motivation: #0652 sat in review with needs_input 'review-rounds-exhausted' and n
 - 2026-10-05T06:16:39Z · status active→review
 - 2026-10-05T06:16:52Z · note: shots: failed — capture of Archive task confirm modal (optional reason field) on "default" failed: click: Error: strict mode violation: locator('.task-card') resolved to 609 elements:
 - 2026-10-05T06:17:56Z · status review→active
+- 2026-10-05T06:34:27Z · status active→review
