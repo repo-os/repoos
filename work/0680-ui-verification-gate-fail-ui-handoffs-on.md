@@ -2,7 +2,7 @@
 id: "0680"
 title: "UI verification gate: fail UI handoffs on browser console errors; reviewer sees the screenshots"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:58:42Z"
-updated_at: "2026-10-05T17:32:22Z"
+updated_at: "2026-10-05T23:35:16Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:16:55Z · story
 - 2026-10-05T17:16:56Z · body: section Story context
 - 2026-10-05T17:32:22Z · body: section Docs follow-up
+- 2026-10-05T23:35:16Z · status inbox→ready
