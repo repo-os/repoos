@@ -170,8 +170,10 @@ import {
   type HandoffOrigin,
 } from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
+import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
 import { ReviewManager } from "./review.js";
+import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
 import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
 import { DebugTldrManager } from "./debug-tldr.js";
 import { TestRunManager } from "./test-run.js";
@@ -1259,6 +1261,35 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   };
   const unsubscribe = index.on(emitEvent);
 
+  // Re-read `repoos.toml` when it changes on disk (#0681). A hand edit, or a
+  // close-out merging a branch that added a `[[preview.targets]]`/services
+  // block to the primary branch, used to leave the running server on the old
+  // config until an unrelated Settings PATCH forced a reload. The watcher
+  // adopts the fresh config in place — `PreviewManager` captured the same
+  // object, so its target resolution updates without a restart — and tells the
+  // UI to refetch. Control-plane only: preview children and ephemeral test
+  // servers do not own config reconciliation.
+  const configWatcher = isControlPlane
+    ? new ConfigWatcher({
+        root: config.root,
+        holder: repoos,
+        onChange: (fresh, prev) => {
+          // workDir/cacheDir/taskExtensions move where the index looks; only
+          // refresh when one actually changed, so an unrelated edit is cheap.
+          if (
+            fresh.workDir !== prev.workDir ||
+            fresh.cacheDir !== prev.cacheDir ||
+            fresh.taskExtensions !== prev.taskExtensions
+          ) {
+            index.refreshAll();
+          }
+          emitEvent({ type: "config.changed", at: new Date().toISOString() });
+        },
+        log: (msg) => logger.system("info", msg, { pid: process.pid, source: "config-watch" }),
+      })
+    : null;
+  configWatcher?.start();
+
   // Sidebar git-state indicator (#0584): one server-owned computation for the
   // repo root checkout, pushed over SSE only when the state actually differs.
   // Two trigger classes feed it — the work watcher (writes under `work/`, plus
@@ -1852,6 +1883,28 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // adopts them. Deferred until `indexReady` — it reads `index.getTasks()`.
   const runReviewRecovery = (): void => reviews.recoverInterruptedReviews(index.getTasks());
   void indexReady.then(runReviewRecovery, runReviewRecovery).catch(() => {});
+
+  reviews.bindCleanReviewHandler((task, report) => {
+    void tryAutoApproveAfterCleanReview(
+      {
+        config,
+        index,
+        jobCoordinator,
+        reload,
+        emitEvent,
+        triggerJobProcessing,
+        runner,
+        previews,
+        reviews,
+      },
+      task,
+      report,
+    ).catch((err) => {
+      console.error(
+        `[repoos] approval policy handler failed for #${task.id}: ${(err as Error).message}`,
+      );
+    });
+  });
 
   // Skill suggestions (#0429): only after a task genuinely reaches `done` does
   // its session get analysed. A high-bar reusable procedure is persisted
@@ -3409,6 +3462,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         } catch {
           /* ignore */
         }
+        configWatcher?.stop();
         repoStatusNotifier.stop();
         offGitMutation();
         try {
@@ -3483,6 +3537,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           repoStatusNotifier.stop();
           offGitMutation();
           watcher.stop();
+          configWatcher?.stop();
           supervisor?.stop();
           watchdog?.stop();
           reload?.stop();

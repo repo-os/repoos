@@ -27,7 +27,9 @@ import type {
   DistributionKind,
   ModelProviderKeysConfig,
   PreviewConfig,
+  PreviewServiceConfig,
   PreviewTargetConfig,
+  ApprovalConfig,
   RepoOSConfig,
   Status,
   Assignee,
@@ -755,9 +757,41 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
       if (targetReadyPath) target.readyPath = targetReadyPath;
       const targetReadyTimeoutMs = normalizeReadyTimeoutMs(r.ready_timeout_ms ?? r.readyTimeoutMs);
       if (targetReadyTimeoutMs) target.readyTimeoutMs = targetReadyTimeoutMs;
+      // Companion processes this target boots alongside its main command
+      // (#0681): a flat string array of `[[preview.services]]` names, resolved
+      // at start time so an unknown name is a clear error, never a silent skip.
+      const targetServices = normalizeStringList(r.services);
+      if (targetServices.length) target.services = targetServices;
       targets.push(target);
     }
     if (targets.length) preview.targets = targets;
+  }
+
+  // Top-level `[[preview.services]]` (#0681): companion processes a target can
+  // boot on their own ports (e.g. an API behind a web dev server). A service
+  // with no command is dropped, like a target.
+  if (Array.isArray(parsed["preview.services"])) {
+    const services: PreviewServiceConfig[] = [];
+    const usedNames = new Set<string>();
+    for (const raw of parsed["preview.services"]) {
+      if (typeof raw !== "object" || raw === null) continue;
+      const r = raw as Record<string, unknown>;
+      const command = typeof r.command === "string" ? r.command.trim() : "";
+      if (!command) continue;
+      const base = typeof r.name === "string" && r.name.trim() ? r.name.trim() : "service";
+      let name = base;
+      for (let n = 2; usedNames.has(name); n++) name = `${base} (${n})`;
+      usedNames.add(name);
+      const service: PreviewServiceConfig = { name, command };
+      const serviceCwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
+      if (serviceCwd) service.cwd = serviceCwd;
+      const serviceReadyPath = normalizeReadyPath(r.ready_path ?? r.readyPath);
+      if (serviceReadyPath) service.readyPath = serviceReadyPath;
+      const serviceReadyTimeoutMs = normalizeReadyTimeoutMs(r.ready_timeout_ms ?? r.readyTimeoutMs);
+      if (serviceReadyTimeoutMs) service.readyTimeoutMs = serviceReadyTimeoutMs;
+      services.push(service);
+    }
+    if (services.length) preview.services = services;
   }
 
   const hasCustom = Boolean(preview.command) || Boolean(preview.targets?.length);
@@ -1489,6 +1523,25 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         );
       }
     }
+
+    const approvalEnabled = parsed["approval.enabled"];
+    const approvalAreas = normalizeStringList(parsed["approval.autoApprove.areas"]);
+    const approvalTypes = normalizeStringList(parsed["approval.autoApprove.types"]);
+    const approvalUiAreas = normalizeStringList(parsed["approval.autoApprove.uiAreas"]);
+    if (
+      approvalEnabled !== undefined ||
+      approvalAreas.length ||
+      approvalTypes.length ||
+      approvalUiAreas.length
+    ) {
+      const approval: ApprovalConfig = {};
+      if (typeof approvalEnabled === "boolean") approval.enabled = approvalEnabled;
+      approval.autoApprove = {};
+      if (approvalAreas.length) approval.autoApprove.areas = approvalAreas;
+      if (approvalTypes.length) approval.autoApprove.types = approvalTypes;
+      if (approvalUiAreas.length) approval.autoApprove.uiAreas = approvalUiAreas;
+      cfg.approval = approval;
+    }
   }
 
   // Model-provider API keys (0327): env-only, same rule as the [auth] secrets
@@ -1512,6 +1565,26 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
 
   cfg.builtInAgents = loadBuiltInAgentsConfig(root, cfg.cacheDir);
   return cfg;
+}
+
+/**
+ * Adopt a freshly loaded config in place (#0681). The holder object is mutated,
+ * not replaced, so every manager that captured a reference to `repoos.config`
+ * (notably `PreviewManager`) observes the change without re-wiring.
+ *
+ * `Object.assign` alone cannot REMOVE a key, and BOTH vocabulary sources can
+ * vanish: clearing the declared areas list re-parses to `undefined`, and
+ * deleting `[preview]` entirely omits `cfg.preview`. Reconcile those removable
+ * keys explicitly, or the old values survive every reload until a restart — the
+ * exact stale-preview failure #0681 reports.
+ *
+ * Shared by the Settings config routes (which call it after a PATCH) and the
+ * server's on-disk `repoos.toml` watcher, so both paths reconcile identically.
+ */
+export function applyReloadedConfig(holder: { config: RepoOSConfig }, fresh: RepoOSConfig): void {
+  Object.assign(holder.config, fresh);
+  holder.config.areas = fresh.areas;
+  holder.config.preview = fresh.preview;
 }
 
 /** Metadata describing a single config field for the Settings UI. */
@@ -1818,6 +1891,39 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "(`[closeOut] timeoutMs`).",
     },
     {
+      key: "approval.enabled",
+      label: "Auto-approve clean reviews",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description:
+        "When enabled, tasks in review that match configured areas or types, pass the handoff gate, " +
+        "and receive a clean reviewer verdict can Move to done automatically. Every auto-approval is " +
+        "recorded in the task activity log. UI areas stay human unless handoff screenshots succeeded. " +
+        "Tag a task `human-only` to opt out. You must set at least one area or type list below — both empty never matches.",
+    },
+    {
+      key: "approval.autoApprove.areas",
+      label: "Auto-approve areas",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Task area values eligible for policy auto-approval (any match). Leave empty to match by type only.",
+    },
+    {
+      key: "approval.autoApprove.types",
+      label: "Auto-approve types",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Task types eligible for policy auto-approval (any match). Leave empty to match by area only.",
+    },
+    {
       key: "maxConcurrentAgents",
       label: "Maximum concurrent agent processes",
       type: "select",
@@ -2098,6 +2204,14 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "preview.targets.cwd",
   "preview.targets.readyPath",
   "preview.targets.readyTimeoutMs",
+  "preview.targets.services",
+  // Companion processes for a full-stack preview (#0681) — a sibling
+  // array-of-tables to `[[preview.targets]]`.
+  "preview.services.name",
+  "preview.services.command",
+  "preview.services.cwd",
+  "preview.services.readyPath",
+  "preview.services.readyTimeoutMs",
   // Preview-only overrides (#0464): a `[preview.<base path>]` table applied
   // only by the preview/UI-test preview runtime. auth.enabled is the headline
   // case; any supported base key can be overridden the same way.
@@ -2184,6 +2298,10 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   // Close-out (Move to done) pipeline budget (#0573)
   "closeOut.timeoutMs",
   "attention.spendAlertUsd",
+  "approval.enabled",
+  "approval.autoApprove.areas",
+  "approval.autoApprove.types",
+  "approval.autoApprove.uiAreas",
   // Remote validation
   "remoteValidation.enabled",
   "remoteValidation.provider",

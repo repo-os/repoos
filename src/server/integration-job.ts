@@ -100,6 +100,11 @@ export interface IntegrationJob {
   cancelled?: boolean;
 }
 
+/** Close-out jobs that still occupy the FIFO queue (excludes terminal done/failed). */
+export function pendingCloseOutJobs(jobs: IntegrationJob[]): IntegrationJob[] {
+  return jobs.filter((j) => j.phase !== "done" && j.phase !== "failed");
+}
+
 export interface JobCoordinator {
   /**
    * Enqueue a close-out job for the task. Returns the job if enqueued/already queued,
@@ -276,9 +281,8 @@ export function createJobCoordinator(root: string): JobCoordinator {
     },
 
     peekNext(): IntegrationJob | null {
-      const all = this.allJobs();
-      const notDone = all.filter((j) => j.phase !== "done" && j.phase !== "failed");
-      return notDone.length > 0 ? notDone[0] : null;
+      const pending = pendingCloseOutJobs(this.allJobs());
+      return pending.length > 0 ? pending[0] : null;
     },
 
     updateJob(taskId: string, update: Partial<IntegrationJob>): IntegrationJob | null {

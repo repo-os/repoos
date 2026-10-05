@@ -663,7 +663,7 @@ async function runHandoffFinalization(
   } catch {
     /* keep the caller's copy */
   }
-  const { underspecified, detail } = assessTaskUnderspecified(canonicalBody);
+  const { underspecified, detail } = assessTaskUnderspecified(canonicalBody, { area: task.area });
   if (underspecified) {
     try {
       patchTaskFile(config, task.absPath, {

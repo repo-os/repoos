@@ -129,6 +129,25 @@ describe("assessTaskUnderspecified", () => {
     expect(result.detail).toContain("placeholder markers");
   });
 
+  it("does not require Desired UX for non-UI areas", () => {
+    const body = [
+      "## Problem",
+      "",
+      SUBSTANTIVE.repeat(3),
+      "",
+      "## Acceptance criteria",
+      "",
+      "- [ ] Automated checks pass",
+      "",
+      "## Notes for AI",
+      "",
+      SUBSTANTIVE.repeat(2),
+    ].join("\n");
+    const result = assessTaskUnderspecified(body, { area: "server" });
+    expect(result.underspecified).toBe(false);
+    expect(result.detail).not.toContain("Desired UX");
+  });
+
   it("does not flag prose that merely mentions TODO or TBD", () => {
     const body = [
       "## Problem",

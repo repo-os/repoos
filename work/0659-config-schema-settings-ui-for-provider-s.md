@@ -1,20 +1,23 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-05T23:18:11.353Z: the worktree changed while the gate was running (appeared: repoos.toml) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+updated_at: "2026-10-05T23:14:33Z"
+review_passes: 3
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
-status: active
+status: review
 priority: p1
-area: ui
+area: [ui, core]
 story: Cloud attachment storage
 depends_on: ["0658"]
 assigned_to: ai
 created_by: ""
 branch: feat/config-schema-settings-ui-for-provider-s
+model_override: opencode-go/deepseek-v4.1-flash
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T22:01:08Z"
 review_rounds: 2
-review_passes: 2
 handoff_signal_retry_count: 2
 ---
 ## Original prompt
@@ -59,6 +62,38 @@ The deeper problem is honesty. `createStorageProvider` deliberately falls back t
 - This is a UI-visible change: declare `## Shots` showing the General tab with local selected and with neon selected/unavailable explained, and rebuild the UI before handoff (`bun run build:ui`).
 - Area note: the metadata says `ui`, but the diff touches `core` and `server` too (config + wiring); set the area to `[ui, core]` if that is more accurate when you implement.
 - Out of scope: the Neon provider itself, credential storage/UI, migration, upload-state/retry, and any change to where local files live.
+
+## Shots
+```json
+[
+  {
+    "label": "Attachment storage — local filesystem selected (default)",
+    "target": "default",
+    "route": "/settings",
+    "highlight": "[id=\"setting-storage.provider\"]"
+  },
+  {
+    "label": "Attachment storage — Neon selected, explained as unavailable with local still in effect",
+    "target": "default",
+    "route": "/settings",
+    "highlight": "[id=\"setting-storage.provider\"]",
+    "steps": [
+      {
+        "click": "[id=\"setting-storage.provider\"] [role=\"combobox\"]"
+      },
+      {
+        "waitFor": "[role=\"option\"]:has-text(\"Neon Object Storage\")"
+      },
+      {
+        "click": "[role=\"option\"]:has-text(\"Neon Object Storage\")"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  }
+]
+```
 
 ## Activity
 
@@ -1146,3 +1181,184 @@ src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no 
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-05T22:01:08Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T22:01:08Z · status review→active
+- 2026-10-05T22:01:38Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + oxfmt@0.62.0
++ oxlint@1.77.0
++ pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [1011.00ms]
+$ git config core.hooksPath .githooks 2>/dev/null || true
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no exported member 'StorageStatus'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-05T22:07:08Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-05T22:07:09Z · status review→active
+- 2026-10-05T22:07:41Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + oxfmt@0.62.0
++ oxlint@1.77.0
++ pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [1001.00ms]
+$ git config core.hooksPath .githooks 2>/dev/null || true
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no exported member 'StorageStatus'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-05T22:13:08Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-05T22:13:09Z · status review→active
+- 2026-10-05T22:13:42Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + oxfmt@0.62.0
++ oxlint@1.77.0
++ pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [519.00ms]
+$ git config core.hooksPath .githooks 2>/dev/null || true
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no exported member 'StorageStatus'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-05T22:19:09Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-05T22:19:09Z · status review→active
+- 2026-10-05T22:19:39Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + mermaid@11.17.2
++ oxfmt@0.62.0
++ oxlint@1.77.0
++ pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [530.00ms]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no exported member 'StorageStatus'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-05T22:25:09Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-05T22:25:09Z · status review→active
+- 2026-10-05T22:25:42Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + mermaid@11.17.2
++ oxfmt@0.62.0
++ oxlint@1.77.0
++ pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [966.00ms]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no exported member 'StorageStatus'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-05T22:31:09Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-05T22:31:10Z · status review→active
+- 2026-10-05T22:31:41Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + mermaid@11.17.2
++ oxfmt@0.62.0
++ oxlint@1.77.0
++ pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [550.00ms]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no exported member 'StorageStatus'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-05T22:37:09Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-05T22:37:09Z · status review→active
+- 2026-10-05T22:37:38Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + oxfmt@0.62.0
++ oxlint@1.77.0
++ pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [550.00ms]
+$ git config core.hooksPath .githooks 2>/dev/null || true
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no exported member 'StorageStatus'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-05T22:43:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-05T22:43:29Z · status active→review
+- 2026-10-05T22:43:29Z · status review→active
+- 2026-10-05T22:43:57Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + mermaid@11.17.2
++ oxfmt@0.62.0
++ oxlint@1.77.0
++ pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [541.00ms]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no exported member 'StorageStatus'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-05T22:46:35Z · model_override
+- 2026-10-05T23:06:14Z · body: section Shots
+- 2026-10-05T23:13:38Z · area
+- 2026-10-05T23:13:47Z · status active→review
+
+
