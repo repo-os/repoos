@@ -12,7 +12,7 @@ branch: feat/small-papercuts-from-a-long-agent-driven
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:52Z"
-updated_at: "2026-10-05T21:20:19Z"
+updated_at: "2026-10-05T21:57:23Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T21:20:17Z · status inbox→ready
 - 2026-10-05T21:20:19Z · cli_override, model_override
 - 2026-10-05T21:20:19Z · status ready→active, needs_input, branch
+- 2026-10-05T21:57:23Z · note: Papercuts: (6) Agents Test timeout/diagnostic truncation already fixed on main (#0677, model-test.ts). (8) idempotent /start kept as-is.
