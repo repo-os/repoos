@@ -103,6 +103,22 @@ const vitest = (args, env) => {
   return r.status ?? 1;
 };
 
+// Failed-first pre-flight (#0655): `--failed-first <file…>` restricts a SINGLE
+// pass to the named test files and exits. `repoos check` uses this to re-run
+// previously failing files first and stop early when they still fail. It is a
+// targeted re-run, not the gate, so the latency-sensitive ISOLATED pass is
+// deliberately skipped — running boot-timing under these filters would make a
+// fast pre-flight slow and could false-fail it on strict timing.
+const failedFirstIdx = passthrough.indexOf("--failed-first");
+if (failedFirstIdx !== -1) {
+  const files = passthrough.slice(failedFirstIdx + 1).filter((a) => !a.startsWith("--"));
+  if (files.length === 0) {
+    console.error("[run-tests] --failed-first needs at least one test file filter");
+    process.exit(1);
+  }
+  process.exit(vitest(files));
+}
+
 // Pass 1 — the bulk of the suite at the configured pool size. `--exclude` takes
 // a glob relative to the vitest root; `**/` keeps it root-agnostic.
 // `--passWithNoTests` only when scoped: a full run that finds nothing is a real

@@ -14,9 +14,11 @@ import { join } from "node:path";
 import {
   CheckStore,
   envToRunContext,
+  getCheckStore,
   localMachineName,
   resetCheckStore,
 } from "../../core/check-store.js";
+import { previousFailedTestsForRun } from "../../commands/check.js";
 import { mainCheckoutRoot } from "../../core/git.js";
 
 const dirs: string[] = [];
@@ -115,6 +117,81 @@ describe("check-run store", () => {
     const migrated = new CheckStore(old);
     migrated.record(row({ failedTests: ["b.test.ts > z"] }));
     expect(migrated.list().map((r) => r.failedTests)).toEqual([["b.test.ts > z"], []]);
+  });
+
+  it("round-trips the isolation note, and reads rows written before it existed (#0655)", () => {
+    const { s } = store();
+    s.record(
+      row({
+        outcome: "fail",
+        failedStep: "tests",
+        isolationNote: "src/a.test.ts: passed 3/3 alone",
+      }),
+    );
+    expect(s.list()[0]!.isolationNote).toBe("src/a.test.ts: passed 3/3 alone");
+    // No note → null, not undefined, so the UI can render it directly.
+    const { s: s2 } = store();
+    s2.record(row());
+    expect(s2.list()[0]!.isolationNote).toBeNull();
+  });
+
+  it("derives failed-first files from the worktree's most recent failing run (#0655)", () => {
+    const { root } = store();
+    getCheckStore(root).record(
+      row({
+        taskId: "0655",
+        worktree: "/wt/0655",
+        outcome: "fail",
+        failedStep: "tests",
+        failedTests: ["a.test.ts > x > y"],
+      }),
+    );
+    const base = {
+      root,
+      cacheDir: ".repoos",
+      worktree: "/wt/0655",
+      taskId: "0655" as string | null,
+    };
+    expect(previousFailedTestsForRun({ ...base, phase: "pre-review" })).toEqual([
+      "a.test.ts > x > y",
+    ]);
+    // A bare CLI self-check shares the worktree but has no task id — it must
+    // still find the same failure.
+    expect(previousFailedTestsForRun({ ...base, taskId: null, phase: "cli" })).toEqual([
+      "a.test.ts > x > y",
+    ]);
+    // A newer green run clears the slate.
+    getCheckStore(root).record(
+      row({
+        taskId: "0655",
+        worktree: "/wt/0655",
+        outcome: "pass",
+        startedAt: "2999-01-01T00:00:00Z",
+      }),
+    );
+    expect(previousFailedTestsForRun({ ...base, phase: "pre-review" })).toEqual([]);
+    // Close-out and release never reorder, even with a newer failure.
+    getCheckStore(root).record(
+      row({
+        taskId: "0655",
+        worktree: "/wt/0655",
+        outcome: "fail",
+        failedStep: "tests",
+        failedTests: ["b.test.ts > x > y"],
+        startedAt: "2999-01-02T00:00:00Z",
+      }),
+    );
+    expect(previousFailedTestsForRun({ ...base, phase: "close-out" })).toEqual([]);
+    expect(previousFailedTestsForRun({ ...base, phase: "release" })).toEqual([]);
+    // A different worktree/task never inherits this one's failures.
+    expect(
+      previousFailedTestsForRun({
+        ...base,
+        worktree: "/wt/other",
+        taskId: "0001",
+        phase: "pre-review",
+      }),
+    ).toEqual([]);
   });
 
   it("filters by task, machine and remote", () => {
