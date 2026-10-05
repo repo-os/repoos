@@ -1092,7 +1092,7 @@ export interface ModelSourcesResponse {
   at: string;
 }
 
-export type ModelTestStatus = "passed" | "failed" | "timed_out" | "not_testable";
+export type ModelTestStatus = "passed" | "failed" | "timed_out" | "cold_start" | "not_testable";
 
 export interface ModelTestResult {
   cli: string;
