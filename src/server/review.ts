@@ -44,6 +44,7 @@ import {
   parseReviewVerdict as parseVerdictLabel,
   parseReviewRelevance,
 } from "../core/review-verdict.js";
+import { extractReviewReportSections } from "../core/review-report-sections.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
   deterministicSessionId,
@@ -340,54 +341,6 @@ function parseRelevance(
   markdown: string,
 ): "still relevant" | "no longer needed" | "needs rescoping" | null {
   return parseReviewRelevance(markdown);
-}
-
-/** Extract Relevance, Bugs, Edge cases, and Suggestions sections from the report markdown. */
-function extractReportSections(markdown: string): {
-  relevance?: string;
-  bugs?: string;
-  edgeCases?: string;
-  suggestions?: string;
-} {
-  const sections: Record<string, string> = {};
-  const lines = markdown.split("\n");
-  let currentSection: string | null = null;
-  const sectionLines: Record<string, string[]> = {};
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed === "## Relevance") {
-      currentSection = "relevance";
-      sectionLines.relevance = [];
-    } else if (trimmed === "## Bugs") {
-      currentSection = "bugs";
-      sectionLines.bugs = [];
-    } else if (trimmed === "## Edge cases") {
-      currentSection = "edgeCases";
-      sectionLines.edgeCases = [];
-    } else if (trimmed === "## Suggestions") {
-      currentSection = "suggestions";
-      sectionLines.suggestions = [];
-    } else if (trimmed.startsWith("## ") && currentSection) {
-      currentSection = null;
-    } else if (currentSection && sectionLines[currentSection]) {
-      sectionLines[currentSection].push(line);
-    }
-  }
-
-  for (const [key, lines] of Object.entries(sectionLines)) {
-    const content = lines.join("\n").trim();
-    if (content && content !== "None found") {
-      sections[key] = content;
-    }
-  }
-
-  return {
-    relevance: sections.relevance,
-    bugs: sections.bugs,
-    edgeCases: sections.edgeCases,
-    suggestions: sections.suggestions,
-  };
 }
 
 /**
@@ -1482,7 +1435,7 @@ export class ReviewManager {
     }
 
     // Extract the report sections
-    const sections = extractReportSections(report.markdown);
+    const sections = extractReviewReportSections(report.markdown);
     const messageParts: string[] = [];
     messageParts.push(
       `The automated review found the following (review round ${reviewRounds + 1}):`,

@@ -136,13 +136,21 @@ describe("evaluateApprovalPolicy (#0686)", () => {
     expect(r.reason).toBe("gate-not-green");
   });
 
-  it("rejects merge conflicts", () => {
+  it("rejects merge preflight failure (not only explicit conflict files)", () => {
     const r = evaluateApprovalPolicy(enabledApi, {
       task: task({}),
       reviewMarkdown: CLEAN_REPORT,
-      mergeConflicts: true,
+      mergePreflightFailed: true,
     });
     expect(r.reason).toBe("branch-conflict");
+  });
+
+  it("rejects when enabled with empty area and type lists", () => {
+    const r = evaluateApprovalPolicy(
+      { approval: { enabled: true, autoApprove: { areas: [], types: [] } } },
+      { task: task({ area: "api" }), reviewMarkdown: CLEAN_REPORT },
+    );
+    expect(r.reason).toBe("no-rule-match");
   });
 
   it("rejects handoff drift", () => {

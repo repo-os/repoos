@@ -28,8 +28,8 @@ export interface ApprovalPolicyInput {
   task: Task;
   /** Stored reviewer report markdown. */
   reviewMarkdown: string;
-  /** True when `preflightMerge` reported unresolved conflicts. */
-  mergeConflicts?: boolean;
+  /** True when `preflightMerge` failed for any reason (conflicts or otherwise). */
+  mergePreflightFailed?: boolean;
   /** True when the branch ref no longer exists locally. */
   branchMissing?: boolean;
   /** True when handoff snapshot / worktree integrity check failed. */
@@ -106,8 +106,14 @@ export function evaluateApprovalPolicy(
     return { eligible: false, reason: "needs-input" };
   }
 
-  const areaRule = matchesAreaRule(task, policy.autoApprove?.areas);
-  const typeRule = matchesTypeRule(task, policy.autoApprove?.types);
+  const configuredAreas = policy.autoApprove?.areas ?? [];
+  const configuredTypes = policy.autoApprove?.types ?? [];
+  if (configuredAreas.length === 0 && configuredTypes.length === 0) {
+    return { eligible: false, reason: "no-rule-match" };
+  }
+
+  const areaRule = matchesAreaRule(task, configuredAreas);
+  const typeRule = matchesTypeRule(task, configuredTypes);
   if (!areaRule && !typeRule) {
     return { eligible: false, reason: "no-rule-match" };
   }
@@ -128,7 +134,7 @@ export function evaluateApprovalPolicy(
   if (input.branchMissing) {
     return { eligible: false, reason: "branch-missing" };
   }
-  if (input.mergeConflicts) {
+  if (input.mergePreflightFailed) {
     return { eligible: false, reason: "branch-conflict" };
   }
   if (input.handoffDrift) {

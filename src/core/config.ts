@@ -1822,7 +1822,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "When enabled, tasks in review that match configured areas or types, pass the handoff gate, " +
         "and receive a clean reviewer verdict can Move to done automatically. Every auto-approval is " +
         "recorded in the task activity log. UI areas stay human unless handoff screenshots succeeded. " +
-        "Tag a task `human-only` to opt out.",
+        "Tag a task `human-only` to opt out. You must set at least one area or type list below — both empty never matches.",
     },
     {
       key: "approval.autoApprove.areas",
