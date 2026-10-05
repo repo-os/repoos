@@ -9,7 +9,12 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "../../core/config";
-import { buildCapturePlan, parseShotPlan, validateDeclaredShotTargets } from "../../core/shot-plan";
+import {
+  buildCapturePlan,
+  parseShotPlan,
+  resolveDeclaredTarget,
+  validateDeclaredShotTargets,
+} from "../../core/shot-plan";
 import {
   buildCliShotPlan,
   parseShotArgs,
@@ -45,6 +50,12 @@ function bodyWithShots(json: string): string {
     "## Activity",
   ].join("\n");
 }
+
+describe("resolveDeclaredTarget default alias", () => {
+  it("maps default to the sole path-resolved target at capture time", () => {
+    expect(resolveDeclaredTarget("default", ["web"])).toEqual({ target: "web" });
+  });
+});
 
 describe("validateDeclaredShotTargets", () => {
   it("accepts default when it is the only configured target name", () => {

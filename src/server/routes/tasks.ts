@@ -2759,10 +2759,12 @@ export const getCloseOutOutcomes: RouteHandler = (ctx, _req, res) => {
 };
 
 export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
-  const pendingJobs = pendingCloseOutJobs(ctx.jobCoordinator.allJobs());
+  const allJobs = ctx.jobCoordinator.allJobs();
+  const pendingJobs = pendingCloseOutJobs(allJobs);
+  const pendingIndex = new Map(pendingJobs.map((job, idx) => [job.taskId, idx]));
   return json(res, 200, {
     ok: true,
-    jobs: pendingJobs.map((job, idx) => ({
+    jobs: allJobs.map((job) => ({
       taskId: job.taskId,
       phase: job.phase,
       enqueuedAt: job.enqueuedAt,
@@ -2772,7 +2774,7 @@ export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
       failedPhase: job.failedPhase,
       failedAt: job.failedAt,
       debugTldr: job.debugTldr,
-      queuePosition: idx,
+      queuePosition: pendingIndex.get(job.taskId) ?? -1,
     })),
     queueLength: pendingJobs.length,
   });

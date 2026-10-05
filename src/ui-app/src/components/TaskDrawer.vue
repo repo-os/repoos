@@ -2226,9 +2226,10 @@ const reviewHtml = computed(() =>
  */
 const reviewSuperseded = computed(() => {
   const task = ui.active;
+  const report = review.value?.report;
   return reviewSupersededByFixRound(
-    task ?? { status: "inbox" },
-    Boolean(review.value?.report),
+    task ?? { status: "inbox", body: "" },
+    report?.at,
     Boolean(task && repo.isRunning(task.id)),
   );
 });
