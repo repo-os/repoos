@@ -63,7 +63,12 @@ import {
 import { formatFixCommand } from "../core/check-format.js";
 import { writeCheckRun } from "../core/check-results-store.js";
 import { extractFailedTests } from "../core/check-failure-summary.js";
-import { envToRunContext, getCheckStore, localMachineName } from "../core/check-store.js";
+import {
+  envToRunContext,
+  getCheckStore,
+  localMachineName,
+  type CheckRunPhase,
+} from "../core/check-store.js";
 import { mainCheckoutRoot } from "../core/git.js";
 import { Logger } from "../core/logger.js";
 import { createRemoteValidator } from "../server/remote-validation.js";
@@ -1062,6 +1067,14 @@ interface StepContext {
   changedRef?: string;
   /** Fix command to run before the check, when `--fix` is active. */
   fixCommand?: string;
+  /**
+   * Failing test names (`file > suite > test`) from the previous run for this
+   * task/worktree (#0655). When present, the tests step re-runs those files
+   * first and stops early if they still fail. Ordering only — never a skip.
+   */
+  previousFailedTests?: string[];
+  /** Re-runs per failing file for the isolation label (#0655). 0 disables. */
+  isolationRuns?: number;
 }
 
 /** What a built-in `kind` handler returns. */
@@ -1071,6 +1084,8 @@ interface BuiltinOutcome {
   command?: string;
   detail?: string;
   output?: string;
+  /** Informational isolation re-run label (#0655); never affects `status`. */
+  isolationNote?: string;
 }
 
 function skipped(detail: string): BuiltinOutcome {
@@ -1402,6 +1417,102 @@ async function stepTaskAssets(ctx: StepContext): Promise<BuiltinOutcome> {
   };
 }
 
+/** Hard cap on failing files that get an isolation re-run (#0655). Above it,
+ *  the failure is broad enough that per-file triage says nothing useful. */
+export const MAX_ISOLATION_TRIAGE_FILES = 3;
+
+/** Quote one shell argument only when it needs it. */
+function shellQuoteArg(value: string): string {
+  return /^[\w@%+=:,./-]+$/.test(value) ? value : `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+/** The test file from a `file > suite > test` failed-test name. */
+export function failedTestFile(name: string): string {
+  return name.split(" > ")[0]?.trim() ?? "";
+}
+
+/**
+ * Unique, still-present test files from recorded failure names, in order.
+ * A filter naming a deleted file makes vitest exit 1 on "no test files found",
+ * which would be a false failed-first failure — so drop paths that don't exist.
+ */
+export function failedTestFiles(names: string[], repoRoot: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const name of names) {
+    const file = failedTestFile(name);
+    if (!file || seen.has(file)) continue;
+    seen.add(file);
+    if (!existsSync(join(repoRoot, file))) continue;
+    out.push(file);
+  }
+  return out;
+}
+
+/**
+ * Args appended after `--` that scope a project's test script to `files`, or
+ * null when the script can't be scoped that way (#0655). RepoOS's own two-pass
+ * runner gets its dedicated `--failed-first` single-pass mode (so the
+ * latency-sensitive isolated pass is skipped); a plain vitest/jest script
+ * accepts positional file filters.
+ */
+export function testFileFilterArgs(
+  testScript: string | undefined,
+  files: string[],
+): string[] | null {
+  if (files.length === 0) return null;
+  const script = testScript ?? "";
+  if (script.includes("run-tests.mjs")) return ["--failed-first", ...files];
+  if (/\bvitest\b|\bjest\b/.test(script)) return [...files];
+  return null;
+}
+
+/**
+ * Re-run each failing test file alone `isolationRuns` times and return the
+ * informational label (#0655). Purely advisory: the caller still reports the
+ * step failed. Returns undefined when triage is disabled, unscopeable, or the
+ * failure spans more than {@link MAX_ISOLATION_TRIAGE_FILES} files.
+ */
+async function triageIsolatedFailures(
+  ctx: StepContext,
+  base: string,
+  testScript: string | undefined,
+  output: string,
+  env: NodeJS.ProcessEnv,
+): Promise<string | undefined> {
+  const runs = ctx.isolationRuns ?? 3;
+  if (runs <= 0) return undefined;
+  const files = failedTestFiles(extractFailedTests(output), ctx.repoRoot);
+  if (files.length === 0 || files.length > MAX_ISOLATION_TRIAGE_FILES) return undefined;
+  const notes: string[] = [];
+  for (const file of files) {
+    const args = testFileFilterArgs(testScript, [file]);
+    if (!args) return undefined;
+    const command = `${base} -- ${args.map(shellQuoteArg).join(" ")}`;
+    console.log(c.dim(`  · isolation re-run · ${file} ×${runs}`));
+    let passed = 0;
+    for (let i = 0; i < runs; i++) {
+      const r = await runCommand({
+        command,
+        cwd: ctx.cwd,
+        timeoutMs: 300_000,
+        env,
+        echo: false,
+      });
+      if (r.status === "passed") passed++;
+    }
+    const failed = runs - passed;
+    notes.push(
+      passed === runs
+        ? `${file}: passed ${runs}/${runs} alone`
+        : passed === 0
+          ? `${file}: failed ${runs}/${runs} alone`
+          : `${file}: passed ${passed}/${runs} alone, failed ${failed}/${runs}`,
+    );
+  }
+  return notes.join("; ");
+}
+
 async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   // The close-out pipeline can hand the suite to the Remote Validation Runner
   // and then run only the cheap local guards (REPOOS_SKIP_TESTS=1).
@@ -1432,10 +1543,39 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
 
   const workers = hasTestScript ? testPoolSize(process.env) : undefined;
   const env = workers ? { ...process.env, REPOOS_TEST_WORKERS: String(workers) } : process.env;
+
+  // Failed-first (#0655): re-run the files that failed last time before paying
+  // for the whole suite. This is an ordering optimisation, never a skip — if
+  // they pass, the full suite below still runs to completion on this tree.
+  const testScript = ctx.scriptPkg.scripts?.test;
+  const priorFiles = hasTestScript
+    ? failedTestFiles(ctx.previousFailedTests ?? [], ctx.repoRoot)
+    : [];
+  const filterArgs = testFileFilterArgs(testScript, priorFiles);
+  if (filterArgs) {
+    const preflight = `${base} -- ${filterArgs.map(shellQuoteArg).join(" ")}`;
+    console.log(c.dim(`  · previously-failed test file(s) first · ${priorFiles.join(", ")}`));
+    const pre = await runCommand({ command: preflight, cwd: ctx.cwd, timeoutMs: 300_000, env });
+    if (pre.status !== "passed") {
+      const why =
+        pre.status === "timeout"
+          ? `timed out after ${timeoutLabel(300_000)}`
+          : (outputTail(pre.output) ?? `still failing (exit ${pre.exitCode})`);
+      return {
+        status: pre.status === "timeout" ? "timeout" : "failed",
+        command: preflight,
+        detail: `previously-failed test file(s) still fail — ${why}`,
+        output: pre.output,
+      };
+    }
+    console.log(c.green("  ✔ previously-failed test file(s) pass now — running the full suite"));
+  }
+
   if (workers && !changedRef) {
     const availGiB = (availableMemBytes() / 1024 ** 3).toFixed(1);
     console.log(c.dim(`  · Full suite · ${workers} workers (${availGiB} GiB reclaimable)`));
   }
+
   // A full unscoped run is ~10min healthy and can legitimately reach ~25min on
   // a slow box; a too-tight cap SIGTERMs a green suite (exit 143). Vitest's own
   // per-test timeout fails a genuine hang fast — this is the outer backstop.
@@ -1456,11 +1596,15 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
       output: res.output,
     };
   }
+  // Flake triage (#0655): informational only. A pass alone is NOT proof the
+  // failure was load-induced (AGENTS.md), so this never turns the run green.
+  const isolationNote = await triageIsolatedFailures(ctx, base, testScript, res.output, env);
   return {
     status: "failed",
     command,
     detail: outputTail(res.output) ?? `Tests failed (exit ${res.exitCode})`,
     output: res.output,
+    isolationNote,
   };
 }
 
@@ -1657,6 +1801,10 @@ export interface RunPlanOptions {
   fix?: boolean;
   /** Only run these step names (`repoos check --step`). Empty means all. */
   stepNames?: string[];
+  /** Failing test names from the previous run, for failed-first ordering (#0655). */
+  previousFailedTests?: string[];
+  /** Isolation re-runs per failing file for the flake-triage label (#0655). */
+  isolationRuns?: number;
   onStart?: (step: CheckStep) => void;
   onResult?: (result: StepRunResult) => void;
 }
@@ -1735,6 +1883,8 @@ export async function runCheckPlan(
         requires: step.requires,
         changedRef: opts.changedRef,
         fixCommand: opts.fix ? (formatFixCommand(step, repoRoot) ?? undefined) : undefined,
+        previousFailedTests: opts.previousFailedTests,
+        isolationRuns: opts.isolationRuns,
       });
     } else if (missingBinaries(step.requires).length > 0) {
       outcome = {
@@ -1766,6 +1916,7 @@ export async function runCheckPlan(
       output: outcome.output,
       detail: outcome.detail,
       required: step.required,
+      isolationNote: outcome.isolationNote,
     });
   }
   return results;
@@ -2053,6 +2204,17 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   }
 
   const runStartedAt = new Date();
+  // Failed-first ordering (#0655): only interactive/CLI and pre-review runs
+  // reorder. Close-out and release always run the full suite from a clean
+  // slate, and the remote close-out gate never reaches this point.
+  const preflightContext = envToRunContext(process.env);
+  const previousFailedTests = previousFailedTestsForRun({
+    root: checkStoreRoot,
+    cacheDir: cfg.cacheDir,
+    worktree: repoRoot,
+    taskId: preflightContext.taskId,
+    phase: preflightContext.phase,
+  });
   let results: StepRunResult[];
   try {
     results = await runCheckPlan(plan, {
@@ -2065,6 +2227,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       changedRef,
       fix: opts.fix,
       stepNames: opts.steps,
+      previousFailedTests,
+      isolationRuns: cfg.check?.isolationRuns,
       onStart: (step) => {
         heading(step.name);
         console.log(c.dim(`  · ${describeStep(step)}`));
@@ -2198,6 +2362,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     root: checkStoreRoot,
     cacheDir: cfg.cacheDir,
     scope: changedRef ? `changed:${changedRef}` : "full",
+    worktree: repoRoot,
     startedAt: runStartedAt.toISOString(),
     durationMs: finishedAt.getTime() - runStartedAt.getTime(),
     outcome: gatingFailures.length === 0 ? "pass" : "fail",
@@ -2207,6 +2372,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     // The stored detail is a short log tail that routinely loses the failing
     // test's name; keep the names themselves so "which test?" is a query.
     failedTests: gatingFailures.flatMap((r) => extractFailedTests(r.output ?? "")),
+    // Informational isolation label (#0655) — never part of the outcome.
+    isolationNote: results.find((r) => r.isolationNote)?.isolationNote ?? null,
   });
 
   process.exit(gatingFailures.length > 0 ? 1 : 0);
@@ -2223,6 +2390,35 @@ function resolveCheckStoreRoot(repoRoot: string): string {
 }
 
 /**
+ * Failing test names from this task's most recent run (#0655), or none. Only
+ * when that most recent run actually failed — once a run is green, the next
+ * `repoos check` starts from a clean slate. Interactive/CLI and pre-review
+ * only: close-out and release always run the full suite. Fail-soft.
+ */
+export function previousFailedTestsForRun(opts: {
+  root: string;
+  cacheDir: string;
+  /** Absolute worktree path the new run will execute in, when known. */
+  worktree?: string;
+  taskId: string | null;
+  phase: CheckRunPhase;
+}): string[] {
+  if (opts.phase !== "cli" && opts.phase !== "pre-review") return [];
+  try {
+    const rows = getCheckStore(opts.root, opts.cacheDir).list({ limit: 100 });
+    // Prefer the worktree's own most recent run — a bare CLI self-check and the
+    // pre-review handoff share a worktree but not a task id (#0655). Fall back
+    // to the task id so a run recorded before worktree tagging still works.
+    const byWorktree = opts.worktree ? rows.find((r) => r.worktree === opts.worktree) : undefined;
+    const latest = byWorktree ?? rows.find((r) => (r.taskId ?? null) === opts.taskId);
+    if (!latest || latest.outcome !== "fail") return [];
+    return latest.failedTests;
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Write one local check-run row into the durable history (#0564), attributing
  * the caller/phase from the environment. Fail-soft: history is observability,
  * never a gate input.
@@ -2231,6 +2427,7 @@ function recordRunHistoryRow(row: {
   root: string;
   cacheDir: string;
   scope: string;
+  worktree?: string;
   startedAt: string;
   durationMs: number;
   outcome: "pass" | "fail" | "skipped";
@@ -2238,12 +2435,14 @@ function recordRunHistoryRow(row: {
   skippedSteps: string[];
   detail: string | null;
   failedTests?: string[];
+  isolationNote?: string | null;
 }): void {
   try {
     const { taskId, phase } = envToRunContext(process.env);
     getCheckStore(row.root, row.cacheDir).record({
       taskId,
       phase,
+      worktree: row.worktree,
       machine: localMachineName(),
       remote: false,
       scope: row.scope,
@@ -2254,6 +2453,7 @@ function recordRunHistoryRow(row: {
       skippedSteps: row.skippedSteps,
       detail: row.detail,
       failedTests: row.failedTests,
+      isolationNote: row.isolationNote,
     });
   } catch {
     /* never fail the gate on a history write */

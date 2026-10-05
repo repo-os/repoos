@@ -143,6 +143,7 @@ cwd = "landing"
 [check]
 version = 1
 uiSmoke = "bun run smoke"
+isolationRuns = 3              # re-run a failing test file alone this many times
 uiStylesheet = "src/styles.css"
 backdropToken = "--bg"
 gradientTokens = ["--btn-primary-bg"]
@@ -602,6 +603,7 @@ than reporting green. (`[checks]` is accepted as an alias for `[check]`.)
 | `check.steps.requires` | array of strings | unset | yes | Binaries that must be on `PATH`; a missing one fails a required step with install advice. |
 | `check.steps.dependsOn` | array of strings | unset | yes | Skip this step when a named earlier required step failed. |
 | `check.uiSmoke` | string | unset | yes | Command for the UI smoke step. Overrides a `smoke` script in `package.json`; with neither, the step skips. |
+| `check.isolationRuns` | number | `3` | yes | After a failed tests step names a few test files, re-run each alone this many times and record `passed N/N alone` / `failed N/N alone` on the run. Informational only — it never turns a failed run green. `0` disables it. Interactive/CLI and pre-review runs only; close-out always runs the full suite. |
 | `check.uiStylesheet` | string | unset | yes | Repo-relative stylesheet the CSS-layering and theme-contrast guards read. With it absent, both skip. |
 | `check.themeScopes` | array of tables | unset | yes | Theme blocks for the contrast guard. Each row is documented just below. |
 | `check.themeScopes.selector` | string | required | yes | CSS selector that opens the block, e.g. `:root[data-ui-theme="clear"]`. |

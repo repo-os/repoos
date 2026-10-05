@@ -1421,6 +1421,14 @@ onUnmounted(() => {
                   :placeholder="arrayPlaceholder(f.key)"
                   @update:model-value="(v) => (form[f.key] = v)"
                 />
+                <Input
+                  v-else-if="f.type === 'number'"
+                  :model-value="form[f.key] == null ? '' : String(form[f.key])"
+                  type="number"
+                  min="0"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
+                />
               </div>
               <span v-if="f.restartRequired" class="restart-badge">restart required</span>
             </div>

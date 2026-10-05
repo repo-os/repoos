@@ -76,6 +76,18 @@ describe("resolveSettingLocation", () => {
     expect(isGeneralSchemaFieldKey("closeOut.timeoutMs")).toBe(true);
   });
 
+  // #0655 — the flake-triage re-run count is a user-facing setting and must
+  // render as a real Advanced control, not fall through to the raw TOML editor.
+  it("routes the check isolation re-run count to Advanced", () => {
+    expect(
+      resolveSettingLocation(
+        "check.isolationRuns",
+        field({ key: "check.isolationRuns", type: "number", tier: "guarded" }),
+        ctx,
+      ),
+    ).toEqual({ tab: "advanced", hasUiRow: true });
+  });
+
   it("mirrors generalFields exclusions via isGeneralSchemaFieldKey", () => {
     expect(isGeneralSchemaFieldKey("maxActiveTasks")).toBe(true);
     expect(isGeneralSchemaFieldKey("remoteValidation.tailscaleHost")).toBe(false);

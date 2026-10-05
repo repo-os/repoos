@@ -40,6 +40,12 @@ export interface StepRunResult {
   detail?: string;
   /** False for an advisory step — its failure does not fail the gate. */
   required: boolean;
+  /**
+   * Informational isolation re-run label (#0655), e.g. `passed 3/3 alone`.
+   * Present only for a failed tests step whose failing files were re-run.
+   * Never affects the step's status.
+   */
+  isolationNote?: string;
 }
 
 /** Max captured output per step (2 MiB) — enough context, no runaway buffers. */
