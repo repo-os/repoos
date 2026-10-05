@@ -3,6 +3,9 @@ id: "0580"
 title: Integrate Sparkle 2 for in-app auto-update in RepoOS Hub
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
 priority: p1
 area: macos
 story: MacOS Native App
@@ -10,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:44:08Z"
-updated_at: "2026-09-28T18:45:05Z"
+updated_at: "2026-10-05T11:15:28Z"
 ---
 Add Sparkle 2 to RepoOS Hub so users receive in-app update prompts automatically when a new version is released, without needing to re-download from GitHub or re-run Homebrew.
 
@@ -59,3 +62,4 @@ In `.github/workflows/macos-hub.yml`, after notarization and stapling (#0579):
 - 2026-09-28T18:44:08Z · created · unknown
 - 2026-09-28T18:44:35Z · body
 - 2026-09-28T18:45:05Z · story
+- 2026-10-05T11:15:28Z · needs_input
