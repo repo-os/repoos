@@ -2,14 +2,19 @@
 id: "0670"
 title: "repoos init: non-interactive new-project mode for agents (flags) and an actionable non-TTY error"
 type: feature
-status: inbox
+status: done
 priority: p2
 area: cli
-assigned_to: ""
+story: "Field report: first agent-driven project run (opex)"
+merged_commit: 2fe5b0629e75708447755cb06f0bb723619ee49a
+assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/repoos-init-non-interactive-new-project-
 created_at: "2026-10-05T15:20:07Z"
-updated_at: "2026-10-05T15:20:07Z"
+updated_at: "2026-10-05T17:16:35Z"
+merge_conflict_retry_count: 1
+review_passes: 1
+dev_error_count: 1
 ---
 ## Problem
 
@@ -49,3 +54,10 @@ Related earlier work: task 0028 (guided new-git-repo mode) and 0364 (seed a real
 ## Activity
 
 - 2026-10-05T15:20:07Z · created · unknown
+- 2026-10-05T15:39:09Z · status inbox→ready
+- 2026-10-05T15:39:10Z · status ready→active, branch
+- 2026-10-05T16:07:32Z · status active→review
+- 2026-10-05T16:07:33Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-05T16:32:27Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-05T16:42:26Z · status review→done, release:success
+- 2026-10-05T17:16:35Z · story

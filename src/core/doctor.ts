@@ -955,6 +955,7 @@ function checkLayout(root: string, config: RepoOSConfig): DoctorFinding[] {
 
   out.push(...checkDocsWiring(root, config));
   out.push(checkTaskFrontmatter(root, config));
+  out.push(checkStarterHygiene(root, config));
   return out;
 }
 
@@ -1043,6 +1044,81 @@ function checkTaskFrontmatter(root: string, config: RepoOSConfig): DoctorFinding
     `${issues.length} task file(s) with invalid frontmatter`,
     `${shown}${more}`,
     "fix the file(s), or re-create them via `repoos new` / the API so frontmatter is valid",
+  );
+}
+
+/**
+ * `created_by` value `repoos init` stamps on the starter task it seeds (#0671).
+ * Kept in sync with `src/commands/init.ts`; duplicated as a literal here to
+ * avoid a core→command import for one string.
+ */
+const INIT_STARTER_CREATOR = "repoos-init";
+
+/**
+ * A seeded starter is a suggestion for the human, so it lands in `inbox`. Once
+ * a real backlog exists it is just clutter (and, if it never got promoted,
+ * noise a driver might pick up) — nudge the user to archive it. Advisory only:
+ * `pass` when there's nothing to do, `warn` once a real backlog exists.
+ */
+function checkStarterHygiene(root: string, config: RepoOSConfig): DoctorFinding {
+  const workPath = join(root, config.workDir);
+  if (!existsSync(workPath)) {
+    return finding(
+      "layout.init-starter",
+      "layout",
+      "pass",
+      "No seeded starter task",
+      `${config.workDir}/ does not exist yet.`,
+    );
+  }
+
+  let starter: { id: string; status: string } | null = null;
+  let realTasks = 0;
+  for (const abs of walkTaskFiles(workPath, config.taskExtensions)) {
+    let content: string;
+    try {
+      content = readFileSync(abs, "utf8");
+    } catch {
+      continue;
+    }
+    const { data } = parseDocument(content);
+    const creator = String(data.created_by ?? "").trim();
+    const status = String(data.status ?? "").toLowerCase();
+    const isArchived = data.is_archived === true;
+    if (creator === INIT_STARTER_CREATOR) {
+      if (!isArchived && (status === "inbox" || status === "draft")) {
+        starter = { id: String(data.id ?? "?"), status };
+      }
+    } else if (!isArchived && status !== "done") {
+      realTasks++;
+    }
+  }
+
+  if (!starter) {
+    return finding(
+      "layout.init-starter",
+      "layout",
+      "pass",
+      "No seeded starter waiting in the inbox",
+      "Nothing created by `repoos init` is still un-promoted.",
+    );
+  }
+  if (realTasks < 5) {
+    return finding(
+      "layout.init-starter",
+      "layout",
+      "pass",
+      `Seeded starter #${starter.id} is still in ${starter.status}`,
+      `Only ${realTasks} other task(s) on the board — it is fine to leave the starter as a suggestion for now.`,
+    );
+  }
+  return finding(
+    "layout.init-starter",
+    "layout",
+    "warn",
+    `Seeded starter #${starter.id} is still in ${starter.status} after ${realTasks} tasks`,
+    "`repoos init` seeded a starter suggestion that was never promoted; it is now likely redundant.",
+    `archive it from the board (task 0657), or promote it to \`ready\` if it is still the first thing to do`,
   );
 }
 

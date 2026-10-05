@@ -5,6 +5,9 @@ instructions, and optionally a few skills. You configure all of it on the
 **Agents** page, and RepoOS drives it — spawning the process, streaming its
 output into the task, and recording its token spend.
 
+Driving a whole board with agents? See
+[Running a project with AI agents](/running-with-agents) for the practical loop.
+
 ## Supported coding agents
 
 RepoOS has a driver for eight CLIs:
