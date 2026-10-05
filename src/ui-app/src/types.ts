@@ -692,6 +692,7 @@ export type RepoEvent =
   /** A close-out (Move to done) run ended (#0640): succeeded, failed, or hit
    *  its wall-clock budget. Feeds the notices bell; a user cancel emits none. */
   | { type: "close-out.outcome"; outcome: CloseOutOutcomeEvent; at: string }
+  | { type: "attention.updated"; at: string }
   | { type: "test-run.started"; at: string }
   | { type: "test-run.output"; chunk: string; at: string }
   | { type: "test-run.done"; code: number | null; at: string }

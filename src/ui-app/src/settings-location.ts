@@ -43,6 +43,7 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   "telegram.enabled",
   "auth.enabled",
   "auth.sessionMaxAge",
+  "attention.spendAlertUsd",
 ]);
 
 /** Mirrors `isFieldVisible` in SettingsView.vue */
@@ -77,7 +78,7 @@ export function resolveSettingLocation(
     if (!field) return null;
     return { tab: "toml", hasUiRow: false };
   }
-  if (key === "ntfyEnabled" || key === "ntfyTopic") {
+  if (key === "ntfyEnabled" || key === "ntfyTopic" || key === "attention.spendAlertUsd") {
     return { tab: "notifications", hasUiRow: true };
   }
   if (key === "telegram.enabled") {
