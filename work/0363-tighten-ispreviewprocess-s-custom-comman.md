@@ -3,13 +3,16 @@ id: "0363"
 title: Tighten isPreviewProcess's custom-command orphan match beyond bare binary basename
 type: bug
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX, Acceptance criteria"
 priority: p3
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-16T02:09:23Z"
-updated_at: "2026-09-16T02:09:23Z"
+updated_at: "2026-10-05T11:15:30Z"
 ---
 ## Problem
 
@@ -60,3 +63,4 @@ subtly wrong fix here risks killing processes it shouldn't.
 ## Activity
 
 - 2026-09-16T02:09:23Z · created · unknown
+- 2026-10-05T11:15:30Z · needs_input
