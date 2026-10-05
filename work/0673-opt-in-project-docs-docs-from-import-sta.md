@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/opt-in-project-docs-docs-from-import-sta
 created_at: "2026-10-05T15:20:13Z"
-updated_at: "2026-10-05T16:57:30Z"
+updated_at: "2026-10-05T17:01:37Z"
 ---
 ## Problem
 
@@ -87,3 +87,23 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T16:57:30Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-05T16:57:30Z · status review→active
+- 2026-10-05T17:01:37Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25
+    196|     // `zip -y` stores symlinks as links rather than following them.
+    197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
+    198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
+       |                         ^
+    199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
+    200|   });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+ Test Files  1 failed | 391 passed | 1 skipped (393)
+      Tests  6 failed | 4804 passed | 15 skipped (4825)
+   Start at  16:58:11
+   Duration  201.71s (transform 5.32s, setup 1.70s, import 27.21s, tests 184.03s, environment 172.30s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 343ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:01:33
+   Duration  1.82s (transform 860ms, setup 9ms, import 1.00s, tests 343ms, environment 406ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
