@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T08:29:09Z"
-updated_at: "2026-10-05T12:06:49Z"
+updated_at: "2026-10-05T12:06:53Z"
 ---
 Slice 5: Private bucket, live authz check per request, short-lived download URLs, cross-repo/cross-instance isolation. Negative tests must fail if checks removed.
 
