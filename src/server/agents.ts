@@ -36,6 +36,7 @@ import { parseTaskAreas } from "../core/areas.js";
 import { fileCommittedClean, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
+import { buildStoryContext, storyContextSummary } from "../core/story-context.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
 import type { Logger } from "../core/logger.js";
@@ -3555,6 +3556,16 @@ export function missionFor(
     parts.push("");
   }
 
+  // The story's shared background (title, a bounded definition excerpt, and the
+  // sibling tasks in the slice). Omitted entirely when the task has no story or
+  // the tag resolves to no definition file, so an untagged task's prompt is
+  // unchanged. Deterministic and bounded — see core/story-context.ts (#0691).
+  const storyContext = buildStoryContext(task, config);
+  if (storyContext) {
+    parts.push(storyContext);
+    parts.push("");
+  }
+
   if (resumePreamble) {
     parts.push(resumePreamble);
     parts.push("");
@@ -5466,6 +5477,13 @@ export class AgentRunner {
         s: "sys",
         d: `Skill routing: ${selectedSkills.map((skill) => skill.name).join(", ")}`,
       });
+    }
+    // Make it visible in the task drawer that the prompt carried the story's
+    // background, and how big the definition excerpt was (#0691). Recorded once
+    // per launch; silent for an untagged task.
+    const storySummary = storyContextSummary(task, this.config);
+    if (storySummary) {
+      this.recordEntry(task.id, session, "sys", { s: "sys", d: storySummary });
     }
     const mission = missionFor(
       task,

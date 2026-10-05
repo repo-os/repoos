@@ -118,6 +118,22 @@ An archived task that another task `depends_on` does **not** count as done:
 the dependent stays blocked and reads *“Blocked by archived task #id; unarchive
 it to unblock”* until the upstream is unarchived.
 
+## Stories
+
+A **story** is an optional grouping over tasks: a delivery slice that spans
+several areas and owners, tagged with a matching `story:` value and optionally
+described by a markdown file under `stories/`. Forms the shared background for a
+related set of tasks — why the work exists, decisions already made, the tasks it
+contains — without repeating it in every task body. A story has no worktree,
+branch or status of its own; it is complete when all its tasks are done. See
+[Configuration → Stories](/configuration#stories).
+
+Agents get this background too: when a tagged task with a registered story is
+picked up, the engineer and the reviewer both receive the story's title, the
+path to its definition file, the sibling tasks (ids, titles, statuses) and a
+bounded excerpt of the definition in their prompt. So the context you write once
+into a story steers the work, not just the humans reading the board.
+
 ## One task, one worktree
 
 When a task goes active, RepoOS creates a dedicated git worktree and branch for
