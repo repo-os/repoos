@@ -2,7 +2,7 @@
 id: "0687"
 title: "Attention queue: extend the notification bell with provider failures, spend threshold, awaiting-visual-check, remote fallback; expose one API feed"
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/attention-queue-extend-the-notification-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:57Z"
-updated_at: "2026-10-05T22:41:50Z"
+updated_at: "2026-10-05T22:46:40Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T22:02:18Z · cli_override, model_override
 - 2026-10-05T22:02:19Z · status ready→active, branch
 - 2026-10-05T22:41:50Z · body: section Shots
+- 2026-10-05T22:46:40Z · status active→review
