@@ -1015,9 +1015,15 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // setup. An explicit `enabled = false` turns it off; a missing or
     // malformed value falls back to the default (on).
     const storiesEnabled = parsed["stories.enabled"];
+    const storiesExcerptBytes = parsed["stories.excerptBytes"];
     const stories: StoriesConfig = {
       enabled: typeof storiesEnabled === "boolean" ? storiesEnabled : true,
     };
+    // Only a finite positive number is accepted; anything else is left unset so
+    // the prompt builder's own default applies (#0691).
+    if (typeof storiesExcerptBytes === "number" && Number.isFinite(storiesExcerptBytes)) {
+      stories.excerptBytes = Math.floor(storiesExcerptBytes);
+    }
     cfg.stories = stories;
     // [areas] section (#0583) — the declared area vocabulary. Both the
     // `[[areas]]` array-of-tables form (with per-area descriptions) and the
@@ -1544,6 +1550,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       default: true,
       description:
         "Show the Stories page and group tasks into cross-area delivery slices (on by default)",
+    },
+    {
+      key: "stories.excerptBytes",
+      label: "Story context excerpt size",
+      type: "number",
+      tier: "guarded",
+      restartRequired: false,
+      default: 4096,
+      group: "general",
+      description:
+        "How many bytes of a story's definition the engineer and reviewer prompts include " +
+        "as shared background, before pointing the agent at the story file to read the rest. " +
+        "Clamped to 512–65536; a task with no story (or a tag with no definition file) gets " +
+        "no story context block.",
     },
     {
       key: "ntfyEnabled",
@@ -2103,6 +2123,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "deployments.subdir",
   // Stories
   "stories.enabled",
+  "stories.excerptBytes",
   // Areas vocabulary (#0583): `[[areas]]` rows plus the flat `areas`
   // string-array shorthand the Settings UI writes.
   "areas",
