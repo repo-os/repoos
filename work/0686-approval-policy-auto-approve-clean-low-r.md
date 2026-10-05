@@ -12,7 +12,7 @@ branch: feat/approval-policy-auto-approve-clean-low-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:55Z"
-updated_at: "2026-10-05T22:43:41Z"
+updated_at: "2026-10-05T22:43:52Z"
 ---
 ## Problem
 
@@ -73,3 +73,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T21:20:31Z · status ready→active, branch
 - 2026-10-05T22:29:37Z · body: section Shots
 - 2026-10-05T22:43:41Z · status active→review
+- 2026-10-05T22:43:52Z · note: shots: failed — capture of Approval policy Settings controls on "default" failed: click: Timeout 5000ms exceeded.
