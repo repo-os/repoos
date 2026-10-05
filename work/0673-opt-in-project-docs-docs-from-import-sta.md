@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: feat/opt-in-project-docs-docs-from-import-sta
+cli_override: cursor
+model_override: default
 created_at: "2026-10-05T15:20:13Z"
-updated_at: "2026-10-05T17:16:39Z"
+updated_at: "2026-10-05T17:20:34Z"
 ---
 ## Problem
 
@@ -131,3 +133,4 @@ error: script "test" exited with code 1
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T17:16:39Z · story
+- 2026-10-05T17:20:34Z · cli_override, model_override
