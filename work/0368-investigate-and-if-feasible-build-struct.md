@@ -5,14 +5,14 @@ type: feature
 status: inbox
 needs_input: true
 needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX, Notes for AI"
+needs_input_detail: "missing sections: Notes for AI"
 priority: p3
 area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-16T05:39:12Z"
-updated_at: "2026-10-05T11:15:30Z"
+updated_at: "2026-10-05T22:38:17Z"
 ---
 ## Problem
 
