@@ -5,11 +5,12 @@ type: chore
 status: inbox
 priority: p2
 area: core
-assigned_to: ""
+story: "Field report: first agent-driven project run (opex)"
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T17:33:12Z"
-updated_at: "2026-10-05T17:33:12Z"
+updated_at: "2026-10-05T17:33:19Z"
 ---
 ## Problem
 
@@ -35,3 +36,4 @@ Part of a small set of follow-ups from the first agent-driven project run (see t
 ## Activity
 
 - 2026-10-05T17:33:12Z · created · unknown
+- 2026-10-05T17:33:19Z · story
