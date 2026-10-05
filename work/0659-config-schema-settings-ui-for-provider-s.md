@@ -2,7 +2,7 @@
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
-status: review
+status: active
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -12,7 +12,7 @@ created_by: ""
 branch: feat/config-schema-settings-ui-for-provider-s
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T20:59:42Z"
+updated_at: "2026-10-05T20:59:43Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -924,3 +924,4 @@ $ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app
 src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no exported member 'StorageStatus'.
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-05T20:59:42Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-05T20:59:43Z · status review→active
