@@ -9,7 +9,12 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "../../core/config";
-import { buildCapturePlan, parseShotPlan } from "../../core/shot-plan";
+import {
+  buildCapturePlan,
+  parseShotPlan,
+  resolveDeclaredTarget,
+  validateDeclaredShotTargets,
+} from "../../core/shot-plan";
 import {
   buildCliShotPlan,
   parseShotArgs,
@@ -45,6 +50,40 @@ function bodyWithShots(json: string): string {
     "## Activity",
   ].join("\n");
 }
+
+describe("resolveDeclaredTarget default alias", () => {
+  it("maps default to the sole path-resolved target at capture time", () => {
+    expect(resolveDeclaredTarget("default", ["web"])).toEqual({ target: "web" });
+  });
+});
+
+describe("validateDeclaredShotTargets", () => {
+  it("accepts default when it is the only configured target name", () => {
+    expect(
+      validateDeclaredShotTargets([{ route: "/", target: "default" }], {
+        command: "echo preview",
+      }),
+    ).toEqual([]);
+  });
+
+  it("accepts default as an alias when only one named target exists", () => {
+    expect(
+      validateDeclaredShotTargets([{ route: "/", target: "default" }], {
+        command: "echo preview",
+        targets: [{ name: "web", areas: ["web"], command: "echo web" }],
+      }),
+    ).toEqual([]);
+  });
+
+  it("rejects unknown targets with the valid name list", () => {
+    const errors = validateDeclaredShotTargets([{ route: "/", target: "nope" }], {
+      command: "echo preview",
+      targets: [{ name: "web", areas: ["web"], command: "echo web" }],
+    });
+    expect(errors[0]).toMatch(/unknown target "nope"/);
+    expect(errors[0]).toMatch(/default, web/);
+  });
+});
 
 describe("parseShotPlan", () => {
   it("returns no shots (and no errors) when the section is absent", () => {

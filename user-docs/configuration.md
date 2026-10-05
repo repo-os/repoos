@@ -282,7 +282,7 @@ worktreeWarnThreshold = 20
 | `defaultAssignee` | select | `unassigned` | yes | Default assignee for new tasks: `unassigned`, `ai`, or `human`. |
 | `defaultTaskMode` | select | `freeform` | yes | New-task flow: `freeform` (the AI writes the task) or `manual` (a form). Any other value falls back to `freeform`. |
 | `maxActiveTasks` | number | `3` | yes | Cap on simultaneously active tasks when `autoEngineeringMode` is on. Must be 1–20. |
-| `autoEngineeringMode` | boolean | `false` | yes | When true, RepoOS selects and starts ready tasks automatically, up to `maxActiveTasks`. |
+| `autoEngineeringMode` | boolean | `false` | yes | When true, RepoOS **event-driven** dispatch starts ready tasks automatically, up to `maxActiveTasks` (see below). |
 | `skillSuggestions` | boolean | `false` | yes | When true, a finished task may generate a high-bar, evidence-gated skill suggestion task. Off by default; a single session never creates one. |
 | `worktreeWarnThreshold` | number | `20` | yes | Advisory ceiling on registered git worktrees. Above it the Control page's Codebase card turns amber and the server logs a `repoos gc` reminder. Never blocks a task. Set `0` to disable. |
 
@@ -305,6 +305,45 @@ the six column labels shown in the UI and CLI. You can edit them from
 that column's default. These are display labels only: the canonical status IDs
 never change, and transitions, frontmatter, and API/CLI status inputs are
 unaffected.
+
+### Auto-engineering mode (`autoEngineeringMode`)
+
+When `autoEngineeringMode = true`, the server runs a **dispatch pass** whenever
+something frees capacity or new work becomes eligible:
+
+- a task leaves `active` for `review` (a slot opens),
+- a task moves from `inbox` to `ready`,
+- a dependency lands on `main` (`dependency-merged` trigger),
+- the server starts up,
+- or `autoEngineeringMode` / `maxActiveTasks` changes in config.
+
+Each pass:
+
+1. Counts active tasks (not archived) and computes free slots up to
+   `maxActiveTasks`.
+2. Builds the **candidate list**: `ready` tasks that are not archived, not
+   `needs_input`, and have no unmet `dependsOn` blockers.
+3. If there are candidates and free slots, calls the **PM agent** once (a real
+   LLM prompt — recorded as a `dispatch` session, not a task-bound PM run) to
+   pick which ready tasks to start, capped at the available slots.
+4. Starts the selected tasks through the normal `/start` path.
+
+Outcomes (`no-capacity`, `no-ready-work`, `pm-unavailable`, …) are persisted for
+the Control page. This is optional automation — default is off.
+
+### Task body sections (underspecified check)
+
+RepoOS can flag stub tasks with `needs_input` / `underspecified`. A well-formed
+task body normally includes these headings (each with real prose, not placeholders):
+
+- `## Problem`
+- `## Desired UX` — **required only when the task's `area` includes a UI slice**
+  (`web`, `ui`, or `ui-app`). Pure server/docs/cli tasks may omit it.
+- `## Acceptance criteria`
+- `## Notes for AI`
+
+The body outside `## Original prompt` should be at least ~400 characters. The PM
+"flesh this out" flow and `repoos new` / task PATCH paths run the same check.
 
 Constraints: a label is a string of at most 40 characters; blank labels,
 duplicates of another column's label, or over-length values fall back to that
