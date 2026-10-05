@@ -148,8 +148,12 @@ export function conflictingPairs(tasks: readonly Task[]): TaskConflict[] {
  * Order is total and stable: two tasks that differ in none of these keys are
  * separated by id, so the same board always yields the same pick.
  */
-export function orderReadyTasks(tasks: readonly Task[]): Task[] {
-  const weights = criticalPathWeights(tasks);
+export function orderReadyTasks(
+  tasks: readonly Task[],
+  /** When set, critical-path weights use this full task list (e.g. all board tasks). */
+  weightContext?: readonly Task[],
+): Task[] {
+  const weights = criticalPathWeights(weightContext ?? tasks);
   return [...tasks].sort((a, b) => {
     const priority = priorityRank(a.priority) - priorityRank(b.priority);
     if (priority !== 0) return priority;
@@ -172,9 +176,8 @@ export function selectReadyTasks(
   options: SelectionOptions,
 ): SelectionResult {
   const blocked = options.blockedIds ?? new Set<string>();
-  const eligibleTasks = orderReadyTasks(
-    tasks.filter((task) => isSelectableReady(task) && !blocked.has(task.id)),
-  );
+  const eligible = tasks.filter((task) => isSelectableReady(task) && !blocked.has(task.id));
+  const eligibleTasks = orderReadyTasks(eligible, tasks);
   const slots = Math.max(0, options.availableSlots);
   return {
     eligible: eligibleTasks.map((task) => task.id),
