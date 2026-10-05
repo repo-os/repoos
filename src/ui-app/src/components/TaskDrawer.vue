@@ -4681,6 +4681,7 @@ watch(
               v-if="!ui.active?.isArchived"
               variant="outline"
               size="sm"
+              class="delete-zone-archive"
               data-test-id="archive-task"
               :disabled="ui.saving"
               title="Park this task without changing its status, branch or worktree"
