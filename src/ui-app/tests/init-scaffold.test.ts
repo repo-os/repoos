@@ -14,8 +14,12 @@ import {
   REPOOS_AGENTS_SECTION_MARKER,
   areaVocabularyTomlAddition,
   canaryUnderRootRuntimeDir,
+  detectMeaningfulRepoContent,
+  isMeaningfulRepoPath,
+  parseStarterOption,
   parseInitFlags,
   quoteBlock,
+  repoHasMeaningfulContent,
   repoOSAgentsSectionAddition,
   scaffoldInto,
   validateNamespace,
@@ -112,8 +116,130 @@ describe("validateNamespace", () => {
   });
 });
 
+describe("parseStarterOption (#0671)", () => {
+  it("returns no starter when the flag is absent, preserving other args", () => {
+    expect(parseStarterOption([])).toEqual({ rest: [] });
+    expect(parseStarterOption(["myproject"])).toEqual({ rest: ["myproject"] });
+  });
+
+  it("parses --starter value and removes it from the remaining args", () => {
+    expect(parseStarterOption(["--starter", "codebase"])).toEqual({
+      starter: "codebase",
+      rest: [],
+    });
+    expect(parseStarterOption(["myproject", "--starter", "vision"])).toEqual({
+      starter: "vision",
+      rest: ["myproject"],
+    });
+  });
+
+  it("parses the --starter=value form", () => {
+    expect(parseStarterOption(["--starter=vision"])).toEqual({ starter: "vision", rest: [] });
+  });
+
+  it("rejects an unknown starter and sets a nonzero exit code", () => {
+    const prev = process.exitCode;
+    try {
+      const result = parseStarterOption(["--starter", "nonsense"]);
+      expect(result.starter).toBeUndefined();
+      expect(process.exitCode).toBe(1);
+    } finally {
+      process.exitCode = prev;
+    }
+  });
+});
+
+describe("repo content detection (#0671)", () => {
+  describe("repoHasMeaningfulContent (pure)", () => {
+    it("is false for an empty repo", () => {
+      expect(repoHasMeaningfulContent([])).toBe(false);
+    });
+
+    it("is false for README, LICENSE and .gitignore only", () => {
+      expect(repoHasMeaningfulContent(["README.md", "LICENSE", ".gitignore", ".env.example"])).toBe(
+        false,
+      );
+    });
+
+    it("is false for RepoOS's own scaffold", () => {
+      expect(
+        repoHasMeaningfulContent([
+          "repoos.toml",
+          "AGENTS.md",
+          "work/0001-set-up-repoos.md",
+          "docs/architecture.md",
+          ".repoos/canary.txt",
+          "repoos/work/0002-read-the-codebase.md",
+        ]),
+      ).toBe(false);
+    });
+
+    it("is true once there are source files", () => {
+      expect(repoHasMeaningfulContent(["src/index.ts"])).toBe(true);
+    });
+
+    it("is true for a manifest-like package.json + .gitignore", () => {
+      // package.json is not boilerplate we ignore — it signals a real project.
+      expect(repoHasMeaningfulContent(["package.json", ".gitignore"])).toBe(true);
+    });
+
+    it("is true for a monorepo package tree", () => {
+      expect(
+        repoHasMeaningfulContent(["packages/app/src/main.ts", "packages/lib/package.json"]),
+      ).toBe(true);
+    });
+
+    it("does not treat a README inside a scaffold dir as content", () => {
+      expect(isMeaningfulRepoPath("docs/README.md")).toBe(false);
+      expect(isMeaningfulRepoPath("work/notes.md")).toBe(false);
+    });
+  });
+
+  describe("detectMeaningfulRepoContent (filesystem)", () => {
+    it("reports an empty directory as having no content", () => {
+      expect(detectMeaningfulRepoContent(scratch())).toBe(false);
+    });
+
+    it("ignores README and RepoOS scaffold files", () => {
+      const root = scratch();
+      writeFileSync(join(root, "README.md"), "# hi\n");
+      writeFileSync(join(root, ".gitignore"), "node_modules\n");
+      writeFileSync(join(root, "repoos.toml"), 'workDir = "work"\n');
+      writeFileSync(join(root, "AGENTS.md"), "# agents\n");
+      expect(detectMeaningfulRepoContent(root)).toBe(false);
+    });
+
+    it("ignores a scaffolded layout's work/ and docs/ dirs", () => {
+      const root = scratch();
+      mkdirSync(join(root, "work"), { recursive: true });
+      mkdirSync(join(root, "docs"), { recursive: true });
+      writeFileSync(join(root, "work/0001-set-up-repoos.md"), "---\n---\n");
+      writeFileSync(join(root, "docs/architecture.md"), "# arch\n");
+      expect(detectMeaningfulRepoContent(root)).toBe(false);
+    });
+
+    it("detects source files at the top level and nested", () => {
+      const a = scratch();
+      writeFileSync(join(a, "main.rs"), "fn main() {}\n");
+      expect(detectMeaningfulRepoContent(a)).toBe(true);
+
+      const b = scratch();
+      mkdirSync(join(b, "packages/app/src"), { recursive: true });
+      writeFileSync(join(b, "packages/app/src/main.ts"), "export {};\n");
+      expect(detectMeaningfulRepoContent(b)).toBe(true);
+    });
+
+    it("ignores generated directories like node_modules", () => {
+      const root = scratch();
+      mkdirSync(join(root, "node_modules/left-pad"), { recursive: true });
+      writeFileSync(join(root, "node_modules/left-pad/index.js"), "module.exports = 1;\n");
+      expect(detectMeaningfulRepoContent(root)).toBe(false);
+    });
+  });
+});
+
 describe("scaffoldInto starter tasks", () => {
-  it("leaves a ready new-project starter after the done 0001", () => {
+  it("leaves an inbox new-project starter after the done 0001", () => {
     const root = scratch();
     const { created } = scaffoldInto(root, "Squishy: a tiny social app", "", "new");
 
@@ -124,7 +250,9 @@ describe("scaffoldInto starter tasks", () => {
 
     const starter = readTask(root, "work/0002-flesh-out-the-vision.md");
     expect(starter.id).toBe("0002");
-    expect(starter.status).toBe("ready");
+    // #0671: a seeded starter is a suggestion, not work to auto-run.
+    expect(starter.status).toBe("inbox");
+    expect(starter.createdBy).toBe("repoos-init");
     expect(starter.body).toContain("Squishy: a tiny social app");
     expect(starter.body).toContain("repoos new");
   });
@@ -142,17 +270,42 @@ describe("scaffoldInto starter tasks", () => {
     const root = scratch();
     scaffoldInto(root, "", "", "new");
     const starter = readTask(root, "work/0002-flesh-out-the-vision.md");
-    expect(starter.status).toBe("ready");
+    expect(starter.status).toBe("inbox");
+    expect(starter.createdBy).toBe("repoos-init");
     expect(starter.body).toMatch(/no description was given/i);
   });
 
-  it("seeds a different ready starter for an existing repo", () => {
+  it("seeds the read-the-codebase starter as inbox when the repo has source", () => {
     const root = scratch();
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/index.ts"), "export const x = 1;\n");
     scaffoldInto(root, "", "", "existing");
     const starter = readTask(root, "work/0002-read-the-codebase.md");
-    expect(starter.status).toBe("ready");
+    expect(starter.status).toBe("inbox");
+    expect(starter.createdBy).toBe("repoos-init");
     expect(starter.title).toMatch(/this codebase/i);
     expect(starter.body).toContain("repoos new");
+  });
+
+  it("seeds the vision starter in an effectively empty existing repo (#0671)", () => {
+    const root = scratch();
+    const { created } = scaffoldInto(root, "", "", "existing");
+    expect(created).toContain("work/0002-flesh-out-the-vision.md");
+    expect(existsSync(join(root, "work/0002-read-the-codebase.md"))).toBe(false);
+    const starter = readTask(root, "work/0002-flesh-out-the-vision.md");
+    expect(starter.status).toBe("inbox");
+    expect(starter.createdBy).toBe("repoos-init");
+  });
+
+  it("honors an explicit starter override on the existing path", () => {
+    const root = scratch();
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/index.ts"), "export const x = 1;\n");
+    // The repo has source, but --starter vision forces the product-vision body.
+    const { starter } = scaffoldInto(root, "", "", "existing", [], false, "vision");
+    expect(starter).toBe("vision");
+    expect(existsSync(join(root, "work/0002-flesh-out-the-vision.md"))).toBe(true);
+    expect(existsSync(join(root, "work/0002-read-the-codebase.md"))).toBe(false);
   });
 
   it("numbers the starter after tasks already on the board", () => {
@@ -160,6 +313,8 @@ describe("scaffoldInto starter tasks", () => {
     mkdirSync(join(root, "work"), { recursive: true });
     writeFileSync(join(root, "work/0001-existing.md"), "---\nid: '0001'\n---\n");
     writeFileSync(join(root, "work/0002-existing.md"), "---\nid: '0002'\n---\n");
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/main.ts"), "export {};\n");
 
     const { created } = scaffoldInto(root, "", "", "existing");
     expect(created).toContain("work/0003-read-the-codebase.md");
@@ -190,6 +345,8 @@ describe("scaffoldInto starter tasks", () => {
 
   it("defaults to namespaced repoos/ layout for fresh existing-repo init", () => {
     const root = scratch();
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/index.ts"), "export {};\n");
     const { created } = scaffoldInto(root, "", "repoos", "existing");
 
     expect(created).toContain("repoos.toml");
@@ -272,9 +429,21 @@ describe("scaffoldInto starter tasks", () => {
 
   it("existing-repo starter task references configured docsDir in title", () => {
     const root = scratch();
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/index.ts"), "export {};\n");
     scaffoldInto(root, "", "repoos", "existing");
     const starter = readTask(root, "repoos/work/0002-read-the-codebase.md");
     expect(starter.title).toContain("repoos/docs/");
+  });
+
+  it("existing-repo starter tells the reader to switch to the vision task when the repo is empty", () => {
+    const root = scratch();
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/index.ts"), "export {};\n");
+    scaffoldInto(root, "", "", "existing");
+    const starter = readTask(root, "work/0002-read-the-codebase.md");
+    expect(starter.body).toMatch(/actually empty/i);
+    expect(starter.body).toContain("--starter vision");
   });
 
   it("aborts cleanly instead of throwing when a file blocks the namespace directory", () => {
