@@ -3,6 +3,9 @@ id: "0434"
 title: "Docs debt: stale claims in AGENTS.md, docs/, and user-docs/"
 type: chore
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
 priority: p2
 area: docs-debt
 story: MacOS Native App
@@ -10,7 +13,7 @@ assigned_to: unassigned
 created_by: docs-debt-agent
 branch: ""
 created_at: "2026-09-19T02:09:23.307Z"
-updated_at: "2026-09-28T00:08:48Z"
+updated_at: "2026-10-05T11:15:29Z"
 ---
 ## Docs Debt Findings
 
@@ -33,3 +36,4 @@ The Docs Debt Agent verified concrete claims in `AGENTS.md`/`docs/`/`user-docs/`
 
 - 2026-09-21T20:11:34Z · story
 - 2026-09-28T00:08:48Z · story
+- 2026-10-05T11:15:29Z · needs_input
