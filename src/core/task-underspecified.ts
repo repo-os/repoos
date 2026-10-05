@@ -1,3 +1,4 @@
+import { parseTaskAreas } from "./areas.js";
 import {
   ACTIVITY_HEADING,
   ORIGINAL_PROMPT_HEADING,
@@ -18,6 +19,25 @@ export const TASK_SPEC_SECTION_HEADINGS = [
   "## Acceptance criteria",
   "## Notes for AI",
 ] as const;
+
+/** Areas that touch product UI — `## Desired UX` is required only for these (#0685). */
+const UI_TASK_AREAS = new Set(["web", "ui", "ui-app"]);
+
+/**
+ * Whether a task's `area` frontmatter implies user-visible UI work. When the
+ * area is empty/unknown the check stays strict; pure server/docs/cli slices
+ * may omit `## Desired UX` (keep the heading with "N/A" if you prefer).
+ */
+export function areasRequireDesiredUx(area: string | null | undefined): boolean {
+  const areas = parseTaskAreas(area).map((a) => a.toLowerCase());
+  if (areas.length === 0) return true;
+  return areas.some((a) => UI_TASK_AREAS.has(a));
+}
+
+export function specSectionHeadingsForTask(area: string | null | undefined): readonly string[] {
+  if (areasRequireDesiredUx(area)) return TASK_SPEC_SECTION_HEADINGS;
+  return TASK_SPEC_SECTION_HEADINGS.filter((h) => h !== "## Desired UX");
+}
 
 /** Stub lines the PM scaffold leaves behind — not prose that mentions TODO/TBD. */
 function hasUnfilledPlaceholderMarkers(text: string): boolean {
@@ -71,13 +91,17 @@ export interface UnderspecifiedAssessment {
   signals: string[];
 }
 
-export function assessTaskUnderspecified(body: string): UnderspecifiedAssessment {
+export function assessTaskUnderspecified(
+  body: string,
+  opts?: { area?: string | null },
+): UnderspecifiedAssessment {
   const signals: string[] = [];
   const trimmed = body.trim();
+  const headings = specSectionHeadingsForTask(opts?.area);
 
   const missing: string[] = [];
   const empty: string[] = [];
-  for (const heading of TASK_SPEC_SECTION_HEADINGS) {
+  for (const heading of headings) {
     const section = extractSection(trimmed, heading);
     const shortName = heading.replace(/^##\s+/, "");
     if (!section) {
@@ -126,7 +150,10 @@ export const PM_FLESH_OUT_MESSAGE = "Can you flesh this out?";
  * Appended server-side to the canned flesh-out message so the PM knows exactly
  * what the underspecified check (`assessTaskUnderspecified`) requires.
  */
-export function fleshOutRequirementsPrompt(story?: { name: string; path?: string }): string {
+export function fleshOutRequirementsPrompt(
+  story?: { name: string; path?: string },
+  area?: string | null,
+): string {
   const storyLine = story
     ? [
         "",
@@ -135,11 +162,16 @@ export function fleshOutRequirementsPrompt(story?: { name: string; path?: string
           : `This task is a slice of the story "${story.name}". If you need more context, look at sibling tasks tagged with that story (\`repoos list\`) before asking the human anything.`,
       ]
     : [];
+  const headings = specSectionHeadingsForTask(area);
+  const desiredUxNote = areasRequireDesiredUx(area)
+    ? ""
+    : "\n`## Desired UX` is optional for this task's area (no UI slice) — skip it or add one sentence if helpful.";
   return [
     "To count as fully specified, the task body must have ALL of these sections, each with real content (not placeholders):",
-    ...TASK_SPEC_SECTION_HEADINGS.map((h) => `- ${h}`),
+    ...headings.map((h) => `- ${h}`),
+    desiredUxNote,
     "",
-    `Rules: use these exact headings; if a section doesn't apply (e.g. no UI change), keep the heading and say so in a sentence; leave no bare TODO/TBD/<placeholder> lines; the body outside "## Original prompt" must be at least ${UNDERSPECIFIED_MIN_BODY_CHARS} characters. Keep the existing "## Original prompt", "## Screenshots" and "## Activity" sections untouched. Update the task through the repoos commands/API, never by editing work/*.md directly.`,
+    `Rules: use these exact headings; if a section doesn't apply, keep the heading and say so in a sentence (except \`## Desired UX\` on non-UI tasks, which may be omitted); leave no bare TODO/TBD/<placeholder> lines; the body outside "## Original prompt" must be at least ${UNDERSPECIFIED_MIN_BODY_CHARS} characters. Keep the existing "## Original prompt", "## Screenshots" and "## Activity" sections untouched. Update the task through the repoos commands/API, never by editing work/*.md directly.`,
     ...storyLine,
   ].join("\n");
 }

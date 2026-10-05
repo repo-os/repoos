@@ -227,6 +227,21 @@ export async function checkAgentCompatibility(
     );
   }
 
+  const debuggerRow = enabled.find((a) => a.name?.toLowerCase() === "debugger");
+  const builtInDebugger = config.builtInAgents?.debugger;
+  if (debuggerRow && builtInDebugger && builtInDebugger.enabled === false) {
+    findings.push(
+      finding(
+        "runtime.debugger-toggle",
+        "runtime",
+        "warn",
+        "Debugger agent row is enabled but the built-in debugger is off",
+        "The debugger row on the Agents page will not run until the separate built-in debugger toggle is enabled in Settings.",
+        "Enable the built-in debugger under Settings → Built-in agents, or disable the debugger agent row.",
+      ),
+    );
+  }
+
   const deduped = new Map<string, DoctorFinding>();
   for (const findingRecord of findings) {
     const key = findingRecord.id;
