@@ -3,6 +3,9 @@ id: "0479"
 title: Configure and launch the RepoOS project-updates channel
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX, Acceptance criteria, Notes for AI"
 priority: p2
 area: infra
 story: Email subscriber list
@@ -10,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-21T12:09:32Z"
-updated_at: "2026-09-21T20:10:53Z"
+updated_at: "2026-10-05T11:15:29Z"
 ---
 ## Problem
 
@@ -43,3 +46,4 @@ Run after #0477 and #0478.
 
 - 2026-09-21T12:09:32Z · created · unknown
 - 2026-09-21T20:10:53Z · story
+- 2026-10-05T11:15:29Z · needs_input
