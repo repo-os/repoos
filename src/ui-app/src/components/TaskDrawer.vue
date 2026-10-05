@@ -4907,7 +4907,7 @@ watch(
               </button>
             </div>
             <Button
-              v-if="ui.active.status === 'review'"
+              v-if="ui.active.status === 'review' && !ui.active.isArchived"
               variant="outline"
               size="sm"
               :disabled="ui.saving || reviewBusy || review?.running || handoffBusy"
@@ -4923,7 +4923,7 @@ watch(
               {{ reviewBusy ? "Starting…" : "Review again" }}
             </Button>
             <Button
-              v-if="ui.active.status === 'review'"
+              v-if="ui.active.status === 'review' && !ui.active.isArchived"
               variant="accent"
               size="sm"
               :disabled="

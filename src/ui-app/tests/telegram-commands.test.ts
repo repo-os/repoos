@@ -172,6 +172,19 @@ describe("createTelegramCommandHandler", () => {
     expect(text).toContain("/work");
   });
 
+  it("excludes archived review/needs-input tasks from /status attention (#0657)", async () => {
+    const { handler, sent } = harness({
+      tasks: [
+        task({ id: "0541", title: "Parked review", status: "review", isArchived: true }),
+        task({ id: "0542", title: "Parked question", needsInput: true, isArchived: true }),
+      ],
+    });
+    await handler(commandUpdate("status"), ACTOR_ADMIN);
+    const text = sent[0].text;
+    expect(text).not.toContain("Needs attention");
+    expect(text).toContain("0 need you");
+  });
+
   it("makes /help role-aware", async () => {
     const admin = harness();
     await admin.handler(commandUpdate("help"), ACTOR_ADMIN);

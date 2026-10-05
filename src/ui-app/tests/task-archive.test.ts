@@ -9,12 +9,12 @@
 import { describe, expect, it, vi } from "vitest";
 import type { IncomingMessage } from "node:http";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { parseTask, serializeTask } from "../../core/task.js";
 import { taskDependencyBlockers } from "../../core/task-dependencies.js";
-import { patchTask, taskAction } from "../../server/routes/tasks.js";
+import { patchTask, reviewAgain, taskAction } from "../../server/routes/tasks.js";
 import { LiveIndex } from "../../server/live-index.js";
 import type { RouteContext } from "../../server/routes/types.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
@@ -340,6 +340,31 @@ describe("POST /api/tasks/:id/archive (#0657)", () => {
       fx.clean();
     }
   });
+
+  it("refuses a generic status PATCH while archived", async () => {
+    const fx = makeFixture("review", "is_archived: true\n");
+    try {
+      const { res, fake } = makeRes();
+      await patchTask(makeCtx(fx), makeReq({ status: "active" }), res, { param1: "0657" });
+      expect(fake.status).toBe(400);
+      expect(fake.payload.error).toMatch(/archived/);
+      expect(readTaskFile(fx).status).toBe("review");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("refuses to re-run the reviewer via /review-again while archived", async () => {
+    const fx = makeFixture("review", "is_archived: true\n");
+    try {
+      const { res, fake } = makeRes();
+      await reviewAgain(makeCtx(fx), makeReq({}), res, { param1: "0657" });
+      expect(fake.status).toBe(400);
+      expect(fake.payload.error).toMatch(/archived/);
+    } finally {
+      fx.clean();
+    }
+  });
 });
 
 describe("POST /api/tasks/:id/unarchive (#0657)", () => {
@@ -374,6 +399,56 @@ describe("POST /api/tasks/:id/unarchive (#0657)", () => {
       expect(fake.status).toBe(400);
     } finally {
       fx.clean();
+    }
+  });
+
+  it("warns but still restores the status when the worktree is gone", async () => {
+    const fx = makeFixture("review", "is_archived: true\narchive_detail: shelved\n");
+    try {
+      const { res, fake } = makeRes();
+      // The default empty git info has worktreeExists: false, with a branch set.
+      await taskAction(makeCtx(fx), makeReq({}), res, {
+        param1: "0657",
+        param2: "unarchive",
+      });
+      expect(fake.status).toBe(200);
+      expect(fake.payload.warning).toMatch(/worktree is gone/);
+      const t = readTaskFile(fx);
+      expect(t.isArchived).toBe(false);
+      expect(t.status).toBe("review");
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
+describe("parser compatibility across the whole board (#0657)", () => {
+  it("parses and round-trips every existing work/*.md", () => {
+    const root = resolve(__dirname, "../../..");
+    const workDir = join(root, "work");
+    const files = readdirSync(workDir).filter((f) => f.endsWith(".md"));
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) {
+      const absPath = join(workDir, file);
+      const content = readFileSync(absPath, "utf8");
+      const t = parseTask({
+        content,
+        absPath,
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      expect(t.id, `${file} must parse with an id`).toBeTruthy();
+      const back = parseTask({
+        content: serializeTask(t),
+        absPath,
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      expect(back.isArchived).toBe(t.isArchived);
+      expect(back.archiveDetail).toBe(t.archiveDetail);
+      expect(back.status).toBe(t.status);
     }
   });
 });

@@ -123,6 +123,18 @@ already `done`, the same `/done` endpoint checks the primary checkout and
 records release without a candidate merge. This is not a shortcut for an
 unmerged feature branch; do not clear its branch metadata to use this path.
 
+## Parking a task you're not ready to merge
+
+A `review` task that has exhausted its review rounds, or that you simply do not
+want to merge yet, does not have to stay in the Review column demanding
+action. **Archive task** at the bottom of the task panel parks it without
+merging, stopping, or deleting anything: the status stays `review` underneath,
+the branch and worktree are kept, and the task moves to the **Archived** list
+below the board. Add an optional reason, and unarchive it later to drop it
+back into the Review column exactly where it left off. See
+[Concepts → Archiving a task](/concepts) for the full behaviour, including why
+archiving is refused while a run, review, preview, or close-out is live.
+
 ## The Move-to-done pipeline
 
 Close-out runs as a job with five phases. It works in a **separate candidate
