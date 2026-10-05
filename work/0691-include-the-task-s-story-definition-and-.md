@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/include-the-task-s-story-definition-and-
 created_at: "2026-10-05T17:15:50Z"
-updated_at: "2026-10-05T19:54:49Z"
+updated_at: "2026-10-05T20:41:33Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T17:33:10Z · note: Owner view (2026-10-06): stories are mostly for the HUMAN to see how tasks relate to each other, so passing the story to agents is a nice-to-have; priority lowered p2 -> p3. A more valuable human-facing improvement may be showing the dependency/relationship view of a story's tasks (and which are done/active/inbox) on the story panel.
 - 2026-10-05T19:54:44Z · status inbox→ready
 - 2026-10-05T19:54:49Z · status ready→active, branch
+- 2026-10-05T20:41:33Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
