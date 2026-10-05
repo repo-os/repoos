@@ -2,7 +2,7 @@
 id: "0673"
 title: "Opt-in project docs: --docs-from import, starter skeleton, and a doctor wiring check"
 type: feature
-status: active
+status: review
 priority: p3
 area: cli
 story: "Field report: first agent-driven project run (opex)"
@@ -142,4 +142,4 @@ error: script "test" exited with code 1
 - 2026-10-05T19:31:20Z · status review→active
 - 2026-10-05T19:31:27Z · status active→review
 - 2026-10-05T19:31:27Z · status review→active
-- 2026-10-05T19:36:22Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-05T19:36:22Z · status active→review
