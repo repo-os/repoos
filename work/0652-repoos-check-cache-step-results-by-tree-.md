@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-05T02:40:53Z"
-review_passes: 3
 id: "0652"
 title: "repoos check: cache step results by tree hash so unchanged reruns return instantly"
 type: feature
@@ -16,6 +14,8 @@ branch: feat/repoos-check-cache-step-results-by-tree-
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-04T16:32:02Z"
+updated_at: "2026-10-05T03:18:50Z"
+review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-04T23:41:37.441Z: server-side finalization timed out (deadline exceeded)"
 ---
@@ -33,7 +33,7 @@ Re-running repoos check on a tree whose relevant inputs have not changed returns
 - Tests: hit, miss on edit, miss on config change, never caches a failure, close-out bypass.
 
 ## Notes for AI
-Design risk is correctness, not speed: a stale cache hit that lets a broken tree through the gate is worse than the time saved. Prefer excluding a step to caching it unsafely. Shares check output with #0651 (auto-format and failed-steps summary); keep the two independent.
+PARKED (2026-10-05, human decision pending on closing this task). Three review rounds each found another input the cache key misses (round 1: --fix and REPOOS_SKIP_TESTS not in the key; round 3: file modes, symlinks, submodules, the resolved --changed ref, environment; round 4: ignored files such as dist/ and node_modules/ for the tests step). The holes cluster in the tests step and raw commands, which are also the slow steps, so a key cannot be proven complete. The cheap steps (format 1.26s, lint 0.07s, lockfile 0.03s, staleness 0.01s in the one full-profile sample in .repoos/check-results/latest.json) total about 1.4s of a 172-225s average run, so a narrowed cache saves under 1%. Decision: rely on #0651 (failed-steps summary and single-step rerun hint) and the failed-first test re-run task instead; revisit only if rerun counts stay high after #0651 ships. Original design risk note: a stale cache hit that lets a broken tree through the gate is worse than the time saved.
 
 ## Activity
 
@@ -76,4 +76,4 @@ error: script "test" exited with code 1
 - 2026-10-05T02:39:19Z · status active→review
 - 2026-10-05T02:39:20Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-05T02:40:53Z · needs_input
-
+- 2026-10-05T03:18:50Z · body: section Notes for AI
