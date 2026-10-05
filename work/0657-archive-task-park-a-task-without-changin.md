@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/archive-task-park-a-task-without-changin
 created_at: "2026-10-05T04:14:23Z"
-updated_at: "2026-10-05T04:45:58Z"
+updated_at: "2026-10-05T05:07:42Z"
 ---
 ## Problem
 There is no way to shelve a task that is not worth finishing right now. A task in review that has exhausted its review rounds (for example #0652) stays in the Review column with a 'Waiting for you' card, and the only exits are Move to done (merges the code), Send to engineer, Dismiss, abandon back to ready, or Delete (destroys it). Nothing says 'set this aside, keep the work, I may come back'. The board fills with tasks nobody intends to move.
@@ -39,8 +39,38 @@ There is no way to shelve a task that is not worth finishing right now. A task i
 ## Notes for AI
 Motivation: #0652 sat in review with needs_input 'review-rounds-exhausted' and no way to shelve it. Relevant code: TaskDrawer.vue (Delete task button, 'Waiting for you' card), DeleteTaskDialog.vue (model for the confirm modal), WorkView.vue (draft column rendering and the board columns), src/server/task-transitions.ts (existing abandon/reopen actions; archive is deliberately NOT a status transition), src/core/task.ts (frontmatter key list). Keep this orthogonal to status: do not add an 'archived' status. Out of scope: bulk archive, auto-archive rules, deleting worktrees of old archived tasks (a later GC task can do that).
 
+## Shots
+```json
+[
+  {
+    "label": "Archive task confirm modal (optional reason field)",
+    "target": "default",
+    "route": "/work",
+    "highlight": ".archive-confirm-modal",
+    "steps": [
+      {
+        "click": ".task-card"
+      },
+      {
+        "waitMs": 500
+      },
+      {
+        "click": "[data-test-id=\"archive-task\"]"
+      },
+      {
+        "waitFor": ".archive-confirm-modal"
+      },
+      {
+        "waitMs": 300
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-05T04:14:23Z · created · unknown
 - 2026-10-05T04:45:44Z · status inbox→ready
 - 2026-10-05T04:45:58Z · status ready→active, branch
+- 2026-10-05T05:07:42Z · body: section Shots
