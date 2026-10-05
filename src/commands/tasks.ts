@@ -10,13 +10,31 @@ import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { createRepoOS } from "../core/repoos.js";
 import { boardRoot, loadConfig, resolveColumnLabels } from "../core/config.js";
-import { STATUSES, type Status, type Task } from "../core/types.js";
+import { STATUSES, PRIORITIES, TASK_TYPES, type Status, type Task } from "../core/types.js";
 import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
 import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
 import { isAncestor } from "../core/git.js";
 import { declaredShotsSectionContent, parseShotPlan } from "../core/shot-plan.js";
 import { normalizeSectionHeading, replaceSection } from "../core/task.js";
+
+/**
+ * The full valid value sets for `--priority` / `--type`, rendered into both
+ * commands' usage text so the accepted values are obvious at the point of
+ * use (#0656) instead of a single example. Exported for tests.
+ */
+export const PRIORITY_USAGE = PRIORITIES.join("|");
+export const TYPE_USAGE = TASK_TYPES.join("|");
+
+export const UPDATE_USAGE =
+  '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] ' +
+  `[--priority ${PRIORITY_USAGE}] [--type ${TYPE_USAGE}] [--body "..."|-] [--branch b] ` +
+  '[--assigned-to ai|human] [--needs-input true|false] [--needs-merge true|false] [--questions "Question one\\nQuestion two"] [--clear-questions] [--shots "<JSON list>"|- | --section "<heading>" --section-body ...] [--force]';
+
+export const NEW_USAGE =
+  '  Usage: repoos new "Task title" [--ai] ' +
+  `[--type ${TYPE_USAGE}] [--area web,core] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority ${PRIORITY_USAGE}] ` +
+  '[--body "..."|-] [--shots "<JSON list>"|-] [--needs-input true|false] [--questions "Question one\\nQuestion two"]';
 
 /**
  * RepoOS facade rooted at the LIVE BOARD's checkout (the main checkout), even
@@ -405,8 +423,7 @@ function shotsSectionContent(raw: string): string {
  */
 export function cmdUpdate(args: string[]): void {
   const [id, ...rest] = args;
-  const usage =
-    '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--needs-merge true|false] [--questions "Question one\\nQuestion two"] [--clear-questions] [--shots "<JSON list>"|- | --section "<heading>" --section-body ...] [--force]';
+  const usage = UPDATE_USAGE;
   if (!id) {
     console.error(c.red(usage));
     process.exitCode = 1;
@@ -613,8 +630,7 @@ function parseQuestions(raw: string): string[] {
 
 /** `repoos new <title> [--ai] [--needs-input true] [--questions "..."] [--depends-on ids]` */
 export function cmdNew(args: string[]): void {
-  const usage =
-    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web,core] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority p1] [--body "..."|-] [--shots "<JSON list>"|-] [--needs-input true|false] [--questions "Question one\\nQuestion two"]';
+  const usage = NEW_USAGE;
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
   for (let i = 0; i < args.length; i++) {
