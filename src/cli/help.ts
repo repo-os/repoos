@@ -38,10 +38,10 @@ const GROUPS: readonly CommandGroup[] = [
       {
         name: "init",
         usage:
-          "init [name|--dir <path>] [--new --description <text>|--description-file <path>|- --areas a,b --commit|--no-commit --launch|--no-launch --json] [--starter vision|codebase] [--force]",
+          "init [name|--dir <path>] [--new --description <text>|--description-file <path>|- --areas a,b --commit|--no-commit --launch|--no-launch --json] [--docs-from <dir|file|.zip>] [--starter vision|codebase] [--force]",
         desc: "Scaffold work/, repoos.toml, AGENTS.md; guided flow for a new project",
         flags:
-          "new-project (--new/--yes): --description · --description-file · --areas · --layout · --commit/--no-commit · --launch/--no-launch · --preview-stub/--no-preview-stub · --dir · --force · --json. Any init: --starter vision|codebase picks the seeded starter task. Existing-repo init takes none of the new-project flags.",
+          "new-project (--new/--yes): --description · --description-file · --areas · --layout · --commit/--no-commit · --launch/--no-launch · --preview-stub/--no-preview-stub · --dir · --force · --json. Any init: --docs-from <dir|file|.zip> · --starter vision|codebase · --force. Existing-repo init takes none of the new-project flags.",
       },
       {
         name: "upgrade",
@@ -76,6 +76,12 @@ const GROUPS: readonly CommandGroup[] = [
         name: "new-doc",
         usage: 'new-doc "<desc>"',
         desc: "Create a document from a description via the PM agent",
+      },
+      {
+        name: "docs",
+        usage: "docs <import|scaffold> [path] [--force] [--dry-run]",
+        desc: "Import an existing doc set, or scaffold starter project docs",
+        flags: "--force · --dry-run",
       },
       {
         name: "note",

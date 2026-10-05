@@ -273,6 +273,39 @@ treat the answers list as a starting point and adjust from the output.
    Never run `repoos serve` from inside a short-lived agent command and expect
    it to stay up.
 
+## Give the project docs
+
+Project docs under `repoos/docs/` are the context an agent reads before it
+starts. RepoOS never invents them and never imposes a structure, but it can
+bring your own or scaffold a starting point — both are opt-in.
+
+Import an existing doc set (a directory, a single file, or a `.zip`):
+
+```bash
+repoos init --docs-from ~/Downloads/project-docs
+# or, in an already-initialized repo:
+repoos docs import ~/Downloads/project-docs.zip
+```
+
+The import preserves the folder structure, ignores macOS junk, refuses to
+overwrite an existing file unless you pass `--force`, and prints what it copied.
+Add `--dry-run` to see the plan without writing anything. During the guided
+`repoos init` flow you can instead paste a path at the
+"Import existing docs from a folder?" prompt.
+
+If you don't have docs yet, ask for the starter skeleton:
+
+```bash
+repoos docs scaffold
+```
+
+That writes an index `README.md` with a reading order, plus short
+`product.md`, `architecture.md`, `conventions.md` and `glossary.md` stubs, each
+with prompts for what to put there. Nothing is created unless you run that
+command (or answer yes to the scaffold prompt in the guided flow). `repoos doctor`
+warns if `AGENTS.md` never points at the docs index, if docs exist that the index
+doesn't link, or if the docs directory is empty while tasks exist.
+
 ## Start the server
 
 ```bash
