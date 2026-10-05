@@ -202,4 +202,52 @@ describe("board-write commands resolve to the main checkout, not cwd (#0202)", (
       clean();
     }
   });
+
+  it("cmdNew flags a stub task as underspecified (#0668)", async () => {
+    const { root, clean } = makeRepoWithTask();
+    try {
+      await withCwd(root, () => {
+        cmdNew(["Stub created by CLI"]);
+      });
+      const file = readdirSync(join(root, "work")).find((f) => f.includes("stub-created-by-cli"));
+      expect(file).toBeTruthy();
+      const content = readFileSync(join(root, "work", file!), "utf8");
+      expect(content).toMatch(/^needs_input: true$/m);
+      expect(content).toMatch(/^needs_input_reason: underspecified$/m);
+    } finally {
+      clean();
+    }
+  });
+
+  it("cmdNew does not flag a fully specified task (#0668)", async () => {
+    const { root, clean } = makeRepoWithTask();
+    const body = [
+      "## Problem",
+      "",
+      "A substantive problem description that clears the short-body heuristic. ".repeat(8),
+      "",
+      "## Desired UX",
+      "",
+      "A substantive UX description that clears the short-body heuristic. ".repeat(8),
+      "",
+      "## Acceptance criteria",
+      "",
+      "- [ ] The flow works end to end",
+      "",
+      "## Notes for AI",
+      "",
+      "Substantive notes that clear the short-body heuristic. ".repeat(6),
+    ].join("\n");
+    try {
+      await withCwd(root, () => {
+        cmdNew(["Full CLI task", "--body", body]);
+      });
+      const file = readdirSync(join(root, "work")).find((f) => f.includes("full-cli-task"));
+      expect(file).toBeTruthy();
+      const content = readFileSync(join(root, "work", file!), "utf8");
+      expect(content).not.toMatch(/^needs_input: true$/m);
+    } finally {
+      clean();
+    }
+  });
 });

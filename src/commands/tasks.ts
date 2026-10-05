@@ -13,6 +13,7 @@ import { boardRoot, loadConfig, resolveColumnLabels } from "../core/config.js";
 import { STATUSES, PRIORITIES, TASK_TYPES, type Status, type Task } from "../core/types.js";
 import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
+import { flagUnderspecifiedIfNeeded } from "../server/task-underspecified-flag.js";
 import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
 import { isAncestor } from "../core/git.js";
 import { declaredShotsSectionContent, parseShotPlan } from "../core/shot-plan.js";
@@ -759,6 +760,18 @@ export function cmdNew(args: string[]): void {
   console.log(
     "  " + c.green("created ") + c.dim("#" + t.id) + "  " + t.title + c.dim("  → " + t.path),
   );
+  // #0668: `repoos new` writes the task directly (no server in the loop), so it
+  // assesses the stub itself. The boot sweep is the backstop for tasks created
+  // while the server was down or by another client.
+  const flagged = flagUnderspecifiedIfNeeded(repoos.config, t);
+  if (flagged) {
+    console.log(
+      "  " +
+        c.yellow("needs input ") +
+        c.dim("task body is underspecified — ") +
+        flagged.needsInputDetail,
+    );
+  }
   const res = repoos.commitNewFile(t.absPath, `docs(${t.id}): add task ${t.title}`);
   if (res.ok) {
     console.log("  " + c.green("committed ") + c.dim(res.hash ?? ""));

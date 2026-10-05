@@ -50,6 +50,32 @@ export function flagUnderspecifiedIfNeeded(config: RepoOSConfig, task: Task): Ta
   });
 }
 
+/**
+ * Whether a task is a candidate for the underspecified sweep. Terminal and
+ * under-review tasks are excluded — `review` already suppresses the flag (#0511)
+ * and `done` is history — as are archived tasks (shelved, not actionable).
+ */
+export function isUnderspecifiedSweepEligible(task: Task): boolean {
+  return task.status !== "done" && task.status !== "review" && !task.isArchived;
+}
+
+/**
+ * One-time sweep over the current board (#0668): flag every eligible task whose
+ * body still looks like a stub. Idempotent — `flagUnderspecifiedIfNeeded`
+ * no-ops when the flag already matches, never clobbers an unrelated
+ * `needs_input` reason, and clears only its own stale reason — so repeated
+ * sweeps do not churn the files. Returns the tasks whose file was rewritten
+ * (the caller commits them on the control plane).
+ */
+export function sweepUnderspecifiedTasks(config: RepoOSConfig, tasks: Iterable<Task>): Task[] {
+  const changed: Task[] = [];
+  for (const task of tasks) {
+    if (!isUnderspecifiedSweepEligible(task)) continue;
+    if (flagUnderspecifiedIfNeeded(config, task)) changed.push(task);
+  }
+  return changed;
+}
+
 /** Reasons cleared when the human sends a PM chat message (mirrors cto-escalation UX). */
 export function needsInputClearsOnPmMessage(reason: string | undefined): boolean {
   return reason === "cto-escalation" || reason === UNDERSPECIFIED_NEEDS_INPUT_REASON;

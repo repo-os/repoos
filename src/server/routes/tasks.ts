@@ -46,6 +46,7 @@ import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
 import {
   flagUnderspecifiedIfNeeded,
+  isUnderspecifiedSweepEligible,
   needsInputClearsOnPmMessage,
   UNDERSPECIFIED_NEEDS_INPUT_REASON,
 } from "../task-underspecified-flag.js";
@@ -248,6 +249,19 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
     type: created.type,
     area: created.area,
   });
+  // #0668: a task created through the plain create path with a stub body is
+  // flagged the moment it exists — not only after a later PATCH or PM run.
+  // `flagUnderspecifiedIfNeeded` preserves any unrelated reason the caller set.
+  if (isUnderspecifiedSweepEligible(created)) {
+    const flagged = flagUnderspecifiedIfNeeded(config, created);
+    if (flagged) {
+      created = flagged;
+      logger.task(created.id, "warn", "Task body is underspecified at creation", {
+        detail: flagged.needsInputDetail,
+        needsInputRaised: true,
+      });
+    }
+  }
   index.applyFileChange(created.absPath);
   commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
   return json(res, 201, index.getTask(created.id));
