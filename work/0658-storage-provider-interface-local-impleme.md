@@ -2,7 +2,7 @@
 id: "0658"
 title: Storage-provider interface + local implementation
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: underspecified
 needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
@@ -66,4 +66,4 @@ Notes for AI:
 - 2026-10-05T12:34:13Z · needs_input
 - 2026-10-05T12:34:13Z · needs_input
 - 2026-10-05T12:44:26Z · body
-- 2026-10-05T12:49:56Z · note: shots: skipped — the diff (10 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-05T12:49:56Z · status active→review
