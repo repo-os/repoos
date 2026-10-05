@@ -2,7 +2,7 @@
 id: "0670"
 title: "repoos init: non-interactive new-project mode for agents (flags) and an actionable non-TTY error"
 type: feature
-status: active
+status: review
 priority: p2
 area: cli
 assigned_to: ai
@@ -51,4 +51,4 @@ Related earlier work: task 0028 (guided new-git-repo mode) and 0364 (seed a real
 - 2026-10-05T15:20:07Z · created · unknown
 - 2026-10-05T15:39:09Z · status inbox→ready
 - 2026-10-05T15:39:10Z · status ready→active, branch
-- 2026-10-05T16:07:32Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-05T16:07:32Z · status active→review
