@@ -345,6 +345,10 @@ export function parseTask(args: ParseTaskArgs): Task {
   return {
     id,
     title,
+    // #0656: reads stay permissive. Existing files carry legacy values
+    // (`type: ux`, `priority: high`), so the parser preserves the raw value
+    // instead of crashing or rewriting it. Validation applies to NEW writes
+    // only — see src/core/task-fields.ts.
     type: String(data.type ?? "feature"),
     status: normalizeStatus(data.status, "inbox" as Status),
     needsInput: data.needs_input === true,

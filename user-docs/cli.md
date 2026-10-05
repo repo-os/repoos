@@ -52,6 +52,13 @@ repoos new "Build the settings screen" --depends-on 0542,0538
 | `--ai` | Assign to an AI agent |
 | `--body` | Task body; pass `-` to read from stdin |
 
+`--priority` and `--type` are validated on every write: a value outside the
+sets above is rejected with the field, the bad value and the full list of valid
+values (e.g. `priority 'medium' is not valid; use one of p0, p1, p2, p3`), and
+is never silently defaulted. The same check applies to `repoos update` and the
+HTTP API. Task files that already carry a legacy value (`priority: high`,
+`type: ux`) still load and display as-is — only new writes are checked.
+
 ### `repoos list [status]`
 
 Shows the board, or one column: `inbox`, `ready`, `active`, `review`, `done`.

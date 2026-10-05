@@ -35,6 +35,7 @@ import { normalizeStoryName } from "../core/stories.js";
 import { branchCommit, commitTaskFile, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { normalizeTaskDependencies, validateTaskDependencies } from "../core/task-dependencies.js";
+import { taskPriorityError, taskTypeError } from "../core/task-fields.js";
 import { appendScreenshotsSection, type ScreenshotMeta } from "./attachments.js";
 import { storiesDirOf } from "../core/story-definition-files.js";
 
@@ -217,6 +218,12 @@ export function patchTaskFile(
   if (patch.status !== undefined && !(STATUSES as readonly string[]).includes(patch.status)) {
     throw new WriteError(`Invalid status "${patch.status}". Valid: ${STATUSES.join(", ")}`);
   }
+  // #0656: reject an out-of-set priority/type before anything is written. The
+  // message names the field, the bad value and the full valid set; the value
+  // is never coerced to a default. Unset fields are a no-op (a patch that does
+  // not touch priority/type is never rejected over what is already on disk).
+  const fieldError = taskPriorityError(patch.priority) ?? taskTypeError(patch.type);
+  if (fieldError) throw new WriteError(fieldError);
 
   // Re-read CURRENT on-disk state right before writing.
   const current = parseTask({
