@@ -494,7 +494,7 @@ export interface RoleUsage {
   totalCacheCreationTokens?: number | null;
   totalTurns?: number | null;
   totalCostUsd: number | null;
-  /** "none"/"estimate"/"extractUsage"/"kiro-credits"/"mixed" — drives honest cost labeling. */
+  /** "none"/"extractUsage"/"kiro-credits"/"mixed" — drives honest cost labeling. */
   costSource: string;
 }
 

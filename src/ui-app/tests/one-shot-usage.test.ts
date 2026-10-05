@@ -89,7 +89,7 @@ describe("recordOneShotSession — tracking AI usage outside the AgentRunner (03
     db.close();
   });
 
-  it("falls back to a token-based cost estimate when the CLI reports none", () => {
+  it("records a token-only run as unknown cost instead of estimating from tokens (#0676)", () => {
     const root = tempRoot();
     recordOneShotSession(
       root,
@@ -103,8 +103,41 @@ describe("recordOneShotSession — tracking AI usage outside the AgentRunner (03
 
     const db = new RepoOSDb(root);
     const pmRole = db.getTaskStats("0312")!.roles.find((r) => r.role === "pm");
-    expect(pmRole!.costSource).toBe("estimate");
-    expect(pmRole!.totalCostUsd ?? 0).toBeGreaterThan(0);
+    // Tokens are recorded, but no dollar figure is invented from them.
+    expect(pmRole!.totalTokens).toBe(50_000);
+    expect(pmRole!.totalCostUsd ?? null).toBeNull();
+    expect(pmRole!.costSource).toBe("none");
+    db.close();
+  });
+
+  it("never lets a cache-heavy token count become a bogus cost (2.8M-token regression, #0676)", () => {
+    // The opex run's poisoned row: a 32-second pi session that ended on an
+    // OpenRouter 402, recorded with input/output 0 and totalTokens 2.8M (all
+    // cache-read). The old estimate priced it at ~$25; it must now be unknown.
+    const root = tempRoot();
+    recordOneShotSession(
+      root,
+      pm,
+      {
+        ok: false,
+        error: "OpenRouter HTTP 402",
+        elapsedMs: 32_000,
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 2_800_000,
+        cacheReadTokens: 2_800_000,
+      },
+      { sessionType: "engineer", taskId: "0023" },
+    );
+
+    const db = new RepoOSDb(root);
+    const stats = db.getTaskStats("0023")!;
+    const role = stats.roles.find((r) => r.role === "engineer")!;
+    expect(role.totalTokens).toBe(2_800_000);
+    expect(role.totalCostUsd ?? null).toBeNull();
+    expect(role.costSource).toBe("none");
+    // And it never inflates the board total.
+    expect(db.getBoardStats().totalCostUsd).toBeNull();
     db.close();
   });
 

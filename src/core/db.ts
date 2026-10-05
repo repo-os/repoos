@@ -301,7 +301,7 @@ export interface TaskStats {
   totalCacheCreationTokens: number | null;
   totalTurns: number | null;
   totalCostUsd: number | null;
-  /** Representative cost source for the task's sessions ("none"/"estimate"/"extractUsage"/"kiro-credits"/"mixed"). */
+  /** Representative cost source for the task's sessions ("none"/"extractUsage"/"kiro-credits"/"mixed"). */
   costSource: string;
   /** Role-level breakdown (engineer/pm/reviewer/cto/guide/…) for this task. */
   roles: TaskRoleStats[];
@@ -358,7 +358,7 @@ export interface BoardStats {
   totalElapsedMs: number;
   totalTokens: number | null;
   totalCostUsd: number | null;
-  /** Representative cost source for the board ("none"/"estimate"/"extractUsage"/"kiro-credits"/"mixed"). */
+  /** Representative cost source for the board ("none"/"extractUsage"/"kiro-credits"/"mixed"). */
   costSource: string;
   mostExpensiveSession: SessionRecord | null;
   mostExpensiveTask: { taskId: string; costUsd: number } | null;
@@ -785,8 +785,10 @@ export class RepoOSDb {
   /**
    * Sum usage across a group of sessions. costSource is classified as "mixed"
    * when the group's spend comes from more than one source, otherwise the
-   * single non-"none" source (or "none"). This drives honest labeling in the UI
-   * (estimates and Kiro credits are never silently shown as firm USD, 0230).
+   * single non-"none" source (or "none"). Legacy `estimate` rows (written
+   * before #0676) are treated as unknown: they never contribute a dollar
+   * figure to the total and never appear as a cost source, because a token-count
+   * estimate is not real spend.
    */
   private aggregateRows(rows: SessionRecord[]): {
     totalSessions: number;
@@ -821,7 +823,9 @@ export class RepoOSDb {
       if (r.cacheCreationTokens != null)
         totalCacheCreationTokens = (totalCacheCreationTokens ?? 0) + r.cacheCreationTokens;
       if (r.turns != null) totalTurns = (totalTurns ?? 0) + r.turns;
-      if (r.costUsd != null) {
+      // Estimates are not real spend (#0676): skip them so a legacy row can
+      // never inflate a total or colour the group's cost source.
+      if (r.costUsd != null && r.costSource !== "estimate") {
         totalCostUsd = (totalCostUsd ?? 0) + r.costUsd;
         sources.add(r.costSource || "extractUsage");
       }
@@ -878,7 +882,7 @@ export class RepoOSDb {
           COUNT(*) as totalSessions,
           COALESCE(SUM(elapsedMs), 0) as totalElapsedMs,
           SUM(CASE WHEN totalTokens IS NOT NULL THEN totalTokens ELSE 0 END) as totalTokens,
-          SUM(CASE WHEN costUsd IS NOT NULL THEN costUsd ELSE 0 END) as totalCostUsd
+          SUM(CASE WHEN costUsd IS NOT NULL AND costSource != 'estimate' THEN costUsd ELSE 0 END) as totalCostUsd
         FROM sessions
         ${startedFilter}
       `)
@@ -887,7 +891,7 @@ export class RepoOSDb {
       const mostExpensive = this.db
         .prepare(`
         SELECT * FROM sessions
-        WHERE costUsd IS NOT NULL
+        WHERE costUsd IS NOT NULL AND costSource != 'estimate'
         ${startedFilterAnd}
         ORDER BY costUsd DESC
         LIMIT 1
@@ -900,7 +904,7 @@ export class RepoOSDb {
         .prepare(`
         SELECT
           taskId,
-          SUM(CASE WHEN costUsd IS NOT NULL THEN costUsd ELSE 0 END) as costUsd
+          SUM(CASE WHEN costUsd IS NOT NULL AND costSource != 'estimate' THEN costUsd ELSE 0 END) as costUsd
         FROM sessions
         WHERE taskId IS NOT NULL
         ${startedFilterAnd}
@@ -918,12 +922,13 @@ export class RepoOSDb {
           : null;
 
       // Representative cost source across the (range-scoped) sessions — mirrors
-      // the per-role / per-day classification in aggregateRows so estimates and
-      // Kiro credits are never silently shown as firm USD at the board level
-      // (0230).
+      // the per-role / per-day classification in aggregateRows so Kiro credits
+      // are never silently shown as firm USD (0230). Legacy `estimate` rows are
+      // ignored (#0676): an estimate is not spend, so it must not colour the
+      // board's cost source.
       const sourceRows = this.db
         .prepare(
-          `SELECT DISTINCT COALESCE(costSource, 'extractUsage') as costSource FROM sessions WHERE costUsd IS NOT NULL ${startedFilterAnd}`,
+          `SELECT DISTINCT COALESCE(costSource, 'extractUsage') as costSource FROM sessions WHERE costUsd IS NOT NULL AND costSource != 'estimate' ${startedFilterAnd}`,
         )
         .all(...startedArgs) as { costSource: string }[];
       const costSource =

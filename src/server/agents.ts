@@ -531,18 +531,6 @@ function writeRegistry(cacheDir: string, registry: DurableRegistry): void {
 export const DEFAULT_STALL_TIMEOUT_MS = 90_000;
 
 /**
- * Estimate cost from token count when the CLI doesn't report it explicitly.
- * Uses rough pricing for common models: claude 3.5 sonnet $3/M input, $15/M output.
- * This is a fallback when extractUsage yields no cost; never fabricates when
- * the CLI provides no data at all.
- */
-export function estimateCostUsd(tokens?: number): number | undefined {
-  if (!tokens || tokens < 1) return undefined;
-  const avgCostPerToken = (3 + 15) / 2 / 1_000_000;
-  return Math.max(0.001, tokens * avgCostPerToken);
-}
-
-/**
  * Best-effort usage/cost extraction from one raw output line. Tries a JSON
  * parse first (codex `--json` usage events, opencode payloads carrying usage)
  * and falls back to plain-text patterns (the kind of human-readable summary
@@ -710,9 +698,9 @@ export function foldUsage(total: ExtractedUsage, raw: string): void {
 /**
  * Classify the cost source for a recorded session (0230). Authoritative
  * CLI-reported cost wins; Kiro is flagged as its own unit (credits), never
- * passed off as USD. Callers that compute a token-based estimate (the engineer
- * runner) set `costSource` to "estimate" themselves — this only reports whether
- * a real CLI figure was present.
+ * passed off as USD. A session with no reported cost is "none" — RepoOS never
+ * estimates a dollar figure from token counts (#0676), so "estimate" is not a
+ * source this returns.
  */
 export function usageCostSource(agent: Agent, usage: { costUsd?: number }): string {
   if (usage.costUsd) return agent.cli === "kiro" ? "kiro-credits" : "extractUsage";
@@ -4379,9 +4367,10 @@ export function oneShotResultFromLog(
  * bypasses the AgentRunner, so nothing books it unless the caller does. This
  * is the shared path for those: it folds the `PromptResult` (elapsed, tokens,
  * cost) into a session row, classifying `costSource` the same way
- * `recordSessionToDb` does — a real CLI figure wins, a token-only run gets an
- * estimate, Kiro credits are never presented as USD. Best-effort: a DB failure
- * never propagates to the request.
+ * `recordSessionToDb` does — a real CLI figure wins, a run that reported only
+ * tokens is stored as unknown (`costUsd: null`, `costSource: "none"`, never a
+ * fabricated dollar figure, #0676), and Kiro credits are never presented as
+ * USD. Best-effort: a DB failure never propagates to the request.
  *
  * `taskId` is null for board-level work that belongs to no single task; those
  * rows still roll into every board-level aggregation (getSessionTypeStats /
@@ -4399,14 +4388,14 @@ export function recordOneShotSession(
     const endedAt = new Date().toISOString();
     const elapsedMs = result.elapsedMs ?? 0;
     const totalTokens = result.totalTokens ?? undefined;
-    let costUsd = result.costUsd ?? undefined;
-    let costSource = "none";
-    if (totalTokens && !costUsd) {
-      costUsd = estimateCostUsd(totalTokens);
-      costSource = "estimate";
-    } else if (result.costUsd) {
-      costSource = agent.cli === "kiro" ? "kiro-credits" : "extractUsage";
-    }
+    // Never estimate a dollar figure from token counts (#0676): `totalTokens`
+    // includes cache-read tokens, so pricing them at a single uncached rate can
+    // be ~1000x too high for a cheap, cache-heavy model (and a run cut off
+    // before usage is extracted has no cost at all). A session with tokens but
+    // no reported cost is stored as unknown — `costUsd: null`, `costSource:
+    // "none"` — and stays out of every spend total.
+    const costUsd = result.costUsd ?? undefined;
+    const costSource = costUsd ? (agent.cli === "kiro" ? "kiro-credits" : "extractUsage") : "none";
     db.upsertSession({
       sessionId:
         opts.sessionId ??
@@ -6766,18 +6755,14 @@ export class AgentRunner {
       const cacheReadTokens = session.cacheReadTokens ?? undefined;
       const cacheCreationTokens = session.cacheCreationTokens ?? undefined;
       const turns = session.turns ?? undefined;
-      let costUsd = session.costUsd ?? undefined;
-      let costSource = "none";
+      // Never fabricate a cost from token counts (#0676) — see
+      // `recordOneShotSession`. A session that reported tokens but no cost is
+      // stored as unknown and excluded from every spend total.
+      const costUsd = session.costUsd ?? undefined;
       const isKiro = session.engine === "kiro";
-
-      if (totalTokens && !costUsd) {
-        costUsd = estimateCostUsd(totalTokens);
-        costSource = "estimate";
-      } else if (session.costUsd) {
-        // Kiro reports credits in its billing unit, not US dollars — flag the
-        // source so aggregation/UI never present it as USD (0230).
-        costSource = isKiro ? "kiro-credits" : "extractUsage";
-      }
+      // Kiro reports credits in its billing unit, not US dollars — flag the
+      // source so aggregation/UI never present it as USD (0230).
+      const costSource = costUsd ? (isKiro ? "kiro-credits" : "extractUsage") : "none";
 
       const status = exitedCleanly ? "finished" : "errored";
 
