@@ -222,7 +222,8 @@ describe("needs_input status labels in the task drawer (#0511)", () => {
       setActivePinia(pinia);
       FakeEventSource.instances = [];
       const task = makeTask({
-        status: reason === "review-failed" ? "review" : "active",
+        status:
+          reason === "review-failed" ? "review" : reason === "underspecified" ? "inbox" : "active",
         needsInput: true,
         needsInputReason: reason === "questions" ? undefined : reason,
         questions: reason === "questions" ? ["Pick A or B"] : undefined,

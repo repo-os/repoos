@@ -176,7 +176,7 @@ function makeCtx(
 }
 
 describe("underspecified flag on task start (#0613)", () => {
-  it("raises the flag and logs a visible warning when an underspecified task starts", async () => {
+  it("does not flag but logs a visible warning when an underspecified task starts", async () => {
     const fx = makeFixture("ready", "hotfix: true\n");
     try {
       const ctx = makeCtx(fx);
@@ -184,16 +184,14 @@ describe("underspecified flag on task start (#0613)", () => {
       const { res, fake } = makeRes();
       await taskAction(ctx, makeReq(), res, { param1: "0558", param2: "start" });
       expect(fake.status).toBe(500);
-      expect(readTaskFile(fx)).toMatchObject({
-        status: "active",
-        needsInput: true,
-        needsInputReason: "underspecified",
-      });
+      const onDisk = readTaskFile(fx);
+      expect(onDisk.status).toBe("active");
+      expect(onDisk.needsInput).toBeFalsy();
       expect(ctx.logger.task).toHaveBeenCalledWith(
         "0558",
         "warn",
         "Task body is underspecified at start",
-        expect.objectContaining({ detail: expect.any(String), needsInputRaised: true }),
+        expect.objectContaining({ detail: expect.any(String), needsInputRaised: false }),
       );
     } finally {
       fx.clean();
@@ -281,7 +279,7 @@ ${"Substantive notes that are long enough to avoid the short-body heuristic. ".r
 - 2026-01-01T00:00:00Z · created
 `;
 
-  it("raises needs_input when body and review transition share one PATCH (#0613)", async () => {
+  it("does not flag when body and review transition share one PATCH (#0613)", async () => {
     const fx = makeFixture("active");
     try {
       writeFileSync(fx.taskPath, taskText("active", "").replace(STUB_BODY, WELL_SPECIFIED));
@@ -297,8 +295,7 @@ ${"Substantive notes that are long enough to avoid the short-body heuristic. ".r
       });
       expect(fake.status).toBe(202);
       const onDisk = readTaskFile(fx);
-      expect(onDisk.needsInput).toBe(true);
-      expect(onDisk.needsInputReason).toBe("underspecified");
+      expect(onDisk.needsInput).toBeFalsy();
     } finally {
       fx.clean();
     }
@@ -327,9 +324,9 @@ ${"Substantive notes that are long enough to avoid the short-body heuristic. ".r
   });
 
   it("raises needs_input when a later body edit leaves spec sections empty", async () => {
-    const fx = makeFixture("active");
+    const fx = makeFixture("inbox");
     try {
-      writeFileSync(fx.taskPath, taskText("active", "").replace(STUB_BODY, WELL_SPECIFIED));
+      writeFileSync(fx.taskPath, taskText("inbox", "").replace(STUB_BODY, WELL_SPECIFIED));
       const gutted = WELL_SPECIFIED.replace(
         /## Problem\n\n[\s\S]*?\n\n## Desired UX/,
         "## Problem\n\n\n## Desired UX",

@@ -10,6 +10,11 @@ import { patchTaskFile } from "./write.js";
  * Raise `needs_input` for an under-specified task body without clobbering an
  * unrelated reason already set (dev-error, watchdog-stuck, …).
  */
+/** `active`, `review` and `done` tasks are being (or have been) worked — flesh-out no longer matters. */
+export function isPastFleshOutStage(task: Pick<Task, "status">): boolean {
+  return task.status === "active" || task.status === "review" || task.status === "done";
+}
+
 export function flagUnderspecifiedIfNeeded(config: RepoOSConfig, task: Task): Task | null {
   if (task.needsInput) {
     if (task.needsInputReason && task.needsInputReason !== UNDERSPECIFIED_NEEDS_INPUT_REASON) {
@@ -21,8 +26,10 @@ export function flagUnderspecifiedIfNeeded(config: RepoOSConfig, task: Task): Ta
     }
   }
 
+  // Once work has started (or finished) a stub body no longer needs a human:
+  // never raise the flag, and drop a stale one.
   const { underspecified, detail } = assessTaskUnderspecified(task.body);
-  if (!underspecified) {
+  if (!underspecified || isPastFleshOutStage(task)) {
     if (task.needsInput && task.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON) {
       // Drop only the obsolete reason; agent questions keep the human blocked.
       const hasQuestions = (task.questions?.length ?? 0) > 0;
@@ -56,7 +63,8 @@ export function flagUnderspecifiedIfNeeded(config: RepoOSConfig, task: Task): Ta
  * and `done` is history — as are archived tasks (shelved, not actionable).
  */
 export function isUnderspecifiedSweepEligible(task: Task): boolean {
-  return task.status !== "done" && task.status !== "review" && !task.isArchived;
+  // Past-stage tasks stay eligible so the sweep clears their stale flag.
+  return !task.isArchived;
 }
 
 /**
