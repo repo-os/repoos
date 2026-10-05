@@ -204,6 +204,7 @@ install = ["npm install -g @scope/package"]
 # ── Stories (cross-area delivery tracking, on by default) ────────────────
 [stories]
 enabled = true            # false hides the Stories page and task Story field
+excerptBytes = 4096       # bytes of story definition agents see in their prompt
 
 # ── Tunnels (managed by `repoos tunnel`) ─────────────────────────────────
 [tunnel]
@@ -752,6 +753,7 @@ enabled = true
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `stories.enabled` | boolean | `true` | yes | Shows the Stories page, its navigation item (between Work and Checks), and the task drawer's Story field. On by default; set `false` to hide all three. |
+| `stories.excerptBytes` | number | `4096` | yes | How many bytes of a story's definition the engineer and reviewer prompts include as shared background (see *What agents see*). Clamped to 512–65536. |
 
 Story definition files live under `storiesDir` (default `stories`, a top-level
 repo-relative layout key — see *Layout and repository paths*). Existing repos
@@ -792,6 +794,25 @@ is no manual completion control.
 Story names are whitespace-normalized and matched case-insensitively, so
 `Project updates email` and `project  updates  email` group together under one
 stable display name. Clearing the field removes the task from every story.
+
+### What agents see
+
+When a tagged task with a registered story is picked up, the engineer and the
+reviewer both get a **Story context** block in their prompt: the story's number
+and title, the path to its definition file, the ids, titles and statuses of the
+other tasks in the story, and the first `stories.excerptBytes` bytes of the
+definition. The story file is named so the agent can read the rest itself.
+
+This means the shared background you write into a story — why the work exists,
+decisions already made, evidence — reaches the agent doing the work, not only
+the humans reading the board. The excerpt is bounded so a long field report does
+not ship into every turn; raise `stories.excerptBytes` if your stories carry
+more reference material than the default.
+
+The block is omitted when a task carries no `story` tag, or when its tag names a
+story with no definition file (a tag-only story has nothing to excerpt). The task
+drawer's transcript records a line saying the story context was included and the
+excerpt size, so a review can see what the agent was given.
 
 ### Numbers and links
 
