@@ -12,7 +12,7 @@ branch: feat/opt-in-project-docs-docs-from-import-sta
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T15:20:13Z"
-updated_at: "2026-10-05T19:31:27Z"
+updated_at: "2026-10-05T19:36:22Z"
 review_passes: 2
 merge_conflict_retry_count: 1
 ---
@@ -142,3 +142,4 @@ error: script "test" exited with code 1
 - 2026-10-05T19:31:20Z · status review→active
 - 2026-10-05T19:31:27Z · status active→review
 - 2026-10-05T19:31:27Z · status review→active
+- 2026-10-05T19:36:22Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
