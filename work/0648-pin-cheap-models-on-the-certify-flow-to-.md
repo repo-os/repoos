@@ -3,13 +3,15 @@ id: "0648"
 title: Pin cheap models on the certify flow to keep probe costs low
 type: feature
 status: inbox
+is_archived: true
+archive_detail: Test archive
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-04T11:37:21Z"
-updated_at: "2026-10-04T16:56:40Z"
+updated_at: "2026-10-05T08:20:30Z"
 ---
 ## Problem
 `repoos certify <cli>` (src/commands/certify.ts → runAdapterContract in src/core/agent-contract.ts) makes 2–3 live model calls per harness (one-shot, resume, cancellation) with the prompt 'Reply with the single word OK.'. Only `pi` receives a model flag today (templates.modelArgs); the other nine harnesses (antigravity, claude code, codex, crush, cursor, github copilot, kiro, opencode, qwen code) run on whatever their configured default is — possibly a flagship model. Certifying all ten can cost real money for no benefit.
@@ -32,3 +34,4 @@ Related: certify now skips already-certified versions unless --force.
 
 - 2026-10-04T11:37:21Z · created · unknown
 - 2026-10-04T16:56:40Z · priority
+- 2026-10-05T08:20:30Z · archived: Test archive
