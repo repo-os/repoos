@@ -350,6 +350,36 @@ describe("opencode adapter", () => {
   });
 });
 
+describe("last-good fallback", () => {
+  it("serves the last successful list (stale) when a later probe fails, across restarts", async () => {
+    const fx = makeFixture();
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const cwd = tmpDir();
+    const old = prependPath(fx.bin);
+    try {
+      const good = await listModelSources({ clis: ["opencode"], cwd });
+      expect(good.opencode.stale).toBeUndefined();
+    } finally {
+      process.env.PATH = old;
+    }
+
+    // New process: memory is empty, only .repoos/model-cache.json remains.
+    clearModelSourceCache();
+    const bin = join(tmpDir(), "bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(bin, "opencode"), "#!/bin/sh\nexec /bin/sleep 30\n", { mode: 0o755 });
+    const old2 = withPath(bin);
+    try {
+      const res = await listModelSources({ clis: ["opencode"], cwd, timeoutMs: 500 });
+      expect(res.opencode.models).toContain("opencode/big-pickle");
+      expect(res.opencode.stale).toBe(true);
+      expect(res.opencode.error).toContain("timed out");
+    } finally {
+      process.env.PATH = old2;
+    }
+  });
+});
+
 describe("crush adapter", () => {
   it("spawns `crush models` and returns 'default' + parsed provider/model lines", async () => {
     const root = tmpDir();
