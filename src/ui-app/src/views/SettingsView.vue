@@ -981,6 +981,52 @@ onUnmounted(() => {
           </div>
         </Card>
 
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Attachments
+            </div>
+            <div id="setting-storage.provider" class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">Attachment storage</div>
+                <div class="setting-desc">
+                  Where attachment files — task and input screenshots — are stored. Local filesystem
+                  keeps them in gitignored <span class="mono">.attachments/</span> folders on this
+                  machine and is the default; Neon Object Storage is opt-in and needs credentials
+                  before it can be used.
+                </div>
+              </div>
+              <div class="setting-input tunnel-setting-actions">
+                <span class="tunnel-status-chip">{{ storageStatusChip }}</span>
+                <Select
+                  :model-value="String(form['storage.provider'] ?? 'local')"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form['storage.provider'] = v)"
+                >
+                  <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem
+                        v-for="o in storageProviderOptions"
+                        :key="o.value"
+                        :value="o.value"
+                      >
+                        {{ o.label }}
+                      </SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
+              <span class="restart-badge">restart required</span>
+            </div>
+            <div class="setting-desc" style="padding: 0 0 12px; max-width: 72ch">
+              {{ storageExplanation }}
+            </div>
+          </div>
+        </Card>
+
         <ServiceSettings />
 
         <Card style="padding: 0 18px 6px; margin-bottom: 16px">
