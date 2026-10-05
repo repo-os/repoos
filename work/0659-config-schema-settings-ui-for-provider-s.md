@@ -2,7 +2,7 @@
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
-status: active
+status: review
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -12,7 +12,7 @@ created_by: ""
 branch: feat/config-schema-settings-ui-for-provider-s
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T15:49:12Z"
+updated_at: "2026-10-05T15:49:13Z"
 handoff_signal_retry_count: 2
 ---
 ## Original prompt
@@ -70,4 +70,4 @@ The deeper problem is honesty. `createStorageProvider` deliberately falls back t
 - 2026-10-05T15:30:33Z · status ready→active, branch
 - 2026-10-05T15:42:36Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T15:42:36Z · status review→active
-- 2026-10-05T15:49:12Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-05T15:49:13Z · status active→review
