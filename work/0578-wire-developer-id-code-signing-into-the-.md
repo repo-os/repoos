@@ -5,7 +5,7 @@ type: feature
 status: inbox
 needs_input: true
 needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
+needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI"
 priority: p1
 area: macos
 story: MacOS Native App
@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:43:30Z"
-updated_at: "2026-10-05T11:15:28Z"
+updated_at: "2026-10-05T22:38:16Z"
 ---
 Replace the current ad-hoc signing in the RepoOS Hub Xcode project and release CI with Developer ID signing using the certificate provisioned in #0576.
 

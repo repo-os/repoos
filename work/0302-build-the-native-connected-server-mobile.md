@@ -5,7 +5,7 @@ type: feature
 status: inbox
 needs_input: true
 needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX, Notes for AI"
+needs_input_detail: "missing sections: Notes for AI"
 priority: p1
 area: mobile
 story: RepoOS Hub for Mobile
@@ -16,7 +16,7 @@ model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 pm_model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 review_model_override: deepinfra/Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo
 created_at: "2026-08-26T16:39:04Z"
-updated_at: "2026-10-05T11:15:27Z"
+updated_at: "2026-10-05T22:38:15Z"
 review_passes: 4
 check_retry_count: 2
 handoff_signal_retry_count: 1

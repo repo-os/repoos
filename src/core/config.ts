@@ -27,7 +27,9 @@ import type {
   DistributionKind,
   ModelProviderKeysConfig,
   PreviewConfig,
+  PreviewServiceConfig,
   PreviewTargetConfig,
+  ApprovalConfig,
   RepoOSConfig,
   Status,
   Assignee,
@@ -758,9 +760,41 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
       if (targetReadyPath) target.readyPath = targetReadyPath;
       const targetReadyTimeoutMs = normalizeReadyTimeoutMs(r.ready_timeout_ms ?? r.readyTimeoutMs);
       if (targetReadyTimeoutMs) target.readyTimeoutMs = targetReadyTimeoutMs;
+      // Companion processes this target boots alongside its main command
+      // (#0681): a flat string array of `[[preview.services]]` names, resolved
+      // at start time so an unknown name is a clear error, never a silent skip.
+      const targetServices = normalizeStringList(r.services);
+      if (targetServices.length) target.services = targetServices;
       targets.push(target);
     }
     if (targets.length) preview.targets = targets;
+  }
+
+  // Top-level `[[preview.services]]` (#0681): companion processes a target can
+  // boot on their own ports (e.g. an API behind a web dev server). A service
+  // with no command is dropped, like a target.
+  if (Array.isArray(parsed["preview.services"])) {
+    const services: PreviewServiceConfig[] = [];
+    const usedNames = new Set<string>();
+    for (const raw of parsed["preview.services"]) {
+      if (typeof raw !== "object" || raw === null) continue;
+      const r = raw as Record<string, unknown>;
+      const command = typeof r.command === "string" ? r.command.trim() : "";
+      if (!command) continue;
+      const base = typeof r.name === "string" && r.name.trim() ? r.name.trim() : "service";
+      let name = base;
+      for (let n = 2; usedNames.has(name); n++) name = `${base} (${n})`;
+      usedNames.add(name);
+      const service: PreviewServiceConfig = { name, command };
+      const serviceCwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
+      if (serviceCwd) service.cwd = serviceCwd;
+      const serviceReadyPath = normalizeReadyPath(r.ready_path ?? r.readyPath);
+      if (serviceReadyPath) service.readyPath = serviceReadyPath;
+      const serviceReadyTimeoutMs = normalizeReadyTimeoutMs(r.ready_timeout_ms ?? r.readyTimeoutMs);
+      if (serviceReadyTimeoutMs) service.readyTimeoutMs = serviceReadyTimeoutMs;
+      services.push(service);
+    }
+    if (services.length) preview.services = services;
   }
 
   const hasCustom = Boolean(preview.command) || Boolean(preview.targets?.length);
@@ -1016,14 +1050,21 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // declarative; an unconfigured project keeps the existing Releases view.
     const distribution = parseDistributionConfig(parsed);
     if (distribution) cfg.distribution = distribution;
-    // [stories] section — opt-in cross-area delivery tracking. Missing,
-    // malformed, or `enabled = false` leaves `cfg.stories` undefined and keeps
-    // the nav item, route and task-edit control entirely dormant.
+    // [stories] section — cross-area delivery tracking, ON by default so the
+    // Stories page, nav item and task Story field are available without any
+    // setup. An explicit `enabled = false` turns it off; a missing or
+    // malformed value falls back to the default (on).
     const storiesEnabled = parsed["stories.enabled"];
-    if (typeof storiesEnabled === "boolean") {
-      const stories: StoriesConfig = { enabled: storiesEnabled };
-      cfg.stories = stories;
+    const storiesExcerptBytes = parsed["stories.excerptBytes"];
+    const stories: StoriesConfig = {
+      enabled: typeof storiesEnabled === "boolean" ? storiesEnabled : true,
+    };
+    // Only a finite positive number is accepted; anything else is left unset so
+    // the prompt builder's own default applies (#0691).
+    if (typeof storiesExcerptBytes === "number" && Number.isFinite(storiesExcerptBytes)) {
+      stories.excerptBytes = Math.floor(storiesExcerptBytes);
     }
+    cfg.stories = stories;
     // [areas] section (#0583) — the declared area vocabulary. Both the
     // `[[areas]]` array-of-tables form (with per-area descriptions) and the
     // flat `areas = ["web", "core"]` string-array shorthand are accepted.
@@ -1481,6 +1522,25 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         );
       }
     }
+
+    const approvalEnabled = parsed["approval.enabled"];
+    const approvalAreas = normalizeStringList(parsed["approval.autoApprove.areas"]);
+    const approvalTypes = normalizeStringList(parsed["approval.autoApprove.types"]);
+    const approvalUiAreas = normalizeStringList(parsed["approval.autoApprove.uiAreas"]);
+    if (
+      approvalEnabled !== undefined ||
+      approvalAreas.length ||
+      approvalTypes.length ||
+      approvalUiAreas.length
+    ) {
+      const approval: ApprovalConfig = {};
+      if (typeof approvalEnabled === "boolean") approval.enabled = approvalEnabled;
+      approval.autoApprove = {};
+      if (approvalAreas.length) approval.autoApprove.areas = approvalAreas;
+      if (approvalTypes.length) approval.autoApprove.types = approvalTypes;
+      if (approvalUiAreas.length) approval.autoApprove.uiAreas = approvalUiAreas;
+      cfg.approval = approval;
+    }
   }
 
   // Model-provider API keys (0327): env-only, same rule as the [auth] secrets
@@ -1504,6 +1564,26 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
 
   cfg.builtInAgents = loadBuiltInAgentsConfig(root, cfg.cacheDir);
   return cfg;
+}
+
+/**
+ * Adopt a freshly loaded config in place (#0681). The holder object is mutated,
+ * not replaced, so every manager that captured a reference to `repoos.config`
+ * (notably `PreviewManager`) observes the change without re-wiring.
+ *
+ * `Object.assign` alone cannot REMOVE a key, and BOTH vocabulary sources can
+ * vanish: clearing the declared areas list re-parses to `undefined`, and
+ * deleting `[preview]` entirely omits `cfg.preview`. Reconcile those removable
+ * keys explicitly, or the old values survive every reload until a restart — the
+ * exact stale-preview failure #0681 reports.
+ *
+ * Shared by the Settings config routes (which call it after a PATCH) and the
+ * server's on-disk `repoos.toml` watcher, so both paths reconcile identically.
+ */
+export function applyReloadedConfig(holder: { config: RepoOSConfig }, fresh: RepoOSConfig): void {
+  Object.assign(holder.config, fresh);
+  holder.config.areas = fresh.areas;
+  holder.config.preview = fresh.preview;
 }
 
 /** Metadata describing a single config field for the Settings UI. */
@@ -1554,8 +1634,23 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       type: "boolean",
       tier: "live",
       restartRequired: false,
-      default: false,
-      description: "Show the Stories page and group tasks into cross-area delivery slices",
+      default: true,
+      description:
+        "Show the Stories page and group tasks into cross-area delivery slices (on by default)",
+    },
+    {
+      key: "stories.excerptBytes",
+      label: "Story context excerpt size",
+      type: "number",
+      tier: "guarded",
+      restartRequired: false,
+      default: 4096,
+      group: "general",
+      description:
+        "How many bytes of a story's definition the engineer and reviewer prompts include " +
+        "as shared background, before pointing the agent at the story file to read the rest. " +
+        "Clamped to 512–65536; a task with no story (or a tag with no definition file) gets " +
+        "no story context block.",
     },
     {
       key: "storage.provider",
@@ -1799,6 +1894,39 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "it is aborted with a retryable failure and the task stays in review; retries and remote " +
         "validation share the same budget. 0 disables the ceiling. Set any value in repoos.toml " +
         "(`[closeOut] timeoutMs`).",
+    },
+    {
+      key: "approval.enabled",
+      label: "Auto-approve clean reviews",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description:
+        "When enabled, tasks in review that match configured areas or types, pass the handoff gate, " +
+        "and receive a clean reviewer verdict can Move to done automatically. Every auto-approval is " +
+        "recorded in the task activity log. UI areas stay human unless handoff screenshots succeeded. " +
+        "Tag a task `human-only` to opt out. You must set at least one area or type list below — both empty never matches.",
+    },
+    {
+      key: "approval.autoApprove.areas",
+      label: "Auto-approve areas",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Task area values eligible for policy auto-approval (any match). Leave empty to match by type only.",
+    },
+    {
+      key: "approval.autoApprove.types",
+      label: "Auto-approve types",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Task types eligible for policy auto-approval (any match). Leave empty to match by area only.",
     },
     {
       key: "maxConcurrentAgents",
@@ -2081,6 +2209,14 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "preview.targets.cwd",
   "preview.targets.readyPath",
   "preview.targets.readyTimeoutMs",
+  "preview.targets.services",
+  // Companion processes for a full-stack preview (#0681) — a sibling
+  // array-of-tables to `[[preview.targets]]`.
+  "preview.services.name",
+  "preview.services.command",
+  "preview.services.cwd",
+  "preview.services.readyPath",
+  "preview.services.readyTimeoutMs",
   // Preview-only overrides (#0464): a `[preview.<base path>]` table applied
   // only by the preview/UI-test preview runtime. auth.enabled is the headline
   // case; any supported base key can be overridden the same way.
@@ -2134,6 +2270,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "stories.enabled",
   // Attachment storage (#0659) — which provider holds attachment bytes.
   "storage.provider",
+  "stories.excerptBytes",
   // Areas vocabulary (#0583): `[[areas]]` rows plus the flat `areas`
   // string-array shorthand the Settings UI writes.
   "areas",
@@ -2167,6 +2304,10 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "tunnel.apps",
   // Close-out (Move to done) pipeline budget (#0573)
   "closeOut.timeoutMs",
+  "approval.enabled",
+  "approval.autoApprove.areas",
+  "approval.autoApprove.types",
+  "approval.autoApprove.uiAreas",
   // Remote validation
   "remoteValidation.enabled",
   "remoteValidation.provider",
@@ -2230,24 +2371,38 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
   let result = text.replace(/\r\n/g, "\n").split("\n");
   let modified = false;
 
-  // Array-of-tables keys ([[agents]]): drop the existing blocks and append the
-  // freshly serialized ones at the end of the file. Also drop any pre-existing
-  // FLAT scalar/array line for the same key (root- or section-scoped) — TOML
-  // cannot validly have both a `key = [...]` line and `[[key]]` blocks for one
-  // key, and leaving a stale flat line untouched here resurrects whatever it
-  // said on the next parse even though this patch never wrote to it (#0521
-  // review: shortening a pool that has both forms rewrote the rows but left
-  // the old flat list, so a removed host came back on reload). Scoped to only
-  // remove a *stray* flat line, not one this same patch is also setting —
-  // callers that intentionally want both never happen; this just guards
-  // against ONE of them going stale after the other form is chosen.
+  // Array-of-tables keys ([[agents]], [[check.steps]], …): rewrite the existing
+  // blocks IN PLACE at the position of the first existing block, so a one-line
+  // change to an unrelated key never relocates the whole section. The previous
+  // behaviour dropped every block anywhere in the file and appended the
+  // freshly serialized ones at the very end — which reordered `[[agents]]`
+  // relative to other tables and produced a whole-section diff for a one-line
+  // Settings save (#0682, field report item 9). A key with no existing blocks
+  // still appends at the end, matching the prior behaviour.
+  //
+  // Also drop any pre-existing FLAT scalar/array line for the same key (root-
+  // or section-scoped) — TOML cannot validly have both a `key = [...]` line and
+  // `[[key]]` blocks for one key, and leaving a stale flat line untouched here
+  // resurrects whatever it said on the next parse even though this patch never
+  // wrote to it (#0521 review: shortening a pool that has both forms rewrote
+  // the rows but left the old flat list, so a removed host came back on
+  // reload). Scoped to only remove a *stray* flat line, not one this same patch
+  // is also setting — callers that intentionally want both never happen; this
+  // just guards against ONE of them going stale after the other form is chosen.
   for (const [key, rawVal] of Object.entries(patch)) {
     if (!isTableArray(rawVal)) continue;
     const blocks = serializeTableArray(key, rawVal);
-    const kept: string[] = [];
+    const withoutBlocks: string[] = [];
+    // Index in `withoutBlocks` where the first removed block sat — where the
+    // freshly serialized blocks go back. `-1` means the key had no blocks.
+    let insertAt = -1;
+    let section = "";
     let i = 0;
     while (i < result.length) {
-      if (stripTomlComment(result[i]).trim() === `[[${key}]]`) {
+      const stripped = stripTomlComment(result[i]).trim();
+      const blockHeader = stripped.match(/^\[\[([^\]]+)\]\]$/);
+      if (blockHeader && blockHeader[1].trim() === key) {
+        if (insertAt === -1) insertAt = withoutBlocks.length;
         i++;
         while (i < result.length) {
           const s = stripTomlComment(result[i]).trim();
@@ -2256,33 +2411,42 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
         }
         continue;
       }
-      kept.push(result[i]);
-      i++;
-    }
-    // Second pass: strip a stray flat line for the same key, root- or
-    // section-scoped — same full-name resolution as the scalar/array patch
-    // loop below (a root-scoped line's own identifier IS the full dotted
-    // key, e.g. `remoteValidation.tailscaleHosts = […]`; a section-scoped
-    // line's leaf combines with its `[section]` header to the same name).
-    let section = "";
-    const withoutFlat: string[] = [];
-    for (const line of kept) {
-      const stripped = stripTomlComment(line).trim();
-      const header = stripped.match(/^\[\[([^\]]+)\]\]/) ?? stripped.match(/^\[([^\]]+)\]/);
+      const header = blockHeader ?? stripped.match(/^\[([^\]]+)\]$/);
       if (header) {
         section = header[1]!.trim();
-        withoutFlat.push(line);
+        withoutBlocks.push(result[i]);
+        i++;
         continue;
       }
+      // Same full-name resolution as the scalar/array patch loop below (a
+      // root-scoped line's own identifier IS the full dotted key, e.g.
+      // `remoteValidation.tailscaleHosts = […]`; a section-scoped line's leaf
+      // combines with its `[section]` header to the same name).
       const kv = stripped.match(/^([A-Za-z0-9_.-]+)\s*=\s*/);
       const full = kv ? (section ? `${section}.${kv[1]}` : kv[1]!) : null;
-      if (full === key) continue; // drop the stray flat line for this key
-      withoutFlat.push(line);
+      if (full === key) {
+        i++; // drop the stray flat line for this key
+        continue;
+      }
+      withoutBlocks.push(result[i]);
+      i++;
     }
-    let finalKept = withoutFlat;
-    while (finalKept.length && finalKept[finalKept.length - 1].trim() === "") finalKept.pop();
-    finalKept.push(blocks);
-    result = finalKept;
+    if (insertAt === -1) {
+      while (withoutBlocks.length && withoutBlocks[withoutBlocks.length - 1].trim() === "") {
+        withoutBlocks.pop();
+      }
+      withoutBlocks.push(blocks);
+      result = withoutBlocks;
+    } else {
+      // The block-skip above swallows the blank line that followed the removed
+      // blocks; put one back when a table follows, so the section never butts
+      // up against the next `[[…]]`.
+      const next = withoutBlocks[insertAt];
+      const needsSep = next !== undefined && next.trim() !== "";
+      const finalKept = withoutBlocks.slice();
+      finalKept.splice(insertAt, 0, ...(needsSep ? [blocks, ""] : [blocks]));
+      result = finalKept;
+    }
     modified = true;
   }
 
@@ -2420,6 +2584,11 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
   }
 
   if (modified) {
+    // Normalize the tail: trim any trailing blank lines and write exactly one
+    // final newline. Without this, a scalar-only patch on a file that already
+    // ended with a blank line (`text.split("\n")` yields a trailing "") grew
+    // one empty line per save (#0682 round-trip stability).
+    while (result.length && result[result.length - 1].trim() === "") result.pop();
     writeFileSync(tomlPath, result.join("\n") + "\n", "utf8");
   }
 }

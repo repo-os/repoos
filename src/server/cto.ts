@@ -31,8 +31,7 @@ import {
   extractOneShotReportText,
   parseOneShotLine,
   resolveCto,
-  runPrompt,
-  reviewCommand,
+  runBoardAgent,
   usageCostSource,
   type AgentRunner,
   type PromptResult,
@@ -239,17 +238,20 @@ export class CTOManager {
 
     const mission = ctoMission(this.config, agent, boardDigest);
     let result;
+    let quarantined: string[] = [];
     try {
-      result = await runPrompt(agent, mission, {
+      const outcome = await runBoardAgent(agent, mission, {
         cwd: this.config.root,
+        cacheDir: this.config.cacheDir,
         timeoutMs: CTO_TIMEOUT_MS,
-        command: reviewCommand(agent, mission, this.config.root),
         onSpawn: (proc) => {
           run.proc = proc;
           if (run.cancelled) proc.kill("SIGTERM");
         },
         onLine: (line) => this.appendSessionLine(agent.cli, line),
       });
+      result = outcome.result;
+      quarantined = outcome.quarantined;
     } finally {
       this.runs.delete("cto");
     }
@@ -268,10 +270,22 @@ export class CTOManager {
     }
 
     const state: CTOReport["state"] = result.ok && result.output ? "ok" : "failed";
-    const body =
+    const quarantineNote = quarantined.length
+      ? `\n\n> Quarantined ${quarantined.length} stray file(s) this run created in the repo ` +
+        `(moved under ${join(this.config.cacheDir, "quarantine")}): ${quarantined
+          .map((p) => `\`${p}\``)
+          .join(", ")}`
+      : "";
+    let body =
       state === "ok"
         ? extractOneShotReportText(agent.cli, result.output ?? "")
         : `The CTO produced no report: ${result.error ?? "unknown error"}`;
+    // A quarantine is a write the agent was not allowed to make: surface it in
+    // the report. A successful circuit is still "ok" (the stray file was caught,
+    // not left behind); a failed run stays failed but names the file too.
+    if (quarantined.length) {
+      body = `${body.trim() ? body : "Nothing to report."}${quarantineNote}`;
+    }
     const report: CTOReport = {
       id: "cto",
       at: now(),
@@ -284,7 +298,7 @@ export class CTOManager {
     this.write(report);
     this.appendMarker(
       state === "ok"
-        ? "✓ CTO monitoring complete"
+        ? `✓ CTO monitoring complete${quarantined.length ? ` (quarantined ${quarantined.length} stray file(s))` : ""}`
         : `✗ CTO run failed: ${result.error ?? "no report"}`,
     );
     this.persistSession();
@@ -324,17 +338,20 @@ export class CTOManager {
 
     const mission = `You are the CTO. Respond to this question about the board and the tasks:\n\n${text}`;
     let result;
+    let quarantined: string[] = [];
     try {
-      result = await runPrompt(agent, mission, {
+      const outcome = await runBoardAgent(agent, mission, {
         cwd: this.config.root,
+        cacheDir: this.config.cacheDir,
         timeoutMs: CTO_TIMEOUT_MS,
-        command: reviewCommand(agent, mission, this.config.root),
         onSpawn: (proc) => {
           run.proc = proc;
           if (run.cancelled) proc.kill("SIGTERM");
         },
         onLine: (line) => this.appendSessionLine(agent.cli, line),
       });
+      result = outcome.result;
+      quarantined = outcome.quarantined;
     } finally {
       this.runs.delete("cto");
     }
@@ -361,6 +378,12 @@ export class CTOManager {
       });
       this.emit({ type: "cto", state: "failed", at: now() });
       return { ok: false, reason: result.error ?? "the CTO failed to answer" };
+    }
+
+    if (quarantined.length) {
+      this.appendMarker(
+        `⚠ the CTO created ${quarantined.length} stray file(s); quarantined under ${join(this.config.cacheDir, "quarantine")}: ${quarantined.join(", ")}`,
+      );
     }
 
     const completedAt = now();

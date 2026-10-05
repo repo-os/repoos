@@ -2686,6 +2686,14 @@
 .drawer-run.reviewing {
   color: var(--amber);
 }
+/* #0684: the effective agent/cli/model for the live run, so "agent coding"
+   never hides which harness is actually running. Muted to sit under the
+   status line rather than compete with it. */
+.drawer-run-agent {
+  color: var(--txt-dim);
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.02em;
+}
 
 /* review substate chip (reviewing / coding / waiting for human) */
 .rs-chip {
@@ -10556,6 +10564,9 @@
 .model-test-timed_out {
   color: var(--red);
 }
+.model-test-cold_start {
+  color: var(--amber);
+}
 .model-test-not_testable {
   color: var(--muted);
 }
@@ -11422,7 +11433,31 @@
   transition: transform 0.15s ease;
 }
 .archived-chevron.open {
-  transform: rotate(90deg);
+  transform: rotate(-90deg);
+}
+/* Desktop: dock the toggle bottom-left on the same row as the pinned
+   integration bar (bottom: 14px), with the task list opening upward from it. */
+@media (min-width: 761px) {
+  .work-page .archived-list {
+    /* Fixed like .ibar-wrap: the scrolling .main pane has bottom padding, so
+       anchoring to the page would land above the pipeline bar's row. */
+    position: fixed;
+    left: calc(210px + 26px);
+    bottom: 14px;
+    margin: 0;
+    z-index: 55;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    width: min(640px, calc(100vw - 210px - 26px - 520px));
+  }
+  .work-page .archived-rows {
+    margin: 0 0 8px;
+    align-self: stretch;
+    background: var(--panel-solid);
+    max-height: 50vh;
+    overflow-y: auto;
+  }
 }
 .archived-rows {
   list-style: none;

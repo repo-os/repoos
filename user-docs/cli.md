@@ -6,15 +6,58 @@ Run `repoos` with no arguments to see this list in your terminal.
 
 ### `repoos init [name]`
 
-Scaffolds RepoOS files in the current repo, plus a `ready` starter task so the
-board isn't empty. By default files go under a `repoos/` subdirectory;
-interactive prompts let you choose a different location or `/` for the repo
-root. `repoos.toml` and `AGENTS.md` always stay at the root. Run outside a git
-repo, it starts a guided new-project flow instead, which can launch the web
+Scaffolds RepoOS files in the current repo, plus an `inbox` starter task so the
+board isn't empty — a suggestion for you, not work to auto-run, promoted with
+`repoos mv <id> ready`. The starter body follows the repo's content: an
+effectively empty repo (no meaningful source yet) gets the product-vision task,
+otherwise the read-the-codebase one; override with
+`repoos init --starter vision|codebase`. By default files go under a `repoos/`
+subdirectory; interactive prompts let you choose a different location or `/` for
+the repo root. `repoos.toml` and `AGENTS.md` always stay at the root. Run outside
+a git repo, it starts a guided new-project flow instead, which can launch the web
 console for you. On an existing repo, an interactive run also offers to seed the
 task-area vocabulary (and commented preview-target stubs for it) — skippable, and
 skipped automatically once `[[areas]]` is declared. See
 [Configuration](/configuration#areas).
+
+`--docs-from` copies an existing doc set into `docsDir` (a directory, a single
+file, or a `.zip`); `--force` overwrites collisions. The guided flow also prompts
+for a path, then offers to scaffold starter docs. Nothing is imported or
+scaffolded unless you pass the flag or answer yes. See `repoos docs` below.
+
+#### Non-interactive new-project mode (for agents and scripts)
+
+Outside a git repo with no TTY, `repoos init <name>` can't prompt, so it prints
+the exact command to run and exits non-zero. Pass `--new` (or `--yes`) to run
+the same guided flow with answers from flags and defaults — no pty tricks:
+
+```bash
+repoos init myproject --new \
+  --description "A tiny social app for book clubs" \
+  --areas web,api \
+  --no-launch
+```
+
+| Flag | Meaning |
+| --- | --- |
+| `--new`, `--yes` | Run the new-project flow non-interactively. Required without a TTY. |
+| `--description "<text>"` | Project description seeded into the starter task. |
+| `--description-file <path>` | Read the description from a file; `-` reads stdin (multi-line markdown). |
+| `--areas web,api` | Seed the area vocabulary (same comma-separated rule as the area picker). |
+| `--layout <ns>` | `repoos` (default), `/` for the repo root, or a namespace path. |
+| `--commit` / `--no-commit` | Make the initial commit of the scaffold (default: commit). |
+| `--launch` / `--no-launch` | Start the web console when done (default: no launch without a TTY). |
+| `--preview-stub` / `--no-preview-stub` | Scaffold commented `[[preview.targets]]` stubs for the areas. |
+| `--dir <path>` | Where to create the project; alternative to the positional name. |
+| `--force` | Scaffold into an existing non-empty directory. |
+| `--json` | Print `{ root, tasks: [...], created: [...] }` instead of the human summary. |
+| `--help` | Documented flags, and which apply to new vs existing repos. |
+
+`--new` seeds the **new-project** starter ("Flesh out the product vision and
+initial architecture"). Do **not** work around a missing TTY by running
+`git init` first: inside a git repo, `repoos init` seeds the *existing-codebase*
+starter ("Read this codebase…"), which is the wrong route for a brand-new
+project.
 
 When the repo has no check plan yet, init inspects its stack and writes a
 starter plan to an uncommitted `repoos.check-plan.proposed.toml` for review;
@@ -104,7 +147,12 @@ only way back is to unarchive it (from the Archived list in the UI, or
 
 Edits a task's metadata or body: `--title`, `--area`, `--story`,
 `--depends-on`, `--priority`, `--type`, `--body`, `--branch`, `--assigned-to`,
-`--needs-input`, `--needs-merge`.
+`--needs-input`, `--needs-merge`, and per-role agent pins (`--agent`, `--cli`,
+`--model`, plus `--pm-*` and `--review-*` variants). These write the same
+fields as `PATCH /api/tasks/<id>` and are what engineer/reviewer runs read.
+`POST /api/tasks/<id>/start` and `/message` reject override fields in the
+request body (HTTP 400); PM chat routes still accept `cliOverride` /
+`modelOverride` for a single turn. See [Running with agents](/running-with-agents#2-choose-agents-per-role).
 
 ```bash
 repoos update 0615 --depends-on 0542,0538
@@ -148,6 +196,26 @@ an agent should read before picking the task up.
 
 Creates a document from a description, via the Product Manager agent.
 
+### `repoos docs import <dir|file|.zip> [--force] [--dry-run]`
+
+Copies an existing doc set into `docsDir`, preserving folder structure. The
+source may be a directory, a single file, or a `.zip` archive (common for a
+browser download): an archive is extracted to a temp directory first, a lone
+top-level folder is unwrapped so you don't get an extra level, and macOS junk
+(`__MACOSX/`, `.DS_Store`, `._*`) is ignored. Archives that try to escape the
+extraction directory (zip-slip), contain symlinks, or are absurdly large or
+numerous are refused. Existing files are left untouched and reported unless
+`--force` is passed; `--dry-run` prints the plan and writes nothing.
+
+### `repoos docs scaffold`
+
+Writes a minimal, opt-in starter skeleton into `docsDir`: an index `README.md`
+with a reading order and an "if you learn something durable, write it here"
+line, plus short `product.md`, `architecture.md`, `conventions.md` and
+`glossary.md` stubs with prompts. It never overwrites an existing file, and
+nothing is created unless you run the command (or answer yes to the scaffold
+prompt in the guided `repoos init` flow).
+
 ## Running it
 
 ### `repoos serve [--port N]`
@@ -177,6 +245,12 @@ readiness — each with a stable finding id, a severity (`pass` / `warn` / `fail
 and a concrete next step. It also reports each enabled harness's compatibility
 contract status (verified, upgrade recommended, newer than verified, unsupported,
 or not yet probed).
+
+It also runs an advisory **docs-wiring** check and warns when `AGENTS.md` never
+points at the docs index (`docsDir/README.md`), when docs exist that the index
+doesn't link to, or when the docs directory is empty while tasks exist. These are
+always warnings with a one-line fix hint — they never change the exit code. See
+[Give the project docs](/getting-started#give-the-project-docs).
 
 ```bash
 repoos doctor            # warnings/failures, summary and next steps

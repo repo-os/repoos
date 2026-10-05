@@ -70,6 +70,8 @@ describe("resolvePreviewTarget", () => {
       cwd: undefined,
       readyPath: "/",
       readyTimeoutMs: 10_000,
+      services: [],
+      unresolvedServices: [],
     });
   });
 
@@ -94,6 +96,8 @@ describe("resolvePreviewTarget", () => {
       cwd: undefined,
       readyPath: "/",
       readyTimeoutMs: 10_000,
+      services: [],
+      unresolvedServices: [],
     });
     expect(resolvePreviewTarget(cfg, task("docs"))).toEqual({
       kind: "command",
@@ -102,6 +106,8 @@ describe("resolvePreviewTarget", () => {
       cwd: "apps/docs",
       readyPath: "/healthz",
       readyTimeoutMs: 10_000,
+      services: [],
+      unresolvedServices: [],
     });
   });
 
@@ -416,6 +422,28 @@ describe("parsePreviewConfig", () => {
     ).toBeUndefined();
     expect(parsePreviewConfig({})).toBeUndefined();
   });
+
+  it("parses [[preview.services]] and target service references (#0681)", () => {
+    const parsed = parsePreviewConfig({
+      "preview.services": [
+        { name: "API", command: "bun run api --port {port}" },
+        { name: "API", command: "duplicate name disambiguates" },
+      ],
+      "preview.targets": [
+        {
+          name: "Full stack",
+          areas: ["web"],
+          command: "bun run web --port {port} --api {api.port}",
+          services: ["API"],
+        },
+      ],
+    });
+    expect(parsed?.services?.map((s) => s.name)).toEqual(["API", "API (2)"]);
+    expect(parsed?.targets?.[0]).toMatchObject({
+      name: "Full stack",
+      services: ["API"],
+    });
+  });
 });
 
 function git(root: string, args: string[]): string {
@@ -456,6 +484,29 @@ const port = Number(process.env.PORT);
 createServer((_req, res) => {
   res.writeHead(200, { "content-type": "text/plain" });
   res.end("CUSTOM-PREVIEW-OK");
+}).listen(port, "127.0.0.1");
+`.trimStart();
+
+/** Companion API: proves the branch's own service port is wired (#0681). */
+const API_SERVICE_SCRIPT = `
+import { createServer } from "node:http";
+const port = Number(process.env.PORT);
+createServer((_req, res) => {
+  res.writeHead(200, { "content-type": "application/json" });
+  res.end(JSON.stringify({ branchField: "branch-api-value" }));
+}).listen(port, "127.0.0.1");
+`.trimStart();
+
+/** Web command: reads the companion API via REPOOS_PREVIEW_API_URL. */
+const WEB_PROXY_SCRIPT = `
+import { createServer } from "node:http";
+const port = Number(process.env.PORT);
+const api = process.env.REPOOS_PREVIEW_API_URL;
+createServer(async (_req, res) => {
+  const r = await fetch(api + "/");
+  const data = await r.json();
+  res.writeHead(200, { "content-type": "text/plain" });
+  res.end("API_FIELD=" + data.branchField);
 }).listen(port, "127.0.0.1");
 `.trimStart();
 
@@ -642,6 +693,43 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
       const same = await manager.start(t, "Web v2");
       expect(same.ok).toBe(true);
       expect(same.label).toBe("Web v2");
+    } finally {
+      await manager.stopAll();
+    }
+  }, 60_000);
+
+  it("boots a companion API service and serves the branch response through the main URL (#0681)", async () => {
+    const fx = makeFixture();
+    fixtures.push(fx);
+    const branch = "feat/preview-fullstack";
+    const wt = ensureWorktree(fx.root, branch);
+    if (!wt.ok) throw new Error(`worktree: ${wt.reason}`);
+    const node = process.execPath;
+    writeFileSync(join(wt.path, "preview-api.mjs"), API_SERVICE_SCRIPT);
+    writeFileSync(join(wt.path, "preview-web.mjs"), WEB_PROXY_SCRIPT);
+    writeFileSync(
+      join(fx.root, "repoos.toml"),
+      [
+        "[[preview.services]]",
+        'name = "API"',
+        `command = ${JSON.stringify(`${node} preview-api.mjs`)}`,
+        "",
+        "[[preview.targets]]",
+        'name = "Full stack"',
+        'areas = ["web"]',
+        'services = ["API"]',
+        `command = ${JSON.stringify(`${node} preview-web.mjs`)}`,
+      ].join("\n") + "\n",
+    );
+
+    const config = loadConfig(fx.root);
+    const manager = new PreviewManager(config, () => {});
+    const t = { id: "0681", area: "web", branch, status: "active" } as unknown as Task;
+    try {
+      const result = await manager.start(t);
+      expect(result.ok).toBe(true);
+      expect(result.services).toEqual([{ name: "API", port: expect.any(Number) }]);
+      expect(await (await fetch(`${result.url}/`)).text()).toBe("API_FIELD=branch-api-value");
     } finally {
       await manager.stopAll();
     }

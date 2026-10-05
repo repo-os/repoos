@@ -143,8 +143,9 @@ onMounted(() => {
     </div>
     <div class="agent-desc">
       Spend and usage per model provider, without leaving RepoOS. Three providers report live
-      numbers behind an API key; the other rows link to dashboards until live data is connected
-      here.
+      numbers behind an API key — read from RepoOS's `.env`, or from a coding agent's own login (pi,
+      opencode) when one is already connected; the other rows link to dashboards until live data is
+      connected here.
     </div>
 
     <div v-if="loadError" class="mp-error">{{ loadError }}</div>

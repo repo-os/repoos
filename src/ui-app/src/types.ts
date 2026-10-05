@@ -44,6 +44,12 @@ export interface PreviewInfo {
   /** Which preview target is serving (#0379): the target's `name`, or
    *  "default" for the bare `[preview] command`. Undefined on very old servers. */
   label?: string;
+  /**
+   * Companion services running behind the main URL (#0681), each with its
+   * name and port — e.g. an API a full-stack preview's web command proxies to.
+   * Absent for a single-process preview.
+   */
+  services?: { name: string; port: number }[];
 }
 
 /** A preview target a task can be served from (#0379). More than one means the
@@ -494,7 +500,7 @@ export interface RoleUsage {
   totalCacheCreationTokens?: number | null;
   totalTurns?: number | null;
   totalCostUsd: number | null;
-  /** "none"/"estimate"/"extractUsage"/"kiro-credits"/"mixed" — drives honest cost labeling. */
+  /** "none"/"extractUsage"/"kiro-credits"/"mixed" — drives honest cost labeling. */
   costSource: string;
 }
 
@@ -640,6 +646,7 @@ export type RepoEvent =
       tldr?: string;
     }
   | { type: "task.corrected"; id: string; path: string; note: string; at: string }
+  | { type: "task.autoApproved"; id: string; rule: string; at: string }
   | { type: "preview"; id: string; preview: PreviewInfo | null; at: string }
   | {
       type: "review";
@@ -668,6 +675,7 @@ export type RepoEvent =
       at: string;
     }
   | { type: "reload.failed"; reason: string; at: string }
+  | { type: "config.changed"; at: string }
   | {
       type: "auto-engineering.state";
       state: {
@@ -1110,7 +1118,7 @@ export interface ModelSourcesResponse {
   at: string;
 }
 
-export type ModelTestStatus = "passed" | "failed" | "timed_out" | "not_testable";
+export type ModelTestStatus = "passed" | "failed" | "timed_out" | "cold_start" | "not_testable";
 
 export interface ModelTestResult {
   cli: string;

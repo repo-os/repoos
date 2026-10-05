@@ -8,12 +8,13 @@ import {
   cmdList,
   cmdShow,
   cmdMv,
+  cmdRm,
   cmdUpdate,
   cmdNew,
   cmdIndex,
   cmdNote,
 } from "../commands/tasks.js";
-import { cmdNewDoc } from "../commands/docs.js";
+import { cmdDocs, cmdNewDoc } from "../commands/docs.js";
 import { cmdGc } from "../commands/gc.js";
 import { cmdOutline } from "../commands/outline.js";
 import { cmdCheck } from "../commands/check.js";
@@ -167,6 +168,10 @@ function main(): void {
     case "note":
       cmdNote(rest);
       break;
+    case "rm":
+    case "delete":
+      cmdRm(rest);
+      break;
     case "update":
       cmdUpdate(rest);
       break;
@@ -176,6 +181,9 @@ function main(): void {
       break;
     case "new-doc":
       void cmdNewDoc(rest);
+      break;
+    case "docs":
+      void cmdDocs(rest);
       break;
     case "index":
     case "reindex":

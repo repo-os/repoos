@@ -26,6 +26,7 @@ import {
   disableAutoStart,
   checkHealth,
   type ServiceListEntry,
+  type ServiceStatus,
 } from "../core/service-manager.js";
 import { boardRoot, loadConfig, resolveServePort } from "../core/config.js";
 import { c } from "../cli/colors.js";
@@ -33,14 +34,19 @@ import { c } from "../cli/colors.js";
 function statusLabel(s: string): string {
   if (s === "running") return c.green("running");
   if (s === "stopped") return c.dim("stopped");
-  if (s === "disabled") return c.dim("disabled");
+  if (s === "disabled") return c.dim("stopped");
   if (s === "error") return c.red("error");
   return c.yellow("unknown");
 }
 
+/** Process state for display — `disabled` only means auto-start is off (#0685). */
+function processStatus(s: ServiceStatus): string {
+  return s === "disabled" ? "stopped" : s;
+}
+
 function printService(s: ServiceListEntry): void {
   console.log(
-    `  ${c.cyan(s.id)}  ${statusLabel(s.status)}  ${c.dim("port")} ${s.port}  ${c.dim("auto-start")} ${s.autoStart ? "yes" : "no"}`,
+    `  ${c.cyan(s.id)}  ${c.dim("process")} ${statusLabel(processStatus(s.status))}  ${c.dim("auto-start")} ${s.autoStart ? "yes" : "no"}  ${c.dim("port")} ${s.port}`,
   );
   console.log(`    ${c.dim("path")} ${s.root}`);
   console.log(`    ${c.dim("platform")} ${s.platform}  ${c.dim("label")} ${s.label}`);
@@ -64,8 +70,29 @@ export async function cmdService(argv: string[]): Promise<void> {
         return;
       }
       console.log(c.bold("  Managed background services:\n"));
+      console.log(
+        c.dim(
+          "  Columns: process = whether repoos serve is up now; auto-start = launch at login (not the same as running).\n",
+        ),
+      );
       for (const s of services) {
-        printService(s);
+        const live = await getServiceStatus(s.root);
+        printService(
+          live
+            ? {
+                id: live.id,
+                root: live.root,
+                port: live.port,
+                platform: live.platform,
+                label: live.label,
+                autoStart: live.autoStart,
+                status: live.status,
+                lastHealthCheck: live.lastHealthCheck,
+                healthError: live.healthError,
+                createdAt: live.createdAt,
+              }
+            : s,
+        );
         console.log();
       }
       // Linux linger guidance — surface when services exist but linger is off

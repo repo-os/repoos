@@ -46,6 +46,19 @@ readyPath = "/"
 
 - `{port}` / `{host}` are replaced with the OS-assigned values, and `PORT` /
   `HOST` are exported into the child's environment.
+- **Companion services (#0681)** for full-stack previews: repeatable
+  `[[preview.services]]` tables (siblings of `[[preview.targets]]`, not nested)
+  declare extra processes — typically an API — each with its own OS-assigned
+  port. A target lists them with `services = ["API"]`. Every service's port and
+  URL are passed to all commands by placeholder (`{api.port}`, `{api.url}`; the
+  token is the service name lowercased with non-alphanumerics collapsed to `_`)
+  and by env (`REPOOS_PREVIEW_API_PORT`, `REPOOS_PREVIEW_API_URL`). Services
+  boot and become ready **before** the main command starts, so a web dev server
+  can proxy `/api` to the **branch's** API instead of the primary checkout's.
+  An unknown service name fails at start time with a clear error. The long-lived
+  control-plane server also re-reads `repoos.toml` on disk (and after a merge
+  to the primary branch) via `ConfigWatcher`, so new targets appear without a
+  restart; preview children do not watch config.
 - `readyPath` is the path polled for readiness (and probed server-side after
   start). The default is `/`.
 - **A declared command must run the worktree's own code.** RepoOS no longer

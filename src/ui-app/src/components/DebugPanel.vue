@@ -2,6 +2,8 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { AlertTriangle, ChevronDown, ChevronRight, RefreshCw } from "lucide-vue-next";
 import type { RemoteValidationEvent, Task, TaskCheckRun, TaskLogEntry } from "../types";
+import { useRouter } from "vue-router";
+import type { DiffFile } from "../lib/diff-files";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
@@ -18,6 +20,7 @@ import ActivityIndicator from "./ActivityIndicator.vue";
 import DiffFileViewer from "./DiffFileViewer.vue";
 
 const props = defineProps<{ task: Task }>();
+const router = useRouter();
 const repo = useRepoStore();
 const ui = useUiStore();
 
@@ -43,6 +46,12 @@ const conflictCount = computed(
 const conflictSuspected = computed(
   () => props.task.needsMerge || !!repo.doneErrorFor(props.task.id)?.conflicts.length,
 );
+/** Open the full-screen diff for the conflict, closing the drawer behind it. */
+function openConflictDiff(file: DiffFile): void {
+  const taskId = props.task.id;
+  ui.close();
+  router.push({ name: "conflict-diff", params: { taskId }, query: { file: file.filename } });
+}
 async function loadConflict(): Promise<void> {
   if (!props.task.branch || conflictLoading.value) return;
   conflictLoading.value = true;
@@ -565,6 +574,8 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           :patch="conflict.patch"
           :truncated="conflict.truncated"
           id-prefix="conflict:"
+          expandable
+          @expand="openConflictDiff"
         />
       </template>
     </template>

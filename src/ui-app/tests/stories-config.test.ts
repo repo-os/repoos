@@ -1,7 +1,7 @@
 /**
- * `[stories]` configuration (#0480). Missing, malformed or false must preserve
- * current behavior exactly — i.e. `cfg.stories` stays undefined, so the nav
- * item, route and task-edit control all stay dormant.
+ * `[stories]` configuration (#0480). Stories are ON by default: a missing or
+ * malformed value yields `enabled: true`; only an explicit `enabled = false`
+ * keeps the nav item, route and task-edit control dormant.
  */
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -25,15 +25,15 @@ describe("[stories] configuration", () => {
       label: "Stories",
       type: "boolean",
       tier: "live",
-      default: false,
+      default: true,
     });
   });
 
-  it("is dormant when the section is missing", () => {
-    expect(load('workDir = "work"\n').stories).toBeUndefined();
+  it("is on by default when the section is missing", () => {
+    expect(load('workDir = "work"\n').stories?.enabled).toBe(true);
   });
 
-  it("is dormant when enabled is false", () => {
+  it("is dormant when enabled is explicitly false", () => {
     expect(load("[stories]\nenabled = false\n").stories?.enabled).toBe(false);
   });
 
@@ -41,9 +41,24 @@ describe("[stories] configuration", () => {
     expect(load("[stories]\nenabled = true\n").stories?.enabled).toBe(true);
   });
 
-  it("ignores a malformed enabled value without enabling the surface", () => {
-    expect(load('[stories]\nenabled = "yes"\n').stories).toBeUndefined();
-    expect(load("[stories]\nenabled = 1\n").stories).toBeUndefined();
+  it("falls back to the default (on) for a malformed enabled value", () => {
+    expect(load('[stories]\nenabled = "yes"\n').stories?.enabled).toBe(true);
+    expect(load("[stories]\nenabled = 1\n").stories?.enabled).toBe(true);
+  });
+
+  it("exposes the story context excerpt size as a guarded Settings number (#0691)", () => {
+    expect(getConfigSchema().find((field) => field.key === "stories.excerptBytes")).toMatchObject({
+      label: "Story context excerpt size",
+      type: "number",
+      tier: "guarded",
+      default: 4096,
+    });
+    expect(SUPPORTED_TOML_KEYS).toContain("stories.excerptBytes");
+  });
+
+  it("parses a configured excerpt size and ignores a malformed one", () => {
+    expect(load("[stories]\nexcerptBytes = 8192\n").stories?.excerptBytes).toBe(8192);
+    expect(load('[stories]\nexcerptBytes = "big"\n').stories?.excerptBytes).toBeUndefined();
   });
 });
 

@@ -2,14 +2,17 @@
 id: "0671"
 title: "init starter tasks: detect empty repos, seed as inbox, mark created_by repoos-init"
 type: feature
-status: inbox
+status: done
 priority: p2
 area: cli
-assigned_to: ""
+story: "Field report: first agent-driven project run (opex)"
+merged_commit: cc909d29c5632f24d718906b6be9d1d28a8c2e47
+assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/init-starter-tasks-detect-empty-repos-se
 created_at: "2026-10-05T15:20:09Z"
-updated_at: "2026-10-05T15:20:09Z"
+updated_at: "2026-10-05T17:16:36Z"
+review_passes: 2
 ---
 ## Problem
 
@@ -45,3 +48,15 @@ Read tasks 0364 and 0028 first (they explain the original design). This does not
 ## Activity
 
 - 2026-10-05T15:20:09Z · created · unknown
+- 2026-10-05T15:38:16Z · status inbox→ready
+- 2026-10-05T15:38:19Z · status ready→active, branch
+- 2026-10-05T16:06:57Z · note: Revised #0364's decision: seed the starter as inbox, not ready. #0364 chose ready so the Ready column wasn't empty after init, but a seeded task is a suggestion for the human, not work to auto-run — auto-starting it (autoEngineeringMode/driver/a skimmer) wasted a run and polluted docs on the wrong starter. Starters also now carry created_by: repoos-init (was human) so they can be filtered/archived once a real backlog exists, and the existing-repo path picks the starter by repo content (effectively empty repo -> product-vision; source present -> read-the-codebase), overridable with --starter vision|codebase.
+- 2026-10-05T16:37:30Z · status active→review
+- 2026-10-05T16:37:30Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-05T16:58:57Z · status review→active
+- 2026-10-05T17:02:06Z · status active→review
+- 2026-10-05T17:02:06Z · status review→active
+- 2026-10-05T17:02:41Z · status active→review
+- 2026-10-05T17:02:41Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-05T17:12:38Z · status review→done, release:success
+- 2026-10-05T17:16:36Z · story
