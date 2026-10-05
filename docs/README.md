@@ -37,6 +37,7 @@ can't assume any.
   `done`, and how the starter task differs for a new project vs. an existing repo.
 - `architecture.md`, `close-out-pipeline.md` — how the system is built, and the
   known close-out failure classes with the guards that exist for them.
+- `field-reports/` — dated evidence from running RepoOS on real projects (what happened, error text, numbers, what to fix), with an index and a recipe for adding one. Start with the first agent-driven run (opex, 2026-10-05).
 - `debugging-check-failures.md` — triage order for a `repoos check` failure you
   can't explain. Read before assuming "flake".
 - `contrast-audit.md` — the rendered contrast gate (#0596): how every theme
