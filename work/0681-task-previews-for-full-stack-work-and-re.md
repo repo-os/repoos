@@ -2,7 +2,7 @@
 id: "0681"
 title: "Task previews for full-stack work, and reload repoos.toml when it changes"
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/task-previews-for-full-stack-work-and-re
 created_at: "2026-10-05T16:58:44Z"
-updated_at: "2026-10-05T19:08:12Z"
+updated_at: "2026-10-05T21:57:47Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:32:23Z · body: section Docs follow-up
 - 2026-10-05T19:08:03Z · status inbox→ready
 - 2026-10-05T19:08:12Z · status ready→active, branch
+- 2026-10-05T21:57:47Z · status active→review
