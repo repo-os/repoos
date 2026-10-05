@@ -12,7 +12,7 @@ branch: feat/attention-queue-extend-the-notification-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:57Z"
-updated_at: "2026-10-05T22:02:19Z"
+updated_at: "2026-10-05T22:41:50Z"
 ---
 ## Problem
 
@@ -36,6 +36,23 @@ This task is part of the story **Field report: first agent-driven project run (o
 ## Docs follow-up
 The playbook page `user-docs/running-with-agents.md` (landed on main) describes the CURRENT behaviour that this task changes. When this task lands, update the page: section 6 or 4 (wherever you describe how you notice problems). In short: point at the extended notification bell and the single attention feed. Keep the page accurate rather than aspirational; if this task is declined, leave the page as is. (This replaces the open task 0689, which is being removed.)
 
+## Shots
+```json
+[
+  {
+    "label": "Spend alert threshold in Notifications settings",
+    "target": "default",
+    "route": "/settings?tab=notifications"
+  },
+  {
+    "label": "Notification bell with extended attention feed",
+    "target": "default",
+    "route": "/",
+    "highlight": "[data-test-id=\"notice-bell-trigger\"]"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-05T16:58:57Z · created · unknown
@@ -45,3 +62,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T22:02:16Z · status inbox→ready
 - 2026-10-05T22:02:18Z · cli_override, model_override
 - 2026-10-05T22:02:19Z · status ready→active, branch
+- 2026-10-05T22:41:50Z · body: section Shots
