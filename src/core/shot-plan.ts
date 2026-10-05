@@ -24,6 +24,7 @@
  * Parsing is pure (a string in, entries out) so the CLI, the server and the
  * tests can share it without touching git, a server or Playwright.
  */
+import type { PreviewConfig } from "./types.js";
 import { DEFAULT_PREVIEW_TARGET as DEFAULT_FALLBACK_TARGET } from "./shot-targets.js";
 
 /** One ordered step within a declared shot. Exactly one key per object. */
@@ -284,6 +285,48 @@ export function resolveDeclaredTarget(
     };
   }
   return { target: declared };
+}
+
+/** Preview target names from `repoos.toml` (for validating `--shots`). */
+export function previewTargetNames(preview?: PreviewConfig): string[] {
+  const named = (preview?.targets ?? []).map((t) => t.name).filter(Boolean);
+  if (preview?.command) {
+    if (named.length === 0) return [DEFAULT_FALLBACK_TARGET];
+    return [DEFAULT_FALLBACK_TARGET, ...named];
+  }
+  return named.length > 0 ? named : [DEFAULT_FALLBACK_TARGET];
+}
+
+/**
+ * Validate declared `target` values against configured preview targets (#0685).
+ * Accepts `default` when it is configured, or when it is the only named target
+ * besides the root `[preview] command` (the common "sole target is web" case).
+ */
+export function validateDeclaredShotTargets(
+  shots: DeclaredShot[],
+  preview?: PreviewConfig,
+): string[] {
+  const errors: string[] = [];
+  const named = (preview?.targets ?? []).map((t) => t.name).filter(Boolean);
+  const valid = new Set(previewTargetNames(preview));
+
+  for (let i = 0; i < shots.length; i++) {
+    const label = `shot #${i + 1}`;
+    const raw = shots[i].target?.trim();
+    if (!raw) continue;
+    if (valid.has(raw)) continue;
+    if (
+      raw === DEFAULT_FALLBACK_TARGET &&
+      named.length === 1 &&
+      !valid.has(DEFAULT_FALLBACK_TARGET)
+    ) {
+      continue;
+    }
+    errors.push(
+      `${label}: unknown target "${raw}" — valid names: ${[...valid].join(", ") || "(none configured)"}`,
+    );
+  }
+  return errors;
 }
 
 /**

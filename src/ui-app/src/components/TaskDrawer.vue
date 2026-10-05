@@ -119,7 +119,7 @@ import AgentModelControl from "./AgentModelControl.vue";
 import { useModelMemory } from "../composables/useModelMemory";
 import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
-import { reportPredatesLatestHandoff } from "../lib/reviewFreshness";
+import { reportPredatesLatestHandoff, reviewSupersededByFixRound } from "../lib/reviewFreshness";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -2224,8 +2224,20 @@ const reviewHtml = computed(() =>
  *  it describes an earlier worktree state and will be replaced as soon as the
  *  fresh run writes its report (RepoOS preserves the prior report until then).
  */
+const reviewSuperseded = computed(() => {
+  const task = ui.active;
+  return reviewSupersededByFixRound(
+    task ?? { status: "inbox" },
+    Boolean(review.value?.report),
+    Boolean(task && repo.isRunning(task.id)),
+  );
+});
+
 const reviewStale = computed(() =>
-  Boolean(review.value?.report && (review.value.running || previousReview.value)),
+  Boolean(
+    review.value?.report &&
+    (review.value.running || previousReview.value || reviewSuperseded.value),
+  ),
 );
 
 // ---- agent review tab (0110) ----
@@ -5040,9 +5052,11 @@ watch(
                 <span class="review-stale-sub">{{
                   review?.running
                     ? "A new review is running and will replace this report."
-                    : awaitingFreshReview
-                      ? "The latest engineering handoff is awaiting a new review. Use Review again if it does not start."
-                      : "This report predates the latest engineering work."
+                    : reviewSuperseded
+                      ? "The engineer is applying review feedback — this report is from before that fix round."
+                      : awaitingFreshReview
+                        ? "The latest engineering handoff is awaiting a new review. Use Review again if it does not start."
+                        : "This report predates the latest engineering work."
                 }}</span>
               </div>
             </div>

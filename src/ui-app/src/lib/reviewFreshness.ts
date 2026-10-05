@@ -18,3 +18,18 @@ export function reportPredatesLatestHandoff(
   }
   return latest > reportTime;
 }
+
+/**
+ * True when an existing review report must not be read as the verdict on the
+ * code being edited now — e.g. after an auto-bounce sent the engineer back to
+ * `active` (#0685).
+ */
+export function reviewSupersededByFixRound(
+  task: Pick<Task, "status">,
+  hasReport: boolean,
+  engineerRunning: boolean,
+): boolean {
+  if (!hasReport) return false;
+  if (engineerRunning) return true;
+  return task.status === "active";
+}

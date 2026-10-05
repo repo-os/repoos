@@ -8,6 +8,7 @@ import {
   cmdList,
   cmdShow,
   cmdMv,
+  cmdRm,
   cmdUpdate,
   cmdNew,
   cmdIndex,
@@ -166,6 +167,10 @@ function main(): void {
     }
     case "note":
       cmdNote(rest);
+      break;
+    case "rm":
+    case "delete":
+      cmdRm(rest);
       break;
     case "update":
       cmdUpdate(rest);

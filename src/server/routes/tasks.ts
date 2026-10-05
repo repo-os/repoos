@@ -112,6 +112,7 @@ import {
 import { TaskFieldValidationError } from "../../core/task-fields.js";
 import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
+import { pendingCloseOutJobs } from "../integration-job.js";
 import { createCloseOutOutcomeStore } from "../close-out-outcome.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
@@ -1550,7 +1551,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // It does not block start; it records a visible activity note.
     const startedTask = index.getTask(updated.id);
     if (startedTask) {
-      const assessment = assessTaskUnderspecified(startedTask.body);
+      const assessment = assessTaskUnderspecified(startedTask.body, { area: startedTask.area });
       const flagged = flagUnderspecifiedIfNeeded(config, startedTask);
       if (flagged) {
         index.applyFileChange(flagged.absPath, { guarded: true });
@@ -1899,7 +1900,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         phase: job.phase,
         enqueuedAt: job.enqueuedAt,
         startedAt: job.startedAt,
-        queuePosition: ctx.jobCoordinator.allJobs().findIndex((j) => j.taskId === job.taskId),
+        queuePosition: pendingCloseOutJobs(ctx.jobCoordinator.allJobs()).findIndex(
+          (j) => j.taskId === job.taskId,
+        ),
+        queueLength: pendingCloseOutJobs(ctx.jobCoordinator.allJobs()).length,
       },
     });
   }
@@ -2557,7 +2561,7 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   // the underspecified check requires so one pass satisfies it.
   const messageText =
     text === PM_FLESH_OUT_MESSAGE
-      ? `${baseMessageText}\n\n${fleshOutRequirementsPrompt(storyContextFor(config, existing.story))}`
+      ? `${baseMessageText}\n\n${fleshOutRequirementsPrompt(storyContextFor(config, existing.story), existing.area)}`
       : baseMessageText;
 
   // Build a one-shot agent override for this PM request. Falls back to the
@@ -2721,8 +2725,8 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
   if (!job) {
     return json(res, 404, { error: `No integration job for task #${id}` });
   }
-  const allJobs = jobCoordinator.allJobs();
-  const queuePos = allJobs.findIndex((j) => j.taskId === job.taskId);
+  const pendingJobs = pendingCloseOutJobs(jobCoordinator.allJobs());
+  const queuePos = pendingJobs.findIndex((j) => j.taskId === job.taskId);
   return json(res, 200, {
     ok: true,
     job: {
@@ -2736,7 +2740,7 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
       reason: job.reason,
       logPath: job.logPath,
       queuePosition: queuePos,
-      queueLength: allJobs.length,
+      queueLength: pendingJobs.length,
     },
   });
 };
@@ -2755,10 +2759,10 @@ export const getCloseOutOutcomes: RouteHandler = (ctx, _req, res) => {
 };
 
 export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
-  const allJobs = ctx.jobCoordinator.allJobs();
+  const pendingJobs = pendingCloseOutJobs(ctx.jobCoordinator.allJobs());
   return json(res, 200, {
     ok: true,
-    jobs: allJobs.map((job, idx) => ({
+    jobs: pendingJobs.map((job, idx) => ({
       taskId: job.taskId,
       phase: job.phase,
       enqueuedAt: job.enqueuedAt,
@@ -2770,7 +2774,7 @@ export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
       debugTldr: job.debugTldr,
       queuePosition: idx,
     })),
-    queueLength: allJobs.length,
+    queueLength: pendingJobs.length,
   });
 };
 
