@@ -1,8 +1,13 @@
 ---
+updated_at: "2026-10-05T23:35:41Z"
+review_passes: 4
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p1
 area: [ui, core]
 story: Cloud attachment storage
@@ -13,10 +18,9 @@ branch: feat/config-schema-settings-ui-for-provider-s
 model_override: opencode-go/deepseek-v4.1-flash
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T23:21:01Z"
+merge_conflict_retry_count: 1
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-05T23:18:11.353Z: the worktree changed while the gate was running (appeared: repoos.toml) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
 ---
@@ -1341,3 +1345,5 @@ src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no 
 - 2026-10-05T23:13:38Z · area
 - 2026-10-05T23:13:47Z · status active→review
 - 2026-10-05T23:21:01Z · body: section Shots
+- 2026-10-05T23:35:41Z · needs_input
+

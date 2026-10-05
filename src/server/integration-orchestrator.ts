@@ -731,6 +731,11 @@ export class CloseOutOrchestrator {
      * push it over SSE; observation must never disturb the close-out.
      */
     private onOutcome?: (event: CloseOutOutcomeEvent) => void,
+    /**
+     * Remote validation was enabled but this close-out ran the gate locally
+     * (#0687). Observation only — must never disturb the close-out.
+     */
+    private onRemoteFallback?: (taskId: string, detail: string) => void,
   ) {}
 
   /** Report a finished close-out, swallowing observer errors (#0640). */
@@ -1779,13 +1784,22 @@ export class CloseOutOrchestrator {
               : remoteGateOutcome.detail,
           };
         }
-        if (remoteGateOutcome.kind === "local-only" && !remoteGateOutcome.skipTests) {
-          this.logger?.integration(
-            job.taskId,
-            "warn",
-            "remote validation unavailable — falling back to the full local gate (remoteValidation.fallbackToLocal)",
-            { detail: remoteGateOutcome.detail },
-          );
+        if (remoteGateOutcome.kind === "local-only") {
+          if (!remoteGateOutcome.skipTests) {
+            this.logger?.integration(
+              job.taskId,
+              "warn",
+              "remote validation unavailable — falling back to the full local gate (remoteValidation.fallbackToLocal)",
+              { detail: remoteGateOutcome.detail },
+            );
+          }
+          if (this.config.remoteValidation?.enabled) {
+            try {
+              this.onRemoteFallback?.(job.taskId, remoteGateOutcome.detail ?? "");
+            } catch {
+              /* attention observation must never break close-out */
+            }
+          }
         }
       }
 

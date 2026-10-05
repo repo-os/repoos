@@ -555,6 +555,10 @@ export interface RepoOSConfig {
    */
   closeOut?: CloseOutConfig;
   /**
+   * Attention bell and `GET /api/attention` (#0687).
+   */
+  attention?: AttentionConfig;
+  /**
    * Opt-in auto-approval after a clean review (#0686). Off unless
    * `approval.enabled = true`. UI-facing areas stay human unless handoff
    * screenshots succeeded.
@@ -1434,6 +1438,15 @@ export interface AutoEngineeringConfig {
    * never invent a task that the deterministic picker did not surface.
    */
   pmVeto?: boolean;
+}
+
+/** Notification bell / attention feed (#0687). */
+export interface AttentionConfig {
+  /**
+   * Alert when provider-reported board spend reaches this USD total. `0` or
+   * omitted disables the alert. Estimates are never counted (#0676).
+   */
+  spendAlertUsd?: number;
 }
 
 /** Close-out (Move to done) pipeline budget (#0573). */

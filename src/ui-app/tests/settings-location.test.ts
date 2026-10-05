@@ -33,6 +33,14 @@ describe("resolveSettingLocation", () => {
       tab: "notifications",
       hasUiRow: true,
     });
+    expect(
+      resolveSettingLocation(
+        "attention.spendAlertUsd",
+        field({ key: "attention.spendAlertUsd", type: "number" }),
+        ctx,
+      ),
+    ).toEqual({ tab: "notifications", hasUiRow: true });
+    expect(isGeneralSchemaFieldKey("attention.spendAlertUsd")).toBe(false);
     expect(resolveSettingLocation("auth.enabled", field({ key: "auth.enabled" }), ctx)).toEqual({
       tab: "security",
       hasUiRow: true,

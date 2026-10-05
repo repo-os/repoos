@@ -513,6 +513,24 @@ const sessionMaxAgeDays = computed<number>({
   },
 });
 
+/** Provider-reported spend alert (#0687) — `0` disables. */
+const spendAlertUsd = computed<number>({
+  get: () => {
+    const usd = Number(form["attention.spendAlertUsd"]);
+    return Number.isFinite(usd) && usd >= 0 ? usd : 0;
+  },
+  set: (usd: number) => {
+    if (!Number.isFinite(usd) || usd < 0) return;
+    form["attention.spendAlertUsd"] = String(usd);
+  },
+});
+
+const spendAlertFieldDesc = computed(
+  () =>
+    config.schema.find((f) => f.key === "attention.spendAlertUsd")?.description ??
+    "Show a notice when provider-reported board spend reaches this total. 0 disables.",
+);
+
 function settingRowVisible(el: HTMLElement): boolean {
   const panel = el.closest<HTMLElement>("[role='tabpanel']");
   if (!panel) return getComputedStyle(el).display !== "none";
@@ -1179,6 +1197,31 @@ onUnmounted(() => {
             </div>
             <TelegramSettingsPanel :enabled="!!form['telegram.enabled']" />
             <TelegramChatNotificationsSettings />
+          </div>
+        </Card>
+
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Spend alert
+            </div>
+            <div id="setting-attention.spendAlertUsd" class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">Spend alert threshold (USD)</div>
+                <div class="setting-desc">{{ spendAlertFieldDesc }}</div>
+              </div>
+              <div class="setting-input">
+                <Input
+                  :model-value="spendAlertUsd"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  style="width: 100px"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (spendAlertUsd = Number(v))"
+                />
+              </div>
+            </div>
           </div>
         </Card>
 
