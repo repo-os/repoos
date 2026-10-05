@@ -135,7 +135,8 @@ for (const fixture of ADOPTION_FIXTURES) {
 
         // The generated task layout is valid frontmatter, not just present:
         // 0001 is the completed scaffold task, and the seeded starter is
-        // genuinely `ready` so the board is usable immediately.
+        // `inbox` (a suggestion, not work to auto-run) and marked as
+        // seeded by init so it can be filtered later (#0671).
         const readTask = (rel: string) => {
           const absPath = join(root, rel);
           return parseTask({
@@ -149,11 +150,17 @@ for (const fixture of ADOPTION_FIXTURES) {
         const scaffoldTask = readTask("repoos/work/0001-set-up-repoos.md");
         expect(scaffoldTask.id).toBe("0001");
         expect(scaffoldTask.status).toBe("done");
+        // Starter choice: the guided/new path forces the product-vision starter;
+        // the existing-repo path picks by content (every `existing` fixture has
+        // source, so read-the-codebase). The genuinely-empty case is unit-tested
+        // in init-scaffold.test.ts.
         const starterRel =
           fixture.kind === "new"
             ? "repoos/work/0002-flesh-out-the-vision.md"
             : "repoos/work/0002-read-the-codebase.md";
-        expect(readTask(starterRel).status).toBe("ready");
+        const starterTask = readTask(starterRel);
+        expect(starterTask.status).toBe("inbox");
+        expect(starterTask.createdBy).toBe("repoos-init");
 
         // init is idempotent: a re-run creates nothing new.
         expect(scaffoldInto(root, "", "repoos", fixture.kind).created).toEqual([]);

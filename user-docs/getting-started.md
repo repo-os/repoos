@@ -137,14 +137,27 @@ See the [CLI reference](/cli#repoos-init-name) for every flag. Don't `git init`
 first to avoid the prompts — that routes you to the existing-codebase starter
 instead of the new-project one.
 
-Either way the board is never empty: init seeds a `ready` task you can start on
-immediately. In an existing repo it's "Read this codebase and propose project docs + an
-initial task backlog"; in the guided new-project flow it's "Flesh out the
-product vision and initial architecture", and it carries the one-line project
-description you gave at init. Both are self-contained enough to work without an
-agent — read the task, do what it says, and it turns into project-context docs and
-concrete follow-up tasks. (`repoos/work/0001-set-up-repoos.md` is still scaffolded,
-but it's marked `done`: it's a worked example of a task file, not work to do.)
+Either way the board is never empty: init seeds a starter task. Which starter
+depends on what's in the repo — if there are no meaningful source files yet (a
+fresh `git init`, a README-only repo, or only RepoOS's own scaffold) it seeds
+"Flesh out the product vision and initial architecture"; once there is code to
+read it seeds "Read this codebase and propose project docs + an initial task
+backlog". The one-line summary after init says which was chosen and why. Force
+one with `repoos init --starter vision|codebase`.
+
+The starter is seeded as an **`inbox`** task, not `ready` — it's a suggestion
+for you, not work to auto-run, and `created_by` is `repoos-init` so it can be
+filtered (and archived) once a real backlog exists. Promote it when you want it
+picked up:
+
+```bash
+repoos mv 0002 ready
+```
+
+Both starters are self-contained enough to work without an agent — read the
+task, do what it says, and it turns into project-context docs and concrete
+follow-up tasks. (`repoos/work/0001-set-up-repoos.md` is still scaffolded, but
+it's marked `done`: it's a worked example of a task file, not work to do.)
 
 ## Starting a new project as an agent
 
@@ -282,12 +295,14 @@ Either from the UI, or:
 repoos new "Fix the login redirect loop"
 ```
 
-Tasks start in `inbox`. Move one to `ready` when it's specified well enough to
-hand over:
+Tasks start in `inbox`, including the starter `repoos init` seeds. Move one to
+`ready` when it's specified well enough to hand over:
 
 ```bash
-repoos mv 0001 ready
+repoos mv 0002 ready
 ```
+
+(`0001` is the `done` scaffolding example; your seeded starter is `0002`.)
 
 ::: warning Let RepoOS write task files
 Never hand-edit task files. Status, activity history and metadata are written
