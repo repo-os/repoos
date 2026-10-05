@@ -3,6 +3,9 @@ id: "0300"
 title: Set up mobile testing for the native RepoOS Hub
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Notes for AI"
 priority: p2
 area: mobile
 story: RepoOS Hub for Mobile
@@ -10,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-26T15:18:19Z"
-updated_at: "2026-09-23T06:53:53Z"
+updated_at: "2026-10-05T11:15:29Z"
 ---
 ## Problem
 
@@ -54,3 +57,4 @@ Establish a repeatable test strategy and automation harness for the native mobil
 - 2026-08-26T15:20:43Z · status inbox→ready
 - 2026-09-17T15:13:36Z · status ready→inbox
 - 2026-09-23T06:53:53Z · story
+- 2026-10-05T11:15:29Z · needs_input
