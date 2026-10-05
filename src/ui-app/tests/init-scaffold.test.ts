@@ -7,11 +7,13 @@ import {
   REPOOS_AGENTS_SECTION_MARKER,
   areaVocabularyTomlAddition,
   canaryUnderRootRuntimeDir,
+  parseDocsFromArgs,
   quoteBlock,
   repoOSAgentsSectionAddition,
   scaffoldInto,
   validateNamespace,
 } from "../../commands/init";
+import { scaffoldStarterDocs, checkDocsWiringAt } from "../../core/project-docs";
 import { loadConfig } from "../../core/config";
 import { parseTask } from "../../core/task";
 import { rmFixture } from "./helpers";
@@ -101,6 +103,45 @@ describe("validateNamespace", () => {
     expect(validateNamespace("repoos.toml")).toContain("!");
     expect(validateNamespace("AGENTS.md")).toContain("!");
     expect(validateNamespace("AGENTS.md/nested")).toContain("!");
+  });
+});
+
+describe("parseDocsFromArgs", () => {
+  it("splits --docs-from and --force off the positional name", () => {
+    expect(parseDocsFromArgs(["myapp", "--docs-from", "/tmp/docs"])).toEqual({
+      positional: ["myapp"],
+      docsFrom: "/tmp/docs",
+      force: false,
+    });
+  });
+
+  it("accepts --docs-from=<path>", () => {
+    expect(parseDocsFromArgs(["--docs-from=~/d.zip"])).toEqual({
+      positional: [],
+      docsFrom: "~/d.zip",
+      force: false,
+    });
+  });
+
+  it("collects --force", () => {
+    expect(parseDocsFromArgs(["--force", "--docs-from", "x"])).toEqual({
+      positional: [],
+      docsFrom: "x",
+      force: true,
+    });
+  });
+
+  it("treats a missing --docs-from value as absent, not as a name", () => {
+    expect(parseDocsFromArgs(["--docs-from"])).toEqual({
+      positional: [],
+      docsFrom: null,
+      force: false,
+    });
+    expect(parseDocsFromArgs(["--docs-from", "--force"])).toEqual({
+      positional: [],
+      docsFrom: null,
+      force: true,
+    });
   });
 });
 
@@ -267,6 +308,36 @@ describe("scaffoldInto starter tasks", () => {
     scaffoldInto(root, "", "repoos", "existing");
     const starter = readTask(root, "repoos/work/0002-read-the-codebase.md");
     expect(starter.title).toContain("repoos/docs/");
+  });
+
+  it("the vision starter tells the agent to read existing docs first", () => {
+    const root = scratch();
+    scaffoldInto(root, "desc", "repoos", "new");
+    const starter = readTask(root, "repoos/work/0002-flesh-out-the-vision.md");
+    expect(starter.body).toMatch(/docs already exist in `repoos\/docs\/`, read them first/i);
+  });
+
+  it("does not scaffold starter docs unless asked", () => {
+    const root = scratch();
+    scaffoldInto(root, "desc", "", "new");
+    expect(existsSync(join(root, "docs/README.md"))).toBe(false);
+  });
+
+  it("writes starter docs into the configured docsDir when requested", () => {
+    const root = scratch();
+    scaffoldInto(root, "desc", "repoos", "new");
+    const result = scaffoldStarterDocs(join(root, "repoos/docs"));
+    expect(result.created).toContain("README.md");
+    expect(existsSync(join(root, "repoos/docs/product.md"))).toBe(true);
+  });
+
+  it("scaffold + starter docs pass the doctor docs-wiring check out of the box", () => {
+    const root = scratch();
+    scaffoldInto(root, "desc", "", "new");
+    scaffoldStarterDocs(join(root, "docs"));
+    const findings = checkDocsWiringAt(root, "docs", 2);
+    expect(findings.map((f) => f.id)).toEqual(["layout.docs-wiring"]);
+    expect(findings[0].level).toBe("pass");
   });
 
   it("aborts cleanly instead of throwing when a file blocks the namespace directory", () => {
