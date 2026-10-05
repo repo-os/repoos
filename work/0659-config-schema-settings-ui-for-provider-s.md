@@ -2,7 +2,7 @@
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
-status: review
+status: active
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -1057,3 +1057,4 @@ src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no 
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-05T21:36:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-05T21:36:43Z · status active→review
+- 2026-10-05T21:36:43Z · status review→active
