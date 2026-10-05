@@ -3,6 +3,9 @@ id: "0658"
 title: Storage-provider interface + local implementation
 type: feature
 status: active
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
 priority: p1
 area: core
 story: Cloud attachment storage
@@ -41,4 +44,5 @@ Notes for AI:
 - 2026-10-05T11:52:38Z · status ready→active, branch
 - 2026-10-05T11:52:39Z · needs_input
 - 2026-10-05T12:12:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-05T12:34:13Z · needs_input
 - 2026-10-05T12:34:13Z · needs_input
