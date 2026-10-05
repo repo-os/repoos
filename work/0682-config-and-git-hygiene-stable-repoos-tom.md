@@ -2,7 +2,7 @@
 id: "0682"
 title: "Config and git hygiene: stable repoos.toml writes, auto-commit config/bookkeeping writes, init .gitignore covers attachments"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:58:46Z"
-updated_at: "2026-10-05T17:17:01Z"
+updated_at: "2026-10-05T18:04:06Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T16:58:46Z · created · unknown
 - 2026-10-05T17:17:00Z · story
 - 2026-10-05T17:17:01Z · body: section Story context
+- 2026-10-05T18:04:06Z · status inbox→ready
