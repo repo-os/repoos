@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 id: "0690"
 title: "Scheduling: deterministic default picker for auto-engineering with an optional PM veto for conflicts"
 type: feature
@@ -73,4 +74,5 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T22:40:26Z · note: highlight [data-config-key="autoEngineering.pmVeto"] matched nothing on /settings?tab=board
 - 2026-10-05T22:57:49Z · status review→active
 - 2026-10-05T23:12:12Z · status active→review
+
 
