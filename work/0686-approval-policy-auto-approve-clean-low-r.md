@@ -2,7 +2,7 @@
 id: "0686"
 title: "Approval policy: auto-approve clean, low-risk reviews with an audit trail; keep UI and risky tasks human"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:58:55Z"
-updated_at: "2026-10-05T17:32:27Z"
+updated_at: "2026-10-05T21:20:28Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:17:10Z · story
 - 2026-10-05T17:17:11Z · body: section Story context
 - 2026-10-05T17:32:27Z · body: section Docs follow-up
+- 2026-10-05T21:20:28Z · status inbox→ready
