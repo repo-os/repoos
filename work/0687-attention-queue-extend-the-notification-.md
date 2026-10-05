@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:58:57Z"
-updated_at: "2026-10-05T17:17:14Z"
+updated_at: "2026-10-05T17:32:28Z"
 ---
 ## Problem
 
@@ -31,8 +31,12 @@ Evidence comes from building a real 30-task project (opex, a Vue + Bun + Postgre
 ## Story context
 This task is part of the story **Field report: first agent-driven project run (opex)** (story #0008, `stories/field-report-first-agent-driven-project-run-opex.md` in this repo). Read that file first: it holds the background of the run that produced this task, the facts already established for your theme (with the evidence), the decisions the owner has already made, the known uncertainties, and the list of sibling tasks you should coordinate with. Verify its facts against the current source before relying on them, and say in the task notes if you find anything in it that is wrong or out of date.
 
+## Docs follow-up
+The playbook page `user-docs/running-with-agents.md` (landed on main) describes the CURRENT behaviour that this task changes. When this task lands, update the page: section 6 or 4 (wherever you describe how you notice problems). In short: point at the extended notification bell and the single attention feed. Keep the page accurate rather than aspirational; if this task is declined, leave the page as is. (This replaces the open task 0689, which is being removed.)
+
 ## Activity
 
 - 2026-10-05T16:58:57Z · created · unknown
 - 2026-10-05T17:17:12Z · story
 - 2026-10-05T17:17:14Z · body: section Story context
+- 2026-10-05T17:32:28Z · body: section Docs follow-up
