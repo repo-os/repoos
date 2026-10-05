@@ -1010,14 +1010,15 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // declarative; an unconfigured project keeps the existing Releases view.
     const distribution = parseDistributionConfig(parsed);
     if (distribution) cfg.distribution = distribution;
-    // [stories] section — opt-in cross-area delivery tracking. Missing,
-    // malformed, or `enabled = false` leaves `cfg.stories` undefined and keeps
-    // the nav item, route and task-edit control entirely dormant.
+    // [stories] section — cross-area delivery tracking, ON by default so the
+    // Stories page, nav item and task Story field are available without any
+    // setup. An explicit `enabled = false` turns it off; a missing or
+    // malformed value falls back to the default (on).
     const storiesEnabled = parsed["stories.enabled"];
-    if (typeof storiesEnabled === "boolean") {
-      const stories: StoriesConfig = { enabled: storiesEnabled };
-      cfg.stories = stories;
-    }
+    const stories: StoriesConfig = {
+      enabled: typeof storiesEnabled === "boolean" ? storiesEnabled : true,
+    };
+    cfg.stories = stories;
     // [areas] section (#0583) — the declared area vocabulary. Both the
     // `[[areas]]` array-of-tables form (with per-area descriptions) and the
     // flat `areas = ["web", "core"]` string-array shorthand are accepted.
@@ -1540,8 +1541,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       type: "boolean",
       tier: "live",
       restartRequired: false,
-      default: false,
-      description: "Show the Stories page and group tasks into cross-area delivery slices",
+      default: true,
+      description:
+        "Show the Stories page and group tasks into cross-area delivery slices (on by default)",
     },
     {
       key: "ntfyEnabled",
