@@ -294,7 +294,9 @@ Run it from the task's worktree; it asks the running `repoos serve` to start the
 task's preview (never starting a server itself), drives the same optional
 Playwright/WebKit path the UI check uses, and stores PNGs under
 `work/.attachments/<taskId>/shots/` — gitignored, never referenced from the task
-body, and shown as the **UI changes** section of the drawer's Changes tab.
+body, and shown as the **UI changes** section of the drawer's Changes tab. This
+is the default local attachment storage; an opt-in cloud provider is configured
+under [`storage.provider`](/configuration#attachment-storage).
 
 ```bash
 repoos shot                          # capture the preview root for this task
