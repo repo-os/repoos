@@ -3,7 +3,9 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  MODEL_TEST_TIMEOUTS,
   MODEL_TEST_TIMEOUT_MS,
+  modelTestTimeoutMs,
   sanitizeDiagnostic,
   testModelCombination,
   testModelCombinations,
@@ -105,5 +107,51 @@ describe("model compatibility runner", () => {
   it("strips ANSI and control characters from bounded diagnostics", () => {
     expect(sanitizeDiagnostic("\u001b[31mnope\u001b[0m\u0000")).toBe("nope");
     expect(sanitizeDiagnostic("x".repeat(10_000))).toHaveLength(4096);
+  });
+
+  it("uses a per-CLI probe ceiling with the 8 s fallback (#0677)", () => {
+    expect(modelTestTimeoutMs("cursor")).toBe(30_000);
+    expect(modelTestTimeoutMs("codex")).toBe(25_000);
+    expect(modelTestTimeoutMs("kilo")).toBe(MODEL_TEST_TIMEOUT_MS);
+    // The calibrated values exist for every driver the probe can spawn.
+    expect(Object.keys(MODEL_TEST_TIMEOUTS).length).toBeGreaterThan(0);
+  });
+
+  it("surfaces the failing line, not the stream head (#0677)", async () => {
+    // The stream starts with a big JSON blob (what the old 4 KB truncation
+    // showed) and only reveals the cause on its final line.
+    const blob = JSON.stringify({ type: "step_start", pad: "x".repeat(6000) });
+    const fixture = fakeOpenCode(
+      `echo '${blob}'; echo "Error: Model unavailable: opencode/mimo-v2.6-flash-free"; exit 1`,
+    );
+    const old = process.env.PATH;
+    process.env.PATH = fixture.path;
+    try {
+      const result = await testModelCombination("opencode", "mimo-v2.6-flash-free", {
+        cwd: fixture.root,
+        timeoutMs: 5000,
+      });
+      expect(result.status).toBe("failed");
+      expect(result.error).toContain("Model unavailable: opencode/mimo-v2.6-flash-free");
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+
+  it("distinguishes a cold start (no output) from a slow failure (#0677)", async () => {
+    // Prints nothing and never exits: the probe times out without a token.
+    const fixture = fakeOpenCode("exec sleep 5");
+    const old = process.env.PATH;
+    process.env.PATH = fixture.path;
+    try {
+      const result = await testModelCombination("opencode", "slow-start", {
+        cwd: fixture.root,
+        timeoutMs: 300,
+      });
+      expect(result.status).toBe("cold_start");
+      expect(result.error).toMatch(/cold start/i);
+    } finally {
+      process.env.PATH = old;
+    }
   });
 });
