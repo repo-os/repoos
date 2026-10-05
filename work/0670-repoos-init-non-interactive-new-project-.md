@@ -2,14 +2,14 @@
 id: "0670"
 title: "repoos init: non-interactive new-project mode for agents (flags) and an actionable non-TTY error"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: cli
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T15:20:07Z"
-updated_at: "2026-10-05T15:20:07Z"
+updated_at: "2026-10-05T15:39:09Z"
 ---
 ## Problem
 
@@ -49,3 +49,4 @@ Related earlier work: task 0028 (guided new-git-repo mode) and 0364 (seed a real
 ## Activity
 
 - 2026-10-05T15:20:07Z · created · unknown
+- 2026-10-05T15:39:09Z · status inbox→ready
