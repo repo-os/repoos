@@ -108,6 +108,7 @@ import {
   normalizeTaskDependencies,
   taskDependencyBlockers,
 } from "../../core/task-dependencies.js";
+import { TaskFieldValidationError } from "../../core/task-fields.js";
 import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
 import { createCloseOutOutcomeStore } from "../close-out-outcome.js";
@@ -239,6 +240,7 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
     });
   } catch (error) {
     if (error instanceof DependencyValidationError) return json(res, 400, { error: error.message });
+    if (error instanceof TaskFieldValidationError) return json(res, 400, { error: error.message });
     throw error;
   }
   logger.task(created.id, "info", "Task created", {
