@@ -2,14 +2,14 @@
 id: "0672"
 title: "Docs: how an AI agent starts a new RepoOS project (recipe, pitfalls, pointers)"
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: docs
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T15:20:11Z"
-updated_at: "2026-10-05T15:20:11Z"
+updated_at: "2026-10-05T15:37:56Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ Depends on the init-flags task for the final wording but can start with the pty 
 ## Activity
 
 - 2026-10-05T15:20:11Z · created · unknown
+- 2026-10-05T15:37:56Z · status inbox→ready
