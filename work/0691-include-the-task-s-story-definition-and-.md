@@ -2,15 +2,16 @@
 id: "0691"
 title: Include the task's story definition and sibling tasks in engineer and reviewer prompts
 type: feature
-status: review
+status: done
 priority: p3
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: fa062542c3af7f2bf85df4d3688d5ba59fc48b99
 assigned_to: ai
 created_by: ""
 branch: feat/include-the-task-s-story-definition-and-
 created_at: "2026-10-05T17:15:50Z"
-updated_at: "2026-10-05T20:41:33Z"
+updated_at: "2026-10-05T21:04:43Z"
 ---
 ## Problem
 
@@ -46,3 +47,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T19:54:44Z · status inbox→ready
 - 2026-10-05T19:54:49Z · status ready→active, branch
 - 2026-10-05T20:41:33Z · status active→review
+- 2026-10-05T21:04:43Z · status review→done, release:success
