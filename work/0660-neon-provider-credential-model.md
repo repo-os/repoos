@@ -2,7 +2,7 @@
 id: "0660"
 title: Neon provider + credential model
 type: feature
-status: inbox
+status: ready
 needs_input: true
 priority: p1
 area: server
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T08:28:57Z"
-updated_at: "2026-10-05T09:16:12Z"
+updated_at: "2026-10-05T09:27:44Z"
 ---
 Slice 3 of storage provider work (after 0658 interface + 0659 settings UI). Scope:
 - Neon Object Storage provider implementing the 0658 provider interface.
@@ -38,3 +38,4 @@ Area: server.
 
 - 2026-10-05T08:28:57Z · created · unknown
 - 2026-10-05T09:16:12Z · needs_input, body
+- 2026-10-05T09:27:44Z · status inbox→ready
