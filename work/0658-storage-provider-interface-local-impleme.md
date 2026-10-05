@@ -67,3 +67,4 @@ Notes for AI:
 - 2026-10-05T12:34:13Z · needs_input
 - 2026-10-05T12:44:26Z · body
 - 2026-10-05T12:49:56Z · status active→review
+- 2026-10-05T12:49:56Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
