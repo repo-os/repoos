@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-05T22:30:04Z"
+review_passes: 2
 id: "0685"
 title: Small papercuts from a long agent-driven run
 type: chore
@@ -12,9 +14,7 @@ branch: feat/small-papercuts-from-a-long-agent-driven
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:52Z"
-updated_at: "2026-10-05T22:29:15Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T22:05:32Z · note: Review round 2: audit (a) complete — default→sole target at CLI validate and capture (resolveDeclaredTarget); shot skip warnings unchanged at handoff. Items 6/8 declined per prior note.
 - 2026-10-05T22:29:15Z · status active→review
 - 2026-10-05T22:29:15Z · note: Task body is underspecified: missing sections: Desired UX
+
