@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-05T02:15:25Z"
+review_passes: 2
 id: "0652"
 title: "repoos check: cache step results by tree hash so unchanged reruns return instantly"
 type: feature
@@ -11,11 +13,9 @@ branch: feat/repoos-check-cache-step-results-by-tree-
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-04T16:32:02Z"
-updated_at: "2026-10-05T02:13:33Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-04T23:41:37.441Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 40% of repoos check runs by engineer agents (181 of 456) had no edit or write since the previous check (upper bound: some follow bun run fmt, which changes files without an edit call). Full runs are slow (opencode-measured p90 about 185s for check, 88s for build). 141 of 203 sessions also ran bun run build by hand even though the check builds.
@@ -48,3 +48,4 @@ Design risk is correctness, not speed: a stale cache hit that lets a broken tree
 - 2026-10-04T23:41:34Z · needs_input
 - 2026-10-05T02:13:25Z · review_cli_override, review_model_override
 - 2026-10-05T02:13:33Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+
