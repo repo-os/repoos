@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/board-agents-cto-ross-debugger-must-be-r
 created_at: "2026-10-05T16:58:36Z"
-updated_at: "2026-10-05T19:08:10Z"
+updated_at: "2026-10-05T19:30:52Z"
 ---
 ## Problem
 
@@ -36,6 +36,26 @@ Evidence comes from building a real 30-task project (opex, a Vue + Bun + Postgre
 ## Story context
 This task is part of the story **Field report: first agent-driven project run (opex)** (story #0008, `stories/field-report-first-agent-driven-project-run-opex.md` in this repo). Read that file first: it holds the background of the run that produced this task, the facts already established for your theme (with the evidence), the decisions the owner has already made, the known uncertainties, and the list of sibling tasks you should coordinate with. Verify its facts against the current source before relying on them, and say in the task notes if you find anything in it that is wrong or out of date.
 
+## Notes
+## What changed
+
+- **Board one-shot agents are read-only** (`readOnlyCommand` in `src/server/agents.ts`): a new per-CLI builder for board roles that omits every write-enabling flag — opencode without `--auto`, cursor without `--force`, claude without `--dangerously-skip-permissions`, pi with `--tools read`, codex on its default read-only sandbox, agy without the bypass. Where a driver has no read-only mode (copilot `--yolo`, kiro, crush) the command still cannot confine writes; the quarantine net is the backstop there.
+- **Stray-file quarantine** (`runBoardAgent` + `quarantineStrayFiles`): snapshots `git status --porcelain -z` before the run, then after it moves any NEW untracked path into `<cacheDir>/quarantine/<timestamp>/` (self-ignoring via a `*` `.gitignore`) and returns the list. Pre-existing dirt — including a user's own untracked files — is never touched. `-z` is used so a path with spaces (the CTO's `Nothing to report`) round-trips unquoted.
+- **CTO wired to both** (`src/server/cto.ts`): `run()` and `send()` now call `runBoardAgent`; a quarantine is surfaced in the report body, the session marker, and the run's error reason.
+- **Real failure text** (`oneShotFailureDetail`, used by `runPrompt` and `oneShotResultFromLog`): when stderr is empty, the last error-shaped stdout line (or a structured event's `error`/`message`) is used instead of `no stderr output`. A stub CLI exiting 1 with `Error: Model unavailable: …` on stdout now records that line.
+- **Model Test** (`src/server/model-test.ts`): per-CLI ceilings (`MODEL_TEST_TIMEOUTS`; cursor/pi 30 s, codex 25 s, …) with the 8 s fallback, the raw stream capture raised from 4 KB to 256 KB so the failing line after a large event dump survives (the old 4 KB cap dropped it — reproduced), and a new `cold_start` status for a timeout with no output. `AgentsView`/`AgentCard`/`types.ts` show `cold start` in amber.
+
+## Verified
+
+- New `src/ui-app/tests/board-agent-safety.test.ts`: stub writes a file → moved to quarantine, `git status` clean, pre-existing untracked file untouched; stub exits 1 with empty stderr and an error on stdout → the error is the stored reason; `readOnlyCommand` drops the write flags per CLI.
+- `src/ui-app/tests/model-test.test.ts`: failing line after a 6 KB blob is surfaced; `cold_start` vs `timed_out`; per-CLI ceiling lookup.
+- `REPOOS_CHECK_CHANGED=main repoos check` green.
+
+## Story-facts check
+
+The story's facts hold: the CTO ran 91 sessions and wrote the junk `Nothing to report` file into main; the failure text was `no stderr output` with the real cause on stdout. Both reproduce against the current source and are fixed here. The Debugger's zero sessions were a separate toggle issue (not this task).
+
+
 ## Activity
 
 - 2026-10-05T16:58:36Z · created · unknown
@@ -43,3 +63,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T17:16:49Z · body: section Story context
 - 2026-10-05T19:08:00Z · status inbox→ready
 - 2026-10-05T19:08:10Z · status ready→active, branch
+- 2026-10-05T19:30:52Z · body: section Notes
