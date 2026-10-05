@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T17:15:50Z"
-updated_at: "2026-10-05T17:33:09Z"
+updated_at: "2026-10-05T17:33:10Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T17:17:22Z · story
 - 2026-10-05T17:17:23Z · body: section Story context
 - 2026-10-05T17:33:09Z · priority
+- 2026-10-05T17:33:10Z · note: Owner view (2026-10-06): stories are mostly for the HUMAN to see how tasks relate to each other, so passing the story to agents is a nice-to-have; priority lowered p2 -> p3. A more valuable human-facing improvement may be showing the dependency/relationship view of a story's tasks (and which are done/active/inbox) on the story panel.
