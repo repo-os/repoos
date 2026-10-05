@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:58:52Z"
-updated_at: "2026-10-05T17:17:07Z"
+updated_at: "2026-10-05T17:17:08Z"
 ---
 ## Problem
 
@@ -35,9 +35,13 @@ A list of low-severity items; fix together or split as convenient:
 
 Evidence comes from building a real 30-task project (opex, a Vue + Bun + Postgres app) with cheap agents on one laptop over ~9 hours. Read `AGENTS.md` first. Never hand-edit work/*.md; use RepoOS commands or APIs. Verify any claim you rely on against the current source before changing behaviour. Where a related task exists it is listed under "See also"; coordinate rather than duplicate.
 
+## Story context
+This task is part of the story **Field report: first agent-driven project run (opex)** (story #0008, `stories/field-report-first-agent-driven-project-run-opex.md` in this repo). Read that file first: it holds the background of the run that produced this task, the facts already established for your theme (with the evidence), the decisions the owner has already made, the known uncertainties, and the list of sibling tasks you should coordinate with. Verify its facts against the current source before relying on them, and say in the task notes if you find anything in it that is wrong or out of date.
+
 ## Activity
 
 - 2026-10-05T16:58:52Z · created · unknown
 - 2026-10-05T16:58:53Z · needs_input
 - 2026-10-05T17:11:38Z · note: Add two items found in a follow-up audit (2026-10-06): (a) declared shots with an unknown target (e.g. 'default' when the only preview target is 'web') are only reported as a 'shots: skipped' activity note at handoff; validate the target when --shots is written, list valid names, make 'default' resolve to the sole target, and show a visible warning when shots were skipped. (b) The built-in Debugger has its own enable toggle (builtInAgents.debugger.enabled) separate from the 'debugger' agent row; an enabled agent row with the toggle off ran zero sessions silently. Make them one setting or warn in repoos doctor.
 - 2026-10-05T17:17:07Z · story
+- 2026-10-05T17:17:08Z · body: section Story context
