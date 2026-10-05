@@ -51,13 +51,40 @@ describe("taskAwaitingVisualCheck", () => {
   });
 });
 
+const emptyFeedInput = () => ({
+  config: { ...DEFAULT_CONFIG, root: "/tmp/repoos-attention-test" },
+  tasks: [] as Task[],
+  closeOutOutcomes: [],
+  releaseRun: null,
+  releaseNotesRun: null,
+  recordedEvents: [],
+  totalSpendUsd: null,
+  recentProviderFailures: [],
+  silentRuns: [],
+  previewTargetAreas: [] as string[],
+});
+
 describe("buildAttentionFeed", () => {
+  it("includes releaseNotesReady when the notes draft succeeded", () => {
+    const feed = buildAttentionFeed({
+      ...emptyFeedInput(),
+      releaseNotesRun: {
+        state: "succeeded",
+        startedAt: "2026-01-03T12:00:00.000Z",
+        updatedAt: "2026-01-03T12:01:00.000Z",
+        stale: false,
+      },
+    });
+    expect(feed.items.some((i) => i.kind === "releaseNotesReady")).toBe(true);
+  });
+
   it("includes provider failures, spend threshold, silent runs, and remote fallback", () => {
     const feed = buildAttentionFeed({
       config: configWithAttention(5),
       tasks: [task({ id: "0042", status: "review", area: "ui", title: "Map page" })],
       closeOutOutcomes: [],
       releaseRun: null,
+      releaseNotesRun: null,
       recordedEvents: [
         {
           id: "remoteFallback:0042:2026",
@@ -102,24 +129,26 @@ describe("buildAttentionFeed", () => {
   });
 });
 
-describe("GET /api/attention contract", () => {
-  it("returns ok, generatedAt, and items array", async () => {
-    const { buildAttentionFeed: build } = await import("../../core/attention.js");
-    const feed = build({
-      config: { ...DEFAULT_CONFIG, root: "/tmp/repoos-attention-test" },
-      tasks: [],
-      closeOutOutcomes: [],
-      releaseRun: null,
-      recordedEvents: [],
-      totalSpendUsd: null,
-      recentProviderFailures: [],
-      silentRuns: [],
-      previewTargetAreas: [],
+describe("buildAttentionFeed close-out and release kinds", () => {
+  it("maps a close-out outcome and a release run", () => {
+    const feed = buildAttentionFeed({
+      ...emptyFeedInput(),
+      closeOutOutcomes: [
+        {
+          taskId: "1",
+          outcome: "succeeded",
+          finishedAt: "2026-01-01T00:00:00.000Z",
+          reason: "",
+        },
+      ],
+      releaseRun: {
+        state: "failed",
+        message: "v1.0.0 cut failed",
+        startedAt: "2026-01-02T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:01:00.000Z",
+      },
     });
-    expect(feed.generatedAt).toMatch(/^\d{4}-/);
-    expect(Array.isArray(feed.items)).toBe(true);
-    const payload = { ok: true, ...feed };
-    expect(payload.ok).toBe(true);
-    expect(payload.items).toEqual(feed.items);
+    expect(feed.items.some((i) => i.kind === "closeOutSucceeded")).toBe(true);
+    expect(feed.items.some((i) => i.kind === "releaseFailed")).toBe(true);
   });
 });

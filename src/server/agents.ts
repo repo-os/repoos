@@ -31,7 +31,13 @@ import type {
   SkillMeta,
   Task,
 } from "../core/types.js";
-import { AGENT_CLIS, agentsForConfig, defaultMaxConcurrentAgents } from "../core/config.js";
+import {
+  AGENT_CLIS,
+  agentsForConfig,
+  defaultMaxConcurrentAgents,
+  loadConfig,
+} from "../core/config.js";
+import { notifyAttentionAfterSession, notifyAttentionAgentStalled } from "./attention-notify.js";
 import { parseTaskAreas } from "../core/areas.js";
 import { fileCommittedClean, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
@@ -4571,10 +4577,11 @@ export function recordOneShotSession(
     // "none"` — and stays out of every spend total.
     const costUsd = result.costUsd ?? undefined;
     const costSource = costUsd ? (agent.cli === "kiro" ? "kiro-credits" : "extractUsage") : "none";
+    const sessionId =
+      opts.sessionId ?? `${opts.sessionType}:${opts.taskId ?? "board"}:${endedAt}:${randomUUID()}`;
+    const errorReason = result.ok ? null : result.error?.trim().slice(0, 500) || null;
     db.upsertSession({
-      sessionId:
-        opts.sessionId ??
-        `${opts.sessionType}:${opts.taskId ?? "board"}:${endedAt}:${randomUUID()}`,
+      sessionId,
       sessionType: opts.sessionType,
       taskId: opts.taskId ?? undefined,
       agent: agent.name,
@@ -4593,7 +4600,14 @@ export function recordOneShotSession(
       costSource,
       status: result.ok ? "finished" : "errored",
       lastActivityAt: endedAt,
-      errorReason: result.ok ? null : result.error?.trim().slice(0, 500) || null,
+      errorReason,
+    });
+    notifyAttentionAfterSession(loadConfig(repoRoot), {
+      sessionId,
+      taskId: opts.taskId ?? null,
+      status: result.ok ? "finished" : "errored",
+      errorReason,
+      endedAt,
     });
   } catch {
     // Database recording is best-effort and must never crash the caller.
@@ -6922,6 +6936,7 @@ export class AgentRunner {
       if (this.snapshotStats(taskId).stalled) {
         session.stalledEmitted = true;
         this.emitStats(taskId);
+        notifyAttentionAgentStalled(taskId);
       }
     }
   }

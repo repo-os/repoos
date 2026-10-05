@@ -155,6 +155,7 @@ import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { closeOutPending, createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { createCloseOutOutcomeStore } from "./close-out-outcome.js";
 import { createAttentionEventStore } from "./attention-events.js";
+import { wireAttentionNotifications } from "./attention-notify.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
@@ -1239,6 +1240,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const bumpAttention = (): void => {
     emitEvent({ type: "attention.updated", at: new Date().toISOString() });
   };
+  wireAttentionNotifications(attentionEvents, bumpAttention);
   const recordRemoteFallbackAttention = (taskId: string, detail: string): void => {
     const at = new Date().toISOString();
     const line =
