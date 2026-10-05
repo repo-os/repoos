@@ -109,6 +109,13 @@ embedded in the starter task ("Flesh out the product vision and initial
 architecture"), so the first thing on the board is turning it into a real
 vision, architecture notes and a follow-on backlog.
 
+::: tip Starting a brand-new project with an agent?
+Don't `git init` first — that makes `repoos init` see an existing repo and seed
+the wrong starter. See
+[Starting a new project as an agent](/getting-started#starting-a-new-project-as-an-agent)
+for the non-interactive recipe and pitfalls.
+:::
+
 ## Next
 
 ```bash
