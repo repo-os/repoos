@@ -3,9 +3,6 @@ id: "0543"
 title: Create tasks and drive task lifecycle from Telegram
 type: feature
 status: ready
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX, Acceptance criteria, Notes for AI"
 priority: p3
 area: server
 story: RepoOS Telegram Bot
@@ -13,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:58Z"
-updated_at: "2026-10-05T11:15:32Z"
+updated_at: "2026-10-05T15:49:02Z"
 ---
 ## Problem
 
@@ -58,3 +55,4 @@ Optional, and genuinely optional. Topic routing is worth supporting for a projec
 - 2026-09-27T15:52:49Z · body
 - 2026-09-28T11:43:55Z · status inbox→ready
 - 2026-10-05T11:15:32Z · needs_input
+- 2026-10-05T15:49:02Z · needs_input
