@@ -279,6 +279,13 @@ export function resolveDeclaredTarget(
       target: targets[0],
     };
   }
+  if (declared === DEFAULT_FALLBACK_TARGET) {
+    if (targets.includes(DEFAULT_FALLBACK_TARGET)) return { target: DEFAULT_FALLBACK_TARGET };
+    // Path resolution names the sole preview target (e.g. `web`) while the
+    // declaration still says `default` — same alias `validateDeclaredShotTargets`
+    // accepts at write time (#0685).
+    if (targets.length === 1) return { target: targets[0] };
+  }
   if (!targets.includes(declared)) {
     return {
       error: `the resolved targets (${targets.join(", ") || "none"}) do not include "${declared}"`,
