@@ -28,7 +28,7 @@ On 2026-10-05 (about 9 hours wall-clock) an AI agent (Claude, acting as the huma
 | Verification quality | 0680 UI verification gate and review history, 0681 full-stack previews and config reload |
 | Configuration and hygiene | 0682 config/git hygiene, 0684 per-task override ergonomics, 0685 papercuts |
 | Remote runners | 0683 remote validation |
-| Running a project well | 0686 approval policy, 0687 attention queue, 0688 CTO safe actions, 0689 playbook page (page landed on main), 0690 scheduling, 0691 give agents the story context |
+| Running a project well | 0686 approval policy, 0687 attention queue, 0688 CTO safe actions, 0690 scheduling, 0691 give agents the story context. The playbook page itself landed on main (`user-docs/running-with-agents.md`); the tasks above that change something it describes each carry a `Docs follow-up` section. |
 
 Do not duplicate a sibling's work: if your task touches the same code as another in this list, read that task first and coordinate through the task notes.
 
@@ -52,13 +52,14 @@ Do not duplicate a sibling's work: if your task touches the same code as another
 
 **Remote validation.** Hosts passed RepoOS's own prerequisite test but no close-out ever dispatched remotely, and the status endpoint still showed every host unprobed. `repoos-ci` is the RepoOS repo's own image (the in-container command is fixed and there is no Postgres); a project with a database needs its own image, which must pass through when run as root because the pre-flight does `docker run -u 0 <image> chown ...`.
 
-**Features the owner asked the driver to use.** The CTO ran 91 sessions and reported "nothing to report" almost every time (once it wrote a junk file into main). The Debugger ran zero sessions because its separate built-in toggle (`builtInAgents.debugger.enabled`) was off while its agent row was configured. Stories were created but not used to steer the work. Engineers do not receive story text in their prompts (task 0691).
+**Features the owner asked the driver to use.** The CTO ran 91 sessions and reported "nothing to report" almost every time (once it wrote a junk file into main). The Debugger ran zero sessions because its separate built-in toggle (`builtInAgents.debugger.enabled`) was off while its agent row was configured. Stories were created but not used to steer the work. Engineers do not receive story text in their prompts (task 0691, p3: the owner sees stories as mainly a human view of how tasks relate).
 
 ## Owner decisions already made
 
 - Starter tasks: `inbox`/`draft`, never `ready`; `created_by: repoos-init`; choose the starter by repo contents; headless flags for the new-project flow.
 - Starter docs: opt-in only. Docs import accepts a directory, a file or a `.zip`, with an interactive prompt; no saved default path.
-- The playbook page "Running a project with AI agents" is on main (user-docs/running-with-agents.md). Task 0689 only tracks the remaining pointers and re-verification.
+- The playbook page "Running a project with AI agents" is on main (user-docs/running-with-agents.md). Task 0689 was deleted; instead each task that changes behaviour the page describes has a `Docs follow-up` section telling the engineer which bullet to update.
+- Stories are ON by default (hotfix on main, commit 8163d5e8e; the owner finds them most useful for humans, to see how tasks relate to each other).
 - Cost: never trust estimates; exclude them from totals and guardrails.
 - Approval stays a human decision by default. Any auto-approval is opt-in, per area, with an audit trail, and never for UI work without clean evidence.
 - Filing everything as `inbox`: the owner chooses what to start.
@@ -72,7 +73,7 @@ Do not duplicate a sibling's work: if your task touches the same code as another
 
 ## Evidence
 
-Numbered observations (39 items, with severity, exact error text and suggested fixes), corrections, a driver action log and a scorecard are in the opex repo: `~/code/jago/opex/repoos/docs/repoos-feedback.md`, with the operating loop in `~/code/jago/opex/repoos/docs/session-handoff.md`. The project itself is `~/code/jago/opex`.
+The full log (40 numbered observations with severity, exact error text and suggested fixes, plus corrections, the driver's action log, a scorecard and a log-item to task map) is in this repo: `docs/field-reports/2026-10-05-opex-first-run.md` (index and recipe for adding future runs: `docs/field-reports/README.md`). The live source log and the operating loop are in the opex project: `~/code/jago/opex/repoos/docs/repoos-feedback.md` and `session-handoff.md`; the project itself is `~/code/jago/opex`.
 
 ## How to use this story
 
