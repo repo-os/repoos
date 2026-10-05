@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T17:15:50Z"
-updated_at: "2026-10-05T17:17:22Z"
+updated_at: "2026-10-05T17:17:23Z"
 ---
 ## Problem
 
@@ -33,7 +33,11 @@ When a task has a story, the engineer and reviewer prompts include the story's t
 
 Look at how the engineer prompt is assembled in `src/server/agents.ts` and how story data is read in `src/core/stories.ts` and `src/core/story-definition-files.ts`. Keep the prompt change small and deterministic. Never hand-edit work/*.md or stories/*.md.
 
+## Story context
+This task is part of the story **Field report: first agent-driven project run (opex)** (story #0008, `stories/field-report-first-agent-driven-project-run-opex.md` in this repo). Read that file first: it holds the background of the run that produced this task, the facts already established for your theme (with the evidence), the decisions the owner has already made, the known uncertainties, and the list of sibling tasks you should coordinate with. Verify its facts against the current source before relying on them, and say in the task notes if you find anything in it that is wrong or out of date.
+
 ## Activity
 
 - 2026-10-05T17:15:50Z · created · unknown
 - 2026-10-05T17:17:22Z · story
+- 2026-10-05T17:17:23Z · body: section Story context
