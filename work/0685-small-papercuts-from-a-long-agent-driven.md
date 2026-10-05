@@ -49,3 +49,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T21:20:19Z · status ready→active, needs_input, branch
 - 2026-10-05T21:57:23Z · note: Papercuts: (6) Agents Test timeout/diagnostic truncation already fixed on main (#0677, model-test.ts). (8) idempotent /start kept as-is.
 - 2026-10-05T22:03:15Z · status active→review
+- 2026-10-05T22:03:15Z · note: Task body is underspecified: missing sections: Desired UX
