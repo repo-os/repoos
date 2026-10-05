@@ -3,6 +3,9 @@ id: "0663"
 title: Migration flow
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX, Notes for AI"
 priority: p1
 area: core
 story: Cloud attachment storage
@@ -11,7 +14,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T08:29:15Z"
-updated_at: "2026-10-05T09:16:41Z"
+updated_at: "2026-10-05T11:15:29Z"
 ---
 Slice 6: Dry run, resumable upload, verification before local originals released. Migration is safely repeatable.
 
@@ -39,3 +42,4 @@ Area: core. Story: Cloud attachment storage.
 
 - 2026-10-05T08:29:15Z · created · unknown
 - 2026-10-05T09:16:41Z · body
+- 2026-10-05T11:15:29Z · needs_input
