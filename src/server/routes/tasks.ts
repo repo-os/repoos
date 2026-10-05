@@ -84,7 +84,7 @@ import { join } from "node:path";
 import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-release.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
-import { mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
+import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
 import { localShotStore } from "../shots.js";
 import { computeTaskShotContext } from "../shot-context.js";
 import {
@@ -965,17 +965,16 @@ export const getScreenshot: RouteHandler = (ctx, _req, res, params) => {
   const { config } = ctx;
   const taskId = params.param1;
   const filename = params.param2;
-  const abs = resolveScreenshot(config, taskId, filename);
-  if (!abs) {
+  const stored = readAttachment(config, taskId, filename);
+  if (!stored) {
     return json(res, 404, { error: "Attachment not found" });
   }
-  const mime = mimeForExtension(abs);
   res.writeHead(200, {
-    "Content-Type": mime ?? "application/octet-stream",
+    "Content-Type": stored.mime,
     "Cache-Control": "no-cache",
     "Access-Control-Allow-Origin": "*",
   });
-  res.end(readFileSync(abs));
+  res.end(stored.data);
 };
 
 export const uploadScreenshot: RouteHandler = async (ctx, req, res, params) => {

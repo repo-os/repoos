@@ -1,15 +1,8 @@
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
-import { join, resolve } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import type { RepoOSConfig } from "./types.js";
 import { parseDocument, serializeDocument } from "./frontmatter.js";
+import { createStorageProvider } from "./storage/index.js";
 
 export type InputStatus = "new" | "reviewing" | "processed";
 /**
@@ -80,7 +73,13 @@ const slug = (v: string) =>
     .slice(0, 55) || "input";
 const inputRoot = (c: RepoOSConfig) => c.inputsDir ?? "inputs";
 const dir = (c: RepoOSConfig) => join(c.root, inputRoot(c));
-const attDir = (c: RepoOSConfig, id: string) => join(dir(c), ".attachments", id);
+/**
+ * Attachment bytes for inputs go through the storage provider (#0658), rooted
+ * at the inputs dir; each input id is a namespace. The provider is the local
+ * gitignored-directory implementation today — same `inputs/.attachments/<id>/`
+ * path as before, just named behind the interface.
+ */
+const attachments = (c: RepoOSConfig) => createStorageProvider(dir(c));
 
 /**
  * Normalize a raw frontmatter `number` to the canonical zero-padded form.
@@ -146,15 +145,14 @@ export function listInputs(c: RepoOSConfig): Input[] {
         parsed = parseDocument(readFileSync(join(dir(c), name), "utf8")),
         d = parsed.data;
       if (typeof d.id !== "string") return [];
-      const ad = attDir(c, d.id),
-        attachments = existsSync(ad)
-          ? readdirSync(ad).map((n) => ({
-              name: n,
-              mime: mimeForName(n),
-              size: statSync(join(ad, n)).size,
-              path: join(inputRoot(c), ".attachments", d.id as string, n),
-            }))
-          : [];
+      const inputId: string = d.id,
+        store = attachments(c),
+        attachmentList: InputAttachment[] = store.list(inputId).map((n) => ({
+          name: n,
+          mime: mimeForName(n),
+          size: store.size?.(inputId, n) ?? store.get(inputId, n)?.length ?? 0,
+          path: join(inputRoot(c), ".attachments", inputId, n),
+        }));
       return [
         {
           id: d.id,
@@ -170,7 +168,7 @@ export function listInputs(c: RepoOSConfig): Input[] {
           updatedAt: String(d.updated_at ?? ""),
           path,
           body: parsed.body.trim(),
-          attachments,
+          attachments: attachmentList,
           resolution: (d.resolution === "task" || d.resolution === "none" ? d.resolution : "") as
             | InputResolution
             | "",
@@ -304,10 +302,9 @@ export function saveInputAttachment(
   data: string,
 ): InputAttachment {
   if (!listInputs(c).some((i) => i.id === id)) throw new Error("input not found");
-  const safe = name.replace(/[^a-zA-Z0-9._-]/g, "-") || "attachment",
-    target = join(attDir(c, id), safe);
-  mkdirSync(attDir(c, id), { recursive: true });
-  writeFileSync(target, Buffer.from(data, "base64"));
+  const safe = name.replace(/[^a-zA-Z0-9._-]/g, "-") || "attachment";
+  const result = attachments(c).put(id, safe, Buffer.from(data, "base64"));
+  if ("error" in result) throw new Error(`could not store attachment: ${result.error}`);
   return {
     name: safe,
     mime: mimeForName(safe),
@@ -323,7 +320,7 @@ export function saveInputAttachment(
  * call when the directory does not exist (no attachments were ever saved).
  */
 export function removeInputAttachments(c: RepoOSConfig, id: string): void {
-  rmSync(attDir(c, id), { recursive: true, force: true });
+  attachments(c).removeNamespace(id);
 }
 
 function mimeForName(name: string): string {
@@ -351,8 +348,7 @@ export function readInputAttachment(
 ): { data: Buffer; mime: string } {
   if (!/^[a-zA-Z0-9._-]+$/.test(name) || !listInputs(c).some((i) => i.id === id))
     throw new Error("attachment not found");
-  const base = resolve(attDir(c, id)),
-    file = resolve(join(base, name));
-  if (!file.startsWith(`${base}/`) || !existsSync(file)) throw new Error("attachment not found");
-  return { data: readFileSync(file), mime: mimeForName(name) };
+  const data = attachments(c).get(id, name);
+  if (!data) throw new Error("attachment not found");
+  return { data, mime: mimeForName(name) };
 }
