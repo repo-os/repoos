@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-05T18:27:44Z"
-review_passes: 1
+updated_at: "2026-10-05T19:14:14Z"
+review_passes: 2
 id: "0676"
 title: "Cost accounting: never estimate from raw token totals; exclude estimates from totals and guardrails"
 type: bug
@@ -69,4 +69,5 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T18:04:12Z · status ready→active, branch
 - 2026-10-05T18:15:32Z · body: section Shots
 - 2026-10-05T18:26:56Z · status active→review
+
 
