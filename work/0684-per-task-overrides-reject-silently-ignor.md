@@ -12,7 +12,7 @@ branch: feat/per-task-overrides-reject-silently-ignor
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:50Z"
-updated_at: "2026-10-05T20:15:36Z"
+updated_at: "2026-10-05T20:15:44Z"
 dev_error_count: 1
 ---
 ## Problem
