@@ -25,7 +25,9 @@ const statusChip = computed(() => {
   if (!decision.value) return { text: "Idle", cls: "idle" };
   switch (decision.value.outcome) {
     case "selected":
-      return { text: "Started " + decision.value.selectedIds.length, cls: "ok" };
+      return decision.value.error
+        ? { text: "Started (PM veto fell back)", cls: "warn" }
+        : { text: "Started " + decision.value.selectedIds.length, cls: "ok" };
     case "no-ready-work":
       return { text: "Waiting for ready tasks", cls: "warn" };
     case "no-capacity":
@@ -47,9 +49,11 @@ const statusLine = computed(() => {
       const ids = d.selectedIds.map((id) => `#${id}`).join(", ");
       const how = d.picker === "pm-veto" ? "PM veto pass" : "deterministic picker";
       const deferred = d.deferredIds?.length ? ` Deferred #${d.deferredIds.join(", #")}.` : "";
-      return d.rationale
+      const fallback = d.error ? ` ${d.error}` : "";
+      const base = d.rationale
         ? `Started ${d.selectedIds.length} task${d.selectedIds.length === 1 ? "" : "s"} (${ids}) via the ${how}. ${d.rationale}${deferred}`
         : `Started ${d.selectedIds.length} task${d.selectedIds.length === 1 ? "" : "s"} (${ids}) via the ${how}.${deferred}`;
+      return `${base}${fallback}`;
     }
     case "no-capacity":
       return `All ${d.maxActiveTasks} engineer slot${d.maxActiveTasks === 1 ? "" : "s"} are full.`;
@@ -131,8 +135,10 @@ function triggerLabel(t: AutoEngineeringDecision["trigger"]): string {
       <div
         class="status-line"
         :class="{
-          warn: decision?.outcome === 'no-ready-work',
-          err: decision?.outcome === 'pm-unavailable' || decision?.outcome === 'pm-failed',
+          warn:
+            decision?.outcome === 'no-ready-work' ||
+            (decision?.outcome === 'selected' && !!decision?.error),
+          err: decision?.outcome === 'pm-failed',
         }"
       >
         {{ statusLine }}

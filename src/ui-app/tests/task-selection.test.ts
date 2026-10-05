@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Task } from "./types.js";
+import type { Task } from "../../core/types.js";
 import {
   conflictingPairs,
   criticalPathWeights,
@@ -10,7 +10,7 @@ import {
   shouldRunPmVeto,
   taskConflict,
   taskIsHeld,
-} from "./task-selection.js";
+} from "../../core/task-selection.js";
 
 function task(partial: Partial<Task> & Pick<Task, "id">): Task {
   return {
@@ -112,21 +112,6 @@ describe("orderReadyTasks", () => {
   });
 });
 
-describe("taskConflict", () => {
-  it("detects shared non-general areas", () => {
-    const webA = task({ id: "1", area: "web" });
-    const webB = task({ id: "2", area: "web" });
-    expect(taskConflict(webA, webB)?.reason).toContain('share area "web"');
-    expect(taskConflict(webA, task({ id: "3", area: "general" }))).toBeNull();
-  });
-
-  it("detects shared declared paths", () => {
-    const a = task({ id: "1", paths: ["src/foo.ts"] });
-    const b = task({ id: "2", paths: ["src/foo.ts", "src/bar.ts"] });
-    expect(taskConflict(a, b)?.reason).toContain('share path "src/foo.ts"');
-  });
-});
-
 describe("selectReadyTasks", () => {
   it("takes the first N slots in deterministic order", () => {
     const tasks = [
@@ -162,6 +147,46 @@ describe("selectReadyTasks", () => {
     const result = selectReadyTasks(tasks, { availableSlots: 1 });
     expect(conflictingPairs(tasks.filter((t) => result.eligible.includes(t.id)))).toHaveLength(1);
     expect(result.conflicts).toHaveLength(1);
+  });
+
+  it("weights critical path using non-eligible dependents on the full board", () => {
+    const tasks = [
+      task({
+        id: "002",
+        priority: "p2",
+        created_at: "2026-01-01T00:00:00Z",
+      }),
+      task({
+        id: "001",
+        priority: "p2",
+        created_at: "2026-01-02T00:00:00Z",
+      }),
+      task({
+        id: "003",
+        status: "inbox",
+        dependsOn: ["001"],
+        created_at: "2026-01-03T00:00:00Z",
+      }),
+    ];
+    const result = selectReadyTasks(tasks, { availableSlots: 1 });
+    // 001 unblocks blocked 003; 002 has no downstream work — 001 must win the tie on weight.
+    expect(result.selected).toEqual(["001"]);
+    expect(result.eligible).toEqual(["001", "002"]);
+  });
+});
+
+describe("taskConflict", () => {
+  it("detects shared non-general areas", () => {
+    const webA = task({ id: "1", area: "web" });
+    const webB = task({ id: "2", area: "web" });
+    expect(taskConflict(webA, webB)?.reason).toContain('share area "web"');
+    expect(taskConflict(webA, task({ id: "3", area: "general" }))).toBeNull();
+  });
+
+  it("detects shared declared paths", () => {
+    const a = task({ id: "1", paths: ["src/foo.ts"] });
+    const b = task({ id: "2", paths: ["src/foo.ts", "src/bar.ts"] });
+    expect(taskConflict(a, b)?.reason).toContain('share path "src/foo.ts"');
   });
 });
 

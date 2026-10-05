@@ -945,6 +945,7 @@ onUnmounted(() => {
               v-for="f in generalFields"
               :key="f.key"
               :id="`setting-${f.key}`"
+              :data-config-key="f.key"
               class="setting-row"
             >
               <div class="setting-info">
