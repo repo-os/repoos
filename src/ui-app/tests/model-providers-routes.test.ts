@@ -24,6 +24,13 @@ import {
 import { loadConfig } from "../../core/config";
 import type { RepoOSConfig } from "../../core/types.js";
 
+// The route falls back to the coding agents' real auth stores (#0676). Stub
+// that out so these route tests are deterministic on any machine; the real
+// reader has its own suite (harness-auth.test.ts).
+vi.mock("../../core/providers/harness-auth.js", () => ({
+  readProviderKeyFromHarness: () => "",
+}));
+
 const ENV_KEYS = [
   "REPOOS_OPENROUTER_API_KEY",
   "REPOOS_OPENCODE_GO_API_KEY",
@@ -111,6 +118,9 @@ describe("readProviderKey", () => {
           envVar: "REPOOS_OPENROUTER_API_KEY",
           configKey: "openrouterApiKey",
         } as never,
+        // Explicit empty harness store list — otherwise a dev machine with a
+        // real pi/opencode login would legitimately return that key (#0676).
+        [],
       ),
     ).toBe("");
   });
