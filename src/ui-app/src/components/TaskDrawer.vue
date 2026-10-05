@@ -73,7 +73,8 @@ import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
-import { confirmDependencyOverride, dependencyBlockerLabel } from "../lib/task-dependencies";
+import { confirmDependencyOverride } from "../lib/task-dependencies";
+import DependencyChip from "./DependencyChip.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
 import WorktreeHandoffConflictDialog from "./WorktreeHandoffConflictDialog.vue";
@@ -127,6 +128,35 @@ import { defaultTaskArea, formatTaskAreas, parseTaskAreas } from "../../../core/
 
 const repo = useRepoStore();
 const ui = useUiStore();
+
+/** Every prerequisite, blocking ones flagged, each resolvable to a title. */
+const dependencyRows = computed(() => {
+  const t = ui.active;
+  if (!t) return [];
+  const blockers = new Map((t.blockedBy ?? []).map((b) => [b.id, b]));
+  return (t.dependsOn ?? []).map((id) => {
+    const blocker = blockers.get(id) ?? null;
+    const known = repo.tasks.find((x) => x.id === id);
+    const stateLabel = blocker
+      ? blocker.state === "cancelled"
+        ? "cancelled"
+        : blocker.state === "archived"
+          ? "archived"
+          : "not merged"
+      : "done";
+    return { id, blocker, title: known?.title ?? "", stateLabel };
+  });
+});
+
+async function openDependency(id: string): Promise<void> {
+  const known = repo.tasks.find((x) => x.id === id);
+  if (known) return void ui.openTask(known);
+  try {
+    void ui.openTask(await api<Task>(`/api/tasks/${id}`));
+  } catch {
+    /* archived or missing: nothing to open */
+  }
+}
 const config = useConfigStore();
 const auth = useAuthStore();
 const router = useRouter();
@@ -3769,13 +3799,6 @@ watch(
                 :path="`/work?task=${encodeURIComponent(ui.active.id)}`"
                 :aria-label="`Copy link to task ${ui.active.id}`"
               />
-              <span
-                v-for="blocker in ui.active.blockedBy"
-                :key="blocker.id"
-                class="rs-chip"
-                :title="dependencyBlockerLabel(blocker)"
-                >{{ dependencyBlockerLabel(blocker) }}</span
-              >
               <span class="tc-id mono">{{ ui.active.path }}</span>
               <span
                 v-if="reviewSubstate"
@@ -4489,6 +4512,26 @@ watch(
           class="drawer-body"
           :class="{ 'transition-success': transitioned }"
         >
+          <div v-if="dependencyRows.length" class="field dep-row">
+            <label>Depends on</label>
+            <div class="dep-list">
+              <button
+                v-for="dep in dependencyRows"
+                :key="dep.id"
+                type="button"
+                class="dep-item"
+                :class="{ 'dep-item-blocking': dep.blocker }"
+                @click="openDependency(dep.id)"
+              >
+                <DependencyChip v-if="dep.blocker" :blocker="dep.blocker" />
+                <span v-else class="dep-item-id"
+                  ><CheckCheck class="dep-chip-icon" />#{{ dep.id }}</span
+                >
+                <span class="dep-item-title">{{ dep.title }}</span>
+                <span class="dep-item-state">{{ dep.stateLabel }}</span>
+              </button>
+            </div>
+          </div>
           <div class="field-row">
             <div class="field">
               <label>Type</label>

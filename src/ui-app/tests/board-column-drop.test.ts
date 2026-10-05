@@ -193,7 +193,7 @@ describe("Dependency override dialog", () => {
     const decision = confirmDependencyOverride([{ id: "0002", state: "waiting" }]);
     await flush();
 
-    expect(wrapper.text()).toContain("Blocked by #0002");
+    expect(wrapper.text()).toContain("Depends on #0002");
     expect(wrapper.text()).toContain("unmet prerequisites");
     await wrapper
       .findAll("button")

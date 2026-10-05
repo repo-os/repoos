@@ -27,7 +27,8 @@ import DoneErrorCard from "./DoneErrorCard.vue";
 import CopyableNumber from "./CopyableNumber.vue";
 import AgentModelModal from "./AgentModelModal.vue";
 import HotfixBadge from "./HotfixBadge.vue";
-import { confirmDependencyOverride, dependencyBlockerLabel } from "../lib/task-dependencies";
+import { confirmDependencyOverride } from "../lib/task-dependencies";
+import DependencyChip from "./DependencyChip.vue";
 
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
@@ -940,20 +941,7 @@ async function openDebuggerFromError(): Promise<void> {
           class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
           >{{ task.area }}</span
         >
-        <span
-          v-for="blocker in task.blockedBy"
-          :key="blocker.id"
-          class="rounded-md border border-[var(--amber-tint)] bg-[var(--amber-tint)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--amber)]"
-          :title="dependencyBlockerLabel(blocker)"
-        >
-          {{
-            blocker.state === "cancelled"
-              ? `Cancelled #${blocker.id}`
-              : blocker.state === "archived"
-                ? `Archived #${blocker.id}`
-                : `Blocked by #${blocker.id}`
-          }}
-        </span>
+        <DependencyChip v-for="blocker in task.blockedBy" :key="blocker.id" :blocker="blocker" />
         <span
           v-if="task.assignee !== 'ai'"
           class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
