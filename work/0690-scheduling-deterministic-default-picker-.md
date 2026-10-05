@@ -1,5 +1,5 @@
 ---
-handoff_signal_retry_count: 1
+handoff_signal_retry_count: 2
 id: "0690"
 title: "Scheduling: deterministic default picker for auto-engineering with an optional PM veto for conflicts"
 type: feature
@@ -45,4 +45,5 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:32:30Z · body: section Docs follow-up
 - 2026-10-05T19:54:41Z · status inbox→ready
 - 2026-10-05T19:54:48Z · status ready→active, branch
+
 
