@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-05T23:14:33Z"
+review_passes: 3
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
@@ -13,9 +15,7 @@ branch: feat/config-schema-settings-ui-for-provider-s
 model_override: opencode-go/deepseek-v4.1-flash
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T23:13:47Z"
 review_rounds: 2
-review_passes: 2
 handoff_signal_retry_count: 2
 ---
 ## Original prompt
@@ -1358,3 +1358,4 @@ src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no 
 - 2026-10-05T23:06:14Z · body: section Shots
 - 2026-10-05T23:13:38Z · area
 - 2026-10-05T23:13:47Z · status active→review
+
