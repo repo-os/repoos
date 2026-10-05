@@ -12,7 +12,7 @@ created_by: ""
 branch: feat/config-schema-settings-ui-for-provider-s
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T17:49:43Z"
+updated_at: "2026-10-05T17:57:17Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -280,3 +280,4 @@ error: script "test" exited with code 1
    Duration  2.15s (transform 952ms, setup 12ms, import 1.18s, tests 414ms, environment 472ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-05T17:57:17Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
