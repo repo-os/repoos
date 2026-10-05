@@ -2,7 +2,7 @@
 id: "0681"
 title: "Task previews for full-stack work, and reload repoos.toml when it changes"
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/task-previews-for-full-stack-work-and-re
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:44Z"
-updated_at: "2026-10-05T20:15:42Z"
+updated_at: "2026-10-05T21:57:47Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -51,3 +51,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T19:23:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-05T20:15:35Z · cli_override, model_override
 - 2026-10-05T20:15:35Z · needs_input
+- 2026-10-05T21:57:47Z · status active→review
