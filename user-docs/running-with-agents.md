@@ -70,6 +70,14 @@ first, then come back here.
   model) belongs in the **task body**. A message lives only in the session it
   was sent to, and the review report file is overwritten on each pass.
 - Approve only after you have seen it work. Approval is a human decision.
+- By default, **Move to done** stays a human step. You can opt in under Settings
+  → **Auto-approve clean reviews**: when enabled, tasks that match configured
+  **areas** or **types**, passed the handoff gate with a clean reviewer verdict,
+  and are not tagged `human-only` can close out automatically. Each
+  auto-approval is written to the task activity log and can notify the bell
+  (`auto-approved by policy: …`). **UI areas** (web, ui-app, and similar) still
+  need successful handoff screenshots — verify them yourself until you trust the
+  policy. Tag any task `human-only` to keep it on a human approval path.
 
 ## 5. Processes and servers
 
