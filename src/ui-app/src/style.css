@@ -11422,7 +11422,31 @@
   transition: transform 0.15s ease;
 }
 .archived-chevron.open {
-  transform: rotate(90deg);
+  transform: rotate(-90deg);
+}
+/* Desktop: dock the toggle bottom-left on the same row as the pinned
+   integration bar (bottom: 14px), with the task list opening upward from it. */
+@media (min-width: 761px) {
+  .work-page .archived-list {
+    /* Fixed like .ibar-wrap: the scrolling .main pane has bottom padding, so
+       anchoring to the page would land above the pipeline bar's row. */
+    position: fixed;
+    left: calc(210px + 26px);
+    bottom: 14px;
+    margin: 0;
+    z-index: 55;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    width: min(640px, calc(100vw - 210px - 26px - 520px));
+  }
+  .work-page .archived-rows {
+    margin: 0 0 8px;
+    align-self: stretch;
+    background: var(--panel-solid);
+    max-height: 50vh;
+    overflow-y: auto;
+  }
 }
 .archived-rows {
   list-style: none;
