@@ -2192,6 +2192,7 @@ export const startPreview: RouteHandler = async (ctx, req, res, params) => {
     url: result.url,
     label: result.label,
     ...(result.overrides?.length ? { overrides: result.overrides } : {}),
+    ...(result.services?.length ? { services: result.services } : {}),
   });
 };
 
