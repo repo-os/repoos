@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p1
 area: server
+story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T23:59:26Z"
-updated_at: "2026-10-05T23:59:26Z"
+updated_at: "2026-10-05T23:59:39Z"
 ---
 ## Problem
 
@@ -36,3 +37,4 @@ Read first: src/server/pre-review-remote-gate.ts (#0520), src/commands/check.ts 
 ## Activity
 
 - 2026-10-05T23:59:26Z · created · unknown
+- 2026-10-05T23:59:39Z · story
