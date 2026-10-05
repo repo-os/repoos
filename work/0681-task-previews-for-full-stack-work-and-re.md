@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-05T21:58:37Z"
+review_passes: 1
 id: "0681"
 title: "Task previews for full-stack work, and reload repoos.toml when it changes"
 type: feature
@@ -12,7 +14,6 @@ branch: feat/task-previews-for-full-stack-work-and-re
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:44Z"
-updated_at: "2026-10-05T21:57:47Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -52,3 +53,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T20:15:35Z · cli_override, model_override
 - 2026-10-05T20:15:35Z · needs_input
 - 2026-10-05T21:57:47Z · status active→review
+
