@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T16:58:30Z"
-updated_at: "2026-10-05T23:44:51Z"
+updated_at: "2026-10-05T23:44:53Z"
 ---
 ## Problem
 
@@ -54,3 +56,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:16:42Z · body: section Story context
 - 2026-10-05T17:32:18Z · body: section Docs follow-up
 - 2026-10-05T23:44:51Z · status inbox→ready
+- 2026-10-05T23:44:53Z · cli_override, model_override
