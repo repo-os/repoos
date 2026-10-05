@@ -264,6 +264,48 @@ describe("runDoctor", () => {
     expect(report.summary.fail).toBe(0);
   });
 
+  it("passes when a repoos-init starter has been promoted or archived", async () => {
+    const root = cleanProject();
+    writeFileSync(
+      join(root, "work", "0002-flesh-out-the-vision.md"),
+      "---\nid: '0002'\ntitle: Vision\nstatus: done\ncreated_by: repoos-init\n---\nbody\n",
+    );
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    expect(findingById(report, "layout.init-starter")?.severity).toBe("pass");
+  });
+
+  it("passes while an unpromoted repoos-init starter is still the only real work", async () => {
+    const root = cleanProject();
+    writeFileSync(
+      join(root, "work", "0002-read-the-codebase.md"),
+      "---\nid: '0002'\ntitle: Read the codebase\nstatus: inbox\ncreated_by: repoos-init\n---\nbody\n",
+    );
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    const starter = findingById(report, "layout.init-starter");
+    expect(starter?.severity).toBe("pass");
+    expect(starter?.detail).toMatch(/only 0 other task/i);
+  });
+
+  it("warns once a real backlog exists and the repoos-init starter is still in the inbox", async () => {
+    const root = cleanProject();
+    writeFileSync(
+      join(root, "work", "0002-read-the-codebase.md"),
+      "---\nid: '0002'\ntitle: Read the codebase\nstatus: inbox\ncreated_by: repoos-init\n---\nbody\n",
+    );
+    for (let i = 3; i <= 7; i++) {
+      writeFileSync(
+        join(root, "work", `000${i}-real.md`),
+        `---\nid: '000${i}'\ntitle: Real ${i}\nstatus: inbox\ncreated_by: human\n---\nbody\n`,
+      );
+    }
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    const starter = findingById(report, "layout.init-starter");
+    expect(starter?.severity).toBe("warn");
+    expect(starter?.remediation).toMatch(/archive/i);
+    // Advisory only — never a hard failure.
+    expect(report.summary.fail).toBe(0);
+  });
+
   it("never throws even when the root does not exist", async () => {
     const report = await runDoctor({
       root: join(tmpdir(), "repoos-doctor-does-not-exist-xyz"),
