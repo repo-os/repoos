@@ -4,7 +4,7 @@ title: Config schema + Settings UI for provider selection
 type: feature
 status: active
 priority: p1
-area: ui
+area: [ui, core]
 story: Cloud attachment storage
 depends_on: ["0658"]
 assigned_to: ai
@@ -13,7 +13,7 @@ branch: feat/config-schema-settings-ui-for-provider-s
 model_override: opencode-go/deepseek-v4.1-flash
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T23:06:14Z"
+updated_at: "2026-10-05T23:13:38Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -1356,3 +1356,4 @@ src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no 
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-05T22:46:35Z · model_override
 - 2026-10-05T23:06:14Z · body: section Shots
+- 2026-10-05T23:13:38Z · area
