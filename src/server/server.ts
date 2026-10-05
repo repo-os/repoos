@@ -146,6 +146,7 @@ import {
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { runAreaMigrationPass } from "./area-migration.js";
+import { sweepUnderspecifiedTasks } from "./task-underspecified-flag.js";
 import { FreeformRunManager } from "./freeform-runs.js";
 import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.js";
 import { attachPendingPmImages } from "./pm-attachments.js";
@@ -1770,6 +1771,34 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   };
   void indexReady.then(runAreaMigration, () => {});
+
+  // One-time underspecified sweep (#0668): tasks created before the create path
+  // assessed them — or created by `repoos new` while the server was down — must
+  // still surface `needs_input` for the Send-to-PM action. Runs once after the
+  // index is populated; `sweepUnderspecifiedTasks` is idempotent and never
+  // clobbers an unrelated reason, so a second boot is a silent no-op. Terminal
+  // and review tasks are skipped by the sweep itself. Control-plane only: a
+  // preview child or worktree-rooted server must never rewrite the board, and a
+  // vitest boot must not touch the live board (mirrors the area migration).
+  const runUnderspecifiedSweep = (): void => {
+    try {
+      if (!isControlPlane) return;
+      if (process.env.VITEST === "true") return;
+      const changed = sweepUnderspecifiedTasks(config, index.getTasks());
+      if (changed.length === 0) return;
+      commitFiles(
+        config.root,
+        changed.map((task) => task.absPath),
+        "docs: flag underspecified tasks (#0668)",
+      );
+      // The index holds pre-sweep parses; refresh so boards see needs_input now.
+      index.refreshAll();
+      logger.system("info", `underspecified sweep: flagged ${changed.length} task(s)`);
+    } catch {
+      /* best-effort: a failed sweep must never block boot */
+    }
+  };
+  void indexReady.then(runUnderspecifiedSweep, runUnderspecifiedSweep).catch(() => {});
 
   // The review agent (0101): when a task lands in `review`, it inspects the
   // implementation and writes a short report for whoever signs the task off.
