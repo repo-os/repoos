@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-05T19:37:23Z"
+review_passes: 1
 id: "0677"
 title: "Board agents (CTO, Ross, debugger) must be read-only; surface 'model unavailable' instead of 'exit code 1'"
 type: bug
@@ -10,7 +12,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/board-agents-cto-ross-debugger-must-be-r
 created_at: "2026-10-05T16:58:36Z"
-updated_at: "2026-10-05T19:36:15Z"
 ---
 ## Problem
 
@@ -77,3 +78,4 @@ The story's facts hold: the CTO ran 91 sessions and wrote the junk `Nothing to r
 - 2026-10-05T19:30:52Z · body: section Notes
 - 2026-10-05T19:31:27Z · body: section Shots
 - 2026-10-05T19:36:15Z · status active→review
+
