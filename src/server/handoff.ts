@@ -28,6 +28,7 @@ import {
   branchChangesSinceBase,
   uncommittedWorkFiles,
   workFileFilter,
+  commitTaskFile,
 } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import { assessTaskUnderspecified } from "../core/task-underspecified.js";
@@ -119,13 +120,16 @@ function samePath(a: string, b: string): boolean {
  * session as still fixing a check failure. Best-effort: never fails the
  * handoff over a cosmetic field.
  */
-function clearCheckRetryCount(absPath: string): void {
+function clearCheckRetryCount(root: string, absPath: string): void {
   try {
     const raw = readFileSync(absPath, "utf8");
     const doc = parseDocument(raw);
     if (doc.data.check_retry_count === undefined) return;
     delete doc.data.check_retry_count;
     writeFileSync(absPath, serializeDocument(doc.data, `\n${doc.body}\n`, Object.keys(doc.data)));
+    // Same bookkeeping-on-main concern as the retry writers below (#0682):
+    // commit the cleared field so it never sits dirty and blocks close-out.
+    commitTaskFile(root, absPath, "docs: clear check-failure retry count");
   } catch (err) {
     console.error(
       `[repoos] could not clear check_retry_count for ${absPath}: ${(err as Error).message}`,
@@ -543,7 +547,7 @@ async function runHandoffFinalization(
     if (check.status !== 0) {
       return fail("check", `repoos check failed: ${concise(check)}`);
     }
-    clearCheckRetryCount(task.absPath);
+    clearCheckRetryCount(config.root, task.absPath);
 
     // Nothing may change underneath the gate (#0512). The gate's verdict is
     // about one exact tree; a file rewritten while it ran — the #0506
@@ -916,6 +920,9 @@ export function scheduleCheckFailureRetry(
       );
       keys.unshift("check_retry_count", "last_check_failure");
       writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      // Bookkeeping write, not a full task patch: commit it (fail-soft) so it
+      // never sits dirty on main and blocks the next close-out (#0682).
+      commitTaskFile(config.root, task.absPath, `docs(${task.id}): record check-failure retry`);
       onFileChange?.(task.absPath);
     } catch (err) {
       console.error(
@@ -1027,6 +1034,8 @@ export function scheduleMergeConflictRetry(
       const keys = Object.keys(doc.data).filter((k) => k !== "merge_conflict_retry_count");
       keys.unshift("merge_conflict_retry_count");
       writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      // Bookkeeping write — commit it (fail-soft) so it can't dirty main (#0682).
+      commitTaskFile(config.root, task.absPath, `docs(${task.id}): record merge-conflict retry`);
       onFileChange?.(task.absPath);
     } catch (err) {
       console.error(
@@ -1094,6 +1103,8 @@ export function scheduleHandoffSignalRetry(
       const keys = Object.keys(doc.data).filter((k) => k !== "handoff_signal_retry_count");
       keys.unshift("handoff_signal_retry_count");
       writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      // Bookkeeping write — commit it (fail-soft) so it can't dirty main (#0682).
+      commitTaskFile(config.root, task.absPath, `docs(${task.id}): record handoff-signal retry`);
       onFileChange?.(task.absPath);
     } catch (err) {
       console.error(
