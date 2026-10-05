@@ -2,7 +2,7 @@
 id: "0674"
 title: "Close-out dependency handling: keep main's install fresh and stop mislabelling environment errors"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:58:30Z"
-updated_at: "2026-10-05T17:32:18Z"
+updated_at: "2026-10-05T23:44:51Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:16:40Z · story
 - 2026-10-05T17:16:42Z · body: section Story context
 - 2026-10-05T17:32:18Z · body: section Docs follow-up
+- 2026-10-05T23:44:51Z · status inbox→ready
