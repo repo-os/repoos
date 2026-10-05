@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
@@ -1341,3 +1342,4 @@ src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no 
 - 2026-10-05T23:13:38Z · area
 - 2026-10-05T23:13:47Z · status active→review
 - 2026-10-05T23:21:01Z · body: section Shots
+
