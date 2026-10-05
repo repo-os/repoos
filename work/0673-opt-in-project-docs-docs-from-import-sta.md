@@ -12,7 +12,7 @@ branch: feat/opt-in-project-docs-docs-from-import-sta
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T15:20:13Z"
-updated_at: "2026-10-05T17:20:35Z"
+updated_at: "2026-10-05T17:20:37Z"
 ---
 ## Problem
 
