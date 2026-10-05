@@ -21,6 +21,11 @@ starter plan to an uncommitted `repoos.check-plan.proposed.toml` for review;
 interactive init offers to move it into `repoos.toml`. See
 [Checks before merge](/check).
 
+Starting a brand-new project non-interactively (for an AI agent with no
+terminal) is a different path — see
+[Starting a new project as an agent](/getting-started#starting-a-new-project-as-an-agent)
+for the flags (coming soon) and the pseudo-terminal fallback.
+
 ### `repoos upgrade [--channel beta|canary|rc]`
 
 Self-updates a standalone (curl-installed) RepoOS to the latest release.
