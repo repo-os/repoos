@@ -1,17 +1,18 @@
 ---
-updated_at: "2026-10-05T20:59:19Z"
-review_passes: 1
 id: "0684"
 title: "Per-task overrides: reject silently-ignored fields and show the effective agent and model"
 type: bug
-status: review
+status: done
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 5cff995dfae949c83e1c05eb669ade41d8f308e2
 assigned_to: ai
 created_by: ""
 branch: feat/per-task-overrides-reject-silently-ignor
 created_at: "2026-10-05T16:58:50Z"
+updated_at: "2026-10-05T21:11:01Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -44,4 +45,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T19:08:06Z · status inbox→ready
 - 2026-10-05T19:08:13Z · status ready→active, branch
 - 2026-10-05T20:25:46Z · status active→review
-
+- 2026-10-05T21:11:01Z · status review→done, release:success
