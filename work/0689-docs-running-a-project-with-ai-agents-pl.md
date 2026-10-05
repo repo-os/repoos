@@ -5,11 +5,12 @@ type: chore
 status: inbox
 priority: p2
 area: docs
+story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:59:01Z"
-updated_at: "2026-10-05T17:05:50Z"
+updated_at: "2026-10-05T17:17:17Z"
 ---
 ## Problem
 
@@ -84,3 +85,4 @@ Evidence comes from building a real 30-task project (opex, a Vue + Bun + Postgre
 
 - 2026-10-05T16:59:01Z · created · unknown
 - 2026-10-05T17:05:50Z · note: Landed directly on main as an owner-authorized hotfix (commit 4c939bc2b): user-docs/running-with-agents.md, linked from the docs sidebar (Using RepoOS), getting-started 'Where to go next' and agents.md; user-docs build and 'repoos check --changed main' passed. REMAINING for this task (if kept open): (1) add the one-line pointer to the AGENTS.md template string in src/commands/init.ts, (2) re-verify each factual bullet after the related fixes land (override endpoints 0684, review history 0680, remote runners 0683, close-out install 0674) and update the page, (3) then close or delete this task. Consider closing it now if (1) is declined.
+- 2026-10-05T17:17:17Z · story
