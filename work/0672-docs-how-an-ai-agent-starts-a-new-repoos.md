@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-05T15:48:55Z"
+review_passes: 1
 id: "0672"
 title: "Docs: how an AI agent starts a new RepoOS project (recipe, pitfalls, pointers)"
 type: chore
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/docs-how-an-ai-agent-starts-a-new-repoos
 created_at: "2026-10-05T15:20:11Z"
-updated_at: "2026-10-05T15:47:52Z"
 ---
 ## Problem
 
@@ -41,3 +42,4 @@ Depends on the init-flags task for the final wording but can start with the pty 
 - 2026-10-05T15:37:56Z · status inbox→ready
 - 2026-10-05T15:38:00Z · status ready→active, branch
 - 2026-10-05T15:47:52Z · status active→review
+
