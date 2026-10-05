@@ -639,6 +639,13 @@ export interface DeploymentConfig {
 export interface StoriesConfig {
   /** Whether the Stories page and its navigation item are shown. Default true. */
   enabled?: boolean;
+  /**
+   * How many bytes of a story's definition the engineer/reviewer "Story
+   * context" prompt block includes before it points the agent at the story
+   * file to read the rest (#0691). Default a few KB; clamped to a sane range
+   * so an accidental huge or zero value can't blow up a prompt.
+   */
+  excerptBytes?: number;
 }
 
 /**
