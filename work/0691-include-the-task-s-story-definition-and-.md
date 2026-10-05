@@ -3,14 +3,14 @@ id: "0691"
 title: Include the task's story definition and sibling tasks in engineer and reviewer prompts
 type: feature
 status: inbox
-priority: p2
+priority: p3
 area: server
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T17:15:50Z"
-updated_at: "2026-10-05T17:17:23Z"
+updated_at: "2026-10-05T17:33:09Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T17:15:50Z · created · unknown
 - 2026-10-05T17:17:22Z · story
 - 2026-10-05T17:17:23Z · body: section Story context
+- 2026-10-05T17:33:09Z · priority
