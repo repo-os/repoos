@@ -45,6 +45,21 @@ describe("[stories] configuration", () => {
     expect(load('[stories]\nenabled = "yes"\n').stories?.enabled).toBe(true);
     expect(load("[stories]\nenabled = 1\n").stories?.enabled).toBe(true);
   });
+
+  it("exposes the story context excerpt size as a guarded Settings number (#0691)", () => {
+    expect(getConfigSchema().find((field) => field.key === "stories.excerptBytes")).toMatchObject({
+      label: "Story context excerpt size",
+      type: "number",
+      tier: "guarded",
+      default: 4096,
+    });
+    expect(SUPPORTED_TOML_KEYS).toContain("stories.excerptBytes");
+  });
+
+  it("parses a configured excerpt size and ignores a malformed one", () => {
+    expect(load("[stories]\nexcerptBytes = 8192\n").stories?.excerptBytes).toBe(8192);
+    expect(load('[stories]\nexcerptBytes = "big"\n').stories?.excerptBytes).toBeUndefined();
+  });
 });
 
 describe("storiesDir (#0637)", () => {

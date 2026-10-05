@@ -18,6 +18,7 @@ import {
   compatibilityForContract,
   type AgentCompatibilityContract,
 } from "../../core/agent-compatibility";
+import { scaffoldStarterDocs } from "../../core/project-docs";
 import { UI_THEMES, type RepoOSConfig } from "../../core/types";
 
 const dirs: string[] = [];
@@ -365,6 +366,39 @@ describe("runDoctor", () => {
     const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
     expect(findingById(report, "layout.docs-dir-relocated")).toBeUndefined();
     expect(findingById(report, "layout.work-dir-relocated")).toBeUndefined();
+  });
+});
+
+describe("runDoctor docs wiring (#0673)", () => {
+  it("warns (empty docs) when tasks exist but docsDir holds nothing", async () => {
+    const root = cleanProject();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(
+      join(root, "work/0001-task.md"),
+      "---\nid: '0001'\ntitle: A task\nstatus: ready\n---\nbody\n",
+    );
+
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    const finding = findingById(report, "layout.docs-empty");
+    expect(finding?.severity).toBe("warn");
+    expect(finding?.remediation).toBeTruthy();
+    // Advisory only — a warn must never flip the exit code.
+    expect(report.summary.fail).toBe(0);
+  });
+
+  it("passes a scaffolded starter skeleton against the doctor check", async () => {
+    const root = cleanProject();
+    scaffoldStarterDocs(join(root, "docs"));
+    writeFileSync(join(root, "AGENTS.md"), "Read docs/README.md before starting.\n");
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(
+      join(root, "work/0001-task.md"),
+      "---\nid: '0001'\ntitle: A task\nstatus: ready\n---\nbody\n",
+    );
+
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    expect(findingById(report, "layout.docs-wiring")?.severity).toBe("pass");
   });
 });
 

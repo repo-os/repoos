@@ -29,6 +29,7 @@ import { scaffoldCanaryFile } from "../core/canary-repo.js";
 import { deriveServePort, findRepoRoot, loadConfig } from "../core/config.js";
 import { CHECK_PLAN_PROPOSAL_FILE, proposeCheckPlan } from "../core/check-plan-proposal.js";
 import { formatPlanToml } from "../core/check-plan.js";
+import { importDocsInto, scaffoldDocsInto } from "./docs-io.js";
 import { gitAvailable, gitCommitAll, gitConfig, gitInit, isGitRepo } from "../core/git.js";
 import { c } from "../cli/colors.js";
 import { cmdServe } from "./serve.js";
@@ -120,16 +121,18 @@ ${
 ## What to do
 
 1. Read the description above and the rest of this repo.
-2. Work through the questions that block design — on your own, or with the
+2. If docs already exist in \`${docsDir}/\`, read them first instead of asking the
+   owner for the vision — they may already answer most of the questions below.
+3. Work through the questions that block design — on your own, or with the
    project's owner:
    - Who is this for, and what is the smallest useful first release?
    - What stack and hosting, and why those over the alternatives?
    - What is explicitly **out of scope** for now?
-3. Write the answers into \`${docsDir}/\` — at minimum a short vision note and an
+4. Write the answers into \`${docsDir}/\` — at minimum a short vision note and an
    architecture note. Keep them specific to this project.
-4. Break the result into a handful of concrete tasks with
+5. Break the result into a handful of concrete tasks with
    \`repoos new "<title>"\`, and move the ones that are ready into \`ready\`.
-5. Record the docs you wrote here, then hand this task off with
+6. Record the docs you wrote here, then hand this task off with
    \`repoos mv <id> review\` and stop — RepoOS runs the checks and moves the
    status (or \`done\` if there is genuinely nothing left to capture).
 
@@ -209,9 +212,10 @@ hand off with \`repoos mv <id> review\`; see the operating loop below.
 For a RepoOS-managed task runner:
 
 1. Read this file, your assigned task under \`${workDir}/\`, and relevant
-   project docs under \`${docsDir}/\`. Before reading a large file, run
-   \`repoos outline <path>\` to get its symbols with line numbers, then read
-   only the range you need instead of the whole file.
+   project docs under \`${docsDir}/\` — start from the index at
+   \`${docsDir}/README.md\`, which lists the reading order. Before reading a
+   large file, run \`repoos outline <path>\` to get its symbols with line
+   numbers, then read only the range you need instead of the whole file.
 2. Work in the task branch and dedicated worktree RepoOS assigned. The server
    owns activation and worktree setup; do not claim another task or edit its
    frontmatter directly.
@@ -973,6 +977,67 @@ async function confirm(question: string, dflt: boolean): Promise<boolean> {
   return answer === "y" || answer === "yes";
 }
 
+/** Split `--docs-from <path>` / `--force` off an init argument list. */
+export function parseDocsFromArgs(args: string[]): {
+  positional: string[];
+  docsFrom: string | null;
+  force: boolean;
+} {
+  const positional: string[] = [];
+  let docsFrom: string | null = null;
+  let force = false;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === "--docs-from") {
+      const value = args[i + 1];
+      if (value && !value.startsWith("--")) {
+        docsFrom = value;
+        i++;
+      }
+    } else if (a.startsWith("--docs-from=")) {
+      docsFrom = a.slice("--docs-from=".length);
+    } else if (a === "--force") {
+      force = true;
+    } else {
+      positional.push(a);
+    }
+  }
+  return { positional, docsFrom, force };
+}
+
+/**
+ * Interactive docs questions for a guided init: import an existing doc set
+ * (Enter to skip), or scaffold the starter skeleton. Both are opt-in; imported
+ * docs win, so the starter prompt is skipped when an import succeeded.
+ * `preset` is the `--docs-from` value, which bypasses the import question.
+ */
+async function askDocsWiring(
+  root: string,
+  docsDir: string,
+  preset: string | null,
+  force: boolean,
+): Promise<void> {
+  let imported = false;
+  if (preset) {
+    console.log(c.dim("\n  Importing project docs from " + preset + " …"));
+    imported = importDocsInto(root, docsDir, preset, { force });
+  } else {
+    const entered = await ask(
+      "  Import existing docs from a folder? " +
+        c.dim("(path to a dir, file or .zip; Enter to skip)") +
+        ": ",
+    );
+    if (entered) {
+      console.log(c.dim("  Importing project docs from " + entered + " …"));
+      imported = importDocsInto(root, docsDir, entered, { force });
+    }
+  }
+
+  if (!imported && (await confirm("  Scaffold starter project docs?", false))) {
+    scaffoldDocsInto(root, docsDir);
+  }
+}
+
 /**
  * Existing projects own AGENTS.md, so RepoOS never edits it silently. In an
  * interactive terminal, show the exact small appendix and add it only after an
@@ -1367,6 +1432,8 @@ interface NewProjectOptions {
   launch: boolean;
   force: boolean;
   json: boolean;
+  /** `--docs-from` import source; interactive flow prompts when absent (#0673). */
+  docsFrom: string | null;
 }
 
 /** Default `--new` answers when a flag isn't given. */
@@ -1397,6 +1464,7 @@ export function parseInitFlags(
     ...NEW_PROJECT_DEFAULTS,
     // Interactive sessions default to launching the console; a script must ask.
     launch: tty,
+    docsFrom: null,
   };
   let positional = "";
   let descriptionFile: string | undefined;
@@ -1736,6 +1804,13 @@ async function guidedNewRepo(opts: NewProjectOptions): Promise<void> {
     previewStub,
   );
   reportInit(target, created, skipped, starter, true);
+  // Opt-in docs wiring (#0673): import an existing set, or scaffold a skeleton.
+  if (opts.docsFrom) {
+    console.log(c.dim("\n  Importing project docs from " + opts.docsFrom + " …"));
+    importDocsInto(target, loadConfig(target).docsDir, opts.docsFrom, { force: opts.force });
+  } else if (interactive) {
+    await askDocsWiring(target, loadConfig(target).docsDir, null, opts.force);
+  }
   await offerCheckPlanProposal(target);
 
   if (!gitOk) {
@@ -1907,17 +1982,21 @@ export function parseStarterOption(args: string[]): { starter?: StarterChoice; r
 }
 
 export async function cmdInit(args: string[]): Promise<void> {
-  const { starter: starterOpt, rest } = parseStarterOption(args);
+  const { starter: starterOpt, rest: restAfterStarter } = parseStarterOption(args);
   if (process.exitCode) return;
   const cwd = process.cwd();
+  // `--docs-from <path>` / `--force` configure the opt-in docs wiring (#0673).
+  const { positional, docsFrom, force: docsForce } = parseDocsFromArgs(restAfterStarter);
   const tty = Boolean(input.isTTY && output.isTTY);
 
-  const { options, error } = parseInitFlags(rest, tty);
+  const { options, error } = parseInitFlags(positional, tty);
   if (error) {
     console.error(c.red(`\n  ${error.slice(1)}`));
     process.exitCode = 1;
     return;
   }
+  if (docsForce) options.force = true;
+  options.docsFrom = docsFrom;
 
   if (isGitRepo(cwd)) {
     if (options.nonInteractive) {
@@ -2011,6 +2090,12 @@ export async function cmdInit(args: string[]): Promise<void> {
     await offerRepoOSAgentsSection(root, config.workDir);
     await offerAreaVocabulary(root);
     await offerCheckPlanProposal(root);
+    // Explicit --docs-from on an existing repo imports (never prompts) — the
+    // interactive flow is the guided new-project path only.
+    if (options.docsFrom) {
+      console.log(c.dim("\n  Importing project docs from " + options.docsFrom + " …"));
+      importDocsInto(root, config.docsDir, options.docsFrom, { force: options.force });
+    }
     if (created.length === 0) {
       warnAlreadySetUp(root, "Nothing to initialize here.");
       for (const f of skipped) console.log("  " + c.dim("exists  " + f));

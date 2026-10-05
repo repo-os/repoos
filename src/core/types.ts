@@ -555,6 +555,12 @@ export interface RepoOSConfig {
    */
   closeOut?: CloseOutConfig;
   /**
+   * Opt-in auto-approval after a clean review (#0686). Off unless
+   * `approval.enabled = true`. UI-facing areas stay human unless handoff
+   * screenshots succeeded.
+   */
+  approval?: ApprovalConfig;
+  /**
    * Distribution destinations shown as the Releases page's "Published to"
    * summary (a `[[distribution]]` array of tables). Omitted/empty keeps the
    * existing Releases experience with no extra section. See [DistributionConfig].
@@ -670,6 +676,13 @@ export interface DeploymentConfig {
 export interface StoriesConfig {
   /** Whether the Stories page and its navigation item are shown. Default true. */
   enabled?: boolean;
+  /**
+   * How many bytes of a story's definition the engineer/reviewer "Story
+   * context" prompt block includes before it points the agent at the story
+   * file to read the rest (#0691). Default a few KB; clamped to a sane range
+   * so an accidental huge or zero value can't blow up a prompt.
+   */
+  excerptBytes?: number;
 }
 
 /**
@@ -1184,6 +1197,43 @@ export interface CheckContrastExempt {
 }
 
 /**
+ * A companion process a preview target starts alongside its main command
+ * (#0681). This is how a full-stack task — a branch that changes BOTH an API
+ * and the UI that consumes it — can actually be verified in its own preview:
+ * the main command (the web app) is told the service's OS-assigned port and
+ * proxies `/api` to *the branch's own* API process instead of the primary
+ * checkout's, so the preview never shows the "new UI parsing an old response"
+ * generic load error the field report hit.
+ *
+ * Declared as a top-level repeatable `[[preview.services]]` table in
+ * `repoos.toml`, and referenced by name from a target's `services` list. The
+ * flat TOML parser handles one level of array-of-tables, so a service must be
+ * a sibling of `[[preview.targets]]` rather than nested inside it.
+ */
+export interface PreviewServiceConfig {
+  /** Label used to reference the service from a target, and in diagnostics. */
+  name: string;
+  /**
+   * Shell command that boots the service. `{port}`/`{host}`/`PORT`/`HOST`
+   * refer to the SERVICE's own OS-assigned port; every configured service's
+   * port/URL is also reachable by placeholder (`{<name>.port}` /
+   * `{<name>.url}`, name lowercased with non-alphanumerics collapsed to `_`)
+   * and by environment variable (`REPOOS_PREVIEW_<NAME>_PORT` /
+   * `REPOOS_PREVIEW_<NAME>_URL`).
+   */
+  command: string;
+  /** Optional subdirectory of the worktree to run the command in. */
+  cwd?: string;
+  /**
+   * Optional readiness path polled on the service's own URL before the main
+   * command is waited on. Defaults to `/`.
+   */
+  readyPath?: string;
+  /** Optional readiness timeout for this service (ms). Defaults built in. */
+  readyTimeoutMs?: number;
+}
+
+/**
  * A named preview target (#0362): one previewable thing in a repo, selected by
  * matching the task's `area:` frontmatter (case-insensitive). A monorepo can
  * hold a landing page, a docs site, several web apps, etc.; each gets a target
@@ -1223,6 +1273,14 @@ export interface PreviewTargetConfig {
    * mid-build and reported as "did not become ready" (#0370).
    */
   readyTimeoutMs?: number;
+  /**
+   * Names of `[[preview.services]]` to boot alongside this target (#0681),
+   * each on its own OS-assigned port. The main `command` can reach them by
+   * placeholder (`{<name>.port}` / `{<name>.url}`) or environment variable, so
+   * a full-stack target's web server can proxy `/api` to the branch's own API.
+   * An unknown name is an error at start time, never a silent skip.
+   */
+  services?: string[];
 }
 
 /**
@@ -1258,6 +1316,13 @@ export interface PreviewConfig {
   readyTimeoutMs?: number;
   /** Named targets, selected by the task's `area:` frontmatter. */
   targets?: PreviewTargetConfig[];
+  /**
+   * Companion processes a target can boot alongside its main command (#0681),
+   * keyed by name. Declared as a top-level repeatable `[[preview.services]]`
+   * table (a sibling of `[[preview.targets]]` — the flat TOML parser handles
+   * one array-of-tables level, not nesting). See `PreviewServiceConfig`.
+   */
+  services?: PreviewServiceConfig[];
 }
 
 /**
@@ -1337,6 +1402,23 @@ export interface WatchdogConfig {
    * `needsInput`. Default true.
    */
   autoTransition?: boolean;
+}
+
+/** Opt-in policy for Move to done without a human click (#0686). */
+export interface ApprovalConfig {
+  /** Master switch — default false when absent. */
+  enabled?: boolean;
+  autoApprove?: {
+    /** Task `area` values eligible for auto-approval (any match). */
+    areas?: string[];
+    /** Task `type` values eligible (any match). */
+    types?: string[];
+    /**
+     * Areas treated as UI — require successful handoff screenshots. Defaults to
+     * web/ui/ui-app/frontend/mobile when unset.
+     */
+    uiAreas?: string[];
+  };
 }
 
 /**

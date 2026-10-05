@@ -51,6 +51,7 @@ import {
 } from "./agent-compatibility.js";
 import { parseDocument } from "./frontmatter.js";
 import { isGitRepo } from "./git.js";
+import { checkDocsWiringAt } from "./project-docs.js";
 import { portListening } from "./net-probe.js";
 import { validateToml } from "./toml-validate.js";
 
@@ -222,6 +223,21 @@ export async function checkAgentCompatibility(
         `${harnessName}: ${result.label}`,
         `${result.explanation} Installed: ${result.installedVersion ?? "unknown"}; certified: ${result.newestCertifiedVersion ?? "none"}.`,
         remediation,
+      ),
+    );
+  }
+
+  const debuggerRow = enabled.find((a) => a.name?.toLowerCase() === "debugger");
+  const builtInDebugger = config.builtInAgents?.debugger;
+  if (debuggerRow && builtInDebugger && builtInDebugger.enabled === false) {
+    findings.push(
+      finding(
+        "runtime.debugger-toggle",
+        "runtime",
+        "warn",
+        "Debugger agent row is enabled but the built-in debugger is off",
+        "The debugger row on the Agents page will not run until the separate built-in debugger toggle is enabled in Settings.",
+        "Enable the built-in debugger under Settings → Built-in agents, or disable the debugger agent row.",
       ),
     );
   }
@@ -953,9 +969,27 @@ function checkLayout(root: string, config: RepoOSConfig): DoctorFinding[] {
     );
   }
 
+  out.push(...checkDocsWiring(root, config));
   out.push(checkTaskFrontmatter(root, config));
   out.push(checkStarterHygiene(root, config));
   return out;
+}
+
+/**
+ * Wire the pure docs-wiring predicate (#0673) into DoctorFindings. Advisory:
+ * every finding is a `warn`, never a `fail`, so the exit code is unchanged.
+ * Each check keeps its own stable id; a clean result yields one pass finding.
+ */
+function checkDocsWiring(root: string, config: RepoOSConfig): DoctorFinding[] {
+  const taskCount = walkTaskFiles(join(root, config.workDir), config.taskExtensions).length;
+  const findings = checkDocsWiringAt(root, config.docsDir, taskCount);
+  if (findings.length === 1 && findings[0].level === "pass") {
+    const f = findings[0];
+    return [finding(f.id, "layout", "pass", f.title, f.detail)];
+  }
+  return findings.map((f) =>
+    finding(f.id, "layout", f.level === "warn" ? "warn" : "pass", f.title, f.detail, f.fix),
+  );
 }
 
 function checkTaskFrontmatter(root: string, config: RepoOSConfig): DoctorFinding {
