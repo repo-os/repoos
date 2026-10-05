@@ -334,6 +334,11 @@ export const getRelease: RouteHandler = async (ctx, _req, res) =>
 
 export const getReleaseRun: RouteHandler = (_ctx, _req, res) => json(res, 200, run);
 
+/** Read the in-memory release run for the attention feed (#0687). */
+export function getReleaseRunState(): ReleaseRun {
+  return run;
+}
+
 /**
  * The release the Releases page is currently showing: the tagged manifest
  * version when it exists, else the newest tag. Null when there's nothing.

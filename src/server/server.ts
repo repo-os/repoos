@@ -154,6 +154,7 @@ import { clearStoryPmChat, isStoryPmWorking } from "../core/story-definition-fil
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { closeOutPending, createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { createCloseOutOutcomeStore } from "./close-out-outcome.js";
+import { createAttentionEventStore } from "./attention-events.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
@@ -298,6 +299,7 @@ import {
   getIntegrationJob,
   getIntegrationJobs,
   getCloseOutOutcomes,
+  getAttention,
   getIntegrationPipeline,
   retryIntegration,
   cancelDone,
@@ -1150,6 +1152,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const closeOutOutcomes = createCloseOutOutcomeStore(config.root, config.cacheDir, (error) =>
     logger.system("warn", `close-out outcome persistence failed: ${(error as Error).message}`),
   );
+  const attentionEvents = createAttentionEventStore(config.root, config.cacheDir, (error) =>
+    logger.system("warn", `attention event persistence failed: ${(error as Error).message}`),
+  );
   const repoLock = createRepositoryLock(config.root);
   const rootLock = createRootLock(config.root);
 
@@ -1230,6 +1235,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         clients.delete(res);
       }
     }
+  };
+  const bumpAttention = (): void => {
+    emitEvent({ type: "attention.updated", at: new Date().toISOString() });
+  };
+  const recordRemoteFallbackAttention = (taskId: string, detail: string): void => {
+    const at = new Date().toISOString();
+    const line =
+      detail
+        .split("\n")
+        .map((l) => l.trim())
+        .find(Boolean) ?? "";
+    attentionEvents.record({
+      kind: "remoteFallback",
+      taskId,
+      message: `Ran locally: #${taskId}`,
+      detail: line || "Remote validation is enabled but this close-out used the full local gate.",
+      at,
+    });
+    bumpAttention();
   };
   const unsubscribe = index.on(emitEvent);
 
@@ -1350,7 +1374,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           (outcome) => {
             closeOutOutcomes.record(outcome);
             emitEvent({ type: "close-out.outcome", outcome, at: outcome.finishedAt });
+            bumpAttention();
           },
+          recordRemoteFallbackAttention,
         );
         const jobBefore = jobCoordinator.peekNext();
         // Defer auto-reload for the duration of this job's processing: a
@@ -2812,6 +2838,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   // Durable close-out outcomes (#0640) — the notices bell's hydrate/backstop.
   router.register("GET", "/api/close-out/outcomes", getCloseOutOutcomes);
+  router.register("GET", "/api/attention", getAttention);
   router.register("GET", "/api/check-plan", getCheckPlan);
   // Durable check-run history across all tasks (#0564) — the Runs tab.
   router.register("GET", "/api/check-runs", getCheckRuns);
@@ -3210,6 +3237,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         rootLock,
         jobCoordinator,
         closeOutOutcomes,
+        attentionEvents,
         remoteValidator,
         reportedStages,
         triggerJobProcessing,

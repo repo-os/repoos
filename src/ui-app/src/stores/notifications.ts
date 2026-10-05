@@ -25,7 +25,12 @@ export type NotificationType =
   | "releaseFailed"
   | "closeOutSucceeded"
   | "closeOutFailed"
-  | "closeOutTimedOut";
+  | "closeOutTimedOut"
+  | "providerFailure"
+  | "silentRun"
+  | "spendThreshold"
+  | "awaitingVisualCheck"
+  | "remoteFallback";
 
 /** Every monitorable type, in Settings display order. */
 export const NOTIFICATION_TYPES: NotificationType[] = [
@@ -39,6 +44,11 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   "closeOutSucceeded",
   "closeOutFailed",
   "closeOutTimedOut",
+  "providerFailure",
+  "silentRun",
+  "spendThreshold",
+  "awaitingVisualCheck",
+  "remoteFallback",
 ];
 
 const STORAGE_KEY = "repoos.notifications";
@@ -221,6 +231,11 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   closeOutSucceeded: "Move to done landed",
   closeOutFailed: "Move to done failed",
   closeOutTimedOut: "Move to done timed out",
+  providerFailure: "Provider or credit error",
+  silentRun: "Agent output went quiet",
+  spendThreshold: "Spend alert",
+  awaitingVisualCheck: "Awaiting visual check",
+  remoteFallback: "Ran locally (remote enabled)",
 };
 
 /** One-line Settings description per type; keyed like the labels. */
@@ -235,6 +250,11 @@ export const NOTIFICATION_TYPE_DESCRIPTIONS: Record<NotificationType, string> = 
   closeOutSucceeded: "A task's Move to done finished and its work landed on main.",
   closeOutFailed: "A task's Move to done failed; the task stays in review.",
   closeOutTimedOut: "A task's Move to done ran past its time budget and was stopped.",
+  providerFailure: "An agent hit a provider credit, auth, or model error.",
+  silentRun: "A running agent stopped producing output while the process is still alive.",
+  spendThreshold: "Provider-reported board spend reached your alert threshold.",
+  awaitingVisualCheck: "A UI task is in review — open the preview and verify it in a browser.",
+  remoteFallback: "Remote validation was on but the gate ran on this machine instead.",
 };
 
 export const useNotificationsStore = defineStore("notifications", () => {
