@@ -2,14 +2,14 @@
 id: "0673"
 title: "Opt-in project docs: --docs-from import, starter skeleton, and a doctor wiring check"
 type: feature
-status: active
+status: review
 priority: p3
 area: cli
 assigned_to: ai
 created_by: ""
 branch: feat/opt-in-project-docs-docs-from-import-sta
 created_at: "2026-10-05T15:20:13Z"
-updated_at: "2026-10-05T15:37:09Z"
+updated_at: "2026-10-05T17:57:07Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Owner guidance (important): do NOT make starter docs the default and do not impo
 - 2026-10-05T15:33:34Z · note: Owner decision (2026-10-05): DROP the saved default entirely (no init.docsTemplate / REPOOS_DOCS_TEMPLATE / --no-docs-template); the owner uses a different path every time. ADD: the source may be a .zip. --docs-from <path> and the interactive prompt must accept (a) a directory, (b) a single file, or (c) a .zip archive (typical browser download, e.g. ~/Downloads/docs.zip) and unpack it automatically. Zip requirements: extract to a temp dir, then import; if the archive has a single top-level folder (very common, e.g. docs/ or project-docs/) use its contents rather than nesting an extra level; ignore macOS junk (__MACOSX/, .DS_Store, ._* files); reject path traversal (zip-slip: entries resolving outside the extraction dir) and absurd sizes/entry counts; refuse symlinks; clean the temp dir afterwards. Zero runtime dependencies is a hard RepoOS constraint, so use the system unzip or Node/Bun built-ins rather than adding an npm dependency (Bun has no built-in zip reader; shelling out to 'unzip' or 'bsdtar' is acceptable with a clear error if neither exists). Tests: zip with single top-level folder, zip with files at root, zip containing __MACOSX, a zip-slip attempt, a corrupt zip, a missing path.
 - 2026-10-05T15:37:04Z · status inbox→ready
 - 2026-10-05T15:37:09Z · status ready→active, branch
+- 2026-10-05T17:57:07Z · status active→review
