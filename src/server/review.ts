@@ -777,6 +777,9 @@ export class ReviewManager {
     let delay = 0;
     for (const task of tasks) {
       if (task.status !== "review") continue;
+      // #0657: an archived review task is parked — never auto-re-review it on
+      // recovery, matching the watchdog/dispatch exclusions.
+      if (task.isArchived) continue;
       if (this.isRunning(task.id)) continue;
       if (this.isCancelled(task.id)) continue;
       if (!task.branch) continue;
@@ -801,7 +804,7 @@ export class ReviewManager {
         // or a human "Review again" may have started one in the interim.
         if (this.isRunning(task.id)) return;
         const fresh = this.index?.getTask(task.id) ?? task;
-        if (fresh.status === "review") void this.run(fresh);
+        if (fresh.status === "review" && !fresh.isArchived) void this.run(fresh);
       }, delay).unref?.();
       delay += 3000;
     }

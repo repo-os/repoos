@@ -93,6 +93,13 @@ describe("ReviewManager.recoverInterruptedReviews", () => {
     expect(reviews.run).toHaveBeenCalledOnce();
   });
 
+  it("does NOT re-review an archived review task (#0657)", async () => {
+    const archived = { ...reviewTask(), isArchived: true };
+    reviews.recoverInterruptedReviews([archived]);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(reviews.run).not.toHaveBeenCalled();
+  });
+
   it("re-reviews when the report predates the branch HEAD commit", async () => {
     writeReport("2000-01-01T00:00:00.000Z"); // ancient — older than the commit
     reviews.recoverInterruptedReviews([reviewTask()]);

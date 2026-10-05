@@ -1534,7 +1534,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
       if (pendingReview.delete(e.id)) {
         const task = index.getTask(e.id);
-        if (task?.status === "review") void reviews.run(task);
+        if (task?.status === "review" && !task.isArchived) void reviews.run(task);
       }
       // #0271 follow-up: when the engineer session `scheduleMergeConflictRetry`
       // resumed finishes its turn, automatically re-enqueue the close-out —
@@ -1548,7 +1548,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       const failedJob = jobCoordinator.getJob(e.id);
       if (failedJob?.phase === "failed" && failedJob.reason?.startsWith("merge conflict in ")) {
         const task = index.getTask(e.id);
-        if (task?.status === "review" && task.branch) {
+        if (task?.status === "review" && task.branch && !task.isArchived) {
           const requeued = jobCoordinator.enqueue(task);
           if (requeued) {
             emitIntegration();

@@ -1550,6 +1550,13 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   }
 
   if (action === "done") {
+    // #0657: a parked task never closes out — its lifecycle is frozen until
+    // it is unarchived, mirroring `repoos mv` and the status PATCH guard.
+    if (existing.isArchived) {
+      return json(res, 400, {
+        error: `Task #${id} is archived — unarchive it before completing it`,
+      });
+    }
     // Branch-less release (2026-08-15): a task fixed by a direct commit on
     // main (a hotfix — see #0212, not yet a first-class flow) has nothing to
     // merge. Routing it through the branch-merge close-out pipeline below
@@ -1965,6 +1972,14 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (runner.isRunning(id)) {
       return json(res, 409, {
         error: `Task #${id} has a live agent run — stop work before archiving`,
+      });
+    }
+    // A handoff finalization (scoped check → commit gate → review) is a live
+    // server-side run that is no longer `isRunning()`. Hiding the task from
+    // the index would orphan it mid-finalization, so refuse until it lands.
+    if (runner.isHandoffInFlight(id) || runner.hasPendingHandoff(id)) {
+      return json(res, 409, {
+        error: `Task #${id} is finishing its handoff — wait for it to move to review before archiving`,
       });
     }
     if (reviews.isRunning(id)) {
