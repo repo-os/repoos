@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p1
 area: server
+story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T23:55:32Z"
-updated_at: "2026-10-05T23:55:32Z"
+updated_at: "2026-10-05T23:55:48Z"
 ---
 ## Problem
 
@@ -35,3 +36,4 @@ Overlaps #0678 (provider failures and silent runs, watchdog) and #0679 (close-ou
 ## Activity
 
 - 2026-10-05T23:55:32Z · created · unknown
+- 2026-10-05T23:55:48Z · story
