@@ -118,6 +118,8 @@ function makeCtx(
     reviewRunning?: boolean;
     previewRunning?: boolean;
     closeOutRunning?: boolean;
+    /** Phase of a persisted close-out job; overrides closeOutRunning. */
+    jobPhase?: string;
     handoffInFlight?: boolean;
   } = {},
 ): RouteContext {
@@ -150,7 +152,12 @@ function makeCtx(
     closeOutLock: { closingOut: () => false } as any,
     rootLock: {} as any,
     jobCoordinator: {
-      getJob: () => (opts.closeOutRunning ? { taskId: "0657" } : null),
+      getJob: () =>
+        opts.jobPhase
+          ? { taskId: "0657", phase: opts.jobPhase }
+          : opts.closeOutRunning
+            ? { taskId: "0657", phase: "syncing" }
+            : null,
       peekNext: () => null,
     } as any,
     reportedStages: {},
@@ -330,6 +337,42 @@ describe("POST /api/tasks/:id/archive (#0657)", () => {
       fx.clean();
     }
   });
+
+  it.each(["queued", "syncing", "validating", "publishing", "cleanup"])(
+    "refuses while the close-out job is in the %s phase",
+    async (jobPhase) => {
+      const fx = makeFixture("review");
+      try {
+        const { res, fake } = makeRes();
+        await taskAction(makeCtx(fx, { jobPhase }), makeReq({}), res, {
+          param1: "0657",
+          param2: "archive",
+        });
+        expect(fake.status).toBe(409);
+        expect(readTaskFile(fx).isArchived).toBe(false);
+      } finally {
+        fx.clean();
+      }
+    },
+  );
+
+  it.each(["done", "failed"])(
+    "archives a task whose old close-out job is %s (job files persist)",
+    async (jobPhase) => {
+      const fx = makeFixture("review");
+      try {
+        const { res, fake } = makeRes();
+        await taskAction(makeCtx(fx, { jobPhase }), makeReq({}), res, {
+          param1: "0657",
+          param2: "archive",
+        });
+        expect(fake.status).toBe(200);
+        expect(readTaskFile(fx).isArchived).toBe(true);
+      } finally {
+        fx.clean();
+      }
+    },
+  );
 
   it("refuses while a handoff finalization is still in flight", async () => {
     const fx = makeFixture("active");
