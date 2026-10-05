@@ -482,10 +482,14 @@ ${printReport}`,
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Review again clears banner");
       await requestReview(server, task.id, task.absPath);
-      await waitFor(
-        () => /^needs_input: true$/m.test(readFileSync(task.absPath, "utf8")),
-        "needs_input is raised after a failed review",
-      );
+      // Wait for the review run itself to fail, not merely for `needs_input` to
+      // be set: a stub task is now flagged at creation (#0668), so the flag is
+      // already present before the review even starts. Waiting on the flag would
+      // race the run and hit `runner.isRunning` in `/review/again` (409).
+      await waitForAsync(async () => {
+        const served = await getReview(server, task.id);
+        return served.review?.state === "failed";
+      }, "the review run failed");
       await waitForAsync(async () => {
         const row = await api(server, "GET", `/api/tasks/${task.id}`);
         return row.body.needsInput === true;

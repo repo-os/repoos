@@ -10,8 +10,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseTask } from "../../core/task.js";
 import type { RepoOSConfig } from "../../core/types.js";
-import { patchTask, pmMessage, taskAction } from "../../server/routes/tasks.js";
-import { flagUnderspecifiedIfNeeded } from "../../server/task-underspecified-flag.js";
+import { createTask, patchTask, pmMessage, taskAction } from "../../server/routes/tasks.js";
+import {
+  flagUnderspecifiedIfNeeded,
+  sweepUnderspecifiedTasks,
+} from "../../server/task-underspecified-flag.js";
 import type { Agent } from "../../core/types.js";
 import type { RouteContext } from "../../server/routes/types.js";
 
@@ -457,6 +460,195 @@ describe("pmMessage underspecified clear (#0558)", () => {
       expect(fake.status).toBe(200);
       const onDisk = readTaskFile(fx);
       expect(onDisk.needsInput).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
+const WELL_SPECIFIED_BODY = `## Problem
+
+${"A substantive problem description that clears the short-body heuristic. ".repeat(8)}
+
+## Desired UX
+
+${"A substantive UX description that clears the short-body heuristic. ".repeat(8)}
+
+## Acceptance criteria
+
+- [ ] The flow works end to end
+
+## Notes for AI
+
+${"Substantive notes that clear the short-body heuristic. ".repeat(6)}
+`;
+
+function taskFileText(id: string, status: string, body: string, extraFrontmatter = ""): string {
+  return `---
+id: "${id}"
+title: Task ${id}
+type: feature
+status: ${status}
+priority: p2
+area: server
+assigned_to: ai
+${extraFrontmatter}---
+${body}`;
+}
+
+describe("underspecified flag on plain create (#0668)", () => {
+  it("flags a stub task created through POST /api/tasks", async () => {
+    const fx = makeFixture("inbox");
+    try {
+      const ctx = makeCtx(fx);
+      ctx.repoos = {
+        createTask: (input: { title: string; body?: string; status?: string }) => {
+          writeFileSync(
+            fx.taskPath,
+            taskFileText("0558", input.status ?? "inbox", input.body ?? ""),
+          );
+          return readTaskFile(fx);
+        },
+      } as any;
+      const { res, fake } = makeRes();
+      await createTask(
+        ctx,
+        makeReq({ title: "Stub task", body: "## Original prompt\n\nAdd a widget.\n" }),
+        res,
+        {},
+      );
+      expect(fake.status).toBe(201);
+      const onDisk = readTaskFile(fx);
+      expect(onDisk.needsInput).toBe(true);
+      expect(onDisk.needsInputReason).toBe("underspecified");
+      expect(ctx.logger.task).toHaveBeenCalledWith(
+        "0558",
+        "warn",
+        "Task body is underspecified at creation",
+        expect.objectContaining({ needsInputRaised: true }),
+      );
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("does not flag a well-specified task created through POST /api/tasks", async () => {
+    const fx = makeFixture("inbox");
+    try {
+      const ctx = makeCtx(fx);
+      ctx.repoos = {
+        createTask: () => {
+          writeFileSync(fx.taskPath, taskFileText("0558", "inbox", WELL_SPECIFIED_BODY));
+          return readTaskFile(fx);
+        },
+      } as any;
+      const { res, fake } = makeRes();
+      await createTask(ctx, makeReq({ title: "Full task", body: WELL_SPECIFIED_BODY }), res, {});
+      expect(fake.status).toBe(201);
+      expect(readTaskFile(fx).needsInput).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
+describe("underspecified boot sweep (#0668)", () => {
+  function makeSweepFixture() {
+    const root = mkdtempSync(join(tmpdir(), "repoos-underspecified-sweep-"));
+    const workDir = join(root, "work");
+    mkdirSync(workDir, { recursive: true });
+    const files = {
+      "0558-inbox-stub.md": taskFileText("0558", "inbox", STUB_BODY),
+      "0559-ready-well.md": taskFileText("0559", "ready", WELL_SPECIFIED_BODY),
+      "0560-done-stub.md": taskFileText("0560", "done", STUB_BODY),
+      "0561-review-stub.md": taskFileText("0561", "review", STUB_BODY),
+      "0562-deverror.md": taskFileText(
+        "0562",
+        "inbox",
+        STUB_BODY,
+        "needs_input: true\nneeds_input_reason: dev-error\n",
+      ),
+      "0563-archived-stub.md": taskFileText("0563", "inbox", STUB_BODY, "is_archived: true\n"),
+    };
+    for (const [name, content] of Object.entries(files))
+      writeFileSync(join(workDir, name), content);
+    git(root, ["init", "-q"]);
+    git(root, ["config", "user.email", "test@example.com"]);
+    git(root, ["config", "user.name", "Test"]);
+    git(root, ["add", "-A"]);
+    git(root, ["commit", "-qm", "initial"]);
+    const cfg = config(root);
+    const tasks = Object.keys(files).map((name) => {
+      const absPath = join(workDir, name);
+      return parseTask({
+        content: readFileSync(absPath, "utf8"),
+        absPath,
+        root,
+        defaultStatus: cfg.defaultStatus,
+        defaultAssignee: cfg.defaultAssignee,
+      });
+    });
+    return {
+      root,
+      workDir,
+      config: cfg,
+      tasks,
+      clean: () => rmSync(root, { recursive: true, force: true }),
+    };
+  }
+
+  it("flags existing underspecified non-terminal tasks and skips done/review/archived", () => {
+    const fx = makeSweepFixture();
+    try {
+      const changed = sweepUnderspecifiedTasks(fx.config, fx.tasks);
+      expect(changed.map((t) => t.id).sort()).toEqual(["0558"]);
+
+      const read = (id: string) => {
+        const task = fx.tasks.find((t) => t.id === id)!;
+        return parseTask({
+          content: readFileSync(task.absPath, "utf8"),
+          absPath: task.absPath,
+          root: fx.root,
+          defaultStatus: fx.config.defaultStatus,
+          defaultAssignee: fx.config.defaultAssignee,
+        });
+      };
+      expect(read("0558")).toMatchObject({
+        needsInput: true,
+        needsInputReason: "underspecified",
+      });
+      expect(read("0559").needsInput).toBe(false);
+      expect(read("0560").needsInput).toBe(false);
+      expect(read("0561").needsInput).toBe(false);
+      // The unrelated dev-error reason must survive untouched.
+      expect(read("0562")).toMatchObject({
+        needsInput: true,
+        needsInputReason: "dev-error",
+      });
+      expect(read("0563").needsInput).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("is idempotent — a second sweep makes no changes", () => {
+    const fx = makeSweepFixture();
+    try {
+      expect(sweepUnderspecifiedTasks(fx.config, fx.tasks).length).toBe(1);
+      const before = fx.tasks.map((t) => readFileSync(t.absPath, "utf8"));
+      // Re-read after the first sweep so the sweep sees the flagged state, as
+      // a second boot would.
+      const fresh = fx.tasks.map((t) =>
+        parseTask({
+          content: readFileSync(t.absPath, "utf8"),
+          absPath: t.absPath,
+          root: fx.root,
+          defaultStatus: fx.config.defaultStatus,
+          defaultAssignee: fx.config.defaultAssignee,
+        }),
+      );
+      expect(sweepUnderspecifiedTasks(fx.config, fresh)).toEqual([]);
+      expect(fx.tasks.map((t) => readFileSync(t.absPath, "utf8"))).toEqual(before);
     } finally {
       fx.clean();
     }
