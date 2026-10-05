@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-05T17:03:22Z"
-review_passes: 2
 id: "0671"
 title: "init starter tasks: detect empty repos, seed as inbox, mark created_by repoos-init"
 type: feature
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/init-starter-tasks-detect-empty-repos-se
 created_at: "2026-10-05T15:20:09Z"
+updated_at: "2026-10-05T17:07:33Z"
+review_passes: 2
 ---
 ## Problem
 
