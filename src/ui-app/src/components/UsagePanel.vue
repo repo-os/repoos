@@ -63,10 +63,14 @@ function fmtWhenFull(iso: string | null | undefined): string {
 }
 
 function fmtCost(usd: number | null | undefined, source?: string): string {
-  if (usd === null || usd === undefined || !Number.isFinite(usd)) return "—";
+  // No provider-reported cost → say so plainly rather than an em dash that
+  // reads as "zero" (#0676). Legacy `estimate` rows are shown as unknown too:
+  // a token-count estimate is not real spend.
+  if (usd === null || usd === undefined || !Number.isFinite(usd) || source === "estimate") {
+    return "unknown";
+  }
   const n = usd < 0.01 ? usd.toFixed(4) : usd < 1 ? usd.toFixed(3) : usd.toFixed(2);
   if (source === "kiro-credits") return `${n} credits`;
-  if (source === "estimate") return `~$${n} est`;
   if (source === "mixed") return `$${n}*`;
   return `$${n}`;
 }
@@ -183,7 +187,8 @@ const recentFailures = computed(() => stats.value?.recentFailures ?? []);
       </div>
 
       <div v-if="stats.costSource === 'mixed'" class="usage-legend">
-        * mixed cost sources — estimates &amp; credits shown alongside USD
+        * mixed cost sources — credits shown alongside USD; rows with no reported cost show
+        “unknown”
       </div>
 
       <div v-if="recentFailures.length" class="usage-failures">
