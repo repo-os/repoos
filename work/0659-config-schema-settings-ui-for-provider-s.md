@@ -2,17 +2,17 @@
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
-status: ready
+status: active
 priority: p1
 area: ui
 story: Cloud attachment storage
 depends_on: ["0658"]
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/config-schema-settings-ui-for-provider-s
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T15:10:11Z"
+updated_at: "2026-10-05T15:30:33Z"
 ---
 ## Original prompt
 
@@ -66,3 +66,4 @@ The deeper problem is honesty. `createStorageProvider` deliberately falls back t
 - 2026-10-05T15:03:03Z · needs_input
 - 2026-10-05T15:07:21Z · pm_model_override
 - 2026-10-05T15:10:11Z · body
+- 2026-10-05T15:30:33Z · status ready→active, branch
