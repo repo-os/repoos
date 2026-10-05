@@ -71,3 +71,4 @@ The deeper problem is honesty. `createStorageProvider` deliberately falls back t
 - 2026-10-05T15:42:36Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T15:42:36Z · status review→active
 - 2026-10-05T15:49:13Z · status active→review
+- 2026-10-05T15:49:13Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
