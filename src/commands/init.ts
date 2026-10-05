@@ -1159,40 +1159,237 @@ function persistServePort(root: string, port: number): void {
   }
 }
 
-async function guidedNewRepo(args: string[]): Promise<void> {
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    console.error(
-      c.red("\n  This directory isn't a git repo, so repoos init needs interactive prompts."),
-    );
-    console.error(
-      c.dim("  Run it in a terminal, or run `git init` first and then `repoos init` again."),
-    );
-    console.error(
+/**
+ * Answers to the guided new-project flow, whether they came from interactive
+ * prompts or from CLI flags. Keeping one record means the interactive and
+ * non-interactive paths run the exact same scaffolding code — only where the
+ * answers come from differs.
+ */
+interface NewProjectOptions {
+  /** Parsed from `--new`/`--yes`; required to run non-interactively. */
+  nonInteractive: boolean;
+  /** Positional name or `--dir`; empty = the current directory. */
+  projectDir: string;
+  description: string;
+  areas: string[];
+  /** `--layout` (`repoos` default, `/` for root, or a namespace path). */
+  layout: ScaffoldLayout;
+  /** `--preview-stub` / `--no-preview-stub`; only meaningful with areas. */
+  previewStub: boolean;
+  commit: boolean;
+  launch: boolean;
+  force: boolean;
+  json: boolean;
+}
+
+/** Default `--new` answers when a flag isn't given. */
+const NEW_PROJECT_DEFAULTS = {
+  description: "",
+  areas: [] as string[],
+  layout: "repoos" as ScaffoldLayout,
+  previewStub: false,
+  commit: true,
+  /** Never launch the server non-interactively unless `--launch` says so. */
+  launch: false,
+  force: false,
+  json: false,
+} as const;
+
+/**
+ * Parse the `repoos init` argument vector. Returns the shared options record
+ * plus an error string (prefixed `!`) when a flag is malformed. `--dir` is an
+ * alias for the positional name; both name a subdirectory under the cwd.
+ */
+export function parseInitFlags(
+  args: string[],
+  tty: boolean,
+): { options: NewProjectOptions; error: string | null } {
+  const options: NewProjectOptions = {
+    nonInteractive: false,
+    projectDir: "",
+    ...NEW_PROJECT_DEFAULTS,
+    // Interactive sessions default to launching the console; a script must ask.
+    launch: tty,
+  };
+  let positional = "";
+  let descriptionFile: string | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    const next = (): string | undefined => args[++i];
+    switch (arg) {
+      case "--new":
+      case "--yes":
+      case "-y":
+        options.nonInteractive = true;
+        break;
+      case "--description":
+      case "--desc": {
+        const value = next();
+        if (value === undefined) return { options, error: "!`--description` needs a value." };
+        options.description = value;
+        break;
+      }
+      case "--description-file": {
+        const value = next();
+        if (value === undefined) return { options, error: "!`--description-file` needs a value." };
+        descriptionFile = value;
+        break;
+      }
+      case "--areas": {
+        const value = next();
+        if (value === undefined) return { options, error: "!`--areas` needs a value." };
+        options.areas = value
+          .split(",")
+          .map((a) => a.trim())
+          .filter(Boolean);
+        break;
+      }
+      case "--dir": {
+        const value = next();
+        if (value === undefined) return { options, error: "!`--dir` needs a value." };
+        options.projectDir = value;
+        break;
+      }
+      case "--layout": {
+        const value = next();
+        if (value === undefined) return { options, error: "!`--layout` needs a value." };
+        const validated = validateNamespace(value);
+        if (validated.startsWith("!")) return { options, error: validated };
+        options.layout = validated;
+        break;
+      }
+      case "--commit":
+        options.commit = true;
+        break;
+      case "--no-commit":
+        options.commit = false;
+        break;
+      case "--launch":
+        options.launch = true;
+        break;
+      case "--no-launch":
+        options.launch = false;
+        break;
+      case "--preview-stub":
+        options.previewStub = true;
+        break;
+      case "--no-preview-stub":
+        options.previewStub = false;
+        break;
+      case "--force":
+        options.force = true;
+        break;
+      case "--json":
+        options.json = true;
+        break;
+      default:
+        if (arg.startsWith("-")) return { options, error: `!Unknown flag \`${arg}\`.` };
+        positional = arg;
+        break;
+    }
+  }
+
+  if (descriptionFile !== undefined) {
+    try {
+      options.description =
+        descriptionFile === "-" ? readFileSync(0, "utf8") : readFileSync(descriptionFile, "utf8");
+      options.description = options.description.trim();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { options, error: `!Cannot read --description-file ${descriptionFile}: ${msg}` };
+    }
+  }
+
+  if (positional && options.projectDir) {
+    return { options, error: "!Give either a project name or `--dir`, not both." };
+  }
+  options.projectDir = (options.projectDir || positional).trim();
+  return { options, error: null };
+}
+
+/** True when `dir` exists and has at least one entry. */
+function dirIsNonEmpty(dir: string): boolean {
+  try {
+    return readdirSync(dir).length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** Human-readable id(s) of seeded ready tasks under `root`/`workDir`. */
+function seededTaskIds(root: string, workDir: string): string[] {
+  const ids: string[] = [];
+  try {
+    for (const name of readdirSync(join(root, workDir))) {
+      const m = name.match(/^(\d+)-/);
+      if (m && !name.includes("-set-up-repoos")) ids.push(m[1]);
+    }
+  } catch {
+    /* workDir missing */
+  }
+  return ids;
+}
+
+/** The non-TTY refusal: say exactly which command succeeds, and warn off the trap. */
+function printNonTtyRefusal(): void {
+  console.error(
+    c.red("\n  This directory isn't a git repo, so repoos init needs interactive prompts."),
+  );
+  console.error(
+    c.dim(
+      "  Not a TTY. To create a new project non-interactively run:\n\n" +
+        '    repoos init <name> --new --description "..." --areas web,api --no-launch\n',
+    ),
+  );
+  console.error(
+    c.yellow("  Do NOT run `git init` first") +
       c.dim(
-        "  (Starting a brand-new project without a terminal? See: user-docs/getting-started.md",
+        ": inside a git repo, `repoos init` seeds the existing-codebase starter\n" +
+          '  ("Read this codebase…") instead of the new-project one — the wrong route for a\n' +
+          "  brand-new project.",
       ),
-    );
-    console.error(c.dim("   → Starting a new project as an agent — don't `git init` first.)"));
+  );
+  console.error(
+    c.dim(
+      '  See user-docs/getting-started.md → "Starting a new project as an agent" for the full recipe.',
+    ),
+  );
+}
+
+async function guidedNewRepo(opts: NewProjectOptions): Promise<void> {
+  const interactive = !opts.nonInteractive && process.stdin.isTTY && process.stdout.isTTY;
+
+  if (!interactive && !opts.nonInteractive) {
+    printNonTtyRefusal();
     process.exitCode = 1;
     return;
   }
 
   const cwd = process.cwd();
-  let projectName = (args[0] ?? "").trim();
-  if (projectName && !/^[A-Za-z0-9._-]+$/.test(projectName)) {
-    console.error(c.red(`  Invalid project name "${projectName}" — use letters, digits, . _ -`));
+  let projectName = opts.projectDir;
+  if (projectName && !/^[A-Za-z0-9._\-/]+$/.test(projectName)) {
+    console.error(
+      c.red(`  Invalid project name "${projectName}" — use letters, digits, . _ - and /`),
+    );
     process.exitCode = 1;
     return;
   }
 
-  console.log(c.dim("\n  Not inside a git repository."));
-  console.log(c.cyan("  repoos init will create a new RepoOS project here."));
-  console.log(
-    c.dim("  Default: the CURRENT directory. Enter a project name to use a subdirectory instead."),
-  );
+  if (interactive) {
+    console.log(c.dim("\n  Not inside a git repository."));
+    console.log(c.cyan("  repoos init will create a new RepoOS project here."));
+    console.log(
+      c.dim(
+        "  Default: the CURRENT directory. Enter a project name to use a subdirectory instead.",
+      ),
+    );
 
-  if (!projectName) {
-    projectName = await ask("  Project name" + c.dim(" (Enter = current directory)") + ": ");
+    if (!projectName) {
+      projectName = await ask("  Project name" + c.dim(" (Enter = current directory)") + ": ");
+    }
+  } else {
+    console.log(c.dim("\n  Not inside a git repository — creating a new RepoOS project."));
   }
 
   let target = cwd;
@@ -1203,69 +1400,106 @@ async function guidedNewRepo(args: string[]): Promise<void> {
       process.exitCode = 1;
       return;
     }
-    console.log();
-    const ok = await confirm(
-      "  Create the project in a new subdirectory " +
-        c.cyan(`./${projectName}`) +
-        c.dim(`  →  ${target}`),
-      true,
-    );
-    if (!ok) {
-      console.log(c.yellow("\n  Cancelled — nothing was created."));
-      return;
+    if (!interactive) {
+      // Non-interactive: never overwrite a non-empty directory silently.
+      if (dirIsNonEmpty(target) && !opts.force) {
+        console.error(
+          c.red(`\n  ${projectName}/ already exists and is not empty.`) +
+            c.dim("  Pass `--force` to scaffold into it anyway."),
+        );
+        process.exitCode = 1;
+        return;
+      }
+      console.log(c.dim(`  →  Creating the project in ./${projectName}`));
+    } else {
+      console.log();
+      const ok = await confirm(
+        "  Create the project in a new subdirectory " +
+          c.cyan(`./${projectName}`) +
+          c.dim(`  →  ${target}`),
+        true,
+      );
+      if (!ok) {
+        console.log(c.yellow("\n  Cancelled — nothing was created."));
+        return;
+      }
     }
   } else {
     console.log(c.dim(`  →  Using the current directory: ${cwd}`));
   }
 
-  const layout = await askLayout();
+  let layout: ScaffoldLayout;
+  if (interactive) {
+    layout = await askLayout();
+  } else {
+    layout = opts.layout;
+    // Never scaffold into a non-empty target that isn't already a RepoOS layout.
+    if (!repoOSMarker(target) && dirIsNonEmpty(target) && !opts.force) {
+      console.error(
+        c.red(`\n  ${target} is not empty and is not a RepoOS project.`) +
+          c.dim("  Pass `--force` to scaffold into it anyway."),
+      );
+      process.exitCode = 1;
+      return;
+    }
+  }
 
   // Pre-scaffold collision check for the chosen namespace
   const collision = checkNamespaceCollision(target, layout);
   if (collision) {
     console.log(c.red(`\n  ${collision}`));
+    process.exitCode = 1;
     return;
   }
 
-  console.log();
-  const scaffoldFiles = layout
-    ? `${layout}/work/, ${layout}/docs/, AGENTS.md, repoos.toml, .gitignore`
-    : "work/, docs/, AGENTS.md, repoos.toml, .gitignore";
-  const proceed = await confirm(
-    "  Ready to " +
-      c.cyan("git init") +
-      c.dim(" and scaffold " + scaffoldFiles) +
-      " in " +
-      c.cyan(target),
-    true,
-  );
+  let proceed = true;
+  if (interactive) {
+    console.log();
+    const scaffoldFiles = layout
+      ? `${layout}/work/, ${layout}/docs/, AGENTS.md, repoos.toml, .gitignore`
+      : "work/, docs/, AGENTS.md, repoos.toml, .gitignore";
+    proceed = await confirm(
+      "  Ready to " +
+        c.cyan("git init") +
+        c.dim(" and scaffold " + scaffoldFiles) +
+        " in " +
+        c.cyan(target),
+      true,
+    );
+  }
   if (!proceed) {
     console.log(c.yellow("\n  Cancelled — nothing was created."));
     return;
   }
 
-  const description = await askMultiline(
-    "  Project description" +
-      c.dim(
-        " — gives the AI context to suggest next steps; paste multi-line markdown or end a line with \\ to continue (optional, Enter to skip)",
-      ) +
-      ": ",
-  );
+  let description = opts.description;
+  if (interactive) {
+    description = await askMultiline(
+      "  Project description" +
+        c.dim(
+          " — gives the AI context to suggest next steps; paste multi-line markdown or end a line with \\ to continue (optional, Enter to skip)",
+        ) +
+        ": ",
+    );
+  }
 
   // The task-area vocabulary (#0583) — reinforced with preview targets, since
   // a `[[preview.targets]]` area is offered in the picker automatically even
   // when not declared here. Skipped means free text only; never blocking.
-  const areasInput = await ask(
-    "  Task areas to seed the area picker" +
-      c.dim(" — comma-separated (e.g. web, cli, api; Enter to skip)") +
-      ": ",
-  );
-  const areas = areasInput
-    ? areasInput
-        .split(",")
-        .map((a) => a.trim())
-        .filter(Boolean)
-    : [];
+  let areas = opts.areas;
+  if (interactive) {
+    const areasInput = await ask(
+      "  Task areas to seed the area picker" +
+        c.dim(" — comma-separated (e.g. web, cli, api; Enter to skip)") +
+        ": ",
+    );
+    areas = areasInput
+      ? areasInput
+          .split(",")
+          .map((a) => a.trim())
+          .filter(Boolean)
+      : [];
+  }
   if (areas.length) {
     console.log(c.dim("  Preview targets route a task preview by its area — the picker and"));
     console.log(
@@ -1280,8 +1514,8 @@ async function guidedNewRepo(args: string[]): Promise<void> {
   // skeleton those areas feed, so the wiring sits where preview setup happens
   // later. A brand-new project has nothing runnable yet — never a live
   // preview command, just the commented shape to fill in.
-  let previewStub = false;
-  if (areas.length) {
+  let previewStub = opts.previewStub;
+  if (areas.length && interactive) {
     previewStub = await confirm(
       "  Scaffold commented preview-target stubs for these areas?",
       false,
@@ -1318,7 +1552,10 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     console.log(c.yellow("  Warning: git init failed — files left uncommitted."));
   }
 
-  if (gitOk && (await confirm("\n  Make an initial commit of the scaffold?", true))) {
+  const doCommit = interactive
+    ? await confirm("\n  Make an initial commit of the scaffold?", true)
+    : opts.commit;
+  if (gitOk && doCommit) {
     const hash = gitCommitAll(target, INITIAL_COMMIT_MSG);
     if (hash) {
       console.log("  " + c.green("committed ") + c.dim(hash));
@@ -1331,7 +1568,10 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     }
   }
 
-  if (await confirm("\n  Launch the RepoOS web console now to start building?", true)) {
+  const doLaunch = interactive
+    ? await confirm("\n  Launch the RepoOS web console now to start building?", true)
+    : opts.launch;
+  if (doLaunch) {
     const { port: preferred, explicit } = await askPort(deriveServePort(target));
     let port = preferred;
     if (preferred > 0) {
@@ -1383,25 +1623,87 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     return;
   }
 
+  if (opts.json && !interactive) {
+    const ids = seededTaskIds(target, loadConfig(target).workDir);
+    console.log(
+      JSON.stringify(
+        {
+          root: target,
+          tasks: ids.map((id) => ({ id })),
+          created,
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
+  const starterIds = seededTaskIds(target, loadConfig(target).workDir);
   const dirHint = target === cwd ? "" : `cd ${target}  ·  `;
+  if (interactive) {
+    // Interactive flow keeps its original closing hint unchanged.
+    console.log(
+      "\n  Next: " +
+        c.cyan(dirHint + "repoos list") +
+        c.dim("  ·  ") +
+        c.cyan("repoos show 0001") +
+        c.dim("  ·  ") +
+        c.cyan('repoos new "My task"') +
+        c.dim("  ·  ") +
+        c.cyan("repoos serve") +
+        c.dim(" to open the web console") +
+        "\n",
+    );
+    return;
+  }
+
+  // Non-interactive: end with the created path, the server hint, and the
+  // seeded starter id — enough for an agent to continue without re-deriving them.
+  if (starterIds.length) {
+    console.log(
+      "\n  Seeded starter task " +
+        c.cyan(starterIds.map((id) => `#${id}`).join(", ")) +
+        c.dim("  ·  ") +
+        c.cyan(dirHint + "repoos list"),
+    );
+  }
   console.log(
-    "\n  Next: " +
-      c.cyan(dirHint + "repoos list") +
-      c.dim("  ·  ") +
-      c.cyan("repoos show 0001") +
-      c.dim("  ·  ") +
-      c.cyan('repoos new "My task"') +
-      c.dim("  ·  ") +
+    "\n  Project: " +
+      c.cyan(target) +
+      "\n  Next: " +
       c.cyan("repoos serve") +
-      c.dim(" to open the web console") +
+      c.dim("  (or ") +
+      c.cyan(dirHint + "repoos list") +
+      c.dim(")") +
       "\n",
   );
 }
 
 export async function cmdInit(args: string[]): Promise<void> {
   const cwd = process.cwd();
+  const tty = Boolean(input.isTTY && output.isTTY);
+
+  const { options, error } = parseInitFlags(args, tty);
+  if (error) {
+    console.error(c.red(`\n  ${error.slice(1)}`));
+    process.exitCode = 1;
+    return;
+  }
 
   if (isGitRepo(cwd)) {
+    if (options.nonInteractive) {
+      // Inside a git repo, `--new` is the wrong tool: that route seeds the
+      // existing-codebase starter, not a new-project one.
+      console.error(
+        c.yellow(
+          "\n  --new is for a brand-new project outside a git repo. Inside a git repo, " +
+            "`repoos init` seeds the existing-codebase starter.",
+        ),
+      );
+      process.exitCode = 1;
+      return;
+    }
     // Existing-repo scaffolding remains idempotent. The only optional edit is
     // a separately previewed, explicitly accepted AGENTS.md appendix.
     const root = findRepoRoot(cwd);
@@ -1500,7 +1802,7 @@ export async function cmdInit(args: string[]): Promise<void> {
   }
 
   try {
-    await guidedNewRepo(args);
+    await guidedNewRepo(options);
   } catch {
     console.log(c.yellow("\n  Cancelled."));
   }

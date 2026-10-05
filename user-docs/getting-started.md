@@ -124,7 +124,18 @@ repo root or another location.
 | `repoos.toml` | Configuration. Every field is optional. |
 
 Run `repoos init` outside a git repo and it starts a guided flow for a brand
-new project instead.
+new project instead. In a terminal it asks a few questions; with no TTY (an
+agent, a script) pass `--new` and answer them with flags:
+
+```bash
+repoos init myproject --new \
+  --description "A tiny social app for book clubs" \
+  --areas web,api --no-launch
+```
+
+See the [CLI reference](/cli#repoos-init-name) for every flag. Don't `git init`
+first to avoid the prompts — that routes you to the existing-codebase starter
+instead of the new-project one.
 
 Either way the board is never empty: init seeds a `ready` task you can start on
 immediately. In an existing repo it's "Read this codebase and propose project docs + an
@@ -150,20 +161,32 @@ git repo" and seeds the **existing-codebase** starter instead
 Starting RepoOS outside a git repo is what selects the right starter.
 :::
 
-### Non-interactive flags (coming soon)
+### Non-interactive flags (the supported path)
 
-The clean path is a non-interactive `repoos init` that takes the project name,
-description, and layout as flags, so an agent never needs a terminal at all:
+Use a non-interactive `repoos init` that takes the project name, description,
+and areas as flags, so an agent never needs a terminal at all:
 
 ```bash
-repoos init --new my-project --description "A tiny demo project" --layout repoos
+repoos init my-project --new \
+  --description "A tiny demo project" \
+  --areas web,api \
+  --no-launch
 ```
 
-These flags are not in the current release yet (tracked in task #0670). Until
-they land, use the pseudo-terminal recipe below — it drives the existing
-interactive flow through a real TTY, which is what it was written for.
+`--new` runs the guided flow with answers from flags and sensible defaults
+(commit the scaffold; never launch the console unless `--launch`). See the
+[CLI reference](/cli#repoos-init-name) for every flag — `--description-file -`
+reads a multi-line description from stdin, `--layout` picks the repo-root or
+`repoos/` layout, and `--json` prints a machine-readable summary.
 
-### Pseudo-terminal fallback (workaround)
+Without `--new` and without a TTY, the command refuses and prints the exact
+`--new` command to run, plus the `git init` warning below.
+
+### Pseudo-terminal fallback (legacy workaround)
+
+Before `--new` existed, the only way to drive the flow without a terminal was a
+real pty. Prefer the flags above; this is kept for older releases. `pty.fork()`
+hands the process a terminal, then you answer the prompts on its file descriptor:
 
 `repoos init` in a non-git directory, with no TTY on stdin/stdout, refuses:
 
@@ -210,8 +233,7 @@ else:
 Run it from the directory that should hold the project. It produces the same
 files an interactive run would, including the correct
 `flesh-out-the-vision` starter. The exact prompts shift between releases, so
-treat the answers list as a starting point and adjust from the output. **This
-whole recipe goes away once `--new` exists** — prefer the flags then.
+treat the answers list as a starting point and adjust from the output.
 
 ### Right after init
 
