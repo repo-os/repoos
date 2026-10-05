@@ -3,13 +3,16 @@ id: "0315"
 title: Evaluate gix/gitoxide for the index read hot paths
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
 priority: p4
 area: general
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-28T09:55:22Z"
-updated_at: "2026-08-28T10:11:18Z"
+updated_at: "2026-10-05T11:15:30Z"
 ---
 `gix` (gitoxide, Rust) is faster than shelling `git` for read-only ops. Candidate
 for the index hot paths only: log, status, branch/worktree/ref enumeration in
@@ -78,3 +81,4 @@ felt problem after everything else landed. Part of the 2026-08 perf initiative
 ## Activity
 
 - 2026-08-28T10:11:18Z · body
+- 2026-10-05T11:15:30Z · needs_input
