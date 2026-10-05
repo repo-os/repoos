@@ -41,6 +41,7 @@ import type {
 import { STATUSES } from "./types.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
 import { parseTailscaleHosts } from "./remote-hosts.js";
+import { DEFAULT_STORAGE_PROVIDER_ID } from "./storage/registry.js";
 import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
 
 /** Default display labels for board columns, keyed by canonical status ID. */
@@ -224,6 +225,11 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   // re-run in isolation for the informational flake-triage label.
   check: {
     isolationRuns: 3,
+  },
+  // Attachment storage (#0659): local gitignored `.attachments/` directories by
+  // default; opt-in cloud providers must be configured before they take effect.
+  storage: {
+    provider: DEFAULT_STORAGE_PROVIDER_ID,
   },
 };
 
@@ -1025,6 +1031,14 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // picker; the vocabulary is advisory (free text stays allowed).
     const declaredAreas = parseAreasConfig(parsed);
     if (declaredAreas) cfg.areas = declaredAreas;
+    // [storage] section (#0659) — which provider holds attachment bytes. Any
+    // non-empty id is accepted syntactically; an unknown or unconfigured one is
+    // surfaced as unavailable and falls back to local (see describeStorage), so
+    // this never crashes and never claims a provider is in effect when it isn't.
+    const storageProvider = parsed["storage.provider"];
+    if (typeof storageProvider === "string" && storageProvider.trim()) {
+      cfg.storage = { provider: storageProvider.trim() };
+    }
     const devInspectorEnabled = parsed["dev.inspector.enabled"];
     const devInspectorEditor = parsed["dev.inspector.editorCommand"];
     if (typeof devInspectorEnabled === "boolean" || typeof devInspectorEditor === "string") {
@@ -1542,6 +1556,23 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: false,
       description: "Show the Stories page and group tasks into cross-area delivery slices",
+    },
+    {
+      key: "storage.provider",
+      label: "Attachment storage",
+      type: "select",
+      tier: "restart",
+      restartRequired: true,
+      default: DEFAULT_STORAGE_PROVIDER_ID,
+      options: [
+        { value: "local", label: "Local filesystem" },
+        { value: "neon", label: "Neon Object Storage" },
+      ],
+      description:
+        "Where attachment files (task and input screenshots) are stored. Local filesystem keeps " +
+        "them in gitignored .attachments/ folders on this machine and is the default; Neon Object " +
+        "Storage is opt-in and needs credentials before it can be used. Switching providers " +
+        "requires a server restart.",
     },
     {
       key: "ntfyEnabled",
@@ -2101,6 +2132,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "deployments.subdir",
   // Stories
   "stories.enabled",
+  // Attachment storage (#0659) — which provider holds attachment bytes.
+  "storage.provider",
   // Areas vocabulary (#0583): `[[areas]]` rows plus the flat `areas`
   // string-array shorthand the Settings UI writes.
   "areas",
