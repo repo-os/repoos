@@ -2869,14 +2869,15 @@ function fmtElapsed(ms: number): string {
 
 /** "@shared fmtTokens" — "1.842M" / "0.013M" / "842", "—" when unreported. */
 
-/** "$0.031" / "$1.20" — "—" when the CLI hasn't reported a cost. Estimates,
- *  Kiro credits, and mixed sources are labeled so they are never read as firm
- *  USD (0230). */
+/** "$0.031" / "$1.20" — "unknown" when the CLI hasn't reported a cost, so it
+ *  is never read as firm USD or as zero. Kiro credits and mixed sources are
+ *  labeled too (0230 / #0676). */
 function fmtCost(usd: number | null | undefined, source?: string): string {
-  if (usd === null || usd === undefined || !Number.isFinite(usd)) return "—";
+  if (usd === null || usd === undefined || !Number.isFinite(usd) || source === "estimate") {
+    return "unknown";
+  }
   const n = usd < 1 ? usd.toFixed(3) : usd.toFixed(2);
   if (source === "kiro-credits") return `${n} credits`;
-  if (source === "estimate") return `~$${n} est`;
   if (source === "mixed") return `$${n}*`;
   return `$${n}`;
 }

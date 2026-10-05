@@ -83,10 +83,12 @@ The page is organised into tabs:
 - **Model Playground** — try a prompt against a CLI/model and compare output.
 - **Model providers** — live spend where a provider exposes an API (OpenRouter,
   opencode Go, DeepInfra), plus links to provider dashboards such as Cursor's
-  Spending page. GitHub Copilot is a link-out too: GitHub has deprecated the
-  personal-account billing endpoints and offers no public API for individual
-  Copilot subscription, billing or usage data, so its row links to the
-  Copilot settings page instead.
+  Spending page. A provider's key is read from RepoOS's `.env` or from a coding
+  agent's own login store, so a provider a harness is already signed into shows
+  as connected without re-pasting the key. GitHub Copilot is a link-out too:
+  GitHub has deprecated the personal-account billing endpoints and offers no
+  public API for individual Copilot subscription, billing or usage data, so its
+  row links to the Copilot settings page instead.
 
 Every role card lets you pick the coding agent and model, toggle the role on or
 off, edit its instructions, and **Test** the combination to see whether the CLI
