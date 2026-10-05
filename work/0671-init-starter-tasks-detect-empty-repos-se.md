@@ -2,14 +2,15 @@
 id: "0671"
 title: "init starter tasks: detect empty repos, seed as inbox, mark created_by repoos-init"
 type: feature
-status: review
+status: done
 priority: p2
 area: cli
+merged_commit: cc909d29c5632f24d718906b6be9d1d28a8c2e47
 assigned_to: ai
 created_by: ""
 branch: feat/init-starter-tasks-detect-empty-repos-se
 created_at: "2026-10-05T15:20:09Z"
-updated_at: "2026-10-05T17:07:33Z"
+updated_at: "2026-10-05T17:12:38Z"
 review_passes: 2
 ---
 ## Problem
@@ -56,4 +57,4 @@ Read tasks 0364 and 0028 first (they explain the original design). This does not
 - 2026-10-05T17:02:06Z · status review→active
 - 2026-10-05T17:02:41Z · status active→review
 - 2026-10-05T17:02:41Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-
+- 2026-10-05T17:12:38Z · status review→done, release:success
