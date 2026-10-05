@@ -2,16 +2,13 @@
 id: "0685"
 title: Small papercuts from a long agent-driven run
 type: chore
-status: ready
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX"
+status: active
 priority: p3
 area: server
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/small-papercuts-from-a-long-agent-driven
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:52Z"
@@ -49,3 +46,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T17:17:08Z · body: section Story context
 - 2026-10-05T21:20:17Z · status inbox→ready
 - 2026-10-05T21:20:19Z · cli_override, model_override
+- 2026-10-05T21:20:19Z · status ready→active, needs_input, branch
