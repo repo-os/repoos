@@ -12,11 +12,50 @@ created_by: ""
 branch: ""
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T15:07:21Z"
+updated_at: "2026-10-05T15:10:11Z"
 ---
+## Original prompt
+
 Slice 2 of provider selection: add the config schema (repoos.toml) for choosing a provider (local as default; cloud unavailable-but-explained until configured). Every user-facing setting needs a matching Settings UI control. Scope: getConfigSchema addition, Settings tab control, and explanation state when cloud is not configured.
 
 Depends on #0658 (config key definition / schema shape). Local provider is always available; cloud provider shows an unavailable-but-explained message until configured.
+
+## Problem
+
+#0658 put attachment bytes behind a `StorageProvider` seam (`src/core/storage/types.ts`, `registry.ts`, `local.ts`) and made the local provider the always-registered fallback, but nothing can actually choose a provider yet: `src/server/attachments.ts` (`store(config)`) and `src/core/input.ts` (`attachments(c)`) both call `createStorageProvider(baseDir)` with no id, so the id always defaults to `local`. There is no config key and no Settings UI control.
+
+The deeper problem is honesty. `createStorageProvider` deliberately falls back to local for an unknown or unconfigured provider id (see the #0658 comment). If we naively expose a "cloud" choice with no status, an administrator could select it, believe screenshots are durable in the cloud, and be wrong — every upload kept going to the local disk. So this slice must ship the choice **and** an accurate explanation of whether the chosen provider is actually in effect.
+
+## Desired UX
+
+- **An "Attachment storage" control in Settings.** Add a provider dropdown on the General tab (the schema auto-render path). If the availability explanation needs a status line beside the select, use a small dedicated "Attachments" card modelled on the existing Publishing / Remote validation cards in `SettingsView.vue`. Use the shared styled `Select` components — never a native `<select>`.
+- **Local is the default and is always available.** The default selection is "Local filesystem". A one-line description states where files live (`work/.attachments/<taskId>/`, `inputs/.attachments/…`, gitignored, nothing in git) and that behavior is unchanged for anyone who never touches this setting.
+- **Cloud is visible but honest while unconfigured.** The dropdown lists "Neon Object Storage" (the `neon` id that #0660 registers). Until it is usable, selecting it shows an inline, non-alarming explanation — for example "Neon Object Storage isn't configured yet. Add credentials to enable it; until then attachments continue to use local storage." It must never read as an error and must never claim cloud is active.
+- **Effective provider is shown when it differs from the configured one.** If `storage.provider = "neon"` but neon is unavailable, the row states that local storage is currently in effect and why, echoing what the server reports (the registry's documented fallback).
+- **Saving follows the normal settings path.** The choice persists to `repoos.toml` as a `[storage]` section with a `provider` key, saved through the existing config PATCH path exactly like other schema fields, and carries the "restart required" badge, because switching where bytes are written should not silently take effect mid-session.
+- **No new surface for secrets.** Credentials are #0660's job and stay out of this control; this slice only chooses the provider and explains availability. No credential value ever reaches the browser.
+
+## Acceptance criteria
+
+- **Config key.** `[storage] provider` parses in `loadConfig`, defaulting to `"local"`; an unrecognized id is accepted syntactically but surfaced as unavailable (never a crash, never a silent switch that claims success). Add `storage.provider` to `getConfigSchema()` as `type: "select"` with options `local` and `neon`, `tier: "restart"`, `restartRequired: true`, and a description covering the local default and the cloud-not-configured case. Expose it on `RepoOSConfig` (for example `storage?: { provider?: string }`).
+- **Schema contract.** Add `storage.provider` to `SUPPORTED_TOML_KEYS` and document it in `user-docs/configuration.md`, so `src/ui-app/tests/config-docs.test.ts` passes (it asserts every schema key and every supported key is documented).
+- **Wiring.** `src/server/attachments.ts` (`store`) and `src/core/input.ts` (`attachments`) call `createStorageProvider(baseDir, config.storage?.provider ?? DEFAULT_STORAGE_PROVIDER_ID)` so the configured provider is actually used; unset still means `local` with today's behavior byte-for-byte.
+- **Availability reported by the server.** Add a small `describeStorage(config)`-style helper in `src/core/storage/registry.ts` returning the configured provider, the effective provider, and a human-readable reason when they differ, and surface it on `GET /api/config` (or a tiny read-only endpoint) so the UI never guesses. `local` is always available; any other id is available only when its factory is registered and reports itself configured — #0660 fills in the neon-specific credential check, and #0659 must not hard-code neon details.
+- **Settings UI.** The control renders on the General tab with the shared `Select`, saves via the standard config path, shows the restart badge, and renders both the local description and the cloud-unavailable explanation. A UI test covers both states (local default; neon selected/configured-but-unavailable shows the explanation and does not claim cloud is active).
+- **Fallback never lies.** When the configured provider is unavailable, a real upload still succeeds through local storage and the UI/status shows local as the effective provider. Cover with a test that selects an unavailable provider and uploads.
+- **No behavior change for local users.** With no `[storage]` section, attachments store and retrieve identically (the #0658 storage-provider tests stay green).
+- **Docs.** `user-docs/configuration.md` gains the `[storage]` key; any user-docs that describe where attachments live note that local is the default and cloud is opt-in. AGENTS.md is touched only if this contradicts it.
+- **Gate.** No runtime dependency added; `repoos check --changed main` passes.
+
+## Notes for AI
+
+- Scope is slice 2 of the "Cloud attachment storage" story (`stories/cloud-attachment-storage.md`) and depends on the merged #0658. Do not implement the Neon provider or credentials — that is #0660; this slice defines the key, the control, the status signal, and the wiring.
+- Key files: `src/core/config.ts` (`ConfigFieldMeta`, `getConfigSchema`, `SUPPORTED_TOML_KEYS`, `loadConfig`, `DEFAULT_CONFIG`), `src/core/storage/registry.ts` (`DEFAULT_STORAGE_PROVIDER_ID`, `createStorageProvider`, `getStorageProviderFactory`, `listStorageProviderIds`), `src/server/attachments.ts`, `src/core/input.ts`, `src/server/routes/config.ts` (the schema-driven PATCH), `src/ui-app/src/views/SettingsView.vue`, `src/ui-app/src/settings-location.ts` (`isGeneralSchemaFieldKey`, `resolveSettingLocation`).
+- Follow the repo conventions in AGENTS.md: styled dropdown component only; no native `select`/`alert`/`confirm`; keep repeated label/value rows on the shared `.kv-rows` aligned layout; any body-teleported overlay must set `data-overlay-layer`. Every new user-facing `repoos.toml` setting needs a Settings control (this task is exactly that).
+- Prefer the schema auto-render path if a plain select suffices; reach for a dedicated card only if the explanation/status line genuinely needs it. If you add a card, mirror `ServiceSettings.vue` or the Publishing card in `SettingsView.vue`.
+- This is a UI-visible change: declare `## Shots` showing the General tab with local selected and with neon selected/unavailable explained, and rebuild the UI before handoff (`bun run build:ui`).
+- Area note: the metadata says `ui`, but the diff touches `core` and `server` too (config + wiring); set the area to `[ui, core]` if that is more accurate when you implement.
+- Out of scope: the Neon provider itself, credential storage/UI, migration, upload-state/retry, and any change to where local files live.
 
 ## Activity
 
@@ -26,3 +65,4 @@ Depends on #0658 (config key definition / schema shape). Local provider is alway
 - 2026-10-05T11:15:31Z · needs_input
 - 2026-10-05T15:03:03Z · needs_input
 - 2026-10-05T15:07:21Z · pm_model_override
+- 2026-10-05T15:10:11Z · body
