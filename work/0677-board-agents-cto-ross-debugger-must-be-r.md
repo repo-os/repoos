@@ -2,7 +2,7 @@
 id: "0677"
 title: "Board agents (CTO, Ross, debugger) must be read-only; surface 'model unavailable' instead of 'exit code 1'"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/board-agents-cto-ross-debugger-must-be-r
 created_at: "2026-10-05T16:58:36Z"
-updated_at: "2026-10-05T19:08:10Z"
+updated_at: "2026-10-05T19:36:15Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T17:16:49Z · body: section Story context
 - 2026-10-05T19:08:00Z · status inbox→ready
 - 2026-10-05T19:08:10Z · status ready→active, branch
+- 2026-10-05T19:36:15Z · status active→review
