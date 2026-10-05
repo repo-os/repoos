@@ -2,14 +2,14 @@
 id: "0673"
 title: "Opt-in project docs: --docs-from import, starter skeleton, and a doctor wiring check"
 type: feature
-status: active
+status: review
 priority: p3
 area: cli
 assigned_to: ai
 created_by: ""
 branch: feat/opt-in-project-docs-docs-from-import-sta
 created_at: "2026-10-05T15:20:13Z"
-updated_at: "2026-10-05T16:47:29Z"
+updated_at: "2026-10-05T16:57:30Z"
 ---
 ## Problem
 
@@ -65,3 +65,24 @@ Owner guidance (important): do NOT make starter docs the default and do not impo
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T16:47:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-05T16:51:51Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25
+    196|     // `zip -y` stores symlinks as links rather than following them.
+    197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
+    198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
+       |                         ^
+    199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
+    200|   });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+ Test Files  1 failed | 391 passed | 1 skipped (393)
+      Tests  6 failed | 4804 passed | 15 skipped (4825)
+   Start at  16:48:25
+   Duration  201.73s (transform 5.54s, setup 1.64s, import 27.45s, tests 183.97s, environment 172.14s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 333ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  16:51:47
+   Duration  1.77s (transform 833ms, setup 9ms, import 962ms, tests 333ms, environment 402ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-05T16:57:30Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
