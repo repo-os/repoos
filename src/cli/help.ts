@@ -37,8 +37,9 @@ const GROUPS: readonly CommandGroup[] = [
     commands: [
       {
         name: "init",
-        usage: "init [name]",
+        usage: "init [name] [--starter vision|codebase]",
         desc: "Scaffold work/, repoos.toml, AGENTS.md; guided flow for a new project",
+        flags: "--starter vision|codebase",
       },
       {
         name: "upgrade",

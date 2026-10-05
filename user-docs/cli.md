@@ -6,11 +6,15 @@ Run `repoos` with no arguments to see this list in your terminal.
 
 ### `repoos init [name]`
 
-Scaffolds RepoOS files in the current repo, plus a `ready` starter task so the
-board isn't empty. By default files go under a `repoos/` subdirectory;
-interactive prompts let you choose a different location or `/` for the repo
-root. `repoos.toml` and `AGENTS.md` always stay at the root. Run outside a git
-repo, it starts a guided new-project flow instead, which can launch the web
+Scaffolds RepoOS files in the current repo, plus an `inbox` starter task so the
+board isn't empty — a suggestion for you, not work to auto-run, promoted with
+`repoos mv <id> ready`. The starter body follows the repo's content: an
+effectively empty repo (no meaningful source yet) gets the product-vision task,
+otherwise the read-the-codebase one; override with
+`repoos init --starter vision|codebase`. By default files go under a `repoos/`
+subdirectory; interactive prompts let you choose a different location or `/` for
+the repo root. `repoos.toml` and `AGENTS.md` always stay at the root. Run outside
+a git repo, it starts a guided new-project flow instead, which can launch the web
 console for you. On an existing repo, an interactive run also offers to seed the
 task-area vocabulary (and commented preview-target stubs for it) — skippable, and
 skipped automatically once `[[areas]]` is declared. See
