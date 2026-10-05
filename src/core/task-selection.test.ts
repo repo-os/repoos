@@ -98,13 +98,11 @@ describe("orderReadyTasks", () => {
       task({ id: "010", priority: "p2", created_at: "2026-01-03T00:00:00Z" }),
       task({ id: "011", priority: "p1", created_at: "2026-01-01T00:00:00Z" }),
       task({ id: "012", priority: "p2", created_at: "2026-01-01T00:00:00Z", dependsOn: ["099"] }),
-      task({ id: "099", priority: "p3", created_at: "2026-01-01T00:00:00Z" }),
+      task({ id: "099", priority: "p2", created_at: "2026-01-02T00:00:00Z" }),
     ];
     const ordered = orderReadyTasks(tasks).map((t) => t.id);
-    // p1 first, then p2 with more downstream weight (010 unblocks nothing; 099 is upstream of 012)
-    expect(ordered.indexOf("011")).toBe(0);
-    expect(ordered.indexOf("099")).toBeLessThan(ordered.indexOf("012"));
-    expect(ordered.indexOf("010")).toBeLessThan(ordered.indexOf("012"));
+    // p1 first; among p2, higher critical-path weight (099 unblocks 012) wins; then older created_at.
+    expect(ordered).toEqual(["011", "099", "012", "010"]);
   });
 
   it("breaks ties on id when priority, weight, and created_at match", () => {
