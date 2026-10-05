@@ -2,15 +2,15 @@
 id: "0690"
 title: "Scheduling: deterministic default picker for auto-engineering with an optional PM veto for conflicts"
 type: feature
-status: ready
+status: active
 priority: p3
 area: server
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/scheduling-deterministic-default-picker-
 created_at: "2026-10-05T16:59:03Z"
-updated_at: "2026-10-05T19:54:41Z"
+updated_at: "2026-10-05T19:54:48Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:17:21Z · body: section Story context
 - 2026-10-05T17:32:30Z · body: section Docs follow-up
 - 2026-10-05T19:54:41Z · status inbox→ready
+- 2026-10-05T19:54:48Z · status ready→active, branch
