@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:58:30Z"
-updated_at: "2026-10-05T17:16:40Z"
+updated_at: "2026-10-05T17:16:42Z"
 ---
 ## Problem
 
@@ -41,7 +41,11 @@ See also: the per-task "dependency-changing merge" logic at `hasDependencyInputC
 
 Evidence comes from building a real 30-task project (opex, a Vue + Bun + Postgres app) with cheap agents on one laptop over ~9 hours. Read `AGENTS.md` first. Never hand-edit work/*.md; use RepoOS commands or APIs. Verify any claim you rely on against the current source before changing behaviour. Where a related task exists it is listed under "See also"; coordinate rather than duplicate.
 
+## Story context
+This task is part of the story **Field report: first agent-driven project run (opex)** (story #0008, `stories/field-report-first-agent-driven-project-run-opex.md` in this repo). Read that file first: it holds the background of the run that produced this task, the facts already established for your theme (with the evidence), the decisions the owner has already made, the known uncertainties, and the list of sibling tasks you should coordinate with. Verify its facts against the current source before relying on them, and say in the task notes if you find anything in it that is wrong or out of date.
+
 ## Activity
 
 - 2026-10-05T16:58:30Z · created · unknown
 - 2026-10-05T17:16:40Z · story
+- 2026-10-05T17:16:42Z · body: section Story context
