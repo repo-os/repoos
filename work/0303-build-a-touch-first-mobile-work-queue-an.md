@@ -3,6 +3,9 @@ id: "0303"
 title: Build a touch-first mobile Work queue and task detail flow
 type: feature
 status: ready
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX, Notes for AI"
 priority: p1
 area: mobile
 story: RepoOS Hub for Mobile
@@ -11,7 +14,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-26T16:45:58Z"
-updated_at: "2026-10-02T09:09:43Z"
+updated_at: "2026-10-05T11:15:30Z"
 ---
 ## Problem
 
@@ -44,3 +47,4 @@ Follow docs/mobile-ux-strategy.md. Do not force the desktop Work DOM and CSS to 
 - 2026-09-23T06:53:53Z · story
 - 2026-10-02T09:03:05Z · depends_on
 - 2026-10-02T09:09:43Z · status inbox→ready
+- 2026-10-05T11:15:30Z · needs_input
