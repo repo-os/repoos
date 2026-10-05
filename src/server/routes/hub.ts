@@ -254,8 +254,9 @@ export const hubSummary: RouteHandler = async (ctx, req, res) => {
     ),
     attention: {
       activeAgents: running.length,
-      reviewReadyTasks: tasks.filter((task) => task.status === "review").length,
-      needsInputTasks: tasks.filter((task) => task.needsInput).length,
+      // Archived tasks are parked (#0657): they never count as needing attention.
+      reviewReadyTasks: tasks.filter((task) => task.status === "review" && !task.isArchived).length,
+      needsInputTasks: tasks.filter((task) => task.needsInput && !task.isArchived).length,
     },
   });
 };

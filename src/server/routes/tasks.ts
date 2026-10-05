@@ -744,6 +744,14 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
       error: `Use POST /api/tasks/${id}/archive or /unarchive to change a task's archived state`,
     });
   }
+  // #0657: an archived task is parked — a status change is a lifecycle
+  // mutation that must go through unarchive first, matching `repoos mv` and
+  // `/start`. Non-status metadata edits (title, area, body) stay allowed.
+  if (body.status !== undefined && body.status !== existing.status && existing.isArchived) {
+    return json(res, 400, {
+      error: `Task #${id} is archived — unarchive it before changing its status`,
+    });
+  }
   if (body.section !== undefined && body.section !== null) {
     const section: unknown = body.section;
     if (!isSectionPatch(section)) {
@@ -2248,6 +2256,11 @@ export const reviewAgain: RouteHandler = async (ctx, req, res, params) => {
       error: `Only review tasks can be re-reviewed (#${id} is ${existing.status})`,
     });
   }
+  if (existing.isArchived) {
+    return json(res, 400, {
+      error: `Task #${id} is archived — unarchive it before starting a review`,
+    });
+  }
   if (runner.isRunning(id)) {
     return json(res, 409, {
       error: `Task #${id} has an agent turn in progress — wait for it to finish`,
@@ -2302,6 +2315,11 @@ export const reviewMessage: RouteHandler = async (ctx, req, res, params) => {
   if (existing.status !== "review") {
     return json(res, 400, {
       error: `Only review tasks accept reviewer messages (#${id} is ${existing.status})`,
+    });
+  }
+  if (existing.isArchived) {
+    return json(res, 400, {
+      error: `Task #${id} is archived — unarchive it before messaging its reviewer`,
     });
   }
   const body = (await readBody(req)) as { text?: unknown };

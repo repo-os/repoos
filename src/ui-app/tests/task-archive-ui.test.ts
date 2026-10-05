@@ -121,7 +121,9 @@ describe("archived task panel (#0657)", () => {
     document.body.innerHTML = "";
   });
 
-  async function mountDrawer(task: Task): Promise<void> {
+  async function mountDrawer(task: Task, tab: "details" | "review" = "details"): Promise<void> {
+    // jsdom has no Element.scrollTo; the Review tab scrolls its log into view.
+    (Element.prototype as unknown as { scrollTo: () => void }).scrollTo = () => {};
     const pinia = createPinia();
     setActivePinia(pinia);
     FakeEventSource.instances = [];
@@ -140,9 +142,19 @@ describe("archived task panel (#0657)", () => {
     });
     const ui = useUiStore();
     ui.open(task);
-    ui.activeTab = "details";
+    ui.activeTab = tab;
     await flush();
   }
+
+  it("hides the Review-tab lifecycle actions while archived", async () => {
+    await mountDrawer(
+      makeTask({ id: "0657", status: "review", isArchived: true, archiveDetail: "shelved" }),
+      "review",
+    );
+    const text = wrapper!.text();
+    expect(text).not.toContain("Review again");
+    expect(text).not.toContain("Send engineer");
+  });
 
   it("shows the Unarchive action and the reason card, and hides lifecycle controls", async () => {
     await mountDrawer(
