@@ -54,8 +54,10 @@ first, then come back here.
   sensible test timeouts, an incremental typecheck. A slow gate turns into
   close-out timeouts that look like real failures.
 - Run at most **two tasks at once** on a laptop. If you have
-  [remote runners](/configuration#remote-validation), confirm they are really
-  being used; a silent fall-back to local looks the same as success.
+  [remote runners](/configuration#remote-validation), watch the notification bell
+  for **Ran locally** when remote validation was on but the gate ran on this
+  machine — and use **`GET /api/attention`** (or the `attention.updated` SSE
+  event) instead of polling job files by hand.
 - Keep the primary checkout **clean**. Commit configuration and bookkeeping
   writes straight away, or **Move to done** will refuse.
 - Close-out candidates reuse the primary checkout's `node_modules`. After any
@@ -105,7 +107,9 @@ first, then come back here.
 
 - Trust **provider-reported** usage only. RepoOS never estimates a dollar figure
   from token counts — a session that reported no cost shows **unknown** and stays
-  out of every spend total.
+  out of every spend total. Set a **spend alert** in Settings → Notifications;
+  the bell and **`GET /api/attention`** surface provider errors and threshold
+  crossings alongside release and close-out notices.
 - Expect roughly an hour of wall-clock for every three small tasks in a pipeline
   with review and close-out, and more for UI work with fix rounds.
 - A long chat costs more with every turn because the whole history is re-read.
