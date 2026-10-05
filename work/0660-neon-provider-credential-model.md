@@ -4,6 +4,8 @@ title: Neon provider + credential model
 type: feature
 status: ready
 needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
 priority: p1
 area: server
 story: Cloud attachment storage
@@ -12,7 +14,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T08:28:57Z"
-updated_at: "2026-10-05T09:27:44Z"
+updated_at: "2026-10-05T11:15:32Z"
 ---
 Slice 3 of storage provider work (after 0658 interface + 0659 settings UI). Scope:
 - Neon Object Storage provider implementing the 0658 provider interface.
