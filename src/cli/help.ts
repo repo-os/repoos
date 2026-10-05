@@ -37,8 +37,9 @@ const GROUPS: readonly CommandGroup[] = [
     commands: [
       {
         name: "init",
-        usage: "init [name]",
+        usage: "init [name] [--docs-from <dir|file|.zip>] [--force]",
         desc: "Scaffold work/, repoos.toml, AGENTS.md; guided flow for a new project",
+        flags: "--docs-from <dir|file|.zip> · --force",
       },
       {
         name: "upgrade",
@@ -73,6 +74,12 @@ const GROUPS: readonly CommandGroup[] = [
         name: "new-doc",
         usage: 'new-doc "<desc>"',
         desc: "Create a document from a description via the PM agent",
+      },
+      {
+        name: "docs",
+        usage: "docs <import|scaffold> [path] [--force] [--dry-run]",
+        desc: "Import an existing doc set, or scaffold starter project docs",
+        flags: "--force · --dry-run",
       },
       {
         name: "note",
