@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-05T20:42:44Z"
+review_passes: 1
 id: "0691"
 title: Include the task's story definition and sibling tasks in engineer and reviewer prompts
 type: feature
@@ -10,7 +12,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/include-the-task-s-story-definition-and-
 created_at: "2026-10-05T17:15:50Z"
-updated_at: "2026-10-05T20:41:34Z"
 ---
 ## Problem
 
@@ -47,3 +48,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T19:54:49Z · status ready→active, branch
 - 2026-10-05T20:41:34Z · status active→review
 - 2026-10-05T20:41:34Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+
