@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-05T06:17:56Z"
+review_passes: 2
 id: "0657"
 title: "Archive task: park a task without changing its status, keep its worktree, and restore it later"
 type: feature
@@ -9,9 +11,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/archive-task-park-a-task-without-changin
 created_at: "2026-10-05T04:14:23Z"
-updated_at: "2026-10-05T06:16:52Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 There is no way to shelve a task that is not worth finishing right now. A task in review that has exhausted its review rounds (for example #0652) stays in the Review column with a 'Waiting for you' card, and the only exits are Move to done (merges the code), Send to engineer, Dismiss, abandon back to ready, or Delete (destroys it). Nothing says 'set this aside, keep the work, I may come back'. The board fills with tasks nobody intends to move.
@@ -81,3 +81,4 @@ Motivation: #0652 sat in review with needs_input 'review-rounds-exhausted' and n
 - 2026-10-05T05:28:40Z · status review→active
 - 2026-10-05T06:16:39Z · status active→review
 - 2026-10-05T06:16:52Z · note: shots: failed — capture of Archive task confirm modal (optional reason field) on "default" failed: click: Error: strict mode violation: locator('.task-card') resolved to 609 elements:
+
