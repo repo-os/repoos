@@ -593,8 +593,16 @@ export class LiveIndex {
 
   counts(): Record<Status, number> {
     const c = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<Status, number>;
-    for (const t of this.byId.values()) c[t.status]++;
+    // Archived tasks are parked (#0657): hidden from every column counter.
+    for (const t of this.byId.values()) if (!t.isArchived) c[t.status]++;
     return c;
+  }
+
+  /** Archived tasks, newest-updated first — the work queue's Archived list. */
+  archivedTasks(): Task[] {
+    return [...this.byId.values()]
+      .filter((t) => t.isArchived)
+      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
   }
 
   snapshot(): RepoIndex {
@@ -678,6 +686,8 @@ function toBoardTask(t: Task): BoardTask {
     debugTldr: t.debugTldr,
     debugTldrAt: t.debugTldrAt,
     needsMerge: t.needsMerge,
+    isArchived: t.isArchived ?? false,
+    archiveDetail: t.archiveDetail,
     priority: t.priority,
     area: t.area,
     areas: t.areas,
@@ -739,6 +749,8 @@ function diff(a: Task, b: Task): Partial<Task> {
     "debugTldrAt",
     "needsInputDetail",
     "needsMerge",
+    "isArchived",
+    "archiveDetail",
     "agentOverride",
     "cliOverride",
     "modelOverride",

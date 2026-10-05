@@ -124,6 +124,23 @@ describe("AutoEngineeringOrchestrator", () => {
       expect(result.triggered).toBe(true);
       expect(result.outcome).toBe("no-ready-work");
     });
+
+    it("ignores archived ready tasks and archived active tasks (#0657)", async () => {
+      const config = mockConfig(true, 1);
+      const archivedReady = mockTask("001", "ready");
+      archivedReady.isArchived = true;
+      const archivedActive = mockTask("002", "active");
+      archivedActive.isArchived = true;
+
+      const result = await orchestrator.reconcile(
+        config,
+        [archivedReady, archivedActive],
+        "active-to-review",
+      );
+
+      // Archived work holds no slot and is never a candidate.
+      expect(result.outcome).toBe("no-ready-work");
+    });
   });
 
   describe("PM agent unavailable", () => {

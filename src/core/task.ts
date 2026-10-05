@@ -27,6 +27,8 @@ const KEY_ORDER = [
   "debug_tldr_key",
   "needs_merge",
   "no_source_change",
+  "is_archived",
+  "archive_detail",
   "priority",
   "area",
   "story",
@@ -360,6 +362,11 @@ export function parseTask(args: ParseTaskArgs): Task {
     debugTldrKey: typeof data.debug_tldr_key === "string" ? data.debug_tldr_key : undefined,
     needsMerge: data.needs_merge === true,
     noSourceChange: data.no_source_change === true,
+    isArchived: data.is_archived === true,
+    archiveDetail:
+      typeof data.archive_detail === "string" && data.archive_detail.trim()
+        ? data.archive_detail
+        : undefined,
     priority: String(data.priority ?? "p2"),
     // #0583: one shared parse for every shape the frontmatter may hold — list,
     // comma string, or legacy "a + b". `area` keeps the comma-joined display
@@ -443,6 +450,14 @@ export function serializeTask(task: Task): string {
   if (task.questions && task.questions.length > 0) data.questions = task.questions;
   if (task.needsMerge) data.needs_merge = true;
   if (task.noSourceChange) data.no_source_change = true;
+  // #0657: `is_archived` is orthogonal to status. Only ever write the flag
+  // when true, and write `archive_detail` only alongside it — clearing the
+  // archive drops both keys so an unarchived task parses back exactly as one
+  // that was never archived.
+  if (task.isArchived) {
+    data.is_archived = true;
+    if (task.archiveDetail) data.archive_detail = task.archiveDetail;
+  }
   if (task.agentOverride) data.agent_override = task.agentOverride;
   if (task.cliOverride) data.cli_override = task.cliOverride;
   if (task.modelOverride) data.model_override = task.modelOverride;

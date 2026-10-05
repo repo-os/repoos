@@ -171,6 +171,30 @@ watch(countsSnapshot, (now, prev) => {
   if (repo.loading) return;
   revealArrivals(prev ?? {}, now);
 });
+
+// ── #0657 Archived list ────────────────────────────────────────────────
+// Parked tasks live below the board, minimised by default, with a live count.
+// The expanded state persists like the board's column-collapse preference.
+const ARCHIVED_EXPANDED_KEY = "repoos.work.archivedExpanded";
+function readArchivedExpanded(): boolean {
+  try {
+    return localStorage.getItem(ARCHIVED_EXPANDED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+const archivedExpanded = ref(readArchivedExpanded());
+function toggleArchived(): void {
+  archivedExpanded.value = !archivedExpanded.value;
+  try {
+    localStorage.setItem(ARCHIVED_EXPANDED_KEY, archivedExpanded.value ? "1" : "0");
+  } catch {
+    /* ignore quota / privacy-mode failures */
+  }
+}
+function openArchived(task: Task): void {
+  void ui.openTask(task);
+}
 </script>
 
 <template>
@@ -286,6 +310,40 @@ watch(countsSnapshot, (now, prev) => {
         />
       </template>
     </div>
+
+    <section v-if="!statusFilter && repo.archivedTasks.length" class="archived-list">
+      <button
+        type="button"
+        class="archived-toggle"
+        :aria-expanded="archivedExpanded"
+        @click="toggleArchived"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          class="archived-chevron"
+          :class="{ open: archivedExpanded }"
+        >
+          <path
+            d="m9 6 6 6-6 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Archived ({{ repo.archivedTasks.length }})
+      </button>
+      <ul v-if="archivedExpanded" class="archived-rows">
+        <li v-for="t in repo.archivedTasks" :key="t.id">
+          <button type="button" class="archived-row" @click="openArchived(t)">
+            <span class="mono archived-id">#{{ t.id }}</span>
+            <span class="archived-title">{{ t.title }}</span>
+            <span class="archived-status">{{ t.status }}</span>
+          </button>
+        </li>
+      </ul>
+    </section>
 
     <div class="ibar-spacer" aria-hidden="true"></div>
     <IntegrationStatusBar class="ibar-outer" />

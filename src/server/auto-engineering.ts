@@ -176,7 +176,9 @@ export class AutoEngineeringOrchestrator {
     trigger: AutoEngineeringDecision["trigger"],
   ): Promise<ReconciliationResult> {
     const maxActiveTasks = config.maxActiveTasks ?? 3;
-    const activeCount = allTasks.filter((t) => t.status === "active").length;
+    // Archived tasks are parked (#0657): they hold no slot and are never
+    // picked up, even if their underlying status is `active`.
+    const activeCount = allTasks.filter((t) => t.status === "active" && !t.isArchived).length;
     const availableSlots = Math.max(0, maxActiveTasks - activeCount);
 
     // No capacity available.
@@ -201,6 +203,7 @@ export class AutoEngineeringOrchestrator {
     const readyTasks = allTasks.filter(
       (task) =>
         task.status === "ready" &&
+        !task.isArchived &&
         !task.needsInput &&
         taskDependencyBlockers(config.root, task, allTasks).length === 0,
     );

@@ -66,16 +66,43 @@ export function cmdList(statusArg?: string): void {
     return;
   }
 
+  // `repoos list archived` shows only shelved tasks (#0657); every other view
+  // hides them, because archived work is parked, not in any column. The count
+  // footer keeps them discoverable instead of silently missing.
+  const archived = idx.tasks.filter((t) => t.isArchived);
+  if (statusArg === "archived") {
+    console.log(
+      c.bold("\n  " + idx.root.split("/").pop()) + c.dim(`  ·  ${archived.length} archived\n`),
+    );
+    if (archived.length === 0) {
+      console.log(c.dim("  No archived tasks.\n"));
+      return;
+    }
+    for (const t of archived) {
+      console.log(
+        "    " +
+          c.dim("#" + pad(t.id, 5)) +
+          priorityColor(t.priority)(pad(t.priority, 4)) +
+          pad(t.title, 44) +
+          c.dim(`${t.status} · `) +
+          (t.archiveDetail ? c.dim(t.archiveDetail) : ""),
+      );
+    }
+    console.log("");
+    return;
+  }
+
   // Default view excludes drafts; explicit `repoos list draft` shows them.
   const cols =
     statusArg && (STATUSES as readonly string[]).includes(statusArg)
       ? [statusArg as Status]
       : STATUSES.filter((s) => s !== "draft");
+  const activeCount = idx.tasks.length - archived.length;
 
-  console.log(c.bold("\n  " + idx.root.split("/").pop()) + c.dim(`  ·  ${idx.taskCount} tasks\n`));
+  console.log(c.bold("\n  " + idx.root.split("/").pop()) + c.dim(`  ·  ${activeCount} tasks\n`));
 
   for (const status of cols) {
-    const tasks = idx.tasks.filter((t) => t.status === status);
+    const tasks = idx.tasks.filter((t) => t.status === status && !t.isArchived);
     if (tasks.length === 0 && statusArg === undefined) continue;
     const sc = statusColor(status);
     const label = labels ? labels[status] : status.toUpperCase();
@@ -91,6 +118,11 @@ export function cmdList(statusArg?: string): void {
       console.log(line);
     }
     console.log("");
+  }
+  if (archived.length > 0) {
+    console.log(
+      c.dim(`  ${archived.length} archived`) + c.dim("  ·  `repoos list archived` to show\n"),
+    );
   }
 }
 
@@ -125,6 +157,9 @@ export function cmdShow(id?: string): void {
   row("area", t.area);
   row("assigned", assigneeLabel(t));
   row("branch", t.branch ? c.cyan(t.branch) : c.dim("—"));
+  if (t.isArchived) {
+    row("archived", c.yellow("yes") + (t.archiveDetail ? c.dim(`  ${t.archiveDetail}`) : ""));
+  }
   if (t.git.branchExists) row("git", c.green("branch exists locally"));
   if (t.git.lastCommit)
     row("last commit", c.dim(t.git.lastCommit + "  " + (t.git.lastCommitAt ?? "")));
@@ -275,6 +310,20 @@ export function cmdMv(
   // .git) is a silent no-op from the board's perspective.
   const repoos = boardRepoOS();
   try {
+    // #0657: archived tasks are parked. Status moves on a shelved task are
+    // almost always a mistake, and the dedicated unarchive route is the only
+    // way back — refuse rather than silently change a hidden task's column.
+    const existingBeforeMv = repoos.getTask(id);
+    if (existingBeforeMv?.isArchived) {
+      console.error(c.red(`  Refusing to move #${id} — `) + c.dim("the task is archived."));
+      console.error(
+        c.dim(
+          "  Unarchive it first (from the app's Archived list, or POST /api/tasks/:id/unarchive).",
+        ),
+      );
+      process.exitCode = 1;
+      return;
+    }
     if (status === "review" && handoffRequestFromRunner(id)) return;
     if (status === "done" && !opts.force) {
       const existing = repoos.getTask(id);

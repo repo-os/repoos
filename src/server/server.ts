@@ -48,6 +48,9 @@
  *   POST /api/tasks/:id/needs-input/dismiss -> clear needs_input (flag, reason, detail, questions) and log who dismissed it
  *   POST /api/tasks/:id/review/message -> send a follow-up to the reviewer (its own session)
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
+ *   POST /api/tasks/:id/archive   -> shelve the task: is_archived=true, optional { detail };
+ *                                    status/branch/worktree untouched; refused while a run/review/preview/close-out is live
+ *   POST /api/tasks/:id/unarchive -> clear is_archived + archive_detail, restoring the original status
  *   POST /api/tasks/:id/preview       -> start a read-only preview of the task's worktree
  *   POST /api/tasks/:id/preview/stop  -> stop it (also DELETE /preview)
  *   POST /api/tasks/:id/attachments   -> attach a screenshot { name, mime, data(base64) };
@@ -2793,7 +2796,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   );
   router.register(
     "POST",
-    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen)$/,
+    /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen|archive|unarchive)$/,
     taskAction,
   );
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);

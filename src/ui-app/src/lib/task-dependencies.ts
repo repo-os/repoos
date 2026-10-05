@@ -2,9 +2,13 @@ import type { DependencyBlocker } from "../types";
 import { shallowRef } from "vue";
 
 export function dependencyBlockerLabel(blocker: DependencyBlocker): string {
-  return blocker.state === "cancelled"
-    ? `Blocked by cancelled task #${blocker.id}; needs a human`
-    : `Blocked by #${blocker.id}`;
+  if (blocker.state === "cancelled") {
+    return `Blocked by cancelled task #${blocker.id}; needs a human`;
+  }
+  if (blocker.state === "archived") {
+    return `Blocked by archived task #${blocker.id}; unarchive it to unblock`;
+  }
+  return `Blocked by #${blocker.id}`;
 }
 
 /** One app-level dialog serves every route that can start blocked work. */
