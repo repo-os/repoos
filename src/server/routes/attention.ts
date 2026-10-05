@@ -2,7 +2,7 @@
 import type { RouteHandler } from "./types.js";
 import { json } from "./utils.js";
 import { assembleAttentionFeed } from "../attention-feed.js";
-import { getReleaseRunState } from "./release.js";
+import { getReleaseNotesRunState, getReleaseRunState } from "./release.js";
 
 export const getAttention: RouteHandler = async (ctx, _req, res) => {
   await ctx.indexReady;
@@ -17,6 +17,7 @@ export const getAttention: RouteHandler = async (ctx, _req, res) => {
     closeOutOutcomes: ctx.closeOutOutcomes,
     attentionEvents: ctx.attentionEvents,
     getReleaseRun: () => getReleaseRunState(),
+    getReleaseNotesRun: () => getReleaseNotesRunState(),
     previewTargetAreas,
   });
   return json(res, 200, { ok: true, ...feed });

@@ -7,7 +7,7 @@ import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
 import type { CloseOutOutcomeStore } from "./close-out-outcome.js";
 import type { AttentionEventStore } from "./attention-events.js";
-import type { ReleaseRun } from "./routes/release.js";
+import type { ReleaseNotesRun, ReleaseRun } from "./routes/release.js";
 import { getRepoOSDb } from "../core/db.js";
 import { DEFAULT_STALL_TIMEOUT_MS } from "./agents.js";
 
@@ -18,6 +18,7 @@ export interface AttentionFeedDeps {
   closeOutOutcomes?: CloseOutOutcomeStore;
   attentionEvents?: AttentionEventStore;
   getReleaseRun: () => ReleaseRun;
+  getReleaseNotesRun: () => ReleaseNotesRun;
   previewTargetAreas: string[];
 }
 
@@ -50,6 +51,7 @@ export function assembleAttentionFeed(deps: AttentionFeedDeps): AttentionFeed {
     tasks,
     closeOutOutcomes: deps.closeOutOutcomes?.list() ?? [],
     releaseRun: deps.getReleaseRun(),
+    releaseNotesRun: deps.getReleaseNotesRun(),
     recordedEvents: deps.attentionEvents?.list() ?? [],
     totalSpendUsd: board?.totalCostUsd ?? null,
     recentProviderFailures,

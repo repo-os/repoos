@@ -43,6 +43,7 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   "telegram.enabled",
   "auth.enabled",
   "auth.sessionMaxAge",
+  "attention.spendAlertUsd",
 ]);
 
 /** Mirrors `isFieldVisible` in SettingsView.vue */

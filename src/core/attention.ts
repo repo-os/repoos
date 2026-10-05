@@ -68,11 +68,20 @@ export interface ReleaseRunAttentionSource {
   updatedAt: string | null;
 }
 
+export interface ReleaseNotesRunAttentionSource {
+  state: "idle" | "running" | "succeeded" | "failed";
+  startedAt: string | null;
+  updatedAt: string | null;
+  /** When true, a terminal run describes an older draft context. */
+  stale?: boolean;
+}
+
 export interface AttentionFeedInput {
   config: RepoOSConfig;
   tasks: Task[];
   closeOutOutcomes: CloseOutOutcomeFeedEvent[];
   releaseRun: ReleaseRunAttentionSource | null;
+  releaseNotesRun: ReleaseNotesRunAttentionSource | null;
   recordedEvents: RecordedAttentionEvent[];
   totalSpendUsd: number | null;
   recentProviderFailures: Array<{
@@ -220,6 +229,26 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
     });
   }
 
+  const notesRun = input.releaseNotesRun;
+  if (
+    notesRun &&
+    notesRun.state === "succeeded" &&
+    !notesRun.stale &&
+    (notesRun.startedAt || notesRun.updatedAt)
+  ) {
+    const eventKey = notesRun.startedAt ?? notesRun.updatedAt!;
+    pushItem(items, {
+      id: `releaseNotesReady:${eventKey}`,
+      kind: "releaseNotesReady",
+      severity: SEVERITY.releaseNotesReady,
+      taskId: null,
+      message: "Release notes ready",
+      detail: "AI draft finished — review it on the Releases page.",
+      link: "/releases",
+      at: notesRun.updatedAt ?? eventKey,
+    });
+  }
+
   const run = input.releaseRun;
   if (run && (run.state === "succeeded" || run.state === "failed")) {
     const kind = run.state === "succeeded" ? "releaseSucceeded" : "releaseFailed";
@@ -289,11 +318,16 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
     });
   }
 
+  const durableProviderIds = new Set(
+    input.recordedEvents.filter((e) => e.kind === "providerFailure").map((e) => e.id),
+  );
   for (const f of input.recentProviderFailures) {
     if (!isProviderFailureReason(f.errorReason)) continue;
+    const id = `providerFailure:${f.sessionId}`;
+    if (durableProviderIds.has(id)) continue;
     const at = f.startedAt;
     pushItem(items, {
-      id: `providerFailure:${f.sessionId}`,
+      id,
       kind: "providerFailure",
       severity: SEVERITY.providerFailure,
       taskId: f.taskId,

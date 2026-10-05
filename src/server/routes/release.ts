@@ -1,5 +1,6 @@
 import type { RouteContext, RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
+import { notifyAttentionReleaseNotesTerminal } from "../attention-notify.js";
 import {
   collectReleaseCommits,
   cutNewRelease,
@@ -339,6 +340,11 @@ export function getReleaseRunState(): ReleaseRun {
   return run;
 }
 
+/** In-memory release-notes draft run for the attention feed (#0687). */
+export function getReleaseNotesRunState(): ReleaseNotesRun {
+  return notesRun;
+}
+
 /**
  * The release the Releases page is currently showing: the tagged manifest
  * version when it exists, else the newest tag. Null when there's nothing.
@@ -533,6 +539,7 @@ async function draftNotes(
   const fail = (error: string): void => {
     notesRun = { ...notesRun, state: "failed", error, notes: null, updatedAt: stamp() };
     emitEvent({ type: "release.notesRun", state: "failed", error, at: notesRun.updatedAt! });
+    notifyAttentionReleaseNotesTerminal();
   };
   try {
     const result = await runPrompt(agent, prompt, {
@@ -565,6 +572,7 @@ async function draftNotes(
     }
     notesRun = { ...notesRun, state: "succeeded", notes, error: null, updatedAt: stamp() };
     emitEvent({ type: "release.notesRun", state: "succeeded", at: notesRun.updatedAt! });
+    notifyAttentionReleaseNotesTerminal();
   } catch (err) {
     fail(err instanceof Error ? err.message : String(err));
   }
