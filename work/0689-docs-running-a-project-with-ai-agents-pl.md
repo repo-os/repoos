@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:59:01Z"
-updated_at: "2026-10-05T17:17:17Z"
+updated_at: "2026-10-05T17:17:18Z"
 ---
 ## Problem
 
@@ -81,8 +81,12 @@ See also: the init-flags (0670), starter-task (0671), agent-docs (0672) and docs
 
 Evidence comes from building a real 30-task project (opex, a Vue + Bun + Postgres app) with cheap agents on one laptop over ~9 hours. Read `AGENTS.md` first. Never hand-edit work/*.md; use RepoOS commands or APIs. Verify any claim you rely on against the current source before changing behaviour. Where a related task exists it is listed under "See also"; coordinate rather than duplicate.
 
+## Story context
+This task is part of the story **Field report: first agent-driven project run (opex)** (story #0008, `stories/field-report-first-agent-driven-project-run-opex.md` in this repo). Read that file first: it holds the background of the run that produced this task, the facts already established for your theme (with the evidence), the decisions the owner has already made, the known uncertainties, and the list of sibling tasks you should coordinate with. Verify its facts against the current source before relying on them, and say in the task notes if you find anything in it that is wrong or out of date.
+
 ## Activity
 
 - 2026-10-05T16:59:01Z · created · unknown
 - 2026-10-05T17:05:50Z · note: Landed directly on main as an owner-authorized hotfix (commit 4c939bc2b): user-docs/running-with-agents.md, linked from the docs sidebar (Using RepoOS), getting-started 'Where to go next' and agents.md; user-docs build and 'repoos check --changed main' passed. REMAINING for this task (if kept open): (1) add the one-line pointer to the AGENTS.md template string in src/commands/init.ts, (2) re-verify each factual bullet after the related fixes land (override endpoints 0684, review history 0680, remote runners 0683, close-out install 0674) and update the page, (3) then close or delete this task. Consider closing it now if (1) is declined.
 - 2026-10-05T17:17:17Z · story
+- 2026-10-05T17:17:18Z · body: section Story context
