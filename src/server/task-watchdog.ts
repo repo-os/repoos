@@ -480,6 +480,10 @@ export class TaskWatchdog {
   }
 
   private isStuck(task: Task): boolean {
+    // An archived task is parked (#0657): it is never surfaced or escalated,
+    // even if its underlying status is active/review. The human set it aside
+    // on purpose; unarchiving restores the stuck-detection window.
+    if (task.isArchived) return false;
     // A task the human is already flagged on is not stuck-but-unnoticed: don't
     // auto-surface or re-escalate it.
     if (task.needsInput) return false;

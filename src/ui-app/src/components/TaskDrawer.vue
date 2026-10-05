@@ -96,6 +96,7 @@ import DiffFileViewer from "./DiffFileViewer.vue";
 import type { DiffFile } from "../lib/diff-files";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
 import DeleteTaskDialog from "./DeleteTaskDialog.vue";
+import ArchiveTaskDialog from "./ArchiveTaskDialog.vue";
 import { storyDeepLinkRef, storyOpenLabel } from "../lib/story-deep-link";
 import { normalizeStoryName } from "../../../core/stories.js";
 import { insertTextAtCursor } from "../utils/text-insertion";
@@ -1112,6 +1113,12 @@ async function reopenTask(): Promise<void> {
 }
 
 const deleteTaskTarget = ref<{ id: string; title: string } | null>(null);
+// Archive confirmation (#0657). Body-teleported like DeleteTaskDialog, so the
+// task identity is snapshotted on open — the drawer's dismiss-on-outside can
+// null `ui.active` before the confirm handler runs.
+const archiveTaskTarget = ref<{ id: string; title: string } | null>(null);
+const archiveBusy = ref(false);
+const unarchiveBusy = ref(false);
 const confirmHotfix = ref(false);
 // Stop work confirmation modal state
 const confirmStopWork = ref(false);
@@ -1180,6 +1187,48 @@ function openDeleteConfirm(): void {
 
 function cancelDelete(): void {
   deleteTaskTarget.value = null;
+}
+
+function openArchiveConfirm(): void {
+  if (ui.active) archiveTaskTarget.value = { id: ui.active.id, title: ui.active.title };
+}
+
+function cancelArchive(): void {
+  if (!archiveBusy.value) archiveTaskTarget.value = null;
+}
+
+async function confirmArchive(detail: string): Promise<void> {
+  const task = archiveTaskTarget.value;
+  if (!task) return;
+  archiveBusy.value = true;
+  ui.saving = true;
+  try {
+    await repo.archiveTask(task, detail);
+    archiveTaskTarget.value = null;
+    // The task leaves the board for the Archived list; close the drawer rather
+    // than leave it pointing at a card that is no longer there.
+    ui.close();
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    archiveBusy.value = false;
+    ui.saving = false;
+  }
+}
+
+async function unarchiveActive(): Promise<void> {
+  const task = ui.active;
+  if (!task) return;
+  unarchiveBusy.value = true;
+  ui.saving = true;
+  try {
+    await repo.unarchiveTask(task);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    unarchiveBusy.value = false;
+    ui.saving = false;
+  }
 }
 
 async function startHotfix(target: "branch" | "main"): Promise<void> {
@@ -3795,7 +3844,32 @@ watch(
         <p v-if="ui.active.hotfix" class="hotfix-note hotfix-banner" role="status">
           {{ hotfixBannerText(ui.active.hotfixTarget, ui.active.branch) }}
         </p>
-        <div class="drawer-quickbar">
+        <!-- #0657: an archived task is parked. Show a prominent reason card
+             (when one was given) and a single Unarchive action in place of
+             every lifecycle control, which does not apply while archived. -->
+        <div v-if="ui.active.isArchived" class="archived-panel">
+          <div v-if="ui.active.archiveDetail" class="agent-waiting archived-reason" role="status">
+            <div>
+              <div class="agent-waiting-title">archived</div>
+              <div class="agent-waiting-sub">
+                This task is parked. Its status, branch and worktree are unchanged.
+              </div>
+              <div class="agent-waiting-detail">{{ ui.active.archiveDetail }}</div>
+            </div>
+          </div>
+          <div class="quickbar-row">
+            <Button
+              variant="default"
+              :disabled="ui.saving || unarchiveBusy"
+              @click="unarchiveActive"
+            >
+              <ActivityIndicator v-if="unarchiveBusy" />
+              <RotateCcw v-else class="size-3.5" />
+              {{ unarchiveBusy ? "Unarchiving…" : "Unarchive" }}
+            </Button>
+          </div>
+        </div>
+        <div v-else class="drawer-quickbar">
           <!-- #0507: the handoff finalization is in flight. The task is still
                `active` on purpose, so without this it would read as "nothing
                happened" for the whole length of the check. -->
@@ -4604,6 +4678,17 @@ watch(
               Delete task
             </Button>
             <Button
+              v-if="!ui.active?.isArchived"
+              variant="outline"
+              size="sm"
+              data-test-id="archive-task"
+              :disabled="ui.saving"
+              title="Park this task without changing its status, branch or worktree"
+              @click="openArchiveConfirm"
+            >
+              Archive task
+            </Button>
+            <Button
               v-if="!ui.active?.hotfix && ui.active?.status === 'ready'"
               variant="outline"
               size="sm"
@@ -4822,7 +4907,7 @@ watch(
               </button>
             </div>
             <Button
-              v-if="ui.active.status === 'review'"
+              v-if="ui.active.status === 'review' && !ui.active.isArchived"
               variant="outline"
               size="sm"
               :disabled="ui.saving || reviewBusy || review?.running || handoffBusy"
@@ -4838,7 +4923,7 @@ watch(
               {{ reviewBusy ? "Starting…" : "Review again" }}
             </Button>
             <Button
-              v-if="ui.active.status === 'review'"
+              v-if="ui.active.status === 'review' && !ui.active.isArchived"
               variant="accent"
               size="sm"
               :disabled="
@@ -5595,6 +5680,14 @@ watch(
     :busy="ui.saving"
     @update:open="(v) => !v && cancelDelete()"
     @confirm="deleteTask"
+  />
+
+  <ArchiveTaskDialog
+    :open="archiveTaskTarget !== null"
+    :task="archiveTaskTarget"
+    :busy="archiveBusy"
+    @update:open="(v) => !v && cancelArchive()"
+    @confirm="confirmArchive"
   />
 
   <AddShotModal

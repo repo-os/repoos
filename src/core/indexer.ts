@@ -130,7 +130,9 @@ export function buildIndex(config: RepoOSConfig): RepoIndex {
   });
 
   const counts = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<Status, number>;
-  for (const t of tasks) counts[t.status]++;
+  // Archived tasks are parked (#0657): they are hidden from the board columns
+  // and every counter, but stay in `tasks` so the Archived list can show them.
+  for (const t of tasks) if (!t.isArchived) counts[t.status]++;
 
   return {
     version: INDEX_VERSION,
@@ -242,7 +244,8 @@ export async function buildIndexAsync(
   });
 
   const counts = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<Status, number>;
-  for (const t of tasks) counts[t.status]++;
+  // Archived tasks are parked (#0657) — see buildIndex.
+  for (const t of tasks) if (!t.isArchived) counts[t.status]++;
 
   return {
     version: INDEX_VERSION,

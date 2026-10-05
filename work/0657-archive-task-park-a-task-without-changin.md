@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-05T06:35:25Z"
-review_passes: 3
 id: "0657"
 title: "Archive task: park a task without changing its status, keep its worktree, and restore it later"
 type: feature
@@ -11,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/archive-task-park-a-task-without-changin
 created_at: "2026-10-05T04:14:23Z"
-review_rounds: 2
+updated_at: "2026-10-05T05:27:29Z"
 ---
 ## Problem
 There is no way to shelve a task that is not worth finishing right now. A task in review that has exhausted its review rounds (for example #0652) stays in the Review column with a 'Waiting for you' card, and the only exits are Move to done (merges the code), Send to engineer, Dismiss, abandon back to ready, or Delete (destroys it). Nothing says 'set this aside, keep the work, I may come back'. The board fills with tasks nobody intends to move.
@@ -41,47 +39,9 @@ There is no way to shelve a task that is not worth finishing right now. A task i
 ## Notes for AI
 Motivation: #0652 sat in review with needs_input 'review-rounds-exhausted' and no way to shelve it. Relevant code: TaskDrawer.vue (Delete task button, 'Waiting for you' card), DeleteTaskDialog.vue (model for the confirm modal), WorkView.vue (draft column rendering and the board columns), src/server/task-transitions.ts (existing abandon/reopen actions; archive is deliberately NOT a status transition), src/core/task.ts (frontmatter key list). Keep this orthogonal to status: do not add an 'archived' status. Out of scope: bulk archive, auto-archive rules, deleting worktrees of old archived tasks (a later GC task can do that).
 
-## Shots
-```json
-[
-  {
-    "label": "Archive task confirm modal (optional reason field)",
-    "target": "default",
-    "route": "/work",
-    "highlight": ".archive-confirm-modal",
-    "steps": [
-      {
-        "click": ".task-card"
-      },
-      {
-        "waitMs": 500
-      },
-      {
-        "click": "[data-test-id=\"archive-task\"]"
-      },
-      {
-        "waitFor": ".archive-confirm-modal"
-      },
-      {
-        "waitMs": 300
-      }
-    ]
-  }
-]
-```
-
 ## Activity
 
 - 2026-10-05T04:14:23Z · created · unknown
 - 2026-10-05T04:45:44Z · status inbox→ready
 - 2026-10-05T04:45:58Z · status ready→active, branch
-- 2026-10-05T05:07:42Z · body: section Shots
 - 2026-10-05T05:27:29Z · status active→review
-- 2026-10-05T05:27:43Z · note: shots: failed — capture of Archive task confirm modal (optional reason field) on "default" failed: click: Error: strict mode violation: locator('.task-card') resolved to 609 elements:
-- 2026-10-05T05:28:40Z · status review→active
-- 2026-10-05T06:16:39Z · status active→review
-- 2026-10-05T06:16:52Z · note: shots: failed — capture of Archive task confirm modal (optional reason field) on "default" failed: click: Error: strict mode violation: locator('.task-card') resolved to 609 elements:
-- 2026-10-05T06:17:56Z · status review→active
-- 2026-10-05T06:34:27Z · status active→review
-- 2026-10-05T06:34:40Z · note: shots: failed — capture of Archive task confirm modal (optional reason field) on "default" failed: click: Error: strict mode violation: locator('.task-card') resolved to 609 elements:
-
