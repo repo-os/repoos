@@ -12,7 +12,7 @@ branch: feat/per-task-overrides-reject-silently-ignor
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:50Z"
-updated_at: "2026-10-05T20:15:44Z"
+updated_at: "2026-10-05T20:20:14Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -37,6 +37,26 @@ This task is part of the story **Field report: first agent-driven project run (o
 ## Docs follow-up
 The playbook page `user-docs/running-with-agents.md` (landed on main) describes the CURRENT behaviour that this task changes. When this task lands, update the page: section 2, the bullet about setting overrides on the task itself and some endpoints ignoring override fields. In short: update to the new validation and the effective-agent display. Keep the page accurate rather than aspirational; if this task is declined, leave the page as is. (This replaces the open task 0689, which is being removed.)
 
+## Shots
+```json
+[
+  {
+    "label": "Task card effective agent assignments (robot panel)",
+    "target": "default",
+    "route": "/",
+    "highlight": ".tc-agent-panel",
+    "steps": [
+      {
+        "click": "button.tc-agent-toggle"
+      },
+      {
+        "waitMs": 300
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-05T16:58:50Z · created · unknown
@@ -49,3 +69,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T19:23:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-05T20:15:36Z · cli_override, model_override
 - 2026-10-05T20:15:36Z · needs_input
+- 2026-10-05T20:20:14Z · body: section Shots
