@@ -118,3 +118,28 @@ export function assessTaskUnderspecified(body: string): UnderspecifiedAssessment
     signals: uniqueSignals,
   };
 }
+
+/** The PM chat's canned "flesh this out" message (mirrors the UI's `PM_FLESH_OUT_CANNED_MESSAGE`). */
+export const PM_FLESH_OUT_MESSAGE = "Can you flesh this out?";
+
+/**
+ * Appended server-side to the canned flesh-out message so the PM knows exactly
+ * what the underspecified check (`assessTaskUnderspecified`) requires.
+ */
+export function fleshOutRequirementsPrompt(story?: { name: string; path?: string }): string {
+  const storyLine = story
+    ? [
+        "",
+        story.path
+          ? `This task is a slice of the story "${story.name}". If you need more context, read the story at ${story.path} (and sibling tasks in that story) before asking the human anything.`
+          : `This task is a slice of the story "${story.name}". If you need more context, look at sibling tasks tagged with that story (\`repoos list\`) before asking the human anything.`,
+      ]
+    : [];
+  return [
+    "To count as fully specified, the task body must have ALL of these sections, each with real content (not placeholders):",
+    ...TASK_SPEC_SECTION_HEADINGS.map((h) => `- ${h}`),
+    "",
+    `Rules: use these exact headings; if a section doesn't apply (e.g. no UI change), keep the heading and say so in a sentence; leave no bare TODO/TBD/<placeholder> lines; the body outside "## Original prompt" must be at least ${UNDERSPECIFIED_MIN_BODY_CHARS} characters. Keep the existing "## Original prompt", "## Screenshots" and "## Activity" sections untouched. Update the task through the repoos commands/API, never by editing work/*.md directly.`,
+    ...storyLine,
+  ].join("\n");
+}
