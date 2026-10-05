@@ -545,7 +545,7 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
       lastActivityAt: startedAt,
     });
 
-    db.upsertSession(session("recent", iso(HOUR), 0.2, "estimate"));
+    db.upsertSession(session("recent", iso(HOUR), 0.2, "extractUsage"));
     db.upsertSession(session("mid", iso(3 * DAY), 0.3, "extractUsage"));
     db.upsertSession(session("old", iso(40 * DAY), 0.4, "kiro-credits"));
 
@@ -562,11 +562,11 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
     expect(d1.totalSessions).toBe(1);
     expect(d1.totalElapsedMs).toBe(1000);
     expect(d1.totalCostUsd).toBeCloseTo(0.2, 5);
-    expect(d1.costSource).toBe("estimate");
+    expect(d1.costSource).toBe("extractUsage");
     expect(d1.roles).toHaveLength(1);
     expect(d1.roles[0].totalSessions).toBe(1);
     expect(d1.roles[0].totalCostUsd).toBeCloseTo(0.2, 5);
-    expect(d1.roles[0].costSource).toBe("estimate");
+    expect(d1.roles[0].costSource).toBe("extractUsage");
     expect(d1.days).toHaveLength(1);
     expect(d1.days[0].totalSessions).toBe(1);
     expect(d1.days[0].totalCostUsd).toBeCloseTo(0.2, 5);
@@ -575,7 +575,7 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
     const d7 = db.getBoardStats("7d");
     expect(d7.totalSessions).toBe(2);
     expect(d7.totalCostUsd).toBeCloseTo(0.5, 5);
-    expect(d7.costSource).toBe("mixed");
+    expect(d7.costSource).toBe("extractUsage");
     expect(db.getBoardStats("30d").totalSessions).toBe(2);
     expect(db.getDailyTotals("30d")).toHaveLength(2);
 
@@ -677,7 +677,8 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
     // The board aggregates across tasks/sources and must also say "mixed".
     expect(db.getBoardStats().costSource).toBe("mixed");
 
-    // An estimate-only group reads as "estimate", never silent USD.
+    // A legacy `estimate` row (written before #0676) is treated as unknown: it
+    // contributes no dollar figure and never colours the group's source.
     db.upsertSession({
       sessionId: "est1",
       sessionType: "cto",
@@ -695,7 +696,10 @@ describe("RepoOSDb — persistence + aggregation (0230)", () => {
       lastActivityAt: ended,
     });
     const est = db.getTaskStats("0002")!;
-    expect(est.costSource).toBe("estimate");
+    expect(est.costSource).toBe("none");
+    expect(est.totalCostUsd ?? null).toBeNull();
+    // Board total sums only real spend (0.15 + 0.05), never the estimate.
+    expect(db.getBoardStats().totalCostUsd).toBeCloseTo(0.2, 10);
     db.close();
   });
 

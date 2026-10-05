@@ -76,7 +76,9 @@ first, then come back here.
 
 ## 6. Money and time
 
-- Trust **provider-reported** usage only. Treat any estimate as unknown.
+- Trust **provider-reported** usage only. RepoOS never estimates a dollar figure
+  from token counts — a session that reported no cost shows **unknown** and stays
+  out of every spend total.
 - Expect roughly an hour of wall-clock for every three small tasks in a pipeline
   with review and close-out, and more for UI work with fix rounds.
 - A long chat costs more with every turn because the whole history is re-read.

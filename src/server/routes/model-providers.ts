@@ -10,7 +10,9 @@
  * the fixed env-var names in the registry — the same env-var-secret pattern
  * as the auth/whisper secrets. They are never written to repoos.toml, never
  * logged, and never echoed back in any response (rows only ever see a
- * boolean `hasKey`).
+ * boolean `hasKey`). Reads additionally fall back to the coding agents' own
+ * auth stores (#0676), so a provider a harness already logged into does not
+ * read as having no key.
  */
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
@@ -24,6 +26,10 @@ import {
   fetchDeepInfraSpend,
 } from "../../core/providers/spend.js";
 import type { ModelProviderRow } from "../../core/providers/spend.js";
+import {
+  readProviderKeyFromHarness,
+  type HarnessAuthStore,
+} from "../../core/providers/harness-auth.js";
 
 /** Cap on pasted key length — real provider keys are far shorter. */
 const MAX_KEY_LEN = 500;
@@ -31,14 +37,23 @@ const MAX_KEY_LEN = 500;
 /**
  * The stored key for a live row, read through process.env FIRST so a save
  * (which updates process.env in place, see `setDotEnvSecret`) is visible
- * immediately, then the boot-time config snapshot. Empty string when unset.
+ * immediately, then the boot-time config snapshot, then the coding agents' own
+ * auth stores (#0676) — a key that only lives in pi/opencode's login store is
+ * still a key this install can spend against. Empty string when unset.
  * Exported for tests.
  */
-export function readProviderKey(config: RepoOSConfig, row: ModelProviderRow): string {
+export function readProviderKey(
+  config: RepoOSConfig,
+  row: ModelProviderRow,
+  harnessStores?: HarnessAuthStore[],
+): string {
   const fromEnv = row.envVar ? process.env[row.envVar] : undefined;
   if (fromEnv) return fromEnv;
-  if (row.configKey) return config.modelProviders?.[row.configKey] ?? "";
-  return "";
+  if (row.configKey) {
+    const fromConfig = config.modelProviders?.[row.configKey];
+    if (fromConfig) return fromConfig;
+  }
+  return readProviderKeyFromHarness(row.id, harnessStores);
 }
 
 export const getModelProviders: RouteHandler = async (ctx, _req, res) => {
