@@ -39,6 +39,7 @@ import {
 } from "../core/git.js";
 import { MAX_AUTO_REVIEW_ROUNDS, needsInputClearsOnSuccessfulReview } from "../core/needs-input.js";
 import { parseTask, recordChange, serializeTask, utcTimestamp } from "../core/task.js";
+import { buildStoryContext } from "../core/story-context.js";
 import {
   parseReviewVerdict as parseVerdictLabel,
   parseReviewRelevance,
@@ -138,9 +139,11 @@ export function reviewMission(
   agent: Agent,
   workdir: string,
   baseBranch: string,
+  config: RepoOSConfig,
 ): string {
   const spec = task.body.trim().slice(0, SPEC_CHARS);
   const role = agent.instructions?.trim();
+  const storyContext = buildStoryContext(task, config);
   const parts: string[] = [];
   if (role) parts.push(role, "");
   parts.push(
@@ -157,6 +160,7 @@ export function reviewMission(
     "",
     spec || "(the task file has no body)",
     "",
+    ...(storyContext ? [storyContext, ""] : []),
     "## How to inspect it",
     "",
     `- \`git diff ${baseBranch}...HEAD\` and \`git log ${baseBranch}..HEAD --oneline\` in the`,
@@ -246,9 +250,11 @@ export function reviewFollowupMission(
   baseBranch: string,
   text: string,
   previousReport: ReviewReport | null,
+  config: RepoOSConfig,
 ): string {
   const spec = task.body.trim().slice(0, SPEC_CHARS);
   const role = agent.instructions?.trim();
+  const storyContext = buildStoryContext(task, config);
   const parts: string[] = [];
   if (role) parts.push(role, "");
   parts.push(
@@ -265,6 +271,7 @@ export function reviewFollowupMission(
     "",
     spec || "(the task file has no body)",
     "",
+    ...(storyContext ? [storyContext, ""] : []),
     ...(previousReport
       ? ["## Your previous review", "", previousReport.markdown.trim().slice(0, REPORT_CHARS), ""]
       : []),
@@ -644,7 +651,7 @@ export class ReviewManager {
     });
     this.appendMarker(task.id, `review started — ${agent.name} (${agent.cli})`);
 
-    const mission = reviewMission(task, agent, workdir, baseBranch);
+    const mission = reviewMission(task, agent, workdir, baseBranch, this.config);
     // A cancel that landed before the spawn must not still start a run.
     if (run.cancelled) {
       this.runs.delete(task.id);
@@ -1109,6 +1116,7 @@ export class ReviewManager {
       baseBranch,
       text,
       this.read(task.id),
+      this.config,
     );
     if (run.cancelled) {
       this.runs.delete(task.id);
