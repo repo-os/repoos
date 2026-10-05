@@ -96,11 +96,11 @@ const NEW_PROJECT_STARTER_TASK = (
 id: "${id}"
 title: Flesh out the product vision and initial architecture
 type: spec
-status: ready
+status: inbox
 priority: p2
 area: product
 assigned_to: unassigned
-created_by: human
+created_by: repoos-init
 branch: ""
 ---
 ## Overview
@@ -154,14 +154,17 @@ const EXISTING_REPO_STARTER_TASK = (
 id: "${id}"
 title: Read this codebase and propose ${docsDir}/ + an initial task backlog
 type: spec
-status: ready
+status: inbox
 priority: p2
 area: docs
 assigned_to: unassigned
-created_by: human
+created_by: repoos-init
 branch: ""
 ---
 ## Overview
+
+If this repository is actually empty, close this task and use the
+product-vision task instead (\`repoos init --starter vision\` seeds one).
 
 RepoOS was just added to an existing codebase. The first useful move is to read
 what's already here, write down what a newcomer — human or agent — would need,
@@ -495,19 +498,146 @@ type ScaffoldLayout = string;
 /** Which starter task to seed beyond 0001 — a blank project or an existing repo. */
 type ScaffoldKind = "new" | "existing";
 
-const STARTER_TASK: Record<
-  ScaffoldKind,
+/**
+ * Which starter body to seed. `vision` is the new-project starter (flesh out
+ * the product vision); `codebase` is the existing-repo one (read the code and
+ * propose docs + a backlog). Selected by the repo's content for the
+ * non-guided path, overridable via `--starter vision|codebase`.
+ */
+export type StarterChoice = "vision" | "codebase";
+
+const STARTER_CHOICE: Record<
+  StarterChoice,
   {
     slug: string;
     build: (id: string, description: string, workDir: string, docsDir: string) => string;
   }
 > = {
-  new: { slug: "flesh-out-the-vision", build: NEW_PROJECT_STARTER_TASK },
-  existing: {
+  vision: { slug: "flesh-out-the-vision", build: NEW_PROJECT_STARTER_TASK },
+  codebase: {
     slug: "read-the-codebase",
     build: (id, _desc, workDir, docsDir) => EXISTING_REPO_STARTER_TASK(id, _desc, workDir, docsDir),
   },
 };
+
+/**
+ * Top-level (and scaffold) files that say nothing about whether a repo has
+ * real source to read: RepoOS's own scaffold, plus the ordinary project
+ * metadata/boilerplate any folder might carry. A repo holding only these is
+ * still "empty" for the purpose of picking a starter task. All entries must be
+ * lowercase — the lookup lowercases the basename.
+ */
+const NON_CONTENT_ROOTS = new Set([
+  "repoos.toml",
+  "agents.md",
+  ".env.example",
+  ".gitignore",
+  ".gitattributes",
+  ".git",
+  ".ds_store",
+  "readme",
+  "readme.md",
+  "readme.txt",
+  "readme.markdown",
+  "license",
+  "license.md",
+  "license.txt",
+  "licence",
+  "licence.md",
+  "licence.txt",
+  "copying",
+  "copyright",
+  "contributing.md",
+  "code_of_conduct.md",
+  "changelog.md",
+  "changes.md",
+]);
+
+/**
+ * Directories that are RepoOS's own scaffolding rather than project content.
+ * `work/` and `docs/` are the root layout; `repoos/` is the namespaced layout
+ * (which itself contains `work/`, `docs/` and `.repoos/`); `.repoos/` is the
+ * runtime cache. None of these are source a starter task should read.
+ */
+const NON_CONTENT_DIRS = new Set(["work", "docs", ".repoos", "repoos"]);
+
+/** Directories never worth descending into when looking for source files. */
+const WALK_SKIP_DIRS = new Set([
+  ".git",
+  ".hg",
+  ".svn",
+  "node_modules",
+  ".venv",
+  "venv",
+  "__pycache__",
+  ".next",
+  ".nuxt",
+  ".cache",
+  "dist",
+  "build",
+  "target",
+  "vendor",
+  "coverage",
+]);
+
+/**
+ * True when a single repo-relative path represents real project content, as
+ * opposed to RepoOS's scaffold or generic boilerplate. Pure, so the starter
+ * decision is unit-testable without a filesystem.
+ */
+export function isMeaningfulRepoPath(relPath: string): boolean {
+  const parts = relPath.split("/").filter(Boolean);
+  if (parts.length === 0) return false;
+  // Anything under a RepoOS scaffold dir (work/, docs/, .repoos/, repoos/) is
+  // RepoOS's own metadata, not project source.
+  if (NON_CONTENT_DIRS.has(parts[0].toLowerCase())) return false;
+  const base = parts[parts.length - 1].toLowerCase();
+  if (NON_CONTENT_ROOTS.has(base)) return false;
+  return true;
+}
+
+/**
+ * Decide which starter to seed from the repo's content: a repo with no
+ * meaningful source files is effectively empty (a fresh `git init`, a README,
+ * or only RepoOS's own scaffold), so it gets the product-vision starter; once
+ * there is code to read, it gets the read-the-codebase starter.
+ *
+ * Uses only the path list, so callers can stop walking as soon as they find
+ * something meaningful.
+ */
+export function repoHasMeaningfulContent(relPaths: string[]): boolean {
+  return relPaths.some(isMeaningfulRepoPath);
+}
+
+/**
+ * Walk a repo's tree and report whether it holds any meaningful content.
+ * Prunes heavy/generated directories and stops at the first real file.
+ */
+export function detectMeaningfulRepoContent(root: string): boolean {
+  const stack: string[] = [""];
+  while (stack.length) {
+    const rel = stack.pop() as string;
+    const abs = rel ? join(root, rel) : root;
+    let entries: import("node:fs").Dirent[];
+    try {
+      entries = readdirSync(abs, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        const lower = entry.name.toLowerCase();
+        if (WALK_SKIP_DIRS.has(lower)) continue;
+        if (NON_CONTENT_DIRS.has(lower) && !rel) continue;
+        stack.push(childRel);
+      } else if (isMeaningfulRepoPath(childRel)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 /**
  * Next free 4-digit task id for a scaffolded file, derived from the ids that
@@ -561,10 +691,22 @@ export function scaffoldInto(
   areas: string[] = [],
   /** When true, scaffold commented `[[preview.targets]]` stubs for those areas. */
   previewStub = false,
+  /**
+   * Force which starter body to seed. Omitted, a fresh install inside an
+   * existing repo picks by content: an effectively empty repo gets the
+   * product-vision starter, a repo with real source gets read-the-codebase.
+   */
+  starter?: StarterChoice,
 ) {
   const created: string[] = [];
   const skipped: string[] = [];
   let aborted = false;
+  // Resolve the starter once, up front — the ENOTDIR abort path below returns
+  // early, and callers want to know what would have been seeded anyway.
+  let starterChoice: StarterChoice = starter ?? "vision";
+  if (starter === undefined && kind === "existing") {
+    starterChoice = detectMeaningfulRepoContent(root) ? "codebase" : "vision";
+  }
 
   const ensureDir = (rel: string) => {
     if (aborted) return;
@@ -616,24 +758,25 @@ export function scaffoldInto(
   // A blocked workDir/docsDir means every ensureFile() below (which writes
   // INTO those directories) would throw an uncaught ENOENT — bail with
   // whatever succeeded so far instead of crashing mid-scaffold.
-  if (aborted) return { created, skipped };
+  if (aborted) return { created, skipped, starter: starterChoice };
   ensureFile("AGENTS.md", AGENTS_MD(config.workDir, config.docsDir));
   ensureFile(
     join(config.workDir, "0001-set-up-repoos.md"),
     SAMPLE_TASK(description, config.workDir),
   );
-  // 0001 is `done` (scaffolding is all of it), so without this the ready
-  // column is empty right after init. Seed one genuinely workable task; its
-  // id follows whatever is already on the board.
-  const starter = STARTER_TASK[kind];
-  const existingStarter = findStarter(root, config.workDir, starter.slug);
+  // 0001 is `done` (scaffolding is all of it), so without this the board is
+  // empty right after init. Seed one genuinely workable task — as `inbox`, so
+  // nothing auto-starts it; it's a suggestion for the human, not work to run.
+  // Its id follows whatever is already on the board.
+  const starterSpec = STARTER_CHOICE[starterChoice];
+  const existingStarter = findStarter(root, config.workDir, starterSpec.slug);
   if (existingStarter) {
     skipped.push(existingStarter);
   } else {
     const starterId = nextScaffoldId(root, config.workDir);
     ensureFile(
-      join(config.workDir, `${starterId}-${starter.slug}.md`),
-      starter.build(starterId, description, config.workDir, config.docsDir),
+      join(config.workDir, `${starterId}-${starterSpec.slug}.md`),
+      starterSpec.build(starterId, description, config.workDir, config.docsDir),
     );
   }
   ensureFile(".env.example", ENV_EXAMPLE);
@@ -677,13 +820,42 @@ export function scaffoldInto(
     created.push(".gitignore");
   }
 
-  return { created, skipped };
+  return { created, skipped, starter: starterChoice };
 }
 
-function reportInit(root: string, created: string[], skipped: string[]): void {
+function reportInit(
+  root: string,
+  created: string[],
+  skipped: string[],
+  starter?: StarterChoice,
+  /** Whether the choice was made automatically from repo content. */
+  starterAuto = false,
+): void {
   console.log(c.bold(c.cyan("\n  RepoOS initialized")) + c.dim(`  ·  ${root}\n`));
   for (const f of created) console.log("  " + c.green("created ") + f);
   for (const f of skipped) console.log("  " + c.dim("exists  " + f));
+  if (starter) {
+    const label = starter === "vision" ? "product-vision" : "read-the-codebase";
+    const why = starterAuto
+      ? starter === "vision"
+        ? "the repo has no source files to read yet"
+        : "the repo already has source files to read"
+      : "chosen with --starter";
+    console.log(
+      "\n  " +
+        c.dim(`Seeded the ${label} starter as an `) +
+        c.yellow("inbox") +
+        c.dim(` task (${why}).`),
+    );
+    console.log(
+      c.dim("  It is a suggestion, not work to auto-run — promote it to ") +
+        c.yellow("ready") +
+        c.dim(" when you want it picked up."),
+    );
+    console.log(
+      c.dim("  Switch with ") + c.cyan("repoos init --starter vision|codebase") + c.dim("."),
+    );
+  }
 }
 
 /**
@@ -1290,8 +1462,15 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     );
   }
 
-  const { created, skipped } = scaffoldInto(target, description, layout, "new", areas, previewStub);
-  reportInit(target, created, skipped);
+  const { created, skipped, starter } = scaffoldInto(
+    target,
+    description,
+    layout,
+    "new",
+    areas,
+    previewStub,
+  );
+  reportInit(target, created, skipped, starter, true);
   await offerCheckPlanProposal(target);
 
   if (!gitOk) {
@@ -1382,7 +1561,41 @@ async function guidedNewRepo(args: string[]): Promise<void> {
   );
 }
 
+/**
+ * Parse `--starter vision|codebase` (also `--starter=vision`) out of `args`,
+ * returning the choice (or `undefined` when absent) and the remaining args with
+ * the flag removed, so downstream parsing never mistakes it for a project name.
+ * An unknown value is rejected loudly rather than silently falling back.
+ */
+export function parseStarterOption(args: string[]): { starter?: StarterChoice; rest: string[] } {
+  const rest: string[] = [];
+  let value: string | undefined;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === "--starter") {
+      value = args[++i];
+    } else if (a.startsWith("--starter=")) {
+      value = a.slice("--starter=".length);
+    } else {
+      rest.push(a);
+    }
+  }
+  if (value === undefined) return { rest };
+  if (value === "vision" || value === "codebase") return { starter: value, rest };
+  console.error(
+    c.red(`\n  Invalid --starter "${value}" — use `) +
+      c.cyan("vision") +
+      c.red(" or ") +
+      c.cyan("codebase") +
+      c.red("."),
+  );
+  process.exitCode = 1;
+  return { rest };
+}
+
 export async function cmdInit(args: string[]): Promise<void> {
+  const { starter: starterOpt, rest } = parseStarterOption(args);
+  if (process.exitCode) return;
   const cwd = process.cwd();
 
   if (isGitRepo(cwd)) {
@@ -1459,7 +1672,8 @@ export async function cmdInit(args: string[]): Promise<void> {
       return;
     }
 
-    const { created, skipped } = scaffoldInto(root, "", namespace, "existing");
+    const result = scaffoldInto(root, "", namespace, "existing", [], false, starterOpt);
+    const { created, skipped } = result;
     const config = loadConfig(root);
     await offerRepoOSAgentsSection(root, config.workDir);
     await offerAreaVocabulary(root);
@@ -1469,7 +1683,7 @@ export async function cmdInit(args: string[]): Promise<void> {
       for (const f of skipped) console.log("  " + c.dim("exists  " + f));
       return;
     }
-    reportInit(root, created, skipped);
+    reportInit(root, created, skipped, result.starter, starterOpt === undefined);
     return;
   }
 
@@ -1484,7 +1698,7 @@ export async function cmdInit(args: string[]): Promise<void> {
   }
 
   try {
-    await guidedNewRepo(args);
+    await guidedNewRepo(rest);
   } catch {
     console.log(c.yellow("\n  Cancelled."));
   }

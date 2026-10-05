@@ -20,23 +20,46 @@ empty immediately after init (task #0364). 0001 still exists as a worked example
 of the task-file shape, and its `## Overview` carries the one-line project
 description collected during the guided flow.
 
-## The starter task (task #0364)
+## The starter task (tasks #0364, #0671)
 
-Because 0001 is done, `repoos init` now also writes one genuinely workable
-`ready` task (id 0002 on a fresh board; the helper scans the work directory and
-takes the next free 4-digit id, matching `createTask`). Which task depends on
-the path:
+Because 0001 is done, `repoos init` also writes one starter task (id 0002 on a
+fresh board; the helper scans the work directory and takes the next free 4-digit
+id, matching `createTask`).
+
+**#0671 revised #0364's decisions.** #0364 seeded the starter `status: ready` so
+the Ready column was not empty after init. In practice that let anything which
+auto-starts ready tasks (`autoEngineeringMode`, a driver script, a person
+skimming "Ready") pick up a *suggestion* immediately — and, on the wrong
+starter, waste a run and pollute the docs. A seeded starter is advice for the
+human, so it now lands in `inbox` (never `ready`), and the init summary tells
+the user to promote it. The starter also carries `created_by: repoos-init`
+(previously `human`) so it can be filtered and archived once a real backlog
+exists (#0657), and `repoos doctor` warns when one lingers unpromoted.
+
+Which starter is seeded now follows the **repo's content** for the
+non-guided path, not just the code path:
 
 | Path | Seeded task | Why |
 | --- | --- | --- |
 | Guided new-project flow (not a git repo) | "Flesh out the product vision and initial architecture" | There's a one-line description but no code. The task embeds the description and carries the questions (audience, first release, stack, out-of-scope) that turn it into docs content and a real backlog. |
-| Existing repo (`repoos init` inside a git repo) | "Read this codebase and propose docs/ + an initial task backlog" | There's a codebase to read but no description was collected. The task asks for real architecture/convention notes from what the code actually does, plus concrete follow-on tasks. |
+| Existing repo with meaningful source inside a git repo | "Read this codebase and propose docs/ + an initial task backlog" | There's a codebase to read. The task asks for real architecture/convention notes from what the code actually does, plus concrete follow-on tasks. |
+| Existing repo that is effectively empty (no meaningful source — a fresh `git init`, a README-only repo, or only RepoOS's own scaffold) | "Flesh out the product vision and initial architecture" | There is nothing to read yet, so the read-the-codebase starter would only invite invented documentation. |
+
+`detectMeaningfulRepoContent` (`src/commands/init.ts`) walks the tree, ignoring
+RepoOS's own scaffold (`work/`, `docs/`, `.repoos/`, the namespaced `repoos/`),
+`.git`, `.gitignore`, README/LICENSE and friends, empty directories, and heavy
+generated dirs (`node_modules`, `dist`, …). Its pure core,
+`repoHasMeaningfulContent`/`isMeaningfulRepoPath`, is unit-tested. Override the
+choice with `repoos init --starter vision|codebase`; the guided new-project flow
+always seeds the vision starter.
 
 Both bodies are self-contained prompts and both are workable by a human alone —
 RepoOS supports human-only usage, and `repoos init` runs before any server or
 agent exists, so a task cannot assume one will be there to pick it up. The
 starter is a static file written at scaffold time (the same `ensureFile`
-mechanism as 0001), not an HTTP/PM call.
+mechanism as 0001), not an HTTP/PM call. The read-the-codebase body opens by
+telling the reader to use the product-vision task instead if the repo turns out
+to be empty.
 
 ## How did the "squishy" backlog actually get created? (investigation)
 

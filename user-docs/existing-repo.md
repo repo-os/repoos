@@ -25,7 +25,7 @@ It creates only what isn't already there:
 | `AGENTS.md` | The cross-tool agent-instructions standard. Always at the repo root. |
 | `repoos.toml` | Configuration. Every field is optional. Always at the repo root. |
 | `repoos/work/0001-set-up-repoos.md` | A worked example of a task file, marked `done` — it's not work to do. |
-| `repoos/work/0002-read-the-codebase.md` | A `ready` starter task: read this codebase and propose `repoos/docs/` + an initial task backlog. |
+| `repoos/work/0002-read-the-codebase.md` | An `inbox` starter task: read this codebase and propose `repoos/docs/` + an initial task backlog. Promote it with `repoos mv 0002 ready` when you want it picked up. |
 | `.env.example` | Documents the secrets a fuller setup expects. |
 | `.gitignore` entries | Ignore RepoOS runtime state — the derived cache (`repoos/.repoos/`), the root `.repoos/` runtime directory, and macOS `.DS_Store` files at any depth — plus local secrets (`.env`). |
 
