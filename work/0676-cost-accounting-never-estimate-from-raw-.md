@@ -2,7 +2,7 @@
 id: "0676"
 title: "Cost accounting: never estimate from raw token totals; exclude estimates from totals and guardrails"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/cost-accounting-never-estimate-from-raw-
 created_at: "2026-10-05T16:58:34Z"
-updated_at: "2026-10-05T18:15:32Z"
+updated_at: "2026-10-05T18:26:56Z"
 ---
 ## Problem
 
@@ -67,3 +67,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T18:04:02Z · status inbox→ready
 - 2026-10-05T18:04:12Z · status ready→active, branch
 - 2026-10-05T18:15:32Z · body: section Shots
+- 2026-10-05T18:26:56Z · status active→review
