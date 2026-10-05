@@ -12,7 +12,7 @@ branch: feat/per-task-overrides-reject-silently-ignor
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:50Z"
-updated_at: "2026-10-05T20:25:47Z"
+updated_at: "2026-10-05T20:26:04Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -72,3 +72,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T20:20:14Z · body: section Shots
 - 2026-10-05T20:20:21Z · note: Story #0008 still describes pre-0684 behaviour (200 + ignored overrides on /start and /message); update that bullet when this lands.
 - 2026-10-05T20:25:47Z · status active→review
+- 2026-10-05T20:26:04Z · note: shots: failed — capture of Task card effective agent assignments (robot panel) on "default" failed: click: Timeout 5000ms exceeded.
