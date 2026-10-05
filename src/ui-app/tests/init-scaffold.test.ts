@@ -584,6 +584,72 @@ describe("scaffoldInto gitignore — runtime state and .DS_Store (#0599)", () =>
   });
 });
 
+describe("scaffoldInto gitignore — screenshot attachments (#0682)", () => {
+  function git(root: string, args: string[]): string {
+    return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+  }
+
+  function isIgnored(root: string, path: string): boolean {
+    return spawnSync("git", ["check-ignore", "-q", path], { cwd: root }).status === 0;
+  }
+
+  function gitScratch(): string {
+    const root = scratch();
+    git(root, ["init", "-q", "-b", "main"]);
+    git(root, ["config", "user.email", "t@example.com"]);
+    git(root, ["config", "user.name", "Test"]);
+    return root;
+  }
+
+  it("root layout ignores work/.attachments/ and inputs/.attachments/", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "", "new");
+    const lines = readFileSync(join(root, ".gitignore"), "utf8")
+      .split(/\r?\n/)
+      .map((l) => l.trim());
+    expect(lines).toContain("work/.attachments/");
+    expect(lines).toContain("inputs/.attachments/");
+  });
+
+  it("namespaced layout ignores repoos/work/.attachments/ and inputs/.attachments/", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "repoos", "new");
+    const lines = readFileSync(join(root, ".gitignore"), "utf8")
+      .split(/\r?\n/)
+      .map((l) => l.trim());
+    expect(lines).toContain("repoos/work/.attachments/");
+    expect(lines).toContain("inputs/.attachments/");
+  });
+
+  it("a `repoos shot` attachment never dirties a fresh project", () => {
+    const root = gitScratch();
+    scaffoldInto(root, "", "repoos", "new");
+    git(root, ["add", "-A"]);
+    git(root, ["commit", "-q", "-m", "init"]);
+    expect(git(root, ["status", "--porcelain"])).toBe("");
+
+    mkdirSync(join(root, "repoos/work/.attachments"), { recursive: true });
+    writeFileSync(join(root, "repoos/work/.attachments/shot.png"), "png");
+    mkdirSync(join(root, "inputs/.attachments"), { recursive: true });
+    writeFileSync(join(root, "inputs/.attachments/shot.png"), "png");
+
+    expect(git(root, ["status", "--porcelain"])).toBe("");
+    expect(isIgnored(root, "repoos/work/.attachments/shot.png")).toBe(true);
+    expect(isIgnored(root, "inputs/.attachments/shot.png")).toBe(true);
+  });
+
+  it("is idempotent — a re-run does not duplicate the attachment rules", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "repoos", "new");
+    scaffoldInto(root, "", "repoos", "new");
+    const lines = readFileSync(join(root, ".gitignore"), "utf8")
+      .split(/\r?\n/)
+      .map((l) => l.trim());
+    expect(lines.filter((l) => l === "repoos/work/.attachments/")).toHaveLength(1);
+    expect(lines.filter((l) => l === "inputs/.attachments/")).toHaveLength(1);
+  });
+});
+
 describe("areaVocabularyTomlAddition — existing-repo areas prompt (#0587)", () => {
   it("appends real [[areas]] rows an existing repoos.toml round-trips", () => {
     const root = scratch();

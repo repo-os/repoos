@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-05T18:46:24Z"
-review_passes: 1
 id: "0682"
 title: "Config and git hygiene: stable repoos.toml writes, auto-commit config/bookkeeping writes, init .gitignore covers attachments"
 type: bug
@@ -12,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/config-and-git-hygiene-stable-repoos-tom
 created_at: "2026-10-05T16:58:46Z"
-handoff_signal_retry_count: 1
+updated_at: "2026-10-05T18:45:35Z"
 ---
 ## Problem
 
@@ -43,5 +41,3 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T18:04:06Z · status inbox→ready
 - 2026-10-05T18:04:14Z · status ready→active, branch
 - 2026-10-05T18:45:35Z · status active→review
-- 2026-10-05T18:45:35Z · note: shots: skipped — the diff (7 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-
