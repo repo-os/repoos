@@ -2,7 +2,7 @@
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
-status: review
+status: active
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -259,3 +259,4 @@ error: script "test" exited with code 1
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T17:44:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-05T17:44:54Z · status review→active
