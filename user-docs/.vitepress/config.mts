@@ -73,6 +73,10 @@ export default defineConfig({
         text: "Getting started",
         items: [
           { text: "Install and first task", link: "/getting-started" },
+          {
+            text: "Starting a project as an agent",
+            link: "/getting-started#starting-a-new-project-as-an-agent",
+          },
           { text: "Concepts", link: "/concepts" },
           { text: "Adding RepoOS to an existing repo", link: "/existing-repo" },
         ],
