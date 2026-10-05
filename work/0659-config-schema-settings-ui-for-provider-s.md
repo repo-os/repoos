@@ -10,8 +10,9 @@ depends_on: ["0658"]
 assigned_to: ai
 created_by: ""
 branch: ""
+pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T15:03:03Z"
+updated_at: "2026-10-05T15:07:21Z"
 ---
 Slice 2 of provider selection: add the config schema (repoos.toml) for choosing a provider (local as default; cloud unavailable-but-explained until configured). Every user-facing setting needs a matching Settings UI control. Scope: getConfigSchema addition, Settings tab control, and explanation state when cloud is not configured.
 
@@ -24,3 +25,4 @@ Depends on #0658 (config key definition / schema shape). Local provider is alway
 - 2026-10-05T09:27:42Z · status inbox→ready
 - 2026-10-05T11:15:31Z · needs_input
 - 2026-10-05T15:03:03Z · needs_input
+- 2026-10-05T15:07:21Z · pm_model_override
