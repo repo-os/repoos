@@ -1,5 +1,12 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -10,13 +17,14 @@ import {
   detectMeaningfulRepoContent,
   isMeaningfulRepoPath,
   parseStarterOption,
+  parseInitFlags,
   quoteBlock,
   repoHasMeaningfulContent,
   repoOSAgentsSectionAddition,
   scaffoldInto,
   validateNamespace,
 } from "../../commands/init";
-import { loadConfig } from "../../core/config";
+import { findRepoRoot, loadConfig } from "../../core/config";
 import { parseTask } from "../../core/task";
 import { rmFixture } from "./helpers";
 
@@ -638,4 +646,187 @@ describe("existing AGENTS.md RepoOS guidance", () => {
     expect(addition).toMatch(/authoritative/i);
     expect(addition).toMatch(/never move/i);
   });
+});
+
+describe("parseInitFlags — non-interactive new-project flags (#0670)", () => {
+  it("defaults to no new-project mode and the current directory", () => {
+    const { options, error } = parseInitFlags([], true);
+    expect(error).toBeNull();
+    expect(options.nonInteractive).toBe(false);
+    expect(options.projectDir).toBe("");
+    expect(options.commit).toBe(true);
+  });
+
+  it("defaults --launch to the TTY state; non-interactive never launches", () => {
+    expect(parseInitFlags([], true).options.launch).toBe(true);
+    expect(parseInitFlags([], false).options.launch).toBe(false);
+  });
+
+  it("accepts --new (and --yes) and reads every documented flag", () => {
+    const { options, error } = parseInitFlags(
+      [
+        "myproj",
+        "--new",
+        "--description",
+        "A tiny app",
+        "--areas",
+        "web, api ,data",
+        "--layout",
+        "/",
+        "--no-commit",
+        "--no-launch",
+        "--preview-stub",
+        "--json",
+      ],
+      false,
+    );
+    expect(error).toBeNull();
+    expect(options.nonInteractive).toBe(true);
+    expect(options.projectDir).toBe("myproj");
+    expect(options.description).toBe("A tiny app");
+    expect(options.areas).toEqual(["web", "api", "data"]);
+    expect(options.layout).toBe("");
+    expect(options.commit).toBe(false);
+    expect(options.launch).toBe(false);
+    expect(options.previewStub).toBe(true);
+    expect(options.json).toBe(true);
+  });
+
+  it("treats --yes as an alias for --new", () => {
+    expect(parseInitFlags(["--yes"], false).options.nonInteractive).toBe(true);
+  });
+
+  it("reads --dir as an alternative to the positional name", () => {
+    const { options } = parseInitFlags(["--dir", "sub/proj"], false);
+    expect(options.projectDir).toBe("sub/proj");
+  });
+
+  it("rejects giving both a name and --dir", () => {
+    const { error } = parseInitFlags(["a", "--dir", "b"], false);
+    expect(error).toContain("!");
+    expect(error).toContain("not both");
+  });
+
+  it("reports an unknown flag instead of silently ignoring it", () => {
+    const { error } = parseInitFlags(["--bogus"], false);
+    expect(error).toBe("!Unknown flag `--bogus`.");
+  });
+
+  it("reports a missing value for a flag that needs one", () => {
+    expect(parseInitFlags(["--description"], false).error).toContain("needs a value");
+    expect(parseInitFlags(["--areas"], false).error).toContain("needs a value");
+    expect(parseInitFlags(["--dir"], false).error).toContain("needs a value");
+  });
+
+  it("rejects an invalid --layout namespace", () => {
+    expect(parseInitFlags(["--layout", "/etc"], false).error).toContain("!");
+  });
+
+  it("reads an inline --description-file", () => {
+    const root = scratch();
+    const file = join(root, "desc.md");
+    writeFileSync(file, "# Project\n\nSome **markdown**.\n");
+    const { options } = parseInitFlags(["--description-file", file], false);
+    expect(options.description).toBe("# Project\n\nSome **markdown**.");
+  });
+
+  it("reports an unreadable --description-file", () => {
+    const { error } = parseInitFlags(["--description-file", "/no/such/file.md"], false);
+    expect(error).toContain("Cannot read --description-file");
+  });
+});
+
+const CLI_PATH = join(findRepoRoot(process.cwd()), "dist/cli/index.js");
+const CLI_BUILT = existsSync(CLI_PATH);
+
+describe.skipIf(!CLI_BUILT)("repoos init --new integration (no TTY) (#0670)", () => {
+  function runInit(cwd: string, args: string[]): { status: number | null; out: string } {
+    const res = spawnSync(process.execPath, [CLI_PATH, "init", ...args], {
+      cwd,
+      encoding: "utf8",
+      // /dev/null stdin = no TTY; the child must not block on prompts.
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, NO_COLOR: "1" },
+      timeout: 30_000,
+    });
+    return { status: res.status, out: (res.stdout ?? "") + (res.stderr ?? "") };
+  }
+
+  it("creates the project, seeds the vision starter, and honours the flags", () => {
+    const root = scratch();
+    const { status, out } = runInit(root, [
+      "proj",
+      "--new",
+      "--description",
+      "A tiny book-club app",
+      "--areas",
+      "web,api",
+      "--no-launch",
+    ]);
+
+    expect(status).toBe(0);
+    // Starter is the new-project one, not read-the-codebase.
+    expect(existsSync(join(root, "proj/repoos/work/0002-flesh-out-the-vision.md"))).toBe(true);
+    expect(existsSync(join(root, "proj/repoos/work/0002-read-the-codebase.md"))).toBe(false);
+
+    const starter = readTask(root, "proj/repoos/work/0002-flesh-out-the-vision.md");
+    expect(starter.body).toContain("A tiny book-club app");
+    expect(loadConfig(join(root, "proj")).areas).toEqual([{ name: "web" }, { name: "api" }]);
+    expect(out).toContain("Seeded starter task #0002");
+    expect(out).toContain("repoos serve");
+  }, 30_000);
+
+  it("makes an initial commit by default and skips it with --no-commit", () => {
+    const committed = scratch();
+    expect(runInit(committed, ["a", "--new", "--no-launch"]).status).toBe(0);
+    const log = execFileSync("git", ["log", "--oneline"], {
+      cwd: join(committed, "a"),
+      encoding: "utf8",
+    });
+    expect(log.trim().length).toBeGreaterThan(0);
+
+    const uncommitted = scratch();
+    expect(runInit(uncommitted, ["b", "--new", "--no-commit", "--no-launch"]).status).toBe(0);
+    const log2 = spawnSync("git", ["log", "--oneline"], {
+      cwd: join(uncommitted, "b"),
+      encoding: "utf8",
+    });
+    // No commits yet → git exits non-zero with no revision.
+    expect(log2.status).not.toBe(0);
+  }, 30_000);
+
+  it("refuses without --new and prints the actionable command, warning off git init", () => {
+    const root = scratch();
+    const { status, out } = runInit(root, ["whatever"]);
+    expect(status).not.toBe(0);
+    expect(out).toContain("Not a TTY");
+    expect(out).toContain("repoos init <name> --new");
+    expect(out).toMatch(/Do NOT run `git init` first/);
+    expect(existsSync(join(root, "whatever"))).toBe(false);
+  }, 30_000);
+
+  it("refuses to overwrite a non-empty directory without --force", () => {
+    const root = scratch();
+    mkdirSync(join(root, "busy"), { recursive: true });
+    writeFileSync(join(root, "busy/keep.txt"), "x");
+    const refused = runInit(root, ["busy", "--new", "--no-launch"]);
+    expect(refused.status).not.toBe(0);
+    expect(refused.out).toContain("--force");
+    expect(existsSync(join(root, "busy/repoos.toml"))).toBe(false);
+
+    const forced = runInit(root, ["busy", "--new", "--force", "--no-launch"]);
+    expect(forced.status).toBe(0);
+    expect(existsSync(join(root, "busy/repoos.toml"))).toBe(true);
+  }, 30_000);
+
+  it("prints machine-readable JSON with --json", () => {
+    const root = scratch();
+    const { status, out } = runInit(root, ["j", "--new", "--json", "--no-launch"]);
+    expect(status).toBe(0);
+    const parsed = JSON.parse(out.slice(out.indexOf("{")));
+    // macOS tmpdir can be /var → /private/var; compare the resolved path.
+    expect(realpathSync(parsed.root)).toBe(realpathSync(join(root, "j")));
+    expect(parsed.tasks).toEqual([{ id: "0002" }]);
+    expect(Array.isArray(parsed.created)).toBe(true);
+  }, 30_000);
 });

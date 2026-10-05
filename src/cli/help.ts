@@ -37,9 +37,11 @@ const GROUPS: readonly CommandGroup[] = [
     commands: [
       {
         name: "init",
-        usage: "init [name] [--starter vision|codebase]",
+        usage:
+          "init [name|--dir <path>] [--new --description <text>|--description-file <path>|- --areas a,b --commit|--no-commit --launch|--no-launch --json] [--starter vision|codebase] [--force]",
         desc: "Scaffold work/, repoos.toml, AGENTS.md; guided flow for a new project",
-        flags: "--starter vision|codebase",
+        flags:
+          "new-project (--new/--yes): --description · --description-file · --areas · --layout · --commit/--no-commit · --launch/--no-launch · --preview-stub/--no-preview-stub · --dir · --force · --json. Any init: --starter vision|codebase picks the seeded starter task. Existing-repo init takes none of the new-project flags.",
       },
       {
         name: "upgrade",
@@ -199,6 +201,10 @@ interface Example {
 const EXAMPLES: readonly Example[] = [
   { cmd: "repoos init" },
   { cmd: "repoos init myproject", comment: "guided new-project flow outside a git repo" },
+  {
+    cmd: 'repoos init myproject --new --description "A tiny social app" --areas web,api --no-launch',
+    comment: "non-interactive new project (no TTY, e.g. an agent)",
+  },
   {
     cmd: 'repoos new "Add company dashboard" --ai --type feature --area web,server --priority p1',
   },
