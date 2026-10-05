@@ -3,6 +3,9 @@ id: "0658"
 title: Storage-provider interface + local implementation
 type: feature
 status: ready
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
 priority: p1
 area: core
 story: Cloud attachment storage
@@ -10,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T08:28:45Z"
-updated_at: "2026-10-05T09:27:36Z"
+updated_at: "2026-10-05T11:15:31Z"
 ---
 Slice 1: Extract current gitignored-directory behavior behind the interface (local implementation) with zero behavior change. Reference implementation for all later providers.
 
@@ -35,3 +38,4 @@ Notes for AI:
 - 2026-10-05T09:15:17Z · status ready→inbox
 - 2026-10-05T09:15:49Z · body
 - 2026-10-05T09:27:36Z · status inbox→ready
+- 2026-10-05T11:15:31Z · needs_input
