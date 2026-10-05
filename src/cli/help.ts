@@ -8,6 +8,7 @@
  * usage line lives in per-command help rather than inline.
  */
 import { readVersion } from "../core/version.js";
+import { PRIORITIES, TASK_TYPES } from "../core/types.js";
 import { c } from "./colors.js";
 import { table, termWidth, visibleWidth, wrap } from "./layout.js";
 
@@ -64,9 +65,9 @@ const GROUPS: readonly CommandGroup[] = [
       { name: "show", usage: "show <id>", desc: "Show a task's full spec" },
       {
         name: "new",
-        usage: 'new "<title>" [--ai --type <t> --area <a> --priority <p> --body <b>]',
+        usage: `new "<title>" [--ai --type ${TASK_TYPES.join("|")} --area <a> --priority ${PRIORITIES.join("|")} --body <b>]`,
         desc: "Create a task",
-        flags: "--ai --type --area --priority --body",
+        flags: `--ai · --type · --area · --priority · --body`,
       },
       {
         name: "new-doc",
@@ -88,7 +89,7 @@ const GROUPS: readonly CommandGroup[] = [
         name: "update",
         usage: "update <id> [flags]",
         desc: "Edit a task's metadata or body",
-        flags: "--title --area --priority --type --body --branch --assigned-to",
+        flags: `--title · --area · --priority ${PRIORITIES.join("|")} · --type ${TASK_TYPES.join("|")} · --body · --branch · --assigned-to`,
       },
       {
         name: "index",

@@ -26,6 +26,7 @@ import { STATUSES, type RepoOSConfig, type RepoIndex, type Task, type Status } f
 import { normalizeStoryName } from "./stories.js";
 import { formatTaskAreas, parseTaskAreas } from "./areas.js";
 import { normalizeTaskDependencies, validateTaskDependencies } from "./task-dependencies.js";
+import { validateTaskFields } from "./task-fields.js";
 
 export interface CreateTaskInput {
   title: string;
@@ -229,6 +230,7 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
     updateTask(id, patch) {
       const task = findFile(id);
       if (!task) throw new Error(`Task #${id} not found.`);
+      validateTaskFields(patch);
       const changed = Object.keys(patch).filter((k) => {
         const v = (patch as Record<string, unknown>)[k];
         return v !== undefined && v !== (task as unknown as Record<string, unknown>)[k];
@@ -253,6 +255,7 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
     },
 
     createTask(input: CreateTaskInput) {
+      validateTaskFields(input);
       const idx = freshIndex();
       const id = nextId(idx);
       const slug = input.title

@@ -51,6 +51,7 @@ import { fmtTime, formatDuration, relTime } from "../lib/time";
 import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
 import { checkRunSkipped } from "../../../core/check-skip.js";
+import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
 import {
   needsInputBannerText,
   needsInputPrimaryAction,
@@ -446,8 +447,10 @@ function onOpenAutoFocus(e: Event): void {
   }
 }
 
-const taskTypes = ["feature", "bug", "chore", "spec", "refactor"];
-const priorities = ["p0", "p1", "p2", "p3"];
+// Single source of truth (#0656): the Select controls below can only ever
+// emit one of these, so the drawer cannot send an invalid priority or type.
+const taskTypes = [...TASK_TYPES];
+const priorities = [...PRIORITIES];
 
 /** The Stories surface is opt-in; hide the story control entirely when off. */
 const storiesEnabled = computed(
