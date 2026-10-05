@@ -191,6 +191,16 @@ const AGENTS_MD = (workDir: string, docsDir: string) => `# AGENTS.md
 This repo uses **RepoOS**: tasks are markdown files under \`${workDir}/\`, and the
 repo itself is the source of truth. This file tells AI agents how to operate.
 
+## For AI agents, day one
+
+New to this repo? The board is \`${workDir}/\` — one markdown file per task.
+Create work with \`repoos new "<title>"\`, move it with \`repoos mv <id> <status>\`,
+and **never** edit \`${workDir}/*.md\` by hand (use the CLI or the HTTP API).
+Project context lives under \`${docsDir}/\`; start there. Run \`repoos serve\` in a
+terminal you keep open (or \`repoos service\`) — a server started from a
+short-lived shell dies with it. When a task is done, run \`repoos check\` and
+hand off with \`repoos mv <id> review\`; see the operating loop below.
+
 ## Operating loop
 
 For a RepoOS-managed task runner:
@@ -1157,6 +1167,12 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     console.error(
       c.dim("  Run it in a terminal, or run `git init` first and then `repoos init` again."),
     );
+    console.error(
+      c.dim(
+        "  (Starting a brand-new project without a terminal? See: user-docs/getting-started.md",
+      ),
+    );
+    console.error(c.dim("   → Starting a new project as an agent — don't `git init` first.)"));
     process.exitCode = 1;
     return;
   }
