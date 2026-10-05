@@ -1,16 +1,16 @@
 ---
-updated_at: "2026-10-05T16:38:33Z"
-review_passes: 1
 id: "0671"
 title: "init starter tasks: detect empty repos, seed as inbox, mark created_by repoos-init"
 type: feature
-status: review
+status: active
 priority: p2
 area: cli
 assigned_to: ai
 created_by: ""
 branch: feat/init-starter-tasks-detect-empty-repos-se
 created_at: "2026-10-05T15:20:09Z"
+updated_at: "2026-10-05T16:58:57Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -51,4 +51,4 @@ Read tasks 0364 and 0028 first (they explain the original design). This does not
 - 2026-10-05T16:06:57Z · note: Revised #0364's decision: seed the starter as inbox, not ready. #0364 chose ready so the Ready column wasn't empty after init, but a seeded task is a suggestion for the human, not work to auto-run — auto-starting it (autoEngineeringMode/driver/a skimmer) wasted a run and polluted docs on the wrong starter. Starters also now carry created_by: repoos-init (was human) so they can be filtered/archived once a real backlog exists, and the existing-repo path picks the starter by repo content (effectively empty repo -> product-vision; source present -> read-the-codebase), overridable with --starter vision|codebase.
 - 2026-10-05T16:37:30Z · status active→review
 - 2026-10-05T16:37:30Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-
+- 2026-10-05T16:58:57Z · status review→active
