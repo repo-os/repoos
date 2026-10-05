@@ -16,6 +16,40 @@ task-area vocabulary (and commented preview-target stubs for it) — skippable, 
 skipped automatically once `[[areas]]` is declared. See
 [Configuration](/configuration#areas).
 
+#### Non-interactive new-project mode (for agents and scripts)
+
+Outside a git repo with no TTY, `repoos init <name>` can't prompt, so it prints
+the exact command to run and exits non-zero. Pass `--new` (or `--yes`) to run
+the same guided flow with answers from flags and defaults — no pty tricks:
+
+```bash
+repoos init myproject --new \
+  --description "A tiny social app for book clubs" \
+  --areas web,api \
+  --no-launch
+```
+
+| Flag | Meaning |
+| --- | --- |
+| `--new`, `--yes` | Run the new-project flow non-interactively. Required without a TTY. |
+| `--description "<text>"` | Project description seeded into the starter task. |
+| `--description-file <path>` | Read the description from a file; `-` reads stdin (multi-line markdown). |
+| `--areas web,api` | Seed the area vocabulary (same comma-separated rule as the area picker). |
+| `--layout <ns>` | `repoos` (default), `/` for the repo root, or a namespace path. |
+| `--commit` / `--no-commit` | Make the initial commit of the scaffold (default: commit). |
+| `--launch` / `--no-launch` | Start the web console when done (default: no launch without a TTY). |
+| `--preview-stub` / `--no-preview-stub` | Scaffold commented `[[preview.targets]]` stubs for the areas. |
+| `--dir <path>` | Where to create the project; alternative to the positional name. |
+| `--force` | Scaffold into an existing non-empty directory. |
+| `--json` | Print `{ root, tasks: [...], created: [...] }` instead of the human summary. |
+| `--help` | Documented flags, and which apply to new vs existing repos. |
+
+`--new` seeds the **new-project** starter ("Flesh out the product vision and
+initial architecture"). Do **not** work around a missing TTY by running
+`git init` first: inside a git repo, `repoos init` seeds the *existing-codebase*
+starter ("Read this codebase…"), which is the wrong route for a brand-new
+project.
+
 When the repo has no check plan yet, init inspects its stack and writes a
 starter plan to an uncommitted `repoos.check-plan.proposed.toml` for review;
 interactive init offers to move it into `repoos.toml`. See

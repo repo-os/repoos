@@ -124,7 +124,18 @@ repo root or another location.
 | `repoos.toml` | Configuration. Every field is optional. |
 
 Run `repoos init` outside a git repo and it starts a guided flow for a brand
-new project instead.
+new project instead. In a terminal it asks a few questions; with no TTY (an
+agent, a script) pass `--new` and answer them with flags:
+
+```bash
+repoos init myproject --new \
+  --description "A tiny social app for book clubs" \
+  --areas web,api --no-launch
+```
+
+See the [CLI reference](/cli#repoos-init-name) for every flag. Don't `git init`
+first to avoid the prompts — that routes you to the existing-codebase starter
+instead of the new-project one.
 
 Either way the board is never empty: init seeds a `ready` task you can start on
 immediately. In an existing repo it's "Read this codebase and propose project docs + an
