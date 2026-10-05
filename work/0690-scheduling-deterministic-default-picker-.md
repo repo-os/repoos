@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 id: "0690"
 title: "Scheduling: deterministic default picker for auto-engineering with an optional PM veto for conflicts"
 type: feature
@@ -9,8 +10,12 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: feat/scheduling-deterministic-default-picker-
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T16:59:03Z"
-updated_at: "2026-10-05T21:46:05Z"
+updated_at: "2026-10-05T23:17:24Z"
+review_passes: 3
+handoff_signal_retry_count: 2
 ---
 ## Problem
 
@@ -36,6 +41,21 @@ This task is part of the story **Field report: first agent-driven project run (o
 ## Docs follow-up
 The playbook page `user-docs/running-with-agents.md` (landed on main) describes the CURRENT behaviour that this task changes. When this task lands, update the page: section 1, the sentence saying 'which task next' is almost mechanical (priority, then longest downstream chain, then age). In short: make it match the shipped picker. Keep the page accurate rather than aspirational; if this task is declined, leave the page as is. (This replaces the open task 0689, which is being removed.)
 
+## Shots
+```json
+[
+  {
+    "label": "PM veto for parallel conflicts setting",
+    "target": "default",
+    "route": "/settings?tab=board",
+    "highlight": "[data-config-key=\"autoEngineering.pmVeto\"]"
+  }
+]
+```
+
+## Review feedback (driver, round 1)
+1. src/core/task-selection.test.ts is NOT run by the gate (vitest include is src/ui-app/tests/**) and it FAILS when run with 'bunx vitest run src/core/task-selection.test.ts': orderReadyTasks > 'sorts by priority, then critical-path weight, then age, then id' at line 106 (indexOf('099') expected < indexOf('012') but is 3). Fix the ordering bug or the test, and MOVE the test file under src/ui-app/tests/ so the gate actually runs it. 2. Reviewer: compute critical-path weights from ALL tasks (not only the eligible-ready subset) while still filtering selection to eligible ids. 3. Drop stale pm-unavailable/pm-failed styling in AutoEngineeringPanel.vue and surface decision.error when veto fallback ran. 4. Re-run repoos check --changed main, then hand off.
+
 ## Activity
 
 - 2026-10-05T16:59:03Z · created · unknown
@@ -44,4 +64,13 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:32:30Z · body: section Docs follow-up
 - 2026-10-05T19:54:41Z · status inbox→ready
 - 2026-10-05T19:54:48Z · status ready→active, branch
-- 2026-10-05T21:46:05Z · status active→review
+- 2026-10-05T20:15:36Z · cli_override, model_override
+- 2026-10-05T21:09:14Z · body: section Shots
+- 2026-10-05T21:46:06Z · status active→review
+- 2026-10-05T21:46:21Z · note: highlight [data-config-key="autoEngineering.pmVeto"] matched nothing on /settings?tab=board
+- 2026-10-05T22:03:18Z · body: section Review feedback (driver, round 1)
+- 2026-10-05T22:03:26Z · status review→active
+- 2026-10-05T22:40:10Z · status active→review
+- 2026-10-05T22:40:26Z · note: highlight [data-config-key="autoEngineering.pmVeto"] matched nothing on /settings?tab=board
+- 2026-10-05T22:57:49Z · status review→active
+- 2026-10-05T23:12:12Z · status active→review

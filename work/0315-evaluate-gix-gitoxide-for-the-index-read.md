@@ -5,14 +5,14 @@ type: feature
 status: inbox
 needs_input: true
 needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
+needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI"
 priority: p4
 area: general
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-28T09:55:22Z"
-updated_at: "2026-10-05T11:15:30Z"
+updated_at: "2026-10-05T22:38:17Z"
 ---
 `gix` (gitoxide, Rust) is faster than shelling `git` for read-only ops. Candidate
 for the index hot paths only: log, status, branch/worktree/ref enumeration in

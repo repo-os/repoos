@@ -2,15 +2,18 @@
 id: "0686"
 title: "Approval policy: auto-approve clean, low-risk reviews with an audit trail; keep UI and risky tasks human"
 type: feature
-status: inbox
+status: done
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: dc29e3e2fb4f3c2576e378c779a3dee094c82cf9
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/approval-policy-auto-approve-clean-low-r
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T16:58:55Z"
-updated_at: "2026-10-05T17:32:27Z"
+updated_at: "2026-10-05T23:18:19Z"
 ---
 ## Problem
 
@@ -46,3 +49,8 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:17:10Z · story
 - 2026-10-05T17:17:11Z · body: section Story context
 - 2026-10-05T17:32:27Z · body: section Docs follow-up
+- 2026-10-05T21:20:28Z · status inbox→ready
+- 2026-10-05T21:20:31Z · cli_override, model_override
+- 2026-10-05T21:20:31Z · status ready→active, branch
+- 2026-10-05T22:43:41Z · status active→review
+- 2026-10-05T23:18:19Z · status review→done, release:success

@@ -1579,7 +1579,10 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   // A full unscoped run is ~10min healthy and can legitimately reach ~25min on
   // a slow box; a too-tight cap SIGTERMs a green suite (exit 143). Vitest's own
   // per-test timeout fails a genuine hang fast — this is the outer backstop.
-  const timeoutMs = changedRef ? 300_000 : 1_500_000;
+  // Scoped runs still execute the full wrapped suite (main pass + boot-timing);
+  // on a laptop that legitimately finishes in ~5–6 minutes, a 300s cap SIGTERMs
+  // a green run (exit 143) — see AGENTS.md debugging-check-failures.
+  const timeoutMs = changedRef ? 420_000 : 1_500_000;
   const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs, env });
   if (res.status === "passed") {
     return {

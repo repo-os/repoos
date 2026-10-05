@@ -5,7 +5,7 @@ type: chore
 status: inbox
 needs_input: true
 needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
+needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI"
 priority: p2
 area: docs-debt
 story: MacOS Native App
@@ -13,7 +13,7 @@ assigned_to: unassigned
 created_by: docs-debt-agent
 branch: ""
 created_at: "2026-09-19T02:09:23.307Z"
-updated_at: "2026-10-05T11:15:29Z"
+updated_at: "2026-10-05T22:38:16Z"
 ---
 ## Docs Debt Findings
 

@@ -16,7 +16,12 @@ import { patchTaskFile, type TaskPatch } from "../server/write.js";
 import { flagUnderspecifiedIfNeeded } from "../server/task-underspecified-flag.js";
 import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
 import { isAncestor } from "../core/git.js";
-import { declaredShotsSectionContent, parseShotPlan } from "../core/shot-plan.js";
+import {
+  declaredShotsSectionContent,
+  parseShotPlan,
+  validateDeclaredShotTargets,
+} from "../core/shot-plan.js";
+import { deleteTaskFile, PathGuardError, WriteError } from "../server/write.js";
 import { normalizeSectionHeading, replaceSection } from "../core/task.js";
 
 /**
@@ -30,7 +35,11 @@ export const TYPE_USAGE = TASK_TYPES.join("|");
 export const UPDATE_USAGE =
   '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] ' +
   `[--priority ${PRIORITY_USAGE}] [--type ${TYPE_USAGE}] [--body "..."|-] [--branch b] ` +
-  '[--assigned-to ai|human] [--needs-input true|false] [--needs-merge true|false] [--hold true|false] [--paths src/a.ts,src/b.ts] [--questions "Question one\\nQuestion two"] [--clear-questions] [--shots "<JSON list>"|- | --section "<heading>" --section-body ...] [--force]';
+  '[--assigned-to ai|human] [--needs-input true|false] [--needs-merge true|false] [--hold true|false] [--paths src/a.ts,src/b.ts] [--questions "Question one\\nQuestion two"] [--clear-questions] ' +
+  "[--agent <name>] [--cli <cli>] [--model <model>] " +
+  "[--pm-agent <name>] [--pm-cli <cli>] [--pm-model <model>] " +
+  "[--review-agent <name>] [--review-cli <cli>] [--review-model <model>] " +
+  '[--shots "<JSON list>"|- | --section "<heading>" --section-body ...] [--force]';
 
 export const NEW_USAGE =
   '  Usage: repoos new "Task title" [--ai] ' +
@@ -428,6 +437,20 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
   paths: "paths",
   questions: "questions",
   section: "section",
+  // #0684: per-task agent overrides, the same fields `PATCH /api/tasks/:id`
+  // applies. Without these the only way to pin an engineer/model to a task was
+  // a raw API call — and sending them to `/start` or `/message` was silently
+  // ignored. An empty string clears the override back to the role default
+  // (patchTaskFile treats a blank as null).
+  agent: "agentOverride",
+  cli: "cliOverride",
+  model: "modelOverride",
+  "pm-agent": "pmAgentOverride",
+  "pm-cli": "pmCliOverride",
+  "pm-model": "pmModelOverride",
+  "review-agent": "reviewAgentOverride",
+  "review-cli": "reviewCliOverride",
+  "review-model": "reviewModelOverride",
 };
 
 /** Section headings a full `--body` replace must not silently drop (#0613). */
@@ -447,13 +470,20 @@ function shotsError(body: string): string | null {
 }
 
 /** Accept raw JSON and write the exact fenced format the capture parser reads. */
-function shotsSectionContent(raw: string): string {
+function shotsSectionContent(
+  raw: string,
+  preview: ReturnType<typeof loadConfig>["preview"],
+): string {
   const body = `## Shots\n\n\`\`\`json\n${raw}\n\`\`\``;
   const parsed = parseShotPlan(body);
   if (parsed.errors.length || parsed.shots.length === 0) {
     throw new Error(
       `Invalid --shots JSON: ${parsed.errors.join("; ") || "expected at least one shot"}`,
     );
+  }
+  const targetErrors = validateDeclaredShotTargets(parsed.shots, preview);
+  if (targetErrors.length) {
+    throw new Error(`Invalid --shots target: ${targetErrors.join("; ")}`);
   }
   return declaredShotsSectionContent(parsed.shots);
 }
@@ -599,16 +629,6 @@ export function cmdUpdate(args: string[]): void {
     return;
   }
 
-  try {
-    if (pendingShots !== undefined) {
-      patch.section = { heading: "Shots", content: shotsSectionContent(pendingShots) };
-    }
-  } catch (error) {
-    console.error(c.red(`  ${(error as Error).message}`));
-    process.exitCode = 1;
-    return;
-  }
-
   if (pendingSectionHeading !== null) {
     if (patch.body !== undefined) {
       console.error(
@@ -642,7 +662,7 @@ export function cmdUpdate(args: string[]): void {
     }
   }
 
-  if (Object.keys(patch).length === 0) {
+  if (Object.keys(patch).length === 0 && pendingShots === undefined) {
     console.error(c.red("  No fields given.\n" + usage));
     process.exitCode = 1;
     return;
@@ -655,6 +675,18 @@ export function cmdUpdate(args: string[]): void {
     console.error(c.red(`  Task #${id} not found.`));
     process.exitCode = 1;
     return;
+  }
+  if (pendingShots !== undefined) {
+    try {
+      patch.section = {
+        heading: "Shots",
+        content: shotsSectionContent(pendingShots, repoos.config.preview),
+      };
+    } catch (error) {
+      console.error(c.red(`  ${(error as Error).message}`));
+      process.exitCode = 1;
+      return;
+    }
   }
   try {
     const updated = patchTaskFile(repoos.config, task.absPath, patch);
@@ -729,6 +761,7 @@ export function cmdNew(args: string[]): void {
     return;
   }
   let body = (flags.body as string) || "";
+  const repoos = boardRepoOS();
   try {
     const error = shotsError(body);
     if (error) throw new Error(error);
@@ -736,7 +769,7 @@ export function cmdNew(args: string[]): void {
       if (/(?:^|\n)##\s*Shots\b/i.test(body)) {
         throw new Error("--shots cannot be combined with an existing ## Shots section in --body");
       }
-      body = replaceSection(body, "Shots", shotsSectionContent(flags.shots));
+      body = replaceSection(body, "Shots", shotsSectionContent(flags.shots, repoos.config.preview));
     }
   } catch (error) {
     console.error(c.red(`  ${(error as Error).message}`));
@@ -746,7 +779,6 @@ export function cmdNew(args: string[]): void {
   // Board-rooted, not cwd-rooted (#0202) — see cmdMv for why. Otherwise a
   // task created from inside a worktree lands in that worktree's own work/
   // dir and is invisible to the real board entirely.
-  const repoos = boardRepoOS();
   let t: Task;
   try {
     t = repoos.createTask({
@@ -792,6 +824,55 @@ export function cmdNew(args: string[]): void {
     console.log("  " + c.green("committed ") + c.dim(res.hash ?? ""));
   } else {
     console.log("  " + c.yellow("warning: ") + c.dim("file left uncommitted — ") + res.reason);
+  }
+}
+
+export const RM_USAGE = "  Usage: repoos rm <id> --yes";
+
+/** `repoos rm <id> --yes` — delete a task file (same path as DELETE /api/tasks/:id). */
+export function cmdRm(args: string[]): void {
+  let id: string | undefined;
+  let confirmed = false;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === "--yes" || a === "-y") confirmed = true;
+    else if (!a.startsWith("--") && !id) id = a;
+    else {
+      console.error(c.red(`  Unknown argument: ${a}\n${RM_USAGE}`));
+      process.exitCode = 1;
+      return;
+    }
+  }
+  if (!id) {
+    console.error(c.red(RM_USAGE));
+    process.exitCode = 1;
+    return;
+  }
+  if (!confirmed) {
+    console.error(
+      c.red("  Refusing to delete without --yes.") +
+        c.dim(" This removes the task file from the repo (same as the UI Delete button)."),
+    );
+    process.exitCode = 1;
+    return;
+  }
+  const repoos = boardRepoOS();
+  const task = repoos.getTask(id);
+  if (!task) {
+    console.error(c.red(`  Task #${id} not found.`));
+    process.exitCode = 1;
+    return;
+  }
+  try {
+    deleteTaskFile(repoos.config, task.absPath);
+    console.log("  " + c.green("deleted ") + c.dim("#" + task.id) + "  " + task.title);
+  } catch (err) {
+    if (err instanceof PathGuardError || err instanceof WriteError) {
+      console.error(c.red(`  ${err.message}`));
+    } else {
+      console.error(c.red(`  ${(err as Error).message}`));
+    }
+    process.exitCode = 1;
   }
 }
 

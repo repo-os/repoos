@@ -5,7 +5,7 @@ type: feature
 status: ready
 needs_input: true
 needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX, Notes for AI"
+needs_input_detail: "missing sections: Notes for AI"
 priority: p1
 area: mobile
 story: RepoOS Hub for Mobile
@@ -14,7 +14,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-26T16:45:58Z"
-updated_at: "2026-10-05T11:15:30Z"
+updated_at: "2026-10-05T22:38:17Z"
 ---
 ## Problem
 

@@ -2,18 +2,18 @@
 id: "0685"
 title: Small papercuts from a long agent-driven run
 type: chore
-status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX"
+status: done
 priority: p3
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 40ad49e9fdb53ed654375c4cad09e502e4eadfcf
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/small-papercuts-from-a-long-agent-driven
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T16:58:52Z"
-updated_at: "2026-10-05T17:17:08Z"
+updated_at: "2026-10-05T22:38:11Z"
 ---
 ## Problem
 
@@ -45,3 +45,8 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T17:11:38Z · note: Add two items found in a follow-up audit (2026-10-06): (a) declared shots with an unknown target (e.g. 'default' when the only preview target is 'web') are only reported as a 'shots: skipped' activity note at handoff; validate the target when --shots is written, list valid names, make 'default' resolve to the sole target, and show a visible warning when shots were skipped. (b) The built-in Debugger has its own enable toggle (builtInAgents.debugger.enabled) separate from the 'debugger' agent row; an enabled agent row with the toggle off ran zero sessions silently. Make them one setting or warn in repoos doctor.
 - 2026-10-05T17:17:07Z · story
 - 2026-10-05T17:17:08Z · body: section Story context
+- 2026-10-05T21:20:17Z · status inbox→ready
+- 2026-10-05T21:20:19Z · cli_override, model_override
+- 2026-10-05T21:20:19Z · status ready→active, needs_input, branch
+- 2026-10-05T22:03:14Z · status active→review
+- 2026-10-05T22:38:11Z · status review→done, release:success
