@@ -43,6 +43,10 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   "telegram.enabled",
   "auth.enabled",
   "auth.sessionMaxAge",
+  // Attachment storage has a dedicated hand-rendered "Attachments" card on
+  // General (#0659) that carries the availability explanation beside the
+  // select, so it must not also auto-render as a plain General row.
+  "storage.provider",
 ]);
 
 /** Mirrors `isFieldVisible` in SettingsView.vue */
