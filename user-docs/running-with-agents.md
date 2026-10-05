@@ -66,12 +66,30 @@ first, then come back here.
   preview, log in, check the browser console, and check phone, tablet and desktop
   widths. Automated checks and LLM reviewers pass UI defects that a human sees in
   seconds — a blank map, a chart drawn wrong, a page wider than the window.
-- A task preview runs the branch's web code against the primary checkout's API.
-  A change that touches both sides can only be fully verified after it merges.
+- A task preview can boot **companion services** alongside the main command:
+  declare repeatable `[[preview.services]]` tables and list their names on a
+  `[[preview.targets]]` row (`services = ["API"]`). Each service gets its own
+  OS-assigned port; the main command reaches it via `{api.port}` /
+  `{api.url}` or `REPOOS_PREVIEW_API_PORT` / `REPOOS_PREVIEW_API_URL` (name
+  lowercased, non-alphanumerics to `_`). That lets a full-stack task — API and
+  UI on the same branch — be verified in preview without merging first. If you
+  only start the web dev server and proxy `/api` to the primary checkout, the
+  new UI may parse an old response and look like a UI regression.
+- The running server re-reads `repoos.toml` when it changes on disk (including
+  after a merge to the primary branch), so new `[[preview.targets]]` rows show
+  up without restarting `repoos serve`.
 - Feedback that must survive a change of engineer session (a different CLI or
   model) belongs in the **task body**. A message lives only in the session it
   was sent to, and the review report file is overwritten on each pass.
 - Approve only after you have seen it work. Approval is a human decision.
+- By default, **Move to done** stays a human step. You can opt in under Settings
+  → **Auto-approve clean reviews**: when enabled, tasks that match configured
+  **areas** or **types**, passed the handoff gate with a clean reviewer verdict,
+  and are not tagged `human-only` can close out automatically. Each
+  auto-approval is written to the task activity log and can notify the bell
+  (`auto-approved by policy: …`). **UI areas** (web, ui-app, and similar) still
+  need successful handoff screenshots — verify them yourself until you trust the
+  policy. Tag any task `human-only` to keep it on a human approval path.
 
 ## 5. Processes and servers
 

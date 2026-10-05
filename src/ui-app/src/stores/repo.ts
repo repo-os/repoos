@@ -1227,6 +1227,8 @@ export const useRepoStore = defineStore("repo", () => {
       void notifications.notify(type, "Task paused", label);
     } else if (type === "stuck") {
       void notifications.notify(type, "Task looks stuck", label);
+    } else if (type === "autoApproved") {
+      void notifications.notify(type, "Auto-approved by policy", label);
     } else {
       void notifications.notify(type, "Task needs attention", label);
     }
@@ -1631,6 +1633,10 @@ export const useRepoStore = defineStore("repo", () => {
       // state because the agent's fail-safe checklist silently failed — worth
       // surfacing, not papering over.
       pushFeed(`<b>board self-healed</b> #${e.id} — ${e.note}`, "#ffb454", "task.corrected");
+    } else if (e.type === "task.autoApproved") {
+      const t = tasks.value.find((task) => task.id === e.id);
+      if (t) notifyAttention("autoApproved", t);
+      pushFeed(`<b>auto-approved</b> #${e.id} — ${e.rule}`, "#3dd68c", "task.autoApproved");
     } else if (e.type === "preview") {
       // A preview started or stopped for a task: reflect it on the stored task
       // and, when the drawer is open on that task, on the drawer's copy.
@@ -1685,6 +1691,22 @@ export const useRepoStore = defineStore("repo", () => {
       }
     } else if (e.type === "index.rebuilt") {
       void refresh();
+    } else if (e.type === "config.changed") {
+      // `repoos.toml` changed on disk (a hand edit, or a close-out merge to the
+      // primary branch) and the server re-read it (#0681). Refresh the board and
+      // the open drawer so config-derived state — notably the task's
+      // `previewTargets` — reflects the new preview config without a restart.
+      void refresh();
+      const ui = useUiStore();
+      if (ui.active?.id) {
+        void fetchTask(ui.active.id)
+          .then((t) => {
+            if (ui.active?.id === t.id) ui.syncActive(t);
+          })
+          .catch(() => {
+            /* the drawer refetches on demand */
+          });
+      }
     } else if (e.type === "system.stats") {
       systemStats.value = e.stats;
     } else if (e.type === "auto-engineering.state") {
@@ -2062,6 +2084,7 @@ export const useRepoStore = defineStore("repo", () => {
       "system.stats",
       "build.available",
       "reload.failed",
+      "config.changed",
       "integration",
       "test-run.started",
       "test-run.output",

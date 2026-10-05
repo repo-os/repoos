@@ -1,20 +1,17 @@
 ---
-updated_at: "2026-10-05T21:58:37Z"
-review_passes: 1
 id: "0681"
 title: "Task previews for full-stack work, and reload repoos.toml when it changes"
 type: feature
-status: review
+status: done
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: "083910b6dd9c55b7a7cd52e30b7f4710289e9cb6"
 assigned_to: ai
 created_by: ""
 branch: feat/task-previews-for-full-stack-work-and-re
-cli_override: cursor
-model_override: composer-2.5
 created_at: "2026-10-05T16:58:44Z"
-dev_error_count: 1
+updated_at: "2026-10-05T22:12:00Z"
 ---
 ## Problem
 
@@ -48,9 +45,5 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:32:23Z · body: section Docs follow-up
 - 2026-10-05T19:08:03Z · status inbox→ready
 - 2026-10-05T19:08:12Z · status ready→active, branch
-- 2026-10-05T19:17:36Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-10-05T19:23:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-05T20:15:35Z · cli_override, model_override
-- 2026-10-05T20:15:35Z · needs_input
 - 2026-10-05T21:57:47Z · status active→review
-
+- 2026-10-05T22:12:00Z · status review→done, release:success

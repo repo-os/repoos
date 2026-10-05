@@ -170,7 +170,7 @@ const statusLabel = computed(() => {
     case "stopped":
       return "Stopped";
     case "disabled":
-      return "Disabled";
+      return "Stopped (auto-start off)";
     case "error":
       return "Needs attention";
     default:

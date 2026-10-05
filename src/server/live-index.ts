@@ -110,6 +110,8 @@ export type RepoEvent =
       note: string;
       at: string;
     }
+  /** Policy auto-approval recorded and close-out enqueued (#0686). */
+  | { type: "task.autoApproved"; id: string; rule: string; at: string }
   | {
       type: "preview";
       id: string;
@@ -144,6 +146,12 @@ export type RepoEvent =
     }
   /** A user-triggered reload could not hand over — the old build keeps serving. */
   | { type: "reload.failed"; reason: string; at: string }
+  /**
+   * `repoos.toml` changed on disk (a hand edit, or a close-out merge to the
+   * primary branch) and the running server re-read it (#0681). The UI refetches
+   * so config-derived state — notably a task's `previewTargets` — is not stale.
+   */
+  | { type: "config.changed"; at: string }
   /** Supervisor heartbeat report (0112). */
   | { type: "supervisor.heartbeat"; heartbeat: SupervisorHeartbeat; at: string }
   /** Auto-engineering mode state change (0124). */

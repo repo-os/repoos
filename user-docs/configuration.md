@@ -89,6 +89,12 @@ strictBuild = false
 # ── Close-out (Move to done) ─────────────────────────────────────────────
 closeOut.timeoutMs = 360000  # 6-minute budget per close-out attempt; 0 = no limit
 
+# ── Approval policy (opt-in; default off) ────────────────────────────────
+# approval.enabled = true
+# approval.autoApprove.areas = ["api", "data", "docs", "chore"]
+# approval.autoApprove.types = ["chore"]
+# approval.autoApprove.uiAreas = ["web", "ui-app", "frontend"]
+
 # ── Agents ───────────────────────────────────────────────────────────────
 maxConcurrentAgents = 5  # omit to size from this machine's CPU count
 ctoSkipHealthy = true    # skip the CTO model call while the board is healthy
@@ -282,7 +288,7 @@ worktreeWarnThreshold = 20
 | `defaultAssignee` | select | `unassigned` | yes | Default assignee for new tasks: `unassigned`, `ai`, or `human`. |
 | `defaultTaskMode` | select | `freeform` | yes | New-task flow: `freeform` (the AI writes the task) or `manual` (a form). Any other value falls back to `freeform`. |
 | `maxActiveTasks` | number | `3` | yes | Cap on simultaneously active tasks when `autoEngineeringMode` is on. Must be 1–20. |
-| `autoEngineeringMode` | boolean | `false` | yes | When true, RepoOS selects and starts ready tasks automatically, up to `maxActiveTasks`. |
+| `autoEngineeringMode` | boolean | `false` | yes | When true, RepoOS **event-driven** dispatch starts ready tasks automatically, up to `maxActiveTasks` (see below). |
 | `skillSuggestions` | boolean | `false` | yes | When true, a finished task may generate a high-bar, evidence-gated skill suggestion task. Off by default; a single session never creates one. |
 | `worktreeWarnThreshold` | number | `20` | yes | Advisory ceiling on registered git worktrees. Above it the Control page's Codebase card turns amber and the server logs a `repoos gc` reminder. Never blocks a task. Set `0` to disable. |
 
@@ -305,6 +311,45 @@ the six column labels shown in the UI and CLI. You can edit them from
 that column's default. These are display labels only: the canonical status IDs
 never change, and transitions, frontmatter, and API/CLI status inputs are
 unaffected.
+
+### Auto-engineering mode (`autoEngineeringMode`)
+
+When `autoEngineeringMode = true`, the server runs a **dispatch pass** whenever
+something frees capacity or new work becomes eligible:
+
+- a task leaves `active` for `review` (a slot opens),
+- a task moves from `inbox` to `ready`,
+- a dependency lands on `main` (`dependency-merged` trigger),
+- the server starts up,
+- or `autoEngineeringMode` / `maxActiveTasks` changes in config.
+
+Each pass:
+
+1. Counts active tasks (not archived) and computes free slots up to
+   `maxActiveTasks`.
+2. Builds the **candidate list**: `ready` tasks that are not archived, not
+   `needs_input`, and have no unmet `dependsOn` blockers.
+3. If there are candidates and free slots, calls the **PM agent** once (a real
+   LLM prompt — recorded as a `dispatch` session, not a task-bound PM run) to
+   pick which ready tasks to start, capped at the available slots.
+4. Starts the selected tasks through the normal `/start` path.
+
+Outcomes (`no-capacity`, `no-ready-work`, `pm-unavailable`, …) are persisted for
+the Control page. This is optional automation — default is off.
+
+### Task body sections (underspecified check)
+
+RepoOS can flag stub tasks with `needs_input` / `underspecified`. A well-formed
+task body normally includes these headings (each with real prose, not placeholders):
+
+- `## Problem`
+- `## Desired UX` — **required only when the task's `area` includes a UI slice**
+  (`web`, `ui`, or `ui-app`). Pure server/docs/cli tasks may omit it.
+- `## Acceptance criteria`
+- `## Notes for AI`
+
+The body outside `## Original prompt` should be at least ~400 characters. The PM
+"flesh this out" flow and `repoos new` / task PATCH paths run the same check.
 
 Constraints: a label is a string of at most 40 characters; blank labels,
 duplicates of another column's label, or over-length values fall back to that
@@ -352,6 +397,27 @@ limit)*), or set any value directly in `repoos.toml`. A timeout is a failure
 with an error card; **Stop MTD** on the task drawer is a user cancel and stays
 badge-free — see [docs/close-out-pipeline.md](../docs/close-out-pipeline.md)
 for how the three outcomes differ.
+
+## Approval policy (opt-in auto Move to done)
+
+```toml
+approval.enabled = false
+approval.autoApprove.areas = ["api", "data", "docs", "chore"]
+approval.autoApprove.types = ["chore"]
+approval.autoApprove.uiAreas = ["web", "ui-app", "frontend", "mobile"]
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `approval.enabled` | boolean | `false` | yes | Master switch. When true, tasks in `review` that match configured areas or types, passed the handoff gate, received a clean reviewer verdict (`good to go`), have no blocking bugs in the report, are not tagged `human-only`, and pass branch/handoff checks can **Move to done** without a human click. Each auto-approval is recorded in the task activity log (`auto-approved by policy: …`) and can notify the bell. |
+| `approval.autoApprove.areas` | string[] | `[]` | yes | Task `area` values eligible for auto-approval (any match). Empty means match by type only. |
+| `approval.autoApprove.types` | string[] | `[]` | yes | Task `type` values eligible (any match). Empty means match by area only. |
+| `approval.autoApprove.uiAreas` | string[] | built-in UI list | yes | Areas treated as UI work. Tasks touching these areas are never auto-approved unless handoff screenshots succeeded (at least one capture, no `shots: failed` activity note). When unset, defaults to `web`, `ui`, `ui-app`, `frontend`, and `mobile`. |
+
+Edit **`approval.enabled`** and the area/type lists in **Settings → General**.
+Tag any task **`human-only`** to keep it on a human approval path regardless of
+policy. UI verification and console-error gates (#0680) may tighten the UI
+evidence rule later; until then, screenshot success is the guard.
 
 ## Worktrees and runtime
 
@@ -468,6 +534,16 @@ areas = ["landing", "web"]
 paths = ["landing/**"]
 command = "bun run dev --port {port}"
 cwd = "landing"
+
+[[preview.services]]
+name = "API"
+command = "bun run api --port {port}"
+
+[[preview.targets]]
+name = "Full stack"
+areas = ["web"]
+services = ["API"]
+command = "bun run web --port {port} --api {api.port}"
 ```
 
 `[preview]` configures the read-only preview RepoOS starts from a task worktree
@@ -487,13 +563,25 @@ when a task is in `active` or `review`.
 | `preview.targets[].cwd` | string | worktree root | yes | Subdirectory of the worktree to run the command in. |
 | `preview.targets[].readyPath` | string | `/` | yes | Per-target readiness path (`ready_path` is also accepted). |
 | `preview.targets[].readyTimeoutMs` | number | `10000` | yes | Per-target readiness timeout (`ready_timeout_ms` is also accepted). |
+| `preview.targets[].services` | array of strings | `[]` | yes | Names of `[[preview.services]]` to boot before this target's main command (#0681). |
+| `preview.services[].name` | string | required | yes | Label used to reference the service from a target and in diagnostics. |
+| `preview.services[].command` | string | required | yes | Command that boots the service on its own OS-assigned port. Rows without one are dropped. |
+| `preview.services[].cwd` | string | worktree root | yes | Subdirectory of the worktree to run the service in. |
+| `preview.services[].readyPath` | string | `/` | yes | Readiness path on the service's own URL (`ready_path` is also accepted). |
+| `preview.services[].readyTimeoutMs` | number | `20000` | yes | Per-service readiness timeout (`ready_timeout_ms` is also accepted). |
 
 `{port}` and `{host}` are replaced at runtime, and the command's environment
-also receives `PORT` and `HOST`. RepoOS owns the port and lifecycle; never
-hardcode a port in a preview command. A task with no usable preview
-configuration gets an actionable "no preview configured" message rather than
-booting a random app. Previews are one-at-a-time and a new request evicts the
-previous preview.
+also receives `PORT` and `HOST`. Each companion service also exposes
+`{<name>.port}` / `{<name>.url}` (name lowercased, non-alphanumerics to `_`) and
+`REPOOS_PREVIEW_<NAME>_PORT` / `REPOOS_PREVIEW_<NAME>_URL` to every command in
+the preview. Services become ready before the main command starts, so a web
+target can proxy `/api` to the branch's own API instead of the primary checkout.
+RepoOS owns every port and lifecycle; never hardcode a port in a preview
+command. A task with no usable preview configuration gets an actionable "no
+preview configured" message rather than booting a random app. Previews are
+one-at-a-time and a new request evicts the previous preview. The control-plane
+server re-reads `repoos.toml` when it changes on disk (including after a merge
+to the primary branch), so new targets appear without restarting `repoos serve`.
 
 `preview.targets[].paths` drives `repoos shot`, which picks the target to
 screenshot from the task's changed files rather than its up-front `area:`.
@@ -505,10 +593,10 @@ one non-slash character — `landing/**` matches every changed file under
 `landing/`. When no target's globs match, `repoos shot` falls back to the
 area match (then the default command); `--target` overrides either way.
 
-> **`[[preview.targets]]` is deliberately TOML-only.** The Settings UI is built
-> on a flat `key = value` schema, which cannot express a per-row sub-field of an
-> array of tables; there is no control for `name`, `areas`, `command`, or `paths`
-> today. Editing targets in `repoos.toml` is the supported path, and
+> **`[[preview.targets]]` and `[[preview.services]]` are deliberately TOML-only.**
+> The Settings UI is built on a flat `key = value` schema, which cannot express a
+> per-row sub-field of an array of tables; there is no control for target or
+> service rows today. Editing `repoos.toml` is the supported path, and
 > `repoos shot`'s area/target mismatch warning is what makes a stale `area:`
 > visible. This is the documented exception to the "every feature setting needs
 > a Settings control" rule, not an oversight.

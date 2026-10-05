@@ -95,6 +95,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: '--note "..." · --force-not-merged',
       },
       {
+        name: "rm",
+        usage: "rm <id> --yes",
+        desc: "Delete a task file from the repo (same as the UI Delete button)",
+        flags: "--yes",
+      },
+      {
         name: "update",
         usage: "update <id> [flags]",
         desc: "Edit a task's metadata or body",

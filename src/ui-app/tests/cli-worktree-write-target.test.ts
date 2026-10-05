@@ -14,6 +14,7 @@
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -25,7 +26,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmFixture } from "./helpers";
 import { ensureWorktree } from "../../core/git";
-import { cmdMv, cmdUpdate, cmdNew } from "../../commands/tasks";
+import { cmdMv, cmdUpdate, cmdNew, cmdRm } from "../../commands/tasks";
 import { parseShotPlan } from "../../core/shot-plan";
 
 function git(root: string, args: string[]): string {
@@ -175,6 +176,26 @@ describe("board-write commands resolve to the main checkout, not cwd (#0202)", (
         shots: [{ route: "/agents", label: "Agents" }],
         errors: [],
       });
+    } finally {
+      process.exitCode = prevExit;
+      clean();
+    }
+  });
+
+  it("cmdRm requires --yes and then deletes the task file", async () => {
+    const { root, taskPath, clean } = makeRepoWithTask();
+    const prevExit = process.exitCode;
+    try {
+      await withCwd(root, () => {
+        cmdRm(["0001"]);
+      });
+      expect(process.exitCode).toBe(1);
+      expect(existsSync(taskPath)).toBe(true);
+      process.exitCode = prevExit;
+      await withCwd(root, () => {
+        cmdRm(["0001", "--yes"]);
+      });
+      expect(existsSync(taskPath)).toBe(false);
     } finally {
       process.exitCode = prevExit;
       clean();
