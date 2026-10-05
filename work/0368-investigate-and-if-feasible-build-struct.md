@@ -3,13 +3,16 @@ id: "0368"
 title: "Investigate and (if feasible) build structured elicitation: clickable multi-choice questions from an agent, not just chat"
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX, Notes for AI"
 priority: p3
 area: agent
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-16T05:39:12Z"
-updated_at: "2026-09-16T05:39:12Z"
+updated_at: "2026-10-05T11:15:30Z"
 ---
 ## Problem
 
@@ -110,3 +113,4 @@ that some drivers get left behind by.
 ## Activity
 
 - 2026-09-16T05:39:12Z · created · unknown
+- 2026-10-05T11:15:30Z · needs_input
