@@ -2,7 +2,7 @@
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
-status: active
+status: review
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -12,7 +12,7 @@ created_by: ""
 branch: feat/config-schema-settings-ui-for-provider-s
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T17:13:41Z"
+updated_at: "2026-10-05T17:24:40Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -194,3 +194,24 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T17:13:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T17:13:41Z · status review→active
+- 2026-10-05T17:18:43Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
+     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+     35|     expect(missing).toEqual([]);
+       |                     ^
+     36|   });
+     37|
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+ Test Files  1 failed | 390 passed | 1 skipped (392)
+      Tests  2 failed | 4775 passed | 15 skipped (4792)
+   Start at  17:14:26
+   Duration  253.32s (transform 6.13s, setup 2.17s, import 46.42s, tests 207.14s, environment 225.97s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 402ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:18:40
+   Duration  2.16s (transform 967ms, setup 11ms, import 1.19s, tests 402ms, environment 478ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-05T17:24:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
