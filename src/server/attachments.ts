@@ -8,10 +8,10 @@
  * Dependency-free, mirroring the rest of the server: base64 in JSON in, a
  * small safe writer for storage.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { basename, extname, join, resolve, sep } from "node:path";
+import { basename, extname, join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { SCREENSHOTS_HEADING, extractSection, removeSection } from "../core/task.js";
+import { createStorageProvider } from "../core/storage/index.js";
 
 /** One persisted screenshot, as returned to the client. */
 export interface ScreenshotMeta {
@@ -42,6 +42,16 @@ export const MAX_SCREENSHOT_BYTES = 10 * 1024 * 1024;
 
 export function attachmentsDir(root: string, workDir: string, taskId: string): string {
   return join(root, workDir, ".attachments", taskId);
+}
+
+/**
+ * Attachment storage for tasks goes through the storage provider (#0658),
+ * rooted at the work dir; each task id is a namespace. Today this is the local
+ * gitignored-directory provider — the same `work/.attachments/<id>/` tree as
+ * before, named behind the interface so a cloud backend can replace it.
+ */
+function store(config: RepoOSConfig) {
+  return createStorageProvider(join(config.root, config.workDir));
 }
 
 /** API URL that serves one stored screenshot. */
@@ -92,13 +102,13 @@ export function saveScreenshot(
     };
   }
 
-  const dir = attachmentsDir(config.root, config.workDir, task.id);
-  mkdirSync(dir, { recursive: true });
-  const taken = new Set(existsSync(dir) ? readdirSync(dir) : []);
+  const stored = store(config);
+  const taken = new Set(stored.list(task.id));
   let next = 1;
   while (taken.has(`screenshot-${next}${ext}`)) next++;
   const file = `screenshot-${next}${ext}`;
-  writeFileSync(join(dir, file), buf);
+  const putResult = stored.put(task.id, file, buf);
+  if ("error" in putResult) return { error: putResult.error };
 
   return {
     id: String(next),
@@ -139,18 +149,36 @@ export function appendScreenshotsSection(body: string, metas: ScreenshotMeta[]):
 
 /**
  * Resolve a stored screenshot to its absolute path, refusing path traversal
- * outside the task's own attachment folder. Returns null on a miss.
+ * outside the task's own attachment folder. Returns null on a miss. Local
+ * fast path — the generic, provider-backed read is {@link readAttachment}.
  */
 export function resolveScreenshot(
   config: RepoOSConfig,
   taskId: string,
   file: string,
 ): string | null {
-  const base = resolve(attachmentsDir(config.root, config.workDir, taskId));
-  const abs = resolve(base, decodeURIComponent(file));
-  if (!abs.startsWith(base + sep)) return null;
-  if (!existsSync(abs) || !statSync(abs).isFile()) return null;
-  return abs;
+  return store(config).localPath?.(taskId, decodeURIComponent(file)) ?? null;
+}
+
+/**
+ * Read a stored screenshot's bytes through the storage provider (#0658), with
+ * its MIME type — the provider-agnostic counterpart to {@link resolveScreenshot}
+ * for serving (`GET /api/tasks/:id/attachments/:file`). Returns null on a miss
+ * or a path-traversal attempt.
+ */
+export function readAttachment(
+  config: RepoOSConfig,
+  taskId: string,
+  file: string,
+): { data: Buffer; mime: string } | null {
+  const data = store(config).get(taskId, decodeURIComponent(file));
+  if (!data) return null;
+  return { data, mime: mimeForExtension(file) ?? "application/octet-stream" };
+}
+
+/** File names in a task's attachment folder (empty when it has none). */
+export function listAttachments(config: RepoOSConfig, taskId: string): string[] {
+  return store(config).list(taskId);
 }
 
 /** Reverse of {@link SCREENSHOT_MIME}: file extension -> MIME type. */
