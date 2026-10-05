@@ -5,11 +5,12 @@ type: feature
 status: active
 priority: p3
 area: cli
+story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: feat/opt-in-project-docs-docs-from-import-sta
 created_at: "2026-10-05T15:20:13Z"
-updated_at: "2026-10-05T17:07:31Z"
+updated_at: "2026-10-05T17:16:39Z"
 ---
 ## Problem
 
@@ -109,3 +110,24 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T17:07:31Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-05T17:07:31Z · status review→active
+- 2026-10-05T17:12:30Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25
+    196|     // `zip -y` stores symlinks as links rather than following them.
+    197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
+    198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
+       |                         ^
+    199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
+    200|   });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+ Test Files  1 failed | 391 passed | 1 skipped (393)
+      Tests  6 failed | 4804 passed | 15 skipped (4825)
+   Start at  17:09:03
+   Duration  202.03s (transform 5.38s, setup 1.68s, import 27.41s, tests 183.84s, environment 172.80s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 348ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:12:25
+   Duration  1.84s (transform 863ms, setup 9ms, import 1.00s, tests 348ms, environment 418ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-05T17:16:39Z · story
