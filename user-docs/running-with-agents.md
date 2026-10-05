@@ -59,8 +59,18 @@ first, then come back here.
   preview, log in, check the browser console, and check phone, tablet and desktop
   widths. Automated checks and LLM reviewers pass UI defects that a human sees in
   seconds — a blank map, a chart drawn wrong, a page wider than the window.
-- A task preview runs the branch's web code against the primary checkout's API.
-  A change that touches both sides can only be fully verified after it merges.
+- A task preview can boot **companion services** alongside the main command:
+  declare repeatable `[[preview.services]]` tables and list their names on a
+  `[[preview.targets]]` row (`services = ["API"]`). Each service gets its own
+  OS-assigned port; the main command reaches it via `{api.port}` /
+  `{api.url}` or `REPOOS_PREVIEW_API_PORT` / `REPOOS_PREVIEW_API_URL` (name
+  lowercased, non-alphanumerics to `_`). That lets a full-stack task — API and
+  UI on the same branch — be verified in preview without merging first. If you
+  only start the web dev server and proxy `/api` to the primary checkout, the
+  new UI may parse an old response and look like a UI regression.
+- The running server re-reads `repoos.toml` when it changes on disk (including
+  after a merge to the primary branch), so new `[[preview.targets]]` rows show
+  up without restarting `repoos serve`.
 - Feedback that must survive a change of engineer session (a different CLI or
   model) belongs in the **task body**. A message lives only in the session it
   was sent to, and the review report file is overwritten on each pass.

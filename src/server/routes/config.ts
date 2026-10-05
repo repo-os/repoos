@@ -8,6 +8,7 @@ import {
   AGENT_MODELS,
   DEFAULT_AGENTS,
   agentsForConfig,
+  applyReloadedConfig,
   getConfigSchema,
   patchTomlConfig,
   loadConfig,
@@ -139,12 +140,12 @@ function sameNames(a: readonly string[], b: readonly string[]): boolean {
  * old key survives every write until a restart — serving the picker/PM prompt
  * areas the file no longer declares, and (for the drift advisory) comparing a
  * stale list to itself so clearing NEVER warns. Reconcile the removable
- * vocabulary keys explicitly (#0587 review).
+ * vocabulary keys explicitly (#0587 review). Delegates to the shared
+ * `applyReloadedConfig` (#0681) so the Settings path and the on-disk
+ * `repoos.toml` watcher reconcile identically.
  */
 function applyLoadedConfig(repoos: { config: RepoOSConfig }, fresh: RepoOSConfig): void {
-  Object.assign(repoos.config, fresh);
-  repoos.config.areas = fresh.areas;
-  repoos.config.preview = fresh.preview;
+  applyReloadedConfig(repoos, fresh);
 }
 
 export const readConfig: RouteHandler = (ctx, _req, res) => {
