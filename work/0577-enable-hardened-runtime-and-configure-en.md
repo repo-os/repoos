@@ -3,6 +3,9 @@ id: "0577"
 title: Enable hardened runtime and configure entitlements for RepoOS Hub
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
 priority: p1
 area: macos
 story: MacOS Native App
@@ -10,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:43:15Z"
-updated_at: "2026-09-28T18:45:04Z"
+updated_at: "2026-10-05T11:15:28Z"
 ---
 Notarization requires the app to opt into Apple's hardened runtime. Configure the Xcode project and add an entitlements file that accurately declares what the app uses.
 
@@ -38,3 +41,4 @@ Notarization requires the app to opt into Apple's hardened runtime. Configure th
 
 - 2026-09-28T18:43:15Z · created · unknown
 - 2026-09-28T18:44:58Z · story
+- 2026-10-05T11:15:28Z · needs_input
