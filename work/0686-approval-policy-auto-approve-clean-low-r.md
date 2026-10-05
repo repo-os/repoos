@@ -12,7 +12,7 @@ branch: feat/approval-policy-auto-approve-clean-low-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:55Z"
-updated_at: "2026-10-05T21:20:31Z"
+updated_at: "2026-10-05T22:29:37Z"
 ---
 ## Problem
 
@@ -42,6 +42,26 @@ This task is part of the story **Field report: first agent-driven project run (o
 ## Docs follow-up
 The playbook page `user-docs/running-with-agents.md` (landed on main) describes the CURRENT behaviour that this task changes. When this task lands, update the page: section 4, the bullet 'Approve only after you have seen it work. Approval is a human decision.'. In short: mention the opt-in approval policy and what stays human. Keep the page accurate rather than aspirational; if this task is declined, leave the page as is. (This replaces the open task 0689, which is being removed.)
 
+## Shots
+```json
+[
+  {
+    "label": "Approval policy Settings controls",
+    "target": "default",
+    "route": "/settings",
+    "highlight": "#setting-approval\\.enabled",
+    "steps": [
+      {
+        "click": "a[href=\"#general\"]"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-05T16:58:55Z · created · unknown
@@ -51,3 +71,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T21:20:28Z · status inbox→ready
 - 2026-10-05T21:20:31Z · cli_override, model_override
 - 2026-10-05T21:20:31Z · status ready→active, branch
+- 2026-10-05T22:29:37Z · body: section Shots
