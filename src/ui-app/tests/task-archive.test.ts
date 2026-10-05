@@ -118,6 +118,7 @@ function makeCtx(
     reviewRunning?: boolean;
     previewRunning?: boolean;
     closeOutRunning?: boolean;
+    handoffInFlight?: boolean;
   } = {},
 ): RouteContext {
   return {
@@ -134,6 +135,8 @@ function makeCtx(
     } as any,
     runner: {
       isRunning: () => opts.runnerRunning ?? false,
+      isHandoffInFlight: () => opts.handoffInFlight ?? false,
+      hasPendingHandoff: () => false,
       stop: vi.fn(() => ({ stopped: true })),
     } as any,
     previews: {
@@ -328,6 +331,22 @@ describe("POST /api/tasks/:id/archive (#0657)", () => {
     }
   });
 
+  it("refuses while a handoff finalization is still in flight", async () => {
+    const fx = makeFixture("active");
+    try {
+      const { res, fake } = makeRes();
+      await taskAction(makeCtx(fx, { handoffInFlight: true }), makeReq({}), res, {
+        param1: "0657",
+        param2: "archive",
+      });
+      expect(fake.status).toBe(409);
+      expect(fake.payload.error).toMatch(/handoff/);
+      expect(readTaskFile(fx).isArchived).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("is rejected as a bare PATCH field (must use the action route)", async () => {
     const fx = makeFixture("review");
     try {
@@ -361,6 +380,22 @@ describe("POST /api/tasks/:id/archive (#0657)", () => {
       await reviewAgain(makeCtx(fx), makeReq({}), res, { param1: "0657" });
       expect(fake.status).toBe(400);
       expect(fake.payload.error).toMatch(/archived/);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("refuses to close out a parked task via /done", async () => {
+    const fx = makeFixture("review", "is_archived: true\n");
+    try {
+      const { res, fake } = makeRes();
+      await taskAction(makeCtx(fx), makeReq({}), res, {
+        param1: "0657",
+        param2: "done",
+      });
+      expect(fake.status).toBe(400);
+      expect(fake.payload.error).toMatch(/archived/);
+      expect(readTaskFile(fx).status).toBe("review");
     } finally {
       fx.clean();
     }
