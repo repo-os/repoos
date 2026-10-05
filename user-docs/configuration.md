@@ -327,6 +327,16 @@ Appearance is **not** a `repoos.toml` setting. The dark/light/system theme and
 the UI design language are per-browser preferences stored in the browser, so
 they never travel with the repo.
 
+## Attention (notification bell)
+
+```toml
+attention.spendAlertUsd = 0
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `attention.spendAlertUsd` | number | `0` | yes | When provider-reported board spend reaches this USD total, the notification bell shows a spend alert. `0` disables the alert. Estimates and unknown costs are never counted. Edit it in **Settings → Notifications**. The same feed is available as `GET /api/attention` (see [Notices and notifications](/notifications)). |
+
 ## Close-out (Move to done)
 
 ```toml

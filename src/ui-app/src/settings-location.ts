@@ -77,7 +77,7 @@ export function resolveSettingLocation(
     if (!field) return null;
     return { tab: "toml", hasUiRow: false };
   }
-  if (key === "ntfyEnabled" || key === "ntfyTopic") {
+  if (key === "ntfyEnabled" || key === "ntfyTopic" || key === "attention.spendAlertUsd") {
     return { tab: "notifications", hasUiRow: true };
   }
   if (key === "telegram.enabled") {

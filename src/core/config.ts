@@ -220,6 +220,9 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   closeOut: {
     timeoutMs: 360_000,
   },
+  attention: {
+    spendAlertUsd: 0,
+  },
   // Check-gate defaults (#0655): how many times a failing test file is
   // re-run in isolation for the informational flake-triage label.
   check: {
@@ -1474,6 +1477,18 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         );
       }
     }
+
+    const spendAlert = parsed["attention.spendAlertUsd"];
+    if (spendAlert !== undefined) {
+      if (typeof spendAlert === "number" && Number.isFinite(spendAlert) && spendAlert >= 0) {
+        cfg.attention = { spendAlertUsd: spendAlert };
+      } else {
+        console.warn(
+          `[attention] spendAlertUsd must be a number >= 0 (0 disables the alert), ` +
+            `got ${JSON.stringify(spendAlert)} — using 0 (off)`,
+        );
+      }
+    }
   }
 
   // Model-provider API keys (0327): env-only, same rule as the [auth] secrets
@@ -1767,6 +1782,17 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       ],
       description:
         "Advisory ceiling on registered git worktrees. Above it, the Control page's Codebase card turns amber and the server logs a `repoos gc` reminder. Never blocks a task.",
+    },
+    {
+      key: "attention.spendAlertUsd",
+      label: "Spend alert threshold (USD)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.attention?.spendAlertUsd ?? 0,
+      description:
+        "Show a notice in the bell when provider-reported board spend reaches this total. " +
+        "0 disables the alert. Estimates and unknown costs are never counted toward the total.",
     },
     {
       key: "closeOut.timeoutMs",
@@ -2157,6 +2183,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "tunnel.apps",
   // Close-out (Move to done) pipeline budget (#0573)
   "closeOut.timeoutMs",
+  "attention.spendAlertUsd",
   // Remote validation
   "remoteValidation.enabled",
   "remoteValidation.provider",

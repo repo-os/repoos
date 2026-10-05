@@ -524,6 +524,10 @@ export interface RepoOSConfig {
    */
   closeOut?: CloseOutConfig;
   /**
+   * Attention bell and `GET /api/attention` (#0687).
+   */
+  attention?: AttentionConfig;
+  /**
    * Distribution destinations shown as the Releases page's "Published to"
    * summary (a `[[distribution]]` array of tables). Omitted/empty keeps the
    * existing Releases experience with no extra section. See [DistributionConfig].
@@ -1318,6 +1322,15 @@ export interface WatchdogConfig {
 /**
  * Close-out (Move to done) pipeline budget (#0573).
  */
+/** Notification bell / attention feed (#0687). */
+export interface AttentionConfig {
+  /**
+   * Alert when provider-reported board spend reaches this USD total. `0` or
+   * omitted disables the alert. Estimates are never counted (#0676).
+   */
+  spendAlertUsd?: number;
+}
+
 export interface CloseOutConfig {
   /**
    * Total wall-clock budget for ONE close-out attempt, from when the job
