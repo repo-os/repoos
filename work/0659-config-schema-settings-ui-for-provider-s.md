@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-05T23:18:11.353Z: the worktree changed while the gate was running (appeared: repoos.toml) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 updated_at: "2026-10-05T23:14:33Z"
 review_passes: 3
 id: "0659"
@@ -1358,4 +1360,5 @@ src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no 
 - 2026-10-05T23:06:14Z · body: section Shots
 - 2026-10-05T23:13:38Z · area
 - 2026-10-05T23:13:47Z · status active→review
+
 
