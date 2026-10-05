@@ -2,10 +2,7 @@
 id: "0652"
 title: "repoos check: cache step results by tree hash so unchanged reruns return instantly"
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
+status: ready
 priority: p2
 area: core
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/repoos-check-cache-step-results-by-tree-
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-04T16:32:02Z"
-updated_at: "2026-10-05T03:18:50Z"
+updated_at: "2026-10-05T04:46:09Z"
 review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-04T23:41:37.441Z: server-side finalization timed out (deadline exceeded)"
@@ -77,3 +74,5 @@ error: script "test" exited with code 1
 - 2026-10-05T02:39:20Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-05T02:40:53Z · needs_input
 - 2026-10-05T03:18:50Z · body: section Notes for AI
+- 2026-10-05T04:46:09Z · status review→ready, needs_input
+- 2026-10-05T04:46:09Z · note: task abandoned
