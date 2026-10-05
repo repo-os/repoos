@@ -2199,24 +2199,38 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
   let result = text.replace(/\r\n/g, "\n").split("\n");
   let modified = false;
 
-  // Array-of-tables keys ([[agents]]): drop the existing blocks and append the
-  // freshly serialized ones at the end of the file. Also drop any pre-existing
-  // FLAT scalar/array line for the same key (root- or section-scoped) — TOML
-  // cannot validly have both a `key = [...]` line and `[[key]]` blocks for one
-  // key, and leaving a stale flat line untouched here resurrects whatever it
-  // said on the next parse even though this patch never wrote to it (#0521
-  // review: shortening a pool that has both forms rewrote the rows but left
-  // the old flat list, so a removed host came back on reload). Scoped to only
-  // remove a *stray* flat line, not one this same patch is also setting —
-  // callers that intentionally want both never happen; this just guards
-  // against ONE of them going stale after the other form is chosen.
+  // Array-of-tables keys ([[agents]], [[check.steps]], …): rewrite the existing
+  // blocks IN PLACE at the position of the first existing block, so a one-line
+  // change to an unrelated key never relocates the whole section. The previous
+  // behaviour dropped every block anywhere in the file and appended the
+  // freshly serialized ones at the very end — which reordered `[[agents]]`
+  // relative to other tables and produced a whole-section diff for a one-line
+  // Settings save (#0682, field report item 9). A key with no existing blocks
+  // still appends at the end, matching the prior behaviour.
+  //
+  // Also drop any pre-existing FLAT scalar/array line for the same key (root-
+  // or section-scoped) — TOML cannot validly have both a `key = [...]` line and
+  // `[[key]]` blocks for one key, and leaving a stale flat line untouched here
+  // resurrects whatever it said on the next parse even though this patch never
+  // wrote to it (#0521 review: shortening a pool that has both forms rewrote
+  // the rows but left the old flat list, so a removed host came back on
+  // reload). Scoped to only remove a *stray* flat line, not one this same patch
+  // is also setting — callers that intentionally want both never happen; this
+  // just guards against ONE of them going stale after the other form is chosen.
   for (const [key, rawVal] of Object.entries(patch)) {
     if (!isTableArray(rawVal)) continue;
     const blocks = serializeTableArray(key, rawVal);
-    const kept: string[] = [];
+    const withoutBlocks: string[] = [];
+    // Index in `withoutBlocks` where the first removed block sat — where the
+    // freshly serialized blocks go back. `-1` means the key had no blocks.
+    let insertAt = -1;
+    let section = "";
     let i = 0;
     while (i < result.length) {
-      if (stripTomlComment(result[i]).trim() === `[[${key}]]`) {
+      const stripped = stripTomlComment(result[i]).trim();
+      const blockHeader = stripped.match(/^\[\[([^\]]+)\]\]$/);
+      if (blockHeader && blockHeader[1].trim() === key) {
+        if (insertAt === -1) insertAt = withoutBlocks.length;
         i++;
         while (i < result.length) {
           const s = stripTomlComment(result[i]).trim();
@@ -2225,33 +2239,42 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
         }
         continue;
       }
-      kept.push(result[i]);
-      i++;
-    }
-    // Second pass: strip a stray flat line for the same key, root- or
-    // section-scoped — same full-name resolution as the scalar/array patch
-    // loop below (a root-scoped line's own identifier IS the full dotted
-    // key, e.g. `remoteValidation.tailscaleHosts = […]`; a section-scoped
-    // line's leaf combines with its `[section]` header to the same name).
-    let section = "";
-    const withoutFlat: string[] = [];
-    for (const line of kept) {
-      const stripped = stripTomlComment(line).trim();
-      const header = stripped.match(/^\[\[([^\]]+)\]\]/) ?? stripped.match(/^\[([^\]]+)\]/);
+      const header = blockHeader ?? stripped.match(/^\[([^\]]+)\]$/);
       if (header) {
         section = header[1]!.trim();
-        withoutFlat.push(line);
+        withoutBlocks.push(result[i]);
+        i++;
         continue;
       }
+      // Same full-name resolution as the scalar/array patch loop below (a
+      // root-scoped line's own identifier IS the full dotted key, e.g.
+      // `remoteValidation.tailscaleHosts = […]`; a section-scoped line's leaf
+      // combines with its `[section]` header to the same name).
       const kv = stripped.match(/^([A-Za-z0-9_.-]+)\s*=\s*/);
       const full = kv ? (section ? `${section}.${kv[1]}` : kv[1]!) : null;
-      if (full === key) continue; // drop the stray flat line for this key
-      withoutFlat.push(line);
+      if (full === key) {
+        i++; // drop the stray flat line for this key
+        continue;
+      }
+      withoutBlocks.push(result[i]);
+      i++;
     }
-    let finalKept = withoutFlat;
-    while (finalKept.length && finalKept[finalKept.length - 1].trim() === "") finalKept.pop();
-    finalKept.push(blocks);
-    result = finalKept;
+    if (insertAt === -1) {
+      while (withoutBlocks.length && withoutBlocks[withoutBlocks.length - 1].trim() === "") {
+        withoutBlocks.pop();
+      }
+      withoutBlocks.push(blocks);
+      result = withoutBlocks;
+    } else {
+      // The block-skip above swallows the blank line that followed the removed
+      // blocks; put one back when a table follows, so the section never butts
+      // up against the next `[[…]]`.
+      const next = withoutBlocks[insertAt];
+      const needsSep = next !== undefined && next.trim() !== "";
+      const finalKept = withoutBlocks.slice();
+      finalKept.splice(insertAt, 0, ...(needsSep ? [blocks, ""] : [blocks]));
+      result = finalKept;
+    }
     modified = true;
   }
 
@@ -2389,6 +2412,11 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
   }
 
   if (modified) {
+    // Normalize the tail: trim any trailing blank lines and write exactly one
+    // final newline. Without this, a scalar-only patch on a file that already
+    // ended with a blank line (`text.split("\n")` yields a trailing "") grew
+    // one empty line per save (#0682 round-trip stability).
+    while (result.length && result[result.length - 1].trim() === "") result.pop();
     writeFileSync(tomlPath, result.join("\n") + "\n", "utf8");
   }
 }
