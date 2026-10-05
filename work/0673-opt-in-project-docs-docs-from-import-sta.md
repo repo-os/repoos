@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-10-05T17:57:59Z"
 review_passes: 1
 id: "0673"
@@ -138,4 +139,5 @@ error: script "test" exited with code 1
 - 2026-10-05T17:20:35Z · model_override
 - 2026-10-05T17:57:07Z · status active→review
 - 2026-10-05T17:57:07Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+
 
