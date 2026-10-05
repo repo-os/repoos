@@ -18,6 +18,7 @@ import {
 } from "../../core/config.js";
 import { effectiveAreaVocabulary } from "../../core/areas.js";
 import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
+import { describeStorage } from "../../core/storage/index.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import type { Logger } from "../../core/logger.js";
 import { resolveRemoteHosts } from "../../core/remote-hosts.js";
@@ -154,6 +155,17 @@ export const readConfig: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, {
     config: safeConfig,
     schema: getConfigSchema(),
+    /**
+     * Attachment-storage status (#0659). The UI must never guess whether the
+     * configured provider is actually in effect: `describeStorage` reports the
+     * configured id, the effective id (local when the choice is unavailable),
+     * and a human-readable reason, using the same registry fallback a real
+     * upload takes.
+     */
+    storageStatus: describeStorage(
+      repoos.config.storage?.provider,
+      join(repoos.config.root, repoos.config.workDir),
+    ),
     agentsMeta: {
       clis: AGENT_CLIS,
       models: AGENT_MODELS,
