@@ -2686,6 +2686,14 @@
 .drawer-run.reviewing {
   color: var(--amber);
 }
+/* #0684: the effective agent/cli/model for the live run, so "agent coding"
+   never hides which harness is actually running. Muted to sit under the
+   status line rather than compete with it. */
+.drawer-run-agent {
+  color: var(--txt-dim);
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.02em;
+}
 
 /* review substate chip (reviewing / coding / waiting for human) */
 .rs-chip {

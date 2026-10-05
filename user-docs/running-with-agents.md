@@ -29,11 +29,16 @@ first, then come back here.
 
 - Use a cheap default engineer, a reviewer from a **different model family**
   than the engineer, and read-only helpers (CTO, Ross) on free or small models.
-- For a hard task, override the engineer on **that task**. Set the override on the
-  task itself (`PATCH /api/tasks/<id>` with `cliOverride` and `modelOverride`)
-  and then confirm which agent and model actually ran. Some endpoints accept
-  override fields and quietly ignore them; the safe check is the process list or
-  the run header, not the HTTP status.
+- For a hard task, override the engineer on **that task** before you start it.
+  Persist the pin with `PATCH /api/tasks/<id>` (`cliOverride`, `modelOverride`,
+  and optionally `agentOverride`), `repoos update <id> --cli … --model …`, or
+  the task drawer's agent picker. `POST /api/tasks/<id>/start` and
+  `/message` **reject** override fields in the body with HTTP 400 and name the
+  PATCH route — they never apply a one-shot override to the engineer run.
+  PM chat (`POST /api/tasks/<id>/pm/message` and story PM routes) still accepts
+  `cliOverride` / `modelOverride` in the body for that turn only. After you
+  start, confirm the effective assignment on the task card (robot panel) and in
+  the drawer's run header (`agent · cli · model`), not from the HTTP status alone.
 - Watch for model failure modes on long, tool-heavy tasks: a runaway loop of
   repeated tokens, an agent that says "I'll call the tool now" without calling
   it, or a request that never returns. Restarting the task on a stronger model is
