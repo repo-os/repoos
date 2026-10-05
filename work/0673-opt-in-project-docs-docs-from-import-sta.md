@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T15:20:13Z"
-updated_at: "2026-10-05T15:20:27Z"
+updated_at: "2026-10-05T15:28:26Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ Owner guidance (important): do NOT make starter docs the default and do not impo
 
 - 2026-10-05T15:20:13Z · created · unknown
 - 2026-10-05T15:20:27Z · note: Owner context (2026-10-05): the main reason for --docs-from is the owner's own workflow: they keep a ready-made docs directory (drafted in earlier AI chats that already know how RepoOS works) and drop it into EVERY new RepoOS project right after init. Design implications: (1) --docs-from must handle a whole nested doc tree, not just one file, and be safe to re-run; (2) add an optional user-level default so it needs no flag each time, e.g. a RepoOS user config key or env var (init.docsTemplate / REPOOS_DOCS_TEMPLATE pointing at a directory) used by 'repoos init' when set, with an opt-out flag (--no-docs-template); (3) the import ships first, the starter skeleton and doctor wiring check can follow as separate tasks. Suggested priority bump p3 -> p2 once the owner agrees.
+- 2026-10-05T15:28:26Z · note: Owner clarification (2026-10-05): the owner's real workflow is interactive 'repoos init', then manually moving a docs dir (kept in ~/Downloads, contents differ per project) into the new repo. So the PRIMARY deliverables are: (1) 'repoos init <name> --docs-from <dir>' and 'repoos docs import <dir>', and (2) a prompt in the GUIDED interactive flow: 'Import existing docs from a folder? (path, Enter to skip)', placed right after the description/areas questions, with ~ expansion and a clear error if the path does not exist. Treat the user-level saved default (init.docsTemplate / REPOOS_DOCS_TEMPLATE) as OPTIONAL and low priority: only useful if the same folder is reused for every project, which is not the owner's case. Supersedes the earlier note's emphasis on the saved default.
