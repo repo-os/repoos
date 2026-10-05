@@ -2,14 +2,14 @@
 id: "0656"
 title: Validate priority and type on task create/update (reject values outside p0-p3 and the known types)
 type: chore
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/validate-priority-and-type-on-task-creat
 created_at: "2026-10-05T03:23:28Z"
-updated_at: "2026-10-05T06:11:05Z"
+updated_at: "2026-10-05T06:16:14Z"
 last_check_failure: "repoos check at 2026-10-05T06:10:21.882Z: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -35,3 +35,4 @@ Affected files found by survey: priority high, p4 and medium; type ux, perf, doc
 - 2026-10-05T05:18:05Z · status ready→active, branch
 - 2026-10-05T06:11:05Z · status active→review
 - 2026-10-05T06:11:05Z · status review→active
+- 2026-10-05T06:16:14Z · status active→review
