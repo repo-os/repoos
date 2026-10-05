@@ -11,10 +11,9 @@ branch: feat/repoos-check-cache-step-results-by-tree-
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-04T16:32:02Z"
-updated_at: "2026-10-05T02:34:12Z"
+updated_at: "2026-10-05T02:39:19Z"
 review_rounds: 2
 review_passes: 2
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-04T23:41:37.441Z: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -71,3 +70,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T02:34:12Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/serve-reaper.test.ts:460:22 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-05T02:34:12Z · status review→active
+- 2026-10-05T02:39:19Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
