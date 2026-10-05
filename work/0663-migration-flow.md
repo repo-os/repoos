@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T08:29:15Z"
-updated_at: "2026-10-05T12:05:54Z"
+updated_at: "2026-10-05T12:06:02Z"
 ---
 Slice 6: Dry run, resumable upload, verification before local originals released. Migration is safely repeatable.
 
