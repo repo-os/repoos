@@ -13,7 +13,7 @@ branch: feat/config-schema-settings-ui-for-provider-s
 model_override: opencode-go/deepseek-v4.1-flash
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T22:46:38Z"
+updated_at: "2026-10-05T23:06:14Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -60,6 +60,38 @@ The deeper problem is honesty. `createStorageProvider` deliberately falls back t
 - This is a UI-visible change: declare `## Shots` showing the General tab with local selected and with neon selected/unavailable explained, and rebuild the UI before handoff (`bun run build:ui`).
 - Area note: the metadata says `ui`, but the diff touches `core` and `server` too (config + wiring); set the area to `[ui, core]` if that is more accurate when you implement.
 - Out of scope: the Neon provider itself, credential storage/UI, migration, upload-state/retry, and any change to where local files live.
+
+## Shots
+```json
+[
+  {
+    "label": "Attachment storage — local filesystem selected (default)",
+    "target": "default",
+    "route": "/settings",
+    "highlight": "[id=\"setting-storage.provider\"]"
+  },
+  {
+    "label": "Attachment storage — Neon selected, explained as unavailable with local still in effect",
+    "target": "default",
+    "route": "/settings",
+    "highlight": "[id=\"setting-storage.provider\"]",
+    "steps": [
+      {
+        "click": "[id=\"setting-storage.provider\"] [role=\"combobox\"]"
+      },
+      {
+        "waitFor": "[role=\"option\"]:has-text(\"Neon Object Storage\")"
+      },
+      {
+        "click": "[role=\"option\"]:has-text(\"Neon Object Storage\")"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  }
+]
+```
 
 ## Activity
 
@@ -1323,3 +1355,4 @@ $ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app
 src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no exported member 'StorageStatus'.
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-05T22:46:35Z · model_override
+- 2026-10-05T23:06:14Z · body: section Shots
