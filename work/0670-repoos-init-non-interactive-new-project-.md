@@ -5,12 +5,13 @@ type: feature
 status: done
 priority: p2
 area: cli
+story: "Field report: first agent-driven project run (opex)"
 merged_commit: 2fe5b0629e75708447755cb06f0bb723619ee49a
 assigned_to: ai
 created_by: ""
 branch: feat/repoos-init-non-interactive-new-project-
 created_at: "2026-10-05T15:20:07Z"
-updated_at: "2026-10-05T16:42:26Z"
+updated_at: "2026-10-05T17:16:35Z"
 merge_conflict_retry_count: 1
 review_passes: 1
 dev_error_count: 1
@@ -59,3 +60,4 @@ Related earlier work: task 0028 (guided new-git-repo mode) and 0364 (seed a real
 - 2026-10-05T16:07:33Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-05T16:32:27Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-05T16:42:26Z · status review→done, release:success
+- 2026-10-05T17:16:35Z · story
