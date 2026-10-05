@@ -20,6 +20,11 @@ task-area vocabulary (and commented preview-target stubs for it) — skippable, 
 skipped automatically once `[[areas]]` is declared. See
 [Configuration](/configuration#areas).
 
+`--docs-from` copies an existing doc set into `docsDir` (a directory, a single
+file, or a `.zip`); `--force` overwrites collisions. The guided flow also prompts
+for a path, then offers to scaffold starter docs. Nothing is imported or
+scaffolded unless you pass the flag or answer yes. See `repoos docs` below.
+
 #### Non-interactive new-project mode (for agents and scripts)
 
 Outside a git repo with no TTY, `repoos init <name>` can't prompt, so it prints
@@ -186,6 +191,26 @@ an agent should read before picking the task up.
 
 Creates a document from a description, via the Product Manager agent.
 
+### `repoos docs import <dir|file|.zip> [--force] [--dry-run]`
+
+Copies an existing doc set into `docsDir`, preserving folder structure. The
+source may be a directory, a single file, or a `.zip` archive (common for a
+browser download): an archive is extracted to a temp directory first, a lone
+top-level folder is unwrapped so you don't get an extra level, and macOS junk
+(`__MACOSX/`, `.DS_Store`, `._*`) is ignored. Archives that try to escape the
+extraction directory (zip-slip), contain symlinks, or are absurdly large or
+numerous are refused. Existing files are left untouched and reported unless
+`--force` is passed; `--dry-run` prints the plan and writes nothing.
+
+### `repoos docs scaffold`
+
+Writes a minimal, opt-in starter skeleton into `docsDir`: an index `README.md`
+with a reading order and an "if you learn something durable, write it here"
+line, plus short `product.md`, `architecture.md`, `conventions.md` and
+`glossary.md` stubs with prompts. It never overwrites an existing file, and
+nothing is created unless you run the command (or answer yes to the scaffold
+prompt in the guided `repoos init` flow).
+
 ## Running it
 
 ### `repoos serve [--port N]`
@@ -215,6 +240,12 @@ readiness — each with a stable finding id, a severity (`pass` / `warn` / `fail
 and a concrete next step. It also reports each enabled harness's compatibility
 contract status (verified, upgrade recommended, newer than verified, unsupported,
 or not yet probed).
+
+It also runs an advisory **docs-wiring** check and warns when `AGENTS.md` never
+points at the docs index (`docsDir/README.md`), when docs exist that the index
+doesn't link to, or when the docs directory is empty while tasks exist. These are
+always warnings with a one-line fix hint — they never change the exit code. See
+[Give the project docs](/getting-started#give-the-project-docs).
 
 ```bash
 repoos doctor            # warnings/failures, summary and next steps

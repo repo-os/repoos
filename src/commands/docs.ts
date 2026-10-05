@@ -2,6 +2,7 @@
  * Document creation commands for the CLI.
  */
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   createDocument,
   createFreeformDocument,
@@ -11,6 +12,7 @@ import {
 import { loadConfig } from "../core/config.js";
 import { c } from "../cli/colors.js";
 import { resolvePmAgent, runPrompt, recordOneShotSession } from "../server/agents.js";
+import { currentDocsDir, importDocsInto, scaffoldDocsInto } from "./docs-io.js";
 
 /** `repoos new-doc "<description>"` or `repoos new-doc --path docs/foo.md --content-file x.md` */
 export async function cmdNewDoc(args: string[]): Promise<void> {
@@ -78,4 +80,56 @@ export async function cmdNewDoc(args: string[]): Promise<void> {
     );
     process.exitCode = 1;
   }
+}
+
+/**
+ * `repoos docs import <dir|file|.zip> [--force] [--dry-run]`
+ * `repoos docs scaffold`
+ *
+ * Opt-in helpers around `docsDir` (#0673): copy an existing doc set, or write a
+ * minimal starter skeleton. Neither runs on its own, and scaffold never
+ * overwrites — an existing file is left exactly as it was.
+ */
+export async function cmdDocs(args: string[]): Promise<void> {
+  const [sub, ...rest] = args;
+
+  if (sub === "import") {
+    let force = false;
+    let dryRun = false;
+    const positional: string[] = [];
+    for (const a of rest) {
+      if (a === "--force") force = true;
+      else if (a === "--dry-run") dryRun = true;
+      else positional.push(a);
+    }
+    const source = positional.join(" ").trim();
+    if (!source) {
+      console.error(c.red("  Usage: repoos docs import <dir|file|.zip> [--force] [--dry-run]"));
+      process.exitCode = 1;
+      return;
+    }
+    const { root, docsDir } = currentDocsDir();
+    if (!importDocsInto(root, docsDir, source, { force, dryRun })) process.exitCode = 1;
+    return;
+  }
+
+  if (sub === "scaffold") {
+    if (rest.includes("--force")) {
+      console.error(
+        c.red(
+          "  repoos docs scaffold never overwrites — remove a file you want rebuilt, then re-run.",
+        ),
+      );
+      process.exitCode = 1;
+      return;
+    }
+    const { root, docsDir } = currentDocsDir();
+    scaffoldDocsInto(root, docsDir);
+    return;
+  }
+
+  console.error(c.red("  Usage: repoos docs <import|scaffold> ..."));
+  console.error(c.dim("    repoos docs import <dir|file|.zip> [--force] [--dry-run]"));
+  console.error(c.dim("    repoos docs scaffold"));
+  process.exitCode = 1;
 }

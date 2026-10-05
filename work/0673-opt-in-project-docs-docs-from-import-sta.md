@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-05T19:37:18Z"
-review_passes: 3
+updated_at: "2026-10-05T17:57:59Z"
+review_passes: 1
 id: "0673"
 title: "Opt-in project docs: --docs-from import, starter skeleton, and a doctor wiring check"
 type: feature
@@ -14,7 +14,6 @@ branch: feat/opt-in-project-docs-docs-from-import-sta
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T15:20:13Z"
-merge_conflict_retry_count: 1
 ---
 ## Problem
 
@@ -139,9 +138,3 @@ error: script "test" exited with code 1
 - 2026-10-05T17:20:35Z · model_override
 - 2026-10-05T17:57:07Z · status active→review
 - 2026-10-05T17:57:07Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-05T19:31:20Z · status review→active
-- 2026-10-05T19:31:27Z · status active→review
-- 2026-10-05T19:31:27Z · status review→active
-- 2026-10-05T19:36:22Z · status active→review
-- 2026-10-05T19:36:23Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-

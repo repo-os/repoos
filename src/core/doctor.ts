@@ -51,6 +51,7 @@ import {
 } from "./agent-compatibility.js";
 import { parseDocument } from "./frontmatter.js";
 import { isGitRepo } from "./git.js";
+import { checkDocsWiringAt } from "./project-docs.js";
 import { portListening } from "./net-probe.js";
 import { validateToml } from "./toml-validate.js";
 
@@ -952,9 +953,27 @@ function checkLayout(root: string, config: RepoOSConfig): DoctorFinding[] {
     );
   }
 
+  out.push(...checkDocsWiring(root, config));
   out.push(checkTaskFrontmatter(root, config));
   out.push(checkStarterHygiene(root, config));
   return out;
+}
+
+/**
+ * Wire the pure docs-wiring predicate (#0673) into DoctorFindings. Advisory:
+ * every finding is a `warn`, never a `fail`, so the exit code is unchanged.
+ * Each check keeps its own stable id; a clean result yields one pass finding.
+ */
+function checkDocsWiring(root: string, config: RepoOSConfig): DoctorFinding[] {
+  const taskCount = walkTaskFiles(join(root, config.workDir), config.taskExtensions).length;
+  const findings = checkDocsWiringAt(root, config.docsDir, taskCount);
+  if (findings.length === 1 && findings[0].level === "pass") {
+    const f = findings[0];
+    return [finding(f.id, "layout", "pass", f.title, f.detail)];
+  }
+  return findings.map((f) =>
+    finding(f.id, "layout", f.level === "warn" ? "warn" : "pass", f.title, f.detail, f.fix),
+  );
 }
 
 function checkTaskFrontmatter(root: string, config: RepoOSConfig): DoctorFinding {
