@@ -1,20 +1,21 @@
 ---
-merge_conflict_retry_count: 1
-updated_at: "2026-10-05T23:03:43Z"
-review_passes: 2
 id: "0687"
 title: "Attention queue: extend the notification bell with provider failures, spend threshold, awaiting-visual-check, remote fallback; expose one API feed"
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: d92db482b4cb445968094c7e02a02b42a5908411
 assigned_to: ai
 created_by: ""
 branch: feat/attention-queue-extend-the-notification-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:57Z"
+updated_at: "2026-10-05T23:34:40Z"
+merge_conflict_retry_count: 1
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -69,4 +70,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T22:46:40Z · status active→review
 - 2026-10-05T22:48:02Z · status review→active
 - 2026-10-05T23:02:52Z · status active→review
-
+- 2026-10-05T23:34:40Z · status review→done, release:success
