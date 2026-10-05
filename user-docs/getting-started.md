@@ -323,6 +323,7 @@ runs again before anything merges.
 - [CLI reference](/cli) — every command.
 - [Configuration](/configuration) — `repoos.toml` and environment variables.
 - [Concepts](/concepts) — how tasks, worktrees and the lifecycle fit together.
+- [Running a project with AI agents](/running-with-agents) — a practical loop for driving a board with agents.
 
 Starting this repo with an AI agent? See
 [Starting a new project as an agent](#starting-a-new-project-as-an-agent) above
