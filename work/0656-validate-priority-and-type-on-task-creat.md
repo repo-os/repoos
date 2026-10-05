@@ -2,14 +2,14 @@
 id: "0656"
 title: Validate priority and type on task create/update (reject values outside p0-p3 and the known types)
 type: chore
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/validate-priority-and-type-on-task-creat
 created_at: "2026-10-05T03:23:28Z"
-updated_at: "2026-10-05T05:18:05Z"
+updated_at: "2026-10-05T06:11:05Z"
 ---
 ## Problem
 Nothing validates a task's priority or type, so invalid values land in work/*.md. src/core/task.ts reads priority as String(data.priority ?? "p2") and accepts anything; the CLI (src/commands/tasks.ts, repoos new / update) and the API routes (src/server/routes/tasks.ts) pass --priority / --type straight through. user-docs/cli.md lists p0,p1,p2,p3 for --priority, but the usage text only shows 'repoos new ... --priority p1' and 'repoos update ... --priority p', so the valid set is not obvious at the point of use. On 2026-10-05 an agent created five tasks with --priority medium (and one with --type improvement); four were corrected by hand afterwards. A survey of work/*.md today shows existing invalid values: priority high x2, p4 x1, medium x1; type ux x2, perf x2, documentation x2, task x1, fix x1, feat x1, docs x1. The constants already exist: PRIORITIES and TASK_TYPES in src/core/types.ts.
@@ -32,3 +32,4 @@ Affected files found by survey: priority high, p4 and medium; type ux, perf, doc
 - 2026-10-05T03:23:28Z · created · unknown
 - 2026-10-05T05:18:05Z · status inbox→ready
 - 2026-10-05T05:18:05Z · status ready→active, branch
+- 2026-10-05T06:11:05Z · status active→review
