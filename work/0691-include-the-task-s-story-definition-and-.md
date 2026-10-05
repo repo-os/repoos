@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: server
-assigned_to: ""
+story: "Field report: first agent-driven project run (opex)"
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T17:15:50Z"
-updated_at: "2026-10-05T17:15:50Z"
+updated_at: "2026-10-05T17:17:22Z"
 ---
 ## Problem
 
@@ -35,3 +36,4 @@ Look at how the engineer prompt is assembled in `src/server/agents.ts` and how s
 ## Activity
 
 - 2026-10-05T17:15:50Z · created · unknown
+- 2026-10-05T17:17:22Z · story
