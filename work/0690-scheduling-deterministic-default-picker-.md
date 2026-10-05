@@ -12,7 +12,7 @@ branch: feat/scheduling-deterministic-default-picker-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:59:03Z"
-updated_at: "2026-10-05T21:46:06Z"
+updated_at: "2026-10-05T21:46:21Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -62,3 +62,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T20:15:36Z · cli_override, model_override
 - 2026-10-05T21:09:14Z · body: section Shots
 - 2026-10-05T21:46:06Z · status active→review
+- 2026-10-05T21:46:21Z · note: highlight [data-config-key="autoEngineering.pmVeto"] matched nothing on /settings?tab=board
