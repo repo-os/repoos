@@ -89,6 +89,12 @@ strictBuild = false
 # ── Close-out (Move to done) ─────────────────────────────────────────────
 closeOut.timeoutMs = 360000  # 6-minute budget per close-out attempt; 0 = no limit
 
+# ── Approval policy (opt-in; default off) ────────────────────────────────
+# approval.enabled = true
+# approval.autoApprove.areas = ["api", "data", "docs", "chore"]
+# approval.autoApprove.types = ["chore"]
+# approval.autoApprove.uiAreas = ["web", "ui-app", "frontend"]
+
 # ── Agents ───────────────────────────────────────────────────────────────
 maxConcurrentAgents = 5  # omit to size from this machine's CPU count
 ctoSkipHealthy = true    # skip the CTO model call while the board is healthy
@@ -381,6 +387,27 @@ limit)*), or set any value directly in `repoos.toml`. A timeout is a failure
 with an error card; **Stop MTD** on the task drawer is a user cancel and stays
 badge-free — see [docs/close-out-pipeline.md](../docs/close-out-pipeline.md)
 for how the three outcomes differ.
+
+## Approval policy (opt-in auto Move to done)
+
+```toml
+approval.enabled = false
+approval.autoApprove.areas = ["api", "data", "docs", "chore"]
+approval.autoApprove.types = ["chore"]
+approval.autoApprove.uiAreas = ["web", "ui-app", "frontend", "mobile"]
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `approval.enabled` | boolean | `false` | yes | Master switch. When true, tasks in `review` that match configured areas or types, passed the handoff gate, received a clean reviewer verdict (`good to go`), have no blocking bugs in the report, are not tagged `human-only`, and pass branch/handoff checks can **Move to done** without a human click. Each auto-approval is recorded in the task activity log (`auto-approved by policy: …`) and can notify the bell. |
+| `approval.autoApprove.areas` | string[] | `[]` | yes | Task `area` values eligible for auto-approval (any match). Empty means match by type only. |
+| `approval.autoApprove.types` | string[] | `[]` | yes | Task `type` values eligible (any match). Empty means match by area only. |
+| `approval.autoApprove.uiAreas` | string[] | built-in UI list | yes | Areas treated as UI work. Tasks touching these areas are never auto-approved unless handoff screenshots succeeded (at least one capture, no `shots: failed` activity note). When unset, defaults to `web`, `ui`, `ui-app`, `frontend`, and `mobile`. |
+
+Edit **`approval.enabled`** and the area/type lists in **Settings → General**.
+Tag any task **`human-only`** to keep it on a human approval path regardless of
+policy. UI verification and console-error gates (#0680) may tighten the UI
+evidence rule later; until then, screenshot success is the guard.
 
 ## Worktrees and runtime
 
