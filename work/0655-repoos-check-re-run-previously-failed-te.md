@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-05T03:51:26Z"
-review_passes: 1
 id: "0655"
 title: "repoos check: re-run previously failed tests first, and triage single-test failures in isolation"
 type: feature
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/repoos-check-re-run-previously-failed-te
 created_at: "2026-10-05T03:18:48Z"
+updated_at: "2026-10-05T03:50:20Z"
 ---
 ## Problem
 A failing test costs a full-suite run to discover and again to confirm. From .repoos/checks.db: 43 runs failed in the tests step (avg 414s) and 15 in remote-validation (avg about 1,236s, includes remote queue/wait). The six most recent failing runs with recorded test names each had ONE failing test out of about 4,690 and ran 260-290s (one 1,039s) before reporting it. serve-reaper.test.ts (orphaned-root sweep) appears at least twice, and failed #0652's handoff on 2026-10-05 while 4,689 others passed. Failed test names are already stored in check_runs.failed_tests (58 runs).
@@ -30,24 +29,10 @@ A failing test costs a full-suite run to discover and again to confirm. From .re
 ## Notes for AI
 Context: split out of the #0652 analysis (check-result cache, parked). Skipping previously-passed tests as a gate is explicitly rejected: a fix for one test can break another, and the gate guarantees the whole suite on the final tree. Do not add a result cache here. Measure after shipping: time-to-first-failure on reruns, and how often the isolation label is 'passed alone'.
 
-## Shots
-```json
-[
-  {
-    "label": "Settings → Advanced: isolation re-runs after a test failure",
-    "target": "default",
-    "route": "/settings?tab=advanced",
-    "highlight": "[id=\"setting-check.isolationRuns\"]"
-  }
-]
-```
-
 ## Activity
 
 - 2026-10-05T03:18:48Z · created · unknown
 - 2026-10-05T03:18:59Z · status inbox→ready
 - 2026-10-05T03:20:20Z · priority
 - 2026-10-05T03:23:25Z · status ready→active, branch
-- 2026-10-05T03:44:30Z · body: section Shots
 - 2026-10-05T03:50:20Z · status active→review
-

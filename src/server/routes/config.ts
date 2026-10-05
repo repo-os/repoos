@@ -390,6 +390,14 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         return json(res, 400, { error: `${field.label} must be true or false` });
       }
       patch[field.key] = val;
+    } else if (field.type === "number") {
+      // Whole, non-negative numbers only (e.g. check.isolationRuns). Persist
+      // as TOML numeric syntax, not a quoted string.
+      const num = Number(val);
+      if (!Number.isInteger(num) || num < 0) {
+        return json(res, 400, { error: `${field.label} must be a whole number` });
+      }
+      patch[field.key] = num;
     } else if (field.type === "select") {
       // Numeric budget selects accept ANY whole non-negative number, not just
       // the preset option labels — a hand-written repoos.toml value (e.g.

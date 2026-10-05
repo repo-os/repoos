@@ -220,6 +220,11 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   closeOut: {
     timeoutMs: 360_000,
   },
+  // Check-gate defaults (#0655): how many times a failing test file is
+  // re-run in isolation for the informational flake-triage label.
+  check: {
+    isolationRuns: 3,
+  },
 };
 
 /**
@@ -1087,6 +1092,19 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       cfg.check = { ...cfg.check, uiSmoke: checkUiSmoke.trim() };
     }
 
+    // [check] isolation re-runs (#0655) — how many times each failing test
+    // file is re-run alone for the flake-triage label. Bounded so a typo can't
+    // turn a red gate into a long loop; 0 disables it.
+    const checkIsolationRuns = parsed["check.isolationRuns"] ?? parsed["checks.isolationRuns"];
+    if (
+      typeof checkIsolationRuns === "number" &&
+      Number.isInteger(checkIsolationRuns) &&
+      checkIsolationRuns >= 0 &&
+      checkIsolationRuns <= 10
+    ) {
+      cfg.check = { ...cfg.check, isolationRuns: checkIsolationRuns };
+    }
+
     // [check] stylesheet guards (#0351) — the CSS-layering and theme-contrast
     // steps read a project-declared stylesheet and token vocabulary instead of
     // a RepoOS-hardcoded path and token names. A row missing its required keys
@@ -1478,7 +1496,7 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
 export interface ConfigFieldMeta {
   key: string;
   label: string;
-  type: "string" | "boolean" | "select" | "array";
+  type: "string" | "boolean" | "select" | "array" | "number";
   tier: "live" | "restart" | "guarded";
   /**
    * Which primary Settings section a field belongs to. Defaults to "general"
@@ -1925,6 +1943,18 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "When a transient failure occurs on one tailscale host, retry the run on another healthy, free host before falling back to local. Default true when 2+ hosts are configured.",
     },
     {
+      key: "check.isolationRuns",
+      label: "Isolation re-runs after a test failure",
+      type: "number",
+      tier: "guarded",
+      restartRequired: false,
+      default: 3,
+      description:
+        "When a failing tests step names a few test files, re-run each alone this many times " +
+        "and record the result on the run. Informational only — it never turns a failed gate " +
+        "green, because passing alone does not prove a flake under load. 0 disables it.",
+    },
+    {
       key: "dev.inspector.enabled",
       label: "Copy inspector",
       type: "boolean",
@@ -2026,6 +2056,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "preview.auth.enabled",
   // Checks
   "check.uiSmoke",
+  "check.isolationRuns",
   "check.uiStylesheet",
   "check.themeScopes",
   "check.contrastPairs",

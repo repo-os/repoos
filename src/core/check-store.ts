@@ -78,6 +78,7 @@ const SCHEMA = `
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id       TEXT,        -- null for bare CLI runs
     phase         TEXT NOT NULL,
+    worktree      TEXT,        -- absolute worktree path this run executed in
     machine       TEXT,        -- short hostname, or null when never dispatched
     remote        INTEGER NOT NULL DEFAULT 0,
     scope         TEXT NOT NULL DEFAULT 'full',
@@ -87,7 +88,8 @@ const SCHEMA = `
     failed_step   TEXT,
     skipped_steps TEXT,        -- JSON array of step names skipped
     detail        TEXT,
-    failed_tests  TEXT         -- JSON array of failing test names (tests step)
+    failed_tests  TEXT,        -- JSON array of failing test names (tests step)
+    isolation_note TEXT        -- flake-triage label, e.g. "passed 3/3 alone" (#0655)
   );
   CREATE INDEX IF NOT EXISTS idx_check_runs_started_at ON check_runs(started_at);
   CREATE INDEX IF NOT EXISTS idx_check_runs_task_id ON check_runs(task_id);
@@ -114,6 +116,9 @@ export interface CheckRunRow {
   /** null for bare CLI runs. */
   taskId: string | null;
   phase: CheckRunPhase;
+  /** Absolute path of the worktree the run executed in, when known. Lets the
+   *  next run in the same worktree find its own last failure (#0655). */
+  worktree: string | null;
   /** Short hostname of the machine that executed the run, or null when the
    *  run never reached a machine (dispatch failed before a host was chosen). */
   machine: string | null;
@@ -131,11 +136,17 @@ export interface CheckRunRow {
   detail: string | null;
   /** Failing tests (`file > suite > test`) when the tests step failed. */
   failedTests: string[];
+  /**
+   * Informational isolation re-run label (#0655), e.g. `passed 3/3 alone` or
+   * `failed 3/3 alone` for each failing file. Never changes the run outcome.
+   */
+  isolationNote: string | null;
 }
 
 export interface RecordCheckRunInput {
   taskId?: string | null;
   phase: CheckRunPhase;
+  worktree?: string | null;
   machine?: string | null;
   remote?: boolean;
   scope?: string;
@@ -146,6 +157,7 @@ export interface RecordCheckRunInput {
   skippedSteps?: string[];
   detail?: string | null;
   failedTests?: string[];
+  isolationNote?: string | null;
 }
 
 export interface ListCheckRunsOptions {
@@ -216,6 +228,12 @@ export class CheckStore {
     if (!cols.some((c) => c.name === "failed_tests")) {
       this.db.exec("ALTER TABLE check_runs ADD COLUMN failed_tests TEXT");
     }
+    if (!cols.some((c) => c.name === "isolation_note")) {
+      this.db.exec("ALTER TABLE check_runs ADD COLUMN isolation_note TEXT");
+    }
+    if (!cols.some((c) => c.name === "worktree")) {
+      this.db.exec("ALTER TABLE check_runs ADD COLUMN worktree TEXT");
+    }
   }
 
   isAvailable(): boolean {
@@ -229,13 +247,14 @@ export class CheckStore {
       this.db
         .prepare(
           `INSERT INTO check_runs
-             (task_id, phase, machine, remote, scope, started_at, duration_ms,
-              outcome, failed_step, skipped_steps, detail, failed_tests)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             (task_id, phase, worktree, machine, remote, scope, started_at, duration_ms,
+              outcome, failed_step, skipped_steps, detail, failed_tests, isolation_note)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           input.taskId ?? null,
           input.phase,
+          input.worktree ?? null,
           input.machine ?? null,
           input.remote ? 1 : 0,
           input.scope || "full",
@@ -250,6 +269,7 @@ export class CheckStore {
           input.failedTests && input.failedTests.length > 0
             ? JSON.stringify(input.failedTests)
             : null,
+          input.isolationNote?.trim() || null,
         );
       // Retention: delete everything older than the newest MAX_ROWS rows.
       this.db
@@ -318,6 +338,7 @@ export class CheckStore {
       id: Number(r.id) || 0,
       taskId: r.task_id ?? null,
       phase: (r.phase ?? "cli") as CheckRunPhase,
+      worktree: r.worktree ?? null,
       machine: r.machine ?? null,
       remote: Number(r.remote) === 1,
       scope: String(r.scope ?? "full"),
@@ -328,6 +349,7 @@ export class CheckStore {
       skippedSteps: skipped,
       detail: r.detail ?? null,
       failedTests: jsonList(r.failed_tests),
+      isolationNote: r.isolation_note ?? null,
     };
   }
 }

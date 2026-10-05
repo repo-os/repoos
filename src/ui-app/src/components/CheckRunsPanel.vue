@@ -31,7 +31,10 @@ const runs = ref<CheckRunRow[]>([]);
 const expanded = ref<Set<number>>(new Set());
 
 function isExpandable(r: CheckRunRow): boolean {
-  return r.outcome === "fail" && (r.failedTests.length > 0 || !!r.detail || !!r.failedStep);
+  return (
+    r.outcome === "fail" &&
+    (r.failedTests.length > 0 || !!r.isolationNote || !!r.detail || !!r.failedStep)
+  );
 }
 
 function toggleRow(r: CheckRunRow): void {
@@ -299,6 +302,10 @@ function outcomeLabel(r: CheckRunRow): string {
                   ><template v-if="r.detail"> — {{ r.detail }}</template
                   ><template v-else> (no individual tests were recorded).</template>
                 </p>
+                <p v-if="r.isolationNote" class="cr-isolation" data-test-id="isolation-note">
+                  Isolation re-run: {{ r.isolationNote }}. A pass alone does not prove a flake under
+                  load.
+                </p>
               </td>
             </tr>
           </template>
@@ -471,6 +478,11 @@ function outcomeLabel(r: CheckRunRow): string {
 .cr-detail-row td {
   padding: 8px 10px 12px 28px;
   background: var(--panel-solid);
+}
+.cr-isolation {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--txt-dim);
 }
 .cr-detail-text {
   margin: 0;
