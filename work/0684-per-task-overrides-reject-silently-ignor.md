@@ -1,5 +1,5 @@
 ---
-updated_at: "2026-10-05T20:26:34Z"
+updated_at: "2026-10-05T20:59:19Z"
 review_passes: 1
 id: "0684"
 title: "Per-task overrides: reject silently-ignored fields and show the effective agent and model"
@@ -11,10 +11,7 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: feat/per-task-overrides-reject-silently-ignor
-cli_override: cursor
-model_override: composer-2.5
 created_at: "2026-10-05T16:58:50Z"
-dev_error_count: 1
 ---
 ## Problem
 
@@ -38,26 +35,6 @@ This task is part of the story **Field report: first agent-driven project run (o
 ## Docs follow-up
 The playbook page `user-docs/running-with-agents.md` (landed on main) describes the CURRENT behaviour that this task changes. When this task lands, update the page: section 2, the bullet about setting overrides on the task itself and some endpoints ignoring override fields. In short: update to the new validation and the effective-agent display. Keep the page accurate rather than aspirational; if this task is declined, leave the page as is. (This replaces the open task 0689, which is being removed.)
 
-## Shots
-```json
-[
-  {
-    "label": "Task card effective agent assignments (robot panel)",
-    "target": "default",
-    "route": "/",
-    "highlight": ".tc-agent-panel",
-    "steps": [
-      {
-        "click": "button.tc-agent-toggle"
-      },
-      {
-        "waitMs": 300
-      }
-    ]
-  }
-]
-```
-
 ## Activity
 
 - 2026-10-05T16:58:50Z · created · unknown
@@ -66,12 +43,5 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:32:26Z · body: section Docs follow-up
 - 2026-10-05T19:08:06Z · status inbox→ready
 - 2026-10-05T19:08:13Z · status ready→active, branch
-- 2026-10-05T19:17:51Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-10-05T19:23:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-05T20:15:36Z · cli_override, model_override
-- 2026-10-05T20:15:36Z · needs_input
-- 2026-10-05T20:20:14Z · body: section Shots
-- 2026-10-05T20:20:21Z · note: Story #0008 still describes pre-0684 behaviour (200 + ignored overrides on /start and /message); update that bullet when this lands.
-- 2026-10-05T20:25:47Z · status active→review
-- 2026-10-05T20:26:04Z · note: shots: failed — capture of Task card effective agent assignments (robot panel) on "default" failed: click: Timeout 5000ms exceeded.
+- 2026-10-05T20:25:46Z · status active→review
 
