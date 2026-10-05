@@ -2,14 +2,14 @@
 id: "0657"
 title: "Archive task: park a task without changing its status, keep its worktree, and restore it later"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, core]
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T04:14:23Z"
-updated_at: "2026-10-05T04:14:23Z"
+updated_at: "2026-10-05T04:45:44Z"
 ---
 ## Problem
 There is no way to shelve a task that is not worth finishing right now. A task in review that has exhausted its review rounds (for example #0652) stays in the Review column with a 'Waiting for you' card, and the only exits are Move to done (merges the code), Send to engineer, Dismiss, abandon back to ready, or Delete (destroys it). Nothing says 'set this aside, keep the work, I may come back'. The board fills with tasks nobody intends to move.
@@ -42,3 +42,4 @@ Motivation: #0652 sat in review with needs_input 'review-rounds-exhausted' and n
 ## Activity
 
 - 2026-10-05T04:14:23Z · created · unknown
+- 2026-10-05T04:45:44Z · status inbox→ready
