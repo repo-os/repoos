@@ -55,3 +55,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T22:04:28Z · status review→active
 - 2026-10-05T22:05:32Z · note: Review round 2: audit (a) complete — default→sole target at CLI validate and capture (resolveDeclaredTarget); shot skip warnings unchanged at handoff. Items 6/8 declined per prior note.
 - 2026-10-05T22:29:15Z · status active→review
+- 2026-10-05T22:29:15Z · note: Task body is underspecified: missing sections: Desired UX
