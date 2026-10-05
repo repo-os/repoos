@@ -105,6 +105,7 @@ describe("notifications store defaults + persistence", () => {
       paused: false,
       stuck: false,
       needsInput: false,
+      autoApproved: false,
       releaseNotesReady: false,
       releaseSucceeded: false,
       releaseFailed: false,
@@ -303,6 +304,7 @@ describe("notify() gating", () => {
 describe("NOTIFICATION_TYPE_LABELS", () => {
   it("covers every monitorable type — task attention, release kinds (0606) and close-out kinds (#0640)", () => {
     expect(Object.keys(NOTIFICATION_TYPE_LABELS).sort()).toEqual([
+      "autoApproved",
       "closeOutFailed",
       "closeOutSucceeded",
       "closeOutTimedOut",

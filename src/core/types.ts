@@ -524,6 +524,12 @@ export interface RepoOSConfig {
    */
   closeOut?: CloseOutConfig;
   /**
+   * Opt-in auto-approval after a clean review (#0686). Off unless
+   * `approval.enabled = true`. UI-facing areas stay human unless handoff
+   * screenshots succeeded.
+   */
+  approval?: ApprovalConfig;
+  /**
    * Distribution destinations shown as the Releases page's "Published to"
    * summary (a `[[distribution]]` array of tables). Omitted/empty keeps the
    * existing Releases experience with no extra section. See [DistributionConfig].
@@ -1313,6 +1319,23 @@ export interface WatchdogConfig {
    * `needsInput`. Default true.
    */
   autoTransition?: boolean;
+}
+
+/** Opt-in policy for Move to done without a human click (#0686). */
+export interface ApprovalConfig {
+  /** Master switch — default false when absent. */
+  enabled?: boolean;
+  autoApprove?: {
+    /** Task `area` values eligible for auto-approval (any match). */
+    areas?: string[];
+    /** Task `type` values eligible (any match). */
+    types?: string[];
+    /**
+     * Areas treated as UI — require successful handoff screenshots. Defaults to
+     * web/ui/ui-app/frontend/mobile when unset.
+     */
+    uiAreas?: string[];
+  };
 }
 
 /**

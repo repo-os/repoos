@@ -485,6 +485,8 @@ export class ReviewManager {
   private readonly db: RepoOSDb | null;
   /** Failure tl;dr trigger (#0570) — fire-and-forget diagnosis of `review-failed`. */
   private readonly onDiagnosableFailure?: (taskId: string, reason: string) => void;
+  /** Opt-in approval policy (#0686): fired when a run review finishes `good to go`. */
+  private onCleanReviewVerdict?: (task: Task, report: ReviewReport) => void;
 
   constructor(
     config: RepoOSConfig,
@@ -500,6 +502,11 @@ export class ReviewManager {
     this.onDiagnosableFailure = onDiagnosableFailure;
     this.logger = createLogger(config.root);
     this.db = getRepoOSDb(config.root);
+  }
+
+  /** Wire the approval-policy runner once server dependencies exist (#0686). */
+  bindCleanReviewHandler(handler: (task: Task, report: ReviewReport) => void): void {
+    this.onCleanReviewVerdict = handler;
   }
 
   /** Whether an enabled review agent exists — the Agents page toggle. */
@@ -995,6 +1002,8 @@ export class ReviewManager {
             `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
           );
         });
+      } else {
+        void this.onCleanReviewVerdict?.(task, report);
       }
     }
 

@@ -170,6 +170,7 @@ import {
 import { PreviewManager, probePreview } from "./preview.js";
 import { runAutoShotCapture } from "./shot-capture.js";
 import { ReviewManager } from "./review.js";
+import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
 import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
 import { DebugTldrManager } from "./debug-tldr.js";
 import { TestRunManager } from "./test-run.js";
@@ -1824,6 +1825,28 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // adopts them. Deferred until `indexReady` — it reads `index.getTasks()`.
   const runReviewRecovery = (): void => reviews.recoverInterruptedReviews(index.getTasks());
   void indexReady.then(runReviewRecovery, runReviewRecovery).catch(() => {});
+
+  reviews.bindCleanReviewHandler((task, report) => {
+    void tryAutoApproveAfterCleanReview(
+      {
+        config,
+        index,
+        jobCoordinator,
+        reload,
+        emitEvent,
+        triggerJobProcessing,
+        runner,
+        previews,
+        reviews,
+      },
+      task,
+      report,
+    ).catch((err) => {
+      console.error(
+        `[repoos] approval policy handler failed for #${task.id}: ${(err as Error).message}`,
+      );
+    });
+  });
 
   // Skill suggestions (#0429): only after a task genuinely reaches `done` does
   // its session get analysed. A high-bar reusable procedure is persisted
