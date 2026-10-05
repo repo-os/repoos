@@ -275,9 +275,12 @@ regressed — check `integration-orchestrator.ts`'s `validateCandidate()` still 
 routine run (`profiles = ["full"]`) still runs before anything merges. Close-out
 never passes `--changed`: changed-path mode is the agent's fast pre-review pass
 and the handoff re-verification of the same isolated branch, not the gate on the
-merged candidate. A plan step that can't run — a missing tool, an unusable row —
-Fails the gate rather than passing; only an explicitly optional or excluded step
-may skip.
+merged candidate. It also never uses the tests step's failed-first ordering or
+isolation-triage accelerators (#0655): those are interactive/CLI and pre-review
+optimisations, and close-out (including the remote close-out gate) always runs
+the full suite from a clean slate. A plan step that can't run — a missing tool,
+an unusable row — Fails the gate rather than passing; only an explicitly
+optional or excluded step may skip.
 
 **Diagnosing a `check failed: ...` reason (#0428):** the reason now leads with the
 gate's own `── Results ──` summary — which checks failed (`✗ check-fmt:check`,

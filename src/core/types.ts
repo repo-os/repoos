@@ -913,6 +913,13 @@ export interface CheckConfig {
    */
   steps?: CheckStepConfig[];
   /**
+   * How many times `repoos check` re-runs each failing test file in isolation
+   * after a failure, purely as an informational flake-triage label (#0655).
+   * `0` disables the re-runs. Never turns a failed run green — a pass in
+   * isolation does not prove the failure was load-induced.
+   */
+  isolationRuns?: number;
+  /**
    * Shell command `repoos check` runs for its UI smoke step. When set it
    * overrides a `smoke` script in the project's `package.json` (config wins).
    * Absent and no `smoke` script means the step skips.

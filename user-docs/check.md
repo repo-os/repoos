@@ -249,6 +249,31 @@ guards only. Changed-path mode does **not** trigger the remote half — it stays
 fast local pass. Pass `--local-tests` to force the full local suite even when
 remote validation is enabled.
 
+## Failed-first re-runs and isolation triage
+
+Two accelerators sit on top of the tests step, and neither can turn a red run
+green:
+
+- **Failed-first.** After a failed run, the next interactive/CLI or pre-review
+  `repoos check` for the same task re-runs the files that failed last time
+  **first**, and stops immediately (seconds, not minutes) if they still fail. If
+  they pass, the full suite still runs to completion. This is an ordering
+  optimisation, never a skip: a green result is only reported after the profile's
+  normal scope — the whole suite, or the `--changed` subset — has run on the
+  final tree.
+- **Isolation triage.** When a failed tests step names a small number of files
+  (at most three), each is re-run alone `check.isolationRuns` times (default 3)
+  and the result is stored on the run and shown in the Checks → Runs tab, e.g.
+  `src/x.test.ts: passed 3/3 alone`. It is **informational**: it never changes the
+  run's outcome and never retries to green. Per AGENTS.md, a test that only fails
+  under load and passes alone is still a real bug — a pass in isolation is not
+  proof of a flake, only a clue.
+
+Both are disabled for close-out and release: those runs always execute the full
+suite from a clean slate, and the remote close-out gate never uses them. Set
+`check.isolationRuns = 0` to disable isolation triage entirely. The setting is
+also available in Settings → Advanced.
+
 ### Cross-cutting steps
 
 A step with **no** `whenChanged` runs whatever changed. That is how you keep a

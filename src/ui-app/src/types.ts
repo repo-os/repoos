@@ -745,6 +745,8 @@ export interface CheckRunRow {
   /** null for bare CLI runs. */
   taskId: string | null;
   phase: "pre-review" | "close-out" | "release" | "cli";
+  /** Absolute worktree path the run executed in, when known. */
+  worktree?: string | null;
   /** Short hostname of the executing machine, or null when never dispatched. */
   machine: string | null;
   /** True when the run executed on a remote validation host. */
@@ -758,6 +760,8 @@ export interface CheckRunRow {
   failedStep: string | null;
   skippedSteps: string[];
   failedTests: string[];
+  /** Informational isolation re-run label (#0655), e.g. `passed 3/3 alone`. */
+  isolationNote?: string | null;
   detail: string | null;
 }
 
@@ -975,7 +979,7 @@ export interface AutoEngineeringState {
 export interface ConfigField {
   key: string;
   label: string;
-  type: "string" | "boolean" | "select" | "array";
+  type: "string" | "boolean" | "select" | "array" | "number";
   tier: "live" | "restart" | "guarded";
   group?: "general" | "voice";
   restartRequired: boolean;

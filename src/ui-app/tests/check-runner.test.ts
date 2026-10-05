@@ -20,7 +20,7 @@ import {
 } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { loadConfig } from "../../core/config.js";
 import { resolveCheckPlan, type CheckPlan } from "../../core/check-plan.js";
 import {
@@ -30,7 +30,13 @@ import {
   missingBinaries,
   runCommand,
 } from "../../core/check-runner.js";
-import { changedPathsSince, runCheckPlan } from "../../commands/check.js";
+import {
+  changedPathsSince,
+  failedTestFile,
+  failedTestFiles,
+  runCheckPlan,
+  testFileFilterArgs,
+} from "../../commands/check.js";
 
 interface Fixture {
   root: string;
@@ -647,6 +653,192 @@ describe("runCommand — the subprocess primitive", () => {
     expect(res.status).toBe("timeout");
     // Resolved promptly rather than waiting out the grandchild's own 30s.
     expect(res.durationMs).toBeLessThan(10_000);
+  });
+});
+
+/**
+ * #0655 — failed-first ordering and informational isolation triage. A fake
+ * `bun` records every invocation, exits `preflightExit` on a
+ * `--failed-first` run (the pre-flight and isolation re-runs both use it) and
+ * `fullExit` for the suite, printing `failLines` for the real run.
+ */
+function scriptedTestsFixture(opts: {
+  preflightExit: number;
+  fullExit: number;
+  failLines?: string[];
+  files?: string[];
+}): Fixture {
+  const f = fixture(`[check]
+version = 1
+
+[[check.steps]]
+name = "tests"
+kind = "tests"
+`);
+  writeFileSync(
+    join(f.root, "package.json"),
+    JSON.stringify({ name: "x", scripts: { test: "node scripts/run-tests.mjs" } }),
+  );
+  writeFileSync(join(f.root, "bun.lock"), "");
+  mkdirSync(join(f.root, "scripts"), { recursive: true });
+  writeFileSync(join(f.root, "scripts", "run-tests.mjs"), "");
+  for (const file of opts.files ?? []) {
+    mkdirSync(join(f.root, dirname(file)), { recursive: true });
+    writeFileSync(join(f.root, file), "");
+  }
+  const failPrint = (opts.failLines ?? [])
+    .map((line) => `printf '%s\\n' ${JSON.stringify(line)}`)
+    .join("\n");
+  const script = join(f.binDir, "bun");
+  writeFileSync(
+    script,
+    `#!/bin/sh\nprintf 'bun %s\\n' "$*" >> "${f.log}"\n` +
+      `case "$*" in\n  *--failed-first*) exit ${opts.preflightExit} ;;\nesac\n` +
+      `${failPrint}\nexit ${opts.fullExit}\n`,
+  );
+  chmodSync(script, 0o755);
+  return f;
+}
+
+describe("failed-first ordering (#0655)", () => {
+  it("does nothing new when there is no prior failure", async () => {
+    const f = scriptedTestsFixture({ preflightExit: 0, fullExit: 0 });
+    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root });
+    expect(results[0].status).toBe("passed");
+    expect(commandsRun(f)).toEqual(["bun run --bun test"]);
+  });
+
+  it("re-runs previously-failed files first and short-circuits when they still fail", async () => {
+    const f = scriptedTestsFixture({
+      preflightExit: 1,
+      fullExit: 0,
+      files: ["src/a.test.ts"],
+    });
+    const results = await runCheckPlan(planFor(f.root), {
+      repoRoot: f.root,
+      previousFailedTests: ["src/a.test.ts > suite > fails"],
+    });
+    expect(results[0].status).toBe("failed");
+    expect(results[0].detail).toMatch(/previously-failed test file\(s\) still fail/);
+    // Only the pre-flight ran — the full suite was never reached.
+    expect(commandsRun(f)).toEqual(["bun run --bun test -- --failed-first src/a.test.ts"]);
+  });
+
+  it("runs the full suite after previously-failed files now pass", async () => {
+    const f = scriptedTestsFixture({
+      preflightExit: 0,
+      fullExit: 0,
+      files: ["src/a.test.ts"],
+    });
+    const results = await runCheckPlan(planFor(f.root), {
+      repoRoot: f.root,
+      previousFailedTests: ["src/a.test.ts > suite > fails"],
+    });
+    expect(results[0].status).toBe("passed");
+    expect(commandsRun(f)).toEqual([
+      "bun run --bun test -- --failed-first src/a.test.ts",
+      "bun run --bun test",
+    ]);
+  });
+
+  it("drops a previously-failed file that no longer exists, without failing on it", async () => {
+    const f = scriptedTestsFixture({ preflightExit: 0, fullExit: 0 });
+    const results = await runCheckPlan(planFor(f.root), {
+      repoRoot: f.root,
+      previousFailedTests: ["src/deleted.test.ts > suite > gone"],
+    });
+    expect(results[0].status).toBe("passed");
+    expect(commandsRun(f)).toEqual(["bun run --bun test"]);
+  });
+});
+
+describe("isolation triage (#0655)", () => {
+  it("re-runs a single failing file in isolation and labels the outcome", async () => {
+    const f = scriptedTestsFixture({
+      preflightExit: 0,
+      fullExit: 1,
+      failLines: ["FAIL  src/a.test.ts > suite > fails"],
+      files: ["src/a.test.ts"],
+    });
+    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root });
+    expect(results[0].status).toBe("failed");
+    expect(results[0].isolationNote).toBe("src/a.test.ts: passed 3/3 alone");
+    expect(commandsRun(f)).toEqual([
+      "bun run --bun test",
+      "bun run --bun test -- --failed-first src/a.test.ts",
+      "bun run --bun test -- --failed-first src/a.test.ts",
+      "bun run --bun test -- --failed-first src/a.test.ts",
+    ]);
+  });
+
+  it("honours a custom re-run count and can be disabled", async () => {
+    const on = scriptedTestsFixture({
+      preflightExit: 0,
+      fullExit: 1,
+      failLines: ["FAIL  src/a.test.ts > suite > fails"],
+      files: ["src/a.test.ts"],
+    });
+    const results = await runCheckPlan(planFor(on.root), {
+      repoRoot: on.root,
+      isolationRuns: 1,
+    });
+    expect(results[0].isolationNote).toBe("src/a.test.ts: passed 1/1 alone");
+    expect(commandsRun(on)).toHaveLength(2);
+
+    const off = scriptedTestsFixture({
+      preflightExit: 0,
+      fullExit: 1,
+      failLines: ["FAIL  src/a.test.ts > suite > fails"],
+      files: ["src/a.test.ts"],
+    });
+    const disabled = await runCheckPlan(planFor(off.root), {
+      repoRoot: off.root,
+      isolationRuns: 0,
+    });
+    expect(disabled[0].isolationNote).toBeUndefined();
+    expect(commandsRun(off)).toEqual(["bun run --bun test"]);
+  });
+
+  it("skips triage when the failure spans more than the cap of files", async () => {
+    const files = ["src/a.test.ts", "src/b.test.ts", "src/c.test.ts", "src/d.test.ts"];
+    const f = scriptedTestsFixture({
+      preflightExit: 0,
+      fullExit: 1,
+      failLines: files.map((file) => `FAIL  ${file} > suite > fails`),
+      files,
+    });
+    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root });
+    expect(results[0].status).toBe("failed");
+    expect(results[0].isolationNote).toBeUndefined();
+    expect(commandsRun(f)).toEqual(["bun run --bun test"]);
+  });
+});
+
+describe("failed-test file parsing and filter args (#0655)", () => {
+  it("takes the file from a `file > suite > test` name", () => {
+    expect(failedTestFile("src/a.test.ts > suite > fails")).toBe("src/a.test.ts");
+    expect(failedTestFile("src/a.test.ts")).toBe("src/a.test.ts");
+  });
+
+  it("dedupes and drops files that are gone", () => {
+    const root = tmpDir("repoos-failed-files-");
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/a.test.ts"), "");
+    const files = failedTestFiles(
+      ["src/a.test.ts > suite > one", "src/a.test.ts > suite > two", "src/gone.test.ts"],
+      root,
+    );
+    expect(files).toEqual(["src/a.test.ts"]);
+  });
+
+  it("uses the dedicated single-pass mode for RepoOS's two-pass runner", () => {
+    expect(testFileFilterArgs("node scripts/run-tests.mjs", ["a.test.ts"])).toEqual([
+      "--failed-first",
+      "a.test.ts",
+    ]);
+    expect(testFileFilterArgs("vitest run", ["a.test.ts"])).toEqual(["a.test.ts"]);
+    expect(testFileFilterArgs("go test ./...", ["a.test.ts"])).toBeNull();
+    expect(testFileFilterArgs("vitest run", [])).toBeNull();
   });
 });
 
