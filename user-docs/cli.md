@@ -4,13 +4,17 @@ Run `repoos` with no arguments to see this list in your terminal.
 
 ## Setup
 
-### `repoos init [name] [--docs-from <dir|file|.zip>] [--force]`
+### `repoos init [name]`
 
-Scaffolds RepoOS files in the current repo, plus a `ready` starter task so the
-board isn't empty. By default files go under a `repoos/` subdirectory;
-interactive prompts let you choose a different location or `/` for the repo
-root. `repoos.toml` and `AGENTS.md` always stay at the root. Run outside a git
-repo, it starts a guided new-project flow instead, which can launch the web
+Scaffolds RepoOS files in the current repo, plus an `inbox` starter task so the
+board isn't empty — a suggestion for you, not work to auto-run, promoted with
+`repoos mv <id> ready`. The starter body follows the repo's content: an
+effectively empty repo (no meaningful source yet) gets the product-vision task,
+otherwise the read-the-codebase one; override with
+`repoos init --starter vision|codebase`. By default files go under a `repoos/`
+subdirectory; interactive prompts let you choose a different location or `/` for
+the repo root. `repoos.toml` and `AGENTS.md` always stay at the root. Run outside
+a git repo, it starts a guided new-project flow instead, which can launch the web
 console for you. On an existing repo, an interactive run also offers to seed the
 task-area vocabulary (and commented preview-target stubs for it) — skippable, and
 skipped automatically once `[[areas]]` is declared. See
@@ -20,6 +24,40 @@ skipped automatically once `[[areas]]` is declared. See
 file, or a `.zip`); `--force` overwrites collisions. The guided flow also prompts
 for a path, then offers to scaffold starter docs. Nothing is imported or
 scaffolded unless you pass the flag or answer yes. See `repoos docs` below.
+
+#### Non-interactive new-project mode (for agents and scripts)
+
+Outside a git repo with no TTY, `repoos init <name>` can't prompt, so it prints
+the exact command to run and exits non-zero. Pass `--new` (or `--yes`) to run
+the same guided flow with answers from flags and defaults — no pty tricks:
+
+```bash
+repoos init myproject --new \
+  --description "A tiny social app for book clubs" \
+  --areas web,api \
+  --no-launch
+```
+
+| Flag | Meaning |
+| --- | --- |
+| `--new`, `--yes` | Run the new-project flow non-interactively. Required without a TTY. |
+| `--description "<text>"` | Project description seeded into the starter task. |
+| `--description-file <path>` | Read the description from a file; `-` reads stdin (multi-line markdown). |
+| `--areas web,api` | Seed the area vocabulary (same comma-separated rule as the area picker). |
+| `--layout <ns>` | `repoos` (default), `/` for the repo root, or a namespace path. |
+| `--commit` / `--no-commit` | Make the initial commit of the scaffold (default: commit). |
+| `--launch` / `--no-launch` | Start the web console when done (default: no launch without a TTY). |
+| `--preview-stub` / `--no-preview-stub` | Scaffold commented `[[preview.targets]]` stubs for the areas. |
+| `--dir <path>` | Where to create the project; alternative to the positional name. |
+| `--force` | Scaffold into an existing non-empty directory. |
+| `--json` | Print `{ root, tasks: [...], created: [...] }` instead of the human summary. |
+| `--help` | Documented flags, and which apply to new vs existing repos. |
+
+`--new` seeds the **new-project** starter ("Flesh out the product vision and
+initial architecture"). Do **not** work around a missing TTY by running
+`git init` first: inside a git repo, `repoos init` seeds the *existing-codebase*
+starter ("Read this codebase…"), which is the wrong route for a brand-new
+project.
 
 When the repo has no check plan yet, init inspects its stack and writes a
 starter plan to an uncommitted `repoos.check-plan.proposed.toml` for review;

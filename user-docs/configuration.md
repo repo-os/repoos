@@ -201,9 +201,9 @@ package = "@scope/package"
 url = "https://www.npmjs.com/package/@scope/package"
 install = ["npm install -g @scope/package"]
 
-# ── Stories (opt-in cross-area delivery tracking) ────────────────────────
+# ── Stories (cross-area delivery tracking, on by default) ────────────────
 [stories]
-enabled = false           # true shows the Stories page and task Story field
+enabled = true            # false hides the Stories page and task Story field
 
 # ── Tunnels (managed by `repoos tunnel`) ─────────────────────────────────
 [tunnel]
@@ -746,12 +746,12 @@ See [Deployments and releases](/deployments-and-releases) for how these render.
 
 ```toml
 [stories]
-enabled = false
+enabled = true
 ```
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
-| `stories.enabled` | boolean | `false` | yes | Turns the Stories page, its navigation item (between Work and Checks), and the task drawer's Story field on. |
+| `stories.enabled` | boolean | `true` | yes | Shows the Stories page, its navigation item (between Work and Checks), and the task drawer's Story field. On by default; set `false` to hide all three. |
 
 Story definition files live under `storiesDir` (default `stories`, a top-level
 repo-relative layout key — see *Layout and repository paths*). Existing repos
