@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-05T17:58:32Z"
+review_passes: 2
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
@@ -12,9 +14,7 @@ created_by: ""
 branch: feat/config-schema-settings-ui-for-provider-s
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T17:57:17Z"
 review_rounds: 1
-review_passes: 1
 handoff_signal_retry_count: 2
 ---
 ## Original prompt
@@ -282,3 +282,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T17:57:17Z · status active→review
 - 2026-10-05T17:57:17Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+
