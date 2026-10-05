@@ -2,7 +2,7 @@
 id: "0656"
 title: Validate priority and type on task create/update (reject values outside p0-p3 and the known types)
 type: chore
-status: review
+status: active
 priority: p2
 area: core
 assigned_to: ai
@@ -34,3 +34,4 @@ Affected files found by survey: priority high, p4 and medium; type ux, perf, doc
 - 2026-10-05T05:18:05Z · status inbox→ready
 - 2026-10-05T05:18:05Z · status ready→active, branch
 - 2026-10-05T06:11:05Z · status active→review
+- 2026-10-05T06:11:05Z · status review→active
