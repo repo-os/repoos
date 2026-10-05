@@ -2,14 +2,14 @@
 id: "0673"
 title: "Opt-in project docs: --docs-from import, starter skeleton, and a doctor wiring check"
 type: feature
-status: ready
+status: active
 priority: p3
 area: cli
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/opt-in-project-docs-docs-from-import-sta
 created_at: "2026-10-05T15:20:13Z"
-updated_at: "2026-10-05T15:37:04Z"
+updated_at: "2026-10-05T15:37:09Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ Owner guidance (important): do NOT make starter docs the default and do not impo
 - 2026-10-05T15:28:26Z · note: Owner clarification (2026-10-05): the owner's real workflow is interactive 'repoos init', then manually moving a docs dir (kept in ~/Downloads, contents differ per project) into the new repo. So the PRIMARY deliverables are: (1) 'repoos init <name> --docs-from <dir>' and 'repoos docs import <dir>', and (2) a prompt in the GUIDED interactive flow: 'Import existing docs from a folder? (path, Enter to skip)', placed right after the description/areas questions, with ~ expansion and a clear error if the path does not exist. Treat the user-level saved default (init.docsTemplate / REPOOS_DOCS_TEMPLATE) as OPTIONAL and low priority: only useful if the same folder is reused for every project, which is not the owner's case. Supersedes the earlier note's emphasis on the saved default.
 - 2026-10-05T15:33:34Z · note: Owner decision (2026-10-05): DROP the saved default entirely (no init.docsTemplate / REPOOS_DOCS_TEMPLATE / --no-docs-template); the owner uses a different path every time. ADD: the source may be a .zip. --docs-from <path> and the interactive prompt must accept (a) a directory, (b) a single file, or (c) a .zip archive (typical browser download, e.g. ~/Downloads/docs.zip) and unpack it automatically. Zip requirements: extract to a temp dir, then import; if the archive has a single top-level folder (very common, e.g. docs/ or project-docs/) use its contents rather than nesting an extra level; ignore macOS junk (__MACOSX/, .DS_Store, ._* files); reject path traversal (zip-slip: entries resolving outside the extraction dir) and absurd sizes/entry counts; refuse symlinks; clean the temp dir afterwards. Zero runtime dependencies is a hard RepoOS constraint, so use the system unzip or Node/Bun built-ins rather than adding an npm dependency (Bun has no built-in zip reader; shelling out to 'unzip' or 'bsdtar' is acceptable with a clear error if neither exists). Tests: zip with single top-level folder, zip with files at root, zip containing __MACOSX, a zip-slip attempt, a corrupt zip, a missing path.
 - 2026-10-05T15:37:04Z · status inbox→ready
+- 2026-10-05T15:37:09Z · status ready→active, branch
