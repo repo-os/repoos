@@ -2,7 +2,7 @@
 id: "0652"
 title: "repoos check: cache step results by tree hash so unchanged reruns return instantly"
 type: feature
-status: review
+status: active
 priority: p2
 area: core
 assigned_to: ai
@@ -70,3 +70,4 @@ Design risk is correctness, not speed: a stale cache hit that lets a broken tree
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T02:34:12Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/serve-reaper.test.ts:460:22 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-05T02:34:12Z · status review→active
