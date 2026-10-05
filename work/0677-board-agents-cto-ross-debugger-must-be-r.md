@@ -2,7 +2,7 @@
 id: "0677"
 title: "Board agents (CTO, Ross, debugger) must be read-only; surface 'model unavailable' instead of 'exit code 1'"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/board-agents-cto-ross-debugger-must-be-r
 created_at: "2026-10-05T16:58:36Z"
-updated_at: "2026-10-05T19:30:52Z"
+updated_at: "2026-10-05T19:36:15Z"
 ---
 ## Problem
 
@@ -55,6 +55,17 @@ This task is part of the story **Field report: first agent-driven project run (o
 
 The story's facts hold: the CTO ran 91 sessions and wrote the junk `Nothing to report` file into main; the failure text was `no stderr output` with the real cause on stdout. Both reproduce against the current source and are fixed here. The Debugger's zero sessions were a separate toggle issue (not this task).
 
+## Shots
+```json
+[
+  {
+    "label": "Agents page: model Test now distinguishes a cold start and names the failing line",
+    "target": "default",
+    "route": "/agents",
+    "highlight": ".agent-test-result"
+  }
+]
+```
 
 ## Activity
 
@@ -64,3 +75,5 @@ The story's facts hold: the CTO ran 91 sessions and wrote the junk `Nothing to r
 - 2026-10-05T19:08:00Z · status inbox→ready
 - 2026-10-05T19:08:10Z · status ready→active, branch
 - 2026-10-05T19:30:52Z · body: section Notes
+- 2026-10-05T19:31:27Z · body: section Shots
+- 2026-10-05T19:36:15Z · status active→review
