@@ -12,7 +12,7 @@ branch: feat/scheduling-deterministic-default-picker-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:59:03Z"
-updated_at: "2026-10-05T20:15:45Z"
+updated_at: "2026-10-05T21:09:14Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -39,6 +39,18 @@ This task is part of the story **Field report: first agent-driven project run (o
 ## Docs follow-up
 The playbook page `user-docs/running-with-agents.md` (landed on main) describes the CURRENT behaviour that this task changes. When this task lands, update the page: section 1, the sentence saying 'which task next' is almost mechanical (priority, then longest downstream chain, then age). In short: make it match the shipped picker. Keep the page accurate rather than aspirational; if this task is declined, leave the page as is. (This replaces the open task 0689, which is being removed.)
 
+## Shots
+```json
+[
+  {
+    "label": "PM veto for parallel conflicts setting",
+    "target": "default",
+    "route": "/settings?tab=board",
+    "highlight": "[data-config-key=\"autoEngineering.pmVeto\"]"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-05T16:59:03Z · created · unknown
@@ -48,3 +60,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T19:54:41Z · status inbox→ready
 - 2026-10-05T19:54:48Z · status ready→active, branch
 - 2026-10-05T20:15:36Z · cli_override, model_override
+- 2026-10-05T21:09:14Z · body: section Shots
