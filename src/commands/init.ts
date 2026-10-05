@@ -814,6 +814,21 @@ export function scaffoldInto(
     ...(canaryUnderRootRuntimeDir(config.cacheDir)
       ? []
       : [{ comment: "# RepoOS runtime state", line: ".repoos/*" }]),
+    // Task/input screenshot attachments. Uploaded through the UI, written here,
+    // and served back from disk — never part of the committed record (the
+    // task/input .md is). Without these rules a `repoos shot` or a pasted
+    // screenshot dirties the working tree and blocks the next Move to done
+    // (#0682, field report item 8); `repoos check`'s task-asset guard enforces
+    // the same rule. Derived from the configured dirs so a namespaced layout
+    // ignores `repoos/work/.attachments/`, not a root `work/`.
+    {
+      comment: "# Task screenshot attachments (binary uploads — never committed)",
+      line: `${config.workDir}/.attachments/`,
+    },
+    {
+      comment: "# Input screenshot attachments (binary uploads — never committed)",
+      line: `${config.inputsDir}/.attachments/`,
+    },
     // No leading slash: a bare ".DS_Store" matches at any depth, unlike
     // anchored patterns such as ".repoos/*" above.
     { comment: "# macOS Finder metadata", line: ".DS_Store" },
