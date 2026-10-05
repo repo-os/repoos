@@ -10556,6 +10556,9 @@
 .model-test-timed_out {
   color: var(--red);
 }
+.model-test-cold_start {
+  color: var(--amber);
+}
 .model-test-not_testable {
   color: var(--muted);
 }
