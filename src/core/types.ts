@@ -630,14 +630,14 @@ export interface DeploymentConfig {
 }
 
 /**
- * Opt-in configuration for the Stories page, from `repoos.toml`'s `[stories]`
+ * Configuration for the Stories page, from `repoos.toml`'s `[stories]`
  * section. A story is optional task metadata (`story:` frontmatter) grouped
  * into named delivery slices — it is not a second task system: no worktree,
- * agent, branch, independent status or hierarchy. When disabled (the default)
- * nothing about the existing board changes.
+ * agent, branch, independent status or hierarchy. On by default; set
+ * `enabled = false` to hide the page, nav item and task Story field.
  */
 export interface StoriesConfig {
-  /** Whether the Stories page and its navigation item are shown. Default false. */
+  /** Whether the Stories page and its navigation item are shown. Default true. */
   enabled?: boolean;
 }
 
