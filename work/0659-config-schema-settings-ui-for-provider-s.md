@@ -2,7 +2,7 @@
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
-status: review
+status: active
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -12,7 +12,7 @@ created_by: ""
 branch: feat/config-schema-settings-ui-for-provider-s
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T19:33:41Z"
+updated_at: "2026-10-05T19:33:42Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -616,3 +616,4 @@ src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no 
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-05T19:33:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-05T19:33:41Z · status active→review
+- 2026-10-05T19:33:42Z · status review→active
