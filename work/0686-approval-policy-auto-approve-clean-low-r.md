@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-05T22:44:34Z"
-review_passes: 1
 id: "0686"
 title: "Approval policy: auto-approve clean, low-risk reviews with an audit trail; keep UI and risky tasks human"
 type: feature
-status: review
+status: active
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -14,6 +12,9 @@ branch: feat/approval-policy-auto-approve-clean-low-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:55Z"
+updated_at: "2026-10-05T22:44:34Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -75,4 +76,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T22:29:37Z · body: section Shots
 - 2026-10-05T22:43:41Z · status active→review
 - 2026-10-05T22:43:52Z · note: shots: failed — capture of Approval policy Settings controls on "default" failed: click: Timeout 5000ms exceeded.
-
+- 2026-10-05T22:44:34Z · status review→active
