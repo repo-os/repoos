@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-05T22:41:03Z"
+review_passes: 2
 id: "0690"
 title: "Scheduling: deterministic default picker for auto-engineering with an optional PM veto for conflicts"
 type: feature
@@ -12,8 +14,6 @@ branch: feat/scheduling-deterministic-default-picker-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:59:03Z"
-updated_at: "2026-10-05T22:40:26Z"
-review_passes: 1
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -71,3 +71,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T22:03:26Z · status review→active
 - 2026-10-05T22:40:10Z · status active→review
 - 2026-10-05T22:40:26Z · note: highlight [data-config-key="autoEngineering.pmVeto"] matched nothing on /settings?tab=board
+
