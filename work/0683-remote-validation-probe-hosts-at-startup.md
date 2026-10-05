@@ -1,0 +1,36 @@
+---
+id: "0683"
+title: "Remote validation: probe hosts at startup, say when a job fell back to local, document the runner image"
+type: bug
+status: inbox
+priority: p2
+area: server
+assigned_to: ""
+created_by: ""
+branch: ""
+created_at: "2026-10-05T16:58:48Z"
+updated_at: "2026-10-05T16:58:48Z"
+---
+## Problem
+
+Enabled the tailscale host pool for a project (same three hosts as RepoOS). `POST /api/remote-validation/test` returned `REPOOS_PREREQ_OK` on two hosts (a third was offline), but NO close-out ever ran remotely: later close-outs show `machine=<laptop>, remote=0` in `check_runs`, and `GET /api/remote-validation/status` still reported every host `probed: false, healthy: false` hours later. `fallbackToLocal = true` hid it. Hypothesis (unverified, from the docs: "Samples run while the tab is open"): host health is only probed while the Checks > Remote runners tab is open in the UI and dispatch needs a healthy host, so an unattended server never uses the pool.
+Related findings:
+- `repoos-ci` is the RepoOS repo's own gate image (generic Bun/git/Node contents, no Postgres) and `validate.sh` hard-codes the in-container command (`bun install --frozen-lockfile && bun run build && <repoos dist shim> && bun run test`). A project that needs a database must ship its own image, built by hand per host (different CPU architectures), and RepoOS's pre-flight runs `docker run -u 0 <image> chown ...` BEFORE the entrypoint logic, so a project image must pass through when run as root. None of this is documented.
+
+## Desired UX
+
+- Probe hosts on server start and on a timer (or lazily at dispatch time).
+- If remote is enabled and a job runs locally, record why in the close-out record and show it in the bell ("ran locally: no healthy runner").
+- Document: the gate command is fixed; how to bring a project image (root pass-through, arch per host); optionally add `remoteValidation.command` and a `repoos runner build-image <dir>` helper that builds the image on every pool host.
+
+## Acceptance criteria
+
+- Test: with hosts configured but UI closed, a close-out dispatches remotely (stub runner) or records the fallback reason. Docs updated. `repoos check` passes.
+
+## Notes for AI
+
+Evidence comes from building a real 30-task project (opex, a Vue + Bun + Postgres app) with cheap agents on one laptop over ~9 hours. Read `AGENTS.md` first. Never hand-edit work/*.md; use RepoOS commands or APIs. Verify any claim you rely on against the current source before changing behaviour. Where a related task exists it is listed under "See also"; coordinate rather than duplicate.
+
+## Activity
+
+- 2026-10-05T16:58:48Z · created · unknown

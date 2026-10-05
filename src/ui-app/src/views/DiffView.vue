@@ -16,6 +16,9 @@ const commitSha = computed(() => (route.params.sha as string) || "");
 // commit-diff plumbing: a repo-level patch plus per-file before/after.
 const isWorkingDiff = computed(() => route.name === "working-diff");
 const isCommitDiff = computed(() => Boolean(commitSha.value) || isWorkingDiff.value);
+// The Debug tab's Merge conflict view: the branch's live conflict against main
+// (main = left/removed, branch = right/added), patch-only (no full file bodies).
+const isConflictDiff = computed(() => route.name === "conflict-diff");
 const targetFile = computed(() => (route.query.file as string) ?? "");
 
 const commitDiff = ref<{ patch: string; truncated: boolean } | null>(null);
@@ -35,14 +38,23 @@ onMounted(async () => {
     }
     return;
   }
+  if (isConflictDiff.value) {
+    if (!repo.mergeConflicts[taskId.value]) await repo.loadMergeConflict(taskId.value);
+    return;
+  }
   if (!repo.diffFor(taskId.value)) {
     await repo.loadDiff(taskId.value);
   }
 });
 
-const taskDiff = computed(() =>
-  isCommitDiff.value ? commitDiff.value : repo.diffFor(taskId.value),
-);
+const taskDiff = computed(() => {
+  if (isCommitDiff.value) return commitDiff.value;
+  if (isConflictDiff.value) {
+    const c = repo.mergeConflicts[taskId.value];
+    return c ? { patch: c.patch, truncated: c.truncated } : null;
+  }
+  return repo.diffFor(taskId.value);
+});
 
 interface DiffFile {
   filename: string;
@@ -111,7 +123,8 @@ function buildPatchRows(file: DiffFile | null): DiffRow[] {
   let prevLeftEnd = 0;
   while (i < lines.length) {
     const line = lines[i]!;
-    const m = line.match(hunkRe);
+    const conflictStart = line.match(/^@@ conflict \d+ of \d+ · line (\d+)/)?.[1];
+    const m = conflictStart ? [line, conflictStart, conflictStart] : line.match(hunkRe);
     if (!m) {
       i++;
       continue;
@@ -353,7 +366,7 @@ watch(
     fileContents.value = null;
     fileContentsError.value = null;
     fullFileNotice.value = null;
-    if (!filename) return;
+    if (!filename || isConflictDiff.value) return;
     fileContentsLoading.value = true;
     try {
       const path = encodeURIComponent(filename);
@@ -559,7 +572,11 @@ function switchFile(filename: string): void {
     });
     return;
   }
-  router.replace({ name: "diff", params: { taskId: taskId.value }, query: { file: filename } });
+  router.replace({
+    name: isConflictDiff.value ? "conflict-diff" : "diff",
+    params: { taskId: taskId.value },
+    query: { file: filename },
+  });
 }
 
 function basename(path: string): string {

@@ -638,7 +638,7 @@ instructions = "Review the task's implementation on its feature branch. The impl
 [[agents]]
 name = "pm"
 cli = "opencode"
-model = "deepinfra/Qwen/Qwen3-235B-A22B-Instruct-2507"
+model = "opencode-go/deepseek-v4.1-flash"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]
