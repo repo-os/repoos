@@ -11,9 +11,12 @@ export { localStorageProvider } from "./local.js";
 export {
   DEFAULT_STORAGE_PROVIDER_ID,
   createStorageProvider,
+  describeStorage,
   getStorageProviderFactory,
   listStorageProviderIds,
   registerStorageProvider,
+  resolveStorageProvider,
   unregisterStorageProvider,
+  type StorageDescription,
   type StorageProviderFactory,
 } from "./registry.js";
