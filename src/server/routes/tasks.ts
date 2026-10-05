@@ -117,7 +117,13 @@ import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
 import { computeMergeConflict } from "../merge-conflict.js";
 import { previewTargetOptions, type PreviewTargetOption } from "../preview.js";
-import { assessTaskUnderspecified } from "../../core/task-underspecified.js";
+import { findStoryDefinitionByKey } from "../../core/story-definition-files.js";
+import { storyKey } from "../../core/stories.js";
+import {
+  PM_FLESH_OUT_MESSAGE,
+  assessTaskUnderspecified,
+  fleshOutRequirementsPrompt,
+} from "../../core/task-underspecified.js";
 import {
   clearNeedsInputForReviewAgainOnTask,
   dismissNeedsInputOnTask,
@@ -2434,6 +2440,21 @@ export function buildPmShotContext(incoming: ReadonlyArray<unknown>): string {
   return `\nNewly attached screenshots (already saved to this task — link them in the spec if relevant):\n${lines.join("\n")}\n`;
 }
 
+/** Story name + definition path (when a `stories/*.md` exists) for a task's `story` tag. */
+function storyContextFor(
+  config: RepoOSConfig,
+  story: string | undefined,
+): { name: string; path?: string } | undefined {
+  const name = story?.trim();
+  if (!name) return undefined;
+  try {
+    const def = findStoryDefinitionByKey(config, storyKey(name));
+    return def ? { name: def.name, path: def.path } : { name };
+  } catch {
+    return { name };
+  }
+}
+
 export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   const { config, index, runner, logger, emitEvent } = ctx;
   const id = params.param1;
@@ -2472,10 +2493,16 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
       error: "answeringQuestions must match this task's open questions",
     });
   }
-  const messageText =
+  const baseMessageText =
     answeringQuestions.length > 0
       ? wrapPmMessageWithQuestionContext(answeringQuestions, text)
       : text;
+  // The canned "flesh this out" chip carries no spec; tell the PM exactly what
+  // the underspecified check requires so one pass satisfies it.
+  const messageText =
+    text === PM_FLESH_OUT_MESSAGE
+      ? `${baseMessageText}\n\n${fleshOutRequirementsPrompt(storyContextFor(config, existing.story))}`
+      : baseMessageText;
 
   // Build a one-shot agent override for this PM request. Falls back to the
   // task's persisted PM overrides (set via the PM tab's selector) when the
