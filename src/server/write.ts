@@ -116,6 +116,16 @@ export interface TaskPatch {
   needsInputDetail?: string | null;
   /** Clear (false) or set (true) the branch-drifted flag. */
   needsMerge?: boolean;
+  /**
+   * Archive (true) or unarchive (false) the task (#0657). Orthogonal to
+   * `status`: the status, branch and worktree are preserved. Clearing the flag
+   * also drops `archiveDetail`. Prefer the dedicated `/archive` and
+   * `/unarchive` action routes, which enforce the live-run refusal; this patch
+   * field is for internal callers that already hold that guarantee.
+   */
+  archived?: boolean;
+  /** Free-text reason for archiving; null clears it. Only written while archived. */
+  archiveDetail?: string | null;
   /** Per-task agent name override, or null to clear. */
   agentOverride?: string | null;
   /** Per-task CLI override, or null to clear. */
@@ -277,6 +287,22 @@ export function patchTaskFile(
   if (patch.needsMerge !== undefined) {
     if (patch.needsMerge !== current.needsMerge) changes.push("needs_merge");
     current.needsMerge = patch.needsMerge;
+  }
+  if (patch.archived !== undefined) {
+    if (patch.archived !== current.isArchived) {
+      // Collapse newlines so the activity list keeps its single-line entries.
+      const detail =
+        typeof patch.archiveDetail === "string"
+          ? patch.archiveDetail.replace(/\r?\n/g, " ").trim()
+          : (current.archiveDetail?.trim() ?? "");
+      changes.push(patch.archived ? (detail ? `archived: ${detail}` : "archived") : "unarchived");
+    }
+    current.isArchived = patch.archived;
+    // Unarchiving always drops the reason — it described the archive, not the task.
+    if (!patch.archived) current.archiveDetail = undefined;
+  }
+  if (patch.archiveDetail !== undefined) {
+    current.archiveDetail = patch.archiveDetail ? String(patch.archiveDetail) : undefined;
   }
   if (patch.title !== undefined) {
     if (patch.title !== current.title) changes.push("title");

@@ -104,6 +104,18 @@ describe("Hub capability contract", () => {
     expect(remote.result.status).toBe(401);
   });
 
+  it("excludes archived tasks from attention counts (#0657)", async () => {
+    const ctx = context([
+      { status: "review", needsInput: false, isArchived: true } as Task,
+      { status: "active", needsInput: true, isArchived: true } as Task,
+    ]);
+    const local = response();
+    await hubSummary(ctx, request({ host: "localhost:7171" }), local.res, {});
+    expect(local.result.status).toBe(200);
+    expect(local.result.body.attention.reviewReadyTasks).toBe(0);
+    expect(local.result.body.attention.needsInputTasks).toBe(0);
+  });
+
   it("issues one-time metadata plus a bearer token, then serves only the compact summary", async () => {
     const session = store.createSession("alice@example.com", "admin", 3600);
     const ctx = context([

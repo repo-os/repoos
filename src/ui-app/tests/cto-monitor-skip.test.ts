@@ -149,6 +149,23 @@ describe("CTO monitor skip-when-healthy (#0649)", () => {
     expect(runs).toHaveLength(0);
   });
 
+  it("ignores a stale archived active task (#0657)", async () => {
+    const { cto, runs } = fakeCto();
+    const archivedStale = task({
+      id: "0001",
+      status: "active",
+      isArchived: true,
+      updated_at: new Date(Date.now() - 25 * 60_000).toISOString(),
+    });
+    const monitor = monitorFor([archivedStale], cto);
+
+    await monitor.checkNow("timer");
+
+    // Archived tasks are parked: no stuck signal, so the board stays healthy.
+    expect(cto.run).not.toHaveBeenCalled();
+    expect(runs).toHaveLength(0);
+  });
+
   it("runs on a stale build or abnormal process check even with no stuck task", async () => {
     const { cto, runs } = fakeCto();
     const monitor = monitorFor([task({ id: "0001", status: "inbox" })], cto, {

@@ -822,6 +822,8 @@ export const useRepoStore = defineStore("repo", () => {
     const items: HumanNeedsItem[] = [];
     const seen = new Set<string>();
     for (const t of tasks.value) {
+      // Archived tasks are parked (#0657): they never demand human action.
+      if (t.isArchived) continue;
       const reasons = humanNeedsReasons(t);
       if (!reasons.length || seen.has(t.id)) continue;
       seen.add(t.id);
@@ -840,10 +842,19 @@ export const useRepoStore = defineStore("repo", () => {
   const fmtDate = (s: string | null): string => (s ? new Date(s).toLocaleString() : "—");
 
   const byStatus = (s: string): Task[] => {
-    const filtered = tasks.value.filter((t) => t.status === s);
+    // Archived tasks are parked (#0657) and never appear in a column; they
+    // live in `archivedTasks` instead.
+    const filtered = tasks.value.filter((t) => t.status === s && !t.isArchived);
     if (sortOrder.value === "current") return filtered;
     return sortTasks(filtered, sortOrder.value);
   };
+
+  /** Archived tasks (#0657) for the work queue's collapsible Archived list. */
+  const archivedTasks = computed<Task[]>(() =>
+    tasks.value
+      .filter((t) => t.isArchived)
+      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")),
+  );
 
   function setSortOrder(order: SortOrder): void {
     sortOrder.value = order;
@@ -1014,7 +1025,8 @@ export const useRepoStore = defineStore("repo", () => {
 
   function recount(): void {
     const c: Counts = { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
-    for (const t of tasks.value) c[t.status] = (c[t.status] ?? 0) + 1;
+    // Archived tasks are hidden from the column counters (#0657).
+    for (const t of tasks.value) if (!t.isArchived) c[t.status] = (c[t.status] ?? 0) + 1;
     Object.assign(counts, c);
   }
 
@@ -2438,6 +2450,41 @@ export const useRepoStore = defineStore("repo", () => {
     acknowledgeHumanTaskAction(t.id);
   }
 
+  /**
+   * Shelve the task (#0657). The status, branch and worktree are untouched —
+   * it is only hidden from the board and every automatic scanner. The server
+   * refuses while a live agent/review/preview/close-out holds the task, so a
+   * half-stopped run can never be orphaned. `detail` is an optional reason.
+   */
+  async function archiveTask(t: Task, detail?: string): Promise<void> {
+    const r = await api<{ ok: boolean; error?: string }>(
+      `/api/tasks/${t.id}/archive`,
+      JSON_OPTS("POST", { detail: detail ?? "" }),
+    );
+    if (!r.ok) {
+      const message = r.error ?? "could not archive task";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+    acknowledgeHumanTaskAction(t.id);
+    pushToast(`Archived #${t.id}`, "info");
+  }
+
+  /** Restore an archived task to its existing status column (#0657). */
+  async function unarchiveTask(t: Task): Promise<void> {
+    const r = await api<{ ok: boolean; error?: string; warning?: string }>(
+      `/api/tasks/${t.id}/unarchive`,
+      { method: "POST" },
+    );
+    if (!r.ok) {
+      const message = r.error ?? "could not unarchive task";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+    acknowledgeHumanTaskAction(t.id);
+    pushToast(r.warning ?? `Unarchived #${t.id} — restored to ${t.status}`, "info");
+  }
+
   async function activateHotfix(
     t: Task,
     hotfixTarget: "branch" | "main" = "branch",
@@ -3510,6 +3557,7 @@ export const useRepoStore = defineStore("repo", () => {
     humanNeeds,
     fmtDate,
     byStatus,
+    archivedTasks,
     statusColor,
     connectSSE,
     refresh,
@@ -3548,6 +3596,8 @@ export const useRepoStore = defineStore("repo", () => {
     pauseWork,
     abandonWork,
     reopenTask,
+    archiveTask,
+    unarchiveTask,
     activateHotfix,
     completeTask,
     loadOutput,

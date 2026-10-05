@@ -86,6 +86,14 @@ export interface TaskFrontmatter {
   /** True when a legitimate no-op task opts out of the vacuous-handoff rejection. */
   no_source_change?: boolean;
   /**
+   * True when the task is shelved. Orthogonal to `status`: an archived task
+   * keeps its status, branch and worktree and is merely hidden from the work
+   * queue and every automatic scanner (#0657).
+   */
+  is_archived?: boolean;
+  /** Optional free-text reason the task was archived. Only meaningful while `is_archived` is true. */
+  archive_detail?: string;
+  /**
    * One area, a comma-separated string ("web, core"), or a list. Legacy
    * "a + b" values read through the shared `parseTaskAreas` helper too (#0583).
    */
@@ -162,6 +170,17 @@ export interface Task {
   needsMerge: boolean;
   /** True when a no-op task opts out of the vacuous-handoff rejection. */
   noSourceChange: boolean;
+  /**
+   * True when the task is shelved (#0657). Orthogonal to `status`: the status,
+   * branch and worktree are all preserved, and unarchiving restores it to the
+   * same column. Archived tasks are excluded from dispatch, the watchdog, the
+   * CTO digest, board counts and ready pickup. Optional on the type so partial
+   * constructions (tests, older serialized payloads) never lie; `parseTask`
+   * always produces a boolean.
+   */
+  isArchived?: boolean;
+  /** Optional free-text reason the task was archived; absent when none was given. */
+  archiveDetail?: string;
   priority: Priority | string;
   area: string;
   /**
@@ -250,8 +269,12 @@ export interface TaskGitInfo {
 /** A prerequisite that currently prevents a task from starting. */
 export interface DependencyBlocker {
   id: string;
-  /** Missing/removed upstream or an unprovable completed upstream needs a human. */
-  state: "waiting" | "cancelled";
+  /**
+   * `waiting` — upstream not done yet; `archived` — upstream was shelved, so
+   * it can never satisfy the dependency until it is unarchived; `cancelled` —
+   * missing/removed upstream or an unprovable completed upstream needs a human.
+   */
+  state: "waiting" | "archived" | "cancelled";
 }
 
 /** An AI coding agent configurable on the Agents page. */
@@ -1395,6 +1418,10 @@ export interface BoardTask {
   /** When `debugTldr` was generated (ISO-8601 UTC). */
   debugTldrAt?: string;
   needsMerge: boolean;
+  /** True when the task is shelved (#0657). Orthogonal to `status`. */
+  isArchived: boolean;
+  /** Optional free-text reason the task was archived; absent when none was given. */
+  archiveDetail?: string;
   priority: Priority | string;
   area: string;
   /** The parsed area list (#0583) — one chip per entry in the UI. */

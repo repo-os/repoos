@@ -92,6 +92,32 @@ consistent. Use `repoos mv`, `repoos update`, `repoos note`, or the UI.
 | `review` | Implementation finished and checks pass. Waiting on a human. |
 | `done` | Approved and merged. |
 
+## Archiving a task
+
+Archive parks a task you don't intend to finish right now **without changing
+its status**. A task archived from `review` is still `review` underneath — it
+just stops appearing in the board columns, and unarchiving drops it back into
+that same column. Nothing else changes: the branch and worktree are kept, so an
+archived task resumes exactly where it left off.
+
+Use **Archive task** at the bottom of the task panel and optionally give a
+reason. Archiving is refused while a run, review, preview, or close-out is
+still live, because hiding a half-stopped run from the automatic scanners
+would orphan it — stop the work first.
+
+Archived tasks live in a minimised **Archived (n)** list below the board on the
+Work Queue page. Archiving is orthogonal to status: there is no `archived`
+status, and it never merges, stops, or deletes anything.
+
+From the CLI, `repoos list` hides archived tasks by default and prints a count;
+`repoos list archived` shows them, and `repoos show <id>` marks an archived
+task. `repoos mv` refuses to move an archived task's status — unarchive it
+first (from the Archived list, or `POST /api/tasks/:id/unarchive`).
+
+An archived task that another task `depends_on` does **not** count as done:
+the dependent stays blocked and reads *“Blocked by archived task #id; unarchive
+it to unblock”* until the upstream is unarchived.
+
 ## One task, one worktree
 
 When a task goes active, RepoOS creates a dedicated git worktree and branch for

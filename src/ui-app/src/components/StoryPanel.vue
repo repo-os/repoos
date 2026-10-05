@@ -394,7 +394,9 @@ async function deleteActiveStory(): Promise<void> {
                 >{{
                   blocker.state === "cancelled"
                     ? `Cancelled #${blocker.id}`
-                    : `Blocked by #${blocker.id}`
+                    : blocker.state === "archived"
+                      ? `Archived #${blocker.id}`
+                      : `Blocked by #${blocker.id}`
                 }}</span
               >
               <span class="story-panel-task-status" :style="taskStatusStyle(task)">{{

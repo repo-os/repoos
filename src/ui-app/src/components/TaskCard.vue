@@ -947,7 +947,11 @@ async function openDebuggerFromError(): Promise<void> {
           :title="dependencyBlockerLabel(blocker)"
         >
           {{
-            blocker.state === "cancelled" ? `Cancelled #${blocker.id}` : `Blocked by #${blocker.id}`
+            blocker.state === "cancelled"
+              ? `Cancelled #${blocker.id}`
+              : blocker.state === "archived"
+                ? `Archived #${blocker.id}`
+                : `Blocked by #${blocker.id}`
           }}
         </span>
         <span

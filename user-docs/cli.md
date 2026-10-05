@@ -55,10 +55,13 @@ repoos new "Build the settings screen" --depends-on 0542,0538
 ### `repoos list [status]`
 
 Shows the board, or one column: `inbox`, `ready`, `active`, `review`, `done`.
+Archived tasks are hidden by default (a count is printed at the bottom);
+`repoos list archived` shows them with their reason.
 
 ### `repoos show <id>`
 
-Prints a task's full spec — metadata, body, and activity log.
+Prints a task's full spec — metadata, body, and activity log. An archived task
+shows an `archived` row with its reason.
 
 ### `repoos mv <id> <status>`
 
@@ -85,6 +88,10 @@ mid-flight.
 `done` is refused when the task's branch still exists and is not merged into
 `main`; `repoos mv done` only flips the flag, it never merges. Use **Move to
 done** in the UI, or merge the branch yourself first.
+
+An archived task is refused too: archiving is orthogonal to status, and the
+only way back is to unarchive it (from the Archived list in the UI, or
+`POST /api/tasks/:id/unarchive`).
 
 ### `repoos update <id>`
 

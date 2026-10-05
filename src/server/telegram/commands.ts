@@ -185,8 +185,10 @@ function taskLabel(deps: TelegramCommandDeps, id: string): string {
 function renderStatus(deps: TelegramCommandDeps): string {
   const tasks = deps.index.getTasks();
   const counts = deps.index.counts();
-  const needsAttention = tasks.filter((t) => t.needsInput || t.status === "review");
-  const needsInputCount = tasks.filter((t) => t.needsInput).length;
+  const needsAttention = tasks.filter(
+    (t) => !t.isArchived && (t.needsInput || t.status === "review"),
+  );
+  const needsInputCount = tasks.filter((t) => t.needsInput && !t.isArchived).length;
 
   const lines: string[] = [
     `📊 ${deps.repositoryName} — status`,
