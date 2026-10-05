@@ -2,7 +2,7 @@
 id: "0673"
 title: "Opt-in project docs: --docs-from import, starter skeleton, and a doctor wiring check"
 type: feature
-status: review
+status: active
 priority: p3
 area: cli
 assigned_to: ai
@@ -86,3 +86,4 @@ error: script "test" exited with code 1
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T16:57:30Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-05T16:57:30Z · status review→active
