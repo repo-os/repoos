@@ -46,7 +46,6 @@ import {
 import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
   deterministicSessionId,
-  estimateCostUsd,
   extractOneShotReportText,
   resolveReviewer,
   resolveReviewerForTask,
@@ -113,8 +112,9 @@ const now = (): string => new Date().toISOString();
 /**
  * Compute the reviewer session's cost + source the same way the engineer's
  * `recordSessionToDb` does (0273): a real CLI-reported figure wins outright,
- * otherwise a token-count estimate (never fabricated), and Kiro credits are
- * never passed off as US dollars.
+ * a run that reported only tokens is stored as unknown (#0676 — never a
+ * fabricated dollar estimate from token counts), and Kiro credits are never
+ * passed off as US dollars.
  */
 function reviewUsage(
   agent: Agent,
@@ -122,9 +122,6 @@ function reviewUsage(
 ): { costUsd?: number; costSource: string } {
   if (usage.costUsd) {
     return { costUsd: usage.costUsd, costSource: usageCostSource(agent, usage) };
-  }
-  if (usage.totalTokens) {
-    return { costUsd: estimateCostUsd(usage.totalTokens), costSource: "estimate" };
   }
   return { costSource: "none" };
 }
