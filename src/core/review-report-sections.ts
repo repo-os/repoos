@@ -4,35 +4,56 @@
  * report carries blocking bugs.
  */
 
-/** Extract non-empty Bugs / Relevance sections (same rules as review.ts). */
-export function extractReviewReportSections(markdown: string): {
-  bugs?: string;
-} {
+function sectionContent(sectionLines: Record<string, string[]>): Record<string, string> {
   const sections: Record<string, string> = {};
+  for (const [key, lines] of Object.entries(sectionLines)) {
+    const content = lines.join("\n").trim();
+    if (content && content !== "None found") {
+      sections[key] = content;
+    }
+  }
+  return sections;
+}
+
+/** Extract Relevance, Bugs, Edge cases, and Suggestions (same rules as review auto-bounce). */
+export function extractReviewReportSections(markdown: string): {
+  relevance?: string;
+  bugs?: string;
+  edgeCases?: string;
+  suggestions?: string;
+} {
   const lines = markdown.split("\n");
   let currentSection: string | null = null;
   const sectionLines: Record<string, string[]> = {};
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed === "## Bugs") {
+    if (trimmed === "## Relevance") {
+      currentSection = "relevance";
+      sectionLines.relevance = [];
+    } else if (trimmed === "## Bugs") {
       currentSection = "bugs";
       sectionLines.bugs = [];
+    } else if (trimmed === "## Edge cases") {
+      currentSection = "edgeCases";
+      sectionLines.edgeCases = [];
+    } else if (trimmed === "## Suggestions") {
+      currentSection = "suggestions";
+      sectionLines.suggestions = [];
     } else if (trimmed.startsWith("## ") && currentSection) {
       currentSection = null;
-    } else if (currentSection === "bugs" && sectionLines.bugs) {
-      sectionLines.bugs.push(line);
+    } else if (currentSection && sectionLines[currentSection]) {
+      sectionLines[currentSection].push(line);
     }
   }
 
-  for (const [key, sectLines] of Object.entries(sectionLines)) {
-    const content = sectLines.join("\n").trim();
-    if (content && content !== "None found") {
-      sections[key] = content;
-    }
-  }
-
-  return { bugs: sections.bugs };
+  const sections = sectionContent(sectionLines);
+  return {
+    relevance: sections.relevance,
+    bugs: sections.bugs,
+    edgeCases: sections.edgeCases,
+    suggestions: sections.suggestions,
+  };
 }
 
 /** True when the reviewer listed concrete bugs (not "None found"). */

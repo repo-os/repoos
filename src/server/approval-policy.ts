@@ -31,23 +31,34 @@ export async function evaluateAutoApprove(
 ): Promise<ApprovalPolicyResult> {
   const branch = task.branch;
   let branchMissing = !branch;
-  let mergeConflicts = false;
+  let mergePreflightFailed = false;
   let handoffDrift = false;
 
   if (branch && localBranches(config.root).has(branch)) {
     const preflight = await gatherApprovalPreflight(config, task);
     branchMissing = preflight.branchMissing;
-    mergeConflicts = preflight.mergeConflicts;
+    mergePreflightFailed = preflight.mergePreflightFailed;
     handoffDrift = preflight.handoffDrift;
   } else if (branch) {
     branchMissing = true;
+  }
+
+  const policy = config.approval;
+  if (
+    policy?.enabled === true &&
+    !(policy.autoApprove?.areas?.length ?? 0) &&
+    !(policy.autoApprove?.types?.length ?? 0)
+  ) {
+    console.warn(
+      "[repoos] approval.enabled is true but approval.autoApprove.areas and .types are both empty — nothing will auto-approve until you configure at least one list",
+    );
   }
 
   return evaluateApprovalPolicy(config, {
     task,
     reviewMarkdown,
     branchMissing,
-    mergeConflicts,
+    mergePreflightFailed,
     handoffDrift,
     uiVisualEvidenceOk: uiVisualEvidenceOk(config, task),
   });
@@ -63,8 +74,15 @@ export async function tryAutoApproveAfterCleanReview(
   if (!decision.eligible || !decision.rule) return;
 
   const rule = decision.rule;
-  const auditLine = `auto-approved by policy: ${rule}`;
+  const enqueue = await enqueueCloseOutForTask(deps, deps.index.getTask(fresh.id) ?? fresh);
+  if (!enqueue.ok) {
+    console.warn(
+      `[repoos] approval policy: close-out did not start for #${fresh.id} (${enqueue.reason}) — task stays in review with no auto-approve audit entry`,
+    );
+    return;
+  }
 
+  const auditLine = `auto-approved by policy: ${rule}`;
   try {
     const updated = patchTaskFile(deps.config, fresh.absPath, { note: auditLine });
     deps.index.applyFileChange(updated.absPath, { guarded: true });
@@ -76,18 +94,11 @@ export async function tryAutoApproveAfterCleanReview(
     });
   } catch (err) {
     console.error(
-      `[repoos] approval policy: could not record audit entry for #${fresh.id}: ${(err as Error).message}`,
+      `[repoos] approval policy: close-out started for #${fresh.id} but audit entry failed: ${(err as Error).message}`,
     );
     return;
   }
 
   const at = new Date().toISOString();
   deps.emitEvent({ type: "task.autoApproved", id: fresh.id, rule, at });
-
-  const enqueue = await enqueueCloseOutForTask(deps, deps.index.getTask(fresh.id) ?? fresh);
-  if (!enqueue.ok) {
-    console.warn(
-      `[repoos] approval policy: auto-approve recorded for #${fresh.id} but close-out did not start (${enqueue.reason})`,
-    );
-  }
 }

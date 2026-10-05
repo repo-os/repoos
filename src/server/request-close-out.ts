@@ -49,19 +49,19 @@ export async function gatherApprovalPreflight(
   task: Task,
 ): Promise<{
   branchMissing: boolean;
-  mergeConflicts: boolean;
+  mergePreflightFailed: boolean;
   handoffDrift: boolean;
 }> {
   const branch = task.branch;
   if (!branch) {
-    return { branchMissing: true, mergeConflicts: false, handoffDrift: false };
+    return { branchMissing: true, mergePreflightFailed: false, handoffDrift: false };
   }
   if (!localBranches(config.root).has(branch)) {
-    return { branchMissing: true, mergeConflicts: false, handoffDrift: false };
+    return { branchMissing: true, mergePreflightFailed: false, handoffDrift: false };
   }
 
   const preflight = await preflightMerge(config.root, branch);
-  const mergeConflicts = !preflight.ok && preflight.conflicts.length > 0;
+  const mergePreflightFailed = !preflight.ok;
 
   let handoffDrift = false;
   const worktree = task.hotfix === true ? null : worktreePathForBranch(config.root, branch);
@@ -82,7 +82,7 @@ export async function gatherApprovalPreflight(
     }
   }
 
-  return { branchMissing: false, mergeConflicts, handoffDrift };
+  return { branchMissing: false, mergePreflightFailed, handoffDrift };
 }
 
 /**
