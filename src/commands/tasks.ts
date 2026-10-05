@@ -35,7 +35,7 @@ export const TYPE_USAGE = TASK_TYPES.join("|");
 export const UPDATE_USAGE =
   '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] ' +
   `[--priority ${PRIORITY_USAGE}] [--type ${TYPE_USAGE}] [--body "..."|-] [--branch b] ` +
-  '[--assigned-to ai|human] [--needs-input true|false] [--needs-merge true|false] [--questions "Question one\\nQuestion two"] [--clear-questions] ' +
+  '[--assigned-to ai|human] [--needs-input true|false] [--needs-merge true|false] [--hold true|false] [--paths src/a.ts,src/b.ts] [--questions "Question one\\nQuestion two"] [--clear-questions] ' +
   "[--agent <name>] [--cli <cli>] [--model <model>] " +
   "[--pm-agent <name>] [--pm-cli <cli>] [--pm-model <model>] " +
   "[--review-agent <name>] [--review-cli <cli>] [--review-model <model>] " +
@@ -433,6 +433,8 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
   "assigned-to": "assignedTo",
   "needs-input": "needsInput",
   "needs-merge": "needsMerge",
+  hold: "hold",
+  paths: "paths",
   questions: "questions",
   section: "section",
   // #0684: per-task agent overrides, the same fields `PATCH /api/tasks/:id`
@@ -490,6 +492,7 @@ function shotsSectionContent(
  * `repoos update <id> [--title ...] [--area ...] [--story ...] [--priority ...]
  *   [--type ...] [--body ... | --body -] [--branch ...] [--assigned-to ai|human]
  *   [--needs-input true|false] [--questions "Question one\nQuestion two"] [--depends-on ids]
+ *   [--hold true|false] [--paths src/a.ts,src/b.ts]
  *   [--shots '<JSON list>' | --section "<heading>" --section-body ... | --force]`
  *
  * Writes directly via patchTaskFile (same path the server's PATCH route uses),
@@ -589,6 +592,18 @@ export function cmdUpdate(args: string[]): void {
       }
       if (field === "needsInput") patch.needsInput = raw === "true";
       else patch.needsMerge = raw === "true";
+    } else if (field === "hold") {
+      if (raw !== "true" && raw !== "false") {
+        console.error(c.red("  --hold must be true or false"));
+        process.exitCode = 1;
+        return;
+      }
+      patch.hold = raw === "true";
+    } else if (field === "paths") {
+      patch.paths = raw
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
     } else if (field === "questions") {
       patch.questions = parseQuestions(raw);
     } else if (field === "dependsOn") {

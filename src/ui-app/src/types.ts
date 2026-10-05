@@ -855,12 +855,16 @@ export interface AutoEngineeringDecision {
     | "dependency-merged"
     | "config-change"
     | "startup";
-  outcome: "selected" | "no-capacity" | "no-ready-work" | "pm-unavailable" | "pm-failed";
+  outcome: "selected" | "no-capacity" | "no-ready-work" | "pm-failed";
+  /** Which picker ran: the deterministic default, or the optional PM veto pass. */
+  picker?: "deterministic" | "pm-veto";
   activeCount: number;
   maxActiveTasks: number;
   availableSlots: number;
   candidateIds: string[];
   selectedIds: string[];
+  /** Eligible tasks left for a later slot, in pick order. */
+  deferredIds?: string[];
   rationale?: string;
   error?: string;
 }

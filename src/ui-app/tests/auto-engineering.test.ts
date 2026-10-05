@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { AutoEngineeringOrchestrator } from "../../server/auto-engineering.js";
+import { applyPmVetoOrdering, AutoEngineeringOrchestrator } from "../../server/auto-engineering.js";
 import { runPrompt } from "../../server/agents.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 
@@ -80,11 +80,7 @@ describe("AutoEngineeringOrchestrator", () => {
 
   beforeEach(() => {
     orchestrator = new AutoEngineeringOrchestrator();
-    // DEFAULT_AGENTS includes an enabled `pm`, so a config without an explicit
-    // agents list still reaches runPrompt. Default to a pm-failed result so
-    // decision fields (trigger, candidates, counts) match across outcomes.
     vi.mocked(runPrompt).mockReset();
-    vi.mocked(runPrompt).mockResolvedValue({ ok: false, error: "mocked: pm unavailable" });
   });
 
   describe("disabled mode", () => {
@@ -143,10 +139,9 @@ describe("AutoEngineeringOrchestrator", () => {
     });
   });
 
-  describe("PM agent unavailable", () => {
-    it("returns pm-unavailable when PM agent is disabled", async () => {
+  describe("deterministic picker (default)", () => {
+    it("selects ready tasks without calling the PM", async () => {
       const config = mockConfig(true, 3);
-      // Explicitly disable the PM agent
       config.agents = [
         {
           name: "pm",
@@ -162,8 +157,20 @@ describe("AutoEngineeringOrchestrator", () => {
       const result = await orchestrator.reconcile(config, tasks, "active-to-review");
 
       expect(result.triggered).toBe(true);
-      expect(result.outcome).toBe("pm-unavailable");
-      expect(result.error).toBeDefined();
+      expect(result.outcome).toBe("selected");
+      expect(result.picker).toBe("deterministic");
+      expect(result.selectedIds).toEqual(["001"]);
+      expect(runPrompt).not.toHaveBeenCalled();
+    });
+
+    it("records the deterministic picker on the decision", async () => {
+      const config = mockConfig(true, 3);
+      const tasks = [mockTask("001", "ready")];
+
+      await orchestrator.reconcile(config, tasks, "active-to-review");
+
+      expect(orchestrator.getLastDecision()?.picker).toBe("deterministic");
+      expect(orchestrator.getLastDecision()?.outcome).toBe("selected");
     });
   });
 
@@ -330,9 +337,10 @@ describe("AutoEngineeringOrchestrator", () => {
   });
 });
 
-/** Config with an enabled `pm` agent so reconciliation reaches the (mocked) runPrompt. */
-function configWithPm(maxActiveTasks = 3): RepoOSConfig {
+/** Config with PM veto enabled and an enabled `pm` agent. */
+function configWithPmVeto(maxActiveTasks = 1): RepoOSConfig {
   const config = mockConfig(true, maxActiveTasks);
+  config.autoEngineering = { pmVeto: true };
   config.agents = [
     {
       name: "pm",
@@ -345,40 +353,43 @@ function configWithPm(maxActiveTasks = 3): RepoOSConfig {
   return config;
 }
 
-describe("AutoEngineeringOrchestrator — PM selection (0124)", () => {
+describe("applyPmVetoOrdering", () => {
+  it("reorders without inventing ids and appends omitted candidates", () => {
+    expect(applyPmVetoOrdering(["1", "2", "3"], ["3", "1", "999"])).toEqual(["3", "1", "2"]);
+  });
+});
+
+describe("AutoEngineeringOrchestrator — PM veto (#0690)", () => {
   let orchestrator: AutoEngineeringOrchestrator;
 
   beforeEach(() => {
     orchestrator = new AutoEngineeringOrchestrator();
-    // DEFAULT_AGENTS includes an enabled `pm`, so a config without an explicit
-    // agents list still reaches runPrompt. Default to a pm-failed result so
-    // decision fields (trigger, candidates, counts) match across outcomes.
     vi.mocked(runPrompt).mockReset();
-    vi.mocked(runPrompt).mockResolvedValue({ ok: false, error: "mocked: pm unavailable" });
   });
 
-  it("fails cleanly when the PM returns output that is not a selection (pm-failed)", async () => {
+  it("falls back to the deterministic pick when the PM returns unparseable output", async () => {
     vi.mocked(runPrompt).mockResolvedValue({ ok: true, output: "no json here, just prose" });
-    const config = configWithPm(3);
-    const tasks = [mockTask("001", "ready"), mockTask("002", "active")];
+    const config = configWithPmVeto(1);
+    const tasks = [mockTask("001", "ready"), mockTask("002", "ready")];
 
     const result = await orchestrator.reconcile(config, tasks, "active-to-review");
 
-    expect(result.outcome).toBe("pm-failed");
+    expect(result.outcome).toBe("selected");
+    expect(result.picker).toBe("deterministic");
     expect(result.error).toBeDefined();
-    const decision = orchestrator.getLastDecision();
-    expect(decision?.selectedIds).toEqual([]);
-    expect(decision?.candidateIds).toEqual(["001"]);
+    expect(result.selectedIds).toEqual(["001"]);
+    expect(runPrompt).toHaveBeenCalled();
   });
 
-  it("fails cleanly when the PM agent errors (pm-failed)", async () => {
+  it("falls back to the deterministic pick when the PM agent errors", async () => {
     vi.mocked(runPrompt).mockResolvedValue({ ok: false, error: "timeout after 30s" });
-    const config = configWithPm(3);
-    const tasks = [mockTask("001", "ready")];
+    const config = configWithPmVeto(1);
+    const tasks = [mockTask("001", "ready"), mockTask("002", "ready")];
 
     const result = await orchestrator.reconcile(config, tasks, "active-to-review");
 
-    expect(result.outcome).toBe("pm-failed");
+    expect(result.outcome).toBe("selected");
+    expect(result.picker).toBe("deterministic");
     expect(result.error).toContain("timeout after 30s");
   });
 
@@ -401,7 +412,7 @@ describe("AutoEngineeringOrchestrator — PM selection (0124)", () => {
       const mergedCommit = git("rev-parse", "HEAD");
       git("checkout", "-q", "main");
 
-      const config = configWithPm(3);
+      const config = mockConfig(true, 3);
       config.root = root;
       const upstream = { ...mockTask("001", "ready"), branch: "feat/upstream" };
       const dependent = { ...mockTask("002", "ready"), dependsOn: ["001"] };
@@ -422,55 +433,51 @@ describe("AutoEngineeringOrchestrator — PM selection (0124)", () => {
     }
   });
 
-  it("drops stale PM choices that are no longer in the ready pool", async () => {
+  it("drops ids the PM invented that are not in the candidate list", async () => {
     vi.mocked(runPrompt).mockResolvedValue({
       ok: true,
-      output: '{"selected": ["001", "999"], "rationale": "both look impactful"}',
+      output: '{"ordered": ["002", "999", "001"], "rationale": "defer web collision"}',
     });
-    const config = configWithPm(3);
-    // 999 is not a task at all; 002 moved out of ready after the PM was asked.
-    const tasks = [mockTask("001", "ready"), mockTask("002", "active")];
+    const config = configWithPmVeto(1);
+    const tasks = [mockTask("001", "ready"), mockTask("002", "ready")];
 
     const result = await orchestrator.reconcile(config, tasks, "active-to-review");
 
     expect(result.outcome).toBe("selected");
-    expect(result.selectedIds).toEqual(["001"]);
+    expect(result.picker).toBe("pm-veto");
+    expect(result.selectedIds).toEqual(["002"]);
   });
 
-  it("never starts more tasks than available slots even if the PM over-selects", async () => {
+  it("never starts more tasks than available slots", async () => {
     vi.mocked(runPrompt).mockResolvedValue({
       ok: true,
-      output: '{"selected": ["002", "003", "004"], "rationale": "top three"}',
+      output: '{"ordered": ["002", "003", "004"], "rationale": "top three"}',
     });
-    const config = configWithPm(1);
-    // max 1, nothing active → exactly one slot; the PM over-selects three.
+    const config = configWithPmVeto(1);
     const tasks = [mockTask("002", "ready"), mockTask("003", "ready"), mockTask("004", "ready")];
 
     const result = await orchestrator.reconcile(config, tasks, "active-to-review");
 
     expect(result.outcome).toBe("selected");
+    expect(result.picker).toBe("pm-veto");
     expect(result.selectedIds).toEqual(["002"]);
     expect(result.selectedIds!.length).toBeLessThanOrEqual(1);
   });
 
   it("persists the decision and recovers it on startup (startup recovery)", async () => {
     const cacheDir = `${tmpdir()}/repoos-autoeng-${Date.now()}`;
-    vi.mocked(runPrompt).mockResolvedValue({
-      ok: true,
-      output: '{"selected": ["001"], "rationale": "only ready task"}',
-    });
-    const config = configWithPm(3);
+    const config = mockConfig(true, 3);
     const tasks = [mockTask("001", "ready")];
 
     const first = new AutoEngineeringOrchestrator(cacheDir);
     await first.reconcile(config, tasks, "active-to-review");
 
-    // A fresh orchestrator (server restart) hydrates from disk.
     const restarted = new AutoEngineeringOrchestrator(cacheDir);
     restarted.loadPersistedDecision();
 
     const decision = restarted.getLastDecision();
     expect(decision?.outcome).toBe("selected");
+    expect(decision?.picker).toBe("deterministic");
     expect(decision?.selectedIds).toEqual(["001"]);
     expect(decision?.trigger).toBe("active-to-review");
 
