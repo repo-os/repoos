@@ -2,7 +2,7 @@
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
-status: review
+status: active
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -69,3 +69,4 @@ The deeper problem is honesty. `createStorageProvider` deliberately falls back t
 - 2026-10-05T15:10:11Z · body
 - 2026-10-05T15:30:33Z · status ready→active, branch
 - 2026-10-05T15:42:36Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-05T15:42:36Z · status review→active
