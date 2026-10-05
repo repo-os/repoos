@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
-import { createJobCoordinator } from "../integration-job.js";
+import { createJobCoordinator, pendingCloseOutJobs } from "../integration-job.js";
 import { createRepositoryLock } from "../repo-lock.js";
 
 describe("integration jobs (0118)", () => {
@@ -77,6 +77,22 @@ describe("integration jobs (0118)", () => {
     expect(interrupted).toHaveLength(1);
     expect(interrupted[0].taskId).toBe("task1");
     expect(interrupted[0].phase).toBe("syncing");
+  });
+
+  it("pendingJobs excludes done and failed records from the close-out queue", () => {
+    const coordinator = createJobCoordinator(testRepo);
+
+    coordinator.enqueue({ id: "done1", branch: "feat/done1" } as any)!;
+    coordinator.updateJob("done1", { phase: "done" });
+    coordinator.enqueue({ id: "fail1", branch: "feat/fail1" } as any)!;
+    coordinator.updateJob("fail1", { phase: "failed", reason: "nope" });
+    const live = coordinator.enqueue({ id: "live1", branch: "feat/live1" } as any)!;
+    coordinator.enqueue({ id: "live2", branch: "feat/live2" } as any)!;
+
+    const pending = pendingCloseOutJobs(coordinator.allJobs());
+    expect(pending.map((j) => j.taskId)).toEqual(["live1", "live2"]);
+    expect(pending.findIndex((j) => j.taskId === live!.taskId)).toBe(0);
+    expect(coordinator.allJobs()).toHaveLength(4);
   });
 
   it("should not recover done/failed jobs", () => {

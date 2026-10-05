@@ -51,6 +51,7 @@ import {
 } from "./agent-compatibility.js";
 import { parseDocument } from "./frontmatter.js";
 import { isGitRepo } from "./git.js";
+import { checkDocsWiringAt } from "./project-docs.js";
 import { portListening } from "./net-probe.js";
 import { validateToml } from "./toml-validate.js";
 
@@ -222,6 +223,21 @@ export async function checkAgentCompatibility(
         `${harnessName}: ${result.label}`,
         `${result.explanation} Installed: ${result.installedVersion ?? "unknown"}; certified: ${result.newestCertifiedVersion ?? "none"}.`,
         remediation,
+      ),
+    );
+  }
+
+  const debuggerRow = enabled.find((a) => a.name?.toLowerCase() === "debugger");
+  const builtInDebugger = config.builtInAgents?.debugger;
+  if (debuggerRow && builtInDebugger && builtInDebugger.enabled === false) {
+    findings.push(
+      finding(
+        "runtime.debugger-toggle",
+        "runtime",
+        "warn",
+        "Debugger agent row is enabled but the built-in debugger is off",
+        "The debugger row on the Agents page will not run until the separate built-in debugger toggle is enabled in Settings.",
+        "Enable the built-in debugger under Settings → Built-in agents, or disable the debugger agent row.",
       ),
     );
   }
@@ -952,8 +968,27 @@ function checkLayout(root: string, config: RepoOSConfig): DoctorFinding[] {
     );
   }
 
+  out.push(...checkDocsWiring(root, config));
   out.push(checkTaskFrontmatter(root, config));
+  out.push(checkStarterHygiene(root, config));
   return out;
+}
+
+/**
+ * Wire the pure docs-wiring predicate (#0673) into DoctorFindings. Advisory:
+ * every finding is a `warn`, never a `fail`, so the exit code is unchanged.
+ * Each check keeps its own stable id; a clean result yields one pass finding.
+ */
+function checkDocsWiring(root: string, config: RepoOSConfig): DoctorFinding[] {
+  const taskCount = walkTaskFiles(join(root, config.workDir), config.taskExtensions).length;
+  const findings = checkDocsWiringAt(root, config.docsDir, taskCount);
+  if (findings.length === 1 && findings[0].level === "pass") {
+    const f = findings[0];
+    return [finding(f.id, "layout", "pass", f.title, f.detail)];
+  }
+  return findings.map((f) =>
+    finding(f.id, "layout", f.level === "warn" ? "warn" : "pass", f.title, f.detail, f.fix),
+  );
 }
 
 function checkTaskFrontmatter(root: string, config: RepoOSConfig): DoctorFinding {
@@ -1024,6 +1059,81 @@ function checkTaskFrontmatter(root: string, config: RepoOSConfig): DoctorFinding
     `${issues.length} task file(s) with invalid frontmatter`,
     `${shown}${more}`,
     "fix the file(s), or re-create them via `repoos new` / the API so frontmatter is valid",
+  );
+}
+
+/**
+ * `created_by` value `repoos init` stamps on the starter task it seeds (#0671).
+ * Kept in sync with `src/commands/init.ts`; duplicated as a literal here to
+ * avoid a core→command import for one string.
+ */
+const INIT_STARTER_CREATOR = "repoos-init";
+
+/**
+ * A seeded starter is a suggestion for the human, so it lands in `inbox`. Once
+ * a real backlog exists it is just clutter (and, if it never got promoted,
+ * noise a driver might pick up) — nudge the user to archive it. Advisory only:
+ * `pass` when there's nothing to do, `warn` once a real backlog exists.
+ */
+function checkStarterHygiene(root: string, config: RepoOSConfig): DoctorFinding {
+  const workPath = join(root, config.workDir);
+  if (!existsSync(workPath)) {
+    return finding(
+      "layout.init-starter",
+      "layout",
+      "pass",
+      "No seeded starter task",
+      `${config.workDir}/ does not exist yet.`,
+    );
+  }
+
+  let starter: { id: string; status: string } | null = null;
+  let realTasks = 0;
+  for (const abs of walkTaskFiles(workPath, config.taskExtensions)) {
+    let content: string;
+    try {
+      content = readFileSync(abs, "utf8");
+    } catch {
+      continue;
+    }
+    const { data } = parseDocument(content);
+    const creator = String(data.created_by ?? "").trim();
+    const status = String(data.status ?? "").toLowerCase();
+    const isArchived = data.is_archived === true;
+    if (creator === INIT_STARTER_CREATOR) {
+      if (!isArchived && (status === "inbox" || status === "draft")) {
+        starter = { id: String(data.id ?? "?"), status };
+      }
+    } else if (!isArchived && status !== "done") {
+      realTasks++;
+    }
+  }
+
+  if (!starter) {
+    return finding(
+      "layout.init-starter",
+      "layout",
+      "pass",
+      "No seeded starter waiting in the inbox",
+      "Nothing created by `repoos init` is still un-promoted.",
+    );
+  }
+  if (realTasks < 5) {
+    return finding(
+      "layout.init-starter",
+      "layout",
+      "pass",
+      `Seeded starter #${starter.id} is still in ${starter.status}`,
+      `Only ${realTasks} other task(s) on the board — it is fine to leave the starter as a suggestion for now.`,
+    );
+  }
+  return finding(
+    "layout.init-starter",
+    "layout",
+    "warn",
+    `Seeded starter #${starter.id} is still in ${starter.status} after ${realTasks} tasks`,
+    "`repoos init` seeded a starter suggestion that was never promoted; it is now likely redundant.",
+    `archive it from the board (task 0657), or promote it to \`ready\` if it is still the first thing to do`,
   );
 }
 

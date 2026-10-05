@@ -39,14 +39,15 @@ import {
 } from "../core/git.js";
 import { MAX_AUTO_REVIEW_ROUNDS, needsInputClearsOnSuccessfulReview } from "../core/needs-input.js";
 import { parseTask, recordChange, serializeTask, utcTimestamp } from "../core/task.js";
+import { buildStoryContext } from "../core/story-context.js";
 import {
   parseReviewVerdict as parseVerdictLabel,
   parseReviewRelevance,
 } from "../core/review-verdict.js";
+import { extractReviewReportSections } from "../core/review-report-sections.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
   deterministicSessionId,
-  estimateCostUsd,
   extractOneShotReportText,
   resolveReviewer,
   resolveReviewerForTask,
@@ -113,8 +114,9 @@ const now = (): string => new Date().toISOString();
 /**
  * Compute the reviewer session's cost + source the same way the engineer's
  * `recordSessionToDb` does (0273): a real CLI-reported figure wins outright,
- * otherwise a token-count estimate (never fabricated), and Kiro credits are
- * never passed off as US dollars.
+ * a run that reported only tokens is stored as unknown (#0676 — never a
+ * fabricated dollar estimate from token counts), and Kiro credits are never
+ * passed off as US dollars.
  */
 function reviewUsage(
   agent: Agent,
@@ -122,9 +124,6 @@ function reviewUsage(
 ): { costUsd?: number; costSource: string } {
   if (usage.costUsd) {
     return { costUsd: usage.costUsd, costSource: usageCostSource(agent, usage) };
-  }
-  if (usage.totalTokens) {
-    return { costUsd: estimateCostUsd(usage.totalTokens), costSource: "estimate" };
   }
   return { costSource: "none" };
 }
@@ -141,9 +140,11 @@ export function reviewMission(
   agent: Agent,
   workdir: string,
   baseBranch: string,
+  config: RepoOSConfig,
 ): string {
   const spec = task.body.trim().slice(0, SPEC_CHARS);
   const role = agent.instructions?.trim();
+  const storyContext = buildStoryContext(task, config);
   const parts: string[] = [];
   if (role) parts.push(role, "");
   parts.push(
@@ -160,6 +161,7 @@ export function reviewMission(
     "",
     spec || "(the task file has no body)",
     "",
+    ...(storyContext ? [storyContext, ""] : []),
     "## How to inspect it",
     "",
     `- \`git diff ${baseBranch}...HEAD\` and \`git log ${baseBranch}..HEAD --oneline\` in the`,
@@ -249,9 +251,11 @@ export function reviewFollowupMission(
   baseBranch: string,
   text: string,
   previousReport: ReviewReport | null,
+  config: RepoOSConfig,
 ): string {
   const spec = task.body.trim().slice(0, SPEC_CHARS);
   const role = agent.instructions?.trim();
+  const storyContext = buildStoryContext(task, config);
   const parts: string[] = [];
   if (role) parts.push(role, "");
   parts.push(
@@ -268,6 +272,7 @@ export function reviewFollowupMission(
     "",
     spec || "(the task file has no body)",
     "",
+    ...(storyContext ? [storyContext, ""] : []),
     ...(previousReport
       ? ["## Your previous review", "", previousReport.markdown.trim().slice(0, REPORT_CHARS), ""]
       : []),
@@ -336,54 +341,6 @@ function parseRelevance(
   markdown: string,
 ): "still relevant" | "no longer needed" | "needs rescoping" | null {
   return parseReviewRelevance(markdown);
-}
-
-/** Extract Relevance, Bugs, Edge cases, and Suggestions sections from the report markdown. */
-function extractReportSections(markdown: string): {
-  relevance?: string;
-  bugs?: string;
-  edgeCases?: string;
-  suggestions?: string;
-} {
-  const sections: Record<string, string> = {};
-  const lines = markdown.split("\n");
-  let currentSection: string | null = null;
-  const sectionLines: Record<string, string[]> = {};
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed === "## Relevance") {
-      currentSection = "relevance";
-      sectionLines.relevance = [];
-    } else if (trimmed === "## Bugs") {
-      currentSection = "bugs";
-      sectionLines.bugs = [];
-    } else if (trimmed === "## Edge cases") {
-      currentSection = "edgeCases";
-      sectionLines.edgeCases = [];
-    } else if (trimmed === "## Suggestions") {
-      currentSection = "suggestions";
-      sectionLines.suggestions = [];
-    } else if (trimmed.startsWith("## ") && currentSection) {
-      currentSection = null;
-    } else if (currentSection && sectionLines[currentSection]) {
-      sectionLines[currentSection].push(line);
-    }
-  }
-
-  for (const [key, lines] of Object.entries(sectionLines)) {
-    const content = lines.join("\n").trim();
-    if (content && content !== "None found") {
-      sections[key] = content;
-    }
-  }
-
-  return {
-    relevance: sections.relevance,
-    bugs: sections.bugs,
-    edgeCases: sections.edgeCases,
-    suggestions: sections.suggestions,
-  };
 }
 
 /**
@@ -481,6 +438,8 @@ export class ReviewManager {
   private readonly db: RepoOSDb | null;
   /** Failure tl;dr trigger (#0570) — fire-and-forget diagnosis of `review-failed`. */
   private readonly onDiagnosableFailure?: (taskId: string, reason: string) => void;
+  /** Opt-in approval policy (#0686): fired when a run review finishes `good to go`. */
+  private onCleanReviewVerdict?: (task: Task, report: ReviewReport) => void;
 
   constructor(
     config: RepoOSConfig,
@@ -496,6 +455,11 @@ export class ReviewManager {
     this.onDiagnosableFailure = onDiagnosableFailure;
     this.logger = createLogger(config.root);
     this.db = getRepoOSDb(config.root);
+  }
+
+  /** Wire the approval-policy runner once server dependencies exist (#0686). */
+  bindCleanReviewHandler(handler: (task: Task, report: ReviewReport) => void): void {
+    this.onCleanReviewVerdict = handler;
   }
 
   /** Whether an enabled review agent exists — the Agents page toggle. */
@@ -647,7 +611,7 @@ export class ReviewManager {
     });
     this.appendMarker(task.id, `review started — ${agent.name} (${agent.cli})`);
 
-    const mission = reviewMission(task, agent, workdir, baseBranch);
+    const mission = reviewMission(task, agent, workdir, baseBranch, this.config);
     // A cancel that landed before the spawn must not still start a run.
     if (run.cancelled) {
       this.runs.delete(task.id);
@@ -991,6 +955,8 @@ export class ReviewManager {
             `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
           );
         });
+      } else {
+        void this.onCleanReviewVerdict?.(task, report);
       }
     }
 
@@ -1112,6 +1078,7 @@ export class ReviewManager {
       baseBranch,
       text,
       this.read(task.id),
+      this.config,
     );
     if (run.cancelled) {
       this.runs.delete(task.id);
@@ -1468,7 +1435,7 @@ export class ReviewManager {
     }
 
     // Extract the report sections
-    const sections = extractReportSections(report.markdown);
+    const sections = extractReviewReportSections(report.markdown);
     const messageParts: string[] = [];
     messageParts.push(
       `The automated review found the following (review round ${reviewRounds + 1}):`,

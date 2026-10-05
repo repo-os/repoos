@@ -5,7 +5,7 @@ type: feature
 status: inbox
 needs_input: true
 needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX, Acceptance criteria, Notes for AI; body under 400 characters (excluding original prompt)"
+needs_input_detail: "missing sections: Acceptance criteria, Notes for AI; body under 400 characters (excluding original prompt)"
 priority: p1
 area: mobile
 story: RepoOS Hub for Mobile
@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-26T16:47:41Z"
-updated_at: "2026-10-05T11:15:28Z"
+updated_at: "2026-10-05T22:38:15Z"
 ---
 ## Problem
 

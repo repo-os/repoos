@@ -62,6 +62,18 @@ export interface PreviewInfo {
    * REPOOS_PREVIEW_CHILD=1; empty/absent means the preview runs the base config.
    */
   overrides?: string[];
+  /**
+   * Every process PID this preview owns (#0681): the main command plus each
+   * companion service. `pid` remains the main process for `isPreviewProcess`
+   * and legacy registries; stop/reap signal the whole set.
+   */
+  pids?: number[];
+  /**
+   * Companion services that booted for this preview (#0681), each with its
+   * name and OS-assigned port, so the drawer can show what is running behind
+   * the main URL. Absent for a single-process preview.
+   */
+  services?: { name: string; port: number }[];
 }
 
 export interface PreviewResult {
@@ -74,6 +86,8 @@ export interface PreviewResult {
   label?: string;
   /** Preview-only config override keys this preview applied (#0464). */
   overrides?: string[];
+  /** Companion services that booted, with their ports (#0681). */
+  services?: { name: string; port: number }[];
   error?: string;
   /** True when the refusal is the one-preview cap (`noEvict`), not a failure (#0627). */
   busy?: boolean;
@@ -139,6 +153,34 @@ const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms
 /** Default readiness path for a project-declared preview command. */
 const DEFAULT_READY_PATH = "/";
 
+/** Readiness timeout for a companion service, when it declares none. */
+const DEFAULT_SERVICE_READY_TIMEOUT_MS = 20_000;
+
+/**
+ * A companion process resolved for a target (#0681): an API a full-stack
+ * preview's web command proxies to. Each gets its own OS-assigned port; the
+ * port/URL is passed to every sibling command by placeholder and env var.
+ */
+export interface ResolvedPreviewService {
+  /** Sanitized token used in placeholders/env (`{api.port}`, `..._API_PORT`). */
+  token: string;
+  /** Original configured name, for diagnostics. */
+  name: string;
+  command: string;
+  cwd?: string;
+  readyPath: string;
+  readyTimeoutMs: number;
+}
+
+/** Turn a service name into a placeholder/env token: lowercase, `_`-joined. */
+export function serviceToken(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
 /** The preview target resolved for one task (#0362): a project-declared
  *  shell command selected by the task's `area`. */
 export type PreviewTarget = {
@@ -150,6 +192,18 @@ export type PreviewTarget = {
   readyPath: string;
   /** How long to wait for this target before giving up (ms). See PreviewTargetConfig.readyTimeoutMs. */
   readyTimeoutMs: number;
+  /**
+   * Companion processes booted alongside the main command (#0681), each on its
+   * own OS-assigned port. Empty for a single-process target, which keeps every
+   * existing target behaving exactly as before.
+   */
+  services: ResolvedPreviewService[];
+  /**
+   * Names the target listed in `services` that no `[[preview.services]]` block
+   * defines (#0681). Start fails with a clear error rather than silently
+   * booting a partial preview.
+   */
+  unresolvedServices: string[];
 };
 
 /** Resolution result: a runnable target, or a clean "nothing configured". */
@@ -256,10 +310,45 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
   const preview = config.preview;
   const taskAreas = taskAreasOf(task);
   const namedTargets = preview?.targets ?? [];
+  const serviceDefs = new Map((preview?.services ?? []).map((s) => [s.name, s] as const));
   const areaMatches: PreviewCandidate[] = [];
   const otherTargets: PreviewCandidate[] = [];
 
+  /** Resolve a target's `services` names against the declared service blocks. */
+  const resolveServices = (
+    names: string[] | undefined,
+  ): {
+    services: ResolvedPreviewService[];
+    unresolvedServices: string[];
+  } => {
+    const services: ResolvedPreviewService[] = [];
+    const unresolvedServices: string[] = [];
+    for (const name of names ?? []) {
+      const def = serviceDefs.get(name);
+      if (!def) {
+        unresolvedServices.push(name);
+        continue;
+      }
+      const token = serviceToken(def.name);
+      // Two services whose names sanitize to the same token would collide in
+      // placeholders/env; disambiguate deterministically like target names.
+      const taken = new Set(services.map((s) => s.token));
+      let unique = token || "service";
+      for (let n = 2; taken.has(unique); n++) unique = `${token || "service"}_${n}`;
+      services.push({
+        token: unique,
+        name: def.name,
+        command: def.command,
+        cwd: def.cwd,
+        readyPath: def.readyPath ?? DEFAULT_READY_PATH,
+        readyTimeoutMs: def.readyTimeoutMs ?? DEFAULT_SERVICE_READY_TIMEOUT_MS,
+      });
+    }
+    return { services, unresolvedServices };
+  };
+
   for (const t of namedTargets) {
+    const { services, unresolvedServices } = resolveServices(t.services);
     const candidate: PreviewCandidate = {
       areas: [...t.areas],
       target: {
@@ -269,6 +358,8 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
         cwd: t.cwd,
         readyPath: t.readyPath ?? DEFAULT_READY_PATH,
         readyTimeoutMs: t.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
+        services,
+        unresolvedServices,
       },
     };
     if (taskAreas.some((a) => t.areas.some((b) => sameArea(a, b)))) {
@@ -295,6 +386,11 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
         cwd: preview?.cwd,
         readyPath: preview?.readyPath ?? DEFAULT_READY_PATH,
         readyTimeoutMs: preview?.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
+        // Services attach to named targets only: the default `[preview]` block
+        // shares its key namespace with `[[preview.services]]` in the flat
+        // parser, so a `services` key there would be ambiguous.
+        services: [],
+        unresolvedServices: [],
       },
       implicit: true,
     });
@@ -728,6 +824,17 @@ export class PreviewManager {
       await this.evictIfAtCapacity(task.id);
     }
 
+    // A service name the target references but no `[[preview.services]]` block
+    // defines is a config error, never a silently partial preview (#0681).
+    if (target.unresolvedServices.length) {
+      const error =
+        `preview target "${target.label}" references unknown service(s) ` +
+        `${target.unresolvedServices.map((n) => `"${n}"`).join(", ")} — ` +
+        `declare each with a [[preview.services]] block in repoos.toml`;
+      this.logLifecycle("start-skipped", task.id, error);
+      return { ok: false, error };
+    }
+
     let port: number;
     try {
       port = await reservePort();
@@ -740,16 +847,52 @@ export class PreviewManager {
       return { ok: false, error: "could not allocate an ephemeral port for the preview" };
     }
 
-    const spawned = this.spawnPreview(root, port, task.id, target);
+    // Reserve one OS-assigned port per companion service (#0681), then spawn
+    // services BEFORE the main command so the main command's env already names
+    // a live API port to proxy to.
+    const servicePorts: { service: ResolvedPreviewService; port: number }[] = [];
+    for (const service of target.services) {
+      try {
+        servicePorts.push({ service, port: await reservePort() });
+      } catch {
+        const error = `could not allocate an ephemeral port for preview service "${service.name}"`;
+        this.logLifecycle("start-failed", task.id, error);
+        return { ok: false, error };
+      }
+    }
+    const portVars: Record<string, number> = {};
+    for (const { service, port: servicePort } of servicePorts) {
+      portVars[service.token] = servicePort;
+    }
+
+    const spawned = this.spawnPreview(root, port, task.id, target, portVars);
     if (!spawned.ok) {
       this.logLifecycle("start-failed", task.id, spawned.error);
       return { ok: false, error: spawned.error };
     }
-    const { pid } = spawned;
+    const { pid, servicePids, resolvedServices, processGroup } = spawned;
+
+    // A service that never becomes ready is reported by name and the whole
+    // preview is torn down — the main command would otherwise start, proxy to a
+    // dead API, and fail with an opaque error.
+    const allPids = [pid, ...servicePids];
+    for (const { service, port: servicePort } of servicePorts) {
+      const serviceUrl = `http://${HOST}:${servicePort}`;
+      if (!(await waitForReady(serviceUrl, service.readyPath, service.readyTimeoutMs))) {
+        void this.killMany(allPids, processGroup);
+        const diag = this.bootErrors.get(task.id);
+        this.bootErrors.delete(task.id);
+        const error =
+          `preview service "${service.name}" for #${task.id} did not become ready` +
+          `${diag ? ` — ${diag}` : ""}`;
+        this.logLifecycle("start-failed", task.id, error);
+        return { ok: false, error };
+      }
+    }
 
     const url = `http://${HOST}:${port}`;
     if (!(await waitForReady(url, target.readyPath, target.readyTimeoutMs))) {
-      void this.kill(pid, spawned.processGroup);
+      void this.killMany(allPids, processGroup);
       const diag = this.bootErrors.get(task.id);
       this.bootErrors.delete(task.id);
       const error = `preview server for #${task.id} did not become ready${diag ? ` — ${diag}` : ""}`;
@@ -765,8 +908,10 @@ export class PreviewManager {
       readyPath: target.readyPath,
       label: target.label,
       ...(spawned.command ? { command: spawned.command } : {}),
-      ...(spawned.processGroup ? { processGroup: true } : {}),
+      ...(processGroup ? { processGroup: true } : {}),
       ...(overrides.length ? { overrides } : {}),
+      ...(servicePids.length ? { pids: allPids } : {}),
+      ...(resolvedServices.length ? { services: resolvedServices } : {}),
     };
     this.registry.set(task.id, info);
     this.persist();
@@ -774,6 +919,9 @@ export class PreviewManager {
       "started",
       task.id,
       `target=${info.label} url=${info.url} pid=${info.pid} port=${info.port}` +
+        (resolvedServices.length
+          ? ` services=${resolvedServices.map((s) => `${s.name}:${s.port}`).join(",")}`
+          : "") +
         (overrides.length ? ` overrides=${overrides.join(",")}` : ""),
     );
     this.emit({
@@ -789,6 +937,7 @@ export class PreviewManager {
       readyPath: target.readyPath,
       label: info.label,
       ...(overrides.length ? { overrides } : {}),
+      ...(resolvedServices.length ? { services: resolvedServices } : {}),
     };
   }
 
@@ -804,7 +953,7 @@ export class PreviewManager {
       `target=${info.label ?? "?"} url=${info.url} pid=${info.pid}`,
     );
     this.emit({ type: "preview", id: taskId, preview: null, at: now() });
-    await this.kill(info.pid, info.processGroup);
+    await this.killMany(info.pids?.length ? info.pids : [info.pid], info.processGroup ?? false);
   }
 
   /** Stop every preview — used on main-server shutdown. */
@@ -816,7 +965,9 @@ export class PreviewManager {
     } catch {
       /* nothing persisted */
     }
-    for (const [, info] of entries) await this.kill(info.pid, info.processGroup);
+    for (const [, info] of entries) {
+      await this.killMany(info.pids?.length ? info.pids : [info.pid], info.processGroup ?? false);
+    }
   }
 
   /**
@@ -835,7 +986,13 @@ export class PreviewManager {
     }
     if (payload) {
       for (const info of Object.values(payload.previews ?? {})) {
-        if (isPreviewProcess(info)) void this.kill(info.pid, info.processGroup);
+        // Only reap the group when the main process is confirmed to be one of
+        // ours; otherwise signalling a reused PID's group could hit unrelated
+        // processes. Companion PIDs are only signalled behind that check.
+        if (!isPreviewProcess(info)) continue;
+        for (const pid of info.pids?.length ? info.pids : [info.pid]) {
+          void this.kill(pid, info.processGroup ?? false);
+        }
       }
     }
     try {
@@ -881,13 +1038,46 @@ export class PreviewManager {
     }
   }
 
+  /**
+   * Expand a command template: `{port}`/`{host}` for the process's OWN port,
+   * plus `{<token>.port}`/`{<token>.url}` for every companion service (#0681),
+   * and the equivalent env vars. Split out so services and the main command
+   * share exactly one expansion rule.
+   */
+  private commandParts(
+    template: string,
+    port: number,
+    portVars: Record<string, number>,
+  ): { command: string; env: Record<string, string> } {
+    let command = template.replaceAll("{port}", String(port)).replaceAll("{host}", HOST);
+    const env: Record<string, string> = { [CHILD_ENV]: "1", PORT: String(port), HOST };
+    for (const [token, servicePort] of Object.entries(portVars)) {
+      const serviceUrl = `http://${HOST}:${servicePort}`;
+      command = command
+        .replaceAll(`{${token}.port}`, String(servicePort))
+        .replaceAll(`{${token}.url}`, serviceUrl);
+      const upper = token.toUpperCase();
+      env[`REPOOS_PREVIEW_${upper}_PORT`] = String(servicePort);
+      env[`REPOOS_PREVIEW_${upper}_URL`] = serviceUrl;
+    }
+    return { command, env };
+  }
+
   private spawnPreview(
     root: string,
     port: number,
     taskId: string,
     target: PreviewTarget,
+    portVars: Record<string, number>,
   ):
-    | { ok: true; pid: number; command?: string; processGroup?: boolean }
+    | {
+        ok: true;
+        pid: number;
+        command?: string;
+        processGroup: boolean;
+        servicePids: number[];
+        resolvedServices: { name: string; port: number }[];
+      }
     | { ok: false; error: string } {
     const cwd = resolvePreviewCwd(root, target.cwd);
     if (!cwd) {
@@ -896,33 +1086,77 @@ export class PreviewManager {
         error: `preview target cwd "${target.cwd}" is not inside the task's worktree`,
       };
     }
-    const resolvedCommand = target.command
-      .replaceAll("{port}", String(port))
-      .replaceAll("{host}", HOST);
     // Own process group (POSIX) so a shell command's whole tree — the shell
     // plus whatever it spawns — can be torn down with one signal.
     const processGroup = process.platform !== "win32";
+
+    // Companion services first (#0681): the main command's env names a live
+    // API port, and each service's own cwd is validated the same way.
+    const servicePids: number[] = [];
+    const resolvedServices: { name: string; port: number }[] = [];
+    for (const service of target.services) {
+      const servicePort = portVars[service.token];
+      if (servicePort === undefined) {
+        return { ok: false, error: `preview service "${service.name}" has no reserved port` };
+      }
+      const serviceCwd = resolvePreviewCwd(root, service.cwd);
+      if (!serviceCwd) {
+        void this.killMany(servicePids, processGroup);
+        return {
+          ok: false,
+          error: `preview service "${service.name}" cwd "${service.cwd}" is not inside the task's worktree`,
+        };
+      }
+      const parts = this.commandParts(service.command, servicePort, portVars);
+      let child: ChildProcess;
+      try {
+        child = spawn(parts.command, {
+          cwd: serviceCwd,
+          shell: true,
+          detached: processGroup,
+          stdio: ["ignore", "ignore", "pipe"],
+          env: { ...process.env, ...parts.env },
+        });
+      } catch (err) {
+        void this.killMany(servicePids, processGroup);
+        return {
+          ok: false,
+          error: `could not launch preview service "${service.name}": ${(err as Error).message}`,
+        };
+      }
+      if (!child.pid) {
+        void this.killMany(servicePids, processGroup);
+        return { ok: false, error: `could not launch preview service "${service.name}" (no pid)` };
+      }
+      servicePids.push(child.pid);
+      resolvedServices.push({ name: service.name, port: servicePort });
+      this.pipeBootErrors(child, taskId, `service "${service.name}"`);
+      child.on("error", () => {
+        this.bootErrors.delete(taskId);
+      });
+    }
+
+    const parts = this.commandParts(target.command, port, portVars);
     let child: ChildProcess;
     try {
-      child = spawn(resolvedCommand, {
+      child = spawn(parts.command, {
         cwd,
         shell: true,
         detached: processGroup,
         stdio: ["ignore", "ignore", "pipe"],
-        env: { ...process.env, [CHILD_ENV]: "1", PORT: String(port), HOST },
+        env: { ...process.env, ...parts.env },
       });
     } catch (err) {
+      void this.killMany(servicePids, processGroup);
       return { ok: false, error: `could not launch preview command: ${(err as Error).message}` };
     }
     const pid = child.pid;
-    if (!pid) return { ok: false, error: "could not launch preview server (no pid)" };
+    if (!pid) {
+      void this.killMany(servicePids, processGroup);
+      return { ok: false, error: "could not launch preview server (no pid)" };
+    }
 
-    child.stderr?.on("data", (c: Buffer) => {
-      for (const line of c.toString("utf8").split("\n")) {
-        const l = line.trim();
-        if (l) this.bootErrors.set(taskId, l);
-      }
-    });
+    this.pipeBootErrors(child, taskId, "");
     child.on("error", () => {
       this.bootErrors.delete(taskId);
     });
@@ -932,13 +1166,34 @@ export class PreviewManager {
       // the registry so the drawer's Stop control and the SSE state stay true.
       const info = this.registry.get(taskId);
       if (info && info.pid === pid) {
+        // The main process died: tear down any surviving companion services and
+        // drop the entry, so a dead preview never leaves an orphan API behind.
+        if (info.pids?.length) void this.killMany(info.pids, info.processGroup ?? false);
         this.registry.delete(taskId);
         this.persist();
         this.logLifecycle("exited", taskId, `preview process ${pid} exited on its own`);
         this.emit({ type: "preview", id: taskId, preview: null, at: now() });
       }
     });
-    return { ok: true, pid, command: resolvedCommand, processGroup };
+    return { ok: true, pid, command: parts.command, processGroup, servicePids, resolvedServices };
+  }
+
+  /** Forward a child's stderr lines into the per-task boot-error buffer. */
+  private pipeBootErrors(child: ChildProcess, taskId: string, prefix: string): void {
+    child.stderr?.on("data", (c: Buffer) => {
+      for (const line of c.toString("utf8").split("\n")) {
+        const l = line.trim();
+        if (l) this.bootErrors.set(taskId, prefix ? `[${prefix}] ${l}` : l);
+      }
+    });
+  }
+
+  /**
+   * Kill a set of PIDs sharing one process group (#0681). Used to tear down a
+   * whole multi-process preview atomically.
+   */
+  private async killMany(pids: number[], processGroup: boolean): Promise<void> {
+    await Promise.all(pids.map((p) => this.kill(p, processGroup)));
   }
 
   /** Graceful SIGTERM, then SIGKILL after a short grace period. */

@@ -18,6 +18,7 @@ import {
   compatibilityForContract,
   type AgentCompatibilityContract,
 } from "../../core/agent-compatibility";
+import { scaffoldStarterDocs } from "../../core/project-docs";
 import { UI_THEMES, type RepoOSConfig } from "../../core/types";
 
 const dirs: string[] = [];
@@ -264,6 +265,48 @@ describe("runDoctor", () => {
     expect(report.summary.fail).toBe(0);
   });
 
+  it("passes when a repoos-init starter has been promoted or archived", async () => {
+    const root = cleanProject();
+    writeFileSync(
+      join(root, "work", "0002-flesh-out-the-vision.md"),
+      "---\nid: '0002'\ntitle: Vision\nstatus: done\ncreated_by: repoos-init\n---\nbody\n",
+    );
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    expect(findingById(report, "layout.init-starter")?.severity).toBe("pass");
+  });
+
+  it("passes while an unpromoted repoos-init starter is still the only real work", async () => {
+    const root = cleanProject();
+    writeFileSync(
+      join(root, "work", "0002-read-the-codebase.md"),
+      "---\nid: '0002'\ntitle: Read the codebase\nstatus: inbox\ncreated_by: repoos-init\n---\nbody\n",
+    );
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    const starter = findingById(report, "layout.init-starter");
+    expect(starter?.severity).toBe("pass");
+    expect(starter?.detail).toMatch(/only 0 other task/i);
+  });
+
+  it("warns once a real backlog exists and the repoos-init starter is still in the inbox", async () => {
+    const root = cleanProject();
+    writeFileSync(
+      join(root, "work", "0002-read-the-codebase.md"),
+      "---\nid: '0002'\ntitle: Read the codebase\nstatus: inbox\ncreated_by: repoos-init\n---\nbody\n",
+    );
+    for (let i = 3; i <= 7; i++) {
+      writeFileSync(
+        join(root, "work", `000${i}-real.md`),
+        `---\nid: '000${i}'\ntitle: Real ${i}\nstatus: inbox\ncreated_by: human\n---\nbody\n`,
+      );
+    }
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    const starter = findingById(report, "layout.init-starter");
+    expect(starter?.severity).toBe("warn");
+    expect(starter?.remediation).toMatch(/archive/i);
+    // Advisory only — never a hard failure.
+    expect(report.summary.fail).toBe(0);
+  });
+
   it("never throws even when the root does not exist", async () => {
     const report = await runDoctor({
       root: join(tmpdir(), "repoos-doctor-does-not-exist-xyz"),
@@ -323,6 +366,39 @@ describe("runDoctor", () => {
     const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
     expect(findingById(report, "layout.docs-dir-relocated")).toBeUndefined();
     expect(findingById(report, "layout.work-dir-relocated")).toBeUndefined();
+  });
+});
+
+describe("runDoctor docs wiring (#0673)", () => {
+  it("warns (empty docs) when tasks exist but docsDir holds nothing", async () => {
+    const root = cleanProject();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(
+      join(root, "work/0001-task.md"),
+      "---\nid: '0001'\ntitle: A task\nstatus: ready\n---\nbody\n",
+    );
+
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    const finding = findingById(report, "layout.docs-empty");
+    expect(finding?.severity).toBe("warn");
+    expect(finding?.remediation).toBeTruthy();
+    // Advisory only — a warn must never flip the exit code.
+    expect(report.summary.fail).toBe(0);
+  });
+
+  it("passes a scaffolded starter skeleton against the doctor check", async () => {
+    const root = cleanProject();
+    scaffoldStarterDocs(join(root, "docs"));
+    writeFileSync(join(root, "AGENTS.md"), "Read docs/README.md before starting.\n");
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(
+      join(root, "work/0001-task.md"),
+      "---\nid: '0001'\ntitle: A task\nstatus: ready\n---\nbody\n",
+    );
+
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    expect(findingById(report, "layout.docs-wiring")?.severity).toBe("pass");
   });
 });
 

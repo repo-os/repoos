@@ -36,6 +36,7 @@ import { parseTaskAreas } from "../core/areas.js";
 import { fileCommittedClean, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
+import { buildStoryContext, storyContextSummary } from "../core/story-context.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
 import type { Logger } from "../core/logger.js";
@@ -531,18 +532,6 @@ function writeRegistry(cacheDir: string, registry: DurableRegistry): void {
 export const DEFAULT_STALL_TIMEOUT_MS = 90_000;
 
 /**
- * Estimate cost from token count when the CLI doesn't report it explicitly.
- * Uses rough pricing for common models: claude 3.5 sonnet $3/M input, $15/M output.
- * This is a fallback when extractUsage yields no cost; never fabricates when
- * the CLI provides no data at all.
- */
-export function estimateCostUsd(tokens?: number): number | undefined {
-  if (!tokens || tokens < 1) return undefined;
-  const avgCostPerToken = (3 + 15) / 2 / 1_000_000;
-  return Math.max(0.001, tokens * avgCostPerToken);
-}
-
-/**
  * Best-effort usage/cost extraction from one raw output line. Tries a JSON
  * parse first (codex `--json` usage events, opencode payloads carrying usage)
  * and falls back to plain-text patterns (the kind of human-readable summary
@@ -710,9 +699,9 @@ export function foldUsage(total: ExtractedUsage, raw: string): void {
 /**
  * Classify the cost source for a recorded session (0230). Authoritative
  * CLI-reported cost wins; Kiro is flagged as its own unit (credits), never
- * passed off as USD. Callers that compute a token-based estimate (the engineer
- * runner) set `costSource` to "estimate" themselves — this only reports whether
- * a real CLI figure was present.
+ * passed off as USD. A session with no reported cost is "none" — RepoOS never
+ * estimates a dollar figure from token counts (#0676), so "estimate" is not a
+ * source this returns.
  */
 export function usageCostSource(agent: Agent, usage: { costUsd?: number }): string {
   if (usage.costUsd) return agent.cli === "kiro" ? "kiro-credits" : "extractUsage";
@@ -3567,6 +3556,16 @@ export function missionFor(
     parts.push("");
   }
 
+  // The story's shared background (title, a bounded definition excerpt, and the
+  // sibling tasks in the slice). Omitted entirely when the task has no story or
+  // the tag resolves to no definition file, so an untagged task's prompt is
+  // unchanged. Deterministic and bounded — see core/story-context.ts (#0691).
+  const storyContext = buildStoryContext(task, config);
+  if (storyContext) {
+    parts.push(storyContext);
+    parts.push("");
+  }
+
   if (resumePreamble) {
     parts.push(resumePreamble);
     parts.push("");
@@ -3989,6 +3988,117 @@ export function reviewCommand(
 }
 
 /**
+ * Map an agent `cli` to a one-shot READ-ONLY invocation for board-level roles
+ * (CTO today) that must never modify the repo (#0677).
+ *
+ * The CTO previously reused `reviewCommand`, which the reviewer needs because
+ * it must run `git diff` and tests in a linked task worktree. Run in the MAIN
+ * checkout, that same invocation hands a board agent write access: opencode
+ * `--auto`, cursor `--force`, claude `--dangerously-skip-permissions`, pi
+ * unrestricted tools. One free-model CTO then wrote a junk file into main,
+ * which blocked Move to done.
+ *
+ * This mirrors `pmCommand`'s read-only choices per driver. Where a CLI has no
+ * read-only mode (copilot `--yolo`, kiro `--trust-all-tools`, crush, pi's
+ * non-gated default) the command cannot confine writes — the quarantine net in
+ * `runBoardAgent` is the backstop and reports what it moved.
+ */
+export function readOnlyCommand(
+  agent: Agent,
+  prompt: string,
+  cwd: string,
+  opts: { sessionId?: string; resume?: boolean } = {},
+): { cmd: string; args: string[] } {
+  ensureDrivableCli(agent.cli);
+  const extra = modelArgs(agent.cli, agent.model);
+  if (agent.cli === "claude code") {
+    // stream-json for usage; deliberately NO --dangerously-skip-permissions —
+    // claude's default tool policy is the read-only blast radius we want.
+    return {
+      cmd: "claude",
+      args: [
+        "-p",
+        prompt,
+        ...extra,
+        "--output-format",
+        "stream-json",
+        "--include-partial-messages",
+        "--verbose",
+      ],
+    };
+  }
+  if (agent.cli === "qwen code") {
+    return {
+      cmd: "qwen",
+      args: [
+        "-p",
+        prompt,
+        ...extra,
+        "--output-format",
+        "stream-json",
+        "--include-partial-messages",
+      ],
+    };
+  }
+  if (agent.cli === "codex") {
+    // Default sandbox is already read-only (no --sandbox workspace-write).
+    return { cmd: "codex", args: ["exec", prompt, ...extra, "--json"] };
+  }
+  if (agent.cli === "cursor") {
+    // write:false → no --force, so edits/bash wait on an approval nobody can
+    // answer rather than going through.
+    return {
+      cmd: "cursor-agent",
+      args: [...cursorArgs({ write: false, cwd }), ...extra, prompt],
+    };
+  }
+  if (agent.cli === "antigravity") {
+    // agy's default (no --dangerously-skip-permissions) is read-only.
+    return { cmd: "agy", args: ["-p", prompt, ...extra, "--output-format", "json"] };
+  }
+  if (agent.cli === "pi") {
+    // pi's `--tools read` is the only valid read-only allowlist; the CTO's
+    // digest is supplied in the prompt, so file reads suffice.
+    return {
+      cmd: "pi",
+      args: [
+        "--mode",
+        "json",
+        "--tools",
+        "read",
+        ...(opts.sessionId
+          ? opts.resume
+            ? ["--session", opts.sessionId]
+            : ["--session-id", opts.sessionId]
+          : []),
+        ...extra,
+        prompt,
+      ],
+    };
+  }
+  if (agent.cli === "github copilot") {
+    // No read-only mode; `--yolo` is required so headless reads don't stall.
+    // Isolation comes from the quarantine net, recorded, not faked.
+    return { cmd: "copilot", args: ["-p", prompt, ...extra, ...copilotArgs()] };
+  }
+  if (agent.cli === "kiro") {
+    // No read-only mode; --trust-all-tools is required for headless reads.
+    return {
+      cmd: "kiro-cli",
+      args: ["chat", "--no-interactive", "--trust-all-tools", ...extra, prompt],
+    };
+  }
+  if (agent.cli === "crush") {
+    // Crush has no read-only mode (non-interactive `run` auto-approves).
+    return { cmd: "crush", args: ["run", "--quiet", ...extra, prompt] };
+  }
+  // opencode: `--format json` for the final answer/usage, deliberately NO
+  // `--auto` — gated edits/bash block instead of running, so a stray redirect
+  // cannot write a file. Reads are permitted.
+  return { cmd: "opencode", args: ["run", "--format", "json", ...extra, prompt] };
+}
+
+/**
  * Turn one line of a one-shot (review/CTO) agent's stdout into a transcript
  * entry for live display. Structured event streams (opencode `--format json`,
  * claude/qwen stream-json, codex `--json`, copilot json) get the same per-line
@@ -4090,6 +4200,59 @@ export function extractOneShotReportText(cli: string, rawOutput: string): string
       truncated = entry.d;
   }
   return (last || truncated || trimmed).trim();
+}
+
+/**
+ * Pick a human-readable failure detail for a non-zero one-shot exit (#0677).
+ *
+ * stderr is the obvious source and is preferred when present. But some CLIs
+ * print the real error to STDOUT and leave stderr empty — opencode on an
+ * unavailable free model writes `Error: Model unavailable: opencode/<model>`
+ * to stdout while stderr stays silent. The old message then said only
+ * `exited with code 1: no stderr output`, which told the user nothing and sent
+ * them to run the CLI by hand to find the cause. Fall back to a meaningful line
+ * scraped from stdout: a structured event's `error`/`message` field first, then
+ * an error-shaped plain line, then the last non-empty line.
+ */
+export function oneShotFailureDetail(stderr: string, output: string): string {
+  const stderrText = stripAnsi(stderr).trim();
+  if (stderrText) return stderrText.split("\n").slice(-3).join(" ").trim();
+  const lines = stripAnsi(output)
+    .trim()
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  // Structured events (opencode `--format json`, claude/qwen stream-json, codex
+  // `--json`, cursor stream-json) carry the failure in an `error` field, which
+  // may be a string or an object with a `message`.
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i];
+    if (!line.startsWith("{")) continue;
+    try {
+      const obj = JSON.parse(line) as Record<string, unknown>;
+      const err =
+        (typeof obj.error === "string" && obj.error) ||
+        (obj.error &&
+        typeof obj.error === "object" &&
+        typeof (obj.error as { message?: unknown }).message === "string"
+          ? (obj.error as { message: string }).message
+          : "") ||
+        (typeof obj.message === "string" &&
+        /error|unavailable|denied|fail|invalid/i.test(obj.message)
+          ? obj.message
+          : "");
+      if (err) return String(err).slice(0, 500);
+    } catch {
+      /* not JSON — keep scanning */
+    }
+  }
+  // Fall back to an error-shaped plain line, searched from the end.
+  const errLine = [...lines]
+    .reverse()
+    .find((line) =>
+      /error|unavailable|denied|unauthori[sz]ed|rate limit|invalid|not found|no such/i.test(line),
+    );
+  return (errLine ?? lines[lines.length - 1] ?? "").slice(0, 500);
 }
 
 /**
@@ -4257,7 +4420,7 @@ export function runPrompt(
         turns: usage.turns,
       };
       if (exitCode !== 0 || signal) {
-        const detail = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no stderr output";
+        const detail = oneShotFailureDetail(stderr, output) || "no stderr output";
         const termination = signal ? `signal ${signal}` : `code ${exitCode ?? "unknown"}`;
         const hint = agent.cli === "antigravity" ? antigravityErrorHint(stderr) : null;
         resolve({
@@ -4278,7 +4441,7 @@ export function runPrompt(
         resolve({ ok: true, output, ...usageFields });
         return;
       }
-      const reason = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no output produced";
+      const reason = oneShotFailureDetail(stderr, output) || "no output produced";
       const hint = agent.cli === "antigravity" ? antigravityErrorHint(stderr) : null;
       resolve({
         ok: false,
@@ -4357,7 +4520,7 @@ export function oneShotResultFromLog(
     turns: usage.turns,
   };
   if (exitCode !== undefined && exitCode !== 0) {
-    const detail = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no stderr output";
+    const detail = oneShotFailureDetail(stderr, output) || "no stderr output";
     return {
       ok: false,
       error: `${commandName} exited with code ${exitCode ?? "unknown"}: ${detail}`,
@@ -4369,7 +4532,7 @@ export function oneShotResultFromLog(
     if (error) return { ok: false, error, ...usageFields };
   }
   if (output) return { ok: true, output, ...usageFields };
-  const reason = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no output produced";
+  const reason = oneShotFailureDetail(stderr, output) || "no output produced";
   return { ok: false, error: `agent exited without output: ${reason}`, ...usageFields };
 }
 
@@ -4379,9 +4542,10 @@ export function oneShotResultFromLog(
  * bypasses the AgentRunner, so nothing books it unless the caller does. This
  * is the shared path for those: it folds the `PromptResult` (elapsed, tokens,
  * cost) into a session row, classifying `costSource` the same way
- * `recordSessionToDb` does — a real CLI figure wins, a token-only run gets an
- * estimate, Kiro credits are never presented as USD. Best-effort: a DB failure
- * never propagates to the request.
+ * `recordSessionToDb` does — a real CLI figure wins, a run that reported only
+ * tokens is stored as unknown (`costUsd: null`, `costSource: "none"`, never a
+ * fabricated dollar figure, #0676), and Kiro credits are never presented as
+ * USD. Best-effort: a DB failure never propagates to the request.
  *
  * `taskId` is null for board-level work that belongs to no single task; those
  * rows still roll into every board-level aggregation (getSessionTypeStats /
@@ -4399,14 +4563,14 @@ export function recordOneShotSession(
     const endedAt = new Date().toISOString();
     const elapsedMs = result.elapsedMs ?? 0;
     const totalTokens = result.totalTokens ?? undefined;
-    let costUsd = result.costUsd ?? undefined;
-    let costSource = "none";
-    if (totalTokens && !costUsd) {
-      costUsd = estimateCostUsd(totalTokens);
-      costSource = "estimate";
-    } else if (result.costUsd) {
-      costSource = agent.cli === "kiro" ? "kiro-credits" : "extractUsage";
-    }
+    // Never estimate a dollar figure from token counts (#0676): `totalTokens`
+    // includes cache-read tokens, so pricing them at a single uncached rate can
+    // be ~1000x too high for a cheap, cache-heavy model (and a run cut off
+    // before usage is extracted has no cost at all). A session with tokens but
+    // no reported cost is stored as unknown — `costUsd: null`, `costSource:
+    // "none"` — and stays out of every spend total.
+    const costUsd = result.costUsd ?? undefined;
+    const costSource = costUsd ? (agent.cli === "kiro" ? "kiro-credits" : "extractUsage") : "none";
     db.upsertSession({
       sessionId:
         opts.sessionId ??
@@ -4434,6 +4598,156 @@ export function recordOneShotSession(
   } catch {
     // Database recording is best-effort and must never crash the caller.
   }
+}
+
+/** A dirtied path captured before a board-agent run, to diff against after. */
+interface BoardRunSnapshot {
+  /** Untracked (`??`) repo-relative paths, the ones an agent typically newly creates. */
+  untracked: Set<string>;
+  /** Every dirty path (any status) at snapshot time, so pre-existing dirt is never quarantined. */
+  all: Set<string>;
+}
+
+/**
+ * Best-effort `git status --porcelain` snapshot for the quarantine net. Returns
+ * null when the dir is not a git work tree or git is unavailable — in that case
+ * quarantine is skipped rather than guessing, and the run proceeds unchanged.
+ */
+function snapshotDirty(cwd: string): BoardRunSnapshot | null {
+  try {
+    // `-z` (NUL-separated, never quoted) so a path with spaces — the CTO's
+    // `Nothing to report` junk file — round-trips exactly. Porcelain v1's
+    // quoted line format would hand back `"Nothing to report"` with quotes.
+    const res = spawnSync("git", ["status", "--porcelain", "-z"], {
+      cwd,
+      encoding: "utf8",
+      timeout: 4000,
+    });
+    if (res.error || res.status !== 0 || typeof res.stdout !== "string") return null;
+    const untracked = new Set<string>();
+    const all = new Set<string>();
+    const records = res.stdout.split("\0");
+    for (let i = 0; i < records.length; i++) {
+      const record = records[i];
+      if (!record || record.length < 4) continue;
+      const status = record.slice(0, 2);
+      const path = record.slice(3);
+      all.add(path);
+      if (status.startsWith("??")) untracked.add(path);
+      // A rename/copy record is followed by the original path as its own record.
+      if (status.includes("R") || status.includes("C")) i++;
+    }
+    return { untracked, all };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Move files a board-level agent created in `cwd` into quarantine so the main
+ * checkout is left clean (#0677). The CTO wrote a junk file named
+ * `Nothing to report` into main via a shell-redirect typo; an untracked file on
+ * main then blocked Move to done. Board roles have no read-only mode on every
+ * driver (copilot, kiro, crush), so this is the CLI-agnostic backstop.
+ *
+ * Only NEW files are touched: paths dirty before the run (both tracked
+ * modifications and pre-existing untracked files) are left exactly as they
+ * were, never a user's in-progress work. A file is only moved when it is still
+ * present and untracked/deleted-safe: `git mv`-style tracked deletions are out
+ * of scope. Quarantine lands under `<cacheDir>/quarantine/<timestamp>/`,
+ * preserving the repo-relative path, and returns the moved paths (empty when
+ * nothing stray appeared).
+ */
+export function quarantineStrayFiles(
+  cwd: string,
+  cacheDir: string,
+  before: BoardRunSnapshot | null,
+): string[] {
+  if (!before) return [];
+  const after = snapshotDirty(cwd);
+  if (!after) return [];
+  const stray = [...after.untracked].filter((p) => !before.all.has(p));
+  if (stray.length === 0) return [];
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const base = join(cwd, cacheDir, "quarantine", stamp);
+  const moved: string[] = [];
+  try {
+    // Keep the quarantine itself out of `git status`: its contents are moved
+    // here precisely so main reads clean, and in a repo that does not ignore
+    // the cache dir an untracked quarantine folder would defeat that.
+    mkdirSync(base, { recursive: true });
+    writeFileSync(join(base, ".gitignore"), "*\n", "utf8");
+  } catch {
+    /* best-effort; still attempt the moves below */
+  }
+  for (const rel of stray) {
+    const src = join(cwd, rel);
+    const dest = join(base, rel);
+    try {
+      if (!existsSync(src)) continue;
+      mkdirSync(dirname(dest), { recursive: true });
+      renameSync(src, dest);
+      moved.push(rel);
+    } catch {
+      // A file we cannot move stays where it is; it will still be reported by
+      // the caller's git-status check rather than silently disappearing.
+    }
+  }
+  return moved;
+}
+
+/** Options for {@link runBoardAgent}. */
+export interface BoardAgentRunOptions {
+  /** Working directory (main checkout for board roles). */
+  cwd: string;
+  /** Repo cache dir (e.g. `.repoos`) where quarantine folders are written. */
+  cacheDir: string;
+  timeoutMs?: number;
+  onLine?: (line: string) => void;
+  /** Override invocation. Defaults to {@link readOnlyCommand}. */
+  command?: { cmd: string; args: string[] };
+  sessionId?: string;
+  resume?: boolean;
+  onQuarantine?: (paths: string[]) => void;
+  /** Hands the live child to the caller so it can be killed early. */
+  onSpawn?: (proc: ChildProcess) => void;
+}
+
+/** A board one-shot outcome plus the stray files it was quarantined for. */
+export interface BoardAgentRunResult {
+  result: PromptResult;
+  /** Repo-relative paths moved into quarantine after the run, if any. */
+  quarantined: string[];
+}
+
+/**
+ * Run a board-level agent (CTO today) once with the strongest isolation the
+ * driver offers, plus the quarantine net (#0677). Board roles must never dirty
+ * the main checkout; where the CLI has no read-only mode, anything they create
+ * is moved out of the way and reported instead of blocking Move to done.
+ */
+export async function runBoardAgent(
+  agent: Agent,
+  prompt: string,
+  opts: BoardAgentRunOptions,
+): Promise<BoardAgentRunResult> {
+  const before = snapshotDirty(opts.cwd);
+  const command =
+    opts.command ??
+    readOnlyCommand(agent, prompt, opts.cwd, {
+      sessionId: opts.sessionId,
+      resume: opts.resume,
+    });
+  const result = await runPrompt(agent, prompt, {
+    cwd: opts.cwd,
+    timeoutMs: opts.timeoutMs,
+    onLine: opts.onLine,
+    command,
+    onSpawn: opts.onSpawn,
+  });
+  const quarantined = quarantineStrayFiles(opts.cwd, opts.cacheDir, before);
+  if (quarantined.length && opts.onQuarantine) opts.onQuarantine(quarantined);
+  return { result, quarantined };
 }
 
 export class AgentRunner {
@@ -5163,6 +5477,13 @@ export class AgentRunner {
         s: "sys",
         d: `Skill routing: ${selectedSkills.map((skill) => skill.name).join(", ")}`,
       });
+    }
+    // Make it visible in the task drawer that the prompt carried the story's
+    // background, and how big the definition excerpt was (#0691). Recorded once
+    // per launch; silent for an untagged task.
+    const storySummary = storyContextSummary(task, this.config);
+    if (storySummary) {
+      this.recordEntry(task.id, session, "sys", { s: "sys", d: storySummary });
     }
     const mission = missionFor(
       task,
@@ -6766,18 +7087,14 @@ export class AgentRunner {
       const cacheReadTokens = session.cacheReadTokens ?? undefined;
       const cacheCreationTokens = session.cacheCreationTokens ?? undefined;
       const turns = session.turns ?? undefined;
-      let costUsd = session.costUsd ?? undefined;
-      let costSource = "none";
+      // Never fabricate a cost from token counts (#0676) — see
+      // `recordOneShotSession`. A session that reported tokens but no cost is
+      // stored as unknown and excluded from every spend total.
+      const costUsd = session.costUsd ?? undefined;
       const isKiro = session.engine === "kiro";
-
-      if (totalTokens && !costUsd) {
-        costUsd = estimateCostUsd(totalTokens);
-        costSource = "estimate";
-      } else if (session.costUsd) {
-        // Kiro reports credits in its billing unit, not US dollars — flag the
-        // source so aggregation/UI never present it as USD (0230).
-        costSource = isKiro ? "kiro-credits" : "extractUsage";
-      }
+      // Kiro reports credits in its billing unit, not US dollars — flag the
+      // source so aggregation/UI never present it as USD (0230).
+      const costSource = costUsd ? (isKiro ? "kiro-credits" : "extractUsage") : "none";
 
       const status = exitedCleanly ? "finished" : "errored";
 

@@ -35,7 +35,7 @@ ctoMonitorIntervalMs = 300000
 # Full guide: docs/native-auth.md. Restart-tier: takes effect on the next
 # `repoos serve`, not live. The server refuses to start with enabled = true
 # unless a login provider AND bootstrapAdmin are both set.
-auth.enabled = false
+auth.enabled = true
 auth.sessionMaxAge = "2592000"
 auth.bootstrapAdmin = "hello@repoos.org"   # ONLY this email can claim the founding admin account
 auth.emailProvider.type = "resend"
@@ -93,13 +93,6 @@ remoteValidation.containerImage = "repoos-ci"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
 remoteValidation.tailscaleHosts = ["nick@thinkpad", "nick@bee", "peckjachowski@mini"]
-storage.provider = "neon"
-telegram.enabled = false
-storiesDir = "stories"
-ctoSkipHealthy = true
-remoteValidation.tailscaleUser = "root"
-remoteValidation.maxConcurrent = 1
-remoteValidation.retryOtherHosts = true
 [board.columns]
 
   draft = "Draft"
@@ -146,7 +139,6 @@ bareRequireDirs = ["src/core", "src/server", "src/commands", "src/cli"]
 # never pays for a build against source that is about to be rewritten.
 # `whenChanged` scopes a step to changed-path mode (`repoos check --changed
 # <ref>`) — a fast pre-review pass only; close-out runs the full plan.
-isolationRuns = 3
 [[check.steps]]
 name = "staleness"
 kind = "staleness"
@@ -630,7 +622,6 @@ tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
 hostname = "dev.repoos.org"
 service = "http://localhost:7171"
 access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
-
 [[agents]]
 name = "engineer"
 cli = "opencode"
@@ -647,7 +638,7 @@ instructions = "Review the task's implementation on its feature branch. The impl
 [[agents]]
 name = "pm"
 cli = "opencode"
-model = "deepinfra/Qwen/Qwen3-235B-A22B-Instruct-2507"
+model = "opencode-go/deepseek-v4.1-flash"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]

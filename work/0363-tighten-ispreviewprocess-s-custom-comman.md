@@ -5,14 +5,14 @@ type: bug
 status: inbox
 needs_input: true
 needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX, Acceptance criteria"
+needs_input_detail: "missing sections: Acceptance criteria"
 priority: p3
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-16T02:09:23Z"
-updated_at: "2026-10-05T11:15:30Z"
+updated_at: "2026-10-05T22:38:17Z"
 ---
 ## Problem
 

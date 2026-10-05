@@ -1,5 +1,12 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -7,12 +14,19 @@ import {
   REPOOS_AGENTS_SECTION_MARKER,
   areaVocabularyTomlAddition,
   canaryUnderRootRuntimeDir,
+  parseDocsFromArgs,
+  detectMeaningfulRepoContent,
+  isMeaningfulRepoPath,
+  parseStarterOption,
+  parseInitFlags,
   quoteBlock,
+  repoHasMeaningfulContent,
   repoOSAgentsSectionAddition,
   scaffoldInto,
   validateNamespace,
 } from "../../commands/init";
-import { loadConfig } from "../../core/config";
+import { scaffoldStarterDocs, checkDocsWiringAt } from "../../core/project-docs";
+import { findRepoRoot, loadConfig } from "../../core/config";
 import { parseTask } from "../../core/task";
 import { rmFixture } from "./helpers";
 
@@ -104,8 +118,169 @@ describe("validateNamespace", () => {
   });
 });
 
+describe("parseDocsFromArgs", () => {
+  it("splits --docs-from and --force off the positional name", () => {
+    expect(parseDocsFromArgs(["myapp", "--docs-from", "/tmp/docs"])).toEqual({
+      positional: ["myapp"],
+      docsFrom: "/tmp/docs",
+      force: false,
+    });
+  });
+
+  it("accepts --docs-from=<path>", () => {
+    expect(parseDocsFromArgs(["--docs-from=~/d.zip"])).toEqual({
+      positional: [],
+      docsFrom: "~/d.zip",
+      force: false,
+    });
+  });
+
+  it("collects --force", () => {
+    expect(parseDocsFromArgs(["--force", "--docs-from", "x"])).toEqual({
+      positional: [],
+      docsFrom: "x",
+      force: true,
+    });
+  });
+
+  it("treats a missing --docs-from value as absent, not as a name", () => {
+    expect(parseDocsFromArgs(["--docs-from"])).toEqual({
+      positional: [],
+      docsFrom: null,
+      force: false,
+    });
+    expect(parseDocsFromArgs(["--docs-from", "--force"])).toEqual({
+      positional: [],
+      docsFrom: null,
+      force: true,
+    });
+  });
+});
+
+describe("parseStarterOption (#0671)", () => {
+  it("returns no starter when the flag is absent, preserving other args", () => {
+    expect(parseStarterOption([])).toEqual({ rest: [] });
+    expect(parseStarterOption(["myproject"])).toEqual({ rest: ["myproject"] });
+  });
+
+  it("parses --starter value and removes it from the remaining args", () => {
+    expect(parseStarterOption(["--starter", "codebase"])).toEqual({
+      starter: "codebase",
+      rest: [],
+    });
+    expect(parseStarterOption(["myproject", "--starter", "vision"])).toEqual({
+      starter: "vision",
+      rest: ["myproject"],
+    });
+  });
+
+  it("parses the --starter=value form", () => {
+    expect(parseStarterOption(["--starter=vision"])).toEqual({ starter: "vision", rest: [] });
+  });
+
+  it("rejects an unknown starter and sets a nonzero exit code", () => {
+    const prev = process.exitCode;
+    try {
+      const result = parseStarterOption(["--starter", "nonsense"]);
+      expect(result.starter).toBeUndefined();
+      expect(process.exitCode).toBe(1);
+    } finally {
+      process.exitCode = prev;
+    }
+  });
+});
+
+describe("repo content detection (#0671)", () => {
+  describe("repoHasMeaningfulContent (pure)", () => {
+    it("is false for an empty repo", () => {
+      expect(repoHasMeaningfulContent([])).toBe(false);
+    });
+
+    it("is false for README, LICENSE and .gitignore only", () => {
+      expect(repoHasMeaningfulContent(["README.md", "LICENSE", ".gitignore", ".env.example"])).toBe(
+        false,
+      );
+    });
+
+    it("is false for RepoOS's own scaffold", () => {
+      expect(
+        repoHasMeaningfulContent([
+          "repoos.toml",
+          "AGENTS.md",
+          "work/0001-set-up-repoos.md",
+          "docs/architecture.md",
+          ".repoos/canary.txt",
+          "repoos/work/0002-read-the-codebase.md",
+        ]),
+      ).toBe(false);
+    });
+
+    it("is true once there are source files", () => {
+      expect(repoHasMeaningfulContent(["src/index.ts"])).toBe(true);
+    });
+
+    it("is true for a manifest-like package.json + .gitignore", () => {
+      // package.json is not boilerplate we ignore — it signals a real project.
+      expect(repoHasMeaningfulContent(["package.json", ".gitignore"])).toBe(true);
+    });
+
+    it("is true for a monorepo package tree", () => {
+      expect(
+        repoHasMeaningfulContent(["packages/app/src/main.ts", "packages/lib/package.json"]),
+      ).toBe(true);
+    });
+
+    it("does not treat a README inside a scaffold dir as content", () => {
+      expect(isMeaningfulRepoPath("docs/README.md")).toBe(false);
+      expect(isMeaningfulRepoPath("work/notes.md")).toBe(false);
+    });
+  });
+
+  describe("detectMeaningfulRepoContent (filesystem)", () => {
+    it("reports an empty directory as having no content", () => {
+      expect(detectMeaningfulRepoContent(scratch())).toBe(false);
+    });
+
+    it("ignores README and RepoOS scaffold files", () => {
+      const root = scratch();
+      writeFileSync(join(root, "README.md"), "# hi\n");
+      writeFileSync(join(root, ".gitignore"), "node_modules\n");
+      writeFileSync(join(root, "repoos.toml"), 'workDir = "work"\n');
+      writeFileSync(join(root, "AGENTS.md"), "# agents\n");
+      expect(detectMeaningfulRepoContent(root)).toBe(false);
+    });
+
+    it("ignores a scaffolded layout's work/ and docs/ dirs", () => {
+      const root = scratch();
+      mkdirSync(join(root, "work"), { recursive: true });
+      mkdirSync(join(root, "docs"), { recursive: true });
+      writeFileSync(join(root, "work/0001-set-up-repoos.md"), "---\n---\n");
+      writeFileSync(join(root, "docs/architecture.md"), "# arch\n");
+      expect(detectMeaningfulRepoContent(root)).toBe(false);
+    });
+
+    it("detects source files at the top level and nested", () => {
+      const a = scratch();
+      writeFileSync(join(a, "main.rs"), "fn main() {}\n");
+      expect(detectMeaningfulRepoContent(a)).toBe(true);
+
+      const b = scratch();
+      mkdirSync(join(b, "packages/app/src"), { recursive: true });
+      writeFileSync(join(b, "packages/app/src/main.ts"), "export {};\n");
+      expect(detectMeaningfulRepoContent(b)).toBe(true);
+    });
+
+    it("ignores generated directories like node_modules", () => {
+      const root = scratch();
+      mkdirSync(join(root, "node_modules/left-pad"), { recursive: true });
+      writeFileSync(join(root, "node_modules/left-pad/index.js"), "module.exports = 1;\n");
+      expect(detectMeaningfulRepoContent(root)).toBe(false);
+    });
+  });
+});
+
 describe("scaffoldInto starter tasks", () => {
-  it("leaves a ready new-project starter after the done 0001", () => {
+  it("leaves an inbox new-project starter after the done 0001", () => {
     const root = scratch();
     const { created } = scaffoldInto(root, "Squishy: a tiny social app", "", "new");
 
@@ -116,7 +291,9 @@ describe("scaffoldInto starter tasks", () => {
 
     const starter = readTask(root, "work/0002-flesh-out-the-vision.md");
     expect(starter.id).toBe("0002");
-    expect(starter.status).toBe("ready");
+    // #0671: a seeded starter is a suggestion, not work to auto-run.
+    expect(starter.status).toBe("inbox");
+    expect(starter.createdBy).toBe("repoos-init");
     expect(starter.body).toContain("Squishy: a tiny social app");
     expect(starter.body).toContain("repoos new");
   });
@@ -134,17 +311,42 @@ describe("scaffoldInto starter tasks", () => {
     const root = scratch();
     scaffoldInto(root, "", "", "new");
     const starter = readTask(root, "work/0002-flesh-out-the-vision.md");
-    expect(starter.status).toBe("ready");
+    expect(starter.status).toBe("inbox");
+    expect(starter.createdBy).toBe("repoos-init");
     expect(starter.body).toMatch(/no description was given/i);
   });
 
-  it("seeds a different ready starter for an existing repo", () => {
+  it("seeds the read-the-codebase starter as inbox when the repo has source", () => {
     const root = scratch();
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/index.ts"), "export const x = 1;\n");
     scaffoldInto(root, "", "", "existing");
     const starter = readTask(root, "work/0002-read-the-codebase.md");
-    expect(starter.status).toBe("ready");
+    expect(starter.status).toBe("inbox");
+    expect(starter.createdBy).toBe("repoos-init");
     expect(starter.title).toMatch(/this codebase/i);
     expect(starter.body).toContain("repoos new");
+  });
+
+  it("seeds the vision starter in an effectively empty existing repo (#0671)", () => {
+    const root = scratch();
+    const { created } = scaffoldInto(root, "", "", "existing");
+    expect(created).toContain("work/0002-flesh-out-the-vision.md");
+    expect(existsSync(join(root, "work/0002-read-the-codebase.md"))).toBe(false);
+    const starter = readTask(root, "work/0002-flesh-out-the-vision.md");
+    expect(starter.status).toBe("inbox");
+    expect(starter.createdBy).toBe("repoos-init");
+  });
+
+  it("honors an explicit starter override on the existing path", () => {
+    const root = scratch();
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/index.ts"), "export const x = 1;\n");
+    // The repo has source, but --starter vision forces the product-vision body.
+    const { starter } = scaffoldInto(root, "", "", "existing", [], false, "vision");
+    expect(starter).toBe("vision");
+    expect(existsSync(join(root, "work/0002-flesh-out-the-vision.md"))).toBe(true);
+    expect(existsSync(join(root, "work/0002-read-the-codebase.md"))).toBe(false);
   });
 
   it("numbers the starter after tasks already on the board", () => {
@@ -152,6 +354,8 @@ describe("scaffoldInto starter tasks", () => {
     mkdirSync(join(root, "work"), { recursive: true });
     writeFileSync(join(root, "work/0001-existing.md"), "---\nid: '0001'\n---\n");
     writeFileSync(join(root, "work/0002-existing.md"), "---\nid: '0002'\n---\n");
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/main.ts"), "export {};\n");
 
     const { created } = scaffoldInto(root, "", "", "existing");
     expect(created).toContain("work/0003-read-the-codebase.md");
@@ -182,6 +386,8 @@ describe("scaffoldInto starter tasks", () => {
 
   it("defaults to namespaced repoos/ layout for fresh existing-repo init", () => {
     const root = scratch();
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/index.ts"), "export {};\n");
     const { created } = scaffoldInto(root, "", "repoos", "existing");
 
     expect(created).toContain("repoos.toml");
@@ -264,9 +470,51 @@ describe("scaffoldInto starter tasks", () => {
 
   it("existing-repo starter task references configured docsDir in title", () => {
     const root = scratch();
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/index.ts"), "export {};\n");
     scaffoldInto(root, "", "repoos", "existing");
     const starter = readTask(root, "repoos/work/0002-read-the-codebase.md");
     expect(starter.title).toContain("repoos/docs/");
+  });
+
+  it("the vision starter tells the agent to read existing docs first", () => {
+    const root = scratch();
+    scaffoldInto(root, "desc", "repoos", "new");
+    const starter = readTask(root, "repoos/work/0002-flesh-out-the-vision.md");
+    expect(starter.body).toMatch(/docs already exist in `repoos\/docs\/`, read them first/i);
+  });
+
+  it("does not scaffold starter docs unless asked", () => {
+    const root = scratch();
+    scaffoldInto(root, "desc", "", "new");
+    expect(existsSync(join(root, "docs/README.md"))).toBe(false);
+  });
+
+  it("writes starter docs into the configured docsDir when requested", () => {
+    const root = scratch();
+    scaffoldInto(root, "desc", "repoos", "new");
+    const result = scaffoldStarterDocs(join(root, "repoos/docs"));
+    expect(result.created).toContain("README.md");
+    expect(existsSync(join(root, "repoos/docs/product.md"))).toBe(true);
+  });
+
+  it("scaffold + starter docs pass the doctor docs-wiring check out of the box", () => {
+    const root = scratch();
+    scaffoldInto(root, "desc", "", "new");
+    scaffoldStarterDocs(join(root, "docs"));
+    const findings = checkDocsWiringAt(root, "docs", 2);
+    expect(findings.map((f) => f.id)).toEqual(["layout.docs-wiring"]);
+    expect(findings[0].level).toBe("pass");
+  });
+
+  it("existing-repo starter tells the reader to switch to the vision task when the repo is empty", () => {
+    const root = scratch();
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src/index.ts"), "export {};\n");
+    scaffoldInto(root, "", "", "existing");
+    const starter = readTask(root, "work/0002-read-the-codebase.md");
+    expect(starter.body).toMatch(/actually empty/i);
+    expect(starter.body).toContain("--starter vision");
   });
 
   it("aborts cleanly instead of throwing when a file blocks the namespace directory", () => {
@@ -407,6 +655,72 @@ describe("scaffoldInto gitignore — runtime state and .DS_Store (#0599)", () =>
   });
 });
 
+describe("scaffoldInto gitignore — screenshot attachments (#0682)", () => {
+  function git(root: string, args: string[]): string {
+    return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+  }
+
+  function isIgnored(root: string, path: string): boolean {
+    return spawnSync("git", ["check-ignore", "-q", path], { cwd: root }).status === 0;
+  }
+
+  function gitScratch(): string {
+    const root = scratch();
+    git(root, ["init", "-q", "-b", "main"]);
+    git(root, ["config", "user.email", "t@example.com"]);
+    git(root, ["config", "user.name", "Test"]);
+    return root;
+  }
+
+  it("root layout ignores work/.attachments/ and inputs/.attachments/", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "", "new");
+    const lines = readFileSync(join(root, ".gitignore"), "utf8")
+      .split(/\r?\n/)
+      .map((l) => l.trim());
+    expect(lines).toContain("work/.attachments/");
+    expect(lines).toContain("inputs/.attachments/");
+  });
+
+  it("namespaced layout ignores repoos/work/.attachments/ and inputs/.attachments/", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "repoos", "new");
+    const lines = readFileSync(join(root, ".gitignore"), "utf8")
+      .split(/\r?\n/)
+      .map((l) => l.trim());
+    expect(lines).toContain("repoos/work/.attachments/");
+    expect(lines).toContain("inputs/.attachments/");
+  });
+
+  it("a `repoos shot` attachment never dirties a fresh project", () => {
+    const root = gitScratch();
+    scaffoldInto(root, "", "repoos", "new");
+    git(root, ["add", "-A"]);
+    git(root, ["commit", "-q", "-m", "init"]);
+    expect(git(root, ["status", "--porcelain"])).toBe("");
+
+    mkdirSync(join(root, "repoos/work/.attachments"), { recursive: true });
+    writeFileSync(join(root, "repoos/work/.attachments/shot.png"), "png");
+    mkdirSync(join(root, "inputs/.attachments"), { recursive: true });
+    writeFileSync(join(root, "inputs/.attachments/shot.png"), "png");
+
+    expect(git(root, ["status", "--porcelain"])).toBe("");
+    expect(isIgnored(root, "repoos/work/.attachments/shot.png")).toBe(true);
+    expect(isIgnored(root, "inputs/.attachments/shot.png")).toBe(true);
+  });
+
+  it("is idempotent — a re-run does not duplicate the attachment rules", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "repoos", "new");
+    scaffoldInto(root, "", "repoos", "new");
+    const lines = readFileSync(join(root, ".gitignore"), "utf8")
+      .split(/\r?\n/)
+      .map((l) => l.trim());
+    expect(lines.filter((l) => l === "repoos/work/.attachments/")).toHaveLength(1);
+    expect(lines.filter((l) => l === "inputs/.attachments/")).toHaveLength(1);
+  });
+});
+
 describe("areaVocabularyTomlAddition — existing-repo areas prompt (#0587)", () => {
   it("appends real [[areas]] rows an existing repoos.toml round-trips", () => {
     const root = scratch();
@@ -469,4 +783,187 @@ describe("existing AGENTS.md RepoOS guidance", () => {
     expect(addition).toMatch(/authoritative/i);
     expect(addition).toMatch(/never move/i);
   });
+});
+
+describe("parseInitFlags — non-interactive new-project flags (#0670)", () => {
+  it("defaults to no new-project mode and the current directory", () => {
+    const { options, error } = parseInitFlags([], true);
+    expect(error).toBeNull();
+    expect(options.nonInteractive).toBe(false);
+    expect(options.projectDir).toBe("");
+    expect(options.commit).toBe(true);
+  });
+
+  it("defaults --launch to the TTY state; non-interactive never launches", () => {
+    expect(parseInitFlags([], true).options.launch).toBe(true);
+    expect(parseInitFlags([], false).options.launch).toBe(false);
+  });
+
+  it("accepts --new (and --yes) and reads every documented flag", () => {
+    const { options, error } = parseInitFlags(
+      [
+        "myproj",
+        "--new",
+        "--description",
+        "A tiny app",
+        "--areas",
+        "web, api ,data",
+        "--layout",
+        "/",
+        "--no-commit",
+        "--no-launch",
+        "--preview-stub",
+        "--json",
+      ],
+      false,
+    );
+    expect(error).toBeNull();
+    expect(options.nonInteractive).toBe(true);
+    expect(options.projectDir).toBe("myproj");
+    expect(options.description).toBe("A tiny app");
+    expect(options.areas).toEqual(["web", "api", "data"]);
+    expect(options.layout).toBe("");
+    expect(options.commit).toBe(false);
+    expect(options.launch).toBe(false);
+    expect(options.previewStub).toBe(true);
+    expect(options.json).toBe(true);
+  });
+
+  it("treats --yes as an alias for --new", () => {
+    expect(parseInitFlags(["--yes"], false).options.nonInteractive).toBe(true);
+  });
+
+  it("reads --dir as an alternative to the positional name", () => {
+    const { options } = parseInitFlags(["--dir", "sub/proj"], false);
+    expect(options.projectDir).toBe("sub/proj");
+  });
+
+  it("rejects giving both a name and --dir", () => {
+    const { error } = parseInitFlags(["a", "--dir", "b"], false);
+    expect(error).toContain("!");
+    expect(error).toContain("not both");
+  });
+
+  it("reports an unknown flag instead of silently ignoring it", () => {
+    const { error } = parseInitFlags(["--bogus"], false);
+    expect(error).toBe("!Unknown flag `--bogus`.");
+  });
+
+  it("reports a missing value for a flag that needs one", () => {
+    expect(parseInitFlags(["--description"], false).error).toContain("needs a value");
+    expect(parseInitFlags(["--areas"], false).error).toContain("needs a value");
+    expect(parseInitFlags(["--dir"], false).error).toContain("needs a value");
+  });
+
+  it("rejects an invalid --layout namespace", () => {
+    expect(parseInitFlags(["--layout", "/etc"], false).error).toContain("!");
+  });
+
+  it("reads an inline --description-file", () => {
+    const root = scratch();
+    const file = join(root, "desc.md");
+    writeFileSync(file, "# Project\n\nSome **markdown**.\n");
+    const { options } = parseInitFlags(["--description-file", file], false);
+    expect(options.description).toBe("# Project\n\nSome **markdown**.");
+  });
+
+  it("reports an unreadable --description-file", () => {
+    const { error } = parseInitFlags(["--description-file", "/no/such/file.md"], false);
+    expect(error).toContain("Cannot read --description-file");
+  });
+});
+
+const CLI_PATH = join(findRepoRoot(process.cwd()), "dist/cli/index.js");
+const CLI_BUILT = existsSync(CLI_PATH);
+
+describe.skipIf(!CLI_BUILT)("repoos init --new integration (no TTY) (#0670)", () => {
+  function runInit(cwd: string, args: string[]): { status: number | null; out: string } {
+    const res = spawnSync(process.execPath, [CLI_PATH, "init", ...args], {
+      cwd,
+      encoding: "utf8",
+      // /dev/null stdin = no TTY; the child must not block on prompts.
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, NO_COLOR: "1" },
+      timeout: 30_000,
+    });
+    return { status: res.status, out: (res.stdout ?? "") + (res.stderr ?? "") };
+  }
+
+  it("creates the project, seeds the vision starter, and honours the flags", () => {
+    const root = scratch();
+    const { status, out } = runInit(root, [
+      "proj",
+      "--new",
+      "--description",
+      "A tiny book-club app",
+      "--areas",
+      "web,api",
+      "--no-launch",
+    ]);
+
+    expect(status).toBe(0);
+    // Starter is the new-project one, not read-the-codebase.
+    expect(existsSync(join(root, "proj/repoos/work/0002-flesh-out-the-vision.md"))).toBe(true);
+    expect(existsSync(join(root, "proj/repoos/work/0002-read-the-codebase.md"))).toBe(false);
+
+    const starter = readTask(root, "proj/repoos/work/0002-flesh-out-the-vision.md");
+    expect(starter.body).toContain("A tiny book-club app");
+    expect(loadConfig(join(root, "proj")).areas).toEqual([{ name: "web" }, { name: "api" }]);
+    expect(out).toContain("Seeded starter task #0002");
+    expect(out).toContain("repoos serve");
+  }, 30_000);
+
+  it("makes an initial commit by default and skips it with --no-commit", () => {
+    const committed = scratch();
+    expect(runInit(committed, ["a", "--new", "--no-launch"]).status).toBe(0);
+    const log = execFileSync("git", ["log", "--oneline"], {
+      cwd: join(committed, "a"),
+      encoding: "utf8",
+    });
+    expect(log.trim().length).toBeGreaterThan(0);
+
+    const uncommitted = scratch();
+    expect(runInit(uncommitted, ["b", "--new", "--no-commit", "--no-launch"]).status).toBe(0);
+    const log2 = spawnSync("git", ["log", "--oneline"], {
+      cwd: join(uncommitted, "b"),
+      encoding: "utf8",
+    });
+    // No commits yet → git exits non-zero with no revision.
+    expect(log2.status).not.toBe(0);
+  }, 30_000);
+
+  it("refuses without --new and prints the actionable command, warning off git init", () => {
+    const root = scratch();
+    const { status, out } = runInit(root, ["whatever"]);
+    expect(status).not.toBe(0);
+    expect(out).toContain("Not a TTY");
+    expect(out).toContain("repoos init <name> --new");
+    expect(out).toMatch(/Do NOT run `git init` first/);
+    expect(existsSync(join(root, "whatever"))).toBe(false);
+  }, 30_000);
+
+  it("refuses to overwrite a non-empty directory without --force", () => {
+    const root = scratch();
+    mkdirSync(join(root, "busy"), { recursive: true });
+    writeFileSync(join(root, "busy/keep.txt"), "x");
+    const refused = runInit(root, ["busy", "--new", "--no-launch"]);
+    expect(refused.status).not.toBe(0);
+    expect(refused.out).toContain("--force");
+    expect(existsSync(join(root, "busy/repoos.toml"))).toBe(false);
+
+    const forced = runInit(root, ["busy", "--new", "--force", "--no-launch"]);
+    expect(forced.status).toBe(0);
+    expect(existsSync(join(root, "busy/repoos.toml"))).toBe(true);
+  }, 30_000);
+
+  it("prints machine-readable JSON with --json", () => {
+    const root = scratch();
+    const { status, out } = runInit(root, ["j", "--new", "--json", "--no-launch"]);
+    expect(status).toBe(0);
+    const parsed = JSON.parse(out.slice(out.indexOf("{")));
+    // macOS tmpdir can be /var → /private/var; compare the resolved path.
+    expect(realpathSync(parsed.root)).toBe(realpathSync(join(root, "j")));
+    expect(parsed.tasks).toEqual([{ id: "0002" }]);
+    expect(Array.isArray(parsed.created)).toBe(true);
+  }, 30_000);
 });

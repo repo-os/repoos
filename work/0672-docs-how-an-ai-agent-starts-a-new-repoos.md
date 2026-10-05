@@ -2,14 +2,16 @@
 id: "0672"
 title: "Docs: how an AI agent starts a new RepoOS project (recipe, pitfalls, pointers)"
 type: chore
-status: inbox
+status: done
 priority: p2
 area: docs
-assigned_to: ""
+story: "Field report: first agent-driven project run (opex)"
+merged_commit: 81ad6836d5859450e284e88f5cfae81c797dde39
+assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/docs-how-an-ai-agent-starts-a-new-repoos
 created_at: "2026-10-05T15:20:11Z"
-updated_at: "2026-10-05T15:20:11Z"
+updated_at: "2026-10-05T17:16:38Z"
 ---
 ## Problem
 
@@ -38,3 +40,8 @@ Depends on the init-flags task for the final wording but can start with the pty 
 ## Activity
 
 - 2026-10-05T15:20:11Z · created · unknown
+- 2026-10-05T15:37:56Z · status inbox→ready
+- 2026-10-05T15:38:00Z · status ready→active, branch
+- 2026-10-05T15:47:51Z · status active→review
+- 2026-10-05T16:00:30Z · status review→done, release:success
+- 2026-10-05T17:16:38Z · story

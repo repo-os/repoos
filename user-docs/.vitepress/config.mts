@@ -73,6 +73,10 @@ export default defineConfig({
         text: "Getting started",
         items: [
           { text: "Install and first task", link: "/getting-started" },
+          {
+            text: "Starting a project as an agent",
+            link: "/getting-started#starting-a-new-project-as-an-agent",
+          },
           { text: "Concepts", link: "/concepts" },
           { text: "Adding RepoOS to an existing repo", link: "/existing-repo" },
         ],
@@ -84,6 +88,7 @@ export default defineConfig({
           { text: "Built-in agents", link: "/built-in-agents" },
           { text: "Coding harness compatibility", link: "/coding-harness-compatibility" },
           { text: "Review and close-out", link: "/review-and-close-out" },
+          { text: "Running with AI agents", link: "/running-with-agents" },
           { text: "Notices and notifications", link: "/notifications" },
           { text: "Checks before merge", link: "/check" },
           { text: "Tunnels", link: "/tunnels" },

@@ -5,6 +5,9 @@ instructions, and optionally a few skills. You configure all of it on the
 **Agents** page, and RepoOS drives it — spawning the process, streaming its
 output into the task, and recording its token spend.
 
+Driving a whole board with agents? See
+[Running a project with AI agents](/running-with-agents) for the practical loop.
+
 ## Supported coding agents
 
 RepoOS has a driver for eight CLIs:
@@ -80,14 +83,22 @@ The page is organised into tabs:
 - **Model Playground** — try a prompt against a CLI/model and compare output.
 - **Model providers** — live spend where a provider exposes an API (OpenRouter,
   opencode Go, DeepInfra), plus links to provider dashboards such as Cursor's
-  Spending page. GitHub Copilot is a link-out too: GitHub has deprecated the
-  personal-account billing endpoints and offers no public API for individual
-  Copilot subscription, billing or usage data, so its row links to the
-  Copilot settings page instead.
+  Spending page. A provider's key is read from RepoOS's `.env` or from a coding
+  agent's own login store, so a provider a harness is already signed into shows
+  as connected without re-pasting the key. GitHub Copilot is a link-out too:
+  GitHub has deprecated the personal-account billing endpoints and offers no
+  public API for individual Copilot subscription, billing or usage data, so its
+  row links to the Copilot settings page instead.
 
 Every role card lets you pick the coding agent and model, toggle the role on or
 off, edit its instructions, and **Test** the combination to see whether the CLI
-and model actually respond. **Refresh models** re-probes every CLI's live model
+and model actually respond. A test that finds nothing is reported as **cold
+start** (no output within the CLI's startup window) rather than a hard failure,
+and a failure shows the actual line the CLI printed — for example
+`Error: Model unavailable: …` — not a truncated dump of the event stream. Each
+CLI gets its own startup ceiling (a cold `cursor` or `pi` gets longer than a
+one-shot `opencode`), so a slow first token is not mistaken for a broken model.
+**Refresh models** re-probes every CLI's live model
 list (`opencode models --refresh` for opencode, and the equivalent for each
 other installed CLI) — model names change often, so pick from live discovery
 rather than a hardcoded list. Each CLI loads independently: one slow or failing
@@ -203,6 +214,9 @@ These run as part of a task's life. They're what the `pm`, `engineer`, and
   the repo; never edits files or changes task state.
 - **cto** — an optional always-on board monitor. Off by default; watches for
   stuck tasks, stale reviews and broken builds, and reports rather than acts.
+  It runs read-only where its CLI supports it, and RepoOS quarantines any stray
+  file a run still creates (moved under `.repoos/quarantine/` and reported in
+  the run's report) so the main checkout is never left dirty.
   While the board is healthy it makes no model call at all: it only runs the
   agent when something needs attention, or when the material board signal
   changes. Every CTO run records what triggered it, and a failed run records a

@@ -112,6 +112,7 @@ import {
 import { TaskFieldValidationError } from "../../core/task-fields.js";
 import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
+import { pendingCloseOutJobs } from "../integration-job.js";
 import { createCloseOutOutcomeStore } from "../close-out-outcome.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
@@ -1370,6 +1371,56 @@ export const getTaskOutput: RouteHandler = (ctx, _req, res, params) => {
   });
 };
 
+/**
+ * #0684: per-task agent override fields that the `/start` and `/message`
+ * action bodies accept but do not apply. Both handlers resolve the engineer
+ * with `resolveAgentForTask(config, task)`, which reads only the task's
+ * persisted `agentOverride`/`cliOverride`/`modelOverride` — a body override is
+ * parsed as an unknown property and dropped, so the run launches on the
+ * configured default while the caller believes it named a CLI/model (the field
+ * report's driver "believed for ~2 hours that two tasks were running on Cursor
+ * when they were on DeepSeek"). Rejecting beats ignoring: the only supported
+ * way to change a task's engineer assignment is `PATCH /api/tasks/:id`.
+ *
+ * Returns the offending field names, empty when the body carries none.
+ */
+const IGNORED_OVERRIDE_FIELDS = [
+  "agentOverride",
+  "cliOverride",
+  "modelOverride",
+  "pmAgentOverride",
+  "pmCliOverride",
+  "pmModelOverride",
+  "reviewAgentOverride",
+  "reviewCliOverride",
+  "reviewModelOverride",
+] as const;
+
+function ignoredOverrideFieldNames(body: unknown): string[] {
+  if (!body || typeof body !== "object") return [];
+  const record = body as Record<string, unknown>;
+  return IGNORED_OVERRIDE_FIELDS.filter((f) => record[f] !== undefined);
+}
+
+/**
+ * #0684: reject a `start`/`message` body that carries a per-task override the
+ * route will ignore, naming the endpoint that does apply it. Returns true when
+ * a 400 was written (the caller must return immediately).
+ */
+function rejectIgnoredOverrides(res: ServerResponse, id: string, body: unknown): boolean {
+  const fields = ignoredOverrideFieldNames(body);
+  if (fields.length === 0) return false;
+  const list = fields.map((f) => `"${f}"`).join(", ");
+  json(res, 400, {
+    error:
+      `POST /api/tasks/${id}/start and /message do not apply agent overrides — ` +
+      `${list} would be silently ignored. Set them on the task with ` +
+      `PATCH /api/tasks/${id} { ${fields.join(", ")} }, or edit them from the ` +
+      `task drawer's agent picker, then start the run.`,
+  });
+  return true;
+}
+
 // Task actions: start, pause, message, done, sync
 export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   const { config, index, runner, previews, reviews, syncTaskBranch, onServerStatusChange, logger } =
@@ -1418,7 +1469,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       mode?: unknown;
       instruction?: unknown;
       overrideDependencies?: unknown;
+      [key: string]: unknown;
     };
+    // #0684: refuse overrides this route will not apply rather than accepting
+    // (200) and silently dropping them — see rejectIgnoredOverrides.
+    if (rejectIgnoredOverrides(res, id, body)) return;
     const blockers = taskDependencyBlockers(config.root, existing, index.getTasks());
     if (blockers.length && body?.overrideDependencies !== true) {
       const reason = blockers
@@ -1496,7 +1551,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // It does not block start; it records a visible activity note.
     const startedTask = index.getTask(updated.id);
     if (startedTask) {
-      const assessment = assessTaskUnderspecified(startedTask.body);
+      const assessment = assessTaskUnderspecified(startedTask.body, { area: startedTask.area });
       const flagged = flagUnderspecifiedIfNeeded(config, startedTask);
       if (flagged) {
         index.applyFileChange(flagged.absPath, { guarded: true });
@@ -1845,7 +1900,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         phase: job.phase,
         enqueuedAt: job.enqueuedAt,
         startedAt: job.startedAt,
-        queuePosition: ctx.jobCoordinator.allJobs().findIndex((j) => j.taskId === job.taskId),
+        queuePosition: pendingCloseOutJobs(ctx.jobCoordinator.allJobs()).findIndex(
+          (j) => j.taskId === job.taskId,
+        ),
+        queueLength: pendingCloseOutJobs(ctx.jobCoordinator.allJobs()).length,
       },
     });
   }
@@ -1885,7 +1943,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: "No enabled engineer agent is configured on the Agents page",
       });
     }
-    const body = (await readBody(req)) as { text?: unknown };
+    const body = (await readBody(req)) as { text?: unknown; [key: string]: unknown };
+    // #0684: the engineer message route resolves the agent from the task's
+    // persisted overrides only — reject a body override instead of dropping it.
+    if (rejectIgnoredOverrides(res, id, body)) return;
     const text = typeof body?.text === "string" ? body.text.trim() : "";
     if (!text) {
       return json(res, 400, { error: "message text is required" });
@@ -2192,6 +2253,7 @@ export const startPreview: RouteHandler = async (ctx, req, res, params) => {
     url: result.url,
     label: result.label,
     ...(result.overrides?.length ? { overrides: result.overrides } : {}),
+    ...(result.services?.length ? { services: result.services } : {}),
   });
 };
 
@@ -2500,7 +2562,7 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   // the underspecified check requires so one pass satisfies it.
   const messageText =
     text === PM_FLESH_OUT_MESSAGE
-      ? `${baseMessageText}\n\n${fleshOutRequirementsPrompt(storyContextFor(config, existing.story))}`
+      ? `${baseMessageText}\n\n${fleshOutRequirementsPrompt(storyContextFor(config, existing.story), existing.area)}`
       : baseMessageText;
 
   // Build a one-shot agent override for this PM request. Falls back to the
@@ -2664,8 +2726,8 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
   if (!job) {
     return json(res, 404, { error: `No integration job for task #${id}` });
   }
-  const allJobs = jobCoordinator.allJobs();
-  const queuePos = allJobs.findIndex((j) => j.taskId === job.taskId);
+  const pendingJobs = pendingCloseOutJobs(jobCoordinator.allJobs());
+  const queuePos = pendingJobs.findIndex((j) => j.taskId === job.taskId);
   return json(res, 200, {
     ok: true,
     job: {
@@ -2679,7 +2741,7 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
       reason: job.reason,
       logPath: job.logPath,
       queuePosition: queuePos,
-      queueLength: allJobs.length,
+      queueLength: pendingJobs.length,
     },
   });
 };
@@ -2699,9 +2761,11 @@ export const getCloseOutOutcomes: RouteHandler = (ctx, _req, res) => {
 
 export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
   const allJobs = ctx.jobCoordinator.allJobs();
+  const pendingJobs = pendingCloseOutJobs(allJobs);
+  const pendingIndex = new Map(pendingJobs.map((job, idx) => [job.taskId, idx]));
   return json(res, 200, {
     ok: true,
-    jobs: allJobs.map((job, idx) => ({
+    jobs: allJobs.map((job) => ({
       taskId: job.taskId,
       phase: job.phase,
       enqueuedAt: job.enqueuedAt,
@@ -2711,9 +2775,9 @@ export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
       failedPhase: job.failedPhase,
       failedAt: job.failedAt,
       debugTldr: job.debugTldr,
-      queuePosition: idx,
+      queuePosition: pendingIndex.get(job.taskId) ?? -1,
     })),
-    queueLength: allJobs.length,
+    queueLength: pendingJobs.length,
   });
 };
 

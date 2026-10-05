@@ -29,6 +29,7 @@ import AgentModelModal from "./AgentModelModal.vue";
 import HotfixBadge from "./HotfixBadge.vue";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
 import DependencyChip from "./DependencyChip.vue";
+import { resolveEffectiveAgent } from "../lib/effective-agent";
 
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
@@ -77,21 +78,8 @@ const agentAssignments = computed(() => {
     cliOverride: string | null | undefined,
     modelOverride: string | null | undefined,
   ): AgentAssignment => {
-    const name = (agentOverride || key).toLowerCase();
-    const base = enabled.find((a) => a.name.toLowerCase() === name) ?? null;
-    const baseCli = base?.cli ?? "default";
-    const baseModel = base?.model ?? "default";
-    const cli = cliOverride || baseCli;
-    // `default` is a sentinel rather than a real pin. When a CLI override
-    // changes the harness, the resolver intentionally uses that harness's
-    // default model; otherwise retain the configured role model.
-    const model =
-      modelOverride && modelOverride !== "default"
-        ? modelOverride
-        : cli !== baseCli
-          ? "default"
-          : baseModel;
-    return { key, label, cli, model, baseCli, baseModel };
+    const a = resolveEffectiveAgent(enabled, { agentOverride, cliOverride, modelOverride }, key);
+    return { key, label, cli: a.cli, model: a.model, baseCli: a.baseCli, baseModel: a.baseModel };
   };
   return [
     resolve("pm", "PM", t.pmAgentOverride, t.pmCliOverride, t.pmModelOverride),

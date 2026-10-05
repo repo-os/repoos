@@ -72,9 +72,9 @@ repoos init    # by default scaffolds repoos/work/, repoos/docs/, and AGENTS.md
 repoos serve   # starts the board — prints the local URL to open
 ```
 
-`repoos init` seeds a real starter task, so the board is never empty on first
-run — read it and follow along, no agent required. Runs on Bun or Node 20+.
-No account, no telemetry.
+`repoos init` seeds a real starter task (as an `inbox` suggestion, not work to
+auto-run), so the board is never empty on first run — read it and follow along,
+no agent required. Runs on Bun or Node 20+. No account, no telemetry.
 
 Next: the full [Getting started](/getting-started) walkthrough, or jump
 straight to the [CLI reference](/cli).

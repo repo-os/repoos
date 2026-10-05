@@ -28,7 +28,7 @@ export function flagUnderspecifiedIfNeeded(config: RepoOSConfig, task: Task): Ta
 
   // Once work has started (or finished) a stub body no longer needs a human:
   // never raise the flag, and drop a stale one.
-  const { underspecified, detail } = assessTaskUnderspecified(task.body);
+  const { underspecified, detail } = assessTaskUnderspecified(task.body, { area: task.area });
   if (!underspecified || isPastFleshOutStage(task)) {
     if (task.needsInput && task.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON) {
       // Drop only the obsolete reason; agent questions keep the human blocked.
