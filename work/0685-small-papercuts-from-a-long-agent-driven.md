@@ -2,7 +2,7 @@
 id: "0685"
 title: Small papercuts from a long agent-driven run
 type: chore
-status: active
+status: review
 priority: p3
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/small-papercuts-from-a-long-agent-driven
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:52Z"
-updated_at: "2026-10-05T21:20:19Z"
+updated_at: "2026-10-05T22:03:14Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T21:20:17Z · status inbox→ready
 - 2026-10-05T21:20:19Z · cli_override, model_override
 - 2026-10-05T21:20:19Z · status ready→active, needs_input, branch
+- 2026-10-05T22:03:14Z · status active→review
