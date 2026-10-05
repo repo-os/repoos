@@ -2,7 +2,7 @@
 id: "0685"
 title: Small papercuts from a long agent-driven run
 type: chore
-status: inbox
+status: ready
 needs_input: true
 needs_input_reason: underspecified
 needs_input_detail: "missing sections: Desired UX"
@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:58:52Z"
-updated_at: "2026-10-05T17:17:08Z"
+updated_at: "2026-10-05T21:20:17Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T17:11:38Z · note: Add two items found in a follow-up audit (2026-10-06): (a) declared shots with an unknown target (e.g. 'default' when the only preview target is 'web') are only reported as a 'shots: skipped' activity note at handoff; validate the target when --shots is written, list valid names, make 'default' resolve to the sole target, and show a visible warning when shots were skipped. (b) The built-in Debugger has its own enable toggle (builtInAgents.debugger.enabled) separate from the 'debugger' agent row; an enabled agent row with the toggle off ran zero sessions silently. Make them one setting or warn in repoos doctor.
 - 2026-10-05T17:17:07Z · story
 - 2026-10-05T17:17:08Z · body: section Story context
+- 2026-10-05T21:20:17Z · status inbox→ready
