@@ -2,7 +2,7 @@
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
-status: active
+status: review
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -12,7 +12,7 @@ created_by: ""
 branch: feat/config-schema-settings-ui-for-provider-s
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T18:51:54Z"
+updated_at: "2026-10-05T18:57:54Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -462,3 +462,24 @@ src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no 
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-05T18:51:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T18:51:54Z · status review→active
+- 2026-10-05T18:52:19Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + mermaid@11.17.2
++ oxfmt@0.62.0
++ oxlint@1.77.0
++ pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [539.00ms]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no exported member 'StorageStatus'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-05T18:57:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
