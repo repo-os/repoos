@@ -4429,6 +4429,7 @@ export function recordOneShotSession(
       costSource,
       status: result.ok ? "finished" : "errored",
       lastActivityAt: endedAt,
+      errorReason: result.ok ? null : result.error?.trim().slice(0, 500) || null,
     });
   } catch {
     // Database recording is best-effort and must never crash the caller.

@@ -3,6 +3,7 @@ import { computed, onMounted } from "vue";
 import { useRepoStore } from "../stores/repo";
 import type { UsageRange } from "../types";
 import { fmtTokens } from "../lib/format";
+import { relTime } from "../lib/time";
 
 const repo = useRepoStore();
 
@@ -33,6 +34,32 @@ function fmtElapsed(ms: number | null | undefined): string {
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
   return h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`;
+}
+
+/** "3 hours ago", prefixed with the calendar date once it is over 24 hours old. */
+function fmtWhen(iso: string | null | undefined): string {
+  const ago = relTime(iso);
+  if (!iso) return ago;
+  const t = new Date(iso);
+  if (Number.isNaN(t.getTime())) return ago;
+  if (Date.now() - t.getTime() <= 24 * 3600 * 1000) return ago;
+  const sameYear = t.getFullYear() === new Date().getFullYear();
+  const date = t.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+  return `${date} · ${ago}`;
+}
+
+/** Hover text, e.g. "Tue, 5 Oct 13:55" (local time). */
+function fmtWhenFull(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const t = new Date(iso);
+  if (Number.isNaN(t.getTime())) return "";
+  const date = t.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  const time = t.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${date.replace(/^(\w+) /, "$1, ")} ${time}`;
 }
 
 function fmtCost(usd: number | null | undefined, source?: string): string {
@@ -164,6 +191,9 @@ const recentFailures = computed(() => stats.value?.recentFailures ?? []);
         <ul class="usage-failure-list">
           <li v-for="f in recentFailures" :key="f.sessionId" class="usage-failure">
             <span class="usage-failure-role">{{ f.sessionType }}</span>
+            <span class="usage-failure-when" :title="fmtWhenFull(f.endedAt ?? f.startedAt)">
+              {{ fmtWhen(f.endedAt ?? f.startedAt) }}
+            </span>
             <span class="usage-failure-agent">
               {{ f.codingAgent }}<template v-if="f.model"> · {{ f.model }}</template>
             </span>
@@ -373,7 +403,7 @@ const recentFailures = computed(() => stats.value?.recentFailures ?? []);
 }
 .usage-failure {
   display: grid;
-  grid-template-columns: 72px 150px 150px minmax(0, 1fr) 48px;
+  grid-template-columns: 72px 130px 150px 150px minmax(0, 1fr) 48px;
   gap: 8px;
   align-items: baseline;
   font-size: 11px;
@@ -383,6 +413,7 @@ const recentFailures = computed(() => stats.value?.recentFailures ?? []);
   color: var(--red);
   text-transform: capitalize;
 }
+.usage-failure-when,
 .usage-failure-agent,
 .usage-failure-trigger,
 .usage-failure-reason {
@@ -390,6 +421,7 @@ const recentFailures = computed(() => stats.value?.recentFailures ?? []);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.usage-failure-when,
 .usage-failure-agent,
 .usage-failure-trigger {
   color: var(--txt-faint);
