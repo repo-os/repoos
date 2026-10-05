@@ -1,17 +1,18 @@
 ---
-updated_at: "2026-10-05T19:09:40Z"
-review_passes: 1
 id: "0676"
 title: "Cost accounting: never estimate from raw token totals; exclude estimates from totals and guardrails"
 type: bug
-status: review
+status: done
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: "06736d4236d363b940754d7b292e297731869d40"
 assigned_to: ai
 created_by: ""
 branch: feat/cost-accounting-never-estimate-from-raw-
 created_at: "2026-10-05T16:58:34Z"
+updated_at: "2026-10-05T19:36:47Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -50,4 +51,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T18:04:02Z · status inbox→ready
 - 2026-10-05T18:04:12Z · status ready→active, branch
 - 2026-10-05T18:26:56Z · status active→review
-
+- 2026-10-05T19:36:47Z · status review→done, release:success
