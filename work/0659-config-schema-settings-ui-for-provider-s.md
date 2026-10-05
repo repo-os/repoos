@@ -12,7 +12,7 @@ created_by: ""
 branch: feat/config-schema-settings-ui-for-provider-s
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T17:44:54Z"
+updated_at: "2026-10-05T17:49:43Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -260,3 +260,23 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T17:44:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T17:44:54Z · status review→active
+- 2026-10-05T17:49:43Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
+     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+     35|     expect(missing).toEqual([]);
+       |                     ^
+     36|   });
+     37|
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+ Test Files  1 failed | 390 passed | 1 skipped (392)
+      Tests  2 failed | 4775 passed | 15 skipped (4792)
+   Start at  17:45:24
+   Duration  254.91s (transform 6.10s, setup 2.28s, import 46.52s, tests 206.64s, environment 228.92s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 414ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:49:40
+   Duration  2.15s (transform 952ms, setup 12ms, import 1.18s, tests 414ms, environment 472ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
