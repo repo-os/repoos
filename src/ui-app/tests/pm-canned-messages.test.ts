@@ -120,6 +120,11 @@ describe("canned PM messages above the compose box", () => {
     expect(wrapper.find(".pm-canned").exists()).toBe(true);
   });
 
+  it("shows the flesh-out canned prompt for a ready task", async () => {
+    const { wrapper } = await mountPmTab(makeTask({ status: "ready" }));
+    expect(wrapper.find(".pm-canned").text()).toContain("flesh this out");
+  });
+
   it("shows the active-stage canned questions for an active task", async () => {
     const { wrapper } = await mountPmTab(makeTask({ status: "active" }));
     const list = wrapper.find(".pm-canned");
@@ -138,7 +143,7 @@ describe("canned PM messages above the compose box", () => {
   });
 
   it("does not show the canned list for statuses without a defined set", async () => {
-    for (const status of ["ready", "done"] as const) {
+    for (const status of ["done"] as const) {
       const { wrapper } = await mountPmTab(makeTask({ status }));
       expect(wrapper.find(".pm-canned").exists(), `status=${status}`).toBe(false);
     }

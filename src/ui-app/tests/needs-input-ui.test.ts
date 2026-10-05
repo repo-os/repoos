@@ -50,6 +50,18 @@ describe("needsInputPrimaryAction (#0511)", () => {
     ).toBe("restart");
   });
 
+  it("hides the underspecified flag once a task is active, in review or done", async () => {
+    const { needsInputSurfaces } = await import("../src/lib/needs-input-ui.js");
+    for (const status of ["active", "review", "done"] as const) {
+      expect(
+        needsInputSurfaces({ status, needsInput: true, needsInputReason: "underspecified" }),
+      ).toBe(false);
+    }
+    expect(
+      needsInputSurfaces({ status: "ready", needsInput: true, needsInputReason: "underspecified" }),
+    ).toBe(true);
+  });
+
   it("offers Send to PM for underspecified tasks", () => {
     expect(needsInputStatusLabel("underspecified")).toBe("Doesn't look fully fleshed out");
     expect(needsInputBannerText("underspecified")).toContain("doesn't look fully fleshed out");

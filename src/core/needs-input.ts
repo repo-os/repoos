@@ -10,8 +10,12 @@ export const MAX_AUTO_REVIEW_ROUNDS = 2;
 export function needsInputSuppressedOnReview(
   task: Pick<Task, "status" | "needsInput" | "needsInputReason">,
 ): boolean {
-  return Boolean(
-    task.needsInput && task.status === "review" && task.needsInputReason === "dev-error",
+  if (!task.needsInput) return false;
+  if (task.status === "review" && task.needsInputReason === "dev-error") return true;
+  // A stub body no longer matters once the task is active, in review or done.
+  return (
+    task.needsInputReason === "underspecified" &&
+    (task.status === "active" || task.status === "review" || task.status === "done")
   );
 }
 
