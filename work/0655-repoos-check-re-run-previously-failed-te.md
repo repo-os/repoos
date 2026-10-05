@@ -2,14 +2,14 @@
 id: "0655"
 title: "repoos check: re-run previously failed tests first, and triage single-test failures in isolation"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/repoos-check-re-run-previously-failed-te
 created_at: "2026-10-05T03:18:48Z"
-updated_at: "2026-10-05T03:44:30Z"
+updated_at: "2026-10-05T03:50:20Z"
 ---
 ## Problem
 A failing test costs a full-suite run to discover and again to confirm. From .repoos/checks.db: 43 runs failed in the tests step (avg 414s) and 15 in remote-validation (avg about 1,236s, includes remote queue/wait). The six most recent failing runs with recorded test names each had ONE failing test out of about 4,690 and ran 260-290s (one 1,039s) before reporting it. serve-reaper.test.ts (orphaned-root sweep) appears at least twice, and failed #0652's handoff on 2026-10-05 while 4,689 others passed. Failed test names are already stored in check_runs.failed_tests (58 runs).
@@ -48,3 +48,4 @@ Context: split out of the #0652 analysis (check-result cache, parked). Skipping 
 - 2026-10-05T03:20:20Z · priority
 - 2026-10-05T03:23:25Z · status ready→active, branch
 - 2026-10-05T03:44:30Z · body: section Shots
+- 2026-10-05T03:50:20Z · status active→review
