@@ -187,6 +187,9 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     autoTransition: true,
   },
   autoEngineeringMode: false,
+  autoEngineering: {
+    pmVeto: false,
+  },
   ctoSkipHealthy: true,
   skillSuggestions: false,
   maxActiveTasks: 3,
@@ -1043,6 +1046,12 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
     if (typeof get("autoEngineeringMode") === "boolean")
       cfg.autoEngineeringMode = get("autoEngineeringMode") as boolean;
+    // #0690: optional PM veto pass. Nested `[autoEngineering] pmVeto = true`.
+    // Absent means the deterministic default (no veto).
+    const pmVeto = parsed["autoEngineering.pmVeto"];
+    if (typeof pmVeto === "boolean") {
+      cfg.autoEngineering = { ...cfg.autoEngineering, pmVeto };
+    }
     if (typeof get("ctoSkipHealthy") === "boolean")
       cfg.ctoSkipHealthy = get("ctoSkipHealthy") as boolean;
     if (typeof get("skillSuggestions") === "boolean")
@@ -1694,6 +1703,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description: "Automatically select and start ready tasks up to the maximum",
     },
     {
+      key: "autoEngineering.pmVeto",
+      label: "PM veto for parallel conflicts",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.autoEngineering?.pmVeto ?? false,
+      description:
+        "Off by default: the picker is fully deterministic (priority, then the most " +
+        "downstream work unblocked, then creation order). When on, a PM pass runs only when " +
+        "there are more eligible tasks than open slots AND two candidates would collide " +
+        "(same area or a declared shared path). It may only reorder or defer — never invent " +
+        "work — and its rationale is recorded with the decision.",
+    },
+    {
       key: "ctoSkipHealthy",
       label: "Skip the CTO on a healthy board",
       type: "boolean",
@@ -2016,6 +2039,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "defaultTaskMode",
   "maxActiveTasks",
   "autoEngineeringMode",
+  "autoEngineering.pmVeto",
   "ctoSkipHealthy",
   "skillSuggestions",
   "worktreeWarnThreshold",

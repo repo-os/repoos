@@ -30,8 +30,6 @@ const statusChip = computed(() => {
       return { text: "Waiting for ready tasks", cls: "warn" };
     case "no-capacity":
       return { text: "At capacity", cls: "idle" };
-    case "pm-unavailable":
-      return { text: "PM unavailable", cls: "err" };
     case "pm-failed":
       return { text: "PM failed", cls: "err" };
     default:
@@ -42,19 +40,21 @@ const statusChip = computed(() => {
 const statusLine = computed(() => {
   const d = decision.value;
   if (!enabled.value) return "Automatic task selection is off. Enable it in Settings.";
-  if (reconciling.value) return "Asking the PM agent which ready tasks should start…";
+  if (reconciling.value) return "Choosing which ready tasks should start…";
   if (!d) return "No decision recorded yet — it will appear here after the first transition.";
   switch (d.outcome) {
-    case "selected":
+    case "selected": {
+      const ids = d.selectedIds.map((id) => `#${id}`).join(", ");
+      const how = d.picker === "pm-veto" ? "PM veto pass" : "deterministic picker";
+      const deferred = d.deferredIds?.length ? ` Deferred #${d.deferredIds.join(", #")}.` : "";
       return d.rationale
-        ? `Started ${d.selectedIds.length} task${d.selectedIds.length === 1 ? "" : "s"} (${d.selectedIds.map((id) => `#${id}`).join(", ")}). ${d.rationale}`
-        : `Started ${d.selectedIds.length} task${d.selectedIds.length === 1 ? "" : "s"} (${d.selectedIds.map((id) => `#${id}`).join(", ")}).`;
+        ? `Started ${d.selectedIds.length} task${d.selectedIds.length === 1 ? "" : "s"} (${ids}) via the ${how}. ${d.rationale}${deferred}`
+        : `Started ${d.selectedIds.length} task${d.selectedIds.length === 1 ? "" : "s"} (${ids}) via the ${how}.${deferred}`;
+    }
     case "no-capacity":
       return `All ${d.maxActiveTasks} engineer slot${d.maxActiveTasks === 1 ? "" : "s"} are full.`;
     case "no-ready-work":
       return "Capacity is open but there are no ready tasks — add or promote work to let auto-engineering start it.";
-    case "pm-unavailable":
-      return "No PM agent is configured, so nothing was started. Configure one on the Agents page.";
     case "pm-failed":
       return d.error
         ? `The PM agent failed: ${d.error}`

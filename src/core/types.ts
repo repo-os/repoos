@@ -94,6 +94,18 @@ export interface TaskFrontmatter {
   /** Optional free-text reason the task was archived. Only meaningful while `is_archived` is true. */
   archive_detail?: string;
   /**
+   * True when the task is held out of auto-start (#0690). Orthogonal to
+   * `status`: the task stays `ready` and startable by hand, but the
+   * auto-engineering picker skips it. A `hold` tag is an equivalent label.
+   */
+  hold?: boolean;
+  /**
+   * Repo-relative files this task expects to touch (#0690). Declared by the
+   * planner so the picker can keep two candidates that would edit the same
+   * file out of the same dispatch batch.
+   */
+  paths?: string[];
+  /**
    * One area, a comma-separated string ("web, core"), or a list. Legacy
    * "a + b" values read through the shared `parseTaskAreas` helper too (#0583).
    */
@@ -181,6 +193,20 @@ export interface Task {
   isArchived?: boolean;
   /** Optional free-text reason the task was archived; absent when none was given. */
   archiveDetail?: string;
+  /**
+   * True when the task is held out of auto-start (#0690). Orthogonal to
+   * `status`: the task stays `ready` and fully startable by hand, but the
+   * auto-engineering picker skips it. A `hold` tag is an equivalent label —
+   * see `taskIsHeld` in `src/core/task-selection.ts`.
+   */
+  isHeld?: boolean;
+  /**
+   * Repo-relative files this task expects to touch (#0690). Declared by the
+   * planner so the auto-engineering picker can hold two candidates that would
+   * edit the same file out of the same dispatch batch. Optional; empty means
+   * "unknown", never "no files".
+   */
+  paths?: string[];
   priority: Priority | string;
   area: string;
   /**
@@ -450,6 +476,11 @@ export interface RepoOSConfig {
   agents?: Agent[];
   /** When true, RepoOS automatically selects and starts ready tasks up to maxActiveTasks. */
   autoEngineeringMode?: boolean;
+  /**
+   * Auto-engineering picker settings (#0690). Absent means the deterministic
+   * default picker with no PM veto.
+   */
+  autoEngineering?: AutoEngineeringConfig;
   /**
    * When true (the default), the CTO monitor skips its model call while the
    * board is healthy — no stuck tasks, a fresh build and a normal process
@@ -1309,8 +1340,21 @@ export interface WatchdogConfig {
 }
 
 /**
- * Close-out (Move to done) pipeline budget (#0573).
+ * Auto-engineering (automatic task dispatch) configuration (#0690).
  */
+export interface AutoEngineeringConfig {
+  /**
+   * When true, a PM veto pass may run before dispatch — but only when there
+   * are more eligible tasks than open slots AND at least two candidates would
+   * collide (same area or a declared shared path). The default (false) is a
+   * purely deterministic picker: priority, then critical-path weight, then
+   * creation order. The veto may only reorder or defer eligible work; it can
+   * never invent a task that the deterministic picker did not surface.
+   */
+  pmVeto?: boolean;
+}
+
+/** Close-out (Move to done) pipeline budget (#0573). */
 export interface CloseOutConfig {
   /**
    * Total wall-clock budget for ONE close-out attempt, from when the job

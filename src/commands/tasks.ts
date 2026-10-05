@@ -30,7 +30,7 @@ export const TYPE_USAGE = TASK_TYPES.join("|");
 export const UPDATE_USAGE =
   '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] ' +
   `[--priority ${PRIORITY_USAGE}] [--type ${TYPE_USAGE}] [--body "..."|-] [--branch b] ` +
-  '[--assigned-to ai|human] [--needs-input true|false] [--needs-merge true|false] [--questions "Question one\\nQuestion two"] [--clear-questions] [--shots "<JSON list>"|- | --section "<heading>" --section-body ...] [--force]';
+  '[--assigned-to ai|human] [--needs-input true|false] [--needs-merge true|false] [--hold true|false] [--paths src/a.ts,src/b.ts] [--questions "Question one\\nQuestion two"] [--clear-questions] [--shots "<JSON list>"|- | --section "<heading>" --section-body ...] [--force]';
 
 export const NEW_USAGE =
   '  Usage: repoos new "Task title" [--ai] ' +
@@ -424,6 +424,8 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
   "assigned-to": "assignedTo",
   "needs-input": "needsInput",
   "needs-merge": "needsMerge",
+  hold: "hold",
+  paths: "paths",
   questions: "questions",
   section: "section",
 };
@@ -460,6 +462,7 @@ function shotsSectionContent(raw: string): string {
  * `repoos update <id> [--title ...] [--area ...] [--story ...] [--priority ...]
  *   [--type ...] [--body ... | --body -] [--branch ...] [--assigned-to ai|human]
  *   [--needs-input true|false] [--questions "Question one\nQuestion two"] [--depends-on ids]
+ *   [--hold true|false] [--paths src/a.ts,src/b.ts]
  *   [--shots '<JSON list>' | --section "<heading>" --section-body ... | --force]`
  *
  * Writes directly via patchTaskFile (same path the server's PATCH route uses),
@@ -559,6 +562,18 @@ export function cmdUpdate(args: string[]): void {
       }
       if (field === "needsInput") patch.needsInput = raw === "true";
       else patch.needsMerge = raw === "true";
+    } else if (field === "hold") {
+      if (raw !== "true" && raw !== "false") {
+        console.error(c.red("  --hold must be true or false"));
+        process.exitCode = 1;
+        return;
+      }
+      patch.hold = raw === "true";
+    } else if (field === "paths") {
+      patch.paths = raw
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
     } else if (field === "questions") {
       patch.questions = parseQuestions(raw);
     } else if (field === "dependsOn") {
