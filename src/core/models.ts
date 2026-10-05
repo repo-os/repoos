@@ -16,6 +16,8 @@
  * (surfaced as `?refresh=1` on GET /api/models) bypasses it.
  */
 import { spawn, type ChildProcess } from "node:child_process";
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { writeChildStdin } from "./child-stdin.js";
 import { resolveBinary, KNOWN_AGENTS } from "./detect.js";
 
@@ -40,6 +42,8 @@ export interface ModelSourceResult {
    * in"), or a JSON-RPC error from the CLI. Absent on success (#0593).
    */
   error?: string;
+  /** True when `models` is the last successful list, served because this probe failed. */
+  stale?: boolean;
 }
 
 /** Options handed to an adapter's `list`. */
@@ -660,10 +664,81 @@ const modelResultCache = new Map<string, CachedModelResult>();
 /** In-flight probes, so concurrent requests for one CLI spawn it once. */
 const inflightModelProbes = new Map<string, Promise<ModelSourceResult>>();
 
+/** Last *successful* probe per cwd + CLI. Unlike the TTL cache it never expires. */
+const lastGoodModels = new Map<string, string[]>();
+const diskLoaded = new Set<string>();
+
 /** Drop every cached/in-flight probe result (tests, and `--refresh` internals). */
 export function clearModelSourceCache(): void {
   modelResultCache.clear();
   inflightModelProbes.clear();
+  lastGoodModels.clear();
+  diskLoaded.clear();
+}
+
+function lastGoodPath(cwd: string): string {
+  return join(cwd, ".repoos", "model-cache.json");
+}
+
+/** Hydrate the in-memory last-good map from disk once per cwd. Fail-soft. */
+function loadLastGood(cwd: string): void {
+  if (diskLoaded.has(cwd)) return;
+  diskLoaded.add(cwd);
+  try {
+    const raw = JSON.parse(readFileSync(lastGoodPath(cwd), "utf8")) as Record<string, unknown>;
+    for (const [cli, models] of Object.entries(raw)) {
+      if (Array.isArray(models) && models.every((m) => typeof m === "string")) {
+        const key = modelCacheKey(cli, cwd);
+        if (!lastGoodModels.has(key)) lastGoodModels.set(key, models as string[]);
+      }
+    }
+  } catch {
+    // no file / unreadable: nothing to hydrate
+  }
+}
+
+function saveLastGood(cwd: string): void {
+  try {
+    const out: Record<string, string[]> = {};
+    const prefix = `${cwd}\u0000`;
+    for (const [key, models] of lastGoodModels) {
+      if (key.startsWith(prefix)) out[key.slice(prefix.length)] = models;
+    }
+    const file = lastGoodPath(cwd);
+    mkdirSync(join(cwd, ".repoos"), { recursive: true });
+    const tmp = `${file}.${process.pid}.tmp`;
+    writeFileSync(tmp, JSON.stringify(out));
+    renameSync(tmp, file);
+  } catch {
+    // best-effort persistence
+  }
+}
+
+/** A probe that actually produced a list (more than the synthetic "default"). */
+function isGoodResult(result: ModelSourceResult): boolean {
+  return !result.error && result.models.some((m) => m !== "default");
+}
+
+/**
+ * Remember good results; when a probe fails (or comes back with nothing but
+ * "default"), serve the last good list marked `stale` with the error attached
+ * so the UI keeps working and still shows why the refresh failed.
+ */
+function withLastGood(key: string, cwd: string, result: ModelSourceResult): ModelSourceResult {
+  loadLastGood(cwd);
+  if (isGoodResult(result)) {
+    lastGoodModels.set(key, result.models);
+    saveLastGood(cwd);
+    return result;
+  }
+  const previous = lastGoodModels.get(key);
+  if (!previous || previous.length <= result.models.length) return result;
+  return {
+    ...result,
+    models: previous,
+    stale: true,
+    error: result.error ?? "model list came back empty; showing the last known list",
+  };
 }
 
 function modelCacheKey(cli: string, cwd: string): string {
@@ -707,8 +782,9 @@ export async function listModelSources(
         const started: Promise<ModelSourceResult> = src
           .list(opts)
           .then((result) => {
-            modelResultCache.set(key, { at: Date.now(), result });
-            return result;
+            const merged = withLastGood(key, cwd, result);
+            modelResultCache.set(key, { at: Date.now(), result: merged });
+            return merged;
           })
           .catch((err: unknown) => {
             // Adapters are contracted never to throw, but if one does the
@@ -721,8 +797,9 @@ export async function listModelSources(
               refreshable: src.supported,
               error: err instanceof Error ? err.message : String(err),
             };
-            modelResultCache.set(key, { at: Date.now(), result });
-            return result;
+            const merged = withLastGood(key, cwd, result);
+            modelResultCache.set(key, { at: Date.now(), result: merged });
+            return merged;
           });
         if (!opts.refresh) {
           inflightModelProbes.set(key, started);
