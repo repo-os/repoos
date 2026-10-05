@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-05T22:04:27Z"
-review_passes: 1
 id: "0685"
 title: Small papercuts from a long agent-driven run
 type: chore
-status: review
+status: active
 priority: p3
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -14,6 +12,9 @@ branch: feat/small-papercuts-from-a-long-agent-driven
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:52Z"
+updated_at: "2026-10-05T22:04:28Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -51,4 +52,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T21:57:23Z · note: Papercuts: (6) Agents Test timeout/diagnostic truncation already fixed on main (#0677, model-test.ts). (8) idempotent /start kept as-is.
 - 2026-10-05T22:03:15Z · status active→review
 - 2026-10-05T22:03:15Z · note: Task body is underspecified: missing sections: Desired UX
-
+- 2026-10-05T22:04:28Z · status review→active
