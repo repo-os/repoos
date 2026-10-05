@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: server
+story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T23:52:38Z"
-updated_at: "2026-10-05T23:52:38Z"
+updated_at: "2026-10-05T23:52:47Z"
 ---
 ## Problem
 
@@ -35,3 +36,4 @@ Overlaps with #0679 (hand merge/semantic conflicts back to the engineer automati
 ## Activity
 
 - 2026-10-05T23:52:38Z · created · unknown
+- 2026-10-05T23:52:47Z · story
