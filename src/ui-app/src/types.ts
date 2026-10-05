@@ -646,6 +646,7 @@ export type RepoEvent =
       tldr?: string;
     }
   | { type: "task.corrected"; id: string; path: string; note: string; at: string }
+  | { type: "task.autoApproved"; id: string; rule: string; at: string }
   | { type: "preview"; id: string; preview: PreviewInfo | null; at: string }
   | {
       type: "review";

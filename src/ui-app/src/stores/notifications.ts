@@ -20,6 +20,7 @@ export type NotificationType =
   | "paused"
   | "stuck"
   | "needsInput"
+  | "autoApproved"
   | "releaseNotesReady"
   | "releaseSucceeded"
   | "releaseFailed"
@@ -33,6 +34,7 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   "paused",
   "stuck",
   "needsInput",
+  "autoApproved",
   "releaseNotesReady",
   "releaseSucceeded",
   "releaseFailed",
@@ -215,6 +217,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   paused: "Paused",
   stuck: "Stuck",
   needsInput: "Needs attention",
+  autoApproved: "Auto-approved by policy",
   releaseNotesReady: "Release notes ready",
   releaseSucceeded: "Release succeeded",
   releaseFailed: "Release failed",
@@ -229,6 +232,8 @@ export const NOTIFICATION_TYPE_DESCRIPTIONS: Record<NotificationType, string> = 
   paused: "A running task was paused.",
   stuck: "A task was surfaced as stuck (no progress detected).",
   needsInput: "A task explicitly needs your attention.",
+  autoApproved:
+    "A clean review matched your approval policy and Move to done started automatically. Turn on this type under Notifications to hear it in the bell.",
   releaseNotesReady: "A release-notes draft finished generating.",
   releaseSucceeded: "A release cut finished successfully.",
   releaseFailed: "A release cut failed.",

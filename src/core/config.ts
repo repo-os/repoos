@@ -29,6 +29,7 @@ import type {
   PreviewConfig,
   PreviewServiceConfig,
   PreviewTargetConfig,
+  ApprovalConfig,
   RepoOSConfig,
   Status,
   Assignee,
@@ -1507,6 +1508,25 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         );
       }
     }
+
+    const approvalEnabled = parsed["approval.enabled"];
+    const approvalAreas = normalizeStringList(parsed["approval.autoApprove.areas"]);
+    const approvalTypes = normalizeStringList(parsed["approval.autoApprove.types"]);
+    const approvalUiAreas = normalizeStringList(parsed["approval.autoApprove.uiAreas"]);
+    if (
+      approvalEnabled !== undefined ||
+      approvalAreas.length ||
+      approvalTypes.length ||
+      approvalUiAreas.length
+    ) {
+      const approval: ApprovalConfig = {};
+      if (typeof approvalEnabled === "boolean") approval.enabled = approvalEnabled;
+      approval.autoApprove = {};
+      if (approvalAreas.length) approval.autoApprove.areas = approvalAreas;
+      if (approvalTypes.length) approval.autoApprove.types = approvalTypes;
+      if (approvalUiAreas.length) approval.autoApprove.uiAreas = approvalUiAreas;
+      cfg.approval = approval;
+    }
   }
 
   // Model-provider API keys (0327): env-only, same rule as the [auth] secrets
@@ -1843,6 +1863,39 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "it is aborted with a retryable failure and the task stays in review; retries and remote " +
         "validation share the same budget. 0 disables the ceiling. Set any value in repoos.toml " +
         "(`[closeOut] timeoutMs`).",
+    },
+    {
+      key: "approval.enabled",
+      label: "Auto-approve clean reviews",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description:
+        "When enabled, tasks in review that match configured areas or types, pass the handoff gate, " +
+        "and receive a clean reviewer verdict can Move to done automatically. Every auto-approval is " +
+        "recorded in the task activity log. UI areas stay human unless handoff screenshots succeeded. " +
+        "Tag a task `human-only` to opt out. You must set at least one area or type list below — both empty never matches.",
+    },
+    {
+      key: "approval.autoApprove.areas",
+      label: "Auto-approve areas",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Task area values eligible for policy auto-approval (any match). Leave empty to match by type only.",
+    },
+    {
+      key: "approval.autoApprove.types",
+      label: "Auto-approve types",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Task types eligible for policy auto-approval (any match). Leave empty to match by area only.",
     },
     {
       key: "maxConcurrentAgents",
@@ -2218,6 +2271,10 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "tunnel.apps",
   // Close-out (Move to done) pipeline budget (#0573)
   "closeOut.timeoutMs",
+  "approval.enabled",
+  "approval.autoApprove.areas",
+  "approval.autoApprove.types",
+  "approval.autoApprove.uiAreas",
   // Remote validation
   "remoteValidation.enabled",
   "remoteValidation.provider",
