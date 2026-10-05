@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p1
 area: server
-assigned_to: ""
+story: "Field report: first agent-driven project run (opex)"
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:58:30Z"
-updated_at: "2026-10-05T16:58:30Z"
+updated_at: "2026-10-05T17:16:40Z"
 ---
 ## Problem
 
@@ -43,3 +44,4 @@ Evidence comes from building a real 30-task project (opex, a Vue + Bun + Postgre
 ## Activity
 
 - 2026-10-05T16:58:30Z · created · unknown
+- 2026-10-05T17:16:40Z · story
