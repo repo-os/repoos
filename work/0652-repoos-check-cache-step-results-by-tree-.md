@@ -2,7 +2,7 @@
 id: "0652"
 title: "repoos check: cache step results by tree hash so unchanged reruns return instantly"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-check-cache-step-results-by-tree-
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-04T16:32:02Z"
-updated_at: "2026-10-05T02:15:25Z"
+updated_at: "2026-10-05T02:34:12Z"
 review_rounds: 2
 review_passes: 2
 check_retry_count: 1
@@ -49,3 +49,24 @@ Design risk is correctness, not speed: a stale cache hit that lets a broken tree
 - 2026-10-05T02:13:25Z · review_cli_override, review_model_override
 - 2026-10-05T02:13:33Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-05T02:15:25Z · status review→active
+- 2026-10-05T02:28:45Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/serve-reaper.test.ts:460:22
+    458|       const reaped = await sweep.cleanupOrphanedRoots();
+    459|
+    460|       expect(reaped).toBeGreaterThanOrEqual(1);
+       |                      ^
+    461|       const outcome = await exited;
+    462|       // The sweep's SIGTERM terminated it; the child must not have su…
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 385 passed | 1 skipped (387)
+      Tests  1 failed | 4689 passed | 15 skipped (4705)
+   Start at  02:24:50
+   Duration  231.39s (transform 5.72s, setup 1.97s, import 40.46s, tests 200.01s, environment 198.38s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 408ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  02:28:42
+   Duration  2.17s (transform 957ms, setup 11ms, import 1.20s, tests 408ms, environment 472ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-05T02:34:12Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/serve-reaper.test.ts:460:22 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
