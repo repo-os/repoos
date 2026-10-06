@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "0717"
 title: "Remote validation: upload only the new commits, not the full-history git bundle, on every run"
 type: feature
@@ -13,7 +14,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T11:11:30Z"
 updated_at: "2026-10-06T14:04:01Z"
-handoff_signal_retry_count: 1
 dev_error_count: 2
 ---
 ## Problem
@@ -45,3 +45,4 @@ Read prepareRemoteTestBundle (it already bundles an extra baseSha for test scope
 - 2026-10-06T11:11:58Z · status ready→active, branch
 - 2026-10-06T11:35:53Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
 - 2026-10-06T13:45:14Z · needs_input
+
