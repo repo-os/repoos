@@ -161,8 +161,10 @@ checkout. Set `candidate = "own-install"` (or `[worktrees] candidate`) to run a 
 install in the candidate instead — slower, but avoids stale main installs and monorepo
 path guards (Vite `Denied ID`). When symlinking, main's install must stay current: after
 every merge that changes package inputs, publish runs `closeOut.postPublishCommand` or an
-inferred lockfile install in the primary checkout (#0674). A branch that changes
-`package.json` / lockfiles always gets its own candidate install before the gate (#0449).
+inferred lockfile install in the primary checkout (#0674). If that refresh fails, close-out
+**fails** (the merge has already landed; use **Refresh install and retry** or install in
+main manually). A branch that changes `package.json` / lockfiles always gets its own
+candidate install before the gate (#0449).
 
 **Pre-flight conflict check (#0358):** before the candidate is created, `syncing`
 runs a non-destructive dry-run of the same merge against the feature branch's own
