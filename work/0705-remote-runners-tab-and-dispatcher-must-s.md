@@ -3,6 +3,9 @@ id: "0705"
 title: Remote runners tab and dispatcher must see standalone self-check slot holders (they starved close-outs); add refresh feedback
 type: bug
 status: active
+needs_input: true
+needs_input_reason: provider-failure
+needs_input_detail: "{\"type\":\"tool_call\",\"subtype\":\"completed\",\"call_id\":\"tool_bfa5ccb9-534d-45cd-a61d-471da9117eb\",\"tool_call\":{\"editToolCall\":{\"args\":{\"path\":\"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts\",\"streamContent\":\"/** Parse {@link hostLockInspectShell} output into a snapshot (#0705). */\"},\"result\":{\"success\":{\"path\":\"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts\",\"l"
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,14 +13,14 @@ assigned_to: ai
 created_by: ""
 branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
-model_override: composer-2.5
+model_override: claude-sonnet-5-thinking-high
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T07:13:32Z"
+updated_at: "2026-10-06T07:18:15Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 9b8efe3e176dfcaaed9b4b43dc9048bee66820c1
 review_rounds: 1
 review_passes: 1
-dev_error_count: 4
+dev_error_count: 5
 ---
 ## Problem
 
@@ -101,3 +104,5 @@ error: script "test" exited with code 1
 - 2026-10-06T07:04:18Z · needs_input
 - 2026-10-06T07:04:45Z · agent exited with an error (cursor) · {"type":"thinking","subtype":"delta","text":" extending `queueNote`","session_id":"4de1a743-5ba4-41d0-961c-6f00a70b14eb","timestamp_ms":1791270285402}
 - 2026-10-06T07:13:32Z · needs_input
+- 2026-10-06T07:14:40Z · agent exited with an error (cursor) · {"type":"tool_call","subtype":"completed","call_id":"tool_bfa5ccb9-534d-45cd-a61d-471da9117eb","tool_call":{"editToolCall":{"args":{"path":"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts","streamContent":"/** Parse {@link hostLockInspectShell} output into a snapshot (#0705). */"},"result":{"success":{"path":"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts","l
+- 2026-10-06T07:18:15Z · model_override
