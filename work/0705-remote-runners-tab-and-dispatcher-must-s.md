@@ -16,8 +16,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
 updated_at: "2026-10-06T10:26:36Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ac677e5a to be92054c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: ac677e5aa2358c37ab8263f1ff88fb56da7c71f1
 review_rounds: 2
 review_passes: 2
 dev_error_count: 7
@@ -212,3 +210,4 @@ error: script "test" exited with code 1
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-06T10:26:36Z · status active→review
+
