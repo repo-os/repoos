@@ -52,3 +52,4 @@ Smallest fix: in scrapeProviderFailure only inspect structured fields for lines 
 - 2026-10-06T09:15:14Z · status active→review
 - 2026-10-06T09:15:15Z · status review→active
 - 2026-10-06T09:21:10Z · status active→review
+- 2026-10-06T09:21:10Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
