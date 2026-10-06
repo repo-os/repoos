@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 3b03e4a30197f99c16e803f14a92c4d3f673280a
 id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
 type: feature
@@ -14,7 +12,9 @@ branch: feat/invented-evidence-reviewer-and-engineer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:46Z"
-updated_at: "2026-10-06T15:12:54Z"
+updated_at: "2026-10-06T15:17:54Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 3b03e4a30197f99c16e803f14a92c4d3f673280a
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -77,4 +77,4 @@ error: script "test" exited with code 1
 - 2026-10-06T15:02:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-06T15:02:55Z · status review→active
 - 2026-10-06T15:12:54Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-10-06T15:17:54Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
