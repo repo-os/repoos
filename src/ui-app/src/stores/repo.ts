@@ -36,6 +36,7 @@ import type {
   TaskLogEntry,
   StoryDefinitionRecord,
   TaskUsageStats,
+  UiHandoffVerificationEvidence,
 } from "../types";
 import type { Input } from "../../../core/input.js";
 
@@ -720,6 +721,10 @@ export const useRepoStore = defineStore("repo", () => {
   const shots = ref<Record<string, ShotMeta[]>>({});
   /** Area/target mismatch warning per task (#0582), from the shots response. */
   const shotWarnings = ref<Record<string, string | undefined>>({});
+  /** Handoff UI verification evidence per task (#0680), from the API. */
+  const uiVerificationEvidence = ref<
+    Record<string, UiHandoffVerificationEvidence | null | undefined>
+  >({});
   /** Historical usage totals for a task (incl. role breakdown), keyed by id. */
   const taskUsage = ref<Record<string, TaskUsageStats | null>>({});
   /** Board-level usage totals (overall + per-role + per-day, 0230). */
@@ -2869,6 +2874,26 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Handoff UI verification evidence for the Changes tab (#0680). */
+  async function loadUiVerification(id: string): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; evidence: UiHandoffVerificationEvidence | null }>(
+        `/api/tasks/${id}/ui-verification`,
+      );
+      if (r.ok) {
+        uiVerificationEvidence.value = {
+          ...uiVerificationEvidence.value,
+          [id]: r.evidence ?? null,
+        };
+      }
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  const uiVerificationFor = (id: string): UiHandoffVerificationEvidence | null | undefined =>
+    uiVerificationEvidence.value[id];
+
   /** Captured shots for a task (empty until loaded). */
   const shotsFor = (id: string): ShotMeta[] => shots.value[id] ?? [];
   /** Area/target mismatch warning for a task, or undefined when none loaded. */
@@ -3653,8 +3678,10 @@ export const useRepoStore = defineStore("repo", () => {
     loadMergeConflict,
     mergeConflicts,
     loadShots,
+    loadUiVerification,
     shotsFor,
     shotWarningFor,
+    uiVerificationFor,
     addShot,
     deleteShot,
     syncTaskBranch,

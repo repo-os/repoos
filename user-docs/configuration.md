@@ -398,6 +398,20 @@ with an error card; **Stop MTD** on the task drawer is a user cancel and stays
 badge-free — see [docs/close-out-pipeline.md](../docs/close-out-pipeline.md)
 for how the three outcomes differ.
 
+## UI handoff verification
+
+```toml
+uiVerification.enabled = true
+uiVerification.viewportWidths = [1024, 375]
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `uiVerification.enabled` | boolean | `true` | yes | When enabled, tasks with a shot capture plan run browser checks at handoff (console errors, failed same-origin requests, horizontal overflow, blank captures) before review. Missing Playwright skips with a visible note. |
+| `uiVerification.viewportWidths` | number[] | `[1024, 375]` | yes | Viewport widths (px) used for horizontal overflow checks during handoff verification. |
+
+Edit both keys in **Settings → General**. Evidence is written under `.repoos/ui-verification/<task-id>.json` and surfaced on the task drawer **Changes** tab.
+
 ## Approval policy (opt-in auto Move to done)
 
 ```toml

@@ -1698,9 +1698,13 @@ export class ReviewManager {
         `zero console errors recorded at capture time.`
       );
     }
+    const lines = evidence.issues
+      .slice(0, 8)
+      .map((i) => `- [${i.kind}] ${i.message}`)
+      .join("\n");
     return (
       `Handoff UI verification (${evidence.at}) recorded ${evidence.issues.length} issue(s) ` +
-      `(this task should not have reached review — investigate).`
+      `(this task should not have reached review — investigate):\n${lines}`
     );
   }
 

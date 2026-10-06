@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   checkHorizontalOverflowAtViewport,
   createPageGateCollector,
+  isBenignFailedResourceUrl,
+  shouldRecordFailedHttpResponse,
 } from "../../core/page-browser-gate.js";
 import type { PageGateListenerPage } from "../../core/page-browser-gate.js";
 
@@ -46,5 +48,57 @@ describe("page-browser-gate (#0680)", () => {
       location: () => ({ url: "" }),
     });
     expect(collector.drain()[0]?.message).toContain("Invalid layer");
+  });
+
+  it("ignores benign failed resource URLs", () => {
+    expect(isBenignFailedResourceUrl("http://127.0.0.1:1/favicon.ico")).toBe(true);
+    expect(isBenignFailedResourceUrl("http://127.0.0.1:1/app.js")).toBe(false);
+    expect(
+      shouldRecordFailedHttpResponse("http://127.0.0.1:1/favicon.ico", 404, "http://127.0.0.1:1/"),
+    ).toBe(false);
+    expect(
+      shouldRecordFailedHttpResponse(
+        "http://127.0.0.1:1/api/tasks/x/stats",
+        404,
+        "http://127.0.0.1:1/",
+      ),
+    ).toBe(false);
+    expect(
+      shouldRecordFailedHttpResponse("http://127.0.0.1:1/api/broken", 500, "http://127.0.0.1:1/"),
+    ).toBe(true);
+    expect(
+      shouldRecordFailedHttpResponse("https://cdn.example/x.js", 404, "http://127.0.0.1:1/"),
+    ).toBe(false);
+  });
+
+  it("does not record cross-origin HTTP failures", () => {
+    const origin = "http://127.0.0.1:9";
+    const collector = createPageGateCollector(origin);
+    const handlers: Record<string, Array<(arg: unknown) => void>> = {
+      console: [],
+      pageerror: [],
+      response: [],
+    };
+    const page = {
+      on(event: string, handler: (arg: unknown) => void) {
+        handlers[event]?.push(handler);
+      },
+      async evaluate<T>(fn: () => T): Promise<T> {
+        return fn();
+      },
+      async setViewportSize(): Promise<void> {},
+    } as unknown as PageGateListenerPage;
+    collector.attach(page);
+    handlers.response[0]?.({
+      url: () => "http://127.0.0.1:9/favicon.ico",
+      status: () => 404,
+    });
+    handlers.response[0]?.({
+      url: () => "http://127.0.0.1:9/settings",
+      status: () => 404,
+    });
+    expect(collector.drain()).toMatchObject([
+      { kind: "request", message: expect.stringContaining("404") },
+    ]);
   });
 });
