@@ -628,7 +628,7 @@ export function isRunnerBundleTransportMismatch(
   exitCode: number | null,
 ): boolean {
   if (/cloned an empty repository/i.test(output)) return true;
-  if (exitCode === 3) {
+  if (exitCode === 3 || exitCode === 128) {
     return /\[validate\] FATAL:|could not fetch .* into the mirror|carries no refs\/repoos\/candidate/i.test(
       output,
     );
@@ -1961,9 +1961,13 @@ export class RemoteValidationRunner implements RemoteValidator {
       runMeta.remoteTestRef = remoteTestRef;
       const remoteBundle = paths.bundle;
       let incrementalUpload = this.validateScriptMirrorByIp.get(host.ip);
-      if (incrementalUpload === undefined) {
-        incrementalUpload = await this.probeValidateScriptMirror(host);
-        this.validateScriptMirrorByIp.set(host.ip, incrementalUpload);
+      if (incrementalUpload !== true) {
+        if (incrementalUpload === undefined) {
+          incrementalUpload = await this.probeValidateScriptMirror(host);
+          this.validateScriptMirrorByIp.set(host.ip, incrementalUpload);
+        } else {
+          incrementalUpload = false;
+        }
       }
       let upload: SuccessfulUpload | null = null;
       let run: RemoteExecResult | null = null;
@@ -2850,7 +2854,7 @@ export class TailscaleHostPool {
   /** Whether incremental bundle upload is safe for this host (#0725). */
   validateScriptMirrorSupported(host: string): boolean {
     const s = this.hosts.find((c) => c.spec.host === host);
-    return s?.validateScriptMirrorSupported !== false;
+    return s?.validateScriptMirrorSupported === true;
   }
 
   /** Remember a host only accepts the legacy full bundle (#0725). */
