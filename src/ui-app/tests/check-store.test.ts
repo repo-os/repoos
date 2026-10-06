@@ -7,13 +7,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { existsSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { mkdtempSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   CheckStore,
   envToRunContext,
+  resolveCheckRunAttribution,
+  taskIdFromWorktreeBranch,
   getCheckStore,
   localMachineName,
   resetCheckStore,
@@ -344,6 +345,45 @@ describe("mainCheckoutRoot (worktree → server store, #0564 review)", () => {
     run(["commit", "-qm", "init"], root);
     return root;
   }
+
+  it("resolves task id from the worktree branch for cli runs (#0695)", () => {
+    const main = gitRepo();
+    const branch = "feat/task-0695";
+    execFileSync("git", ["branch", branch], { cwd: main, stdio: "ignore" });
+    execFileSync("git", ["checkout", branch], { cwd: main, stdio: "ignore" });
+    mkdirSync(join(main, "work"), { recursive: true });
+    writeFileSync(
+      join(main, "work", "0695-sample.md"),
+      `---
+id: "0695"
+title: Sample
+branch: ${branch}
+---
+`,
+    );
+    expect(taskIdFromWorktreeBranch(main)).toBe("0695");
+    expect(resolveCheckRunAttribution({}, main)).toEqual({ taskId: "0695", phase: "cli" });
+  });
+
+  it("returns null when two tasks share the same branch (#0695)", () => {
+    const main = gitRepo();
+    const branch = "feat/dup-branch";
+    execFileSync("git", ["branch", branch], { cwd: main, stdio: "ignore" });
+    execFileSync("git", ["checkout", branch], { cwd: main, stdio: "ignore" });
+    mkdirSync(join(main, "work"), { recursive: true });
+    for (const id of ["0695", "0696"]) {
+      writeFileSync(
+        join(main, "work", `${id}-x.md`),
+        `---
+id: "${id}"
+title: X
+branch: ${branch}
+---
+`,
+      );
+    }
+    expect(taskIdFromWorktreeBranch(main)).toBeNull();
+  });
 
   it("resolves the main checkout from inside a linked worktree", () => {
     const main = gitRepo();
