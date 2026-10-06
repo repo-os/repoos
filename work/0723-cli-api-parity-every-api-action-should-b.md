@@ -2,7 +2,7 @@
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
 type: feature
-status: review
+status: active
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -110,3 +110,4 @@ error: script "build" exited with code 127
 - 2026-10-06T18:27:48Z · body
 - 2026-10-06T18:29:20Z · body
 - 2026-10-06T18:40:44Z · status active→review
+- 2026-10-06T18:40:44Z · status review→active
