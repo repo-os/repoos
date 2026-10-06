@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-stuck-timer-source-ne
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:27:52Z"
-updated_at: "2026-10-06T16:29:44Z"
+updated_at: "2026-10-06T16:29:55Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -73,3 +73,7 @@ warning: You appear to have cloned an empty repository.
 fatal: unable to read tree (25c22c96a27f03b0c4de97fbff14af7d4b037c08) — fix it in the feature branch and re-run the gate
 - 2026-10-06T16:29:44Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-06T16:29:44Z · status review→active
+- 2026-10-06T16:29:55Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s
+[validate] cloning bundle /home/nick/.repoos-0721-f4fad1da.bundle
+warning: You appear to have cloned an empty repository.
+fatal: unable to read tree (25c22c96a27f03b0c4de97fbff14af7d4b037c08) — fix it in the feature branch and re-run the gate
