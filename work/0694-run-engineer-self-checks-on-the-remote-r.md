@@ -2,7 +2,7 @@
 id: "0694"
 title: Run engineer self-checks on the remote runners (not the laptop) and reuse the green remote result at handoff
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/run-engineer-self-checks-on-the-remote-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:59:26Z"
-updated_at: "2026-10-06T01:26:17Z"
+updated_at: "2026-10-06T01:26:22Z"
 review_passes: 2
 review_rounds: 1
 ---
@@ -78,3 +78,4 @@ error: script "test" exited with code 1
 - 2026-10-06T01:16:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-06T01:21:25Z · status active→review
 - 2026-10-06T01:26:17Z · body: section Review feedback (driver, round 2)
+- 2026-10-06T01:26:22Z · status review→active
