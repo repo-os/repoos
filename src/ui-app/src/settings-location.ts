@@ -131,6 +131,11 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
     "tailscale hetzner remote validation runner configure disposable vm cloud",
   tunnelEnabled: "cloudflare tunnel publish publishing hostname public",
   "closeOut.timeoutMs": "close out move to done mtd merge pipeline budget timeout hung",
+  "closeOut.candidate":
+    "close out candidate node_modules symlink own install workspace dependencies monorepo",
+  "closeOut.installCommand": "close out install command bun npm python venv cargo dependencies",
+  "closeOut.postPublishCommand":
+    "close out post publish merge lockfile refresh main install dependencies",
   "approval.enabled": "auto approve clean reviews policy move to done rubber stamp low risk",
 };
 
