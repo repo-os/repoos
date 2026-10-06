@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0725"
 title: "P0: remote validation breaks on hosts with the old validate.sh since #0717: new bundle has no HEAD ref, old script clones an empty repo"
 type: bug
@@ -74,3 +75,4 @@ URGENT: this blocks all remote validation on this board. Read #0717's diff (src/
 - 2026-10-06T16:16:23Z · status ready→active, branch
 - 2026-10-06T16:24:08Z · body: section Shots
 - 2026-10-06T17:04:01Z · body
+
