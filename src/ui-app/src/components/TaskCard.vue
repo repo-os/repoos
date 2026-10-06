@@ -4,6 +4,7 @@ import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
+import { useNoticesStore } from "../stores/notices";
 import { recordOrigin, takeOrigin } from "../lib/flip";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { reportPredatesLatestHandoff } from "../lib/reviewFreshness";
@@ -42,6 +43,10 @@ const props = withDefaults(
 const ui = useUiStore();
 const repo = useRepoStore();
 const config = useConfigStore();
+const notices = useNoticesStore();
+
+/** Live slow-check flag from the attention feed (#0720). */
+const slowCheck = computed(() => notices.slowRunByTask[props.task.id]);
 
 /**
  * One chip per area (#0583). The parsed board payload carries `areas`;
@@ -439,12 +444,15 @@ const hint = computed<CardHint | null>(() => {
   }
   if (t.status === "review") {
     if (inPipeline.value) {
+      const slow = slowCheck.value;
+      const stage = pipelineStage.value;
+      const base = stage ? `moving to done · ${stage}` : "queued for close-out";
       return {
-        label: pipelineStage.value
-          ? `moving to done · ${pipelineStage.value}`
-          : "queued for close-out",
-        title:
-          "Move to done already started — merging, building, and checking. See the pipeline bar for live progress.",
+        label: slow ? `${base} · slow` : base,
+        title: slow
+          ? (slow.detail ??
+            "Close-out is taking longer than usual — see the bell or Remote runners tab")
+          : "Move to done already started — merging, building, and checking. See the pipeline bar for live progress.",
         cls: "tc-moving",
       };
     }
@@ -530,9 +538,12 @@ const hint = computed<CardHint | null>(() => {
     // hide the live handoff: the human already sent it back and it is
     // running checks to return to review.
     if (repo.handoffInFlight(t.id)) {
+      const slow = slowCheck.value;
       return {
-        label: "running checks",
-        title: "RepoOS is committing and running the checks before moving this to review",
+        label: slow ? "running checks · slow" : "running checks",
+        title: slow
+          ? (slow.detail ?? "This check is taking longer than usual — see the bell for details")
+          : "RepoOS is committing and running the checks before moving this to review",
         cls: "tc-reviewing",
       };
     }
@@ -1037,6 +1048,14 @@ async function openDebuggerFromError(): Promise<void> {
           >
           <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Moving to done…" />
           {{ hint.label }}
+          <span
+            v-if="slowCheck && (hint.cls === 'tc-reviewing' || hint.cls === 'tc-moving')"
+            class="tc-slow-badge"
+            data-test-id="task-card-slow"
+            :title="slowCheck.detail"
+          >
+            slow
+          </span>
         </span>
       </div>
     </div>

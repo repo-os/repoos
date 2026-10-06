@@ -423,8 +423,9 @@ const checkChip = computed(() => {
       slow: !!slow,
       slowDetail: slow?.detail ?? null,
       label: `Checks running${machine ? ` on ${machine}` : ""} · ${elapsed}`,
-      title:
-        run.scope === "full"
+      title: slow?.detail
+        ? slow.detail
+        : run.scope === "full"
           ? "The check gate is running — open the Debug tab for live output"
           : `Changed-path check (${run.scope}) — open the Debug tab for live output`,
     };
