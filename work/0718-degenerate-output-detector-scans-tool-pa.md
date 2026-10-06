@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T11:48:55Z"
-updated_at: "2026-10-06T14:01:52Z"
+updated_at: "2026-10-06T14:04:02Z"
 ---
 ## Problem
 
@@ -36,3 +38,4 @@ Read #0709 and its fix (scrapeProviderFailure) first: same approach, structured 
 
 - 2026-10-06T11:48:55Z · created · unknown
 - 2026-10-06T14:01:52Z · note: Owner feedback: 'degenerate agent output' gives no next step. When it fires, the card/needs_input detail should say (1) which rule fired + a short excerpt, (2) whether it looks like a real model loop (e.g. repeated tokens) or a false positive from tool content, and (3) the recommended action: for a real loop use 'Restart fresh' (new session, optionally a different model); never resume the same session (resume re-poisons it, seen on #0717 and #0679). The card's Restart button should default to a fresh session after a degenerate-output stop.
+- 2026-10-06T14:04:02Z · cli_override, model_override
