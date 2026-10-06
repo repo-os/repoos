@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-06T03:19:43Z"
+review_passes: 1
 id: "0688"
 title: "CTO with a short allowlist of safe actions (restart stalled agent, refresh install, re-queue close-out)"
 type: feature
@@ -12,7 +14,6 @@ branch: feat/cto-with-a-short-allowlist-of-safe-actio
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:59Z"
-updated_at: "2026-10-06T03:19:43Z"
 last_check_failure: "repoos check at 2026-10-06T03:00:50.534Z: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -64,3 +65,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T03:19:01Z · status active→review
 - 2026-10-06T03:19:01Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T03:19:43Z · note: review pass 1: good to go
+
