@@ -60,6 +60,14 @@ import { UNDERSPECIFIED_NEEDS_INPUT_REASON } from "./task-underspecified-flag.js
 import { patchTaskFile } from "./write.js";
 import { createLogger, type Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
+import {
+  allocateReviewPassNumber,
+  ensureReviewPassDir,
+  listReviewPasses,
+  reviewPassActivitySummary,
+  reviewPassPath,
+} from "../core/review-passes.js";
+import { readUiHandoffGateEvidence } from "./ui-handoff-gate.js";
 
 /** A stored agent review, as served to the UI. */
 export interface ReviewReport {
@@ -198,8 +206,16 @@ export function reviewMission(
     "- Do NOT commit, push, merge, sync, or delete branches.",
     "- Do NOT change the task's status, and NEVER move it to `done` — the task stays",
     "  in `review` for the human. Approving, merging, and completing are not yours.",
-    "- Do NOT start servers or long-running processes.",
+    "- Do NOT start servers or long-running processes (no `bun run dev`, no `repoos serve`).",
     "- Do NOT use `pkill`, `killall`, or other pattern kills — they affect every matching process on the machine.",
+    "- Your report MUST end with a parseable ## Verdict section — an incomplete report",
+    "  with no verdict will be automatically retried once, then escalated.",
+    "",
+    "## UI verification evidence",
+    "",
+    "For UI work, handoff captured screenshots (task drawer Changes tab) and a browser",
+    " console log. Read the PNGs — flag blank or error states. Comment on whether they",
+    " match the diff and whether the recorded console log looks acceptable.",
     "",
     "## What to output",
     "",
@@ -613,7 +629,11 @@ export class ReviewManager {
     });
     this.appendMarker(task.id, `review started — ${agent.name} (${agent.cli})`);
 
-    const mission = reviewMission(task, agent, workdir, baseBranch, this.config);
+    const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config);
+    const uiNote = this.uiVerificationSummary(task.id);
+    const mission = uiNote
+      ? `${missionBase}\n\n## Handoff UI verification (recorded at handoff)\n\n${uiNote}\n`
+      : missionBase;
     // A cancel that landed before the spawn must not still start a run.
     if (run.cancelled) {
       this.runs.delete(task.id);
@@ -878,7 +898,7 @@ export class ReviewManager {
       state,
       markdown: body.slice(0, REPORT_CHARS),
     };
-    this.write(report);
+    this.write(report, task);
     const marker =
       state === "ok"
         ? "✓ review complete"
@@ -890,6 +910,7 @@ export class ReviewManager {
       this.logger.task(task.id, "info", "review completed");
     } else if (state === "incomplete") {
       this.logger.task(task.id, "warn", "review incomplete — no parseable verdict");
+      void this.scheduleIncompleteRetry(task);
     } else {
       this.logger.task(task.id, "error", "review failed", { error: error ?? "no report" });
     }
@@ -1587,11 +1608,27 @@ export class ReviewManager {
   }
 
   /** Persist a report, creating `<cacheDir>/reviews/` on first use. */
-  private write(report: ReviewReport): void {
-    const file = this.path(report.id);
+  private write(report: ReviewReport, task: Task): void {
+    const pass = allocateReviewPassNumber(this.config, report.id);
+    ensureReviewPassDir(this.config, report.id);
+    const passFile = reviewPassPath(this.config, report.id, pass);
+    const latestFile = this.path(report.id);
     try {
-      mkdirSync(dirname(file), { recursive: true });
+      mkdirSync(dirname(latestFile), { recursive: true });
       const data: Record<string, unknown> = {
+        task: report.id,
+        pass,
+        at: report.at,
+        agent: report.agent,
+        cli: report.cli,
+        model: report.model,
+        branch: report.branch,
+        state: report.state,
+      };
+      const body = `\n${report.markdown}\n`;
+      const keys = ["task", "pass", ...REPORT_KEYS.filter((k) => k !== "task")];
+      writeFileSync(passFile, serializeDocument(data, body, keys));
+      const latestData: Record<string, unknown> = {
         task: report.id,
         at: report.at,
         agent: report.agent,
@@ -1600,12 +1637,77 @@ export class ReviewManager {
         branch: report.branch,
         state: report.state,
       };
-      writeFileSync(file, serializeDocument(data, `\n${report.markdown}\n`, REPORT_KEYS));
+      writeFileSync(latestFile, serializeDocument(latestData, body, REPORT_KEYS));
+      const verdict = parseVerdict(report.markdown);
+      try {
+        patchTaskFile(this.config, task.absPath, {
+          note: reviewPassActivitySummary(pass, report.state, verdict),
+        });
+      } catch {
+        /* best-effort */
+      }
     } catch (err) {
       console.error(
         `[repoos] could not write the review for #${report.id}: ${(err as Error).message}`,
       );
     }
+  }
+
+  /** Auto-retry once when the reviewer exits without a verdict (#0680). */
+  private scheduleIncompleteRetry(task: Task): void {
+    let retries = task.extra?.incomplete_review_retries as number | undefined;
+    if (typeof retries !== "number") retries = 0;
+    if (retries >= 1) return;
+    const timer = setTimeout(() => {
+      const current = this.index?.getTask(task.id);
+      if (!current || current.status !== "review") return;
+      void (async () => {
+        try {
+          const raw = readFileSync(task.absPath, "utf8");
+          const doc = parseDocument(raw);
+          doc.data.incomplete_review_retries = retries + 1;
+          writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`));
+          commitTaskFile(
+            this.config.root,
+            task.absPath,
+            `docs(${task.id}): incomplete review retry`,
+          );
+        } catch {
+          /* best-effort */
+        }
+        this.appendMarker(
+          task.id,
+          "↻ automatically retrying review — previous pass had no verdict",
+        );
+        await this.run(current);
+      })();
+    }, 4_000);
+    timer.unref?.();
+  }
+
+  /** List numbered review pass summaries for the drawer (#0680). */
+  listPasses(taskId: string): ReturnType<typeof listReviewPasses> {
+    return listReviewPasses(this.config, taskId);
+  }
+
+  /** UI handoff gate evidence path content for missions. */
+  uiVerificationSummary(taskId: string): string | null {
+    const evidence = readUiHandoffGateEvidence(this.config, taskId);
+    if (!evidence) return null;
+    if (evidence.issues.length === 0) {
+      return (
+        `Handoff UI verification (${evidence.at}): ${evidence.captures} capture(s), ` +
+        `zero console errors recorded at capture time.`
+      );
+    }
+    const lines = evidence.issues
+      .slice(0, 8)
+      .map((i) => `- [${i.kind}] ${i.message}`)
+      .join("\n");
+    return (
+      `Handoff UI verification (${evidence.at}) recorded ${evidence.issues.length} issue(s) ` +
+      `(this task should not have reached review — investigate):\n${lines}`
+    );
   }
 
   /**

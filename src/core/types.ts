@@ -564,6 +564,8 @@ export interface RepoOSConfig {
    * screenshots succeeded.
    */
   approval?: ApprovalConfig;
+  /** UI handoff browser verification (#0680). */
+  uiVerification?: UiVerificationConfig;
   /**
    * Distribution destinations shown as the Releases page's "Published to"
    * summary (a `[[distribution]]` array of tables). Omitted/empty keeps the
@@ -1440,6 +1442,14 @@ export interface WatchdogConfig {
    * `needsInput`. Default true.
    */
   autoTransition?: boolean;
+}
+
+/** Browser console / overflow gate at engineer handoff for UI work (#0680). */
+export interface UiVerificationConfig {
+  /** When false, skip the gate (shots may still run on entry to review). Default true. */
+  enabled?: boolean;
+  /** Viewport widths (px) to check `scrollWidth > innerWidth` on each captured route. */
+  viewportWidths?: number[];
 }
 
 /** Opt-in policy for Move to done without a human click (#0686). */

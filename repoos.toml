@@ -6,6 +6,9 @@ defaultStatus = "inbox"
 defaultAssignee = "ai"
 cacheDir = ".repoos"
 
+uiVerification.enabled = true
+uiVerification.viewportWidths = [1024, 375]
+
 theme = "dark"
 strictBuild = false
 uiTheme = "jelly"
@@ -92,7 +95,18 @@ remoteValidation.containerImage = "repoos-ci"
 #   os = "linux"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
-remoteValidation.tailscaleHosts = ["nick@thinkpad", "nick@bee", "peckjachowski@mini"]
+remoteValidation.engineerSelfCheckRemote = false
+[[remoteValidation.tailscaleHosts]]
+host = "bee"
+user = "nick"
+maxConcurrent = 2
+[[remoteValidation.tailscaleHosts]]
+host = "thinkpad"
+user = "nick"
+maxConcurrent = 2
+[[remoteValidation.tailscaleHosts]]
+host = "mini"
+user = "peckjachowski"
 [board.columns]
 
   draft = "Draft"
@@ -634,11 +648,11 @@ name = "reviewer"
 cli = "cursor"
 model = "composer-2.5"
 enabled = true
-instructions = "Review the task's implementation on its feature branch. The implementer already ran `repoos check` green (that is the gate to enter review), so do NOT re-run the full build or test suite. Work directly from the diff: run `git diff <base>...HEAD` and `git log <base>..HEAD --oneline` in the worktree, read the files the diff touches, and judge the code against every acceptance criterion in the task spec. Look for real bugs (wrong logic, unhandled errors, races, broken contracts) and the edge cases that matter. Flag any new bare `node`, `npm` or `npx` invocation (package.json scripts, justfile recipes, shebangs, spawned subprocesses): RepoOS runs on Bun and keeps Node only as a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Be fast and focused; a handful of git/read commands is enough. Read-only: never edit files, never change task status, never move the task to done."
+instructions = "Review the task's implementation on its feature branch. The implementer already ran `repoos check` green (that is the gate to enter review), so do NOT re-run the full build or test suite — and never start long-running processes such as `bun run dev` or `repoos serve`. Work directly from the diff: run `git diff <base>...HEAD` and `git log <base>..HEAD --oneline` in the worktree, read the files the diff touches, and judge the code against every acceptance criterion in the task spec. For UI work, read the handoff screenshots in the task drawer Changes tab and comment on them; flag blank or broken captures. Look for real bugs (wrong logic, unhandled errors, races, broken contracts) and the edge cases that matter. Flag any new bare `node`, `npm` or `npx` invocation (package.json scripts, justfile recipes, shebangs, spawned subprocesses): RepoOS runs on Bun and keeps Node only as a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Be fast and focused; a handful of git/read commands is enough. Your report MUST end with a parseable ## Verdict (`good to go`, `needs some work`, or `back to the drawing board`). Read-only: never edit files, never change task status, never move the task to done."
 [[agents]]
 name = "pm"
-cli = "opencode"
-model = "opencode-go/deepseek-v4.1-flash"
+cli = "github copilot"
+model = "default"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]

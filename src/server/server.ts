@@ -170,6 +170,15 @@ import {
   type HandoffOrigin,
 } from "./handoff.js";
 import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
+import {
+  lastHandoffFailureFromBody,
+  parkTaskForIdenticalHandoffFailures,
+  parseHandoffFailureReason,
+  persistHandoffFailureLoopMetadata,
+  readTaskBranchHead,
+  shouldParkForIdenticalHandoffFailures,
+  shouldSkipHandoffValidationForUnchangedTree,
+} from "./handoff-failure-loop.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
@@ -324,6 +333,7 @@ import {
   getScreenshot,
   uploadScreenshot,
   listTaskShots,
+  getTaskUiVerification,
   getTaskShot,
   uploadTaskShot,
   deleteTaskShot,
@@ -1679,6 +1689,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             taskChecks,
             onTaskCheckEvent,
             remoteValidator,
+            previews,
+            (id, level, message) => logger.task(id, level, message),
           );
           if (result.ok) {
             index.applyFileChange(task.absPath, { guarded: true });
@@ -2268,6 +2280,29 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (!runner.markHandoffInFlight(task.id)) {
       return { started: false, reason: "a handoff is already running for this task" };
     }
+    const branchHead = readTaskBranchHead(config, task);
+    if (shouldParkForIdenticalHandoffFailures(task, branchHead)) {
+      runner.releaseHandoffInFlight(task.id);
+      const last = lastHandoffFailureFromBody(task.body);
+      parkTaskForIdenticalHandoffFailures(config, task, last?.detail ?? "check failed", (absPath) =>
+        index.applyFileChange(absPath, { guarded: true }),
+      );
+      return {
+        started: false,
+        reason: "identical handoff validation failures — task parked for a human",
+      };
+    }
+    if (!opts.skipChecks && shouldSkipHandoffValidationForUnchangedTree(task, branchHead)) {
+      runner.releaseHandoffInFlight(task.id);
+      runner.system(
+        task.id,
+        "✗ Server finalization skipped: the branch tip is unchanged since the last identical check failure — fix the code or wait for an engineer recovery turn",
+      );
+      return {
+        started: false,
+        reason: "unchanged branch tip with a known identical check failure",
+      };
+    }
     const started = Date.now();
     const progress = (step: string, detail?: string): void => {
       try {
@@ -2291,6 +2326,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       taskChecks,
       onTaskCheckEvent,
       remoteValidator,
+      previews,
+      onTaskLog: (id, level, message) => logger.task(id, level, message),
       onProgress: (step) => {
         if (step === "validate") return;
         progress(step, undefined);
@@ -2315,11 +2352,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         runner.system(task.id, message);
         // Durable: the watchdog and any later reader of the activity log can
         // see why this handoff did not land, across a reload.
-        runner.persistHandoffFailure(
-          task.id,
-          task,
-          `${opts.origin} handoff failed at ${result.step} · ${detail}`,
-        );
+        const failureReason = `${opts.origin} handoff failed at ${result.step} · ${detail}`;
+        runner.persistHandoffFailure(task.id, task, failureReason);
+        const parsed = parseHandoffFailureReason(failureReason);
+        if (parsed && result.step === "check") {
+          persistHandoffFailureLoopMetadata(config, task, branchHead, parsed, (absPath) =>
+            index.applyFileChange(absPath, { guarded: true }),
+          );
+        }
         progress("failed", detail);
       })
       .catch((err: unknown) => {
@@ -2944,6 +2984,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/shots$/, listTaskShots);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/ui-verification$/, getTaskUiVerification);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/shots$/, uploadTaskShot);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/shots\/([^/]+)$/, getTaskShot);
   // Task drawer shot management (#0627): declare-and-capture via POST (the

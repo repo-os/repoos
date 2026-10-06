@@ -85,6 +85,7 @@ import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-re
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
+import { readUiHandoffGateEvidence } from "../ui-handoff-gate.js";
 import { localShotStore } from "../shots.js";
 import { computeTaskShotContext } from "../shot-context.js";
 import {
@@ -1014,6 +1015,18 @@ export const listTaskShots: RouteHandler = (ctx, _req, res, params) => {
   const shots = localShotStore(config, taskId).list();
   const shotContext = computeTaskShotContext(config, task);
   return json(res, 200, { ok: true, shots, ...shotContext });
+};
+
+/** Handoff UI verification evidence (#0680) for the Changes tab. */
+export const getTaskUiVerification: RouteHandler = (ctx, _req, res, params) => {
+  const { config, index } = ctx;
+  const taskId = params.param1;
+  const task = index.getTask(taskId);
+  if (!task) {
+    return json(res, 404, { error: `Task #${taskId} not found` });
+  }
+  const evidence = readUiHandoffGateEvidence(config, taskId);
+  return json(res, 200, { ok: true, evidence });
 };
 
 export const getTaskShot: RouteHandler = (ctx, _req, res, params) => {
@@ -2306,6 +2319,7 @@ export const getTaskReview: RouteHandler = (ctx, _req, res, params) => {
     running: reviews.isRunning(id),
     enabled: reviews.enabled(),
     review: reviews.read(id),
+    history: reviews.listPasses(id),
     lines: reviews.session(id),
   });
 };

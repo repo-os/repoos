@@ -122,7 +122,7 @@ function request(fx: Fixture, overrides: Record<string, string> = {}) {
   };
 }
 
-describe("trusted server-side handoff", () => {
+describe("trusted server-side handoff", { timeout: 15_000 }, () => {
   it("commits, checks, moves both task copies to review, and is idempotent", async () => {
     const fx = makeFixture();
     const oldPath = process.env.PATH ?? "";
