@@ -12,7 +12,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T04:07:54Z"
+updated_at: "2026-10-06T04:26:19Z"
 ---
 ## Problem
 
@@ -38,6 +38,18 @@ Read #0694 and #0695 first (engineer self-checks on runners; item 6 there covers
 ## Scope addition: fold in #0706
 Task #0706 (filed by the #0695 reviewer: standalone self-check prefers the least-loaded remote host, plus stuck-badge / transcript copy for queued remote runs) is the same problem from the self-check side. Implement it HERE so there is one coherent fix: (a) standalone self-checks choose the idlest eligible host using the same counts the dispatcher uses (include host-side lock holders and waiters); (b) the stuck badge and the engineer transcript say 'waiting for a runner (host, position)' instead of reporting a silent/stuck agent; (c) close-out/release priority over self-checks. When done, note on #0706 that it is superseded. Owner priority: p1, goal is getting the remote runners to their full potential (idle hosts used, no starvation, visible queue).
 
+## Shots
+```json
+[
+  {
+    "label": "Remote runners tab with refresh feedback",
+    "target": "default",
+    "route": "/checks?tab=remote-runners",
+    "highlight": ".rr-panel"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-06T03:31:15Z · created · unknown
@@ -46,3 +58,4 @@ Task #0706 (filed by the #0695 reviewer: standalone self-check prefers the least
 - 2026-10-06T04:07:31Z · cli_override, model_override
 - 2026-10-06T04:07:31Z · status ready→active, branch
 - 2026-10-06T04:07:54Z · body: section Scope addition: fold in #0706
+- 2026-10-06T04:26:19Z · body: section Shots
