@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { parseTask } from "../../core/task";
+import { getCheckStore, resetCheckStore } from "../../core/check-store.js";
 import { handoffTask } from "../../server/handoff";
 import { TaskCheckManager } from "../../server/task-check";
 import type { RemoteValidator } from "../../server/remote-validation";
@@ -648,6 +649,52 @@ describe("trusted server-side handoff", () => {
         expect(runs).toHaveLength(1);
         expect(runs[0]).toMatchObject({ running: false, passed: false });
         expect(runs[0]!.output).toContain("remote gate output");
+      } finally {
+        process.env.PATH = oldPath;
+        fx.clean();
+      }
+    });
+
+    it("skips runner dispatch when checks.db already has a green pass at HEAD (#0694)", async () => {
+      resetCheckStore();
+      const fx = remoteFixture();
+      fx.config.remoteValidation = { enabled: true, engineerSelfCheckRemote: true };
+      const oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      try {
+        git(fx.worktree, ["add", "-A"]);
+        git(fx.worktree, ["commit", "-q", "-m", "engineer ready"]);
+        const head = git(fx.worktree, ["rev-parse", "HEAD"]);
+        getCheckStore(fx.config.root, fx.config.cacheDir).record({
+          taskId: "0001",
+          phase: "pre-review",
+          candidateSha: head,
+          machine: "bee",
+          remote: true,
+          scope: "full",
+          startedAt: new Date().toISOString(),
+          durationMs: 12_000,
+          outcome: "pass",
+        });
+        const validate = vi.fn(async () => ({ ok: true }));
+        const validator = {
+          validate,
+          dispose: async () => {},
+          reconcile: async () => {},
+          logPath: () => "",
+        } as unknown as RemoteValidator;
+        const result = await handoffTask(
+          fx.config,
+          readTask(fx),
+          request(fx),
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          validator,
+        );
+        expect(result).toMatchObject({ ok: true, step: "done" });
+        expect(validate).not.toHaveBeenCalled();
       } finally {
         process.env.PATH = oldPath;
         fx.clean();
