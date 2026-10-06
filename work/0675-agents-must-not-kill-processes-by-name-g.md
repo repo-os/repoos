@@ -54,3 +54,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T23:45:00Z · status ready→active, branch
 - 2026-10-06T00:14:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-06T01:09:30Z · status active→review
+- 2026-10-06T01:09:30Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
