@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
@@ -62,3 +63,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T04:29:19Z · status review→active
 - 2026-10-06T04:29:27Z · status active→review
 - 2026-10-06T04:29:27Z · status review→active
+
