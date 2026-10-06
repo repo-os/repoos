@@ -12,7 +12,7 @@ branch: feat/invented-evidence-reviewer-and-engineer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:46Z"
-updated_at: "2026-10-06T14:42:52Z"
+updated_at: "2026-10-06T14:52:52Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -49,3 +49,4 @@ The tuk-private repo's `repoos.toml` now carries hand-written versions of these 
 - 2026-10-06T14:04:02Z · needs_input
 - 2026-10-06T14:42:52Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-06T14:42:52Z · status review→active
+- 2026-10-06T14:52:52Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
