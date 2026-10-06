@@ -12,7 +12,7 @@ branch: feat/ui-verification-gate-fail-ui-handoffs-on
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:42Z"
-updated_at: "2026-10-06T01:16:12Z"
+updated_at: "2026-10-06T01:16:28Z"
 ---
 ## Problem
 
@@ -71,3 +71,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-06T00:14:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-06T01:05:55Z · body: section Shots
 - 2026-10-06T01:16:12Z · status active→review
+- 2026-10-06T01:16:28Z · note: shots: failed — capture of Task drawer review history list on "default" failed: click: Timeout 5000ms exceeded.
