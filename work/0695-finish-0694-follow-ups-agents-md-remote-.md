@@ -2,7 +2,7 @@
 id: "0695"
 title: "Finish #0694 follow-ups: AGENTS.md remote self-check wording, task attribution for cli Runs rows, WIP-checkpoint tests, load measurement"
 type: chore
-status: review
+status: active
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/finish-0694-follow-ups-agents-md-remote-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T01:38:21Z"
-updated_at: "2026-10-06T04:35:20Z"
+updated_at: "2026-10-06T04:35:21Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -91,3 +91,4 @@ Found 2026-10-06 10:50: four engineers (0679, 0683, 0688, 0695) showed 'stuck' i
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-06T04:35:20Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202); · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T04:35:21Z · status review→active
