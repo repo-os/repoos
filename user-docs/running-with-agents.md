@@ -97,11 +97,17 @@ first, then come back here.
 
 ## 5. Processes and servers
 
-- Run the server in a real terminal tab or with `repoos service`, not as a
-  detached child of a short-lived agent shell; those get reaped.
-- Never kill processes by name (`pkill -f vite`). It takes down every matching
-  process on the machine, including other projects' servers. Start helpers on a
-  free port and stop only the PID you started.
+- RepoOS runs each managed agent turn in its own process group and reaps that group
+  when the turn ends, so helpers the agent started during a turn are torn down with
+  it. That does not replace good habits: agents should still avoid pattern kills.
+- For an unattended RepoOS server on your machine, use `repoos service` (launchd /
+  systemd) or a terminal tab you keep open — not a detached `repoos serve` started
+  from an agent shell. A detached serve for this repo whose parent is gone is
+  classified as a stray orphan and SIGTERMed by the control plane's periodic reaper
+  (~every 30s). See `docs/agent-process-safety.md`.
+- Never kill processes by name (`pkill -f vite`, `killall node`). It takes down
+  every matching process on the machine, including other projects' servers. Stop
+  only the PID you started, or let RepoOS reap the turn's process group.
 
 ## 6. Money and time
 
