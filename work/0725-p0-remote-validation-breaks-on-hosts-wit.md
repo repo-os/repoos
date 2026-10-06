@@ -2,7 +2,7 @@
 id: "0725"
 title: "P0: remote validation breaks on hosts with the old validate.sh since #0717: new bundle has no HEAD ref, old script clones an empty repo"
 type: bug
-status: review
+status: active
 priority: p0
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/p0-remote-validation-breaks-on-hosts-wit
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T16:15:47Z"
-updated_at: "2026-10-06T22:43:29Z"
+updated_at: "2026-10-06T22:43:30Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-06T17:03:07.270Z: repoos check failed: [22m[39m[repoos] failed to escalate failed exit for #0001: ENOENT: no such file or directory, open '/tmp/repoos-pause-nep5pr/work/0001-pause-and-resume.md' · [32m✓[39m tests/pause-resume.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 332[2mms[22m[39m · [32m✓[39m tests/raw-config-store.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 18[2mms[22m[39m · [31m❯[39m tests/auth.test.ts [2m([22m[2m0 test[22m[2m)[22m · error: Cannot find module '@vitest/expect… (truncated)"
@@ -217,3 +217,4 @@ URGENT: this blocks all remote validation on this board. Read #0717's diff (src/
 - 2026-10-06T22:36:30Z · status review→active
 - 2026-10-06T22:37:34Z · handoff failed · task-file handoff failed at verify · ui verification: capture of /settings?tab=remote-validation failed — click: Timeout 5000ms exceeded.
 - 2026-10-06T22:43:29Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at verify · ui verification: capture of /settings?tab=remote-validation failed — click: Timeout 5000ms exceeded. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-06T22:43:30Z · status review→active
