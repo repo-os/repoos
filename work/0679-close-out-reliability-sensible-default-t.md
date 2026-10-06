@@ -3,9 +3,6 @@ id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: provider-failure
-needs_input_detail: "{\"type\":\"tool_call\",\"subtype\":\"started\",\"call_id\":\"tool_14bacaca-6e04-4025-a8d7-77e9663c806\",\"tool_call\":{\"shellToolCall\":{\"args\":{\"command\":\"cd /Users/nick/code/nick/repoos-worktrees/feat/close-out-reliability-sensible-default-t && git status && git stash list\",\"workingDirectory\":\"\",\"timeout\":30000,\"toolCallId\":\"tool_14bacaca-6e04-4025-a8d7-77e9663c806\",\"simpleCommands\":[\"cd\",\"git\",\"git\"],\"hasInputRedirect\":false,\"hasOutputRedirect\":false,\"parsingResult\":{\"parsingFailed\":false,\"executableComman"
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -98,3 +95,4 @@ Close-out failed twice with 'merge conflict in src/server/server.ts' because mai
 - 2026-10-06T07:13:33Z · needs_input
 - 2026-10-06T07:13:44Z · agent exited with an error (cursor) · {"type":"tool_call","subtype":"started","call_id":"tool_14bacaca-6e04-4025-a8d7-77e9663c806","tool_call":{"shellToolCall":{"args":{"command":"cd /Users/nick/code/nick/repoos-worktrees/feat/close-out-reliability-sensible-default-t && git status && git stash list","workingDirectory":"","timeout":30000,"toolCallId":"tool_14bacaca-6e04-4025-a8d7-77e9663c806","simpleCommands":["cd","git","git"],"hasInputRedirect":false,"hasOutputRedirect":false,"parsingResult":{"parsingFailed":false,"executableComman
 - 2026-10-06T07:18:58Z · model_override
+- 2026-10-06T07:18:58Z · needs_input
