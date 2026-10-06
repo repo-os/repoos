@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T07:35:51Z"
-updated_at: "2026-10-06T07:36:03Z"
+updated_at: "2026-10-06T07:36:04Z"
 ---
 ## Problem
 
@@ -35,3 +37,4 @@ Smallest fix: in scrapeProviderFailure only inspect structured fields for lines 
 
 - 2026-10-06T07:35:51Z · created · unknown
 - 2026-10-06T07:36:03Z · status inbox→ready
+- 2026-10-06T07:36:04Z · cli_override, model_override
