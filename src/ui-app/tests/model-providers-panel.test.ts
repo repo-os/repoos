@@ -8,8 +8,10 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
 import ModelProvidersPanel from "../src/components/ModelProvidersPanel.vue";
+import { useRepoStore } from "../src/stores/repo";
 import type { ModelProvidersResponse } from "../src/types";
 
 function providersFixture(
@@ -533,6 +535,47 @@ describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
     const row = wrapper.findAll(".mp-row")[4];
     expect(row.text()).toContain("Balance unavailable: DeepInfra rejected the API key.");
     expect(row.text()).toContain("Usage unavailable: DeepInfra API returned 500");
+  });
+});
+
+describe("ModelProvidersPanel — balance refresh (#0707)", () => {
+  it("shows as-of time and a success toast after manual refresh", async () => {
+    const fetchedAt = "2026-10-06T12:00:00.000Z";
+    const usage = {
+      kind: "openrouter" as const,
+      at: fetchedAt,
+      credits: { totalCredits: 10, totalUsage: 2, remaining: 8 },
+      creditsError: null,
+      key: null,
+      keyError: null,
+    };
+    const usageRoute = openrouterUsageRoute(usage);
+    stubFetch([providersRoute(providersFixture([{ hasKey: true }])), usageRoute]);
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const wrapper = mount(ModelProvidersPanel, { global: { plugins: [pinia] } });
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[0];
+    expect(row.text()).toContain("As of");
+    const refreshBtn = row.findAll("button").find((b) => b.text() === "Refresh");
+    expect(refreshBtn).toBeTruthy();
+    usageRoute.body = {
+      ...usage,
+      at: "2026-10-06T12:05:00.000Z",
+      credits: { totalCredits: 10, totalUsage: 2, remaining: 9 },
+    };
+    await refreshBtn!.trigger("click");
+    await flushPromises();
+    await nextTick();
+
+    expect(usageRoute.calls!.length).toBeGreaterThanOrEqual(2);
+    expect(repo.toasts.some((t) => t.type === "success" && t.message.includes("OpenRouter"))).toBe(
+      true,
+    );
+    expect(row.text()).toContain("$9.00");
   });
 });
 

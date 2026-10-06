@@ -3066,12 +3066,16 @@ export const useRepoStore = defineStore("repo", () => {
   /** Hydrate the running marker on reload so a running agent is never phantom. */
   async function fetchRunning(): Promise<void> {
     try {
-      const r = await api<{ tasks: { id: string; startedAt: string }[] }>("/api/agents/running");
+      const r = await api<{
+        tasks: { id: string; startedAt: string; lastOutputAt?: string | null }[];
+      }>("/api/agents/running");
       runningIds.value = r.tasks.map((t) => t.id);
       runningSince.value = Object.fromEntries(r.tasks.map((t) => [t.id, t.startedAt]));
       agentActivityAt.value = {
         ...agentActivityAt.value,
-        ...Object.fromEntries(r.tasks.map((t) => [t.id, t.startedAt])),
+        ...Object.fromEntries(
+          r.tasks.map((t) => [t.id, t.lastOutputAt ?? t.startedAt]),
+        ),
       };
     } catch {
       /* endpoint unavailable — running state is best-effort */
