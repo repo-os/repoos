@@ -21,6 +21,9 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
+import type { LogLevel } from "../core/logger.js";
+import type { PreviewManager } from "./preview.js";
+import { runUiHandoffGate, taskNeedsUiHandoffVerification } from "./ui-handoff-gate.js";
 import {
   runGit,
   worktreePathForBranch,
@@ -50,7 +53,7 @@ import {
   type RemotePreReviewOutcome,
 } from "./pre-review-remote-gate.js";
 
-export type HandoffStep = "validate" | "check" | "commit" | "review" | "main" | "done";
+export type HandoffStep = "validate" | "check" | "verify" | "commit" | "review" | "main" | "done";
 
 export interface HandoffResult {
   ok: boolean;
@@ -232,6 +235,10 @@ export interface HandoffSink {
   onTaskCheckEvent?: TaskCheckListener;
   /** When set and remote validation is enabled, tests run on the runner first (#0520). */
   remoteValidator?: RemoteValidator;
+  /** Server-owned previews — required for the UI handoff verification gate (#0680). */
+  previews?: PreviewManager;
+  /** Optional task log sink for UI verification lines. */
+  onTaskLog?: (taskId: string, level: LogLevel, message: string) => void;
 }
 
 /** Options for the non-capability entry point (`finalizeReviewHandoff`). */
@@ -565,6 +572,19 @@ async function runHandoffFinalization(
     }
     const drift = describeStateDrift(before, after);
     if (drift) return fail("check", drift);
+
+    if (!opts.skipChecks) {
+      const uiTask = { ...task, body: worktreeTask.body };
+      if (taskNeedsUiHandoffVerification(config, uiTask)) {
+        onProgress?.("verify");
+        const ui = await runUiHandoffGate(config, uiTask, opts.previews, (id, level, message) =>
+          opts.onTaskLog?.(id, level, message),
+        );
+        if (!ui.ok && !ui.skipped) {
+          return fail("verify", ui.detail);
+        }
+      }
+    }
   } else {
     // Keep the step sequence honest for a UI that renders "Running checks…":
     // the commit gate is still real work, so report it as the step in flight.
@@ -726,6 +746,8 @@ export async function handoffTask(
   taskChecks?: TaskCheckManager,
   onTaskCheckEvent?: TaskCheckListener,
   remoteValidator?: RemoteValidator,
+  previews?: PreviewManager,
+  onTaskLog?: (taskId: string, level: LogLevel, message: string) => void,
 ): Promise<HandoffResult> {
   return withHandoffDeadline(async (markSettled) => {
     try {
@@ -744,6 +766,8 @@ export async function handoffTask(
         taskChecks,
         onTaskCheckEvent,
         remoteValidator,
+        previews,
+        onTaskLog,
       });
     } catch (err) {
       markSettled();
@@ -845,7 +869,7 @@ export function scheduleCheckFailureRetry(
    *  this write bypasses `patchTaskFile`, so nothing else refreshes it. */
   onFileChange?: (absPath: string) => void,
 ): boolean {
-  if (result.step !== "check") return false;
+  if (result.step !== "check" && result.step !== "verify") return false;
   if (result.checkRetryable === false) {
     runner.persistHandoffFailure(
       task.id,

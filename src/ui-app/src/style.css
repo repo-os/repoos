@@ -4713,6 +4713,17 @@
   color: var(--txt-faint);
   font-family: "JetBrains Mono", monospace;
 }
+.review-history {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+  font-size: 10px;
+  color: var(--txt-muted);
+  font-family: "JetBrains Mono", monospace;
+}
+.review-history li + li {
+  margin-top: 4px;
+}
 .review-card {
   cursor: default;
   margin-bottom: 4px;
