@@ -3,6 +3,9 @@ id: "0531"
 title: Add the local Telegram adapter and Bring Your Own Bot Token support
 type: feature
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -14,7 +17,7 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-09-27T23:17:11Z"
+updated_at: "2026-10-06T23:48:13Z"
 merge_conflict_retry_count: 1
 review_passes: 3
 review_rounds: 2
@@ -78,3 +81,4 @@ Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted me
 - 2026-09-27T22:59:51Z · review_model_override
 - 2026-09-27T23:00:38Z · needs_input
 - 2026-09-27T23:17:11Z · status review→done, release:success
+- 2026-10-06T23:48:13Z · needs_input
