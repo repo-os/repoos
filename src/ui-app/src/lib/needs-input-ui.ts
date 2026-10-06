@@ -171,6 +171,8 @@ export function needsInputPrimaryAction(
       if (ctx.status === "review") return REVIEW_AGAIN_ACTION;
       return canRestartWork(ctx) ? RESTART_ACTION : null;
     case "dev-error":
+    case "provider-failure":
+    case "degenerate-output":
     case "check-failed-after-retries":
       return canRestartWork(ctx) ? RESTART_ACTION : null;
     case "cto-escalation":

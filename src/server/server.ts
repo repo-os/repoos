@@ -860,7 +860,8 @@ function serveStaticUi(res: ServerResponse, uiDir: string, urlPath: string): boo
   const rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
   if (rel.includes("..")) return false;
   // Never serve index.html through the static path — it contains the
-  // __REPOOS_BUILD_HASH__ placeholder that must be substituted at read time.
+  // __REPOOS_BUILD_HASH_VALUE__ placeholder must be substituted at read time
+  // (not the window property name — replaceAll would corrupt `window.__REPOOS_BUILD_HASH__`).
   // The SPA fallback below handles it via readUiIndex().
   if (!rel || rel === "index.html") return false;
   const abs = resolve(uiDir, rel);
@@ -1128,7 +1129,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // ephemeral port is requested (nothing stable to hand off).
   const loadedHash = readBuildHash(config.root);
   const readUiIndex = (indexPath: string): string =>
-    readFileSync(indexPath, "utf8").replaceAll("__REPOOS_BUILD_HASH__", loadedHash || "unknown");
+    readFileSync(indexPath, "utf8").replaceAll(
+      "__REPOOS_BUILD_HASH_VALUE__",
+      loadedHash || "unknown",
+    );
   const reloadEnabled =
     !isDevBuild() && process.env.REPOOS_PREVIEW_CHILD !== "1" && opts.port !== 0;
   let reload: ReloadManager | null = null;
