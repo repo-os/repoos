@@ -12,7 +12,7 @@ branch: feat/cto-with-a-short-allowlist-of-safe-actio
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:59Z"
-updated_at: "2026-10-06T02:49:30Z"
+updated_at: "2026-10-06T02:50:12Z"
 ---
 ## Problem
 
@@ -35,6 +35,18 @@ Evidence comes from building a real 30-task project (opex, a Vue + Bun + Postgre
 ## Story context
 This task is part of the story **Field report: first agent-driven project run (opex)** (story #0008, `stories/field-report-first-agent-driven-project-run-opex.md` in this repo). Read that file first: it holds the background of the run that produced this task, the facts already established for your theme (with the evidence), the decisions the owner has already made, the known uncertainties, and the list of sibling tasks you should coordinate with. Verify its facts against the current source before relying on them, and say in the task notes if you find anything in it that is wrong or out of date.
 
+## Shots
+```json
+[
+  {
+    "label": "CTO safe actions allowlist in Settings",
+    "target": "default",
+    "route": "/settings",
+    "highlight": "#setting-cto.actions"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-05T16:58:59Z · created · unknown
@@ -45,3 +57,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T02:10:16Z · status ready→active, branch
 - 2026-10-06T02:33:45Z · body
 - 2026-10-06T02:49:30Z · body
+- 2026-10-06T02:50:12Z · body: section Shots
