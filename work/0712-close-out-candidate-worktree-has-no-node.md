@@ -11,9 +11,13 @@ branch: feat/close-out-candidate-worktree-has-no-node
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:49Z"
-updated_at: "2026-10-06T23:57:16Z"
+updated_at: "2026-10-06T23:57:25Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 24: unless the check plan starts with an install step. Install deps (or reuse) in the candidate worktree, or fail with advice.
+
+## Verify first
+
+VERIFY FIRST: #0674 (merged 2026-10-06) already reuses the primary checkout's node_modules in a candidate worktree (integration-orchestrator.ts ~691-700). Reproduce on CURRENT main with a check plan that runs a locally installed tool (prettier) in the close-out candidate. If it already works, add a regression test, say so in your reply and the task notes, and stop.
 
 ## Activity
 
@@ -24,3 +28,4 @@ Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoo
 - 2026-10-06T23:52:21Z · status ready→active, needs_input, branch
 - 2026-10-06T23:55:52Z · body
 - 2026-10-06T23:57:16Z · body
+- 2026-10-06T23:57:25Z · body
