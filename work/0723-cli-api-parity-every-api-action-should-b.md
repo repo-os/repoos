@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-06T18:42:12Z"
+review_passes: 2
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
 type: feature
@@ -12,10 +14,8 @@ branch: feat/cli-api-parity-every-api-action-should-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
-updated_at: "2026-10-06T18:42:12Z"
 last_check_failure: "repoos check at 2026-10-06T18:40:11.714Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
-review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -115,3 +115,4 @@ error: script "build" exited with code 127
 - 2026-10-06T18:41:19Z · status active→review
 - 2026-10-06T18:41:19Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-06T18:42:12Z · note: review pass 2: good to go
+
