@@ -11,7 +11,7 @@
 import { basename, extname, join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { SCREENSHOTS_HEADING, extractSection, removeSection } from "../core/task.js";
-import { createStorageProvider } from "../core/storage/index.js";
+import { createStorageProvider, DEFAULT_STORAGE_PROVIDER_ID } from "../core/storage/index.js";
 
 /** One persisted screenshot, as returned to the client. */
 export interface ScreenshotMeta {
@@ -45,13 +45,18 @@ export function attachmentsDir(root: string, workDir: string, taskId: string): s
 }
 
 /**
- * Attachment storage for tasks goes through the storage provider (#0658),
- * rooted at the work dir; each task id is a namespace. Today this is the local
- * gitignored-directory provider — the same `work/.attachments/<id>/` tree as
- * before, named behind the interface so a cloud backend can replace it.
+ * Attachment storage for tasks goes through the storage provider (#0658/#0659),
+ * rooted at the work dir; each task id is a namespace. The provider is chosen
+ * by `storage.provider` in `repoos.toml`; the local gitignored-directory
+ * provider is the default — the same `work/.attachments/<id>/` tree as before
+ * — and an unknown/unconfigured provider falls back to it, so a cloud choice
+ * that isn't ready yet never fails an upload.
  */
 function store(config: RepoOSConfig) {
-  return createStorageProvider(join(config.root, config.workDir));
+  return createStorageProvider(
+    join(config.root, config.workDir),
+    config.storage?.provider ?? DEFAULT_STORAGE_PROVIDER_ID,
+  );
 }
 
 /** API URL that serves one stored screenshot. */

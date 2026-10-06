@@ -971,6 +971,19 @@ want to see whether a whole customer-visible outcome is ready.
 With `enabled` missing, false, or malformed, nothing changes: no nav item, no
 route entry point, no Story field in the drawer, and no extra API work.
 
+## Attachment storage
+
+```toml
+[storage]
+provider = "local"
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `storage.provider` | `local` \| `neon` | `local` | yes | Where attachment files (task and input screenshots) are stored. `local` keeps them in gitignored `.attachments/` folders on this machine. `neon` (Neon Object Storage) is opt-in and needs credentials before it can be used; until it is configured, Settings shows it as unavailable with an explanation and RepoOS falls back to `local`. Changing it requires a server restart. |
+
+The Settings page exposes this key as "Attachment storage".
+
 ## Notifications
 
 ```toml

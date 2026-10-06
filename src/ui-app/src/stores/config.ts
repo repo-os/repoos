@@ -7,6 +7,7 @@ import type {
   ConfigField,
   ModelSourceResult,
   ModelSourcesResponse,
+  StorageStatus,
 } from "../types";
 
 /** claude code takes model aliases, not the provider/model ids other CLIs use. */
@@ -33,6 +34,8 @@ export interface ConfigResponse {
   config: Record<string, unknown>;
   schema: ConfigField[];
   agentsMeta?: AgentsMeta;
+  /** Attachment-storage status from the server (#0659) — the UI never guesses. */
+  storageStatus?: StorageStatus;
 }
 
 // ---- Live model lists, one independent request per CLI (#0593) ----
@@ -160,6 +163,12 @@ export const useConfigStore = defineStore("config", () => {
   const error = ref("");
   const schema = ref<ConfigField[]>([]);
   const data = ref<Record<string, unknown> | null>(null);
+  /**
+   * Attachment-storage status (#0659), refreshed from the server on every
+   * config load/save so the Settings card explains the effective provider
+   * (never claims cloud is active when it isn't). `null` until the first load.
+   */
+  const storageStatus = ref<StorageStatus | null>(null);
   const showAdvanced = ref(false);
   const form = reactive<Record<string, unknown>>({});
 
@@ -627,6 +636,7 @@ export const useConfigStore = defineStore("config", () => {
       const res = await api<ConfigResponse>("/api/config");
       data.value = res.config;
       schema.value = res.schema;
+      storageStatus.value = res.storageStatus ?? null;
       fillForm(res);
       syncWhisperFlag(res);
       agents.value = Array.isArray(res.config.agents) ? (res.config.agents as Agent[]) : [];
@@ -763,6 +773,7 @@ export const useConfigStore = defineStore("config", () => {
         : "Saved — applied live.";
       const res = await api<ConfigResponse>("/api/config");
       data.value = res.config;
+      storageStatus.value = res.storageStatus ?? null;
       fillForm(res);
       syncWhisperFlag(res);
       const storedTheme = localStorage.getItem("repoos.theme") ?? "system";
