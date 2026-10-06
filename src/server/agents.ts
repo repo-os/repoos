@@ -3597,6 +3597,16 @@ export function missionFor(
 
   parts.push(agent.instructions?.trim() ? agent.instructions.trim() : "Implement this task.", "");
 
+  parts.push(
+    "## Evidence — never invent",
+    "",
+    "Do not fabricate device test results, network measurements, external account IDs,",
+    "registration confirmations, or live API outcomes you did not observe in this run.",
+    "Leave those fields blank in the task body or your report and say a human must",
+    "supply the proof.",
+    "",
+  );
+
   // Skills are intentionally explicit: a repository may contain many
   // procedures, but an agent sees only the skills enabled for its role. Resolve
   // names through the discovered list rather than constructing paths from

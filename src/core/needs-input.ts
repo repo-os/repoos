@@ -14,7 +14,7 @@ export function needsInputSuppressedOnReview(
   if (task.status === "review" && task.needsInputReason === "dev-error") return true;
   // A stub body no longer matters once the task is active, in review or done.
   return (
-    task.needsInputReason === "underspecified" &&
+    (task.needsInputReason === "underspecified" || task.needsInputReason === "needs-human-step") &&
     (task.status === "active" || task.status === "review" || task.status === "done")
   );
 }

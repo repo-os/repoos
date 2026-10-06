@@ -28,6 +28,10 @@ first, then come back here.
   points at it, and a glossary of your domain words. Keep reference code and
   legacy material out of the build. Never put real data or secrets in the repo or
   in task text.
+- Keep human-only verification out of agent tasks: if acceptance criteria need a
+  real device, hardware, account, credentials, or third-party registration, split
+  that into a separate task a person runs. RepoOS flags mixed criteria at
+  creation with `needs-human-step`.
 
 ## 2. Choose agents per role
 
