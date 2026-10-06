@@ -46,7 +46,7 @@ import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
 import { needsInputClearsOnNewEngineerRun } from "../../core/needs-input.js";
 import {
-  flagUnderspecifiedIfNeeded,
+  flagTaskSpecFlagsIfNeeded,
   isUnderspecifiedSweepEligible,
   needsInputClearsOnPmMessage,
   UNDERSPECIFIED_NEEDS_INPUT_REASON,
@@ -260,9 +260,9 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
   });
   // #0668: a task created through the plain create path with a stub body is
   // flagged the moment it exists — not only after a later PATCH or PM run.
-  // `flagUnderspecifiedIfNeeded` preserves any unrelated reason the caller set.
+  // `flagTaskSpecFlagsIfNeeded` preserves any unrelated reason the caller set.
   if (isUnderspecifiedSweepEligible(created)) {
-    const flagged = flagUnderspecifiedIfNeeded(config, created);
+    const flagged = flagTaskSpecFlagsIfNeeded(config, created);
     if (flagged) {
       created = flagged;
       logger.task(created.id, "warn", "Task body is underspecified at creation", {
@@ -365,7 +365,7 @@ export function finalizeFreeformRun(
       });
       const afterFailure = index.getTask(taskId);
       if (afterFailure) {
-        const flagged = flagUnderspecifiedIfNeeded(config, afterFailure);
+        const flagged = flagTaskSpecFlagsIfNeeded(config, afterFailure);
         if (flagged) index.applyFileChange(flagged.absPath);
       }
       return;
@@ -397,7 +397,7 @@ export function finalizeFreeformRun(
     index.applyFileChange(updated.absPath);
     const afterPromote = index.getTask(taskId);
     if (afterPromote) {
-      const flagged = flagUnderspecifiedIfNeeded(config, afterPromote);
+      const flagged = flagTaskSpecFlagsIfNeeded(config, afterPromote);
       if (flagged) index.applyFileChange(flagged.absPath);
     }
     logger.task(taskId, "info", "PM agent fleshed out draft task", {
@@ -875,7 +875,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     if (rest.body !== undefined || rest.section !== undefined) {
       const current = index.getTask(updated.id);
       if (current) {
-        const flagged = flagUnderspecifiedIfNeeded(config, current);
+        const flagged = flagTaskSpecFlagsIfNeeded(config, current);
         if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
       }
     }
@@ -914,11 +914,11 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
 
   // Re-run the underspecified check on every body change (#0613) — not only
   // draft promotion. If the body becomes well-specified again the flag clears;
-  // clearing when underspecified persists is handled inside flagUnderspecifiedIfNeeded.
+  // clearing when underspecified persists is handled inside flagTaskSpecFlagsIfNeeded.
   if (body.body !== undefined || body.section !== undefined) {
     const current = index.getTask(updated.id);
     if (current) {
-      const flagged = flagUnderspecifiedIfNeeded(config, current);
+      const flagged = flagTaskSpecFlagsIfNeeded(config, current);
       if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
     }
   }
@@ -926,7 +926,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   if (prevStatus === "draft" && updated.status !== "draft") {
     const current = index.getTask(updated.id);
     if (current) {
-      const flagged = flagUnderspecifiedIfNeeded(config, current);
+      const flagged = flagTaskSpecFlagsIfNeeded(config, current);
       if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
     }
   }
@@ -1564,7 +1564,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     const startedTask = index.getTask(updated.id);
     if (startedTask) {
       const assessment = assessTaskUnderspecified(startedTask.body, { area: startedTask.area });
-      const flagged = flagUnderspecifiedIfNeeded(config, startedTask);
+      const flagged = flagTaskSpecFlagsIfNeeded(config, startedTask);
       if (flagged) {
         index.applyFileChange(flagged.absPath, { guarded: true });
       }
