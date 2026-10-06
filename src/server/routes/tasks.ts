@@ -44,6 +44,7 @@ import type { LiveIndex, RepoEvent } from "../live-index.js";
 import type { Logger } from "../../core/logger.js";
 import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
+import { needsInputClearsOnNewEngineerRun } from "../../core/needs-input.js";
 import {
   flagUnderspecifiedIfNeeded,
   isUnderspecifiedSweepEligible,
@@ -1535,12 +1536,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     }
     const isHotfix = existing.hotfix === true;
     const patch: TaskPatch = { status: "active" };
-    // Starting acknowledges ordinary question/underspecified flags, but must
-    // not erase a failure reason owned by another subsystem.
-    if (
-      !existing.needsInputReason ||
-      existing.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON
-    ) {
+    // Starting acknowledges ordinary question/underspecified flags and clears
+    // recoverable run-health flags (#0716), but must not erase a failure
+    // reason owned by another subsystem.
+    if (needsInputClearsOnNewEngineerRun(existing.needsInputReason)) {
       patch.needsInput = false;
     }
     if (!existing.branch) patch.branch = branch;

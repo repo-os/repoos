@@ -1,8 +1,10 @@
 ---
+updated_at: "2026-10-06T17:34:53Z"
+review_passes: 3
 id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,9 +14,7 @@ branch: feat/invented-evidence-reviewer-and-engineer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:46Z"
-updated_at: "2026-10-06T17:25:37Z"
 review_rounds: 1
-review_passes: 2
 merge_conflict_retry_count: 1
 last_check_failure: "repoos check at 2026-10-06T15:38:56.453Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
 handoff_signal_retry_count: 2
@@ -103,3 +103,8 @@ fatal: unable to read tree (d9b027c8a905fb78ea2f2613a250bf35d5f9782b) — fix it
 - 2026-10-06T17:22:03Z · note: review pass 2: needs some work
 - 2026-10-06T17:22:04Z · status review→active
 - 2026-10-06T17:25:37Z · note: Driver: reviewer pass 2 claimed flagNeedsHumanStepIfNeeded clears the flag once active/review/done. Not so: it only clears when assessTaskNeedsHumanStep(body) is false (no status check; isPastFleshOutStage is used only by flagUnderspecifiedIfNeeded). Existing tests in task-underspecified-flag.test.ts (the 'active' fixtures near lines 505-545) already assert the flag survives flagTaskSpecFlagsIfNeeded on an active task and is raised while active. Re-requesting review.
+- 2026-10-06T17:31:33Z · body
+- 2026-10-06T17:33:47Z · status active→review
+- 2026-10-06T17:33:49Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T17:34:53Z · note: review pass 3: good to go
+

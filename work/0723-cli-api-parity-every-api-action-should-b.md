@@ -1,8 +1,10 @@
 ---
+updated_at: "2026-10-06T18:42:12Z"
+review_passes: 2
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +14,8 @@ branch: feat/cli-api-parity-every-api-action-should-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
-updated_at: "2026-10-06T17:26:33Z"
+last_check_failure: "repoos check at 2026-10-06T18:40:11.714Z: server-side finalization timed out (deadline exceeded)"
+review_rounds: 1
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -66,3 +69,50 @@ Read src/commands/tasks.ts and src/cli/ for the command registry and the HTTP ro
    Duration  1.96s (transform 976ms, setup 10ms, import 1.12s, tests 348ms, environment 414ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-06T17:32:25Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —        |                                        ^ · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T17:32:26Z · status review→active
+- 2026-10-06T17:42:25Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-06T17:43:28Z · status active→review
+- 2026-10-06T17:43:28Z · status review→active
+- 2026-10-06T17:43:58Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 127) — + pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [1031.00ms]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+/usr/bin/bash: line 1: vite: command not found
+error: script "build:ui" exited with code 127
+error: script "build:raw" exited with code 127
+error: script "build" exited with code 127
+[validate] gate exit 127 — fix it in the feature branch and re-run the gate
+- 2026-10-06T17:49:28Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —        |                                        ^ · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T17:49:28Z · status review→active
+- 2026-10-06T17:54:04Z · handoff failed · task-file handoff failed at check · repoos check failed: build complete in 4.19s. · ⏭ landing-build  — skipped — no changed path matches landing/** · ⏭ telegram-manager-build  — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test  — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed. · ── Failed steps ── · ✗ rendered-contrast — rerun: repoos check --profile full --step rendered-contrast --changed f8aed19bc
+- 2026-10-06T17:59:28Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-10-06T18:01:24Z · body
+- 2026-10-06T18:02:13Z · body
+- 2026-10-06T18:03:13Z · body
+- 2026-10-06T18:04:02Z · body
+- 2026-10-06T18:07:19Z · body
+- 2026-10-06T18:17:28Z · status active→review
+- 2026-10-06T18:17:30Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-06T18:18:20Z · note: review pass 1: needs some work
+- 2026-10-06T18:18:20Z · status review→active
+- 2026-10-06T18:27:48Z · body
+- 2026-10-06T18:29:20Z · body
+- 2026-10-06T18:40:44Z · status active→review
+- 2026-10-06T18:40:44Z · status review→active
+- 2026-10-06T18:40:54Z · body
+- 2026-10-06T18:41:19Z · status active→review
+- 2026-10-06T18:41:19Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-06T18:42:12Z · note: review pass 2: good to go
+

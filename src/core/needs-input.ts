@@ -1,7 +1,14 @@
 import type { Task } from "./types.js";
+import { UNDERSPECIFIED_NEEDS_INPUT_REASON } from "./task-underspecified.js";
 
 /** Automatic reviewer send-backs allowed before human review is required. */
 export const MAX_AUTO_REVIEW_ROUNDS = 2;
+
+/** Provider/run-health flags clear when engineering work resumes (#0716). */
+export function needsInputClearsOnNewEngineerRun(reason: string | undefined): boolean {
+  if (!reason || reason === UNDERSPECIFIED_NEEDS_INPUT_REASON) return true;
+  return reason === "provider-failure" || reason === "degenerate-output";
+}
 
 /**
  * Stale `dev-error` on a `review` task: the engineer reached review but a
