@@ -90,6 +90,7 @@ describe("missing candidate node_modules (#0712)", () => {
       ],
       source: "declared",
       errors: [],
+      warnings: [],
     };
     const { cfg, clean } = withToml("");
     try {
@@ -108,6 +109,7 @@ describe("missing candidate node_modules (#0712)", () => {
       steps: [],
       source: "empty",
       errors: [],
+      warnings: [],
     };
     try {
       writeFileSync(join(cfg.root, "bun.lock"), "# stub\n");
