@@ -1884,7 +1884,7 @@ interface PoolWaiter {
   excludeHosts?: ReadonlySet<string>;
   resolve: (slot: HostSlot) => void;
   reject: (err: Error) => void;
-  onQueue?: (ahead: number) => void;
+  onQueue?: (info: { ahead: number; host: string }) => void;
   /** Which run is waiting — surfaced as the queue's next-up tasks (#0564). */
   taskId?: string;
   timer?: ReturnType<typeof setTimeout>;
@@ -2270,7 +2270,10 @@ export class TailscaleHostPool {
         }, ms);
         waiter.timer.unref?.();
       }
-      waiter.onQueue?.(this.queueAheadCount(capabilities, this.waiters.length - 1, excluded));
+      waiter.onQueue?.({
+        ahead: this.queueAheadCount(capabilities, this.waiters.length - 1, excluded),
+        host: candidates[0]?.spec.host ?? "",
+      });
       // Opportunistic recovery while queued: re-probe dead candidates so the
       // job can move to one the moment it comes back.
       for (const s of candidates) if (!s.healthy) this.armHealthRetry(s);
@@ -3016,7 +3019,7 @@ export class TailscaleRunner implements RemoteValidator {
           // Failover guarantee: the pool never hands back a host this run
           // already tried, so a retry cannot re-run the failed host.
           excludeHosts: [...triedHosts],
-          onQueue: (ahead) => {
+          onQueue: ({ ahead }) => {
             const note = this.queueNote(ahead, capabilities);
             emit(note);
             appendRemoteValidationEvent(this.config.root, opts.taskId, {
