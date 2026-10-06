@@ -12,7 +12,7 @@ branch: feat/finish-0694-follow-ups-agents-md-remote-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T01:38:21Z"
-updated_at: "2026-10-06T02:46:48Z"
+updated_at: "2026-10-06T02:54:37Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Found 2026-10-06 10:50: four engineers (0679, 0683, 0688, 0695) showed 'stuck' i
 - 2026-10-06T02:28:32Z · cli_override, model_override
 - 2026-10-06T02:28:32Z · status ready→active, branch
 - 2026-10-06T02:46:48Z · body: section Added item 6: self-checks must spill to idle hosts, not wait on thinkpad
+- 2026-10-06T02:54:37Z · body
