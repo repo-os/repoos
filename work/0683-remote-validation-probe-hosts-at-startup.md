@@ -12,7 +12,7 @@ branch: feat/remote-validation-probe-hosts-at-startup
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:48Z"
-updated_at: "2026-10-06T04:57:47Z"
+updated_at: "2026-10-06T04:58:38Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-06T04:49:50Z · body
 - 2026-10-06T04:57:44Z · status active→review
 - 2026-10-06T04:57:47Z · note: shots: skipped — the diff (8 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-06T04:58:38Z · note: review pass 1: needs some work
