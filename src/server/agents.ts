@@ -49,6 +49,7 @@ import { fileCommittedClean, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { buildStoryContext, storyContextSummary } from "../core/story-context.js";
+import { unresolvedReviewFindingsBlock } from "../core/review-findings.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
 import type { Logger } from "../core/logger.js";
@@ -3580,6 +3581,12 @@ export function missionFor(
   const storyContext = buildStoryContext(task, config);
   if (storyContext) {
     parts.push(storyContext);
+    parts.push("");
+  }
+
+  const reviewFindings = unresolvedReviewFindingsBlock(config, task.id);
+  if (reviewFindings) {
+    parts.push(reviewFindings);
     parts.push("");
   }
 

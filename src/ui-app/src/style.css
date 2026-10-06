@@ -4713,6 +4713,17 @@
   color: var(--txt-faint);
   font-family: "JetBrains Mono", monospace;
 }
+.review-history {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+  font-size: 10px;
+  color: var(--txt-muted);
+  font-family: "JetBrains Mono", monospace;
+}
+.review-history li + li {
+  margin-top: 4px;
+}
 .review-card {
   cursor: default;
   margin-bottom: 4px;
@@ -5588,6 +5599,34 @@
  * room for the `## Shots` spec. Those grid rules are gone with it. */
 .ui-changes {
   margin-bottom: 18px;
+}
+.ui-verification-evidence {
+  margin-bottom: 18px;
+}
+.ui-verification-meta {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+.ui-verification-ok {
+  margin: 0;
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+.ui-verification-issues {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 12px;
+  color: var(--txt);
+}
+.ui-verification-issues li {
+  margin-bottom: 4px;
+}
+.ui-verification-detail {
+  display: block;
+  color: var(--txt-dim);
+  font-size: 11px;
+  word-break: break-all;
 }
 .shot-warning {
   font-size: 12px;

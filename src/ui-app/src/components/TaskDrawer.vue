@@ -862,6 +862,10 @@ const uiMissingShots = computed(() =>
 );
 /** Area/target mismatch warning for the open task, or undefined. */
 const shotWarning = computed(() => (ui.active ? repo.shotWarningFor(ui.active.id) : undefined));
+/** Last handoff browser verification (#0680), when loaded. */
+const uiHandoffVerification = computed(() =>
+  ui.active ? repo.uiVerificationFor(ui.active.id) : undefined,
+);
 const shotsViewerOpen = ref(false);
 const shotsViewerStart = ref(0);
 const shotsViewerShots = computed<ScreenshotShot[]>(() =>
@@ -3165,7 +3169,10 @@ watch(
   () => [ui.active?.id, ui.activeTab],
   () => {
     const id = ui.active?.id;
-    if (id) void repo.loadShots(id);
+    if (id) {
+      void repo.loadShots(id);
+      void repo.loadUiVerification(id);
+    }
   },
   { immediate: true },
 );
@@ -5088,6 +5095,16 @@ watch(
                 <span>{{ repo.fmtDate(review.report.at) }}</span>
                 <span class="mono">{{ review.report.agent }} · {{ review.report.cli }}</span>
               </div>
+              <ul
+                v-if="review.history && review.history.length > 0"
+                class="review-history"
+                aria-label="Review pass history"
+              >
+                <li v-for="h in review.history" :key="h.pass">
+                  Pass {{ h.pass }} · {{ repo.fmtDate(h.at) }} ·
+                  {{ h.verdict ?? h.state }}
+                </li>
+              </ul>
               <div class="md-card review-card">
                 <div class="md-rendered" v-html="reviewHtml"></div>
               </div>
@@ -5199,6 +5216,32 @@ watch(
               Pick the right target from the preview control above.
             </span>
           </div>
+          <section
+            v-if="ui.active && uiHandoffVerification"
+            class="changes-summary ui-verification-evidence"
+            aria-label="Handoff UI verification"
+          >
+            <div class="changes-summary-title">Handoff UI verification</div>
+            <p class="ui-verification-meta">
+              {{ repo.fmtDate(uiHandoffVerification.at) }}
+              · {{ uiHandoffVerification.captures }} capture(s)
+            </p>
+            <p v-if="uiHandoffVerification.issues.length === 0" class="ui-verification-ok">
+              No console errors, failed same-origin requests, overflow, or blank captures at
+              handoff.
+            </p>
+            <ul v-else class="ui-verification-issues">
+              <li v-for="(issue, idx) in uiHandoffVerification.issues" :key="idx">
+                <span class="mono">[{{ issue.kind }}]</span> {{ issue.message }}
+                <span v-if="issue.viewportWidth !== undefined" class="ui-verification-detail">
+                  @{{ issue.viewportWidth }}px
+                </span>
+                <span v-if="issue.url" class="ui-verification-detail" :title="issue.url">{{
+                  issue.url
+                }}</span>
+              </li>
+            </ul>
+          </section>
           <!-- Captured preview shots (#0611). Same one-per-row shape as the New
                task / New input pending attachments (ff-pending-*), because a
                thumbnail grid had no room for the `## Shots` spec the reviewer

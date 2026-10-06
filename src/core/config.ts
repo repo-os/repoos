@@ -30,6 +30,7 @@ import type {
   PreviewServiceConfig,
   PreviewTargetConfig,
   ApprovalConfig,
+  UiVerificationConfig,
   RepoOSConfig,
   Status,
   Assignee,
@@ -835,6 +836,15 @@ function normalizeStringList(value: unknown): string[] {
   return items.map((v) => (typeof v === "string" ? v.trim() : "")).filter(Boolean);
 }
 
+/** Flat TOML arrays of numbers arrive as strings; accept both. */
+function parsePositiveNumberList(value: unknown): number[] {
+  if (value === undefined || value === null) return [];
+  const items = Array.isArray(value) ? value : normalizeStringList(value);
+  return items
+    .map((v) => (typeof v === "number" ? v : typeof v === "string" ? Number(v.trim()) : NaN))
+    .filter((n) => Number.isFinite(n) && n > 0);
+}
+
 /**
  * The `[preview]` keys that configure *how a preview boots* — the preview
  * feature's own settings. Any other `[preview.<path>]` table is a preview-only
@@ -1622,6 +1632,17 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       if (approvalUiAreas.length) approval.autoApprove.uiAreas = approvalUiAreas;
       cfg.approval = approval;
     }
+
+    const uiVerifEnabled = parsed["uiVerification.enabled"];
+    const uiVerifWidthsRaw = parsed["uiVerification.viewportWidths"];
+    const uiVerifWidths = parsePositiveNumberList(uiVerifWidthsRaw);
+    if (uiVerifEnabled !== undefined || uiVerifWidths.length) {
+      const uiVerification: UiVerificationConfig = {};
+      if (typeof uiVerifEnabled === "boolean") uiVerification.enabled = uiVerifEnabled;
+      const widths = uiVerifWidths.filter((n) => Number.isFinite(n) && n > 0);
+      if (widths.length) uiVerification.viewportWidths = widths.map((n) => Math.floor(n));
+      cfg.uiVerification = uiVerification;
+    }
   }
 
   // Model-provider API keys (0327): env-only, same rule as the [auth] secrets
@@ -2075,6 +2096,27 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Task types eligible for policy auto-approval (any match). Leave empty to match by area only.",
     },
     {
+      key: "uiVerification.enabled",
+      label: "UI handoff verification",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: true,
+      description:
+        "When enabled, tasks with a shot capture plan run browser checks at handoff (console errors, " +
+        "failed same-origin requests, horizontal overflow) before review. Playwright missing skips with a note.",
+    },
+    {
+      key: "uiVerification.viewportWidths",
+      label: "UI verification viewport widths",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [1024, 375],
+      description:
+        "Pixel widths used for overflow checks during handoff UI verification (desktop and mobile by default).",
+    },
+    {
       key: "maxConcurrentAgents",
       label: "Maximum concurrent agent processes",
       type: "select",
@@ -2471,6 +2513,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "approval.autoApprove.areas",
   "approval.autoApprove.types",
   "approval.autoApprove.uiAreas",
+  "uiVerification.enabled",
+  "uiVerification.viewportWidths",
   // Remote validation
   "remoteValidation.enabled",
   "remoteValidation.provider",
