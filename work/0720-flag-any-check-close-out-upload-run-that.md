@@ -1,11 +1,8 @@
 ---
-merge_conflict_retry_count: 1
-updated_at: "2026-10-06T17:23:25Z"
-review_passes: 1
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -15,6 +12,9 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
+updated_at: "2026-10-06T17:30:53Z"
+merge_conflict_retry_count: 1
+review_passes: 1
 dev_error_count: 2
 ---
 ## Problem
@@ -79,5 +79,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-06T17:22:06Z · status active→review
 - 2026-10-06T17:22:06Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T17:23:25Z · note: review pass 1: good to go
-
-
+- 2026-10-06T17:30:53Z · status review→active
