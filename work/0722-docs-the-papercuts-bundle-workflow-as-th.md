@@ -12,7 +12,7 @@ branch: feat/docs-the-easter-eggs-bundle-workflow-as-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-06T14:31:00Z"
-updated_at: "2026-10-06T15:55:43Z"
+updated_at: "2026-10-06T16:10:43Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -46,3 +46,4 @@ Docs-only; do not touch src/. Edit AGENTS.md carefully: it is the single source 
 - 2026-10-06T15:07:10Z · body
 - 2026-10-06T15:18:24Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-06T15:55:42Z · needs_input
+- 2026-10-06T16:10:43Z · body
