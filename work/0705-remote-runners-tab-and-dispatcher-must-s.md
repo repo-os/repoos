@@ -15,7 +15,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: claude-sonnet-5-thinking-high
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T07:25:49Z"
+updated_at: "2026-10-06T07:25:50Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 6
@@ -109,4 +109,4 @@ error: script "test" exited with code 1
 - 2026-10-06T07:20:08Z · status active→review
 - 2026-10-06T07:20:08Z · status review→active
 - 2026-10-06T07:25:49Z · status active→review
-
+- 2026-10-06T07:25:50Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
