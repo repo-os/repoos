@@ -2,7 +2,7 @@
 id: "0722"
 title: "Docs: the easter-eggs bundle workflow as the alternative to hotfix flows (AGENTS.md + docs/)"
 type: chore
-status: review
+status: active
 priority: p2
 area: docs
 story: "Field report: first agent-driven project run (opex)"
@@ -68,3 +68,4 @@ fatal: unable to read tree (c7d0b9de8cafe603ae704776248d9502afa5b636) — fix it
 warning: You appear to have cloned an empty repository.
 fatal: unable to read tree (0755bd7d81e0810a547df2c7c594548c6a67297c) — fix it in the feature branch and re-run the gate
 - 2026-10-06T17:09:47Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T17:09:47Z · status review→active
