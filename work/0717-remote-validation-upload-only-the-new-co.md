@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-06T15:06:10Z"
+review_passes: 1
 id: "0717"
 title: "Remote validation: upload only the new commits, not the full-history git bundle, on every run"
 type: feature
@@ -12,7 +14,6 @@ branch: feat/remote-validation-upload-only-the-new-co
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T11:11:30Z"
-updated_at: "2026-10-06T15:06:07Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 ---
@@ -50,3 +51,4 @@ Read prepareRemoteTestBundle (it already bundles an extra baseSha for test scope
 - 2026-10-06T15:05:02Z · status active→review
 - 2026-10-06T15:05:03Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-06T15:06:07Z · note: review pass 1: good to go
+
