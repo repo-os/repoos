@@ -17,6 +17,10 @@ import { dirname, isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
 import { worktreesDir, worktreesInheritEnv } from "./config.js";
 import { notifyGitMutation } from "./git-activity.js";
+import {
+  isLockfileOnlyConflicts,
+  tryCompleteMergeByRegeneratingLockfile,
+} from "./lockfile-conflict.js";
 
 function git(root: string, args: string[]): string | null {
   try {
@@ -1819,6 +1823,8 @@ export async function mergeBranch(
     autoResolve?: string[];
     autoResolveOurs?: string[];
     dryRun?: boolean;
+    /** When true, lockfile-only conflicts are resolved by regenerating the lockfile (#0679). */
+    regenerateLockfileConflicts?: boolean;
   } = {},
 ): Promise<MergeBranchResult> {
   if (opts.dryRun) return dryRunMergeBranch(root, branch, opts);
@@ -1895,6 +1901,14 @@ export async function mergeBranch(
     // bookkeeping that the close-out is supposed to auto-resolve anyway (#0271).
     // This is consistent with `preflightMerge`, which already filters to the
     // unresolved (non-auto-resolvable) paths.
+    // Lockfile-only conflicts: regenerate instead of failing (#0679).
+    if (opts.regenerateLockfileConflicts && isLockfileOnlyConflicts(blocking)) {
+      const regen = await tryCompleteMergeByRegeneratingLockfile(root);
+      if (regen.ok) {
+        notifyGitMutation(root, "merge");
+        return { merged: true, ff: false, conflicts: [] };
+      }
+    }
     // Nothing may be left half-applied: back out of the merge entirely.
     await runGit(root, ["merge", "--abort"], 4000);
     return {

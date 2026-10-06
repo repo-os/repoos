@@ -169,6 +169,7 @@ import {
   scheduleMergeConflictRetry,
   type HandoffOrigin,
 } from "./handoff.js";
+import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
@@ -1400,6 +1401,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             if (!task) return;
             scheduleMergeConflictRetry(config, task, reason, runner, (absPath) =>
               index.applyFileChange(absPath, { guarded: true }),
+            );
+          },
+          (taskId, reason) => {
+            const task = index.getTask(taskId);
+            if (!task) return;
+            scheduleCloseOutRepairHandback(
+              config,
+              task,
+              "gate-failure",
+              reason,
+              runner,
+              (absPath) => index.applyFileChange(absPath, { guarded: true }),
             );
           },
           remoteValidator,
