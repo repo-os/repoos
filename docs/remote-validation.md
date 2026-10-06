@@ -70,7 +70,10 @@ The pre-review, close-out and release gates share `runRemotePreReviewGate` (`src
   guards with `REPOOS_SKIP_TESTS=1`. When `remoteValidation.engineerSelfCheckRemote`
   is on (default), a managed engineer's self-check uses the same remote half; handoff
   **reuses** a green remote row in `.repoos/checks.db` at the same `candidate_sha`
-  instead of running twice. Task activity records which host ran the self-check and
+  instead of running twice. Reuse is keyed on `git rev-parse HEAD` after handoff's
+  commit gate (and auto-format): if the engineer's last self-check ran on an earlier
+  sha — common when handoff-only formatting landed afterward — handoff still runs the
+  full remote gate once. Task activity records which host ran the self-check and
   how long it took. Logs land in
   `.repoos/logs/remote-validation/<taskId>.log` (task id, or `pre-review` for a
   bare CLI run). Alongside it, `<taskId>.events.ndjson` records the same run's

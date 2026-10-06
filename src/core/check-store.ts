@@ -396,7 +396,9 @@ export function envToRunContext(env: NodeJS.ProcessEnv): {
   taskId: string | null;
   phase: CheckRunPhase;
 } {
-  const taskId = env.REPOOS_CHECK_TASK_ID?.trim() || null;
+  const explicit = env.REPOOS_CHECK_TASK_ID?.trim();
+  const managed = env.REPOOS_AGENT === "1" ? env.REPOOS_TASK_ID?.trim() : undefined;
+  const taskId = explicit || managed || null;
   const raw = env.REPOOS_CHECK_PHASE?.trim();
   const phase: CheckRunPhase =
     raw === "pre-review" || raw === "close-out" || raw === "release"

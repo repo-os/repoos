@@ -1,15 +1,18 @@
+import { describe, expect, it, vi } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
 import { getCheckStore, resetCheckStore } from "../../core/check-store.js";
 import {
   engineerSelfCheckRemoteEnabled,
   findReusableRemotePreReviewPass,
   remoteOutcomeFromReuse,
-  shouldRunEngineerRemoteSelfCheck,
+  runEngineerRemoteSelfCheckGate,
 } from "../../server/engineer-remote-self-check.js";
+import * as preReview from "../../server/pre-review-remote-gate.js";
+import * as remoteValidation from "../../server/remote-validation.js";
 import type { RepoOSConfig } from "../../core/types.js";
+import { shouldRunCliRemotePreReviewGate } from "../../server/pre-review-remote-gate.js";
 
 function makeConfig(root: string, rv: Record<string, unknown>): RepoOSConfig {
   return {
@@ -28,16 +31,39 @@ describe("engineer remote self-check (#0694)", () => {
     ).toBe(false);
   });
 
-  it("shouldRunEngineerRemoteSelfCheck allows managed engineers on Hetzner", () => {
+  it("shouldRunEngineerRemoteSelfCheck aliases the CLI gate predicate", () => {
     const hetzner = makeConfig("/x", { provider: "hetzner" });
     expect(
-      shouldRunEngineerRemoteSelfCheck(
+      shouldRunCliRemotePreReviewGate(
         hetzner,
         { changedRef: "main" },
         { REPOOS_AGENT: "1", REPOOS_TASK_ID: "0694" },
       ),
     ).toBe(true);
-    expect(shouldRunEngineerRemoteSelfCheck(hetzner, {}, {})).toBe(false);
+    expect(shouldRunCliRemotePreReviewGate(hetzner, {}, {})).toBe(false);
+  });
+
+  it("runEngineerRemoteSelfCheckGate creates one validator and disposes it once", async () => {
+    const dispose = vi.fn(async () => {});
+    vi.spyOn(remoteValidation, "createRemoteValidator").mockReturnValue({
+      validate: vi.fn(),
+      dispose,
+      reconcile: async () => {},
+      logPath: () => "",
+    } as never);
+    vi.spyOn(preReview, "runRemotePreReviewGate").mockResolvedValue({
+      kind: "local-only",
+      skipTests: true,
+    });
+    const root = mkdtempSync(join(tmpdir(), "repoos-0694-gate-"));
+    const cfg = makeConfig(root, { enabled: true, provider: "hetzner" });
+    await runEngineerRemoteSelfCheckGate({
+      worktreeConfig: cfg,
+      worktreePath: root,
+      taskId: "0694",
+    });
+    expect(dispose).toHaveBeenCalledTimes(1);
+    vi.restoreAllMocks();
   });
 
   it("findReusableRemotePreReviewPass matches task, sha, and green remote row", () => {

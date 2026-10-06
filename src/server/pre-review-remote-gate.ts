@@ -82,8 +82,8 @@ export function standaloneCliCanUseRemote(config: RepoOSConfig): boolean {
 
 /**
  * Whether standalone `repoos check` should run the remote half (not when a parent
- * already did, not for changed-path fast pre-review, not with `--local-tests`,
- * not for a provider whose runner the server owns).
+ * already did, not with `--local-tests`, not when engineer self-check remote is
+ * off). Same predicate as managed engineer self-check (#0694).
  */
 export function shouldRunCliRemotePreReviewGate(
   config: RepoOSConfig,
@@ -100,6 +100,9 @@ export function shouldRunCliRemotePreReviewGate(
   // Standalone CLI: Tailscale only (#0520); changed-path mode still uses remote (#0694).
   return standaloneCliCanUseRemote(config);
 }
+
+/** Alias — one implementation for CLI and docs (#0694 review). */
+export const shouldRunEngineerRemoteSelfCheck = shouldRunCliRemotePreReviewGate;
 
 /**
  * `repoos check` argv for a child process spawned by handoff, close-out, release,
