@@ -2,7 +2,7 @@
 id: "0721"
 title: "Easter eggs bundle: stuck-timer source, needs_input clear on new run, stale provider balance, agent-review test races"
 type: chore
-status: active
+status: review
 priority: p2
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-stuck-timer-source-ne
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:27:52Z"
-updated_at: "2026-10-06T14:43:20Z"
+updated_at: "2026-10-06T17:21:54Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ Keep each item small and separate in commits. Do not touch the degenerate detect
 - 2026-10-06T14:31:28Z · title, body
 - 2026-10-06T14:43:17Z · status inbox→ready
 - 2026-10-06T14:43:20Z · status ready→active, branch
+- 2026-10-06T17:21:54Z · status active→review
