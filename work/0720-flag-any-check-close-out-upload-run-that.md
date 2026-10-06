@@ -12,7 +12,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-06T15:55:39Z"
+updated_at: "2026-10-06T17:10:28Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -66,3 +66,9 @@ Read src/server/attention-feed.ts and attention-notify.ts (silent-run items), sr
 - 2026-10-06T15:03:28Z · body: section Shots
 - 2026-10-06T15:13:17Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-10-06T15:55:38Z · needs_input
+- 2026-10-06T17:08:15Z · body
+- 2026-10-06T17:08:46Z · body
+- 2026-10-06T17:10:28Z · handoff failed · remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s
+[validate] cloning bundle /home/nick/.repoos-0720-334e6eb2.bundle
+warning: You appear to have cloned an empty repository.
+fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it in the feature branch and re-run the gate
