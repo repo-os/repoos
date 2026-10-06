@@ -65,6 +65,7 @@ import { writeCheckRun } from "../core/check-results-store.js";
 import { extractFailedTests } from "../core/check-failure-summary.js";
 import {
   envToRunContext,
+  resolveCheckRunAttribution,
   getCheckStore,
   localMachineName,
   type CheckRunPhase,
@@ -2188,6 +2189,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
           worktreePath: repoRoot,
           taskId,
           taskAbsPath,
+          changedRef,
           onChunk: (chunk) => {
             remoteOutput += chunk;
             process.stdout.write(chunk);
@@ -2228,6 +2230,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
               worktreePath: repoRoot,
               taskId,
               phase: runPhase,
+              changedRef,
               onChunk: (chunk) => {
                 remoteOutput += chunk;
                 process.stdout.write(chunk);
@@ -2482,7 +2485,7 @@ function recordRunHistoryRow(row: {
   isolationNote?: string | null;
 }): void {
   try {
-    const { taskId, phase } = envToRunContext(process.env);
+    const { taskId, phase } = resolveCheckRunAttribution(process.env, row.root);
     getCheckStore(row.root, row.cacheDir).record({
       taskId,
       phase,

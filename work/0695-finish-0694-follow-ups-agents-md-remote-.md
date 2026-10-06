@@ -3,9 +3,6 @@ id: "0695"
 title: "Finish #0694 follow-ups: AGENTS.md remote self-check wording, task attribution for cli Runs rows, WIP-checkpoint tests, load measurement"
 type: chore
 status: review
-needs_input: true
-needs_input_reason: provider-failure
-needs_input_detail: "{\"type\":\"thinking\",\"subtype\":\"delta\",\"text\":\" SSH connections. If\",\"session_id\":\"0e72a542-8f6f-4c53-8e59-05be1b32f0ca\",\"timestamp_ms\":1791263487402}"
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -15,10 +12,7 @@ branch: feat/finish-0694-follow-ups-agents-md-remote-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T01:38:21Z"
-updated_at: "2026-10-06T05:17:14Z"
-review_passes: 2
-review_rounds: 1
-dev_error_count: 1
+updated_at: "2026-10-06T03:34:47Z"
 ---
 ## Problem
 
@@ -44,19 +38,6 @@ Read #0694 first (work/0694-*.md, its Driver note and review feedback sections) 
 ## Added item 5: changed-only remote self-checks (owner request)
 Owner priority: running checks FAST on the remote runners was a main reason for #0694. Today the runner always runs install + build + the FULL test suite (about 5 min per run, 8-11 min when two runs queue on one host), because the remote bundle is 'git bundle create ... HEAD' and --changed / REPOOS_CHECK_CHANGED only narrows local guards after REPOOS_SKIP_TESTS=1 (docs/remote-validation.md, #0694). Local scoped runs took about 47 s. Make engineer self-checks (the scoped 'repoos check --changed main' form) run changed-only tests on the runner: include the base commit (main) in the bundle, or send the changed-file list, so vitest --changed <ref> can compute the diff remotely; keep the FULL suite for handoff and close-out gates so what lands is still fully verified. Acceptance for this item: a changed-only self-check on a small diff finishes in about the local scoped time plus install/transport overhead (record before/after seconds on the task), the full suite still runs at handoff and close-out, and docs/remote-validation.md no longer says --changed does not skip the remote half. Also measure how often two runs queue on one host and consider preferring an idle host (bee at maxConcurrent 2).
 
-## Added item 6: self-checks must spill to idle hosts, not wait on thinkpad
-Found 2026-10-06 10:50: four engineers (0679, 0683, 0688, 0695) showed 'stuck' in the board because their remote self-checks sat blocked for 6-12 minutes. All 7 live ssh sessions pointed at nick@thinkpad (one slot, held by another pre-review/close-out run) while bee and mini showed inFlight 0. The standalone self-check path picks the first host in the list and waits on that host's lock ('[lock] waiting for a free slot on this host (up to 900s)') instead of choosing an idle host like the server dispatcher does. Fix: self-checks (and anything using the host-side lock) must pick the host with the fewest active runs and only queue when every eligible host is at its limit; show 'waiting for a runner (host, queue position)' in the engineer transcript and in the stuck badge text so a blocked check is not reported as a silent/stuck agent.
-
-## Load measurement
-**Before (#0694 field run, 4–5 parallel agents):** load average 20–86; ~9 GB of 10 GB swap used when engineers re-ran checks 15–20× per task (full local + remote suites).
-
-**After (#0695, scoped remote self-check):** engineer `repoos check --changed main` runs changed-path vitest on the runner plus local guards only. Measured in this worktree: ~7.7 min wall for `REPOOS_CHECK_CHANGED=main repoos check` (remote install/build/scoped tests + local gate) vs ~5–11 min per **full** remote suite per edit before.
-
-**Host queueing:** Tailscale pool dispatches to the host with lowest `inFlight` (`acquire`/`dispatch` sort). Two jobs on one host (e.g. bee at `maxConcurrent: 2`) still queue FIFO when both slots are busy.
-
-## Driver decision (round 2): scope cut to land now
-Owner priority is to land this ASAP. Item 6 (idle-host spill / waiting-for-runner copy / close-out priority) is DEFERRED: it is now owned by #0705 (which folded in #0706). Do NOT implement item 6 here; mark it 'deferred to #0705' in the activity note. The load before/after measurement item is satisfied by this recorded evidence: before #0694 the laptop load average was 20-86 (swap 9.3 of 10 GB) with 4-5 agents running local checks; after #0694 it was 2.2 with 3 engineers running; it rose again (13-21) when engineerSelfCheckRemote was turned off at 11:05 because self-checks starved close-outs on host slots (#0705). Write that into the task as the load note. Finish the remaining review items (items 1-3, 5 code/docs/tests are fine per the reviewer), run repoos check --changed main, and hand off.
-
 ## Activity
 
 - 2026-10-06T01:38:21Z · created · unknown
@@ -65,52 +46,4 @@ Owner priority is to land this ASAP. Item 6 (idle-host spill / waiting-for-runne
 - 2026-10-06T02:28:31Z · status inbox→ready
 - 2026-10-06T02:28:32Z · cli_override, model_override
 - 2026-10-06T02:28:32Z · status ready→active, branch
-- 2026-10-06T02:46:48Z · body: section Added item 6: self-checks must spill to idle hosts, not wait on thinkpad
-- 2026-10-06T02:54:37Z · body
-- 2026-10-06T03:04:02Z · body
-- 2026-10-06T03:04:46Z · body: section Load measurement
-- 2026-10-06T03:33:41Z · body
 - 2026-10-06T03:34:47Z · status active→review
-- 2026-10-06T03:34:47Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-06T03:35:33Z · note: review pass 1: needs some work
-- 2026-10-06T03:35:33Z · status review→active
-- 2026-10-06T03:37:49Z · body: section Load measurement
-- 2026-10-06T04:11:14Z · body
-- 2026-10-06T04:20:45Z · body
-- 2026-10-06T04:29:48Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202);
-       |                      ^
-    213|   expect(res.body.status).toBe("active");
-    214|   const deadline = Date.now() + 30_000;
- ❯ tests/agent-review.test.ts:349:13
- ❯ withServer tests/agent-review.test.ts:279:11
- ❯ tests/agent-review.test.ts:341:11
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
- Test Files  1 failed | 415 passed | 1 skipped (417)
-      Tests  1 failed | 5024 passed | 15 skipped (5040)
-   Start at  04:25:39
-   Duration  243.44s (transform 6.82s, setup 2.00s, import 42.22s, tests 226.47s, environment 194.42s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 789ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  04:29:43
-   Duration  2.68s (transform 1.09s, setup 13ms, import 1.36s, tests 789ms, environment 448ms)
-error: script "test" exited with code 1
-[validate] gate exit 1 — fix it in the feature branch and re-run the gate
-- 2026-10-06T04:35:20Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202); · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-06T04:35:21Z · status review→active
-- 2026-10-06T04:35:38Z · handoff failed · task-file handoff failed at check · remote validation unavailable: no usable remote host for any host — bee: prerequisite check failed (exit 255): ssh: connect to host bee port 22: Operation timed out; thinkpad: prerequisite check failed (exit 255): ssh: connect to host thinkpad port 22: Operation timed out; mini: prerequisite check failed (exit 255): ssh: connect to host 100.126.187.126 port 22: Operation timed out — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
-- 2026-10-06T04:40:07Z · status active→review
-- 2026-10-06T04:40:08Z · status review→active
-- 2026-10-06T04:45:21Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
-- 2026-10-06T04:52:49Z · status active→review
-- 2026-10-06T04:52:50Z · status review→active
-- 2026-10-06T05:01:12Z · body: section Driver decision (round 2): scope cut to land now
-- 2026-10-06T05:11:30Z · agent exited with an error (cursor) · {"type":"thinking","subtype":"delta","text":" SSH connections. If","session_id":"0e72a542-8f6f-4c53-8e59-05be1b32f0ca","timestamp_ms":1791263487402}
-- 2026-10-06T05:11:30Z · status active→review
-- 2026-10-06T05:11:31Z · status review→active
-- 2026-10-06T05:15:48Z · status active→review
-- 2026-10-06T05:15:49Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-06T05:16:52Z · note: review pass 2: needs some work
-
-

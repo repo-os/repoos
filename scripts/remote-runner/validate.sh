@@ -2,7 +2,7 @@
 #
 # Runs on the Hetzner runner VM. Invoked by RepoOS over ssh as:
 #
-#   /opt/repoos/validate.sh <bundle-path> <expected-sha> [artifacts-dir]
+#   /opt/repoos/validate.sh <bundle-path> <expected-sha> [artifacts-dir] [changed-ref]
 #
 # Restores the candidate tree from a git bundle, hard-verifies it is exactly the
 # SHA RepoOS asked for, then runs `bun install && bun run build && bun run test`
@@ -14,6 +14,8 @@ set -euo pipefail
 
 BUNDLE="${1:?usage: validate.sh <bundle-path> <expected-sha>}"
 SHA="${2:?usage: validate.sh <bundle-path> <expected-sha>}"
+# Optional: vitest changed-path ref (e.g. main) for engineer self-checks (#0695).
+CHANGED_REF="${4:-}"
 # Per-run artifacts dir (#0520): RepoOS passes a unique one so overlapping runs
 # never wipe each other's logs. Without it, fall back to the shared default.
 # Under $HOME, not /tmp or /var/tmp: on Linux, /tmp is commonly a RAM-backed
@@ -80,7 +82,7 @@ docker run --rm \
   -w /repo \
   --user "$(id -u):$(id -g)" \
   "$IMAGE" \
-  'set -o pipefail; bun install --frozen-lockfile && bun run build && printf "#!/bin/sh\nexec bun /repo/dist/cli/index.js \"\$@\"\n" > /tmp/repoos && chmod +x /tmp/repoos && export PATH="/tmp:$PATH" && bun run test 2>&1 | tee /artifacts/test-output.log'
+  "set -o pipefail; bun install --frozen-lockfile && bun run build && printf '#!/bin/sh\nexec bun /repo/dist/cli/index.js \"\$@\"\n' > /tmp/repoos && chmod +x /tmp/repoos && export PATH=\"/tmp:\$PATH\" && if [ -n \"${CHANGED_REF}\" ]; then bun run test -- --changed \"${CHANGED_REF}\"; else bun run test; fi 2>&1 | tee /artifacts/test-output.log"
 CODE=$?
 set -e
 
