@@ -55,8 +55,8 @@ import {
   hasDependencyInputChange,
   isCloseOutEnvironmentFailure,
   prepareCandidateDependencyInstall,
-  refreshMainDependencyInstall,
   resolveCloseOutCandidateMode,
+  refreshMainInstallAfterPublish,
   shouldRunCandidateInstall,
 } from "../core/dependency-install.js";
 
@@ -684,6 +684,21 @@ export class CloseOutOrchestrator {
     private onRemoteFallback?: (taskId: string, detail: string) => void,
   ) {}
 
+  /** Reuse the primary checkout's `node_modules` in a candidate worktree (#0674). */
+  private symlinkMainNodeModulesIntoCandidate(candidatePath: string, root: string): void {
+    const candidateNodeModules = join(candidatePath, "node_modules");
+    if (!existsSync(candidateNodeModules)) {
+      const rootNodeModules = join(root, "node_modules");
+      if (existsSync(rootNodeModules)) {
+        try {
+          symlinkSync(rootNodeModules, candidateNodeModules, "dir");
+        } catch {
+          /* fail-soft: the build step will report the real error */
+        }
+      }
+    }
+  }
+
   /** Report a finished close-out, swallowing observer errors (#0640). */
   private emitOutcome(
     taskId: string,
@@ -1270,17 +1285,7 @@ export class CloseOutOrchestrator {
     // per-candidate installs (#0674). Fail-soft so a missing install surfaces
     // as a build/check error rather than a misleading sync failure.
     if (resolveCloseOutCandidateMode(this.config) === "symlink-main") {
-      const candidateNodeModules = join(wtRes.path, "node_modules");
-      if (!existsSync(candidateNodeModules)) {
-        const rootNodeModules = join(root, "node_modules");
-        if (existsSync(rootNodeModules)) {
-          try {
-            symlinkSync(rootNodeModules, candidateNodeModules, "dir");
-          } catch {
-            /* fail-soft: the build step will report the real error */
-          }
-        }
-      }
+      this.symlinkMainNodeModulesIntoCandidate(wtRes.path, root);
     }
 
     // Reset candidate to main so it's a clean base for the merge.
@@ -1656,6 +1661,10 @@ export class CloseOutOrchestrator {
             reason: dependencies.reason ?? "could not prepare candidate dependencies",
           };
         }
+      } else if (resolveCloseOutCandidateMode(this.config) === "own-install") {
+        // No package-input change in this merge: reuse main's install via symlink
+        // instead of a redundant frozen install on every src-only close-out (#0674).
+        this.symlinkMainNodeModulesIntoCandidate(wtPath, root);
       }
 
       // A close-out used to run `bun run build` unconditionally here. That
@@ -2333,21 +2342,28 @@ export class CloseOutOrchestrator {
           .split("\n")
           .map((s) => s.trim())
           .filter(Boolean);
-        if (hasDependencyInputChange(publishedPaths)) {
-          const installRes = await refreshMainDependencyInstall(this.config, {
-            isCancelled: () => this.isCancelled(job.taskId),
-          });
-          if (installRes.cancelled) {
-            return { ok: false, cancelled: true, reason: CANCEL_REASON };
-          }
-          if (!installRes.ok) {
-            this.logger?.integration(
-              job.taskId,
-              "warn",
-              "post-publish dependency refresh failed — main may have a stale install until refreshed manually",
-              { reason: installRes.reason },
-            );
-          }
+        const headSha = postMergeHead.status === 0 ? postMergeHead.stdout.trim() : currentMainSha;
+        const installOutcome = await refreshMainInstallAfterPublish(
+          this.config,
+          currentMainSha,
+          headSha,
+          publishedPaths,
+          { isCancelled: () => this.isCancelled(job.taskId) },
+        );
+        if ("cancelled" in installOutcome && installOutcome.cancelled) {
+          return { ok: false, cancelled: true, reason: CANCEL_REASON };
+        }
+        if ("timedOut" in installOutcome && installOutcome.timedOut) {
+          return this.timeoutResult();
+        }
+        if (!("kind" in installOutcome) && !installOutcome.ok) {
+          const detail = installOutcome.reason ?? "unknown error";
+          return {
+            ok: false,
+            reason:
+              `dependency install failed: ${detail} — the merge to main succeeded but the primary ` +
+              "checkout was not refreshed. Refresh the install in main and retry Move to done.",
+          };
         }
       }
 

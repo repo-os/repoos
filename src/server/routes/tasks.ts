@@ -2826,6 +2826,19 @@ export const refreshInstallAndRetryIntegration: RouteHandler = async (ctx, _req,
     return json(res, 404, { error: `Task #${id} not found` });
   }
 
+  const reason = job.reason ?? "";
+  const { classifyFailure } = await import("../../core/close-out-failure.js");
+  const { isCloseOutEnvironmentFailure } = await import("../../core/dependency-install.js");
+  if (
+    classifyFailure(job.failedPhase, reason) !== "environment" &&
+    !isCloseOutEnvironmentFailure(reason)
+  ) {
+    return json(res, 409, {
+      error:
+        "Refresh install and retry is only for environment failures (stale or missing dependencies), not branch regressions",
+    });
+  }
+
   const { refreshMainDependencyInstall } = await import("../../core/dependency-install.js");
   const install = await refreshMainDependencyInstall(config);
   if (!install.ok) {

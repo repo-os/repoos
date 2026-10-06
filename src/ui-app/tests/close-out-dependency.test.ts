@@ -48,12 +48,12 @@ describe("isCloseOutEnvironmentFailure (#0674)", () => {
 });
 
 describe("candidate install policy (#0674)", () => {
-  it("uses own-install for every candidate when configured", () => {
+  it("own-install still only runs a frozen install when package inputs changed", () => {
     const { cfg, clean } = withToml('[closeOut]\ncandidate = "own-install"\n');
     try {
       expect(resolveCloseOutCandidateMode(cfg)).toBe("own-install");
-      expect(shouldRunCandidateInstall(cfg, ["src/a.ts"])).toBe(true);
-      expect(shouldRunCandidateInstall(cfg, null)).toBe(true);
+      expect(shouldRunCandidateInstall(cfg, ["src/a.ts"])).toBe(false);
+      expect(shouldRunCandidateInstall(cfg, ["package.json"])).toBe(true);
     } finally {
       clean();
     }

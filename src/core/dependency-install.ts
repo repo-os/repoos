@@ -48,7 +48,11 @@ export function resolvePostPublishShellCommand(config: RepoOSConfig): string | u
   return typeof cmd === "string" && cmd.trim() ? cmd.trim() : undefined;
 }
 
-/** Lockfile-inferred install argv, or null when no lockfile is present. */
+/**
+ * Lockfile-inferred install argv, or null when no lockfile is present.
+ * May return npm/pnpm/yarn/bun argv when those lockfiles exist — same #0449
+ * inference as before; not an endorsement of those tools for RepoOS itself.
+ */
 export function inferLockfileInstallCommand(
   projectRoot: string,
 ): { command: string; args: string[] } | null {
@@ -67,12 +71,17 @@ export function inferLockfileInstallCommand(
   return null;
 }
 
+/**
+ * Whether the validating gate should run a candidate-local install before build/check.
+ * Docs-only close-outs skip the whole non-docs branch, so they never call this (#0674).
+ * `symlink-main` installs only when the merged diff changes package inputs; `own-install`
+ * does the same but uses a private frozen install instead of symlinking when it runs.
+ */
 export function shouldRunCandidateInstall(
   config: RepoOSConfig,
   changedPaths: readonly string[] | null,
 ): boolean {
   if (!existsSync(join(config.root, "package.json"))) return false;
-  if (resolveCloseOutCandidateMode(config) === "own-install") return true;
   return changedPaths !== null && hasDependencyInputChange(changedPaths);
 }
 
@@ -304,6 +313,29 @@ export async function refreshMainDependencyInstall(
   opts: RunInstallOptions = {},
 ): Promise<RunInstallResult> {
   return runConfiguredInstall(config.root, config, "post-publish", opts);
+}
+
+export type PostPublishRefreshOutcome = { kind: "skipped" } | { kind: "ok" } | RunInstallResult;
+
+/**
+ * After a publish merge, refresh main when `baseMainSha..headSha` changed package inputs.
+ * Used by the close-out orchestrator and integration tests (#0674).
+ */
+export async function refreshMainInstallAfterPublish(
+  config: RepoOSConfig,
+  baseMainSha: string,
+  headSha: string,
+  publishedPaths: readonly string[],
+  opts: RunInstallOptions = {},
+): Promise<PostPublishRefreshOutcome> {
+  if (!publishedPaths.length || !hasDependencyInputChange(publishedPaths)) {
+    return { kind: "skipped" };
+  }
+  void baseMainSha;
+  void headSha;
+  const result = await refreshMainDependencyInstall(config, opts);
+  if (result.ok) return { kind: "ok" };
+  return result;
 }
 
 const ENV_PATTERNS: RegExp[] = [
