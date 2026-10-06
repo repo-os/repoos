@@ -12,7 +12,7 @@ branch: feat/docs-the-easter-eggs-bundle-workflow-as-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-06T14:31:00Z"
-updated_at: "2026-10-06T17:27:50Z"
+updated_at: "2026-10-06T17:27:51Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -83,4 +83,4 @@ error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INST
 - 2026-10-06T17:22:23Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-06T17:22:23Z · status review→active
 - 2026-10-06T17:27:50Z · status active→review
-
+- 2026-10-06T17:27:51Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
