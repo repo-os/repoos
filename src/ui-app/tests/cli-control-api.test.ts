@@ -99,5 +99,4 @@ describe("control API CLI", () => {
       log.mockRestore();
     });
   });
-
 });
