@@ -1019,6 +1019,7 @@ async function openDebuggerFromError(): Promise<void> {
       <div v-if="hint" class="mt-[13px]">
         <span
           class="tc-hint"
+          data-test-id="task-card-agent-hint"
           :class="hint.cls"
           :title="hint.title"
           @click.stop="

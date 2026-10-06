@@ -428,7 +428,11 @@ onMounted(() => {
             </div>
           </div>
 
-          <div v-if="row.hasKey && !formOpen[row.id]" class="mp-actions">
+          <div
+            v-if="row.hasKey && !formOpen[row.id]"
+            class="mp-actions"
+            data-test-id="model-providers-balance-meta"
+          >
             <span
               v-if="rowState(row.id).fetchedAt"
               class="mp-as-of"

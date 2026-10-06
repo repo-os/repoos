@@ -62,7 +62,7 @@
  *   POST /api/stories/:key/pm/message   -> send a message to the PM agent about this story (0515)
  *   POST /api/stories/:key/pm/interrupt -> stop the in-flight PM turn about this story
  *   GET  /api/stories/:key/pm/output    -> { lines, stats } the story PM transcript + live run stats
- *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
+ *   GET  /api/agents/running   -> [{ id, pid, startedAt, lastOutputAt? }] running agents
  *   GET  /api/agents/queued    -> [{ id, queuedAt }] agents waiting for a free maxConcurrentAgents slot
  *   GET  /api/agents/detect        -> { agents, cachedAt } — cached results, instant
  *   GET  /api/agents/detect/stream -> SSE: event:agent per agent, event:done at end
