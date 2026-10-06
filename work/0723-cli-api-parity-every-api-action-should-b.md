@@ -12,7 +12,7 @@ branch: feat/cli-api-parity-every-api-action-should-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
-updated_at: "2026-10-06T15:55:46Z"
+updated_at: "2026-10-06T16:17:01Z"
 dev_error_count: 1
 ---
 ## Problem
