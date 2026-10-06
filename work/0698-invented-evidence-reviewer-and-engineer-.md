@@ -1,5 +1,4 @@
 ---
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-06T15:38:56.453Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
 id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
@@ -82,4 +81,5 @@ error: script "test" exited with code 1
 - 2026-10-06T15:17:54Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-06T15:19:33Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
 - 2026-10-06T15:38:53Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
+
 
