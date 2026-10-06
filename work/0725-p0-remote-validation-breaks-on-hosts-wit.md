@@ -76,3 +76,4 @@ URGENT: this blocks all remote validation on this board. Read #0717's diff (src/
 - 2026-10-06T17:04:01Z · body
 - 2026-10-06T17:20:54Z · body
 - 2026-10-06T17:27:08Z · status active→review
+- 2026-10-06T17:27:08Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
