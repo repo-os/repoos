@@ -2,7 +2,7 @@
 id: "0725"
 title: "P0: remote validation breaks on hosts with the old validate.sh since #0717: new bundle has no HEAD ref, old script clones an empty repo"
 type: bug
-status: active
+status: review
 priority: p0
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/p0-remote-validation-breaks-on-hosts-wit
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T16:15:47Z"
-updated_at: "2026-10-06T16:16:23Z"
+updated_at: "2026-10-06T17:27:07Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ URGENT: this blocks all remote validation on this board. Read #0717's diff (src/
 - 2026-10-06T16:15:59Z · cli_override, model_override
 - 2026-10-06T16:16:14Z · status inbox→ready
 - 2026-10-06T16:16:23Z · status ready→active, branch
+- 2026-10-06T17:27:07Z · status active→review
