@@ -263,7 +263,8 @@ export const NOTIFICATION_TYPE_DESCRIPTIONS: Record<NotificationType, string> = 
   spendThreshold: "Provider-reported board spend reached your alert threshold.",
   awaitingVisualCheck: "A UI task is in review — open the preview and verify it in a browser.",
   remoteFallback: "Remote validation was on but the gate ran on this machine instead.",
-  ctoAction: "The CTO or you ran an allowlisted recovery action (restart, refresh install, re-queue).",
+  ctoAction:
+    "The CTO or you ran an allowlisted recovery action (restart, refresh install, re-queue).",
 };
 
 export const useNotificationsStore = defineStore("notifications", () => {

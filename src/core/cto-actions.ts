@@ -55,18 +55,12 @@ export const CTO_ACTION_LABELS: Record<CtoSafeActionId, string> = {
  * Pure rate-limit check: `recent` is ISO timestamps within the last hour for
  * this action's scope key.
  */
-export function ctoActionRateLimitExceeded(
-  action: CtoSafeActionId,
-  recentCount: number,
-): boolean {
+export function ctoActionRateLimitExceeded(action: CtoSafeActionId, recentCount: number): boolean {
   const limit = CTO_ACTION_RATE_LIMITS[action].maxPerHour;
   return recentCount >= limit;
 }
 
-export function ctoActionRateScopeKey(
-  action: CtoSafeActionId,
-  taskId: string | null,
-): string {
+export function ctoActionRateScopeKey(action: CtoSafeActionId, taskId: string | null): string {
   const spec = CTO_ACTION_RATE_LIMITS[action];
   if (spec.scope === "global") return "global";
   return taskId ?? "global";

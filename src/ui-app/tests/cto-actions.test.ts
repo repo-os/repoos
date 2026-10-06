@@ -27,10 +27,7 @@ describe("cto.actions config (#0688)", () => {
       "utf8",
     );
     const cfg = loadConfig(dir);
-    expect(configuredCtoActions(cfg)).toEqual([
-      "restart-stalled-agent",
-      "refresh-main-install",
-    ]);
+    expect(configuredCtoActions(cfg)).toEqual(["restart-stalled-agent", "refresh-main-install"]);
   });
 
   it("exposes Settings schema and supported TOML key", () => {
@@ -48,7 +45,12 @@ describe("CTO safe action gate", () => {
     const result = await runCtoSafeAction(
       {
         config,
-        index: { getTask: () => null, getTasks: () => [], applyFileChange: () => {}, refreshBranches: () => {} } as never,
+        index: {
+          getTask: () => null,
+          getTasks: () => [],
+          applyFileChange: () => {},
+          refreshBranches: () => {},
+        } as never,
         runner: {} as never,
         jobCoordinator: { allJobs: () => [], getJob: () => null, enqueue: () => null } as never,
         attentionEvents,
