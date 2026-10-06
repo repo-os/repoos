@@ -177,11 +177,7 @@ describe("persistentSlowNotices", () => {
   });
 
   it("stays quiet at 2 of 10", () => {
-    const history: CheckRunSample[] = [
-      ...fiveAt(100_000),
-      pass(400_000),
-      pass(400_000),
-    ];
+    const history: CheckRunSample[] = [...fiveAt(100_000), pass(400_000), pass(400_000)];
     expect(persistentSlowNotices({ history, multiplier: 1.5 })).toHaveLength(0);
   });
 });

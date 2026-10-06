@@ -1024,6 +1024,16 @@ onUnmounted(() => {
                   :disabled="config.saving"
                   @update:checked="(v: boolean) => (form[f.key] = v)"
                 />
+                <Input
+                  v-else-if="f.type === 'number'"
+                  :model-value="form[f.key] == null ? '' : String(form[f.key])"
+                  type="number"
+                  :min="f.key === 'attention.slowRunMultiplier' ? 1 : 0"
+                  :step="f.key === 'attention.slowRunMultiplier' ? 0.1 : 1"
+                  style="width: 100px"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
+                />
               </div>
               <span v-if="f.restartRequired" class="restart-badge">restart required</span>
             </div>

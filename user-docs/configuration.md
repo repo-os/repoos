@@ -389,11 +389,13 @@ they never travel with the repo.
 
 ```toml
 attention.spendAlertUsd = 0
+attention.slowRunMultiplier = 1.5
 ```
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `attention.spendAlertUsd` | number | `0` | yes | When provider-reported board spend reaches this USD total, the notification bell shows a spend alert. `0` disables the alert. Estimates and unknown costs are never counted. Edit it in **Settings → Notifications**. The same feed is available as `GET /api/attention` (see [Notices and notifications](/notifications)). |
+| `attention.slowRunMultiplier` | number | `1.5` | yes | While a check, handoff gate, close-out stage, or bundle upload is running, flag it in the bell when elapsed time exceeds this multiple of the median of recent passing runs of the same kind (at least five samples). Must be ≥ 1. Edit it in **Settings → General**. See [Checks — slow-run alerts](/check#slow-run-alerts-0720). |
 
 ## Close-out (Move to done)
 
