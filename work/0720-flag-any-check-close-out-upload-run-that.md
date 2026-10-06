@@ -2,7 +2,7 @@
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-06T14:30:17Z"
+updated_at: "2026-10-06T17:22:05Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Read src/server/attention-feed.ts and attention-notify.ts (silent-run items), sr
 - 2026-10-06T14:26:08Z · cli_override, model_override
 - 2026-10-06T14:30:13Z · status inbox→ready
 - 2026-10-06T14:30:17Z · status ready→active, branch
+- 2026-10-06T17:22:05Z · status active→review
