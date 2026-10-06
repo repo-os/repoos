@@ -51,6 +51,17 @@ describe("invented evidence defaults (#0698)", () => {
     expect(mission).toMatch(/fabricate device test results/i);
   });
 
+  it("does not add the evidence block to non-engineer missions", () => {
+    const mission = missionFor(
+      task({ status: "active" }),
+      "feat/invented-evidence",
+      "/tmp/worktree",
+      reviewer as Agent,
+      cfg as never,
+    );
+    expect(mission).not.toContain("## Evidence — never invent");
+  });
+
   it("includes invented-evidence checks in the built-in review mission", () => {
     const mission = reviewMission(task(), reviewer as Agent, "/tmp/worktree", "main", cfg as never);
     expect(mission).toMatch(/invented or/i);

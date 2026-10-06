@@ -13,6 +13,7 @@ import type { RepoOSConfig } from "../../core/types.js";
 import { createTask, patchTask, pmMessage, taskAction } from "../../server/routes/tasks.js";
 import {
   flagNeedsHumanStepIfNeeded,
+  flagTaskSpecFlagsIfNeeded,
   flagUnderspecifiedIfNeeded,
   sweepUnderspecifiedTasks,
 } from "../../server/task-underspecified-flag.js";
@@ -495,6 +496,46 @@ ${body}`;
 }
 
 describe("needs-human-step flag (#0698)", () => {
+  const humanOnlyBody = WELL_SPECIFIED_BODY.replace(
+    "- [ ] The flow works end to end",
+    "- [ ] Verify on a real device with production credentials",
+  );
+
+  it("keeps needs-human-step after start when acceptance criteria still need a human", () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(
+        fx.taskPath,
+        taskFileText(
+          "0698",
+          "active",
+          humanOnlyBody,
+          "needs_input: true\nneeds_input_reason: needs-human-step\nneeds_input_detail: device\n",
+        ),
+      );
+      const task = readTaskFile(fx);
+      expect(task.needsInputReason).toBe("needs-human-step");
+      flagTaskSpecFlagsIfNeeded(fx.config, task);
+      const onDisk = readTaskFile(fx);
+      expect(onDisk.needsInput).toBe(true);
+      expect(onDisk.needsInputReason).toBe("needs-human-step");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("flags needs-human-step when human-only acceptance criteria are added while active", () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(fx.taskPath, taskFileText("0698", "active", humanOnlyBody));
+      const flagged = flagNeedsHumanStepIfNeeded(fx.config, readTaskFile(fx));
+      expect(flagged).not.toBeNull();
+      expect(flagged!.needsInputReason).toBe("needs-human-step");
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("clears needs-human-step when acceptance criteria no longer mention human-only work", () => {
     const fx = makeFixture("inbox", "needs_input: true\nneeds_input_reason: needs-human-step\n");
     try {
