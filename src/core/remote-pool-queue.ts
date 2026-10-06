@@ -16,9 +16,7 @@ export function formatRemotePoolQueueMessage(
   info: RemotePoolQueueInfo,
   capabilities: string[] = [],
 ): string {
-  const need = capabilities.length
-    ? `waiting for a host with ${capabilities.join(", ")} — `
-    : "";
+  const need = capabilities.length ? `waiting for a host with ${capabilities.join(", ")} — ` : "";
   return (
     `[waiting for a runner on ${info.host} (queue position ${info.position}) — ` +
     `queued behind ${info.ahead} other remote run(s) — ${need}` +
