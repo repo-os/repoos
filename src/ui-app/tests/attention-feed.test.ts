@@ -7,6 +7,7 @@ import {
   isProviderFailureReason,
   taskAwaitingVisualCheck,
 } from "../../core/attention.js";
+import { collectRunningRuns } from "../../server/attention-feed.js";
 import type { Task } from "../../core/types.js";
 import { DEFAULT_CONFIG } from "../../core/config.js";
 
@@ -126,6 +127,43 @@ describe("buildAttentionFeed", () => {
       expect(item.at).toMatch(/^\d{4}-/);
       expect(["info", "warning", "error"]).toContain(item.severity);
     }
+  });
+});
+
+describe("collectRunningRuns (#0720)", () => {
+  it("prefers the remote row when the same task is also in TaskCheckManager", () => {
+    const now = Date.parse("2026-10-06T12:00:00.000Z");
+    const runs = collectRunningRuns(
+      {
+        runningRuns: () => [
+          {
+            id: "handoff-finalize:1",
+            taskId: "0042",
+            kind: "handoff-finalize",
+            scope: "full",
+            machine: null,
+            startedAt: "2026-10-06T11:00:00.000Z",
+          },
+        ],
+      },
+      [
+        {
+          taskId: "0042",
+          host: "bee",
+          phase: "pre-review",
+          scope: "full",
+          startedAt: "2026-10-06T11:00:00.000Z",
+          stage: "upload",
+          uploadBytes: 1024,
+          uploadSeconds: 120,
+        },
+      ],
+      now,
+      undefined,
+    );
+    expect(runs).toHaveLength(1);
+    expect(runs[0].remote).toBe(true);
+    expect(runs[0].id).toMatch(/^remote:/);
   });
 });
 
