@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-06T01:17:26Z"
+review_passes: 2
 id: "0674"
 title: "Close-out dependency handling: keep main's install fresh and stop mislabelling environment errors"
 type: bug
@@ -12,9 +14,7 @@ branch: feat/close-out-dependency-handling-keep-main-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:30Z"
-updated_at: "2026-10-06T01:16:45Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-06T00:49:45Z · status active→review
 - 2026-10-06T00:50:33Z · status review→active
 - 2026-10-06T01:16:45Z · status active→review
+
