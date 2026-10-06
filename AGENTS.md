@@ -374,9 +374,11 @@ cannot tell from the code alone:
   source task superseded when the bundle lands. Never fold easter eggs INTO a
   release-critical or machinery task — a failing small item would hold up the
   big one. Keep a bundle to about 3–6 items in one area family, file it p2/p3,
-  and run it while big tasks soak or wait. When the human explicitly asks for a
-  hotfix on `main`, the direct-commit exception above still applies. See
-  `docs/easter-eggs-bundles.md`; #0721 is the worked example.
+  and run it while big tasks soak or wait. A bundle is an ordinary task: it still
+  runs the gate and goes to review — it just pays that overhead once for several
+  fixes. When the human explicitly asks for a hotfix on `main`, the direct-commit
+  exception above still applies. See `docs/easter-eggs-bundles.md`; #0721 is the
+  worked example.
 - **Explicitly authorized manual recovery only:** if the human directs you to
   hand-land a stale branch outside the normal pipeline, check other tasks' files —
   `git diff main...HEAD --name-only | grep '^work/'` — and
