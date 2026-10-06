@@ -194,6 +194,7 @@ import { CTOMonitor } from "./cto-monitor.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { ServeReaper, isPortListening } from "./serve-reaper.js";
 import { isLoopbackAddress, localTokenMatches, writeLocalCliToken } from "./local-token.js";
+import { recordApiRouteCatalog } from "./api-route-catalog.js";
 import { testModelCombination } from "./model-test.js";
 import {
   generateReleaseNotes,
@@ -3161,6 +3162,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/service/disable", disableAutoStartRoute);
   router.register("POST", "/api/service/remove", removeServiceRoute);
   router.register("POST", "/api/service/health", healthCheckRoute);
+
+  recordApiRouteCatalog(router);
 
   // UI routes
   router.register("GET", "/manifest.webmanifest", serveManifest);

@@ -353,6 +353,13 @@ export function cmdMv(
       return;
     }
     if (status === "review" && handoffRequestFromRunner(id)) return;
+    if (status === "review") {
+      console.error(
+        c.dim(
+          `  For a synchronous handoff with checks, use \`repoos review ${id}\` instead of \`repoos mv review\`.`,
+        ),
+      );
+    }
     if (status === "done" && !opts.force) {
       const existing = repoos.getTask(id);
       if (existing && existing.status !== "done" && existing.branch) {
@@ -372,7 +379,7 @@ export function cmdMv(
           console.error(
             c.dim(
               `  "repoos mv done" only flips the status flag; it never merges code. ` +
-                `Merge the branch into ${mainBranch} yourself first (see docs/close-out-pipeline.md), ` +
+                `Use \`repoos done ${id}\` for the real close-out pipeline, or merge the branch into ${mainBranch} yourself first (see docs/close-out-pipeline.md), ` +
                 `or pass --force-not-merged if you have already landed the code some other way.`,
             ),
           );
