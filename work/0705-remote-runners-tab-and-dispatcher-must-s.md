@@ -2,7 +2,7 @@
 id: "0705"
 title: Remote runners tab and dispatcher must see standalone self-check slot holders (they starved close-outs); add refresh feedback
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: provider-failure
 needs_input_detail: "{\"type\":\"tool_call\",\"subtype\":\"completed\",\"call_id\":\"toolu_bdrk_013Dkabx3PDrnQ8hZqVTTSbv\",\"tool_call\":{\"editToolCall\":{\"args\":{\"path\":\"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts\",\"streamContent\":\"  async acquire(\n    capabilities: string[],\n    opts: {\n      /** Fired once this run joins the FIFO queue (#0706: host + position too). */\n      onQueue?: (info: { ahead: number; host: string }) => void;\n      deadlineAt?: "
@@ -15,7 +15,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T09:18:48Z"
+updated_at: "2026-10-06T10:26:35Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ac677e5a to be92054c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: ac677e5aa2358c37ab8263f1ff88fb56da7c71f1
 review_rounds: 2
@@ -191,3 +191,4 @@ src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahea
    Duration  2.70s (transform 1.10s, setup 13ms, import 1.37s, tests 792ms, environment 444ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-06T10:26:35Z · status active→review
