@@ -1545,6 +1545,23 @@ process.exit(1);
       expect(onDisk.needsInput).toBe(true);
       expect(onDisk.needsInputReason).toBe("provider-failure");
       expect(onDisk.needsInputDetail).toContain("402");
+
+      const hangBin = `#!/usr/bin/env node
+process.stdout.write("resumed after provider error\\n");
+setTimeout(() => process.exit(0), 50);
+`;
+      writeFileSync(join(fx.bin, "claude"), hangBin, { mode: 0o755 });
+      runner.start(task, "feat/x", agent("claude code"), { cwd });
+      await waitFor(() => runner.isRunning("0001"), "resumed turn starts", 5000);
+      await waitFor(() => !runner.isRunning("0001"), "resumed turn exits", 5000);
+      const afterResume = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      expect(afterResume.needsInput).toBe(false);
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;

@@ -1274,6 +1274,8 @@ export interface ModelProviderUsageWindow {
 /** OpenRouter live spend (GET /api/model-providers/openrouter/usage). */
 export interface OpenRouterUsage {
   kind: "openrouter";
+  /** When this snapshot was fetched from the provider API. */
+  at?: string;
   credits: {
     totalCredits: number | null;
     totalUsage: number | null;
@@ -1296,6 +1298,7 @@ export interface OpenRouterUsage {
 /** opencode Go live usage (GET /api/model-providers/opencode-go/usage). */
 export interface OpenCodeGoUsage {
   kind: "opencode-go";
+  at?: string;
   windows: ModelProviderUsageWindow[];
   unrecognized: boolean;
 }
@@ -1303,6 +1306,7 @@ export interface OpenCodeGoUsage {
 /** DeepInfra live spend (GET /api/model-providers/deepinfra/usage). */
 export interface DeepInfraUsage {
   kind: "deepinfra";
+  at?: string;
   checklist: {
     /**
      * Ready-to-spend credit — DeepInfra's `stripe_balance` with its sign
