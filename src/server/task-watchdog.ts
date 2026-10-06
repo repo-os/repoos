@@ -465,7 +465,11 @@ export class TaskWatchdog {
     if (this.scanning) return;
     this.scanning = true;
     const wallNow = Date.now();
-    const stalenessNow = effectiveStalenessNow(wallNow, this.lastWatchdogTickMs, WATCHDOG_INTERVAL_MS);
+    const stalenessNow = effectiveStalenessNow(
+      wallNow,
+      this.lastWatchdogTickMs,
+      WATCHDOG_INTERVAL_MS,
+    );
     this.lastWatchdogTickMs = wallNow;
     try {
       // The `active` status is scanned for the dead/stalled ENGINEER shape

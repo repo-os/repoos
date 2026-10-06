@@ -53,10 +53,10 @@ describe("DegenerateOutputTracker", () => {
     const t = new DegenerateOutputTracker({
       repeatCharThreshold: 500,
       repeatLineThreshold: 50,
-      bytesWithoutToolThreshold: 100,
+      bytesWithoutToolThreshold: 200,
     });
-    expect(t.observe("x".repeat(50), false)).toBe("ok");
-    expect(t.observe("y".repeat(50), true)).toBe("ok");
-    expect(t.observe("z".repeat(50), false)).toBe("ok");
+    expect(t.observe("x".repeat(80), false)).toBe("ok");
+    expect(t.observe("y".repeat(80), true)).toBe("ok");
+    expect(t.observe("z".repeat(80), false)).toBe("ok");
   });
 });

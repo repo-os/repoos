@@ -6323,12 +6323,7 @@ export class AgentRunner {
    * a stall warning immediately — the periodic check only ever needs to raise
    * the flag, never lower it.
    */
-  private lineTouched(
-    taskId: string,
-    session: Session,
-    raw: string,
-    hadToolCall = false,
-  ): void {
+  private lineTouched(taskId: string, session: Session, raw: string, hadToolCall = false): void {
     const usageChanged = this.applyUsage(taskId, session, raw);
     session.lastOutputAt = now();
     session.silentAwakeMs = 0;
@@ -7077,10 +7072,7 @@ export class AgentRunner {
     const session = this.sessions.get(taskId);
     const running = this.entries.has(taskId);
     const lastOutputAt = session?.lastOutputAt ?? null;
-    const stalled =
-      running &&
-      !!session &&
-      (session.silentAwakeMs ?? 0) >= this.stallTimeoutMs;
+    const stalled = running && !!session && (session.silentAwakeMs ?? 0) >= this.stallTimeoutMs;
     return {
       accumulatedMs: session?.accumulatedMs ?? 0,
       turnStartedAt: running ? (session?.turnStartedAt ?? null) : null,
@@ -7124,8 +7116,7 @@ export class AgentRunner {
       session.lastStallTickMs = wallNow;
       if (this.entries.has(taskId)) {
         session.silentAwakeMs =
-          (session.silentAwakeMs ?? 0) +
-          creditIdleMs(delta, this.stallCheckIntervalMs);
+          (session.silentAwakeMs ?? 0) + creditIdleMs(delta, this.stallCheckIntervalMs);
       }
       if (session.stalledEmitted) continue;
       if (this.snapshotStats(taskId).stalled) {
@@ -7326,12 +7317,8 @@ export class AgentRunner {
 
       const errorReason =
         status === "errored"
-          ? (
-              session.providerFailureDetail ??
-              this.lastFailureLine(session)
-            )
-              .trim()
-              .slice(0, 500) || null
+          ? (session.providerFailureDetail ?? this.lastFailureLine(session)).trim().slice(0, 500) ||
+            null
           : null;
       this.db.upsertSession({
         sessionId: finalSessionId,
