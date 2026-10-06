@@ -53,6 +53,7 @@ export const DIAGNOSABLE_REASONS = [
   "dev-error",
   "check-failed-after-retries",
   "watchdog-stuck",
+  "identical-handoff-failures",
 ] as const;
 export type DiagnosableReason = (typeof DIAGNOSABLE_REASONS)[number];
 
@@ -79,6 +80,7 @@ function transcriptSessionIdFor(reason: DiagnosableReason, taskId: string): stri
     // transcript (plus the task logs) carries the failure.
     case "dev-error":
     case "check-failed-after-retries":
+    case "identical-handoff-failures":
       return taskId;
     // Nothing ran — logs are all there is.
     case "watchdog-stuck":

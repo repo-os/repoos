@@ -57,6 +57,14 @@ import type { ReviewReport, ReviewRunResult } from "./review.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { commitTaskFile, worktreeStatus, worktreePathForBranch } from "../core/git.js";
 import { scheduleHandoffSignalRetry } from "./handoff.js";
+import {
+  IDENTICAL_HANDOFF_FAILURES_REASON,
+  assessHandoffFailureLoop,
+  parkTaskForIdenticalHandoffFailures,
+  readTaskBranchHead,
+  scheduleIdenticalCheckFailureEngineerRestart,
+  shouldParkForIdenticalHandoffFailures,
+} from "./handoff-failure-loop.js";
 
 const DEFAULT_STALENESS_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 const WATCHDOG_INTERVAL_MS = 60 * 1000; // Check every 1 minute
@@ -487,6 +495,7 @@ export class TaskWatchdog {
     // A task the human is already flagged on is not stuck-but-unnoticed: don't
     // auto-surface or re-escalate it.
     if (task.needsInput) return false;
+    if (task.needsInputReason === IDENTICAL_HANDOFF_FAILURES_REASON) return false;
     // An agent process is running, or a server-side handoff is finalizing.
     if (this.runner.isRunning(task.id)) return false;
     if (this.runner.isHandoffInFlight(task.id)) return false;
@@ -565,6 +574,8 @@ export class TaskWatchdog {
       this.escalateToNeedsInput(current, reason);
       return;
     }
+
+    if (this.handleIdenticalHandoffFailureLoop(current)) return;
 
     // #0271 follow-up: `exited-without-handoff` is the one dead-session shape
     // with a plausible quick fix — the agent may have simply mis-emitted the
@@ -654,10 +665,48 @@ export class TaskWatchdog {
    * reason in one Activity entry, then commit so main stays mergeable and the
    * indexing write surfaces the change to the board + ntfy notification.
    */
+  /**
+   * When the branch tip has not moved since the last identical check failure,
+   * do not auto-surface into `review` (that only re-runs validation). Park at
+   * the cap, or restart the engineer once with the failure text (#0693).
+   */
+  private handleIdenticalHandoffFailureLoop(task: Task): boolean {
+    const head = readTaskBranchHead(this.config, task);
+    const state = assessHandoffFailureLoop(task, head);
+    if (!state.lastFailureIsCheck || !state.branchUnchanged) return false;
+
+    if (shouldParkForIdenticalHandoffFailures(task, head)) {
+      const detail = state.lastFailure?.detail ?? "check failed";
+      parkTaskForIdenticalHandoffFailures(this.config, task, detail, (absPath) =>
+        this.index.applyFileChange(absPath),
+      );
+      return true;
+    }
+
+    if (
+      !this.runner.isRunning(task.id) &&
+      state.lastFailure &&
+      scheduleIdenticalCheckFailureEngineerRestart(
+        this.config,
+        task,
+        state.lastFailure,
+        this.runner,
+        (absPath) => this.index.applyFileChange(absPath),
+      )
+    ) {
+      return true;
+    }
+
+    // Unchanged tree with a known check failure — surfacing to `review` would
+    // only spin validation again; stay quiet until the branch moves or a human acts.
+    return true;
+  }
+
   private surfaceTask(task: Task, target: "ready" | "review", reason: string): void {
     const current = this.readCurrent(task);
     if (current.status !== "active") return;
     if (alreadySurfaced(current.body)) return;
+    if (target === "review" && this.handleIdenticalHandoffFailureLoop(current)) return;
     try {
       const note = `watchdog: auto-surfaced stuck task · status active→${target} · ${reason} · next step: ${suggestNextStep(reason)}`;
       current.status = target;

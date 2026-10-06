@@ -13,6 +13,18 @@ and git history, and desyncs the task file from its branch copy (this exact mist
 a real, confirmed merge-conflict failure later in this session — see "Task file drift"
 below).**
 
+## Watchdog ↔ handoff validation loops (#0693)
+
+A stuck `active` task with work in its branch used to be auto-surfaced to `review`, which
+re-ran server-side `repoos check`, failed the same way on an unchanged branch tip, and
+bounced back to `active` — repeating every few minutes. RepoOS now fingerprints check-step
+handoff failures (`last_handoff_failure_sha` / Activity log), skips redundant validation
+while the branch tip is unchanged, restarts a dead engineer once with the failure text, and
+after three identical consecutive failures parks the task (`needs_input` reason
+`identical-handoff-failures`) instead of re-running remote checks. Paused tasks are exempt
+from watchdog surfacing and from the CTO monitor's idle completion nudge when no engineer
+session is running. See `src/server/handoff-failure-loop.ts` and `src/server/task-watchdog.ts`.
+
 ## Running the control-plane server: choose one owner
 
 There are two supported ways to run the server on port 7171. **Use exactly one at a
