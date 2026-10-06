@@ -12,7 +12,7 @@ branch: feat/remote-validation-probe-hosts-at-startup
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:48Z"
-updated_at: "2026-10-06T01:49:29Z"
+updated_at: "2026-10-06T02:11:13Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-06T01:49:28Z · status inbox→ready
 - 2026-10-06T01:49:29Z · cli_override, model_override
 - 2026-10-06T01:49:29Z · status ready→active, branch
+- 2026-10-06T02:11:13Z · body
