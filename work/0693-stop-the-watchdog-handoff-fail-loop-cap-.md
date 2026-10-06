@@ -49,3 +49,4 @@ Overlaps #0678 (provider failures and silent runs, watchdog) and #0679 (close-ou
 - 2026-10-06T02:05:47Z · body
 - 2026-10-06T02:39:14Z · body
 - 2026-10-06T02:40:39Z · status active→review
+- 2026-10-06T02:40:39Z · note: shots: skipped — the diff (13 changed paths) touches no [[preview.paths]] globs — no UI change to capture
