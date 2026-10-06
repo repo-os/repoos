@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 0e8ba4e203bf0659fcf5ca704c0f343c0bb67b30
 id: "0709"
 title: "P0: scrapeProviderFailure kills healthy agents on any output line containing '402', 'billing' or 'rate limit'"
 type: bug
@@ -42,3 +44,4 @@ Smallest fix: in scrapeProviderFailure only inspect structured fields for lines 
 - 2026-10-06T07:37:21Z · status active→review
 - 2026-10-06T07:37:21Z · status review→active
 - 2026-10-06T07:54:22Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
