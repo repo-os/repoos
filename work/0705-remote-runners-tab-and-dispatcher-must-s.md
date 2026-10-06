@@ -15,7 +15,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: claude-sonnet-5-thinking-high
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T07:20:08Z"
+updated_at: "2026-10-06T07:25:49Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 9b8efe3e176dfcaaed9b4b43dc9048bee66820c1
 review_rounds: 1
@@ -110,3 +110,4 @@ error: script "test" exited with code 1
 - 2026-10-06T07:20:08Z · agent exited with an error (cursor) · {"type":"thinking","subtype":"delta","text":"irming close-out be","session_id":"4de1a743-5ba4-41d0-961c-6f00a70b14eb","timestamp_ms":1791271208402}
 - 2026-10-06T07:20:08Z · status active→review
 - 2026-10-06T07:20:08Z · status review→active
+- 2026-10-06T07:25:49Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
