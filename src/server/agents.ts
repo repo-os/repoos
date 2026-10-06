@@ -45,7 +45,7 @@ import {
 } from "../core/config.js";
 import { notifyAttentionAfterSession, notifyAttentionAgentStalled } from "./attention-notify.js";
 import { parseTaskAreas } from "../core/areas.js";
-import { fileCommittedClean, currentBranch } from "../core/git.js";
+import { commitTaskFile, fileCommittedClean, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { buildStoryContext, storyContextSummary } from "../core/story-context.js";
@@ -7837,6 +7837,7 @@ export class AgentRunner {
       });
       recordChange(current, `handoff failed · ${reason}`);
       writeFileSync(task.absPath, serializeTask(current));
+      commitTaskFile(this.config.root, task.absPath, `docs(${current.id}): record handoff failure`);
     } catch (err) {
       // Fail-soft: if we can't persist, just log — don't crash the runner
       console.error(
