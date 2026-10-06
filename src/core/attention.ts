@@ -129,7 +129,7 @@ export function isProviderFailureReason(reason: string | null | undefined): bool
   if (!reason) return false;
   const r = reason.toLowerCase();
   return (
-    r.includes("402") ||
+    /\b402\b/.test(r) ||
     r.includes("insufficient credit") ||
     r.includes("payment required") ||
     r.includes("rate limit") ||
