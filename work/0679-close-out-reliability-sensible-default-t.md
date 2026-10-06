@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-10-06T04:04:54Z"
 review_passes: 1
 id: "0679"
@@ -58,4 +59,5 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T04:04:09Z · status active→review
 - 2026-10-06T04:04:09Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T04:04:53Z · note: review pass 1: good to go
+
 
