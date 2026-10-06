@@ -81,9 +81,7 @@ import {
   effectiveCloseOutTimeoutMs,
   recordCloseOutGateTimingStats,
 } from "../core/close-out-timing.js";
-import {
-  recordTaskCloseOutGateDuration,
-} from "./close-out-repair.js";
+import { recordTaskCloseOutGateDuration } from "./close-out-repair.js";
 import { summarizeCheckFailure } from "../core/check-failure-summary.js";
 import { checkFailureSignature, summarizeCheckOutput } from "../core/check-results.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
@@ -1135,9 +1133,7 @@ export class CloseOutOrchestrator {
               job,
               "validating",
               reason,
-              gateHandback
-                ? () => this.onCloseOutGateFailure?.(job.taskId, reason)
-                : undefined,
+              gateHandback ? () => this.onCloseOutGateFailure?.(job.taskId, reason) : undefined,
             );
           }
         }

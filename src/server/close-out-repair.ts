@@ -72,7 +72,11 @@ export function scheduleCloseOutRepairHandback(
         task.id,
         `✗ could not move task to active for close-out repair: ${(err as Error).message}`,
       );
-      runner.persistHandoffFailure(task.id, task, `close-out repair status change failed · ${reason}`);
+      runner.persistHandoffFailure(
+        task.id,
+        task,
+        `close-out repair status change failed · ${reason}`,
+      );
       return;
     }
 
@@ -94,9 +98,10 @@ export function scheduleCloseOutRepairHandback(
     try {
       const raw = readFileSync(task.absPath, "utf8");
       const doc = parseDocument(raw);
-      const count = (typeof doc.data.close_out_repair_count === "number"
-        ? doc.data.close_out_repair_count
-        : 0) + 1;
+      const count =
+        (typeof doc.data.close_out_repair_count === "number"
+          ? doc.data.close_out_repair_count
+          : 0) + 1;
       doc.data.close_out_repair_count = count;
       const keys = Object.keys(doc.data).filter((k) => k !== "close_out_repair_count");
       keys.unshift("close_out_repair_count");

@@ -79,10 +79,7 @@ export function recordCloseOutGateTimingStats(
  * Adaptive default when `[closeOut] timeoutMs` is not set in repoos.toml:
  * `max(10 min, 3 × last successful gate)`, or 10 min when there is no history.
  */
-export function adaptiveCloseOutTimeoutMs(
-  root: string | undefined,
-  cacheDir?: string,
-): number {
+export function adaptiveCloseOutTimeoutMs(root: string | undefined, cacheDir?: string): number {
   if (!root) return CLOSE_OUT_MIN_TIMEOUT_MS;
   const stats = readCloseOutGateTimingStats(root, cacheDir);
   if (!stats) return CLOSE_OUT_MIN_TIMEOUT_MS;
