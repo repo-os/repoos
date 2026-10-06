@@ -263,11 +263,7 @@ function fmtAgo(iso: string): string {
                 <span class="mono">{{ runLabel(r) }}</span>
                 <span v-if="r.phase" class="rr-dim"> · {{ r.phase }}</span>
                 · {{ elapsedSince(r.startedAt) }}
-                <span
-                  v-if="r.slow"
-                  class="rr-slow-badge"
-                  data-test-id="remote-run-slow"
-                >
+                <span v-if="r.slow" class="rr-slow-badge" data-test-id="remote-run-slow">
                   slow
                 </span>
               </span>

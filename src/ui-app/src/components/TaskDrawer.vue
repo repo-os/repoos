@@ -3874,11 +3874,7 @@ watch(
               >
                 <ActivityIndicator v-if="checkChip.state === 'running'" class="ck-chip-spin" />
                 {{ checkChip.label }}
-                <span
-                  v-if="checkChip.slow"
-                  class="ck-slow-badge"
-                  data-test-id="task-check-slow"
-                >
+                <span v-if="checkChip.slow" class="ck-slow-badge" data-test-id="task-check-slow">
                   slow
                 </span>
               </button>
