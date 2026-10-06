@@ -12,7 +12,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-06T17:37:12Z"
+updated_at: "2026-10-06T17:37:13Z"
 merge_conflict_retry_count: 1
 review_passes: 1
 dev_error_count: 2
@@ -81,3 +81,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-06T17:23:25Z · note: review pass 1: good to go
 - 2026-10-06T17:30:53Z · status review→active
 - 2026-10-06T17:37:12Z · status active→review
+- 2026-10-06T17:37:13Z · note: shots: skipped — 2 handoff shots already captured during finalization (#0680)
