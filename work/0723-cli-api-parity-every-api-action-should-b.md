@@ -2,7 +2,7 @@
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
 type: feature
-status: review
+status: active
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/cli-api-parity-every-api-action-should-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
-updated_at: "2026-10-06T17:32:25Z"
+updated_at: "2026-10-06T17:32:26Z"
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -67,3 +67,4 @@ Read src/commands/tasks.ts and src/cli/ for the command registry and the HTTP ro
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-06T17:32:25Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —        |                                        ^ · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T17:32:26Z · status review→active
