@@ -27,6 +27,7 @@ export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
   "cto-escalation": "Agent asked a question",
   "watchdog-stuck": "No agent running",
   underspecified: "Doesn't look fully fleshed out",
+  "needs-human-step": "Needs a human-only verification step",
   questions: "Agent asked a question",
 };
 
@@ -41,6 +42,8 @@ export const NEEDS_INPUT_BANNER_LABELS: Record<string, string> = {
   "watchdog-stuck": "The task went quiet with no agent running.",
   underspecified:
     "This task doesn't look fully fleshed out yet — probably the PM agent didn't finish writing it.",
+  "needs-human-step":
+    "The acceptance criteria mix agent work with steps only a human can run (device, account, or external registration).",
   questions: "The agent is waiting on your answer before it can continue.",
 };
 
@@ -62,6 +65,8 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
   "cto-escalation": "Open the PM tab and send a reply — the flag clears when your message is sent.",
   underspecified:
     "Send it to the PM agent to flesh it out, or write the missing sections yourself.",
+  "needs-human-step":
+    "Split the human-only verification into its own task, or rewrite the acceptance criteria so agents are not asked to prove device or account outcomes.",
   "closeout-worktree-dirty":
     "The merge already landed. Inspect the kept worktree if you want its uncommitted files, or Clear worktree to force-remove it and delete the merged branch.",
   questions: "Open the PM tab to answer — your reply is sent with the questions attached.",
@@ -180,6 +185,8 @@ export function needsInputPrimaryAction(
     case "questions":
       return ANSWER_IN_PM_ACTION;
     case "underspecified":
+      return SEND_TO_PM_ACTION;
+    case "needs-human-step":
       return SEND_TO_PM_ACTION;
     default:
       return null;

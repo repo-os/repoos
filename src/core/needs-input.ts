@@ -20,10 +20,17 @@ export function needsInputSuppressedOnReview(
   if (!task.needsInput) return false;
   if (task.status === "review" && task.needsInputReason === "dev-error") return true;
   // A stub body no longer matters once the task is active, in review or done.
-  return (
+  if (
     task.needsInputReason === "underspecified" &&
     (task.status === "active" || task.status === "review" || task.status === "done")
-  );
+  ) {
+    return true;
+  }
+  // Human-only acceptance criteria stay actionable — and visible — while the
+  // task is being worked and signed off (#0698); they are the moment a human
+  // should split the work rather than accept an agent's unverifiable claim.
+  // Only `done` is history, so suppress there alone.
+  return task.needsInputReason === "needs-human-step" && task.status === "done";
 }
 
 /** A successful review run clears these reviewer-episode flags (#0511). */
