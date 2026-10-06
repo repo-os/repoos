@@ -98,6 +98,7 @@ closeOut.timeoutMs = 360000  # 6-minute budget per close-out attempt; 0 = no lim
 # ── Agents ───────────────────────────────────────────────────────────────
 maxConcurrentAgents = 5  # omit to size from this machine's CPU count
 ctoSkipHealthy = true    # skip the CTO model call while the board is healthy
+# cto.actions = []       # opt-in allowlist: restart-stalled-agent, refresh-main-install, requeue-closeout-after-env-fix
 
 # ── Notifications ────────────────────────────────────────────────────────
 ntfyEnabled = false
@@ -501,6 +502,7 @@ provider = "none"
 | --- | --- | --- | --- | --- |
 | `maxConcurrentAgents` | number | derived from CPU count | yes | How many agent CLI processes (start/send/chat) may run at once; extras queue. Must be 1–16. The default is computed from this machine's CPU count and capped sensibly. |
 | `ctoSkipHealthy` | boolean | `true` | yes | When true (the default), the CTO monitor skips its model call while the board is healthy — no stuck tasks, a fresh build and a normal process check — and only calls the model when something needs attention. Set `false` to run a full CTO pass whenever the material signal changes. |
+| `cto.actions` | string[] | `[]` | yes | Opt-in allowlist of bounded recovery actions the CTO may run automatically (rate limited, audited in the bell). Values: `restart-stalled-agent` (dead active engineer), `refresh-main-install` (lockfile install in main), `requeue-closeout-after-env-fix` (refresh main then re-queue a failed env close-out). Empty means report-only. Humans can also invoke `POST /api/cto/actions/<id>`. |
 | `watchdog.enabled` | boolean | `true` | yes | Whether active-task staleness monitoring runs. |
 | `watchdog.stalenessMs` | number | `300000` (5 min) | yes | Milliseconds of silence before an `active` task is a candidate-stuck. Minimum `60000`; smaller values are ignored. |
 | `watchdog.autoTransition` | boolean | `true` | yes | Whether a stuck task auto-transitions out of `active` — to `review` when its worktree holds work, else back to `ready`. When false, it is only flagged `needsInput`. |
