@@ -207,6 +207,17 @@ name = "hardcoded-colors"
 kind = "hardcoded-colors"
 whenChanged = ["src/ui-app/**"]
 
+# Rendered audit (#0596): boots the built app in headless WebKit and measures
+# every visible text node's real foreground/background across every theme
+# scope × light/dark. Needs the build, like ui-smoke; skips cleanly when
+# Playwright/WebKit is not installed.
+[[check.steps]]
+name = "rendered-contrast"
+command = "bun run contrast:audit"
+requires = ["bun"]
+whenChanged = ["src/ui-app/**"]
+dependsOn = ["check-fmt:check", "check-lint", "build"]
+
 [[check.steps]]
 name = "bare-require"
 kind = "bare-require"
@@ -227,17 +238,6 @@ dependsOn = ["check-fmt:check", "check-lint"]
 name = "ui-smoke"
 kind = "ui-smoke"
 dependsOn = ["check-fmt:check", "check-lint", "build"]
-
-# Rendered audit (#0596): boots the built app in headless WebKit and measures
-# every visible text node's real foreground/background across every theme
-# scope × light/dark. Runs after ui-smoke so the two WebKit passes are not
-# back-to-back on a cold browser launch during a loaded handoff gate.
-[[check.steps]]
-name = "rendered-contrast"
-command = "bun run contrast:audit"
-requires = ["bun"]
-whenChanged = ["src/ui-app/**"]
-dependsOn = ["check-fmt:check", "check-lint", "build", "ui-smoke"]
 
 [[check.steps]]
 name = "user-docs-build"

@@ -9,9 +9,7 @@ import {
   resolveControlPlaneBase,
   type ApiJson,
 } from "../cli/repoos-api.js";
-import { resolveAgentForTask } from "../server/agents.js";
-import { boardRoot, loadConfig } from "../core/config.js";
-import { createRepoOS } from "../core/repoos.js";
+import { effectiveEngineerFromApi } from "../cli/effective-from-api.js";
 
 interface CommonOpts {
   json: boolean;
@@ -320,26 +318,28 @@ export async function cmdOverride(args: string[]): Promise<number> {
     if (cli) patch.cliOverride = cli;
     if (model) patch.modelOverride = model;
     const updated = await api.requestOk("PATCH", `/api/tasks/${id}`, patch);
-    const { root } = boardRoot();
-    const config = loadConfig(root);
-    const task = createRepoOS(root)
-      .reindex()
-      .tasks.find((t) => t.id === id);
-    const effective = task ? resolveAgentForTask(config, task) : null;
+    const configRes = await api.requestOk("GET", "/api/config");
+    const agents =
+      ((configRes.config as { agents?: unknown } | undefined)?.agents as
+        | { name: string; cli: string; model: string; enabled: boolean }[]
+        | undefined) ?? [];
+    const effective = effectiveEngineerFromApi(agents, {
+      agentOverride: updated.agentOverride as string | null | undefined,
+      cliOverride: updated.cliOverride as string | null | undefined,
+      modelOverride: updated.modelOverride as string | null | undefined,
+    });
     const out = {
       ok: true,
       task: updated,
-      effective: effective
-        ? { name: effective.name, cli: effective.cli, model: effective.model }
-        : null,
+      effective: { name: effective.name, cli: effective.cli, model: effective.model },
     };
     if (opts.json) printJson(out);
-    else if (effective) {
+    else {
       console.log(
         c.green("  ✓ ") +
           `effective engineer: ${effective.name} · ${effective.cli} · ${effective.model}`,
       );
-    } else console.log(c.green("  ✓ ") + c.dim(`updated overrides on #${id}`));
+    }
     return 0;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
