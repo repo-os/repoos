@@ -1,5 +1,4 @@
 ---
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-06T18:40:11.714Z: server-side finalization timed out (deadline exceeded)"
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
@@ -110,4 +109,5 @@ error: script "build" exited with code 127
 - 2026-10-06T18:18:20Z · status review→active
 - 2026-10-06T18:27:48Z · body
 - 2026-10-06T18:29:20Z · body
+
 
