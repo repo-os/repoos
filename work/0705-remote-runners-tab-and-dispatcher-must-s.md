@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 9b8efe3e176dfcaaed9b4b43dc9048bee66820c1
 id: "0705"
 title: Remote runners tab and dispatcher must see standalone self-check slot holders (they starved close-outs); add refresh feedback
 type: bug
@@ -95,3 +97,4 @@ error: script "test" exited with code 1
 - 2026-10-06T06:32:18Z · status active→review
 - 2026-10-06T06:32:19Z · status review→active
 - 2026-10-06T06:42:39Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
