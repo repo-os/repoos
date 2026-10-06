@@ -3,9 +3,6 @@ id: "0717"
 title: "Remote validation: upload only the new commits, not the full-history git bundle, on every run"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: degenerate-output
-needs_input_detail: Degenerate output loop detected after one automatic retry.
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -15,7 +12,7 @@ branch: feat/remote-validation-upload-only-the-new-co
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T11:11:30Z"
-updated_at: "2026-10-06T11:49:00Z"
+updated_at: "2026-10-06T13:45:14Z"
 handoff_signal_retry_count: 1
 dev_error_count: 2
 ---
@@ -47,3 +44,4 @@ Read prepareRemoteTestBundle (it already bundles an extra baseSha for test scope
 - 2026-10-06T11:11:58Z · cli_override, model_override
 - 2026-10-06T11:11:58Z · status ready→active, branch
 - 2026-10-06T11:35:53Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
+- 2026-10-06T13:45:14Z · needs_input
