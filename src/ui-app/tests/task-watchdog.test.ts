@@ -1009,3 +1009,95 @@ Stuck twice.
     fx.clean();
   });
 });
+
+function taskMdWithIdenticalCheckFailures(
+  transitionAgeMs: number,
+  failureDetail: string,
+  count: number,
+  headSha: string,
+): string {
+  const ts = new Date(Date.now() - transitionAgeMs).toISOString();
+  const failures = Array.from({ length: count }, (_, i) => {
+    const lineTs = `2026-10-0${(i % 9) + 1}T12:00:0${i}Z`;
+    return `- ${lineTs} · handoff failed · api handoff failed at check · ${failureDetail}`;
+  }).join("\n");
+  return `---
+id: "0001"
+title: "Stuck task"
+type: feature
+status: active
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/x
+last_handoff_failure_sha: ${headSha}
+---
+## Problem
+Stuck.
+
+## Activity
+
+- ${ts} · status inbox→active
+${failures}
+`;
+}
+
+describe("identical handoff failure loop (#0693)", () => {
+  it("parks after three identical check failures instead of surfacing to review", async () => {
+    const fx = makeGitFx(600_000, { committedWork: true });
+    const wtDir = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
+    const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: wtDir, encoding: "utf8" }).trim();
+    writeFileSync(
+      fx.taskPath,
+      taskMdWithIdenticalCheckFailures(600_000, "Type error: StorageStatus", 3, head),
+    );
+    git(fx.root, ["add", fx.taskPath]);
+    git(fx.root, ["commit", "-q", "-m", "task failures"]);
+    const stale = new Date(Date.now() - 600_000);
+    backdateTree(wtDir, stale);
+
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const runner = new AgentRunner(fx.config, () => {}, { PATH: `${fx.bin}:${process.env.PATH}` });
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+    await watchdog.checkNow();
+
+    const body = readFileSync(fx.taskPath, "utf8");
+    expect(body).not.toContain("watchdog: auto-surfaced stuck task");
+    expect(body).toContain("parked after 3 identical handoff validation failures");
+    expect(parseTaskAt(fx).needsInputReason).toBe("identical-handoff-failures");
+    fx.clean();
+  });
+
+  it("restarts a dead engineer once with the failure text before parking", async () => {
+    const fx = makeGitFx(600_000, { committedWork: true });
+    const wtDir = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
+    const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: wtDir, encoding: "utf8" }).trim();
+    writeFileSync(
+      fx.taskPath,
+      taskMdWithIdenticalCheckFailures(600_000, "Type error: StorageStatus", 1, head),
+    );
+    const stale = new Date(Date.now() - 600_000);
+    backdateTree(wtDir, stale);
+
+    const prevPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${prevPath}`;
+    process.env.REPOOS_WATCHDOG_LOG = fx.log;
+    try {
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      const runner = new AgentRunner(fx.config, () => {});
+      const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+      await watchdog.checkNow();
+
+      const body = readFileSync(fx.taskPath, "utf8");
+      expect(body).toContain("restarted engineer after identical check failure");
+      expect(body).not.toContain("watchdog: auto-surfaced stuck task");
+      await waitFor(() => spawns(fx).length >= 1, "engineer restart spawns", 6000);
+    } finally {
+      delete process.env.REPOOS_WATCHDOG_LOG;
+      process.env.PATH = prevPath;
+      fx.clean();
+    }
+  }, 15_000);
+});

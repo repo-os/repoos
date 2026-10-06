@@ -40,6 +40,7 @@ import { patchTaskFile } from "./write.js";
 import { guardReviewTransition } from "./review-guard.js";
 import { runFormatFixes } from "../core/check-format.js";
 import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
+import { clearHandoffFailureLoopMetadata } from "./handoff-failure-loop.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
 import {
   engineerSelfCheckRemoteEnabled,
@@ -702,6 +703,8 @@ async function runHandoffFinalization(
       /* best-effort — close-out still has the dirty-worktree guards */
     }
   }
+
+  clearHandoffFailureLoopMetadata(config, task);
 
   onProgress?.("done");
   return { ok: true, step: "done" };
