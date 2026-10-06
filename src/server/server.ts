@@ -155,6 +155,8 @@ import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { closeOutPending, createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { createCloseOutOutcomeStore } from "./close-out-outcome.js";
 import { createAttentionEventStore } from "./attention-events.js";
+import { createCtoActionRateStore } from "./cto-action-rates.js";
+import { runCtoMonitorSafeActions } from "./cto-actions.js";
 import { wireAttentionNotifications } from "./attention-notify.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
@@ -327,6 +329,7 @@ import {
   getCTO,
   ctoMessage,
   ctoInterrupt,
+  runCtoSafeActionRoute,
   pmMessage,
   pmInterrupt,
   getScreenshot,
@@ -1169,6 +1172,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const attentionEvents = createAttentionEventStore(config.root, config.cacheDir, (error) =>
     logger.system("warn", `attention event persistence failed: ${(error as Error).message}`),
   );
+  const ctoActionRates = createCtoActionRateStore(config.root, config.cacheDir);
   const repoLock = createRepositoryLock(config.root);
   const rootLock = createRootLock(config.root);
 
@@ -1981,6 +1985,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
   const cto = new CTOManager(config, emitEvent, runner);
   const ctoMonitor = new CTOMonitor(config, index, cto, runner);
+  ctoMonitor.wireSafeActions(() =>
+    runCtoMonitorSafeActions({
+      config,
+      index,
+      runner,
+      jobCoordinator,
+      attentionEvents,
+      rates: ctoActionRates,
+      logger,
+      emitEvent,
+      triggerJobProcessing,
+      reportedStages,
+    }),
+  );
   // Run the monitor cadence unconditionally: `checkNow` no-ops while the CTO
   // agent is disabled, so enabling it from the Agents page takes effect on the
   // next tick without a restart, and disabling it stops runs immediately.
@@ -2966,6 +2984,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/cto", getCTO);
   router.register("POST", "/api/cto/message", ctoMessage);
   router.register("POST", "/api/cto/interrupt", ctoInterrupt);
+  router.register("POST", /^\/api\/cto\/actions\/([^/]+)$/, runCtoSafeActionRoute);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/, pmMessage);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/interrupt$/, pmInterrupt);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
@@ -3340,6 +3359,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         jobCoordinator,
         closeOutOutcomes,
         attentionEvents,
+        ctoActionRates,
         remoteValidator,
         reportedStages,
         triggerJobProcessing,
