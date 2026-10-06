@@ -4,10 +4,14 @@
 import { describe, expect, it } from "vitest";
 import {
   creditIdleMs,
+  DEFAULT_DEGENERATE_OUTPUT_CONFIG,
+  degenerateHitDetail,
   DegenerateOutputTracker,
   effectiveStalenessNow,
   scrapeProviderFailure,
 } from "../../core/agent-run-health";
+import type { AgentOutputEntry } from "../../core/types";
+import { degenerateScanInput } from "../../server/agents";
 
 describe("creditIdleMs", () => {
   it("caps long wall gaps (laptop sleep) to a small awake credit", () => {
@@ -97,7 +101,7 @@ describe("DegenerateOutputTracker", () => {
       bytesWithoutToolThreshold: 10_000,
     });
     expect(t.observe("<".repeat(19), false)).toBe("ok");
-    expect(t.observe("<", false)).toBe("degenerate");
+    expect(t.observe("<".repeat(20), false)).toBe("degenerate");
   });
 
   it("resets byte growth after a tool call", () => {
@@ -109,5 +113,46 @@ describe("DegenerateOutputTracker", () => {
     expect(t.observe("x".repeat(80), false)).toBe("ok");
     expect(t.observe("y".repeat(80), true)).toBe("ok");
     expect(t.observe("z".repeat(80), false)).toBe("ok");
+  });
+});
+
+// #0718: the tracker may only ever see the agent's own assistant text.
+describe("degenerate-output scan input (#0718)", () => {
+  const run = (entries: AgentOutputEntry[]) => {
+    const t = new DegenerateOutputTracker(DEFAULT_DEGENERATE_OUTPUT_CONFIG);
+    let verdict = "ok";
+    for (const e of entries) {
+      const { text, hadToolCall } = degenerateScanInput(e);
+      verdict = t.observe(text, hadToolCall);
+      if (verdict === "degenerate") break;
+    }
+    return { verdict, t };
+  };
+
+  it("never scans tool payloads or tool results", () => {
+    const banner = "=".repeat(300);
+    const closers = Array.from({ length: 20 }, () => "}").join("\n");
+    const bigRead = "x".repeat(300 * 1024);
+    const { verdict } = run([
+      { type: "tool", tool: "edit", input: banner, state: "running" },
+      { type: "tool", tool: "shell", input: closers, state: "running" },
+      { type: "tool", tool: "read", input: bigRead, state: "running" },
+    ] as AgentOutputEntry[]);
+    expect(verdict).toBe("ok");
+  });
+
+  it("still flags a real loop in assistant text", () => {
+    const line = "I will fix the test now.";
+    const { verdict, t } = run([
+      { type: "text", text: Array.from({ length: 20 }, () => line).join("\n") },
+    ] as AgentOutputEntry[]);
+    expect(verdict).toBe("degenerate");
+    expect(t.lastHit()?.rule).toBe("repeat-line");
+    expect(degenerateHitDetail(t.lastHit())).toContain("fresh session");
+  });
+
+  it("flags 500 identical characters in assistant text", () => {
+    const { verdict } = run([{ type: "text", text: "<".repeat(500) } as AgentOutputEntry]);
+    expect(verdict).toBe("degenerate");
   });
 });

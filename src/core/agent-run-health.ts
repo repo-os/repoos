@@ -61,11 +61,11 @@ export function scrapeProviderFailure(text: string): string | null {
 }
 
 export interface DegenerateOutputConfig {
-  /** Consecutive repetitions of one character in streamed text. */
+  /** Consecutive repetitions of one character within one assistant text block. */
   repeatCharThreshold: number;
-  /** Consecutive identical trimmed lines. */
+  /** Consecutive identical trimmed lines within one assistant text block. */
   repeatLineThreshold: number;
-  /** Bytes of output without any tool call before flagging. */
+  /** Assistant-text bytes without any intervening tool call before flagging. */
   bytesWithoutToolThreshold: number;
 }
 
@@ -77,53 +77,126 @@ export const DEFAULT_DEGENERATE_OUTPUT_CONFIG: DegenerateOutputConfig = {
 
 export type DegenerateOutputVerdict = "ok" | "degenerate";
 
+/** Which rule tripped, with a short excerpt so a human can judge the hit (#0718). */
+export interface DegenerateOutputHit {
+  rule: "repeat-char" | "repeat-line" | "bytes-without-tool";
+  /** Collapsed, trimmed excerpt of the offending assistant text (capped). */
+  excerpt: string;
+}
+
+/** Longest excerpt kept for the needs-input detail — enough to spot a real loop. */
+const HIT_EXCERPT_MAX = 200;
+
+function excerptOf(text: string): string {
+  const collapsed = text.replace(/\s+/g, " ").trim();
+  return collapsed.length > HIT_EXCERPT_MAX ? `${collapsed.slice(0, HIT_EXCERPT_MAX)}…` : collapsed;
+}
+
+/** Longest run of one repeated character in `text`. */
+function longestCharRun(text: string): number {
+  let runChar = "";
+  let run = 0;
+  let max = 0;
+  for (const ch of text) {
+    if (ch === runChar) run += 1;
+    else {
+      runChar = ch;
+      run = 1;
+    }
+    if (run > max) max = run;
+  }
+  return max;
+}
+
+/** Longest run of consecutive identical trimmed, non-empty lines in `text`. */
+function longestRepeatedLineRun(text: string): number {
+  let last = "";
+  let run = 0;
+  let max = 0;
+  for (const rawLine of text.split("\n")) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (line === last) run += 1;
+    else {
+      last = line;
+      run = 1;
+    }
+    if (run > max) max = run;
+  }
+  return max;
+}
+
+/** Human-readable "which rule tripped, and on what text" for needs-input detail. */
+export function degenerateHitDetail(hit: DegenerateOutputHit | null): string {
+  if (!hit) return "Degenerate output loop detected after one automatic retry.";
+  const rule =
+    hit.rule === "repeat-char"
+      ? "one character repeated"
+      : hit.rule === "repeat-line"
+        ? "the same line repeated"
+        : "a very long run of text with no tool call";
+  return `Degenerate output loop detected (${rule}). Excerpt: "${hit.excerpt}". If this is a real loop, restart with a fresh session; if it looks like normal output, it is a false positive.`;
+}
+
 /**
- * Tracks runaway repetition and log growth with no tool calls during one turn.
+ * Detects a runaway assistant text loop or growth with no tool calls during one
+ * turn (#0678), scanning ONLY the agent's own assistant text (#0718).
+ *
+ * `observe` is called once per assistant text block — the text of one streamed
+ * `text` event, or one plain output line. A tool-call payload, a tool result,
+ * or a CLI notice carries no assistant text and must be passed as `undefined`:
+ * the old tracker scanned every raw stream line, so a minified file write or a
+ * big tool result (a wall of `=`, a stack of `}` lines, a 300 KB read) looked
+ * exactly like a model loop and healthy agents were killed (#0679, #0717).
+ *
+ * The repetition rules are scored per block, so `}` lines a coding agent writes
+ * in two unrelated snippets never accumulate into a false hit; the
+ * no-tool-call byte budget is the one signal that accumulates *across* blocks,
+ * which is what catches a runaway that streams as many small text events.
  */
 export class DegenerateOutputTracker {
   private readonly cfg: DegenerateOutputConfig;
-  private repeatChar = "";
-  private repeatCharCount = 0;
-  private lastLine = "";
-  private repeatLineCount = 0;
   private bytesSinceTool = 0;
+  private hit: DegenerateOutputHit | null = null;
 
   constructor(cfg: DegenerateOutputConfig = DEFAULT_DEGENERATE_OUTPUT_CONFIG) {
     this.cfg = cfg;
   }
 
   reset(): void {
-    this.repeatChar = "";
-    this.repeatCharCount = 0;
-    this.lastLine = "";
-    this.repeatLineCount = 0;
     this.bytesSinceTool = 0;
+    this.hit = null;
   }
 
-  observe(line: string, hadToolCall: boolean): DegenerateOutputVerdict {
+  /** The rule and excerpt behind the last `"degenerate"` verdict, else null. */
+  lastHit(): DegenerateOutputHit | null {
+    return this.hit;
+  }
+
+  /**
+   * Scan one block of the agent's own assistant text. Pass `undefined` for
+   * anything that is not assistant prose (tool calls/results, notices): it is
+   * never scanned, and a tool call (`hadToolCall`) resets the no-tool budget.
+   */
+  observe(assistantText: string | undefined, hadToolCall: boolean): DegenerateOutputVerdict {
     if (hadToolCall) this.bytesSinceTool = 0;
-    const text = line;
-    this.bytesSinceTool += text.length;
-    if (this.bytesSinceTool >= this.cfg.bytesWithoutToolThreshold) return "degenerate";
-
-    for (const ch of text) {
-      if (ch === this.repeatChar) this.repeatCharCount += 1;
-      else {
-        this.repeatChar = ch;
-        this.repeatCharCount = 1;
-      }
-      if (this.repeatCharCount >= this.cfg.repeatCharThreshold) return "degenerate";
+    if (!assistantText) return "ok";
+    this.hit = null;
+    this.bytesSinceTool += assistantText.length;
+    if (this.bytesSinceTool >= this.cfg.bytesWithoutToolThreshold) {
+      return this.flag("bytes-without-tool", assistantText);
     }
-
-    const lineKey = text.trim();
-    if (lineKey) {
-      if (lineKey === this.lastLine) this.repeatLineCount += 1;
-      else {
-        this.lastLine = lineKey;
-        this.repeatLineCount = 1;
-      }
-      if (this.repeatLineCount >= this.cfg.repeatLineThreshold) return "degenerate";
+    if (longestCharRun(assistantText) >= this.cfg.repeatCharThreshold) {
+      return this.flag("repeat-char", assistantText);
+    }
+    if (longestRepeatedLineRun(assistantText) >= this.cfg.repeatLineThreshold) {
+      return this.flag("repeat-line", assistantText);
     }
     return "ok";
+  }
+
+  private flag(rule: DegenerateOutputHit["rule"], text: string): DegenerateOutputVerdict {
+    this.hit = { rule, excerpt: excerptOf(text) };
+    return "degenerate";
   }
 }
