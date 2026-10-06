@@ -1044,10 +1044,16 @@ describe("validate.sh compatibility (#0725)", () => {
 
   it("detects bundle transport mismatches for a single legacy retry", () => {
     expect(
-      isRunnerBundleTransportMismatch("warning: You appear to have cloned an empty repository.", 128),
+      isRunnerBundleTransportMismatch(
+        "warning: You appear to have cloned an empty repository.",
+        128,
+      ),
     ).toBe(true);
     expect(
-      isRunnerBundleTransportMismatch("[validate] FATAL: could not fetch bundle into the mirror", 3),
+      isRunnerBundleTransportMismatch(
+        "[validate] FATAL: could not fetch bundle into the mirror",
+        3,
+      ),
     ).toBe(true);
     expect(isRunnerBundleTransportMismatch("1 test failed\nFAIL x", 1)).toBe(false);
   });
@@ -1066,9 +1072,7 @@ describe("validate.sh compatibility (#0725)", () => {
       const candidateSha = git("rev-parse", "HEAD");
       const bundlePath = join(root, "candidate.bundle");
       const exec = fakeExec({
-        bundleRepo: vi.fn((cwd, out, o) =>
-          defaultRemoteExec().bundleRepo(cwd, out, o),
-        ),
+        bundleRepo: vi.fn((cwd, out, o) => defaultRemoteExec().bundleRepo(cwd, out, o)),
       });
       const res = await prepareCandidateUpload(exec, {
         host: { ip: "203.0.113.9", user: "root" },
@@ -1088,9 +1092,7 @@ describe("validate.sh compatibility (#0725)", () => {
       });
       expect(refs).toContain("HEAD");
       const legacyCall = validateScriptArgs("~/.b", candidateSha, "~/.art", "main");
-      expect(legacyCall).toBe(
-        `/opt/repoos/validate.sh ~/.b ${candidateSha} ~/.art 'main'`,
-      );
+      expect(legacyCall).toBe(`/opt/repoos/validate.sh ~/.b ${candidateSha} ~/.art 'main'`);
       expect(legacyCall).not.toContain("repoos-cache");
       expect(validateScriptArgs("~/.b", candidateSha, "~/.art", "main", "~/.mirror")).toContain(
         "~/.mirror",

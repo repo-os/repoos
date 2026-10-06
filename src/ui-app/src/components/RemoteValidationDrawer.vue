@@ -431,7 +431,12 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
               >last: #{{ h.lastRun.taskId }} {{ h.lastRun.ok ? "passed" : "failed" }}</span
             >
             <p
-              v-if="h.probed && h.healthy && h.validateScriptMirrorSupported === false && h.validateScriptInstallCommand"
+              v-if="
+                h.probed &&
+                h.healthy &&
+                h.validateScriptMirrorSupported === false &&
+                h.validateScriptInstallCommand
+              "
               class="tunnel-help mono"
             >
               Update:
