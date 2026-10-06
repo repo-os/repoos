@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
 type: feature
@@ -13,7 +12,8 @@ branch: feat/cli-api-parity-every-api-action-should-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
-updated_at: "2026-10-06T16:17:01Z"
+updated_at: "2026-10-06T17:21:18Z"
+handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -45,4 +45,4 @@ Read src/commands/tasks.ts and src/cli/ for the command registry and the HTTP ro
 - 2026-10-06T15:05:55Z · status ready→active, branch
 - 2026-10-06T15:12:01Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-10-06T15:55:45Z · needs_input
-
+- 2026-10-06T17:21:18Z · body
