@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p1
 area: server
+story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T03:31:15Z"
+updated_at: "2026-10-06T03:31:24Z"
 ---
 ## Problem
 
@@ -35,3 +36,4 @@ Read #0694 and #0695 first (engineer self-checks on runners; item 6 there covers
 ## Activity
 
 - 2026-10-06T03:31:15Z · created · unknown
+- 2026-10-06T03:31:24Z · story
