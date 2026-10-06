@@ -356,10 +356,18 @@ function codingOrStuckHint(taskId: string): CardHint {
   const lastActivity = lastActivityFor(taskId);
   const ms = silentMs(now.value, lastActivity);
   if (ms !== null && ms >= STUCK_SILENCE_MS) {
+    const lastOut = lastActivity
+      ? new Date(lastActivity).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      : null;
+    const lastOutNote = lastOut ? ` Last output ${lastOut}.` : "";
     return {
       label: `stuck · silent ${formatDuration(ms)}`,
       title:
-        "agent process is still running but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
+        `agent process is still running but hasn't produced output in a while — it may be hung.${lastOutNote} Click to inspect, or restart work.`,
       cls: "tc-stuck",
     };
   }

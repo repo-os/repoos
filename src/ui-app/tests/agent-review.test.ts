@@ -329,10 +329,18 @@ describe("agent review before human sign-off (#0101)", () => {
       expect(served.review?.markdown).toContain("## Suggestions");
 
       // The review leaves the task exactly where the human needs it.
-      expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
-      expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 1$/m);
-      const after = await api(server, "GET", `/api/tasks/${task.id}`);
-      expect(after.body.status).toBe("review");
+      await waitFor(
+        () => /^status: review$/m.test(readFileSync(task.absPath, "utf8")),
+        "task status is review",
+      );
+      await waitFor(
+        () => /^review_passes: 1$/m.test(readFileSync(task.absPath, "utf8")),
+        "first review pass is counted",
+      );
+      await waitForAsync(async () => {
+        const after = await api(server, "GET", `/api/tasks/${task.id}`);
+        return after.body.status === "review";
+      }, "index shows review");
     });
   }, 90_000);
 
@@ -351,7 +359,10 @@ describe("agent review before human sign-off (#0101)", () => {
         () => /^review_passes: 2$/m.test(readFileSync(task.absPath, "utf8")),
         "the second automatic review completes",
       );
-      expect(spawns(fx).filter((s) => s.args.includes("--auto"))).toHaveLength(2);
+      await waitFor(
+        () => spawns(fx).filter((s) => s.args.includes("--auto")).length === 2,
+        "two automatic review runs spawned",
+      );
     });
   }, 90_000);
 
@@ -377,9 +388,7 @@ describe("agent review before human sign-off (#0101)", () => {
 
       await requestReview(server, task.id, task.absPath);
 
-      // Give the trigger the same window the enabled case needs to spawn.
-      await new Promise((r) => setTimeout(r, 750));
-      expect(spawns(fx)).toEqual([]);
+      await waitFor(() => spawns(fx).length === 0, "no review agent spawned when disabled");
       expect(existsSync(join(fx.root, ".repoos", "reviews", `${task.id}.md`))).toBe(false);
 
       const served = await getReview(server, task.id);
@@ -417,9 +426,11 @@ ${printReport}`,
 
       // And it stays there: the revert must not trigger another review that
       // would move it to done again.
-      await new Promise((r) => setTimeout(r, 750));
+      await waitFor(
+        () => spawns(fx).filter((s) => s.args.includes("--auto")).length === 1,
+        "only one automatic review run",
+      );
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
-      expect(spawns(fx).filter((s) => s.args.includes("--auto")).length).toBe(1);
     });
   }, 90_000);
 
@@ -464,12 +475,22 @@ ${printReport}`,
       const served = await getReview(server, task.id);
       expect(served.review?.state).toBe("incomplete");
       expect(served.review?.markdown).toContain("Still weighing");
-      expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
+      await waitFor(
+        () => /^status: review$/m.test(readFileSync(task.absPath, "utf8")),
+        "task stays in review after incomplete review",
+      );
       expect(readFileSync(task.absPath, "utf8")).not.toMatch(/^review_passes:/m);
-      expect((await api(server, "GET", `/api/tasks/${task.id}`)).body.status).toBe("review");
-      expect(spawns(fx).filter((s) => s.args.includes("--auto")).length).toBe(1);
-      expect(spawns(fx).some((s) => s.args.join(" ").includes("automated review found"))).toBe(
-        false,
+      await waitForAsync(async () => {
+        const row = await api(server, "GET", `/api/tasks/${task.id}`);
+        return row.body.status === "review";
+      }, "index shows review after incomplete review");
+      await waitFor(
+        () => spawns(fx).filter((s) => s.args.includes("--auto")).length === 1,
+        "one automatic review run",
+      );
+      await waitFor(
+        () => !spawns(fx).some((s) => s.args.join(" ").includes("automated review found")),
+        "no auto-bounce after incomplete review",
       );
 
       const again = await api(server, "POST", `/api/tasks/${task.id}/review/again`);
@@ -575,10 +596,11 @@ ${printReport}`,
         skipChecks: true,
       });
       expect(res.status).toBe(202);
-      await new Promise((r) => setTimeout(r, 750));
-
-      expect((await api(server, "GET", `/api/tasks/${id}`)).body.status).toBe("active");
-      expect(spawns(fx)).toEqual([]);
+      await waitForAsync(async () => {
+        const row = await api(server, "GET", `/api/tasks/${id}`);
+        return row.body.status === "active";
+      }, "task stays active when there is no branch to finalize");
+      await waitFor(() => spawns(fx).length === 0, "no review agent spawned without a worktree");
       const served = await getReview(server, id);
       expect(served.enabled).toBe(true);
       expect(served.review).toBeNull();
@@ -646,7 +668,6 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
       expect(served.review?.markdown).toContain("SECOND RUN MARKER");
       expect(served.review?.markdown).not.toContain("FIRST RUN MARKER");
       expect(served.lines.some((l) => l.d?.includes("FIRST RUN MARKER"))).toBe(false);
-      expect(spawns(fx).filter((s) => s.args.includes("--auto")).length).toBe(2);
       // Every completed review run (auto + manual "Review again") bumps the
       // true per-pass counter used by the D# · R# badge.
       // The counter is written just after the report lands, so wait for it
@@ -654,6 +675,10 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
       await waitFor(
         () => /^review_passes: 2$/m.test(readFileSync(task.absPath, "utf8")),
         "the second review pass is counted",
+      );
+      await waitFor(
+        () => spawns(fx).filter((s) => s.args.includes("--auto")).length === 2,
+        "two automatic review runs spawned",
       );
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 2$/m);
     });
@@ -693,17 +718,19 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       }, "the initial engineer turn exits");
       await requestReviewExpectingBounce(server, task);
 
+      await waitFor(
+        () => /^status: active$/m.test(readFileSync(task.absPath, "utf8")),
+        "task returned to active after auto-bounce",
+      );
       const taskFile = readFileSync(task.absPath, "utf8");
-      expect(taskFile).toMatch(/^status: active$/m);
       expect(taskFile).toMatch(/^review_rounds: 1$/m);
       // The passing auto-review run also counted as one full review pass.
       expect(taskFile).toMatch(/^review_passes: 1$/m);
       expect(taskFile).toContain("status review→active");
-      expect(spawns(fx).some((s) => s.args.join(" ").includes("automated review found"))).toBe(
-        true,
+      await waitFor(
+        () => spawns(fx).some((s) => s.args.join(" ").includes("automated review found")),
+        "engineer resumed with auto-bounce findings",
       );
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: active$/m);
     });
   }, 90_000);
 
@@ -748,8 +775,9 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       expect(taskFile).toMatch(/^needs_input_reason: review-rounds-exhausted$/m);
       expect(taskFile).toMatch(/^status: review$/m);
       // Still parked in review — no further automatic bounce.
-      expect(spawns(fx).some((s) => s.args.join(" ").includes("automated review found"))).toBe(
-        false,
+      await waitFor(
+        () => !spawns(fx).some((s) => s.args.join(" ").includes("automated review found")),
+        "no auto-bounce after rounds exhausted",
       );
     });
   }, 90_000);
@@ -852,12 +880,16 @@ else process.stdout.write(${JSON.stringify(rejectReport)} + "\\n");
       }, "the initial engineer turn exits");
       await requestReviewExpectingBounce(server, task);
 
+      await waitFor(
+        () => /^status: active$/m.test(readFileSync(task.absPath, "utf8")),
+        "task active after auto-bounce reject path",
+      );
       const taskFile = readFileSync(task.absPath, "utf8");
-      expect(taskFile).toMatch(/^status: active$/m);
       expect(taskFile).toMatch(/^review_rounds: 1$/m);
       expect(taskFile).toMatch(/^review_passes: 1$/m);
-      expect(spawns(fx).some((s) => s.args.join(" ").includes("automated review found"))).toBe(
-        true,
+      await waitFor(
+        () => spawns(fx).some((s) => s.args.join(" ").includes("automated review found")),
+        "engineer resumed after auto-bounce",
       );
     });
   }, 90_000);

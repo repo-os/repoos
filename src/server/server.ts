@@ -1641,6 +1641,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     {
       logger,
       getTask: (taskId) => index.getTask(taskId),
+      onTaskFilePatched: (absPath) => index.applyFileChange(absPath),
       onDiagnosableFailure: (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
       onHandoff: async (request) => {
         let reachedFinalization = false;
