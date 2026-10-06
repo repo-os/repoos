@@ -632,6 +632,25 @@ export interface RepoOSConfig {
    * frontmatter, or API/CLI status inputs.
    */
   boardColumns?: Record<string, string>;
+  /**
+   * Attachment storage (`[storage]` in `repoos.toml`, #0659). Chooses where
+   * task and input attachment bytes live: the gitignored local `.attachments/`
+   * directories (the default, unchanged behavior) or an opt-in cloud provider
+   * that must be configured before it can be used. Absent means `local`.
+   */
+  storage?: StorageConfig;
+}
+
+/**
+ * Attachment-storage configuration (#0659), from `repoos.toml`'s `[storage]`
+ * section. `provider` is the id of a registered storage provider; `local` is
+ * the default. An unrecognized id is accepted syntactically and surfaced as
+ * unavailable (falling back to local), never a crash and never a silent claim
+ * that the configured provider is in effect.
+ */
+export interface StorageConfig {
+  /** Storage provider id, e.g. `"local"` or `"neon"`. Defaults to `local`. */
+  provider?: string;
 }
 
 /**
