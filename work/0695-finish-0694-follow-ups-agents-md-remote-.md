@@ -5,11 +5,12 @@ type: chore
 status: inbox
 priority: p2
 area: server
+story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T01:38:21Z"
-updated_at: "2026-10-06T01:38:21Z"
+updated_at: "2026-10-06T01:38:34Z"
 ---
 ## Problem
 
@@ -35,3 +36,4 @@ Read #0694 first (work/0694-*.md, its Driver note and review feedback sections) 
 ## Activity
 
 - 2026-10-06T01:38:21Z · created · unknown
+- 2026-10-06T01:38:34Z · story
