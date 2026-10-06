@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T03:15:53Z"
-updated_at: "2026-10-06T03:15:53Z"
+updated_at: "2026-10-06T03:26:52Z"
 ---
 ## Problem
 
@@ -34,3 +34,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 ## Activity
 
 - 2026-10-06T03:15:53Z · created · unknown
+- 2026-10-06T03:26:52Z · note: Recheck after restarting the tuk-private server on current code: the served page still has repoos-build-hash 'unknown', and repoos status still prints 'no dist build — source checkout' and labels a hand-run terminal serve as 'managed'.
