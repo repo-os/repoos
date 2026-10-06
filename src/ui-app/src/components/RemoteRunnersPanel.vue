@@ -300,6 +300,22 @@ function fmtAgo(iso: string): string {
           </dd>
         </div>
         <div>
+          <dt>validate.sh</dt>
+          <dd class="rr-wrap">
+            <template v-if="!h.probed">not checked yet</template>
+            <template v-else-if="h.validateScriptMirrorSupported">
+              incremental uploads (mirror)
+            </template>
+            <template v-else-if="h.healthy">
+              legacy — full bundle only
+              <span v-if="h.validateScriptInstallCommand" class="rr-dim mono rr-wrap">
+                · update: {{ h.validateScriptInstallCommand }}
+              </span>
+            </template>
+            <span v-else class="rr-dim">—</span>
+          </dd>
+        </div>
+        <div>
           <dt>Last completed</dt>
           <dd class="rr-wrap">
             <template v-if="h.lastRun">

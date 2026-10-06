@@ -419,9 +419,35 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
               }}<template v-if="h.queued"> · {{ h.queued }} queued</template>
             </span>
             <span class="rvr-host-state" :class="hostStateClass(h)">{{ hostState(h) }}</span>
+            <span v-if="h.probed && h.healthy" class="rvr-host-meta">
+              validate.sh:
+              {{
+                h.validateScriptMirrorSupported
+                  ? "incremental uploads"
+                  : "legacy (full bundle only)"
+              }}
+            </span>
             <span v-if="h.lastRun" class="rvr-host-meta"
               >last: #{{ h.lastRun.taskId }} {{ h.lastRun.ok ? "passed" : "failed" }}</span
             >
+            <p
+              v-if="
+                h.probed &&
+                h.healthy &&
+                h.validateScriptMirrorSupported === false &&
+                h.validateScriptInstallCommand
+              "
+              class="tunnel-help mono"
+            >
+              Update:
+              <button
+                type="button"
+                class="rvr-copy-inline"
+                @click="copy(h.validateScriptInstallCommand)"
+              >
+                {{ h.validateScriptInstallCommand }}
+              </button>
+            </p>
           </div>
           <p class="tunnel-help">
             Jobs dispatch to an idle host that provides what the check plan's
