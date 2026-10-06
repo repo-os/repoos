@@ -70,6 +70,9 @@ function fixture(opts: { hosts: Array<{ host: string; maxConcurrent?: number }> 
       if (cmd.includes(PREREQ_OK_TOKEN)) {
         return { code: 0, output: PREREQ_OK_TOKEN, timedOut: false };
       }
+      if (cmd.includes("__HOST_LOCK__")) {
+        return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
+      }
       await new Promise<void>((resolve) => pendingRuns.push(resolve));
       return { code: 0, output: "ok", timedOut: false };
     }),
@@ -150,6 +153,9 @@ describe("TailscaleHostPool activeRuns (#0564)", () => {
       runRemote: vi.fn((_host, cmd): Promise<RemoteExecResult> => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
           return Promise.resolve({ code: 0, output: PREREQ_OK_TOKEN, timedOut: false });
+        }
+        if (cmd.includes("__HOST_LOCK__")) {
+          return Promise.resolve({ code: 0, output: "__HOST_LOCK__\n", timedOut: false });
         }
         // Never finishes — the holder keeps its slot for the whole test.
         return new Promise<RemoteExecResult>(() => {});

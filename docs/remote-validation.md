@@ -447,6 +447,19 @@ actually recover an orphan within one wait (the earlier 40-minute threshold
 exceeded that budget and left waiters timing out with the misleading "another
 repoos check is still running" message before the dir was breakable).
 
+Each holder writes a `.meta` JSON file in its slot (`taskId`, gate `phase`,
+optional `worktree`, `priority`). Waiters register under
+`~/.repoos-validate-locks/wait/` with the same metadata. **Priority** lets
+close-out and release beat engineer self-checks for the next free slot
+(close-out = 100, release = 90, handoff pre-review = 60, managed-engineer
+self-check = 30). The server's dispatch pool **samples** these locks over SSH
+before choosing a host (`hostLockInspectShell`) and counts holders toward the
+per-host cap, so a close-out is not sent to a host that standalone
+`repoos check` runs already filled. The Checks → **Remote runners** tab lists
+every holder and waiter (not only server-dispatched jobs), with phase, age,
+and queue position; a failed "waited N s for a free host slot" message names
+which jobs held the slot.
+
 #### Deadlines
 
 Waiting counts against the caller's own deadline: handoff passes its

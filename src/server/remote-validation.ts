@@ -295,10 +295,26 @@ export interface RemoteHostStatus {
    * In-flight runs with WHO is running and since when (#0564) — the Remote
    * runners tab shows "#0564 · 2m 10s", not just a count.
    */
-  activeRuns?: { taskId: string; startedAt: string }[];
+  activeRuns?: {
+    taskId: string;
+    startedAt: string;
+    phase?: string;
+    label?: string;
+    source?: "server" | "host-lock";
+  }[];
   /** Task ids of the queued runs waiting for THIS host, FIFO order (#0564). */
   queuedTasks?: string[];
   serverStats?: RemoteServerStats;
+  /** Host-side lock holders + waiters sampled over SSH (#0705). */
+  hostLock?: HostLockSnapshot;
+  /** Standalone / host-lock waiters with phase and queue position (#0705). */
+  lockWaiters?: {
+    taskId: string;
+    phase: string;
+    label: string;
+    queuePosition?: number;
+    ageSecs: number;
+  }[];
 }
 
 export interface RemoteServerStats {
@@ -331,6 +347,8 @@ export interface RemoteValidator {
   hostStatus?(): RemoteHostStatus[];
   /** Start non-blocking, independent SSH sampling for configured pool hosts. */
   refreshHostStats?(): void;
+  /** Sample host-side validate locks for the Remote runners tab (#0705). */
+  refreshHostLocks?(): void;
   /**
    * Rebuild dispatch state from the live config after a Settings / raw-TOML
    * save. Without this the pool keeps the boot-time host list until restart
@@ -514,6 +532,219 @@ export const HOST_LOCK_HEARTBEAT_TICKS = 30;
 /** Slot indices 0..N-1 on a host — independent of any one caller's limit (#0521 review). */
 export const HOST_LOCK_MAX_SLOTS = 16;
 
+/** One job holding or waiting for a host-side validate lock (#0705). */
+export interface HostLockJob {
+  state: "holding" | "waiting";
+  /** Task id when known; absent for anonymous standalone runs. */
+  taskId?: string;
+  /** Human label — `#0693` or `standalone check in <worktree>`. */
+  label: string;
+  /** Gate phase for display: self-check / pre-review / close-out / release. */
+  phase: string;
+  ageSecs: number;
+  /** 1-based position among waiters on this host (waiters only). */
+  queuePosition?: number;
+  slotIndex?: number;
+}
+
+export interface HostLockSnapshot {
+  holders: HostLockJob[];
+  waiters: HostLockJob[];
+  sampledAt?: string;
+}
+
+/** Host-lock priority: close-out and release beat engineer self-checks (#0705). */
+export function hostLockPriority(
+  phase?: CheckRunPhase,
+  env: NodeJS.ProcessEnv = process.env,
+): number {
+  if (phase === "close-out") return 100;
+  if (phase === "release") return 90;
+  if (phase === "pre-review" && env.REPOOS_AGENT === "1") return 30;
+  if (phase === "pre-review") return 60;
+  if (phase === "cli") return 40;
+  return 40;
+}
+
+/** Display phase for the Remote runners tab (#0705). */
+export function hostLockPhaseLabel(
+  phase?: CheckRunPhase,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  if (phase === "pre-review" && env.REPOOS_AGENT === "1") return "self-check";
+  if (phase === "cli") return "self-check";
+  return phase ?? "self-check";
+}
+
+export function hostLockMetaJson(opts: {
+  taskId: string;
+  phase?: CheckRunPhase;
+  worktree?: string;
+  priority: number;
+  env?: NodeJS.ProcessEnv;
+}): string {
+  const env = opts.env ?? process.env;
+  const phase = hostLockPhaseLabel(opts.phase, env);
+  const worktree = opts.worktree?.trim();
+  return JSON.stringify({
+    taskId: opts.taskId,
+    phase,
+    priority: opts.priority,
+    worktree: worktree || undefined,
+  });
+}
+
+/** Remote shell: line-oriented lock inspect (no jq) (#0705). */
+export function hostLockInspectShell(lockRoot?: string): string {
+  const raw = (lockRoot ?? "~/.repoos-validate-locks").replace(/'/g, "");
+  const lockLine = raw.startsWith("~/")
+    ? `LOCKROOT="$HOME/${raw.slice(2).replace(/["\\$]/g, "")}"`
+    : `LOCKROOT='${raw}'`;
+  return [
+    lockLine,
+    "NOW=$(date +%s)",
+    'echo "__HOST_LOCK__"',
+    'if [ -d "$LOCKROOT" ]; then',
+    '  for _d in "$LOCKROOT"/[0-9]*; do',
+    '    [ -d "$_d" ] || continue',
+    '    _slot=$(basename "$_d")',
+    '    _age=$((NOW - $(stat -f %m "$_d" 2>/dev/null || stat -c %Y "$_d" 2>/dev/null || echo "$NOW")))',
+    '    echo "hold\t$_slot\t$_age"',
+    '    [ -r "$_d/.meta" ] && cat "$_d/.meta"',
+    "  done",
+    '  if [ -d "$LOCKROOT/wait" ]; then',
+    "    _pos=0",
+    '    for _wf in "$LOCKROOT/wait"/*; do',
+    '      [ -f "$_wf" ] || continue',
+    "      _pos=$((_pos+1))",
+    '      _age=$((NOW - $(stat -f %m "$_wf" 2>/dev/null || stat -c %Y "$_wf" 2>/dev/null || echo "$NOW")))',
+    '      echo "wait\t$_pos\t$_age"',
+    '      tail -n +2 "$_wf" 2>/dev/null',
+    "    done",
+    "  fi",
+    "fi",
+  ].join("\n");
+}
+
+function parseHostLockMeta(raw: string | undefined): {
+  taskId?: string;
+  phase?: string;
+  worktree?: string;
+} {
+  if (!raw?.trim()) return {};
+  try {
+    const o = JSON.parse(raw.trim()) as Record<string, unknown>;
+    return {
+      taskId: typeof o.taskId === "string" ? o.taskId : undefined,
+      phase: typeof o.phase === "string" ? o.phase : undefined,
+      worktree: typeof o.worktree === "string" ? o.worktree : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function hostLockJobLabel(meta: ReturnType<typeof parseHostLockMeta>, taskId?: string): string {
+  const id = meta.taskId ?? taskId;
+  if (id && id !== "pre-review" && id !== "?") return `#${id}`;
+  if (meta.worktree) {
+    const parts = meta.worktree.replace(/\\/g, "/").split("/").filter(Boolean);
+    const tail = parts.slice(-2).join("/") || meta.worktree;
+    return `standalone check in ${tail}`;
+  }
+  return "standalone check";
+}
+
+/** Parse {@link hostLockInspectShell} output into a snapshot (#0705). */
+export function parseHostLockInspectOutput(output: string, sampledAt?: string): HostLockSnapshot {
+  const holders: HostLockJob[] = [];
+  const waiters: HostLockJob[] = [];
+  const lines = output.split("\n");
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i]!;
+    if (!line.startsWith("hold\t") && !line.startsWith("wait\t")) {
+      i++;
+      continue;
+    }
+    const [kind, a, b] = line.split("\t");
+    const ageSecs = Math.max(0, Number(b) || 0);
+    const metaLine = lines[i + 1]?.trim();
+    const meta = parseHostLockMeta(metaLine);
+    i += metaLine?.startsWith("{") ? 2 : 1;
+    if (kind === "hold") {
+      holders.push({
+        state: "holding",
+        slotIndex: Number(a),
+        ageSecs,
+        phase: meta.phase ?? "self-check",
+        label: hostLockJobLabel(meta),
+        taskId: meta.taskId,
+      });
+    } else {
+      waiters.push({
+        state: "waiting",
+        queuePosition: Number(a) || waiters.length + 1,
+        ageSecs,
+        phase: meta.phase ?? "self-check",
+        label: hostLockJobLabel(meta),
+        taskId: meta.taskId,
+      });
+    }
+  }
+  return { holders, waiters, sampledAt };
+}
+
+export function formatHostLockHolderSummary(lock?: HostLockSnapshot): string {
+  if (!lock?.holders.length) return "";
+  const parts = lock.holders.map((h) => `${h.label} (${h.phase}, ${h.ageSecs}s)`);
+  return ` — slot held by ${parts.join("; ")}`;
+}
+
+export function mergeHostLockIntoStatus(
+  base: RemoteHostStatus,
+  lock?: HostLockSnapshot,
+): RemoteHostStatus {
+  if (!lock) return base;
+  const serverTaskIds = new Set((base.activeRuns ?? []).map((r) => r.taskId));
+  const extraRuns = lock.holders
+    .filter((h) => !h.taskId || !serverTaskIds.has(h.taskId))
+    .map((h) => ({
+      taskId: h.taskId ?? h.label,
+      startedAt: new Date(Date.now() - h.ageSecs * 1000).toISOString(),
+      phase: h.phase,
+      label: h.label,
+      source: "host-lock" as const,
+    }));
+  const activeRuns = [
+    ...(base.activeRuns ?? []).map((r) => ({ ...r, source: "server" as const })),
+    ...extraRuns,
+  ];
+  const lockWaiters = lock.waiters.map((w) => ({
+    taskId: w.taskId ?? w.label,
+    phase: w.phase,
+    label: w.label,
+    queuePosition: w.queuePosition,
+    ageSecs: w.ageSecs,
+  }));
+  const holderCount = lock.holders.length;
+  const inFlight = Math.max(base.inFlight, holderCount);
+  const queued = base.queued + lock.waiters.length;
+  const queuedTasks = [
+    ...lock.waiters.map((w) => w.taskId ?? w.label),
+    ...(base.queuedTasks ?? []),
+  ];
+  return {
+    ...base,
+    inFlight,
+    queued,
+    activeRuns,
+    queuedTasks,
+    hostLock: lock,
+    lockWaiters,
+  };
+}
+
 /**
  * Per-host prerequisite check (#0521) run over ssh before a host's first job,
  * so a misconfigured host is REPORTED (health + detail in the status endpoint)
@@ -682,6 +913,10 @@ export function hostLockShell(opts: {
    * caller with no deadline, e.g. a standalone `repoos check`).
    */
   deadlineAtEpochSecs?: number;
+  /** JSON metadata written to the slot's `.meta` file (#0705). */
+  metaJson?: string;
+  /** Wait-queue priority — close-out beats self-check (#0705). */
+  priority?: number;
   inner: string;
 }): string {
   // `~` would NOT expand inside the single-quoted LOCKROOT assignment below,
@@ -700,12 +935,22 @@ export function hostLockShell(opts: {
   const stale = Math.max(1, Math.floor(opts.staleMinutes ?? HOST_LOCK_STALE_MINUTES));
   const beat = Math.max(1, Math.floor(opts.heartbeatSecs ?? HOST_LOCK_HEARTBEAT_SECS));
   const ticks = Math.max(1, Math.floor(opts.heartbeatTicks ?? HOST_LOCK_HEARTBEAT_TICKS));
+  const priority = Math.max(0, Math.floor(opts.priority ?? 40));
+  const metaShell = opts.metaJson ? shellQuote(opts.metaJson) : "";
   const script = [
     lockLine,
     `SLOTS=${slots}`,
     `HOSTMAX=${HOST_LOCK_MAX_SLOTS}`,
     `WAIT=${wait}`,
+    `PRIORITY=${priority}`,
     `DEADLINE=${deadline !== undefined ? deadline : ""}`,
+    'WAITDIR="$LOCKROOT/wait"',
+    'mkdir -p "$WAITDIR" 2>/dev/null || true',
+    '[ "$WAIT" -gt 0 ] || [ -n "$DEADLINE" ] && {',
+    metaShell
+      ? `  printf '%s\\n' "$PRIORITY" > "$WAITDIR/$$" && printf '%s\\n' ${metaShell} >> "$WAITDIR/$$"`
+      : `  printf '%s\\n' "$PRIORITY" > "$WAITDIR/$$"`,
+    "}",
     // zsh throws "no matches found" when a glob expands to nothing (unlike bash/sh
     // which pass the literal string — caught by the `[ -d ]` guard below).
     // nullglob makes unmatched globs expand to nothing instead of erroring.
@@ -723,6 +968,26 @@ export function hostLockShell(opts: {
     '_rvslot=""',
     "_rvwaited=0",
     'while [ -z "$_rvslot" ]; do',
+    "  _defer=0",
+    '  if [ "$WAIT" -gt 0 ] || [ -n "$DEADLINE" ]; then',
+    '  for _wf in "$WAITDIR"/*; do',
+    '    [ -f "$_wf" ] || continue',
+    '    _wpid=$(basename "$_wf")',
+    '    [ "$_wpid" = "$$" ] && continue',
+    "    _opri=0",
+    '    IFS= read -r _opri < "$_wf" || _opri=0',
+    '    case "$_opri" in ""|*[!0-9]*) _opri=0 ;; esac',
+    '    if [ "$_opri" -gt "$PRIORITY" ] || { [ "$_opri" -eq "$PRIORITY" ] && [ "$_wpid" -lt "$$" ]; }; then',
+    "      _defer=1",
+    "      break",
+    "    fi",
+    "  done",
+    '  if [ "$_defer" -eq 1 ]; then',
+    "    sleep 5",
+    "    _rvwaited=$((_rvwaited+5))",
+    "    continue",
+    "  fi",
+    "  fi",
     // Host-wide cap = min(this caller's limit, every occupied slot's limit).
     // Scan all slot indices (HOSTMAX), not just 0..SLOTS-1, so a caller with
     // a lower limit cannot grab a free high index while another run holds a
@@ -754,7 +1019,12 @@ export function hostLockShell(opts: {
     '          [ "$_rvother" -ge 1 ] || _rvother=1',
     '          [ "$_rvother" -lt "$_rvcap2" ] && _rvcap2=$_rvother',
     "        done",
-    '        if [ "$_rvcount" -le "$_rvcap2" ]; then _rvslot=$_i; break; fi',
+    '        if [ "$_rvcount" -le "$_rvcap2" ]; then _rvslot=$_i;',
+    ...(metaShell
+      ? [`          printf '%s\\n' ${metaShell} > "$LOCKROOT/$_rvslot/.meta" 2>/dev/null || true`]
+      : []),
+    '          rm -f "$WAITDIR/$$" 2>/dev/null || true',
+    "          break; fi",
     '        rm -f "$LOCKROOT/$_i/.limit"; rmdir "$LOCKROOT/$_i" 2>/dev/null',
     "      fi",
     "      _i=$((_i+1))",
@@ -799,7 +1069,7 @@ export function hostLockShell(opts: {
     // for up to a full heartbeat interval after every run.
     "_rvbeat >/dev/null 2>&1 &",
     "_rvhb=$!",
-    '_rvcleanup() { _rc=$?; kill "$_rvhb" 2>/dev/null; rm -f "$LOCKROOT/$_rvslot/.limit"; rmdir "$LOCKROOT/$_rvslot" 2>/dev/null; exit $_rc; }',
+    '_rvcleanup() { _rc=$?; kill "$_rvhb" 2>/dev/null; rm -f "$LOCKROOT/$_rvslot/.limit" "$LOCKROOT/$_rvslot/.meta"; rmdir "$LOCKROOT/$_rvslot" 2>/dev/null; rm -f "$WAITDIR/$$" 2>/dev/null; exit $_rc; }',
     "trap _rvcleanup EXIT",
     "trap 'exit 129' HUP",
     "trap 'exit 130' INT",
@@ -1687,6 +1957,9 @@ interface PoolHostState {
   serverStats?: RemoteServerStats;
   statsRequestedAt?: number;
   statsSampling?: Promise<void>;
+  hostLock?: HostLockSnapshot;
+  hostLockRequestedAt?: number;
+  hostLockSampling?: Promise<void>;
 }
 
 /** One in-flight remote run, attributed to the host executing it (#0564). */
@@ -1705,7 +1978,7 @@ interface PoolWaiter {
   excludeHosts?: ReadonlySet<string>;
   resolve: (slot: HostSlot) => void;
   reject: (err: Error) => void;
-  onQueue?: (ahead: number) => void;
+  onQueue?: (info: { ahead: number; host: string }) => void;
   /** Which run is waiting — surfaced as the queue's next-up tasks (#0564). */
   taskId?: string;
   timer?: ReturnType<typeof setTimeout>;
@@ -1732,6 +2005,8 @@ function formatProbeReachabilityDetail(detail: string): string {
 }
 const SERVER_STATS_REFRESH_MS = 15_000;
 const SERVER_STATS_TIMEOUT_MS = 5_000;
+const HOST_LOCK_REFRESH_MS = 3_000;
+const HOST_LOCK_INSPECT_TIMEOUT_MS = 4_000;
 /**
  * Consecutive failed probes before a host stops being retried. Hitting the cap
  * must not strand queued runs: callers with no `deadlineAt` of their own
@@ -2002,7 +2277,8 @@ export class TailscaleHostPool {
   async acquire(
     capabilities: string[],
     opts: {
-      onQueue?: (ahead: number) => void;
+      /** Fired once this run joins the FIFO queue (#0706: host + position too). */
+      onQueue?: (info: { ahead: number; host: string }) => void;
       deadlineAt?: number;
       taskId?: string;
       /**
@@ -2088,15 +2364,20 @@ export class TailscaleHostPool {
           candidates.map((s) => `${s.spec.host}: ${s.detail ?? "unreachable"}`).join("; "),
       );
     }
-    const free = healthy.filter((s) => s.healthy && s.active < s.limit);
+    await Promise.all(healthy.map((s) => this.refreshHostLockFor(s)));
+    const free = healthy.filter((s) => this.hostHasCapacity(s));
     if (free.length > 0) {
       // Somebody already queued may be ahead of this arrival for that slot
       // (#0521 review: e.g. a host recovering while a waiter holds the queue).
       // Dispatch first, then re-check — a late arrival never jumps the queue.
       if (this.waiters.length > 0) this.dispatch();
       const nowFree = healthy
-        .filter((s) => s.healthy && s.active < s.limit)
-        .sort((a, b) => a.active - b.active || this.hosts.indexOf(a) - this.hosts.indexOf(b));
+        .filter((s) => this.hostHasCapacity(s))
+        .sort(
+          (a, b) =>
+            this.effectiveActive(a) - this.effectiveActive(b) ||
+            this.hosts.indexOf(a) - this.hosts.indexOf(b),
+        );
       if (nowFree.length > 0) return this.assign(nowFree[0]!, opts.taskId);
     }
 
@@ -2130,7 +2411,10 @@ export class TailscaleHostPool {
         }, ms);
         waiter.timer.unref?.();
       }
-      waiter.onQueue?.(this.queueAheadCount(capabilities, this.waiters.length - 1, excluded));
+      waiter.onQueue?.({
+        ahead: this.queueAheadCount(capabilities, this.waiters.length - 1, excluded),
+        host: candidates[0]?.spec.host ?? "",
+      });
       // Opportunistic recovery while queued: re-probe dead candidates so the
       // job can move to one the moment it comes back.
       for (const s of candidates) if (!s.healthy) this.armHealthRetry(s);
@@ -2174,7 +2458,7 @@ export class TailscaleHostPool {
         .sort(
           (a, b) =>
             Number(b.healthy) - Number(a.healthy) ||
-            a.active - b.active ||
+            this.effectiveActive(a) - this.effectiveActive(b) ||
             this.hosts.indexOf(a) - this.hosts.indexOf(b),
         )[0];
       if (next) {
@@ -2186,25 +2470,66 @@ export class TailscaleHostPool {
         queuedOn.set(next, entry);
       }
     }
-    return this.hosts.map((s) => ({
-      host: s.spec.host,
-      user: s.ssh.user,
-      os: s.spec.os,
-      labels: s.spec.labels ?? [],
-      maxConcurrent: s.limit,
-      inFlight: s.active,
-      queued: queuedOn.get(s)?.count ?? 0,
-      probed: s.probed,
-      healthy: s.healthy,
-      detail: s.detail,
-      lastRun: s.lastRun,
-      activeRuns: s.activeRuns.map((r) => ({ ...r })),
-      queuedTasks: [...(queuedOn.get(s)?.taskIds ?? [])],
-      serverStats: s.serverStats ?? { available: false },
-    }));
+    return this.hosts.map((s) =>
+      mergeHostLockIntoStatus(
+        {
+          host: s.spec.host,
+          user: s.ssh.user,
+          os: s.spec.os,
+          labels: s.spec.labels ?? [],
+          maxConcurrent: s.limit,
+          inFlight: s.active,
+          queued: queuedOn.get(s)?.count ?? 0,
+          probed: s.probed,
+          healthy: s.healthy,
+          detail: s.detail,
+          lastRun: s.lastRun,
+          activeRuns: s.activeRuns.map((r) => ({ ...r })),
+          queuedTasks: [...(queuedOn.get(s)?.taskIds ?? [])],
+          serverStats: s.serverStats ?? { available: false },
+        },
+        s.hostLock,
+      ),
+    );
   }
 
   /** Request stats without acquiring a run slot or entering the run queue. */
+  /** Sample host-side lock holders/waiters without taking a run slot (#0705). */
+  refreshHostLocks(): void {
+    const now = Date.now();
+    for (const host of this.liveHosts()) {
+      if (
+        host.hostLockSampling ||
+        (host.hostLockRequestedAt && now - host.hostLockRequestedAt < HOST_LOCK_REFRESH_MS)
+      ) {
+        continue;
+      }
+      if (!host.probed || !host.healthy) continue;
+      host.hostLockRequestedAt = now;
+      host.hostLockSampling = Promise.resolve()
+        .then(() =>
+          this.exec.runRemote(
+            host.ssh,
+            hostLockInspectShell(),
+            () => {},
+            HOST_LOCK_INSPECT_TIMEOUT_MS,
+          ),
+        )
+        .then((result) => {
+          const sampledAt = new Date().toISOString();
+          if (result.code === 0 && !result.timedOut && result.output.includes("__HOST_LOCK__")) {
+            host.hostLock = parseHostLockInspectOutput(result.output, sampledAt);
+          }
+        })
+        .catch(() => {
+          /* best effort */
+        })
+        .finally(() => {
+          host.hostLockSampling = undefined;
+        });
+    }
+  }
+
   refreshServerStats(): void {
     const now = Date.now();
     for (const host of this.liveHosts()) {
@@ -2273,6 +2598,40 @@ export class TailscaleHostPool {
     return this.hosts.filter((s) => !s.removed);
   }
 
+  /** Host-side slots in use (standalone + server), for dispatch (#0705). */
+  private lockOccupancy(s: PoolHostState): number {
+    return s.hostLock?.holders.length ?? 0;
+  }
+
+  private effectiveActive(s: PoolHostState): number {
+    return Math.max(s.active, this.lockOccupancy(s));
+  }
+
+  private hostHasCapacity(s: PoolHostState): boolean {
+    return s.healthy && this.effectiveActive(s) < s.limit;
+  }
+
+  hostLockFor(host: string): HostLockSnapshot | undefined {
+    return this.hosts.find((s) => s.spec.host === host)?.hostLock;
+  }
+
+  private async refreshHostLockFor(s: PoolHostState): Promise<void> {
+    try {
+      const result = await this.exec.runRemote(
+        s.ssh,
+        hostLockInspectShell(),
+        () => {},
+        HOST_LOCK_INSPECT_TIMEOUT_MS,
+      );
+      if (result.code === 0 && !result.timedOut && result.output.includes("__HOST_LOCK__")) {
+        s.hostLock = parseHostLockInspectOutput(result.output, new Date().toISOString());
+        s.hostLockRequestedAt = Date.now();
+      }
+    } catch {
+      /* best effort */
+    }
+  }
+
   /** Hosts that could take a job with these capabilities. */
   private hostsEligibleFor(
     capabilities: string[],
@@ -2307,7 +2666,7 @@ export class TailscaleHostPool {
     excludeHosts?: ReadonlySet<string>,
   ): number {
     const active = this.hostsEligibleFor(capabilities, excludeHosts).reduce(
-      (n, s) => n + s.active,
+      (n, s) => n + this.effectiveActive(s),
       0,
     );
     let aheadWaiters = 0;
@@ -2375,12 +2734,15 @@ export class TailscaleHostPool {
       const free = this.liveHosts()
         .filter(
           (s) =>
-            s.healthy &&
-            s.active < s.limit &&
+            this.hostHasCapacity(s) &&
             hostSatisfies(s.spec, w.capabilities) &&
             !(w.excludeHosts?.has(s.spec.host) ?? false),
         )
-        .sort((a, b) => a.active - b.active || this.hosts.indexOf(a) - this.hosts.indexOf(b))[0];
+        .sort(
+          (a, b) =>
+            this.effectiveActive(a) - this.effectiveActive(b) ||
+            this.hosts.indexOf(a) - this.hosts.indexOf(b),
+        )[0];
       if (!free) {
         i++;
         continue;
@@ -2739,6 +3101,10 @@ export class TailscaleRunner implements RemoteValidator {
     this.pool.refreshServerStats();
   }
 
+  refreshHostLocks(): void {
+    this.pool.refreshHostLocks();
+  }
+
   /**
    * Rebuild the dispatch pool from the (already mutated) config object so a
    * Settings save takes effect without restarting the server (#0521 review).
@@ -2810,7 +3176,7 @@ export class TailscaleRunner implements RemoteValidator {
           // Failover guarantee: the pool never hands back a host this run
           // already tried, so a retry cannot re-run the failed host.
           excludeHosts: [...triedHosts],
-          onQueue: (ahead) => {
+          onQueue: ({ ahead }) => {
             const note = this.queueNote(ahead, capabilities);
             emit(note);
             appendRemoteValidationEvent(this.config.root, opts.taskId, {
@@ -3010,7 +3376,21 @@ export class TailscaleRunner implements RemoteValidator {
       // can let a run start well past the caller's real deadline.
       const deadlineAtEpochSecs =
         opts.deadlineAt !== undefined ? Math.floor(opts.deadlineAt / 1000) : undefined;
-      const cmd = hostLockShell({ slots: slot.limit, waitSecs, deadlineAtEpochSecs, inner });
+      const lockPriority = hostLockPriority(opts.phase);
+      const metaJson = hostLockMetaJson({
+        taskId: opts.taskId,
+        phase: opts.phase,
+        worktree: opts.worktreePath,
+        priority: lockPriority,
+      });
+      const cmd = hostLockShell({
+        slots: slot.limit,
+        waitSecs,
+        deadlineAtEpochSecs,
+        inner,
+        metaJson,
+        priority: lockPriority,
+      });
       // The outer SSH timeout must cover the lock wait AND the actual run —
       // it wraps BOTH phases as one process, but was a fixed remoteRunTimeoutMs
       // regardless of how long waitSecs allowed the lock to wait first
@@ -3066,10 +3446,12 @@ export class TailscaleRunner implements RemoteValidator {
         // job; this run gives its slot back and retries later.
         emit(`\n[host busy — another repoos check held ${host.ip}]\n`);
         this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
+        const holderNote = formatHostLockHolderSummary(this.pool.hostLockFor(host.ip));
         return withScope(
           this.infraFail(
             `another repoos check is already running on ${host.ip} — waited ${elapsed}s for a free host slot ` +
-              "(the per-host limit is shared by the server and standalone `repoos check`)",
+              "(the per-host limit is shared by the server and standalone `repoos check`)" +
+              holderNote,
             { taskId: opts.taskId, host: host.ip, exitCode: run.code },
           ),
         );
