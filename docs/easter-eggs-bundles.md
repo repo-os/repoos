@@ -14,8 +14,8 @@ the same reason.
 Every task costs the same fixed overhead regardless of how small the change is:
 
 - **One worktree** and its branch.
-- **One `repoos check` run** — minutes of build, typecheck, tests and the
-  headless UI smoke test.
+- **One `repoos check` run** — five to eight minutes of build, typecheck, tests
+  and the headless UI smoke test.
 - **One review** by a second agent, and possibly a round of review fixes.
 - **One close-out** — merge, full gate, and a server reload that briefly takes
   the control plane down. During that window nothing else should start.
