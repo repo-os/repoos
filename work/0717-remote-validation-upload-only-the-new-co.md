@@ -17,7 +17,7 @@ model_override: composer-2.5
 created_at: "2026-10-06T11:11:30Z"
 updated_at: "2026-10-06T11:49:00Z"
 handoff_signal_retry_count: 1
-dev_error_count: 1
+dev_error_count: 2
 ---
 ## Problem
 
