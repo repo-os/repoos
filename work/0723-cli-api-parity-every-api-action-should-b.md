@@ -13,8 +13,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
 updated_at: "2026-10-06T17:43:28Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: a08ed173a134a642e6252b314b28cd73b79d12f6
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -73,3 +71,4 @@ error: script "test" exited with code 1
 - 2026-10-06T17:42:25Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-06T17:43:28Z · status active→review
 - 2026-10-06T17:43:28Z · status review→active
+
