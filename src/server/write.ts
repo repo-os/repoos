@@ -127,6 +127,14 @@ export interface TaskPatch {
   archived?: boolean;
   /** Free-text reason for archiving; null clears it. Only written while archived. */
   archiveDetail?: string | null;
+  /**
+   * Hold (true) or release (false) the task out of auto-start (#0690).
+   * Orthogonal to `status`: a held task stays `ready` and is still startable
+   * by hand; the auto-engineering picker just skips it.
+   */
+  hold?: boolean;
+  /** Repo-relative files this task expects to touch; null/empty clears them. */
+  paths?: string[] | null;
   /** Per-task agent name override, or null to clear. */
   agentOverride?: string | null;
   /** Per-task CLI override, or null to clear. */
@@ -310,6 +318,19 @@ export function patchTaskFile(
   }
   if (patch.archiveDetail !== undefined) {
     current.archiveDetail = patch.archiveDetail ? String(patch.archiveDetail) : undefined;
+  }
+  if (patch.hold !== undefined) {
+    if (patch.hold !== Boolean(current.isHeld)) changes.push(patch.hold ? "held" : "released");
+    current.isHeld = patch.hold;
+  }
+  if (patch.paths !== undefined) {
+    const next = patch.paths
+      ?.map(String)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    const normalized = next && next.length > 0 ? next : undefined;
+    if ((normalized ?? []).join("\0") !== (current.paths ?? []).join("\0")) changes.push("paths");
+    current.paths = normalized;
   }
   if (patch.title !== undefined) {
     if (patch.title !== current.title) changes.push("title");

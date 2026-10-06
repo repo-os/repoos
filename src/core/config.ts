@@ -190,6 +190,9 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     autoTransition: true,
   },
   autoEngineeringMode: false,
+  autoEngineering: {
+    pmVeto: false,
+  },
   ctoSkipHealthy: true,
   skillSuggestions: false,
   maxActiveTasks: 3,
@@ -222,6 +225,9 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   // disables the ceiling for repos whose gate legitimately needs longer.
   closeOut: {
     timeoutMs: 360_000,
+  },
+  attention: {
+    spendAlertUsd: 0,
   },
   // Check-gate defaults (#0655): how many times a failing test file is
   // re-run in isolation for the informational flake-triage label.
@@ -1097,6 +1103,12 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
     if (typeof get("autoEngineeringMode") === "boolean")
       cfg.autoEngineeringMode = get("autoEngineeringMode") as boolean;
+    // #0690: optional PM veto pass. Nested `[autoEngineering] pmVeto = true`.
+    // Absent means the deterministic default (no veto).
+    const pmVeto = parsed["autoEngineering.pmVeto"];
+    if (typeof pmVeto === "boolean") {
+      cfg.autoEngineering = { ...cfg.autoEngineering, pmVeto };
+    }
     if (typeof get("ctoSkipHealthy") === "boolean")
       cfg.ctoSkipHealthy = get("ctoSkipHealthy") as boolean;
     if (typeof get("skillSuggestions") === "boolean")
@@ -1523,6 +1535,18 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       }
     }
 
+    const spendAlert = parsed["attention.spendAlertUsd"];
+    if (spendAlert !== undefined) {
+      if (typeof spendAlert === "number" && Number.isFinite(spendAlert) && spendAlert >= 0) {
+        cfg.attention = { spendAlertUsd: spendAlert };
+      } else {
+        console.warn(
+          `[attention] spendAlertUsd must be a number >= 0 (0 disables the alert), ` +
+            `got ${JSON.stringify(spendAlert)} — using 0 (off)`,
+        );
+      }
+    }
+
     const approvalEnabled = parsed["approval.enabled"];
     const approvalAreas = normalizeStringList(parsed["approval.autoApprove.areas"]);
     const approvalTypes = normalizeStringList(parsed["approval.autoApprove.types"]);
@@ -1818,6 +1842,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description: "Automatically select and start ready tasks up to the maximum",
     },
     {
+      key: "autoEngineering.pmVeto",
+      label: "PM veto for parallel conflicts",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.autoEngineering?.pmVeto ?? false,
+      description:
+        "Off by default: the picker is fully deterministic (priority, then the most " +
+        "downstream work unblocked, then creation order). When on, a PM pass runs only when " +
+        "there are more eligible tasks than open slots AND two candidates would collide " +
+        "(same area or a declared shared path). It may only reorder or defer — never invent " +
+        "work — and its rationale is recorded with the decision.",
+    },
+    {
       key: "ctoSkipHealthy",
       label: "Skip the CTO on a healthy board",
       type: "boolean",
@@ -1871,6 +1909,17 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       ],
       description:
         "Advisory ceiling on registered git worktrees. Above it, the Control page's Codebase card turns amber and the server logs a `repoos gc` reminder. Never blocks a task.",
+    },
+    {
+      key: "attention.spendAlertUsd",
+      label: "Spend alert threshold (USD)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.attention?.spendAlertUsd ?? 0,
+      description:
+        "Show a notice in the bell when provider-reported board spend reaches this total. " +
+        "0 disables the alert. Estimates and unknown costs are never counted toward the total.",
     },
     {
       key: "closeOut.timeoutMs",
@@ -2173,6 +2222,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "defaultTaskMode",
   "maxActiveTasks",
   "autoEngineeringMode",
+  "autoEngineering.pmVeto",
   "ctoSkipHealthy",
   "skillSuggestions",
   "worktreeWarnThreshold",
@@ -2304,6 +2354,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "tunnel.apps",
   // Close-out (Move to done) pipeline budget (#0573)
   "closeOut.timeoutMs",
+  "attention.spendAlertUsd",
   "approval.enabled",
   "approval.autoApprove.areas",
   "approval.autoApprove.types",

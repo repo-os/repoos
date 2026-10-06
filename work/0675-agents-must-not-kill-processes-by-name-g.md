@@ -2,15 +2,17 @@
 id: "0675"
 title: Agents must not kill processes by name; give each agent its own process group
 type: bug
-status: inbox
+status: active
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/agents-must-not-kill-processes-by-name-g
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T16:58:32Z"
-updated_at: "2026-10-05T17:32:20Z"
+updated_at: "2026-10-05T23:45:00Z"
 ---
 ## Problem
 
@@ -47,3 +49,6 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:16:43Z · story
 - 2026-10-05T17:16:44Z · body: section Story context
 - 2026-10-05T17:32:20Z · body: section Docs follow-up
+- 2026-10-05T23:44:58Z · status inbox→ready
+- 2026-10-05T23:44:59Z · cli_override, model_override
+- 2026-10-05T23:45:00Z · status ready→active, branch

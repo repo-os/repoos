@@ -11,6 +11,7 @@ import type { RootLock } from "../repo-lock.js";
 import type { ReloadManager } from "../reload.js";
 import type { JobCoordinator } from "../integration-job.js";
 import type { CloseOutOutcomeStore } from "../close-out-outcome.js";
+import type { AttentionEventStore } from "../attention-events.js";
 import type { Logger } from "../../core/logger.js";
 import type { DoneStep } from "../done.js";
 import type { RemoteValidator } from "../remote-validation.js";
@@ -58,6 +59,8 @@ export interface RouteContext {
    * Optional so route tests can build a partial context.
    */
   closeOutOutcomes?: CloseOutOutcomeStore;
+  /** Durable provider-failure and remote-fallback events (#0687). */
+  attentionEvents?: AttentionEventStore;
   /** Remote Validation Runner (docs/remote-validation.md). Undefined when not configured. */
   remoteValidator?: RemoteValidator;
   /**
