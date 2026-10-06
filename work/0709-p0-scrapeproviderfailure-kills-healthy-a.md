@@ -12,7 +12,7 @@ branch: feat/p0-scrapeproviderfailure-kills-healthy-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T07:35:51Z"
-updated_at: "2026-10-06T08:51:22Z"
+updated_at: "2026-10-06T09:15:11Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 0e8ba4e203bf0659fcf5ca704c0f343c0bb67b30
 ---
@@ -48,3 +48,4 @@ Smallest fix: in scrapeProviderFailure only inspect structured fields for lines 
 - 2026-10-06T08:39:26Z · status review→active
 - 2026-10-06T08:51:22Z · status active→review
 - 2026-10-06T08:51:22Z · status review→active
+- 2026-10-06T09:15:11Z · note: Field report from tuk-private confirms this bug (15 runs killed). Tightened further on the branch: bare 402 no longer matches anywhere (line numbers '402:', hashes, timestamps); needs HTTP-ish context. Tests added for each vector from the report.
