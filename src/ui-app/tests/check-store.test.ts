@@ -310,6 +310,17 @@ describe("envToRunContext (caller attribution)", () => {
     });
   });
 
+  it("falls back to REPOOS_TASK_ID for managed engineer self-checks (#0694)", () => {
+    expect(envToRunContext({ REPOOS_AGENT: "1", REPOOS_TASK_ID: "0694" })).toEqual({
+      taskId: "0694",
+      phase: "pre-review",
+    });
+    expect(envToRunContext({ REPOOS_CHECK_TASK_ID: "0564", REPOOS_TASK_ID: "0694" })).toEqual({
+      taskId: "0564",
+      phase: "pre-review",
+    });
+  });
+
   it("localMachineName is a short hostname", () => {
     const name = localMachineName();
     expect(name).toBeTruthy();
