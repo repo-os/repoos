@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T14:01:47Z"
-updated_at: "2026-10-06T14:01:49Z"
+updated_at: "2026-10-06T14:56:36Z"
 ---
 ## Problem
 
@@ -34,3 +34,4 @@ TaskCard.vue (codingOrStuckHint) computes silence from repo.agentActivityAt[task
 
 - 2026-10-06T14:01:47Z · created · unknown
 - 2026-10-06T14:01:49Z · needs_input
+- 2026-10-06T14:56:36Z · note: Superseded by #0721 (lastOutputAt on /api/agents/running).
