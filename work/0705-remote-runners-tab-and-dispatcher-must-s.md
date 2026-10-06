@@ -12,7 +12,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T06:19:56Z"
+updated_at: "2026-10-06T06:24:40Z"
 ---
 ## Problem
 
@@ -79,3 +79,5 @@ Task #0706 (filed by the #0695 reviewer: standalone self-check prefers the least
    Duration  2.62s (transform 1.08s, setup 13ms, import 1.36s, tests 728ms, environment 444ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-06T06:24:40Z · status active→review
+- 2026-10-06T06:24:40Z · status review→active
