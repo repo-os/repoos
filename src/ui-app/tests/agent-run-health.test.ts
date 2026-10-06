@@ -36,6 +36,41 @@ describe("scrapeProviderFailure", () => {
   it("detects 402/credit lines", () => {
     expect(scrapeProviderFailure("OpenRouter HTTP 402 insufficient credits")).toContain("402");
   });
+
+  // #0709: healthy agents were killed because a stream-json line merely contained
+  // the digits "402" (a timestamp or call id) or the words billing / rate limit
+  // in file contents.
+  it("ignores stream-json tool lines whose text only contains the trigger substrings", () => {
+    const edit = JSON.stringify({
+      type: "tool_call",
+      subtype: "completed",
+      call_id: "tool_bfa5ccb9-402e-45cd-a61d-471da9117eb",
+      timestamp_ms: 1791270402123,
+      tool_call: {
+        editToolCall: {
+          args: { path: "src/billing.ts" },
+          result:
+            "// handle rate limit and model unavailable and insufficient credit in the billing flow",
+        },
+      },
+    });
+    expect(scrapeProviderFailure(edit)).toBeNull();
+  });
+
+  it("detects a structured provider error event with its real message", () => {
+    const ev = JSON.stringify({
+      type: "error",
+      error: { message: "402 Payment Required: insufficient credits" },
+    });
+    expect(scrapeProviderFailure(ev)).toContain("insufficient credits");
+    const res = JSON.stringify({ type: "result", is_error: true, result: "Rate limit exceeded" });
+    expect(scrapeProviderFailure(res)).toContain("Rate limit");
+  });
+
+  it("does not match a bare 402 inside a number or a long plain-text blob", () => {
+    expect(scrapeProviderFailure("elapsed 1791270402123 ms")).toBeNull();
+    expect(scrapeProviderFailure("x".repeat(400) + " rate limit")).toBeNull();
+  });
 });
 
 describe("DegenerateOutputTracker", () => {
