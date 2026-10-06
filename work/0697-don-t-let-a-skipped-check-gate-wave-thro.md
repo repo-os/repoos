@@ -44,3 +44,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-06T04:37:21Z · cli_override, model_override
 - 2026-10-06T04:37:21Z · status ready→active, branch
 - 2026-10-06T10:22:55Z · status active→review
+- 2026-10-06T10:22:55Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
