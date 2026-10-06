@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0697"
 title: Don't let a skipped check gate wave through a branch that adds a buildable project; tell the reviewer when the gate skipped
 type: feature
@@ -13,7 +12,8 @@ branch: feat/don-t-let-a-skipped-check-gate-wave-thro
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:44Z"
-updated_at: "2026-10-06T05:16:02Z"
+updated_at: "2026-10-06T05:59:39Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
