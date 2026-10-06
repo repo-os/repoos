@@ -2,7 +2,7 @@
 id: "0695"
 title: "Finish #0694 follow-ups: AGENTS.md remote self-check wording, task attribution for cli Runs rows, WIP-checkpoint tests, load measurement"
 type: chore
-status: active
+status: review
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -61,4 +61,4 @@ Found 2026-10-06 10:50: four engineers (0679, 0683, 0688, 0695) showed 'stuck' i
 - 2026-10-06T03:04:02Z · body
 - 2026-10-06T03:04:46Z · body: section Load measurement
 - 2026-10-06T03:33:41Z · body
-- 2026-10-06T03:34:47Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-06T03:34:47Z · status active→review
