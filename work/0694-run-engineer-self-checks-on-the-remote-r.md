@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-06T01:22:22Z"
-review_passes: 2
 id: "0694"
 title: Run engineer self-checks on the remote runners (not the laptop) and reuse the green remote result at handoff
 type: feature
@@ -14,6 +12,8 @@ branch: feat/run-engineer-self-checks-on-the-remote-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:59:26Z"
+updated_at: "2026-10-06T01:26:17Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -40,6 +40,9 @@ Read first: src/server/pre-review-remote-gate.ts (#0520), src/commands/check.ts 
 
 ## Driver note: runs list and repeat local checks
 Also in scope, found 2026-10-06 from the Checks > Runs tab: (1) all 191 phase=cli rows in 12 h have task_id NULL, because an engineer running 'repoos check' in its own shell has no REPOOS_TASK_ID (only handoff, pre-review and close-out pass it), so the Runs list shows a dash; the worktree column still identifies the branch. Fix: set REPOOS_TASK_ID in the engineer agent environment, and/or derive task from the worktree branch when env is missing, and show it in the Runs list. (2) Engineers re-run the local check many times per task (about 15-20 runs per task in 2 hours, e.g. 20 for 0690); when you move self-checks to a runner, also consider telling engineers to run it once before handoff, not after every edit.
+
+## Review feedback (driver, round 2)
+Reviewer verdict 'needs some work' (non-blocking items, fix quickly): 1. Update AGENTS.md Definition of done: with remote validation on, 'repoos check --changed main' and managed-engineer self-checks run on a runner; add 'run repoos check once before handoff, not after every edit'. Same for any user-docs sentence that still says the scoped check is a fast local pass. 2. Derive the task from the worktree branch when REPOOS_TASK_ID is missing so local phase=cli rows in Checks > Runs show a task number (driver note in this task body). 3. Add focused tests for commitWipCheckpointForRemoteGate and for managed-engineer fallback messaging. 4. The load before/after acceptance item is WAIVED by the owner/driver (will be measured after merge); say so in the activity note. 5. Re-run repoos check --changed main, then hand off.
 
 ## Activity
 
@@ -74,4 +77,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-06T01:16:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-06T01:21:25Z · status active→review
-
+- 2026-10-06T01:26:17Z · body: section Review feedback (driver, round 2)
