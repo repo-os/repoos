@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-06T17:50:35Z"
-review_passes: 2
 id: "0721"
 title: "Easter eggs bundle: stuck-timer source, needs_input clear on new run, stale provider balance, agent-review test races"
 type: chore
@@ -14,7 +12,9 @@ branch: feat/easter-eggs-bundle-stuck-timer-source-ne
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:27:52Z"
+updated_at: "2026-10-06T17:49:39Z"
 review_rounds: 1
+review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -106,6 +106,3 @@ fatal: unable to read tree (25c22c96a27f03b0c4de97fbff14af7d4b037c08) — fix it
 - 2026-10-06T17:23:44Z · status review→active
 - 2026-10-06T17:25:26Z · body: section Shots
 - 2026-10-06T17:49:39Z · status active→review
-- 2026-10-06T17:49:40Z · note: shots: skipped — 2 handoff shots already captured during finalization (#0680)
-- 2026-10-06T17:50:35Z · note: review pass 2: good to go
-
