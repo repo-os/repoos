@@ -10,6 +10,13 @@ import {
 /** Machine-readable `needs_input_reason` when a task body looks like an unfinished stub. */
 export const UNDERSPECIFIED_NEEDS_INPUT_REASON = "underspecified";
 
+/** Machine-readable `needs_input_reason` when acceptance criteria need a human-only step. */
+export const NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON = "needs-human-step";
+
+/** Shown in `needs_input_detail` when the acceptance-criteria heuristic fires. */
+export const NEEDS_HUMAN_STEP_HINT =
+  "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task.";
+
 /** Minimum non–original-prompt body length before the short-body heuristic fires. */
 export const UNDERSPECIFIED_MIN_BODY_CHARS = 400;
 
@@ -89,6 +96,60 @@ export interface UnderspecifiedAssessment {
   /** Human-readable signals joined for `needs_input_detail`. */
   detail: string;
   signals: string[];
+}
+
+export interface NeedsHumanStepAssessment {
+  needsHumanStep: boolean;
+  /** Human-readable signals joined for `needs_input_detail`. */
+  detail: string;
+  signals: string[];
+}
+
+const HUMAN_STEP_ACCEPTANCE_PATTERNS: { re: RegExp; label: string }[] = [
+  { re: /\breal\s+device/i, label: "real device" },
+  { re: /\bphysical\s+(device|hardware)\b/i, label: "physical hardware" },
+  { re: /\bon\s+(a|the)\s+(real\s+)?device\b/i, label: "on-device verification" },
+  {
+    re: /\b(iphone|android\s+device|google\s+pixel|handset|tablet|wearable)\b/i,
+    label: "named mobile hardware",
+  },
+  {
+    re: /\b(test|verify|confirm|prove).{0,80}\b(device|hardware)\b/i,
+    label: "device verification",
+  },
+  { re: /\b(production|staging)\s+(account|credentials?)\b/i, label: "environment credentials" },
+  { re: /\b(credentials?|api\s+keys?|service\s+account)\b/i, label: "credentials or keys" },
+  {
+    re: /\b(register|sign[- ]?up|enroll|create).{0,50}\b(apple|google|firebase|third[- ]?party|external)\b/i,
+    label: "third-party registration",
+  },
+  { re: /\bfirebase\s+project\b/i, label: "Firebase project" },
+  { re: /\b(app\s+store|play\s+console|developer\s+portal)\b/i, label: "store or portal setup" },
+];
+
+/**
+ * True when `## Acceptance criteria` (or the whole body if that section is missing)
+ * mentions work only a human can perform on real hardware, accounts, or external systems.
+ */
+export function assessTaskNeedsHumanStep(
+  body: string,
+  _opts?: { area?: string | null },
+): NeedsHumanStepAssessment {
+  const trimmed = body.trim();
+  const acSection = extractSection(trimmed, "## Acceptance criteria");
+  const scanText = acSection
+    ? stripTemplatePlaceholderLines(sectionContent(acSection))
+    : stripTemplatePlaceholderLines(bodyForLengthCheck(trimmed));
+  const signals: string[] = [];
+  for (const { re, label } of HUMAN_STEP_ACCEPTANCE_PATTERNS) {
+    if (re.test(scanText)) signals.push(label);
+  }
+  const uniqueSignals = [...new Set(signals)];
+  if (uniqueSignals.length === 0) {
+    return { needsHumanStep: false, detail: "", signals: [] };
+  }
+  const detail = `${NEEDS_HUMAN_STEP_HINT} (matched: ${uniqueSignals.join(", ")})`;
+  return { needsHumanStep: true, detail, signals: uniqueSignals };
 }
 
 export function assessTaskUnderspecified(

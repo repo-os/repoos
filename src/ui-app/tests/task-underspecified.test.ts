@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   UNDERSPECIFIED_MIN_BODY_CHARS,
   assessTaskUnderspecified,
+  assessTaskNeedsHumanStep,
+  NEEDS_HUMAN_STEP_HINT,
 } from "../../core/task-underspecified.js";
 import { needsInputClearsOnSuccessfulReview } from "../../core/needs-input.js";
 
@@ -169,6 +171,42 @@ describe("assessTaskUnderspecified", () => {
     ].join("\n");
     const result = assessTaskUnderspecified(body);
     expect(result.detail).not.toContain("placeholder markers");
+  });
+});
+
+describe("assessTaskNeedsHumanStep (#0698)", () => {
+  const wellFormed = [
+    "## Problem",
+    "",
+    SUBSTANTIVE.repeat(3),
+    "",
+    "## Desired UX",
+    "",
+    SUBSTANTIVE.repeat(3),
+    "",
+    "## Acceptance criteria",
+    "",
+    "- [ ] Unit tests pass",
+    "",
+    "## Notes for AI",
+    "",
+    SUBSTANTIVE.repeat(2),
+  ].join("\n");
+
+  it("does not flag ordinary agent-only acceptance criteria", () => {
+    const result = assessTaskNeedsHumanStep(wellFormed);
+    expect(result.needsHumanStep).toBe(false);
+  });
+
+  it("flags real-device and credential requirements in acceptance criteria", () => {
+    const body = wellFormed.replace(
+      "- [ ] Unit tests pass",
+      "- [ ] Verify on a real device with production credentials\n- [ ] Firebase project registered",
+    );
+    const result = assessTaskNeedsHumanStep(body);
+    expect(result.needsHumanStep).toBe(true);
+    expect(result.signals.length).toBeGreaterThan(0);
+    expect(result.detail).toContain(NEEDS_HUMAN_STEP_HINT.slice(0, 40));
   });
 });
 
