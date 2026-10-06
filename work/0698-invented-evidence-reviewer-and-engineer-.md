@@ -80,4 +80,4 @@ error: script "test" exited with code 1
 - 2026-10-06T15:19:33Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
 - 2026-10-06T15:38:53Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
 - 2026-10-06T15:54:31Z · status active→review
-
+- 2026-10-06T15:54:31Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
