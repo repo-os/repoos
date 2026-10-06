@@ -14,8 +14,6 @@ model_override: composer-2.5
 created_at: "2026-10-06T03:15:46Z"
 updated_at: "2026-10-06T15:54:31Z"
 last_check_failure: "repoos check at 2026-10-06T15:38:56.453Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 3b03e4a30197f99c16e803f14a92c4d3f673280a
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -82,3 +80,4 @@ error: script "test" exited with code 1
 - 2026-10-06T15:19:33Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
 - 2026-10-06T15:38:53Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
 - 2026-10-06T15:54:31Z · status active→review
+
