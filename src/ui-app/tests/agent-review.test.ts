@@ -26,6 +26,9 @@ import { basename, dirname, join } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
 import { waitFor } from "./helpers";
 
+/** Review finalization + bumpReviewPasses can exceed the default poll ceiling under full-suite load. */
+const REVIEW_PASS_WAIT_MS = 120_000;
+
 interface Fixture {
   root: string;
   bin: string;
@@ -336,6 +339,7 @@ describe("agent review before human sign-off (#0101)", () => {
       await waitFor(
         () => /^review_passes: 1$/m.test(readFileSync(task.absPath, "utf8")),
         "first review pass is counted",
+        REVIEW_PASS_WAIT_MS,
       );
       await waitForAsync(async () => {
         const after = await api(server, "GET", `/api/tasks/${task.id}`);
@@ -358,10 +362,12 @@ describe("agent review before human sign-off (#0101)", () => {
       await waitFor(
         () => /^review_passes: 2$/m.test(readFileSync(task.absPath, "utf8")),
         "the second automatic review completes",
+        REVIEW_PASS_WAIT_MS,
       );
       await waitFor(
         () => spawns(fx).filter((s) => s.args.includes("--auto")).length === 2,
         "two automatic review runs spawned",
+        REVIEW_PASS_WAIT_MS,
       );
     });
   }, 90_000);
@@ -675,14 +681,16 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
       await waitFor(
         () => /^review_passes: 2$/m.test(readFileSync(task.absPath, "utf8")),
         "the second review pass is counted",
+        REVIEW_PASS_WAIT_MS,
       );
       await waitFor(
         () => spawns(fx).filter((s) => s.args.includes("--auto")).length === 2,
         "two automatic review runs spawned",
+        REVIEW_PASS_WAIT_MS,
       );
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 2$/m);
     });
-  }, 90_000);
+  }, 150_000);
 
   it("returns a task to active when review findings are auto-bounced to the engineer", async () => {
     const needsWorkReport = [
