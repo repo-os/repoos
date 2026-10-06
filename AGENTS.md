@@ -81,11 +81,15 @@ RepoOS's own; in a managed repo it is that project's. See `docs/README.md`.
 2. Work in the dedicated worktree and branch RepoOS assigned. The server has
    already activated the task and created or reused its worktree. Do not edit
    task frontmatter or create a second worktree for it.
-3. Implement the task and update docs directly affected by the change. Run
-   `repoos check --changed main` for the scoped pre-review check — it must
-   pass. Add `--fix` (or just `bun run fmt`) to run the `format` step's fixer
-   before the check; handoff also does this and commits the result itself.
-   Rebuild after UI changes.
+3. Implement the task and update docs directly affected by the change. Before
+   handoff, run `repoos check` once (typically `repoos check --changed main` or
+   `REPOOS_CHECK_CHANGED=main repoos check`) and confirm it passes — not after
+   every edit; repeated runs create WIP checkpoint commits on the task branch.
+   When `remoteValidation` is enabled, that scoped check runs install + build +
+   changed-path tests on the runner and fast guards locally; handoff still runs
+   the full suite on the runner before merge. Add `--fix` (or just `bun run fmt`)
+   to run the `format` step's fixer before the check; handoff also does this and
+   commits the result itself. Rebuild after UI changes.
 4. Request handoff with `repoos mv <id> review` or finish your reply with
    `::repoos-handoff-ready::`, then end your turn. In your own runner session,
    both record a request without changing status. RepoOS commits the branch,
@@ -207,8 +211,10 @@ Change the gate by editing that plan in `repoos.toml`, not by editing
 plus optional `fix`, `cwd`, `timeoutMs`, `required`, `profiles`, `whenChanged`,
 `requires`, `dependsOn`. A required step whose tool is missing FAILS with
 install advice — only an explicitly optional or excluded step may skip.
-Close-out runs the full profile; `repoos check --changed main` is a fast
-pre-review pass, not the merge gate. See `user-docs/check.md`.
+Close-out runs the full profile; a scoped `repoos check --changed main` (or
+`REPOOS_CHECK_CHANGED`) is a fast engineer self-check — remote validation runs
+changed-path tests on the runner when enabled — not the merge gate. See
+`user-docs/check.md`.
 
 `repoos check` only catches code breakage — it says nothing about whether this
 task's diff just made a doc wrong. Before moving to review, also check: does

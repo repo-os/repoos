@@ -152,6 +152,8 @@ export async function runRemotePreReviewGate(params: {
    * abandoned it (the handoff's 10-minute deadline).
    */
   deadlineAt?: number;
+  /** When set, the remote runner runs vitest in changed-path mode (#0695). */
+  changedRef?: string;
 }): Promise<RemotePreReviewOutcome> {
   const rv = params.config.remoteValidation;
   if (!rv?.enabled) return { kind: "skip" };
@@ -169,6 +171,7 @@ export async function runRemotePreReviewGate(params: {
   // deliberately not profile-filtered — the remote run executes the entire
   // plan in one go, so it must never land on a host missing one of its steps.
   const capabilities = remoteJobCapabilities(params.config);
+  const changedRef = params.changedRef?.trim();
   const remote = await params.remoteValidator.validate({
     taskId: params.taskId,
     worktreePath: params.worktreePath,
@@ -177,6 +180,7 @@ export async function runRemotePreReviewGate(params: {
     onChunk: params.onChunk,
     ...(capabilities.length ? { capabilities } : {}),
     ...(params.deadlineAt !== undefined ? { deadlineAt: params.deadlineAt } : {}),
+    ...(changedRef ? { changedRef } : {}),
   });
   if (remote.ok) {
     return { kind: "local-only", skipTests: true };
