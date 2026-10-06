@@ -15,7 +15,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T07:38:15Z"
+updated_at: "2026-10-06T08:40:35Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 7
@@ -157,3 +157,5 @@ src/server/remote-validation.ts(2251,9): error TS2322: Type '((info: { ahead: nu
       Type 'number' is not assignable to type '{ ahead: number; host: string; }'.
 src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahead: number; host: string; }' is not assignable to parameter of type 'number'.
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-06T08:40:34Z · status active→review
+- 2026-10-06T08:40:35Z · status review→active
