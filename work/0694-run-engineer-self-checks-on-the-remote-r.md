@@ -2,17 +2,18 @@
 id: "0694"
 title: Run engineer self-checks on the remote runners (not the laptop) and reuse the green remote result at handoff
 type: feature
-status: review
+status: done
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 86559e91bb8d3b90ca1a0eae1d96acd4ce19815d
 assigned_to: ai
 created_by: ""
 branch: feat/run-engineer-self-checks-on-the-remote-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:59:26Z"
-updated_at: "2026-10-06T00:52:57Z"
+updated_at: "2026-10-06T01:45:11Z"
 ---
 ## Problem
 
@@ -44,3 +45,4 @@ Read first: src/server/pre-review-remote-gate.ts (#0520), src/commands/check.ts 
 - 2026-10-06T00:02:30Z · cli_override, model_override
 - 2026-10-06T00:02:31Z · status ready→active, branch
 - 2026-10-06T00:52:57Z · status active→review
+- 2026-10-06T01:45:11Z · status review→done, release:success
