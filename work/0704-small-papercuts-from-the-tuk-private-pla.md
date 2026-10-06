@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-06T03:16:00Z"
+updated_at: "2026-10-06T03:18:29Z"
 ---
 ## Problem
 
@@ -35,3 +35,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 ## Activity
 
 - 2026-10-06T03:16:00Z · created · unknown
+- 2026-10-06T03:18:29Z · note: Also from the tuk-private run (log items 18-19): (5) `repoos show` omits story, depends_on and paths from its header; (6) GET on a POST-only /api route (e.g. /api/tasks/0004/done) returns index.html with HTTP 200 instead of JSON 404/405.
