@@ -13,7 +13,7 @@ import { boardRoot, loadConfig, resolveColumnLabels } from "../core/config.js";
 import { STATUSES, PRIORITIES, TASK_TYPES, type Status, type Task } from "../core/types.js";
 import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
-import { flagUnderspecifiedIfNeeded } from "../server/task-underspecified-flag.js";
+import { flagTaskSpecFlagsIfNeeded } from "../server/task-underspecified-flag.js";
 import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
 import { isAncestor } from "../core/git.js";
 import {
@@ -810,7 +810,7 @@ export function cmdNew(args: string[]): void {
   // #0668: `repoos new` writes the task directly (no server in the loop), so it
   // assesses the stub itself. The boot sweep is the backstop for tasks created
   // while the server was down or by another client.
-  const flagged = flagUnderspecifiedIfNeeded(repoos.config, t);
+  const flagged = flagTaskSpecFlagsIfNeeded(repoos.config, t);
   if (flagged) {
     console.log(
       "  " +

@@ -73,6 +73,17 @@ describe("needsInputPrimaryAction (#0511)", () => {
     ).toBe(true);
   });
 
+  it("offers Send to PM for needs-human-step tasks (#0698)", () => {
+    expect(needsInputStatusLabel("needs-human-step")).toBe("Needs a human-only verification step");
+    expect(needsInputSuggestionText("needs-human-step")).toContain("Split the human-only");
+    expect(
+      needsInputPrimaryAction("needs-human-step", false, {
+        status: "inbox",
+        agentRunning: false,
+      })?.kind,
+    ).toBe("send-pm");
+  });
+
   it("offers Send to PM for underspecified tasks", () => {
     expect(needsInputStatusLabel("underspecified")).toBe("Doesn't look fully fleshed out");
     expect(needsInputBannerText("underspecified")).toContain("doesn't look fully fleshed out");

@@ -1,9 +1,11 @@
 import type { RepoOSConfig, Task } from "../core/types.js";
 import {
+  NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
   UNDERSPECIFIED_NEEDS_INPUT_REASON,
+  assessTaskNeedsHumanStep,
   assessTaskUnderspecified,
 } from "../core/task-underspecified.js";
-export { UNDERSPECIFIED_NEEDS_INPUT_REASON };
+export { NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON, UNDERSPECIFIED_NEEDS_INPUT_REASON };
 import { patchTaskFile } from "./write.js";
 
 /**
@@ -13,6 +15,44 @@ import { patchTaskFile } from "./write.js";
 /** `active`, `review` and `done` tasks are being (or have been) worked — flesh-out no longer matters. */
 export function isPastFleshOutStage(task: Pick<Task, "status">): boolean {
   return task.status === "active" || task.status === "review" || task.status === "done";
+}
+
+export function flagNeedsHumanStepIfNeeded(config: RepoOSConfig, task: Task): Task | null {
+  if (task.needsInput) {
+    if (task.needsInputReason && task.needsInputReason !== NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON) {
+      return null;
+    }
+    if ((task.questions?.length ?? 0) > 0 && !task.needsInputReason) {
+      return null;
+    }
+  }
+
+  const { needsHumanStep, detail } = assessTaskNeedsHumanStep(task.body, { area: task.area });
+  if (!needsHumanStep) {
+    if (task.needsInput && task.needsInputReason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON) {
+      const hasQuestions = (task.questions?.length ?? 0) > 0;
+      return patchTaskFile(config, task.absPath, {
+        needsInput: hasQuestions,
+        needsInputReason: null,
+        needsInputDetail: null,
+      });
+    }
+    return null;
+  }
+
+  if (
+    task.needsInput &&
+    task.needsInputReason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON &&
+    task.needsInputDetail === detail
+  ) {
+    return null;
+  }
+
+  return patchTaskFile(config, task.absPath, {
+    needsInput: true,
+    needsInputReason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+    needsInputDetail: detail,
+  });
 }
 
 export function flagUnderspecifiedIfNeeded(config: RepoOSConfig, task: Task): Task | null {
@@ -75,16 +115,36 @@ export function isUnderspecifiedSweepEligible(task: Task): boolean {
  * sweeps do not churn the files. Returns the tasks whose file was rewritten
  * (the caller commits them on the control plane).
  */
+/**
+ * Run human-step and underspecified assessments. Human-only acceptance criteria
+ * take precedence over stub-body detection when both would flag.
+ */
+export function flagTaskSpecFlagsIfNeeded(config: RepoOSConfig, task: Task): Task | null {
+  let current = task;
+  let changed: Task | null = null;
+  const human = flagNeedsHumanStepIfNeeded(config, current);
+  if (human) {
+    changed = human;
+    current = human;
+  }
+  const under = flagUnderspecifiedIfNeeded(config, current);
+  return under ?? changed;
+}
+
 export function sweepUnderspecifiedTasks(config: RepoOSConfig, tasks: Iterable<Task>): Task[] {
   const changed: Task[] = [];
   for (const task of tasks) {
     if (!isUnderspecifiedSweepEligible(task)) continue;
-    if (flagUnderspecifiedIfNeeded(config, task)) changed.push(task);
+    if (flagTaskSpecFlagsIfNeeded(config, task)) changed.push(task);
   }
   return changed;
 }
 
 /** Reasons cleared when the human sends a PM chat message (mirrors cto-escalation UX). */
 export function needsInputClearsOnPmMessage(reason: string | undefined): boolean {
-  return reason === "cto-escalation" || reason === UNDERSPECIFIED_NEEDS_INPUT_REASON;
+  return (
+    reason === "cto-escalation" ||
+    reason === UNDERSPECIFIED_NEEDS_INPUT_REASON ||
+    reason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON
+  );
 }
