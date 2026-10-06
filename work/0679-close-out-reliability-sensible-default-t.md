@@ -1,9 +1,11 @@
 ---
-handoff_signal_retry_count: 1
 id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: degenerate-output
+needs_input_detail: Degenerate output loop detected after one automatic retry.
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -13,10 +15,14 @@ branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-06T04:29:27Z"
-merge_conflict_retry_count: 1
-review_passes: 1
+updated_at: "2026-10-06T13:49:16Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 404c1109cf8aa78b7446c56733747d534bb744ae
+merge_conflict_retry_count: 2
+review_passes: 2
+handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-06T03:42:59.088Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
+dev_error_count: 10
 ---
 ## Problem
 
@@ -42,6 +48,9 @@ Evidence comes from building a real 30-task project (opex, a Vue + Bun + Postgre
 ## Story context
 This task is part of the story **Field report: first agent-driven project run (opex)** (story #0008, `stories/field-report-first-agent-driven-project-run-opex.md` in this repo). Read that file first: it holds the background of the run that produced this task, the facts already established for your theme (with the evidence), the decisions the owner has already made, the known uncertainties, and the list of sibling tasks you should coordinate with. Verify its facts against the current source before relying on them, and say in the task notes if you find anything in it that is wrong or out of date.
 
+## Driver feedback (round 3): merge conflict again
+Close-out failed twice with 'merge conflict in src/server/server.ts' because main moved a lot since your last merge (the branch is about 100 commits behind). Merge main into this branch NOW in your worktree, resolve src/server/server.ts (keep BOTH sides: main now has the 0693 watchdog/handoff-failure-loop wiring, 0683 background host probing, 0688 CTO action routes, 0678 stall/credit wiring, 0705 and 0695 changes landing), rerun repoos check --changed main, commit, and hand off again. Do it quickly: main moves every few minutes, so merge and hand off in one go.
+
 ## Activity
 
 - 2026-10-05T16:58:40Z · created · unknown
@@ -63,4 +72,54 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T04:29:19Z · status review→active
 - 2026-10-06T04:29:27Z · status active→review
 - 2026-10-06T04:29:27Z · status review→active
-
+- 2026-10-06T06:01:08Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-06T06:01:09Z · status active→review
+- 2026-10-06T06:01:10Z · status review→active
+- 2026-10-06T06:02:02Z · handoff failed · task-file handoff failed at check · remote validation unavailable: ssh upload of candidate bundle to mini failed: ssh: connect to host 100.126.187.126 port 22: Operation timed out
+[stdin error: EPIPE: broken pipe, write] — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
+- 2026-10-06T06:07:36Z · status active→review
+- 2026-10-06T06:07:36Z · status review→active
+- 2026-10-06T06:12:52Z · status active→review
+- 2026-10-06T06:12:52Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T06:13:42Z · note: review pass 2: good to go
+- 2026-10-06T06:16:23Z · handoff failed · merge conflict unresolved after 2 automatic retries · merge conflict in src/server/server.ts — resolve it in the feature branch's own worktree (merge main into the branch), then retry
+- 2026-10-06T06:16:44Z · handoff failed · merge conflict unresolved after 2 automatic retries · merge conflict in src/server/server.ts — resolve it in the feature branch's own worktree (merge main into the branch), then retry
+- 2026-10-06T06:24:30Z · body: section Driver feedback (round 3): merge conflict again
+- 2026-10-06T06:24:33Z · status review→active
+- 2026-10-06T06:32:20Z · status active→review
+- 2026-10-06T06:32:21Z · status review→active
+- 2026-10-06T06:42:39Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-06T06:50:30Z · status active→review
+- 2026-10-06T06:50:30Z · status review→active
+- 2026-10-06T06:51:36Z · status active→review
+- 2026-10-06T06:51:36Z · status review→active
+- 2026-10-06T07:04:18Z · needs_input
+- 2026-10-06T07:04:55Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
+- 2026-10-06T07:13:33Z · needs_input
+- 2026-10-06T07:13:44Z · agent exited with an error (cursor) · {"type":"tool_call","subtype":"started","call_id":"tool_14bacaca-6e04-4025-a8d7-77e9663c806","tool_call":{"shellToolCall":{"args":{"command":"cd /Users/nick/code/nick/repoos-worktrees/feat/close-out-reliability-sensible-default-t && git status && git stash list","workingDirectory":"","timeout":30000,"toolCallId":"tool_14bacaca-6e04-4025-a8d7-77e9663c806","simpleCommands":["cd","git","git"],"hasInputRedirect":false,"hasOutputRedirect":false,"parsingResult":{"parsingFailed":false,"executableComman
+- 2026-10-06T07:18:58Z · model_override
+- 2026-10-06T07:18:58Z · needs_input
+- 2026-10-06T07:19:23Z · agent exited with an error (cursor) · {"type":"tool_call","subtype":"started","call_id":"call_ZE29rDMmQBn4wuNDburgw4Qz\nfc_040240ea6287b31b016ac4a0fb1c4487d197ab259edc2796c3","tool_call":{"shellToolCall":{"args":{"command":"git status --short --branch && git stash list","workingDirectory":"/Users/nick/code/nick/repoos-worktrees/feat/close-out-reliability-sensible-default-t","timeout":30000,"toolCallId":"call_ZE29rDMmQBn4wuNDburgw4Qz\nfc_040240ea6287b31b016ac4a0fb1c4487d197ab259edc2796c3","simpleCommands":["git","git"],"hasInputRedir
+- 2026-10-06T07:26:16Z · needs_input
+- 2026-10-06T07:26:54Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
+- 2026-10-06T07:36:39Z · model_override
+- 2026-10-06T13:49:16Z · handoff failed · ui-review handoff failed at check · remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202);
+       |                      ^
+    213|   expect(res.body.status).toBe("active");
+    214|   const deadline = Date.now() + 30_000;
+ ❯ tests/agent-review.test.ts:349:13
+ ❯ withServer tests/agent-review.test.ts:279:11
+ ❯ tests/agent-review.test.ts:341:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 423 passed | 1 skipped (425)
+      Tests  1 failed | 5086 passed | 15 skipped (5102)
+   Start at  13:45:06
+   Duration  245.32s (transform 6.47s, setup 2.03s, import 42.41s, tests 228.19s, environment 195.98s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 782ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  13:49:12
+   Duration  2.72s (transform 1.13s, setup 13ms, import 1.41s, tests 782ms, environment 440ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate

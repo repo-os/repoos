@@ -245,13 +245,18 @@ full plan.
 
 When `[remoteValidation] enabled = true`, `repoos check` runs install + build +
 tests on the remote runner first (unless `--local-tests` or the remote half already
-ran), then local guards only with `REPOOS_SKIP_TESTS=1`. That includes
-`--changed` / `REPOOS_CHECK_CHANGED` pre-review passes (#0694): the runner still
-runs the full remote suite; changed-path mode only narrows which **local** steps
-run afterward. Managed engineers (`REPOOS_AGENT=1`) always use the board's runner
-(Hetzner or Tailscale). Handoff reuses a green remote pass at the same commit when
-`remoteValidation.engineerSelfCheckRemote` is on (default). Pass `--local-tests` to
-force the full local suite even when remote validation is enabled.
+ran), then local guards only with `REPOOS_SKIP_TESTS=1`. After the first run on
+a host, RepoOS usually uploads only new commits (not the full git history) using
+a persistent mirror on that machine; the task Debug tab's remote-validation events
+show bundle size and upload time for each run. With `--changed` /
+`REPOOS_CHECK_CHANGED`, the **remote** test step is scoped the same way as locally
+(#0695); handoff and close-out still run the full suite on the runner. Managed
+engineers (`REPOOS_AGENT=1`) always use the board's runner (Hetzner or Tailscale).
+Run `repoos check` once before handoff — not after every edit — to avoid WIP
+checkpoint churn. Handoff reuses a green **full** remote pass at the same commit
+when `remoteValidation.engineerSelfCheckRemote` is on (default); a scoped
+self-check does not skip handoff's full runner pass. Pass `--local-tests` to force
+the full local suite even when remote validation is enabled.
 
 ## Failed-first re-runs and isolation triage
 
@@ -328,9 +333,12 @@ one-off: `sqlite3 .repoos/checks.db "select failed_tests from check_runs where
 failed_tests is not null"`. Remote validation runs record the same fields from
 the runner's output when Vitest names are present.
 
-The **Remote runners** tab shows each configured host live: health, the runs in
-flight right now (task and elapsed time), what is queued next, and the last
-completed run with its outcome and duration.
+The **Remote runners** tab shows each configured host live: health, every job
+holding or waiting for a host slot (server-dispatched and standalone
+`repoos check` self-checks), with task id or worktree, gate phase, age, and
+queue position; what the server has queued next; and the last completed run.
+**Refresh** shows a spinner, then "Updated just now" (or an error toast).
+Idle means no holders and no waiters on that host.
 
 On the task page itself, a chip appears while a check is in progress —
 "Checks running on mini · 2m 34s" — and stays afterwards showing the result
@@ -368,6 +376,20 @@ falls back, in order, to:
    never green — it is never recorded or displayed as "Checks passed".
    Config mistakes (malformed rows, an unusable step) keep failing as errors,
    and `--changed <ref>` with a ref git cannot resolve keeps exiting non-zero.
+
+**Handoff and close-out (#0697).** A skip stays correct for a docs-only or
+planning-phase repo. If a branch **newly adds** a buildable project marker
+(`package.json`, `go.mod`, `Cargo.toml`, or `gradlew` — including under a
+subdirectory) while `repoos.toml` still has no usable `[[check.steps]]`, the
+gate would skip and verify nothing. RepoOS **fails handoff and close-out**
+instead of waving that through, with a message to run `repoos check
+--print-plan`, commit the steps, and get a real green gate. The server does
+not silently run an inferred plan at handoff: inference is a convenience for
+local `repoos check`, not a substitute for committing what the gate should
+run, and a bare manifest without conventional scripts still infers to an empty
+plan. The automatic reviewer is told when the handoff gate skipped and, if the
+task names a finite proof command, to run that instead of assuming checks
+passed.
 
 The reminder is actionable: run `repoos check --print-plan` for a starting
 `[[check.steps]]` TOML once the repo has a `package.json`, `go.mod`,

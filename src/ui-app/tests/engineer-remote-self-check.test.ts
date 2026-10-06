@@ -98,6 +98,23 @@ describe("engineer remote self-check (#0694)", () => {
         candidateSha: "abc123",
       })?.machine,
     ).toBe("bee");
+    store.record({
+      taskId: "0694",
+      phase: "pre-review",
+      candidateSha: "scoped123",
+      machine: "bee",
+      remote: true,
+      scope: "changed:main",
+      startedAt: new Date().toISOString(),
+      durationMs: 1000,
+      outcome: "pass",
+    });
+    expect(
+      findReusableRemotePreReviewPass(root, ".repoos", {
+        taskId: "0694",
+        candidateSha: "scoped123",
+      }),
+    ).toBeNull();
     expect(
       findReusableRemotePreReviewPass(root, ".repoos", {
         taskId: "0694",

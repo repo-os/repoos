@@ -117,7 +117,7 @@ import {
 import { sweepAndWarn } from "../core/worktree-gc.js";
 import { onGitMutation } from "../core/git-activity.js";
 import { createRepoStatusNotifier, isSameCheckout } from "./repo-status.js";
-import { remoteJobCapabilities } from "./pre-review-remote-gate.js";
+import { remoteJobCapabilities, summarizeRemoteFallbackDetail } from "./pre-review-remote-gate.js";
 import {
   hostRunner,
   remoteHostLimit,
@@ -872,8 +872,8 @@ const UI_MIME: Record<string, string> = {
 function serveStaticUi(res: ServerResponse, uiDir: string, urlPath: string): boolean {
   const rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
   if (rel.includes("..")) return false;
-  // Never serve index.html through the static path — it contains the
-  // __REPOOS_BUILD_HASH__ placeholder that must be substituted at read time.
+  // Never serve index.html through the static path — `__REPOOS_BUILD_HASH_VALUE__`
+  // must be substituted at read time (not the window property name).
   // The SPA fallback below handles it via readUiIndex().
   if (!rel || rel === "index.html") return false;
   const abs = resolve(uiDir, rel);
@@ -1270,7 +1270,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       kind: "remoteFallback",
       taskId,
       message: `Ran locally: #${taskId}`,
-      detail: line || "Remote validation is enabled but this close-out used the full local gate.",
+      detail: summarizeRemoteFallbackDetail(
+        line || "Remote validation is enabled but this close-out used the full local gate.",
+      ),
       at,
     });
     bumpAttention();
@@ -2805,6 +2807,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       /* no warm runner */
     }
     const sshKeyEnv = process.env.REPOOS_REMOTE_SSH_KEY;
+    remoteValidator?.refreshHostLocks?.();
     if (new URL(req.url ?? "/", "http://localhost").searchParams.has("includeStats")) {
       remoteValidator?.refreshHostStats?.();
     }

@@ -198,6 +198,9 @@ describe("TailscaleRunner queueing and isolation", () => {
           probes++;
           return { code: 0, output: `ok ${PREREQ_OK_TOKEN}`, timedOut: false };
         }
+        if (cmd.includes("__HOST_LOCK__")) {
+          return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
+        }
         cmds.push(cmd);
         inFlight++;
         peak = Math.max(peak, inFlight);

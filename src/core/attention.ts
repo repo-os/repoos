@@ -129,7 +129,10 @@ export function isProviderFailureReason(reason: string | null | undefined): bool
   if (!reason) return false;
   const r = reason.toLowerCase();
   return (
-    r.includes("402") ||
+    // A bare "402" matches line numbers ("402:  ..."), hashes and timestamps, so
+    // require an HTTP-ish context around it (#0709).
+    /\b(?:http|status|status code|code|error)[\s:=]*402\b/.test(r) ||
+    /\b402\s+payment required\b/.test(r) ||
     r.includes("insufficient credit") ||
     r.includes("payment required") ||
     r.includes("rate limit") ||

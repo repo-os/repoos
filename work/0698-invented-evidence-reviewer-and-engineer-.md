@@ -1,4 +1,7 @@
 ---
+merge_conflict_retry_count: 1
+updated_at: "2026-10-06T15:55:20Z"
+review_passes: 1
 id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
 type: feature
@@ -12,7 +15,9 @@ branch: feat/invented-evidence-reviewer-and-engineer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:46Z"
-updated_at: "2026-10-06T15:54:30Z"
+last_check_failure: "repoos check at 2026-10-06T15:38:56.453Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
+handoff_signal_retry_count: 2
+dev_error_count: 1
 ---
 ## Problem
 
@@ -41,4 +46,43 @@ The tuk-private repo's `repoos.toml` now carries hand-written versions of these 
 - 2026-10-06T04:37:26Z · status inbox→ready
 - 2026-10-06T04:37:27Z · cli_override, model_override
 - 2026-10-06T04:37:27Z · status ready→active, branch
-- 2026-10-06T15:54:30Z · status active→review
+- 2026-10-06T04:45:22Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-06T06:01:09Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-06T13:44:42Z · status ready→active
+- 2026-10-06T14:04:02Z · needs_input
+- 2026-10-06T14:42:52Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-06T14:42:52Z · status review→active
+- 2026-10-06T14:52:52Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-06T14:57:53Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-06T14:57:53Z · status review→active
+- 2026-10-06T15:02:51Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —     344|       await waitForReviewRunning(server, task.id, false);
+    345|       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_pass…
+       |                                                  ^
+    346|
+    347|       const returned = await api(server, "PATCH", `/api/tasks/${task.i…
+ ❯ withServer tests/agent-review.test.ts:279:11
+ ❯ tests/agent-review.test.ts:341:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 417 passed | 1 skipped (419)
+      Tests  1 failed | 5048 passed | 15 skipped (5064)
+   Start at  14:58:23
+   Duration  261.81s (transform 6.41s, setup 2.33s, import 47.70s, tests 209.08s, environment 238.04s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 411ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  15:02:45
+   Duration  2.24s (transform 1.04s, setup 11ms, import 1.29s, tests 411ms, environment 459ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-06T15:02:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-06T15:02:55Z · status review→active
+- 2026-10-06T15:12:54Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-06T15:17:54Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-10-06T15:19:33Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
+- 2026-10-06T15:38:53Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
+- 2026-10-06T15:54:31Z · status active→review
+- 2026-10-06T15:54:31Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T15:55:20Z · note: review pass 1: good to go
+
+

@@ -2,17 +2,23 @@
 id: "0705"
 title: Remote runners tab and dispatcher must see standalone self-check slot holders (they starved close-outs); add refresh feedback
 type: bug
-status: active
+status: done
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 33eb8db5deaa92dd050dc484987b5791903290a5
 assigned_to: ai
 created_by: ""
 branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T04:26:19Z"
+updated_at: "2026-10-06T10:36:39Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ac677e5a to be92054c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: ac677e5aa2358c37ab8263f1ff88fb56da7c71f1
+review_rounds: 2
+review_passes: 2
+dev_error_count: 7
 ---
 ## Problem
 
@@ -59,3 +65,129 @@ Task #0706 (filed by the #0695 reviewer: standalone self-check prefers the least
 - 2026-10-06T04:07:31Z · status ready→active, branch
 - 2026-10-06T04:07:54Z · body: section Scope addition: fold in #0706
 - 2026-10-06T04:26:19Z · body: section Shots
+- 2026-10-06T06:19:56Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     651|       // true per-pass counter used by the D# · R# badge.
+    652|       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_pass…
+       |                                                  ^
+    653|     });
+    654|   }, 90_000);
+ ❯ withServer tests/agent-review.test.ts:279:11
+ ❯ tests/agent-review.test.ts:625:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 414 passed | 1 skipped (416)
+      Tests  1 failed | 5022 passed | 15 skipped (5038)
+   Start at  06:15:46
+   Duration  241.30s (transform 6.24s, setup 2.00s, import 41.19s, tests 225.99s, environment 191.72s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 728ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  06:19:48
+   Duration  2.62s (transform 1.08s, setup 13ms, import 1.36s, tests 728ms, environment 444ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-06T06:24:40Z · status active→review
+- 2026-10-06T06:24:40Z · status review→active
+- 2026-10-06T06:30:04Z · status active→review
+- 2026-10-06T06:30:05Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T06:31:06Z · note: review pass 1: needs some work
+- 2026-10-06T06:31:06Z · status review→active
+- 2026-10-06T06:31:54Z · agent exited with an error (cursor) · {"type":"tool_call","subtype":"started","call_id":"tool_dfe8d9dc-0030-4022-a076-d41f7daf065","tool_call":{"readToolCall":{"args":{"path":"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts","offset":2945,"limit":90}},"hookAdditionalContexts":[],"toolCallId":"tool_dfe8d9dc-0030-4022-a076-d41f7daf065","startedAtMs":"1791268313908"},"model_call_id":"ba00a2de-fd6d-4f79-8778-84b978483b17-7-nfcx","session_id":"4de1a743-5ba4-41d0-961c-6f
+- 2026-10-06T06:32:18Z · status active→review
+- 2026-10-06T06:32:19Z · status review→active
+- 2026-10-06T06:42:39Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-06T06:50:29Z · status active→review
+- 2026-10-06T06:50:29Z · status review→active
+- 2026-10-06T06:51:33Z · status active→review
+- 2026-10-06T06:51:33Z · status review→active
+- 2026-10-06T07:04:18Z · needs_input
+- 2026-10-06T07:04:45Z · agent exited with an error (cursor) · {"type":"thinking","subtype":"delta","text":" extending `queueNote`","session_id":"4de1a743-5ba4-41d0-961c-6f00a70b14eb","timestamp_ms":1791270285402}
+- 2026-10-06T07:13:32Z · needs_input
+- 2026-10-06T07:14:40Z · agent exited with an error (cursor) · {"type":"tool_call","subtype":"completed","call_id":"tool_bfa5ccb9-534d-45cd-a61d-471da9117eb","tool_call":{"editToolCall":{"args":{"path":"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts","streamContent":"/** Parse {@link hostLockInspectShell} output into a snapshot (#0705). */"},"result":{"success":{"path":"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts","l
+- 2026-10-06T07:18:15Z · model_override
+- 2026-10-06T07:18:58Z · needs_input
+- 2026-10-06T07:20:08Z · agent exited with an error (cursor) · {"type":"thinking","subtype":"delta","text":"irming close-out be","session_id":"4de1a743-5ba4-41d0-961c-6f00a70b14eb","timestamp_ms":1791271208402}
+- 2026-10-06T07:20:08Z · status active→review
+- 2026-10-06T07:20:08Z · status review→active
+- 2026-10-06T07:25:49Z · status active→review
+- 2026-10-06T07:25:50Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T07:27:32Z · note: review pass 2: needs some work
+- 2026-10-06T07:27:32Z · status review→active
+- 2026-10-06T07:32:22Z · status active→review
+- 2026-10-06T07:32:22Z · status review→active
+- 2026-10-06T07:33:04Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [999.00ms]
+$ git config core.hooksPath .githooks 2>/dev/null || true
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+src/server/remote-validation.ts(2251,9): error TS2322: Type '((info: { ahead: number; host: string; }) => void) | undefined' is not assignable to type '((ahead: number) => void) | undefined'.
+  Type '(info: { ahead: number; host: string; }) => void' is not assignable to type '(ahead: number) => void'.
+    Types of parameters 'info' and 'ahead' are incompatible.
+      Type 'number' is not assignable to type '{ ahead: number; host: string; }'.
+src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahead: number; host: string; }' is not assignable to parameter of type 'number'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-06T07:36:39Z · model_override
+- 2026-10-06T07:37:40Z · status active→review
+- 2026-10-06T07:37:40Z · status review→active
+- 2026-10-06T07:38:15Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [540.00ms]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+src/server/remote-validation.ts(2251,9): error TS2322: Type '((info: { ahead: number; host: string; }) => void) | undefined' is not assignable to type '((ahead: number) => void) | undefined'.
+  Type '(info: { ahead: number; host: string; }) => void' is not assignable to type '(ahead: number) => void'.
+    Types of parameters 'info' and 'ahead' are incompatible.
+      Type 'number' is not assignable to type '{ ahead: number; host: string; }'.
+src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahead: number; host: string; }' is not assignable to parameter of type 'number'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-06T08:40:34Z · status active→review
+- 2026-10-06T08:40:35Z · status review→active
+- 2026-10-06T08:45:55Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
+- 2026-10-06T08:45:56Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
+- 2026-10-06T08:53:22Z · status active→review
+- 2026-10-06T08:53:22Z · status review→active
+- 2026-10-06T09:02:38Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 777a3238 to 4a06caa8) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-06T09:05:12Z · status active→review
+- 2026-10-06T09:05:12Z · status review→active
+- 2026-10-06T09:11:56Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from ac677e5a to be92054c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-06T09:13:40Z · status active→review
+- 2026-10-06T09:13:40Z · status review→active
+- 2026-10-06T09:18:48Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —     651|       // true per-pass counter used by the D# · R# badge.
+    652|       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_pass…
+       |                                                  ^
+    653|     });
+    654|   }, 90_000);
+ ❯ withServer tests/agent-review.test.ts:279:11
+ ❯ tests/agent-review.test.ts:625:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 419 passed | 1 skipped (421)
+      Tests  1 failed | 5066 passed | 15 skipped (5082)
+   Start at  09:14:37
+   Duration  244.68s (transform 6.34s, setup 2.04s, import 41.77s, tests 227.61s, environment 196.13s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 792ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  09:18:42
+   Duration  2.70s (transform 1.10s, setup 13ms, import 1.37s, tests 792ms, environment 444ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-06T10:26:35Z · status active→review
+- 2026-10-06T10:36:39Z · status review→done, release:success

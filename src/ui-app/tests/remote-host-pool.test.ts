@@ -35,6 +35,8 @@ import {
   TailscaleRunner,
   deadlineLockWaitSecs,
   hostLockShell,
+  hostLockPriority,
+  parseHostLockInspectOutput,
   parseRemoteServerStats,
   prereqProbeCommand,
   type RemoteExecDeps,
@@ -43,6 +45,8 @@ import {
 import {
   runRemotePreReviewGate,
   remoteJobCapabilities,
+  checkEnvAfterRemoteGate,
+  REPOOS_REMOTE_FALLBACK_DETAIL,
 } from "../../server/pre-review-remote-gate.js";
 
 const dirs: string[] = [];
@@ -375,6 +379,8 @@ function poolFixture(opts: {
   retryOtherHosts?: boolean;
   healthRetryMs?: number;
   containerImage?: string;
+  /** Simulated host-lock holders per host (#0705). */
+  hostLockOccupancy?: Record<string, number>;
 }): Fixture {
   const root = tmpRoot();
   const config = {
@@ -407,6 +413,14 @@ function poolFixture(opts: {
     uploadFile: vi.fn(async () => ({ ok: true })),
     downloadDir: vi.fn(async () => {}),
     runRemote: vi.fn(async (host, cmd): Promise<RemoteExecResult> => {
+      if (cmd.includes("__HOST_LOCK__")) {
+        const n = opts.hostLockOccupancy?.[host.ip] ?? 0;
+        let output = "__HOST_LOCK__\n";
+        for (let i = 0; i < n; i++) {
+          output += `hold\t${i}\t120\n{"taskId":"0694","phase":"self-check","worktree":"/wt/feat"}\n`;
+        }
+        return { code: 0, output, timedOut: false };
+      }
       if (cmd.includes(PREREQ_OK_TOKEN)) {
         if (opts.unreachable?.includes(host.ip) || down.has(host.ip)) {
           return {
@@ -473,6 +487,66 @@ const opts = (taskId: string, extra: Record<string, unknown> = {}) => ({
   worktreePath: "/nonexistent",
   candidateSha: "abc123def456",
   ...extra,
+});
+
+describe("background host probing (#0683)", () => {
+  it("probes every configured host when the runner starts, without dispatch", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    for (let i = 0; i < 20 && !f.runner.hostStatus()?.every((h) => h.probed); i++) {
+      await tick();
+    }
+    const status = f.runner.hostStatus()!;
+    expect(status.map((h) => [h.host, h.probed, h.healthy])).toEqual([
+      ["a", true, true],
+      ["b", true, true],
+    ]);
+    expect(f.pending()).toEqual([]);
+  });
+
+  it("surfaces Tailscale hints on unreachable hosts", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }], unreachable: ["a"] });
+    for (let i = 0; i < 20 && !f.runner.hostStatus()?.[0]?.probed; i++) {
+      await tick();
+    }
+    expect(f.runner.hostStatus()?.[0]).toMatchObject({
+      probed: true,
+      healthy: false,
+      detail: expect.stringMatching(/Tailscale/i),
+    });
+  });
+
+  it("records a fallback reason when every host fails probe and fallbackToLocal is on", async () => {
+    const root = tmpRoot();
+    execFileSync("git", ["init", "-q"], { cwd: root });
+    execFileSync("git", ["config", "user.email", "t@example.com"], { cwd: root });
+    execFileSync("git", ["config", "user.name", "T"], { cwd: root });
+    writeFileSync(join(root, "f.txt"), "x");
+    execFileSync("git", ["add", "."], { cwd: root });
+    execFileSync("git", ["commit", "-qm", "init"], { cwd: root });
+    const f = poolFixture({ hosts: [{ host: "a" }], unreachable: ["a"] });
+    for (let i = 0; i < 20 && !f.runner.hostStatus()?.[0]?.probed; i++) {
+      await tick();
+    }
+    const out = await runRemotePreReviewGate({
+      config: {
+        ...f.config,
+        remoteValidation: {
+          ...f.config.remoteValidation,
+          fallbackToLocal: true,
+        },
+      } as RepoOSConfig,
+      remoteValidator: f.runner,
+      worktreePath: root,
+      taskId: "0683",
+      deadlineAt: Date.now() + 60_000,
+    });
+    expect(out).toMatchObject({ kind: "local-only", skipTests: false });
+    if (out.kind !== "local-only") throw new Error("expected local-only");
+    expect(out.detail).toContain("no usable remote host");
+    expect(checkEnvAfterRemoteGate(out)[REPOOS_REMOTE_FALLBACK_DETAIL]).toContain(
+      "no usable remote host",
+    );
+  });
 });
 
 describe("TailscaleRunner pool dispatch (#0521)", () => {
@@ -987,6 +1061,9 @@ describe("failover to another host (#0632)", () => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
           return { code: 0, output: `prereq ok ${PREREQ_OK_TOKEN}`, timedOut: false };
         }
+        if (cmd.includes("__HOST_LOCK__")) {
+          return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
+        }
         // Never finishes — no validation run should reach a host here.
         return new Promise<RemoteExecResult>(() => {});
       }),
@@ -1316,6 +1393,8 @@ describe("outer SSH timeout covers the lock wait, not just the run (#0521 review
       async (_host: unknown, cmd: string, _onChunk?: unknown, _timeoutMs?: number) => {
         if (cmd.includes(PREREQ_OK_TOKEN))
           return { code: 0, output: PREREQ_OK_TOKEN, timedOut: false };
+        if (cmd.includes("__HOST_LOCK__"))
+          return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
         return { code: 0, output: "ok", timedOut: false };
       },
     );
@@ -1344,7 +1423,9 @@ describe("outer SSH timeout covers the lock wait, not just the run (#0521 review
     });
     await runner.validate(opts("0001"));
     // No deadline passed → the wait budget is DEFAULT_HOST_LOCK_WAIT_SECS.
-    const runCall = runRemote.mock.calls.find((c) => !String(c[1]).includes(PREREQ_OK_TOKEN));
+    const runCall = runRemote.mock.calls.find(
+      (c) => !String(c[1]).includes(PREREQ_OK_TOKEN) && !String(c[1]).includes("__HOST_LOCK__"),
+    );
     expect(runCall?.[3]).toBe(remoteRunTimeoutMs + DEFAULT_HOST_LOCK_WAIT_SECS * 1000);
   });
 });
@@ -1416,6 +1497,47 @@ function sh(script: string): Promise<{ code: number | null; out: string }> {
     child.on("close", (code) => resolve({ code, out }));
   });
 }
+
+describe("host lock observability and dispatch (#0705)", () => {
+  it("close-out lock priority beats engineer self-check", () => {
+    expect(hostLockPriority("close-out")).toBeGreaterThan(
+      hostLockPriority("pre-review", { REPOOS_AGENT: "1" }),
+    );
+  });
+
+  it("parses portable lock inspect output", () => {
+    const snap = parseHostLockInspectOutput(
+      '__HOST_LOCK__\nhold\t0\t90\n{"taskId":"0694","phase":"self-check","worktree":"/x/y"}\n' +
+        'wait\t1\t30\n{"taskId":"0693","phase":"close-out"}\n',
+    );
+    expect(snap.holders).toHaveLength(1);
+    expect(snap.holders[0]).toMatchObject({
+      label: "#0694",
+      phase: "self-check",
+      ageSecs: 90,
+    });
+    expect(snap.waiters[0]).toMatchObject({
+      label: "#0693",
+      phase: "close-out",
+      queuePosition: 1,
+    });
+  });
+
+  it("dispatches to a free host when another host's slots are held by standalone checks", async () => {
+    const f = poolFixture({
+      hosts: [
+        { host: "bee", maxConcurrent: 2 },
+        { host: "linux2", maxConcurrent: 1 },
+      ],
+      hostLockOccupancy: { bee: 2 },
+    });
+    const job = f.runner.validate(opts("0693", { phase: "close-out" }));
+    await tick();
+    expect(f.pending()).toEqual(["linux2"]);
+    f.release("linux2");
+    expect(await job).toMatchObject({ ok: true });
+  });
+});
 
 describe("host-side lock (server + standalone CLI share one limit)", () => {
   it("serialises two independent processes on a one-slot host", async () => {
