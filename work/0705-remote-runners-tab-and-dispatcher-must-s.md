@@ -15,7 +15,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T06:32:19Z"
+updated_at: "2026-10-06T06:42:39Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 2
@@ -94,3 +94,4 @@ error: script "test" exited with code 1
 - 2026-10-06T06:31:54Z · agent exited with an error (cursor) · {"type":"tool_call","subtype":"started","call_id":"tool_dfe8d9dc-0030-4022-a076-d41f7daf065","tool_call":{"readToolCall":{"args":{"path":"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts","offset":2945,"limit":90}},"hookAdditionalContexts":[],"toolCallId":"tool_dfe8d9dc-0030-4022-a076-d41f7daf065","startedAtMs":"1791268313908"},"model_call_id":"ba00a2de-fd6d-4f79-8778-84b978483b17-7-nfcx","session_id":"4de1a743-5ba4-41d0-961c-6f
 - 2026-10-06T06:32:18Z · status active→review
 - 2026-10-06T06:32:19Z · status review→active
+- 2026-10-06T06:42:39Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
