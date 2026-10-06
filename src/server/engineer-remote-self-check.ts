@@ -143,7 +143,8 @@ export function findReusableRemotePreReviewPass(
         (r) =>
           r.outcome === "pass" &&
           r.candidateSha === opts.candidateSha &&
-          (r.phase === "pre-review" || r.phase === "cli"),
+          (r.phase === "pre-review" || r.phase === "cli") &&
+          (r.scope ?? "full") === "full",
       ) ?? null
     );
   } catch {
@@ -170,6 +171,7 @@ export async function runEngineerRemoteSelfCheckGate(params: {
   worktreePath: string;
   taskId: string;
   taskAbsPath?: string;
+  changedRef?: string;
   onChunk?: (chunk: string) => void;
 }): Promise<RemotePreReviewOutcome> {
   const boardRoot = boardRootForEngineerRemote(params.worktreePath);
@@ -192,6 +194,7 @@ export async function runEngineerRemoteSelfCheckGate(params: {
       worktreePath: params.worktreePath,
       taskId: params.taskId,
       phase: "pre-review",
+      changedRef: params.changedRef,
       onChunk: params.onChunk,
     });
     await remoteValidator.dispose().catch(() => {});

@@ -63,6 +63,7 @@ import { remoteRunHistoryMeta } from "../core/check-failure-summary.js";
 import { getCheckStore, type CheckRunPhase } from "../core/check-store.js";
 import type { CheckSummary } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
+import { runGit } from "../core/git.js";
 
 export type { CheckSummary } from "./done.js";
 import { createHetznerClient, type HetznerClient, type HetznerServer } from "./hetzner.js";
@@ -212,8 +213,12 @@ export interface RemoteExecResult {
  * never touch a real API, network, or subprocess.
  */
 export interface RemoteExecDeps {
-  /** `git bundle create <outPath> HEAD` in `cwd`. */
-  bundleRepo(cwd: string, outPath: string): Promise<{ ok: boolean; detail?: string }>;
+  /** `git bundle create <outPath> HEAD [extra-refs…]` in `cwd`. */
+  bundleRepo(
+    cwd: string,
+    outPath: string,
+    extraRefs?: string[],
+  ): Promise<{ ok: boolean; detail?: string }>;
   /** `scp <localPath> <host>:<remotePath>`. */
   uploadFile(
     host: RemoteHost,
@@ -259,6 +264,11 @@ export interface ValidateOptions {
    * A run already executing is not interrupted.
    */
   deadlineAt?: number;
+  /**
+   * When set, the runner bundles this ref alongside HEAD and runs
+   * `bun run test -- --changed <ref>` (#0695). Handoff and close-out omit it.
+   */
+  changedRef?: string;
 }
 
 /** One host's live state, surfaced by `/api/remote-validation/status` (#0521). */
@@ -911,10 +921,63 @@ function runLocal(
   });
 }
 
+/** How engineer self-checks scope remote vitest (#0695). */
+export type RemoteChangedTestScope =
+  | { scoped: false; warning?: string }
+  | { scoped: true; ref: string; baseSha: string };
+
+/**
+ * Resolve `--changed` / `REPOOS_CHECK_CHANGED` for the remote runner. When the
+ * ref does not resolve, returns full-suite mode and a warning string for logs.
+ */
+export async function remoteChangedTestScope(
+  worktreePath: string,
+  changedRef?: string,
+): Promise<RemoteChangedTestScope> {
+  const ref = changedRef?.trim();
+  if (!ref) return { scoped: false };
+  const res = await runGit(worktreePath, ["rev-parse", "--verify", ref], 15_000);
+  if (res.status !== 0) {
+    return {
+      scoped: false,
+      warning: `could not resolve changed ref "${ref}" for remote tests — running the full suite on the runner, not a scoped self-check`,
+    };
+  }
+  return { scoped: true, ref, baseSha: res.stdout.trim() };
+}
+
+async function prepareRemoteTestBundle(
+  worktreePath: string,
+  changedRef: string | undefined,
+  emit: (line: string) => void,
+): Promise<{ remoteTestRef: string | null; bundleExtras: string[] }> {
+  const testScope = await remoteChangedTestScope(worktreePath, changedRef);
+  if (testScope.warning) {
+    emit(`[remote validation] WARNING: ${testScope.warning}\n`);
+  }
+  if (!testScope.scoped) {
+    return { remoteTestRef: null, bundleExtras: [] };
+  }
+  return { remoteTestRef: testScope.ref, bundleExtras: [testScope.baseSha] };
+}
+
+function validateScriptArgs(
+  remoteBundle: string,
+  candidateSha: string,
+  artifactsDir: string,
+  changedRef?: string,
+): string {
+  const parts = [VALIDATE_SCRIPT, remoteBundle, candidateSha, artifactsDir];
+  const ref = changedRef?.trim();
+  if (ref) parts.push(shellQuote(ref));
+  return parts.join(" ");
+}
+
 export function defaultRemoteExec(): RemoteExecDeps {
   return {
-    async bundleRepo(cwd, outPath) {
-      const res = await runLocal("git", ["bundle", "create", outPath, "HEAD"], {
+    async bundleRepo(cwd, outPath, extraRefs) {
+      const refs = ["HEAD", ...(extraRefs ?? [])];
+      const res = await runLocal("git", ["bundle", "create", outPath, ...refs], {
         cwd,
         timeoutMs: 120_000,
       });
@@ -1162,7 +1225,10 @@ export class RemoteValidationRunner implements RemoteValidator {
     }
     // Which machine ends up running the suite is known only after provisioning
     // inside runValidation — captured here so the history row can name it.
-    const runMeta: { machine: string | null } = { machine: null };
+    const runMeta: { machine: string | null; remoteTestRef: string | null } = {
+      machine: null,
+      remoteTestRef: null,
+    };
     try {
       // Dispatch can hand over a free slot in the same tick the deadline
       // passes — cancel here rather than start a suite nobody waits for.
@@ -1201,23 +1267,27 @@ export class RemoteValidationRunner implements RemoteValidator {
     opts: ValidateOptions,
     paths: RemoteRunPaths,
     /** Set once a runner VM is actually chosen — the history row's machine (#0564). */
-    runMeta: { machine: string | null },
+    runMeta: { machine: string | null; remoteTestRef?: string | null },
   ): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
     const dispatch = { taskId: opts.taskId, phase: "dispatch" as const };
-    if (!rv.enabled) return this.infraFail("remote validation is disabled", dispatch);
+    let remoteTestRef: string | null = null;
+    const withScope = (summary: CheckSummary): CheckSummary => ({
+      ...summary,
+      remoteTestScopeRef: remoteTestRef,
+    });
+    if (!rv.enabled) return withScope(this.infraFail("remote validation is disabled", dispatch));
     if (!process.env.HETZNER_API_TOKEN)
-      return this.infraFail("HETZNER_API_TOKEN is not set", dispatch);
+      return withScope(this.infraFail("HETZNER_API_TOKEN is not set", dispatch));
     if (!this.keyPath || !existsSync(this.keyPath)) {
-      return this.infraFail(
-        "REPOOS_REMOTE_SSH_KEY is not set or the key file is missing",
-        dispatch,
+      return withScope(
+        this.infraFail("REPOOS_REMOTE_SSH_KEY is not set or the key file is missing", dispatch),
       );
     }
     if (!rv.snapshotId)
-      return this.infraFail("remoteValidation.snapshotId is not configured", dispatch);
+      return withScope(this.infraFail("remoteValidation.snapshotId is not configured", dispatch));
     if (!rv.sshKeyName)
-      return this.infraFail("remoteValidation.sshKeyName is not configured", dispatch);
+      return withScope(this.infraFail("remoteValidation.sshKeyName is not configured", dispatch));
 
     this.activeJobs++;
     this.clearIdleTimer();
@@ -1241,43 +1311,64 @@ export class RemoteValidationRunner implements RemoteValidator {
       // 1. bundle the candidate tree
       tmp = mkdtempSync(join(tmpdir(), "repoos-rvr-"));
       const bundlePath = join(tmp, "candidate.bundle");
-      const bundle = await this.exec.bundleRepo(opts.worktreePath, bundlePath);
+      const prepared = await prepareRemoteTestBundle(opts.worktreePath, opts.changedRef, emit);
+      remoteTestRef = prepared.remoteTestRef;
+      runMeta.remoteTestRef = remoteTestRef;
+      const bundle = await this.exec.bundleRepo(
+        opts.worktreePath,
+        bundlePath,
+        prepared.bundleExtras,
+      );
       if (!bundle.ok)
-        return this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`, {
-          taskId: opts.taskId,
-          host: host.ip,
-        });
+        return withScope(
+          this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`, {
+            taskId: opts.taskId,
+            host: host.ip,
+          }),
+        );
 
       // 2. upload
       const remoteBundle = paths.bundle;
       const up = await this.exec.uploadFile(host, bundlePath, remoteBundle);
       if (!up.ok)
-        return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`, {
-          taskId: opts.taskId,
-          host: host.ip,
-        });
+        return withScope(
+          this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`, {
+            taskId: opts.taskId,
+            host: host.ip,
+          }),
+        );
 
       // Provisioning + bundling can outlast the caller's deadline (#0521 spec
       // item 5) — never start a suite for a caller that already gave up. The
       // `cancelled` marker tells the history row apart from a real gate
       // failure (0564 review: this used to land as `fail`).
       if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
-        return {
+        return withScope({
           ...this.infraFail(
             `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
             { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
           ),
           cancelled: true,
-        };
+        });
       }
 
       // 3. run build + test inside the container
-      emit(`[running build + test on ${host.ip}]\n`);
+      const changedNote = remoteTestRef ? ` (tests scoped to changed vs ${remoteTestRef})` : "";
+      emit(`[running build + test on ${host.ip}${changedNote}]\n`);
       this.record(
         { taskId: opts.taskId, host: host.ip, phase: "run" },
-        { level: "info", phase: "run", message: `running build + test on ${host.ip}` },
+        {
+          level: "info",
+          phase: "run",
+          message: `running build + test on ${host.ip}${changedNote}`,
+        },
       );
-      const cmd = `/opt/repoos/validate.sh ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
+      const cmd = validateScriptArgs(
+        remoteBundle,
+        opts.candidateSha,
+        paths.artifacts,
+        remoteTestRef ?? undefined,
+      );
       const run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
 
       // 4. pull artifacts (best effort)
@@ -1309,14 +1400,14 @@ export class RemoteValidationRunner implements RemoteValidator {
             infra: true,
           },
         );
-        return {
+        return withScope({
           ok: false,
           stage: "check",
           transient: true,
           exitCode: null,
           output: tail(run.output, 40, 4000),
           detail,
-        };
+        });
       }
       if (run.code === 0) {
         emit(`\n[remote validation PASSED in ${elapsed}s]\n`);
@@ -1331,7 +1422,7 @@ export class RemoteValidationRunner implements RemoteValidator {
             exitCode: 0,
           },
         );
-        return { ok: true, stage: "check" };
+        return withScope({ ok: true, stage: "check" });
       }
 
       // Non-zero: the ssh transport itself could have dropped (code 255) — treat
@@ -1340,11 +1431,13 @@ export class RemoteValidationRunner implements RemoteValidator {
         run.code === 255 &&
         /(?:Connection|ssh:|closed by remote host|Broken pipe)/i.test(run.output)
       ) {
-        return this.infraFail(`ssh connection to the runner dropped mid-run: ${tail(run.output)}`, {
-          taskId: opts.taskId,
-          host: host.ip,
-          exitCode: 255,
-        });
+        return withScope(
+          this.infraFail(`ssh connection to the runner dropped mid-run: ${tail(run.output)}`, {
+            taskId: opts.taskId,
+            host: host.ip,
+            exitCode: 255,
+          }),
+        );
       }
       const transient = looksTransient(run.output);
       emit(`\n[remote validation FAILED (exit ${run.code}) in ${elapsed}s]\n`);
@@ -1362,16 +1455,16 @@ export class RemoteValidationRunner implements RemoteValidator {
           infra: transient,
         },
       );
-      return {
+      return withScope({
         ok: false,
         stage: "check",
         exitCode: run.code,
         transient,
         output: tail(run.output, 40, 4000),
         detail: `remote validation failed (exit ${run.code}) — ${tail(run.output)}`,
-      };
+      });
     } catch (e) {
-      return this.infraFail((e as Error).message, { taskId: opts.taskId });
+      return withScope(this.infraFail((e as Error).message, { taskId: opts.taskId }));
     } finally {
       if (tmp) rmSync(tmp, { recursive: true, force: true });
       this.activeJobs = Math.max(0, this.activeJobs - 1);
@@ -2414,7 +2507,7 @@ function classifyRunOutcome(summary: CheckSummary): "pass" | "fail" | "cancelled
  * One row per `validate()` invocation — dispatch failures included, with a
  * null machine when the run never reached a host. Pseudo task ids ("release",
  * "checks-test-suite") record task-less; their phase tells the story. The
- * remote half always runs the full plan, so scope is always 'full'. Fail-soft:
+ * scope is 'full' unless the run used changed-path tests (#0695). Fail-soft:
  * history is observability, never a gate input.
  *
  * The store root honours `REPOOS_CHECK_STORE_ROOT` (0564 review): a standalone
@@ -2449,7 +2542,10 @@ function recordRemoteRunHistory(
       candidateSha: opts.candidateSha,
       machine,
       remote: true,
-      scope: "full",
+      scope:
+        summary?.remoteTestScopeRef != null && summary.remoteTestScopeRef !== ""
+          ? `changed:${summary.remoteTestScopeRef}`
+          : "full",
       startedAt: new Date(startedAt).toISOString(),
       durationMs: outcome === "cancelled" ? null : Math.max(0, Date.now() - startedAt),
       outcome,
@@ -2754,6 +2850,11 @@ export class TailscaleRunner implements RemoteValidator {
     const host = slot.ssh;
     const paths = remoteRunPaths(opts.taskId);
     const startedAt = Date.now();
+    let remoteTestRef: string | null = null;
+    const withScope = (summary: CheckSummary): CheckSummary => ({
+      ...summary,
+      remoteTestScopeRef: remoteTestRef,
+    });
     const emit = (s: string): void => {
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
@@ -2776,12 +2877,20 @@ export class TailscaleRunner implements RemoteValidator {
       // 1. bundle the candidate tree
       tmp = mkdtempSync(join(tmpdir(), "repoos-rvr-"));
       const bundlePath = join(tmp, "candidate.bundle");
-      const bundle = await this.exec.bundleRepo(opts.worktreePath, bundlePath);
+      const prepared = await prepareRemoteTestBundle(opts.worktreePath, opts.changedRef, emit);
+      remoteTestRef = prepared.remoteTestRef;
+      const bundle = await this.exec.bundleRepo(
+        opts.worktreePath,
+        bundlePath,
+        prepared.bundleExtras,
+      );
       if (!bundle.ok)
-        return this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`, {
-          taskId: opts.taskId,
-          host: host.ip,
-        });
+        return withScope(
+          this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`, {
+            taskId: opts.taskId,
+            host: host.ip,
+          }),
+        );
 
       // 2. upload
       const remoteBundle = paths.bundle;
@@ -2793,7 +2902,7 @@ export class TailscaleRunner implements RemoteValidator {
         // from immediately selecting it again until the health retry probe.
         this.pool.markUnhealthy(host.ip, detail);
         this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
-        return this.infraFail(detail, { taskId: opts.taskId, host: host.ip });
+        return withScope(this.infraFail(detail, { taskId: opts.taskId, host: host.ip }));
       }
 
       // 3. run build + test via validate.sh on the host (which calls docker run
@@ -2807,20 +2916,30 @@ export class TailscaleRunner implements RemoteValidator {
       // run. The `cancelled` marker keeps the history row from reading as a
       // gate failure (0564 review).
       if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
-        return {
+        return withScope({
           ...this.infraFail(
             `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
             { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
           ),
           cancelled: true,
-        };
+        });
       }
-      emit(`[running build + test in ${image} on ${host.ip}]\n`);
+      const changedNote = remoteTestRef ? ` (tests scoped to changed vs ${remoteTestRef})` : "";
+      emit(`[running build + test in ${image} on ${host.ip}${changedNote}]\n`);
       this.record(
         { taskId: opts.taskId, host: host.ip, phase: "run" },
-        { level: "info", phase: "run", message: `running build + test in ${image} on ${host.ip}` },
+        {
+          level: "info",
+          phase: "run",
+          message: `running build + test in ${image} on ${host.ip}${changedNote}`,
+        },
       );
-      const inner = `REPOOS_CI_IMAGE=${shellQuote(image)} ${VALIDATE_SCRIPT} ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
+      const inner = `REPOOS_CI_IMAGE=${shellQuote(image)} ${validateScriptArgs(
+        remoteBundle,
+        opts.candidateSha,
+        paths.artifacts,
+        remoteTestRef ?? undefined,
+      )}`;
       const waitSecs =
         opts.deadlineAt !== undefined
           ? deadlineLockWaitSecs(opts.deadlineAt)
@@ -2874,24 +2993,26 @@ export class TailscaleRunner implements RemoteValidator {
             infra: true,
           },
         );
-        return {
+        return withScope({
           ok: false,
           stage: "check",
           transient: true,
           exitCode: null,
           output: tail(run.output, 40, 4000),
           detail,
-        };
+        });
       }
       if (run.code === HOST_LOCK_TIMEOUT_EXIT && run.output.includes("[lock]")) {
         // Another repoos process held the host past our wait — the cap did its
         // job; this run gives its slot back and retries later.
         emit(`\n[host busy — another repoos check held ${host.ip}]\n`);
         this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
-        return this.infraFail(
-          `another repoos check is already running on ${host.ip} — waited ${elapsed}s for a free host slot ` +
-            "(the per-host limit is shared by the server and standalone `repoos check`)",
-          { taskId: opts.taskId, host: host.ip, exitCode: run.code },
+        return withScope(
+          this.infraFail(
+            `another repoos check is already running on ${host.ip} — waited ${elapsed}s for a free host slot ` +
+              "(the per-host limit is shared by the server and standalone `repoos check`)",
+            { taskId: opts.taskId, host: host.ip, exitCode: run.code },
+          ),
         );
       }
       if (run.code === 0) {
@@ -2908,7 +3029,7 @@ export class TailscaleRunner implements RemoteValidator {
             exitCode: 0,
           },
         );
-        return { ok: true, stage: "check" };
+        return withScope({ ok: true, stage: "check" });
       }
 
       // Non-zero: the ssh transport itself could have dropped (code 255) — treat
@@ -2920,11 +3041,13 @@ export class TailscaleRunner implements RemoteValidator {
         const detail = `ssh connection to ${host.ip} dropped mid-run: ${tail(run.output)}`;
         this.pool.markUnhealthy(host.ip, detail);
         this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
-        return this.infraFail(detail, {
-          taskId: opts.taskId,
-          host: host.ip,
-          exitCode: 255,
-        });
+        return withScope(
+          this.infraFail(detail, {
+            taskId: opts.taskId,
+            host: host.ip,
+            exitCode: 255,
+          }),
+        );
       }
       const transient = looksTransient(run.output);
       emit(`\n[remote validation FAILED (exit ${run.code}) in ${elapsed}s on ${host.ip}]\n`);
@@ -2943,16 +3066,18 @@ export class TailscaleRunner implements RemoteValidator {
           infra: transient,
         },
       );
-      return {
+      return withScope({
         ok: false,
         stage: "check",
         exitCode: run.code,
         transient,
         output: tail(run.output, 40, 4000),
         detail: `remote validation failed (exit ${run.code}) — ${tail(run.output)}`,
-      };
+      });
     } catch (e) {
-      return this.infraFail((e as Error).message, { taskId: opts.taskId, host: host.ip });
+      return withScope(
+        this.infraFail((e as Error).message, { taskId: opts.taskId, host: host.ip }),
+      );
     } finally {
       if (tmp) rmSync(tmp, { recursive: true, force: true });
     }

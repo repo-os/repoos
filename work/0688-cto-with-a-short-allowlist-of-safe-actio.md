@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-06T03:19:43Z"
-review_passes: 1
 id: "0688"
 title: "CTO with a short allowlist of safe actions (restart stalled agent, refresh install, re-queue close-out)"
 type: feature
-status: review
+status: active
 priority: p3
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -14,7 +12,7 @@ branch: feat/cto-with-a-short-allowlist-of-safe-actio
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:59Z"
-last_check_failure: "repoos check at 2026-10-06T03:00:50.534Z: server-side finalization timed out (deadline exceeded)"
+updated_at: "2026-10-06T02:10:16Z"
 ---
 ## Problem
 
@@ -37,18 +35,6 @@ Evidence comes from building a real 30-task project (opex, a Vue + Bun + Postgre
 ## Story context
 This task is part of the story **Field report: first agent-driven project run (opex)** (story #0008, `stories/field-report-first-agent-driven-project-run-opex.md` in this repo). Read that file first: it holds the background of the run that produced this task, the facts already established for your theme (with the evidence), the decisions the owner has already made, the known uncertainties, and the list of sibling tasks you should coordinate with. Verify its facts against the current source before relying on them, and say in the task notes if you find anything in it that is wrong or out of date.
 
-## Shots
-```json
-[
-  {
-    "label": "CTO safe actions allowlist in Settings",
-    "target": "default",
-    "route": "/settings",
-    "highlight": "#setting-cto.actions"
-  }
-]
-```
-
 ## Activity
 
 - 2026-10-05T16:58:59Z · created · unknown
@@ -57,12 +43,3 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T02:10:14Z · status inbox→ready
 - 2026-10-06T02:10:15Z · cli_override, model_override
 - 2026-10-06T02:10:16Z · status ready→active, branch
-- 2026-10-06T02:33:45Z · body
-- 2026-10-06T02:49:30Z · body
-- 2026-10-06T02:50:12Z · body: section Shots
-- 2026-10-06T03:08:30Z · body
-- 2026-10-06T03:17:33Z · body
-- 2026-10-06T03:19:01Z · status active→review
-- 2026-10-06T03:19:01Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
-- 2026-10-06T03:19:43Z · note: review pass 1: good to go
-

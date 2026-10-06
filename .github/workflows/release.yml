@@ -111,11 +111,8 @@ jobs:
               break
             fi
             if [[ "$attempt" == 60 ]]; then
-              # Don't fail the release (v0.5.66: npm's tarball was live ~5 min
-              # after publish but this runner kept seeing a cached 404). The
-              # tap's own update job retries, so dispatch anyway.
-              echo "::warning::npm tarball for ${VERSION} not visible after 10 minutes; dispatching anyway"
-              break
+              echo "npm tarball for ${VERSION} did not become available after 10 minutes" >&2
+              exit 1
             fi
             echo "Waiting for npm tarball (attempt ${attempt}/60)…" >&2
             sleep 10
