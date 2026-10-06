@@ -188,7 +188,7 @@ describe("RemoteValidationRunner", () => {
       onChunk: (c) => chunks.push(c),
     });
     expect(res.ok).toBe(true);
-    expect(res.remoteTestScopeRef).toBeNull();
+    expect(res.remoteTestScopeRef).toBeUndefined();
     const cmd = (exec.runRemote as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
     expect(cmd).not.toContain("not-a-real-ref-xyz");
     expect(chunks.join("")).toMatch(/WARNING:.*full suite/i);

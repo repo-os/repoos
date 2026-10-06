@@ -1272,10 +1272,8 @@ export class RemoteValidationRunner implements RemoteValidator {
     const rv = this.config.remoteValidation ?? {};
     const dispatch = { taskId: opts.taskId, phase: "dispatch" as const };
     let remoteTestRef: string | null = null;
-    const withScope = (summary: CheckSummary): CheckSummary => ({
-      ...summary,
-      remoteTestScopeRef: remoteTestRef,
-    });
+    const withScope = (summary: CheckSummary): CheckSummary =>
+      remoteTestRef != null ? { ...summary, remoteTestScopeRef: remoteTestRef } : summary;
     if (!rv.enabled) return withScope(this.infraFail("remote validation is disabled", dispatch));
     if (!process.env.HETZNER_API_TOKEN)
       return withScope(this.infraFail("HETZNER_API_TOKEN is not set", dispatch));
@@ -2851,10 +2849,8 @@ export class TailscaleRunner implements RemoteValidator {
     const paths = remoteRunPaths(opts.taskId);
     const startedAt = Date.now();
     let remoteTestRef: string | null = null;
-    const withScope = (summary: CheckSummary): CheckSummary => ({
-      ...summary,
-      remoteTestScopeRef: remoteTestRef,
-    });
+    const withScope = (summary: CheckSummary): CheckSummary =>
+      remoteTestRef != null ? { ...summary, remoteTestScopeRef: remoteTestRef } : summary;
     const emit = (s: string): void => {
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
