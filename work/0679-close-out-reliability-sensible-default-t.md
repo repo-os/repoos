@@ -2,7 +2,7 @@
 id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-05T17:16:54Z"
+updated_at: "2026-10-06T01:49:16Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T16:58:40Z · created · unknown
 - 2026-10-05T17:16:53Z · story
 - 2026-10-05T17:16:54Z · body: section Story context
+- 2026-10-06T01:49:16Z · status inbox→ready
