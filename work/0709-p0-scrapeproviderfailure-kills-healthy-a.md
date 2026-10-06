@@ -12,7 +12,7 @@ branch: feat/p0-scrapeproviderfailure-kills-healthy-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T07:35:51Z"
-updated_at: "2026-10-06T07:37:21Z"
+updated_at: "2026-10-06T07:54:22Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Smallest fix: in scrapeProviderFailure only inspect structured fields for lines 
 - 2026-10-06T07:36:04Z · status ready→active, branch
 - 2026-10-06T07:37:21Z · status active→review
 - 2026-10-06T07:37:21Z · status review→active
+- 2026-10-06T07:54:22Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
