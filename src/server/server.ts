@@ -2883,7 +2883,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // slow-run detail (stage, cause) also comes from the runner registry.
     annotateHostSlowRuns(hosts, config, remoteValidator, {
       taskChecks,
-      awakeClock: watchdog ? () => watchdog.awakeClock() : undefined,
+      awakeClock: watchdog ? () => watchdog!.awakeClock() : undefined,
     });
     return json(res, 200, {
       enabled: !!rv.enabled,
