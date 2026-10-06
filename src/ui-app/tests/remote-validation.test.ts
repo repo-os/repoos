@@ -28,6 +28,12 @@ import {
   EMPTY_REMOTE_MIRROR,
   prepareCandidateUpload,
   parseMirrorProbeOutput,
+  parseValidateScriptMirrorSupport,
+  isRunnerBundleTransportMismatch,
+  validateScriptArgs,
+  validateScriptInstallCommand,
+  RUNNER_SCRIPT_MIRROR_TOKEN,
+  PREREQ_OK_TOKEN,
   defaultRemoteExec,
   remoteMirrorPath,
   type RemoteExecDeps,
@@ -1002,6 +1008,80 @@ describe("prepareCandidateUpload (#0717)", () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+});
+
+describe("validate.sh compatibility (#0725)", () => {
+  it("parses mirror support from the prerequisite probe", () => {
+    expect(
+      parseValidateScriptMirrorSupport(`${RUNNER_SCRIPT_MIRROR_TOKEN}=1\n${PREREQ_OK_TOKEN}`),
+    ).toBe(true);
+    expect(parseValidateScriptMirrorSupport(`${RUNNER_SCRIPT_MIRROR_TOKEN}=0`)).toBe(false);
+    expect(parseValidateScriptMirrorSupport(PREREQ_OK_TOKEN)).toBe(false);
+  });
+
+  it("detects bundle transport mismatches for a single legacy retry", () => {
+    expect(
+      isRunnerBundleTransportMismatch("warning: You appear to have cloned an empty repository.", 128),
+    ).toBe(true);
+    expect(
+      isRunnerBundleTransportMismatch("[validate] FATAL: could not fetch bundle into the mirror", 3),
+    ).toBe(true);
+    expect(isRunnerBundleTransportMismatch("1 test failed\nFAIL x", 1)).toBe(false);
+  });
+
+  it("uses a HEAD bundle and a four-argument validate call for legacy hosts", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-0725-"));
+    try {
+      const git = (...args: string[]): string =>
+        execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+      git("init", "-q", "-b", "main");
+      git("config", "user.email", "t@example.com");
+      git("config", "user.name", "T");
+      writeFileSync(join(root, "f.txt"), "one\n");
+      git("add", ".");
+      git("commit", "-qm", "c");
+      const candidateSha = git("rev-parse", "HEAD");
+      const bundlePath = join(root, "candidate.bundle");
+      const exec = fakeExec({
+        bundleRepo: vi.fn((cwd, out, o) =>
+          defaultRemoteExec().bundleRepo(cwd, out, o),
+        ),
+      });
+      const res = await prepareCandidateUpload(exec, {
+        host: { ip: "203.0.113.9", user: "root" },
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: "~/.repoos-cache/x.git",
+        incrementalUpload: false,
+        emit: () => {},
+      });
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.mirrorPath).toBe("");
+      const refs = execFileSync("git", ["bundle", "list-heads", bundlePath], {
+        encoding: "utf8",
+      });
+      expect(refs).toContain("HEAD");
+      const legacyCall = validateScriptArgs("~/.b", candidateSha, "~/.art", "main");
+      expect(legacyCall).toBe(
+        `/opt/repoos/validate.sh ~/.b ${candidateSha} ~/.art 'main'`,
+      );
+      expect(legacyCall).not.toContain("repoos-cache");
+      expect(validateScriptArgs("~/.b", candidateSha, "~/.art", "main", "~/.mirror")).toContain(
+        "~/.mirror",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("formats a one-line install command for the host owner", () => {
+    const cmd = validateScriptInstallCommand("nick", "bee");
+    expect(cmd).toContain("nick@bee");
+    expect(cmd).toContain("/opt/repoos/validate.sh");
   });
 });
 
