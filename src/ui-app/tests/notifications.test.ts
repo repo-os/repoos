@@ -117,6 +117,7 @@ describe("notifications store defaults + persistence", () => {
       spendThreshold: false,
       awaitingVisualCheck: false,
       remoteFallback: false,
+      ctoAction: false,
     });
     expect(n.isActive).toBe(false);
   });
@@ -314,6 +315,7 @@ describe("NOTIFICATION_TYPE_LABELS", () => {
       "closeOutFailed",
       "closeOutSucceeded",
       "closeOutTimedOut",
+      "ctoAction",
       "needsInput",
       "paused",
       "providerFailure",
