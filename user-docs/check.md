@@ -243,11 +243,15 @@ globs; steps without it still run. This is a **fast pre-review pass** — an
 agent's self-check before handoff — never the final gate. Close-out runs the
 full plan.
 
-When `[remoteValidation] enabled = true`, a **full** `repoos check` (no
-`--changed`) runs install + build + tests on the remote runner first, then local
-guards only. Changed-path mode does **not** trigger the remote half — it stays a
-fast local pass. Pass `--local-tests` to force the full local suite even when
-remote validation is enabled.
+When `[remoteValidation] enabled = true`, `repoos check` runs install + build +
+tests on the remote runner first (unless `--local-tests` or the remote half already
+ran), then local guards only with `REPOOS_SKIP_TESTS=1`. That includes
+`--changed` / `REPOOS_CHECK_CHANGED` pre-review passes (#0694): the runner still
+runs the full remote suite; changed-path mode only narrows which **local** steps
+run afterward. Managed engineers (`REPOOS_AGENT=1`) always use the board's runner
+(Hetzner or Tailscale). Handoff reuses a green remote pass at the same commit when
+`remoteValidation.engineerSelfCheckRemote` is on (default). Pass `--local-tests` to
+force the full local suite even when remote validation is enabled.
 
 ## Failed-first re-runs and isolation triage
 

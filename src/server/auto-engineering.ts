@@ -1,7 +1,18 @@
 /**
  * Auto-engineering mode: automatically selects and starts ready tasks up to a
- * configured maximum. The PM agent decides which tasks are most suitable;
- * orchestration remains server-owned with proper safeguards against
+ * configured maximum.
+ *
+ * Selection is DETERMINISTIC by default (#0690): when the dependency graph is
+ * explicit, choosing the next task is mechanical — priority, then the amount
+ * of downstream work a task unblocks (its critical-path weight), then creation
+ * order. `selectReadyTasks` (src/core/task-selection.ts) owns that ordering and
+ * costs nothing. An optional PM pass (`autoEngineering.pmVeto`) runs ONLY when
+ * there are more eligible tasks than open slots AND two candidates would
+ * collide (same area or a declared shared path); it may reorder or defer, never
+ * invent work. A PM failure never stalls dispatch — the deterministic pick
+ * already has the answer.
+ *
+ * Orchestration remains server-owned with proper safeguards against
  * oversubscription and stale state.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -9,13 +20,24 @@ import { join } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
 import { resolvePmAgent, runPrompt, recordOneShotSession } from "./agents.js";
 import { taskDependencyBlockers } from "../core/task-dependencies.js";
+import {
+  selectReadyTasks,
+  shouldRunPmVeto,
+  type SelectionResult,
+  type TaskConflict,
+} from "../core/task-selection.js";
+
+/** Which picker produced a decision. */
+export type PickerKind = "deterministic" | "pm-veto";
 
 /** Result of a reconciliation attempt. */
 export interface ReconciliationResult {
   triggered: boolean;
-  outcome?: "selected" | "no-capacity" | "no-ready-work" | "pm-unavailable" | "pm-failed";
+  outcome?: "selected" | "no-capacity" | "no-ready-work" | "pm-failed";
+  picker?: PickerKind;
   candidateIds?: string[];
   selectedIds?: string[];
+  deferredIds?: string[];
   rationale?: string;
   error?: string;
 }
@@ -30,76 +52,120 @@ export interface AutoEngineeringDecision {
     | "config-change"
     | "startup";
   outcome: ReconciliationResult["outcome"];
+  /** Which picker ran: the deterministic default, or the optional PM veto pass. */
+  picker?: PickerKind;
   activeCount: number;
   maxActiveTasks: number;
   availableSlots: number;
   candidateIds: string[];
   selectedIds: string[];
+  /** Eligible tasks left for a later slot, in pick order. */
+  deferredIds?: string[];
+  /** Candidate pairs that would collide if started together. */
+  conflicts?: TaskConflict[];
   rationale?: string;
   error?: string;
 }
 
 /**
- * Render the PM prompt for auto-engineering task selection. Receives all
- * ready tasks and the number of available slots, returns selected task IDs
- * and brief rationale. The PM never selects more tasks than slots available.
+ * Render the PM veto prompt. The candidate list is already ordered by the
+ * deterministic picker; the PM may only reorder it or move a task later, to
+ * avoid two candidates that touch the same area/paths running in parallel.
+ * It can never add a task outside the candidate list.
  */
-function autoEngineeringPrompt(readyTasks: Task[], availableSlots: number): string {
-  const tasksList = readyTasks
+function pmVetoPrompt(
+  candidates: Task[],
+  availableSlots: number,
+  conflicts: TaskConflict[],
+): string {
+  const tasksList = candidates
     .map(
-      (t) =>
-        `- **#${t.id}** ${t.title}\n  Type: ${t.type}, Priority: ${t.priority}, Area: ${t.area || "unspecified"}`,
+      (t, index) =>
+        `${index + 1}. **#${t.id}** ${t.title}\n   Type: ${t.type}, Priority: ${t.priority}, Area: ${
+          t.area || "unspecified"
+        }, Paths: ${(t.paths ?? []).join(", ") || "—"}`,
     )
     .join("\n");
 
+  const conflictList = conflicts.length
+    ? conflicts.map((c) => `- #${c.a} and #${c.b} ${c.reason}`).join("\n")
+    : "- (none detected)";
+
   return [
-    "You are the PM agent for RepoOS auto-engineering mode. The engineering team has capacity for",
-    `${availableSlots} more task(s). Choose which ready task(s) to start now based on priority,`,
-    "impact, and dependencies.",
+    "You are the PM agent for RepoOS auto-engineering mode. The deterministic picker has",
+    `already ordered the eligible ready tasks. There are ${availableSlots} open slot(s) and`,
+    "some candidates would collide if started together.",
     "",
-    "Ready tasks available:",
+    "Your ONLY job is to reorder or defer the candidates below so that tasks which share an",
+    "area or a declared path do not run in parallel. You may not add, remove, or rename any",
+    "task — the candidate id list is fixed. Return the full list in the order RepoOS should",
+    "start them; tasks beyond the slot count are deferred.",
+    "",
+    "Detected collisions:",
+    "",
+    conflictList,
+    "",
+    "Candidates (already in the default order):",
     "",
     tasksList,
     "",
     "Respond with ONLY a JSON object (no preamble, no code fences):",
-    '{"selected": ["0123", "0124"], "rationale": "Starting the most impactful high-priority tasks"}',
+    '{"ordered": ["0123", "0124", "0125"], "rationale": "Deferred #0124 below #0125 so the two web tasks do not run in parallel"}',
     "",
-    "- `selected`: array of task IDs to start (must not exceed available slots)",
-    "- `rationale`: one-sentence explanation of why these were chosen",
+    "- `ordered`: every candidate id, in the order to start them (reorder/defer only)",
+    "- `rationale`: one sentence explaining the reordering or deferral",
   ].join("\n");
 }
 
 /**
- * Parse the PM agent's structured JSON response. Never throws: anything
- * unparseable yields an empty selection with an error description.
+ * Parse the PM veto response. Never throws: anything unparseable yields an
+ * error description so the caller can fall back to the deterministic order.
  */
-function parseAutoEngineeringSelection(output: string): {
-  selected: string[];
+function parsePmVetoOrdering(output: string): {
+  ordered: string[];
   rationale: string;
   error?: string;
 } {
   try {
-    const trimmed = output.trim();
-    const obj = JSON.parse(trimmed) as unknown;
-    if (
-      typeof obj === "object" &&
-      obj !== null &&
-      Array.isArray((obj as Record<string, unknown>).selected) &&
-      typeof (obj as Record<string, unknown>).rationale === "string"
-    ) {
-      return {
-        selected: (obj as Record<string, unknown>).selected as string[],
-        rationale: ((obj as Record<string, unknown>).rationale as string).trim(),
-      };
+    const obj = JSON.parse(output.trim()) as unknown;
+    if (typeof obj === "object" && obj !== null) {
+      const record = obj as Record<string, unknown>;
+      if (Array.isArray(record.ordered) && typeof record.rationale === "string") {
+        return {
+          ordered: record.ordered.map(String),
+          rationale: record.rationale.trim(),
+        };
+      }
     }
-  } catch (e) {
+  } catch {
     // Fall through to error response
   }
   return {
-    selected: [],
+    ordered: [],
     rationale: "",
-    error: "PM response was not valid JSON or missing required fields",
+    error: "PM veto response was not valid JSON or missing required fields",
   };
+}
+
+/**
+ * Reorder the deterministic candidate list by the PM's ordering, tolerating a
+ * partial or stale response: ids the PM omitted keep their deterministic
+ * position at the end, and ids not in the candidate set are dropped. This is
+ * the "reorder or defer, never invent" guarantee, enforced in code.
+ */
+export function applyPmVetoOrdering(eligible: string[], pmOrdered: string[]): string[] {
+  const eligibleSet = new Set(eligible);
+  const result: string[] = [];
+  const seen = new Set<string>();
+  for (const id of pmOrdered) {
+    if (!eligibleSet.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    result.push(id);
+  }
+  for (const id of eligible) {
+    if (!seen.has(id)) result.push(id);
+  }
+  return result;
 }
 
 /**
@@ -187,6 +253,7 @@ export class AutoEngineeringOrchestrator {
         timestamp: new Date().toISOString(),
         trigger,
         outcome: "no-capacity",
+        picker: "deterministic",
         activeCount,
         maxActiveTasks,
         availableSlots,
@@ -200,20 +267,22 @@ export class AutoEngineeringOrchestrator {
       };
     }
 
-    const readyTasks = allTasks.filter(
-      (task) =>
-        task.status === "ready" &&
-        !task.isArchived &&
-        !task.needsInput &&
-        taskDependencyBlockers(config.root, task, allTasks).length === 0,
+    // Eligibility lives in the pure selector; the git-aware blocker check is
+    // the only impure input, computed once here.
+    const blockedIds = new Set(
+      allTasks
+        .filter((task) => taskDependencyBlockers(config.root, task, allTasks).length > 0)
+        .map((task) => task.id),
     );
+    const selection = selectReadyTasks(allTasks, { availableSlots, blockedIds });
 
     // No ready tasks.
-    if (readyTasks.length === 0) {
+    if (selection.eligible.length === 0) {
       this.lastDecision = {
         timestamp: new Date().toISOString(),
         trigger,
         outcome: "no-ready-work",
+        picker: "deterministic",
         activeCount,
         maxActiveTasks,
         availableSlots,
@@ -227,123 +296,159 @@ export class AutoEngineeringOrchestrator {
       };
     }
 
-    const pm = resolvePmAgent(config);
-    if (!pm) {
-      this.lastDecision = {
-        timestamp: new Date().toISOString(),
+    const pmVetoEnabled = config.autoEngineering?.pmVeto ?? false;
+    if (pmVetoEnabled && shouldRunPmVeto(selection, availableSlots)) {
+      return this.reconcileWithPmVeto(
+        config,
+        allTasks,
         trigger,
-        outcome: "pm-unavailable",
+        selection,
+        availableSlots,
         activeCount,
         maxActiveTasks,
-        availableSlots,
-        candidateIds: readyTasks.map((t) => t.id),
-        selectedIds: [],
-        error: "PM agent is not configured or enabled",
-      };
-      this.persistDecision(this.lastDecision);
-      return {
-        triggered: true,
-        outcome: "pm-unavailable",
-        error: "PM agent is not configured or enabled",
-      };
+      );
     }
 
-    // Invoke PM agent to select which ready tasks to start.
-    const prompt = autoEngineeringPrompt(readyTasks, availableSlots);
-    let pmResult;
-    try {
-      pmResult = await runPrompt(pm, prompt, {
-        cwd: config.root,
-      });
-    } catch (e) {
-      const error = `PM agent failed: ${e instanceof Error ? e.message : String(e)}`;
-      this.lastDecision = {
-        timestamp: new Date().toISOString(),
+    return this.finishDeterministic(
+      trigger,
+      selection,
+      availableSlots,
+      activeCount,
+      maxActiveTasks,
+    );
+  }
+
+  /** Record and return the deterministic pick (no PM call). */
+  private finishDeterministic(
+    trigger: AutoEngineeringDecision["trigger"],
+    selection: SelectionResult,
+    availableSlots: number,
+    activeCount: number,
+    maxActiveTasks: number,
+    pmError?: string,
+  ): ReconciliationResult {
+    this.lastDecision = {
+      timestamp: new Date().toISOString(),
+      trigger,
+      outcome: "selected",
+      picker: "deterministic",
+      activeCount,
+      maxActiveTasks,
+      availableSlots,
+      candidateIds: selection.eligible,
+      selectedIds: selection.selected,
+      deferredIds: selection.eligible.slice(selection.selected.length),
+      conflicts: selection.conflicts,
+      error: pmError,
+    };
+    this.persistDecision(this.lastDecision);
+    return {
+      triggered: true,
+      outcome: "selected",
+      picker: "deterministic",
+      candidateIds: selection.eligible,
+      selectedIds: selection.selected,
+      deferredIds: this.lastDecision.deferredIds,
+      error: pmError,
+    };
+  }
+
+  /**
+   * Run the optional PM veto pass. The PM may only reorder/defer the
+   * deterministic candidate list; on any failure or unparseable output the
+   * deterministic pick stands, so a flaky model can never stall dispatch.
+   */
+  private async reconcileWithPmVeto(
+    config: RepoOSConfig,
+    allTasks: Task[],
+    trigger: AutoEngineeringDecision["trigger"],
+    selection: SelectionResult,
+    availableSlots: number,
+    activeCount: number,
+    maxActiveTasks: number,
+  ): Promise<ReconciliationResult> {
+    const pm = resolvePmAgent(config);
+    if (!pm) {
+      return this.finishDeterministic(
         trigger,
-        outcome: "pm-failed",
+        selection,
+        availableSlots,
         activeCount,
         maxActiveTasks,
+        "PM veto is enabled but no PM agent is configured; used the deterministic picker",
+      );
+    }
+
+    const candidates = selection.eligible
+      .map((id) => allTasks.find((task) => task.id === id))
+      .filter((task): task is Task => task !== undefined);
+    const prompt = pmVetoPrompt(candidates, availableSlots, selection.conflicts);
+
+    let pmResult;
+    try {
+      pmResult = await runPrompt(pm, prompt, { cwd: config.root });
+    } catch (e) {
+      return this.finishDeterministic(
+        trigger,
+        selection,
         availableSlots,
-        candidateIds: readyTasks.map((t) => t.id),
-        selectedIds: [],
-        error,
-      };
-      this.persistDecision(this.lastDecision);
-      return {
-        triggered: true,
-        outcome: "pm-failed",
-        error,
-      };
+        activeCount,
+        maxActiveTasks,
+        `PM veto run failed (${e instanceof Error ? e.message : String(e)}); used the deterministic picker`,
+      );
     }
 
     // Board-level PM spend — the dispatch pass belongs to no single task (0311).
     recordOneShotSession(config.root, pm, pmResult, { sessionType: "dispatch", taskId: null });
 
     if (!pmResult.ok || !pmResult.output) {
-      const error = pmResult.error || "PM agent returned no output";
-      this.lastDecision = {
-        timestamp: new Date().toISOString(),
+      return this.finishDeterministic(
         trigger,
-        outcome: "pm-failed",
+        selection,
+        availableSlots,
         activeCount,
         maxActiveTasks,
-        availableSlots,
-        candidateIds: readyTasks.map((t) => t.id),
-        selectedIds: [],
-        error,
-      };
-      this.persistDecision(this.lastDecision);
-      return {
-        triggered: true,
-        outcome: "pm-failed",
-        error,
-      };
+        `PM veto returned no output (${pmResult.error || "unknown"}); used the deterministic picker`,
+      );
     }
 
-    const selection = parseAutoEngineeringSelection(pmResult.output);
-    if (selection.error) {
-      this.lastDecision = {
-        timestamp: new Date().toISOString(),
+    const veto = parsePmVetoOrdering(pmResult.output);
+    if (veto.error) {
+      return this.finishDeterministic(
         trigger,
-        outcome: "pm-failed",
+        selection,
+        availableSlots,
         activeCount,
         maxActiveTasks,
-        availableSlots,
-        candidateIds: readyTasks.map((t) => t.id),
-        selectedIds: [],
-        error: selection.error,
-      };
-      this.persistDecision(this.lastDecision);
-      return {
-        triggered: true,
-        outcome: "pm-failed",
-        error: selection.error,
-      };
+        `${veto.error}; used the deterministic picker`,
+      );
     }
 
-    // Validate selection: ensure all IDs exist in ready pool and don't exceed slots.
-    const readySet = new Set(readyTasks.map((t) => t.id));
-    const validated = selection.selected.filter((id) => readySet.has(id)).slice(0, availableSlots);
-
+    const ordered = applyPmVetoOrdering(selection.eligible, veto.ordered);
+    const selected = ordered.slice(0, availableSlots);
     this.lastDecision = {
       timestamp: new Date().toISOString(),
       trigger,
       outcome: "selected",
+      picker: "pm-veto",
       activeCount,
       maxActiveTasks,
       availableSlots,
-      candidateIds: readyTasks.map((t) => t.id),
-      selectedIds: validated,
-      rationale: selection.rationale,
+      candidateIds: selection.eligible,
+      selectedIds: selected,
+      deferredIds: ordered.slice(selected.length),
+      conflicts: selection.conflicts,
+      rationale: veto.rationale,
     };
     this.persistDecision(this.lastDecision);
-
     return {
       triggered: true,
       outcome: "selected",
-      candidateIds: readyTasks.map((t) => t.id),
-      selectedIds: validated,
-      rationale: selection.rationale,
+      picker: "pm-veto",
+      candidateIds: selection.eligible,
+      selectedIds: selected,
+      deferredIds: this.lastDecision.deferredIds,
+      rationale: veto.rationale,
     };
   }
 }

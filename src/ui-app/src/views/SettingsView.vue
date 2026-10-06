@@ -14,6 +14,11 @@ import {
 } from "../stores/notifications";
 import { api, JSON_OPTS } from "../api";
 import { highlightToml } from "../lib/toml-highlight";
+import {
+  storageProviderOptions as storageProviderOptionList,
+  storageStatusChip as storageProviderStatusChip,
+  storageExplanation as storageProviderExplanation,
+} from "../lib/storage-status";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
@@ -447,6 +452,31 @@ async function sendTestNotification(): Promise<void> {
 
 const generalFields = computed(() =>
   config.visibleFields.filter((field) => isGeneralSchemaFieldKey(field.key)),
+);
+
+// ---- Attachment storage (#0659) ----
+// The choice is a plain schema select, but whether the selected provider is
+// actually in effect needs the server's status (the registry falls back to
+// local for an unavailable cloud provider). We show the configured choice plus
+// an honest, non-alarming explanation of the effective provider — never a claim
+// that cloud is active when only local storage is.
+const storageProviderOptions = computed(() =>
+  storageProviderOptionList(config.schema.find((f) => f.key === "storage.provider")),
+);
+
+/** The provider selected in the form (the local default when unset). */
+const selectedStorageProvider = computed(() => String(form["storage.provider"] ?? "local"));
+
+const storageStatusChip = computed(() =>
+  storageProviderStatusChip(config.storageStatus, storageProviderOptions.value),
+);
+
+const storageExplanation = computed(() =>
+  storageProviderExplanation(
+    selectedStorageProvider.value,
+    config.storageStatus,
+    storageProviderOptions.value,
+  ),
 );
 
 const BOARD_COLUMN_STATUSES = ["draft", "inbox", "ready", "active", "review", "done"] as const;
@@ -963,6 +993,7 @@ onUnmounted(() => {
               v-for="f in generalFields"
               :key="f.key"
               :id="`setting-${f.key}`"
+              :data-config-key="f.key"
               class="setting-row"
             >
               <div class="setting-info">
@@ -995,6 +1026,52 @@ onUnmounted(() => {
                 />
               </div>
               <span v-if="f.restartRequired" class="restart-badge">restart required</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Attachments
+            </div>
+            <div id="setting-storage.provider" class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">Attachment storage</div>
+                <div class="setting-desc">
+                  Where attachment files — task and input screenshots — are stored. Local filesystem
+                  keeps them in gitignored <span class="mono">.attachments/</span> folders on this
+                  machine and is the default; Neon Object Storage is opt-in and needs credentials
+                  before it can be used.
+                </div>
+              </div>
+              <div class="setting-input tunnel-setting-actions">
+                <span class="tunnel-status-chip">{{ storageStatusChip }}</span>
+                <Select
+                  :model-value="String(form['storage.provider'] ?? 'local')"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form['storage.provider'] = v)"
+                >
+                  <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem
+                        v-for="o in storageProviderOptions"
+                        :key="o.value"
+                        :value="o.value"
+                      >
+                        {{ o.label }}
+                      </SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
+              <span class="restart-badge">restart required</span>
+            </div>
+            <div class="setting-desc" style="padding: 0 0 12px; max-width: 72ch">
+              {{ storageExplanation }}
             </div>
           </div>
         </Card>

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import type { RepoOSConfig } from "./types.js";
 import { parseDocument, serializeDocument } from "./frontmatter.js";
-import { createStorageProvider } from "./storage/index.js";
+import { createStorageProvider, DEFAULT_STORAGE_PROVIDER_ID } from "./storage/index.js";
 
 export type InputStatus = "new" | "reviewing" | "processed";
 /**
@@ -74,12 +74,14 @@ const slug = (v: string) =>
 const inputRoot = (c: RepoOSConfig) => c.inputsDir ?? "inputs";
 const dir = (c: RepoOSConfig) => join(c.root, inputRoot(c));
 /**
- * Attachment bytes for inputs go through the storage provider (#0658), rooted
- * at the inputs dir; each input id is a namespace. The provider is the local
- * gitignored-directory implementation today — same `inputs/.attachments/<id>/`
- * path as before, just named behind the interface.
+ * Attachment bytes for inputs go through the storage provider (#0658/#0659),
+ * rooted at the inputs dir; each input id is a namespace. The provider is
+ * chosen by `storage.provider` in `repoos.toml`; the default is the local
+ * gitignored-directory implementation — the same `inputs/.attachments/<id>/`
+ * path as before — and an unknown/unconfigured provider falls back to it.
  */
-const attachments = (c: RepoOSConfig) => createStorageProvider(dir(c));
+const attachments = (c: RepoOSConfig) =>
+  createStorageProvider(dir(c), c.storage?.provider ?? DEFAULT_STORAGE_PROVIDER_ID);
 
 /**
  * Normalize a raw frontmatter `number` to the canonical zero-padded form.

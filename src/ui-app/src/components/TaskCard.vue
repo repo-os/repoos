@@ -1153,6 +1153,7 @@ async function openDebuggerFromError(): Promise<void> {
       :failed-at="repo.doneErrorFor(task.id)!.failedAt"
       :tldr="repo.doneErrorFor(task.id)!.tldr"
       :summary="repo.doneErrorFor(task.id)!.summary"
+      :action="repo.doneErrorFor(task.id)!.action"
       :tldr-diagnosing="!repo.doneErrorFor(task.id)!.tldr && repo.debugTldrWorkingFor(task.id)"
       :retry-hint="doneErrorRetryHint"
       :task-id="task.id"
@@ -1160,6 +1161,7 @@ async function openDebuggerFromError(): Promise<void> {
       @open-panel="openPanelFromError"
       @open-debugger="openDebuggerFromError"
       @dismiss="repo.dismissDoneError(task.id)"
+      @refresh-install-retry="repo.refreshInstallAndRetryIntegration(task.id)"
       @click.stop
     />
   </article>

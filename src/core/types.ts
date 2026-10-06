@@ -94,6 +94,18 @@ export interface TaskFrontmatter {
   /** Optional free-text reason the task was archived. Only meaningful while `is_archived` is true. */
   archive_detail?: string;
   /**
+   * True when the task is held out of auto-start (#0690). Orthogonal to
+   * `status`: the task stays `ready` and startable by hand, but the
+   * auto-engineering picker skips it. A `hold` tag is an equivalent label.
+   */
+  hold?: boolean;
+  /**
+   * Repo-relative files this task expects to touch (#0690). Declared by the
+   * planner so the picker can keep two candidates that would edit the same
+   * file out of the same dispatch batch.
+   */
+  paths?: string[];
+  /**
    * One area, a comma-separated string ("web, core"), or a list. Legacy
    * "a + b" values read through the shared `parseTaskAreas` helper too (#0583).
    */
@@ -181,6 +193,20 @@ export interface Task {
   isArchived?: boolean;
   /** Optional free-text reason the task was archived; absent when none was given. */
   archiveDetail?: string;
+  /**
+   * True when the task is held out of auto-start (#0690). Orthogonal to
+   * `status`: the task stays `ready` and fully startable by hand, but the
+   * auto-engineering picker skips it. A `hold` tag is an equivalent label —
+   * see `taskIsHeld` in `src/core/task-selection.ts`.
+   */
+  isHeld?: boolean;
+  /**
+   * Repo-relative files this task expects to touch (#0690). Declared by the
+   * planner so the auto-engineering picker can hold two candidates that would
+   * edit the same file out of the same dispatch batch. Optional; empty means
+   * "unknown", never "no files".
+   */
+  paths?: string[];
   priority: Priority | string;
   area: string;
   /**
@@ -451,6 +477,11 @@ export interface RepoOSConfig {
   /** When true, RepoOS automatically selects and starts ready tasks up to maxActiveTasks. */
   autoEngineeringMode?: boolean;
   /**
+   * Auto-engineering picker settings (#0690). Absent means the deterministic
+   * default picker with no PM veto.
+   */
+  autoEngineering?: AutoEngineeringConfig;
+  /**
    * When true (the default), the CTO monitor skips its model call while the
    * board is healthy — no stuck tasks, a fresh build and a normal process
    * check. Set false to run a full CTO pass whenever the material signal
@@ -603,6 +634,25 @@ export interface RepoOSConfig {
    * frontmatter, or API/CLI status inputs.
    */
   boardColumns?: Record<string, string>;
+  /**
+   * Attachment storage (`[storage]` in `repoos.toml`, #0659). Chooses where
+   * task and input attachment bytes live: the gitignored local `.attachments/`
+   * directories (the default, unchanged behavior) or an opt-in cloud provider
+   * that must be configured before it can be used. Absent means `local`.
+   */
+  storage?: StorageConfig;
+}
+
+/**
+ * Attachment-storage configuration (#0659), from `repoos.toml`'s `[storage]`
+ * section. `provider` is the id of a registered storage provider; `local` is
+ * the default. An unrecognized id is accepted syntactically and surfaced as
+ * unavailable (falling back to local), never a crash and never a silent claim
+ * that the configured provider is in effect.
+ */
+export interface StorageConfig {
+  /** Storage provider id, e.g. `"local"` or `"neon"`. Defaults to `local`. */
+  provider?: string;
 }
 
 /**
@@ -885,6 +935,12 @@ export interface RemoteValidationConfig {
    * behaviour apply. Default true when 2+ hosts are configured.
    */
   retryOtherHosts?: boolean;
+  /**
+   * Run engineer `repoos check` build + tests on the remote runner (via the
+   * board's provider) instead of on the laptop. Default true when `enabled`.
+   * Handoff reuses a green pass at the same HEAD (#0694).
+   */
+  engineerSelfCheckRemote?: boolean;
 }
 
 /**
@@ -1316,6 +1372,15 @@ export interface WorktreesConfig {
    * deliberate per-repo opt-in rather than a `node_modules`-style automatic.
    */
   inheritEnv?: boolean;
+  /**
+   * How close-out candidate worktrees get dependencies (#0674). `symlink-main`
+   * reuses the primary checkout's `node_modules` (default). `own-install` runs
+   * a frozen install in the candidate — slower but avoids workspace symlink
+   * issues (Vite `Denied ID`, per-package `node_modules`).
+   */
+  candidate?: "symlink-main" | "own-install";
+  /** Shell command for candidate (or main refresh when no post-publish override). */
+  installCommand?: string;
 }
 
 /** Whisper voice transcription configuration. */
@@ -1405,8 +1470,20 @@ export interface ApprovalConfig {
 }
 
 /**
- * Close-out (Move to done) pipeline budget (#0573).
+ * Auto-engineering (automatic task dispatch) configuration (#0690).
  */
+export interface AutoEngineeringConfig {
+  /**
+   * When true, a PM veto pass may run before dispatch — but only when there
+   * are more eligible tasks than open slots AND at least two candidates would
+   * collide (same area or a declared shared path). The default (false) is a
+   * purely deterministic picker: priority, then critical-path weight, then
+   * creation order. The veto may only reorder or defer eligible work; it can
+   * never invent a task that the deterministic picker did not surface.
+   */
+  pmVeto?: boolean;
+}
+
 /** Notification bell / attention feed (#0687). */
 export interface AttentionConfig {
   /**
@@ -1416,6 +1493,7 @@ export interface AttentionConfig {
   spendAlertUsd?: number;
 }
 
+/** Close-out (Move to done) pipeline budget (#0573). */
 export interface CloseOutConfig {
   /**
    * Total wall-clock budget for ONE close-out attempt, from when the job
@@ -1424,6 +1502,12 @@ export interface CloseOutConfig {
    * behaviour). Default `360000` (6 minutes).
    */
   timeoutMs: number;
+  /** Overrides `[worktrees] candidate` when set (#0674). */
+  candidate?: "symlink-main" | "own-install";
+  /** Shell install for candidates; also used for main refresh unless `postPublishCommand` is set. */
+  installCommand?: string;
+  /** Shell command run in main after a merge that changed package inputs (#0674). */
+  postPublishCommand?: string;
 }
 
 /** Agent supervisor configuration. */

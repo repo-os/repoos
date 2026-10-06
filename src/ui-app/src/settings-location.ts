@@ -43,6 +43,10 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   "telegram.enabled",
   "auth.enabled",
   "auth.sessionMaxAge",
+  // Attachment storage has a dedicated hand-rendered "Attachments" card on
+  // General (#0659) that carries the availability explanation beside the
+  // select, so it must not also auto-render as a plain General row.
+  "storage.provider",
   "attention.spendAlertUsd",
 ]);
 
@@ -85,6 +89,10 @@ export function resolveSettingLocation(
     // Dedicated hand-rendered card on Notifications (#0531).
     return { tab: "notifications", hasUiRow: true };
   }
+  if (key === "storage.provider") {
+    // Dedicated hand-rendered "Attachments" card on General (#0659).
+    return { tab: "general", hasUiRow: true };
+  }
   if (key === "auth.enabled" || key === "auth.sessionMaxAge") {
     return { tab: "security", hasUiRow: true };
   }
@@ -123,6 +131,11 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
     "tailscale hetzner remote validation runner configure disposable vm cloud",
   tunnelEnabled: "cloudflare tunnel publish publishing hostname public",
   "closeOut.timeoutMs": "close out move to done mtd merge pipeline budget timeout hung",
+  "closeOut.candidate":
+    "close out candidate node_modules symlink own install workspace dependencies monorepo",
+  "closeOut.installCommand": "close out install command bun npm python venv cargo dependencies",
+  "closeOut.postPublishCommand":
+    "close out post publish merge lockfile refresh main install dependencies",
   "approval.enabled": "auto approve clean reviews policy move to done rubber stamp low risk",
   "uiVerification.enabled":
     "handoff browser gate playwright console overflow screenshot verification review block",

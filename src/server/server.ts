@@ -305,6 +305,7 @@ import {
   getAttention,
   getIntegrationPipeline,
   retryIntegration,
+  refreshInstallAndRetryIntegration,
   cancelDone,
   discardWorktreeHandoff,
   startPreview,
@@ -2904,6 +2905,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/check-runs", getCheckRuns);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
+  router.register(
+    "POST",
+    /^\/api\/integration\/pipeline\/refresh-install\/([^/]+)$/,
+    refreshInstallAndRetryIntegration,
+  );
   router.register("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/, cancelDone);
   router.register(
     "POST",
