@@ -43,6 +43,8 @@ import {
 import {
   runRemotePreReviewGate,
   remoteJobCapabilities,
+  checkEnvAfterRemoteGate,
+  REPOOS_REMOTE_FALLBACK_DETAIL,
 } from "../../server/pre-review-remote-gate.js";
 
 const dirs: string[] = [];
@@ -473,6 +475,66 @@ const opts = (taskId: string, extra: Record<string, unknown> = {}) => ({
   worktreePath: "/nonexistent",
   candidateSha: "abc123def456",
   ...extra,
+});
+
+describe("background host probing (#0683)", () => {
+  it("probes every configured host when the runner starts, without dispatch", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    for (let i = 0; i < 20 && !f.runner.hostStatus()?.every((h) => h.probed); i++) {
+      await tick();
+    }
+    const status = f.runner.hostStatus()!;
+    expect(status.map((h) => [h.host, h.probed, h.healthy])).toEqual([
+      ["a", true, true],
+      ["b", true, true],
+    ]);
+    expect(f.pending()).toEqual([]);
+  });
+
+  it("surfaces Tailscale hints on unreachable hosts", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }], unreachable: ["a"] });
+    for (let i = 0; i < 20 && !f.runner.hostStatus()?.[0]?.probed; i++) {
+      await tick();
+    }
+    expect(f.runner.hostStatus()?.[0]).toMatchObject({
+      probed: true,
+      healthy: false,
+      detail: expect.stringMatching(/Tailscale/i),
+    });
+  });
+
+  it("records a fallback reason when every host fails probe and fallbackToLocal is on", async () => {
+    const root = tmpRoot();
+    execFileSync("git", ["init", "-q"], { cwd: root });
+    execFileSync("git", ["config", "user.email", "t@example.com"], { cwd: root });
+    execFileSync("git", ["config", "user.name", "T"], { cwd: root });
+    writeFileSync(join(root, "f.txt"), "x");
+    execFileSync("git", ["add", "."], { cwd: root });
+    execFileSync("git", ["commit", "-qm", "init"], { cwd: root });
+    const f = poolFixture({ hosts: [{ host: "a" }], unreachable: ["a"] });
+    for (let i = 0; i < 20 && !f.runner.hostStatus()?.[0]?.probed; i++) {
+      await tick();
+    }
+    const out = await runRemotePreReviewGate({
+      config: {
+        ...f.config,
+        remoteValidation: {
+          ...f.config.remoteValidation,
+          fallbackToLocal: true,
+        },
+      } as RepoOSConfig,
+      remoteValidator: f.runner,
+      worktreePath: root,
+      taskId: "0683",
+      deadlineAt: Date.now() + 60_000,
+    });
+    expect(out).toMatchObject({ kind: "local-only", skipTests: false });
+    if (out.kind !== "local-only") throw new Error("expected local-only");
+    expect(out.detail).toContain("no usable remote host");
+    expect(checkEnvAfterRemoteGate(out)[REPOOS_REMOTE_FALLBACK_DETAIL]).toContain(
+      "no usable remote host",
+    );
+  });
 });
 
 describe("TailscaleRunner pool dispatch (#0521)", () => {

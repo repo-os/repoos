@@ -357,6 +357,8 @@ export interface RunnerTimings {
   probeTimeoutMs: number;
   /** Cooldown before an unreachable/misconfigured host is probed again (#0521). */
   healthRetryMs: number;
+  /** Re-probe hosts that are still unprobed or unhealthy (#0683). */
+  backgroundProbeIntervalMs: number;
 }
 
 const DEFAULT_TIMINGS: RunnerTimings = {
@@ -367,6 +369,7 @@ const DEFAULT_TIMINGS: RunnerTimings = {
   remoteRunTimeoutMs: 25 * 60_000,
   probeTimeoutMs: 20_000,
   healthRetryMs: 30_000,
+  backgroundProbeIntervalMs: 60_000,
 };
 
 /** Contention-shaped failure text — matches runDoneStep's heuristic in done.ts. */
@@ -1710,6 +1713,23 @@ interface PoolWaiter {
 
 /** How long an unhealthy host waits before a probe may retry it. */
 const HEALTH_RETRY_MS = 30_000;
+
+/** Actionable hint when SSH cannot reach a tailnet host (#0683). */
+function formatProbeReachabilityDetail(detail: string): string {
+  const lower = detail.toLowerCase();
+  if (
+    lower.includes("connection timed out") ||
+    lower.includes("connection refused") ||
+    lower.includes("no route to host") ||
+    lower.includes("network is unreachable")
+  ) {
+    return `${detail} — host unreachable: is Tailscale connected and logged in on that machine?`;
+  }
+  if (lower.includes("tailscale") && (lower.includes("login") || lower.includes("logged out"))) {
+    return `${detail} — host unreachable: Tailscale login may have expired on that machine`;
+  }
+  return detail;
+}
 const SERVER_STATS_REFRESH_MS = 15_000;
 const SERVER_STATS_TIMEOUT_MS = 5_000;
 /**
@@ -1819,16 +1839,20 @@ export class TailscaleHostPool {
   private readonly exec: RemoteExecDeps;
   private readonly probeTimeoutMs: number;
   private readonly healthRetryMs: number;
+  private readonly backgroundProbeIntervalMs: number;
   private readonly keyPath?: string;
   private readonly logger?: Logger;
   /** The image every host's Docker prerequisite probe must find (#0521 review). */
   private containerImage: string;
+  private backgroundProbeTimer?: ReturnType<typeof setInterval>;
 
   constructor(rv: RemoteValidationConfig | undefined, opts: HostPoolOptions) {
     this.exec = opts.exec;
     this.logger = opts.logger;
     this.probeTimeoutMs = opts.probeTimeoutMs ?? 20_000;
     this.healthRetryMs = opts.healthRetryMs ?? HEALTH_RETRY_MS;
+    this.backgroundProbeIntervalMs =
+      opts.backgroundProbeIntervalMs ?? DEFAULT_TIMINGS.backgroundProbeIntervalMs;
     this.containerImage = rv?.containerImage ?? "repoos-ci";
     const key = opts.keyPath ?? "";
     this.keyPath = key && existsSync(key) ? key : undefined;
@@ -1931,6 +1955,32 @@ export class TailscaleHostPool {
       }
     }
     this.dispatch();
+    this.probeDueHosts();
+  }
+
+  /**
+   * Probe every configured host on server boot and on a timer (#0683), so
+   * close-out can dispatch without waiting for the Checks UI tab and
+   * `GET /api/remote-validation/status` reflects real health while idle.
+   */
+  startBackgroundProbing(): void {
+    this.probeDueHosts();
+    if (this.backgroundProbeTimer || this.backgroundProbeIntervalMs <= 0) return;
+    this.backgroundProbeTimer = setInterval(
+      () => this.probeDueHosts(),
+      this.backgroundProbeIntervalMs,
+    );
+    this.backgroundProbeTimer.unref?.();
+  }
+
+  /** Probe hosts that have never been checked or are due for a health retry. */
+  probeDueHosts(): void {
+    for (const s of this.liveHosts()) {
+      if (s.probing) continue;
+      const due =
+        !s.probed || (!s.healthy && Date.now() >= s.retryAt && s.healthFails < MAX_HEALTH_RETRIES);
+      if (due) void this.probe(s);
+    }
   }
 
   get size(): number {
@@ -2202,6 +2252,10 @@ export class TailscaleHostPool {
    * transient infra summary, not hang forever after a restart/dispose.
    */
   dispose(): void {
+    if (this.backgroundProbeTimer) {
+      clearInterval(this.backgroundProbeTimer);
+      this.backgroundProbeTimer = undefined;
+    }
     for (const s of this.hosts) {
       if (s.retryTimer) {
         clearTimeout(s.retryTimer);
@@ -2366,10 +2420,12 @@ export class TailscaleHostPool {
       ok = res.code === 0 && res.output.includes(PREREQ_OK_TOKEN);
       if (!ok) {
         const why = tail(res.output, 5, 600);
-        detail = `prerequisite check failed (exit ${res.code ?? "signal"}): ${why}`;
+        detail = formatProbeReachabilityDetail(
+          `prerequisite check failed (exit ${res.code ?? "signal"}): ${why}`,
+        );
       }
     } catch (e) {
-      detail = `prerequisite check failed: ${(e as Error).message}`;
+      detail = formatProbeReachabilityDetail(`prerequisite check failed: ${(e as Error).message}`);
     }
     s.probed = true;
     if (ok) {
@@ -2486,6 +2542,8 @@ export interface HostPoolOptions {
   keyPath?: string;
   probeTimeoutMs?: number;
   healthRetryMs?: number;
+  /** Periodic re-probe of unhealthy hosts; 0 disables the timer (#0683). */
+  backgroundProbeIntervalMs?: number;
 }
 
 /**
@@ -2591,7 +2649,11 @@ export class TailscaleRunner implements RemoteValidator {
       keyPath: this.keyPath,
       probeTimeoutMs: this.timings.probeTimeoutMs,
       healthRetryMs: this.timings.healthRetryMs,
+      backgroundProbeIntervalMs: this.timings.backgroundProbeIntervalMs,
     });
+    if (config.remoteValidation?.enabled) {
+      this.pool.startBackgroundProbing();
+    }
   }
 
   logPath(taskId: string): string {
@@ -2683,6 +2745,7 @@ export class TailscaleRunner implements RemoteValidator {
    */
   applyConfig(): void {
     this.pool.sync(this.config.remoteValidation);
+    this.pool.startBackgroundProbing();
   }
 
   /** The queue line a waiting job streams: what it needs and why it waits. */
