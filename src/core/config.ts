@@ -1124,6 +1124,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     }
     if (typeof get("ctoSkipHealthy") === "boolean")
       cfg.ctoSkipHealthy = get("ctoSkipHealthy") as boolean;
+    const ctoActions = normalizeStringList(parsed["cto.actions"]);
+    if (ctoActions.length) {
+      cfg.cto = { ...cfg.cto, actions: ctoActions };
+    }
     if (typeof get("skillSuggestions") === "boolean")
       cfg.skillSuggestions = get("skillSuggestions") as boolean;
     const maxActiveTasks = get("maxActiveTasks");
@@ -1945,6 +1949,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "and the process check is normal. Disable to run a full CTO pass on every tick.",
     },
     {
+      key: "cto.actions",
+      label: "CTO safe actions",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Opt-in allowlist of bounded actions the CTO may take automatically (rate limited, " +
+        "audited in the bell). restart-stalled-agent restarts a dead active engineer with the " +
+        "last failure text. refresh-main-install runs the lockfile install in main. " +
+        "requeue-closeout-after-env-fix refreshes main and re-queues a failed close-out when " +
+        "the failure was environmental. Empty means report-only.",
+    },
+    {
       key: "skillSuggestions",
       label: "Auto-suggest skills from completed sessions",
       type: "boolean",
@@ -2373,6 +2391,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "autoEngineeringMode",
   "autoEngineering.pmVeto",
   "ctoSkipHealthy",
+  "cto.actions",
   "skillSuggestions",
   "worktreeWarnThreshold",
   "dev.inspector.enabled",

@@ -314,6 +314,7 @@ describe("NOTIFICATION_TYPE_LABELS", () => {
       "closeOutFailed",
       "closeOutSucceeded",
       "closeOutTimedOut",
+      "ctoAction",
       "needsInput",
       "paused",
       "providerFailure",

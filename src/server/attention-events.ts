@@ -19,7 +19,9 @@ function isRecordedEvent(v: unknown): v is RecordedAttentionEvent {
   const e = v as RecordedAttentionEvent;
   return (
     typeof e.id === "string" &&
-    (e.kind === "providerFailure" || e.kind === "remoteFallback") &&
+    (e.kind === "providerFailure" ||
+      e.kind === "remoteFallback" ||
+      e.kind === "ctoAction") &&
     typeof e.message === "string" &&
     typeof e.detail === "string" &&
     typeof e.at === "string"

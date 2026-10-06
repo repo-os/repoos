@@ -74,6 +74,8 @@ export class CTOMonitor {
   private lastMaterialHash: string = "";
   /** Cleared as soon as the worktree becomes active again: one nudge per idle stretch. */
   private nudgedIdleTasks = new Set<string>();
+  /** Optional allowlisted recovery pass (#0688), wired from the server boot. */
+  private safeActions: (() => Promise<void>) | null = null;
 
   constructor(config: RepoOSConfig, index: LiveIndex, cto: CTOManager, runner?: AgentRunner) {
     this.config = config;
@@ -122,6 +124,9 @@ export class CTOMonitor {
     // This is deliberately independent of the CTO's longer report turn: an
     // engineer nudge should still be timely if a report is in progress.
     this.nudgeIdleActiveTasks();
+    if (this.safeActions) {
+      await this.safeActions();
+    }
 
     if (this.cto.isRunning()) return;
 
@@ -146,6 +151,10 @@ export class CTOMonitor {
 
     this.lastMaterialHash = materialHash;
     await this.cto.run(built.text, this.triggerLabel(kind, detail));
+  }
+
+  wireSafeActions(fn: () => Promise<void>): void {
+    this.safeActions = fn;
   }
 
   private shouldSkipHealthy(): boolean {

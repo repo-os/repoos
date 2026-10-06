@@ -30,7 +30,8 @@ export type AttentionKind =
   | "silentRun"
   | "spendThreshold"
   | "awaitingVisualCheck"
-  | "remoteFallback";
+  | "remoteFallback"
+  | "ctoAction";
 
 export interface AttentionItem {
   /** Stable per event — dedupe key for clients and dismiss markers. */
@@ -54,7 +55,7 @@ export interface AttentionFeed {
 /** Durable attention events recorded on the server (provider failures, remote fallback). */
 export interface RecordedAttentionEvent {
   id: string;
-  kind: "providerFailure" | "remoteFallback";
+  kind: "providerFailure" | "remoteFallback" | "ctoAction";
   taskId: string | null;
   message: string;
   detail: string;
@@ -120,6 +121,7 @@ const SEVERITY: Record<AttentionKind, AttentionSeverity> = {
   silentRun: "warning",
   spendThreshold: "warning",
   remoteFallback: "warning",
+  ctoAction: "info",
 };
 
 /** Provider/credit/auth failures that should surface in the bell (#0687, #0678). */
