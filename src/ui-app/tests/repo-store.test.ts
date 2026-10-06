@@ -1728,6 +1728,43 @@ describe("sync task branch with main (rebase-onto-main button)", () => {
   });
 });
 
+describe("fetchRunning seeds agent activity (#0719)", () => {
+  it("uses lastOutputAt from /api/agents/running when newer than startedAt", async () => {
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health"))
+          return json({
+            ok: true,
+            root: "/tmp/repo",
+            projectName: "repo",
+            branch: null,
+            taskCount: 0,
+            workDir: "work",
+          });
+        if (url.includes("/api/board") || url.includes("/api/index"))
+          return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+        if (url.includes("/api/agents/running"))
+          return json({
+            tasks: [
+              {
+                id: "0001",
+                startedAt: "2026-10-06T21:49:41.000Z",
+                lastOutputAt: "2026-10-06T21:56:13.000Z",
+              },
+            ],
+          });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+    const repo = useRepoStore();
+    await repo.init();
+    expect(repo.agentActivityAt["0001"]).toBe("2026-10-06T21:56:13.000Z");
+    expect(repo.runningSince["0001"]).toBe("2026-10-06T21:49:41.000Z");
+  });
+});
+
 describe("board refresh keeps the open drawer current", () => {
   it("re-fetches the open task so a lost task.updated can't leave it stale (#0499)", async () => {
     // The drawer holds a review-state copy with needs-input set; the task went
