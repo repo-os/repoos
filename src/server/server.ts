@@ -181,7 +181,7 @@ import { TestRunManager } from "./test-run.js";
 import { TaskCheckManager, type TaskCheckListener } from "./task-check.js";
 import { CTOManager } from "./cto.js";
 import { CTOMonitor } from "./cto-monitor.js";
-import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
+import { ReloadManager, readBuildHash, isDevBuild, substituteUiIndexBuildHash } from "./reload.js";
 import { ServeReaper, isPortListening } from "./serve-reaper.js";
 import { isLoopbackAddress, localTokenMatches, writeLocalCliToken } from "./local-token.js";
 import { testModelCombination } from "./model-test.js";
@@ -860,7 +860,7 @@ function serveStaticUi(res: ServerResponse, uiDir: string, urlPath: string): boo
   const rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
   if (rel.includes("..")) return false;
   // Never serve index.html through the static path — it contains the
-  // __REPOOS_BUILD_HASH__ placeholder that must be substituted at read time.
+  // __REPOOS_BUILD_HASH_VALUE__ placeholder that must be substituted at read time.
   // The SPA fallback below handles it via readUiIndex().
   if (!rel || rel === "index.html") return false;
   const abs = resolve(uiDir, rel);
@@ -1128,7 +1128,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // ephemeral port is requested (nothing stable to hand off).
   const loadedHash = readBuildHash(config.root);
   const readUiIndex = (indexPath: string): string =>
-    readFileSync(indexPath, "utf8").replaceAll("__REPOOS_BUILD_HASH__", loadedHash || "unknown");
+    substituteUiIndexBuildHash(readFileSync(indexPath, "utf8"), loadedHash || "unknown");
   const reloadEnabled =
     !isDevBuild() && process.env.REPOOS_PREVIEW_CHILD !== "1" && opts.port !== 0;
   let reload: ReloadManager | null = null;
