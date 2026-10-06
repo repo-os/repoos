@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-06T01:10:12Z"
+review_passes: 1
 id: "0675"
 title: Agents must not kill processes by name; give each agent its own process group
 type: bug
@@ -12,7 +14,6 @@ branch: feat/agents-must-not-kill-processes-by-name-g
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:32Z"
-updated_at: "2026-10-06T01:09:30Z"
 ---
 ## Problem
 
@@ -55,3 +56,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-06T00:14:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-06T01:09:30Z · status active→review
 - 2026-10-06T01:09:30Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+
