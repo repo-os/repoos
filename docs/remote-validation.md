@@ -43,7 +43,7 @@ run it again. Server-spawned checks also pass `--local-tests` when remote is
 enabled but that path opted out (e.g. release with `useForReleases = false`,
 close-out without a build step). With `remoteValidation.enabled`, standalone
 `repoos check` runs the remote half first unless you pass `--local-tests` or either env
-var is already set. **`--changed` / `REPOOS_CHECK_CHANGED` does not skip the remote half** (#0694): the runner still runs install + build + the full test suite; changed-path mode only narrows local guards after `REPOOS_SKIP_TESTS=1`. The remote bundle is **`git bundle create … HEAD`**, so only
+var is already set. **`--changed` / `REPOOS_CHECK_CHANGED` scopes the remote test step too** (#0695): engineer self-checks bundle the merge-base ref alongside `HEAD` and run `bun run test -- --changed <ref>` on the runner (install + build still run). Handoff and close-out omit `changedRef`, so they still run the **full** suite on the runner. The remote bundle is **`git bundle create … HEAD [base]`**, so only
 committed work reaches the runner, and local tests are skipped after a green
 remote pass. What is tested must be what is committed (#0512), which the two
 entry points guarantee differently:
@@ -265,6 +265,40 @@ The scripts on hosts are **copies**: after updating RepoOS re-run the setup
 above, otherwise an old `validate.sh` ignores the third (artifacts) argument —
 the per-host prerequisite check below reports exactly that.
 
+#### The gate container (`repoos-ci`) and project-specific images
+
+The default `remoteValidation.containerImage` is **`repoos-ci`**: the image RepoOS
+uses to dogfood its own repo (`Dockerfile.ci` in this repository). It is a
+generic Bun + git + Node toolchain — **no Postgres or other services**. Inside
+the container, `/opt/repoos/validate.sh` runs a **fixed** sequence (not your
+project's `[[check.steps]]` plan):
+
+`bun install --frozen-lockfile && bun run build && <repoos dist shim> && bun run test`
+
+That shim exists so the in-container `repoos check` matches RepoOS self-hosting;
+other projects still get `bun install`, `bun run build`, and `bun run test` only.
+
+**Other repos** can reuse the same pattern with their own image name in
+`containerImage`, but you must build and tag that image **on every pool host**
+(the CPU architecture differs per machine — arm64 vs amd64). There is no
+`repoos runner build-image` helper yet; build locally and load or push per host.
+
+Before your entrypoint runs, RepoOS pre-flight may execute `docker run -u 0 …`
+as root to `chown` the persistent bun-cache volume. A custom image must **tolerate
+that root invocation** (pass through to your normal entrypoint or no-op safely).
+
+Projects whose tests need Postgres, Redis, or similar must ship a **project CI
+image** that starts those services (or embeds them) and adjust `validate.sh` on
+each host accordingly — the stock `repoos-ci` gate will not satisfy them. A
+future `remoteValidation.command` override is not implemented yet; today the
+remote half is always the `validate.sh` contract above.
+
+When remote validation is enabled but every host is unreachable or fails its
+probe, close-out and handoff may still run the **full local gate** if
+`fallbackToLocal = true`. That shows up in `.repoos/checks.db` on the local row
+(`Ran locally: no healthy runner …`) and in the notification bell (#0687) — it
+is not silent success.
+
 #### Dispatch, health and queueing (#0521)
 
 Each job goes to an **idle host that satisfies its requirements**; it queues
@@ -286,7 +320,8 @@ shorthand from `repoos.toml` to let the list order control that host. Pools
 using `[[remoteValidation.tailscaleHosts]]` rows are shown read-only in the
 tab; edit their order in `repoos.toml`.
 
-Before a host's first job it is probed over SSH: reachability, the toolchain
+Before a host's first job it is probed over SSH (and again on a timer while
+the server runs, without opening the Checks UI — #0683): reachability, the toolchain
 its `runner` says to expect — Docker, the configured `containerImage`
 actually present (not just the daemon reachable — a daemon up with the
 image never built/pulled used to report healthy, then fail every job it
@@ -314,15 +349,20 @@ length — `lastRun` with the run's duration, and #0564's `activeRuns`
 next-up task ids attributed to that host). The Checks page's **Remote runners**
 tab renders the same payload live, including a per-host **Server stats** row
 with load averages, CPU count, memory use/total, free space on the remote
-user's home work area, and sample time. While that tab is open, it requests
-read-only SSH samples every 15 seconds with a five-second timeout; samples do
-not acquire a run slot or wait behind validation jobs. Unsupported commands,
-failed SSH, and unreachable hosts show unavailable values rather than blocking
-the status page. Host state is in-memory per server process;
+user's home work area, and sample time. **Health probes** (ready/unready above)
+run at server boot and every minute on unhealthy hosts; they do not need the
+Checks tab open. **Server stats** samples are different: while the Remote
+runners tab is open, it requests read-only SSH samples every 15 seconds with a
+five-second timeout; those samples do not acquire a run slot or wait behind
+validation jobs. Unsupported commands, failed SSH, and unreachable hosts show
+unavailable values rather than blocking the status page. Host state is in-memory
+per server process;
 the durable record of what actually ran lives in the check-run history
 (`.repoos/checks.db`, below) — it is skipped while
 other hosts are healthy, and re-probed later (30 s cooldown, capped at 10
-retries) so it rejoins the pool when it comes back. Once a host hits that cap
+retries) so it rejoins the pool when it comes back. SSH timeouts and refused
+connections surface as **host unreachable** with a hint to check Tailscale login
+on that machine (#0683). Once a host hits that cap
 its retries stop; a queued run whose eligible hosts have **all** hit it is
 cancelled and fails retryably rather than waiting forever (release, and
 close-out with `closeOut.timeoutMs = 0`, pass no deadline of their own;

@@ -116,7 +116,7 @@ import {
 import { sweepAndWarn } from "../core/worktree-gc.js";
 import { onGitMutation } from "../core/git-activity.js";
 import { createRepoStatusNotifier, isSameCheckout } from "./repo-status.js";
-import { remoteJobCapabilities } from "./pre-review-remote-gate.js";
+import { remoteJobCapabilities, summarizeRemoteFallbackDetail } from "./pre-review-remote-gate.js";
 import {
   hostRunner,
   remoteHostLimit,
@@ -155,6 +155,8 @@ import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { closeOutPending, createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { createCloseOutOutcomeStore } from "./close-out-outcome.js";
 import { createAttentionEventStore } from "./attention-events.js";
+import { createCtoActionRateStore } from "./cto-action-rates.js";
+import { runCtoMonitorSafeActions } from "./cto-actions.js";
 import { wireAttentionNotifications } from "./attention-notify.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
@@ -328,6 +330,7 @@ import {
   getCTO,
   ctoMessage,
   ctoInterrupt,
+  runCtoSafeActionRoute,
   pmMessage,
   pmInterrupt,
   getScreenshot,
@@ -870,7 +873,8 @@ function serveStaticUi(res: ServerResponse, uiDir: string, urlPath: string): boo
   const rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
   if (rel.includes("..")) return false;
   // Never serve index.html through the static path — it contains the
-  // __REPOOS_BUILD_HASH_VALUE__ placeholder that must be substituted at read time.
+  // __REPOOS_BUILD_HASH_VALUE__ placeholder that must be substituted at read time
+  // (not the window property name — replaceAll would corrupt `window.__REPOOS_BUILD_HASH__`).
   // The SPA fallback below handles it via readUiIndex().
   if (!rel || rel === "index.html") return false;
   const abs = resolve(uiDir, rel);
@@ -1170,6 +1174,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const attentionEvents = createAttentionEventStore(config.root, config.cacheDir, (error) =>
     logger.system("warn", `attention event persistence failed: ${(error as Error).message}`),
   );
+  const ctoActionRates = createCtoActionRateStore(config.root, config.cacheDir);
   const repoLock = createRepositoryLock(config.root);
   const rootLock = createRootLock(config.root);
 
@@ -1266,7 +1271,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       kind: "remoteFallback",
       taskId,
       message: `Ran locally: #${taskId}`,
-      detail: line || "Remote validation is enabled but this close-out used the full local gate.",
+      detail: summarizeRemoteFallbackDetail(
+        line || "Remote validation is enabled but this close-out used the full local gate.",
+      ),
       at,
     });
     bumpAttention();
@@ -1994,6 +2001,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
   const cto = new CTOManager(config, emitEvent, runner);
   const ctoMonitor = new CTOMonitor(config, index, cto, runner);
+  ctoMonitor.wireSafeActions(() =>
+    runCtoMonitorSafeActions({
+      config,
+      index,
+      runner,
+      jobCoordinator,
+      attentionEvents,
+      rates: ctoActionRates,
+      logger,
+      emitEvent,
+      triggerJobProcessing,
+      reportedStages,
+    }),
+  );
   // Run the monitor cadence unconditionally: `checkNow` no-ops while the CTO
   // agent is disabled, so enabling it from the Agents page takes effect on the
   // next tick without a restart, and disabling it stops runs immediately.
@@ -2979,6 +3000,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/cto", getCTO);
   router.register("POST", "/api/cto/message", ctoMessage);
   router.register("POST", "/api/cto/interrupt", ctoInterrupt);
+  router.register("POST", /^\/api\/cto\/actions\/([^/]+)$/, runCtoSafeActionRoute);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/, pmMessage);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/interrupt$/, pmInterrupt);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
@@ -3353,6 +3375,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         jobCoordinator,
         closeOutOutcomes,
         attentionEvents,
+        ctoActionRates,
         remoteValidator,
         reportedStages,
         triggerJobProcessing,
