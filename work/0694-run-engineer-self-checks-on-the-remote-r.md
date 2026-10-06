@@ -12,7 +12,7 @@ branch: feat/run-engineer-self-checks-on-the-remote-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:59:26Z"
-updated_at: "2026-10-06T00:02:31Z"
+updated_at: "2026-10-06T00:03:12Z"
 ---
 ## Problem
 
@@ -36,6 +36,9 @@ Overnight 2026-10-06, with 3-4 engineers running, the laptop sat at load 15-28 o
 
 Read first: src/server/pre-review-remote-gate.ts (#0520), src/commands/check.ts (changedTestRef, standaloneCliCanUseRemote, shouldRunCliRemotePreReviewGate), src/server/remote-validation.ts, docs/remote-validation.md. Overlaps #0683 (remote validation reliability: probes, fallback visibility) and #0692/#0693; build on them. Longer term (out of scope here): run the engineer agent and its worktree on a runner too. Evidence: check_runs table and `ps` during the run; see the story for context.
 
+## Driver note: runs list and repeat local checks
+Also in scope, found 2026-10-06 from the Checks > Runs tab: (1) all 191 phase=cli rows in 12 h have task_id NULL, because an engineer running 'repoos check' in its own shell has no REPOOS_TASK_ID (only handoff, pre-review and close-out pass it), so the Runs list shows a dash; the worktree column still identifies the branch. Fix: set REPOOS_TASK_ID in the engineer agent environment, and/or derive task from the worktree branch when env is missing, and show it in the Runs list. (2) Engineers re-run the local check many times per task (about 15-20 runs per task in 2 hours, e.g. 20 for 0690); when you move self-checks to a runner, also consider telling engineers to run it once before handoff, not after every edit.
+
 ## Activity
 
 - 2026-10-05T23:59:26Z · created · unknown
@@ -43,3 +46,4 @@ Read first: src/server/pre-review-remote-gate.ts (#0520), src/commands/check.ts 
 - 2026-10-06T00:02:25Z · status inbox→ready
 - 2026-10-06T00:02:30Z · cli_override, model_override
 - 2026-10-06T00:02:31Z · status ready→active, branch
+- 2026-10-06T00:03:12Z · body: section Driver note: runs list and repeat local checks
