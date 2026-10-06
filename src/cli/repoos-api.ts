@@ -112,7 +112,7 @@ export class RepoOsApi {
     const setCookie =
       typeof res.headers.getSetCookie === "function"
         ? res.headers.getSetCookie()
-        : res.headers.get("set-cookie");
+        : res.headers.get("set-cookie") ?? undefined;
     const token = sessionTokenFromSetCookie(setCookie, SESSION_COOKIE_NAME);
     if (!token) return false;
     this.session = token;
