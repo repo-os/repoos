@@ -30,6 +30,7 @@ import {
   parseMirrorProbeOutput,
   defaultRemoteExec,
   remoteMirrorPath,
+  validateScriptArgs,
   type RemoteExecDeps,
   type RemoteExecResult,
   type RemoteHost,
@@ -1026,5 +1027,27 @@ describe("remote mirror helpers (#0717)", () => {
     expect(a).toMatch(/^~\/\.repoos-cache\/opex-[0-9a-f]{8}\.git$/);
     expect(a).not.toBe(b);
     expect(remoteMirrorPath("/Users/x/opex")).toBe(a);
+  });
+});
+
+// 2026-10-07: handoff/close-out pass a mirror path but no changed ref. The mirror
+// must stay in $5, so $4 is an empty placeholder (it used to land in $4, the host
+// script saw no mirror and cloned the ref-only bundle: "cloned an empty repository").
+describe("validateScriptArgs positional layout", () => {
+  const sha = "a".repeat(40);
+  it("keeps the mirror path in $5 when there is no changed ref", () => {
+    expect(validateScriptArgs("~/.b", sha, "~/.art", undefined, "~/.mirror")).toBe(
+      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art '' '~/.mirror'`,
+    );
+  });
+  it("keeps the changed ref in $4 and the mirror in $5", () => {
+    expect(validateScriptArgs("~/.b", sha, "~/.art", "main", "~/.mirror")).toBe(
+      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art 'main' '~/.mirror'`,
+    );
+  });
+  it("sends the legacy 3-argument call when neither is set", () => {
+    expect(validateScriptArgs("~/.b", sha, "~/.art")).toBe(
+      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art`,
+    );
   });
 });
