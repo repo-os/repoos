@@ -2,7 +2,7 @@
 id: "0719"
 title: "Task card 'stuck · silent Nm' counts from the turn start after a reload, not the agent's last output"
 type: bug
-status: inbox
+status: done
 needs_input: true
 needs_input_reason: underspecified
 needs_input_detail: "missing sections: Notes for AI"
@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T14:01:47Z"
-updated_at: "2026-10-06T14:01:49Z"
+updated_at: "2026-10-06T17:25:11Z"
 ---
 ## Problem
 
@@ -34,3 +34,7 @@ TaskCard.vue (codingOrStuckHint) computes silence from repo.agentActivityAt[task
 
 - 2026-10-06T14:01:47Z · created · unknown
 - 2026-10-06T14:01:49Z · needs_input
+- 2026-10-06T14:56:36Z · note: Superseded by #0721 (lastOutputAt on /api/agents/running).
+- 2026-10-06T15:56:54Z · note: Superseded by #0721 (lastOutputAt on /api/agents/running).
+- 2026-10-06T17:25:11Z · status inbox→done
+- 2026-10-06T17:25:11Z · note: Superseded by #0721 — lastOutputAt on /api/agents/running and fetchRunning seed.

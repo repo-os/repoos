@@ -1,4 +1,7 @@
 ---
+merge_conflict_retry_count: 1
+updated_at: "2026-10-06T17:23:25Z"
+review_passes: 1
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
@@ -12,7 +15,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-06T17:22:05Z"
+dev_error_count: 2
 ---
 ## Problem
 
@@ -36,10 +39,45 @@ On 2026-10-06 the remote validation path was far slower than normal for hours (b
 
 Read src/server/attention-feed.ts and attention-notify.ts (silent-run items), src/core/agent-run-health.ts (effectiveStalenessNow), src/core/check-store.ts (check_runs), and the Remote runners panel (RemoteRunnersPanel.vue). Do not scan raw agent output for any of this. Related: #0717 (smaller uploads), #0719 (stuck timer shows turn start instead of last output; do not copy that bug: use server-side timestamps).
 
+## Shots
+```json
+[
+  {
+    "label": "Slow-check multiplier in Settings",
+    "target": "default",
+    "route": "/settings?tab=general",
+    "highlight": "#setting-attention.slowRunMultiplier"
+  },
+  {
+    "label": "Remote runners slow badge on active job",
+    "target": "default",
+    "route": "/agents?tab=runners",
+    "highlight": ".rr-slow-badge"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-06T14:26:00Z · created · unknown
 - 2026-10-06T14:26:08Z · cli_override, model_override
 - 2026-10-06T14:30:13Z · status inbox→ready
 - 2026-10-06T14:30:17Z · status ready→active, branch
-- 2026-10-06T17:22:05Z · status active→review
+- 2026-10-06T14:46:34Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-06T14:50:15Z · needs_input
+- 2026-10-06T15:03:28Z · body: section Shots
+- 2026-10-06T15:13:17Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-10-06T15:55:38Z · needs_input
+- 2026-10-06T17:08:15Z · body
+- 2026-10-06T17:08:46Z · body
+- 2026-10-06T17:10:28Z · handoff failed · remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s
+[validate] cloning bundle /home/nick/.repoos-0720-334e6eb2.bundle
+warning: You appear to have cloned an empty repository.
+fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it in the feature branch and re-run the gate
+- 2026-10-06T17:16:22Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T17:16:23Z · status review→active
+- 2026-10-06T17:22:06Z · status active→review
+- 2026-10-06T17:22:06Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T17:23:25Z · note: review pass 1: good to go
+
+
