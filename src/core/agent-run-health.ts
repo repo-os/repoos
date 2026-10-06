@@ -32,10 +32,14 @@ export function effectiveStalenessNow(
 export function scrapeProviderFailure(text: string): string | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
-  if (isProviderFailureReason(trimmed)) return trimmed.slice(0, 500);
+  // Stream-json events carry timestamps, call ids and arbitrary tool output
+  // (file contents, test logs). Scanning the whole line for substrings such as
+  // "402" or "billing" killed healthy agents mid-turn (#0709): only the
+  // structured error fields of an event may report a provider failure.
   if (trimmed.startsWith("{")) {
     try {
       const obj = JSON.parse(trimmed) as Record<string, unknown>;
+      const isErrorEvent = obj.type === "error" || obj.is_error === true || obj.subtype === "error";
       const err =
         (typeof obj.error === "string" && obj.error) ||
         (obj.error &&
@@ -43,12 +47,16 @@ export function scrapeProviderFailure(text: string): string | null {
         typeof (obj.error as { message?: unknown }).message === "string"
           ? (obj.error as { message: string }).message
           : "") ||
-        (typeof obj.message === "string" ? obj.message : "");
+        (isErrorEvent && typeof obj.message === "string" ? obj.message : "") ||
+        (isErrorEvent && typeof obj.result === "string" ? obj.result : "");
       if (err && isProviderFailureReason(String(err))) return String(err).slice(0, 500);
     } catch {
       /* not JSON */
     }
+    return null;
   }
+  // Plain text: only a short line, never a long blob of tool output.
+  if (trimmed.length <= 300 && isProviderFailureReason(trimmed)) return trimmed.slice(0, 500);
   return null;
 }
 
