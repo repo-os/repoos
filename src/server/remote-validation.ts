@@ -2560,7 +2560,9 @@ export class TailscaleRunner implements RemoteValidator {
       healthRetryMs: this.timings.healthRetryMs,
       backgroundProbeIntervalMs: this.timings.backgroundProbeIntervalMs,
     });
-    this.pool.startBackgroundProbing();
+    if (config.remoteValidation?.enabled) {
+      this.pool.startBackgroundProbing();
+    }
   }
 
   logPath(taskId: string): string {
