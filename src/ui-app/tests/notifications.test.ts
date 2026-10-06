@@ -117,6 +117,7 @@ describe("notifications store defaults + persistence", () => {
       spendThreshold: false,
       awaitingVisualCheck: false,
       remoteFallback: false,
+      ctoAction: false,
     });
     expect(n.isActive).toBe(false);
   });

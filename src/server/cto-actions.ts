@@ -62,11 +62,7 @@ function auditAction(
   const at = new Date().toISOString();
   const label = CTO_ACTION_LABELS[action];
   const message =
-    actor === "cto"
-      ? `CTO: ${label}`
-      : actor === "human"
-        ? `You ran: ${label}`
-        : label;
+    actor === "cto" ? `CTO: ${label}` : actor === "human" ? `You ran: ${label}` : label;
   deps.attentionEvents.record({
     kind: "ctoAction",
     taskId,

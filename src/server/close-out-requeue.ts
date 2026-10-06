@@ -34,8 +34,7 @@ export async function requeueCloseOutAfterEnvFix(
   ) {
     return {
       ok: false,
-      reason:
-        "Only environment failures (stale or missing dependencies) can be re-queued this way",
+      reason: "Only environment failures (stale or missing dependencies) can be re-queued this way",
     };
   }
 

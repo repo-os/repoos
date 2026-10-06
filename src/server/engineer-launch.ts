@@ -84,8 +84,7 @@ export async function relaunchEngineerOnActiveTask(
 
   const pack = generateContextPack(config, fresh, branch, cwd, bootResult);
   const resumeContext = resumePreamble(config, fresh, branch, cwd);
-  const preamble =
-    [resumeContext, instruction.trim()].filter(Boolean).join("\n\n") || undefined;
+  const preamble = [resumeContext, instruction.trim()].filter(Boolean).join("\n\n") || undefined;
 
   const spawnRes = runner.start(fresh, branch, agent, {
     cwd,
