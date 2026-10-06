@@ -155,10 +155,14 @@ merged only the committed branch tip, kept the dirty worktree, and flagged
 
 ### 1. `queued` → `syncing`
 Creates (or resets) a **candidate worktree** at `repoos-worktrees/repoos/integrate/<id>`
-on branch `repoos/integrate/<id>`, hard-reset to current `main`. Symlinks
-`node_modules` from the main checkout (candidate worktrees never get their own install —
-if this symlink is missing, every build in the next phase fails with module-not-found
-errors that look unrelated).
+on branch `repoos/integrate/<id>`, hard-reset to current `main`. By default (`[closeOut]
+candidate = "symlink-main"`, the default) symlinks `node_modules` from the primary
+checkout. Set `candidate = "own-install"` (or `[worktrees] candidate`) to run a frozen
+install in the candidate instead — slower, but avoids stale main installs and monorepo
+path guards (Vite `Denied ID`). When symlinking, main's install must stay current: after
+every merge that changes package inputs, publish runs `closeOut.postPublishCommand` or an
+inferred lockfile install in the primary checkout (#0674). A branch that changes
+`package.json` / lockfiles always gets its own candidate install before the gate (#0449).
 
 **Pre-flight conflict check (#0358):** before the candidate is created, `syncing`
 runs a non-destructive dry-run of the same merge against the feature branch's own

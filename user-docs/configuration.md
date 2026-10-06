@@ -386,6 +386,9 @@ attention.spendAlertUsd = 0
 
 ```toml
 closeOut.timeoutMs = 360000
+closeOut.candidate = "symlink-main"   # or "own-install"
+closeOut.installCommand = ""          # optional shell install for candidates / main refresh
+closeOut.postPublishCommand = ""      # optional shell install in main after lockfile-changing merges
 ```
 
 | Field | Type | Default | Committed | Effect |
@@ -397,6 +400,13 @@ limit)*), or set any value directly in `repoos.toml`. A timeout is a failure
 with an error card; **Stop MTD** on the task drawer is a user cancel and stays
 badge-free — see [docs/close-out-pipeline.md](../docs/close-out-pipeline.md)
 for how the three outcomes differ.
+
+| `closeOut.candidate` | string | `symlink-main` | yes | How the throwaway **candidate** worktree gets dependencies. `symlink-main` reuses the primary checkout's `node_modules` (fast). `own-install` runs a frozen install in the candidate — use for monorepos or when Vite reports `Denied ID` on symlinked paths. `[worktrees] candidate` is an alias when `closeOut.candidate` is unset. |
+| `closeOut.installCommand` | string | *(empty)* | yes | Optional shell command to install dependencies for candidates, and to refresh main after a lockfile-changing merge when `postPublishCommand` is empty. When empty, RepoOS infers `bun install --frozen-lockfile`, `npm ci`, etc. from lockfiles. |
+| `closeOut.postPublishCommand` | string | *(empty)* | yes | Shell command run in the **primary checkout** after a merge that changed `package.json` or a lockfile. Replaces the automatic lockfile install — use for Python venvs, Cargo, or other stacks. |
+
+Edit **Close-out candidate dependencies**, **Close-out install command**, and
+**Post-merge install command** in **Settings → General**.
 
 ## Approval policy (opt-in auto Move to done)
 
@@ -429,6 +439,8 @@ inheritEnv = false
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `worktrees.inheritEnv` | boolean | `false` | yes | When true, RepoOS symlinks the main checkout's `.env` into each task worktree so worktree-local build or preview commands can read project secrets. |
+| `worktrees.candidate` | string | *(see `closeOut.candidate`)* | yes | Same as `closeOut.candidate` when the close-out section does not set it. |
+| `worktrees.installCommand` | string | *(empty)* | yes | Same as `closeOut.installCommand` when the close-out section does not set it. |
 
 **`inheritEnv` is off by default and must be opted into deliberately.** Every
 worktree is another place secrets live on disk. When enabled, RepoOS creates a

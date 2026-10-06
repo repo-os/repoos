@@ -1314,6 +1314,15 @@ export interface WorktreesConfig {
    * deliberate per-repo opt-in rather than a `node_modules`-style automatic.
    */
   inheritEnv?: boolean;
+  /**
+   * How close-out candidate worktrees get dependencies (#0674). `symlink-main`
+   * reuses the primary checkout's `node_modules` (default). `own-install` runs
+   * a frozen install in the candidate — slower but avoids workspace symlink
+   * issues (Vite `Denied ID`, per-package `node_modules`).
+   */
+  candidate?: "symlink-main" | "own-install";
+  /** Shell command for candidate (or main refresh when no post-publish override). */
+  installCommand?: string;
 }
 
 /** Whisper voice transcription configuration. */
@@ -1414,6 +1423,12 @@ export interface CloseOutConfig {
    * behaviour). Default `360000` (6 minutes).
    */
   timeoutMs: number;
+  /** Overrides `[worktrees] candidate` when set (#0674). */
+  candidate?: "symlink-main" | "own-install";
+  /** Shell install for candidates; also used for main refresh unless `postPublishCommand` is set. */
+  installCommand?: string;
+  /** Shell command run in main after a merge that changed package inputs (#0674). */
+  postPublishCommand?: string;
 }
 
 /** Agent supervisor configuration. */

@@ -5,5 +5,6 @@ export {
   extractConflicts,
   stripAnsi,
   type CloseOutFailure,
+  type CloseOutFailureAction,
   type CloseOutFailureKind,
 } from "../../../core/close-out-failure.js";
