@@ -12,7 +12,7 @@ branch: feat/finish-0694-follow-ups-agents-md-remote-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T01:38:21Z"
-updated_at: "2026-10-06T04:52:50Z"
+updated_at: "2026-10-06T05:01:12Z"
 last_handoff_failure_fingerprint: "check|remote validation unavailable: no usable remote host for any host — bee: prerequisite check failed (exit 255): ssh: connect to host bee port 22: Operation timed out; thinkpad: prerequisite check failed (exit 255): ssh: connect to host thinkpad port 22: Operation timed out; mini: prerequisite check failed (exit 255): ssh: connect to host 100.126.187.126 port 22: Operation timed out — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 last_handoff_failure_sha: "014e214e820f4a2f41e790351361589f239df3bf"
 review_rounds: 1
@@ -51,6 +51,9 @@ Found 2026-10-06 10:50: four engineers (0679, 0683, 0688, 0695) showed 'stuck' i
 **After (#0695, scoped remote self-check):** engineer `repoos check --changed main` runs changed-path vitest on the runner plus local guards only. Measured in this worktree: ~7.7 min wall for `REPOOS_CHECK_CHANGED=main repoos check` (remote install/build/scoped tests + local gate) vs ~5–11 min per **full** remote suite per edit before.
 
 **Host queueing:** Tailscale pool dispatches to the host with lowest `inFlight` (`acquire`/`dispatch` sort). Two jobs on one host (e.g. bee at `maxConcurrent: 2`) still queue FIFO when both slots are busy.
+
+## Driver decision (round 2): scope cut to land now
+Owner priority is to land this ASAP. Item 6 (idle-host spill / waiting-for-runner copy / close-out priority) is DEFERRED: it is now owned by #0705 (which folded in #0706). Do NOT implement item 6 here; mark it 'deferred to #0705' in the activity note. The load before/after measurement item is satisfied by this recorded evidence: before #0694 the laptop load average was 20-86 (swap 9.3 of 10 GB) with 4-5 agents running local checks; after #0694 it was 2.2 with 3 engineers running; it rose again (13-21) when engineerSelfCheckRemote was turned off at 11:05 because self-checks starved close-outs on host slots (#0705). Write that into the task as the load note. Finish the remaining review items (items 1-3, 5 code/docs/tests are fine per the reviewer), run repoos check --changed main, and hand off.
 
 ## Activity
 
@@ -100,3 +103,4 @@ error: script "test" exited with code 1
 - 2026-10-06T04:45:21Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-06T04:52:49Z · status active→review
 - 2026-10-06T04:52:50Z · status review→active
+- 2026-10-06T05:01:12Z · body: section Driver decision (round 2): scope cut to land now
