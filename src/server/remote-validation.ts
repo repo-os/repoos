@@ -44,6 +44,7 @@ import {
   appendFileSync,
   existsSync,
   readFileSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
@@ -355,6 +356,25 @@ export interface RemoteValidator {
    * (#0521 review). Optional: Hetzner has no pool to rebuild.
    */
   applyConfig?(): void;
+  /**
+   * In-flight remote runs with their current stage and host, for the
+   * slow-run detector (#0720). Optional so a runner that does not track
+   * stages (or a test double) stays a valid validator.
+   */
+  activeRemoteRuns?(): ActiveRemoteRunInfo[];
+}
+
+/** One in-flight remote run, as the slow-run detector (#0720) needs it. */
+export interface ActiveRemoteRunInfo {
+  taskId: string;
+  host: string;
+  phase: CheckRunPhase;
+  scope: string;
+  startedAt: string;
+  /** e.g. `bundle`, `upload`, `queue`, `lock`, `run`, `install`, `test`. */
+  stage: string | null;
+  uploadBytes: number | null;
+  uploadSeconds: number | null;
 }
 
 interface RunnerState {
@@ -2996,6 +3016,12 @@ export class TailscaleRunner implements RemoteValidator {
   private readonly timings: RunnerTimings;
   private readonly keyPath: string;
   private readonly pool: TailscaleHostPool;
+  /**
+   * In-flight runs keyed by task id, tracking the current stage so the slow-run
+   * detector (#0720) can say *which* phase is slow (upload vs test) while it is
+   * still running. Bounded by the number of concurrently dispatched jobs.
+   */
+  private readonly activeRuns = new Map<string, ActiveRemoteRunInfo>();
 
   constructor(
     private readonly config: RepoOSConfig,
@@ -3095,6 +3121,20 @@ export class TailscaleRunner implements RemoteValidator {
   /** Per-host pool state for the status endpoint (#0521). */
   hostStatus(): RemoteHostStatus[] {
     return this.pool.status();
+  }
+
+  /** In-flight runs with their current stage, for the slow-run detector (#0720). */
+  activeRemoteRuns(): ActiveRemoteRunInfo[] {
+    return [...this.activeRuns.values()].map((r) => ({ ...r }));
+  }
+
+  /**
+   * Record/advance the stage of one in-flight remote run. `null` clears the
+   * entry when the run finishes (or its host slot is released without a result).
+   */
+  private setActiveRunStage(info: ActiveRemoteRunInfo | null, taskId: string): void {
+    if (info) this.activeRuns.set(taskId, info);
+    else this.activeRuns.delete(taskId);
   }
 
   refreshHostStats(): void {
@@ -3298,6 +3338,22 @@ export class TailscaleRunner implements RemoteValidator {
     );
 
     let tmp: string | null = null;
+    // Register this run so the slow-run detector (#0720) can watch its stage
+    // and elapsed time while it is still in flight.
+    const runScope = opts.changedRef ? `changed:${opts.changedRef}` : "full";
+    this.setActiveRunStage(
+      {
+        taskId: opts.taskId,
+        host: host.ip,
+        phase: opts.phase ?? "pre-review",
+        scope: runScope,
+        startedAt: new Date(startedAt).toISOString(),
+        stage: "bundle",
+        uploadBytes: null,
+        uploadSeconds: null,
+      },
+      opts.taskId,
+    );
     try {
       // 1. bundle the candidate tree
       tmp = mkdtempSync(join(tmpdir(), "repoos-rvr-"));
@@ -3319,6 +3375,26 @@ export class TailscaleRunner implements RemoteValidator {
 
       // 2. upload
       const remoteBundle = paths.bundle;
+      let bundleBytes: number | null = null;
+      try {
+        bundleBytes = statSync(bundlePath).size;
+      } catch {
+        /* size is best-effort */
+      }
+      const uploadStartedAt = Date.now();
+      this.setActiveRunStage(
+        {
+          taskId: opts.taskId,
+          host: host.ip,
+          phase: opts.phase ?? "pre-review",
+          scope: runScope,
+          startedAt: new Date(startedAt).toISOString(),
+          stage: "upload",
+          uploadBytes: bundleBytes,
+          uploadSeconds: null,
+        },
+        opts.taskId,
+      );
       const up = await this.exec.uploadFile(host, bundlePath, remoteBundle);
       if (!up.ok) {
         const detail = `ssh upload of candidate bundle to ${host.ip} failed: ${up.detail ?? "unknown"}`;
@@ -3329,6 +3405,22 @@ export class TailscaleRunner implements RemoteValidator {
         this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
         return withScope(this.infraFail(detail, { taskId: opts.taskId, host: host.ip }));
       }
+      const uploadSeconds = Math.round((Date.now() - uploadStartedAt) / 1000);
+      // The upload is done — from here the run waits for the host lock and then
+      // executes the suite, so the slow-run detector stops blaming the transfer.
+      this.setActiveRunStage(
+        {
+          taskId: opts.taskId,
+          host: host.ip,
+          phase: opts.phase ?? "pre-review",
+          scope: runScope,
+          startedAt: new Date(startedAt).toISOString(),
+          stage: "queue",
+          uploadBytes: bundleBytes,
+          uploadSeconds,
+        },
+        opts.taskId,
+      );
 
       // 3. run build + test via validate.sh on the host (which calls docker run
       //    itself), wrapped in the host-side slot lock so this process's gate
@@ -3402,6 +3494,19 @@ export class TailscaleRunner implements RemoteValidator {
       // wrong. Add the wait budget on top so the full remoteRunTimeoutMs is
       // always available for the run itself once it actually starts.
       const outerTimeoutMs = this.timings.remoteRunTimeoutMs + waitSecs * 1000;
+      this.setActiveRunStage(
+        {
+          taskId: opts.taskId,
+          host: host.ip,
+          phase: opts.phase ?? "pre-review",
+          scope: runScope,
+          startedAt: new Date(startedAt).toISOString(),
+          stage: "run",
+          uploadBytes: bundleBytes,
+          uploadSeconds,
+        },
+        opts.taskId,
+      );
       const run = await this.exec.runRemote(host, cmd, emit, outerTimeoutMs);
 
       // 4. pull artifacts (best effort)
@@ -3521,6 +3626,7 @@ export class TailscaleRunner implements RemoteValidator {
       );
     } finally {
       if (tmp) rmSync(tmp, { recursive: true, force: true });
+      this.setActiveRunStage(null, opts.taskId);
     }
   }
 

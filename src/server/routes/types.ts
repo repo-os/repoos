@@ -18,6 +18,7 @@ import type { Logger } from "../../core/logger.js";
 import type { RemoteValidator } from "../remote-validation.js";
 import type { FreeformRunManager } from "../freeform-runs.js";
 import type { HandoffOrigin } from "../handoff.js";
+import type { TaskCheckManager } from "../task-check.js";
 
 export interface SyncResult {
   ok: boolean;
@@ -62,6 +63,17 @@ export interface RouteContext {
   closeOutOutcomes?: CloseOutOutcomeStore;
   /** Durable provider-failure and remote-fallback events (#0687). */
   attentionEvents?: AttentionEventStore;
+  /**
+   * In-memory live check runs (#0720) — the attention feed reads the ones still
+   * in flight to compare their elapsed time against the history median.
+   * Optional so route tests can build a partial context.
+   */
+  taskChecks?: TaskCheckManager;
+  /**
+   * Awake-clock sample (last watchdog tick + cadence) so the slow-run detector
+   * can exclude laptop-sleep gaps (#0720/#0678). Optional.
+   */
+  awakeClock?: () => { lastTickMs: number; intervalMs: number };
   /** CTO safe-action rate windows (#0688). */
   ctoActionRates?: CtoActionRateStore;
   /** Remote Validation Runner (docs/remote-validation.md). Undefined when not configured. */
