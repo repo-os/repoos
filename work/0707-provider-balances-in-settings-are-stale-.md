@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p2
 area: server
+story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T04:40:52Z"
-updated_at: "2026-10-06T04:40:52Z"
+updated_at: "2026-10-06T04:41:05Z"
 ---
 ## Problem
 
@@ -32,3 +33,4 @@ Read src/server/routes/model-providers.ts and the ModelProvidersPanel component 
 ## Activity
 
 - 2026-10-06T04:40:52Z · created · unknown
+- 2026-10-06T04:41:05Z · story
