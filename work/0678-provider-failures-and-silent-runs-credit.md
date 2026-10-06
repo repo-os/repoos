@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T16:58:38Z"
-updated_at: "2026-10-06T02:44:25Z"
+updated_at: "2026-10-06T02:44:28Z"
 ---
 ## Problem
 
@@ -42,3 +44,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T17:16:50Z · story
 - 2026-10-05T17:16:51Z · body: section Story context
 - 2026-10-06T02:44:25Z · status inbox→ready
+- 2026-10-06T02:44:28Z · cli_override, model_override
