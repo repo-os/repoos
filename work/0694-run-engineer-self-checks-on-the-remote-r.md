@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-06T01:33:45Z"
-review_passes: 3
 id: "0694"
 title: Run engineer self-checks on the remote runners (not the laptop) and reuse the green remote result at handoff
 type: feature
@@ -14,6 +12,8 @@ branch: feat/run-engineer-self-checks-on-the-remote-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:59:26Z"
+updated_at: "2026-10-06T01:38:21Z"
+review_passes: 3
 review_rounds: 1
 ---
 ## Problem
