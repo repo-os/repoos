@@ -2268,11 +2268,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (shouldParkForIdenticalHandoffFailures(task, branchHead)) {
       runner.releaseHandoffInFlight(task.id);
       const last = lastHandoffFailureFromBody(task.body);
-      parkTaskForIdenticalHandoffFailures(
-        config,
-        task,
-        last?.detail ?? "check failed",
-        (absPath) => index.applyFileChange(absPath, { guarded: true }),
+      parkTaskForIdenticalHandoffFailures(config, task, last?.detail ?? "check failed", (absPath) =>
+        index.applyFileChange(absPath, { guarded: true }),
       );
       return {
         started: false,

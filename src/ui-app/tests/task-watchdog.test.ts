@@ -1046,7 +1046,10 @@ describe("identical handoff failure loop (#0693)", () => {
   it("parks after three identical check failures instead of surfacing to review", async () => {
     const fx = makeGitFx(600_000, { committedWork: true });
     const wtDir = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
-    const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: wtDir, encoding: "utf8" }).trim();
+    const head = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: wtDir,
+      encoding: "utf8",
+    }).trim();
     writeFileSync(
       fx.taskPath,
       taskMdWithIdenticalCheckFailures(600_000, "Type error: StorageStatus", 3, head),
@@ -1072,7 +1075,10 @@ describe("identical handoff failure loop (#0693)", () => {
   it("restarts a dead engineer once with the failure text before parking", async () => {
     const fx = makeGitFx(600_000, { committedWork: true });
     const wtDir = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, "feat", "x");
-    const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: wtDir, encoding: "utf8" }).trim();
+    const head = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: wtDir,
+      encoding: "utf8",
+    }).trim();
     writeFileSync(
       fx.taskPath,
       taskMdWithIdenticalCheckFailures(600_000, "Type error: StorageStatus", 1, head),
