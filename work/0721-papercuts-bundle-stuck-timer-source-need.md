@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-stuck-timer-source-ne
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:27:52Z"
-updated_at: "2026-10-06T14:43:20Z"
+updated_at: "2026-10-06T14:56:36Z"
 ---
 ## Problem
 
@@ -36,6 +36,23 @@ Each of the four behaves as its own task describes (read #0719, #0716, #0707 fir
 
 Keep each item small and separate in commits. Do not touch the degenerate detector (#0718) or remote validation (#0717).
 
+## Shots
+```json
+[
+  {
+    "label": "Provider balances with as-of time and Refresh feedback",
+    "target": "default",
+    "route": "/agents?tab=providers",
+    "highlight": ".mp-panel"
+  },
+  {
+    "label": "Task card stuck hint uses server lastOutputAt after reload",
+    "target": "default",
+    "route": "/"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-06T14:27:52Z · created · unknown
@@ -43,3 +60,4 @@ Keep each item small and separate in commits. Do not touch the degenerate detect
 - 2026-10-06T14:31:28Z · title, body
 - 2026-10-06T14:43:17Z · status inbox→ready
 - 2026-10-06T14:43:20Z · status ready→active, branch
+- 2026-10-06T14:56:36Z · body: section Shots
