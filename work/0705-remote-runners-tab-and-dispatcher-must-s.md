@@ -15,7 +15,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T09:18:48Z"
+updated_at: "2026-10-06T10:12:51Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ac677e5a to be92054c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: ac677e5aa2358c37ab8263f1ff88fb56da7c71f1
 review_rounds: 2
@@ -189,5 +189,25 @@ src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahea
       Tests  2 passed (2)
    Start at  09:18:42
    Duration  2.70s (transform 1.10s, setup 13ms, import 1.37s, tests 792ms, environment 444ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-06T10:12:51Z · handoff failed · ui-review handoff failed at check · remote validation failed: remote validation failed (exit 1) —     651|       // true per-pass counter used by the D# · R# badge.
+    652|       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_pass…
+       |                                                  ^
+    653|     });
+    654|   }, 90_000);
+ ❯ withServer tests/agent-review.test.ts:279:11
+ ❯ tests/agent-review.test.ts:625:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 419 passed | 1 skipped (421)
+      Tests  1 failed | 5071 passed | 15 skipped (5087)
+   Start at  10:08:42
+   Duration  243.48s (transform 6.32s, setup 2.06s, import 41.60s, tests 227.15s, environment 194.43s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 730ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:12:46
+   Duration  2.62s (transform 1.08s, setup 12ms, import 1.36s, tests 730ms, environment 447ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
