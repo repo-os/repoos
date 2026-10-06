@@ -366,8 +366,7 @@ function codingOrStuckHint(taskId: string): CardHint {
     const lastOutNote = lastOut ? ` Last output ${lastOut}.` : "";
     return {
       label: `stuck · silent ${formatDuration(ms)}`,
-      title:
-        `agent process is still running but hasn't produced output in a while — it may be hung.${lastOutNote} Click to inspect, or restart work.`,
+      title: `agent process is still running but hasn't produced output in a while — it may be hung.${lastOutNote} Click to inspect, or restart work.`,
       cls: "tc-stuck",
     };
   }
