@@ -5,7 +5,7 @@ type: bug
 status: active
 needs_input: true
 needs_input_reason: provider-failure
-needs_input_detail: "{\"type\":\"thinking\",\"subtype\":\"delta\",\"text\":\"irming close-out be\",\"session_id\":\"4de1a743-5ba4-41d0-961c-6f00a70b14eb\",\"timestamp_ms\":1791271208402}"
+needs_input_detail: "{\"type\":\"tool_call\",\"subtype\":\"completed\",\"call_id\":\"toolu_bdrk_013Dkabx3PDrnQ8hZqVTTSbv\",\"tool_call\":{\"editToolCall\":{\"args\":{\"path\":\"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts\",\"streamContent\":\"  async acquire(\n    capabilities: string[],\n    opts: {\n      /** Fired once this run joins the FIFO queue (#0706: host + position too). */\n      onQueue?: (info: { ahead: number; host: string }) => void;\n      deadlineAt?: "
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -15,10 +15,10 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: claude-sonnet-5-thinking-high
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T07:27:32Z"
+updated_at: "2026-10-06T07:32:22Z"
 review_rounds: 2
 review_passes: 2
-dev_error_count: 6
+dev_error_count: 7
 ---
 ## Problem
 
@@ -112,3 +112,5 @@ error: script "test" exited with code 1
 - 2026-10-06T07:25:50Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T07:27:32Z · note: review pass 2: needs some work
 - 2026-10-06T07:27:32Z · status review→active
+- 2026-10-06T07:32:22Z · status active→review
+- 2026-10-06T07:32:22Z · status review→active
