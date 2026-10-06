@@ -116,7 +116,7 @@ import {
 import { sweepAndWarn } from "../core/worktree-gc.js";
 import { onGitMutation } from "../core/git-activity.js";
 import { createRepoStatusNotifier, isSameCheckout } from "./repo-status.js";
-import { remoteJobCapabilities } from "./pre-review-remote-gate.js";
+import { remoteJobCapabilities, summarizeRemoteFallbackDetail } from "./pre-review-remote-gate.js";
 import {
   hostRunner,
   remoteHostLimit,
@@ -1255,7 +1255,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       kind: "remoteFallback",
       taskId,
       message: `Ran locally: #${taskId}`,
-      detail: line || "Remote validation is enabled but this close-out used the full local gate.",
+      detail: summarizeRemoteFallbackDetail(
+        line || "Remote validation is enabled but this close-out used the full local gate.",
+      ),
       at,
     });
     bumpAttention();
