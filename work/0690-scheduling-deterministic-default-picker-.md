@@ -13,7 +13,7 @@ branch: feat/scheduling-deterministic-default-picker-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:59:03Z"
-updated_at: "2026-10-05T23:49:54Z"
+updated_at: "2026-10-05T23:51:00Z"
 merge_conflict_retry_count: 2
 review_passes: 3
 handoff_signal_retry_count: 2
@@ -81,3 +81,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T23:46:29Z · status active→review
 - 2026-10-05T23:46:29Z · status review→active
 - 2026-10-05T23:49:54Z · status active→done, release:success
+- 2026-10-05T23:51:00Z · handoff failed · task-file handoff failed at check · repoos check failed: ENOENT: no such file or directory, posix_spawn 'bun'

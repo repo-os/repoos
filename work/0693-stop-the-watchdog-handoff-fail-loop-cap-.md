@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T23:55:32Z"
-updated_at: "2026-10-05T23:55:48Z"
+updated_at: "2026-10-06T00:16:18Z"
 ---
 ## Problem
 
@@ -33,7 +33,11 @@ Task 0659 sat in a loop for hours on 2026-10-05/06: every ~6 minutes the stuck-t
 
 Overlaps #0678 (provider failures and silent runs, watchdog) and #0679 (close-out reliability): read both first, build on them, do not duplicate. Evidence: work/0659 activity log 2026-10-05T18:03Z-23:20Z and the check_runs table (task_id 0659, outcome fail, failed_step build).
 
+## Driver note: CTO overrides an explicit pause
+2026-10-06 08:09 the driver PAUSED tasks 0680 and 0675 to relieve a load average of 86 (swap nearly full). Within about 5 minutes the CTO logged 'CTO nudge: sent engineer a completion reminder after 5m without worktree activity' on both and they were running again (agents/running showed both). A paused task must be exempt from CTO nudges, watchdog auto-surface and any auto-start until explicitly resumed.
+
 ## Activity
 
 - 2026-10-05T23:55:32Z · created · unknown
 - 2026-10-05T23:55:48Z · story
+- 2026-10-06T00:16:18Z · body: section Driver note: CTO overrides an explicit pause
