@@ -320,6 +320,28 @@ describe("trusted server-side handoff", { timeout: 15_000 }, () => {
     }
   });
 
+  it("rejects handoff when the gate skips but the branch newly adds package.json (#0697)", async () => {
+    const fx = makeFixture(0);
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      const notice = "No check plan configured — nothing to verify.";
+      writeFileSync(join(fx.bin, "repoos"), `#!/bin/sh\nprintf '  ⚠ ${notice}\\n'\nexit 0\n`, {
+        mode: 0o755,
+      });
+      writeFileSync(join(fx.worktree, "package.json"), '{"name":"new-app"}\n');
+      git(fx.worktree, ["add", "package.json"]);
+      git(fx.worktree, ["commit", "-qm", "add package.json"]);
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+      expect(result).toMatchObject({ ok: false, step: "check" });
+      expect(result.detail).toContain("repoos check --print-plan");
+      expect(readTask(fx).status).toBe("active");
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
   it("finalizes the handoff when repoos check is skipped because no check plan is configured (#0592)", async () => {
     // A planless repo's gate exits 0 with the "no check plan" notice; the
     // handoff must treat that as a pass — the explicitly blocking failure
