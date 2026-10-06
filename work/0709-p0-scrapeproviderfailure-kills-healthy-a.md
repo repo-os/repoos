@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-06T09:22:20Z"
-review_passes: 1
 id: "0709"
 title: "P0: scrapeProviderFailure kills healthy agents on any output line containing '402', 'billing' or 'rate limit'"
 type: bug
@@ -14,6 +12,7 @@ branch: feat/p0-scrapeproviderfailure-kills-healthy-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T07:35:51Z"
+updated_at: "2026-10-06T09:21:08Z"
 ---
 ## Problem
 
@@ -40,17 +39,4 @@ Smallest fix: in scrapeProviderFailure only inspect structured fields for lines 
 - 2026-10-06T07:36:03Z · status inbox→ready
 - 2026-10-06T07:36:04Z · cli_override, model_override
 - 2026-10-06T07:36:04Z · status ready→active, branch
-- 2026-10-06T07:37:21Z · status active→review
-- 2026-10-06T07:37:21Z · status review→active
-- 2026-10-06T07:54:22Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-- 2026-10-06T08:39:26Z · status active→review
-- 2026-10-06T08:39:26Z · status review→active
-- 2026-10-06T08:51:22Z · status active→review
-- 2026-10-06T08:51:22Z · status review→active
-- 2026-10-06T09:15:11Z · note: Field report from tuk-private confirms this bug (15 runs killed). Tightened further on the branch: bare 402 no longer matches anywhere (line numbers '402:', hashes, timestamps); needs HTTP-ish context. Tests added for each vector from the report.
-- 2026-10-06T09:15:14Z · status active→review
-- 2026-10-06T09:15:15Z · status review→active
-- 2026-10-06T09:21:10Z · status active→review
-- 2026-10-06T09:21:10Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-06T09:22:20Z · note: review pass 1: good to go
-
+- 2026-10-06T09:21:08Z · status active→review
