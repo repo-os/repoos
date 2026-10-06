@@ -7815,14 +7815,6 @@ export class AgentRunner {
     };
   }
 
-  private initSessionHealth(session: Session): void {
-    session.silentAwakeMs = 0;
-    session.lastStallTickMs = Date.now();
-    session.degenerate = new DegenerateOutputTracker();
-    session.degenerateRetried = false;
-    session.providerFailureDetail = undefined;
-  }
-
   private emptySession(): Session {
     const session: Session = {
       lines: [],
