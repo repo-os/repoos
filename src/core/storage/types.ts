@@ -29,6 +29,23 @@ export interface StoredObject {
 }
 
 /**
+ * Whether a provider can actually store bytes right now, and why not when it
+ * cannot (#0659). A credentialed cloud provider reports `available: false`
+ * with a human-readable `reason` until its credentials are configured; a
+ * provider that omits {@link StorageProvider.status} is treated as available
+ * whenever its factory is registered (the local reference implementation).
+ */
+export interface StorageProviderStatus {
+  /** True when the provider is ready to store and read bytes. */
+  available: boolean;
+  /**
+   * Human-readable, non-alarming explanation of why the provider is not
+   * available. Required when `available` is false; ignored otherwise.
+   */
+  reason?: string;
+}
+
+/**
  * A backend that stores attachment bytes. Every method addresses one object by
  * a `namespace` (a logical group, e.g. a task id — the provider maps it to a
  * real directory/prefix) and a `name` (the file name within it).
@@ -40,6 +57,13 @@ export interface StoredObject {
 export interface StorageProvider {
   /** Stable provider id, e.g. `"local"`. Used by the registry and config. */
   readonly id: string;
+  /**
+   * Availability of this provider (#0659). Optional: the local provider omits
+   * it and is always available. A cloud provider implements it to report
+   * whether credentials/config are in place, so the registry can fall back to
+   * local and the UI can explain the effective provider honestly.
+   */
+  status?(): StorageProviderStatus;
   /**
    * Write `data` under `namespace/name`, overwriting any existing object.
    * Returns {@link StoredObject} on success, or `{ error }` on invalid input

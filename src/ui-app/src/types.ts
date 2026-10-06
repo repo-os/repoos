@@ -1010,6 +1010,24 @@ export interface ConfigField {
   description: string;
 }
 
+/**
+ * Attachment-storage status from `GET /api/config` (#0659). Reports which
+ * provider is configured and which is actually in effect (local when the
+ * configured cloud provider is not usable yet), plus a non-alarming
+ * explanation of why, so the Settings UI explains the effective provider
+ * instead of guessing.
+ */
+export interface StorageStatus {
+  /** Provider id configured in `repoos.toml` (defaults to `local`). */
+  configured: string;
+  /** Provider id actually in effect — `local` when the configured one is unavailable. */
+  effective: string;
+  /** Whether the configured provider is available right now. */
+  available: boolean;
+  /** Human-readable explanation when configured and effective differ; `""` otherwise. */
+  reason: string;
+}
+
 /** An AI coding agent configured on the Agents page. */
 export interface Agent {
   name: string;
