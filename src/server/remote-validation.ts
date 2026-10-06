@@ -2136,7 +2136,8 @@ export class TailscaleHostPool {
   async acquire(
     capabilities: string[],
     opts: {
-      onQueue?: (ahead: number) => void;
+      /** Fired once this run joins the FIFO queue (#0706: host + position too). */
+      onQueue?: (info: { ahead: number; host: string }) => void;
       deadlineAt?: number;
       taskId?: string;
       /**
