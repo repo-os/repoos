@@ -203,8 +203,11 @@ New to this repo? The board is \`${workDir}/\` — one markdown file per task.
 Create work with \`repoos new "<title>"\`, move it with \`repoos mv <id> <status>\`,
 and **never** edit \`${workDir}/*.md\` by hand (use the CLI or the HTTP API).
 Project context lives under \`${docsDir}/\`; start there. Run \`repoos serve\` in a
-terminal you keep open (or \`repoos service\`) — a server started from a
-short-lived shell dies with it. When a task is done, run \`repoos check\` and
+terminal you keep open, or install \`repoos service\` for an unattended server —
+a detached \`repoos serve\` started from an agent shell is reaped as a stray orphan
+(see \`docs/agent-process-safety.md\`). RepoOS runs each managed agent turn in its
+own process group and tears that group down when the turn ends; never use \`pkill\`
+or \`killall\` to clean up helpers. When a task is done, run \`repoos check\` and
 hand off with \`repoos mv <id> review\`; see the operating loop below.
 
 ## Operating loop
