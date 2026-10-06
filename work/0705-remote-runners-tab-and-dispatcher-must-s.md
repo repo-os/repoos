@@ -12,7 +12,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T06:24:40Z"
+updated_at: "2026-10-06T06:30:04Z"
 ---
 ## Problem
 
@@ -81,3 +81,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-06T06:24:40Z · status active→review
 - 2026-10-06T06:24:40Z · status review→active
+- 2026-10-06T06:30:04Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
