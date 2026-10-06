@@ -3,6 +3,9 @@ id: "0718"
 title: "Degenerate-output detector scans tool payloads and tool output, so it kills healthy agents (same class as #0709)"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: degenerate-output
+needs_input_detail: Degenerate output loop detected after one automatic retry.
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,8 +15,8 @@ branch: feat/degenerate-output-detector-scans-tool-pa
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T11:48:55Z"
-updated_at: "2026-10-06T14:14:34Z"
-dev_error_count: 1
+updated_at: "2026-10-06T14:25:36Z"
+dev_error_count: 2
 ---
 ## Problem
 
@@ -44,3 +47,5 @@ Read #0709 and its fix (scrapeProviderFailure) first: same approach, structured 
 - 2026-10-06T14:04:06Z · status ready→active, branch
 - 2026-10-06T14:14:21Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
 - 2026-10-06T14:14:34Z · needs_input
+- 2026-10-06T14:15:25Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
+- 2026-10-06T14:25:36Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
