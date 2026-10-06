@@ -13,8 +13,6 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-06T14:31:00Z"
 updated_at: "2026-10-06T17:27:50Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: [32m✓[39m tests/check-plan-proposal.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m · [32m✓[39m tests/repo-commit-route.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 209[2mms[22m[39m · [32m✓[39m tests/tunnel-assistant.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 83[2mms[22m[39m · [32m✓[39m tests/area-picker.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 100[2mms[22m[39m · [32m✓[39m tests/settings-location.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m · [32m✓[39m tests/needs-input-ui.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m · [32m✓[39m tests/telegram-chat-routes.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 34[2mms[22m[39m · [32m✓[39m tests/drawer-load.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 118[2mms[22m[39m"
-last_handoff_failure_sha: c7d0b9de8cafe603ae704776248d9502afa5b636
 dev_error_count: 1
 ---
 ## Problem
@@ -85,3 +83,4 @@ error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INST
 - 2026-10-06T17:22:23Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-06T17:22:23Z · status review→active
 - 2026-10-06T17:27:50Z · status active→review
+
