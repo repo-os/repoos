@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0683"
 title: "Remote validation: probe hosts at startup, say when a job fell back to local, document the runner image"
 type: bug
@@ -60,3 +61,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-06T04:57:47Z · note: shots: skipped — the diff (8 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-06T04:58:38Z · note: review pass 1: needs some work
 - 2026-10-06T04:58:42Z · status review→active
+
