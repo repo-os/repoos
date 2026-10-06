@@ -5,11 +5,12 @@ type: chore
 status: inbox
 priority: p2
 area: docs
+story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T08:37:40Z"
-updated_at: "2026-10-06T08:37:40Z"
+updated_at: "2026-10-06T08:37:43Z"
 ---
 ## Problem
 
@@ -30,3 +31,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 ## Activity
 
 - 2026-10-06T08:37:40Z · created · unknown
+- 2026-10-06T08:37:43Z · story
