@@ -2,15 +2,18 @@
 id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/invented-evidence-reviewer-and-engineer-
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T03:15:46Z"
-updated_at: "2026-10-06T03:15:46Z"
+updated_at: "2026-10-06T04:45:22Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 
@@ -36,3 +39,7 @@ The tuk-private repo's `repoos.toml` now carries hand-written versions of these 
 ## Activity
 
 - 2026-10-06T03:15:46Z · created · unknown
+- 2026-10-06T04:37:26Z · status inbox→ready
+- 2026-10-06T04:37:27Z · cli_override, model_override
+- 2026-10-06T04:37:27Z · status ready→active, branch
+- 2026-10-06T04:45:22Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
