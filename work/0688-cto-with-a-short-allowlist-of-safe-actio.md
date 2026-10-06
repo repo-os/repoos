@@ -2,7 +2,7 @@
 id: "0688"
 title: "CTO with a short allowlist of safe actions (restart stalled agent, refresh install, re-queue close-out)"
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:58:59Z"
-updated_at: "2026-10-05T17:17:16Z"
+updated_at: "2026-10-06T02:10:14Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T16:58:59Z · created · unknown
 - 2026-10-05T17:17:15Z · story
 - 2026-10-05T17:17:16Z · body: section Story context
+- 2026-10-06T02:10:14Z · status inbox→ready
