@@ -96,16 +96,22 @@ function elapsedFor(startedAtIso: string, nowMs: number, clock: AwakeClock | und
   return effectiveElapsedMs(startedMs, nowMs, clock.lastTickMs, clock.intervalMs);
 }
 
-/** Assemble the in-flight runs from the local check manager and remote pool. */
-function collectRunningRuns(
+/**
+ * Assemble in-flight runs from the local check manager and remote validator.
+ * When a task's gate is on a remote runner, TaskCheckManager still tracks the
+ * local wrapper — skip that row so slow-run detection raises one item (#0720).
+ */
+export function collectRunningRuns(
   taskChecks: TaskCheckManager | undefined,
   remoteRuns: RemoteActiveRunInfoLike[] | undefined,
   nowMs: number,
   clock: AwakeClock | undefined,
 ): RunningRun[] {
   const running: RunningRun[] = [];
+  const remoteTaskIds = new Set((remoteRuns ?? []).map((r) => r.taskId));
 
   for (const run of taskChecks?.runningRuns() ?? []) {
+    if (remoteTaskIds.has(run.taskId)) continue;
     running.push({
       id: `taskcheck:${run.id}`,
       taskId: run.taskId,

@@ -708,10 +708,19 @@ function annotateHostSlowRuns(
   hosts: Array<{ activeRuns?: Array<{ taskId: string; startedAt: string }> }>,
   config: RepoOSConfig,
   remoteValidator: RemoteValidator | undefined,
+  opts?: {
+    taskChecks?: TaskCheckManager;
+    awakeClock?: () => { lastTickMs: number; intervalMs: number };
+  },
 ): void {
   const active = remoteValidator?.activeRemoteRuns?.();
   if (!active || active.length === 0) return;
-  const flags = computeSlowRunFlags({ config, remoteRuns: active });
+  const flags = computeSlowRunFlags({
+    config,
+    remoteRuns: active,
+    taskChecks: opts?.taskChecks,
+    awakeClock: opts?.awakeClock?.(),
+  }).filter((f) => f.runId.startsWith("remote:"));
   if (flags.length === 0) return;
   // The validator's active-run registry and the host pool both key a run by
   // task id + start time; match on both, falling back to task id alone when a
@@ -2872,7 +2881,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     // Annotate each in-flight run with whether it exceeds its kind median
     // (#0720) so the panel can badge it without opening the attention feed. The
     // slow-run detail (stage, cause) also comes from the runner registry.
-    annotateHostSlowRuns(hosts, config, remoteValidator);
+    annotateHostSlowRuns(hosts, config, remoteValidator, {
+      taskChecks,
+      awakeClock: watchdog ? () => watchdog.awakeClock() : undefined,
+    });
     return json(res, 200, {
       enabled: !!rv.enabled,
       running: !!remoteValidator,

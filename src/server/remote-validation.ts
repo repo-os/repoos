@@ -457,6 +457,23 @@ export interface ActiveRemoteRunInfo {
   uploadSeconds: number | null;
 }
 
+/**
+ * In-flight remote runs keyed by task id — shared by Hetzner and Tailscale
+ * runners so the slow-run detector (#0720) sees every provider the same way.
+ */
+export class ActiveRemoteRunRegistry {
+  private readonly runs = new Map<string, ActiveRemoteRunInfo>();
+
+  list(): ActiveRemoteRunInfo[] {
+    return [...this.runs.values()].map((r) => ({ ...r }));
+  }
+
+  set(info: ActiveRemoteRunInfo | null, taskId: string): void {
+    if (info) this.runs.set(taskId, info);
+    else this.runs.delete(taskId);
+  }
+}
+
 interface RunnerState {
   serverId: number;
   ip: string;
@@ -1606,6 +1623,7 @@ export class RemoteValidationRunner implements RemoteValidator {
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
   private lifetimeTimer: ReturnType<typeof setTimeout> | null = null;
   private activeJobs = 0;
+  private readonly activeRunRegistry = new ActiveRemoteRunRegistry();
 
   constructor(
     private readonly config: RepoOSConfig,
@@ -1726,6 +1744,15 @@ export class RemoteValidationRunner implements RemoteValidator {
       host: event.host ?? ctx.host,
       exitCode: event.exitCode ?? ctx.exitCode,
     });
+  }
+
+  /** In-flight runs with stage metadata, for the slow-run detector (#0720). */
+  activeRemoteRuns(): ActiveRemoteRunInfo[] {
+    return this.activeRunRegistry.list();
+  }
+
+  private setActiveRunStage(info: ActiveRemoteRunInfo | null, taskId: string): void {
+    this.activeRunRegistry.set(info, taskId);
   }
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
@@ -1864,6 +1891,22 @@ export class RemoteValidationRunner implements RemoteValidator {
         { level: "info", phase: "run", message: `runner ${host.ip} ready` },
       );
 
+      const runScope = opts.changedRef ? `changed:${opts.changedRef}` : "full";
+      const runStartedIso = new Date(startedAt).toISOString();
+      this.setActiveRunStage(
+        {
+          taskId: opts.taskId,
+          host: host.ip,
+          phase: opts.phase ?? "pre-review",
+          scope: runScope,
+          startedAt: runStartedIso,
+          stage: "bundle",
+          uploadBytes: null,
+          uploadSeconds: null,
+        },
+        opts.taskId,
+      );
+
       // 1. bundle the candidate tree + 2. upload it, transferring only commits
       //    the host does not already have (#0717).
       tmp = mkdtempSync(join(tmpdir(), "repoos-rvr-"));
@@ -1872,6 +1915,19 @@ export class RemoteValidationRunner implements RemoteValidator {
       remoteTestRef = prepared.remoteTestRef;
       runMeta.remoteTestRef = remoteTestRef;
       const remoteBundle = paths.bundle;
+      this.setActiveRunStage(
+        {
+          taskId: opts.taskId,
+          host: host.ip,
+          phase: opts.phase ?? "pre-review",
+          scope: runScope,
+          startedAt: runStartedIso,
+          stage: "upload",
+          uploadBytes: null,
+          uploadSeconds: null,
+        },
+        opts.taskId,
+      );
       const upload = await prepareCandidateUpload(this.exec, {
         host,
         bundlePath,
@@ -1900,6 +1956,20 @@ export class RemoteValidationRunner implements RemoteValidator {
           phase: "run",
           message: `uploaded bundle ${formatBytes(upload.bundleBytes)} in ${upload.uploadSecs}s${upload.partial ? " (incremental)" : " (full)"}`,
         },
+      );
+      const uploadSeconds = Math.round(upload.uploadSecs);
+      this.setActiveRunStage(
+        {
+          taskId: opts.taskId,
+          host: host.ip,
+          phase: opts.phase ?? "pre-review",
+          scope: runScope,
+          startedAt: runStartedIso,
+          stage: "run",
+          uploadBytes: upload.bundleBytes,
+          uploadSeconds,
+        },
+        opts.taskId,
       );
 
       // Provisioning + bundling can outlast the caller's deadline (#0521 spec
@@ -2032,6 +2102,7 @@ export class RemoteValidationRunner implements RemoteValidator {
       return withScope(this.infraFail((e as Error).message, { taskId: opts.taskId }));
     } finally {
       if (tmp) rmSync(tmp, { recursive: true, force: true });
+      this.setActiveRunStage(null, opts.taskId);
       this.activeJobs = Math.max(0, this.activeJobs - 1);
       if (this.activeJobs === 0) this.armIdleTimer();
     }
@@ -3290,12 +3361,7 @@ export class TailscaleRunner implements RemoteValidator {
   private readonly timings: RunnerTimings;
   private readonly keyPath: string;
   private readonly pool: TailscaleHostPool;
-  /**
-   * In-flight runs keyed by task id, tracking the current stage so the slow-run
-   * detector (#0720) can say *which* phase is slow (upload vs test) while it is
-   * still running. Bounded by the number of concurrently dispatched jobs.
-   */
-  private readonly activeRuns = new Map<string, ActiveRemoteRunInfo>();
+  private readonly activeRunRegistry = new ActiveRemoteRunRegistry();
 
   constructor(
     private readonly config: RepoOSConfig,
@@ -3399,7 +3465,7 @@ export class TailscaleRunner implements RemoteValidator {
 
   /** In-flight runs with their current stage, for the slow-run detector (#0720). */
   activeRemoteRuns(): ActiveRemoteRunInfo[] {
-    return [...this.activeRuns.values()].map((r) => ({ ...r }));
+    return this.activeRunRegistry.list();
   }
 
   /**
@@ -3407,8 +3473,7 @@ export class TailscaleRunner implements RemoteValidator {
    * entry when the run finishes (or its host slot is released without a result).
    */
   private setActiveRunStage(info: ActiveRemoteRunInfo | null, taskId: string): void {
-    if (info) this.activeRuns.set(taskId, info);
-    else this.activeRuns.delete(taskId);
+    this.activeRunRegistry.set(info, taskId);
   }
 
   refreshHostStats(): void {

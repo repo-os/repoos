@@ -9,9 +9,11 @@ in the product surfaced it until a human asked. The data already lived in
 
 While a run is **in flight**, the server:
 
-1. Collects **running** jobs from `TaskCheckManager` (local handoff / merge-gate)
-   and `RemoteValidator.activeRemoteRuns()` (remote handoff, close-out, release,
-   with live `stage`, `uploadBytes`, `uploadSeconds` when the runner reports them).
+1. Collects **running** jobs from `TaskCheckManager` (local-only gates) and
+   `RemoteValidator.activeRemoteRuns()` on **both** Hetzner and Tailscale
+   (remote handoff, close-out, release, with live `stage`, `uploadBytes`,
+   `uploadSeconds`). When the same task appears in both, only the remote row is
+   kept so the bell raises one item per run.
 2. Loads recent **history** from the check store (passing runs only for the median).
 3. Runs pure logic in `src/core/check-slowness.ts`:
    - `evaluateSlowness` — one attention item per run above
