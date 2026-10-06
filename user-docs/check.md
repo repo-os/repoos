@@ -341,6 +341,29 @@ On the task page itself, a chip appears while a check is in progress —
 "Checks running on mini · 2m 34s" — and stays afterwards showing the result
 inline; click it to open the task's Debug tab with the full check output.
 
+### Slow-run alerts (#0720)
+
+While a check, handoff gate, close-out stage, or bundle upload is **still
+running**, RepoOS compares its elapsed time to the rolling median of the last
+30 **passing** runs of the same kind (phase + remote/local + scope). It needs
+at least five samples before it says anything. When elapsed exceeds
+**1.5×** that median (configurable in **Settings → General** as "Flag slow
+checks above (× median)"), you get:
+
+- One **bell** item per run (`Slow check`) with elapsed vs typical, host, and
+  the current phase when known (upload, install, build, tests). It clears
+  automatically when the run finishes — nothing to dismiss.
+- An amber **slow** badge on the task card (handoff / close-out hints), the
+  task drawer's check chip, and the **Remote runners** row for that job.
+- A persistent **Checks slow lately** notice when three or more of the last
+  ten completed runs of a kind were slow, naming the common factor (same host,
+  local load, and so on).
+
+Sleep gaps on the control machine are excluded the same way as the stuck-agent
+watchdog (#0678), so a laptop suspend does not count as a slow run. History
+comes from `.repoos/checks.db`; see `docs/check-slowness.md` for how the
+server assembles running jobs and medians.
+
 ## Bootstrapping a plan with `repoos init`
 
 When a repo has no check plan yet, `repoos init` inspects its durable signals

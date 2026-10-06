@@ -129,6 +129,51 @@ describe("buildAttentionFeed", () => {
   });
 });
 
+describe("buildAttentionFeed slow runs (#0720)", () => {
+  it("includes slowRun and slowRunsRecently from live flags", () => {
+    const feed = buildAttentionFeed({
+      ...emptyFeedInput(),
+      slowRuns: [
+        {
+          id: "slowRun:r1",
+          runId: "r1",
+          taskId: "0042",
+          phase: "pre-review",
+          remote: true,
+          scope: "full",
+          machine: "bee",
+          startedAt: "2026-10-06T10:00:00.000Z",
+          kindLabel: "handoff check on bee",
+          elapsedMs: 600_000,
+          medianMs: 300_000,
+          ratio: 2,
+          sampleCount: 10,
+          stage: "upload",
+          uploadBytes: null,
+          uploadSeconds: null,
+          likelyCause: "bundle upload",
+        },
+      ],
+      slowRunNotices: [
+        {
+          id: "slowKind:pre-review|remote|full",
+          phase: "pre-review",
+          remote: true,
+          scope: "full",
+          slowCount: 3,
+          windowCount: 10,
+          commonFactor: "the same remote host recurs",
+          medianMs: 300_000,
+        },
+      ],
+    });
+    const slow = feed.items.find((i) => i.kind === "slowRun");
+    expect(slow?.taskId).toBe("0042");
+    expect(slow?.message).toContain("slow");
+    expect(feed.items.some((i) => i.kind === "slowRunsRecently")).toBe(true);
+  });
+});
+
 describe("buildAttentionFeed close-out and release kinds", () => {
   it("maps a close-out outcome and a release run", () => {
     const feed = buildAttentionFeed({
