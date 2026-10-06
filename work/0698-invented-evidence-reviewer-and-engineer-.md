@@ -3,6 +3,9 @@ id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
 type: feature
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: real device, physical hardware, credentials or keys)"
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -13,7 +16,7 @@ branch: feat/invented-evidence-reviewer-and-engineer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:46Z"
-updated_at: "2026-10-06T23:48:04Z"
+updated_at: "2026-10-06T23:48:14Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: [32m✓[39m tests/mtd-close-out-deps.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 882[2mms[22m[39m · [33m[2m✓[22m[39m publishCandidate runs post-publish refresh and a later symlink-main candidate sees it [33m 498[2mms[22m[39m · [32m✓[39m tests/debugger-integration.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1350[2mms[22m[39m · [33m[2m✓[22m[39m runs a diagnosis when enabled and serves it back [33m 429[2mms[22m[39m · [33m[2m✓[22m[39m does not re-broadcast a turn the panel already drew optimistically (#0443) [33m 411[2mms[22m[39m · [32m✓[39m tests/release-fallback.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 540[2mms[22m[39m · [32m✓[39m tests/mtd-cancel.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 859[2mms[22m[39m · [33m[2m✓[22m[39m tears down an already-created candidate when cancellation arrives later [33m 342[2mms[22m[39m"
 last_handoff_failure_sha: 36bbf34820faf5c2ae64cbf3251c5a07591201a2
 merge_conflict_retry_count: 1
@@ -102,3 +105,4 @@ warning: You appear to have cloned an empty repository.
 fatal: unable to read tree (d9b027c8a905fb78ea2f2613a250bf35d5f9782b) — fix it in the feature branch and re-run the gate
 - 2026-10-06T17:21:11Z · status active→review
 - 2026-10-06T23:48:04Z · status review→done, release:success
+- 2026-10-06T23:48:14Z · needs_input
