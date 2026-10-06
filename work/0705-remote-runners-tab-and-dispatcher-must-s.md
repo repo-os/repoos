@@ -15,7 +15,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: claude-sonnet-5-thinking-high
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T07:32:22Z"
+updated_at: "2026-10-06T07:33:04Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 7
@@ -114,3 +114,23 @@ error: script "test" exited with code 1
 - 2026-10-06T07:27:32Z · status review→active
 - 2026-10-06T07:32:22Z · status active→review
 - 2026-10-06T07:32:22Z · status review→active
+- 2026-10-06T07:33:04Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [999.00ms]
+$ git config core.hooksPath .githooks 2>/dev/null || true
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+src/server/remote-validation.ts(2251,9): error TS2322: Type '((info: { ahead: number; host: string; }) => void) | undefined' is not assignable to type '((ahead: number) => void) | undefined'.
+  Type '(info: { ahead: number; host: string; }) => void' is not assignable to type '(ahead: number) => void'.
+    Types of parameters 'info' and 'ahead' are incompatible.
+      Type 'number' is not assignable to type '{ ahead: number; host: string; }'.
+src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahead: number; host: string; }' is not assignable to parameter of type 'number'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
