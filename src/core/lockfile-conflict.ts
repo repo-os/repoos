@@ -57,10 +57,9 @@ async function runBunInstall(cwd: string, timeoutMs: number): Promise<number> {
 export async function tryCompleteMergeByRegeneratingLockfile(
   worktreePath: string,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const diffRes = await runGit(worktreePath, ["diff", "--name-only", "--diff-filter=U"], 10_000);
   const conflicts =
-    runGit(worktreePath, ["diff", "--name-only", "--diff-filter=U"])
-      ?.split("\n")
-      .filter(Boolean) ?? [];
+    diffRes.status === 0 ? diffRes.stdout.split("\n").filter(Boolean) : [];
   if (!isLockfileOnlyConflicts(conflicts)) {
     return { ok: false, reason: "not a lockfile-only conflict" };
   }
