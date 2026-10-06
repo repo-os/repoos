@@ -2,7 +2,7 @@
 id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -53,3 +53,4 @@ The tuk-private repo's `repoos.toml` now carries hand-written versions of these 
 - 2026-10-06T14:42:52Z · status review→active
 - 2026-10-06T14:52:52Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-06T14:57:53Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-06T14:57:53Z · status review→active
