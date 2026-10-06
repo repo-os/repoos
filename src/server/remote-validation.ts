@@ -623,10 +623,7 @@ export function parseValidateScriptMirrorSupport(output: string): boolean {
  * True when the runner likely rejected an incremental bundle (old `validate.sh`
  * cloning a HEAD-less bundle, or validate.sh exit 3 transport).
  */
-export function isRunnerBundleTransportMismatch(
-  output: string,
-  exitCode: number | null,
-): boolean {
+export function isRunnerBundleTransportMismatch(output: string, exitCode: number | null): boolean {
   if (/cloned an empty repository/i.test(output)) return true;
   if (exitCode === 3 || exitCode === 128) {
     return /\[validate\] FATAL:|could not fetch .* into the mirror|carries no refs\/repoos\/candidate/i.test(
@@ -2036,9 +2033,7 @@ export class RemoteValidationRunner implements RemoteValidator {
         ) {
           this.validateScriptMirrorByIp.set(host.ip, false);
           incrementalUpload = false;
-          emit(
-            "[bundle transport mismatch — retrying once with full HEAD bundle for this host]\n",
-          );
+          emit("[bundle transport mismatch — retrying once with full HEAD bundle for this host]\n");
           continue;
         }
         break;
@@ -3833,9 +3828,7 @@ export class TailscaleRunner implements RemoteValidator {
         ) {
           this.pool.markValidateScriptLegacy(host.ip);
           incrementalUpload = false;
-          emit(
-            "[bundle transport mismatch — retrying once with full HEAD bundle for this host]\n",
-          );
+          emit("[bundle transport mismatch — retrying once with full HEAD bundle for this host]\n");
           continue;
         }
         break;

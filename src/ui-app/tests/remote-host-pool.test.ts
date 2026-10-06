@@ -1065,10 +1065,10 @@ describe("failover to another host (#0632)", () => {
       runRemote: vi.fn(async (_host, cmd): Promise<RemoteExecResult> => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
           return {
-          code: 0,
-          output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
-          timedOut: false,
-        };
+            code: 0,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            timedOut: false,
+          };
         }
         if (cmd.includes("__HOST_LOCK__")) {
           return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
