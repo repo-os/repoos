@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-06T03:42:59.088Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
 id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
@@ -50,3 +52,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T03:26:34Z · body
 - 2026-10-06T03:34:19Z · body
 - 2026-10-06T03:42:55Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
+
