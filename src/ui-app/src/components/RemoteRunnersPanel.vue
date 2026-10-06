@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { ArrowDown, ArrowUp, RefreshCw } from "lucide-vue-next";
+import { ArrowDown, ArrowUp, Check, RefreshCw } from "lucide-vue-next";
 import { api } from "../api";
 import { useConfigStore } from "../stores/config";
+import { useRepoStore } from "../stores/repo";
 import Button from "./ui/button.vue";
-import type { RemoteValidationStatusView } from "../types";
+import type { RemoteHostStatusView, RemoteValidationStatusView } from "../types";
 
 /**
  * The Remote runners tab (#0564): each configured host with its health, the
@@ -15,7 +16,11 @@ import type { RemoteValidationStatusView } from "../types";
 
 const status = ref<RemoteValidationStatusView | null>(null);
 const config = useConfigStore();
+const repo = useRepoStore();
 const loading = ref(true);
+const refreshing = ref(false);
+const lastRefreshedAt = ref<number | null>(null);
+const refreshOk = ref(false);
 const error = ref("");
 const orderSaving = ref(false);
 const orderMessage = ref("");
@@ -24,17 +29,31 @@ let pollTimer: ReturnType<typeof setInterval> | undefined;
 const nowTick = ref(Date.now());
 let tickTimer: ReturnType<typeof setInterval> | undefined;
 
-async function load(): Promise<void> {
+async function load(opts?: { manual?: boolean }): Promise<void> {
+  const manual = opts?.manual === true;
+  if (manual) refreshing.value = true;
   try {
     status.value = await api<RemoteValidationStatusView>(
       "/api/remote-validation/status?includeStats=1",
     );
     error.value = "";
+    lastRefreshedAt.value = Date.now();
+    refreshOk.value = true;
+    if (manual) repo.pushToast("Runner status updated", "success");
   } catch (e) {
-    error.value = e instanceof Error ? e.message : "Could not load runner status.";
+    const message = e instanceof Error ? e.message : "Could not load runner status.";
+    error.value = message;
+    refreshOk.value = false;
+    if (manual) repo.pushToast(message, "error");
   } finally {
     loading.value = false;
+    if (manual) refreshing.value = false;
   }
+}
+
+async function refreshManual(): Promise<void> {
+  if (refreshing.value) return;
+  await load({ manual: true });
 }
 
 onMounted(() => {
@@ -117,6 +136,20 @@ function elapsedSince(startedAt: string): string {
   return fmtDuration(Math.max(0, nowTick.value - t));
 }
 
+const lastRefreshedLabel = computed(() => {
+  if (lastRefreshedAt.value == null) return "";
+  const secs = Math.max(0, Math.round((nowTick.value - lastRefreshedAt.value) / 1000));
+  if (secs < 8) return "just now";
+  if (secs < 60) return `${secs}s ago`;
+  return `${Math.floor(secs / 60)}m ago`;
+});
+
+function runLabel(r: NonNullable<RemoteHostStatusView["activeRuns"]>[number]): string {
+  if (r.label) return r.label;
+  if (/^\d+$/.test(r.taskId)) return `#${r.taskId}`;
+  return r.taskId;
+}
+
 function fmtAgo(iso: string): string {
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return "";
@@ -130,11 +163,21 @@ function fmtAgo(iso: string): string {
 <template>
   <div class="rr-panel">
     <div class="rr-toolbar">
-      <Button variant="ghost" size="sm" :disabled="loading" @click="load">
-        <RefreshCw class="size-3.5" :class="{ spin: loading }" />
+      <Button
+        variant="ghost"
+        size="sm"
+        :disabled="refreshing"
+        :aria-busy="refreshing"
+        @click="refreshManual"
+      >
+        <RefreshCw class="size-3.5" :class="{ spin: refreshing }" aria-hidden="true" />
         Refresh
       </Button>
-      <span class="rr-note">runner status 3s · server stats 15s</span>
+      <span v-if="refreshOk && lastRefreshedLabel" class="rr-refresh-ok" role="status">
+        <Check class="size-3.5" aria-hidden="true" />
+        Updated {{ lastRefreshedLabel }}
+      </span>
+      <span class="rr-note">auto 3s · host locks 3s · server stats 15s</span>
     </div>
     <p v-if="hosts.length" class="rr-tie-note">
       Jobs go to the host with the fewest active runs. Hosts with equal load are tried top to
@@ -168,7 +211,7 @@ function fmtAgo(iso: string): string {
       :key="h.host"
       class="rr-host"
       :data-health="health(h).cls"
-      :data-running="(h.activeRuns ?? []).length > 0 || undefined"
+      :data-running="h.inFlight > 0 || (h.lockWaiters ?? []).length > 0 || undefined"
     >
       <div class="rr-host-head">
         <span class="rr-host-name mono">{{ h.user }}@{{ h.host }}</span>
@@ -217,7 +260,9 @@ function fmtAgo(iso: string): string {
                 :key="`${r.taskId}-${r.startedAt}`"
                 class="rr-active-run"
               >
-                <span class="mono">#{{ r.taskId }}</span> · {{ elapsedSince(r.startedAt) }}
+                <span class="mono">{{ runLabel(r) }}</span>
+                <span v-if="r.phase" class="rr-dim"> · {{ r.phase }}</span>
+                · {{ elapsedSince(r.startedAt) }}
               </span>
             </template>
             <span v-else class="rr-dim">idle</span>
@@ -226,12 +271,28 @@ function fmtAgo(iso: string): string {
         <div>
           <dt>Queue</dt>
           <dd class="rr-wrap">
-            <template v-if="h.queued > 0">
-              <template v-if="(h.queuedTasks ?? []).length">
+            <template v-if="h.queued > 0 || (h.lockWaiters ?? []).length">
+              <template v-if="(h.lockWaiters ?? []).length">
+                <span
+                  v-for="w in h.lockWaiters"
+                  :key="`${w.taskId}-${w.queuePosition ?? 0}`"
+                  class="rr-active-run"
+                >
+                  <span class="mono">{{ w.label }}</span>
+                  <span class="rr-dim"> · {{ w.phase }}</span>
+                  <span v-if="w.queuePosition != null" class="rr-dim">
+                    · queue #{{ w.queuePosition }}</span
+                  >
+                  · {{ fmtDuration(w.ageSecs * 1000) }} waiting
+                </span>
+              </template>
+              <template v-else-if="(h.queuedTasks ?? []).length">
                 next: <span class="mono">#{{ h.queuedTasks![0] }}</span>
               </template>
               <span v-if="h.queued > 1" class="rr-dim"> +{{ h.queued - 1 }} behind</span>
-              <span v-else-if="(h.queuedTasks ?? []).length === 0" class="rr-dim"
+              <span
+                v-else-if="!(h.lockWaiters ?? []).length && !(h.queuedTasks ?? []).length"
+                class="rr-dim"
                 >{{ h.queued }} queued</span
               >
             </template>
@@ -325,6 +386,13 @@ function fmtAgo(iso: string): string {
 .rr-note {
   font-size: 11.5px;
   color: var(--txt-dim);
+}
+.rr-refresh-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--green);
 }
 .rr-tie-note,
 .rr-config-note,

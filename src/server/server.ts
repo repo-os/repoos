@@ -2810,6 +2810,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       /* no warm runner */
     }
     const sshKeyEnv = process.env.REPOOS_REMOTE_SSH_KEY;
+    remoteValidator?.refreshHostLocks?.();
     if (new URL(req.url ?? "/", "http://localhost").searchParams.has("includeStats")) {
       remoteValidator?.refreshHostStats?.();
     }
