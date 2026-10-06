@@ -3,6 +3,9 @@ id: "0445"
 title: Show configured distribution channels on Releases
 type: feature
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p1
 area: release
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/show-configured-distribution-channels-on
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-19T10:56:32Z"
-updated_at: "2026-09-19T12:40:27Z"
+updated_at: "2026-10-06T23:48:12Z"
 ---
 ## Activity
 
@@ -108,3 +111,4 @@ claiming a channel is current when its version cannot be verified.
 - 2026-09-19T11:18:54Z · status ready→active, branch
 - 2026-09-19T11:50:18Z · status active→review
 - 2026-09-19T12:40:27Z · status review→done, release:success
+- 2026-10-06T23:48:12Z · needs_input
