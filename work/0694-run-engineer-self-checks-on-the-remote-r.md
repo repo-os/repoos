@@ -12,7 +12,7 @@ branch: feat/run-engineer-self-checks-on-the-remote-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:59:26Z"
-updated_at: "2026-10-06T00:55:36Z"
+updated_at: "2026-10-06T01:10:11Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -52,3 +52,23 @@ Also in scope, found 2026-10-06 from the Checks > Runs tab: (1) all 191 phase=cl
 - 2026-10-06T00:52:57Z · status active→review
 - 2026-10-06T00:54:05Z · status review→active
 - 2026-10-06T00:55:36Z · note: Load before/after (3 parallel engineers): deferred until post-merge — measure on owner hardware with remote pool enabled; record uptime/load in a follow-up note.
+- 2026-10-06T01:10:11Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     347|       const returned = await api(server, "PATCH", `/api/tasks/${task.i…
+    348|       expect(returned.status).toBe(200);
+       |                               ^
+    349|       await requestReview(server, task.id, task.absPath);
+    350|       await waitFor(
+ ❯ withServer tests/agent-review.test.ts:279:11
+ ❯ tests/agent-review.test.ts:341:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 406 passed | 1 skipped (408)
+      Tests  1 failed | 4971 passed | 15 skipped (4987)
+   Start at  01:06:09
+   Duration  236.94s (transform 6.20s, setup 1.93s, import 40.04s, tests 223.74s, environment 187.29s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 713ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  01:10:07
+   Duration  2.54s (transform 1.05s, setup 13ms, import 1.30s, tests 713ms, environment 440ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
