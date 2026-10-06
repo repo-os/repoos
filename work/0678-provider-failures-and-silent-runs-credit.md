@@ -2,7 +2,7 @@
 id: "0678"
 title: "Provider failures and silent runs: credit/402 alerts, degenerate-output detection, sleep-aware watchdog"
 type: feature
-status: review
+status: active
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -70,3 +70,4 @@ error: script "test" exited with code 1
 - 2026-10-06T03:13:03Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202); · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-06T03:13:04Z · status review→active
 - 2026-10-06T03:18:16Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202); · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T03:18:16Z · status review→active
