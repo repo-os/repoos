@@ -15,7 +15,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T07:37:40Z"
+updated_at: "2026-10-06T07:38:15Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 7
@@ -137,3 +137,23 @@ src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahea
 - 2026-10-06T07:36:39Z · model_override
 - 2026-10-06T07:37:40Z · status active→review
 - 2026-10-06T07:37:40Z · status review→active
+- 2026-10-06T07:38:15Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [540.00ms]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+src/server/remote-validation.ts(2251,9): error TS2322: Type '((info: { ahead: number; host: string; }) => void) | undefined' is not assignable to type '((ahead: number) => void) | undefined'.
+  Type '(info: { ahead: number; host: string; }) => void' is not assignable to type '(ahead: number) => void'.
+    Types of parameters 'info' and 'ahead' are incompatible.
+      Type 'number' is not assignable to type '{ ahead: number; host: string; }'.
+src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahead: number; host: string; }' is not assignable to parameter of type 'number'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
