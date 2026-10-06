@@ -2,7 +2,7 @@
 id: "0683"
 title: "Remote validation: probe hosts at startup, say when a job fell back to local, document the runner image"
 type: bug
-status: review
+status: active
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -64,3 +64,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-06T05:06:25Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-06T05:06:27Z · status review→active
 - 2026-10-06T05:11:59Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-06T05:11:59Z · status review→active
