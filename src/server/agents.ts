@@ -43,6 +43,12 @@ import {
   defaultMaxConcurrentAgents,
   loadConfig,
 } from "../core/config.js";
+import { isProviderFailureReason } from "../core/attention.js";
+import {
+  creditIdleMs,
+  DegenerateOutputTracker,
+  scrapeProviderFailure,
+} from "../core/agent-run-health.js";
 import { notifyAttentionAfterSession, notifyAttentionAgentStalled } from "./attention-notify.js";
 import { parseTaskAreas } from "../core/areas.js";
 import { commitTaskFile, fileCommittedClean, currentBranch } from "../core/git.js";
@@ -285,6 +291,18 @@ interface Entry {
    * reap helper subprocesses without touching the rest of the machine (#0675).
    */
   processGroupLeader?: number;
+  /**
+   * Turn ended by RepoOS health checks (#0678) — controls cleanup escalation
+   * and one-shot degenerate retries.
+   */
+  abortKind?: "provider-failure" | "degenerate-output" | "degenerate-retry";
+  /** When `abortKind` is `degenerate-retry`, respawn after cleanup. */
+  degenerateRetry?: {
+    task: Task;
+    agent: Agent;
+    branch: string;
+    cwd: string;
+  };
 }
 
 /**
@@ -441,6 +459,14 @@ interface Session {
    * arriving after a stall clears it exactly once too.
    */
   stalledEmitted: boolean;
+  /** Awake-time silence accumulated across stall ticks (#0678). */
+  silentAwakeMs: number;
+  lastStallTickMs: number;
+  degenerate: DegenerateOutputTracker;
+  /** True after one automatic degenerate-output retry this turn episode. */
+  degenerateRetried: boolean;
+  /** Provider failure text captured from the stream before exit. */
+  providerFailureDetail?: string;
 }
 
 const now = (): string => new Date().toISOString();
@@ -4834,6 +4860,7 @@ export class AgentRunner {
    */
   apiUrl?: string;
   private readonly stallTimeoutMs: number;
+  private readonly stallCheckIntervalMs: number;
   private readonly stallTimer: ReturnType<typeof setInterval>;
 
   private readonly authorizedHandoffs = new Map<string, AgentHandoffRequest>();
@@ -4922,10 +4949,10 @@ export class AgentRunner {
     this.retentionCount = opts.retentionCount ?? SESSION_RETENTION_COUNT;
     this.clock = opts.now ?? (() => new Date());
     this.stallTimeoutMs = opts.stallTimeoutMs ?? DEFAULT_STALL_TIMEOUT_MS;
-    const checkMs =
+    this.stallCheckIntervalMs =
       opts.stallCheckIntervalMs ??
       Math.max(20, Math.min(5000, Math.floor(this.stallTimeoutMs / 3)));
-    this.stallTimer = setInterval(() => this.checkStalls(), checkMs);
+    this.stallTimer = setInterval(() => this.checkStalls(), this.stallCheckIntervalMs);
     this.stallTimer.unref();
     this.loadHotSessions();
     this.pruneSessions();
@@ -5574,6 +5601,10 @@ export class AgentRunner {
       model: agent.model,
       accumulatedMs: 0,
       stalledEmitted: false,
+      silentAwakeMs: 0,
+      lastStallTickMs: Date.now(),
+      degenerate: new DegenerateOutputTracker(),
+      degenerateRetried: false,
     };
     this.sessions.set(sessionId, session);
     // Persist immediately so the opening turn survives a reload even if the
@@ -6059,6 +6090,9 @@ export class AgentRunner {
       session.permissionDenial = undefined;
       // Per-turn: a cut payload from a PREVIOUS turn must not fail this one.
       session.truncation = undefined;
+      session.silentAwakeMs = 0;
+      session.lastStallTickMs = Date.now();
+      session.degenerate?.reset();
     }
     // Persist the durable registry entry so a restart can re-attach (0214).
     if (proc.pid) {
@@ -6208,7 +6242,8 @@ export class AgentRunner {
       entry = this.applySignals(taskId, raw, entry, session);
     }
     this.recordEntry(taskId, session, stream, entry);
-    this.lineTouched(taskId, session, raw);
+    const hadTool = "type" in entry && entry.type === "tool";
+    this.lineTouched(taskId, session, raw, hadTool);
   }
 
   /**
@@ -6288,12 +6323,120 @@ export class AgentRunner {
    * a stall warning immediately — the periodic check only ever needs to raise
    * the flag, never lower it.
    */
-  private lineTouched(taskId: string, session: Session, raw: string): void {
+  private lineTouched(taskId: string, session: Session, raw: string, hadToolCall = false): void {
     const usageChanged = this.applyUsage(taskId, session, raw);
     session.lastOutputAt = now();
+    session.silentAwakeMs = 0;
     const stallCleared = session.stalledEmitted;
     session.stalledEmitted = false;
     if (usageChanged || stallCleared) this.emitStats(taskId);
+    this.checkOutputHealth(taskId, session, raw, hadToolCall);
+  }
+
+  private checkOutputHealth(
+    taskId: string,
+    session: Session,
+    raw: string,
+    hadToolCall: boolean,
+  ): void {
+    const entry = this.entries.get(taskId);
+    if (!entry || entry.review) return;
+    const provider = scrapeProviderFailure(raw);
+    if (provider) {
+      this.abortForProviderFailure(taskId, session, provider);
+      return;
+    }
+    const verdict = session.degenerate?.observe(raw, hadToolCall) ?? "ok";
+    if (verdict === "degenerate") void this.handleDegenerateOutput(taskId, session);
+  }
+
+  private abortForProviderFailure(taskId: string, session: Session, detail: string): void {
+    const entry = this.entries.get(taskId);
+    if (!entry || entry.abortKind) return;
+    session.providerFailureDetail = detail;
+    entry.abortKind = "provider-failure";
+    this.recordEntry(taskId, session, "sys", {
+      type: "sys",
+      d: `✗ Provider error: ${detail}`,
+    });
+    this.killTurnProcess(taskId);
+  }
+
+  private handleDegenerateOutput(taskId: string, session: Session): void {
+    const entry = this.entries.get(taskId);
+    if (!entry || entry.abortKind) return;
+    const task = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
+    const agentName = session.agent;
+    const agents = agentsForConfig(this.config);
+    const agent = agentName ? agents.find((a) => a.name === agentName) : undefined;
+    if (!session.degenerateRetried && task && agent && entry.workdir) {
+      session.degenerateRetried = true;
+      entry.abortKind = "degenerate-retry";
+      entry.degenerateRetry = {
+        task,
+        agent,
+        branch: entry.branch,
+        cwd: entry.workdir,
+      };
+      session.degenerate?.reset();
+      this.recordEntry(taskId, session, "sys", {
+        type: "sys",
+        d: "↻ Degenerate output detected — stopping and retrying this turn once.",
+      });
+      this.killTurnProcess(taskId);
+      return;
+    }
+    entry.abortKind = "degenerate-output";
+    this.recordEntry(taskId, session, "sys", {
+      type: "sys",
+      d: "✗ Degenerate output loop detected — agent stopped.",
+    });
+    this.killTurnProcess(taskId);
+  }
+
+  /** End the turn process without marking a deliberate human/intentional stop. */
+  private killTurnProcess(taskId: string): void {
+    const entry = this.entries.get(taskId);
+    if (!entry) return;
+    const cancelSignal = engineCancelSignal(this.sessions.get(taskId)?.engine);
+    const groupLeader = entry.processGroupLeader ?? entry.proc?.pid ?? entry.adoptedPid;
+    for (const tailer of entry.tailers ?? []) {
+      tailer.drain();
+      tailer.flush();
+      clearInterval(tailer.timer);
+    }
+    entry.tailers = undefined;
+    if (entry.proc) {
+      if (groupLeader) signalProcessGroup(groupLeader, cancelSignal);
+      else {
+        try {
+          entry.proc.kill(cancelSignal);
+        } catch {
+          /* gone */
+        }
+      }
+      entry.killTimer = setTimeout(() => {
+        if (groupLeader) signalProcessGroup(groupLeader, "SIGKILL");
+        else {
+          try {
+            entry.proc?.kill("SIGKILL");
+          } catch {
+            /* gone */
+          }
+        }
+      }, 3000);
+      return;
+    }
+    if (entry.adoptedPid) {
+      if (groupLeader) signalProcessGroup(groupLeader, cancelSignal);
+      else {
+        try {
+          process.kill(entry.adoptedPid, cancelSignal);
+        } catch {
+          /* gone */
+        }
+      }
+    }
   }
 
   /**
@@ -6929,8 +7072,7 @@ export class AgentRunner {
     const session = this.sessions.get(taskId);
     const running = this.entries.has(taskId);
     const lastOutputAt = session?.lastOutputAt ?? null;
-    const stalled =
-      running && !!lastOutputAt && Date.now() - Date.parse(lastOutputAt) >= this.stallTimeoutMs;
+    const stalled = running && !!session && (session.silentAwakeMs ?? 0) >= this.stallTimeoutMs;
     return {
       accumulatedMs: session?.accumulatedMs ?? 0,
       turnStartedAt: running ? (session?.turnStartedAt ?? null) : null,
@@ -6968,7 +7110,15 @@ export class AgentRunner {
         }
       }
       const session = this.sessions.get(taskId);
-      if (!session || session.stalledEmitted) continue;
+      if (!session) continue;
+      const wallNow = Date.now();
+      const delta = wallNow - (session.lastStallTickMs || wallNow);
+      session.lastStallTickMs = wallNow;
+      if (this.entries.has(taskId)) {
+        session.silentAwakeMs =
+          (session.silentAwakeMs ?? 0) + creditIdleMs(delta, this.stallCheckIntervalMs);
+      }
+      if (session.stalledEmitted) continue;
       if (this.snapshotStats(taskId).stalled) {
         session.stalledEmitted = true;
         this.emitStats(taskId);
@@ -7165,6 +7315,11 @@ export class AgentRunner {
       // Use session creation time (first time this session started), not current time
       const startedAt = session.createdAt ?? endedAt;
 
+      const errorReason =
+        status === "errored"
+          ? (session.providerFailureDetail ?? this.lastFailureLine(session)).trim().slice(0, 500) ||
+            null
+          : null;
       this.db.upsertSession({
         sessionId: finalSessionId,
         sessionType,
@@ -7185,6 +7340,14 @@ export class AgentRunner {
         costSource,
         status,
         lastActivityAt: session.lastOutputAt ?? endedAt,
+        errorReason,
+      });
+      notifyAttentionAfterSession(this.config, {
+        sessionId: finalSessionId,
+        taskId: taskId || null,
+        status,
+        errorReason,
+        endedAt,
       });
     } catch {
       // Database recording is best-effort and must never crash the server.
@@ -7373,14 +7536,38 @@ export class AgentRunner {
     // deliberate human pause, a stop the server or a human asked for (the task
     // left `active`, Stop work, an interrupted chat), and a handoff-requested
     // turn — which finalizes below instead.
+    const abortKind = entry.abortKind;
+    const degenerateRetry = entry.degenerateRetry;
     if (
-      !exitedCleanly &&
       !this.isPaused(taskId) &&
       !entry.intentionalStop &&
       !entry.handoffRequested &&
       taskForHandoff
     ) {
-      this.escalateFailedExit(taskId, taskForHandoff, session);
+      if (abortKind === "degenerate-retry" && degenerateRetry) {
+        const { task, agent, branch, cwd } = degenerateRetry;
+        queueMicrotask(() => {
+          void this.start(task, branch, agent, { cwd });
+        });
+      } else if (abortKind === "provider-failure") {
+        this.escalateFailedExit(
+          taskId,
+          taskForHandoff,
+          session,
+          session?.providerFailureDetail,
+          "provider-failure",
+        );
+      } else if (abortKind === "degenerate-output") {
+        this.escalateFailedExit(
+          taskId,
+          taskForHandoff,
+          session,
+          "Degenerate output loop detected after one automatic retry.",
+          "degenerate-output",
+        );
+      } else if (!exitedCleanly) {
+        this.escalateFailedExit(taskId, taskForHandoff, session);
+      }
     }
     if (entry.handoffRequested) {
       if (taskForHandoff && entry.branch && entry.workdir) {
@@ -7629,7 +7816,7 @@ export class AgentRunner {
   }
 
   private emptySession(): Session {
-    return {
+    const session: Session = {
       lines: [],
       pending: "",
       bytes: 0,
@@ -7637,7 +7824,12 @@ export class AgentRunner {
       accumulatedMs: 0,
       createdAt: now(),
       stalledEmitted: false,
+      silentAwakeMs: 0,
+      lastStallTickMs: Date.now(),
+      degenerate: new DegenerateOutputTracker(),
+      degenerateRetried: false,
     };
+    return session;
   }
 
   private sessionFile(taskId: string): string | null {
@@ -7701,6 +7893,10 @@ export class AgentRunner {
       model: saved.model,
       accumulatedMs: 0,
       stalledEmitted: false,
+      silentAwakeMs: 0,
+      lastStallTickMs: Date.now(),
+      degenerate: new DegenerateOutputTracker(),
+      degenerateRetried: false,
     };
     while (session.bytes > OUTPUT_CAP_BYTES) {
       const dropped = session.lines.shift();
@@ -7916,6 +8112,7 @@ export class AgentRunner {
     task: Task,
     session: Session | undefined,
     detailOverride?: string,
+    needsInputReason = "dev-error",
   ): void {
     try {
       const current = parseTask({
@@ -7932,32 +8129,37 @@ export class AgentRunner {
           (typeof errCount === "number" && Number.isFinite(errCount) ? errCount : 0) + 1,
       };
       const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
-      const detail =
+      let detail =
         detailOverride ??
         (this.hasPendingHandoff(taskId) || handoffFinalizationWasInterrupted(session)
           ? HANDOFF_FINALIZATION_INTERRUPTED_DETAIL
           : this.lastFailureLine(session));
+      let reason = needsInputReason;
+      if (reason === "dev-error" && isProviderFailureReason(detail)) {
+        reason = "provider-failure";
+      }
       if (current.needsInput) {
         // A repeat error before the human cleared the flag — still refresh
         // the detail so the banner shows the LATEST failure, not whichever
         // one happened to trip needsInput first.
-        if (current.needsInputReason === "dev-error") {
+        if (current.needsInputReason === reason || current.needsInputReason === "dev-error") {
           current.needsInputDetail = detail;
+          current.needsInputReason = reason;
           writeFileSync(task.absPath, serializeTask(current));
           // The latest failure may differ from the one the existing tl;dr
           // describes — the pass dedupes on the (reason, detail) fingerprint.
-          this.onDiagnosableFailure?.(taskId, "dev-error");
+          this.onDiagnosableFailure?.(taskId, reason);
           return;
         }
         writeFileSync(task.absPath, serializeTask(current));
         return;
       }
       current.needsInput = true;
-      current.needsInputReason = "dev-error";
+      current.needsInputReason = reason;
       current.needsInputDetail = detail;
       recordChange(current, `agent exited with an error${engine} · ${detail}`);
       writeFileSync(task.absPath, serializeTask(current));
-      this.onDiagnosableFailure?.(taskId, "dev-error");
+      this.onDiagnosableFailure?.(taskId, reason);
     } catch (err) {
       console.error(
         `[repoos] failed to escalate failed exit for #${taskId}: ${(err as Error).message}`,
