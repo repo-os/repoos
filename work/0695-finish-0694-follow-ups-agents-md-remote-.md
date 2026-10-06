@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-06T05:16:52Z"
-review_passes: 2
 id: "0695"
 title: "Finish #0694 follow-ups: AGENTS.md remote self-check wording, task attribution for cli Runs rows, WIP-checkpoint tests, load measurement"
 type: chore
@@ -17,6 +15,8 @@ branch: feat/finish-0694-follow-ups-agents-md-remote-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T01:38:21Z"
+updated_at: "2026-10-06T05:17:14Z"
+review_passes: 2
 last_handoff_failure_fingerprint: "check|remote validation unavailable: no usable remote host for any host — bee: prerequisite check failed (exit 255): ssh: connect to host bee port 22: Operation timed out; thinkpad: prerequisite check failed (exit 255): ssh: connect to host thinkpad port 22: Operation timed out; mini: prerequisite check failed (exit 255): ssh: connect to host 100.126.187.126 port 22: Operation timed out — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 last_handoff_failure_sha: "014e214e820f4a2f41e790351361589f239df3bf"
 review_rounds: 1
