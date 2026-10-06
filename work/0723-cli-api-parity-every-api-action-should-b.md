@@ -2,7 +2,7 @@
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -102,4 +102,4 @@ error: script "build" exited with code 127
 - 2026-10-06T18:03:13Z · body
 - 2026-10-06T18:04:02Z · body
 - 2026-10-06T18:07:19Z · body
-- 2026-10-06T18:17:28Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-06T18:17:28Z · status active→review
