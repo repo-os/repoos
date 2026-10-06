@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-10-06T15:55:20Z"
 review_passes: 1
 id: "0698"
@@ -83,4 +84,5 @@ error: script "test" exited with code 1
 - 2026-10-06T15:54:31Z · status active→review
 - 2026-10-06T15:54:31Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T15:55:20Z · note: review pass 1: good to go
+
 
