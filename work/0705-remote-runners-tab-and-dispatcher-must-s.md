@@ -12,7 +12,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T04:26:19Z"
+updated_at: "2026-10-06T06:19:56Z"
 ---
 ## Problem
 
@@ -59,3 +59,23 @@ Task #0706 (filed by the #0695 reviewer: standalone self-check prefers the least
 - 2026-10-06T04:07:31Z · status ready→active, branch
 - 2026-10-06T04:07:54Z · body: section Scope addition: fold in #0706
 - 2026-10-06T04:26:19Z · body: section Shots
+- 2026-10-06T06:19:56Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     651|       // true per-pass counter used by the D# · R# badge.
+    652|       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_pass…
+       |                                                  ^
+    653|     });
+    654|   }, 90_000);
+ ❯ withServer tests/agent-review.test.ts:279:11
+ ❯ tests/agent-review.test.ts:625:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 414 passed | 1 skipped (416)
+      Tests  1 failed | 5022 passed | 15 skipped (5038)
+   Start at  06:15:46
+   Duration  241.30s (transform 6.24s, setup 2.00s, import 41.19s, tests 225.99s, environment 191.72s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 728ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  06:19:48
+   Duration  2.62s (transform 1.08s, setup 13ms, import 1.36s, tests 728ms, environment 444ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
