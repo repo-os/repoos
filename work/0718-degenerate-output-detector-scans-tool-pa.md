@@ -12,7 +12,8 @@ branch: feat/degenerate-output-detector-scans-tool-pa
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T11:48:55Z"
-updated_at: "2026-10-06T14:13:13Z"
+updated_at: "2026-10-06T14:14:34Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -41,3 +42,5 @@ Read #0709 and its fix (scrapeProviderFailure) first: same approach, structured 
 - 2026-10-06T14:04:02Z · cli_override, model_override
 - 2026-10-06T14:04:04Z · status inbox→ready
 - 2026-10-06T14:04:06Z · status ready→active, branch
+- 2026-10-06T14:14:21Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
+- 2026-10-06T14:14:34Z · needs_input
