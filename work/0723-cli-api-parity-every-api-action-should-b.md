@@ -2,7 +2,7 @@
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
 type: feature
-status: review
+status: active
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -72,3 +72,4 @@ error: script "test" exited with code 1
 - 2026-10-06T17:32:26Z · status review→active
 - 2026-10-06T17:42:25Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-06T17:43:28Z · status active→review
+- 2026-10-06T17:43:28Z · status review→active
