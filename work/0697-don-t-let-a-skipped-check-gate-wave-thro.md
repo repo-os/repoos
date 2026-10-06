@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T03:15:44Z"
-updated_at: "2026-10-06T04:37:19Z"
+updated_at: "2026-10-06T04:37:21Z"
 ---
 ## Problem
 
@@ -38,3 +40,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 
 - 2026-10-06T03:15:44Z · created · unknown
 - 2026-10-06T04:37:19Z · status inbox→ready
+- 2026-10-06T04:37:21Z · cli_override, model_override
