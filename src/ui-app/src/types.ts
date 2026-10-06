@@ -862,6 +862,9 @@ export interface RemoteHostStatusView {
     diskFreeBytes?: number;
     detail?: string;
   };
+  /** Set after the prerequisite probe (#0725). */
+  validateScriptMirrorSupported?: boolean;
+  validateScriptInstallCommand?: string;
 }
 
 /** The `/api/remote-validation/status` payload (#0521/#0564). */

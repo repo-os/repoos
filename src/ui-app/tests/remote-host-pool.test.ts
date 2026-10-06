@@ -29,6 +29,7 @@ import {
   HOST_LOCK_STALE_MINUTES,
   HOST_LOCK_TIMEOUT_EXIT,
   PREREQ_OK_TOKEN,
+  RUNNER_SCRIPT_MIRROR_TOKEN,
   HostsUnavailableError,
   RemoteValidationRunner,
   TailscaleHostPool,
@@ -429,7 +430,11 @@ function poolFixture(opts: {
             timedOut: false,
           };
         }
-        return { code: 0, output: `prereq ok ${PREREQ_OK_TOKEN}`, timedOut: false };
+        return {
+          code: 0,
+          output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+          timedOut: false,
+        };
       }
       if (opts.timeoutRunOn?.includes(host.ip)) {
         (cmds[host.ip] ??= []).push(cmd);
@@ -1059,7 +1064,11 @@ describe("failover to another host (#0632)", () => {
       probeTcp: vi.fn(async () => true),
       runRemote: vi.fn(async (_host, cmd): Promise<RemoteExecResult> => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
-          return { code: 0, output: `prereq ok ${PREREQ_OK_TOKEN}`, timedOut: false };
+          return {
+          code: 0,
+          output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+          timedOut: false,
+        };
         }
         if (cmd.includes("__HOST_LOCK__")) {
           return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
@@ -1392,7 +1401,11 @@ describe("outer SSH timeout covers the lock wait, not just the run (#0521 review
     const runRemote = vi.fn(
       async (_host: unknown, cmd: string, _onChunk?: unknown, _timeoutMs?: number) => {
         if (cmd.includes(PREREQ_OK_TOKEN))
-          return { code: 0, output: PREREQ_OK_TOKEN, timedOut: false };
+          return {
+            code: 0,
+            output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            timedOut: false,
+          };
         if (cmd.includes("__HOST_LOCK__"))
           return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
         return { code: 0, output: "ok", timedOut: false };
@@ -1753,6 +1766,7 @@ describe("per-host prerequisite probe", () => {
     expect(cmd).toContain("/opt/repoos/validate.sh");
     expect(cmd).toContain("grep -qF '${3'");
     expect(cmd).toContain(PREREQ_OK_TOKEN);
+    expect(cmd).toContain(RUNNER_SCRIPT_MIRROR_TOKEN);
     expect(cmd).not.toContain("bun not found");
   });
 
