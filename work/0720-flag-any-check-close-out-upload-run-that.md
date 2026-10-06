@@ -2,7 +2,7 @@
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -80,4 +80,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-06T17:22:06Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T17:23:25Z · note: review pass 1: good to go
 - 2026-10-06T17:30:53Z · status review→active
-- 2026-10-06T17:37:12Z · note: shots: skipped — 2 handoff shots already captured during finalization (#0680)
+- 2026-10-06T17:37:12Z · status active→review
