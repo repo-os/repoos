@@ -83,6 +83,7 @@ import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { readBuildMeta } from "../core/build.js";
+import { injectBuildHashIntoUiIndex } from "../core/ui-index.js";
 import { createRepoOS } from "../core/repoos.js";
 import { ensureInputNumbers } from "../core/input.js";
 import { ensureStoryNumbers } from "../core/story-definition-files.js";
@@ -1140,7 +1141,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // ephemeral port is requested (nothing stable to hand off).
   const loadedHash = readBuildHash(config.root);
   const readUiIndex = (indexPath: string): string =>
-    readFileSync(indexPath, "utf8").replaceAll("__REPOOS_BUILD_HASH__", loadedHash || "unknown");
+    injectBuildHashIntoUiIndex(readFileSync(indexPath, "utf8"), loadedHash ?? "");
   const reloadEnabled =
     !isDevBuild() && process.env.REPOOS_PREVIEW_CHILD !== "1" && opts.port !== 0;
   let reload: ReloadManager | null = null;
