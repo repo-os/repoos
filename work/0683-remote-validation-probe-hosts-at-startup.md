@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T16:58:48Z"
-updated_at: "2026-10-06T01:49:28Z"
+updated_at: "2026-10-06T01:49:29Z"
 ---
 ## Problem
 
@@ -46,3 +48,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T17:32:25Z · body: section Docs follow-up
 - 2026-10-05T17:33:07Z · note: Owner update (2026-10-06): the 'bee' host had an expired login (Tailscale re-auth needed); the owner re-logged in. That is one concrete reason a host reads as unhealthy/unreachable, so the probe and the fall-back notice should name it ('host unreachable: Tailscale login expired?') instead of just 'not healthy'. The owner will retry remote validation on the next project run; the unexplained part (thinkpad and mini passed the prerequisite test yet no close-out dispatched remotely) is still open and still unverified.
 - 2026-10-06T01:49:28Z · status inbox→ready
+- 2026-10-06T01:49:29Z · cli_override, model_override
