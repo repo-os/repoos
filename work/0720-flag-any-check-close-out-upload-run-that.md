@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-06T17:38:57Z"
+review_passes: 2
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
@@ -12,9 +14,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-06T17:38:57Z"
 merge_conflict_retry_count: 1
-review_passes: 1
 dev_error_count: 2
 ---
 ## Problem
@@ -84,3 +84,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-06T17:37:13Z · note: shots: skipped — 2 handoff shots already captured during finalization (#0680)
 - 2026-10-06T17:38:10Z · body
 - 2026-10-06T17:38:57Z · note: review pass 2: needs some work
+
