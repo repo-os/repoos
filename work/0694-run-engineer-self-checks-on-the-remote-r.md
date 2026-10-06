@@ -2,7 +2,7 @@
 id: "0694"
 title: Run engineer self-checks on the remote runners (not the laptop) and reuse the green remote result at handoff
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/run-engineer-self-checks-on-the-remote-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:59:26Z"
-updated_at: "2026-10-06T01:16:01Z"
+updated_at: "2026-10-06T01:21:25Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -73,3 +73,4 @@ Also in scope, found 2026-10-06 from the Checks > Runs tab: (1) all 191 phase=cl
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-06T01:16:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-06T01:21:25Z · status active→review
