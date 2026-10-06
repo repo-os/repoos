@@ -168,6 +168,65 @@ describe("RemoteValidationRunner", () => {
     await r.dispose();
   });
 
+  it("warns and uses full-suite mode when changed ref does not resolve (#0695)", async () => {
+    const h = fakeHetzner();
+    const chunks: string[] = [];
+    const exec = fakeExec({
+      runRemote: vi.fn(async (_h, _c, onChunk): Promise<RemoteExecResult> => {
+        onChunk("ok\n");
+        return { code: 0, output: "ok\n", timedOut: false };
+      }),
+    });
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+    const res = await r.validate({
+      ...opts(),
+      changedRef: "not-a-real-ref-xyz",
+      onChunk: (c) => chunks.push(c),
+    });
+    expect(res.ok).toBe(true);
+    expect(res.remoteTestScopeRef).toBeNull();
+    const cmd = (exec.runRemote as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
+    expect(cmd).not.toContain("not-a-real-ref-xyz");
+    expect(chunks.join("")).toMatch(/WARNING:.*full suite/i);
+    await r.dispose();
+  });
+
+  it("bundles the changed ref and passes it to validate.sh (#0695)", async () => {
+    const h = fakeHetzner();
+    const exec = fakeExec();
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+    const { execFileSync } = await import("node:child_process");
+    execFileSync("git", ["init", "-q", "-b", "main"], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["config", "user.email", "t@example.com"], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["config", "user.name", "T"], { cwd: root, stdio: "ignore" });
+    writeFileSync(join(root, "f.txt"), "x");
+    execFileSync("git", ["add", "."], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["commit", "-qm", "init"], { cwd: root, stdio: "ignore" });
+    const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+
+    const res = await r.validate({ ...opts(), candidateSha: sha, changedRef: "main" });
+
+    expect(res.ok).toBe(true);
+    expect(exec.bundleRepo).toHaveBeenCalledOnce();
+    const bundleArgs = (exec.bundleRepo as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      string,
+      string[]?,
+    ];
+    expect(bundleArgs[2]?.length).toBeGreaterThan(0);
+    const cmd = (exec.runRemote as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
+    expect(cmd).toContain("main");
+    await r.dispose();
+  });
+
   it("dispose() leaves a VM another process provisioned alone, and deletes one it created itself", async () => {
     // A warm VM recorded by the server process (shared state file).
     mkdirSync(join(root, ".repoos"), { recursive: true });

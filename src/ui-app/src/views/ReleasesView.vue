@@ -72,7 +72,6 @@ interface DistributionChannel {
 }
 
 interface DistributionSummary {
-  ciFailure?: { runUrl: string; failedStep: string | null; jobName: string | null } | null;
   releaseVersion: string | null;
   releaseTag: string | null;
   channels: DistributionChannel[];
@@ -218,7 +217,6 @@ let distributionSeq = 0;
 const distribution = ref<DistributionChannel[]>([]);
 const distributionReleaseVersion = ref<string | null>(null);
 const distributionLoading = ref(false);
-const distributionCiFailure = ref<DistributionSummary["ciFailure"]>(null);
 const copiedCommand = ref("");
 let copyTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -393,12 +391,10 @@ async function loadDistribution(): Promise<void> {
     if (seq !== distributionSeq) return;
     distribution.value = data.channels ?? [];
     distributionReleaseVersion.value = data.releaseVersion ?? null;
-    distributionCiFailure.value = data.ciFailure ?? null;
   } catch {
     if (seq !== distributionSeq) return;
     distribution.value = [];
     distributionReleaseVersion.value = null;
-    distributionCiFailure.value = null;
   } finally {
     if (seq === distributionSeq) distributionLoading.value = false;
   }
@@ -1155,14 +1151,6 @@ onBeforeUnmount(() => {
             <span class="rel-dist-loading-spin" aria-hidden="true"></span>
             Checking distribution channels…
           </div>
-          <p v-if="distributionCiFailure" class="ff-error" role="alert">
-            The release workflow failed<template v-if="distributionCiFailure.failedStep">
-              at “{{ distributionCiFailure.failedStep }}”</template
-            >, so some channels below may not update on their own.
-            <a :href="distributionCiFailure.runUrl" target="_blank" rel="noreferrer"
-              >View the failed run ↗</a
-            >
-          </p>
           <div v-if="distribution.length" class="rel-dist-channels">
             <article v-for="channel in distribution" :key="channel.name" class="rel-channel">
               <header class="rel-channel-head">
