@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-06T17:28:16Z"
+review_passes: 1
 id: "0725"
 title: "P0: remote validation breaks on hosts with the old validate.sh since #0717: new bundle has no HEAD ref, old script clones an empty repo"
 type: bug
@@ -12,7 +14,8 @@ branch: feat/p0-remote-validation-breaks-on-hosts-wit
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T16:15:47Z"
-updated_at: "2026-10-06T17:27:07Z"
+handoff_signal_retry_count: 1
+last_check_failure: "repoos check at 2026-10-06T17:03:07.270Z: repoos check failed: [22m[39m[repoos] failed to escalate failed exit for #0001: ENOENT: no such file or directory, open '/tmp/repoos-pause-nep5pr/work/0001-pause-and-resume.md' · [32m✓[39m tests/pause-resume.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 332[2mms[22m[39m · [32m✓[39m tests/raw-config-store.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 18[2mms[22m[39m · [31m❯[39m tests/auth.test.ts [2m([22m[2m0 test[22m[2m)[22m · error: Cannot find module '@vitest/expect… (truncated)"
 ---
 ## Problem
 
@@ -39,10 +42,41 @@ updated_at: "2026-10-06T17:27:07Z"
 
 URGENT: this blocks all remote validation on this board. Read #0717's diff (src/server/remote-validation.ts prepareCandidateUpload, probeMirror, scripts/remote-runner/validate.sh) and the failing rows in .repoos/checks.db (started_at >= 2026-10-07 16:12). Keep the incremental path working when the host script is new. Do NOT touch hosts or repoos.toml.
 
+## Shots
+```json
+[
+  {
+    "label": "Remote runners tab shows validate.sh mirror state",
+    "target": "default",
+    "route": "/checks?tab=runners",
+    "highlight": ".rr-panel"
+  },
+  {
+    "label": "Settings remote validation host mirror status",
+    "target": "default",
+    "route": "/settings?tab=remote-validation",
+    "steps": [
+      {
+        "click": "button[data-test-id=open-remote-validation]"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-06T16:15:47Z · created · unknown
 - 2026-10-06T16:15:59Z · cli_override, model_override
 - 2026-10-06T16:16:14Z · status inbox→ready
 - 2026-10-06T16:16:23Z · status ready→active, branch
-- 2026-10-06T17:27:07Z · status active→review
+- 2026-10-06T16:24:08Z · body: section Shots
+- 2026-10-06T17:04:01Z · body
+- 2026-10-06T17:20:54Z · body
+- 2026-10-06T17:27:08Z · status active→review
+- 2026-10-06T17:27:08Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T17:28:16Z · note: review pass 1: good to go
+

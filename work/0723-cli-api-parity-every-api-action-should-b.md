@@ -12,7 +12,8 @@ branch: feat/cli-api-parity-every-api-action-should-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
-updated_at: "2026-10-06T15:55:46Z"
+updated_at: "2026-10-06T17:26:33Z"
+handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -44,3 +45,24 @@ Read src/commands/tasks.ts and src/cli/ for the command registry and the HTTP ro
 - 2026-10-06T15:05:55Z · status ready→active, branch
 - 2026-10-06T15:12:01Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-10-06T15:55:45Z · needs_input
+- 2026-10-06T17:21:18Z · body
+- 2026-10-06T17:26:33Z · handoff failed · remote validation failed: remote validation failed (exit 1) —        |                                        ^
+    415|         "the task is put back in review",
+    416|       );
+ ❯ waitFor tests/helpers.ts:45:11
+ ❯ tests/agent-review.test.ts:413:13
+ ❯ withServer tests/agent-review.test.ts:279:11
+ ❯ tests/agent-review.test.ts:403:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 424 passed | 1 skipped (426)
+      Tests  1 failed | 5087 passed | 15 skipped (5103)
+   Start at  17:22:55
+   Duration  213.48s (transform 5.57s, setup 1.85s, import 29.38s, tests 189.25s, environment 186.98s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 348ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:26:29
+   Duration  1.96s (transform 976ms, setup 10ms, import 1.12s, tests 348ms, environment 414ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate

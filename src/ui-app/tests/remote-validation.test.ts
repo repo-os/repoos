@@ -37,6 +37,7 @@ import {
   VALIDATE_SCRIPT,
   defaultRemoteExec,
   remoteMirrorPath,
+  validateScriptArgs,
   type RemoteExecDeps,
   type RemoteExecResult,
   type RemoteHost,
