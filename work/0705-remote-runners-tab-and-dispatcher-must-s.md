@@ -3,6 +3,9 @@ id: "0705"
 title: Remote runners tab and dispatcher must see standalone self-check slot holders (they starved close-outs); add refresh feedback
 type: bug
 status: active
+needs_input: true
+needs_input_reason: provider-failure
+needs_input_detail: "{\"type\":\"tool_call\",\"subtype\":\"started\",\"call_id\":\"tool_dfe8d9dc-0030-4022-a076-d41f7daf065\",\"tool_call\":{\"readToolCall\":{\"args\":{\"path\":\"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts\",\"offset\":2945,\"limit\":90}},\"hookAdditionalContexts\":[],\"toolCallId\":\"tool_dfe8d9dc-0030-4022-a076-d41f7daf065\",\"startedAtMs\":\"1791268313908\"},\"model_call_id\":\"ba00a2de-fd6d-4f79-8778-84b978483b17-7-nfcx\",\"session_id\":\"4de1a743-5ba4-41d0-961c-6f"
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,9 +15,10 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T06:31:06Z"
+updated_at: "2026-10-06T06:32:12Z"
 review_rounds: 1
 review_passes: 1
+dev_error_count: 1
 ---
 ## Problem
 
@@ -87,3 +91,4 @@ error: script "test" exited with code 1
 - 2026-10-06T06:30:05Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T06:31:06Z · note: review pass 1: needs some work
 - 2026-10-06T06:31:06Z · status review→active
+- 2026-10-06T06:31:54Z · agent exited with an error (cursor) · {"type":"tool_call","subtype":"started","call_id":"tool_dfe8d9dc-0030-4022-a076-d41f7daf065","tool_call":{"readToolCall":{"args":{"path":"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts","offset":2945,"limit":90}},"hookAdditionalContexts":[],"toolCallId":"tool_dfe8d9dc-0030-4022-a076-d41f7daf065","startedAtMs":"1791268313908"},"model_call_id":"ba00a2de-fd6d-4f79-8778-84b978483b17-7-nfcx","session_id":"4de1a743-5ba4-41d0-961c-6f
