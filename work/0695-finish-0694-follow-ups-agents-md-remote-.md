@@ -3,14 +3,14 @@ id: "0695"
 title: "Finish #0694 follow-ups: AGENTS.md remote self-check wording, task attribution for cli Runs rows, WIP-checkpoint tests, load measurement"
 type: chore
 status: inbox
-priority: p2
+priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T01:38:21Z"
-updated_at: "2026-10-06T01:38:34Z"
+updated_at: "2026-10-06T02:27:02Z"
 ---
 ## Problem
 
@@ -33,7 +33,11 @@ All four items done; no behaviour change beyond item 2 (task shown in Runs).
 
 Read #0694 first (work/0694-*.md, its Driver note and review feedback sections) and docs/remote-validation.md. Small task.
 
+## Added item 5: changed-only remote self-checks (owner request)
+Owner priority: running checks FAST on the remote runners was a main reason for #0694. Today the runner always runs install + build + the FULL test suite (about 5 min per run, 8-11 min when two runs queue on one host), because the remote bundle is 'git bundle create ... HEAD' and --changed / REPOOS_CHECK_CHANGED only narrows local guards after REPOOS_SKIP_TESTS=1 (docs/remote-validation.md, #0694). Local scoped runs took about 47 s. Make engineer self-checks (the scoped 'repoos check --changed main' form) run changed-only tests on the runner: include the base commit (main) in the bundle, or send the changed-file list, so vitest --changed <ref> can compute the diff remotely; keep the FULL suite for handoff and close-out gates so what lands is still fully verified. Acceptance for this item: a changed-only self-check on a small diff finishes in about the local scoped time plus install/transport overhead (record before/after seconds on the task), the full suite still runs at handoff and close-out, and docs/remote-validation.md no longer says --changed does not skip the remote half. Also measure how often two runs queue on one host and consider preferring an idle host (bee at maxConcurrent 2).
+
 ## Activity
 
 - 2026-10-06T01:38:21Z · created · unknown
 - 2026-10-06T01:38:34Z · story
+- 2026-10-06T02:27:02Z · priority, body: section Added item 5: changed-only remote self-checks (owner request)
