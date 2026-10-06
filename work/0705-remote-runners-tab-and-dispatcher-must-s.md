@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-06T06:31:06Z"
-review_passes: 1
 id: "0705"
 title: Remote runners tab and dispatcher must see standalone self-check slot holders (they starved close-outs); add refresh feedback
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -14,6 +12,9 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
+updated_at: "2026-10-06T06:31:06Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -85,4 +86,4 @@ error: script "test" exited with code 1
 - 2026-10-06T06:30:04Z · status active→review
 - 2026-10-06T06:30:05Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T06:31:06Z · note: review pass 1: needs some work
-
+- 2026-10-06T06:31:06Z · status review→active
