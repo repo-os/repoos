@@ -12,7 +12,7 @@ branch: feat/invented-evidence-reviewer-and-engineer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:46Z"
-updated_at: "2026-10-06T17:22:04Z"
+updated_at: "2026-10-06T17:25:37Z"
 review_rounds: 1
 review_passes: 2
 merge_conflict_retry_count: 1
@@ -102,3 +102,4 @@ fatal: unable to read tree (d9b027c8a905fb78ea2f2613a250bf35d5f9782b) — fix it
 - 2026-10-06T17:21:11Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T17:22:03Z · note: review pass 2: needs some work
 - 2026-10-06T17:22:04Z · status review→active
+- 2026-10-06T17:25:37Z · note: Driver: reviewer pass 2 claimed flagNeedsHumanStepIfNeeded clears the flag once active/review/done. Not so: it only clears when assessTaskNeedsHumanStep(body) is false (no status check; isPastFleshOutStage is used only by flagUnderspecifiedIfNeeded). Existing tests in task-underspecified-flag.test.ts (the 'active' fixtures near lines 505-545) already assert the flag survives flagTaskSpecFlagsIfNeeded on an active task and is raised while active. Re-requesting review.
