@@ -107,6 +107,7 @@ maxConcurrent = 2
 [[remoteValidation.tailscaleHosts]]
 host = "mini"
 user = "peckjachowski"
+maxConcurrent = 2
 [board.columns]
 
   draft = "Draft"
