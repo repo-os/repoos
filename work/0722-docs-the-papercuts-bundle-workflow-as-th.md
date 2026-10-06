@@ -2,7 +2,7 @@
 id: "0722"
 title: "Docs: the easter-eggs bundle workflow as the alternative to hotfix flows (AGENTS.md + docs/)"
 type: chore
-status: active
+status: review
 priority: p2
 area: docs
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/docs-the-easter-eggs-bundle-workflow-as-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-06T14:31:00Z"
-updated_at: "2026-10-06T16:30:50Z"
+updated_at: "2026-10-06T16:36:44Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -57,3 +57,4 @@ fatal: unable to read tree (c7d0b9de8cafe603ae704776248d9502afa5b636) — fix it
 [validate] cloning bundle /home/nick/.repoos-0722-fc1b20e7.bundle
 warning: You appear to have cloned an empty repository.
 fatal: unable to read tree (c7d0b9de8cafe603ae704776248d9502afa5b636) — fix it in the feature branch and re-run the gate
+- 2026-10-06T16:36:44Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
