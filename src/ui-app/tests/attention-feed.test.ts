@@ -152,7 +152,7 @@ describe("collectRunningRuns (#0720)", () => {
             skipped: false,
           },
         ],
-      },
+      } as import("../../server/task-check.js").TaskCheckManager,
       [
         {
           taskId: "0042",
