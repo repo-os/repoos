@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T16:15:47Z"
-updated_at: "2026-10-06T16:15:47Z"
+updated_at: "2026-10-06T16:15:59Z"
 ---
 ## Problem
 
@@ -40,3 +42,4 @@ URGENT: this blocks all remote validation on this board. Read #0717's diff (src/
 ## Activity
 
 - 2026-10-06T16:15:47Z · created · unknown
+- 2026-10-06T16:15:59Z · cli_override, model_override
