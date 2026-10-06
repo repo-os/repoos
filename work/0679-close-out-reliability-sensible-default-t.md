@@ -3,6 +3,9 @@ id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: provider-failure
+needs_input_detail: "{\"type\":\"tool_call\",\"subtype\":\"started\",\"call_id\":\"tool_14bacaca-6e04-4025-a8d7-77e9663c806\",\"tool_call\":{\"shellToolCall\":{\"args\":{\"command\":\"cd /Users/nick/code/nick/repoos-worktrees/feat/close-out-reliability-sensible-default-t && git status && git stash list\",\"workingDirectory\":\"\",\"timeout\":30000,\"toolCallId\":\"tool_14bacaca-6e04-4025-a8d7-77e9663c806\",\"simpleCommands\":[\"cd\",\"git\",\"git\"],\"hasInputRedirect\":false,\"hasOutputRedirect\":false,\"parsingResult\":{\"parsingFailed\":false,\"executableComman"
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,16 +13,16 @@ assigned_to: ai
 created_by: ""
 branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
-model_override: composer-2.5
+model_override: gpt-5.3-codex-high
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-06T07:13:33Z"
+updated_at: "2026-10-06T07:18:58Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 404c1109cf8aa78b7446c56733747d534bb744ae
 merge_conflict_retry_count: 2
 review_passes: 2
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-06T03:42:59.088Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
-dev_error_count: 7
+dev_error_count: 8
 ---
 ## Problem
 
@@ -93,3 +96,5 @@ Close-out failed twice with 'merge conflict in src/server/server.ts' because mai
 - 2026-10-06T07:04:18Z · needs_input
 - 2026-10-06T07:04:55Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
 - 2026-10-06T07:13:33Z · needs_input
+- 2026-10-06T07:13:44Z · agent exited with an error (cursor) · {"type":"tool_call","subtype":"started","call_id":"tool_14bacaca-6e04-4025-a8d7-77e9663c806","tool_call":{"shellToolCall":{"args":{"command":"cd /Users/nick/code/nick/repoos-worktrees/feat/close-out-reliability-sensible-default-t && git status && git stash list","workingDirectory":"","timeout":30000,"toolCallId":"tool_14bacaca-6e04-4025-a8d7-77e9663c806","simpleCommands":["cd","git","git"],"hasInputRedirect":false,"hasOutputRedirect":false,"parsingResult":{"parsingFailed":false,"executableComman
+- 2026-10-06T07:18:58Z · model_override
