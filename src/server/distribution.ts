@@ -41,7 +41,21 @@ export interface DistributionChannel {
   detail: string | null;
 }
 
+/**
+ * The release workflow's run for the viewed tag, when it did not succeed.
+ * Explains a channel that is out of sync because CI failed after the publish
+ * (e.g. the Homebrew tap dispatch step) rather than still propagating.
+ */
+export interface ReleaseCiFailure {
+  runUrl: string;
+  /** The first failed job step, e.g. "Request Homebrew tap update". */
+  failedStep: string | null;
+  jobName: string | null;
+}
+
 export interface DistributionSummary {
+  /** Set only when the tag's release workflow run concluded unsuccessfully. */
+  ciFailure?: ReleaseCiFailure | null;
   /** Version of the release being viewed, or null when none could be resolved. */
   releaseVersion: string | null;
   /** Tag of the release being viewed, or null. */
@@ -235,6 +249,51 @@ async function resolveChannel(
   }
 }
 
+/** Public, credential-free lookup of a failed release workflow run for `tag`. */
+async function fetchCiFailure(
+  repository: string,
+  tag: string,
+  fetchImpl: typeof fetch,
+  timeoutMs: number,
+): Promise<ReleaseCiFailure | null> {
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "RepoOS distribution check",
+  };
+  try {
+    const runsRes = await fetchImpl(
+      `https://api.github.com/repos/${repository}/actions/runs?event=push&head_branch=${encodeURIComponent(tag)}&per_page=10`,
+      { headers, signal: AbortSignal.timeout(timeoutMs) },
+    );
+    if (!runsRes.ok) return null;
+    const runs =
+      ((await runsRes.json()) as { workflow_runs?: Record<string, unknown>[] }).workflow_runs ?? [];
+    const failed = runs.find((r) => r.conclusion === "failure" || r.conclusion === "timed_out");
+    if (!failed || typeof failed.html_url !== "string") return null;
+    const result: ReleaseCiFailure = { runUrl: failed.html_url, failedStep: null, jobName: null };
+    const jobsRes = await fetchImpl(
+      `https://api.github.com/repos/${repository}/actions/runs/${failed.id}/jobs`,
+      { headers, signal: AbortSignal.timeout(timeoutMs) },
+    );
+    if (jobsRes.ok) {
+      const jobs = ((await jobsRes.json()) as { jobs?: Record<string, any>[] }).jobs ?? [];
+      for (const job of jobs) {
+        const step = (job.steps ?? []).find(
+          (st: { conclusion?: string }) => st.conclusion === "failure",
+        );
+        if (step) {
+          result.jobName = String(job.name);
+          result.failedStep = String(step.name);
+          break;
+        }
+      }
+    }
+    return result;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Resolve every configured channel's published version. Never rejects: a
  * failed channel is reported in its own row so the rest of the summary (and the
@@ -256,5 +315,9 @@ export async function getDistributionStatus(
   summary.channels = await Promise.all(
     configured.map((channel) => resolveChannel(channel, release, fetchImpl, timeoutMs)),
   );
+  const repository = config.release?.repository;
+  if (repository && release?.tag && summary.channels.some((c) => c.state !== "matching")) {
+    summary.ciFailure = await fetchCiFailure(repository, release.tag, fetchImpl, timeoutMs);
+  }
   return summary;
 }
