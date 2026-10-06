@@ -1651,7 +1651,9 @@ export class CloseOutOrchestrator {
         // No package-input change: try symlink before deciding on a cold install (#0674).
         this.symlinkMainNodeModulesIntoCandidate(wtPath, root);
       }
-      if (shouldPrepareCandidateDependencies(this.config, wtPath, changedPaths, candidateCheckPlan)) {
+      if (
+        shouldPrepareCandidateDependencies(this.config, wtPath, changedPaths, candidateCheckPlan)
+      ) {
         const canInstall =
           resolveInstallShellCommand(this.config) !== undefined ||
           inferLockfileInstallCommand(wtPath) !== null;
