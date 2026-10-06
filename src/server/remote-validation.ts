@@ -1887,8 +1887,7 @@ export class TailscaleHostPool {
     for (const s of this.liveHosts()) {
       if (s.probing) continue;
       const due =
-        !s.probed ||
-        (!s.healthy && Date.now() >= s.retryAt && s.healthFails < MAX_HEALTH_RETRIES);
+        !s.probed || (!s.healthy && Date.now() >= s.retryAt && s.healthFails < MAX_HEALTH_RETRIES);
       if (due) void this.probe(s);
     }
   }
@@ -2335,9 +2334,7 @@ export class TailscaleHostPool {
         );
       }
     } catch (e) {
-      detail = formatProbeReachabilityDetail(
-        `prerequisite check failed: ${(e as Error).message}`,
-      );
+      detail = formatProbeReachabilityDetail(`prerequisite check failed: ${(e as Error).message}`);
     }
     s.probed = true;
     if (ok) {
