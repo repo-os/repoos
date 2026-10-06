@@ -77,6 +77,13 @@ import { planGateSkips } from "../core/check-skip.js";
 import { getCheckStore, localMachineName } from "../core/check-store.js";
 import { detectRepoMarkers } from "../core/check-runner.js";
 import { DEFAULT_CONFIG, loadConfig } from "../core/config.js";
+import {
+  effectiveCloseOutTimeoutMs,
+  recordCloseOutGateTimingStats,
+} from "../core/close-out-timing.js";
+import {
+  recordTaskCloseOutGateDuration,
+} from "./close-out-repair.js";
 import { summarizeCheckFailure } from "../core/check-failure-summary.js";
 import { checkFailureSignature, summarizeCheckOutput } from "../core/check-results.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
@@ -120,9 +127,9 @@ export function formatCloseOutBudget(timeoutMs: number): string {
   return `${Math.round(timeoutMs)}ms`;
 }
 
-/** The configured budget for one close-out attempt; 6 minutes when unset. */
-export function closeOutTimeoutMs(config: Pick<RepoOSConfig, "closeOut">): number {
-  return config.closeOut?.timeoutMs ?? DEFAULT_CONFIG.closeOut?.timeoutMs ?? 360_000;
+/** Effective budget for one close-out attempt (#0573, adaptive default #0679). */
+export function closeOutTimeoutMs(config: RepoOSConfig): number {
+  return effectiveCloseOutTimeoutMs(config);
 }
 
 /** The recorded failure reason for a close-out that hit its budget (#0573). */
@@ -141,14 +148,27 @@ export function closeOutTimeoutReason(timeoutMs: number): string {
  * Exported for tests (#0573).
  */
 export function closeOutDeadline(
-  config: Pick<RepoOSConfig, "closeOut">,
+  config: RepoOSConfig,
   startedAt: string | null | undefined,
+  budgetMonotonicStartNs?: string | null,
 ): number | null {
   const timeoutMs = closeOutTimeoutMs(config);
   if (!(timeoutMs > 0) || !startedAt) return null;
+  if (budgetMonotonicStartNs) {
+    const start = BigInt(budgetMonotonicStartNs);
+    const elapsedMs = Number(process.hrtime.bigint() - start) / 1e6;
+    const remaining = timeoutMs - elapsedMs;
+    return remaining <= 0 ? Date.now() : Date.now() + remaining;
+  }
   const started = Date.parse(startedAt);
   if (!Number.isFinite(started)) return null;
   return started + timeoutMs;
+}
+
+/** Monotonic elapsed ms for a job's close-out budget (#0679). */
+export function closeOutMonotonicElapsedMs(job: IntegrationJob): number | null {
+  if (!job.budgetMonotonicStartNs) return null;
+  return Number(process.hrtime.bigint() - BigInt(job.budgetMonotonicStartNs)) / 1e6;
 }
 
 /**
@@ -661,6 +681,8 @@ export class CloseOutOrchestrator {
      * to auto-resume the engineer to fix it and resubmit (#0271 follow-up).
      */
     private onMergeConflict?: (taskId: string, reason: string) => void,
+    /** Gate failed on a branch that already passed handoff review (#0679). */
+    private onCloseOutGateFailure?: (taskId: string, reason: string) => void,
     /**
      * Runs the expensive half of the gate (build + test) on a cloud VM when
      * `config.remoteValidation.enabled` — see validateCandidate. Undefined
@@ -827,11 +849,23 @@ export class CloseOutOrchestrator {
    */
   private pipelineDeadline(job: IntegrationJob): number | null {
     const fresh = this.coordinator.getJob(job.taskId);
-    return closeOutDeadline(this.config, fresh?.startedAt ?? job.startedAt);
+    return closeOutDeadline(
+      this.config,
+      fresh?.startedAt ?? job.startedAt,
+      fresh?.budgetMonotonicStartNs ?? job.budgetMonotonicStartNs,
+    );
   }
 
-  /** True when the close-out has spent its wall-clock budget (#0573). */
+  /** True when the close-out has spent its budget (#0573, monotonic #0679). */
   private pipelineTimedOut(job: IntegrationJob): boolean {
+    const fresh = this.coordinator.getJob(job.taskId);
+    const timeoutMs = closeOutTimeoutMs(this.config);
+    if (!(timeoutMs > 0)) return false;
+    const startNs = fresh?.budgetMonotonicStartNs ?? job.budgetMonotonicStartNs;
+    if (startNs) {
+      const elapsedMs = Number(process.hrtime.bigint() - BigInt(startNs)) / 1e6;
+      return elapsedMs >= timeoutMs;
+    }
     const deadline = this.pipelineDeadline(job);
     return deadline !== null && Date.now() >= deadline;
   }
@@ -976,6 +1010,7 @@ export class CloseOutOrchestrator {
         const updated = this.coordinator.updateJob(job.taskId, {
           phase: "syncing",
           startedAt: new Date().toISOString(),
+          budgetMonotonicStartNs: process.hrtime.bigint().toString(),
         });
         if (!updated) return { ok: false, reason: "job disappeared" };
         job = updated;
@@ -1092,12 +1127,36 @@ export class CloseOutOrchestrator {
               : firstSig === secondSig
                 ? `${secondReason} — reproduced identically on retry, so this is a real failure in the branch, not machine load`
                 : `${secondReason} — NOTE: the first attempt failed differently (${firstReason}). Two unrelated failures point at machine load or infrastructure rather than a regression in this branch; check for stray serve processes and retry.`;
-            return this.failOrReconcile(job, "validating", reason);
+            const gateHandback =
+              !envFailure &&
+              firstSig === secondSig &&
+              /^(?:repoos\s+)?(?:check|build) failed:/i.test(secondReason);
+            return this.failOrReconcile(
+              job,
+              "validating",
+              reason,
+              gateHandback
+                ? () => this.onCloseOutGateFailure?.(job.taskId, reason)
+                : undefined,
+            );
           }
         }
         // Gate green — but never promote past an exhausted budget (#0573):
         // fail here while main is still untouched.
         if (this.pipelineTimedOut(job)) return this.timeoutJob(job);
+        if (validateRes.gateDurationMs && validateRes.gateDurationMs > 0) {
+          recordCloseOutGateTimingStats(
+            this.config.root,
+            this.config.cacheDir,
+            validateRes.gateDurationMs,
+          );
+          const absPath =
+            this.getTask?.(job.taskId)?.absPath ??
+            findTaskFileById(root, this.config.workDir, job.taskId);
+          if (absPath) {
+            recordTaskCloseOutGateDuration(this.config, absPath, validateRes.gateDurationMs);
+          }
+        }
         job = this.coordinator.updateJob(job.taskId, {
           phase: "publishing",
           candidateSha: validateRes.candidateSha,
@@ -1401,6 +1460,8 @@ export class CloseOutOrchestrator {
      * instead of promoting the (now un-merged) candidate to publishing.
      */
     resynced?: boolean;
+    /** Wall time spent in this validate pass (#0679). */
+    gateDurationMs?: number;
   }> {
     const root = this.config.root;
     const branch = candidateBranchName(job.taskId);
@@ -1408,6 +1469,7 @@ export class CloseOutOrchestrator {
     if (!wtPath) {
       return { ok: false, reason: "candidate worktree not found" };
     }
+    const gateStartedNs = process.hrtime.bigint();
 
     // Stop MTD (#0459): abort before the merge/gate if already requested.
     if (this.isCancelled(job.taskId)) {
@@ -1525,6 +1587,7 @@ export class CloseOutOrchestrator {
     const merge = await mergeBranch(wtPath, featureBranch, {
       autoResolve,
       autoResolveOurs,
+      regenerateLockfileConflicts: true,
     });
     if (!merge.merged) {
       // A conflict is a property of the two trees, not of the machine. Retrying
@@ -1985,7 +2048,8 @@ export class CloseOutOrchestrator {
     const snapshotStats = getDiffStats(wtPath, mainBranch);
     saveDiffSnapshot(root, this.config.cacheDir, job.taskId, snapshotStats, snapshotDiff);
 
-    return { ok: true, candidateSha: candidateShaRes.stdout.trim() };
+    const gateDurationMs = Math.round(Number(process.hrtime.bigint() - gateStartedNs) / 1e6);
+    return { ok: true, candidateSha: candidateShaRes.stdout.trim(), gateDurationMs };
   }
 
   private async publishCandidate(job: IntegrationJob): Promise<{

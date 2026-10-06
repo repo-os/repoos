@@ -130,6 +130,7 @@ import {
   dismissNeedsInputOnTask,
 } from "../needs-input-dismiss.js";
 import {
+  clearWorktreeHandoffProtection,
   discardWorktreeHandoffChanges,
   readHandoffSnapshot,
   refreshHandoffSnapshotFromWorktree,
@@ -1956,6 +1957,38 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         needsInput: false,
       });
       index.applyFileChange(cleared.absPath);
+    }
+    // #0679: a follow-up message while in `review` must land on an `active`
+    // task so the engineer can commit fixes and hand off again.
+    if (existing.status === "review") {
+      if (runner.isRunning(id)) {
+        return json(res, 409, {
+          error: `Task #${id} has an agent turn in progress — wait for it to finish`,
+        });
+      }
+      if (reviews.isRunning(id)) {
+        return json(res, 409, {
+          error: `Task #${id} has a review in progress — wait for it to finish`,
+        });
+      }
+      const closeOutJob = jobCoordinator.getJob(id);
+      if (closeOutJob && closeOutJob.phase !== "done" && closeOutJob.phase !== "failed") {
+        return json(res, 409, {
+          error: `Task #${id} is in the close-out pipeline — cancel Move to done or wait for it to finish before messaging`,
+        });
+      }
+      clearWorktreeHandoffProtection(config.root, config.cacheDir ?? ".repoos", id);
+      const moved = patchTaskFile(
+        config,
+        existing.absPath,
+        {
+          status: "active",
+          note: "follow-up message — moved from review to active so work can be committed and re-handoffed",
+        },
+        { onStatusChange: onServerStatusChange },
+      );
+      index.applyFileChange(moved.absPath);
+      existing = index.getTask(id) ?? moved;
     }
     let preamble: string | undefined;
     if (existing.branch) {

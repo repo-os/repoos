@@ -77,16 +77,22 @@ function makeOrchestrator(root: string, closeOut?: { timeoutMs: number }) {
 const AGED = (ms: number): string => new Date(Date.now() - ms).toISOString();
 
 describe("close-out pipeline budget helpers (#0573)", () => {
-  it("defaults to 6 minutes, honours 0 = disabled, and reads the config value", () => {
-    expect(closeOutTimeoutMs({})).toBe(360_000);
-    expect(closeOutTimeoutMs({ closeOut: { timeoutMs: 0 } })).toBe(0);
-    expect(closeOutTimeoutMs({ closeOut: { timeoutMs: 900_000 } })).toBe(900_000);
+  it("defaults to 10 minutes adaptive, honours 0 = disabled, and reads explicit config", () => {
+    expect(closeOutTimeoutMs({} as never)).toBe(600_000);
+    expect(
+      closeOutTimeoutMs({ closeOut: { timeoutMs: 0, timeoutMsFromToml: true } } as never),
+    ).toBe(0);
+    expect(
+      closeOutTimeoutMs({ closeOut: { timeoutMs: 900_000, timeoutMsFromToml: true } } as never),
+    ).toBe(900_000);
   });
 
   it("derives the deadline from startedAt + timeoutMs, or none when disabled", () => {
     const startedAt = "2026-09-28T10:00:00.000Z";
-    expect(closeOutDeadline({}, startedAt)).toBe(Date.parse(startedAt) + 360_000);
-    expect(closeOutDeadline({ closeOut: { timeoutMs: 0 } }, startedAt)).toBeNull();
+    expect(closeOutDeadline({} as never, startedAt)).toBe(Date.parse(startedAt) + 600_000);
+    expect(
+      closeOutDeadline({ closeOut: { timeoutMs: 0, timeoutMsFromToml: true } } as never, startedAt),
+    ).toBeNull();
     // Not left `queued` yet → no clock, exactly as before #0573.
     expect(closeOutDeadline({}, null)).toBeNull();
     expect(closeOutDeadline({}, undefined)).toBeNull();

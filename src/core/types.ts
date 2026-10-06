@@ -1492,6 +1492,8 @@ export interface CloseOutConfig {
    * behaviour). Default `360000` (6 minutes).
    */
   timeoutMs: number;
+  /** True when `timeoutMs` came from repoos.toml; when false, the adaptive default applies (#0679). */
+  timeoutMsFromToml?: boolean;
   /** Overrides `[worktrees] candidate` when set (#0674). */
   candidate?: "symlink-main" | "own-install";
   /** Shell install for candidates; also used for main refresh unless `postPublishCommand` is set. */

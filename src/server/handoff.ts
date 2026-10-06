@@ -37,6 +37,7 @@ import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import type { AgentHandoffRequest, AgentRunner } from "./agents.js";
 import { resolveAgentForTask } from "./agents.js";
 import { patchTaskFile } from "./write.js";
+import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
 import { guardReviewTransition } from "./review-guard.js";
 import { runFormatFixes } from "../core/check-format.js";
 import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
@@ -959,10 +960,6 @@ export function scheduleCheckFailureRetry(
   return true;
 }
 
-/** Cap mirrors MAX_CHECK_RETRY_ATTEMPTS — same reasoning, different failure step. */
-const MAX_MERGE_CONFLICT_RETRY_ATTEMPTS = 2;
-const MERGE_CONFLICT_RETRY_DELAY_MS = 3_000;
-
 /**
  * On a close-out `validating`-phase failure caused by a REAL merge conflict
  * (the candidate's merge of the feature branch into itself failed with named
@@ -1004,72 +1001,14 @@ export function scheduleMergeConflictRetry(
    *  up the new retry count immediately via its own SSE event. */
   onFileChange?: (absPath: string) => void,
 ): boolean {
-  let retries = task.extra?.merge_conflict_retry_count as number | undefined;
-  if (typeof retries !== "number") retries = 0;
-
-  if (retries >= MAX_MERGE_CONFLICT_RETRY_ATTEMPTS) {
-    runner.persistHandoffFailure(
-      task.id,
-      task,
-      `merge conflict unresolved after ${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS} automatic retries · ${reason}`,
-    );
-    return false;
-  }
-
-  const engineer = resolveAgentForTask(config, task);
-  if (!engineer) {
-    runner.persistHandoffFailure(
-      task.id,
-      task,
-      `merge conflict and no engineer is configured to retry · ${reason}`,
-    );
-    return false;
-  }
-
-  const attempt = retries + 1;
-  setTimeout(() => {
-    const message = [
-      `Close-out validation failed (automatic retry ${attempt} of ${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS}): your branch has a real merge conflict with main.`,
-      "",
-      reason,
-      "",
-      'In YOUR OWN branch\'s worktree (not the candidate — the candidate is discarded and rebuilt from your branch on every attempt): merge main into your branch, resolve the conflict by understanding what BOTH sides were trying to do — do not blindly prefer one side over the other unless one is genuinely obsolete — verify `repoos check` passes, and commit the merge. The task is already in `review`, so do NOT re-emit the handoff signal (it will just report "already finalized" and do nothing) — simply end your turn once the merge is committed and verified. The close-out retries automatically the moment your turn ends.',
-    ].join("\n");
-    const sent = runner.send(task.id, message, engineer, { skipBoardDivergence: true });
-    if (!sent.ok) {
-      runner.system(
-        task.id,
-        `✗ automatic merge-conflict retry could not resume: ${sent.reason ?? "unknown error"}`,
-      );
-      runner.persistHandoffFailure(
-        task.id,
-        task,
-        `could not auto-retry after merge conflict · ${sent.reason ?? "unknown error"}`,
-      );
-      return;
-    }
-    try {
-      const raw = readFileSync(task.absPath, "utf8");
-      const doc = parseDocument(raw);
-      doc.data.merge_conflict_retry_count = attempt;
-      const keys = Object.keys(doc.data).filter((k) => k !== "merge_conflict_retry_count");
-      keys.unshift("merge_conflict_retry_count");
-      writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
-      // Bookkeeping write — commit it (fail-soft) so it can't dirty main (#0682).
-      commitTaskFile(config.root, task.absPath, `docs(${task.id}): record merge-conflict retry`);
-      onFileChange?.(task.absPath);
-    } catch (err) {
-      console.error(
-        `[repoos] could not persist merge_conflict_retry_count for #${task.id}: ${(err as Error).message}`,
-      );
-    }
-    runner.system(
-      task.id,
-      `↻ automatically resuming after merge conflict (attempt ${attempt} of ${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS})`,
-    );
-  }, MERGE_CONFLICT_RETRY_DELAY_MS);
-
-  return true;
+  return scheduleCloseOutRepairHandback(
+    config,
+    task,
+    "merge-conflict",
+    reason,
+    runner,
+    onFileChange,
+  );
 }
 
 /** Cap mirrors the other two retry schedulers — same reasoning, different failure step. */
