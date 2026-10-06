@@ -12,7 +12,7 @@ branch: feat/run-engineer-self-checks-on-the-remote-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:59:26Z"
-updated_at: "2026-10-06T01:26:27Z"
+updated_at: "2026-10-06T01:32:39Z"
 review_passes: 2
 review_rounds: 1
 ---
@@ -43,6 +43,13 @@ Also in scope, found 2026-10-06 from the Checks > Runs tab: (1) all 191 phase=cl
 
 ## Review feedback (driver, round 2)
 Reviewer verdict 'needs some work' (non-blocking items, fix quickly): 1. Update AGENTS.md Definition of done: with remote validation on, 'repoos check --changed main' and managed-engineer self-checks run on a runner; add 'run repoos check once before handoff, not after every edit'. Same for any user-docs sentence that still says the scoped check is a fast local pass. 2. Derive the task from the worktree branch when REPOOS_TASK_ID is missing so local phase=cli rows in Checks > Runs show a task number (driver note in this task body). 3. Add focused tests for commitWipCheckpointForRemoteGate and for managed-engineer fallback messaging. 4. The load before/after acceptance item is WAIVED by the owner/driver (will be measured after merge); say so in the activity note. 5. Re-run repoos check --changed main, then hand off.
+
+## Load measurement
+**Before (2026-10-06 overnight, opex field run):** 3–4 parallel engineers; laptop load average 15–28 on 10 cores (mostly per-worktree `repoos check` build/vue-tsc/vitest); Tailscale runners thinkpad/bee/mini ~0.1–1.3.
+
+**After (this change):** Managed engineer `repoos check` with `remoteValidation.engineerSelfCheckRemote` (default on) runs install/build/test on the board runner; format/lint stay local; handoff reuses a green `candidate_sha` row instead of a second remote pass. Expect laptop load during parallel engineers to drop to fast local guards only.
+
+**Post-deploy check (driver):** On the next 3-engineer session on a small repo, compare `uptime` and top `repoos check` CPU before vs after and append numbers here.
 
 ## Activity
 
@@ -79,3 +86,4 @@ error: script "test" exited with code 1
 - 2026-10-06T01:21:25Z · status active→review
 - 2026-10-06T01:26:17Z · body: section Review feedback (driver, round 2)
 - 2026-10-06T01:26:22Z · status review→active
+- 2026-10-06T01:32:39Z · body: section Load measurement
