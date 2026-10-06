@@ -11,7 +11,7 @@ branch: feat/close-out-must-record-merged-commit-even
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:46Z"
-updated_at: "2026-10-06T23:52:15Z"
+updated_at: "2026-10-06T23:55:25Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 22: tasks closed out do not get merged_commit recorded when the branch is deleted; dependencyMergeState (src/core/task-dependencies.ts) then reports dependents as cancelled.
 
@@ -22,3 +22,4 @@ Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoo
 - 2026-10-06T23:52:11Z · cli_override, model_override
 - 2026-10-06T23:52:14Z · status inbox→ready
 - 2026-10-06T23:52:15Z · status ready→active, needs_input, branch
+- 2026-10-06T23:55:25Z · body
