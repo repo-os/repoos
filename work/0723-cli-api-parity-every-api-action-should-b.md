@@ -2,7 +2,7 @@
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
 type: feature
-status: review
+status: active
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -92,3 +92,4 @@ error: script "build:raw" exited with code 127
 error: script "build" exited with code 127
 [validate] gate exit 127 — fix it in the feature branch and re-run the gate
 - 2026-10-06T17:49:28Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —        |                                        ^ · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T17:49:28Z · status review→active
