@@ -12,7 +12,7 @@ branch: feat/run-engineer-self-checks-on-the-remote-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:59:26Z"
-updated_at: "2026-10-06T01:32:39Z"
+updated_at: "2026-10-06T01:32:40Z"
 review_passes: 2
 review_rounds: 1
 ---
@@ -51,6 +51,18 @@ Reviewer verdict 'needs some work' (non-blocking items, fix quickly): 1. Update 
 
 **Post-deploy check (driver):** On the next 3-engineer session on a small repo, compare `uptime` and top `repoos check` CPU before vs after and append numbers here.
 
+## Shots
+```json
+[
+  {
+    "label": "Engineer self-check on runner toggle in Remote validation",
+    "target": "default",
+    "route": "/settings",
+    "highlight": ".setting-label:has-text(\"Remote validation runner\")"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-05T23:59:26Z · created · unknown
@@ -87,3 +99,4 @@ error: script "test" exited with code 1
 - 2026-10-06T01:26:17Z · body: section Review feedback (driver, round 2)
 - 2026-10-06T01:26:22Z · status review→active
 - 2026-10-06T01:32:39Z · body: section Load measurement
+- 2026-10-06T01:32:40Z · body: section Shots
