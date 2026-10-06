@@ -2,7 +2,7 @@
 id: "0725"
 title: "P0: remote validation breaks on hosts with the old validate.sh since #0717: new bundle has no HEAD ref, old script clones an empty repo"
 type: bug
-status: review
+status: active
 priority: p0
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -133,3 +133,4 @@ URGENT: this blocks all remote validation on this board. Read #0717's diff (src/
 - 2026-10-06T19:25:29Z · status review→active
 - 2026-10-06T19:26:28Z · handoff failed · task-file handoff failed at verify · ui verification: capture of /settings?tab=remote-validation failed — click: Timeout 5000ms exceeded.
 - 2026-10-06T19:31:29Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at verify · ui verification: capture of /settings?tab=remote-validation failed — click: Timeout 5000ms exceeded. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-06T19:31:29Z · status review→active
