@@ -68,6 +68,8 @@ import {
   reviewPassPath,
 } from "../core/review-passes.js";
 import { readUiHandoffGateEvidence } from "./ui-handoff-gate.js";
+import { getCheckStore } from "../core/check-store.js";
+import { extractTaskProofCommands } from "../core/task-proof-commands.js";
 
 /** A stored agent review, as served to the UI. */
 export interface ReviewReport {
@@ -139,6 +141,24 @@ function reviewUsage(
 /** Frontmatter key order for the stored report file. */
 const REPORT_KEYS = ["task", "at", "agent", "cli", "model", "branch", "state"];
 
+/** How the handoff `repoos check` gate finished (#0697). */
+export type ReviewHandoffCheckOutcome = "passed" | "skipped: no check plan";
+
+/** Latest pre-review check outcome for a task in `review`, when recorded (#0697). */
+export function handoffCheckOutcomeForTask(
+  config: RepoOSConfig,
+  taskId: string,
+): ReviewHandoffCheckOutcome {
+  const rows = getCheckStore(config.root, config.cacheDir).list({ taskId, limit: 30 });
+  const handoff = rows.find((r) => r.phase === "pre-review");
+  if (handoff?.outcome === "skipped") return "skipped: no check plan";
+  return "passed";
+}
+
+export interface ReviewMissionOptions {
+  handoffCheck?: ReviewHandoffCheckOutcome;
+}
+
 /**
  * The mission handed to the review agent. Deliberately narrow: what to look
  * at, what to write, and a hard boundary on what it may not touch.
@@ -149,7 +169,9 @@ export function reviewMission(
   workdir: string,
   baseBranch: string,
   config: RepoOSConfig,
+  options: ReviewMissionOptions = {},
 ): string {
+  const handoffCheck = options.handoffCheck ?? "passed";
   const spec = task.body.trim().slice(0, SPEC_CHARS);
   const role = agent.instructions?.trim();
   const storyContext = buildStoryContext(task, config);
@@ -167,9 +189,41 @@ export function reviewMission(
     "",
     "## The task spec",
     "",
+    "The spec quoted below is authoritative. The copy of this task's markdown file",
+    "in the worktree may lag the board copy on `main` (status and frontmatter sync",
+    "through RepoOS on `main` only) — judge against THIS prompt, not the file on disk.",
+    "",
     spec || "(the task file has no body)",
     "",
     ...(storyContext ? [storyContext, ""] : []),
+    "## Check gate at handoff",
+    "",
+    `Handoff check outcome: **${handoffCheck}**.`,
+    ...(handoffCheck === "passed"
+      ? [
+          "The implementer ran `repoos check` and the gate passed before review — do NOT",
+          "re-run the full build or test suite unless the diff clearly needs it; it is slow",
+          "and usually adds nothing you cannot see from the code.",
+        ]
+      : [
+          "The gate **skipped** — this repo has no check plan, so nothing was built or",
+          "tested at handoff. Do NOT assume `repoos check` passed.",
+          ...(() => {
+            const proof = extractTaskProofCommands(task.body);
+            if (proof.length === 0) {
+              return [
+                "No finite proof command is named in the task spec — rely on the diff,",
+                "any screenshots, and your own spot-checks (read-only git/file commands only).",
+              ];
+            }
+            return [
+              "Run the task's named proof command(s) once in the worktree (finite commands",
+              "only — no dev servers):",
+              ...proof.map((c) => `- \`${c}\``),
+            ];
+          })(),
+        ]),
+    "",
     "## How to inspect it",
     "",
     `- \`git diff ${baseBranch}...HEAD\` and \`git log ${baseBranch}..HEAD --oneline\` in the`,
@@ -191,9 +245,8 @@ export function reviewMission(
     "  broken contracts with existing callers, missing or misleading tests.",
     "- Call out the edge cases that matter for this change (empty/missing input,",
     "  concurrency, failure of a dependency, first run, repeated run).",
-    "- You may run read-only commands (git, reading files). The implementer already",
-    "  ran `repoos check` green to enter review, so do NOT re-run the full build or",
-    "  test suite — it is slow and adds nothing you cannot see from the code.",
+    "- You may run read-only commands (git, reading files) and any proof commands",
+    "  named above when the gate skipped.",
     "- Read the engineer transcript and task notes for claims of evidence. Flag as",
     "  **blocking** (under ## Bugs, not merely a suggestion) any invented or",
     "  impossible proof: physical-device sessions, network or performance",
@@ -638,7 +691,9 @@ export class ReviewManager {
     });
     this.appendMarker(task.id, `review started — ${agent.name} (${agent.cli})`);
 
-    const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config);
+    const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config, {
+      handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
+    });
     const uiNote = this.uiVerificationSummary(task.id);
     const mission = uiNote
       ? `${missionBase}\n\n## Handoff UI verification (recorded at handoff)\n\n${uiNote}\n`

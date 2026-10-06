@@ -35,7 +35,7 @@
 
 import { spawn } from "node:child_process";
 import { writeChildStdin } from "../core/child-stdin.js";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { createConnection } from "node:net";
 import {
   mkdtempSync,
@@ -44,6 +44,7 @@ import {
   appendFileSync,
   existsSync,
   readFileSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
@@ -63,6 +64,7 @@ import { remoteRunHistoryMeta } from "../core/check-failure-summary.js";
 import { getCheckStore, type CheckRunPhase } from "../core/check-store.js";
 import type { CheckSummary } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
+import { runGit } from "../core/git.js";
 
 export type { CheckSummary } from "./done.js";
 import { createHetznerClient, type HetznerClient, type HetznerServer } from "./hetzner.js";
@@ -201,6 +203,75 @@ export function remoteRunPaths(
   };
 }
 
+/**
+ * A persistent bare mirror the runner keeps per repo, so a run only has to
+ * upload the commits the host does not already have (#0717). Its name is
+ * derived from the repo's absolute root so two different repos validated by one
+ * host never share a mirror — a plain basename would collide (two `opex`
+ * checkouts) and fold unrelated histories together.
+ */
+export function remoteMirrorPath(root: string): string {
+  const base = (root.split(/[\\/]/).filter(Boolean).pop() ?? "repo").replace(
+    /[^A-Za-z0-9_.-]/g,
+    "_",
+  );
+  const suffix = createHash("sha1").update(root).digest("hex").slice(0, 8);
+  return `~/.repoos-cache/${base}-${suffix}.git`;
+}
+
+/** Ref the candidate commit travels under; a stable name validate.sh knows. */
+export const MIRROR_CANDIDATE_REF = "refs/repoos/candidate";
+/** Ref the pre-fetched main tip travels under, for scoped `--changed` runs. */
+export const MIRROR_SCOPE_REF = "refs/repoos/scope";
+
+/** What a host's persistent mirror currently holds (#0717). */
+export interface RemoteMirrorState {
+  exists: boolean;
+  /** ref name → commit sha, for the refs the runner cares about. */
+  refs: Record<string, string>;
+}
+
+/** Probe result when the host has no mirror yet (full-bundle fallback). */
+export const EMPTY_REMOTE_MIRROR: RemoteMirrorState = { exists: false, refs: {} };
+
+/**
+ * One ssh command that reports the mirror's refs as `<ref> <sha>` lines, or
+ * nothing when the mirror is absent. Kept to a single call so a warm host with
+ * a mirror costs one round-trip before bundling.
+ */
+export function mirrorProbeCommand(mirrorPath: string): string {
+  const refs = [MIRROR_CANDIDATE_REF, MIRROR_SCOPE_REF];
+  const checks = refs
+    .map(
+      (r) =>
+        `git -C ${shellQuote(mirrorPath)} rev-parse --verify --quiet ${shellQuote(r)} 2>/dev/null`,
+    )
+    .join("; ");
+  return (
+    `if [ -d ${shellQuote(mirrorPath)} ]; then echo MIRROR=1; ` +
+    `${checks}; else echo MIRROR=0; fi`
+  );
+}
+
+/** Parse {@link mirrorProbeCommand} output into a {@link RemoteMirrorState}. */
+export function parseMirrorProbeOutput(
+  output: string,
+  refs: string[] = [MIRROR_CANDIDATE_REF, MIRROR_SCOPE_REF],
+): RemoteMirrorState {
+  const trimmed = output.trim();
+  if (!trimmed.includes("MIRROR=1")) return { exists: false, refs: {} };
+  const shas = trimmed
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => /^[0-9a-f]{40}$/.test(l));
+  const result: Record<string, string> = {};
+  refs.forEach((ref, i) => {
+    const sha = shas[i];
+    if (sha) result[ref] = sha;
+  });
+  return { exists: true, refs: result };
+}
+
 export interface RemoteExecResult {
   code: number | null;
   output: string;
@@ -212,14 +283,29 @@ export interface RemoteExecResult {
  * never touch a real API, network, or subprocess.
  */
 export interface RemoteExecDeps {
-  /** `git bundle create <outPath> HEAD` in `cwd`. */
-  bundleRepo(cwd: string, outPath: string): Promise<{ ok: boolean; detail?: string }>;
+  /**
+   * `git bundle create <outPath> <refs…> [^<exclude>…]` in `cwd`.
+   * `refs` are the positive refs the bundle records; `excludeRefs` are
+   * prerequisites the host already holds, so the bundle carries only what is
+   * new (`<base>..HEAD`) — the whole point of #0717.
+   */
+  bundleRepo(
+    cwd: string,
+    outPath: string,
+    opts?: { refs?: string[]; excludeRefs?: string[] },
+  ): Promise<{ ok: boolean; detail?: string }>;
   /** `scp <localPath> <host>:<remotePath>`. */
   uploadFile(
     host: RemoteHost,
     localPath: string,
     remotePath: string,
   ): Promise<{ ok: boolean; detail?: string }>;
+  /**
+   * Ask whether the host's persistent mirror exists and which refs it holds.
+   * Optional: a runner (or test double) that cannot probe simply reports no
+   * mirror, so the run falls back to the full-history bundle (#0717).
+   */
+  probeMirror?(host: RemoteHost, mirrorPath: string): Promise<RemoteMirrorState>;
   /** `scp -r <host>:<remotePath> <localDir>` — best effort, never throws. */
   downloadDir(host: RemoteHost, remotePath: string, localDir: string): Promise<void>;
   /** `ssh <host> <command>`, streaming combined stdout+stderr through `onChunk`. */
@@ -259,6 +345,11 @@ export interface ValidateOptions {
    * A run already executing is not interrupted.
    */
   deadlineAt?: number;
+  /**
+   * When set, the runner bundles this ref alongside HEAD and runs
+   * `bun run test -- --changed <ref>` (#0695). Handoff and close-out omit it.
+   */
+  changedRef?: string;
 }
 
 /** One host's live state, surfaced by `/api/remote-validation/status` (#0521). */
@@ -285,10 +376,26 @@ export interface RemoteHostStatus {
    * In-flight runs with WHO is running and since when (#0564) — the Remote
    * runners tab shows "#0564 · 2m 10s", not just a count.
    */
-  activeRuns?: { taskId: string; startedAt: string }[];
+  activeRuns?: {
+    taskId: string;
+    startedAt: string;
+    phase?: string;
+    label?: string;
+    source?: "server" | "host-lock";
+  }[];
   /** Task ids of the queued runs waiting for THIS host, FIFO order (#0564). */
   queuedTasks?: string[];
   serverStats?: RemoteServerStats;
+  /** Host-side lock holders + waiters sampled over SSH (#0705). */
+  hostLock?: HostLockSnapshot;
+  /** Standalone / host-lock waiters with phase and queue position (#0705). */
+  lockWaiters?: {
+    taskId: string;
+    phase: string;
+    label: string;
+    queuePosition?: number;
+    ageSecs: number;
+  }[];
 }
 
 export interface RemoteServerStats {
@@ -321,6 +428,8 @@ export interface RemoteValidator {
   hostStatus?(): RemoteHostStatus[];
   /** Start non-blocking, independent SSH sampling for configured pool hosts. */
   refreshHostStats?(): void;
+  /** Sample host-side validate locks for the Remote runners tab (#0705). */
+  refreshHostLocks?(): void;
   /**
    * Rebuild dispatch state from the live config after a Settings / raw-TOML
    * save. Without this the pool keeps the boot-time host list until restart
@@ -347,6 +456,8 @@ export interface RunnerTimings {
   probeTimeoutMs: number;
   /** Cooldown before an unreachable/misconfigured host is probed again (#0521). */
   healthRetryMs: number;
+  /** Re-probe hosts that are still unprobed or unhealthy (#0683). */
+  backgroundProbeIntervalMs: number;
 }
 
 const DEFAULT_TIMINGS: RunnerTimings = {
@@ -357,6 +468,7 @@ const DEFAULT_TIMINGS: RunnerTimings = {
   remoteRunTimeoutMs: 25 * 60_000,
   probeTimeoutMs: 20_000,
   healthRetryMs: 30_000,
+  backgroundProbeIntervalMs: 60_000,
 };
 
 /** Contention-shaped failure text — matches runDoneStep's heuristic in done.ts. */
@@ -375,6 +487,20 @@ function tail(output: string, lines = 20, maxChars = 1200): string {
   let out = cleaned.slice(-lines).join("\n");
   if (out.length > maxChars) out = `…${out.slice(out.length - maxChars)}`;
   return out || "no output";
+}
+
+/** Human-readable byte count for run logs (e.g. "812 B", "1.1 MB"). */
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return "unknown";
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KB", "MB", "GB"];
+  let value = bytes / 1024;
+  let unit = units[0]!;
+  for (let i = 1; value >= 1024 && i < units.length; i++) {
+    value /= 1024;
+    unit = units[i]!;
+  }
+  return `${value.toFixed(value >= 10 ? 0 : 1)} ${unit}`;
 }
 
 // ── per-task remote-validation events (#0568) ───────────────────────────────
@@ -500,6 +626,219 @@ export const HOST_LOCK_HEARTBEAT_SECS = 60;
 export const HOST_LOCK_HEARTBEAT_TICKS = 30;
 /** Slot indices 0..N-1 on a host — independent of any one caller's limit (#0521 review). */
 export const HOST_LOCK_MAX_SLOTS = 16;
+
+/** One job holding or waiting for a host-side validate lock (#0705). */
+export interface HostLockJob {
+  state: "holding" | "waiting";
+  /** Task id when known; absent for anonymous standalone runs. */
+  taskId?: string;
+  /** Human label — `#0693` or `standalone check in <worktree>`. */
+  label: string;
+  /** Gate phase for display: self-check / pre-review / close-out / release. */
+  phase: string;
+  ageSecs: number;
+  /** 1-based position among waiters on this host (waiters only). */
+  queuePosition?: number;
+  slotIndex?: number;
+}
+
+export interface HostLockSnapshot {
+  holders: HostLockJob[];
+  waiters: HostLockJob[];
+  sampledAt?: string;
+}
+
+/** Host-lock priority: close-out and release beat engineer self-checks (#0705). */
+export function hostLockPriority(
+  phase?: CheckRunPhase,
+  env: NodeJS.ProcessEnv = process.env,
+): number {
+  if (phase === "close-out") return 100;
+  if (phase === "release") return 90;
+  if (phase === "pre-review" && env.REPOOS_AGENT === "1") return 30;
+  if (phase === "pre-review") return 60;
+  if (phase === "cli") return 40;
+  return 40;
+}
+
+/** Display phase for the Remote runners tab (#0705). */
+export function hostLockPhaseLabel(
+  phase?: CheckRunPhase,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  if (phase === "pre-review" && env.REPOOS_AGENT === "1") return "self-check";
+  if (phase === "cli") return "self-check";
+  return phase ?? "self-check";
+}
+
+export function hostLockMetaJson(opts: {
+  taskId: string;
+  phase?: CheckRunPhase;
+  worktree?: string;
+  priority: number;
+  env?: NodeJS.ProcessEnv;
+}): string {
+  const env = opts.env ?? process.env;
+  const phase = hostLockPhaseLabel(opts.phase, env);
+  const worktree = opts.worktree?.trim();
+  return JSON.stringify({
+    taskId: opts.taskId,
+    phase,
+    priority: opts.priority,
+    worktree: worktree || undefined,
+  });
+}
+
+/** Remote shell: line-oriented lock inspect (no jq) (#0705). */
+export function hostLockInspectShell(lockRoot?: string): string {
+  const raw = (lockRoot ?? "~/.repoos-validate-locks").replace(/'/g, "");
+  const lockLine = raw.startsWith("~/")
+    ? `LOCKROOT="$HOME/${raw.slice(2).replace(/["\\$]/g, "")}"`
+    : `LOCKROOT='${raw}'`;
+  return [
+    lockLine,
+    "NOW=$(date +%s)",
+    'echo "__HOST_LOCK__"',
+    'if [ -d "$LOCKROOT" ]; then',
+    '  for _d in "$LOCKROOT"/[0-9]*; do',
+    '    [ -d "$_d" ] || continue',
+    '    _slot=$(basename "$_d")',
+    '    _age=$((NOW - $(stat -f %m "$_d" 2>/dev/null || stat -c %Y "$_d" 2>/dev/null || echo "$NOW")))',
+    '    echo "hold\t$_slot\t$_age"',
+    '    [ -r "$_d/.meta" ] && cat "$_d/.meta"',
+    "  done",
+    '  if [ -d "$LOCKROOT/wait" ]; then',
+    "    _pos=0",
+    '    for _wf in "$LOCKROOT/wait"/*; do',
+    '      [ -f "$_wf" ] || continue',
+    "      _pos=$((_pos+1))",
+    '      _age=$((NOW - $(stat -f %m "$_wf" 2>/dev/null || stat -c %Y "$_wf" 2>/dev/null || echo "$NOW")))',
+    '      echo "wait\t$_pos\t$_age"',
+    '      tail -n +2 "$_wf" 2>/dev/null',
+    "    done",
+    "  fi",
+    "fi",
+  ].join("\n");
+}
+
+function parseHostLockMeta(raw: string | undefined): {
+  taskId?: string;
+  phase?: string;
+  worktree?: string;
+} {
+  if (!raw?.trim()) return {};
+  try {
+    const o = JSON.parse(raw.trim()) as Record<string, unknown>;
+    return {
+      taskId: typeof o.taskId === "string" ? o.taskId : undefined,
+      phase: typeof o.phase === "string" ? o.phase : undefined,
+      worktree: typeof o.worktree === "string" ? o.worktree : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function hostLockJobLabel(meta: ReturnType<typeof parseHostLockMeta>, taskId?: string): string {
+  const id = meta.taskId ?? taskId;
+  if (id && id !== "pre-review" && id !== "?") return `#${id}`;
+  if (meta.worktree) {
+    const parts = meta.worktree.replace(/\\/g, "/").split("/").filter(Boolean);
+    const tail = parts.slice(-2).join("/") || meta.worktree;
+    return `standalone check in ${tail}`;
+  }
+  return "standalone check";
+}
+
+/** Parse {@link hostLockInspectShell} output into a snapshot (#0705). */
+export function parseHostLockInspectOutput(output: string, sampledAt?: string): HostLockSnapshot {
+  const holders: HostLockJob[] = [];
+  const waiters: HostLockJob[] = [];
+  const lines = output.split("\n");
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i]!;
+    if (!line.startsWith("hold\t") && !line.startsWith("wait\t")) {
+      i++;
+      continue;
+    }
+    const [kind, a, b] = line.split("\t");
+    const ageSecs = Math.max(0, Number(b) || 0);
+    const metaLine = lines[i + 1]?.trim();
+    const meta = parseHostLockMeta(metaLine);
+    i += metaLine?.startsWith("{") ? 2 : 1;
+    if (kind === "hold") {
+      holders.push({
+        state: "holding",
+        slotIndex: Number(a),
+        ageSecs,
+        phase: meta.phase ?? "self-check",
+        label: hostLockJobLabel(meta),
+        taskId: meta.taskId,
+      });
+    } else {
+      waiters.push({
+        state: "waiting",
+        queuePosition: Number(a) || waiters.length + 1,
+        ageSecs,
+        phase: meta.phase ?? "self-check",
+        label: hostLockJobLabel(meta),
+        taskId: meta.taskId,
+      });
+    }
+  }
+  return { holders, waiters, sampledAt };
+}
+
+export function formatHostLockHolderSummary(lock?: HostLockSnapshot): string {
+  if (!lock?.holders.length) return "";
+  const parts = lock.holders.map((h) => `${h.label} (${h.phase}, ${h.ageSecs}s)`);
+  return ` — slot held by ${parts.join("; ")}`;
+}
+
+export function mergeHostLockIntoStatus(
+  base: RemoteHostStatus,
+  lock?: HostLockSnapshot,
+): RemoteHostStatus {
+  if (!lock) return base;
+  const serverTaskIds = new Set((base.activeRuns ?? []).map((r) => r.taskId));
+  const extraRuns = lock.holders
+    .filter((h) => !h.taskId || !serverTaskIds.has(h.taskId))
+    .map((h) => ({
+      taskId: h.taskId ?? h.label,
+      startedAt: new Date(Date.now() - h.ageSecs * 1000).toISOString(),
+      phase: h.phase,
+      label: h.label,
+      source: "host-lock" as const,
+    }));
+  const activeRuns = [
+    ...(base.activeRuns ?? []).map((r) => ({ ...r, source: "server" as const })),
+    ...extraRuns,
+  ];
+  const lockWaiters = lock.waiters.map((w) => ({
+    taskId: w.taskId ?? w.label,
+    phase: w.phase,
+    label: w.label,
+    queuePosition: w.queuePosition,
+    ageSecs: w.ageSecs,
+  }));
+  const holderCount = lock.holders.length;
+  const inFlight = Math.max(base.inFlight, holderCount);
+  const queued = base.queued + lock.waiters.length;
+  const queuedTasks = [
+    ...lock.waiters.map((w) => w.taskId ?? w.label),
+    ...(base.queuedTasks ?? []),
+  ];
+  return {
+    ...base,
+    inFlight,
+    queued,
+    activeRuns,
+    queuedTasks,
+    hostLock: lock,
+    lockWaiters,
+  };
+}
 
 /**
  * Per-host prerequisite check (#0521) run over ssh before a host's first job,
@@ -669,6 +1008,10 @@ export function hostLockShell(opts: {
    * caller with no deadline, e.g. a standalone `repoos check`).
    */
   deadlineAtEpochSecs?: number;
+  /** JSON metadata written to the slot's `.meta` file (#0705). */
+  metaJson?: string;
+  /** Wait-queue priority — close-out beats self-check (#0705). */
+  priority?: number;
   inner: string;
 }): string {
   // `~` would NOT expand inside the single-quoted LOCKROOT assignment below,
@@ -687,12 +1030,22 @@ export function hostLockShell(opts: {
   const stale = Math.max(1, Math.floor(opts.staleMinutes ?? HOST_LOCK_STALE_MINUTES));
   const beat = Math.max(1, Math.floor(opts.heartbeatSecs ?? HOST_LOCK_HEARTBEAT_SECS));
   const ticks = Math.max(1, Math.floor(opts.heartbeatTicks ?? HOST_LOCK_HEARTBEAT_TICKS));
+  const priority = Math.max(0, Math.floor(opts.priority ?? 40));
+  const metaShell = opts.metaJson ? shellQuote(opts.metaJson) : "";
   const script = [
     lockLine,
     `SLOTS=${slots}`,
     `HOSTMAX=${HOST_LOCK_MAX_SLOTS}`,
     `WAIT=${wait}`,
+    `PRIORITY=${priority}`,
     `DEADLINE=${deadline !== undefined ? deadline : ""}`,
+    'WAITDIR="$LOCKROOT/wait"',
+    'mkdir -p "$WAITDIR" 2>/dev/null || true',
+    '[ "$WAIT" -gt 0 ] || [ -n "$DEADLINE" ] && {',
+    metaShell
+      ? `  printf '%s\\n' "$PRIORITY" > "$WAITDIR/$$" && printf '%s\\n' ${metaShell} >> "$WAITDIR/$$"`
+      : `  printf '%s\\n' "$PRIORITY" > "$WAITDIR/$$"`,
+    "}",
     // zsh throws "no matches found" when a glob expands to nothing (unlike bash/sh
     // which pass the literal string — caught by the `[ -d ]` guard below).
     // nullglob makes unmatched globs expand to nothing instead of erroring.
@@ -710,6 +1063,26 @@ export function hostLockShell(opts: {
     '_rvslot=""',
     "_rvwaited=0",
     'while [ -z "$_rvslot" ]; do',
+    "  _defer=0",
+    '  if [ "$WAIT" -gt 0 ] || [ -n "$DEADLINE" ]; then',
+    '  for _wf in "$WAITDIR"/*; do',
+    '    [ -f "$_wf" ] || continue',
+    '    _wpid=$(basename "$_wf")',
+    '    [ "$_wpid" = "$$" ] && continue',
+    "    _opri=0",
+    '    IFS= read -r _opri < "$_wf" || _opri=0',
+    '    case "$_opri" in ""|*[!0-9]*) _opri=0 ;; esac',
+    '    if [ "$_opri" -gt "$PRIORITY" ] || { [ "$_opri" -eq "$PRIORITY" ] && [ "$_wpid" -lt "$$" ]; }; then',
+    "      _defer=1",
+    "      break",
+    "    fi",
+    "  done",
+    '  if [ "$_defer" -eq 1 ]; then',
+    "    sleep 5",
+    "    _rvwaited=$((_rvwaited+5))",
+    "    continue",
+    "  fi",
+    "  fi",
     // Host-wide cap = min(this caller's limit, every occupied slot's limit).
     // Scan all slot indices (HOSTMAX), not just 0..SLOTS-1, so a caller with
     // a lower limit cannot grab a free high index while another run holds a
@@ -741,7 +1114,12 @@ export function hostLockShell(opts: {
     '          [ "$_rvother" -ge 1 ] || _rvother=1',
     '          [ "$_rvother" -lt "$_rvcap2" ] && _rvcap2=$_rvother',
     "        done",
-    '        if [ "$_rvcount" -le "$_rvcap2" ]; then _rvslot=$_i; break; fi',
+    '        if [ "$_rvcount" -le "$_rvcap2" ]; then _rvslot=$_i;',
+    ...(metaShell
+      ? [`          printf '%s\\n' ${metaShell} > "$LOCKROOT/$_rvslot/.meta" 2>/dev/null || true`]
+      : []),
+    '          rm -f "$WAITDIR/$$" 2>/dev/null || true',
+    "          break; fi",
     '        rm -f "$LOCKROOT/$_i/.limit"; rmdir "$LOCKROOT/$_i" 2>/dev/null',
     "      fi",
     "      _i=$((_i+1))",
@@ -786,7 +1164,7 @@ export function hostLockShell(opts: {
     // for up to a full heartbeat interval after every run.
     "_rvbeat >/dev/null 2>&1 &",
     "_rvhb=$!",
-    '_rvcleanup() { _rc=$?; kill "$_rvhb" 2>/dev/null; rm -f "$LOCKROOT/$_rvslot/.limit"; rmdir "$LOCKROOT/$_rvslot" 2>/dev/null; exit $_rc; }',
+    '_rvcleanup() { _rc=$?; kill "$_rvhb" 2>/dev/null; rm -f "$LOCKROOT/$_rvslot/.limit" "$LOCKROOT/$_rvslot/.meta"; rmdir "$LOCKROOT/$_rvslot" 2>/dev/null; rm -f "$WAITDIR/$$" 2>/dev/null; exit $_rc; }',
     "trap _rvcleanup EXIT",
     "trap 'exit 129' HUP",
     "trap 'exit 130' INT",
@@ -911,10 +1289,73 @@ function runLocal(
   });
 }
 
+/** How engineer self-checks scope remote vitest (#0695). */
+export type RemoteChangedTestScope =
+  | { scoped: false; warning?: string }
+  | { scoped: true; ref: string; baseSha: string };
+
+/**
+ * Resolve `--changed` / `REPOOS_CHECK_CHANGED` for the remote runner. When the
+ * ref does not resolve, returns full-suite mode and a warning string for logs.
+ */
+export async function remoteChangedTestScope(
+  worktreePath: string,
+  changedRef?: string,
+): Promise<RemoteChangedTestScope> {
+  const ref = changedRef?.trim();
+  if (!ref) return { scoped: false };
+  const res = await runGit(worktreePath, ["rev-parse", "--verify", ref], 15_000);
+  if (res.status !== 0) {
+    return {
+      scoped: false,
+      warning: `could not resolve changed ref "${ref}" for remote tests — running the full suite on the runner, not a scoped self-check`,
+    };
+  }
+  return { scoped: true, ref, baseSha: res.stdout.trim() };
+}
+
+async function prepareRemoteTestBundle(
+  worktreePath: string,
+  changedRef: string | undefined,
+  emit: (line: string) => void,
+): Promise<{ remoteTestRef: string | null; changedBaseSha: string | null }> {
+  const testScope = await remoteChangedTestScope(worktreePath, changedRef);
+  if (!testScope.scoped && testScope.warning) {
+    emit(`[remote validation] WARNING: ${testScope.warning}\n`);
+  }
+  if (!testScope.scoped) {
+    return { remoteTestRef: null, changedBaseSha: null };
+  }
+  // The scope ref (e.g. `main`) travels as a NAMED ref so the runner can run
+  // `--changed main`; the base sha both names that ref and bounds the partial
+  // bundle (#0717).
+  return { remoteTestRef: testScope.ref, changedBaseSha: testScope.baseSha };
+}
+
+function validateScriptArgs(
+  remoteBundle: string,
+  candidateSha: string,
+  artifactsDir: string,
+  changedRef?: string,
+  mirrorPath?: string,
+): string {
+  const parts = [VALIDATE_SCRIPT, remoteBundle, candidateSha, artifactsDir];
+  const ref = changedRef?.trim();
+  if (ref) parts.push(shellQuote(ref));
+  // Mirror path is appended last so an older installed validate.sh (which reads
+  // only $4 as the changed ref) still receives a valid positional layout.
+  if (mirrorPath) parts.push(shellQuote(mirrorPath));
+  return parts.join(" ");
+}
+
 export function defaultRemoteExec(): RemoteExecDeps {
   return {
-    async bundleRepo(cwd, outPath) {
-      const res = await runLocal("git", ["bundle", "create", outPath, "HEAD"], {
+    async bundleRepo(cwd, outPath, opts) {
+      const refs = [...(opts?.refs ?? ["HEAD"])];
+      // `^<base>` prerequisites: the host already holds these commits, so only
+      // the commits after them travel (#0717).
+      const excludes = (opts?.excludeRefs ?? []).map((r) => `^${r}`);
+      const res = await runLocal("git", ["bundle", "create", outPath, ...refs, ...excludes], {
         cwd,
         timeoutMs: 120_000,
       });
@@ -931,6 +1372,15 @@ export function defaultRemoteExec(): RemoteExecDeps {
         { timeoutMs: 120_000 },
       );
       return res.code === 0 ? { ok: true } : { ok: false, detail: tail(res.output) };
+    },
+    async probeMirror(host, mirrorPath) {
+      const res = await runLocal(
+        "ssh",
+        [...sshArgs(host), `${host.user}@${host.ip}`, mirrorProbeCommand(mirrorPath)],
+        { timeoutMs: 20_000 },
+      ).catch(() => undefined);
+      if (!res || res.code !== 0) return { exists: false, refs: {} };
+      return parseMirrorProbeOutput(res.output);
     },
     async downloadDir(host, remotePath, localDir) {
       mkdirSync(localDir, { recursive: true });
@@ -960,6 +1410,153 @@ export function defaultRemoteExec(): RemoteExecDeps {
       });
     },
   };
+}
+
+// ── incremental candidate upload (#0717) ─────────────────────────────────────
+
+/** Result of bundling + uploading the candidate tree to a host. */
+export type PreparedUpload =
+  | {
+      ok: true;
+      bundlePath: string;
+      bundleBytes: number;
+      uploadSecs: number;
+      /** True when only `<base>..HEAD` was uploaded (host held the base). */
+      partial: boolean;
+      baseSha: string | null;
+      mirrorPath: string;
+    }
+  | { ok: false; stage: "bundle" | "upload"; detail: string; hostGone: boolean };
+
+const UPLOAD_ATTEMPTS = 3;
+
+/**
+ * Bundle the candidate tree and upload it to a host, transferring only commits
+ * the host does not already have (#0717).
+ *
+ * A persistent bare mirror on the host (`~/.repoos-cache/<repo>.git`) holds the
+ * last candidate it validated. When the host reports a commit the candidate
+ * descends from, the bundle excludes it (`<base>..HEAD`) and is a few KB instead
+ * of the full ~100 MB history. On the first run, or when the host has no mirror
+ * or lacks a usable base, it falls back to the full bundle. The upload is
+ * retried a few times instead of restarting the whole run.
+ */
+export async function prepareCandidateUpload(
+  exec: RemoteExecDeps,
+  opts: {
+    host: RemoteHost;
+    /** Local path to write the bundle to (owned by the caller's tmp dir). */
+    bundlePath: string;
+    /** Where the bundle lands on the host. */
+    remoteBundle: string;
+    worktreePath: string;
+    candidateSha: string;
+    changedRef?: string;
+    /** The changed-ref base sha, when the run is scoped (#0695). */
+    changedBaseSha?: string | null;
+    mirrorPath: string;
+    emit: (s: string) => void;
+  },
+): Promise<PreparedUpload> {
+  const { host, bundlePath, remoteBundle, worktreePath, candidateSha, mirrorPath, emit } = opts;
+
+  // 1. Ask the host what its mirror already holds (one round-trip). A failed
+  //    probe, or a runner with no probe at all, is not fatal: treat it as "no
+  //    mirror" and send the full bundle.
+  const mirror = exec.probeMirror
+    ? await exec.probeMirror(host, mirrorPath).catch(() => EMPTY_REMOTE_MIRROR)
+    : EMPTY_REMOTE_MIRROR;
+  const hostShas = mirror.exists ? Object.values(mirror.refs) : [];
+
+  // 2. Pick a base the host holds that the candidate is built on. Prefer the
+  //    newest such base so the bundle is smallest; never pick the candidate
+  //    itself. For a scoped run the base must be a STRICT ancestor of the scope
+  //    ref's tip: excluding the base also excludes the scope tip itself when
+  //    they are equal, which would drop the `refs/repoos/scope` ref the runner
+  //    needs to run `--changed <ref>` (validate.sh re-fetches it from the
+  //    bundle). Base == scope tip is therefore not usable for a partial bundle.
+  const scopeBase = opts.changedBaseSha ?? null;
+  let baseSha: string | null = null;
+  for (const sha of hostShas) {
+    if (!sha || sha === candidateSha) continue;
+    if (!(await isAncestor(worktreePath, sha, candidateSha))) continue;
+    if (scopeBase) {
+      if (sha === scopeBase) continue;
+      if (!(await isAncestor(worktreePath, sha, scopeBase))) continue;
+    }
+    if (baseSha === null || (await isAncestor(worktreePath, baseSha, sha))) baseSha = sha;
+  }
+
+  // 3. Stage the refs the bundle must record, under per-run names so concurrent
+  //    runs in one repo never race on a shared ref. validate.sh re-fetches them
+  //    into the mirror under the stable names it knows. If the refs cannot be
+  //    staged (not a git worktree, a read-only git dir, an exotic checkout) the
+  //    mirror cannot be used at all — fall back to the legacy full `HEAD`
+  //    bundle and tell the runner to clone it directly (`mirrorPath: ""`).
+  const runTag = randomBytes(4).toString("hex");
+  const candidateRef = `refs/repoos/candidate-${runTag}`;
+  const staged = await updateRef(worktreePath, candidateRef, candidateSha);
+  let refs: string[] = ["HEAD"];
+  let excludeRefs: string[] = [];
+  let effectiveMirror = "";
+  if (staged) {
+    refs = [candidateRef];
+    effectiveMirror = mirrorPath;
+    excludeRefs = baseSha ? [baseSha] : [];
+    if (scopeBase) {
+      const scopeRef = `refs/repoos/scope-${runTag}`;
+      if (await updateRef(worktreePath, scopeRef, scopeBase)) refs.push(scopeRef);
+    }
+  }
+
+  const bundle = await exec.bundleRepo(worktreePath, bundlePath, { refs, excludeRefs });
+  if (!bundle.ok) {
+    return { ok: false, stage: "bundle", detail: bundle.detail ?? "unknown", hostGone: false };
+  }
+  if (!staged) baseSha = null;
+  let bundleBytes = 0;
+  try {
+    bundleBytes = statSync(bundlePath).size;
+  } catch {
+    /* size is observability only */
+  }
+
+  // 4. Upload, retrying a failed transfer instead of losing the whole run. The
+  //    bundle is already local, so a retry re-sends it (a partial bundle is
+  //    small; a full one is the case this feature is meant to avoid repeating).
+  const uploadStartedAt = Date.now();
+  let lastDetail = "";
+  for (let attempt = 1; attempt <= UPLOAD_ATTEMPTS; attempt++) {
+    const up = await exec.uploadFile(host, bundlePath, remoteBundle);
+    if (up.ok) {
+      const uploadSecs = Math.round((Date.now() - uploadStartedAt) / 100) / 10;
+      return {
+        ok: true,
+        bundlePath,
+        bundleBytes,
+        uploadSecs,
+        partial: baseSha !== null,
+        baseSha,
+        mirrorPath: effectiveMirror,
+      };
+    }
+    lastDetail = up.detail ?? "unknown";
+    if (attempt < UPLOAD_ATTEMPTS) {
+      emit(`[upload attempt ${attempt} failed (${lastDetail}) — retrying]\n`);
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    }
+  }
+  return { ok: false, stage: "upload", detail: lastDetail, hostGone: true };
+}
+
+async function isAncestor(cwd: string, ancestor: string, descendant: string): Promise<boolean> {
+  const res = await runGit(cwd, ["merge-base", "--is-ancestor", ancestor, descendant], 15_000);
+  return res.status === 0;
+}
+
+async function updateRef(cwd: string, ref: string, sha: string): Promise<boolean> {
+  const res = await runGit(cwd, ["update-ref", ref, sha], 15_000);
+  return res.status === 0;
 }
 
 // ── the runner ──────────────────────────────────────────────────────────────
@@ -1162,7 +1759,10 @@ export class RemoteValidationRunner implements RemoteValidator {
     }
     // Which machine ends up running the suite is known only after provisioning
     // inside runValidation — captured here so the history row can name it.
-    const runMeta: { machine: string | null } = { machine: null };
+    const runMeta: { machine: string | null; remoteTestRef: string | null } = {
+      machine: null,
+      remoteTestRef: null,
+    };
     try {
       // Dispatch can hand over a free slot in the same tick the deadline
       // passes — cancel here rather than start a suite nobody waits for.
@@ -1201,23 +1801,25 @@ export class RemoteValidationRunner implements RemoteValidator {
     opts: ValidateOptions,
     paths: RemoteRunPaths,
     /** Set once a runner VM is actually chosen — the history row's machine (#0564). */
-    runMeta: { machine: string | null },
+    runMeta: { machine: string | null; remoteTestRef?: string | null },
   ): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
     const dispatch = { taskId: opts.taskId, phase: "dispatch" as const };
-    if (!rv.enabled) return this.infraFail("remote validation is disabled", dispatch);
+    let remoteTestRef: string | null = null;
+    const withScope = (summary: CheckSummary): CheckSummary =>
+      remoteTestRef != null ? { ...summary, remoteTestScopeRef: remoteTestRef } : summary;
+    if (!rv.enabled) return withScope(this.infraFail("remote validation is disabled", dispatch));
     if (!process.env.HETZNER_API_TOKEN)
-      return this.infraFail("HETZNER_API_TOKEN is not set", dispatch);
+      return withScope(this.infraFail("HETZNER_API_TOKEN is not set", dispatch));
     if (!this.keyPath || !existsSync(this.keyPath)) {
-      return this.infraFail(
-        "REPOOS_REMOTE_SSH_KEY is not set or the key file is missing",
-        dispatch,
+      return withScope(
+        this.infraFail("REPOOS_REMOTE_SSH_KEY is not set or the key file is missing", dispatch),
       );
     }
     if (!rv.snapshotId)
-      return this.infraFail("remoteValidation.snapshotId is not configured", dispatch);
+      return withScope(this.infraFail("remoteValidation.snapshotId is not configured", dispatch));
     if (!rv.sshKeyName)
-      return this.infraFail("remoteValidation.sshKeyName is not configured", dispatch);
+      return withScope(this.infraFail("remoteValidation.sshKeyName is not configured", dispatch));
 
     this.activeJobs++;
     this.clearIdleTimer();
@@ -1238,46 +1840,76 @@ export class RemoteValidationRunner implements RemoteValidator {
         { level: "info", phase: "run", message: `runner ${host.ip} ready` },
       );
 
-      // 1. bundle the candidate tree
+      // 1. bundle the candidate tree + 2. upload it, transferring only commits
+      //    the host does not already have (#0717).
       tmp = mkdtempSync(join(tmpdir(), "repoos-rvr-"));
       const bundlePath = join(tmp, "candidate.bundle");
-      const bundle = await this.exec.bundleRepo(opts.worktreePath, bundlePath);
-      if (!bundle.ok)
-        return this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`, {
-          taskId: opts.taskId,
-          host: host.ip,
-        });
-
-      // 2. upload
+      const prepared = await prepareRemoteTestBundle(opts.worktreePath, opts.changedRef, emit);
+      remoteTestRef = prepared.remoteTestRef;
+      runMeta.remoteTestRef = remoteTestRef;
       const remoteBundle = paths.bundle;
-      const up = await this.exec.uploadFile(host, bundlePath, remoteBundle);
-      if (!up.ok)
-        return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`, {
-          taskId: opts.taskId,
-          host: host.ip,
-        });
+      const upload = await prepareCandidateUpload(this.exec, {
+        host,
+        bundlePath,
+        remoteBundle,
+        worktreePath: opts.worktreePath,
+        candidateSha: opts.candidateSha,
+        changedRef: opts.changedRef,
+        changedBaseSha: prepared.changedBaseSha,
+        mirrorPath: remoteMirrorPath(this.config.root),
+        emit,
+      });
+      if (!upload.ok) {
+        const what =
+          upload.stage === "bundle"
+            ? `git bundle failed: ${upload.detail}`
+            : `upload of candidate bundle failed: ${upload.detail}`;
+        return withScope(this.infraFail(what, { taskId: opts.taskId, host: host.ip }));
+      }
+      emit(
+        `[uploaded bundle ${formatBytes(upload.bundleBytes)}${upload.partial ? ` (only new commits since ${upload.baseSha?.slice(0, 12)})` : " (full history — host had no usable base)"} in ${upload.uploadSecs}s]\n`,
+      );
+      this.record(
+        { taskId: opts.taskId, host: host.ip, phase: "run" },
+        {
+          level: "info",
+          phase: "run",
+          message: `uploaded bundle ${formatBytes(upload.bundleBytes)} in ${upload.uploadSecs}s${upload.partial ? " (incremental)" : " (full)"}`,
+        },
+      );
 
       // Provisioning + bundling can outlast the caller's deadline (#0521 spec
       // item 5) — never start a suite for a caller that already gave up. The
       // `cancelled` marker tells the history row apart from a real gate
       // failure (0564 review: this used to land as `fail`).
       if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
-        return {
+        return withScope({
           ...this.infraFail(
             `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
             { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
           ),
           cancelled: true,
-        };
+        });
       }
 
       // 3. run build + test inside the container
-      emit(`[running build + test on ${host.ip}]\n`);
+      const changedNote = remoteTestRef ? ` (tests scoped to changed vs ${remoteTestRef})` : "";
+      emit(`[running build + test on ${host.ip}${changedNote}]\n`);
       this.record(
         { taskId: opts.taskId, host: host.ip, phase: "run" },
-        { level: "info", phase: "run", message: `running build + test on ${host.ip}` },
+        {
+          level: "info",
+          phase: "run",
+          message: `running build + test on ${host.ip}${changedNote}`,
+        },
       );
-      const cmd = `/opt/repoos/validate.sh ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
+      const cmd = validateScriptArgs(
+        remoteBundle,
+        opts.candidateSha,
+        paths.artifacts,
+        remoteTestRef ?? undefined,
+        upload.mirrorPath || undefined,
+      );
       const run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
 
       // 4. pull artifacts (best effort)
@@ -1309,14 +1941,14 @@ export class RemoteValidationRunner implements RemoteValidator {
             infra: true,
           },
         );
-        return {
+        return withScope({
           ok: false,
           stage: "check",
           transient: true,
           exitCode: null,
           output: tail(run.output, 40, 4000),
           detail,
-        };
+        });
       }
       if (run.code === 0) {
         emit(`\n[remote validation PASSED in ${elapsed}s]\n`);
@@ -1331,7 +1963,7 @@ export class RemoteValidationRunner implements RemoteValidator {
             exitCode: 0,
           },
         );
-        return { ok: true, stage: "check" };
+        return withScope({ ok: true, stage: "check" });
       }
 
       // Non-zero: the ssh transport itself could have dropped (code 255) — treat
@@ -1340,11 +1972,13 @@ export class RemoteValidationRunner implements RemoteValidator {
         run.code === 255 &&
         /(?:Connection|ssh:|closed by remote host|Broken pipe)/i.test(run.output)
       ) {
-        return this.infraFail(`ssh connection to the runner dropped mid-run: ${tail(run.output)}`, {
-          taskId: opts.taskId,
-          host: host.ip,
-          exitCode: 255,
-        });
+        return withScope(
+          this.infraFail(`ssh connection to the runner dropped mid-run: ${tail(run.output)}`, {
+            taskId: opts.taskId,
+            host: host.ip,
+            exitCode: 255,
+          }),
+        );
       }
       const transient = looksTransient(run.output);
       emit(`\n[remote validation FAILED (exit ${run.code}) in ${elapsed}s]\n`);
@@ -1362,16 +1996,16 @@ export class RemoteValidationRunner implements RemoteValidator {
           infra: transient,
         },
       );
-      return {
+      return withScope({
         ok: false,
         stage: "check",
         exitCode: run.code,
         transient,
         output: tail(run.output, 40, 4000),
         detail: `remote validation failed (exit ${run.code}) — ${tail(run.output)}`,
-      };
+      });
     } catch (e) {
-      return this.infraFail((e as Error).message, { taskId: opts.taskId });
+      return withScope(this.infraFail((e as Error).message, { taskId: opts.taskId }));
     } finally {
       if (tmp) rmSync(tmp, { recursive: true, force: true });
       this.activeJobs = Math.max(0, this.activeJobs - 1);
@@ -1593,6 +2227,9 @@ interface PoolHostState {
   serverStats?: RemoteServerStats;
   statsRequestedAt?: number;
   statsSampling?: Promise<void>;
+  hostLock?: HostLockSnapshot;
+  hostLockRequestedAt?: number;
+  hostLockSampling?: Promise<void>;
 }
 
 /** One in-flight remote run, attributed to the host executing it (#0564). */
@@ -1611,7 +2248,7 @@ interface PoolWaiter {
   excludeHosts?: ReadonlySet<string>;
   resolve: (slot: HostSlot) => void;
   reject: (err: Error) => void;
-  onQueue?: (ahead: number) => void;
+  onQueue?: (info: { ahead: number; host: string }) => void;
   /** Which run is waiting — surfaced as the queue's next-up tasks (#0564). */
   taskId?: string;
   timer?: ReturnType<typeof setTimeout>;
@@ -1619,8 +2256,27 @@ interface PoolWaiter {
 
 /** How long an unhealthy host waits before a probe may retry it. */
 const HEALTH_RETRY_MS = 30_000;
+
+/** Actionable hint when SSH cannot reach a tailnet host (#0683). */
+function formatProbeReachabilityDetail(detail: string): string {
+  const lower = detail.toLowerCase();
+  if (
+    lower.includes("connection timed out") ||
+    lower.includes("connection refused") ||
+    lower.includes("no route to host") ||
+    lower.includes("network is unreachable")
+  ) {
+    return `${detail} — host unreachable: is Tailscale connected and logged in on that machine?`;
+  }
+  if (lower.includes("tailscale") && (lower.includes("login") || lower.includes("logged out"))) {
+    return `${detail} — host unreachable: Tailscale login may have expired on that machine`;
+  }
+  return detail;
+}
 const SERVER_STATS_REFRESH_MS = 15_000;
 const SERVER_STATS_TIMEOUT_MS = 5_000;
+const HOST_LOCK_REFRESH_MS = 3_000;
+const HOST_LOCK_INSPECT_TIMEOUT_MS = 4_000;
 /**
  * Consecutive failed probes before a host stops being retried. Hitting the cap
  * must not strand queued runs: callers with no `deadlineAt` of their own
@@ -1728,16 +2384,20 @@ export class TailscaleHostPool {
   private readonly exec: RemoteExecDeps;
   private readonly probeTimeoutMs: number;
   private readonly healthRetryMs: number;
+  private readonly backgroundProbeIntervalMs: number;
   private readonly keyPath?: string;
   private readonly logger?: Logger;
   /** The image every host's Docker prerequisite probe must find (#0521 review). */
   private containerImage: string;
+  private backgroundProbeTimer?: ReturnType<typeof setInterval>;
 
   constructor(rv: RemoteValidationConfig | undefined, opts: HostPoolOptions) {
     this.exec = opts.exec;
     this.logger = opts.logger;
     this.probeTimeoutMs = opts.probeTimeoutMs ?? 20_000;
     this.healthRetryMs = opts.healthRetryMs ?? HEALTH_RETRY_MS;
+    this.backgroundProbeIntervalMs =
+      opts.backgroundProbeIntervalMs ?? DEFAULT_TIMINGS.backgroundProbeIntervalMs;
     this.containerImage = rv?.containerImage ?? "repoos-ci";
     const key = opts.keyPath ?? "";
     this.keyPath = key && existsSync(key) ? key : undefined;
@@ -1840,6 +2500,32 @@ export class TailscaleHostPool {
       }
     }
     this.dispatch();
+    this.probeDueHosts();
+  }
+
+  /**
+   * Probe every configured host on server boot and on a timer (#0683), so
+   * close-out can dispatch without waiting for the Checks UI tab and
+   * `GET /api/remote-validation/status` reflects real health while idle.
+   */
+  startBackgroundProbing(): void {
+    this.probeDueHosts();
+    if (this.backgroundProbeTimer || this.backgroundProbeIntervalMs <= 0) return;
+    this.backgroundProbeTimer = setInterval(
+      () => this.probeDueHosts(),
+      this.backgroundProbeIntervalMs,
+    );
+    this.backgroundProbeTimer.unref?.();
+  }
+
+  /** Probe hosts that have never been checked or are due for a health retry. */
+  probeDueHosts(): void {
+    for (const s of this.liveHosts()) {
+      if (s.probing) continue;
+      const due =
+        !s.probed || (!s.healthy && Date.now() >= s.retryAt && s.healthFails < MAX_HEALTH_RETRIES);
+      if (due) void this.probe(s);
+    }
   }
 
   get size(): number {
@@ -1861,7 +2547,8 @@ export class TailscaleHostPool {
   async acquire(
     capabilities: string[],
     opts: {
-      onQueue?: (ahead: number) => void;
+      /** Fired once this run joins the FIFO queue (#0706: host + position too). */
+      onQueue?: (info: { ahead: number; host: string }) => void;
       deadlineAt?: number;
       taskId?: string;
       /**
@@ -1947,15 +2634,20 @@ export class TailscaleHostPool {
           candidates.map((s) => `${s.spec.host}: ${s.detail ?? "unreachable"}`).join("; "),
       );
     }
-    const free = healthy.filter((s) => s.healthy && s.active < s.limit);
+    await Promise.all(healthy.map((s) => this.refreshHostLockFor(s)));
+    const free = healthy.filter((s) => this.hostHasCapacity(s));
     if (free.length > 0) {
       // Somebody already queued may be ahead of this arrival for that slot
       // (#0521 review: e.g. a host recovering while a waiter holds the queue).
       // Dispatch first, then re-check — a late arrival never jumps the queue.
       if (this.waiters.length > 0) this.dispatch();
       const nowFree = healthy
-        .filter((s) => s.healthy && s.active < s.limit)
-        .sort((a, b) => a.active - b.active || this.hosts.indexOf(a) - this.hosts.indexOf(b));
+        .filter((s) => this.hostHasCapacity(s))
+        .sort(
+          (a, b) =>
+            this.effectiveActive(a) - this.effectiveActive(b) ||
+            this.hosts.indexOf(a) - this.hosts.indexOf(b),
+        );
       if (nowFree.length > 0) return this.assign(nowFree[0]!, opts.taskId);
     }
 
@@ -1989,7 +2681,10 @@ export class TailscaleHostPool {
         }, ms);
         waiter.timer.unref?.();
       }
-      waiter.onQueue?.(this.queueAheadCount(capabilities, this.waiters.length - 1, excluded));
+      waiter.onQueue?.({
+        ahead: this.queueAheadCount(capabilities, this.waiters.length - 1, excluded),
+        host: candidates[0]?.spec.host ?? "",
+      });
       // Opportunistic recovery while queued: re-probe dead candidates so the
       // job can move to one the moment it comes back.
       for (const s of candidates) if (!s.healthy) this.armHealthRetry(s);
@@ -2033,7 +2728,7 @@ export class TailscaleHostPool {
         .sort(
           (a, b) =>
             Number(b.healthy) - Number(a.healthy) ||
-            a.active - b.active ||
+            this.effectiveActive(a) - this.effectiveActive(b) ||
             this.hosts.indexOf(a) - this.hosts.indexOf(b),
         )[0];
       if (next) {
@@ -2045,25 +2740,66 @@ export class TailscaleHostPool {
         queuedOn.set(next, entry);
       }
     }
-    return this.hosts.map((s) => ({
-      host: s.spec.host,
-      user: s.ssh.user,
-      os: s.spec.os,
-      labels: s.spec.labels ?? [],
-      maxConcurrent: s.limit,
-      inFlight: s.active,
-      queued: queuedOn.get(s)?.count ?? 0,
-      probed: s.probed,
-      healthy: s.healthy,
-      detail: s.detail,
-      lastRun: s.lastRun,
-      activeRuns: s.activeRuns.map((r) => ({ ...r })),
-      queuedTasks: [...(queuedOn.get(s)?.taskIds ?? [])],
-      serverStats: s.serverStats ?? { available: false },
-    }));
+    return this.hosts.map((s) =>
+      mergeHostLockIntoStatus(
+        {
+          host: s.spec.host,
+          user: s.ssh.user,
+          os: s.spec.os,
+          labels: s.spec.labels ?? [],
+          maxConcurrent: s.limit,
+          inFlight: s.active,
+          queued: queuedOn.get(s)?.count ?? 0,
+          probed: s.probed,
+          healthy: s.healthy,
+          detail: s.detail,
+          lastRun: s.lastRun,
+          activeRuns: s.activeRuns.map((r) => ({ ...r })),
+          queuedTasks: [...(queuedOn.get(s)?.taskIds ?? [])],
+          serverStats: s.serverStats ?? { available: false },
+        },
+        s.hostLock,
+      ),
+    );
   }
 
   /** Request stats without acquiring a run slot or entering the run queue. */
+  /** Sample host-side lock holders/waiters without taking a run slot (#0705). */
+  refreshHostLocks(): void {
+    const now = Date.now();
+    for (const host of this.liveHosts()) {
+      if (
+        host.hostLockSampling ||
+        (host.hostLockRequestedAt && now - host.hostLockRequestedAt < HOST_LOCK_REFRESH_MS)
+      ) {
+        continue;
+      }
+      if (!host.probed || !host.healthy) continue;
+      host.hostLockRequestedAt = now;
+      host.hostLockSampling = Promise.resolve()
+        .then(() =>
+          this.exec.runRemote(
+            host.ssh,
+            hostLockInspectShell(),
+            () => {},
+            HOST_LOCK_INSPECT_TIMEOUT_MS,
+          ),
+        )
+        .then((result) => {
+          const sampledAt = new Date().toISOString();
+          if (result.code === 0 && !result.timedOut && result.output.includes("__HOST_LOCK__")) {
+            host.hostLock = parseHostLockInspectOutput(result.output, sampledAt);
+          }
+        })
+        .catch(() => {
+          /* best effort */
+        })
+        .finally(() => {
+          host.hostLockSampling = undefined;
+        });
+    }
+  }
+
   refreshServerStats(): void {
     const now = Date.now();
     for (const host of this.liveHosts()) {
@@ -2111,6 +2847,10 @@ export class TailscaleHostPool {
    * transient infra summary, not hang forever after a restart/dispose.
    */
   dispose(): void {
+    if (this.backgroundProbeTimer) {
+      clearInterval(this.backgroundProbeTimer);
+      this.backgroundProbeTimer = undefined;
+    }
     for (const s of this.hosts) {
       if (s.retryTimer) {
         clearTimeout(s.retryTimer);
@@ -2126,6 +2866,40 @@ export class TailscaleHostPool {
 
   private liveHosts(): PoolHostState[] {
     return this.hosts.filter((s) => !s.removed);
+  }
+
+  /** Host-side slots in use (standalone + server), for dispatch (#0705). */
+  private lockOccupancy(s: PoolHostState): number {
+    return s.hostLock?.holders.length ?? 0;
+  }
+
+  private effectiveActive(s: PoolHostState): number {
+    return Math.max(s.active, this.lockOccupancy(s));
+  }
+
+  private hostHasCapacity(s: PoolHostState): boolean {
+    return s.healthy && this.effectiveActive(s) < s.limit;
+  }
+
+  hostLockFor(host: string): HostLockSnapshot | undefined {
+    return this.hosts.find((s) => s.spec.host === host)?.hostLock;
+  }
+
+  private async refreshHostLockFor(s: PoolHostState): Promise<void> {
+    try {
+      const result = await this.exec.runRemote(
+        s.ssh,
+        hostLockInspectShell(),
+        () => {},
+        HOST_LOCK_INSPECT_TIMEOUT_MS,
+      );
+      if (result.code === 0 && !result.timedOut && result.output.includes("__HOST_LOCK__")) {
+        s.hostLock = parseHostLockInspectOutput(result.output, new Date().toISOString());
+        s.hostLockRequestedAt = Date.now();
+      }
+    } catch {
+      /* best effort */
+    }
   }
 
   /** Hosts that could take a job with these capabilities. */
@@ -2162,7 +2936,7 @@ export class TailscaleHostPool {
     excludeHosts?: ReadonlySet<string>,
   ): number {
     const active = this.hostsEligibleFor(capabilities, excludeHosts).reduce(
-      (n, s) => n + s.active,
+      (n, s) => n + this.effectiveActive(s),
       0,
     );
     let aheadWaiters = 0;
@@ -2230,12 +3004,15 @@ export class TailscaleHostPool {
       const free = this.liveHosts()
         .filter(
           (s) =>
-            s.healthy &&
-            s.active < s.limit &&
+            this.hostHasCapacity(s) &&
             hostSatisfies(s.spec, w.capabilities) &&
             !(w.excludeHosts?.has(s.spec.host) ?? false),
         )
-        .sort((a, b) => a.active - b.active || this.hosts.indexOf(a) - this.hosts.indexOf(b))[0];
+        .sort(
+          (a, b) =>
+            this.effectiveActive(a) - this.effectiveActive(b) ||
+            this.hosts.indexOf(a) - this.hosts.indexOf(b),
+        )[0];
       if (!free) {
         i++;
         continue;
@@ -2275,10 +3052,12 @@ export class TailscaleHostPool {
       ok = res.code === 0 && res.output.includes(PREREQ_OK_TOKEN);
       if (!ok) {
         const why = tail(res.output, 5, 600);
-        detail = `prerequisite check failed (exit ${res.code ?? "signal"}): ${why}`;
+        detail = formatProbeReachabilityDetail(
+          `prerequisite check failed (exit ${res.code ?? "signal"}): ${why}`,
+        );
       }
     } catch (e) {
-      detail = `prerequisite check failed: ${(e as Error).message}`;
+      detail = formatProbeReachabilityDetail(`prerequisite check failed: ${(e as Error).message}`);
     }
     s.probed = true;
     if (ok) {
@@ -2395,6 +3174,8 @@ export interface HostPoolOptions {
   keyPath?: string;
   probeTimeoutMs?: number;
   healthRetryMs?: number;
+  /** Periodic re-probe of unhealthy hosts; 0 disables the timer (#0683). */
+  backgroundProbeIntervalMs?: number;
 }
 
 /**
@@ -2414,7 +3195,7 @@ function classifyRunOutcome(summary: CheckSummary): "pass" | "fail" | "cancelled
  * One row per `validate()` invocation — dispatch failures included, with a
  * null machine when the run never reached a host. Pseudo task ids ("release",
  * "checks-test-suite") record task-less; their phase tells the story. The
- * remote half always runs the full plan, so scope is always 'full'. Fail-soft:
+ * scope is 'full' unless the run used changed-path tests (#0695). Fail-soft:
  * history is observability, never a gate input.
  *
  * The store root honours `REPOOS_CHECK_STORE_ROOT` (0564 review): a standalone
@@ -2449,7 +3230,10 @@ function recordRemoteRunHistory(
       candidateSha: opts.candidateSha,
       machine,
       remote: true,
-      scope: "full",
+      scope:
+        summary?.remoteTestScopeRef != null && summary.remoteTestScopeRef !== ""
+          ? `changed:${summary.remoteTestScopeRef}`
+          : "full",
       startedAt: new Date(startedAt).toISOString(),
       durationMs: outcome === "cancelled" ? null : Math.max(0, Date.now() - startedAt),
       outcome,
@@ -2497,7 +3281,11 @@ export class TailscaleRunner implements RemoteValidator {
       keyPath: this.keyPath,
       probeTimeoutMs: this.timings.probeTimeoutMs,
       healthRetryMs: this.timings.healthRetryMs,
+      backgroundProbeIntervalMs: this.timings.backgroundProbeIntervalMs,
     });
+    if (config.remoteValidation?.enabled) {
+      this.pool.startBackgroundProbing();
+    }
   }
 
   logPath(taskId: string): string {
@@ -2583,12 +3371,17 @@ export class TailscaleRunner implements RemoteValidator {
     this.pool.refreshServerStats();
   }
 
+  refreshHostLocks(): void {
+    this.pool.refreshHostLocks();
+  }
+
   /**
    * Rebuild the dispatch pool from the (already mutated) config object so a
    * Settings save takes effect without restarting the server (#0521 review).
    */
   applyConfig(): void {
     this.pool.sync(this.config.remoteValidation);
+    this.pool.startBackgroundProbing();
   }
 
   /** The queue line a waiting job streams: what it needs and why it waits. */
@@ -2653,7 +3446,7 @@ export class TailscaleRunner implements RemoteValidator {
           // Failover guarantee: the pool never hands back a host this run
           // already tried, so a retry cannot re-run the failed host.
           excludeHosts: [...triedHosts],
-          onQueue: (ahead) => {
+          onQueue: ({ ahead }) => {
             const note = this.queueNote(ahead, capabilities);
             emit(note);
             appendRemoteValidationEvent(this.config.root, opts.taskId, {
@@ -2754,6 +3547,9 @@ export class TailscaleRunner implements RemoteValidator {
     const host = slot.ssh;
     const paths = remoteRunPaths(opts.taskId);
     const startedAt = Date.now();
+    let remoteTestRef: string | null = null;
+    const withScope = (summary: CheckSummary): CheckSummary =>
+      remoteTestRef != null ? { ...summary, remoteTestScopeRef: remoteTestRef } : summary;
     const emit = (s: string): void => {
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
@@ -2773,28 +3569,51 @@ export class TailscaleRunner implements RemoteValidator {
 
     let tmp: string | null = null;
     try {
-      // 1. bundle the candidate tree
+      // 1. bundle the candidate tree + 2. upload it, transferring only commits
+      //    the host does not already have (#0717). A persistent bare mirror on
+      //    the host holds the last candidate, so a normal run ships a few KB
+      //    instead of the full ~100 MB history.
       tmp = mkdtempSync(join(tmpdir(), "repoos-rvr-"));
       const bundlePath = join(tmp, "candidate.bundle");
-      const bundle = await this.exec.bundleRepo(opts.worktreePath, bundlePath);
-      if (!bundle.ok)
-        return this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`, {
-          taskId: opts.taskId,
-          host: host.ip,
-        });
-
-      // 2. upload
+      const prepared = await prepareRemoteTestBundle(opts.worktreePath, opts.changedRef, emit);
+      remoteTestRef = prepared.remoteTestRef;
       const remoteBundle = paths.bundle;
-      const up = await this.exec.uploadFile(host, bundlePath, remoteBundle);
-      if (!up.ok) {
-        const detail = `ssh upload of candidate bundle to ${host.ip} failed: ${up.detail ?? "unknown"}`;
+      const upload = await prepareCandidateUpload(this.exec, {
+        host,
+        bundlePath,
+        remoteBundle,
+        worktreePath: opts.worktreePath,
+        candidateSha: opts.candidateSha,
+        changedRef: opts.changedRef,
+        changedBaseSha: prepared.changedBaseSha,
+        mirrorPath: remoteMirrorPath(this.config.root),
+        emit,
+      });
+      if (!upload.ok) {
+        const detail =
+          upload.stage === "bundle"
+            ? `git bundle failed: ${upload.detail}`
+            : `ssh upload of candidate bundle to ${host.ip} failed: ${upload.detail}`;
         // Upload uses the SSH transport too. A failed transfer means this host
         // may have gone away since its prerequisite probe; keep queued work
         // from immediately selecting it again until the health retry probe.
-        this.pool.markUnhealthy(host.ip, detail);
-        this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
-        return this.infraFail(detail, { taskId: opts.taskId, host: host.ip });
+        if (upload.hostGone) {
+          this.pool.markUnhealthy(host.ip, detail);
+          this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
+        }
+        return withScope(this.infraFail(detail, { taskId: opts.taskId, host: host.ip }));
       }
+      emit(
+        `[uploaded bundle ${formatBytes(upload.bundleBytes)}${upload.partial ? ` (only new commits since ${upload.baseSha?.slice(0, 12)})` : " (full history — host had no usable base)"} in ${upload.uploadSecs}s]\n`,
+      );
+      this.record(
+        { taskId: opts.taskId, host: host.ip, phase: "run" },
+        {
+          level: "info",
+          phase: "run",
+          message: `uploaded bundle ${formatBytes(upload.bundleBytes)} in ${upload.uploadSecs}s${upload.partial ? " (incremental)" : " (full)"}`,
+        },
+      );
 
       // 3. run build + test via validate.sh on the host (which calls docker run
       //    itself), wrapped in the host-side slot lock so this process's gate
@@ -2807,20 +3626,31 @@ export class TailscaleRunner implements RemoteValidator {
       // run. The `cancelled` marker keeps the history row from reading as a
       // gate failure (0564 review).
       if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
-        return {
+        return withScope({
           ...this.infraFail(
             `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
             { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
           ),
           cancelled: true,
-        };
+        });
       }
-      emit(`[running build + test in ${image} on ${host.ip}]\n`);
+      const changedNote = remoteTestRef ? ` (tests scoped to changed vs ${remoteTestRef})` : "";
+      emit(`[running build + test in ${image} on ${host.ip}${changedNote}]\n`);
       this.record(
         { taskId: opts.taskId, host: host.ip, phase: "run" },
-        { level: "info", phase: "run", message: `running build + test in ${image} on ${host.ip}` },
+        {
+          level: "info",
+          phase: "run",
+          message: `running build + test in ${image} on ${host.ip}${changedNote}`,
+        },
       );
-      const inner = `REPOOS_CI_IMAGE=${shellQuote(image)} ${VALIDATE_SCRIPT} ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
+      const inner = `REPOOS_CI_IMAGE=${shellQuote(image)} ${validateScriptArgs(
+        remoteBundle,
+        opts.candidateSha,
+        paths.artifacts,
+        remoteTestRef ?? undefined,
+        upload.mirrorPath || undefined,
+      )}`;
       const waitSecs =
         opts.deadlineAt !== undefined
           ? deadlineLockWaitSecs(opts.deadlineAt)
@@ -2832,7 +3662,21 @@ export class TailscaleRunner implements RemoteValidator {
       // can let a run start well past the caller's real deadline.
       const deadlineAtEpochSecs =
         opts.deadlineAt !== undefined ? Math.floor(opts.deadlineAt / 1000) : undefined;
-      const cmd = hostLockShell({ slots: slot.limit, waitSecs, deadlineAtEpochSecs, inner });
+      const lockPriority = hostLockPriority(opts.phase);
+      const metaJson = hostLockMetaJson({
+        taskId: opts.taskId,
+        phase: opts.phase,
+        worktree: opts.worktreePath,
+        priority: lockPriority,
+      });
+      const cmd = hostLockShell({
+        slots: slot.limit,
+        waitSecs,
+        deadlineAtEpochSecs,
+        inner,
+        metaJson,
+        priority: lockPriority,
+      });
       // The outer SSH timeout must cover the lock wait AND the actual run —
       // it wraps BOTH phases as one process, but was a fixed remoteRunTimeoutMs
       // regardless of how long waitSecs allowed the lock to wait first
@@ -2874,24 +3718,28 @@ export class TailscaleRunner implements RemoteValidator {
             infra: true,
           },
         );
-        return {
+        return withScope({
           ok: false,
           stage: "check",
           transient: true,
           exitCode: null,
           output: tail(run.output, 40, 4000),
           detail,
-        };
+        });
       }
       if (run.code === HOST_LOCK_TIMEOUT_EXIT && run.output.includes("[lock]")) {
         // Another repoos process held the host past our wait — the cap did its
         // job; this run gives its slot back and retries later.
         emit(`\n[host busy — another repoos check held ${host.ip}]\n`);
         this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
-        return this.infraFail(
-          `another repoos check is already running on ${host.ip} — waited ${elapsed}s for a free host slot ` +
-            "(the per-host limit is shared by the server and standalone `repoos check`)",
-          { taskId: opts.taskId, host: host.ip, exitCode: run.code },
+        const holderNote = formatHostLockHolderSummary(this.pool.hostLockFor(host.ip));
+        return withScope(
+          this.infraFail(
+            `another repoos check is already running on ${host.ip} — waited ${elapsed}s for a free host slot ` +
+              "(the per-host limit is shared by the server and standalone `repoos check`)" +
+              holderNote,
+            { taskId: opts.taskId, host: host.ip, exitCode: run.code },
+          ),
         );
       }
       if (run.code === 0) {
@@ -2908,7 +3756,7 @@ export class TailscaleRunner implements RemoteValidator {
             exitCode: 0,
           },
         );
-        return { ok: true, stage: "check" };
+        return withScope({ ok: true, stage: "check" });
       }
 
       // Non-zero: the ssh transport itself could have dropped (code 255) — treat
@@ -2920,11 +3768,13 @@ export class TailscaleRunner implements RemoteValidator {
         const detail = `ssh connection to ${host.ip} dropped mid-run: ${tail(run.output)}`;
         this.pool.markUnhealthy(host.ip, detail);
         this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
-        return this.infraFail(detail, {
-          taskId: opts.taskId,
-          host: host.ip,
-          exitCode: 255,
-        });
+        return withScope(
+          this.infraFail(detail, {
+            taskId: opts.taskId,
+            host: host.ip,
+            exitCode: 255,
+          }),
+        );
       }
       const transient = looksTransient(run.output);
       emit(`\n[remote validation FAILED (exit ${run.code}) in ${elapsed}s on ${host.ip}]\n`);
@@ -2943,16 +3793,18 @@ export class TailscaleRunner implements RemoteValidator {
           infra: transient,
         },
       );
-      return {
+      return withScope({
         ok: false,
         stage: "check",
         exitCode: run.code,
         transient,
         output: tail(run.output, 40, 4000),
         detail: `remote validation failed (exit ${run.code}) — ${tail(run.output)}`,
-      };
+      });
     } catch (e) {
-      return this.infraFail((e as Error).message, { taskId: opts.taskId, host: host.ip });
+      return withScope(
+        this.infraFail((e as Error).message, { taskId: opts.taskId, host: host.ip }),
+      );
     } finally {
       if (tmp) rmSync(tmp, { recursive: true, force: true });
     }

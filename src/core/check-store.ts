@@ -18,9 +18,10 @@
  */
 
 import { createRequire } from "node:module";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { hostname } from "node:os";
 import { join } from "node:path";
+import { currentBranch } from "./git.js";
 
 let Database: any;
 let sqliteAvailable = false;
@@ -387,6 +388,42 @@ export function resetCheckStore(): void {
   warnedRecordFailed = false;
 }
 
+function frontmatterScalar(fm: string, key: string): string | null {
+  const re = new RegExp(`^${key}:\\s*(?:"([^"]*)"|'([^']*)'|(\\S+))\\s*$`, "m");
+  const m = fm.match(re);
+  if (!m) return null;
+  const v = (m[1] ?? m[2] ?? m[3] ?? "").trim();
+  return v || null;
+}
+
+/**
+ * Numeric task id for an active task branch checked out in `repoRoot`, when the
+ * engineer shell has no `REPOOS_TASK_ID` (#0695).
+ */
+export function taskIdFromWorktreeBranch(repoRoot: string, workDir = "work"): string | null {
+  const branch = currentBranch(repoRoot);
+  if (!branch) return null;
+  const dir = join(repoRoot, workDir);
+  let match: string | null = null;
+  try {
+    for (const name of readdirSync(dir)) {
+      if (!name.endsWith(".md")) continue;
+      const raw = readFileSync(join(dir, name), "utf8");
+      const end = raw.indexOf("\n---", 4);
+      if (!raw.startsWith("---") || end === -1) continue;
+      const fm = raw.slice(4, end);
+      if (frontmatterScalar(fm, "branch") !== branch) continue;
+      const id = frontmatterScalar(fm, "id");
+      if (!id || !/^\d+$/.test(id)) continue;
+      if (match !== null && match !== id) return null;
+      match = id;
+    }
+  } catch {
+    /* missing work dir */
+  }
+  return match;
+}
+
 /**
  * Which phase a spawned `repoos check` belongs to, from the caller-supplied
  * env. Task-less callers (a plain `repoos check` in a terminal) record as
@@ -398,13 +435,25 @@ export function envToRunContext(env: NodeJS.ProcessEnv): {
 } {
   const explicit = env.REPOOS_CHECK_TASK_ID?.trim();
   const managed = env.REPOOS_AGENT === "1" ? env.REPOOS_TASK_ID?.trim() : undefined;
-  const taskId = explicit || managed || null;
+  const callerTaskId = explicit || managed || null;
   const raw = env.REPOOS_CHECK_PHASE?.trim();
   const phase: CheckRunPhase =
     raw === "pre-review" || raw === "close-out" || raw === "release"
       ? raw
-      : taskId
+      : callerTaskId
         ? "pre-review"
         : "cli";
-  return { taskId, phase };
+  return { taskId: callerTaskId, phase };
+}
+
+/** Task + phase for a check-run row, including branch attribution in a task worktree (#0695). */
+export function resolveCheckRunAttribution(
+  env: NodeJS.ProcessEnv,
+  repoRoot: string,
+): { taskId: string | null; phase: CheckRunPhase } {
+  const { taskId: callerTaskId, phase } = envToRunContext(env);
+  if (callerTaskId) return { taskId: callerTaskId, phase };
+  const branchTaskId = taskIdFromWorktreeBranch(repoRoot);
+  if (!branchTaskId) return { taskId: null, phase };
+  return { taskId: branchTaskId, phase: "cli" };
 }

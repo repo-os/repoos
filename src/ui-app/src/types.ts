@@ -818,8 +818,40 @@ export interface RemoteHostStatusView {
   healthy: boolean;
   detail?: string;
   lastRun?: { taskId: string; ok: boolean; at: string; durationMs?: number };
-  activeRuns?: { taskId: string; startedAt: string }[];
+  activeRuns?: {
+    taskId: string;
+    startedAt: string;
+    phase?: string;
+    label?: string;
+    source?: "server" | "host-lock";
+  }[];
   queuedTasks?: string[];
+  hostLock?: {
+    holders: Array<{
+      state: "holding";
+      taskId?: string;
+      label: string;
+      phase: string;
+      ageSecs: number;
+      slotIndex?: number;
+    }>;
+    waiters: Array<{
+      state: "waiting";
+      taskId?: string;
+      label: string;
+      phase: string;
+      ageSecs: number;
+      queuePosition?: number;
+    }>;
+    sampledAt?: string;
+  };
+  lockWaiters?: Array<{
+    taskId: string;
+    phase: string;
+    label: string;
+    queuePosition?: number;
+    ageSecs: number;
+  }>;
   serverStats?: {
     available: boolean;
     sampledAt?: string;
