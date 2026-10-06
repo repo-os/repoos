@@ -2,7 +2,7 @@
 id: "0705"
 title: Remote runners tab and dispatcher must see standalone self-check slot holders (they starved close-outs); add refresh feedback
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: provider-failure
 needs_input_detail: "{\"type\":\"thinking\",\"subtype\":\"delta\",\"text\":\"irming close-out be\",\"session_id\":\"4de1a743-5ba4-41d0-961c-6f00a70b14eb\",\"timestamp_ms\":1791271208402}"
@@ -109,3 +109,4 @@ error: script "test" exited with code 1
 - 2026-10-06T07:18:58Z · needs_input
 - 2026-10-06T07:20:08Z · agent exited with an error (cursor) · {"type":"thinking","subtype":"delta","text":"irming close-out be","session_id":"4de1a743-5ba4-41d0-961c-6f00a70b14eb","timestamp_ms":1791271208402}
 - 2026-10-06T07:20:08Z · status active→review
+- 2026-10-06T07:20:08Z · status review→active
