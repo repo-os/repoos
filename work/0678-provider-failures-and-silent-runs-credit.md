@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-06T04:53:12Z"
+review_passes: 1
 id: "0678"
 title: "Provider failures and silent runs: credit/402 alerts, degenerate-output detection, sleep-aware watchdog"
 type: feature
@@ -12,7 +14,6 @@ branch: feat/provider-failures-and-silent-runs-credit
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:38Z"
-updated_at: "2026-10-06T04:53:10Z"
 last_check_failure: "repoos check at 2026-10-06T03:55:55.263Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
 ---
 ## Problem
@@ -88,3 +89,4 @@ error: script "test" exited with code 1
 - 2026-10-06T04:51:54Z · status active→review
 - 2026-10-06T04:51:58Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T04:53:10Z · note: review pass 1: good to go
+
