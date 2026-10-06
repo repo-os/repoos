@@ -281,6 +281,11 @@ a candidate merge. Do not erase a task's branch metadata to force this path.
 - **Never** deploy to production without human sign-off.
 - Keep frontmatter tidy; \`repoos\` will normalize key order on write.
 - One task = one focused worktree.
+- **Never invent evidence.** Do not fabricate device sessions, live API results,
+  external account IDs, or registration details. Leave those fields blank and
+  say a human must supply the proof. Split acceptance criteria that require a
+  real device, account, or third-party registration into a separate human-only
+  task.
 
 ## Conventions
 
