@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 4feeaed1089e8ac8feaf0d4682678a31307d7a10
 id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
 type: feature
@@ -50,3 +52,4 @@ The tuk-private repo's `repoos.toml` now carries hand-written versions of these 
 - 2026-10-06T14:42:52Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-06T14:42:52Z · status review→active
 - 2026-10-06T14:52:52Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
