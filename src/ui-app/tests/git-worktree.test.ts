@@ -22,6 +22,9 @@ import {
   removeWorktree,
   listWorktrees,
   dirtyFiles,
+  filterIgnorableMainDirtyPaths,
+  isLocalAttachmentPath,
+  mainDirtyFilesForCloseOut,
   uncommittedWorkFiles,
   commitDirtyFiles,
   mergeBranch,
@@ -650,6 +653,48 @@ describe("uncommittedWorkFiles (#0609)", () => {
       expect(
         await uncommittedWorkFiles(wt.path, {}, { omitWorktreeDeletionsPresentAtRef: "feat/one" }),
       ).toContain("keep.txt");
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("main dirty paths for close-out (#0713)", () => {
+  it("recognizes attachment trees under configurable work and inputs dirs", () => {
+    expect(isLocalAttachmentPath("work/.attachments/0713/shots/a.png")).toBe(true);
+    expect(isLocalAttachmentPath("inputs/.attachments/in-1/shot.png")).toBe(true);
+    expect(isLocalAttachmentPath("repoos/work/.attachments/1/a.png", { workDir: "repoos/work" })).toBe(
+      true,
+    );
+    expect(isLocalAttachmentPath("work/0713.md")).toBe(false);
+    expect(isLocalAttachmentPath("src/foo.ts")).toBe(false);
+  });
+
+  it("mainDirtyFilesForCloseOut omits cache and attachment churn", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, "work", ".attachments", "0999", "shots"), { recursive: true });
+      writeFileSync(join(root, "work", ".attachments", "0999", "shots", "default-1.png"), "png");
+      mkdirSync(join(root, "inputs", ".attachments", "in-1"), { recursive: true });
+      writeFileSync(join(root, "inputs", ".attachments", "in-1", "dark.png"), "png");
+      mkdirSync(join(root, ".repoos", "logs"), { recursive: true });
+      writeFileSync(join(root, ".repoos", "logs", "system.log"), "log\n");
+      writeFileSync(join(root, "blocking.txt"), "real work\n");
+
+      const raw = await dirtyFiles(root);
+      expect(raw).toContain("work/.attachments/0999/shots/default-1.png");
+      expect(raw).toContain("blocking.txt");
+
+      const filtered = filterIgnorableMainDirtyPaths(raw, {
+        workDir: "work",
+        inputsDir: "inputs",
+        cacheDir: ".repoos",
+      });
+      expect(filtered).toEqual(["blocking.txt"]);
+
+      expect(await mainDirtyFilesForCloseOut(root, { workDir: "work", inputsDir: "inputs" })).toEqual(
+        ["blocking.txt"],
+      );
     } finally {
       clean();
     }

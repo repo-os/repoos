@@ -38,6 +38,7 @@ import {
   commitTaskFile,
   commitDirtyFiles,
   mergeBranch,
+  filterIgnorableMainDirtyPaths,
   dirtyFiles,
   uncommittedWorkFiles,
   workFileFilter,
@@ -2193,8 +2194,7 @@ export class CloseOutOrchestrator {
       // committed before their ignore rule was corrected. Fall back to the
       // documented default when a partial config omits it (loadConfig always
       // fills it; a hand-built fixture may not).
-      const cachePrefix = `${(this.config.cacheDir ?? ".repoos").replace(/\/+$/, "")}/`;
-      dirtyOnMain = dirtyOnMain.filter((path) => !path.startsWith(cachePrefix));
+      dirtyOnMain = filterIgnorableMainDirtyPaths(dirtyOnMain, this.config);
       const handoffGuard = await this.assertHandoffWorktreeUnchanged(job);
       if (!handoffGuard.ok) {
         return { ok: false, reason: handoffGuard.reason };
