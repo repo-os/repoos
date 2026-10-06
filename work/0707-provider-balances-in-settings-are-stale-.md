@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T04:40:52Z"
-updated_at: "2026-10-06T04:41:05Z"
+updated_at: "2026-10-06T14:56:49Z"
 ---
 ## Problem
 
@@ -34,3 +34,4 @@ Read src/server/routes/model-providers.ts and the ModelProvidersPanel component 
 
 - 2026-10-06T04:40:52Z · created · unknown
 - 2026-10-06T04:41:05Z · story
+- 2026-10-06T14:56:49Z · note: Superseded by #0721 (provider balance as-of + Refresh feedback).
