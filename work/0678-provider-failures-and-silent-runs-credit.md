@@ -2,7 +2,7 @@
 id: "0678"
 title: "Provider failures and silent runs: credit/402 alerts, degenerate-output detection, sleep-aware watchdog"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T16:58:38Z"
-updated_at: "2026-10-05T17:16:51Z"
+updated_at: "2026-10-06T02:44:25Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T16:58:38Z · created · unknown
 - 2026-10-05T17:16:50Z · story
 - 2026-10-05T17:16:51Z · body: section Story context
+- 2026-10-06T02:44:25Z · status inbox→ready
