@@ -65,7 +65,8 @@ first, then come back here.
 - For UI tasks, **handoff runs a browser verification gate** before review: declared
   (or auto-matched) shots are captured through the managed preview while Playwright
   records console errors, failed requests, and horizontal overflow at configured
-  viewport widths (`[uiVerification]` in `repoos.toml`, default 1024px and 375px).
+  viewport widths (`uiVerification.enabled` and `uiVerification.viewportWidths` in
+  `repoos.toml`, default on with 1024px and 375px).
   Any issue **blocks handoff** and writes evidence under `.repoos/ui-verification/`.
   When Playwright is missing, the gate skips with a visible note (same as other
   browser checks).

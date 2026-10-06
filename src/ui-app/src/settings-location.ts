@@ -124,6 +124,9 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
   tunnelEnabled: "cloudflare tunnel publish publishing hostname public",
   "closeOut.timeoutMs": "close out move to done mtd merge pipeline budget timeout hung",
   "approval.enabled": "auto approve clean reviews policy move to done rubber stamp low risk",
+  "uiVerification.enabled":
+    "handoff browser gate playwright console overflow screenshot verification review block",
+  "uiVerification.viewportWidths": "handoff ui verification mobile desktop overflow viewport width",
 };
 
 export function settingSearchAliases(key: string): string {

@@ -438,6 +438,21 @@ export interface ReviewReport {
   markdown: string;
 }
 
+/** Persisted handoff UI verification evidence (#0680). */
+export interface UiHandoffVerificationIssue {
+  kind: string;
+  message: string;
+  url?: string;
+  viewportWidth?: number;
+}
+
+export interface UiHandoffVerificationEvidence {
+  at: string;
+  issues: UiHandoffVerificationIssue[];
+  blankShots: string[];
+  captures: number;
+}
+
 /** Client-side view of a task's agent review. */
 export interface ReviewState {
   /** True while the review agent is inspecting the worktree. */

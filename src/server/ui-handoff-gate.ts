@@ -99,7 +99,7 @@ async function captureEntryWithGate(
   viewports: number[],
 ): Promise<{ png: Buffer; issues: PageGateIssue[]; blank: boolean; warnings: string[] }> {
   const warnings: string[] = [];
-  const collector = createPageGateCollector();
+  const collector = createPageGateCollector(pageUrl);
   const page = (await context.newPage()) as unknown as ShotDriverPage & PageGateListenerPage;
   collector.attach(page);
   const issues: PageGateIssue[] = [];
@@ -253,7 +253,13 @@ export async function runUiHandoffGate(
         };
       }
       allIssues.push(...issues);
-      if (blank) blankShots.push(`${entry.target}${entry.route}`);
+      if (blank) {
+        allIssues.push({
+          kind: "blank",
+          message: `blank-looking screenshot for ${entry.target}${entry.route}`,
+        });
+        blankShots.push(`${entry.target}${entry.route}`);
+      }
       for (const msg of warnings) {
         log(task.id, "warn", `shots: ${msg}`);
       }
@@ -310,19 +316,8 @@ export async function runUiHandoffGate(
     return { ok: false, detail, evidencePath: path };
   }
 
-  const shotDetail =
-    `${captured} shot${captured === 1 ? "" : "s"} captured with clean console` +
-    (blankShots.length ? ` (warning: ${blankShots.length} blank-looking capture(s))` : "");
+  const shotDetail = `${captured} shot${captured === 1 ? "" : "s"} captured with clean console`;
   log(task.id, "info", `ui verification: ${shotDetail}`);
-  if (blankShots.length) {
-    try {
-      patchTaskFile(config, task.absPath, {
-        note: `ui verification: blank-looking screenshot(s) — ${blankShots.join(", ")}`,
-      });
-    } catch {
-      /* best-effort */
-    }
-  }
 
   return {
     ok: true,
