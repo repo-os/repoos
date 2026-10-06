@@ -12,7 +12,7 @@ branch: feat/don-t-let-a-skipped-check-gate-wave-thro
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:44Z"
-updated_at: "2026-10-06T04:37:21Z"
+updated_at: "2026-10-06T05:16:02Z"
 ---
 ## Problem
 
