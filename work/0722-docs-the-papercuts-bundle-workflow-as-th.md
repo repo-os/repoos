@@ -2,17 +2,18 @@
 id: "0722"
 title: "Docs: the easter-eggs bundle workflow as the alternative to hotfix flows (AGENTS.md + docs/)"
 type: chore
-status: review
+status: done
 priority: p2
 area: docs
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: afa15e8bf86c667a1228cc1aafff94c5304eda89
 assigned_to: ai
 created_by: ""
 branch: feat/docs-the-easter-eggs-bundle-workflow-as-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-06T14:31:00Z"
-updated_at: "2026-10-06T17:27:50Z"
+updated_at: "2026-10-06T17:31:19Z"
 ---
 ## Problem
 
@@ -43,3 +44,4 @@ Docs-only; do not touch src/. Edit AGENTS.md carefully: it is the single source 
 - 2026-10-06T14:57:12Z · status inbox→ready
 - 2026-10-06T14:57:16Z · status ready→active, branch
 - 2026-10-06T17:27:50Z · status active→review
+- 2026-10-06T17:31:19Z · status review→done, release:success
