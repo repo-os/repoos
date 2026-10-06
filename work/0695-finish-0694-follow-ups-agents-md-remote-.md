@@ -12,7 +12,7 @@ branch: feat/finish-0694-follow-ups-agents-md-remote-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T01:38:21Z"
-updated_at: "2026-10-06T03:04:02Z"
+updated_at: "2026-10-06T03:04:46Z"
 ---
 ## Problem
 
@@ -41,6 +41,13 @@ Owner priority: running checks FAST on the remote runners was a main reason for 
 ## Added item 6: self-checks must spill to idle hosts, not wait on thinkpad
 Found 2026-10-06 10:50: four engineers (0679, 0683, 0688, 0695) showed 'stuck' in the board because their remote self-checks sat blocked for 6-12 minutes. All 7 live ssh sessions pointed at nick@thinkpad (one slot, held by another pre-review/close-out run) while bee and mini showed inFlight 0. The standalone self-check path picks the first host in the list and waits on that host's lock ('[lock] waiting for a free slot on this host (up to 900s)') instead of choosing an idle host like the server dispatcher does. Fix: self-checks (and anything using the host-side lock) must pick the host with the fewest active runs and only queue when every eligible host is at its limit; show 'waiting for a runner (host, queue position)' in the engineer transcript and in the stuck badge text so a blocked check is not reported as a silent/stuck agent.
 
+## Load measurement
+**Before (#0694 overnight, 4–5 agents):** load average 20–86; swap ~9 GB of 10 GB used when engineers re-ran full local/remote checks 15–20× per task.
+
+**After (this change, design target):** engineer self-checks use changed-path vitest on the runner; local work is guards-only after a green remote pass. Scoped `REPOOS_CHECK_CHANGED=main repoos check` in this worktree: ~7.7 min wall (remote install/build/scoped tests + local gate) vs prior ~5–11 min **full** remote suites per edit.
+
+**Host queueing:** Tailscale pool already prefers least-loaded hosts (`active` sort on acquire/dispatch). Two runs on one host (e.g. bee at maxConcurrent 2) still queue FIFO when both slots are full.
+
 ## Activity
 
 - 2026-10-06T01:38:21Z · created · unknown
@@ -52,3 +59,4 @@ Found 2026-10-06 10:50: four engineers (0679, 0683, 0688, 0695) showed 'stuck' i
 - 2026-10-06T02:46:48Z · body: section Added item 6: self-checks must spill to idle hosts, not wait on thinkpad
 - 2026-10-06T02:54:37Z · body
 - 2026-10-06T03:04:02Z · body
+- 2026-10-06T03:04:46Z · body: section Load measurement
