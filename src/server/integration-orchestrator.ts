@@ -2456,8 +2456,7 @@ export class CloseOutOrchestrator {
     // retry (or a partial run that deleted the branch before markTaskReleased)
     // must still write merged_commit for dependency proof (#0711).
     const durableJob = this.coordinator.getJob(job.taskId) ?? job;
-    const mergedCommit =
-      durableJob.branchSha ?? branchCommit(root, featureBranch);
+    const mergedCommit = durableJob.branchSha ?? branchCommit(root, featureBranch);
 
     // Candidate worktree + throwaway branch.
     this.removeCandidate(job.taskId);
