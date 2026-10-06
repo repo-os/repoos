@@ -12,7 +12,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { rmFixture } from "./helpers";
-import { ensureWorktree, listWorktrees } from "../../core/git.js";
+import { ensureWorktree, listWorktrees, removeWorktree } from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
 import { createRepositoryLock, createRootLock } from "../../server/repo-lock.js";
 import {
@@ -367,6 +367,48 @@ describe("close-out cleanup keeps a dirty feature worktree (#0512)", () => {
       expect(git(root, ["branch", "--list", branch])).toBe("");
       expect(readFileSync(join(root, "work", `${id}-cleanup.md`), "utf8")).not.toMatch(
         /needs_input: true/,
+      );
+    } finally {
+      clean();
+    }
+  });
+
+  it("records merged_commit from job.branchSha when the feature branch is already gone (#0711)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const id = "0711";
+      const branch = `feat/${id}`;
+      taskFile(root, id);
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "implemented\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "the work"]);
+      const branchSha = git(wt.path, ["rev-parse", "HEAD"]);
+      git(root, ["merge", "--ff-only", branch]);
+      removeWorktree(root, branch, { force: true });
+      git(root, ["branch", "-D", branch]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id, branch } as any);
+      coordinator.updateJob(id, {
+        phase: "cleanup",
+        startedAt: new Date().toISOString(),
+        branchSha,
+      });
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      expect(result.ok).toBe(true);
+      expect(readFileSync(join(root, "work", `${id}-cleanup.md`), "utf8")).toContain(
+        `merged_commit: ${branchSha}`,
       );
     } finally {
       clean();
