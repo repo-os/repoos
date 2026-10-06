@@ -12,7 +12,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-06T14:50:15Z"
+updated_at: "2026-10-06T15:03:28Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -37,6 +37,24 @@ On 2026-10-06 the remote validation path was far slower than normal for hours (b
 
 Read src/server/attention-feed.ts and attention-notify.ts (silent-run items), src/core/agent-run-health.ts (effectiveStalenessNow), src/core/check-store.ts (check_runs), and the Remote runners panel (RemoteRunnersPanel.vue). Do not scan raw agent output for any of this. Related: #0717 (smaller uploads), #0719 (stuck timer shows turn start instead of last output; do not copy that bug: use server-side timestamps).
 
+## Shots
+```json
+[
+  {
+    "label": "Slow-check multiplier in Settings",
+    "target": "default",
+    "route": "/settings?tab=general",
+    "highlight": "#setting-attention.slowRunMultiplier"
+  },
+  {
+    "label": "Remote runners slow badge on active job",
+    "target": "default",
+    "route": "/agents?tab=runners",
+    "highlight": ".rr-slow-badge"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-06T14:26:00Z · created · unknown
@@ -45,3 +63,4 @@ Read src/server/attention-feed.ts and attention-notify.ts (silent-run items), sr
 - 2026-10-06T14:30:17Z · status ready→active, branch
 - 2026-10-06T14:46:34Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-06T14:50:15Z · needs_input
+- 2026-10-06T15:03:28Z · body: section Shots
