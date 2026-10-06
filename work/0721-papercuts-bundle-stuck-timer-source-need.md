@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T14:27:52Z"
-updated_at: "2026-10-06T14:27:52Z"
+updated_at: "2026-10-06T14:30:23Z"
 ---
 ## Problem
 
@@ -37,3 +39,4 @@ Keep each item small and separate in commits. Do not touch the degenerate detect
 ## Activity
 
 - 2026-10-06T14:27:52Z · created · unknown
+- 2026-10-06T14:30:23Z · cli_override, model_override
