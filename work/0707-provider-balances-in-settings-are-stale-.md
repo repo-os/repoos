@@ -2,7 +2,7 @@
 id: "0707"
 title: "Provider balances in Settings are stale: show a fresh balance with an as-of time and a Refresh that gives feedback"
 type: bug
-status: inbox
+status: done
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T04:40:52Z"
-updated_at: "2026-10-06T04:41:05Z"
+updated_at: "2026-10-06T17:25:00Z"
 ---
 ## Problem
 
@@ -34,3 +34,7 @@ Read src/server/routes/model-providers.ts and the ModelProvidersPanel component 
 
 - 2026-10-06T04:40:52Z · created · unknown
 - 2026-10-06T04:41:05Z · story
+- 2026-10-06T14:56:49Z · note: Superseded by #0721 (provider balance as-of + Refresh feedback).
+- 2026-10-06T15:57:04Z · note: Superseded by #0721 (provider balance as-of + Refresh feedback).
+- 2026-10-06T17:25:00Z · status inbox→done
+- 2026-10-06T17:25:00Z · note: Superseded by #0721 — provider balance as-of time and Refresh feedback.
