@@ -2,7 +2,7 @@
 id: "0709"
 title: "P0: scrapeProviderFailure kills healthy agents on any output line containing '402', 'billing' or 'rate limit'"
 type: bug
-status: active
+status: review
 priority: p0
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/p0-scrapeproviderfailure-kills-healthy-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T07:35:51Z"
-updated_at: "2026-10-06T09:21:09Z"
+updated_at: "2026-10-06T09:21:10Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 0e8ba4e203bf0659fcf5ca704c0f343c0bb67b30
 ---
@@ -51,4 +51,4 @@ Smallest fix: in scrapeProviderFailure only inspect structured fields for lines 
 - 2026-10-06T09:15:11Z · note: Field report from tuk-private confirms this bug (15 runs killed). Tightened further on the branch: bare 402 no longer matches anywhere (line numbers '402:', hashes, timestamps); needs HTTP-ish context. Tests added for each vector from the report.
 - 2026-10-06T09:15:14Z · status active→review
 - 2026-10-06T09:15:15Z · status review→active
-- 2026-10-06T09:21:09Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-06T09:21:10Z · status active→review
