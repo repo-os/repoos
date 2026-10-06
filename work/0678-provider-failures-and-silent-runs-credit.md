@@ -2,17 +2,18 @@
 id: "0678"
 title: "Provider failures and silent runs: credit/402 alerts, degenerate-output detection, sleep-aware watchdog"
 type: feature
-status: review
+status: done
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: bdf43b03dbe060e70c841d5dd1d087ab6795e4b1
 assigned_to: ai
 created_by: ""
 branch: feat/provider-failures-and-silent-runs-credit
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:38Z"
-updated_at: "2026-10-06T04:51:49Z"
+updated_at: "2026-10-06T05:07:46Z"
 ---
 ## Problem
 
@@ -47,3 +48,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T02:44:28Z · cli_override, model_override
 - 2026-10-06T02:44:29Z · status ready→active, branch
 - 2026-10-06T04:51:49Z · status active→review
+- 2026-10-06T05:07:46Z · status review→done, release:success
