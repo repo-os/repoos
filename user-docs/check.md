@@ -374,6 +374,20 @@ falls back, in order, to:
    Config mistakes (malformed rows, an unusable step) keep failing as errors,
    and `--changed <ref>` with a ref git cannot resolve keeps exiting non-zero.
 
+**Handoff and close-out (#0697).** A skip stays correct for a docs-only or
+planning-phase repo. If a branch **newly adds** a buildable project marker
+(`package.json`, `go.mod`, `Cargo.toml`, or `gradlew` — including under a
+subdirectory) while `repoos.toml` still has no usable `[[check.steps]]`, the
+gate would skip and verify nothing. RepoOS **fails handoff and close-out**
+instead of waving that through, with a message to run `repoos check
+--print-plan`, commit the steps, and get a real green gate. The server does
+not silently run an inferred plan at handoff: inference is a convenience for
+local `repoos check`, not a substitute for committing what the gate should
+run, and a bare manifest without conventional scripts still infers to an empty
+plan. The automatic reviewer is told when the handoff gate skipped and, if the
+task names a finite proof command, to run that instead of assuming checks
+passed.
+
 The reminder is actionable: run `repoos check --print-plan` for a starting
 `[[check.steps]]` TOML once the repo has a `package.json`, `go.mod`,
 `Cargo.toml` or `gradlew`, commit the steps, and `repoos check` runs the gate
