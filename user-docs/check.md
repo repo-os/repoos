@@ -245,7 +245,10 @@ full plan.
 
 When `[remoteValidation] enabled = true`, `repoos check` runs install + build +
 tests on the remote runner first (unless `--local-tests` or the remote half already
-ran), then local guards only with `REPOOS_SKIP_TESTS=1`. With `--changed` /
+ran), then local guards only with `REPOOS_SKIP_TESTS=1`. After the first run on
+a host, RepoOS usually uploads only new commits (not the full git history) using
+a persistent mirror on that machine; the task Debug tab's remote-validation events
+show bundle size and upload time for each run. With `--changed` /
 `REPOOS_CHECK_CHANGED`, the **remote** test step is scoped the same way as locally
 (#0695); handoff and close-out still run the full suite on the runner. Managed
 engineers (`REPOOS_AGENT=1`) always use the board's runner (Hetzner or Tailscale).
