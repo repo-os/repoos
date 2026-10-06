@@ -663,9 +663,9 @@ describe("main dirty paths for close-out (#0713)", () => {
   it("recognizes attachment trees under configurable work and inputs dirs", () => {
     expect(isLocalAttachmentPath("work/.attachments/0713/shots/a.png")).toBe(true);
     expect(isLocalAttachmentPath("inputs/.attachments/in-1/shot.png")).toBe(true);
-    expect(isLocalAttachmentPath("repoos/work/.attachments/1/a.png", { workDir: "repoos/work" })).toBe(
-      true,
-    );
+    expect(
+      isLocalAttachmentPath("repoos/work/.attachments/1/a.png", { workDir: "repoos/work" }),
+    ).toBe(true);
     expect(isLocalAttachmentPath("work/0713.md")).toBe(false);
     expect(isLocalAttachmentPath("src/foo.ts")).toBe(false);
   });
@@ -692,9 +692,9 @@ describe("main dirty paths for close-out (#0713)", () => {
       });
       expect(filtered).toEqual(["blocking.txt"]);
 
-      expect(await mainDirtyFilesForCloseOut(root, { workDir: "work", inputsDir: "inputs" })).toEqual(
-        ["blocking.txt"],
-      );
+      expect(
+        await mainDirtyFilesForCloseOut(root, { workDir: "work", inputsDir: "inputs" }),
+      ).toEqual(["blocking.txt"]);
     } finally {
       clean();
     }
