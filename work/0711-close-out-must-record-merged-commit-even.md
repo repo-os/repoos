@@ -11,9 +11,13 @@ branch: feat/close-out-must-record-merged-commit-even
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:46Z"
-updated_at: "2026-10-06T23:56:47Z"
+updated_at: "2026-10-06T23:57:21Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 22: tasks closed out do not get merged_commit recorded when the branch is deleted; dependencyMergeState (src/core/task-dependencies.ts) then reports dependents as cancelled.
+
+## Verify first
+
+VERIFY FIRST: the field report came from an older server build. Before changing code, reproduce on CURRENT main. integration-orchestrator.ts already passes mergedCommit = branchCommit(root, featureBranch) to markTaskReleased (~2455/2539) and dependencyMergeState falls back to branchCommit; find the exact path where mergedCommit is null when the branch is deleted. If it does not reproduce, add a regression test, say so in your reply and the task notes, and stop.
 
 ## Activity
 
@@ -24,3 +28,4 @@ Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoo
 - 2026-10-06T23:52:15Z · status ready→active, needs_input, branch
 - 2026-10-06T23:55:25Z · body
 - 2026-10-06T23:56:47Z · body
+- 2026-10-06T23:57:21Z · body
