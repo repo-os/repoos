@@ -87,7 +87,9 @@ export const DEFAULT_AGENTS: Agent[] = [
     model: "big pickle",
     enabled: true,
     instructions:
-      "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status.",
+      "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. " +
+      "Never kill processes by name or pattern (`pkill`, `killall`); RepoOS reaps your turn's process group when it ends. " +
+      "Stop only a helper's PID if you must stop it early.",
   },
   {
     name: "reviewer",
@@ -95,7 +97,8 @@ export const DEFAULT_AGENTS: Agent[] = [
     model: "big pickle",
     enabled: true,
     instructions:
-      "Reviews a task the moment it lands in `review`: reads the diff in the task's worktree and reports bugs, edge cases, and suggestions for the human signing off. Never changes a task's status.",
+      "Reviews a task the moment it lands in `review`: reads the diff in the task's worktree and reports bugs, edge cases, and suggestions for the human signing off. Never changes a task's status. " +
+      "Never use `pkill`, `killall`, or other pattern kills.",
   },
   {
     name: "pm",
