@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
+import { Check } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
+import { useRepoStore } from "../stores/repo";
 import type {
   ModelProviderRow,
   ModelProvidersResponse,
@@ -20,7 +22,12 @@ interface RowState {
   usage: ModelProviderUsage | null;
   loading: boolean;
   error: string;
+  /** ISO timestamp of the last successful usage fetch. */
+  fetchedAt: string | null;
+  refreshOk: boolean;
 }
+
+const repo = useRepoStore();
 
 const states = reactive<Record<string, RowState>>({});
 
@@ -31,7 +38,9 @@ const formOpen = reactive<Record<string, boolean>>({});
 const keyErrors = reactive<Record<string, string>>({});
 
 function rowState(id: string): RowState {
-  if (!states[id]) states[id] = { usage: null, loading: false, error: "" };
+  if (!states[id]) {
+    states[id] = { usage: null, loading: false, error: "", fetchedAt: null, refreshOk: false };
+  }
   return states[id];
 }
 
@@ -53,18 +62,50 @@ async function loadProviders(): Promise<void> {
   }
 }
 
-async function loadUsage(id: string): Promise<void> {
+async function loadUsage(id: string, opts?: { manual?: boolean }): Promise<void> {
   const state = rowState(id);
   if (state.loading) return;
+  const manual = opts?.manual === true;
   state.loading = true;
   state.error = "";
   try {
-    state.usage = await api<ModelProviderUsage>(`/api/model-providers/${id}/usage`);
+    const usage = await api<ModelProviderUsage>(`/api/model-providers/${id}/usage`);
+    state.usage = usage;
+    const at =
+      usage && typeof usage === "object" && "at" in usage && typeof usage.at === "string"
+        ? usage.at
+        : new Date().toISOString();
+    state.fetchedAt = at;
+    state.refreshOk = true;
+    if (manual) repo.pushToast(`${rowLabel(id)} balance updated`, "success");
   } catch (err) {
-    state.error = err instanceof Error ? err.message : "Could not load usage.";
+    const message = err instanceof Error ? err.message : "Could not load usage.";
+    state.error = message;
+    state.refreshOk = false;
+    if (manual) repo.pushToast(message, "error");
   } finally {
     state.loading = false;
   }
+}
+
+function rowLabel(id: string): string {
+  return rows.value.find((r) => r.id === id)?.label ?? id;
+}
+
+function fmtAsOf(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+async function refreshUsage(id: string): Promise<void> {
+  await loadUsage(id, { manual: true });
 }
 
 async function saveKey(row: ModelProviderRow): Promise<void> {
@@ -387,12 +428,31 @@ onMounted(() => {
             </div>
           </div>
 
-          <div v-if="row.hasKey && !formOpen[row.id]" class="mp-actions">
+          <div
+            v-if="row.hasKey && !formOpen[row.id]"
+            class="mp-actions"
+            data-test-id="model-providers-balance-meta"
+          >
+            <span
+              v-if="rowState(row.id).fetchedAt"
+              class="mp-as-of"
+              :title="rowState(row.id).fetchedAt ?? undefined"
+            >
+              As of {{ fmtAsOf(rowState(row.id).fetchedAt) }}
+            </span>
+            <span
+              v-if="rowState(row.id).refreshOk && rowState(row.id).fetchedAt"
+              class="mp-refresh-ok"
+              role="status"
+            >
+              <Check class="size-3.5" aria-hidden="true" />
+            </span>
             <Button
               variant="outline"
               size="sm"
               :disabled="rowState(row.id).loading"
-              @click="loadUsage(row.id)"
+              :aria-busy="rowState(row.id).loading"
+              @click="refreshUsage(row.id)"
             >
               {{ rowState(row.id).loading ? "Refreshing…" : "Refresh" }}
             </Button>
@@ -596,8 +656,19 @@ onMounted(() => {
 }
 .mp-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
   margin-top: 10px;
+}
+.mp-as-of {
+  font-size: 11.5px;
+  color: var(--txt-dim);
+  margin-right: 2px;
+}
+.mp-refresh-ok {
+  display: inline-flex;
+  color: var(--green);
 }
 .mp-loading {
   margin-top: 10px;
