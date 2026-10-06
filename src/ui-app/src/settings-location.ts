@@ -47,6 +47,7 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   // General (#0659) that carries the availability explanation beside the
   // select, so it must not also auto-render as a plain General row.
   "storage.provider",
+  "attention.spendAlertUsd",
 ]);
 
 /** Mirrors `isFieldVisible` in SettingsView.vue */
@@ -81,7 +82,7 @@ export function resolveSettingLocation(
     if (!field) return null;
     return { tab: "toml", hasUiRow: false };
   }
-  if (key === "ntfyEnabled" || key === "ntfyTopic") {
+  if (key === "ntfyEnabled" || key === "ntfyTopic" || key === "attention.spendAlertUsd") {
     return { tab: "notifications", hasUiRow: true };
   }
   if (key === "telegram.enabled") {

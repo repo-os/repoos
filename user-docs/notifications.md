@@ -16,6 +16,24 @@ hand-offs, tasks flagged `needs input`, and branch drift (`needs merge`). A task
 that is already `done` is never listed, even if it carries a stale flag left by
 an earlier metadata-only state change.
 
+### Provider, spend, preview, and remote-runner notices
+
+| Notice | Meaning |
+| --- | --- |
+| Provider error | A recent agent run failed with a credit, auth, rate-limit, or model-unavailable error. |
+| Silent agent run | An engineer is still running but has stopped producing output for longer than the stall threshold. |
+| Spend alert | Provider-reported board spend reached your threshold (Settings → Notifications). |
+| Awaiting visual check | A UI-area task is in `review` — open the preview and verify it in a browser. |
+| Ran locally | Remote validation was enabled but a close-out used the full local gate instead. |
+
+### Machine-readable feed
+
+Scripts and agents can read the same items as **`GET /api/attention`**
+(`ok`, `generatedAt`, `items[]` with stable `id`, `kind`, `severity`, `taskId`,
+`message`, `detail`, `link`, and `at`). The server also emits an
+**`attention.updated`** SSE event when the feed changes so clients can poll once
+per signal instead of reassembling close-out outcomes and task flags by hand.
+
 ### Close-out notices
 
 A Move to done that **finishes**, **fails**, or **times out** records a durable
@@ -46,6 +64,8 @@ Settings → **Notifications** controls the bell sound and browser push. Both ar
 - Task attention — review ready, paused, stuck, needs attention.
 - Releases — notes ready, release succeeded, release failed.
 - Close-out — Move to done landed, failed, timed out.
+- Provider and spend — provider/credit errors, silent runs, spend threshold,
+  awaiting visual check, remote fallback to local.
 
 A per-type toggle only suppresses the sound and push for that type; the bell
 still shows the notice. Browser push needs the browser's permission and a

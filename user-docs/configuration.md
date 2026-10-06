@@ -278,6 +278,10 @@ defaultAssignee = "unassigned"
 defaultTaskMode = "freeform"
 maxActiveTasks = 3
 autoEngineeringMode = false
+
+[autoEngineering]
+pmVeto = false
+
 skillSuggestions = false
 worktreeWarnThreshold = 20
 ```
@@ -289,6 +293,7 @@ worktreeWarnThreshold = 20
 | `defaultTaskMode` | select | `freeform` | yes | New-task flow: `freeform` (the AI writes the task) or `manual` (a form). Any other value falls back to `freeform`. |
 | `maxActiveTasks` | number | `3` | yes | Cap on simultaneously active tasks when `autoEngineeringMode` is on. Must be 1–20. |
 | `autoEngineeringMode` | boolean | `false` | yes | When true, RepoOS **event-driven** dispatch starts ready tasks automatically, up to `maxActiveTasks` (see below). |
+| `autoEngineering.pmVeto` | boolean | `false` | yes | Off by default: selection is fully deterministic (priority, then critical-path weight, then creation order). When on, a PM pass runs only when there are more eligible ready tasks than open slots **and** two candidates would collide (same area or a declared shared path); it may reorder or defer, never invent work. |
 | `skillSuggestions` | boolean | `false` | yes | When true, a finished task may generate a high-bar, evidence-gated skill suggestion task. Off by default; a single session never creates one. |
 | `worktreeWarnThreshold` | number | `20` | yes | Advisory ceiling on registered git worktrees. Above it the Control page's Codebase card turns amber and the server logs a `repoos gc` reminder. Never blocks a task. Set `0` to disable. |
 
@@ -328,14 +333,21 @@ Each pass:
 1. Counts active tasks (not archived) and computes free slots up to
    `maxActiveTasks`.
 2. Builds the **candidate list**: `ready` tasks that are not archived, not
-   `needs_input`, and have no unmet `dependsOn` blockers.
-3. If there are candidates and free slots, calls the **PM agent** once (a real
-   LLM prompt — recorded as a `dispatch` session, not a task-bound PM run) to
-   pick which ready tasks to start, capped at the available slots.
-4. Starts the selected tasks through the normal `/start` path.
+   `needs_input`, not held (`hold: true` or a `hold` tag), and have no unmet
+   `dependsOn` blockers.
+3. Orders candidates **deterministically**: priority, then critical-path weight
+   (transitive dependents on the full board), then creation order, then task id;
+   takes as many as fit in the open slots.
+4. When `autoEngineering.pmVeto` is on and there are more eligible tasks than
+   slots **and** two candidates would collide (same area or a declared shared
+   `paths` entry), calls the **PM agent** once (recorded as a `dispatch`
+   session) to reorder or defer only — never to invent tasks. On PM failure, the
+   deterministic order stands.
+5. Starts the selected tasks through the normal `/start` path.
 
-Outcomes (`no-capacity`, `no-ready-work`, `pm-unavailable`, …) are persisted for
-the Control page. This is optional automation — default is off.
+Outcomes (`no-capacity`, `no-ready-work`, `selected`, …) and which picker ran
+are persisted for the Control page. This is optional automation — default is
+off.
 
 ### Task body sections (underspecified check)
 
@@ -371,6 +383,16 @@ strictBuild = false
 Appearance is **not** a `repoos.toml` setting. The dark/light/system theme and
 the UI design language are per-browser preferences stored in the browser, so
 they never travel with the repo.
+
+## Attention (notification bell)
+
+```toml
+attention.spendAlertUsd = 0
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `attention.spendAlertUsd` | number | `0` | yes | When provider-reported board spend reaches this USD total, the notification bell shows a spend alert. `0` disables the alert. Estimates and unknown costs are never counted. Edit it in **Settings → Notifications**. The same feed is available as `GET /api/attention` (see [Notices and notifications](/notifications)). |
 
 ## Close-out (Move to done)
 

@@ -194,6 +194,8 @@ export type RepoEvent =
    * GET /api/close-out/outcomes after a reload. A user cancel emits nothing.
    */
   | { type: "close-out.outcome"; outcome: CloseOutOutcomeEvent; at: string }
+  /** The unified attention feed changed (#0687) — clients poll `GET /api/attention`. */
+  | { type: "attention.updated"; at: string }
   /** Full-suite test run (Control page): started, a raw stdout/stderr chunk, or exited. */
   | { type: "test-run.started"; at: string }
   | { type: "test-run.output"; chunk: string; at: string }

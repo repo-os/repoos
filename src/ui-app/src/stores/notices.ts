@@ -30,7 +30,12 @@ export type NoticeKind =
   | "releaseFailed"
   | "closeOutSucceeded"
   | "closeOutFailed"
-  | "closeOutTimedOut";
+  | "closeOutTimedOut"
+  | "providerFailure"
+  | "silentRun"
+  | "spendThreshold"
+  | "awaitingVisualCheck"
+  | "remoteFallback";
 
 export interface NoticeItem {
   /** Stable per event: `<kind>:<eventKey>`. Dedupe + dismissed/read keys. */
@@ -56,6 +61,11 @@ export const NOTICE_KIND_LABELS: Record<NoticeKind, string> = {
   closeOutSucceeded: "Move to done landed",
   closeOutFailed: "Move to done failed",
   closeOutTimedOut: "Move to done timed out",
+  providerFailure: "Provider error",
+  silentRun: "Silent agent run",
+  spendThreshold: "Spend alert",
+  awaitingVisualCheck: "Awaiting visual check",
+  remoteFallback: "Ran locally",
 };
 
 /** Dot / accent color per kind — CSS tokens only (hardcoded-colors guard). */
@@ -68,7 +78,36 @@ export const NOTICE_KIND_COLOR: Record<NoticeKind, string> = {
   // Amber, not red: a timeout is retryable and its advice differs from a
   // real gate failure.
   closeOutTimedOut: "var(--amber)",
+  providerFailure: "var(--red)",
+  silentRun: "var(--amber)",
+  spendThreshold: "var(--amber)",
+  awaitingVisualCheck: "var(--violet)",
+  remoteFallback: "var(--amber)",
 };
+
+/** Kinds surfaced as bell notices from `GET /api/attention` (#0687). */
+const ATTENTION_NOTICE_KINDS = new Set<NoticeKind>([
+  "releaseNotesReady",
+  "releaseSucceeded",
+  "releaseFailed",
+  "closeOutSucceeded",
+  "closeOutFailed",
+  "closeOutTimedOut",
+  "providerFailure",
+  "silentRun",
+  "spendThreshold",
+  "awaitingVisualCheck",
+  "remoteFallback",
+]);
+
+export interface AttentionFeedItem {
+  id: string;
+  kind: string;
+  message: string;
+  detail: string;
+  link: string | null;
+  at: string;
+}
 
 /** Max live notices kept in the feed. Oldest are dropped by createdAt. */
 const MAX_NOTICES = 20;
@@ -341,6 +380,42 @@ export const useNoticesStore = defineStore("notices", () => {
    * disconnected (#0640). The server's list is the durable source of truth,
    * newest first; ingest oldest-first so the newest lands at the feed head.
    */
+  /**
+   * Hydrate notice-shaped rows from the unified attention feed (#0687).
+   * Task rows (`taskReview`, …) stay in the human-needs panel only.
+   */
+  function ingestAttentionItem(item: AttentionFeedItem): NoticeItem | null {
+    if (!ATTENTION_NOTICE_KINDS.has(item.kind as NoticeKind)) return null;
+    const kind = item.kind as NoticeKind;
+    const id = item.id;
+    const existing = notices.value.find((n) => n.id === id);
+    if (existing) return null;
+    const marker = markers.value[id] ?? {};
+    if (marker.dismissed) return null;
+    const notice: NoticeItem = {
+      id,
+      kind,
+      title: item.message,
+      detail: item.detail,
+      link: item.link ?? "/",
+      createdAt: item.at,
+      read: !!marker.read,
+      dismissed: false,
+    };
+    notices.value = [notice, ...notices.value].slice(0, MAX_NOTICES);
+    if (!notice.read) void fireChannels(kind, notice.title, notice.detail);
+    return notice;
+  }
+
+  async function pollAttention(): Promise<void> {
+    try {
+      const res = await api<{ items: AttentionFeedItem[] }>("/api/attention");
+      for (const item of [...(res.items ?? [])].reverse()) ingestAttentionItem(item);
+    } catch {
+      /* server restarting */
+    }
+  }
+
   async function pollCloseOutOutcomes(): Promise<void> {
     try {
       const res = await api<{ outcomes: CloseOutOutcomeEvent[] }>("/api/close-out/outcomes");
@@ -373,6 +448,7 @@ export const useNoticesStore = defineStore("notices", () => {
     polling = true;
     void pollReleaseRun();
     void pollCloseOutOutcomes();
+    void pollAttention();
     schedule(RELEASE_RUN_POLL_MS_IDLE);
 
     // A tab regaining focus tends to precede finished release/close-out work:
@@ -384,12 +460,14 @@ export const useNoticesStore = defineStore("notices", () => {
   function onFocus(): void {
     void pollReleaseRun();
     void pollCloseOutOutcomes();
+    void pollAttention();
   }
 
   function onVisibility(): void {
     if (document.visibilityState === "visible") {
       void pollReleaseRun();
       void pollCloseOutOutcomes();
+      void pollAttention();
     }
   }
 
@@ -413,6 +491,8 @@ export const useNoticesStore = defineStore("notices", () => {
     ingestReleaseRun,
     pollCloseOutOutcomes,
     ingestCloseOutOutcome,
+    pollAttention,
+    ingestAttentionItem,
     dismiss,
     dismissAll,
     markRead,

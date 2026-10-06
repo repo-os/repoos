@@ -29,6 +29,8 @@ const KEY_ORDER = [
   "no_source_change",
   "is_archived",
   "archive_detail",
+  "hold",
+  "paths",
   "priority",
   "area",
   "story",
@@ -371,6 +373,13 @@ export function parseTask(args: ParseTaskArgs): Task {
       typeof data.archive_detail === "string" && data.archive_detail.trim()
         ? data.archive_detail
         : undefined,
+    isHeld: data.hold === true,
+    paths: Array.isArray(data.paths)
+      ? data.paths
+          .map(String)
+          .map((p) => p.trim())
+          .filter(Boolean)
+      : undefined,
     priority: String(data.priority ?? "p2"),
     // #0583: one shared parse for every shape the frontmatter may hold — list,
     // comma string, or legacy "a + b". `area` keeps the comma-joined display
@@ -462,6 +471,11 @@ export function serializeTask(task: Task): string {
     data.is_archived = true;
     if (task.archiveDetail) data.archive_detail = task.archiveDetail;
   }
+  // #0690: `hold` and `paths` are only ever written when set — clearing the
+  // hold removes the key so a released task parses back exactly as one that was
+  // never held.
+  if (task.isHeld) data.hold = true;
+  if (task.paths?.length) data.paths = task.paths;
   if (task.agentOverride) data.agent_override = task.agentOverride;
   if (task.cliOverride) data.cli_override = task.cliOverride;
   if (task.modelOverride) data.model_override = task.modelOverride;
