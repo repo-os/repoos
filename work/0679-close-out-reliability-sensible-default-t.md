@@ -1,4 +1,7 @@
 ---
+merge_conflict_retry_count: 1
+updated_at: "2026-10-06T04:04:54Z"
+review_passes: 1
 id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
@@ -12,7 +15,6 @@ branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-06T04:04:08Z"
 ---
 ## Problem
 
@@ -46,4 +48,14 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T01:49:16Z · status inbox→ready
 - 2026-10-06T01:49:17Z · cli_override, model_override
 - 2026-10-06T01:49:17Z · status ready→active, branch
-- 2026-10-06T04:04:08Z · status active→review
+- 2026-10-06T03:13:01Z · body
+- 2026-10-06T03:26:34Z · body
+- 2026-10-06T03:34:19Z · body
+- 2026-10-06T03:42:55Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
+- 2026-10-06T03:49:31Z · body
+- 2026-10-06T03:58:31Z · body
+- 2026-10-06T04:02:59Z · body
+- 2026-10-06T04:04:09Z · status active→review
+- 2026-10-06T04:04:09Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T04:04:53Z · note: review pass 1: good to go
+

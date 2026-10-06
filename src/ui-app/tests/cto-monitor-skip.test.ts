@@ -210,6 +210,74 @@ describe("CTO monitor skip-when-healthy (#0649)", () => {
     expect(runs).toHaveLength(2);
   });
 
+  it("does not nudge or record a CTO reminder when no engineer session is running (#0693)", async () => {
+    const root = tempRoot();
+    const stale = task({
+      id: "0001",
+      status: "active",
+      branch: "feat/x",
+      updated_at: new Date(Date.now() - 6 * 60_000).toISOString(),
+    });
+    const recordNudge = vi.fn(() => true);
+    const sendMessage = vi.fn(() => true);
+    const cto: FakeCTO = {
+      run: vi.fn(),
+      enabled: () => true,
+      isRunning: () => false,
+      sendTaskMessage: sendMessage,
+      recordAutomaticNudge: recordNudge,
+    };
+    const runner = {
+      isRunning: () => false,
+      isPaused: () => false,
+      isHandoffInFlight: () => false,
+      hasPendingHandoff: () => false,
+    };
+    const monitor = new CTOMonitor(
+      configFor(root),
+      indexWith([stale]),
+      cto as unknown as CTOManager,
+      runner as never,
+    );
+    await monitor.checkNow("timer");
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(recordNudge).not.toHaveBeenCalled();
+  });
+
+  it("does not nudge a deliberately paused task (#0693)", async () => {
+    const root = tempRoot();
+    const stale = task({
+      id: "0001",
+      status: "active",
+      branch: "feat/x",
+      updated_at: new Date(Date.now() - 6 * 60_000).toISOString(),
+    });
+    const recordNudge = vi.fn(() => true);
+    const sendMessage = vi.fn(() => true);
+    const cto: FakeCTO = {
+      run: vi.fn(),
+      enabled: () => true,
+      isRunning: () => false,
+      sendTaskMessage: sendMessage,
+      recordAutomaticNudge: recordNudge,
+    };
+    const runner = {
+      isRunning: () => true,
+      isPaused: () => true,
+      isHandoffInFlight: () => false,
+      hasPendingHandoff: () => false,
+    };
+    const monitor = new CTOMonitor(
+      configFor(root),
+      indexWith([stale]),
+      cto as unknown as CTOManager,
+      runner as never,
+    );
+    await monitor.checkNow("timer");
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(recordNudge).not.toHaveBeenCalled();
+  });
+
   it("records the event reason on an event-triggered run", async () => {
     vi.useFakeTimers();
     const { cto, runs } = fakeCto();

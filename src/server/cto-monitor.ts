@@ -170,7 +170,9 @@ export class CTOMonitor {
       // Archived tasks are parked (#0657): never nudge them, even if their
       // underlying status is active.
       if (task.isArchived) continue;
+      if (this.runner?.isPaused(task.id)) continue;
       activeIds.add(task.id);
+      if (!this.runner?.isRunning(task.id)) continue;
       if (hasRecentWorktreeActivity(this.config.root, task.branch, AUTOMATIC_NUDGE_IDLE_MS, now)) {
         this.nudgedIdleTasks.delete(task.id);
         continue;
