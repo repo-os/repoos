@@ -32,7 +32,7 @@ function taskWithBody(body: string, extra?: Record<string, unknown>): Task {
     path: "work/0693-t.md",
     absPath: "/tmp/0693-t.md",
     extra,
-  } as Task;
+  } as unknown as Task;
 }
 
 function failureActivity(detail: string, i = 1): string {

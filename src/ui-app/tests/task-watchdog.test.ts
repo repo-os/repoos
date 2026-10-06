@@ -1058,7 +1058,7 @@ describe("identical handoff failure loop (#0693)", () => {
 
     const index = new LiveIndex(fx.config);
     index.refreshAll();
-    const runner = new AgentRunner(fx.config, () => {}, { PATH: `${fx.bin}:${process.env.PATH}` });
+    const runner = new AgentRunner(fx.config, () => {});
     const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
     await watchdog.checkNow();
 
