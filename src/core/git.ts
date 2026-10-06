@@ -1047,6 +1047,35 @@ export function changedPathsVsBase(worktree: string, baseBranch: string): string
   return [...paths];
 }
 
+/**
+ * Paths newly introduced on this branch relative to `baseBranch`: committed
+ * additions since the merge-base plus untracked files (#0697). Returns `null`
+ * when `baseBranch` does not resolve.
+ */
+export function addedPathsVsBase(worktree: string, baseBranch: string): string[] | null {
+  const verify = gitCapture(worktree, [
+    "rev-parse",
+    "--verify",
+    "--quiet",
+    `${baseBranch}^{commit}`,
+  ]);
+  if (verify.status !== 0) return null;
+  const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
+  const run = (args: string[]): string[] =>
+    (git(worktree, args) ?? "")
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  const paths = new Set<string>();
+  if (baseFull) {
+    for (const p of run(["diff", "--diff-filter=A", "--name-only", baseFull, "HEAD"])) {
+      paths.add(p);
+    }
+  }
+  for (const p of run(["ls-files", "--others", "--exclude-standard"])) paths.add(p);
+  return [...paths];
+}
+
 export interface DiffStats {
   filesChanged: number;
   additions: number;
