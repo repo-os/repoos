@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0697"
 title: Don't let a skipped check gate wave through a branch that adds a buildable project; tell the reviewer when the gate skipped
 type: feature
@@ -42,3 +43,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-06T04:37:19Z · status inbox→ready
 - 2026-10-06T04:37:21Z · cli_override, model_override
 - 2026-10-06T04:37:21Z · status ready→active, branch
+
