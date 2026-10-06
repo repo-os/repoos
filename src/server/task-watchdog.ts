@@ -54,6 +54,7 @@ import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
 import type { ReviewReport, ReviewRunResult } from "./review.js";
+import { effectiveStalenessNow } from "../core/agent-run-health.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { commitTaskFile, worktreeStatus, worktreePathForBranch } from "../core/git.js";
 import { scheduleHandoffSignalRetry } from "./handoff.js";
@@ -426,6 +427,8 @@ export class TaskWatchdog {
   private stalenessThresholdMs: number;
   /** Re-entry guard: a scan already in flight is skipped by the next tick. */
   private scanning = false;
+  /** Wall time of the previous `checkNow` — sleep-aware staleness (#0678). */
+  private lastWatchdogTickMs = Date.now();
 
   constructor(
     config: RepoOSConfig,
@@ -469,6 +472,13 @@ export class TaskWatchdog {
     // so a scan never blocks on it.
     if (this.scanning) return;
     this.scanning = true;
+    const wallNow = Date.now();
+    const stalenessNow = effectiveStalenessNow(
+      wallNow,
+      this.lastWatchdogTickMs,
+      WATCHDOG_INTERVAL_MS,
+    );
+    this.lastWatchdogTickMs = wallNow;
     try {
       // The `active` status is scanned for the dead/stalled ENGINEER shape
       // (#0180). The `review` status is scanned too (#0286): a task whose
@@ -477,7 +487,7 @@ export class TaskWatchdog {
       // on the review side where the watchdog never looked before.
       for (const status of ["active", "review"] as const) {
         for (const task of this.index.getTasks(status)) {
-          if (this.isStuck(task)) {
+          if (this.isStuck(task, stalenessNow)) {
             this.handleStuck(task);
           }
         }
@@ -487,7 +497,7 @@ export class TaskWatchdog {
     }
   }
 
-  private isStuck(task: Task): boolean {
+  private isStuck(task: Task, now: number = Date.now()): boolean {
     // An archived task is parked (#0657): it is never surfaced or escalated,
     // even if its underlying status is active/review. The human set it aside
     // on purpose; unarchiving restores the stuck-detection window.
@@ -508,7 +518,6 @@ export class TaskWatchdog {
     }
     // A deliberately paused agent is legitimate — never disturb it (#0180).
     if (this.runner.isPaused(task.id)) return false;
-    const now = Date.now();
     if (task.status === "review") {
       return this.isStuckReview(task, now);
     }
