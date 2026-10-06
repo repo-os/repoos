@@ -2,7 +2,7 @@
 id: "0694"
 title: Run engineer self-checks on the remote runners (not the laptop) and reuse the green remote result at handoff
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T23:59:26Z"
-updated_at: "2026-10-05T23:59:39Z"
+updated_at: "2026-10-06T00:02:25Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ Read first: src/server/pre-review-remote-gate.ts (#0520), src/commands/check.ts 
 
 - 2026-10-05T23:59:26Z · created · unknown
 - 2026-10-05T23:59:39Z · story
+- 2026-10-06T00:02:25Z · status inbox→ready
