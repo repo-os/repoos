@@ -66,6 +66,7 @@ function makeOrchestrator(
     undefined,
     undefined,
     undefined,
+    undefined,
     (event) => outcomes.push(event),
   );
   return { orch, coordinator, outcomes };
