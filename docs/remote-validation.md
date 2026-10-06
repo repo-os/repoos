@@ -1,7 +1,8 @@
 # Remote Validation Runner
 
-Written 2026-08-28. Updated 2026-09-22 to add the Tailscale provider, and
-2026-09-27 to pool multiple Tailscale hosts (#0521).
+Written 2026-08-28. Updated 2026-09-22 to add the Tailscale provider,
+2026-09-27 to pool multiple Tailscale hosts (#0521), and 2026-10-06 for
+incremental bundle upload via a per-host mirror (#0717).
 Runs the expensive half of the close-out gate on a remote machine instead of
 the developer's machine. Two providers are supported: **hetzner** (disposable
 cloud VM, the original) and **tailscale** (one or more persistent machines on
@@ -43,9 +44,7 @@ run it again. Server-spawned checks also pass `--local-tests` when remote is
 enabled but that path opted out (e.g. release with `useForReleases = false`,
 close-out without a build step). With `remoteValidation.enabled`, standalone
 `repoos check` runs the remote half first unless you pass `--local-tests` or either env
-var is already set. **`--changed` / `REPOOS_CHECK_CHANGED` scopes the remote test step too** (#0695): engineer self-checks bundle the merge-base ref alongside `HEAD` and run `bun run test -- --changed <ref>` on the runner (install + build still run). Handoff and close-out omit `changedRef`, so they still run the **full** suite on the runner. The remote bundle is **`git bundle create … HEAD [base]`**, so only
-committed work reaches the runner, and local tests are skipped after a green
-remote pass. What is tested must be what is committed (#0512), which the two
+var is already set. **`--changed` / `REPOOS_CHECK_CHANGED` scopes the remote test step too** (#0695): engineer self-checks bundle the merge-base ref alongside `HEAD` and run `bun run test -- --changed <ref>` on the runner (install + build still run). Handoff and close-out omit `changedRef`, so they still run the **full** suite on the runner. Each run bundles only what the host does not already hold when possible (#0717): RepoOS probes a persistent bare mirror on the host (`~/.repoos-cache/<repo>-<hash>.git`), and when the mirror contains a commit the candidate descends from, the upload is a partial **`git bundle create … <base>..<candidate>`** (kilobytes, not the full history). The first run on a host, a cleared mirror, or a probe failure falls back to a full bundle; `validate.sh` still hard-verifies `git rev-parse HEAD == <expected-sha>`. Only committed work reaches the runner, and local tests are skipped after a green remote pass. What is tested must be what is committed (#0512), which the two
 entry points guarantee differently:
 
 - **Handoff** commits the worktree first (the commit gate runs before the check),
@@ -137,14 +136,19 @@ Set it in `repoos.toml` (`remoteValidation.retryOtherHosts`), in Settings → Re
   one in-flight promise — **never more than one VM**. State (`serverId`, `ip`,
   `createdAt`) is cached in `.repoos/remote-runner.json` (a convenience, not a
   source of truth).
-- **Transport**: `git bundle create … HEAD` of the merged candidate worktree,
-  `scp` to the VM. Self-contained — nothing is pushed to GitHub, no dependency
-  on `origin` freshness.
-- **Execute**: `ssh` → `/opt/repoos/validate.sh <bundle> <sha>` (see
-  `scripts/remote-runner/`), which asserts `git rev-parse HEAD == <sha>` and
-  runs the gate inside the prebuilt `repoos-ci` container with a persistent
-  `/var/cache/repoos/bun` volume. Combined output streams to
-  `.repoos/logs/remote-validation/<taskId>.log` and the caller's `onChunk`.
+- **Transport**: bundle the candidate worktree (partial when the host mirror
+  holds a usable base, otherwise full `HEAD`), upload over SSH. Failed uploads
+  retry up to three times without restarting the whole validation run. The run
+  log and structured events record bundle size and upload seconds. Self-contained
+  — nothing is pushed to GitHub, no dependency on `origin` freshness.
+- **Execute**: `ssh` → `/opt/repoos/validate.sh <bundle> <sha> [artifacts]
+  [changed-ref] [mirror-path]` (see `scripts/remote-runner/`). When
+  `mirror-path` is set, the bundle is fetched into the host mirror and the
+  candidate is checked out from there; otherwise the script clones the bundle
+  directly. Either way it asserts `git rev-parse HEAD == <sha>` and runs the
+  gate inside the prebuilt `repoos-ci` container with a persistent bun cache
+  volume. Combined output streams to `.repoos/logs/remote-validation/<taskId>.log`
+  and the caller's `onChunk`.
 - **Teardown**: an idle timer (`idleShutdownMinutes`, default 8) deletes the VM
   after the last job; a hard `maxServerLifetimeMinutes` timer (default 120)
   force-deletes it even mid-job as a cost stop-loss.
@@ -505,7 +509,10 @@ headroom.
 Each run also gets its **own bundle and artifacts path** on the host
 (`~/.repoos-<task>-<id>.bundle`, `~/.repoos-artifacts/<task>-<id>/`, passed to
 `validate.sh` as its third argument) so overlapping runs never delete each
-other's logs; artifact dirs older than a day are pruned. This lives under the
+other's logs; artifact dirs older than a day are pruned. Across runs, the same
+host keeps a **persistent bare mirror** under `~/.repoos-cache/` (one directory
+per repo root, hashed so two projects never collide) so later uploads can be
+incremental; clearing that directory forces the next run back to a full bundle. This lives under the
 remote user's home directory deliberately, not `/tmp` or `/var/tmp`: on
 Linux, `/tmp` is commonly a RAM-backed tmpfs with a per-user quota shared
 with whatever else that user runs on the box (e.g. a desktop session on a

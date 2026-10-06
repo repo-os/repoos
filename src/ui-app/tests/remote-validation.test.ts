@@ -8,15 +8,31 @@
  * nothing here touches a real API, network, or subprocess.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  existsSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { RepoOSConfig } from "../../core/types.js";
 import { getCheckStore, resetCheckStore } from "../../core/check-store.js";
 import {
   RemoteValidationRunner,
+  EMPTY_REMOTE_MIRROR,
+  prepareCandidateUpload,
+  parseMirrorProbeOutput,
+  defaultRemoteExec,
+  remoteMirrorPath,
   type RemoteExecDeps,
   type RemoteExecResult,
+  type RemoteHost,
 } from "../../server/remote-validation.js";
 import type { HetznerClient, HetznerServer } from "../../server/hetzner.js";
 
@@ -70,6 +86,7 @@ function fakeExec(over: Partial<RemoteExecDeps> = {}): RemoteExecDeps {
   return {
     bundleRepo: vi.fn(async () => ({ ok: true })),
     uploadFile: vi.fn(async () => ({ ok: true })),
+    probeMirror: vi.fn(async () => EMPTY_REMOTE_MIRROR),
     downloadDir: vi.fn(async () => undefined),
     runRemote: vi.fn(async (_h, _c, onChunk): Promise<RemoteExecResult> => {
       onChunk("build ok\ntest ok\n");
@@ -91,10 +108,21 @@ const FAST = {
 describe("RemoteValidationRunner", () => {
   let root: string;
   let config: RepoOSConfig;
+  /** HEAD of the throwaway repo at `root`, the real sha runs are bundled from (#0717). */
+  let headSha: string;
 
   beforeEach(() => {
     root = join(tmpdir(), `repoos-rvr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
     mkdirSync(join(root, ".repoos"), { recursive: true });
+    // #0717: a run stages the candidate under a per-run ref in the worktree and
+    // bundles it, so the worktree must be a real git repo with that commit.
+    execFileSync("git", ["init", "-q", "-b", "main"], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["config", "user.email", "t@example.com"], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["config", "user.name", "T"], { cwd: root, stdio: "ignore" });
+    writeFileSync(join(root, "f.txt"), "one\n");
+    execFileSync("git", ["add", "."], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["commit", "-qm", "init"], { cwd: root, stdio: "ignore" });
+    headSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
     process.env.HETZNER_API_TOKEN = "test-token";
     process.env.REPOOS_REMOTE_SSH_KEY = join(root, "key");
     // These fixtures assert on their own tmp-root store; an inherited
@@ -140,7 +168,7 @@ describe("RemoteValidationRunner", () => {
   const mkOpts = (taskId = "0999") => ({
     taskId,
     worktreePath: root,
-    candidateSha: "abc123def456",
+    candidateSha: headSha,
   });
   const opts = () => mkOpts();
 
@@ -162,7 +190,7 @@ describe("RemoteValidationRunner", () => {
     // validate.sh is invoked with the bundle path + the exact candidate SHA.
     const cmd = (exec.runRemote as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
     expect(cmd).toContain("/opt/repoos/validate.sh");
-    expect(cmd).toContain("abc123def456");
+    expect(cmd).toContain(headSha);
     expect(existsSync(r.logPath("0999"))).toBe(true);
     expect(readFileSync(r.logPath("0999"), "utf8")).toContain("PASSED");
     await r.dispose();
@@ -203,25 +231,17 @@ describe("RemoteValidationRunner", () => {
       exec,
       timings: FAST,
     });
-    const { execFileSync } = await import("node:child_process");
-    execFileSync("git", ["init", "-q", "-b", "main"], { cwd: root, stdio: "ignore" });
-    execFileSync("git", ["config", "user.email", "t@example.com"], { cwd: root, stdio: "ignore" });
-    execFileSync("git", ["config", "user.name", "T"], { cwd: root, stdio: "ignore" });
-    writeFileSync(join(root, "f.txt"), "x");
-    execFileSync("git", ["add", "."], { cwd: root, stdio: "ignore" });
-    execFileSync("git", ["commit", "-qm", "init"], { cwd: root, stdio: "ignore" });
-    const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
 
-    const res = await r.validate({ ...opts(), candidateSha: sha, changedRef: "main" });
+    const res = await r.validate({ ...opts(), changedRef: "main" });
 
     expect(res.ok).toBe(true);
     expect(exec.bundleRepo).toHaveBeenCalledOnce();
-    const bundleArgs = (exec.bundleRepo as ReturnType<typeof vi.fn>).mock.calls[0] as [
-      string,
-      string,
-      string[]?,
-    ];
-    expect(bundleArgs[2]?.length).toBeGreaterThan(0);
+    const bundleOpts = (exec.bundleRepo as ReturnType<typeof vi.fn>).mock.calls[0]?.[2] as {
+      refs?: string[];
+    };
+    // Candidate + scope ref travel together so the runner can run `--changed`.
+    expect(bundleOpts?.refs?.some((ref) => ref.startsWith("refs/repoos/candidate"))).toBe(true);
+    expect(bundleOpts?.refs?.some((ref) => ref.startsWith("refs/repoos/scope"))).toBe(true);
     const cmd = (exec.runRemote as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
     expect(cmd).toContain("main");
     await r.dispose();
@@ -600,5 +620,411 @@ describe("RemoteValidationRunner", () => {
     expect(ev).toBeTruthy();
     expect(ev?.message).toContain("deadline passed");
     await r.dispose();
+  });
+});
+
+/**
+ * Incremental candidate upload (#0717): every remote run used to upload the
+ * full ~100 MB history bundle. With a persistent mirror on the host that holds
+ * a base the candidate descends from, only `<base>..HEAD` travels.
+ */
+describe("prepareCandidateUpload (#0717)", () => {
+  const HOST: RemoteHost = { ip: "203.0.113.9", user: "root" };
+  const MIRROR = "~/.repoos-cache/repo-deadbeef.git";
+
+  /** A real git repo with `base` → `candidate` on top, plus a sibling history. */
+  function makeRepo(): { root: string; baseSha: string; candidateSha: string } {
+    const root = mkdtempSync(join(tmpdir(), "repoos-0717-"));
+    const git = (...args: string[]): string =>
+      execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "t@example.com");
+    git("config", "user.name", "T");
+    writeFileSync(join(root, "f.txt"), "one\n");
+    git("add", ".");
+    git("commit", "-qm", "base");
+    const baseSha = git("rev-parse", "HEAD");
+    // A commit that makes the full history noticeably bigger than the delta.
+    writeFileSync(join(root, "big.txt"), randomBytes(20_000).toString("hex"));
+    git("add", ".");
+    git("commit", "-qm", "fill");
+    writeFileSync(join(root, "f.txt"), "two\n");
+    git("add", ".");
+    git("commit", "-qm", "candidate");
+    const candidateSha = git("rev-parse", "HEAD");
+    return { root, baseSha, candidateSha };
+  }
+
+  function listBundleRefs(bundlePath: string): string[] {
+    return execFileSync("git", ["bundle", "list-heads", bundlePath], { encoding: "utf8" })
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => l.split(/\s+/)[1]);
+  }
+
+  /** A fake exec whose bundling is the real `git bundle create` (#0717). */
+  function realBundleExec(over: Partial<RemoteExecDeps> = {}): RemoteExecDeps {
+    const real = defaultRemoteExec().bundleRepo;
+    return fakeExec({ bundleRepo: vi.fn((cwd, out, o) => real(cwd, out, o)), ...over });
+  }
+
+  it("bundles only the new commits when the host holds the candidate's base", async () => {
+    const { root, baseSha, candidateSha } = makeRepo();
+    try {
+      const bundlePath = join(root, "candidate.bundle");
+      // A real `git bundle create` (defaultRemoteExec), so the excludeRefs
+      // handling is exercised against actual git semantics, not just mocked.
+      const exec = realBundleExec({
+        probeMirror: vi.fn(async () => ({
+          exists: true,
+          refs: { "refs/repoos/candidate": baseSha },
+        })),
+      });
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+      });
+
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.partial).toBe(true);
+      expect(res.baseSha).toBe(baseSha);
+      // The bundle records the candidate ref but excludes the base commits:
+      // `git bundle verify` proves the base is a prerequisite (must exist on
+      // the host mirror), not carried in the bundle.
+      const refs = listBundleRefs(bundlePath);
+      expect(refs.some((r) => r.startsWith("refs/repoos/candidate"))).toBe(true);
+      const verify = execFileSync("git", ["bundle", "verify", bundlePath], {
+        cwd: root,
+        encoding: "utf8",
+      });
+      expect(verify).toContain(baseSha);
+      // The partial bundle is far smaller than the full-history one, and
+      // smaller than the 200 KB payload commit it does not need to send.
+      const fullPath = join(root, "full.bundle");
+      execFileSync("git", ["bundle", "create", fullPath, "HEAD"], { cwd: root });
+      expect(res.bundleBytes).toBeLessThan(statSync(fullPath).size);
+      expect(res.bundleBytes).toBeLessThan(statSync(join(root, "big.txt")).size);
+      expect(res.uploadSecs).toBeGreaterThanOrEqual(0);
+
+      const bundleOpts = (exec.bundleRepo as ReturnType<typeof vi.fn>).mock.calls[0]?.[2] as {
+        refs?: string[];
+        excludeRefs?: string[];
+      };
+      expect(bundleOpts?.excludeRefs).toEqual([baseSha]);
+      expect(bundleOpts?.refs?.some((r) => r.startsWith("refs/repoos/candidate"))).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("falls back to the full bundle when the host reports no mirror", async () => {
+    const { root, candidateSha } = makeRepo();
+    try {
+      const bundlePath = join(root, "candidate.bundle");
+      const exec = realBundleExec(); // probeMirror defaults to EMPTY_REMOTE_MIRROR
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+      });
+
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.partial).toBe(false);
+      expect(res.baseSha).toBeNull();
+      const bundleOpts = (exec.bundleRepo as ReturnType<typeof vi.fn>).mock.calls[0]?.[2] as {
+        excludeRefs?: string[];
+      };
+      expect(bundleOpts?.excludeRefs).toEqual([]);
+      // A full-history bundle carries the base too.
+      const refs = listBundleRefs(bundlePath);
+      expect(refs.some((r) => r.startsWith("refs/repoos/candidate"))).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("never excludes a base the candidate does not descend from", async () => {
+    const { root, candidateSha } = makeRepo();
+    try {
+      // An unrelated commit on the host mirror (a sibling line the candidate
+      // does not contain). Excluding it would drop commits the bundle needs.
+      execFileSync("git", ["checkout", "-q", "-b", "side", candidateSha], { cwd: root });
+      writeFileSync(join(root, "side.txt"), "side\n");
+      execFileSync("git", ["add", "."], { cwd: root });
+      execFileSync("git", ["commit", "-qm", "side"], { cwd: root });
+      const unrelated = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: root,
+        encoding: "utf8",
+      }).trim();
+      execFileSync("git", ["checkout", "-q", "main"], { cwd: root });
+      const exec = realBundleExec({
+        probeMirror: vi.fn(async () => ({
+          exists: true,
+          refs: { "refs/repoos/scope": unrelated },
+        })),
+      });
+      const bundlePath = join(root, "candidate.bundle");
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+      });
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.partial).toBe(false);
+      expect(res.baseSha).toBeNull();
+      const bundleOpts = (exec.bundleRepo as ReturnType<typeof vi.fn>).mock.calls[0]?.[2] as {
+        excludeRefs?: string[];
+      };
+      expect(bundleOpts?.excludeRefs).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("ships the scope ref while still excluding a base the host holds", async () => {
+    const { root, baseSha, candidateSha } = makeRepo();
+    try {
+      // The scope tip (main) is the middle commit: a strict descendant of the
+      // host's base and a strict ancestor of the candidate.
+      const scopeTip = execFileSync("git", ["rev-parse", `${candidateSha}^`], {
+        cwd: root,
+        encoding: "utf8",
+      }).trim();
+      const bundlePath = join(root, "candidate.bundle");
+      const exec = realBundleExec({
+        probeMirror: vi.fn(async () => ({
+          exists: true,
+          refs: { "refs/repoos/candidate": baseSha, "refs/repoos/scope": scopeTip },
+        })),
+      });
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        changedRef: "main",
+        changedBaseSha: scopeTip,
+        mirrorPath: MIRROR,
+        emit: () => {},
+      });
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      // The base is a strict ancestor of both the candidate and the scope tip,
+      // so a partial bundle is safe AND the scope ref travels alongside it.
+      expect(res.partial).toBe(true);
+      expect(res.baseSha).toBe(baseSha);
+      const refs = listBundleRefs(bundlePath);
+      expect(refs.some((r) => r.startsWith("refs/repoos/candidate"))).toBe(true);
+      expect(refs.some((r) => r.startsWith("refs/repoos/scope"))).toBe(true);
+      const bundleOpts = (exec.bundleRepo as ReturnType<typeof vi.fn>).mock.calls[0]?.[2] as {
+        refs?: string[];
+        excludeRefs?: string[];
+      };
+      expect(bundleOpts?.refs?.some((r) => r.startsWith("refs/repoos/scope"))).toBe(true);
+      expect(bundleOpts?.excludeRefs).toEqual([baseSha]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not exclude a base equal to the scope tip (it would drop the scope ref)", async () => {
+    const { root, baseSha, candidateSha } = makeRepo();
+    try {
+      const bundlePath = join(root, "candidate.bundle");
+      // The host's only base IS the scope tip: excluding it would also exclude
+      // the scope ref the runner needs, so the run must fall back to full.
+      const exec = realBundleExec({
+        probeMirror: vi.fn(async () => ({
+          exists: true,
+          refs: { "refs/repoos/candidate": baseSha },
+        })),
+      });
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        changedRef: "main",
+        changedBaseSha: baseSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+      });
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.baseSha).toBeNull();
+      expect(res.partial).toBe(false);
+      // The scope ref is still carried, so `--changed main` resolves.
+      const refs = listBundleRefs(bundlePath);
+      expect(refs.some((r) => r.startsWith("refs/repoos/scope"))).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("retries the upload instead of losing the whole run", async () => {
+    const { root, candidateSha } = makeRepo();
+    try {
+      const bundlePath = join(root, "candidate.bundle");
+      let calls = 0;
+      const exec = fakeExec({
+        uploadFile: vi.fn(async () => {
+          calls++;
+          return calls < 2 ? { ok: false, detail: "EPIPE" } : { ok: true };
+        }),
+      });
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+      });
+      expect(res.ok).toBe(true);
+      expect(calls).toBe(2);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("a partial bundle applies only to a mirror that holds its base (validate.sh contract)", async () => {
+    const { root, baseSha, candidateSha } = makeRepo();
+    try {
+      // Build the partial bundle exactly as prepareCandidateUpload would.
+      const bundlePath = join(root, "candidate.bundle");
+      execFileSync("git", ["update-ref", "refs/repoos/candidate-x", candidateSha], { cwd: root });
+      execFileSync(
+        "git",
+        ["bundle", "create", bundlePath, "refs/repoos/candidate-x", `^${baseSha}`],
+        {
+          cwd: root,
+        },
+      );
+
+      // A fresh mirror (no base) cannot apply the partial bundle — this is the
+      // fetch validate.sh does; it must fail rather than silently produce a
+      // wrong tree, so RepoOS falls back to the full bundle on the next run.
+      const fresh = join(root, "fresh.git");
+      execFileSync("git", ["init", "-q", "--bare", fresh]);
+      const failed = (() => {
+        try {
+          execFileSync(
+            "git",
+            [
+              "-C",
+              fresh,
+              "fetch",
+              "-q",
+              "--no-tags",
+              "--force",
+              bundlePath,
+              "+refs/repoos/candidate-x:refs/repoos/candidate",
+            ],
+            { stdio: "pipe" },
+          );
+          return false;
+        } catch {
+          return true;
+        }
+      })();
+      expect(failed).toBe(true);
+
+      // A mirror that already holds the base applies it and lands on the
+      // candidate — and a wrong expected sha is detectable by rev-parse.
+      const warm = join(root, "warm.git");
+      execFileSync("git", ["init", "-q", "--bare", warm]);
+      execFileSync("git", ["-C", warm, "fetch", "-q", root, baseSha], { stdio: "pipe" });
+      execFileSync(
+        "git",
+        [
+          "-C",
+          warm,
+          "fetch",
+          "-q",
+          "--no-tags",
+          "--force",
+          bundlePath,
+          "+refs/repoos/candidate-x:refs/repoos/candidate",
+        ],
+        { stdio: "pipe" },
+      );
+      const mirrorSha = execFileSync(
+        "git",
+        ["-C", warm, "rev-parse", "--verify", "refs/repoos/candidate"],
+        { encoding: "utf8" },
+      ).trim();
+      expect(mirrorSha).toBe(candidateSha);
+      expect(mirrorSha).not.toBe(baseSha);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reports the upload as failed (hostGone) after exhausting retries", async () => {
+    const { root, candidateSha } = makeRepo();
+    try {
+      const bundlePath = join(root, "candidate.bundle");
+      const exec = fakeExec({
+        uploadFile: vi.fn(async () => ({ ok: false, detail: "Broken pipe" })),
+      });
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+      });
+      expect(res.ok).toBe(false);
+      if (res.ok) return;
+      expect(res.stage).toBe("upload");
+      expect(res.hostGone).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("remote mirror helpers (#0717)", () => {
+  it("parses a MIRROR=1 probe with both refs", () => {
+    const out = "MIRROR=1\n" + "a".repeat(40) + "\n" + "b".repeat(40) + "\n";
+    const state = parseMirrorProbeOutput(out);
+    expect(state.exists).toBe(true);
+    expect(state.refs["refs/repoos/candidate"]).toBe("a".repeat(40));
+    expect(state.refs["refs/repoos/scope"]).toBe("b".repeat(40));
+  });
+
+  it("treats a missing mirror or a failed probe as no mirror", () => {
+    expect(parseMirrorProbeOutput("MIRROR=0").exists).toBe(false);
+    expect(parseMirrorProbeOutput("").exists).toBe(false);
+    expect(EMPTY_REMOTE_MIRROR).toEqual({ exists: false, refs: {} });
+  });
+
+  it("derives a stable, distinct mirror path per repo root", () => {
+    const a = remoteMirrorPath("/Users/x/opex");
+    const b = remoteMirrorPath("/Users/y/opex");
+    expect(a).toMatch(/^~\/\.repoos-cache\/opex-[0-9a-f]{8}\.git$/);
+    expect(a).not.toBe(b);
+    expect(remoteMirrorPath("/Users/x/opex")).toBe(a);
   });
 });
