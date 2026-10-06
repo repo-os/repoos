@@ -2,21 +2,19 @@
 id: "0659"
 title: Config schema + Settings UI for provider selection
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
+status: done
 priority: p1
 area: [ui, core]
 story: Cloud attachment storage
 depends_on: ["0658"]
+merged_commit: cd08f8692cfcee19a6f4bfd863e4655ee13f0e76
 assigned_to: ai
 created_by: ""
 branch: feat/config-schema-settings-ui-for-provider-s
 model_override: opencode-go/deepseek-v4.1-flash
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-05T08:28:51Z"
-updated_at: "2026-10-05T23:35:41Z"
+updated_at: "2026-10-06T00:25:20Z"
 review_passes: 4
 merge_conflict_retry_count: 1
 check_retry_count: 1
@@ -1347,4 +1345,4 @@ src/ui-app/src/stores/config.ts(10,3): error TS2305: Module '"../types"' has no 
 - 2026-10-05T23:13:47Z · status active→review
 - 2026-10-05T23:21:01Z · body: section Shots
 - 2026-10-05T23:35:41Z · needs_input
-
+- 2026-10-06T00:25:20Z · status review→done, release:success
