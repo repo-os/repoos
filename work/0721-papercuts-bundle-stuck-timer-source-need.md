@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: [32m✓[39m tests/repo-commit-route.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 206[2mms[22m[39m · [32m✓[39m tests/tunnel-assistant.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 84[2mms[22m[39m · [32m✓[39m tests/area-picker.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 101[2mms[22m[39m · [32m✓[39m tests/settings-location.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m · [32m✓[39m tests/needs-input-ui.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m · [32m✓[39m tests/telegram-chat-routes.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 36[2mms[22m[39m · [32m✓[39m tests/drawer-load.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 122[2mms[22m[39m · [32m✓[39m tests/playground-chat.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 6[2mms[22m[39m"
+last_handoff_failure_sha: 25c22c96a27f03b0c4de97fbff14af7d4b037c08
 id: "0721"
 title: "Easter eggs bundle: stuck-timer source, needs_input clear on new run, stale provider balance, agent-review test races"
 type: chore
@@ -12,7 +14,7 @@ branch: feat/easter-eggs-bundle-stuck-timer-source-ne
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:27:52Z"
-updated_at: "2026-10-06T16:01:32Z"
+updated_at: "2026-10-06T16:45:48Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -67,3 +69,23 @@ Keep each item small and separate in commits. Do not touch the degenerate detect
 - 2026-10-06T15:17:57Z · body
 - 2026-10-06T15:55:40Z · needs_input
 - 2026-10-06T16:01:32Z · body
+- 2026-10-06T16:24:03Z · handoff failed · remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s
+[validate] cloning bundle /home/nick/.repoos-0721-4e99e8fe.bundle
+warning: You appear to have cloned an empty repository.
+fatal: unable to read tree (25c22c96a27f03b0c4de97fbff14af7d4b037c08) — fix it in the feature branch and re-run the gate
+- 2026-10-06T16:29:44Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T16:29:44Z · status review→active
+- 2026-10-06T16:29:55Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s
+[validate] cloning bundle /home/nick/.repoos-0721-f4fad1da.bundle
+warning: You appear to have cloned an empty repository.
+fatal: unable to read tree (25c22c96a27f03b0c4de97fbff14af7d4b037c08) — fix it in the feature branch and re-run the gate
+- 2026-10-06T16:35:44Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T16:35:44Z · status review→active
+- 2026-10-06T16:35:52Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s
+[validate] cloning bundle /home/nick/.repoos-0721-11858811.bundle
+warning: You appear to have cloned an empty repository.
+fatal: unable to read tree (25c22c96a27f03b0c4de97fbff14af7d4b037c08) — fix it in the feature branch and re-run the gate
+- 2026-10-06T16:41:44Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T16:41:44Z · status review→active
+- 2026-10-06T16:45:48Z · handoff failed · task-file handoff failed at check · repoos check failed: [32m✓[39m tests/repo-commit-route.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 206[2mms[22m[39m · [32m✓[39m tests/tunnel-assistant.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 84[2mms[22m[39m · [32m✓[39m tests/area-picker.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 101[2mms[22m[39m · [32m✓[39m tests/settings-location.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m · [32m✓[39m tests/needs-input-ui.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m · [32m✓[39m tests/telegram-chat-routes.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 36[2mms[22m[39m · [32m✓[39m tests/drawer-load.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 122[2mms[22m[39m · [32m✓[39m tests/playground-chat.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+
