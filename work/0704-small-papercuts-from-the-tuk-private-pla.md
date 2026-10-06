@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-06T03:18:29Z"
+updated_at: "2026-10-06T03:26:49Z"
 ---
 ## Problem
 
@@ -36,3 +36,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 
 - 2026-10-06T03:16:00Z · created · unknown
 - 2026-10-06T03:18:29Z · note: Also from the tuk-private run (log items 18-19): (5) `repoos show` omits story, depends_on and paths from its header; (6) GET on a POST-only /api route (e.g. /api/tasks/0004/done) returns index.html with HTTP 200 instead of JSON 404/405.
+- 2026-10-06T03:26:49Z · note: Recheck on current code (tuk-private, 2026-10-06): created_by empty and the HTML-200 API response are still present. New (item 21): PATCH /api/config rejects numeric maxActiveTasks 3 ('must be one of: 1, 2, 3, ...'); only the string '3' is accepted.
