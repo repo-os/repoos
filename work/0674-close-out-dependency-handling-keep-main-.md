@@ -2,7 +2,7 @@
 id: "0674"
 title: "Close-out dependency handling: keep main's install fresh and stop mislabelling environment errors"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/close-out-dependency-handling-keep-main-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:30Z"
-updated_at: "2026-10-06T00:50:33Z"
+updated_at: "2026-10-06T01:16:45Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -62,3 +62,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T23:44:53Z · status ready→active, branch
 - 2026-10-06T00:49:45Z · status active→review
 - 2026-10-06T00:50:33Z · status review→active
+- 2026-10-06T01:16:45Z · status active→review
