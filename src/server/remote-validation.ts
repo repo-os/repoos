@@ -1380,7 +1380,12 @@ export function validateScriptArgs(
 ): string {
   const parts = [VALIDATE_SCRIPT, remoteBundle, candidateSha, artifactsDir];
   const ref = changedRef?.trim();
-  if (ref) parts.push(shellQuote(ref));
+  // $4 is the changed ref and $5 the mirror path. When a mirror is passed
+  // without a changed ref (handoff and close-out run the full suite), $4 must
+  // still be present as an empty placeholder: otherwise the mirror path lands
+  // in $4, the script sees no mirror and clones the mirror-ref bundle directly
+  // ("cloned an empty repository") — the 2026-10-07 regression after #0717.
+  if (ref || mirrorPath) parts.push(ref ? shellQuote(ref) : "''");
   // Mirror path is appended last so an older installed validate.sh (which reads
   // only $4 as the changed ref) still receives a valid positional layout.
   if (mirrorPath) parts.push(shellQuote(mirrorPath));
