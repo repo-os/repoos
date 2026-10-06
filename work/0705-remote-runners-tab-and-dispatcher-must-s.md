@@ -2,7 +2,7 @@
 id: "0705"
 title: Remote runners tab and dispatcher must see standalone self-check slot holders (they starved close-outs); add refresh feedback
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -81,4 +81,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-06T06:24:40Z · status active→review
 - 2026-10-06T06:24:40Z · status review→active
-- 2026-10-06T06:30:04Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T06:30:04Z · status active→review
