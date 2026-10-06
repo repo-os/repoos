@@ -75,6 +75,11 @@ export interface CheckSummary {
    * was cancelled" apart from "the gate caught something".
    */
   cancelled?: boolean;
+  /**
+   * Effective vitest `--changed` ref on the runner (#0695). `null` means the
+   * full suite ran (no `--changed`, or the ref did not resolve).
+   */
+  remoteTestScopeRef?: string | null;
 }
 
 export interface CompleteResult {

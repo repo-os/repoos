@@ -43,7 +43,7 @@ run it again. Server-spawned checks also pass `--local-tests` when remote is
 enabled but that path opted out (e.g. release with `useForReleases = false`,
 close-out without a build step). With `remoteValidation.enabled`, standalone
 `repoos check` runs the remote half first unless you pass `--local-tests` or either env
-var is already set. **`--changed` / `REPOOS_CHECK_CHANGED` does not skip the remote half** (#0694): the runner still runs install + build + the full test suite; changed-path mode only narrows local guards after `REPOOS_SKIP_TESTS=1`. The remote bundle is **`git bundle create … HEAD`**, so only
+var is already set. **`--changed` / `REPOOS_CHECK_CHANGED` scopes the remote test step too** (#0695): engineer self-checks bundle the merge-base ref alongside `HEAD` and run `bun run test -- --changed <ref>` on the runner (install + build still run). Handoff and close-out omit `changedRef`, so they still run the **full** suite on the runner. The remote bundle is **`git bundle create … HEAD [base]`**, so only
 committed work reaches the runner, and local tests are skipped after a green
 remote pass. What is tested must be what is committed (#0512), which the two
 entry points guarantee differently:
