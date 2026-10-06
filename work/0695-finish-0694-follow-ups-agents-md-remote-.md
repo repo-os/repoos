@@ -2,7 +2,10 @@
 id: "0695"
 title: "Finish #0694 follow-ups: AGENTS.md remote self-check wording, task attribution for cli Runs rows, WIP-checkpoint tests, load measurement"
 type: chore
-status: active
+status: review
+needs_input: true
+needs_input_reason: provider-failure
+needs_input_detail: "{\"type\":\"thinking\",\"subtype\":\"delta\",\"text\":\" SSH connections. If\",\"session_id\":\"0e72a542-8f6f-4c53-8e59-05be1b32f0ca\",\"timestamp_ms\":1791263487402}"
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,11 +15,12 @@ branch: feat/finish-0694-follow-ups-agents-md-remote-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T01:38:21Z"
-updated_at: "2026-10-06T05:01:12Z"
+updated_at: "2026-10-06T05:11:30Z"
 last_handoff_failure_fingerprint: "check|remote validation unavailable: no usable remote host for any host — bee: prerequisite check failed (exit 255): ssh: connect to host bee port 22: Operation timed out; thinkpad: prerequisite check failed (exit 255): ssh: connect to host thinkpad port 22: Operation timed out; mini: prerequisite check failed (exit 255): ssh: connect to host 100.126.187.126 port 22: Operation timed out — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 last_handoff_failure_sha: "014e214e820f4a2f41e790351361589f239df3bf"
 review_rounds: 1
 review_passes: 1
+dev_error_count: 1
 ---
 ## Problem
 
@@ -104,3 +108,5 @@ error: script "test" exited with code 1
 - 2026-10-06T04:52:49Z · status active→review
 - 2026-10-06T04:52:50Z · status review→active
 - 2026-10-06T05:01:12Z · body: section Driver decision (round 2): scope cut to land now
+- 2026-10-06T05:11:30Z · agent exited with an error (cursor) · {"type":"thinking","subtype":"delta","text":" SSH connections. If","session_id":"0e72a542-8f6f-4c53-8e59-05be1b32f0ca","timestamp_ms":1791263487402}
+- 2026-10-06T05:11:30Z · status active→review
