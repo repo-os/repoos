@@ -12,7 +12,7 @@ branch: feat/cli-api-parity-every-api-action-should-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
-updated_at: "2026-10-06T17:59:28Z"
+updated_at: "2026-10-06T18:01:24Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: build complete in 4.19s. · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed. · ── Failed steps ── · ✗ rendered-contrast — rerun: repoos check --profile full --step rendered-contrast --changed f8aed19bc"
 last_handoff_failure_sha: 5145d4867f59320065b186f190f59ff9398c155a
 handoff_signal_retry_count: 1
@@ -97,3 +97,4 @@ error: script "build" exited with code 127
 - 2026-10-06T17:49:28Z · status review→active
 - 2026-10-06T17:54:04Z · handoff failed · task-file handoff failed at check · repoos check failed: build complete in 4.19s. · ⏭ landing-build  — skipped — no changed path matches landing/** · ⏭ telegram-manager-build  — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test  — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed. · ── Failed steps ── · ✗ rendered-contrast — rerun: repoos check --profile full --step rendered-contrast --changed f8aed19bc
 - 2026-10-06T17:59:28Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-10-06T18:01:24Z · body
