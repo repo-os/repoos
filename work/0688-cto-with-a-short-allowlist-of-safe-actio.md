@@ -2,7 +2,7 @@
 id: "0688"
 title: "CTO with a short allowlist of safe actions (restart stalled agent, refresh install, re-queue close-out)"
 type: feature
-status: active
+status: review
 priority: p3
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -61,4 +61,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T02:50:12Z · body: section Shots
 - 2026-10-06T03:08:30Z · body
 - 2026-10-06T03:17:33Z · body
-- 2026-10-06T03:19:01Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T03:19:01Z · status active→review
