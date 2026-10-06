@@ -1,11 +1,10 @@
 ---
-merge_conflict_retry_count: 1
-updated_at: "2026-10-06T15:55:20Z"
-review_passes: 1
+last_handoff_failure_fingerprint: "check|repoos check failed: [validate] cloning bundle /home/nick/.repoos-pre-review-0d2c60a6.bundle · warning: You appear to have cloned an empty repository. · fatal: unable to read tree (c9612904e88034feea7d09a578cee3d3dbea1399) · [remote validation FAILED (exit 128) in 4s on bee] · ✗ remote validation failed: remote validation failed (exit 128) — [lock] slot 0 acquired after 0s · [validate] cloning bundle /home/nick/.repoos-pre-review-0d2c60a6.bundle · warning: You appear to have cloned an empty repository. · fatal: unable to read tree (c9612904e88034feea7d09a578cee3d3dbea1399) — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: c9612904e88034feea7d09a578cee3d3dbea1399
 id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -15,6 +14,9 @@ branch: feat/invented-evidence-reviewer-and-engineer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:46Z"
+updated_at: "2026-10-06T16:46:36Z"
+merge_conflict_retry_count: 1
+review_passes: 1
 last_check_failure: "repoos check at 2026-10-06T15:38:56.453Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
 handoff_signal_retry_count: 2
 dev_error_count: 1
@@ -84,5 +86,12 @@ error: script "test" exited with code 1
 - 2026-10-06T15:54:31Z · status active→review
 - 2026-10-06T15:54:31Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T15:55:20Z · note: review pass 1: good to go
-
+- 2026-10-06T16:26:51Z · status review→active
+- 2026-10-06T16:27:10Z · handoff failed · ui-review handoff failed at check · remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s
+[validate] cloning bundle /home/nick/.repoos-0698-53a5b0d2.bundle
+warning: You appear to have cloned an empty repository.
+fatal: unable to read tree (db995368dd1423d6d064eadbf4545ed1ab7b5d94) — fix it in the feature branch and re-run the gate
+- 2026-10-06T16:36:29Z · handoff failed · ui-review handoff failed at check · repoos check failed: [validate] cloning bundle /home/nick/.repoos-pre-review-61575a6e.bundle · warning: You appear to have cloned an empty repository. · fatal: unable to read tree (db995368dd1423d6d064eadbf4545ed1ab7b5d94) · [remote validation FAILED (exit 128) in 4s on bee] · ✗ remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · [validate] cloning bundle /home/nick/.repoos-pre-review-61575a6e.bundle · warning: You appear to have cloned an empty repository. · fatal: unable to read tree (db995368dd1423d6d064eadbf4545ed1ab7b5d94) — fix it in the feature branch and re-run the gate
+- 2026-10-06T16:41:41Z · handoff failed · ui-review handoff failed at check · repoos check failed: [validate] cloning bundle /home/nick/.repoos-pre-review-d322d500.bundle · warning: You appear to have cloned an empty repository. · fatal: unable to read tree (bcc18ead3bc4f7b9a69660efe505763b0a7e04c2) · [remote validation FAILED (exit 128) in 3s on bee] · ✗ remote validation failed: remote validation failed (exit 128) — [lock] slot 0 acquired after 0s · [validate] cloning bundle /home/nick/.repoos-pre-review-d322d500.bundle · warning: You appear to have cloned an empty repository. · fatal: unable to read tree (bcc18ead3bc4f7b9a69660efe505763b0a7e04c2) — fix it in the feature branch and re-run the gate
+- 2026-10-06T16:46:36Z · handoff failed · ui-review handoff failed at check · repoos check failed: [validate] cloning bundle /home/nick/.repoos-pre-review-0d2c60a6.bundle · warning: You appear to have cloned an empty repository. · fatal: unable to read tree (c9612904e88034feea7d09a578cee3d3dbea1399) · [remote validation FAILED (exit 128) in 4s on bee] · ✗ remote validation failed: remote validation failed (exit 128) — [lock] slot 0 acquired after 0s · [validate] cloning bundle /home/nick/.repoos-pre-review-0d2c60a6.bundle · warning: You appear to have cloned an empty repository. · fatal: unable to read tree (c9612904e88034feea7d09a578cee3d3dbea1399) — fix it in the feature branch and re-run the gate
 
