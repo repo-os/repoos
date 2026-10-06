@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 id: "0680"
 title: "UI verification gate: fail UI handoffs on browser console errors; reviewer sees the screenshots"
 type: feature
@@ -77,4 +78,5 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-06T01:17:16Z · status review→active
 - 2026-10-06T01:37:32Z · status active→review
 - 2026-10-06T01:37:51Z · note: shots: failed — capture of Task drawer review history list on "default" failed: click: Timeout 5000ms exceeded.
+
 
