@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T23:55:32Z"
-updated_at: "2026-10-06T01:49:22Z"
+updated_at: "2026-10-06T01:49:23Z"
 ---
 ## Problem
 
@@ -42,3 +44,4 @@ Overlaps #0678 (provider failures and silent runs, watchdog) and #0679 (close-ou
 - 2026-10-05T23:55:48Z · story
 - 2026-10-06T00:16:18Z · body: section Driver note: CTO overrides an explicit pause
 - 2026-10-06T01:49:22Z · status inbox→ready
+- 2026-10-06T01:49:23Z · cli_override, model_override
