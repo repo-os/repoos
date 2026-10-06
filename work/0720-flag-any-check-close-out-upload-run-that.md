@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 24b3ea891378548e3412d37682e5bd3fa4e6229e
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
@@ -14,7 +12,9 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-06T18:04:29Z"
+updated_at: "2026-10-06T18:04:38Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 24b3ea891378548e3412d37682e5bd3fa4e6229e
 review_passes: 3
 review_rounds: 1
 merge_conflict_retry_count: 1
