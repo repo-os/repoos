@@ -2,7 +2,7 @@
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -74,4 +74,4 @@ warning: You appear to have cloned an empty repository.
 fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it in the feature branch and re-run the gate
 - 2026-10-06T17:16:22Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-06T17:16:23Z · status review→active
-- 2026-10-06T17:22:06Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T17:22:06Z · status active→review
