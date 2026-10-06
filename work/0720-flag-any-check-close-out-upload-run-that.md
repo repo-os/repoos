@@ -2,7 +2,7 @@
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-06T17:44:20Z"
+updated_at: "2026-10-06T17:54:28Z"
 review_rounds: 1
 review_passes: 2
 merge_conflict_retry_count: 1
@@ -88,3 +88,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-06T17:38:57Z · status review→active
 - 2026-10-06T17:42:39Z · body
 - 2026-10-06T17:44:20Z · body
+- 2026-10-06T17:54:28Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
