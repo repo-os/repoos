@@ -2,7 +2,7 @@
 id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -99,4 +99,4 @@ fatal: unable to read tree (db995368dd1423d6d064eadbf4545ed1ab7b5d94) — fix it
 [validate] cloning bundle /home/nick/.repoos-0698-d61d6381.bundle
 warning: You appear to have cloned an empty repository.
 fatal: unable to read tree (d9b027c8a905fb78ea2f2613a250bf35d5f9782b) — fix it in the feature branch and re-run the gate
-- 2026-10-06T17:21:11Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T17:21:11Z · status active→review
