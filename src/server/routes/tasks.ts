@@ -2487,6 +2487,39 @@ export const ctoInterrupt: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, { ok: true, ...result });
 };
 
+/** Run one allowlisted CTO safe action (#0688). */
+export const runCtoSafeActionRoute: RouteHandler = async (ctx, req, res, params) => {
+  const actionId = params.param1;
+  const body = (await readBody(req)) as { taskId?: unknown };
+  const taskId = typeof body?.taskId === "string" ? body.taskId.trim() : null;
+  const { runCtoSafeAction } = await import("../cto-actions.js");
+  const rates = ctx.ctoActionRates;
+  if (!rates || !ctx.attentionEvents) {
+    return json(res, 500, { error: "CTO action services are not available" });
+  }
+  const result = await runCtoSafeAction(
+    {
+      config: ctx.config,
+      index: ctx.index,
+      runner: ctx.runner,
+      jobCoordinator: ctx.jobCoordinator,
+      attentionEvents: ctx.attentionEvents,
+      rates,
+      logger: ctx.logger,
+      emitEvent: ctx.emitEvent,
+      triggerJobProcessing: ctx.triggerJobProcessing,
+      reportedStages: ctx.reportedStages,
+    },
+    actionId,
+    { taskId, actor: "human" },
+  );
+  if (!result.ok) {
+    const status = result.rateLimited ? 429 : 400;
+    return json(res, status, { ok: false, error: result.reason, rateLimited: result.rateLimited });
+  }
+  return json(res, 200, { ok: true, detail: result.detail });
+};
+
 /**
  * Build the "newly attached screenshots" fragment appended to the PM's task
  * context (#0382). Each entry surfaces the API URL and the repo-relative
@@ -2826,45 +2859,19 @@ export const getIntegrationPipeline: RouteHandler = (ctx, _req, res) => {
 export const refreshInstallAndRetryIntegration: RouteHandler = async (ctx, _req, res, params) => {
   const { jobCoordinator, config } = ctx;
   const id = params.param1;
-  const job = jobCoordinator.getJob(id);
-  if (!job) {
-    return json(res, 404, { error: `No integration job for task #${id}` });
-  }
-  if (job.phase !== "failed") {
-    return json(res, 409, {
-      error: `Task #${id} is not in a failed integration state (it is ${job.phase})`,
-    });
-  }
   const task = ctx.index.getTask(id);
   if (!task) {
     return json(res, 404, { error: `Task #${id} not found` });
   }
 
-  const reason = job.reason ?? "";
-  const { classifyFailure } = await import("../../core/close-out-failure.js");
-  const { isCloseOutEnvironmentFailure } = await import("../../core/dependency-install.js");
-  if (
-    classifyFailure(job.failedPhase, reason) !== "environment" &&
-    !isCloseOutEnvironmentFailure(reason)
-  ) {
-    return json(res, 409, {
-      error:
-        "Refresh install and retry is only for environment failures (stale or missing dependencies), not branch regressions",
-    });
+  const { requeueCloseOutAfterEnvFix } = await import("../close-out-requeue.js");
+  const result = await requeueCloseOutAfterEnvFix(config, jobCoordinator, task);
+  if (!result.ok) {
+    const status = result.reason.includes("not in a failed") ? 409 : 400;
+    return json(res, status, { error: result.reason });
   }
 
-  const { refreshMainDependencyInstall } = await import("../../core/dependency-install.js");
-  const install = await refreshMainDependencyInstall(config);
-  if (!install.ok) {
-    return json(res, 400, {
-      error: install.reason ?? "could not refresh dependencies in the primary checkout",
-    });
-  }
-
-  const reenqueued = jobCoordinator.enqueue(task);
-  if (!reenqueued) {
-    return json(res, 400, { error: `Task #${id} has no branch to integrate` });
-  }
+  const reenqueued = jobCoordinator.getJob(id);
   ctx.emitEvent({
     type: "integration",
     pipeline: buildIntegrationSnapshot(jobCoordinator, {}, resolvePipelineCheckPlan(ctx.config)),
@@ -2872,11 +2879,13 @@ export const refreshInstallAndRetryIntegration: RouteHandler = async (ctx, _req,
   ctx.triggerJobProcessing();
   return json(res, 200, {
     ok: true,
-    job: {
-      taskId: reenqueued.taskId,
-      phase: reenqueued.phase,
-      enqueuedAt: reenqueued.enqueuedAt,
-    },
+    job: reenqueued
+      ? {
+          taskId: reenqueued.taskId,
+          phase: reenqueued.phase,
+          enqueuedAt: reenqueued.enqueuedAt,
+        }
+      : undefined,
   });
 };
 
