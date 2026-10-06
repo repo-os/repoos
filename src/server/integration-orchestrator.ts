@@ -11,9 +11,7 @@
 import {
   readFileSync,
   existsSync,
-  lstatSync,
   symlinkSync,
-  unlinkSync,
   readdirSync,
   mkdirSync,
   writeFileSync,
@@ -53,6 +51,16 @@ import {
   type MergeBranchResult,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
+import {
+  hasDependencyInputChange,
+  isCloseOutEnvironmentFailure,
+  prepareCandidateDependencyInstall,
+  refreshMainDependencyInstall,
+  resolveCloseOutCandidateMode,
+  shouldRunCandidateInstall,
+} from "../core/dependency-install.js";
+
+export { hasDependencyInputChange } from "../core/dependency-install.js";
 import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import type { RemoteValidator } from "./remote-validation.js";
@@ -384,29 +392,6 @@ export function isDocsOnlyChange(paths: string[], docsDir = "docs"): boolean {
 }
 
 /**
- * Does a merged candidate declare a dependency tree that may differ from the
- * one already installed in main?
- *
- * Candidates normally symlink main's node_modules for a warm, cheap gate. A
- * feature that adds or changes a package cannot safely use that tree: it may
- * compile in its own worktree but fail after the merge because main has not
- * installed the new dependency yet (#0449). Treat package manifests and every
- * conventional JavaScript lockfile as an exact, conservative boundary.
- */
-export function hasDependencyInputChange(paths: readonly string[]): boolean {
-  return paths.some((path) => {
-    const filename = path.slice(path.lastIndexOf("/") + 1);
-    return (
-      filename === "package.json" ||
-      filename === "bun.lock" ||
-      filename === "package-lock.json" ||
-      filename === "pnpm-lock.yaml" ||
-      filename === "yarn.lock"
-    );
-  });
-}
-
-/**
  * Resolve the repository's actual default branch name.
  * Tries (in order):
  * 1. git symbolic-ref refs/remotes/origin/HEAD (when remote exists)
@@ -644,57 +629,18 @@ interface CandidateDependencyPreparation {
  */
 async function prepareCandidateDependencies(
   candidatePath: string,
+  config: RepoOSConfig,
   isCancelled: () => boolean,
   deadlineAt?: number,
 ): Promise<CandidateDependencyPreparation> {
-  const nodeModules = join(candidatePath, "node_modules");
-  try {
-    // A normal candidate reuses main's tree through this link. Removing only
-    // the link leaves main completely untouched; the frozen install below then
-    // creates a candidate-local tree from the merged lockfile.
-    if (lstatSync(nodeModules).isSymbolicLink()) unlinkSync(nodeModules);
-  } catch {
-    /* Missing or unreadable node_modules is fine: the install recreates it. */
-  }
-
-  const commands: Array<{ command: string; args: string[] }> = existsSync(
-    join(candidatePath, "bun.lock"),
-  )
-    ? [{ command: "bun", args: ["install", "--frozen-lockfile"] }]
-    : existsSync(join(candidatePath, "pnpm-lock.yaml"))
-      ? [{ command: "pnpm", args: ["install", "--frozen-lockfile"] }]
-      : existsSync(join(candidatePath, "package-lock.json"))
-        ? [{ command: "npm", args: ["ci"] }]
-        : existsSync(join(candidatePath, "yarn.lock"))
-          ? [{ command: "yarn", args: ["install", "--frozen-lockfile"] }]
-          : [];
-
-  if (commands.length === 0) {
-    return {
-      ok: false,
-      reason:
-        "package inputs changed but no recognized lockfile is available to prepare candidate dependencies",
-    };
-  }
-
-  const { command, args } = commands[0];
-  const result = await runProcess(command, args, {
-    cwd: candidatePath,
-    timeout: 300_000,
+  const result = await prepareCandidateDependencyInstall(candidatePath, config, {
     isCancelled,
-    ...(deadlineAt !== undefined ? { deadlineAt } : {}),
+    deadlineAt,
   });
   if (result.cancelled) return { ok: false, cancelled: true };
-  // Killed (or finished) at/after the pipeline deadline (#0573): the caller
-  // fails the whole close-out as a timeout, never as a dependency-install bug.
-  if (deadlineAt !== undefined && Date.now() >= deadlineAt) {
-    return { ok: false, timedOut: true };
-  }
-  if (result.status === 0) return { ok: true };
-  const detail = commandMissing(result)
-    ? `${command} is not available to prepare candidate dependencies`
-    : tailLine(result.stdout, result.stderr);
-  return { ok: false, reason: `dependency install failed: ${detail}` };
+  if (result.timedOut) return { ok: false, timedOut: true };
+  if (result.ok) return { ok: true };
+  return { ok: false, reason: `dependency install failed: ${result.reason ?? "unknown"}` };
 }
 
 /** Candidate validation and publication orchestrator for one job. */
@@ -1123,8 +1069,12 @@ export class CloseOutOrchestrator {
             // available (a non-gate failure).
             const firstSig = checkFailureSignature(firstChecks, firstReason);
             const secondSig = checkFailureSignature(validateRes.failedChecks, secondReason);
-            const reason =
-              firstSig === secondSig
+            const envFailure =
+              isCloseOutEnvironmentFailure(firstReason) &&
+              isCloseOutEnvironmentFailure(secondReason);
+            const reason = envFailure
+              ? `${secondReason} — this looks like a stale or incomplete dependency install in the primary checkout, not a regression in the branch. Refresh the install in main and retry Move to done.`
+              : firstSig === secondSig
                 ? `${secondReason} — reproduced identically on retry, so this is a real failure in the branch, not machine load`
                 : `${secondReason} — NOTE: the first attempt failed differently (${firstReason}). Two unrelated failures point at machine load or infrastructure rather than a regression in this branch; check for stray serve processes and retry.`;
             return this.failOrReconcile(job, "validating", reason);
@@ -1316,16 +1266,19 @@ export class CloseOutOrchestrator {
 
     // A fresh candidate worktree has no dependencies, and the gate below runs a
     // full `bun run build` + check. Reuse the main checkout's node_modules via
-    // a symlink instead of a slow cold install; fail-soft so a missing install
-    // surfaces as a build/check error rather than a misleading sync failure.
-    const candidateNodeModules = join(wtRes.path, "node_modules");
-    if (!existsSync(candidateNodeModules)) {
-      const rootNodeModules = join(root, "node_modules");
-      if (existsSync(rootNodeModules)) {
-        try {
-          symlinkSync(rootNodeModules, candidateNodeModules, "dir");
-        } catch {
-          /* fail-soft: the build step will report the real error */
+    // a symlink instead of a slow cold install unless the project opted into
+    // per-candidate installs (#0674). Fail-soft so a missing install surfaces
+    // as a build/check error rather than a misleading sync failure.
+    if (resolveCloseOutCandidateMode(this.config) === "symlink-main") {
+      const candidateNodeModules = join(wtRes.path, "node_modules");
+      if (!existsSync(candidateNodeModules)) {
+        const rootNodeModules = join(root, "node_modules");
+        if (existsSync(rootNodeModules)) {
+          try {
+            symlinkSync(rootNodeModules, candidateNodeModules, "dir");
+          } catch {
+            /* fail-soft: the build step will report the real error */
+          }
         }
       }
     }
@@ -1680,14 +1633,13 @@ export class CloseOutOrchestrator {
         { paths: changedPaths },
       );
     } else {
-      // The candidate normally points at main's node_modules to avoid a cold
-      // install. That tree cannot satisfy a dependency added by this branch,
-      // however, because main has not merged its package.json/lockfile yet.
-      // Give only dependency-changing candidates their own frozen install.
-      if (changedPaths !== null && hasDependencyInputChange(changedPaths)) {
+      // Symlink-main candidates reuse main's install; own-install candidates and
+      // any branch that changes package inputs get a private frozen install (#0449, #0674).
+      if (shouldRunCandidateInstall(this.config, changedPaths)) {
         this.onProgress?.("build");
         const dependencies = await prepareCandidateDependencies(
           wtPath,
+          this.config,
           () => this.isCancelled(job.taskId),
           deadlineAt,
         );
@@ -2365,6 +2317,37 @@ export class CloseOutOrchestrator {
         );
         if (dropped) {
           return { ok: false, reason: dropped };
+        }
+      }
+
+      // Keep main's install aligned with the lockfile that just landed (#0674).
+      // Earlier merges only installed in throwaway candidates, so the next
+      // symlink-main candidate would otherwise build against a stale tree.
+      const publishDiffRes = await runGit(
+        root,
+        ["diff", "--name-only", currentMainSha, "HEAD"],
+        10_000,
+      );
+      if (publishDiffRes.status === 0) {
+        const publishedPaths = publishDiffRes.stdout
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (hasDependencyInputChange(publishedPaths)) {
+          const installRes = await refreshMainDependencyInstall(this.config, {
+            isCancelled: () => this.isCancelled(job.taskId),
+          });
+          if (installRes.cancelled) {
+            return { ok: false, cancelled: true, reason: CANCEL_REASON };
+          }
+          if (!installRes.ok) {
+            this.logger?.integration(
+              job.taskId,
+              "warn",
+              "post-publish dependency refresh failed — main may have a stale install until refreshed manually",
+              { reason: installRes.reason },
+            );
+          }
         }
       }
 

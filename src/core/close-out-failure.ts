@@ -1,3 +1,5 @@
+import { isCloseOutEnvironmentFailure } from "./dependency-install.js";
+
 /**
  * Close-out failure messaging (0215).
  *
@@ -65,11 +67,14 @@ function headline(s: string): string {
 export type CloseOutFailureKind =
   | "conflict" // a genuine merge conflict: list files + resolve-then-retry
   | "timeout" // the pipeline budget (closeOut.timeoutMs) ran out — retryable infra
+  | "environment" // stale/missing deps in main or candidate — refresh install + retry
   | "validating" // build/check gate failed: show output, offer retry, no conflicts
   | "dirty" // publish blocked by a dirty tree: name files, commit/stash
   | "syncing" // branch could not be brought up to date with main
   | "publishing" // any other publish-time failure
   | "other";
+
+export type CloseOutFailureAction = "refresh-install-retry";
 
 /**
  * The orchestrator's stable timeout-reason prefix (#0573). Kept in sync with
@@ -90,6 +95,7 @@ export function classifyFailure(
   // conflict and never blamed on the branch (#0573). Checked before the
   // phase-based arms below so a timeout at any phase classifies the same way.
   if (reason.trim().startsWith(TIMEOUT_PREFIX)) return "timeout";
+  if (isCloseOutEnvironmentFailure(reason)) return "environment";
   if (/^(?:repoos\s+)?(?:check|build) failed:/i.test(reason) || phase === "validating")
     return "validating";
   if (/uncommitted|dirty|would be overwritten|clean at publish|not merged/i.test(reason))
@@ -118,6 +124,8 @@ export interface CloseOutFailure {
    * Debugger. The card shows the Debugger's sentence in preference when present.
    */
   summary?: string;
+  /** One-click repair when the failure is environmental (#0674). */
+  action?: CloseOutFailureAction;
 }
 
 const CONFLICT_HINT =
@@ -149,6 +157,25 @@ export function describeCloseOutFailure(
         step: "merge",
         detail: clean || undefined,
         hint: CONFLICT_HINT,
+      };
+    }
+    case "environment": {
+      const excerpt = clean.replace(/^(?:repoos\s+)?(?:check|build) failed:\s*/i, "").trim();
+      return {
+        message: clean
+          ? headline(clean)
+          : "Close-out failed because dependencies were missing or stale.",
+        conflicts: [],
+        step: "check",
+        detail: excerpt || clean || undefined,
+        hint:
+          "The gate could not resolve packages or binaries — usually the primary checkout's " +
+          "install is stale after another task merged new dependencies. Refresh the install in " +
+          "main, then retry Move to done. For monorepos, consider `[closeOut] candidate = " +
+          '"own-install"`.',
+        summary:
+          "Dependencies in the primary checkout look stale or incomplete — refresh the install and retry Move to done.",
+        action: "refresh-install-retry",
       };
     }
     case "timeout": {
