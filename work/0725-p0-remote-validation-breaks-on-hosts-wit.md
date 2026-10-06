@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-06T17:03:07.270Z: repoos check failed: [22m[39m[repoos] failed to escalate failed exit for #0001: ENOENT: no such file or directory, open '/tmp/repoos-pause-nep5pr/work/0001-pause-and-resume.md' · [32m✓[39m tests/pause-resume.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 332[2mms[22m[39m · [32m✓[39m tests/raw-config-store.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 18[2mms[22m[39m · [31m❯[39m tests/auth.test.ts [2m([22m[2m0 test[22m[2m)[22m · error: Cannot find module '@vitest/expect… (truncated)"
 id: "0725"
 title: "P0: remote validation breaks on hosts with the old validate.sh since #0717: new bundle has no HEAD ref, old script clones an empty repo"
 type: bug
@@ -71,3 +73,4 @@ URGENT: this blocks all remote validation on this board. Read #0717's diff (src/
 - 2026-10-06T16:16:14Z · status inbox→ready
 - 2026-10-06T16:16:23Z · status ready→active, branch
 - 2026-10-06T16:24:08Z · body: section Shots
+
