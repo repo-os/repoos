@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-06T14:26:00Z"
+updated_at: "2026-10-06T14:26:08Z"
 ---
 ## Problem
 
@@ -37,3 +39,4 @@ Read src/server/attention-feed.ts and attention-notify.ts (silent-run items), sr
 ## Activity
 
 - 2026-10-06T14:26:00Z · created · unknown
+- 2026-10-06T14:26:08Z · cli_override, model_override
