@@ -3,9 +3,6 @@ id: "0705"
 title: Remote runners tab and dispatcher must see standalone self-check slot holders (they starved close-outs); add refresh feedback
 type: bug
 status: active
-needs_input: true
-needs_input_reason: provider-failure
-needs_input_detail: "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Working directory: /Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s (a git worktree checked out on branch feat/remote-runners-tab-and-dispatcher-must-s — work here).\nUse absolute paths under /Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s for every file read, edit, and command.\nThe main checkout at /Users/nick/code/nick/repoos is off-limits for this"
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -15,7 +12,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T06:51:33Z"
+updated_at: "2026-10-06T07:04:18Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 9b8efe3e176dfcaaed9b4b43dc9048bee66820c1
 review_rounds: 1
@@ -101,3 +98,4 @@ error: script "test" exited with code 1
 - 2026-10-06T06:50:29Z · status review→active
 - 2026-10-06T06:51:33Z · status active→review
 - 2026-10-06T06:51:33Z · status review→active
+- 2026-10-06T07:04:18Z · needs_input
