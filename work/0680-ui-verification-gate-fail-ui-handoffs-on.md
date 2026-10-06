@@ -79,4 +79,3 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-06T01:37:32Z · status active→review
 - 2026-10-06T01:37:51Z · note: shots: failed — capture of Task drawer review history list on "default" failed: click: Timeout 5000ms exceeded.
 
-

@@ -67,10 +67,18 @@ first, then come back here.
 
 ## 4. The review loop
 
-- Read the reviewer's report, then **look at UI work yourself**: open the task
-  preview, log in, check the browser console, and check phone, tablet and desktop
-  widths. Automated checks and LLM reviewers pass UI defects that a human sees in
-  seconds — a blank map, a chart drawn wrong, a page wider than the window.
+- For UI tasks, **handoff runs a browser verification gate** before review: declared
+  (or auto-matched) shots are captured through the managed preview while Playwright
+  records console errors, failed requests, and horizontal overflow at configured
+  viewport widths (`uiVerification.enabled` and `uiVerification.viewportWidths` in
+  `repoos.toml`, default on with 1024px and 375px).
+  Any issue **blocks handoff** and writes evidence under `.repoos/ui-verification/`.
+  When Playwright is missing, the gate skips with a visible note (same as other
+  browser checks).
+- Read the reviewer's report and the **handoff screenshots** in the task drawer
+  Changes tab. The reviewer is prompted to comment on them and flag blank captures.
+  You can still open the task preview yourself for a second look — automated checks
+  and LLM reviewers miss defects a human sees in seconds.
 - A task preview can boot **companion services** alongside the main command:
   declare repeatable `[[preview.services]]` tables and list their names on a
   `[[preview.targets]]` row (`services = ["API"]`). Each service gets its own
@@ -84,17 +92,22 @@ first, then come back here.
   after a merge to the primary branch), so new `[[preview.targets]]` rows show
   up without restarting `repoos serve`.
 - Feedback that must survive a change of engineer session (a different CLI or
-  model) belongs in the **task body**. A message lives only in the session it
-  was sent to, and the review report file is overwritten on each pass.
+  model) belongs in the **task body** or the **stored review report**. A chat
+  message lives only in the session it was sent to. Each review pass is also kept
+  as a numbered artifact (`.repoos/reviews/<taskId>/<pass>.md`) with a one-line
+  summary in the task activity log; the latest pass still overwrites
+  `.repoos/reviews/<taskId>.md` for sign-off. Unresolved review findings are
+  injected into new engineer sessions automatically.
 - Approve only after you have seen it work. Approval is a human decision.
 - By default, **Move to done** stays a human step. You can opt in under Settings
   → **Auto-approve clean reviews**: when enabled, tasks that match configured
   **areas** or **types**, passed the handoff gate with a clean reviewer verdict,
   and are not tagged `human-only` can close out automatically. Each
   auto-approval is written to the task activity log and can notify the bell
-  (`auto-approved by policy: …`). **UI areas** (web, ui-app, and similar) still
-  need successful handoff screenshots — verify them yourself until you trust the
-  policy. Tag any task `human-only` to keep it on a human approval path.
+  (`auto-approved by policy: …`). **UI areas** still need a clean handoff
+  verification gate (screenshots plus zero console/overflow issues recorded at
+  handoff) — not just a green `repoos check`. Tag any task `human-only` to keep it
+  on a human approval path.
 
 ## 5. Processes and servers
 

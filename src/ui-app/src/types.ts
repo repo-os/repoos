@@ -438,6 +438,21 @@ export interface ReviewReport {
   markdown: string;
 }
 
+/** Persisted handoff UI verification evidence (#0680). */
+export interface UiHandoffVerificationIssue {
+  kind: string;
+  message: string;
+  url?: string;
+  viewportWidth?: number;
+}
+
+export interface UiHandoffVerificationEvidence {
+  at: string;
+  issues: UiHandoffVerificationIssue[];
+  blankShots: string[];
+  captures: number;
+}
+
 /** Client-side view of a task's agent review. */
 export interface ReviewState {
   /** True while the review agent is inspecting the worktree. */
@@ -446,6 +461,13 @@ export interface ReviewState {
   enabled: boolean;
   /** The stored report, or null when none has been written yet. */
   report: ReviewReport | null;
+  /** Numbered review pass summaries (#0680). */
+  history?: Array<{
+    pass: number;
+    at: string;
+    state: string;
+    verdict: string | null;
+  }>;
   /**
    * The reviewer conversation, kept separate from the engineer session (0110).
    * Human messages and the reviewer's streamed output share this buffer only.

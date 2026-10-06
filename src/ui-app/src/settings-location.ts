@@ -137,6 +137,9 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
   "closeOut.postPublishCommand":
     "close out post publish merge lockfile refresh main install dependencies",
   "approval.enabled": "auto approve clean reviews policy move to done rubber stamp low risk",
+  "uiVerification.enabled":
+    "handoff browser gate playwright console overflow screenshot verification review block",
+  "uiVerification.viewportWidths": "handoff ui verification mobile desktop overflow viewport width",
 };
 
 export function settingSearchAliases(key: string): string {
