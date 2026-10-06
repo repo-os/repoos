@@ -12,7 +12,7 @@ branch: feat/cli-api-parity-every-api-action-should-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
-updated_at: "2026-10-06T17:43:28Z"
+updated_at: "2026-10-06T17:43:58Z"
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -71,4 +71,23 @@ error: script "test" exited with code 1
 - 2026-10-06T17:42:25Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-06T17:43:28Z · status active→review
 - 2026-10-06T17:43:28Z · status review→active
-
+- 2026-10-06T17:43:58Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 127) — + pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [1031.00ms]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+/usr/bin/bash: line 1: vite: command not found
+error: script "build:ui" exited with code 127
+error: script "build:raw" exited with code 127
+error: script "build" exited with code 127
+[validate] gate exit 127 — fix it in the feature branch and re-run the gate
