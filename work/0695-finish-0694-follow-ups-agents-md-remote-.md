@@ -12,7 +12,7 @@ branch: feat/finish-0694-follow-ups-agents-md-remote-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T01:38:21Z"
-updated_at: "2026-10-06T04:45:21Z"
+updated_at: "2026-10-06T04:52:50Z"
 last_handoff_failure_fingerprint: "check|remote validation unavailable: no usable remote host for any host — bee: prerequisite check failed (exit 255): ssh: connect to host bee port 22: Operation timed out; thinkpad: prerequisite check failed (exit 255): ssh: connect to host thinkpad port 22: Operation timed out; mini: prerequisite check failed (exit 255): ssh: connect to host 100.126.187.126 port 22: Operation timed out — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
 last_handoff_failure_sha: "014e214e820f4a2f41e790351361589f239df3bf"
 review_rounds: 1
@@ -98,3 +98,5 @@ error: script "test" exited with code 1
 - 2026-10-06T04:40:07Z · status active→review
 - 2026-10-06T04:40:08Z · status review→active
 - 2026-10-06T04:45:21Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-10-06T04:52:49Z · status active→review
+- 2026-10-06T04:52:50Z · status review→active
