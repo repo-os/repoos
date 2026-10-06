@@ -2,7 +2,7 @@
 id: "0721"
 title: "Easter eggs bundle: stuck-timer source, needs_input clear on new run, stale provider balance, agent-review test races"
 type: chore
-status: review
+status: active
 priority: p2
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -84,3 +84,4 @@ fatal: unable to read tree (25c22c96a27f03b0c4de97fbff14af7d4b037c08) — fix it
 warning: You appear to have cloned an empty repository.
 fatal: unable to read tree (25c22c96a27f03b0c4de97fbff14af7d4b037c08) — fix it in the feature branch and re-run the gate
 - 2026-10-06T16:41:44Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T16:41:44Z · status review→active
