@@ -1097,6 +1097,7 @@ machine. Enabling it sends repo contents to a third-party host.
 | `remoteValidation.fallbackToLocal` | boolean | `false` | yes | When the runner is unreachable, run the full gate locally instead of keeping the task in review for retry. |
 | `remoteValidation.useForReleases` | boolean | `false` | yes | Also validate release cuts on the runner. Off by default because a release is watched live. |
 | `remoteValidation.retryOtherHosts` | boolean | `true` when 2+ hosts configured, else `false` | yes | When a transient failure (timeout, ssh drop, host overload) occurs on one host with the `tailscale` provider, retry the run on another healthy, free host before applying `fallbackToLocal`. A non-transient result (red gate, config error) never retries. Default `true` when at least two hosts are configured (`tailscaleHost` + `tailscaleHosts` or two `tailscaleHosts` entries); `false` otherwise. Only applies to the `tailscale` provider. |
+| `remoteValidation.engineerSelfCheckRemote` | boolean | `true` when remote validation is enabled | yes | Managed engineers run install + build + tests on the runner during `repoos check` (format/lint stay local). Handoff reuses a green remote pass at the same commit. Turn off to run the full gate on the laptop again. |
 
 The `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` credentials are
 environment-only.
