@@ -15,6 +15,15 @@ first, then come back here.
   Acceptance criteria and Notes for AI. Put checkable criteria in
   ("works at 375px wide", "browser console is clean", "tests cover the empty
   case").
+- **Bundle small, unrelated fixes instead of filing one task each.** When a run
+  turns up several small, low-risk fixes — cosmetic, copy, test hardening, tiny
+  corrections, docs follow-ups — collect them into one `Easter eggs bundle`
+  task (title it with the themes it covers) rather than one task per fix or a
+  hotfix to `main`: one worktree, one check run, one review, one close-out. Keep
+  it to about 3–6 items in one area family, and never fold them into a
+  release-critical task. See
+  [Easter-eggs bundles](../docs/easter-eggs-bundles.md) for the reasoning and
+  the task template.
 - Encode the order with `dependsOn`. The sequencing judgment belongs **here**,
   at planning time. Once the graph is right, auto-engineering picks the next
   tasks deterministically: priority first, then how much downstream work each
