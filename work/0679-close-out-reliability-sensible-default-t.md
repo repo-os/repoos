@@ -2,7 +2,7 @@
 id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-06T04:04:08Z"
+updated_at: "2026-10-06T04:04:09Z"
 last_check_failure: "repoos check at 2026-10-06T03:42:59.088Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
 ---
 ## Problem
@@ -54,4 +54,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T03:49:31Z · body
 - 2026-10-06T03:58:31Z · body
 - 2026-10-06T04:02:59Z · body
-- 2026-10-06T04:04:08Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T04:04:09Z · status active→review
