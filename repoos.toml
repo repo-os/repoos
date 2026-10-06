@@ -51,7 +51,7 @@ auth.emailProvider.fromAddress = "otp@send.repoos.org"
 # # clientSecret likewise goes in .env as REPOOS_GOOGLE_CLIENT_SECRET, not here.
 whisper.provider = "none"
 
-remoteValidation.enabled = false
+remoteValidation.enabled = true
 remoteValidation.fallbackToLocal = true
 
 worktreeWarnThreshold = 20
@@ -95,7 +95,7 @@ remoteValidation.containerImage = "repoos-ci"
 #   os = "linux"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
-remoteValidation.engineerSelfCheckRemote = false
+remoteValidation.engineerSelfCheckRemote = true
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
 user = "nick"
