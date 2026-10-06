@@ -12,7 +12,7 @@ branch: feat/p0-remote-validation-breaks-on-hosts-wit
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T16:15:47Z"
-updated_at: "2026-10-06T23:35:47Z"
+updated_at: "2026-10-06T23:41:10Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-06T17:03:07.270Z: repoos check failed: [22m[39m[repoos] failed to escalate failed exit for #0001: ENOENT: no such file or directory, open '/tmp/repoos-pause-nep5pr/work/0001-pause-and-resume.md' · [32m✓[39m tests/pause-resume.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 332[2mms[22m[39m · [32m✓[39m tests/raw-config-store.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 18[2mms[22m[39m · [31m❯[39m tests/auth.test.ts [2m([22m[2m0 test[22m[2m)[22m · error: Cannot find module '@vitest/expect… (truncated)"
