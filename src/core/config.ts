@@ -30,6 +30,7 @@ import type {
   PreviewServiceConfig,
   PreviewTargetConfig,
   ApprovalConfig,
+  UiVerificationConfig,
   RepoOSConfig,
   Status,
   Assignee,
@@ -1541,6 +1542,21 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       if (approvalTypes.length) approval.autoApprove.types = approvalTypes;
       if (approvalUiAreas.length) approval.autoApprove.uiAreas = approvalUiAreas;
       cfg.approval = approval;
+    }
+
+    const uiVerifEnabled = parsed["uiVerification.enabled"];
+    const uiVerifWidthsRaw = parsed["uiVerification.viewportWidths"];
+    const uiVerifWidths = Array.isArray(uiVerifWidthsRaw)
+      ? uiVerifWidthsRaw.filter((n): n is number => typeof n === "number" && Number.isFinite(n))
+      : normalizeStringList(uiVerifWidthsRaw)
+          .map((s) => Number(s))
+          .filter((n) => Number.isFinite(n) && n > 0);
+    if (uiVerifEnabled !== undefined || uiVerifWidths.length) {
+      const uiVerification: UiVerificationConfig = {};
+      if (typeof uiVerifEnabled === "boolean") uiVerification.enabled = uiVerifEnabled;
+      const widths = uiVerifWidths.filter((n) => Number.isFinite(n) && n > 0);
+      if (widths.length) uiVerification.viewportWidths = widths.map((n) => Math.floor(n));
+      cfg.uiVerification = uiVerification;
     }
   }
 

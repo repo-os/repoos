@@ -261,6 +261,15 @@ export async function runAutoShotCapture(
   if ("reason" in plan) {
     return finish("skipped", plan.reason);
   }
+  const autoExisting = localShotStore(config, task.id)
+    .list()
+    .filter((shot) => shot.origin === "auto");
+  if (autoExisting.length > 0) {
+    return finish(
+      "skipped",
+      `${autoExisting.length} handoff shot${autoExisting.length === 1 ? "" : "s"} already captured during finalization (#0680)`,
+    );
+  }
   const entries = plan.entries;
   // #0603: partial outcomes stay visible — a docs-content target that was
   // skipped beside a captured one, or a declared entry that errored, is a note

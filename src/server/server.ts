@@ -1665,6 +1665,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             taskChecks,
             onTaskCheckEvent,
             remoteValidator,
+            previews,
+            (id, level, message) => logger.task(id, level, message),
           );
           if (result.ok) {
             index.applyFileChange(task.absPath, { guarded: true });
@@ -2277,6 +2279,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       taskChecks,
       onTaskCheckEvent,
       remoteValidator,
+      previews,
+      onTaskLog: (id, level, message) => logger.task(id, level, message),
       onProgress: (step) => {
         if (step === "validate") return;
         progress(step, undefined);

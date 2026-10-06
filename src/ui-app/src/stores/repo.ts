@@ -2650,6 +2650,7 @@ export const useRepoStore = defineStore("repo", () => {
         running: boolean;
         enabled: boolean;
         review: ReviewReport | null;
+        history?: ReviewState["history"];
         lines?: AgentOutputEntry[];
       }>(`/api/tasks/${id}/review`);
       if (!r.ok) return;
@@ -2659,6 +2660,7 @@ export const useRepoStore = defineStore("repo", () => {
           running: r.running,
           enabled: r.enabled,
           report: r.review,
+          history: r.history ?? [],
           lines: r.lines ?? [],
         },
       };

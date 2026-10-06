@@ -2273,6 +2273,7 @@ export const getTaskReview: RouteHandler = (ctx, _req, res, params) => {
     running: reviews.isRunning(id),
     enabled: reviews.enabled(),
     review: reviews.read(id),
+    history: reviews.listPasses(id),
     lines: reviews.session(id),
   });
 };

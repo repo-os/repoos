@@ -5086,6 +5086,16 @@ watch(
                 <span>{{ repo.fmtDate(review.report.at) }}</span>
                 <span class="mono">{{ review.report.agent }} · {{ review.report.cli }}</span>
               </div>
+              <ul
+                v-if="review.history && review.history.length > 1"
+                class="review-history"
+                aria-label="Review pass history"
+              >
+                <li v-for="h in review.history" :key="h.pass">
+                  Pass {{ h.pass }} · {{ repo.fmtDate(h.at) }} ·
+                  {{ h.verdict ?? h.state }}
+                </li>
+              </ul>
               <div class="md-card review-card">
                 <div class="md-rendered" v-html="reviewHtml"></div>
               </div>
