@@ -12,7 +12,7 @@ branch: feat/agents-must-not-kill-processes-by-name-g
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:32Z"
-updated_at: "2026-10-05T23:45:00Z"
+updated_at: "2026-10-06T00:08:35Z"
 ---
 ## Problem
 
