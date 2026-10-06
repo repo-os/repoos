@@ -57,26 +57,6 @@ export function isManagedEngineerCheck(env: NodeJS.ProcessEnv): boolean {
   return env.REPOOS_AGENT === "1" && /^\d+$/.test(env.REPOOS_TASK_ID?.trim() ?? "");
 }
 
-/**
- * Whether this `repoos check` should run the remote install/build/test block
- * before local guards (#0694 extends #0520 to `--changed` and Hetzner via the
- * board root when the engineer is managed).
- */
-export function shouldRunEngineerRemoteSelfCheck(
-  config: RepoOSConfig,
-  opts: { localTestsOnly?: boolean; changedRef?: string },
-  env: NodeJS.ProcessEnv,
-): boolean {
-  if (!engineerSelfCheckRemoteEnabled(config)) return false;
-  if (opts.localTestsOnly) return false;
-  if (env.REPOOS_SKIP_TESTS === "1" || env.REPOOS_REMOTE_VALIDATION_DONE === "1") {
-    return false;
-  }
-  if (isManagedEngineerCheck(env)) return true;
-  // Standalone CLI: Tailscale only (Hetzner VM lifecycle stays server-owned).
-  return config.remoteValidation?.provider === "tailscale";
-}
-
 /** Config + logger for the board-owned runner instance. */
 export function createBoardRemoteValidator(
   worktreeRoot: string,
@@ -216,13 +196,16 @@ export async function runEngineerRemoteSelfCheckGate(params: {
     });
     await remoteValidator.dispose().catch(() => {});
     if (gate.kind === "local-only" && gate.skipTests && params.taskAbsPath) {
-      const rows = getCheckStore(boardRoot, boardCfg.cacheDir).list({
-        taskId: params.taskId,
-        remote: true,
-        limit: 1,
-      });
-      const machine = rows[0]?.machine ?? "remote host";
-      const dur = formatSelfCheckDuration(rows[0]?.durationMs ?? Date.now() - startedAt);
+      const headRes = await runGit(params.worktreePath, ["rev-parse", "HEAD"], 10_000);
+      const candidateSha = headRes.status === 0 ? headRes.stdout.trim() : "";
+      const row = candidateSha
+        ? findReusableRemotePreReviewPass(boardRoot, boardCfg.cacheDir, {
+            taskId: params.taskId,
+            candidateSha,
+          })
+        : null;
+      const machine = row?.machine ?? "remote host";
+      const dur = formatSelfCheckDuration(row?.durationMs ?? Date.now() - startedAt);
       void appendEngineerSelfCheckActivity(
         boardCfg,
         params.taskAbsPath,

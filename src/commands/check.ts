@@ -75,7 +75,6 @@ import {
   boardRootForEngineerRemote,
   boardTaskAbsPath,
   commitWipCheckpointForRemoteGate,
-  createBoardRemoteValidator,
   isManagedEngineerCheck,
   runEngineerRemoteSelfCheckGate,
 } from "../server/engineer-remote-self-check.js";
@@ -2156,61 +2155,75 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   };
   if (runRemoteGate) {
     heading("Remote validation");
-    const logger = new Logger({ root: repoRoot });
     const managed = isManagedEngineerCheck(process.env);
-    let remoteValidator;
-    try {
-      remoteValidator = managed
-        ? createBoardRemoteValidator(repoRoot, cfg)
-        : createRemoteValidator(cfg, logger);
-    } catch (e) {
-      const msg = `remote validation init failed: ${(e as Error).message}`;
-      if (!cfg.remoteValidation?.fallbackToLocal) {
-        console.log(c.red(`\n  ✗ ${msg}\n`));
-        persistRemoteFailure(msg, "", new Date());
-        // The runner never dispatched, so nothing else will record this
-        // failed remote attempt in the history (#0564). Record it here —
-        // machine unknown (no host was ever chosen), remote half only.
-        recordRunHistoryRow({
-          root: checkStoreRoot,
-          cacheDir: cfg.cacheDir,
-          scope: "full",
-          startedAt: new Date().toISOString(),
-          durationMs: 0,
-          outcome: "fail",
-          failedStep: "remote-validation",
-          skippedSteps: [],
-          detail: msg,
-        });
+    const taskId = process.env.REPOOS_TASK_ID?.trim() || "pre-review";
+    const remoteStartedAt = new Date();
+    let remoteOutput = "";
+    const prevStoreRoot = process.env.REPOOS_CHECK_STORE_ROOT;
+    process.env.REPOOS_CHECK_STORE_ROOT = checkStoreRoot;
+
+    const applyRemoteGateOutcome = (
+      gate: Awaited<ReturnType<typeof runRemotePreReviewGate>>,
+    ): void => {
+      if (gate.kind === "fail") {
+        console.log(c.red(`\n  ✗ ${gate.detail}\n`));
+        persistRemoteFailure(gate.detail, remoteOutput, remoteStartedAt);
         process.exit(1);
       }
-      console.log(c.yellow(`  ⚠ ${msg} — running the full local gate\n`));
-    }
-    if (remoteValidator) {
-      const prevStoreRoot = process.env.REPOOS_CHECK_STORE_ROOT;
-      process.env.REPOOS_CHECK_STORE_ROOT = checkStoreRoot;
-      try {
-        const taskId = process.env.REPOOS_TASK_ID?.trim() || "pre-review";
-        const remoteStartedAt = new Date();
-        let remoteOutput = "";
-        const { phase: runPhase } = envToRunContext(process.env);
+      if (gate.kind === "local-only" && gate.skipTests) {
+        process.env.REPOOS_SKIP_TESTS = "1";
+        console.log(c.green("  ✔ remote gate passed — running local guards only\n"));
+      } else if (gate.kind === "local-only") {
+        console.log(c.yellow("  ⚠ remote unavailable — running the full local gate\n"));
+      }
+    };
+
+    try {
+      if (managed) {
         const boardRoot = boardRootForEngineerRemote(repoRoot);
-        const gateConfig = managed ? loadConfig(boardRoot) : cfg;
-        const taskAbsPath =
-          managed && /^\d+$/.test(taskId) ? boardTaskAbsPath(gateConfig, taskId) : undefined;
-        const gate = managed
-          ? await runEngineerRemoteSelfCheckGate({
-              worktreeConfig: cfg,
-              worktreePath: repoRoot,
-              taskId,
-              taskAbsPath,
-              onChunk: (chunk) => {
-                remoteOutput += chunk;
-                process.stdout.write(chunk);
-              },
-            })
-          : await runRemotePreReviewGate({
-              config: gateConfig,
+        const gateConfig = loadConfig(boardRoot);
+        const taskAbsPath = /^\d+$/.test(taskId) ? boardTaskAbsPath(gateConfig, taskId) : undefined;
+        const gate = await runEngineerRemoteSelfCheckGate({
+          worktreeConfig: cfg,
+          worktreePath: repoRoot,
+          taskId,
+          taskAbsPath,
+          onChunk: (chunk) => {
+            remoteOutput += chunk;
+            process.stdout.write(chunk);
+          },
+        });
+        applyRemoteGateOutcome(gate);
+      } else {
+        const logger = new Logger({ root: repoRoot });
+        let remoteValidator;
+        try {
+          remoteValidator = createRemoteValidator(cfg, logger);
+        } catch (e) {
+          const msg = `remote validation init failed: ${(e as Error).message}`;
+          if (!cfg.remoteValidation?.fallbackToLocal) {
+            console.log(c.red(`\n  ✗ ${msg}\n`));
+            persistRemoteFailure(msg, "", new Date());
+            recordRunHistoryRow({
+              root: checkStoreRoot,
+              cacheDir: cfg.cacheDir,
+              scope: "full",
+              startedAt: new Date().toISOString(),
+              durationMs: 0,
+              outcome: "fail",
+              failedStep: "remote-validation",
+              skippedSteps: [],
+              detail: msg,
+            });
+            process.exit(1);
+          }
+          console.log(c.yellow(`  ⚠ ${msg} — running the full local gate\n`));
+        }
+        if (remoteValidator) {
+          try {
+            const { phase: runPhase } = envToRunContext(process.env);
+            const gate = await runRemotePreReviewGate({
+              config: cfg,
               remoteValidator,
               worktreePath: repoRoot,
               taskId,
@@ -2220,24 +2233,17 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
                 process.stdout.write(chunk);
               },
             });
-        if (!managed) {
-          await remoteValidator.dispose().catch(() => {});
+            await remoteValidator.dispose().catch(() => {});
+            applyRemoteGateOutcome(gate);
+          } catch (e) {
+            await remoteValidator.dispose().catch(() => {});
+            throw e;
+          }
         }
-        if (gate.kind === "fail") {
-          console.log(c.red(`\n  ✗ ${gate.detail}\n`));
-          persistRemoteFailure(gate.detail, remoteOutput, remoteStartedAt);
-          process.exit(1);
-        }
-        if (gate.kind === "local-only" && gate.skipTests) {
-          process.env.REPOOS_SKIP_TESTS = "1";
-          console.log(c.green("  ✔ remote gate passed — running local guards only\n"));
-        } else if (gate.kind === "local-only") {
-          console.log(c.yellow("  ⚠ remote unavailable — running the full local gate\n"));
-        }
-      } finally {
-        if (prevStoreRoot === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;
-        else process.env.REPOOS_CHECK_STORE_ROOT = prevStoreRoot;
       }
+    } finally {
+      if (prevStoreRoot === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;
+      else process.env.REPOOS_CHECK_STORE_ROOT = prevStoreRoot;
     }
   }
 
