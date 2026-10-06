@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 24b3ea891378548e3412d37682e5bd3fa4e6229e
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
@@ -95,3 +97,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-06T17:55:15Z · note: shots: skipped — 2 handoff shots already captured during finalization (#0680)
 - 2026-10-06T17:56:52Z · note: review pass 3: good to go
 - 2026-10-06T18:04:29Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
