@@ -2,17 +2,18 @@
 id: "0695"
 title: "Finish #0694 follow-ups: AGENTS.md remote self-check wording, task attribution for cli Runs rows, WIP-checkpoint tests, load measurement"
 type: chore
-status: review
+status: done
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: dcaf4dc2a80e15059968d80cd9b10c8f9dc16c13
 assigned_to: ai
 created_by: ""
 branch: feat/finish-0694-follow-ups-agents-md-remote-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T01:38:21Z"
-updated_at: "2026-10-06T03:34:47Z"
+updated_at: "2026-10-06T05:33:25Z"
 ---
 ## Problem
 
@@ -47,3 +48,4 @@ Owner priority: running checks FAST on the remote runners was a main reason for 
 - 2026-10-06T02:28:32Z · cli_override, model_override
 - 2026-10-06T02:28:32Z · status ready→active, branch
 - 2026-10-06T03:34:47Z · status active→review
+- 2026-10-06T05:33:25Z · status review→done, release:success
