@@ -2,7 +2,7 @@
 id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
@@ -15,7 +15,7 @@ branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-06T06:01:09Z"
+updated_at: "2026-10-06T06:01:10Z"
 handoff_signal_retry_count: 1
 merge_conflict_retry_count: 1
 review_passes: 1
@@ -69,3 +69,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T04:29:27Z · status review→active
 - 2026-10-06T06:01:08Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-06T06:01:09Z · status active→review
+- 2026-10-06T06:01:10Z · status review→active
