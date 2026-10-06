@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
-updated_at: "2026-10-06T14:59:25Z"
+updated_at: "2026-10-06T15:05:35Z"
 ---
 ## Problem
 
@@ -36,3 +38,4 @@ Read src/commands/tasks.ts and src/cli/ for the command registry and the HTTP ro
 ## Activity
 
 - 2026-10-06T14:59:25Z · created · unknown
+- 2026-10-06T15:05:35Z · cli_override, model_override
