@@ -11,7 +11,7 @@ branch: feat/shot-captures-are-written-untracked-into
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:53Z"
-updated_at: "2026-10-06T23:57:32Z"
+updated_at: "2026-10-06T23:57:40Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 25. Captures should be gitignored/ignored by the dirty-main check.
 
@@ -29,3 +29,4 @@ VERIFY FIRST: in this repo .gitignore already ignores work/.attachments/ and inp
 - 2026-10-06T23:54:58Z · body
 - 2026-10-06T23:56:20Z · body
 - 2026-10-06T23:57:29Z · body
+- 2026-10-06T23:57:40Z · body
