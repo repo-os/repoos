@@ -2452,7 +2452,12 @@ export class CloseOutOrchestrator {
   private async cleanup(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const root = this.config.root;
     const featureBranch = job.branch ?? job.taskId;
-    const mergedCommit = branchCommit(root, featureBranch);
+    // Prefer the SHA recorded at sync: cleanup deletes the feature branch, and a
+    // retry (or a partial run that deleted the branch before markTaskReleased)
+    // must still write merged_commit for dependency proof (#0711).
+    const durableJob = this.coordinator.getJob(job.taskId) ?? job;
+    const mergedCommit =
+      durableJob.branchSha ?? branchCommit(root, featureBranch);
 
     // Candidate worktree + throwaway branch.
     this.removeCandidate(job.taskId);
