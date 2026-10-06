@@ -210,4 +210,4 @@ error: script "test" exited with code 1
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-06T10:26:36Z · status active→review
-
+- 2026-10-06T10:26:36Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
