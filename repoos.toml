@@ -58,7 +58,7 @@ worktreeWarnThreshold = 20
 
 # Move-to-done pipeline budget (ms). The 6 min default leaves under a minute of
 # slack over a ~4.7 min close-out, so one resync (e.g. main moving) times out.
-closeOut.timeoutMs = 600000
+closeOut.timeoutMs = 1800000
 
 # Task worktrees inherit the main checkout's gitignored `.env` (#0373). This
 # repo has auth.enabled = true, and its own `[preview] command` below boots a
@@ -95,7 +95,7 @@ remoteValidation.containerImage = "repoos-ci"
 #   os = "linux"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
-remoteValidation.engineerSelfCheckRemote = false
+remoteValidation.engineerSelfCheckRemote = true
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
 user = "nick"
