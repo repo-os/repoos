@@ -1,0 +1,37 @@
+---
+id: "0704"
+title: Small papercuts from the tuk-private planning run
+type: chore
+status: inbox
+priority: p3
+area: [cli, server]
+story: "Field report: first agent-driven project run (opex)"
+assigned_to: ai
+created_by: ""
+branch: ""
+created_at: "2026-10-06T03:16:00Z"
+updated_at: "2026-10-06T03:16:00Z"
+---
+## Problem
+
+Low-severity items: (1) `repoos list` runs long titles into the area column with no space (`... completed ridemobile`), here and in the RepoOS repo; (2) PM-created tasks get `created_by: ""` and activity `created · unknown`, API-created stories `created_by: unknown`; (3) a CLI handoff logs `active→review`, `review→active`, `active→review` within one second; (4) `repoos doctor` does not notice `AGENTS.md` naming paths that do not exist (`packages/`, a root `justfile`).
+
+## Desired UX
+
+Tidy board output and activity logs that say who did what.
+
+## Acceptance criteria
+
+- [ ] `repoos list` truncates titles to the column with an ellipsis (or guarantees two spaces before the area).
+- [ ] Creator recorded for PM/API/CLI writes (`pm`, `api`, the CLI user, `repoos-init`).
+- [ ] An intercepted CLI handoff logs one request line and the final transition only.
+- [ ] Optional: doctor warns (never fails) for backticked paths in `AGENTS.md` that do not exist.
+- [ ] Each item fixed or declined with a reason in the task activity.
+
+## Notes for AI
+
+Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private run, 2026-10-06), item 10, 11, 15, 17.
+
+## Activity
+
+- 2026-10-06T03:16:00Z · created · unknown
