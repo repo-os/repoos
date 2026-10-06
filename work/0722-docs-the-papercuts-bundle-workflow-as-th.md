@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-06T14:31:00Z"
-updated_at: "2026-10-06T14:31:25Z"
+updated_at: "2026-10-06T14:57:06Z"
 ---
 ## Problem
 
@@ -37,3 +39,4 @@ Docs-only; do not touch src/. Edit AGENTS.md carefully: it is the single source 
 
 - 2026-10-06T14:31:00Z · created · unknown
 - 2026-10-06T14:31:25Z · title, body
+- 2026-10-06T14:57:06Z · cli_override, model_override
