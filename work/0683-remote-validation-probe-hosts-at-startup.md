@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-06T04:58:40Z"
-review_passes: 1
 id: "0683"
 title: "Remote validation: probe hosts at startup, say when a job fell back to local, document the runner image"
 type: bug
-status: review
+status: active
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -14,6 +12,9 @@ branch: feat/remote-validation-probe-hosts-at-startup
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:48Z"
+updated_at: "2026-10-06T04:58:42Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -58,4 +59,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-06T04:57:44Z · status active→review
 - 2026-10-06T04:57:47Z · note: shots: skipped — the diff (8 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-06T04:58:38Z · note: review pass 1: needs some work
-
+- 2026-10-06T04:58:42Z · status review→active
