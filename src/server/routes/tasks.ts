@@ -2818,6 +2818,68 @@ export const getIntegrationPipeline: RouteHandler = (ctx, _req, res) => {
  * retry path: `enqueue` re-enqueues a `failed` job as a fresh queued job
  * (see integration-job.ts), then processing resumes from the queue.
  */
+/**
+ * Refresh the primary checkout's dependency install, then re-queue a failed
+ * close-out (#0674). Used by the "Refresh install and retry" action on
+ * environment-classified failures.
+ */
+export const refreshInstallAndRetryIntegration: RouteHandler = async (ctx, _req, res, params) => {
+  const { jobCoordinator, config } = ctx;
+  const id = params.param1;
+  const job = jobCoordinator.getJob(id);
+  if (!job) {
+    return json(res, 404, { error: `No integration job for task #${id}` });
+  }
+  if (job.phase !== "failed") {
+    return json(res, 409, {
+      error: `Task #${id} is not in a failed integration state (it is ${job.phase})`,
+    });
+  }
+  const task = ctx.index.getTask(id);
+  if (!task) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+
+  const reason = job.reason ?? "";
+  const { classifyFailure } = await import("../../core/close-out-failure.js");
+  const { isCloseOutEnvironmentFailure } = await import("../../core/dependency-install.js");
+  if (
+    classifyFailure(job.failedPhase, reason) !== "environment" &&
+    !isCloseOutEnvironmentFailure(reason)
+  ) {
+    return json(res, 409, {
+      error:
+        "Refresh install and retry is only for environment failures (stale or missing dependencies), not branch regressions",
+    });
+  }
+
+  const { refreshMainDependencyInstall } = await import("../../core/dependency-install.js");
+  const install = await refreshMainDependencyInstall(config);
+  if (!install.ok) {
+    return json(res, 400, {
+      error: install.reason ?? "could not refresh dependencies in the primary checkout",
+    });
+  }
+
+  const reenqueued = jobCoordinator.enqueue(task);
+  if (!reenqueued) {
+    return json(res, 400, { error: `Task #${id} has no branch to integrate` });
+  }
+  ctx.emitEvent({
+    type: "integration",
+    pipeline: buildIntegrationSnapshot(jobCoordinator, {}, resolvePipelineCheckPlan(ctx.config)),
+  });
+  ctx.triggerJobProcessing();
+  return json(res, 200, {
+    ok: true,
+    job: {
+      taskId: reenqueued.taskId,
+      phase: reenqueued.phase,
+      enqueuedAt: reenqueued.enqueuedAt,
+    },
+  });
+};
+
 export const retryIntegration: RouteHandler = (ctx, _req, res, params) => {
   const { jobCoordinator } = ctx;
   const id = params.param1;

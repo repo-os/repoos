@@ -308,8 +308,10 @@ visible viewport (`fullPage: false`) with changed elements outlined via
 `highlight`; `selector` (element crop) is the exception, and `fullPage` stays
 off. For tabbed views, prefer `?tab=<id>` routes (e.g. `/agents?tab=detected`)
 over click steps to reach the right tab, and always `highlight` the changed
-elements. The PNGs are stored gitignored under `work/.attachments/<taskId>/shots/` and
-appear as the **UI changes** section of the task drawer's Changes tab, so you
+elements. The PNGs are stored gitignored under `work/.attachments/<taskId>/shots/`
+(the default local attachment storage; cloud storage is opt-in, see
+[Attachment storage](/configuration#attachment-storage)) and appear as the
+**UI changes** section of the task drawer's Changes tab, so you
 see what actually rendered rather than only the diff. `repoos shot` picks its
 target from the task's changed files (`[[preview.targets]].paths`, plus the
 default target's own `[preview] paths` for app diffs; test files are not UI

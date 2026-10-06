@@ -278,6 +278,10 @@ defaultAssignee = "unassigned"
 defaultTaskMode = "freeform"
 maxActiveTasks = 3
 autoEngineeringMode = false
+
+[autoEngineering]
+pmVeto = false
+
 skillSuggestions = false
 worktreeWarnThreshold = 20
 ```
@@ -289,6 +293,7 @@ worktreeWarnThreshold = 20
 | `defaultTaskMode` | select | `freeform` | yes | New-task flow: `freeform` (the AI writes the task) or `manual` (a form). Any other value falls back to `freeform`. |
 | `maxActiveTasks` | number | `3` | yes | Cap on simultaneously active tasks when `autoEngineeringMode` is on. Must be 1–20. |
 | `autoEngineeringMode` | boolean | `false` | yes | When true, RepoOS **event-driven** dispatch starts ready tasks automatically, up to `maxActiveTasks` (see below). |
+| `autoEngineering.pmVeto` | boolean | `false` | yes | Off by default: selection is fully deterministic (priority, then critical-path weight, then creation order). When on, a PM pass runs only when there are more eligible ready tasks than open slots **and** two candidates would collide (same area or a declared shared path); it may reorder or defer, never invent work. |
 | `skillSuggestions` | boolean | `false` | yes | When true, a finished task may generate a high-bar, evidence-gated skill suggestion task. Off by default; a single session never creates one. |
 | `worktreeWarnThreshold` | number | `20` | yes | Advisory ceiling on registered git worktrees. Above it the Control page's Codebase card turns amber and the server logs a `repoos gc` reminder. Never blocks a task. Set `0` to disable. |
 
@@ -328,14 +333,21 @@ Each pass:
 1. Counts active tasks (not archived) and computes free slots up to
    `maxActiveTasks`.
 2. Builds the **candidate list**: `ready` tasks that are not archived, not
-   `needs_input`, and have no unmet `dependsOn` blockers.
-3. If there are candidates and free slots, calls the **PM agent** once (a real
-   LLM prompt — recorded as a `dispatch` session, not a task-bound PM run) to
-   pick which ready tasks to start, capped at the available slots.
-4. Starts the selected tasks through the normal `/start` path.
+   `needs_input`, not held (`hold: true` or a `hold` tag), and have no unmet
+   `dependsOn` blockers.
+3. Orders candidates **deterministically**: priority, then critical-path weight
+   (transitive dependents on the full board), then creation order, then task id;
+   takes as many as fit in the open slots.
+4. When `autoEngineering.pmVeto` is on and there are more eligible tasks than
+   slots **and** two candidates would collide (same area or a declared shared
+   `paths` entry), calls the **PM agent** once (recorded as a `dispatch`
+   session) to reorder or defer only — never to invent tasks. On PM failure, the
+   deterministic order stands.
+5. Starts the selected tasks through the normal `/start` path.
 
-Outcomes (`no-capacity`, `no-ready-work`, `pm-unavailable`, …) are persisted for
-the Control page. This is optional automation — default is off.
+Outcomes (`no-capacity`, `no-ready-work`, `selected`, …) and which picker ran
+are persisted for the Control page. This is optional automation — default is
+off.
 
 ### Task body sections (underspecified check)
 
@@ -386,6 +398,9 @@ attention.spendAlertUsd = 0
 
 ```toml
 closeOut.timeoutMs = 360000
+closeOut.candidate = "symlink-main"   # or "own-install"
+closeOut.installCommand = ""          # optional shell install for candidates / main refresh
+closeOut.postPublishCommand = ""      # optional shell install in main after lockfile-changing merges
 ```
 
 | Field | Type | Default | Committed | Effect |
@@ -397,6 +412,13 @@ limit)*), or set any value directly in `repoos.toml`. A timeout is a failure
 with an error card; **Stop MTD** on the task drawer is a user cancel and stays
 badge-free — see [docs/close-out-pipeline.md](../docs/close-out-pipeline.md)
 for how the three outcomes differ.
+
+| `closeOut.candidate` | string | `symlink-main` | yes | How the throwaway **candidate** worktree gets dependencies. `symlink-main` reuses the primary checkout's `node_modules` (fast). `own-install` runs a frozen install in the candidate — use for monorepos or when Vite reports `Denied ID` on symlinked paths. `[worktrees] candidate` is an alias when `closeOut.candidate` is unset. |
+| `closeOut.installCommand` | string | *(empty)* | yes | Optional shell command to install dependencies for candidates, and to refresh main after a lockfile-changing merge when `postPublishCommand` is empty. When empty, RepoOS infers `bun install --frozen-lockfile`, `npm ci`, etc. from lockfiles. |
+| `closeOut.postPublishCommand` | string | *(empty)* | yes | Shell command run in the **primary checkout** after a merge that changed `package.json` or a lockfile. Replaces the automatic lockfile install — use for Python venvs, Cargo, or other stacks. |
+
+Edit **Close-out candidate dependencies**, **Close-out install command**, and
+**Post-merge install command** in **Settings → General**.
 
 ## UI handoff verification
 
@@ -443,6 +465,8 @@ inheritEnv = false
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `worktrees.inheritEnv` | boolean | `false` | yes | When true, RepoOS symlinks the main checkout's `.env` into each task worktree so worktree-local build or preview commands can read project secrets. |
+| `worktrees.candidate` | string | *(see `closeOut.candidate`)* | yes | Same as `closeOut.candidate` when the close-out section does not set it. |
+| `worktrees.installCommand` | string | *(empty)* | yes | Same as `closeOut.installCommand` when the close-out section does not set it. |
 
 **`inheritEnv` is off by default and must be opted into deliberately.** Every
 worktree is another place secrets live on disk. When enabled, RepoOS creates a
@@ -973,6 +997,19 @@ want to see whether a whole customer-visible outcome is ready.
 With `enabled` missing, false, or malformed, nothing changes: no nav item, no
 route entry point, no Story field in the drawer, and no extra API work.
 
+## Attachment storage
+
+```toml
+[storage]
+provider = "local"
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `storage.provider` | `local` \| `neon` | `local` | yes | Where attachment files (task and input screenshots) are stored. `local` keeps them in gitignored `.attachments/` folders on this machine. `neon` (Neon Object Storage) is opt-in and needs credentials before it can be used; until it is configured, Settings shows it as unavailable with an explanation and RepoOS falls back to `local`. Changing it requires a server restart. |
+
+The Settings page exposes this key as "Attachment storage".
+
 ## Notifications
 
 ```toml
@@ -1074,6 +1111,7 @@ machine. Enabling it sends repo contents to a third-party host.
 | `remoteValidation.fallbackToLocal` | boolean | `false` | yes | When the runner is unreachable, run the full gate locally instead of keeping the task in review for retry. |
 | `remoteValidation.useForReleases` | boolean | `false` | yes | Also validate release cuts on the runner. Off by default because a release is watched live. |
 | `remoteValidation.retryOtherHosts` | boolean | `true` when 2+ hosts configured, else `false` | yes | When a transient failure (timeout, ssh drop, host overload) occurs on one host with the `tailscale` provider, retry the run on another healthy, free host before applying `fallbackToLocal`. A non-transient result (red gate, config error) never retries. Default `true` when at least two hosts are configured (`tailscaleHost` + `tailscaleHosts` or two `tailscaleHosts` entries); `false` otherwise. Only applies to the `tailscale` provider. |
+| `remoteValidation.engineerSelfCheckRemote` | boolean | `true` when remote validation is enabled | yes | Managed engineers run install + build + tests on the runner during `repoos check` (format/lint stay local). Handoff reuses a green remote pass at the same commit. Turn off to run the full gate on the laptop again. |
 
 The `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` credentials are
 environment-only.

@@ -44,6 +44,11 @@ import { guardReviewTransition } from "./review-guard.js";
 import { runFormatFixes } from "../core/check-format.js";
 import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
+import {
+  engineerSelfCheckRemoteEnabled,
+  findReusableRemotePreReviewPass,
+  remoteOutcomeFromReuse,
+} from "./engineer-remote-self-check.js";
 import type { RemoteValidator } from "./remote-validation.js";
 import {
   remotePreReviewEnabled,
@@ -522,15 +527,31 @@ async function runHandoffFinalization(
         : undefined;
     let remoteOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" };
     if (opts.remoteValidator && remotePreReviewEnabled(config)) {
-      remoteOutcome = await runRemotePreReviewGate({
-        config,
-        remoteValidator: opts.remoteValidator,
-        worktreePath: workdir,
-        taskId: task.id,
-        phase: "pre-review",
-        onChunk: checkHandle?.chunk,
-        deadlineAt: handoffDeadlineAt,
-      });
+      const headRes = await runGit(workdir, ["rev-parse", "HEAD"], 10_000);
+      const candidateSha = headRes.status === 0 ? headRes.stdout.trim() : "";
+      const reusable =
+        candidateSha && engineerSelfCheckRemoteEnabled(config)
+          ? findReusableRemotePreReviewPass(config.root, config.cacheDir, {
+              taskId: task.id,
+              candidateSha,
+            })
+          : null;
+      if (reusable) {
+        remoteOutcome = remoteOutcomeFromReuse(reusable);
+        checkHandle?.chunk?.(
+          `\n[${remoteOutcome.kind === "local-only" ? remoteOutcome.detail : "reusing remote self-check"}]\n`,
+        );
+      } else {
+        remoteOutcome = await runRemotePreReviewGate({
+          config,
+          remoteValidator: opts.remoteValidator,
+          worktreePath: workdir,
+          taskId: task.id,
+          phase: "pre-review",
+          onChunk: checkHandle?.chunk,
+          deadlineAt: handoffDeadlineAt,
+        });
+      }
       if (remoteOutcome.kind === "fail") {
         checkHandle?.done(1);
         return {

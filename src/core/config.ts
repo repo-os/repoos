@@ -44,6 +44,7 @@ import type {
 import { STATUSES } from "./types.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
 import { parseTailscaleHosts } from "./remote-hosts.js";
+import { DEFAULT_STORAGE_PROVIDER_ID } from "./storage/registry.js";
 import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
 
 /** Default display labels for board columns, keyed by canonical status ID. */
@@ -88,7 +89,9 @@ export const DEFAULT_AGENTS: Agent[] = [
     model: "big pickle",
     enabled: true,
     instructions:
-      "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status.",
+      "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. " +
+      "Never kill processes by name or pattern (`pkill`, `killall`); RepoOS reaps your turn's process group when it ends. " +
+      "Stop only a helper's PID if you must stop it early.",
   },
   {
     name: "reviewer",
@@ -96,7 +99,8 @@ export const DEFAULT_AGENTS: Agent[] = [
     model: "big pickle",
     enabled: true,
     instructions:
-      "Reviews a task the moment it lands in `review`: reads the diff in the task's worktree and reports bugs, edge cases, and suggestions for the human signing off. Never changes a task's status.",
+      "Reviews a task the moment it lands in `review`: reads the diff in the task's worktree and reports bugs, edge cases, and suggestions for the human signing off. Never changes a task's status. " +
+      "Never use `pkill`, `killall`, or other pattern kills.",
   },
   {
     name: "pm",
@@ -190,6 +194,9 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     autoTransition: true,
   },
   autoEngineeringMode: false,
+  autoEngineering: {
+    pmVeto: false,
+  },
   ctoSkipHealthy: true,
   skillSuggestions: false,
   maxActiveTasks: 3,
@@ -230,6 +237,11 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   // re-run in isolation for the informational flake-triage label.
   check: {
     isolationRuns: 3,
+  },
+  // Attachment storage (#0659): local gitignored `.attachments/` directories by
+  // default; opt-in cloud providers must be configured before they take effect.
+  storage: {
+    provider: DEFAULT_STORAGE_PROVIDER_ID,
   },
 };
 
@@ -1079,6 +1091,14 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // picker; the vocabulary is advisory (free text stays allowed).
     const declaredAreas = parseAreasConfig(parsed);
     if (declaredAreas) cfg.areas = declaredAreas;
+    // [storage] section (#0659) — which provider holds attachment bytes. Any
+    // non-empty id is accepted syntactically; an unknown or unconfigured one is
+    // surfaced as unavailable and falls back to local (see describeStorage), so
+    // this never crashes and never claims a provider is in effect when it isn't.
+    const storageProvider = parsed["storage.provider"];
+    if (typeof storageProvider === "string" && storageProvider.trim()) {
+      cfg.storage = { provider: storageProvider.trim() };
+    }
     const devInspectorEnabled = parsed["dev.inspector.enabled"];
     const devInspectorEditor = parsed["dev.inspector.editorCommand"];
     if (typeof devInspectorEnabled === "boolean" || typeof devInspectorEditor === "string") {
@@ -1096,6 +1116,12 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
     if (typeof get("autoEngineeringMode") === "boolean")
       cfg.autoEngineeringMode = get("autoEngineeringMode") as boolean;
+    // #0690: optional PM veto pass. Nested `[autoEngineering] pmVeto = true`.
+    // Absent means the deterministic default (no veto).
+    const pmVeto = parsed["autoEngineering.pmVeto"];
+    if (typeof pmVeto === "boolean") {
+      cfg.autoEngineering = { ...cfg.autoEngineering, pmVeto };
+    }
     if (typeof get("ctoSkipHealthy") === "boolean")
       cfg.ctoSkipHealthy = get("ctoSkipHealthy") as boolean;
     if (typeof get("skillSuggestions") === "boolean")
@@ -1113,6 +1139,18 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     const worktreesInheritEnvFlag = get("worktrees.inheritEnv");
     if (typeof worktreesInheritEnvFlag === "boolean") {
       cfg.worktrees = { ...cfg.worktrees, inheritEnv: worktreesInheritEnvFlag };
+    }
+    const worktreesCandidate = get("worktrees.candidate");
+    if (worktreesCandidate === "symlink-main" || worktreesCandidate === "own-install") {
+      cfg.worktrees = { ...cfg.worktrees, candidate: worktreesCandidate };
+    } else if (worktreesCandidate !== undefined) {
+      console.warn(
+        `[worktrees] candidate must be "symlink-main" or "own-install", got ${JSON.stringify(worktreesCandidate)} — using symlink-main`,
+      );
+    }
+    const worktreesInstallCommand = get("worktrees.installCommand");
+    if (typeof worktreesInstallCommand === "string" && worktreesInstallCommand.trim()) {
+      cfg.worktrees = { ...cfg.worktrees, installCommand: worktreesInstallCommand.trim() };
     }
     const servePort = get("servePort");
     const servePortNum =
@@ -1482,6 +1520,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof rvRetry === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, retryOtherHosts: rvRetry };
     }
+    const rvEngineer = parsed["remoteValidation.engineerSelfCheckRemote"];
+    if (typeof rvEngineer === "boolean") {
+      cfg.remoteValidation = { ...cfg.remoteValidation, engineerSelfCheckRemote: rvEngineer };
+    }
     // Default: true when 2+ tailscale hosts are configured, else false. The
     // guard tests the TOML key, NOT the merged object: DEFAULT_CONFIG already
     // fills `retryOtherHosts: false`, so a merged-object `=== undefined` check
@@ -1499,6 +1541,13 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     ) {
       cfg.remoteValidation = { ...cfg.remoteValidation, retryOtherHosts: true };
     }
+    if (
+      typeof rvEngineer !== "boolean" &&
+      cfg.remoteValidation?.enabled === true &&
+      cfg.remoteValidation.engineerSelfCheckRemote === undefined
+    ) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, engineerSelfCheckRemote: true };
+    }
 
     // [closeOut] section — wall-clock budget for one Move-to-done attempt
     // (#0573). Invalid/negative values are clamped back to the default with a
@@ -1513,13 +1562,44 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         Number.isFinite(closeOutTimeout) &&
         closeOutTimeout >= 0
       ) {
-        cfg.closeOut = { timeoutMs: Math.floor(closeOutTimeout) };
+        cfg.closeOut = {
+          ...cfg.closeOut,
+          timeoutMs: Math.floor(closeOutTimeout),
+        };
       } else {
         console.warn(
           `[closeOut] timeoutMs must be a number of milliseconds >= 0 (0 disables the ceiling), ` +
             `got ${JSON.stringify(closeOutTimeout)} — using the default 360000 (6 minutes)`,
         );
       }
+    }
+    const closeOutCandidate = parsed["closeOut.candidate"];
+    if (closeOutCandidate === "symlink-main" || closeOutCandidate === "own-install") {
+      cfg.closeOut = {
+        timeoutMs: cfg.closeOut?.timeoutMs ?? DEFAULT_CONFIG.closeOut!.timeoutMs,
+        ...cfg.closeOut,
+        candidate: closeOutCandidate,
+      };
+    } else if (closeOutCandidate !== undefined) {
+      console.warn(
+        `[closeOut] candidate must be "symlink-main" or "own-install", got ${JSON.stringify(closeOutCandidate)} — using symlink-main`,
+      );
+    }
+    const closeOutInstallCommand = parsed["closeOut.installCommand"];
+    if (typeof closeOutInstallCommand === "string" && closeOutInstallCommand.trim()) {
+      cfg.closeOut = {
+        timeoutMs: cfg.closeOut?.timeoutMs ?? DEFAULT_CONFIG.closeOut!.timeoutMs,
+        ...cfg.closeOut,
+        installCommand: closeOutInstallCommand.trim(),
+      };
+    }
+    const closeOutPostPublish = parsed["closeOut.postPublishCommand"];
+    if (typeof closeOutPostPublish === "string" && closeOutPostPublish.trim()) {
+      cfg.closeOut = {
+        timeoutMs: cfg.closeOut?.timeoutMs ?? DEFAULT_CONFIG.closeOut!.timeoutMs,
+        ...cfg.closeOut,
+        postPublishCommand: closeOutPostPublish.trim(),
+      };
     }
 
     const spendAlert = parsed["attention.spendAlertUsd"];
@@ -1675,6 +1755,23 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "no story context block.",
     },
     {
+      key: "storage.provider",
+      label: "Attachment storage",
+      type: "select",
+      tier: "restart",
+      restartRequired: true,
+      default: DEFAULT_STORAGE_PROVIDER_ID,
+      options: [
+        { value: "local", label: "Local filesystem" },
+        { value: "neon", label: "Neon Object Storage" },
+      ],
+      description:
+        "Where attachment files (task and input screenshots) are stored. Local filesystem keeps " +
+        "them in gitignored .attachments/ folders on this machine and is the default; Neon Object " +
+        "Storage is opt-in and needs credentials before it can be used. Switching providers " +
+        "requires a server restart.",
+    },
+    {
       key: "ntfyEnabled",
       label: "ntfy notifications",
       type: "boolean",
@@ -1823,6 +1920,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description: "Automatically select and start ready tasks up to the maximum",
     },
     {
+      key: "autoEngineering.pmVeto",
+      label: "PM veto for parallel conflicts",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.autoEngineering?.pmVeto ?? false,
+      description:
+        "Off by default: the picker is fully deterministic (priority, then the most " +
+        "downstream work unblocked, then creation order). When on, a PM pass runs only when " +
+        "there are more eligible tasks than open slots AND two candidates would collide " +
+        "(same area or a declared shared path). It may only reorder or defer — never invent " +
+        "work — and its rationale is recorded with the decision.",
+    },
+    {
       key: "ctoSkipHealthy",
       label: "Skip the CTO on a healthy board",
       type: "boolean",
@@ -1910,6 +2021,46 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "it is aborted with a retryable failure and the task stays in review; retries and remote " +
         "validation share the same budget. 0 disables the ceiling. Set any value in repoos.toml " +
         "(`[closeOut] timeoutMs`).",
+    },
+    {
+      key: "closeOut.candidate",
+      label: "Close-out candidate dependencies",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "symlink-main",
+      options: [
+        { value: "symlink-main", label: "Symlink main's node_modules (default)" },
+        { value: "own-install", label: "Own install in each candidate" },
+      ],
+      description:
+        "How Move-to-done prepares dependencies in the throwaway candidate worktree. " +
+        "Symlinking is fast but can fail for monorepos (stale main install, Vite path guards). " +
+        "Own install runs a frozen install in the candidate — slower, more reliable for workspaces.",
+    },
+    {
+      key: "closeOut.installCommand",
+      label: "Close-out install command",
+      type: "string",
+      tier: "live",
+      restartRequired: false,
+      default: "",
+      description:
+        "Optional shell command to install dependencies for close-out candidates (and to refresh " +
+        "main after a lockfile-changing merge when no post-publish command is set). Leave empty " +
+        "to infer from bun.lock / package-lock.json / etc.",
+    },
+    {
+      key: "closeOut.postPublishCommand",
+      label: "Post-merge install command",
+      type: "string",
+      tier: "live",
+      restartRequired: false,
+      default: "",
+      description:
+        "Optional shell command run in the primary checkout after a merge that changed package " +
+        "inputs. Replaces the automatic lockfile install so Python venvs, Cargo, etc. can refresh " +
+        "main. Leave empty to use the install command or lockfile inference.",
     },
     {
       key: "approval.enabled",
@@ -2129,6 +2280,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Cut releases on the same Hetzner runner as close-outs (off by default — a release is watched live, so the provision delay reads as a regression; opt in per repo). Only applies when the runner is enabled.",
     },
     {
+      key: "remoteValidation.engineerSelfCheckRemote",
+      label: "Remote validation: engineer self-check on runner",
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: true,
+      description:
+        "When enabled, managed engineers run install + build + tests on the remote runner during `repoos check` (fast format/lint guards stay local). Handoff reuses a green pass at the same commit. Default on when remote validation is enabled.",
+    },
+    {
       key: "remoteValidation.retryOtherHosts",
       label: "Remote validation: retry on other hosts",
       type: "boolean",
@@ -2210,6 +2371,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "defaultTaskMode",
   "maxActiveTasks",
   "autoEngineeringMode",
+  "autoEngineering.pmVeto",
   "ctoSkipHealthy",
   "skillSuggestions",
   "worktreeWarnThreshold",
@@ -2305,6 +2467,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "deployments.subdir",
   // Stories
   "stories.enabled",
+  // Attachment storage (#0659) — which provider holds attachment bytes.
+  "storage.provider",
   "stories.excerptBytes",
   // Areas vocabulary (#0583): `[[areas]]` rows plus the flat `areas`
   // string-array shorthand the Settings UI writes.
@@ -2339,6 +2503,11 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "tunnel.apps",
   // Close-out (Move to done) pipeline budget (#0573)
   "closeOut.timeoutMs",
+  "closeOut.candidate",
+  "closeOut.installCommand",
+  "closeOut.postPublishCommand",
+  "worktrees.candidate",
+  "worktrees.installCommand",
   "attention.spendAlertUsd",
   "approval.enabled",
   "approval.autoApprove.areas",
@@ -2362,6 +2531,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.maxConcurrent",
   "remoteValidation.fallbackToLocal",
   "remoteValidation.retryOtherHosts",
+  "remoteValidation.engineerSelfCheckRemote",
   "remoteValidation.useForReleases",
 ];
 

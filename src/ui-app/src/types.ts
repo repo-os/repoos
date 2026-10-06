@@ -877,12 +877,16 @@ export interface AutoEngineeringDecision {
     | "dependency-merged"
     | "config-change"
     | "startup";
-  outcome: "selected" | "no-capacity" | "no-ready-work" | "pm-unavailable" | "pm-failed";
+  outcome: "selected" | "no-capacity" | "no-ready-work" | "pm-failed";
+  /** Which picker ran: the deterministic default, or the optional PM veto pass. */
+  picker?: "deterministic" | "pm-veto";
   activeCount: number;
   maxActiveTasks: number;
   availableSlots: number;
   candidateIds: string[];
   selectedIds: string[];
+  /** Eligible tasks left for a later slot, in pick order. */
+  deferredIds?: string[];
   rationale?: string;
   error?: string;
 }
@@ -1026,6 +1030,24 @@ export interface ConfigField {
   default: unknown;
   options?: { value: string; label: string }[];
   description: string;
+}
+
+/**
+ * Attachment-storage status from `GET /api/config` (#0659). Reports which
+ * provider is configured and which is actually in effect (local when the
+ * configured cloud provider is not usable yet), plus a non-alarming
+ * explanation of why, so the Settings UI explains the effective provider
+ * instead of guessing.
+ */
+export interface StorageStatus {
+  /** Provider id configured in `repoos.toml` (defaults to `local`). */
+  configured: string;
+  /** Provider id actually in effect — `local` when the configured one is unavailable. */
+  effective: string;
+  /** Whether the configured provider is available right now. */
+  available: boolean;
+  /** Human-readable explanation when configured and effective differ; `""` otherwise. */
+  reason: string;
 }
 
 /** An AI coding agent configured on the Agents page. */

@@ -4162,6 +4162,7 @@ watch(
             :failed-at="repo.doneErrorFor(ui.active.id)!.failedAt"
             :tldr="repo.doneErrorFor(ui.active.id)!.tldr"
             :summary="repo.doneErrorFor(ui.active.id)!.summary"
+            :action="repo.doneErrorFor(ui.active.id)!.action"
             :tldr-diagnosing="
               !repo.doneErrorFor(ui.active.id)!.tldr && repo.debugTldrWorkingFor(ui.active.id)
             "
@@ -4172,6 +4173,7 @@ watch(
             @open-support="openSupportFromError"
             @open-conflict="openConflictFromError"
             @dismiss="repo.dismissDoneError(ui.active.id)"
+            @refresh-install-retry="repo.refreshInstallAndRetryIntegration(ui.active.id)"
           />
           <div
             v-if="

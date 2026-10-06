@@ -16,9 +16,13 @@ first, then come back here.
   ("works at 375px wide", "browser console is clean", "tests cover the empty
   case").
 - Encode the order with `dependsOn`. The sequencing judgment belongs **here**,
-  at planning time. Once the graph is right, "which task next?" is almost
-  mechanical: priority first, then the longest chain of work it unblocks, then
-  age.
+  at planning time. Once the graph is right, auto-engineering picks the next
+  tasks deterministically: priority first, then how much downstream work each
+  candidate unblocks (its critical-path weight), then creation order. Held tasks
+  (`hold: true` or a `hold` tag) stay ready but are skipped. With
+  `autoEngineering.pmVeto` enabled, a PM pass runs only when there are more
+  eligible tasks than open slots **and** two candidates would collide (same
+  area or a declared shared path); it may reorder or defer, never invent work.
 - Put the context agents need where they will read it: an index file in your docs
   directory with a reading order, a short block of hard rules in `AGENTS.md` that
   points at it, and a glossary of your domain words. Keep reference code and
@@ -56,9 +60,10 @@ first, then come back here.
   event) instead of polling job files by hand.
 - Keep the primary checkout **clean**. Commit configuration and bookkeeping
   writes straight away, or **Move to done** will refuse.
-- Close-out candidates reuse the primary checkout's `node_modules`. After any
-  merge that changes the lockfile, install dependencies in the primary checkout,
-  or the next task's close-out can fail on missing modules.
+- Close-out candidates reuse the primary checkout's `node_modules` by default.
+  Move to done refreshes that install automatically after a merge that changes
+  package inputs; if close-out still fails with missing modules, use **Refresh
+  install and retry** or set `[closeOut] candidate = "own-install"` for monorepos.
 
 ## 4. The review loop
 
@@ -106,11 +111,17 @@ first, then come back here.
 
 ## 5. Processes and servers
 
-- Run the server in a real terminal tab or with `repoos service`, not as a
-  detached child of a short-lived agent shell; those get reaped.
-- Never kill processes by name (`pkill -f vite`). It takes down every matching
-  process on the machine, including other projects' servers. Start helpers on a
-  free port and stop only the PID you started.
+- RepoOS runs each managed agent turn in its own process group and reaps that group
+  when the turn ends, so helpers the agent started during a turn are torn down with
+  it. That does not replace good habits: agents should still avoid pattern kills.
+- For an unattended RepoOS server on your machine, use `repoos service` (launchd /
+  systemd) or a terminal tab you keep open — not a detached `repoos serve` started
+  from an agent shell. A detached serve for this repo whose parent is gone is
+  classified as a stray orphan and SIGTERMed by the control plane's periodic reaper
+  (~every 30s). See `docs/agent-process-safety.md`.
+- Never kill processes by name (`pkill -f vite`, `killall node`). It takes down
+  every matching process on the machine, including other projects' servers. Stop
+  only the PID you started, or let RepoOS reap the turn's process group.
 
 ## 6. Money and time
 

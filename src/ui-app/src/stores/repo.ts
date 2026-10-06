@@ -150,6 +150,8 @@ export interface DoneError {
   failedAt?: string;
   /** Debugger one-line tl;dr for this failure (#0595). */
   tldr?: string;
+  /** One-click repair for environment failures (#0674). */
+  action?: "refresh-install-retry";
 }
 
 /**
@@ -1790,6 +1792,12 @@ export const useRepoStore = defineStore("repo", () => {
    * path (re-enqueue as a fresh queued job). Best-effort: non-fatal errors are
    * surfaced as a toast for the caller to catch.
    */
+  async function refreshInstallAndRetryIntegration(taskId: string): Promise<void> {
+    await api(`/api/integration/pipeline/refresh-install/${taskId}`, JSON_OPTS("POST", {}));
+    setDoneError(taskId, null);
+    await refreshIntegration();
+  }
+
   async function retryIntegration(taskId: string): Promise<void> {
     await api<{ ok: boolean }>(`/api/integration/pipeline/retry/${taskId}`, { method: "POST" });
   }
@@ -3586,6 +3594,7 @@ export const useRepoStore = defineStore("repo", () => {
     refreshDoneErrors,
     dismissDoneError,
     retryIntegration,
+    refreshInstallAndRetryIntegration,
     cancelDone,
     testRun,
     refreshTestRun,

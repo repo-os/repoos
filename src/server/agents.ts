@@ -9,6 +9,12 @@
 import { randomUUID } from "node:crypto";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import {
+  patternKillWarning,
+  processGroupKillSupported,
+  reapAgentTurnProcessGroup,
+  signalProcessGroup,
+} from "../core/process-group.js";
+import {
   closeSync,
   existsSync,
   mkdirSync,
@@ -274,6 +280,11 @@ interface Entry {
    * was captured — the id is then left unset rather than guessed).
    */
   crushSessionsBefore?: string[];
+  /**
+   * PID of this turn's process-group leader (`detached` spawn on POSIX). Used to
+   * reap helper subprocesses without touching the rest of the machine (#0675).
+   */
+  processGroupLeader?: number;
 }
 
 /**
@@ -3638,6 +3649,14 @@ export function missionFor(
     "",
     "Work in turns: finish the requested work, then stop and report. The session can be continued later with follow-up instructions from the user.",
     "",
+    "## Helper processes — do not kill by name",
+    "",
+    "RepoOS runs each agent turn in its own process group and reaps that group when the turn ends, so helpers you start during the turn are torn down with it.",
+    "",
+    "- Never use `pkill`, `killall`, or other pattern kills — they match every process on the machine, including the owner's dev servers and other projects.",
+    "- To stop a helper early, remember the PID when you start it and run `kill <pid>` only.",
+    "- Prefer finite commands (`repoos check`, tests, builds). For a long-lived RepoOS server, use `repoos service` or a terminal tab you keep open — not a detached `repoos serve` from this shell (see below).",
+    "",
     "## Managed previews are server-owned — never run `repoos serve` yourself",
     "",
     "RepoOS owns previews and the control-plane port. Do NOT launch `repoos serve` directly, do not choose a port, and never run a long-lived serve process: direct serve attempts from managed agent processes are rejected. Preview ports and lifecycle are managed for you.",
@@ -5003,6 +5022,7 @@ export class AgentRunner {
         handoffRequested: false,
         previewRequested: false,
         adoptedPid: rec.pid,
+        processGroupLeader: rec.pid,
         review: isReview,
         reviewKind: rec.kind === "review" ? rec.reviewKind : undefined,
         tailers,
@@ -5994,6 +6014,8 @@ export class AgentRunner {
         cwd,
         stdio: ["ignore", outFd, errFd],
         env: agentEnv,
+        // Own process group on POSIX so turn end can reap the whole tree (#0675).
+        detached: processGroupKillSupported(),
       });
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
@@ -6020,6 +6042,7 @@ export class AgentRunner {
       review: opts.review,
       reviewKind: opts.review ? opts.reviewKind : undefined,
       tailers,
+      processGroupLeader: proc.pid,
       ...(crushSessionsBefore ? { crushSessionsBefore } : {}),
     });
     // Turn-start bookkeeping for the live stats readout (0080): the silence
@@ -6244,6 +6267,12 @@ export class AgentRunner {
       stream: stream === "sys" ? "out" : stream,
       at: now(),
     });
+    if ("type" in stamped && stamped.type === "tool" && stamped.tool === "shell" && stamped.input) {
+      const warn = patternKillWarning(stamped.input);
+      if (warn) {
+        this.recordEntry(taskId, session, "sys", { type: "sys", d: `⚠ ${warn}` });
+      }
+    }
     while (session.bytes > OUTPUT_CAP_BYTES) {
       const dropped = session.lines.shift();
       if (!dropped) break;
@@ -7017,6 +7046,7 @@ export class AgentRunner {
     if (!entry) return { stopped: false, reason: "task is not running" };
     entry.intentionalStop = true;
     const cancelSignal = engineCancelSignal(this.sessions.get(taskId)?.engine);
+    const groupLeader = entry.processGroupLeader ?? entry.proc?.pid ?? entry.adoptedPid;
     for (const tailer of entry.tailers ?? []) {
       tailer.drain();
       tailer.flush();
@@ -7024,31 +7054,43 @@ export class AgentRunner {
     }
     entry.tailers = undefined;
     if (entry.adoptedPid) {
-      // For adopted entries (0214): kill by PID directly since proc is null.
-      try {
-        process.kill(entry.adoptedPid, cancelSignal);
-      } catch {
-        /* already gone */
-      }
-      const adoptedPid = entry.adoptedPid;
-      entry.killTimer = setTimeout(() => {
+      // For adopted entries (0214): signal the process group by leader PID.
+      if (groupLeader) signalProcessGroup(groupLeader, cancelSignal);
+      else {
         try {
-          process.kill(adoptedPid, "SIGKILL");
+          process.kill(entry.adoptedPid, cancelSignal);
         } catch {
           /* already gone */
         }
+      }
+      const adoptedPid = entry.adoptedPid;
+      entry.killTimer = setTimeout(() => {
+        if (groupLeader) signalProcessGroup(groupLeader, "SIGKILL");
+        else {
+          try {
+            process.kill(adoptedPid, "SIGKILL");
+          } catch {
+            /* already gone */
+          }
+        }
       }, 3000);
     } else if (!entry.killTimer) {
-      try {
-        entry.proc?.kill(cancelSignal);
-      } catch {
-        /* already gone */
-      }
-      entry.killTimer = setTimeout(() => {
+      if (groupLeader) signalProcessGroup(groupLeader, cancelSignal);
+      else {
         try {
-          entry.proc?.kill("SIGKILL");
+          entry.proc?.kill(cancelSignal);
         } catch {
           /* already gone */
+        }
+      }
+      entry.killTimer = setTimeout(() => {
+        if (groupLeader) signalProcessGroup(groupLeader, "SIGKILL");
+        else {
+          try {
+            entry.proc?.kill("SIGKILL");
+          } catch {
+            /* already gone */
+          }
         }
       }, 3000);
     }
@@ -7153,6 +7195,7 @@ export class AgentRunner {
   private cleanup(taskId: string, exitedCleanly: boolean, exitCode: number | null = null): void {
     const entry = this.entries.get(taskId);
     if (!entry) return;
+    const groupLeader = entry.processGroupLeader ?? entry.proc?.pid ?? entry.adoptedPid;
     // Capture before the entry is deleted below so the review-completion hook
     // can still be fired and its DB recording skipped (0288).
     const wasReview = entry.review === true;
@@ -7426,6 +7469,23 @@ export class AgentRunner {
     // fail-safe checklist's main-copy sync silently failed (the #0068 shape).
     // Patch the main copy to match so the live board cannot drift silently.
     this.healBoardDivergence(taskId, entry, session);
+    if (groupLeader) {
+      const leaked = reapAgentTurnProcessGroup(groupLeader);
+      if (leaked.length > 0 && session) {
+        this.recordEntry(taskId, session, "sys", {
+          type: "sys",
+          d:
+            `⚠ After this turn ended, ${leaked.length} process(es) escaped its process group ` +
+            `(PIDs: ${leaked.join(", ")}). They may need manual cleanup.`,
+        });
+      } else if (leaked.length > 0) {
+        this.appendLine(
+          taskId,
+          "sys",
+          `⚠ After this turn ended, ${leaked.length} process(es) escaped its process group (PIDs: ${leaked.join(", ")}).`,
+        );
+      }
+    }
     // Self-heal may have appended a final system line, so persist only after it.
     this.persist(taskId);
     if (this.pendingCompletion.delete(taskId)) this.finishCompletion(taskId);

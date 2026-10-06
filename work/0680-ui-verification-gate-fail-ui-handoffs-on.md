@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 id: "0680"
 title: "UI verification gate: fail UI handoffs on browser console errors; reviewer sees the screenshots"
 type: feature
@@ -12,7 +13,9 @@ branch: feat/ui-verification-gate-fail-ui-handoffs-on
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:42Z"
-updated_at: "2026-10-06T01:16:12Z"
+updated_at: "2026-10-06T01:42:28Z"
+review_passes: 2
+review_rounds: 1
 ---
 ## Problem
 
@@ -39,6 +42,26 @@ This task is part of the story **Field report: first agent-driven project run (o
 ## Docs follow-up
 The playbook page `user-docs/running-with-agents.md` (landed on main) describes the CURRENT behaviour that this task changes. When this task lands, update the page: section 4, the bullets about looking at UI work yourself and about the review report being overwritten each pass. In short: describe the console/overflow gate, the screenshots the reviewer now sees, and the kept review history. Keep the page accurate rather than aspirational; if this task is declined, leave the page as is. (This replaces the open task 0689, which is being removed.)
 
+## Shots
+```json
+[
+  {
+    "label": "Task drawer review history list",
+    "target": "default",
+    "route": "/",
+    "highlight": ".review-history",
+    "steps": [
+      {
+        "click": "[data-task-id=\"0680\"]"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-05T16:58:42Z · created · unknown
@@ -48,4 +71,11 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T23:35:16Z · status inbox→ready
 - 2026-10-05T23:35:19Z · cli_override, model_override
 - 2026-10-05T23:35:19Z · status ready→active, branch
+- 2026-10-06T00:14:51Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-06T01:05:55Z · body: section Shots
 - 2026-10-06T01:16:12Z · status active→review
+- 2026-10-06T01:16:28Z · note: shots: failed — capture of Task drawer review history list on "default" failed: click: Timeout 5000ms exceeded.
+- 2026-10-06T01:17:16Z · status review→active
+- 2026-10-06T01:37:32Z · status active→review
+- 2026-10-06T01:37:51Z · note: shots: failed — capture of Task drawer review history list on "default" failed: click: Timeout 5000ms exceeded.
+

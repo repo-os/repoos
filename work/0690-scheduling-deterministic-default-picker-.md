@@ -1,21 +1,23 @@
 ---
-merge_conflict_retry_count: 1
 id: "0690"
 title: "Scheduling: deterministic default picker for auto-engineering with an optional PM veto for conflicts"
 type: feature
-status: review
+status: done
 priority: p3
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: c9a96426769164be4c29e377d881cffa711e3028
 assigned_to: ai
 created_by: ""
 branch: feat/scheduling-deterministic-default-picker-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:59:03Z"
-updated_at: "2026-10-05T23:17:24Z"
+updated_at: "2026-10-05T23:51:00Z"
+merge_conflict_retry_count: 2
 review_passes: 3
 handoff_signal_retry_count: 2
+dev_error_count: 1
 ---
 ## Problem
 
@@ -74,5 +76,9 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T22:40:26Z · note: highlight [data-config-key="autoEngineering.pmVeto"] matched nothing on /settings?tab=board
 - 2026-10-05T22:57:49Z · status review→active
 - 2026-10-05T23:12:12Z · status active→review
-
-
+- 2026-10-05T23:36:50Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
+- 2026-10-05T23:46:20Z · status review→active
+- 2026-10-05T23:46:29Z · status active→review
+- 2026-10-05T23:46:29Z · status review→active
+- 2026-10-05T23:49:54Z · status active→done, release:success
+- 2026-10-05T23:51:00Z · handoff failed · task-file handoff failed at check · repoos check failed: ENOENT: no such file or directory, posix_spawn 'bun'
