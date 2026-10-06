@@ -2,7 +2,7 @@
 id: "0721"
 title: "Easter eggs bundle: stuck-timer source, needs_input clear on new run, stale provider balance, agent-review test races"
 type: chore
-status: active
+status: review
 priority: p2
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -89,4 +89,4 @@ fatal: unable to read tree (25c22c96a27f03b0c4de97fbff14af7d4b037c08) — fix it
 - 2026-10-06T16:41:44Z · status review→active
 - 2026-10-06T16:45:48Z · handoff failed · task-file handoff failed at check · repoos check failed: [32m✓[39m tests/repo-commit-route.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 206[2mms[22m[39m · [32m✓[39m tests/tunnel-assistant.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 84[2mms[22m[39m · [32m✓[39m tests/area-picker.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 101[2mms[22m[39m · [32m✓[39m tests/settings-location.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m · [32m✓[39m tests/needs-input-ui.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m · [32m✓[39m tests/telegram-chat-routes.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 36[2mms[22m[39m · [32m✓[39m tests/drawer-load.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 122[2mms[22m[39m · [32m✓[39m tests/playground-chat.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 6[2mms[22m[39m
 - 2026-10-06T16:51:44Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
-- 2026-10-06T17:21:55Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T17:21:55Z · status active→review
