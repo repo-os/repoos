@@ -12,7 +12,7 @@ branch: feat/run-engineer-self-checks-on-the-remote-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:59:26Z"
-updated_at: "2026-10-06T00:54:05Z"
+updated_at: "2026-10-06T00:55:36Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -51,3 +51,4 @@ Also in scope, found 2026-10-06 from the Checks > Runs tab: (1) all 191 phase=cl
 - 2026-10-06T00:03:12Z · body: section Driver note: runs list and repeat local checks
 - 2026-10-06T00:52:57Z · status active→review
 - 2026-10-06T00:54:05Z · status review→active
+- 2026-10-06T00:55:36Z · note: Load before/after (3 parallel engineers): deferred until post-merge — measure on owner hardware with remote pool enabled; record uptime/load in a follow-up note.
