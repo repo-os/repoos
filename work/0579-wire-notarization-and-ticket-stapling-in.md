@@ -3,6 +3,9 @@ id: "0579"
 title: Wire notarization and ticket stapling into the RepoOS Hub release workflow
 type: feature
 status: ready
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p1
 area: macos
 story: MacOS Native App
@@ -10,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:43:47Z"
-updated_at: "2026-10-05T15:55:09Z"
+updated_at: "2026-10-06T23:48:11Z"
 ---
 After the app is Developer ID–signed (#0578), submit it to Apple's notary service, wait for approval, and staple the ticket to the DMG before uploading the release asset. This removes the Gatekeeper warning on first launch.
 
@@ -97,3 +100,4 @@ In `.github/workflows/macos-hub.yml`, after the signing step:
 - 2026-10-05T11:15:31Z · needs_input
 - 2026-10-05T15:49:48Z · needs_input
 - 2026-10-05T15:55:09Z · body
+- 2026-10-06T23:48:11Z · needs_input
