@@ -20,6 +20,7 @@ import {
   runPrompt,
 } from "../../server/agents";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../../core/types";
+import { parseTask } from "../../core/task";
 import { waitFor } from "./helpers";
 
 /** Plain-line text of an entry (legacy `{s,d}` or sys) — narrows the union. */
@@ -182,6 +183,29 @@ const TASK: Task = {
 };
 
 const agent = (cli: string): Agent => ({ name: "engineer", cli, model: "default", enabled: true });
+
+function taskOnDisk(root: string): Task {
+  const absPath = join(root, "work/0001-test.md");
+  mkdirSync(join(root, "work"), { recursive: true });
+  writeFileSync(
+    absPath,
+    `---
+id: "0001"
+title: "Test task"
+type: feature
+status: active
+priority: p2
+area: web
+assigned_to: ai
+branch: feat/x
+---
+## Problem
+Test.
+`,
+    "utf8",
+  );
+  return { ...TASK, absPath, path: "work/0001-test.md", status: "active" };
+}
 
 function spawns(fx: Fixture): SpawnRecord[] {
   const text = readFileSync(fx.log, "utf8").trim();
@@ -1489,6 +1513,106 @@ process.exit(1);
       delete process.env.REPOOS_CRUSH_LOG;
       delete process.env.REPOOS_CRUSH_STATE;
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("provider failures and run health (#0678)", () => {
+  it("surfaces HTTP 402 output as provider-failure needs_input", async () => {
+    const fx = makeFixture();
+    const root = mkdtempSync(join(tmpdir(), "repoos-0678-provider-"));
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const creditBin = `#!/usr/bin/env node
+process.stderr.write("OpenRouter HTTP 402 insufficient credits\\n");
+process.exit(1);
+`;
+    writeFileSync(join(fx.bin, "claude"), creditBin, { mode: 0o755 });
+    const cwd = join(root, "wt");
+    mkdirSync(cwd, { recursive: true });
+    const task = taskOnDisk(root);
+    try {
+      const runner = new AgentRunner({ ...config(root), root }, () => {});
+      runner.start(task, "feat/x", agent("claude code"), { cwd });
+      await waitFor(() => !runner.isRunning("0001"), "402 exit", 5000);
+      const onDisk = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      expect(onDisk.needsInput).toBe(true);
+      expect(onDisk.needsInputReason).toBe("provider-failure");
+      expect(onDisk.needsInputDetail).toContain("402");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("stops and flags repeated-token output after one retry", async () => {
+    const fx = makeFixture();
+    const root = mkdtempSync(join(tmpdir(), "repoos-0678-degen-"));
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const loop = "<".repeat(220);
+    const degenBin = `#!/usr/bin/env node
+const fs = require("fs");
+if (process.env.REPOOS_FAKEBIN_LOG) fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd() }) + "\\n");
+process.stdout.write(${JSON.stringify(loop)} + "\\n");
+setTimeout(() => process.exit(0), 30_000);
+`;
+    writeFileSync(join(fx.bin, "opencode"), degenBin, { mode: 0o755 });
+    const cwd = join(root, "wt");
+    mkdirSync(cwd, { recursive: true });
+    const task = taskOnDisk(root);
+    try {
+      const runner = new AgentRunner({ ...config(root), root }, () => {});
+      runner.start(task, "feat/x", agent("opencode"), { cwd });
+      await waitFor(() => !runner.isRunning("0001"), "degenerate stopped", 15_000);
+      const onDisk = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      expect(onDisk.needsInput).toBe(true);
+      expect(onDisk.needsInputReason).toBe("degenerate-output");
+      expect(spawns(fx).length).toBeGreaterThanOrEqual(2);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("flags a silent-but-alive turn after credited idle time", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const hangBin = `#!/usr/bin/env node
+process.stdout.write("only line\\n");
+Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15_000);
+process.exit(0);
+`;
+    writeFileSync(join(fx.bin, "claude"), hangBin, { mode: 0o755 });
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        stallTimeoutMs: 60,
+        stallCheckIntervalMs: 20,
+      });
+      runner.start(TASK, "feat/x", agent("claude code"), { cwd: fx.bin });
+      await waitFor(() => runner.stats("0001").stalled === true, "silent stall", 8000);
+      expect(runner.isRunning("0001")).toBe(true);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
     }
   });
 });
