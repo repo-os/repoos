@@ -12,7 +12,8 @@ type Matcher = (route: ApiRouteRef) => boolean;
 
 /** Routes implemented by the server-backed control CLI (#0723). */
 const CONTROL_API_MATCHERS: Matcher[] = [
-  (r) => r.method === "POST" && /\/tasks\/\(\[\^\/\]\+\)\/(start|pause|message|done)\$/.test(r.pattern),
+  (r) =>
+    r.method === "POST" && /\/tasks\/\(\[\^\/\]\+\)\/(start|pause|message|done)\$/.test(r.pattern),
   (r) => r.method === "POST" && /\/tasks\/\(\[\^\/\]\+\)\/preview\$/.test(r.pattern),
   (r) => r.method === "POST" && /\/tasks\/\(\[\^\/\]\+\)\/preview\/stop\$/.test(r.pattern),
   (r) => r.method === "GET" && r.pattern === "/api/config",
@@ -101,9 +102,9 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   (r) => r.method === "POST" && r.pattern === "/api/transcribe",
   (r) => r.pattern.startsWith("/api/service/"),
   (r) => r.method === "POST" && r.pattern === "/api/server/restart",
-  (r) => r.method === "POST" && /\/tasks\/\(\[\^\/\]\+\)\/(sync|hotfix|abandon|reopen|archive|unarchive)\$/.test(
-    r.pattern,
-  ),
+  (r) =>
+    r.method === "POST" &&
+    /\/tasks\/\(\[\^\/\]\+\)\/(sync|hotfix|abandon|reopen|archive|unarchive)\$/.test(r.pattern),
   (r) => r.method === "POST" && r.pattern === "/api/tasks/freeform",
   (r) => r.method === "POST" && r.pattern === "/api/docs/create",
   (r) => r.method === "POST" && r.pattern === "/api/docs/freeform",

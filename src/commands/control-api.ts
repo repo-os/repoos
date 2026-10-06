@@ -29,7 +29,8 @@ function parseCommonFlags(args: string[]): { rest: string[]; opts: CommonOpts; e
     else if (a === "--port") {
       const p = args[++i];
       const n = Number(p);
-      if (!p || !Number.isInteger(n) || n <= 0) return { rest, opts, error: "--port requires a positive integer" };
+      if (!p || !Number.isInteger(n) || n <= 0)
+        return { rest, opts, error: "--port requires a positive integer" };
       opts.port = n;
     } else rest.push(a);
   }
@@ -234,7 +235,11 @@ export async function cmdDone(args: string[]): Promise<number> {
     await ensureServer(api);
     const started = await api.request("POST", `/api/tasks/${id}/done`, { commitDirty });
     if (started.status === 409 && started.body.needsCommit) {
-      throw new RepoOsApiError(started.body.error ?? "close-out blocked on dirty tree", 409, started.body);
+      throw new RepoOsApiError(
+        started.body.error ?? "close-out blocked on dirty tree",
+        409,
+        started.body,
+      );
     }
     if (started.status !== 200 || !started.body.ok) {
       throw new RepoOsApiError(
@@ -274,7 +279,8 @@ export async function cmdDone(args: string[]): Promise<number> {
     );
     const phase = (jobResult.job as { phase?: string } | undefined)?.phase ?? "done";
     if (phase === "failed") {
-      const reason = (jobResult.job as { reason?: string } | undefined)?.reason ?? "close-out failed";
+      const reason =
+        (jobResult.job as { reason?: string } | undefined)?.reason ?? "close-out failed";
       throw new RepoOsApiError(reason, 500, jobResult);
     }
     if (opts.json) printJson(jobResult);
@@ -316,7 +322,9 @@ export async function cmdOverride(args: string[]): Promise<number> {
     const updated = await api.requestOk("PATCH", `/api/tasks/${id}`, patch);
     const { root } = boardRoot();
     const config = loadConfig(root);
-    const task = createRepoOS(root).reindex().tasks.find((t) => t.id === id);
+    const task = createRepoOS(root)
+      .reindex()
+      .tasks.find((t) => t.id === id);
     const effective = task ? resolveAgentForTask(config, task) : null;
     const out = {
       ok: true,
@@ -367,7 +375,10 @@ export async function cmdPreview(args: string[]): Promise<number> {
     }
     const data = await api.requestOk("POST", `/api/tasks/${id}/preview`, { target: "default" });
     if (opts.json) printJson(data);
-    else console.log(c.green("  ✓ ") + c.dim(`preview: ${(data as { url?: string }).url ?? "started"}`));
+    else
+      console.log(
+        c.green("  ✓ ") + c.dim(`preview: ${(data as { url?: string }).url ?? "started"}`),
+      );
     return 0;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
@@ -436,7 +447,10 @@ export async function cmdRunners(args: string[]): Promise<number> {
     const out = probe ? { status, test } : status;
     if (opts.json) printJson(out);
     else {
-      console.log(c.dim("  remote validation:"), (status as { enabled?: boolean }).enabled ? "on" : "off");
+      console.log(
+        c.dim("  remote validation:"),
+        (status as { enabled?: boolean }).enabled ? "on" : "off",
+      );
       if (probe && test) {
         console.log(c.dim("  probe:"), (test as { ok?: boolean }).ok ? "ok" : "failed");
       }
