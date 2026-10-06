@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-06T17:34:53Z"
+review_passes: 3
 id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
 type: feature
@@ -12,9 +14,7 @@ branch: feat/invented-evidence-reviewer-and-engineer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:46Z"
-updated_at: "2026-10-06T17:34:53Z"
 review_rounds: 1
-review_passes: 2
 merge_conflict_retry_count: 1
 last_check_failure: "repoos check at 2026-10-06T15:38:56.453Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
 handoff_signal_retry_count: 2
@@ -107,3 +107,4 @@ fatal: unable to read tree (d9b027c8a905fb78ea2f2613a250bf35d5f9782b) — fix it
 - 2026-10-06T17:33:47Z · status active→review
 - 2026-10-06T17:33:49Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T17:34:53Z · note: review pass 3: good to go
+
