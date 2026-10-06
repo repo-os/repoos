@@ -16,6 +16,37 @@ import type { RemoteValidator } from "./remote-validation.js";
 /** Set on a spawned `repoos check` when a parent already ran the remote gate (#0520). */
 export const REPOOS_REMOTE_VALIDATION_DONE = "REPOOS_REMOTE_VALIDATION_DONE";
 
+/** Why the local half ran after remote was enabled (#0683). */
+export const REPOOS_REMOTE_FALLBACK_DETAIL = "REPOOS_REMOTE_FALLBACK_DETAIL";
+
+/**
+ * Short label for check-run history and the attention bell when remote validation
+ * was on but the gate fell back to this machine (#0683).
+ */
+export function summarizeRemoteFallbackDetail(detail: string): string {
+  const trimmed = detail.trim();
+  if (!trimmed) return "Ran locally: remote validation unavailable";
+  const lower = trimmed.toLowerCase();
+  if (
+    lower.includes("no usable remote host") ||
+    lower.includes("hosts unavailable") ||
+    lower.includes("every host that can run")
+  ) {
+    return "Ran locally: no healthy runner";
+  }
+  if (lower.startsWith("remote validation unavailable:")) {
+    const rest = trimmed.slice("remote validation unavailable:".length).trim();
+    if (/connection timed out|connection refused|no route to host/i.test(rest)) {
+      return "Ran locally: no healthy runner (host unreachable — Tailscale connected and logged in?)";
+    }
+    return `Ran locally: ${rest}`;
+  }
+  if (lower.startsWith("remote validation cannot run:")) {
+    return trimmed.replace(/^remote validation cannot run:/i, "Ran locally (config):");
+  }
+  return `Ran locally: ${trimmed}`;
+}
+
 export function remotePreReviewEnabled(config: RepoOSConfig): boolean {
   return config.remoteValidation?.enabled === true;
 }
@@ -62,6 +93,9 @@ export function checkEnvAfterRemoteGate(
   const env: NodeJS.ProcessEnv = { [REPOOS_REMOTE_VALIDATION_DONE]: "1" };
   if (outcome.kind === "local-only" && outcome.skipTests) {
     env.REPOOS_SKIP_TESTS = "1";
+  }
+  if (outcome.kind === "local-only" && !outcome.skipTests && outcome.detail?.trim()) {
+    env[REPOOS_REMOTE_FALLBACK_DETAIL] = outcome.detail.trim();
   }
   return env;
 }
