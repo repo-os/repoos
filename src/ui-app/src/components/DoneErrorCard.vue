@@ -12,6 +12,7 @@ import {
 } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import type { RetryHint } from "../lib/retryHints";
+import type { CloseOutFailureAction } from "../lib/closeOutFailure";
 import { copyToClipboard } from "../lib/clipboard";
 import { fmtTime } from "../lib/time";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -48,6 +49,8 @@ const props = withDefaults(
     summary?: string;
     /** True while the Debugger is generating `tldr`. */
     tldrDiagnosing?: boolean;
+    /** One-click repair for environment failures (#0674). */
+    action?: CloseOutFailureAction;
   }>(),
   { mode: "card" },
 );
@@ -75,6 +78,8 @@ const emit = defineEmits<{
   (e: "open-conflict"): void;
   /** The user acknowledged the error; the parent hides it (and remembers that). */
   (e: "dismiss"): void;
+  /** Refresh main's install and re-queue close-out (#0674). */
+  (e: "refresh-install-retry"): void;
 }>();
 /**
  * Surface the redacted support bundle right on the failed-setup path: a failed
@@ -276,6 +281,14 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
       <button type="button" class="done-error-support" @click="openSupportBundle">
         <LifeBuoy class="size-3.5" />
         Create a redacted support bundle
+      </button>
+      <button
+        v-if="action === 'refresh-install-retry' && taskId"
+        type="button"
+        class="done-error-support"
+        @click="emit('refresh-install-retry')"
+      >
+        Refresh install and retry
       </button>
     </div>
 

@@ -60,9 +60,10 @@ first, then come back here.
   event) instead of polling job files by hand.
 - Keep the primary checkout **clean**. Commit configuration and bookkeeping
   writes straight away, or **Move to done** will refuse.
-- Close-out candidates reuse the primary checkout's `node_modules`. After any
-  merge that changes the lockfile, install dependencies in the primary checkout,
-  or the next task's close-out can fail on missing modules.
+- Close-out candidates reuse the primary checkout's `node_modules` by default.
+  Move to done refreshes that install automatically after a merge that changes
+  package inputs; if close-out still fails with missing modules, use **Refresh
+  install and retry** or set `[closeOut] candidate = "own-install"` for monorepos.
 
 ## 4. The review loop
 
