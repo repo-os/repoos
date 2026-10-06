@@ -1130,6 +1130,18 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof worktreesInheritEnvFlag === "boolean") {
       cfg.worktrees = { ...cfg.worktrees, inheritEnv: worktreesInheritEnvFlag };
     }
+    const worktreesCandidate = get("worktrees.candidate");
+    if (worktreesCandidate === "symlink-main" || worktreesCandidate === "own-install") {
+      cfg.worktrees = { ...cfg.worktrees, candidate: worktreesCandidate };
+    } else if (worktreesCandidate !== undefined) {
+      console.warn(
+        `[worktrees] candidate must be "symlink-main" or "own-install", got ${JSON.stringify(worktreesCandidate)} — using symlink-main`,
+      );
+    }
+    const worktreesInstallCommand = get("worktrees.installCommand");
+    if (typeof worktreesInstallCommand === "string" && worktreesInstallCommand.trim()) {
+      cfg.worktrees = { ...cfg.worktrees, installCommand: worktreesInstallCommand.trim() };
+    }
     const servePort = get("servePort");
     const servePortNum =
       typeof servePort === "number"
@@ -1529,13 +1541,44 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         Number.isFinite(closeOutTimeout) &&
         closeOutTimeout >= 0
       ) {
-        cfg.closeOut = { timeoutMs: Math.floor(closeOutTimeout) };
+        cfg.closeOut = {
+          ...cfg.closeOut,
+          timeoutMs: Math.floor(closeOutTimeout),
+        };
       } else {
         console.warn(
           `[closeOut] timeoutMs must be a number of milliseconds >= 0 (0 disables the ceiling), ` +
             `got ${JSON.stringify(closeOutTimeout)} — using the default 360000 (6 minutes)`,
         );
       }
+    }
+    const closeOutCandidate = parsed["closeOut.candidate"];
+    if (closeOutCandidate === "symlink-main" || closeOutCandidate === "own-install") {
+      cfg.closeOut = {
+        timeoutMs: cfg.closeOut?.timeoutMs ?? DEFAULT_CONFIG.closeOut!.timeoutMs,
+        ...cfg.closeOut,
+        candidate: closeOutCandidate,
+      };
+    } else if (closeOutCandidate !== undefined) {
+      console.warn(
+        `[closeOut] candidate must be "symlink-main" or "own-install", got ${JSON.stringify(closeOutCandidate)} — using symlink-main`,
+      );
+    }
+    const closeOutInstallCommand = parsed["closeOut.installCommand"];
+    if (typeof closeOutInstallCommand === "string" && closeOutInstallCommand.trim()) {
+      cfg.closeOut = {
+        timeoutMs: cfg.closeOut?.timeoutMs ?? DEFAULT_CONFIG.closeOut!.timeoutMs,
+        ...cfg.closeOut,
+        installCommand: closeOutInstallCommand.trim(),
+      };
+    }
+    const closeOutPostPublish = parsed["closeOut.postPublishCommand"];
+    if (typeof closeOutPostPublish === "string" && closeOutPostPublish.trim()) {
+      cfg.closeOut = {
+        timeoutMs: cfg.closeOut?.timeoutMs ?? DEFAULT_CONFIG.closeOut!.timeoutMs,
+        ...cfg.closeOut,
+        postPublishCommand: closeOutPostPublish.trim(),
+      };
     }
 
     const spendAlert = parsed["attention.spendAlertUsd"];
@@ -1948,6 +1991,46 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "(`[closeOut] timeoutMs`).",
     },
     {
+      key: "closeOut.candidate",
+      label: "Close-out candidate dependencies",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "symlink-main",
+      options: [
+        { value: "symlink-main", label: "Symlink main's node_modules (default)" },
+        { value: "own-install", label: "Own install in each candidate" },
+      ],
+      description:
+        "How Move-to-done prepares dependencies in the throwaway candidate worktree. " +
+        "Symlinking is fast but can fail for monorepos (stale main install, Vite path guards). " +
+        "Own install runs a frozen install in the candidate — slower, more reliable for workspaces.",
+    },
+    {
+      key: "closeOut.installCommand",
+      label: "Close-out install command",
+      type: "string",
+      tier: "live",
+      restartRequired: false,
+      default: "",
+      description:
+        "Optional shell command to install dependencies for close-out candidates (and to refresh " +
+        "main after a lockfile-changing merge when no post-publish command is set). Leave empty " +
+        "to infer from bun.lock / package-lock.json / etc.",
+    },
+    {
+      key: "closeOut.postPublishCommand",
+      label: "Post-merge install command",
+      type: "string",
+      tier: "live",
+      restartRequired: false,
+      default: "",
+      description:
+        "Optional shell command run in the primary checkout after a merge that changed package " +
+        "inputs. Replaces the automatic lockfile install so Python venvs, Cargo, etc. can refresh " +
+        "main. Leave empty to use the install command or lockfile inference.",
+    },
+    {
       key: "approval.enabled",
       label: "Auto-approve clean reviews",
       type: "boolean",
@@ -2357,6 +2440,11 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "tunnel.apps",
   // Close-out (Move to done) pipeline budget (#0573)
   "closeOut.timeoutMs",
+  "closeOut.candidate",
+  "closeOut.installCommand",
+  "closeOut.postPublishCommand",
+  "worktrees.candidate",
+  "worktrees.installCommand",
   "attention.spendAlertUsd",
   "approval.enabled",
   "approval.autoApprove.areas",
