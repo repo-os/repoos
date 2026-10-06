@@ -2,7 +2,7 @@
 id: "0680"
 title: "UI verification gate: fail UI handoffs on browser console errors; reviewer sees the screenshots"
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/ui-verification-gate-fail-ui-handoffs-on
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:42Z"
-updated_at: "2026-10-06T01:17:16Z"
+updated_at: "2026-10-06T01:37:32Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -75,3 +75,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-06T01:16:12Z · status active→review
 - 2026-10-06T01:16:28Z · note: shots: failed — capture of Task drawer review history list on "default" failed: click: Timeout 5000ms exceeded.
 - 2026-10-06T01:17:16Z · status review→active
+- 2026-10-06T01:37:32Z · status active→review
