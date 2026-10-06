@@ -28,7 +28,7 @@ export function flagNeedsHumanStepIfNeeded(config: RepoOSConfig, task: Task): Ta
   }
 
   const { needsHumanStep, detail } = assessTaskNeedsHumanStep(task.body, { area: task.area });
-  if (!needsHumanStep || isPastFleshOutStage(task)) {
+  if (!needsHumanStep) {
     if (task.needsInput && task.needsInputReason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON) {
       const hasQuestions = (task.questions?.length ?? 0) > 0;
       return patchTaskFile(config, task.absPath, {
