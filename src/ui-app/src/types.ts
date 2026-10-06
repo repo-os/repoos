@@ -824,6 +824,12 @@ export interface RemoteHostStatusView {
     phase?: string;
     label?: string;
     source?: "server" | "host-lock";
+    /** #0720: this run exceeds its kind median while still running. */
+    slow?: boolean;
+    /** #0720: best-guess cause, e.g. "bundle upload …". */
+    slowDetail?: string | null;
+    /** #0720: elapsed ÷ median ratio. */
+    slowRatio?: number;
   }[];
   queuedTasks?: string[];
   hostLock?: {
