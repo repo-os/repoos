@@ -1481,6 +1481,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof rvRetry === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, retryOtherHosts: rvRetry };
     }
+    const rvEngineer = parsed["remoteValidation.engineerSelfCheckRemote"];
+    if (typeof rvEngineer === "boolean") {
+      cfg.remoteValidation = { ...cfg.remoteValidation, engineerSelfCheckRemote: rvEngineer };
+    }
     // Default: true when 2+ tailscale hosts are configured, else false. The
     // guard tests the TOML key, NOT the merged object: DEFAULT_CONFIG already
     // fills `retryOtherHosts: false`, so a merged-object `=== undefined` check
@@ -1497,6 +1501,13 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       hostCount >= 2
     ) {
       cfg.remoteValidation = { ...cfg.remoteValidation, retryOtherHosts: true };
+    }
+    if (
+      typeof rvEngineer !== "boolean" &&
+      cfg.remoteValidation?.enabled === true &&
+      cfg.remoteValidation.engineerSelfCheckRemote === undefined
+    ) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, engineerSelfCheckRemote: true };
     }
 
     // [closeOut] section — wall-clock budget for one Move-to-done attempt
@@ -2110,6 +2121,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Cut releases on the same Hetzner runner as close-outs (off by default — a release is watched live, so the provision delay reads as a regression; opt in per repo). Only applies when the runner is enabled.",
     },
     {
+      key: "remoteValidation.engineerSelfCheckRemote",
+      label: "Remote validation: engineer self-check on runner",
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: true,
+      description:
+        "When enabled, managed engineers run install + build + tests on the remote runner during `repoos check` (fast format/lint guards stay local). Handoff reuses a green pass at the same commit. Default on when remote validation is enabled.",
+    },
+    {
       key: "remoteValidation.retryOtherHosts",
       label: "Remote validation: retry on other hosts",
       type: "boolean",
@@ -2342,6 +2363,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.maxConcurrent",
   "remoteValidation.fallbackToLocal",
   "remoteValidation.retryOtherHosts",
+  "remoteValidation.engineerSelfCheckRemote",
   "remoteValidation.useForReleases",
 ];
 

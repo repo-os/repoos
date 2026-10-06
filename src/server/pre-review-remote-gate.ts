@@ -90,13 +90,15 @@ export function shouldRunCliRemotePreReviewGate(
   opts: { localTestsOnly?: boolean; changedRef?: string },
   env: NodeJS.ProcessEnv,
 ): boolean {
-  if (opts.changedRef?.trim()) return false;
-  return (
-    remotePreReviewEnabled(config) &&
-    standaloneCliCanUseRemote(config) &&
-    !opts.localTestsOnly &&
-    !remoteValidationAlreadyAttempted(env)
-  );
+  if (opts.localTestsOnly) return false;
+  if (remoteValidationAlreadyAttempted(env)) return false;
+  if (!remotePreReviewEnabled(config)) return false;
+  if (config.remoteValidation?.engineerSelfCheckRemote === false) return false;
+  const managedEngineer =
+    env.REPOOS_AGENT === "1" && /^\d+$/.test(env.REPOOS_TASK_ID?.trim() ?? "");
+  if (managedEngineer) return true;
+  // Standalone CLI: Tailscale only (#0520); changed-path mode still uses remote (#0694).
+  return standaloneCliCanUseRemote(config);
 }
 
 /**

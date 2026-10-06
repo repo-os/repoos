@@ -270,8 +270,17 @@ describe("shouldRunCliRemotePreReviewGate", () => {
     expect(shouldRunCliRemotePreReviewGate(enabled, {}, {})).toBe(true);
   });
 
-  it("is false in changed-path mode", () => {
-    expect(shouldRunCliRemotePreReviewGate(enabled, { changedRef: "main" }, {})).toBe(false);
+  it("still runs remotely in changed-path mode (#0694)", () => {
+    expect(shouldRunCliRemotePreReviewGate(enabled, { changedRef: "main" }, {})).toBe(true);
+  });
+
+  it("is false when engineerSelfCheckRemote is off", () => {
+    const off = makeConfig("/tmp", {
+      enabled: true,
+      provider: "tailscale",
+      engineerSelfCheckRemote: false,
+    });
+    expect(shouldRunCliRemotePreReviewGate(off, {}, {})).toBe(false);
   });
 
   it("is false for the Hetzner provider: its VM lifecycle belongs to the server", () => {

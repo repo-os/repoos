@@ -334,7 +334,7 @@ describe("RemoteValidationDrawer", () => {
       const { wrapper } = await mountDrawer({ tailscaleHosts: ["bee"], hosts: [hostRow("bee")] });
       const active = wrapper.get(".rvr-tab.active");
       expect(active.text()).toBe("Tailscale");
-      expect(wrapper.findAll('button[role="switch"]')).toHaveLength(3);
+      expect(wrapper.findAll('button[role="switch"]')).toHaveLength(4);
       expect(wrapper.text()).toContain("containerImage: repoos-ci");
       expect(wrapper.text()).not.toContain("HETZNER_API_TOKEN");
       // tailscale setup recipe, not hetzner's
@@ -353,7 +353,7 @@ describe("RemoteValidationDrawer", () => {
         .find((l) => l.text().startsWith("Retry on other hosts"));
       expect(label).toBeTruthy();
 
-      const sw = wrapper.findAll('button[role="switch"]')[2]!;
+      const sw = wrapper.findAll('button[role="switch"]')[3]!;
       // An unset form value is not an explicit `false` — with the key absent,
       // the dynamic default (true with 2+ hosts) owns it, so the control
       // renders ON exactly when the server would retry.

@@ -97,6 +97,12 @@ const retryOtherHosts = computed({
     void config.setConfigValues({ "remoteValidation.retryOtherHosts": v });
   },
 });
+const engineerSelfCheckRemote = computed({
+  get: () => config.form["remoteValidation.engineerSelfCheckRemote"] !== false,
+  set: (v: boolean) => {
+    void config.setConfigValues({ "remoteValidation.engineerSelfCheckRemote": v });
+  },
+});
 
 // ── host pool editing (#0521) ────────────────────────────────────────────────
 
@@ -285,6 +291,21 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
           <Switch
             :checked="fallbackToLocal"
             @update:checked="(v: boolean) => (fallbackToLocal = v)"
+          />
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px">
+          <label style="display: flex; flex-direction: column; gap: 2px">
+            Engineer self-check on runner
+            <span class="tunnel-help" style="margin: 0">
+              Default on when remote validation is enabled. Managed engineers run install + build +
+              tests on the runner during <code>repoos check</code> (format/lint stay local). Handoff
+              reuses a green pass at the same commit.
+            </span>
+          </label>
+          <Switch
+            :checked="engineerSelfCheckRemote"
+            @update:checked="(v: boolean) => (engineerSelfCheckRemote = v)"
           />
         </div>
 
