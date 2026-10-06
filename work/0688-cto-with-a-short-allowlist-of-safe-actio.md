@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-06T03:00:50.534Z: server-side finalization timed out (deadline exceeded)"
 id: "0688"
 title: "CTO with a short allowlist of safe actions (restart stalled agent, refresh install, re-queue close-out)"
 type: feature
@@ -14,7 +12,9 @@ branch: feat/cto-with-a-short-allowlist-of-safe-actio
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:59Z"
-updated_at: "2026-10-06T02:50:12Z"
+updated_at: "2026-10-06T03:08:30Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-06T03:00:50.534Z: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
 
@@ -60,4 +60,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T02:33:45Z · body
 - 2026-10-06T02:49:30Z · body
 - 2026-10-06T02:50:12Z · body: section Shots
-
+- 2026-10-06T03:08:30Z · body
