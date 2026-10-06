@@ -5,6 +5,7 @@
 export const AGENT_FAILURE_NEEDS_INPUT_REASONS = new Set([
   "watchdog-stuck",
   "check-failed-after-retries",
+  "identical-handoff-failures",
   "dev-error",
 ]);
 
