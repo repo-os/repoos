@@ -642,7 +642,7 @@ function hostLockJobLabel(meta: ReturnType<typeof parseHostLockMeta>, taskId?: s
   return "standalone check";
 }
 
-/** Parse {@link hostLockInspectShellPortable} output into a snapshot (#0705). */
+/** Parse {@link hostLockInspectShell} output into a snapshot (#0705). */
 export function parseHostLockInspectOutput(output: string, sampledAt?: string): HostLockSnapshot {
   const holders: HostLockJob[] = [];
   const waiters: HostLockJob[] = [];

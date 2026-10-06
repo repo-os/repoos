@@ -488,6 +488,8 @@ export interface RepoOSConfig {
    * changes, healthy or not.
    */
   ctoSkipHealthy?: boolean;
+  /** Opt-in CTO safe actions allowlist (#0688). */
+  cto?: CtoConfig;
   /**
    * When true (off by default), a task's session is analysed only after it
    * reaches `done`, and a `New Skill Suggestion: …` task is created only for a
@@ -1482,6 +1484,16 @@ export interface AutoEngineeringConfig {
    * never invent a task that the deterministic picker did not surface.
    */
   pmVeto?: boolean;
+}
+
+/** CTO monitor settings (#0688). */
+export interface CtoConfig {
+  /**
+   * Named safe actions the CTO (and API) may run when allowlisted. Default empty
+   * (report-only). Values: restart-stalled-agent, refresh-main-install,
+   * requeue-closeout-after-env-fix.
+   */
+  actions?: string[];
 }
 
 /** Notification bell / attention feed (#0687). */

@@ -35,7 +35,8 @@ export type NoticeKind =
   | "silentRun"
   | "spendThreshold"
   | "awaitingVisualCheck"
-  | "remoteFallback";
+  | "remoteFallback"
+  | "ctoAction";
 
 export interface NoticeItem {
   /** Stable per event: `<kind>:<eventKey>`. Dedupe + dismissed/read keys. */
@@ -66,6 +67,7 @@ export const NOTICE_KIND_LABELS: Record<NoticeKind, string> = {
   spendThreshold: "Spend alert",
   awaitingVisualCheck: "Awaiting visual check",
   remoteFallback: "Ran locally",
+  ctoAction: "CTO safe action",
 };
 
 /** Dot / accent color per kind — CSS tokens only (hardcoded-colors guard). */
@@ -83,6 +85,7 @@ export const NOTICE_KIND_COLOR: Record<NoticeKind, string> = {
   spendThreshold: "var(--amber)",
   awaitingVisualCheck: "var(--violet)",
   remoteFallback: "var(--amber)",
+  ctoAction: "var(--violet)",
 };
 
 /** Kinds surfaced as bell notices from `GET /api/attention` (#0687). */
@@ -98,6 +101,7 @@ const ATTENTION_NOTICE_KINDS = new Set<NoticeKind>([
   "spendThreshold",
   "awaitingVisualCheck",
   "remoteFallback",
+  "ctoAction",
 ]);
 
 export interface AttentionFeedItem {

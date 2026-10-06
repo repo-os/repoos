@@ -2,15 +2,17 @@
 id: "0697"
 title: Don't let a skipped check gate wave through a branch that adds a buildable project; tell the reviewer when the gate skipped
 type: feature
-status: inbox
+status: active
 priority: p1
 area: [server, core]
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/don-t-let-a-skipped-check-gate-wave-thro
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T03:15:44Z"
-updated_at: "2026-10-06T03:15:44Z"
+updated_at: "2026-10-06T04:37:21Z"
 ---
 ## Problem
 
@@ -37,3 +39,6 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 ## Activity
 
 - 2026-10-06T03:15:44Z · created · unknown
+- 2026-10-06T04:37:19Z · status inbox→ready
+- 2026-10-06T04:37:21Z · cli_override, model_override
+- 2026-10-06T04:37:21Z · status ready→active, branch

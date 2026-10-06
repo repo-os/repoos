@@ -155,6 +155,8 @@ import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { closeOutPending, createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { createCloseOutOutcomeStore } from "./close-out-outcome.js";
 import { createAttentionEventStore } from "./attention-events.js";
+import { createCtoActionRateStore } from "./cto-action-rates.js";
+import { runCtoMonitorSafeActions } from "./cto-actions.js";
 import { wireAttentionNotifications } from "./attention-notify.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
@@ -169,6 +171,15 @@ import {
   scheduleMergeConflictRetry,
   type HandoffOrigin,
 } from "./handoff.js";
+import {
+  lastHandoffFailureFromBody,
+  parkTaskForIdenticalHandoffFailures,
+  parseHandoffFailureReason,
+  persistHandoffFailureLoopMetadata,
+  readTaskBranchHead,
+  shouldParkForIdenticalHandoffFailures,
+  shouldSkipHandoffValidationForUnchangedTree,
+} from "./handoff-failure-loop.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
@@ -318,6 +329,7 @@ import {
   getCTO,
   ctoMessage,
   ctoInterrupt,
+  runCtoSafeActionRoute,
   pmMessage,
   pmInterrupt,
   getScreenshot,
@@ -1160,6 +1172,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const attentionEvents = createAttentionEventStore(config.root, config.cacheDir, (error) =>
     logger.system("warn", `attention event persistence failed: ${(error as Error).message}`),
   );
+  const ctoActionRates = createCtoActionRateStore(config.root, config.cacheDir);
   const repoLock = createRepositoryLock(config.root);
   const rootLock = createRootLock(config.root);
 
@@ -1972,6 +1985,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
   const cto = new CTOManager(config, emitEvent, runner);
   const ctoMonitor = new CTOMonitor(config, index, cto, runner);
+  ctoMonitor.wireSafeActions(() =>
+    runCtoMonitorSafeActions({
+      config,
+      index,
+      runner,
+      jobCoordinator,
+      attentionEvents,
+      rates: ctoActionRates,
+      logger,
+      emitEvent,
+      triggerJobProcessing,
+      reportedStages,
+    }),
+  );
   // Run the monitor cadence unconditionally: `checkNow` no-ops while the CTO
   // agent is disabled, so enabling it from the Agents page takes effect on the
   // next tick without a restart, and disabling it stops runs immediately.
@@ -2258,6 +2285,29 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (!runner.markHandoffInFlight(task.id)) {
       return { started: false, reason: "a handoff is already running for this task" };
     }
+    const branchHead = readTaskBranchHead(config, task);
+    if (shouldParkForIdenticalHandoffFailures(task, branchHead)) {
+      runner.releaseHandoffInFlight(task.id);
+      const last = lastHandoffFailureFromBody(task.body);
+      parkTaskForIdenticalHandoffFailures(config, task, last?.detail ?? "check failed", (absPath) =>
+        index.applyFileChange(absPath, { guarded: true }),
+      );
+      return {
+        started: false,
+        reason: "identical handoff validation failures — task parked for a human",
+      };
+    }
+    if (!opts.skipChecks && shouldSkipHandoffValidationForUnchangedTree(task, branchHead)) {
+      runner.releaseHandoffInFlight(task.id);
+      runner.system(
+        task.id,
+        "✗ Server finalization skipped: the branch tip is unchanged since the last identical check failure — fix the code or wait for an engineer recovery turn",
+      );
+      return {
+        started: false,
+        reason: "unchanged branch tip with a known identical check failure",
+      };
+    }
     const started = Date.now();
     const progress = (step: string, detail?: string): void => {
       try {
@@ -2307,11 +2357,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         runner.system(task.id, message);
         // Durable: the watchdog and any later reader of the activity log can
         // see why this handoff did not land, across a reload.
-        runner.persistHandoffFailure(
-          task.id,
-          task,
-          `${opts.origin} handoff failed at ${result.step} · ${detail}`,
-        );
+        const failureReason = `${opts.origin} handoff failed at ${result.step} · ${detail}`;
+        runner.persistHandoffFailure(task.id, task, failureReason);
+        const parsed = parseHandoffFailureReason(failureReason);
+        if (parsed && result.step === "check") {
+          persistHandoffFailureLoopMetadata(config, task, branchHead, parsed, (absPath) =>
+            index.applyFileChange(absPath, { guarded: true }),
+          );
+        }
         progress("failed", detail);
       })
       .catch((err: unknown) => {
@@ -2932,6 +2985,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/cto", getCTO);
   router.register("POST", "/api/cto/message", ctoMessage);
   router.register("POST", "/api/cto/interrupt", ctoInterrupt);
+  router.register("POST", /^\/api\/cto\/actions\/([^/]+)$/, runCtoSafeActionRoute);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/, pmMessage);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/interrupt$/, pmInterrupt);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
@@ -3306,6 +3360,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         jobCoordinator,
         closeOutOutcomes,
         attentionEvents,
+        ctoActionRates,
         remoteValidator,
         reportedStages,
         triggerJobProcessing,

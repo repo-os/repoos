@@ -12,8 +12,9 @@ import type { ReloadManager } from "../reload.js";
 import type { JobCoordinator } from "../integration-job.js";
 import type { CloseOutOutcomeStore } from "../close-out-outcome.js";
 import type { AttentionEventStore } from "../attention-events.js";
-import type { Logger } from "../../core/logger.js";
+import type { CtoActionRateStore } from "../cto-action-rates.js";
 import type { DoneStep } from "../done.js";
+import type { Logger } from "../../core/logger.js";
 import type { RemoteValidator } from "../remote-validation.js";
 import type { FreeformRunManager } from "../freeform-runs.js";
 import type { HandoffOrigin } from "../handoff.js";
@@ -61,6 +62,8 @@ export interface RouteContext {
   closeOutOutcomes?: CloseOutOutcomeStore;
   /** Durable provider-failure and remote-fallback events (#0687). */
   attentionEvents?: AttentionEventStore;
+  /** CTO safe-action rate windows (#0688). */
+  ctoActionRates?: CtoActionRateStore;
   /** Remote Validation Runner (docs/remote-validation.md). Undefined when not configured. */
   remoteValidator?: RemoteValidator;
   /**
