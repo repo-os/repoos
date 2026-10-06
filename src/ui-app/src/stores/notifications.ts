@@ -31,7 +31,8 @@ export type NotificationType =
   | "silentRun"
   | "spendThreshold"
   | "awaitingVisualCheck"
-  | "remoteFallback";
+  | "remoteFallback"
+  | "ctoAction";
 
 /** Every monitorable type, in Settings display order. */
 export const NOTIFICATION_TYPES: NotificationType[] = [
@@ -51,6 +52,7 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   "spendThreshold",
   "awaitingVisualCheck",
   "remoteFallback",
+  "ctoAction",
 ];
 
 const STORAGE_KEY = "repoos.notifications";
@@ -239,6 +241,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   spendThreshold: "Spend alert",
   awaitingVisualCheck: "Awaiting visual check",
   remoteFallback: "Ran locally (remote enabled)",
+  ctoAction: "CTO safe action",
 };
 
 /** One-line Settings description per type; keyed like the labels. */
@@ -260,6 +263,8 @@ export const NOTIFICATION_TYPE_DESCRIPTIONS: Record<NotificationType, string> = 
   spendThreshold: "Provider-reported board spend reached your alert threshold.",
   awaitingVisualCheck: "A UI task is in review — open the preview and verify it in a browser.",
   remoteFallback: "Remote validation was on but the gate ran on this machine instead.",
+  ctoAction:
+    "The CTO or you ran an allowlisted recovery action (restart, refresh install, re-queue).",
 };
 
 export const useNotificationsStore = defineStore("notifications", () => {
