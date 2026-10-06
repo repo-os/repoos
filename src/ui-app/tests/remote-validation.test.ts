@@ -912,9 +912,13 @@ describe("prepareCandidateUpload (#0717)", () => {
       // Build the partial bundle exactly as prepareCandidateUpload would.
       const bundlePath = join(root, "candidate.bundle");
       execFileSync("git", ["update-ref", "refs/repoos/candidate-x", candidateSha], { cwd: root });
-      execFileSync("git", ["bundle", "create", bundlePath, "refs/repoos/candidate-x", `^${baseSha}`], {
-        cwd: root,
-      });
+      execFileSync(
+        "git",
+        ["bundle", "create", bundlePath, "refs/repoos/candidate-x", `^${baseSha}`],
+        {
+          cwd: root,
+        },
+      );
 
       // A fresh mirror (no base) cannot apply the partial bundle — this is the
       // fetch validate.sh does; it must fail rather than silently produce a
@@ -1003,8 +1007,7 @@ describe("prepareCandidateUpload (#0717)", () => {
 
 describe("remote mirror helpers (#0717)", () => {
   it("parses a MIRROR=1 probe with both refs", () => {
-    const out =
-      "MIRROR=1\n" + "a".repeat(40) + "\n" + "b".repeat(40) + "\n";
+    const out = "MIRROR=1\n" + "a".repeat(40) + "\n" + "b".repeat(40) + "\n";
     const state = parseMirrorProbeOutput(out);
     expect(state.exists).toBe(true);
     expect(state.refs["refs/repoos/candidate"]).toBe("a".repeat(40));
