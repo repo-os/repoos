@@ -6,6 +6,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import type { RepoOSConfig } from "../../core/types.js";
 import {
   REPOOS_REMOTE_VALIDATION_DONE,
+  REPOOS_REMOTE_FALLBACK_DETAIL,
   checkEnvAfterRemoteGate,
   remotePreReviewEnabled,
   remoteValidationAlreadyAttempted,
@@ -13,6 +14,7 @@ import {
   shouldRunCliRemotePreReviewGate,
   standaloneCliCanUseRemote,
   spawnedRepoosCheckArgs,
+  summarizeRemoteFallbackDetail,
   uncommittedFilesBlockingRemoteGate,
 } from "../../server/pre-review-remote-gate.js";
 import { CLOSEOUT_CHECK_ARGS } from "../../core/check-plan.js";
@@ -234,8 +236,15 @@ describe("remoteValidationAlreadyAttempted", () => {
 
 describe("checkEnvAfterRemoteGate", () => {
   it("marks fallback local-only without skipping tests", () => {
-    expect(checkEnvAfterRemoteGate({ kind: "local-only", skipTests: false })).toEqual({
+    expect(
+      checkEnvAfterRemoteGate({
+        kind: "local-only",
+        skipTests: false,
+        detail: "remote validation unavailable: no usable remote host",
+      }),
+    ).toEqual({
       [REPOOS_REMOTE_VALIDATION_DONE]: "1",
+      [REPOOS_REMOTE_FALLBACK_DETAIL]: "remote validation unavailable: no usable remote host",
     });
   });
 
@@ -244,6 +253,16 @@ describe("checkEnvAfterRemoteGate", () => {
       [REPOOS_REMOTE_VALIDATION_DONE]: "1",
       REPOOS_SKIP_TESTS: "1",
     });
+  });
+});
+
+describe("summarizeRemoteFallbackDetail (#0683)", () => {
+  it("names a spent pool as no healthy runner", () => {
+    expect(
+      summarizeRemoteFallbackDetail(
+        "remote validation unavailable: no usable remote host for  — a: unreachable",
+      ),
+    ).toBe("Ran locally: no healthy runner");
   });
 });
 
