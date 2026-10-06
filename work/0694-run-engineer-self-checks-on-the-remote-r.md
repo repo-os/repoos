@@ -9,8 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T23:59:26Z"
-updated_at: "2026-10-06T00:02:25Z"
+updated_at: "2026-10-06T00:02:30Z"
 ---
 ## Problem
 
@@ -39,3 +41,4 @@ Read first: src/server/pre-review-remote-gate.ts (#0520), src/commands/check.ts 
 - 2026-10-05T23:59:26Z · created · unknown
 - 2026-10-05T23:59:39Z · story
 - 2026-10-06T00:02:25Z · status inbox→ready
+- 2026-10-06T00:02:30Z · cli_override, model_override
