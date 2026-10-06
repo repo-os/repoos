@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-06T00:54:05Z"
+review_passes: 1
 id: "0694"
 title: Run engineer self-checks on the remote runners (not the laptop) and reuse the green remote result at handoff
 type: feature
@@ -12,7 +14,6 @@ branch: feat/run-engineer-self-checks-on-the-remote-r
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:59:26Z"
-updated_at: "2026-10-06T00:52:57Z"
 ---
 ## Problem
 
@@ -48,3 +49,4 @@ Also in scope, found 2026-10-06 from the Checks > Runs tab: (1) all 191 phase=cl
 - 2026-10-06T00:02:31Z · status ready→active, branch
 - 2026-10-06T00:03:12Z · body: section Driver note: runs list and repeat local checks
 - 2026-10-06T00:52:57Z · status active→review
+
