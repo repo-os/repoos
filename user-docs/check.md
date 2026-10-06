@@ -328,9 +328,12 @@ one-off: `sqlite3 .repoos/checks.db "select failed_tests from check_runs where
 failed_tests is not null"`. Remote validation runs record the same fields from
 the runner's output when Vitest names are present.
 
-The **Remote runners** tab shows each configured host live: health, the runs in
-flight right now (task and elapsed time), what is queued next, and the last
-completed run with its outcome and duration.
+The **Remote runners** tab shows each configured host live: health, every job
+holding or waiting for a host slot (server-dispatched and standalone
+`repoos check` self-checks), with task id or worktree, gate phase, age, and
+queue position; what the server has queued next; and the last completed run.
+**Refresh** shows a spinner, then "Updated just now" (or an error toast).
+Idle means no holders and no waiters on that host.
 
 On the task page itself, a chip appears while a check is in progress —
 "Checks running on mini · 2m 34s" — and stays afterwards showing the result
