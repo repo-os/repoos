@@ -58,8 +58,7 @@ export async function tryCompleteMergeByRegeneratingLockfile(
   worktreePath: string,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   const diffRes = await runGit(worktreePath, ["diff", "--name-only", "--diff-filter=U"], 10_000);
-  const conflicts =
-    diffRes.status === 0 ? diffRes.stdout.split("\n").filter(Boolean) : [];
+  const conflicts = diffRes.status === 0 ? diffRes.stdout.split("\n").filter(Boolean) : [];
   if (!isLockfileOnlyConflicts(conflicts)) {
     return { ok: false, reason: "not a lockfile-only conflict" };
   }

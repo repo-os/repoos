@@ -16,7 +16,10 @@ import {
 import { isLockfileOnlyConflicts } from "../../core/lockfile-conflict.js";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { scheduleCloseOutRepairHandback } from "../../server/close-out-repair.js";
-import { closeOutMonotonicElapsedMs, closeOutTimeoutMs } from "../../server/integration-orchestrator.js";
+import {
+  closeOutMonotonicElapsedMs,
+  closeOutTimeoutMs,
+} from "../../server/integration-orchestrator.js";
 import type { IntegrationJob } from "../../server/integration-job.js";
 import type { AgentRunner } from "../../server/agents.js";
 import { parseTask } from "../../core/task";
