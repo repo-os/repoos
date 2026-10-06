@@ -2,7 +2,7 @@
 id: "0678"
 title: "Provider failures and silent runs: credit/402 alerts, degenerate-output detection, sleep-aware watchdog"
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/provider-failures-and-silent-runs-credit
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:38Z"
-updated_at: "2026-10-06T04:51:52Z"
+updated_at: "2026-10-06T04:51:54Z"
 last_check_failure: "repoos check at 2026-10-06T03:55:55.263Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
 ---
 ## Problem
@@ -85,4 +85,4 @@ error: script "test" exited with code 1
 - 2026-10-06T04:36:50Z · body
 - 2026-10-06T04:41:43Z · body
 - 2026-10-06T04:44:40Z · body
-- 2026-10-06T04:51:52Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T04:51:54Z · status active→review
