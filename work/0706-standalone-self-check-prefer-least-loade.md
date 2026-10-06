@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-06T03:37:48Z"
+updated_at: "2026-10-06T07:32:25Z"
 ---
 ## Problem
 
@@ -26,7 +26,11 @@ Standalone engineer self-checks pick the idlest eligible Tailscale host when mul
 
 - Document or implement any host-pick change beyond current least-`active` dispatch; stuck-badge/transcript strings reviewed.
 
+## Status (driver, 15:35)
+#0705 landed (or is landing) the dispatcher/host-lock/UI core. STILL OPEN here (per the #0705 reviewer): wire src/core/remote-pool-queue.ts (currently never imported) into TailscaleRunner so queue/transcript copy reads 'waiting for a runner on <host> (position N)' instead of the old '[queued behind N other remote run(s)…]'; make standalone repoos check pick the idlest host using the same counts as the dispatcher; stuck-badge copy; UI evidence screenshot of the Remote runners tab showing lock holders/waiters and refresh feedback (the handoff PNG captured the Check plan tab). Do not redo the #0705 plumbing.
+
 ## Activity
 
 - 2026-10-06T03:37:47Z · created · unknown
 - 2026-10-06T03:37:48Z · needs_input
+- 2026-10-06T07:32:25Z · body: section Status (driver, 15:35)

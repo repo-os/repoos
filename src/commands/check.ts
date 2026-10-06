@@ -65,6 +65,7 @@ import { writeCheckRun } from "../core/check-results-store.js";
 import { extractFailedTests } from "../core/check-failure-summary.js";
 import {
   envToRunContext,
+  resolveCheckRunAttribution,
   getCheckStore,
   localMachineName,
   type CheckRunPhase,
@@ -85,6 +86,8 @@ import {
   remoteValidationAlreadyAttempted,
   uncommittedFilesBlockingRemoteGate,
   shouldRunCliRemotePreReviewGate,
+  summarizeRemoteFallbackDetail,
+  REPOOS_REMOTE_FALLBACK_DETAIL,
 } from "../server/pre-review-remote-gate.js";
 
 /**
@@ -2188,6 +2191,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
           worktreePath: repoRoot,
           taskId,
           taskAbsPath,
+          changedRef,
           onChunk: (chunk) => {
             remoteOutput += chunk;
             process.stdout.write(chunk);
@@ -2228,6 +2232,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
               worktreePath: repoRoot,
               taskId,
               phase: runPhase,
+              changedRef,
               onChunk: (chunk) => {
                 remoteOutput += chunk;
                 process.stdout.write(chunk);
@@ -2412,7 +2417,14 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     outcome: gatingFailures.length === 0 ? "pass" : "fail",
     failedStep: gatingFailures[0]?.name ?? null,
     skippedSteps: results.filter((r) => r.status === "skipped").map((r) => r.name),
-    detail: gatingFailures[0]?.detail ?? null,
+    detail: (() => {
+      const fallback = process.env[REPOOS_REMOTE_FALLBACK_DETAIL]?.trim();
+      const stepDetail = gatingFailures[0]?.detail ?? null;
+      if (!fallback) return stepDetail;
+      const summary = summarizeRemoteFallbackDetail(fallback);
+      if (!stepDetail) return summary;
+      return `${summary} — ${stepDetail}`;
+    })(),
     // The stored detail is a short log tail that routinely loses the failing
     // test's name; keep the names themselves so "which test?" is a query.
     failedTests: gatingFailures.flatMap((r) => extractFailedTests(r.output ?? "")),
@@ -2482,7 +2494,7 @@ function recordRunHistoryRow(row: {
   isolationNote?: string | null;
 }): void {
   try {
-    const { taskId, phase } = envToRunContext(process.env);
+    const { taskId, phase } = resolveCheckRunAttribution(process.env, row.root);
     getCheckStore(row.root, row.cacheDir).record({
       taskId,
       phase,

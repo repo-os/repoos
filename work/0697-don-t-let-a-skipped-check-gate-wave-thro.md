@@ -12,7 +12,8 @@ branch: feat/don-t-let-a-skipped-check-gate-wave-thro
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:44Z"
-updated_at: "2026-10-06T04:37:21Z"
+updated_at: "2026-10-06T05:59:39Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -42,3 +43,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-06T04:37:19Z · status inbox→ready
 - 2026-10-06T04:37:21Z · cli_override, model_override
 - 2026-10-06T04:37:21Z · status ready→active, branch
+
