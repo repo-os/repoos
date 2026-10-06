@@ -62,3 +62,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-06T03:08:30Z · body
 - 2026-10-06T03:17:33Z · body
 - 2026-10-06T03:19:01Z · status active→review
+- 2026-10-06T03:19:01Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
