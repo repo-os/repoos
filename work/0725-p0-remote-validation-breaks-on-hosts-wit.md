@@ -12,7 +12,7 @@ branch: feat/p0-remote-validation-breaks-on-hosts-wit
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T16:15:47Z"
-updated_at: "2026-10-06T16:16:23Z"
+updated_at: "2026-10-06T16:24:08Z"
 ---
 ## Problem
 
@@ -39,9 +39,35 @@ updated_at: "2026-10-06T16:16:23Z"
 
 URGENT: this blocks all remote validation on this board. Read #0717's diff (src/server/remote-validation.ts prepareCandidateUpload, probeMirror, scripts/remote-runner/validate.sh) and the failing rows in .repoos/checks.db (started_at >= 2026-10-07 16:12). Keep the incremental path working when the host script is new. Do NOT touch hosts or repoos.toml.
 
+## Shots
+```json
+[
+  {
+    "label": "Remote runners tab shows validate.sh mirror state",
+    "target": "default",
+    "route": "/checks?tab=runners",
+    "highlight": ".rr-panel"
+  },
+  {
+    "label": "Settings remote validation host mirror status",
+    "target": "default",
+    "route": "/settings?tab=remote-validation",
+    "steps": [
+      {
+        "click": "button[data-test-id=open-remote-validation]"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-06T16:15:47Z · created · unknown
 - 2026-10-06T16:15:59Z · cli_override, model_override
 - 2026-10-06T16:16:14Z · status inbox→ready
 - 2026-10-06T16:16:23Z · status ready→active, branch
+- 2026-10-06T16:24:08Z · body: section Shots
