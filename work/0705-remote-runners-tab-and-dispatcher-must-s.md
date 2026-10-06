@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ac677e5a to be92054c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: ac677e5aa2358c37ab8263f1ff88fb56da7c71f1
 id: "0705"
 title: Remote runners tab and dispatcher must see standalone self-check slot holders (they starved close-outs); add refresh feedback
 type: bug
@@ -17,7 +15,9 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T09:11:56Z"
+updated_at: "2026-10-06T09:13:40Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ac677e5a to be92054c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: ac677e5aa2358c37ab8263f1ff88fb56da7c71f1
 review_rounds: 2
 review_passes: 2
 dev_error_count: 7
@@ -169,4 +169,5 @@ src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahea
 - 2026-10-06T09:05:12Z · status active→review
 - 2026-10-06T09:05:12Z · status review→active
 - 2026-10-06T09:11:56Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from ac677e5a to be92054c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-
+- 2026-10-06T09:13:40Z · status active→review
+- 2026-10-06T09:13:40Z · status review→active
