@@ -58,6 +58,11 @@ import {
   spawnedRepoosCheckArgs,
   type RemotePreReviewOutcome,
 } from "./pre-review-remote-gate.js";
+import { checkRunSkipped } from "../core/check-skip.js";
+import {
+  BRANCH_ADDS_PROJECT_NO_CHECK_PLAN,
+  branchAddsBuildableProjectMarker,
+} from "../core/check-buildable-project.js";
 
 export type HandoffStep = "validate" | "check" | "verify" | "commit" | "review" | "main" | "done";
 
@@ -575,6 +580,13 @@ async function runHandoffFinalization(
     checkHandle?.done(check.status);
     if (check.status !== 0) {
       return fail("check", `repoos check failed: ${concise(check)}`);
+    }
+    const checkOutput = `${check.stdout}\n${check.stderr}`;
+    if (checkRunSkipped(checkOutput)) {
+      const baseBranch = currentBranch(config.root) ?? "main";
+      if (branchAddsBuildableProjectMarker(workdir, baseBranch)) {
+        return fail("check", BRANCH_ADDS_PROJECT_NO_CHECK_PLAN);
+      }
     }
     clearCheckRetryCount(config.root, task.absPath);
 

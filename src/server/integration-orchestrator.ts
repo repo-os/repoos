@@ -74,6 +74,10 @@ import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
 import { resolveCheckPlan } from "../core/check-plan.js";
 import { planGateSkips } from "../core/check-skip.js";
+import {
+  BRANCH_ADDS_PROJECT_NO_CHECK_PLAN,
+  diffTouchesBuildableProjectMarker,
+} from "../core/check-buildable-project.js";
 import { getCheckStore, localMachineName } from "../core/check-store.js";
 import { detectRepoMarkers } from "../core/check-runner.js";
 import { DEFAULT_CONFIG, loadConfig } from "../core/config.js";
@@ -1774,6 +1778,12 @@ export class CloseOutOrchestrator {
       }
 
       if (bootstrapWithoutPlan) {
+        if (changedPaths !== null && diffTouchesBuildableProjectMarker(changedPaths)) {
+          return {
+            ok: false,
+            reason: BRANCH_ADDS_PROJECT_NO_CHECK_PLAN,
+          };
+        }
         // #0592: the candidate's own `repoos check` would SKIP the gate (exit
         // 0 with a "no check plan" reminder), so nothing runs here either —
         // but the run is recorded as `skipped`, never as a pass.
