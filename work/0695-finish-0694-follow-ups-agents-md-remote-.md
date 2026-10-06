@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation unavailable: no usable remote host for any host — bee: prerequisite check failed (exit 255): ssh: connect to host bee port 22: Operation timed out; thinkpad: prerequisite check failed (exit 255): ssh: connect to host thinkpad port 22: Operation timed out; mini: prerequisite check failed (exit 255): ssh: connect to host 100.126.187.126 port 22: Operation timed out — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
+last_handoff_failure_sha: "014e214e820f4a2f41e790351361589f239df3bf"
 id: "0695"
 title: "Finish #0694 follow-ups: AGENTS.md remote self-check wording, task attribution for cli Runs rows, WIP-checkpoint tests, load measurement"
 type: chore
@@ -93,3 +95,4 @@ error: script "test" exited with code 1
 - 2026-10-06T04:35:20Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202); · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-06T04:35:21Z · status review→active
 - 2026-10-06T04:35:38Z · handoff failed · task-file handoff failed at check · remote validation unavailable: no usable remote host for any host — bee: prerequisite check failed (exit 255): ssh: connect to host bee port 22: Operation timed out; thinkpad: prerequisite check failed (exit 255): ssh: connect to host thinkpad port 22: Operation timed out; mini: prerequisite check failed (exit 255): ssh: connect to host 100.126.187.126 port 22: Operation timed out — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
+
