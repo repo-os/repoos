@@ -95,6 +95,7 @@ remoteValidation.containerImage = "repoos-ci"
 #   os = "linux"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
+remoteValidation.engineerSelfCheckRemote = false
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
 user = "nick"
