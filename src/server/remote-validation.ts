@@ -952,7 +952,7 @@ async function prepareRemoteTestBundle(
   emit: (line: string) => void,
 ): Promise<{ remoteTestRef: string | null; bundleExtras: string[] }> {
   const testScope = await remoteChangedTestScope(worktreePath, changedRef);
-  if (testScope.warning) {
+  if (!testScope.scoped && testScope.warning) {
     emit(`[remote validation] WARNING: ${testScope.warning}\n`);
   }
   if (!testScope.scoped) {

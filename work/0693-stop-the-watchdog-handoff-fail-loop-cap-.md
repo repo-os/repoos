@@ -2,7 +2,7 @@
 id: "0693"
 title: "Stop the watchdog -> handoff -> fail loop: cap identical failures, restart the dead engineer with the failure text, park for a human"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,8 @@ branch: feat/stop-the-watchdog-handoff-fail-loop-cap-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:55:32Z"
-updated_at: "2026-10-06T02:05:47Z"
+updated_at: "2026-10-06T02:44:22Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -47,3 +48,8 @@ Overlaps #0678 (provider failures and silent runs, watchdog) and #0679 (close-ou
 - 2026-10-06T01:49:23Z · cli_override, model_override
 - 2026-10-06T01:49:23Z · status ready→active, branch
 - 2026-10-06T02:05:47Z · body
+- 2026-10-06T02:39:14Z · body
+- 2026-10-06T02:40:39Z · status active→review
+- 2026-10-06T02:40:39Z · note: shots: skipped — the diff (13 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-06T02:41:19Z · note: review pass 1: good to go
+- 2026-10-06T02:44:22Z · body

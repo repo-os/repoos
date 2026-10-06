@@ -2,15 +2,17 @@
 id: "0678"
 title: "Provider failures and silent runs: credit/402 alerts, degenerate-output detection, sleep-aware watchdog"
 type: feature
-status: inbox
+status: active
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/provider-failures-and-silent-runs-credit
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T16:58:38Z"
-updated_at: "2026-10-05T17:16:51Z"
+updated_at: "2026-10-06T03:34:50Z"
 ---
 ## Problem
 
@@ -41,3 +43,38 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T16:58:38Z · created · unknown
 - 2026-10-05T17:16:50Z · story
 - 2026-10-05T17:16:51Z · body: section Story context
+- 2026-10-06T02:44:25Z · status inbox→ready
+- 2026-10-06T02:44:28Z · cli_override, model_override
+- 2026-10-06T02:44:29Z · status ready→active, branch
+- 2026-10-06T02:59:35Z · body
+- 2026-10-06T03:07:16Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202);
+       |                      ^
+    213|   expect(res.body.status).toBe("active");
+    214|   const deadline = Date.now() + 30_000;
+ ❯ tests/agent-review.test.ts:349:13
+ ❯ withServer tests/agent-review.test.ts:279:11
+ ❯ tests/agent-review.test.ts:341:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 415 passed | 1 skipped (417)
+      Tests  1 failed | 5031 passed | 15 skipped (5047)
+   Start at  03:02:46
+   Duration  266.06s (transform 6.44s, setup 2.42s, import 49.06s, tests 212.11s, environment 241.60s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 407ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  03:07:13
+   Duration  2.29s (transform 1.05s, setup 12ms, import 1.30s, tests 407ms, environment 489ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-06T03:13:03Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202); · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T03:13:04Z · status review→active
+- 2026-10-06T03:18:16Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202); · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T03:18:16Z · status review→active
+- 2026-10-06T03:23:58Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
+- 2026-10-06T03:23:58Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
+- 2026-10-06T03:29:16Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202); · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T03:29:16Z · status review→active
+- 2026-10-06T03:29:48Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
+- 2026-10-06T03:29:48Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
+- 2026-10-06T03:34:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity

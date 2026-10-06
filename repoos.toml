@@ -96,10 +96,11 @@ remoteValidation.containerImage = "repoos-ci"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
 [[remoteValidation.tailscaleHosts]]
-host = "thinkpad"
-user = "nick"
-[[remoteValidation.tailscaleHosts]]
 host = "bee"
+user = "nick"
+maxConcurrent = 2
+[[remoteValidation.tailscaleHosts]]
+host = "thinkpad"
 user = "nick"
 maxConcurrent = 2
 [[remoteValidation.tailscaleHosts]]
