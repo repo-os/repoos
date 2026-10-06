@@ -6,7 +6,7 @@
  * save/clear flow must hit the right endpoints and never put key material
  * into the DOM.
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
@@ -162,6 +162,10 @@ const keyRoute = (status: number, body: unknown): StubRoute => ({
   status,
   body,
   calls: [],
+});
+
+beforeEach(() => {
+  setActivePinia(createPinia());
 });
 
 afterEach(() => {
