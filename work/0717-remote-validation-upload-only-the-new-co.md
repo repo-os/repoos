@@ -2,13 +2,13 @@
 id: "0717"
 title: "Remote validation: upload only the new commits, not the full-history git bundle, on every run"
 type: feature
-status: ready
+status: active
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/remote-validation-upload-only-the-new-co
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T11:11:30Z"
@@ -40,3 +40,4 @@ Read prepareRemoteTestBundle (it already bundles an extra baseSha for test scope
 - 2026-10-06T11:11:30Z · created · unknown
 - 2026-10-06T11:11:39Z · status inbox→ready
 - 2026-10-06T11:11:58Z · cli_override, model_override
+- 2026-10-06T11:11:58Z · status ready→active, branch
