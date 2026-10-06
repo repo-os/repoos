@@ -12,12 +12,12 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T07:04:18Z"
+updated_at: "2026-10-06T07:13:32Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 9b8efe3e176dfcaaed9b4b43dc9048bee66820c1
 review_rounds: 1
 review_passes: 1
-dev_error_count: 3
+dev_error_count: 4
 ---
 ## Problem
 
@@ -99,3 +99,5 @@ error: script "test" exited with code 1
 - 2026-10-06T06:51:33Z · status active→review
 - 2026-10-06T06:51:33Z · status review→active
 - 2026-10-06T07:04:18Z · needs_input
+- 2026-10-06T07:04:45Z · agent exited with an error (cursor) · {"type":"thinking","subtype":"delta","text":" extending `queueNote`","session_id":"4de1a743-5ba4-41d0-961c-6f00a70b14eb","timestamp_ms":1791270285402}
+- 2026-10-06T07:13:32Z · needs_input
