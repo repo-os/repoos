@@ -49,3 +49,4 @@ Read #0709 and its fix (scrapeProviderFailure) first: same approach, structured 
 - 2026-10-06T14:14:34Z · needs_input
 - 2026-10-06T14:15:25Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
 - 2026-10-06T14:25:36Z · status active→review
+- 2026-10-06T14:25:36Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
