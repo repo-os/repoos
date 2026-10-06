@@ -2,17 +2,17 @@
 id: "0688"
 title: "CTO with a short allowlist of safe actions (restart stalled agent, refresh install, re-queue close-out)"
 type: feature
-status: ready
+status: active
 priority: p3
 area: server
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/cto-with-a-short-allowlist-of-safe-actio
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:59Z"
-updated_at: "2026-10-06T02:10:15Z"
+updated_at: "2026-10-06T02:10:16Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ This task is part of the story **Field report: first agent-driven project run (o
 - 2026-10-05T17:17:16Z · body: section Story context
 - 2026-10-06T02:10:14Z · status inbox→ready
 - 2026-10-06T02:10:15Z · cli_override, model_override
+- 2026-10-06T02:10:16Z · status ready→active, branch
