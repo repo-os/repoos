@@ -914,6 +914,12 @@ export interface RemoteValidationConfig {
    * behaviour apply. Default true when 2+ hosts are configured.
    */
   retryOtherHosts?: boolean;
+  /**
+   * Run engineer `repoos check` build + tests on the remote runner (via the
+   * board's provider) instead of on the laptop. Default true when `enabled`.
+   * Handoff reuses a green pass at the same HEAD (#0694).
+   */
+  engineerSelfCheckRemote?: boolean;
 }
 
 /**

@@ -126,6 +126,8 @@ export interface CheckRunRow {
   remote: boolean;
   /** 'full' or 'changed:<ref>'. */
   scope: string;
+  /** Set for remote rows when the bundle SHA is known (#0694). */
+  candidateSha: string | null;
   startedAt: string;
   durationMs: number | null;
   outcome: CheckRunOutcome;
@@ -147,6 +149,8 @@ export interface RecordCheckRunInput {
   taskId?: string | null;
   phase: CheckRunPhase;
   worktree?: string | null;
+  /** `git rev-parse HEAD` the remote bundle was built from (#0694 reuse). */
+  candidateSha?: string | null;
   machine?: string | null;
   remote?: boolean;
   scope?: string;
@@ -234,6 +238,9 @@ export class CheckStore {
     if (!cols.some((c) => c.name === "worktree")) {
       this.db.exec("ALTER TABLE check_runs ADD COLUMN worktree TEXT");
     }
+    if (!cols.some((c) => c.name === "candidate_sha")) {
+      this.db.exec("ALTER TABLE check_runs ADD COLUMN candidate_sha TEXT");
+    }
   }
 
   isAvailable(): boolean {
@@ -247,14 +254,15 @@ export class CheckStore {
       this.db
         .prepare(
           `INSERT INTO check_runs
-             (task_id, phase, worktree, machine, remote, scope, started_at, duration_ms,
+             (task_id, phase, worktree, candidate_sha, machine, remote, scope, started_at, duration_ms,
               outcome, failed_step, skipped_steps, detail, failed_tests, isolation_note)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           input.taskId ?? null,
           input.phase,
           input.worktree ?? null,
+          input.candidateSha ?? null,
           input.machine ?? null,
           input.remote ? 1 : 0,
           input.scope || "full",
@@ -339,6 +347,7 @@ export class CheckStore {
       taskId: r.task_id ?? null,
       phase: (r.phase ?? "cli") as CheckRunPhase,
       worktree: r.worktree ?? null,
+      candidateSha: r.candidate_sha ?? null,
       machine: r.machine ?? null,
       remote: Number(r.remote) === 1,
       scope: String(r.scope ?? "full"),

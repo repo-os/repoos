@@ -71,6 +71,14 @@ import {
 } from "../core/check-store.js";
 import { mainCheckoutRoot } from "../core/git.js";
 import { Logger } from "../core/logger.js";
+import {
+  boardRootForEngineerRemote,
+  boardTaskAbsPath,
+  commitWipCheckpointForRemoteGate,
+  createBoardRemoteValidator,
+  isManagedEngineerCheck,
+  runEngineerRemoteSelfCheckGate,
+} from "../server/engineer-remote-self-check.js";
 import { createRemoteValidator } from "../server/remote-validation.js";
 import {
   runRemotePreReviewGate,
@@ -2071,7 +2079,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   if (
     cfg.remoteValidation?.enabled &&
     !standaloneCliCanUseRemote(cfg) &&
-    !changedRef &&
+    !isManagedEngineerCheck(process.env) &&
     !opts.localTestsOnly &&
     !remoteValidationAlreadyAttempted(process.env)
   ) {
@@ -2084,19 +2092,36 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   }
   let runRemoteGate = shouldRunCliRemotePreReviewGate(cfg, { ...opts, changedRef }, process.env);
   if (runRemoteGate) {
-    // The runner tests a bundle of HEAD. Uncommitted work would be skipped by it
-    // and then unverified locally (tests are skipped after a remote pass), so
-    // test the working tree locally instead and say why.
     const uncommitted = await uncommittedFilesBlockingRemoteGate(repoRoot, cfg);
     if (uncommitted.length > 0) {
-      runRemoteGate = false;
-      const shown = uncommitted.slice(0, 5).join(", ");
-      console.log(
-        c.yellow(
-          `  ⚠ uncommitted changes (${shown}${uncommitted.length > 5 ? ", …" : ""}) — the remote ` +
-            "gate tests committed HEAD only, so running the full local gate on the working tree instead\n",
-        ),
-      );
+      if (isManagedEngineerCheck(process.env)) {
+        const taskId = process.env.REPOOS_TASK_ID!.trim();
+        const wipErr = await commitWipCheckpointForRemoteGate(repoRoot, cfg, taskId);
+        if (wipErr) {
+          runRemoteGate = false;
+          console.log(
+            c.yellow(
+              `  ⚠ uncommitted changes — could not commit a WIP checkpoint (${wipErr}); ` +
+                "running the full local gate on the working tree instead\n",
+            ),
+          );
+        } else {
+          console.log(
+            c.dim(
+              "  · uncommitted work committed as a WIP checkpoint so the remote runner tests this tree\n",
+            ),
+          );
+        }
+      } else {
+        runRemoteGate = false;
+        const shown = uncommitted.slice(0, 5).join(", ");
+        console.log(
+          c.yellow(
+            `  ⚠ uncommitted changes (${shown}${uncommitted.length > 5 ? ", …" : ""}) — the remote ` +
+              "gate tests committed HEAD only, so running the full local gate on the working tree instead\n",
+          ),
+        );
+      }
     }
   }
   // The plan never runs when the remote gate fails, so the normal end-of-run
@@ -2132,9 +2157,12 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   if (runRemoteGate) {
     heading("Remote validation");
     const logger = new Logger({ root: repoRoot });
+    const managed = isManagedEngineerCheck(process.env);
     let remoteValidator;
     try {
-      remoteValidator = createRemoteValidator(cfg, logger);
+      remoteValidator = managed
+        ? createBoardRemoteValidator(repoRoot, cfg)
+        : createRemoteValidator(cfg, logger);
     } catch (e) {
       const msg = `remote validation init failed: ${(e as Error).message}`;
       if (!cfg.remoteValidation?.fallbackToLocal) {
@@ -2159,35 +2187,42 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       console.log(c.yellow(`  ⚠ ${msg} — running the full local gate\n`));
     }
     if (remoteValidator) {
-      // Route the runner's own history rows (recordRemoteRunHistory reads
-      // this env) to the resolved store root for THIS dispatch only, then
-      // restore — a process-wide export here would leak into the check
-      // plan's child processes (the test suite's own check-store fixtures
-      // record via the same env and would land in the live store).
       const prevStoreRoot = process.env.REPOOS_CHECK_STORE_ROOT;
       process.env.REPOOS_CHECK_STORE_ROOT = checkStoreRoot;
       try {
         const taskId = process.env.REPOOS_TASK_ID?.trim() || "pre-review";
         const remoteStartedAt = new Date();
         let remoteOutput = "";
-        // Which gate is calling (#0564): a caller-supplied task id means this is
-        // a pre-review pass for that task; otherwise a bare CLI run.
         const { phase: runPhase } = envToRunContext(process.env);
-        const gate = await runRemotePreReviewGate({
-          config: cfg,
-          remoteValidator,
-          worktreePath: repoRoot,
-          taskId,
-          phase: runPhase,
-          onChunk: (chunk) => {
-            remoteOutput += chunk;
-            process.stdout.write(chunk);
-          },
-        });
-        // Await the teardown: the failure path below exits the process, and an
-        // un-awaited async runner delete would be cut off mid-request, leaking a
-        // warm VM that no idle timer survives the exit to reap.
-        await remoteValidator.dispose().catch(() => {});
+        const boardRoot = boardRootForEngineerRemote(repoRoot);
+        const gateConfig = managed ? loadConfig(boardRoot) : cfg;
+        const taskAbsPath =
+          managed && /^\d+$/.test(taskId) ? boardTaskAbsPath(gateConfig, taskId) : undefined;
+        const gate = managed
+          ? await runEngineerRemoteSelfCheckGate({
+              worktreeConfig: cfg,
+              worktreePath: repoRoot,
+              taskId,
+              taskAbsPath,
+              onChunk: (chunk) => {
+                remoteOutput += chunk;
+                process.stdout.write(chunk);
+              },
+            })
+          : await runRemotePreReviewGate({
+              config: gateConfig,
+              remoteValidator,
+              worktreePath: repoRoot,
+              taskId,
+              phase: runPhase,
+              onChunk: (chunk) => {
+                remoteOutput += chunk;
+                process.stdout.write(chunk);
+              },
+            });
+        if (!managed) {
+          await remoteValidator.dispose().catch(() => {});
+        }
         if (gate.kind === "fail") {
           console.log(c.red(`\n  ✗ ${gate.detail}\n`));
           persistRemoteFailure(gate.detail, remoteOutput, remoteStartedAt);

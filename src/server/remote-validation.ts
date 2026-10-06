@@ -2446,6 +2446,7 @@ function recordRemoteRunHistory(
     getCheckStore(storeRoot, config.cacheDir).record({
       taskId: /^\d+$/.test(opts.taskId) ? opts.taskId : null,
       phase: opts.phase ?? "pre-review",
+      candidateSha: opts.candidateSha,
       machine,
       remote: true,
       scope: "full",

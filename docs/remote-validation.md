@@ -42,24 +42,17 @@ gate (including `fallbackToLocal` fallback) so a spawned `repoos check` does not
 run it again. Server-spawned checks also pass `--local-tests` when remote is
 enabled but that path opted out (e.g. release with `useForReleases = false`,
 close-out without a build step). With `remoteValidation.enabled`, standalone
-`repoos check` runs the remote half first unless you pass `--local-tests`, use
-`--changed` / `REPOOS_CHECK_CHANGED` (fast local pre-review only), or either env
-var is already set. The remote bundle is **`git bundle create … HEAD`**, so only
+`repoos check` runs the remote half first unless you pass `--local-tests` or either env
+var is already set. **`--changed` / `REPOOS_CHECK_CHANGED` does not skip the remote half** (#0694): the runner still runs install + build + the full test suite; changed-path mode only narrows local guards after `REPOOS_SKIP_TESTS=1`. The remote bundle is **`git bundle create … HEAD`**, so only
 committed work reaches the runner, and local tests are skipped after a green
 remote pass. What is tested must be what is committed (#0512), which the two
 entry points guarantee differently:
 
 - **Handoff** commits the worktree first (the commit gate runs before the check),
   so the sha the runner tests already contains everything the agent wrote.
-- **Standalone `repoos check`** uses the remote gate only with the **Tailscale**
-  provider. Hetzner's single warm VM is owned by the server process (its state
-  lives in the server's `.repoos/remote-runner.json`); a CLI in a task worktree
-  has a different root, so its leak reconciliation would delete the server's VM
-  mid-run. With Hetzner the CLI runs the full local gate and says so; handoff and
-  close-out still use the runner.
-- **Standalone `repoos check`** on a tree with uncommitted work does not use the
-  remote gate: it prints which files are uncommitted and runs the full local gate
-  on the working tree instead. An unreadable git status counts as dirty.
+- **Standalone `repoos check`** uses the remote gate with the **Tailscale**
+  provider, or **any provider when the engineer is a managed agent** (`REPOOS_AGENT=1`): the check uses the board checkout's runner state so Hetzner's warm VM stays server-owned (#0694). Hetzner without a managed agent still runs the full local gate and says so; handoff and close-out still use the runner.
+- **Standalone `repoos check`** on a tree with uncommitted work: a **managed engineer** gets an automatic WIP checkpoint commit on the task branch so the bundle matches the working tree; other callers print which files are uncommitted and run the full local gate instead.
 
 `REPOOS_SKIP_TESTS=1` counts as "remote already ran" on purpose: close-out and
 release set it after their own remote pass, and a user who exports it has asked
@@ -72,9 +65,13 @@ so it cannot leak a warm VM. Repos with remote validation off behave as before.
 The pre-review, close-out and release gates share `runRemotePreReviewGate` (`src/server/pre-review-remote-gate.ts`); the legacy single-shot path does not:
 
 - **Pre-review** — engineer handoff finalization (`src/server/handoff.ts`) and
-  `repoos check` when `remoteValidation.enabled` (task #0520). Bundles the task
+  `repoos check` when `remoteValidation.enabled` (task #0520, #0694). Bundles the task
   worktree at `HEAD`, runs install + build + test on the runner, then local
-  guards with `REPOOS_SKIP_TESTS=1`. Logs land in
+  guards with `REPOOS_SKIP_TESTS=1`. When `remoteValidation.engineerSelfCheckRemote`
+  is on (default), a managed engineer's self-check uses the same remote half; handoff
+  **reuses** a green remote row in `.repoos/checks.db` at the same `candidate_sha`
+  instead of running twice. Task activity records which host ran the self-check and
+  how long it took. Logs land in
   `.repoos/logs/remote-validation/<taskId>.log` (task id, or `pre-review` for a
   bare CLI run). Alongside it, `<taskId>.events.ndjson` records the same run's
   structured outcomes — the host, the exit code, and any infra/config failure —
