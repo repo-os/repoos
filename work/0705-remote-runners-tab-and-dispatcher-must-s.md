@@ -15,7 +15,9 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T08:45:56Z"
+updated_at: "2026-10-06T09:18:48Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ac677e5a to be92054c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: ac677e5aa2358c37ab8263f1ff88fb56da7c71f1
 review_rounds: 2
 review_passes: 2
 dev_error_count: 7
@@ -161,3 +163,31 @@ src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahea
 - 2026-10-06T08:40:35Z · status review→active
 - 2026-10-06T08:45:55Z · note: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
 - 2026-10-06T08:45:56Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
+- 2026-10-06T08:53:22Z · status active→review
+- 2026-10-06T08:53:22Z · status review→active
+- 2026-10-06T09:02:38Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 777a3238 to 4a06caa8) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-06T09:05:12Z · status active→review
+- 2026-10-06T09:05:12Z · status review→active
+- 2026-10-06T09:11:56Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from ac677e5a to be92054c) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-06T09:13:40Z · status active→review
+- 2026-10-06T09:13:40Z · status review→active
+- 2026-10-06T09:18:48Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —     651|       // true per-pass counter used by the D# · R# badge.
+    652|       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_pass…
+       |                                                  ^
+    653|     });
+    654|   }, 90_000);
+ ❯ withServer tests/agent-review.test.ts:279:11
+ ❯ tests/agent-review.test.ts:625:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 419 passed | 1 skipped (421)
+      Tests  1 failed | 5066 passed | 15 skipped (5082)
+   Start at  09:14:37
+   Duration  244.68s (transform 6.34s, setup 2.04s, import 41.77s, tests 227.61s, environment 196.13s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 792ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  09:18:42
+   Duration  2.70s (transform 1.10s, setup 13ms, import 1.37s, tests 792ms, environment 444ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate

@@ -2,19 +2,18 @@
 id: "0709"
 title: "P0: scrapeProviderFailure kills healthy agents on any output line containing '402', 'billing' or 'rate limit'"
 type: bug
-status: active
+status: done
 priority: p0
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 126f8dd43c4d6ce883059785980d10c1ea5aac2f
 assigned_to: ai
 created_by: ""
 branch: feat/p0-scrapeproviderfailure-kills-healthy-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T07:35:51Z"
-updated_at: "2026-10-06T08:51:22Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 0e8ba4e203bf0659fcf5ca704c0f343c0bb67b30
+updated_at: "2026-10-06T10:06:06Z"
 ---
 ## Problem
 
@@ -41,10 +40,5 @@ Smallest fix: in scrapeProviderFailure only inspect structured fields for lines 
 - 2026-10-06T07:36:03Z · status inbox→ready
 - 2026-10-06T07:36:04Z · cli_override, model_override
 - 2026-10-06T07:36:04Z · status ready→active, branch
-- 2026-10-06T07:37:21Z · status active→review
-- 2026-10-06T07:37:21Z · status review→active
-- 2026-10-06T07:54:22Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-- 2026-10-06T08:39:26Z · status active→review
-- 2026-10-06T08:39:26Z · status review→active
-- 2026-10-06T08:51:22Z · status active→review
-- 2026-10-06T08:51:22Z · status review→active
+- 2026-10-06T09:21:08Z · status active→review
+- 2026-10-06T10:06:06Z · status review→done, release:success
