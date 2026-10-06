@@ -2,17 +2,18 @@
 id: "0674"
 title: "Close-out dependency handling: keep main's install fresh and stop mislabelling environment errors"
 type: bug
-status: review
+status: done
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 3a39697680d2913cdf5e210dcb7730e5d3fd567b
 assigned_to: ai
 created_by: ""
 branch: feat/close-out-dependency-handling-keep-main-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:30Z"
-updated_at: "2026-10-06T00:49:45Z"
+updated_at: "2026-10-06T01:26:03Z"
 ---
 ## Problem
 
@@ -59,3 +60,4 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 - 2026-10-05T23:44:53Z · cli_override, model_override
 - 2026-10-05T23:44:53Z · status ready→active, branch
 - 2026-10-06T00:49:45Z · status active→review
+- 2026-10-06T01:26:03Z · status review→done, release:success
