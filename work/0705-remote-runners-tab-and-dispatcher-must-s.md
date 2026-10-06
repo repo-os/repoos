@@ -15,7 +15,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T06:50:29Z"
+updated_at: "2026-10-06T06:51:33Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 9b8efe3e176dfcaaed9b4b43dc9048bee66820c1
 review_rounds: 1
@@ -99,3 +99,5 @@ error: script "test" exited with code 1
 - 2026-10-06T06:42:39Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-06T06:50:29Z · status active→review
 - 2026-10-06T06:50:29Z · status review→active
+- 2026-10-06T06:51:33Z · status active→review
+- 2026-10-06T06:51:33Z · status review→active
