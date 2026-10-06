@@ -3073,9 +3073,7 @@ export const useRepoStore = defineStore("repo", () => {
       runningSince.value = Object.fromEntries(r.tasks.map((t) => [t.id, t.startedAt]));
       agentActivityAt.value = {
         ...agentActivityAt.value,
-        ...Object.fromEntries(
-          r.tasks.map((t) => [t.id, t.lastOutputAt ?? t.startedAt]),
-        ),
+        ...Object.fromEntries(r.tasks.map((t) => [t.id, t.lastOutputAt ?? t.startedAt])),
       };
     } catch {
       /* endpoint unavailable — running state is best-effort */
