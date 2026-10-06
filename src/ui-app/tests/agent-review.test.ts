@@ -649,6 +649,12 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
       expect(spawns(fx).filter((s) => s.args.includes("--auto")).length).toBe(2);
       // Every completed review run (auto + manual "Review again") bumps the
       // true per-pass counter used by the D# · R# badge.
+      // The counter is written just after the report lands, so wait for it
+      // rather than reading once (flaked on fast hosts).
+      await waitFor(
+        () => /^review_passes: 2$/m.test(readFileSync(task.absPath, "utf8")),
+        "the second review pass is counted",
+      );
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 2$/m);
     });
   }, 90_000);
