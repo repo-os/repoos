@@ -21,6 +21,8 @@ export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
   "review-failed": "Reviewer failed — no report",
   "review-rounds-exhausted": "Review still finding issues",
   "dev-error": "Agent exited with an error",
+  "provider-failure": "Provider or credit error",
+  "degenerate-output": "Degenerate agent output",
   "check-failed-after-retries": "Checks failed after retries",
   "cto-escalation": "Agent asked a question",
   "watchdog-stuck": "No agent running",
@@ -32,6 +34,8 @@ export const NEEDS_INPUT_BANNER_LABELS: Record<string, string> = {
   "review-failed": "The reviewer crashed or timed out without producing a report.",
   "review-rounds-exhausted": `The reviewer has sent this back to the engineer ${MAX_AUTO_REVIEW_ROUNDS} times and still found issues. No review is running now.`,
   "dev-error": "The agent exited with an error.",
+  "provider-failure": "The model provider returned a credit, auth, or availability error.",
+  "degenerate-output": "The agent looped on repetitive or runaway output and was stopped.",
   "check-failed-after-retries": "Checks failed after automatic retries.",
   "cto-escalation": "The CTO agent flagged this for a human decision.",
   "watchdog-stuck": "The task went quiet with no agent running.",
@@ -47,6 +51,10 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
     "Read the latest review report, then send it to the engineer, fix it yourself, or move to done if the remaining findings are acceptable. A review already finished with findings, so re-reviewing the same code would just repeat it — review again after the fixes.",
   "dev-error":
     "Restart work to resume the agent, or reply below with more context first. If it keeps failing on the same error, check the coding agent/model picker above — a CLI switch without a matching model pin causes exactly this.",
+  "provider-failure":
+    "Add credits or fix the API key on the Providers page, then Restart work. Consider a per-task model override if this model stays unavailable.",
+  "degenerate-output":
+    "Restart work with a different model or agent, or narrow the task scope. If it repeats, move the task to a stronger model via per-task override.",
   "check-failed-after-retries":
     "Open the Debug tab for the failing check output, fix the issue or adjust the check plan, then Restart work. Move to done only after checks pass.",
   "watchdog-stuck":
@@ -163,6 +171,8 @@ export function needsInputPrimaryAction(
       if (ctx.status === "review") return REVIEW_AGAIN_ACTION;
       return canRestartWork(ctx) ? RESTART_ACTION : null;
     case "dev-error":
+    case "provider-failure":
+    case "degenerate-output":
     case "check-failed-after-retries":
       return canRestartWork(ctx) ? RESTART_ACTION : null;
     case "cto-escalation":

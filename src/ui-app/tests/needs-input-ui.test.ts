@@ -26,6 +26,17 @@ describe("needsInputPrimaryAction (#0511)", () => {
     ).toBeNull();
   });
 
+  it("offers Restart work for provider-failure and degenerate-output like dev-error", () => {
+    for (const reason of ["provider-failure", "degenerate-output"]) {
+      expect(
+        needsInputPrimaryAction(reason, false, {
+          status: "active",
+          agentRunning: false,
+        })?.kind,
+      ).toBe("restart");
+    }
+  });
+
   it("offers Restart work only on ready or idle active tasks", () => {
     expect(
       needsInputPrimaryAction("dev-error", false, {
