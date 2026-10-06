@@ -2,7 +2,7 @@
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/cli-api-parity-every-api-action-should-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
-updated_at: "2026-10-06T17:43:27Z"
+updated_at: "2026-10-06T17:43:28Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: a08ed173a134a642e6252b314b28cd73b79d12f6
 handoff_signal_retry_count: 1
@@ -71,4 +71,4 @@ error: script "test" exited with code 1
 - 2026-10-06T17:32:25Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —        |                                        ^ · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-06T17:32:26Z · status review→active
 - 2026-10-06T17:42:25Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-- 2026-10-06T17:43:27Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-06T17:43:28Z · status active→review
