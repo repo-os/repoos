@@ -34,6 +34,7 @@ import {
   validateScriptInstallCommand,
   RUNNER_SCRIPT_MIRROR_TOKEN,
   PREREQ_OK_TOKEN,
+  VALIDATE_SCRIPT,
   defaultRemoteExec,
   remoteMirrorPath,
   type RemoteExecDeps,
@@ -88,19 +89,34 @@ function fakeHetzner(opts: FakeHetznerOpts = {}) {
   return { client, calls, servers };
 }
 
+function isValidateScriptMirrorProbe(cmd: string): boolean {
+  return cmd.includes("grep -q MIRROR") && cmd.includes(VALIDATE_SCRIPT);
+}
+
 function fakeExec(over: Partial<RemoteExecDeps> = {}): RemoteExecDeps {
+  const baseRunRemote = vi.fn(async (_h, cmd, onChunk): Promise<RemoteExecResult> => {
+    if (isValidateScriptMirrorProbe(cmd)) {
+      return { code: 0, output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1\n`, timedOut: false };
+    }
+    onChunk("build ok\ntest ok\n");
+    return { code: 0, output: "build ok\ntest ok\n", timedOut: false };
+  });
   return {
     bundleRepo: vi.fn(async () => ({ ok: true })),
     uploadFile: vi.fn(async () => ({ ok: true })),
     probeMirror: vi.fn(async () => EMPTY_REMOTE_MIRROR),
     downloadDir: vi.fn(async () => undefined),
-    runRemote: vi.fn(async (_h, _c, onChunk): Promise<RemoteExecResult> => {
-      onChunk("build ok\ntest ok\n");
-      return { code: 0, output: "build ok\ntest ok\n", timedOut: false };
-    }),
+    runRemote: baseRunRemote,
     probeTcp: vi.fn(async () => true),
     ...over,
   };
+}
+
+/** Suite ssh calls only — excludes the validate.sh mirror capability probe (#0725). */
+function remoteSuiteCalls(exec: RemoteExecDeps): unknown[][] {
+  return (exec.runRemote as ReturnType<typeof vi.fn>).mock.calls.filter(
+    (c) => !isValidateScriptMirrorProbe(String(c[1])),
+  );
 }
 
 const FAST = {
@@ -192,9 +208,9 @@ describe("RemoteValidationRunner", () => {
     expect(res.ok).toBe(true);
     expect(exec.bundleRepo).toHaveBeenCalledOnce();
     expect(exec.uploadFile).toHaveBeenCalledOnce();
-    expect(exec.runRemote).toHaveBeenCalledOnce();
+    expect(exec.runRemote).toHaveBeenCalledTimes(2); // mirror probe + validate.sh
     // validate.sh is invoked with the bundle path + the exact candidate SHA.
-    const cmd = (exec.runRemote as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
+    const cmd = remoteSuiteCalls(exec)[0]![1] as string;
     expect(cmd).toContain("/opt/repoos/validate.sh");
     expect(cmd).toContain(headSha);
     expect(existsSync(r.logPath("0999"))).toBe(true);
@@ -223,7 +239,7 @@ describe("RemoteValidationRunner", () => {
     });
     expect(res.ok).toBe(true);
     expect(res.remoteTestScopeRef).toBeUndefined();
-    const cmd = (exec.runRemote as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
+    const cmd = remoteSuiteCalls(exec)[0]![1] as string;
     expect(cmd).not.toContain("not-a-real-ref-xyz");
     expect(chunks.join("")).toMatch(/WARNING:.*full suite/i);
     await r.dispose();
@@ -248,7 +264,7 @@ describe("RemoteValidationRunner", () => {
     // Candidate + scope ref travel together so the runner can run `--changed`.
     expect(bundleOpts?.refs?.some((ref) => ref.startsWith("refs/repoos/candidate"))).toBe(true);
     expect(bundleOpts?.refs?.some((ref) => ref.startsWith("refs/repoos/scope"))).toBe(true);
-    const cmd = (exec.runRemote as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
+    const cmd = remoteSuiteCalls(exec)[0]![1] as string;
     expect(cmd).toContain("main");
     await r.dispose();
   });
@@ -411,12 +427,18 @@ describe("RemoteValidationRunner", () => {
     const h = fakeHetzner();
     const pending: Array<(r: RemoteExecResult) => void> = [];
     const exec = fakeExec({
-      runRemote: vi.fn(
-        () =>
-          new Promise<RemoteExecResult>((resolve) => {
-            pending.push(resolve);
-          }),
-      ),
+      runRemote: vi.fn((_h, cmd) => {
+        if (isValidateScriptMirrorProbe(cmd)) {
+          return Promise.resolve({
+            code: 0,
+            output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1\n`,
+            timedOut: false,
+          });
+        }
+        return new Promise<RemoteExecResult>((resolve) => {
+          pending.push(resolve);
+        });
+      }),
     });
     const r = new RemoteValidationRunner(config, undefined, {
       hetzner: h.client,
@@ -462,7 +484,7 @@ describe("RemoteValidationRunner", () => {
     expect(summary.ok).toBe(false);
     expect(summary.transient).toBe(true);
     expect(summary.detail).toContain("deadline passed");
-    expect(exec.runRemote).not.toHaveBeenCalled(); // never entered the run
+    expect(remoteSuiteCalls(exec)).toHaveLength(0); // never entered the suite
     await r.dispose();
   });
 
@@ -489,7 +511,7 @@ describe("RemoteValidationRunner", () => {
 
     expect(summary.ok).toBe(false);
     expect(summary.cancelled).toBe(true);
-    expect(exec.runRemote).not.toHaveBeenCalled(); // the suite never started
+    expect(remoteSuiteCalls(exec)).toHaveLength(0); // the suite never started
 
     const rows = getCheckStore(config.root, config.cacheDir).list();
     expect(rows).toHaveLength(1);
