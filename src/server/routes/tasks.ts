@@ -61,7 +61,7 @@ import { listInputs } from "../../core/input.js";
 import {
   commitTaskFile,
   commitDirtyFiles,
-  dirtyFiles,
+  mainDirtyFilesForCloseOut,
   uncommittedWorkFiles,
   workFileFilter,
   worktreePathForBranch,
@@ -1730,7 +1730,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // state must never silently look clean.
     let dirty: string[];
     try {
-      dirty = await dirtyFiles(config.root);
+      dirty = await mainDirtyFilesForCloseOut(config.root, config);
     } catch (err) {
       if (err instanceof GitDirtyCheckError) {
         return json(res, 409, {
@@ -2178,7 +2178,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
 
     let dirty: string[];
     try {
-      dirty = await dirtyFiles(config.root);
+      dirty = await mainDirtyFilesForCloseOut(config.root, config);
     } catch (err) {
       rootLock.release(existing.id);
       if (err instanceof GitDirtyCheckError) {

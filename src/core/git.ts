@@ -1575,6 +1575,48 @@ export function isGeneratedOrRuntimePath(path: string, filter: WorkFileFilter = 
   return false;
 }
 
+/** Dirs needed to recognize gitignored attachment trees on the primary checkout. */
+export interface MainDirtyPathFilter {
+  workDir?: string;
+  inputsDir?: string;
+  cacheDir?: string;
+}
+
+/**
+ * True for repo-relative paths under the gitignored `.attachments/` trees
+ * where shot captures, PM uploads, and input screenshots are stored locally.
+ * These must not block close-out when they appear as untracked files (#0713).
+ */
+export function isLocalAttachmentPath(path: string, dirs: MainDirtyPathFilter = {}): boolean {
+  const workDir = dirs.workDir ?? "work";
+  const inputsDir = dirs.inputsDir ?? "inputs";
+  const workAtt = `${withTrailingSlash(workDir)}.attachments/`;
+  const inputsAtt = `${withTrailingSlash(inputsDir)}.attachments/`;
+  return path.startsWith(workAtt) || path.startsWith(inputsAtt);
+}
+
+/**
+ * Paths on the primary checkout that must not block close-out: the RepoOS
+ * runtime cache dir and local attachment bytes (see {@link isLocalAttachmentPath}).
+ * The raw `dirtyFiles` list still includes them when git does not ignore them
+ * yet; this filter is applied at every close-out guard on `main`.
+ */
+export function filterIgnorableMainDirtyPaths(
+  paths: string[],
+  dirs: MainDirtyPathFilter = {},
+): string[] {
+  const cachePrefix = `${(dirs.cacheDir ?? ".repoos").replace(/\/+$/, "")}/`;
+  return paths.filter((p) => !p.startsWith(cachePrefix) && !isLocalAttachmentPath(p, dirs));
+}
+
+/** `dirtyFiles` on the primary checkout, minus ignorable runtime/attachment churn. */
+export async function mainDirtyFilesForCloseOut(
+  root: string,
+  dirs: MainDirtyPathFilter = {},
+): Promise<string[]> {
+  return filterIgnorableMainDirtyPaths(await dirtyFiles(root), dirs);
+}
+
 /** Repo-relative path is a committed task markdown file under `workDir` (board bookkeeping). */
 export function isTaskBookkeepingPath(path: string, filter: WorkFileFilter = {}): boolean {
   const workDir = filter.workDir ?? "work";
