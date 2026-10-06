@@ -52,12 +52,15 @@ import {
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
 import {
+  candidateMissingDependenciesAdvice,
   hasDependencyInputChange,
+  inferLockfileInstallCommand,
   isCloseOutEnvironmentFailure,
   prepareCandidateDependencyInstall,
   resolveCloseOutCandidateMode,
+  resolveInstallShellCommand,
   refreshMainInstallAfterPublish,
-  shouldRunCandidateInstall,
+  shouldPrepareCandidateDependencies,
 } from "../core/dependency-install.js";
 
 export { hasDependencyInputChange } from "../core/dependency-install.js";
@@ -1642,9 +1645,23 @@ export class CloseOutOrchestrator {
         { paths: changedPaths },
       );
     } else {
-      // Symlink-main candidates reuse main's install; own-install candidates and
-      // any branch that changes package inputs get a private frozen install (#0449, #0674).
-      if (shouldRunCandidateInstall(this.config, changedPaths)) {
+      // Reuse main's install when configured; package-input merges and candidates
+      // with no usable node_modules get a private install (#0449, #0674, #0712).
+      if (resolveCloseOutCandidateMode(this.config) === "own-install") {
+        // No package-input change: try symlink before deciding on a cold install (#0674).
+        this.symlinkMainNodeModulesIntoCandidate(wtPath, root);
+      }
+      if (shouldPrepareCandidateDependencies(this.config, wtPath, changedPaths, candidateCheckPlan)) {
+        const canInstall =
+          resolveInstallShellCommand(this.config) !== undefined ||
+          inferLockfileInstallCommand(wtPath) !== null;
+        if (!canInstall) {
+          return {
+            ok: false,
+            retryable: true,
+            reason: candidateMissingDependenciesAdvice(wtPath, this.config),
+          };
+        }
         this.onProgress?.("build");
         const dependencies = await prepareCandidateDependencies(
           wtPath,
@@ -1665,10 +1682,6 @@ export class CloseOutOrchestrator {
             reason: dependencies.reason ?? "could not prepare candidate dependencies",
           };
         }
-      } else if (resolveCloseOutCandidateMode(this.config) === "own-install") {
-        // No package-input change in this merge: reuse main's install via symlink
-        // instead of a redundant frozen install on every src-only close-out (#0674).
-        this.symlinkMainNodeModulesIntoCandidate(wtPath, root);
       }
 
       // A close-out used to run `bun run build` unconditionally here. That
