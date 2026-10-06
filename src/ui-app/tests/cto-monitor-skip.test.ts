@@ -233,7 +233,12 @@ describe("CTO monitor skip-when-healthy (#0649)", () => {
       isHandoffInFlight: () => false,
       hasPendingHandoff: () => false,
     };
-    const monitor = new CTOMonitor(configFor(root), indexWith([stale]), cto as unknown as CTOManager, runner as never);
+    const monitor = new CTOMonitor(
+      configFor(root),
+      indexWith([stale]),
+      cto as unknown as CTOManager,
+      runner as never,
+    );
     await monitor.checkNow("timer");
     expect(sendMessage).not.toHaveBeenCalled();
     expect(recordNudge).not.toHaveBeenCalled();
@@ -262,7 +267,12 @@ describe("CTO monitor skip-when-healthy (#0649)", () => {
       isHandoffInFlight: () => false,
       hasPendingHandoff: () => false,
     };
-    const monitor = new CTOMonitor(configFor(root), indexWith([stale]), cto as unknown as CTOManager, runner as never);
+    const monitor = new CTOMonitor(
+      configFor(root),
+      indexWith([stale]),
+      cto as unknown as CTOManager,
+      runner as never,
+    );
     await monitor.checkNow("timer");
     expect(sendMessage).not.toHaveBeenCalled();
     expect(recordNudge).not.toHaveBeenCalled();

@@ -147,10 +147,7 @@ export interface HandoffFailureLoopState {
   lastFailureIsCheck: boolean;
 }
 
-export function assessHandoffFailureLoop(
-  task: Task,
-  head: string | null,
-): HandoffFailureLoopState {
+export function assessHandoffFailureLoop(task: Task, head: string | null): HandoffFailureLoopState {
   const lastFailure = lastHandoffFailureFromBody(task.body);
   const identicalCount = countTrailingIdenticalHandoffFailures(task.body);
   const branchUnchanged = branchUnchangedSinceLastHandoffFailure(task, head);
@@ -175,10 +172,7 @@ export function shouldSkipHandoffValidationForUnchangedTree(
   return state.identicalCount >= 1;
 }
 
-export function shouldParkForIdenticalHandoffFailures(
-  task: Task,
-  head: string | null,
-): boolean {
+export function shouldParkForIdenticalHandoffFailures(task: Task, head: string | null): boolean {
   const state = assessHandoffFailureLoop(task, head);
   return state.atCap && state.branchUnchanged && state.lastFailureIsCheck;
 }
@@ -222,14 +216,14 @@ export function persistHandoffFailureLoopMetadata(
   }
 }
 
-export function clearHandoffFailureLoopMetadata(
-  config: RepoOSConfig,
-  task: Task,
-): void {
+export function clearHandoffFailureLoopMetadata(config: RepoOSConfig, task: Task): void {
   try {
     const raw = readFileSync(task.absPath, "utf8");
     const doc = parseDocument(raw);
-    if (!("last_handoff_failure_sha" in doc.data) && !("last_handoff_failure_fingerprint" in doc.data)) {
+    if (
+      !("last_handoff_failure_sha" in doc.data) &&
+      !("last_handoff_failure_fingerprint" in doc.data)
+    ) {
       return;
     }
     delete doc.data.last_handoff_failure_sha;
@@ -261,7 +255,11 @@ export function parkTaskForIdenticalHandoffFailures(
   current.needsInputReason = IDENTICAL_HANDOFF_FAILURES_REASON;
   recordChange(current, note);
   writeFileSync(task.absPath, serializeTask(current));
-  commitTaskFile(config.root, current.absPath, `docs(${current.id}): park identical handoff failures`);
+  commitTaskFile(
+    config.root,
+    current.absPath,
+    `docs(${current.id}): park identical handoff failures`,
+  );
   onFileChange?.(current.absPath);
 }
 
