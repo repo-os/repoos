@@ -15,7 +15,7 @@ branch: feat/remote-runners-tab-and-dispatcher-must-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:31:15Z"
-updated_at: "2026-10-06T08:53:22Z"
+updated_at: "2026-10-06T09:02:38Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 7
@@ -163,3 +163,4 @@ src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahea
 - 2026-10-06T08:45:56Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal
 - 2026-10-06T08:53:22Z · status active→review
 - 2026-10-06T08:53:22Z · status review→active
+- 2026-10-06T09:02:38Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 777a3238 to 4a06caa8) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
