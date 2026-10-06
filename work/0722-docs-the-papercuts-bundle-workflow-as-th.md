@@ -2,7 +2,7 @@
 id: "0722"
 title: "Docs: the easter-eggs bundle workflow as the alternative to hotfix flows (AGENTS.md + docs/)"
 type: chore
-status: review
+status: active
 priority: p2
 area: docs
 story: "Field report: first agent-driven project run (opex)"
@@ -83,3 +83,4 @@ bun install v1.4.2 (744846f84)
 error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INSTALL
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-06T17:22:23Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T17:22:23Z · status review→active
