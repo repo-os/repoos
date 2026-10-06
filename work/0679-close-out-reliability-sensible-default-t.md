@@ -3,6 +3,9 @@ id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: degenerate-output
+needs_input_detail: Degenerate output loop detected after one automatic retry.
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,16 +13,16 @@ assigned_to: ai
 created_by: ""
 branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
-model_override: gpt-5.3-codex-high
+model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-06T07:26:16Z"
+updated_at: "2026-10-06T07:36:39Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 404c1109cf8aa78b7446c56733747d534bb744ae
 merge_conflict_retry_count: 2
 review_passes: 2
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-06T03:42:59.088Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
-dev_error_count: 9
+dev_error_count: 10
 ---
 ## Problem
 
@@ -98,3 +101,5 @@ Close-out failed twice with 'merge conflict in src/server/server.ts' because mai
 - 2026-10-06T07:18:58Z · needs_input
 - 2026-10-06T07:19:23Z · agent exited with an error (cursor) · {"type":"tool_call","subtype":"started","call_id":"call_ZE29rDMmQBn4wuNDburgw4Qz\nfc_040240ea6287b31b016ac4a0fb1c4487d197ab259edc2796c3","tool_call":{"shellToolCall":{"args":{"command":"git status --short --branch && git stash list","workingDirectory":"/Users/nick/code/nick/repoos-worktrees/feat/close-out-reliability-sensible-default-t","timeout":30000,"toolCallId":"call_ZE29rDMmQBn4wuNDburgw4Qz\nfc_040240ea6287b31b016ac4a0fb1c4487d197ab259edc2796c3","simpleCommands":["git","git"],"hasInputRedir
 - 2026-10-06T07:26:16Z · needs_input
+- 2026-10-06T07:26:54Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
+- 2026-10-06T07:36:39Z · model_override
