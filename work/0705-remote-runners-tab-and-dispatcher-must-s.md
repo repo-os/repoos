@@ -2,7 +2,7 @@
 id: "0705"
 title: Remote runners tab and dispatcher must see standalone self-check slot holders (they starved close-outs); add refresh feedback
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: provider-failure
 needs_input_detail: "{\"type\":\"tool_call\",\"subtype\":\"completed\",\"call_id\":\"toolu_bdrk_013Dkabx3PDrnQ8hZqVTTSbv\",\"tool_call\":{\"editToolCall\":{\"args\":{\"path\":\"/Users/nick/code/nick/repoos-worktrees/feat/remote-runners-tab-and-dispatcher-must-s/src/server/remote-validation.ts\",\"streamContent\":\"  async acquire(\n    capabilities: string[],\n    opts: {\n      /** Fired once this run joins the FIFO queue (#0706: host + position too). */\n      onQueue?: (info: { ahead: number; host: string }) => void;\n      deadlineAt?: "
@@ -211,4 +211,4 @@ error: script "test" exited with code 1
    Duration  2.62s (transform 1.08s, setup 12ms, import 1.36s, tests 730ms, environment 447ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
-- 2026-10-06T10:26:36Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-06T10:26:36Z · status active→review
