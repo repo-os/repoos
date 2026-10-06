@@ -94,9 +94,9 @@ describe("close-out pipeline budget helpers (#0573)", () => {
       closeOutDeadline({ closeOut: { timeoutMs: 0, timeoutMsFromToml: true } } as never, startedAt),
     ).toBeNull();
     // Not left `queued` yet → no clock, exactly as before #0573.
-    expect(closeOutDeadline({}, null)).toBeNull();
-    expect(closeOutDeadline({}, undefined)).toBeNull();
-    expect(closeOutDeadline({}, "not-a-date")).toBeNull();
+    expect(closeOutDeadline({} as never, null)).toBeNull();
+    expect(closeOutDeadline({} as never, undefined)).toBeNull();
+    expect(closeOutDeadline({} as never, "not-a-date")).toBeNull();
   });
 
   it("records a stable, grep-friendly reason naming the budget", () => {

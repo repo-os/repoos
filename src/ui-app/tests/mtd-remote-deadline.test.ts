@@ -96,6 +96,7 @@ async function runGateWithBudget(timeoutMs: number) {
       undefined, // onProgress
       undefined, // logger
       undefined, // onMergeConflict
+      undefined, // onCloseOutGateFailure
       remoteValidator as never,
     );
 
