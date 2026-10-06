@@ -2,15 +2,17 @@
 id: "0698"
 title: "Invented evidence: reviewer and engineer defaults should catch claims an agent cannot have produced; flag human-only acceptance criteria"
 type: feature
-status: inbox
+status: active
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/invented-evidence-reviewer-and-engineer-
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T03:15:46Z"
-updated_at: "2026-10-06T03:15:46Z"
+updated_at: "2026-10-06T04:37:27Z"
 ---
 ## Problem
 
@@ -36,3 +38,6 @@ The tuk-private repo's `repoos.toml` now carries hand-written versions of these 
 ## Activity
 
 - 2026-10-06T03:15:46Z · created · unknown
+- 2026-10-06T04:37:26Z · status inbox→ready
+- 2026-10-06T04:37:27Z · cli_override, model_override
+- 2026-10-06T04:37:27Z · status ready→active, branch

@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation unavailable: no usable remote host for any host — bee: prerequisite check failed (exit 255): ssh: connect to host bee port 22: Operation timed out; thinkpad: prerequisite check failed (exit 255): ssh: connect to host thinkpad port 22: Operation timed out; mini: prerequisite check failed (exit 255): ssh: connect to host 100.126.187.126 port 22: Operation timed out — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally"
+last_handoff_failure_sha: "014e214e820f4a2f41e790351361589f239df3bf"
 id: "0695"
 title: "Finish #0694 follow-ups: AGENTS.md remote self-check wording, task attribution for cli Runs rows, WIP-checkpoint tests, load measurement"
 type: chore
@@ -12,7 +14,7 @@ branch: feat/finish-0694-follow-ups-agents-md-remote-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T01:38:21Z"
-updated_at: "2026-10-06T03:37:49Z"
+updated_at: "2026-10-06T04:35:38Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -68,3 +70,29 @@ Found 2026-10-06 10:50: four engineers (0679, 0683, 0688, 0695) showed 'stuck' i
 - 2026-10-06T03:35:33Z · note: review pass 1: needs some work
 - 2026-10-06T03:35:33Z · status review→active
 - 2026-10-06T03:37:49Z · body: section Load measurement
+- 2026-10-06T04:11:14Z · body
+- 2026-10-06T04:20:45Z · body
+- 2026-10-06T04:29:48Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202);
+       |                      ^
+    213|   expect(res.body.status).toBe("active");
+    214|   const deadline = Date.now() + 30_000;
+ ❯ tests/agent-review.test.ts:349:13
+ ❯ withServer tests/agent-review.test.ts:279:11
+ ❯ tests/agent-review.test.ts:341:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 415 passed | 1 skipped (417)
+      Tests  1 failed | 5024 passed | 15 skipped (5040)
+   Start at  04:25:39
+   Duration  243.44s (transform 6.82s, setup 2.00s, import 42.22s, tests 226.47s, environment 194.42s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 789ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  04:29:43
+   Duration  2.68s (transform 1.09s, setup 13ms, import 1.36s, tests 789ms, environment 448ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-06T04:35:20Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202); · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T04:35:21Z · status review→active
+- 2026-10-06T04:35:38Z · handoff failed · task-file handoff failed at check · remote validation unavailable: no usable remote host for any host — bee: prerequisite check failed (exit 255): ssh: connect to host bee port 22: Operation timed out; thinkpad: prerequisite check failed (exit 255): ssh: connect to host thinkpad port 22: Operation timed out; mini: prerequisite check failed (exit 255): ssh: connect to host 100.126.187.126 port 22: Operation timed out — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
+

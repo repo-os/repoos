@@ -213,7 +213,10 @@ These run as part of a task's life. They're what the `pm`, `engineer`, and
 - **Ross** — a repository assistant you can chat with. Answers questions about
   the repo; never edits files or changes task state.
 - **cto** — an optional always-on board monitor. Off by default; watches for
-  stuck tasks, stale reviews and broken builds, and reports rather than acts.
+  stuck tasks, stale reviews and broken builds. By default it reports rather
+  than acts; opt in to bounded recovery via `cto.actions` in Settings (restart a
+  stalled engineer, refresh main's install, re-queue an environment close-out).
+  Each action is rate limited and recorded in the notification bell.
   It runs read-only where its CLI supports it, and RepoOS quarantines any stray
   file a run still creates (moved under `.repoos/quarantine/` and reported in
   the run's report) so the main checkout is never left dirty.
