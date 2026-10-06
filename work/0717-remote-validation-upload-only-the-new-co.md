@@ -2,17 +2,18 @@
 id: "0717"
 title: "Remote validation: upload only the new commits, not the full-history git bundle, on every run"
 type: feature
-status: review
+status: done
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 4dd73f6567db0dfda2b0220869ef13be94554585
 assigned_to: ai
 created_by: ""
 branch: feat/remote-validation-upload-only-the-new-co
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T11:11:30Z"
-updated_at: "2026-10-06T15:05:00Z"
+updated_at: "2026-10-06T16:10:31Z"
 ---
 ## Problem
 
@@ -42,3 +43,4 @@ Read prepareRemoteTestBundle (it already bundles an extra baseSha for test scope
 - 2026-10-06T11:11:58Z · cli_override, model_override
 - 2026-10-06T11:11:58Z · status ready→active, branch
 - 2026-10-06T15:05:00Z · status active→review
+- 2026-10-06T16:10:31Z · status review→done, release:success
