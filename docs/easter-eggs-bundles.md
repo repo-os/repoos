@@ -45,6 +45,21 @@ If an item needs a design decision, changes behaviour an acceptance criterion
 covers, or could destabilize a subsystem, it is not an easter egg — give it its
 own task so it gets its own review attention.
 
+A bundle is still an ordinary task: it runs the gate and goes through review
+like any other. The only thing it saves is paying that overhead once for several
+fixes instead of once each — it is never a shortcut past the branch, the check
+or the review.
+
+## When an item grows
+
+Bundles go wrong when an item turns out to be bigger than it looked. When that
+happens, pull the item out into its own task and let the rest of the bundle
+land. Do not let a bundle absorb a design decision or a risky change just
+because it is already open — that is how a p2 cosmetic bundle becomes a
+release-critical task with five unrelated commits in it. The excluded subsystems
+named in **Notes for AI** are the same guard: if the fix needs those, it belongs
+in its own task.
+
 ## Rules of thumb
 
 - **3–6 items.** Below that, the overhead saved is marginal; above it the bundle
