@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
 type: feature
@@ -44,3 +45,4 @@ Read src/commands/tasks.ts and src/cli/ for the command registry and the HTTP ro
 - 2026-10-06T15:05:55Z · status ready→active, branch
 - 2026-10-06T15:12:01Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-10-06T15:55:45Z · needs_input
+
