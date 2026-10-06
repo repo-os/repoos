@@ -57,7 +57,9 @@ function makeOrchestrator(root: string, closeOut?: { timeoutMs: number }) {
     cacheDir: ".repoos",
     defaultStatus: "inbox",
     defaultAssignee: "unassigned",
-    ...(closeOut ? { closeOut } : {}),
+    ...(closeOut
+      ? { closeOut: { ...closeOut, timeoutMsFromToml: true as const } }
+      : {}),
   } as RepoOSConfig;
   const coordinator = createJobCoordinator(root);
   const orch = new CloseOutOrchestrator(config, coordinator);
@@ -126,14 +128,14 @@ describe("pipeline timeout enforcement (#0573)", () => {
         }
       ).syncCandidate(coordinator.getJob("0601"));
       expect(synced.ok).toBe(true);
-      // Simulate a run whose 6-minute budget (startedAt 10 minutes ago) is spent.
+      // Simulate a run whose adaptive 10-minute budget (startedAt 10 minutes ago) is spent.
       coordinator.updateJob("0601", { phase: "syncing", startedAt: AGED(600_000) });
 
       const res = await orch.processNext();
 
       expect(res.ok).toBe(false);
       expect(res.reason).toBe(
-        "close-out timed out after 6m — increase closeOut.timeoutMs or retry when the runner is less loaded",
+        "close-out timed out after 10m — increase closeOut.timeoutMs or retry when the runner is less loaded",
       );
       // A normal failed-job record (NOT a silent cancel-style removal) …
       const job = coordinator.getJob("0601");

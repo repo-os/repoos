@@ -50,7 +50,9 @@ function makeOrchestrator(
     cacheDir: ".repoos",
     defaultStatus: "inbox",
     defaultAssignee: "unassigned",
-    ...(closeOut ? { closeOut } : {}),
+    ...(closeOut
+      ? { closeOut: { ...closeOut, timeoutMsFromToml: true as const } }
+      : {}),
   } as RepoOSConfig;
   const coordinator = createJobCoordinator(root);
   const outcomes: CloseOutOutcomeEvent[] = [];
