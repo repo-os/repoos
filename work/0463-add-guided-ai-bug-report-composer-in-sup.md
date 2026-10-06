@@ -3,6 +3,9 @@ id: "0463"
 title: Add guided AI bug-report composer in Support
 type: feature
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys, third-party registration)"
 priority: p1
 area: support
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/add-guided-ai-bug-report-composer-in-sup
 model_override: opencode-go/mimo-v2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-09-20T09:02:32Z"
-updated_at: "2026-09-20T12:50:21Z"
+updated_at: "2026-10-06T23:48:12Z"
 ---
 ## Goal
 
@@ -46,3 +49,4 @@ Add focused tests for generation request/error states, edit/copy behavior, priva
 - 2026-09-20T11:54:15Z · status ready→active, branch
 - 2026-09-20T12:24:21Z · status active→review
 - 2026-09-20T12:50:21Z · status review→done, release:success
+- 2026-10-06T23:48:12Z · needs_input
