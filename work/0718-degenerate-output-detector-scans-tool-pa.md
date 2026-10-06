@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-06T14:26:42Z"
+review_passes: 1
 id: "0718"
 title: "Degenerate-output detector scans tool payloads and tool output, so it kills healthy agents (same class as #0709)"
 type: bug
@@ -15,7 +17,6 @@ branch: feat/degenerate-output-detector-scans-tool-pa
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T11:48:55Z"
-updated_at: "2026-10-06T14:26:42Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -51,3 +52,4 @@ Read #0709 and its fix (scrapeProviderFailure) first: same approach, structured 
 - 2026-10-06T14:25:36Z · status active→review
 - 2026-10-06T14:25:36Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-06T14:26:42Z · note: review pass 1: good to go
+
