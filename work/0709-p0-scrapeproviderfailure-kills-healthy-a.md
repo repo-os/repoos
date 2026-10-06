@@ -12,7 +12,7 @@ branch: feat/p0-scrapeproviderfailure-kills-healthy-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T07:35:51Z"
-updated_at: "2026-10-06T09:22:11Z"
+updated_at: "2026-10-06T09:22:20Z"
 ---
 ## Problem
 
@@ -51,4 +51,4 @@ Smallest fix: in scrapeProviderFailure only inspect structured fields for lines 
 - 2026-10-06T09:15:15Z · status review→active
 - 2026-10-06T09:21:10Z · status active→review
 - 2026-10-06T09:21:10Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-
+- 2026-10-06T09:22:20Z · note: review pass 1: good to go
