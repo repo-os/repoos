@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-06T01:38:38Z"
-review_passes: 2
 id: "0680"
 title: "UI verification gate: fail UI handoffs on browser console errors; reviewer sees the screenshots"
 type: feature
@@ -14,6 +12,8 @@ branch: feat/ui-verification-gate-fail-ui-handoffs-on
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:42Z"
+updated_at: "2026-10-06T01:42:28Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
