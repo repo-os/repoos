@@ -2,7 +2,7 @@
 id: "0709"
 title: "P0: scrapeProviderFailure kills healthy agents on any output line containing '402', 'billing' or 'rate limit'"
 type: bug
-status: inbox
+status: ready
 priority: p0
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T07:35:51Z"
-updated_at: "2026-10-06T07:36:01Z"
+updated_at: "2026-10-06T07:36:03Z"
 ---
 ## Problem
 
@@ -34,3 +34,4 @@ Smallest fix: in scrapeProviderFailure only inspect structured fields for lines 
 ## Activity
 
 - 2026-10-06T07:35:51Z · created · unknown
+- 2026-10-06T07:36:03Z · status inbox→ready
