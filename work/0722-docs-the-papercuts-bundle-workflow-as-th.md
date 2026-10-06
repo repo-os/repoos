@@ -2,7 +2,7 @@
 id: "0722"
 title: "Docs: the easter-eggs bundle workflow as the alternative to hotfix flows (AGENTS.md + docs/)"
 type: chore
-status: active
+status: review
 priority: p2
 area: docs
 story: "Field report: first agent-driven project run (opex)"
@@ -84,4 +84,4 @@ error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INST
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-06T17:22:23Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-06T17:22:23Z · status review→active
-- 2026-10-06T17:27:50Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-06T17:27:50Z · status active→review
