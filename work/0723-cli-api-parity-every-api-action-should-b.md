@@ -2,7 +2,7 @@
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/cli-api-parity-every-api-action-should-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
-updated_at: "2026-10-06T15:05:55Z"
+updated_at: "2026-10-06T17:43:27Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Read src/commands/tasks.ts and src/cli/ for the command registry and the HTTP ro
 - 2026-10-06T15:05:35Z · cli_override, model_override
 - 2026-10-06T15:05:48Z · status inbox→ready
 - 2026-10-06T15:05:55Z · status ready→active, branch
+- 2026-10-06T17:43:27Z · status active→review
