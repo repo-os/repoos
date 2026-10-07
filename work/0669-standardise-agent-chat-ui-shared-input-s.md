@@ -1,8 +1,10 @@
 ---
+updated_at: "2026-10-07T18:37:47Z"
+review_passes: 1
 id: "0669"
 title: "Standardise agent chat UI: shared input style, markdown replies, simplified headers with inline agent+model picker"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +13,7 @@ branch: feat/standardise-agent-chat-ui-shared-input-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T15:01:24Z"
-updated_at: "2026-10-07T18:18:52Z"
+last_check_failure: "repoos check at 2026-10-07T18:25:28.512Z: repoos check failed: ui verification: capture of / failed — click: Timeout 5000ms exceeded."
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -52,8 +54,18 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
     "route": "/",
     "highlight": ".floating-head-panel .agent-chat-header",
     "steps": [
-      {"click": "button.head-btn img[alt=\"CTO\"]"},
-      {"waitMs": 500}
+      {
+        "waitFor": "[data-test-id=\"floating-head-cto\"]"
+      },
+      {
+        "click": "[data-test-id=\"floating-head-cto\"]"
+      },
+      {
+        "waitFor": ".floating-head-panel .agent-chat-header"
+      },
+      {
+        "waitMs": 400
+      }
     ]
   },
   {
@@ -62,8 +74,18 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
     "route": "/",
     "highlight": ".floating-head-panel .agent-chat-header",
     "steps": [
-      {"click": "button.head-btn img[alt=\"Debugger\"]"},
-      {"waitMs": 500}
+      {
+        "waitFor": "[data-test-id=\"floating-head-debugger\"]"
+      },
+      {
+        "click": "[data-test-id=\"floating-head-debugger\"]"
+      },
+      {
+        "waitFor": ".floating-head-panel .agent-chat-header"
+      },
+      {
+        "waitMs": 400
+      }
     ]
   },
   {
@@ -72,8 +94,18 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
     "route": "/",
     "highlight": ".floating-head-panel .agent-chat-header",
     "steps": [
-      {"click": "button.head-btn img[alt=\"Ross\"]"},
-      {"waitMs": 500}
+      {
+        "waitFor": "[data-test-id=\"floating-head-ross\"]"
+      },
+      {
+        "click": "[data-test-id=\"floating-head-ross\"]"
+      },
+      {
+        "waitFor": ".floating-head-panel .agent-chat-header"
+      },
+      {
+        "waitMs": 400
+      }
     ]
   }
 ]
@@ -180,3 +212,10 @@ error: script "test" exited with code 1
 - 2026-10-07T18:16:34Z · body
 - 2026-10-07T18:18:07Z · body
 - 2026-10-07T18:18:52Z · body: section Shots
+- 2026-10-07T18:27:14Z · body: section Shots
+- 2026-10-07T18:27:27Z · body: section Shots
+- 2026-10-07T18:28:39Z · body
+- 2026-10-07T18:30:10Z · body
+- 2026-10-07T18:36:53Z · status active→review
+- 2026-10-07T18:37:46Z · note: review pass 1: good to go
+
