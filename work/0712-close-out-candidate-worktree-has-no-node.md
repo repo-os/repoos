@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 75ecc5c804367fa512aab520f4212af2a15d5d6f
 id: "0712"
 title: "Close-out candidate worktree has no node_modules: check plan fails with 'prettier: command not found'"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/close-out-candidate-worktree-has-no-node
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:49Z"
-updated_at: "2026-10-07T00:48:18Z"
+updated_at: "2026-10-07T00:53:18Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 75ecc5c804367fa512aab520f4212af2a15d5d6f
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 24: unless the check plan starts with an install step. Install deps (or reuse) in the candidate worktree, or fail with advice.
 
@@ -107,4 +107,4 @@ error: script "test" exited with code 1
 - 2026-10-07T00:38:18Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/mtd-remote-deadline.test.ts:147:28 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-07T00:38:18Z · status review→active
 - 2026-10-07T00:48:18Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-10-07T00:53:18Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
