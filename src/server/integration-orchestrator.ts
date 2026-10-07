@@ -1551,15 +1551,48 @@ export class CloseOutOrchestrator {
       .split("\n")
       .map((s) => s.trim())
       .filter(Boolean);
-    // The set must be exactly what the classifier approved — no extra file may
-    // be resolved by this narrow path.
+
+    // First apply the SAME auto-resolve semantics the normal merge uses for the
+    // closing task's own file and unrelated task files — those are routine
+    // bookkeeping conflicts, not the source conflict being resolved here, and
+    // `mergeBranch` would have resolved them had it not hit the real conflict.
+    const task = this.getTask?.(taskId);
+    const autoResolve = task ? [relative(this.config.root, task.absPath)] : [];
+    const autoResolveOurs = [`${this.config.workDir}/`];
+    const matchesRule = (p: string, rules: string[]): boolean =>
+      rules.some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
     const approved = new Set(conflictPaths);
-    if (conflicted.length === 0 || conflicted.some((p) => !approved.has(p))) {
+    const remaining: string[] = [];
+    for (const p of conflicted) {
+      const ours = matchesRule(p, autoResolveOurs);
+      const theirs = matchesRule(p, autoResolve);
+      if (!ours && !theirs) {
+        remaining.push(p);
+        continue;
+      }
+      // Ambiguous only if the classifier ALSO claims it — then the union path
+      // owns it; otherwise take the bookkeeping side the normal merge would.
+      if (approved.has(p) && !ours) {
+        remaining.push(p);
+        continue;
+      }
+      const side = theirs ? "--theirs" : "--ours";
+      const resolved = await runGit(wtPath, ["checkout", side, "--", p], 10_000);
+      if (resolved.status !== 0) {
+        await runGit(wtPath, ["merge", "--abort"], 10_000);
+        return { ok: false };
+      }
+      await runGit(wtPath, ["add", "--", p], 10_000);
+    }
+
+    // What remains must be exactly what the classifier approved — no extra file
+    // may be resolved by this narrow path.
+    if (remaining.length === 0 || remaining.some((p) => !approved.has(p))) {
       await runGit(wtPath, ["merge", "--abort"], 10_000);
       return { ok: false };
     }
 
-    for (const file of conflicted) {
+    for (const file of remaining) {
       let content: string;
       try {
         content = readFileSync(join(wtPath, file), "utf8");
@@ -1574,14 +1607,14 @@ export class CloseOutOrchestrator {
       }
       writeFileSync(join(wtPath, file), union.content);
     }
-    const add = await runGit(wtPath, ["add", "-A", "--", ...conflicted], 10_000);
+    const add = await runGit(wtPath, ["add", "-A", "--", ...remaining], 10_000);
     if (add.status !== 0) {
       await runGit(wtPath, ["merge", "--abort"], 10_000);
       return { ok: false };
     }
     // A conflict marker that survived would make the later marker scan fail the
     // candidate anyway; fail here with a clean abort instead.
-    for (const file of conflicted) {
+    for (const file of remaining) {
       try {
         if (/^<{7}$|^={7}$|^>{7}$/m.test(readFileSync(join(wtPath, file), "utf8"))) {
           await runGit(wtPath, ["merge", "--abort"], 10_000);
