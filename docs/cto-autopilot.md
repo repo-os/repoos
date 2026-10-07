@@ -136,3 +136,17 @@ actions would handle are omitted while automation is on. The broader notificatio
 bell (`GET /api/attention`) still lists informational events; the digest is the
 CTO's escalation surface only. The CTO does not invent work outside its allowlist;
 it reports and waits.
+
+## The board brief (rotation and handoff)
+
+The escalation digest answers "what needs a decision". The **board brief**
+(`GET /api/driver/brief`, `repoos driver brief [--json]`) answers "what is the
+state of the board right now" — the snapshot a driver needs on rotation, whether
+that is the CTO, a human, or an external agent session. It lists next actions
+(tagged CTO vs. human), the board by status with each task's cause, merged tasks
+since the last tag with SHAs, running agents, the close-out queue, host health
+and recent slow/hung runs, config keys changed since the release baseline, and
+the AGENTS.md rules that matter to a driver. `--json` makes it loadable by a
+driver agent. It replaces the hand-written handoff doc that went stale in
+minutes (#0731). Durable lessons belong in `docs/driver-notes.md`, in the repo,
+not in an agent's private memory.
