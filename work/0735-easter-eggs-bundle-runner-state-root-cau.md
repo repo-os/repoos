@@ -5,11 +5,11 @@ type: chore
 status: inbox
 priority: p2
 area: [server, web]
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-07T09:29:29Z"
-updated_at: "2026-10-07T09:29:29Z"
+updated_at: "2026-10-07T10:31:21Z"
 ---
 ## Problem
 Driver verification on 2026-10-07 found three small, independent follow-ups while landing #0727/#0729. Keep them out of the release-critical machinery branch.
@@ -26,6 +26,10 @@ Driver verification on 2026-10-07 found three small, independent follow-ups whil
 ## Notes for AI
 Independently verify against current main and running build before implementing, especially any cross-repo reports. Source evidence is driver log overnight-log-2026-10-06.md in opex docs, #0727 remote log thinkpad09:11Z assertion (correct SHA quoted), #0729 final reviewer09:27:31Z and onHung/markHung call sites. Areas server,web are existing vocabulary. Wait until #0729 lands; this is p2 follow-up, not a release blocker. No production screenshot fixtures. Bundle convention applies: three low-impact runner/close-out follow-ups, one focused worktree, one scoped check, one review, one close-out.
 
+## Owner fix to transfer (2026-10-07)
+Owner explicitly authorizes transferring the uncommitted .github/workflows/certify-harnesses.yml fix into this Easter eggs bundle. Exact patch preserved /private/tmp/repoos-owner-certify-harnesses.patch; exact full file /private/tmp/repoos-owner-certify-harnesses.yml. Apply the patch FIRST to this dedicated task worktree, commit as its own item preserving owner content. This removes invalid job-level matrix condition and uses Select harness step plus step-level guards. Add meaningful regression validation: scheduled/empty input runs each harness; targeted input runs matching harness only; nonmatching harness performs no checkout/install/certify/manifest/PR steps. Prefer existing workflow-validation tooling, do not run external workflow or open PR. Independently inspect correctness before modifying the owner fix; preserve evidence. Driver will verify byte-for-byte transfer before reverting ONLY transferred file on main. Engineer must never edit main. Continue original three bundle items after transfer; current-main/build relevance verification, no host/config/restart, one scoped check, normal review/MTD.
+
 ## Activity
 
 - 2026-10-07T09:29:29Z · created · hello@repoos.org
+- 2026-10-07T10:31:21Z · body
