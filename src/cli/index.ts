@@ -29,6 +29,19 @@ import { cmdDoctor } from "../commands/doctor.js";
 import { cmdCertify } from "../commands/certify.js";
 import { cmdSupport } from "../commands/support.js";
 import { cmdService } from "../commands/service.js";
+import {
+  cmdAgentsRunning,
+  cmdConfig,
+  cmdDone,
+  cmdMessage,
+  cmdOverride,
+  cmdPause,
+  cmdPreview,
+  cmdReview,
+  cmdRunners,
+  cmdStart,
+  cmdStats,
+} from "../commands/control-api.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
 import { reexecAfterStaleBuild, reexecUnderBunIfRequested } from "../core/runtime.js";
@@ -207,6 +220,61 @@ function main(): void {
       break;
     case "check":
       void cmdCheck(rest);
+      break;
+    case "start":
+      void cmdStart(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "pause":
+      void cmdPause(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "message":
+      void cmdMessage(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "review":
+      void cmdReview(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "done":
+      void cmdDone(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "override":
+      void cmdOverride(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "preview":
+      void cmdPreview(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "config":
+      void cmdConfig(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "runners":
+      void cmdRunners(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "agents":
+      void cmdAgentsRunning(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "stats":
+      void cmdStats(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
       break;
     case "shot":
       void cmdShot(rest)
