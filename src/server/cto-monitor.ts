@@ -76,6 +76,8 @@ export class CTOMonitor {
   private nudgedIdleTasks = new Set<string>();
   /** Optional allowlisted recovery pass (#0688), wired from the server boot. */
   private safeActions: (() => Promise<void>) | null = null;
+  /** Called when the monitor wakes (#0728 CTO heartbeat). */
+  private heartbeatTouch: (() => void) | null = null;
 
   constructor(config: RepoOSConfig, index: LiveIndex, cto: CTOManager, runner?: AgentRunner) {
     this.config = config;
@@ -120,6 +122,7 @@ export class CTOMonitor {
    */
   async checkNow(kind: string = "manual", detail?: string): Promise<void> {
     if (!this.cto.enabled()) return;
+    this.heartbeatTouch?.();
 
     // This is deliberately independent of the CTO's longer report turn: an
     // engineer nudge should still be timely if a report is in progress. The
@@ -158,6 +161,10 @@ export class CTOMonitor {
 
   wireSafeActions(fn: () => Promise<void>): void {
     this.safeActions = fn;
+  }
+
+  wireHeartbeatTouch(fn: () => void): void {
+    this.heartbeatTouch = fn;
   }
 
   private shouldSkipHealthy(): boolean {

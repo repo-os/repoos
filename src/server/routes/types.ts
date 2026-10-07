@@ -19,6 +19,7 @@ import type { RemoteValidator } from "../remote-validation.js";
 import type { FreeformRunManager } from "../freeform-runs.js";
 import type { HandoffOrigin } from "../handoff.js";
 import type { TaskCheckManager } from "../task-check.js";
+import type { CtoHeartbeatTracker } from "../cto-heartbeat.js";
 
 export interface SyncResult {
   ok: boolean;
@@ -42,6 +43,8 @@ export interface RouteContext {
   previews: PreviewManager;
   reviews: ReviewManager;
   cto: CTOManager;
+  /** CTO liveness for the attention feed (#0728). */
+  ctoHeartbeat?: CtoHeartbeatTracker;
   /**
    * Durable, reload-resumable registry for freeform PM task-creation runs
    * (#0403). The freeform route starts a run here instead of fire-and-forget

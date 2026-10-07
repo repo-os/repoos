@@ -88,6 +88,7 @@ import {
   shouldRunCliRemotePreReviewGate,
   summarizeRemoteFallbackDetail,
   REPOOS_REMOTE_FALLBACK_DETAIL,
+  REPOOS_CHECK_GATE_NOTE,
 } from "../server/pre-review-remote-gate.js";
 
 /**
@@ -1525,10 +1526,16 @@ async function triageIsolatedFailures(
 
 async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   // The close-out pipeline can hand the suite to the Remote Validation Runner
-  // and then run only the cheap local guards (REPOOS_SKIP_TESTS=1).
+  // and then run only the cheap local guards (REPOOS_SKIP_TESTS=1), or reuse a
+  // handoff-proven result entirely (#0724). Either way the step is skipped —
+  // say which, so the Checks tab is not misleading.
   if (process.env.REPOOS_SKIP_TESTS === "1") {
+    const reuseNote = process.env[REPOOS_CHECK_GATE_NOTE]?.trim();
+    const viaReuse = reuseNote ? /reus|identical|bookkeeping/i.test(reuseNote) : false;
     return skipped(
-      "skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)",
+      viaReuse
+        ? `skipped — full suite reused from the handoff gate (${reuseNote})`
+        : "skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)",
     );
   }
   const hasTestScript = Boolean(ctx.scriptPkg.scripts?.test);
@@ -2420,10 +2427,18 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     detail: (() => {
       const fallback = process.env[REPOOS_REMOTE_FALLBACK_DETAIL]?.trim();
       const stepDetail = gatingFailures[0]?.detail ?? null;
-      if (!fallback) return stepDetail;
-      const summary = summarizeRemoteFallbackDetail(fallback);
-      if (!stepDetail) return summary;
-      return `${summary} — ${stepDetail}`;
+      // #0724: which close-out gate mode ran and why, so the Checks tab is
+      // auditable ("reused from handoff check <sha>" / "scoped N files").
+      const gateNote = process.env[REPOOS_CHECK_GATE_NOTE]?.trim();
+      const fallbackPart = (() => {
+        if (!fallback) return null;
+        const summary = summarizeRemoteFallbackDetail(fallback);
+        if (!stepDetail) return summary;
+        return `${summary} — ${stepDetail}`;
+      })();
+      const base = fallbackPart ?? stepDetail;
+      if (!gateNote) return base;
+      return base ? `${gateNote} — ${base}` : gateNote;
     })(),
     // The stored detail is a short log tail that routinely loses the failing
     // test's name; keep the names themselves so "which test?" is a query.

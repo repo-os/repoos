@@ -22,6 +22,8 @@ import type { ReleaseNotesRun, ReleaseRun } from "./routes/release.js";
 import { getRepoOSDb } from "../core/db.js";
 import { getCheckStore, type CheckRunPhase } from "../core/check-store.js";
 import { DEFAULT_STALL_TIMEOUT_MS } from "./agents.js";
+import type { CtoHeartbeatTracker } from "./cto-heartbeat.js";
+import { ctoSilentThresholdMs } from "./cto-heartbeat.js";
 
 /** Maps a tracked TaskCheckManager kind to its history phase. */
 const TASK_CHECK_PHASE: Record<string, CheckRunPhase> = {
@@ -68,6 +70,7 @@ export interface AttentionFeedDeps {
   getReleaseRun: () => ReleaseRun;
   getReleaseNotesRun: () => ReleaseNotesRun;
   previewTargetAreas: string[];
+  ctoHeartbeat?: CtoHeartbeatTracker;
 }
 
 /** Read the recent check-run history reduced to what the median needs. */
@@ -211,5 +214,9 @@ export function assembleAttentionFeed(deps: AttentionFeedDeps): AttentionFeed {
     slowRuns,
     slowRunNotices,
     previewTargetAreas: deps.previewTargetAreas,
+    ctoHeartbeatAt: deps.ctoHeartbeat?.last() ?? null,
+    ctoSilentThresholdMs: ctoSilentThresholdMs(
+      (deps.config as { ctoMonitorIntervalMs?: number }).ctoMonitorIntervalMs,
+    ),
   });
 }

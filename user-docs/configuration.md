@@ -410,6 +410,7 @@ attention.slowRunMultiplier = 1.5
 
 ```toml
 closeOut.timeoutMs = 360000
+closeOut.gate = "scoped"              # "scoped" (default) | "reuse" | "full"
 closeOut.candidate = "symlink-main"   # or "own-install"
 closeOut.installCommand = ""          # optional shell install for candidates / main refresh
 closeOut.postPublishCommand = ""      # optional shell install in main after lockfile-changing merges
@@ -418,6 +419,7 @@ closeOut.postPublishCommand = ""      # optional shell install in main after loc
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `closeOut.timeoutMs` | number | `360000` (6 min) | yes | Total wall-clock budget for **one** close-out attempt — from when the job leaves the queue until it reaches `failed`, `done`, or is removed by a user cancel. A close-out that runs past it is aborted: in-flight build/check/publish children are killed, the throwaway candidate worktree is torn down, and the job is recorded as a retryable `failed` whose reason starts `close-out timed out after …`. The task stays in `review` with its feature branch and worktree untouched, so **Move to done** can be retried. The single validating retry, main-drift resyncs, and remote validation (host-pool queue wait included) all spend the **same** budget, and per-step child timeouts are capped to whatever budget remains. `0` disables the ceiling (the unbounded pre-#0573 behaviour). Invalid or negative values are ignored with a `[closeOut] timeoutMs …` console warning and fall back to the default. |
+| `closeOut.gate` | string | `"scoped"` | yes | How much of the merge gate a Move to done re-runs (#0724). The candidate already passed the identical full gate at handoff, so the close-out compares the candidate tree against the tree the handoff gate recorded and picks a mode. `"reuse"` runs the cheap steps and skips the suite when the candidate tree is identical to the tested tree or main advanced with bookkeeping only; `"scoped"` (default) reuses in those cases and otherwise runs `repoos check --changed <tested base>`; `"full"` always runs the whole suite. Releases and paths under `check.fullSuitePaths` always run the full suite, and a scoped failure is retried once as the full suite. Invalid values are ignored with a warning and fall back to `"scoped"`. |
 
 Edit it in **Settings → General → "Close-out timeout"** (presets plus *Off (no
 limit)*), or set any value directly in `repoos.toml`. A timeout is a failure
@@ -776,7 +778,7 @@ than reporting green. (`[checks]` is accepted as an alias for `[check]`.)
 | `check.steps.requires` | array of strings | unset | yes | Binaries that must be on `PATH`; a missing one fails a required step with install advice. |
 | `check.steps.dependsOn` | array of strings | unset | yes | Skip this step when a named earlier required step failed. |
 | `check.uiSmoke` | string | unset | yes | Command for the UI smoke step. Overrides a `smoke` script in `package.json`; with neither, the step skips. |
-| `check.isolationRuns` | number | `3` | yes | After a failed tests step names a few test files, re-run each alone this many times and record `passed N/N alone` / `failed N/N alone` on the run. Informational only — it never turns a failed run green. `0` disables it. Interactive/CLI and pre-review runs only; close-out always runs the full suite. |
+| `check.isolationRuns` | number | `3` | yes | After a failed tests step names a few test files, re-run each alone this many times and record `passed N/N alone` / `failed N/N alone` on the run. Informational only — it never turns a failed run green. `0` disables it. Interactive/CLI and pre-review runs only; close-out and release never use it. |
 | `check.uiStylesheet` | string | unset | yes | Repo-relative stylesheet the CSS-layering and theme-contrast guards read. With it absent, both skip. |
 | `check.themeScopes` | array of tables | unset | yes | Theme blocks for the contrast guard. Each row is documented just below. |
 | `check.themeScopes.selector` | string | required | yes | CSS selector that opens the block, e.g. `:root[data-ui-theme="clear"]`. |
@@ -791,6 +793,7 @@ than reporting green. (`[checks]` is accepted as an alias for `[check]`.)
 | `check.bareRequireExcludes` | array of strings | tsconfig `exclude` | yes | Paths or globs the bare-`require()` guard skips. Consulted only with `bareRequireDirs`. |
 | `check.hardcodedColorDirs` | array of strings | unset | yes | Source roots the `hardcoded-colors` guard scans for `#hex` / `rgba(255,…)` literals in component `<style>` blocks. Stylesheets are deliberately out of scope — their literals are theme tokens, checked by `theme-contrast`. |
 | `check.contrastExempts` | array of tables | unset | yes | Selectors the rendered-contrast audit allows below the WCAG floor, each with a reason. Rows missing either half are dropped. |
+| `check.fullSuitePaths` | array of strings | unset | yes | Repo-relative path prefixes that force the **full** close-out suite even when `closeOut.gate` would reuse or scope it (#0724) — machinery the changed-path scoping cannot reason about, e.g. a CI pipeline or the check engine's own config. |
 | `check.contrastExempts.selector` | string | required | yes | CSS selector to exempt (matched against the text's element and its ancestors), e.g. `.code-pane`. |
 | `check.contrastExempts.reason` | string | required | yes | Why the block is intentionally off-contrast — this is what makes the exemption reviewable. |
 

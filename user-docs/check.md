@@ -240,8 +240,9 @@ repoos check --changed main
 With `--changed <ref>` (or `REPOOS_CHECK_CHANGED=<ref>` in the environment),
 steps that declare `whenChanged` run only when a changed path matches their
 globs; steps without it still run. This is a **fast pre-review pass** — an
-agent's self-check before handoff — never the final gate. Close-out runs the
-full plan.
+agent's self-check before handoff. Close-out runs the **full profile**
+(`--profile full`), but since #0724 it may *reuse* a handoff-proven result or
+**scope** the tests to what changed (see "Close-out gate scope" below).
 
 When `[remoteValidation] enabled = true`, `repoos check` runs install + build +
 tests on the remote runner first (unless `--local-tests` or the remote half already
@@ -254,7 +255,8 @@ remote-validation events show bundle size and upload time for each run. The
 Remote runners tab and Settings → Remote validation show each host's
 `validate.sh` generation and a one-line install command when an update is needed. With `--changed` /
 `REPOOS_CHECK_CHANGED`, the **remote** test step is scoped the same way as locally
-(#0695); handoff and close-out still run the full suite on the runner. Managed
+(#0695); handoff runs the full suite on the runner, and close-out scopes it only
+when main moved with real code (#0724, below). Managed
 engineers (`REPOOS_AGENT=1`) always use the board's runner (Hetzner or Tailscale).
 Run `repoos check` once before handoff — not after every edit — to avoid WIP
 checkpoint churn. Handoff reuses a green **full** remote pass at the same commit
@@ -282,10 +284,40 @@ green:
   under load and passes alone is still a real bug — a pass in isolation is not
   proof of a flake, only a clue.
 
-Both are disabled for close-out and release: those runs always execute the full
-suite from a clean slate, and the remote close-out gate never uses them. Set
+Both are disabled for close-out and release: those gates never apply the
+failed-first ordering or isolation-triage accelerators, and the remote close-out
+gate never uses them. (Close-out still runs the full suite at least once on any
+tree it must test — see "Close-out gate scope" below.) Set
 `check.isolationRuns = 0` to disable isolation triage entirely. The setting is
 also available in Settings → Advanced.
+
+### Close-out gate scope
+
+Move to done does not blindly re-run the whole suite (#0724). The candidate is
+the feature branch merged with current main, and that commit already passed the
+identical full gate at handoff, so the close-out compares the candidate tree
+against the tree the handoff gate recorded (`check_runs.candidate_sha` of the
+latest green full pre-review run) and picks a mode from `closeOut.gate`
+(`full | scoped | reuse`, default `scoped`, in Settings → General):
+
+| Mode | When | What runs |
+| --- | --- | --- |
+| **reuse** | The candidate tree is identical to the handoff-tested tree, or main advanced with bookkeeping only (`work/`, `inputs/`, `stories/`, `dist/`) | Cheap steps only; the tests step records `skipped — full suite reused from the handoff gate` |
+| **scoped** | Main advanced with real code | The full profile, with the tests step scoped to `--changed <tested base>` (#0695), locally and on the runner |
+| **full** | `closeOut.gate = full`, a declared `[[check.fullSuitePaths]]` prefix changed, or a release | The whole suite, as before |
+
+`[[check.fullSuitePaths]]` (Settings → Advanced) lists repo-relative path
+prefixes that always force the full suite — machinery the changed-path scoping
+cannot reason about, such as a CI pipeline or the check engine's own config.
+
+A **scoped** run that fails is re-run once as the identical **full** suite
+before the close-out fails — on the runner (dropping the changed ref) and
+locally — so scoping can cost time but never correctness. Without a recorded
+tested tree (no remote validation, or no green full pre-review run) there is
+nothing to reuse and no base to scope against, so the close-out runs the full
+suite exactly as before. The Checks → Runs tab shows the chosen mode and why in
+the run's detail; a reused suite's tests step reads
+`skipped — full suite reused from the handoff gate`.
 
 ### Cross-cutting steps
 
