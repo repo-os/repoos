@@ -12,7 +12,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-07T02:43:26Z"
+updated_at: "2026-10-07T02:44:49Z"
 review_rounds: 2
 review_passes: 4
 last_check_failure: "repoos check at 2026-10-07T01:25:57.253Z: server-side finalization timed out (deadline exceeded)"
@@ -127,3 +127,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T02:40:42Z · note: DRIVER review followup: current attention.ts:419 independently confirms wrong /agents?tab=runners link; use /checks?tab=remote with regression test. Corrected Shots plan already exists from driver01:18 but handoff reused OLD PNGs. Do not declare screenshot fixes completed merely by updating plan: recapture via sanctioned repoos shot using current Settings focus=attention.slowRunMultiplier + data-config-key highlight and Checks remote route, truthful badge label if no live slow run; stop managed preview afterward via API. No concurrent external edits; follow current main/version verification. #0712 close-out is cancelled pending runner repair (missing Vitest forks.js), do not widen timeout/alter hosts/config to bypass.
 - 2026-10-07T02:41:36Z · body: section Shots
 - 2026-10-07T02:43:26Z · body
+- 2026-10-07T02:44:49Z · body
