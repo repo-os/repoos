@@ -1644,10 +1644,7 @@ export async function execRemoteWithHardDeadline(
   timeoutMs: number,
 ): Promise<RemoteExecResult> {
   const hard = new Promise<RemoteExecResult>((resolve) => {
-    const t = setTimeout(
-      () => resolve({ code: null, output: "", timedOut: true }),
-      timeoutMs,
-    );
+    const t = setTimeout(() => resolve({ code: null, output: "", timedOut: true }), timeoutMs);
     t.unref?.();
   });
   return Promise.race([exec.runRemote(host, command, onChunk, timeoutMs), hard]);

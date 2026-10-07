@@ -2468,9 +2468,7 @@ describe("hung run recovery end to end (#0729)", () => {
       uploadFile: vi.fn(),
       downloadDir: vi.fn(),
       probeTcp: vi.fn(),
-      runRemote: vi.fn(
-        (): Promise<RemoteExecResult> => new Promise(() => {}),
-      ),
+      runRemote: vi.fn((): Promise<RemoteExecResult> => new Promise(() => {})),
     };
     const host = { ip: "a", user: "u" };
     const res = await execRemoteWithHardDeadline(exec, host, "true", () => {}, 40);
