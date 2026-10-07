@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T12:21:44.271Z: server-side finalization timed out (deadline exceeded)"
 updated_at: "2026-10-07T12:01:02Z"
 review_passes: 2
 id: "0724"
@@ -13,7 +15,6 @@ created_by: ""
 branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
 review_rounds: 1
-last_check_failure: "repoos check at 2026-10-07T10:26:38.467Z: repoos check failed: build complete in 3.72s. · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-ico… (truncated)"
 ---
 ## Problem
 
@@ -101,4 +102,5 @@ Still open by design: reuse requires a recorded green FULL pre-review row (no re
 - 2026-10-07T12:00:04Z · status active→review
 - 2026-10-07T12:00:05Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-07T12:01:02Z · note: review pass 2: good to go
+
 
