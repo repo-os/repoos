@@ -44,4 +44,4 @@ VERIFY FIRST: the field report came from an older server build. Before changing 
 - 2026-10-07T01:10:27Z · status active→review
 - 2026-10-07T01:10:28Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-07T01:11:23Z · note: review pass 2: good to go
-
+- 2026-10-07T01:15:54Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria, Notes for AI
