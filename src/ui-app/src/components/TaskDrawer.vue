@@ -4536,6 +4536,7 @@ watch(
           <button
             type="button"
             class="tab-btn"
+            data-test-id="task-tab-review"
             :class="{ active: ui.activeTab === 'review' }"
             :data-tip="
               ui.active.hotfix
