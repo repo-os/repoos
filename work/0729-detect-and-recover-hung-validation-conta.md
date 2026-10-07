@@ -1,6 +1,6 @@
 ---
-last_close_out_gate_ms: 364247
-last_close_out_gate_at: "2026-10-07T09:54:23.715Z"
+last_close_out_gate_ms: 418898
+last_close_out_gate_at: "2026-10-07T10:03:26.584Z"
 id: "0729"
 title: "Detect and recover hung validation containers on runner hosts (kill, retry on another host, isolate the bun cache per run); CTO safe action"
 type: bug
@@ -14,7 +14,7 @@ branch: feat/detect-and-recover-hung-validation-conta
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T09:54:23Z"
+updated_at: "2026-10-07T10:03:26Z"
 review_passes: 6
 close_out_repair_count: 1
 error: "script \\"test\\" exited with code 1 — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.\""
@@ -174,4 +174,5 @@ error: script "test" exited with code 1
 - 2026-10-07T09:45:11Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-07T09:46:26Z · note: review pass 6: good to go
 - 2026-10-07T09:54:23Z · close-out gate completed in 364s
+- 2026-10-07T10:03:26Z · close-out gate completed in 419s
 
