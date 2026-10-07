@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0669"
 title: "Standardise agent chat UI: shared input style, markdown replies, simplified headers with inline agent+model picker"
 type: feature
@@ -46,3 +47,4 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 - 2026-10-05T22:32:55Z · status inbox→ready
 - 2026-10-07T17:06:44Z · status ready→active, branch
 - 2026-10-07T17:17:27Z · body
+
