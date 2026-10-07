@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 322397
-last_close_out_gate_at: "2026-10-07T18:14:48.350Z"
 id: "0701"
 title: Show the running server's version next to the CLI's and warn when the server is stale
 type: feature
-status: review
+status: done
 priority: p2
 area: [server, cli]
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 9bc456f10df05443d9900542720c245c93801ede
 assigned_to: ai
 created_by: ""
 branch: feat/show-the-running-server-s-version-next-t
 created_at: "2026-10-06T03:15:53Z"
-updated_at: "2026-10-07T18:14:48Z"
+updated_at: "2026-10-07T18:15:06Z"
+last_close_out_gate_ms: 322397
+last_close_out_gate_at: "2026-10-07T18:14:48.350Z"
 review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 2
@@ -113,4 +114,4 @@ src/commands/status.ts(414,9): error TS2741: Property 'buildState' is missing in
 - 2026-10-07T18:07:51Z · status active→review
 - 2026-10-07T18:09:10Z · note: review pass 2: good to go
 - 2026-10-07T18:14:48Z · close-out gate completed in 322s
-
+- 2026-10-07T18:15:06Z · status review→done, release:success
