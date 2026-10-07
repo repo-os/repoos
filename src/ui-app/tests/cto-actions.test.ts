@@ -8,6 +8,8 @@ import { tmpdir } from "node:os";
 import {
   ctoActionRateLimitExceeded,
   configuredCtoActions,
+  countCtoRestartsThisEpisode,
+  decideRestartStrategy,
   isCtoActionAllowlisted,
 } from "../../core/cto-actions.js";
 import { createCtoActionRateStore } from "../../server/cto-action-rates.js";
@@ -114,5 +116,141 @@ describe("CTO action rate limits", () => {
     const cfg = { ...DEFAULT_CONFIG, root: "/tmp", cto: { actions: ["restart-stalled-agent"] } };
     expect(isCtoActionAllowlisted(cfg, "restart-stalled-agent")).toBe(true);
     expect(isCtoActionAllowlisted(cfg, "refresh-main-install")).toBe(false);
+  });
+});
+
+describe("CTO restart strategy (#0727)", () => {
+  it("resumes after a network stall", () => {
+    expect(
+      decideRestartStrategy(
+        {
+          kind: "crashed",
+          reason: "the agent stalled or timed out — see DEFAULT_STALL_TIMEOUT_MS",
+        },
+        0,
+      ),
+    ).toBe("resume");
+  });
+
+  it("resumes a never-started session", () => {
+    expect(
+      decideRestartStrategy({ kind: "never-started", reason: "agent never started" }, 0),
+    ).toBe("resume");
+  });
+
+  it("starts fresh after a real crash", () => {
+    expect(
+      decideRestartStrategy({ kind: "crashed", reason: "agent crashed mid-turn" }, 0),
+    ).toBe("fresh");
+  });
+
+  it("starts fresh once a task has been restarted past the threshold", () => {
+    expect(
+      decideRestartStrategy(
+        { kind: "crashed", reason: "the agent stalled or timed out" },
+        2,
+      ),
+    ).toBe("fresh");
+  });
+
+  it("counts restarts in the current active episode only", () => {
+    const body = [
+      "## Activity",
+      "- 2026-01-01T00:00:00Z · CTO action: restart-stalled-agent (resume) · old",
+      "- 2026-01-02T00:00:00Z · status review→active",
+      "- 2026-01-02T00:01:00Z · CTO action: restart-stalled-agent (fresh) · one",
+      "- 2026-01-02T00:02:00Z · CTO action: restart-stalled-agent (resume) · two",
+    ].join("\n");
+    expect(countCtoRestartsThisEpisode(body)).toBe(2);
+  });
+
+  it("is zero before any restart in the episode", () => {
+    expect(
+      countCtoRestartsThisEpisode("## Activity\n- 2026-01-02T00:00:00Z · status ready→active\n"),
+    ).toBe(0);
+  });
+});
+
+describe("automation kill switch (#0727)", () => {
+  it("blocks CTO-actor actions when paused", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-cto-paused-"));
+    const config = {
+      ...DEFAULT_CONFIG,
+      root,
+      cto: { actions: ["refresh-main-install"] },
+      automation: { paused: true },
+    };
+    const result = await runCtoSafeAction(
+      {
+        config,
+        index: {} as never,
+        runner: {} as never,
+        jobCoordinator: {} as never,
+        attentionEvents: createAttentionEventStore(root),
+        rates: createCtoActionRateStore(root),
+        logger: { agent: vi.fn(), task: vi.fn() } as never,
+        emitEvent: vi.fn(),
+        triggerJobProcessing: vi.fn(),
+        reportedStages: {},
+      },
+      "refresh-main-install",
+      { actor: "cto" },
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toContain("paused");
+  });
+
+  it("does not block a human's explicit action when paused", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-cto-human-"));
+    const config = {
+      ...DEFAULT_CONFIG,
+      root,
+      cto: { actions: ["refresh-main-install"] },
+      automation: { paused: true },
+    };
+    const result = await runCtoSafeAction(
+      {
+        config,
+        index: {} as never,
+        runner: {} as never,
+        jobCoordinator: {} as never,
+        attentionEvents: createAttentionEventStore(root),
+        rates: createCtoActionRateStore(root),
+        logger: { agent: vi.fn(), task: vi.fn() } as never,
+        emitEvent: vi.fn(),
+        triggerJobProcessing: vi.fn(),
+        reportedStages: {},
+      },
+      "refresh-main-install",
+      { actor: "human" },
+    );
+    // The install itself fails in a bare temp dir; the point is the kill switch
+    // did not short-circuit it.
+    if (!result.ok) expect(result.reason).not.toContain("paused");
+  });
+
+  it("parses automation.paused from repoos.toml and exposes the schema key", () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-automation-"));
+    writeFileSync(join(dir, "repoos.toml"), "automation.paused = true\n", "utf8");
+    const cfg = loadConfig(dir);
+    expect(cfg.automation?.paused).toBe(true);
+    expect(getConfigSchema().find((f) => f.key === "automation.paused")).toBeDefined();
+    expect(SUPPORTED_TOML_KEYS).toContain("automation.paused");
+    expect(SUPPORTED_TOML_KEYS).toContain("approval.autoApprove.machineryPaths");
+    expect(SUPPORTED_TOML_KEYS).toContain("approval.autoApprove.allowP0");
+  });
+
+  it("parses the new approval keys from repoos.toml", () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-approval-paths-"));
+    writeFileSync(
+      join(dir, "repoos.toml"),
+      'approval.enabled = true\napproval.autoApprove.machineryPaths = ["vendor/"]\napproval.autoApprove.allowP0 = true\n',
+      "utf8",
+    );
+    const cfg = loadConfig(dir);
+    expect(cfg.approval?.autoApprove?.machineryPaths).toEqual(["vendor/"]);
+    expect(cfg.approval?.autoApprove?.allowP0).toBe(true);
+    expect(getConfigSchema().find((f) => f.key === "approval.autoApprove.machineryPaths")).toBeDefined();
+    expect(getConfigSchema().find((f) => f.key === "approval.autoApprove.allowP0")).toBeDefined();
   });
 });
