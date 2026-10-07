@@ -2,7 +2,7 @@
 id: "0731"
 title: Generate the CTO's board brief from live state (also usable as the handoff for any human or agent session)
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/generate-the-cto-s-board-brief-from-live
 created_at: "2026-10-07T02:05:40Z"
-updated_at: "2026-10-07T18:14:19Z"
+updated_at: "2026-10-07T18:14:59Z"
 last_close_out_gate_ms: 290058
 last_close_out_gate_at: "2026-10-07T17:47:49.796Z"
 review_passes: 1
@@ -56,3 +56,4 @@ The brief is produced by the CTO from live state (merged since the last tag, tas
 - 2026-10-07T18:11:02Z · status inbox→ready
 - 2026-10-07T18:11:28Z · status ready→active
 - 2026-10-07T18:14:19Z · body
+- 2026-10-07T18:14:59Z · status active→review
