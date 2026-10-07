@@ -259,6 +259,7 @@ function fmtAgo(iso: string): string {
                 v-for="r in h.activeRuns"
                 :key="`${r.taskId}-${r.startedAt}`"
                 class="rr-active-run"
+                :class="{ 'rr-hung': r.hung }"
               >
                 <span class="mono">{{ runLabel(r) }}</span>
                 <span v-if="r.phase" class="rr-dim"> · {{ r.phase }}</span>
@@ -273,9 +274,23 @@ function fmtAgo(iso: string): string {
                 >
                   slow
                 </span>
+                <span v-if="r.hung" class="rr-hung-badge">hung · killing</span>
               </span>
             </template>
             <span v-else class="rr-dim">idle</span>
+          </dd>
+        </div>
+        <div v-if="(h.hungRuns ?? []).length">
+          <dt>Hung runs</dt>
+          <dd class="rr-wrap">
+            <span
+              v-for="hr in h.hungRuns"
+              :key="`${hr.taskId}-${hr.at}`"
+              class="rr-active-run rr-hung"
+            >
+              <span class="mono">#{{ hr.taskId }}</span>
+              <span class="rr-dim"> · killed {{ fmtAgo(hr.at) }}</span>
+            </span>
           </dd>
         </div>
         <div>
@@ -607,6 +622,18 @@ function fmtAgo(iso: string): string {
   letter-spacing: 0.04em;
   color: var(--amber);
   border: 1px solid var(--amber);
+}
+.rr-hung {
+  color: var(--amber);
+}
+.rr-hung-badge {
+  margin-left: 6px;
+  padding: 0 5px;
+  border: 1px solid var(--amber);
+  border-radius: 999px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 .rr-queue-note {
   margin: 0;

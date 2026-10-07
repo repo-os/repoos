@@ -2,27 +2,25 @@
 id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
-status: active
-needs_input: true
-needs_input_reason: degenerate-output
-needs_input_detail: Degenerate output loop detected after one automatic retry.
+status: done
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: e158ff71490623115ceb4de85f6b1e802c4b4ede
 assigned_to: ai
 created_by: ""
 branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-06T13:49:16Z"
+updated_at: "2026-10-07T03:55:54Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 404c1109cf8aa78b7446c56733747d534bb744ae
 merge_conflict_retry_count: 2
 review_passes: 2
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-06T03:42:59.088Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
-dev_error_count: 10
+dev_error_count: 11
 ---
 ## Problem
 
@@ -123,3 +121,8 @@ Close-out failed twice with 'merge conflict in src/server/server.ts' because mai
    Duration  2.72s (transform 1.13s, setup 13ms, import 1.41s, tests 782ms, environment 440ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T02:12:40Z · needs_input
+- 2026-10-07T02:12:44Z · note: DRIVER recovery 2026-10-07: no live engineer/reviewer; clean existing worktree, 694 commits behind current main acb6cf309. Previous failed integration names src/server/server.ts conflict; later handoff failed agent-review.test.ts:349. Current main default closeOut.timeoutMs remains360000 and existing conflict recovery exists, so independently verify every acceptance claim and identify remaining gaps before changing code. Current compiled build hash0c80617fbf0a version0.5.66; cross-repo report came from older running builds, not proof of current behavior. Use FRESH cursor/composer-2.5 session because prior session was loop-poisoned. Read current AGENTS and latest owner runbook/log. Merge current main in recorded worktree, preserve current source and task bookkeeping via supported RepoOS operations; never hand-edit work/stories. Diagnose reviewer failures with evidence, do not weaken assertions or widen timeouts to pass. Scoped check once after actual repairs, rebuild as needed, re-handoff, new review. No main commit/push/PR/release/host/config/server changes. Keep source changes intrinsic0679; no unrelated easter eggs. Record current commit/build, reproduction and still relevant/partly fixed/already fixed/misdiagnosed per item.
+- 2026-10-07T02:37:02Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-10-07T03:08:36Z · status active→review
+- 2026-10-07T03:55:54Z · status review→done, release:success

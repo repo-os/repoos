@@ -17,6 +17,10 @@ import { dirname, isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
 import { worktreesDir, worktreesInheritEnv } from "./config.js";
 import { notifyGitMutation } from "./git-activity.js";
+import {
+  isLockfileOnlyConflicts,
+  tryCompleteMergeByRegeneratingLockfile,
+} from "./lockfile-conflict.js";
 
 function git(root: string, args: string[]): string | null {
   try {
@@ -1194,6 +1198,32 @@ export async function getChangedFilePaths(
     .filter(Boolean);
 }
 
+/**
+ * The paths a feature branch changes against its own merge-base with the base
+ * branch (`git diff --name-only <merge-base> HEAD`) — the branch's own work,
+ * not whatever main moved on to since (#0727). Returns `null` when git errors
+ * or times out so a caller can fail closed rather than read "no changes". The
+ * worktree for `branch` is used when present, else the repo root.
+ */
+export async function branchChangedPaths(
+  root: string,
+  branch: string,
+  baseBranch = "main",
+  timeout = 8_000,
+): Promise<string[] | null> {
+  const worktree = worktreePathForBranch(root, branch) ?? root;
+  const base = await runGit(worktree, ["merge-base", baseBranch, branch], timeout);
+  if (base.status !== 0 || base.timedOut) return null;
+  const baseSha = base.stdout.trim();
+  if (!baseSha) return null;
+  const run = await runGit(worktree, ["diff", "--name-only", baseSha, branch], timeout);
+  if (run.status !== 0 || run.timedOut) return null;
+  return run.stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 /** Whether git is installed at all (independent of being inside a repo). */
 export function gitAvailable(root: string): boolean {
   return git(root, ["--version"]) !== null;
@@ -1907,6 +1937,8 @@ export async function mergeBranch(
     autoResolve?: string[];
     autoResolveOurs?: string[];
     dryRun?: boolean;
+    /** When true, lockfile-only conflicts are resolved by regenerating the lockfile (#0679). */
+    regenerateLockfileConflicts?: boolean;
   } = {},
 ): Promise<MergeBranchResult> {
   if (opts.dryRun) return dryRunMergeBranch(root, branch, opts);
@@ -1983,6 +2015,14 @@ export async function mergeBranch(
     // bookkeeping that the close-out is supposed to auto-resolve anyway (#0271).
     // This is consistent with `preflightMerge`, which already filters to the
     // unresolved (non-auto-resolvable) paths.
+    // Lockfile-only conflicts: regenerate instead of failing (#0679).
+    if (opts.regenerateLockfileConflicts && isLockfileOnlyConflicts(blocking)) {
+      const regen = await tryCompleteMergeByRegeneratingLockfile(root);
+      if (regen.ok) {
+        notifyGitMutation(root, "merge");
+        return { merged: true, ff: false, conflicts: [] };
+      }
+    }
     // Nothing may be left half-applied: back out of the merge entirely.
     await runGit(root, ["merge", "--abort"], 4000);
     return {

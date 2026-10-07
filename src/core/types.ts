@@ -567,6 +567,8 @@ export interface RepoOSConfig {
    * screenshots succeeded.
    */
   approval?: ApprovalConfig;
+  /** Master kill switch for automatic actions (#0727). */
+  automation?: AutomationConfig;
   /** UI handoff browser verification (#0680). */
   uiVerification?: UiVerificationConfig;
   /**
@@ -922,6 +924,12 @@ export interface RemoteValidationConfig {
    * own process and is not counted.
    */
   maxConcurrent?: number;
+  /**
+   * Minutes a remote run's output may sit unchanged, while its host is idle
+   * (load per CPU under 0.5), before the run is treated as hung: its container
+   * is killed and the run retried once on another host (#0729). Default 5.
+   */
+  hangIdleMinutes?: number;
   /**
    * Opt a human-watched release cut into the remote runner. Default false.
    * Close-out uses the runner whenever `enabled` is true (it runs unattended,
@@ -1469,7 +1477,28 @@ export interface ApprovalConfig {
      * web/ui/ui-app/frontend/mobile when unset.
      */
     uiAreas?: string[];
+    /**
+     * Repo-relative path prefixes whose change always keeps a task on the human
+     * path (#0727). Defaults to a conservative machinery list when unset.
+     */
+    machineryPaths?: string[];
+    /**
+     * When true, `p0` tasks may auto-approve. Default false: a p0 always needs
+     * a human, whatever area or type it matches (#0727).
+     */
+    allowP0?: boolean;
   };
+}
+
+/**
+ * Master kill switch for automatic actions (#0727). Separate from the
+ * per-feature switches (`approval.enabled`, `cto.actions`) so a human can halt
+ * every autonomous action — auto-approval, CTO safe actions and the idle nudge
+ * — from one control without losing its configuration.
+ */
+export interface AutomationConfig {
+  /** When true, nothing runs automatically. Default false. */
+  paused?: boolean;
 }
 
 /**
@@ -1524,6 +1553,8 @@ export interface CloseOutConfig {
    * behaviour). Default `360000` (6 minutes).
    */
   timeoutMs: number;
+  /** True when `timeoutMs` came from repoos.toml; when false, the adaptive default applies (#0679). */
+  timeoutMsFromToml?: boolean;
   /** Overrides `[worktrees] candidate` when set (#0674). */
   candidate?: "symlink-main" | "own-install";
   /** Shell install for candidates; also used for main refresh unless `postPublishCommand` is set. */

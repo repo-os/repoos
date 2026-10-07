@@ -255,6 +255,53 @@ describe("remoteValidation.retryOtherHosts default (#0632)", () => {
 });
 
 /**
+ * `remoteValidation.hangIdleMinutes` (#0729): the hang detector's configurable
+ * threshold. The docs claim it is settable; this proves the parser actually
+ * reads it (review round 1 flagged docs that described a key nothing parsed).
+ */
+describe("remoteValidation.hangIdleMinutes (#0729)", () => {
+  const base = '[remoteValidation]\nenabled = true\nprovider = "tailscale"\n';
+
+  it("defaults to 5 minutes when the key is absent", async () => {
+    const root = repo(base);
+    expect(loadConfig(root).remoteValidation?.hangIdleMinutes).toBe(5);
+    await cleanup();
+  });
+
+  it("reads a positive override", async () => {
+    const root = repo(`${base}hangIdleMinutes = 12\n`);
+    expect(loadConfig(root).remoteValidation?.hangIdleMinutes).toBe(12);
+    await cleanup();
+  });
+
+  it("reads a whole-minute override above 1", async () => {
+    const root = repo(`${base}hangIdleMinutes = 12\n`);
+    expect(loadConfig(root).remoteValidation?.hangIdleMinutes).toBe(12);
+    await cleanup();
+  });
+
+  it("ignores a non-positive or non-numeric value, keeping the default", async () => {
+    // The flat-TOML subset parses only `^-?\d+$` as a number, so `1.5` arrives
+    // as a string and is ignored; minutes are whole by design. 0 is rejected so
+    // a disabled detector can't be configured by accident.
+    for (const bad of [
+      "hangIdleMinutes = 0\n",
+      "hangIdleMinutes = 1.5\n",
+      'hangIdleMinutes = "soon"\n',
+    ]) {
+      const root = repo(base + bad);
+      expect(loadConfig(root).remoteValidation?.hangIdleMinutes).toBe(5);
+      await cleanup();
+    }
+  });
+
+  it("is a supported TOML key so a Settings save can persist it", () => {
+    const keys = getConfigSchema().map((f) => f.key);
+    expect(keys).toContain("remoteValidation.hangIdleMinutes");
+  });
+});
+
+/**
  * Section-scoped writes (#0521 review): `patchTomlConfig` used to match only
  * the full dotted key, so a line written the way the docs show it — under
  * `[remoteValidation]` — was invisible to the patch: a duplicate root line was

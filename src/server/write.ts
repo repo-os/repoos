@@ -548,15 +548,25 @@ export function markTaskReleased(
   // silently no-op'd every subsequent close-out (#0195, 2026-08-15): main got
   // the merge, but the task sat published-and-still-review indefinitely.
   // `status === "done"` is only true for an actually-current release.
-  if (task.status === "done") return task;
-
-  const previousStatus = task.status;
-  task.status = "done";
-  task.mergedCommit =
+  const resolvedMergedCommit =
     mergedCommit ??
     branchCommit(config.root, task.branch || currentBranch(config.root) || "main") ??
     task.mergedCommit ??
     null;
+  if (task.status === "done") {
+    // Close-out can delete the feature branch before a retry finishes
+    // markTaskReleased; backfill proof without a second release marker (#0711).
+    if (!task.mergedCommit && resolvedMergedCommit) {
+      task.mergedCommit = resolvedMergedCommit;
+      writeFileSync(absPath, serializeTask(task));
+      commitTaskFile(config.root, absPath, `docs(${task.id}): record merged commit`);
+    }
+    return task;
+  }
+
+  const previousStatus = task.status;
+  task.status = "done";
+  task.mergedCommit = resolvedMergedCommit;
   // A finished task is never "waiting on human input" — leaving a stale flag
   // here (e.g. from an earlier failed review that got fixed on retry) makes a
   // completed task show a permanent "needs input" badge for no reason (#0293

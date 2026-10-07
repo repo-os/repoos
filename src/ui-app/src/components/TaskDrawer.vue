@@ -1325,6 +1325,15 @@ const pipelineStage = computed(() => {
   return active && active.taskId === ui.active?.id ? active.stage : null;
 });
 
+/** Last successful merge-gate duration on this task (#0679), for close-out tuning. */
+const lastCloseOutGateLabel = computed(() => {
+  const ms = ui.active?.extra?.last_close_out_gate_ms;
+  if (typeof ms !== "number" || !(ms > 0)) return null;
+  const sec = Math.round(ms / 1000);
+  if (sec >= 60) return `${Math.round(sec / 60)} min`;
+  return `${sec} s`;
+});
+
 /** True while the merge+build+check+cleanup request is in flight. */
 const doingDone = ref(false);
 /** Elapsed seconds shown next to the progress label while the flow runs. */
@@ -2258,6 +2267,25 @@ const reviewStale = computed(() =>
 
 /** The review agent's verdict, derived from the report's verdict line. */
 const verdict = computed(() => parseReviewVerdict(review.value?.report?.markdown));
+
+/**
+ * Review passes as table rows, newest first. Each pass appears once — the
+ * records table is the single record of every review run, so the latest run is
+ * not repeated in a separate summary. `reviewer`/`model` identify the coding
+ * agent for the run; older reports without those fields fall back to "—".
+ */
+const reviewHistoryRows = computed(() => {
+  const history = review.value?.history ?? [];
+  return [...history]
+    .sort((a, b) => b.pass - a.pass)
+    .map((h) => ({
+      pass: h.pass,
+      at: h.at,
+      verdict: h.state === "ok" ? (h.verdict ?? "—") : h.state,
+      reviewer: h.agent || h.cli || "—",
+      model: h.model || "—",
+    }));
+});
 
 /** True while a "Review again" / reviewer-chat request is in flight. */
 const reviewBusy = ref(false);
@@ -4094,6 +4122,12 @@ watch(
               <RotateCcw class="size-3.5" />
               Reopen
             </Button>
+            <p
+              v-if="ui.active.status === 'review' && lastCloseOutGateLabel"
+              class="ff-notice close-out-gate-hint"
+            >
+              Last successful close-out gate: {{ lastCloseOutGateLabel }}
+            </p>
             <Button
               v-if="ui.active.status === 'review'"
               variant="status"
@@ -4538,6 +4572,7 @@ watch(
           <button
             type="button"
             class="tab-btn"
+            data-test-id="task-tab-review"
             :class="{ active: ui.activeTab === 'review' }"
             :data-tip="
               ui.active.hotfix
@@ -5112,20 +5147,28 @@ watch(
                 <span class="verdict-dot"></span>
                 <span class="verdict-label">{{ verdict.label }}</span>
               </div>
-              <div class="review-meta">
-                <span>{{ repo.fmtDate(review.report.at) }}</span>
-                <span class="mono">{{ review.report.agent }} · {{ review.report.cli }}</span>
+              <div v-if="reviewHistoryRows.length > 0" class="review-history-wrap">
+                <table class="review-history-table" aria-label="Review pass records">
+                  <thead>
+                    <tr>
+                      <th class="ta-left">pass</th>
+                      <th class="ta-left">when</th>
+                      <th class="ta-left">reviewer</th>
+                      <th class="ta-left">model</th>
+                      <th class="ta-left">verdict</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="h in reviewHistoryRows" :key="h.pass">
+                      <td class="ta-left review-history-pass">#{{ h.pass }}</td>
+                      <td class="ta-left">{{ repo.fmtDate(h.at) }}</td>
+                      <td class="ta-left review-history-reviewer">{{ h.reviewer }}</td>
+                      <td class="ta-left review-history-model">{{ h.model }}</td>
+                      <td class="ta-left">{{ h.verdict }}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <ul
-                v-if="review.history && review.history.length > 0"
-                class="review-history"
-                aria-label="Review pass history"
-              >
-                <li v-for="h in review.history" :key="h.pass">
-                  Pass {{ h.pass }} · {{ repo.fmtDate(h.at) }} ·
-                  {{ h.verdict ?? h.state }}
-                </li>
-              </ul>
               <div class="md-card review-card">
                 <div class="md-rendered" v-html="reviewHtml"></div>
               </div>

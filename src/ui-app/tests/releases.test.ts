@@ -152,6 +152,28 @@ describe("feature releases", () => {
     }
   });
 
+  it("backfills merged_commit on an already-done task when proof is supplied (#0711)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-release-merged-"));
+    try {
+      const work = join(root, "work");
+      mkdirSync(work);
+      const pending = task(root, "0001");
+      patchTaskFile(config(root), pending.absPath, { status: "review" });
+      markTaskReleased(config(root), pending.absPath);
+      expect(readFileSync(pending.absPath, "utf8")).not.toContain("merged_commit:");
+
+      const proof = "a".repeat(40);
+      const backfilled = markTaskReleased(config(root), pending.absPath, proof);
+      expect(backfilled.mergedCommit).toBe(proof);
+      expect(readFileSync(pending.absPath, "utf8")).toContain(`merged_commit: ${proof}`);
+      expect((readFileSync(pending.absPath, "utf8").match(/release:success/g) ?? []).length).toBe(
+        1,
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("releases again after a task is legitimately reopened post-release (#0195)", () => {
     // A task that goes `done` with no real work, then gets manually reopened
     // (done→ready, a real workflow — see docs/close-out-pipeline.md) and

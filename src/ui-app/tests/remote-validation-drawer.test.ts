@@ -385,6 +385,31 @@ describe("RemoteValidationDrawer", () => {
       ).toBe(true);
     });
 
+    it("hang timeout (#0729): renders the default and persists a change", async () => {
+      const { wrapper, config, calls } = await mountDrawer({
+        tailscaleHosts: ["bee"],
+        hosts: [hostRow("bee")],
+      });
+
+      const label = wrapper.findAll("label").find((l) => l.text().startsWith("Hang timeout"));
+      expect(label).toBeTruthy();
+      const input = wrapper.find('input[type="number"]');
+      expect(input.exists()).toBe(true);
+      // Unset form value falls back to the config default (5).
+      expect((input.element as HTMLInputElement).value).toBe("5");
+
+      await input.setValue("3");
+      await flush();
+      expect(config.form["remoteValidation.hangIdleMinutes"]).toBe(3);
+      expect(
+        calls.some(
+          (c) =>
+            c.method === "PATCH" &&
+            (c.body as Record<string, unknown>)?.["remoteValidation.hangIdleMinutes"] === 3,
+        ),
+      ).toBe(true);
+    });
+
     it("switches to hetzner: readiness, setup steps and pool editor swap over", async () => {
       const { wrapper } = await mountDrawer({ tailscaleHosts: ["bee"], hosts: [hostRow("bee")] });
 

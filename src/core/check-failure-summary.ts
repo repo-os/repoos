@@ -78,7 +78,7 @@ export interface RemoteRunHistoryMeta {
  * failures when the output still carries them.
  */
 export function remoteRunHistoryMeta(
-  outcome: "pass" | "fail" | "cancelled",
+  outcome: "pass" | "fail" | "cancelled" | "hung",
   opts: {
     output?: string;
     detail?: string | null;
@@ -91,7 +91,7 @@ export function remoteRunHistoryMeta(
 
   const combined = [opts.output, opts.detail].filter(Boolean).join("\n");
 
-  if (outcome === "cancelled" || opts.cancelled) {
+  if (outcome === "cancelled" || outcome === "hung" || opts.cancelled) {
     return { failedStep: "remote-validation", failedTests: [] };
   }
   if (opts.transient || opts.configError) {

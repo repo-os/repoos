@@ -703,6 +703,10 @@ watch(
           name: "settings",
           query: { ...route.query, tab: targetTab },
         });
+        await nextTick();
+        // Let the tab panel mount before we hunt for #setting-* rows (shot capture
+        // and ?focus= deep links otherwise stop on the Themes card at the top).
+        await new Promise<void>((r) => window.setTimeout(r, 150));
       }
       if (run !== focusNavigationRun) return;
 
@@ -761,6 +765,9 @@ watch(
 const ARRAY_PLACEHOLDERS: Record<string, string> = {
   areas: "web, core (comma-separated area names)",
   taskExtensions: ".md, .markdown",
+  "approval.autoApprove.areas": "docs, chore (comma-separated areas)",
+  "approval.autoApprove.types": "chore (comma-separated types)",
+  "approval.autoApprove.machineryPaths": "src/server/, src/core/ (comma-separated path prefixes)",
 };
 
 function arrayPlaceholder(key: string): string {
@@ -1033,6 +1040,21 @@ onUnmounted(() => {
                   style="width: 100px"
                   :disabled="config.saving"
                   @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
+                />
+                <Input
+                  v-else-if="f.type === 'string'"
+                  :model-value="String(form[f.key] ?? '')"
+                  type="text"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form[f.key] = v)"
+                />
+                <Input
+                  v-else-if="f.type === 'array'"
+                  :model-value="String(form[f.key] ?? '')"
+                  type="text"
+                  :placeholder="arrayPlaceholder(f.key)"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form[f.key] = v)"
                 />
               </div>
               <span v-if="f.restartRequired" class="restart-badge">restart required</span>

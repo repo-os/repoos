@@ -2,7 +2,7 @@
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -12,11 +12,12 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-07T02:14:23Z"
+updated_at: "2026-10-07T12:01:01Z"
+review_passes: 5
+last_check_failure: "repoos check at 2026-10-07T02:57:53.598Z: server-side finalization timed out (deadline exceeded)"
+review_rounds: 2
 merge_conflict_retry_count: 2
-review_passes: 3
-review_rounds: 1
-dev_error_count: 2
+dev_error_count: 3
 ---
 ## Problem
 
@@ -44,16 +45,25 @@ Read src/server/attention-feed.ts and attention-notify.ts (silent-run items), sr
 ```json
 [
   {
-    "label": "Slow-check multiplier in Settings",
+    "label": "Slow-check multiplier control in Settings",
     "target": "default",
-    "route": "/settings?tab=general",
-    "highlight": "#setting-attention.slowRunMultiplier"
+    "route": "/settings?tab=general&focus=attention.slowRunMultiplier",
+    "highlight": "[data-config-key=\"attention.slowRunMultiplier\"]",
+    "steps": [
+      {
+        "waitMs": 1500
+      }
+    ]
   },
   {
-    "label": "Remote runners slow badge on active job",
+    "label": "Checks remote runners tab (slow badge only when a run is live)",
     "target": "default",
-    "route": "/agents?tab=runners",
-    "highlight": ".rr-slow-badge"
+    "route": "/checks?tab=remote",
+    "steps": [
+      {
+        "waitMs": 1000
+      }
+    ]
   }
 ]
 ```
@@ -99,4 +109,37 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T00:57:22Z · body
 - 2026-10-07T01:06:34Z · note: Driver verification 2026-10-07: close-out at01:02:48Z failed agent-review.test.ts:691 final review_passes counter assertion after281s on bee. Focused current-main test (starts a fresh review run) passes1/1 in3.55s; full-suite race remains unproven. Holding another close-out pending repair/re-review. Current branch b06a77131 is clean but handoff snapshot/lock remains24b3ea891. Existing review explicitly calls UI evidence incomplete: Settings control not in frame and Agents capture was Default Agents, not Runners. Confirmed new TaskCard slowCheck :title violates AGENTS tooltip convention; commonFactorFor claims same host using only remote booleans. When an engineer slot frees, return active via API, fix scoped issues, recapture real setting/live slow badge with clean console, inspect counter race, run scoped check and re-handoff. No edits while in review; no infrastructure/config changes.
 - 2026-10-07T01:10:29Z · status review→active
+- 2026-10-07T01:11:50Z · body: section Shots
+- 2026-10-07T01:15:21Z · body
+- 2026-10-07T01:18:16Z · body: section Shots
+- 2026-10-07T02:07:25Z · body
+- 2026-10-07T02:07:40Z · body
+- 2026-10-07T02:11:09Z · body
+- 2026-10-07T02:12:52Z · body
 - 2026-10-07T02:14:23Z · status active→review
+- 2026-10-07T02:14:23Z · note: shots: skipped — 2 handoff shots already captured during finalization (#0680)
+- 2026-10-07T02:30:48Z · note: review pass 4: failed — no usable report
+- 2026-10-07T02:30:49Z · needs_input
+- 2026-10-07T02:38:27Z · needs_input (review-failed) cleared for review again by human
+- 2026-10-07T02:40:03Z · note: review pass 5: needs some work
+- 2026-10-07T02:40:03Z · status review→active
+- 2026-10-07T02:40:42Z · note: DRIVER review followup: current attention.ts:419 independently confirms wrong /agents?tab=runners link; use /checks?tab=remote with regression test. Corrected Shots plan already exists from driver01:18 but handoff reused OLD PNGs. Do not declare screenshot fixes completed merely by updating plan: recapture via sanctioned repoos shot using current Settings focus=attention.slowRunMultiplier + data-config-key highlight and Checks remote route, truthful badge label if no live slow run; stop managed preview afterward via API. No concurrent external edits; follow current main/version verification. #0712 close-out is cancelled pending runner repair (missing Vitest forks.js), do not widen timeout/alter hosts/config to bypass.
+- 2026-10-07T02:41:36Z · body: section Shots
+- 2026-10-07T02:43:26Z · body
+- 2026-10-07T02:44:49Z · body
+- 2026-10-07T02:47:10Z · body
+- 2026-10-07T02:58:06Z · status active→review
+- 2026-10-07T02:58:07Z · status review→active
+- 2026-10-07T02:58:50Z · status active→review
+- 2026-10-07T02:58:50Z · note: shots: skipped — 2 handoff shots already captured during finalization (#0680)
+- 2026-10-07T03:00:38Z · note: review pass 6: needs some work
+- 2026-10-07T03:00:38Z · needs_input
+- 2026-10-07T03:07:23Z · status review→active
+- 2026-10-07T03:07:29Z · body: section Shots
+- 2026-10-07T03:08:52Z · note: shot removed: Slow-check multiplier in Settings
+- 2026-10-07T03:09:12Z · note: shot removed: Remote runners slow badge on active job
+- 2026-10-07T03:09:33Z · note: DRIVER repaired visual evidence03:08Z via repoos shot --task0720 FROM MAIN canonicalcorrectedplan: default-3 multiplier1.5 visible/highlighted; default-4 Checks Remote runners correctpage, normalstate(no live slow job, truthful label). CLIreports2captures; previewstopped. Removedwrongolddefault1/2viaattachmentAPI. Sourceunchanged; reviewroundcounterNOTreset. AutomaticapprovalreviewREJECTEDclearingreview-rounds-exhausted becauseexplicitownerapprovalrequired. Keepblocker; awaitownerapprovaltore-review. Currentversion/buildverificationrequirementremains.
+- 2026-10-07T11:08:10Z · needs_input
+- 2026-10-07T11:56:00Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-10-07T11:58:21Z · needs_input
+- 2026-10-07T12:01:01Z · body: section Shots

@@ -76,7 +76,7 @@ async function runGateWithBudget(timeoutMs: number) {
       root,
       workDir: "work",
       cacheDir: ".repoos",
-      closeOut: { timeoutMs },
+      closeOut: { timeoutMs, timeoutMsFromToml: true },
       remoteValidation: { enabled: true },
     } as RepoOSConfig;
     const coordinator = createJobCoordinator(root);
@@ -96,11 +96,15 @@ async function runGateWithBudget(timeoutMs: number) {
       undefined, // onProgress
       undefined, // logger
       undefined, // onMergeConflict
+      undefined, // onCloseOutGateFailure
       remoteValidator as never,
     );
 
     coordinator.enqueue({ id: "0701", branch: "feat/r1" } as never);
     const job = coordinator.getJob("0701")!;
+    // Close-out reuses the primary checkout's install in the candidate (#0674);
+    // without it, #0712 blocks the gate before remote validation runs.
+    mkdirSync(join(root, "node_modules"), { recursive: true });
     // Materialize the candidate and record baseMainSha, as syncing does.
     const synced = await (
       orch as never as {
