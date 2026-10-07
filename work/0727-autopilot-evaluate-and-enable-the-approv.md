@@ -12,7 +12,7 @@ branch: feat/give-the-cto-the-routine-evaluate-and-en
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:31Z"
-updated_at: "2026-10-07T06:24:26Z"
+updated_at: "2026-10-07T06:30:39Z"
 review_passes: 1
 ---
 ## Problem
@@ -112,3 +112,4 @@ Rationale: land routine docs/chore work only; machinery paths and UI screenshot 
 - 2026-10-07T05:40:03Z · body: section Shots
 - 2026-10-07T05:41:50Z · body
 - 2026-10-07T06:24:26Z · body
+- 2026-10-07T06:30:39Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 908fb7e0 to 0bee0747) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
