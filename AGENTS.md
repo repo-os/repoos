@@ -123,6 +123,27 @@ for repair/retry. See `docs/close-out-pipeline.md` and
 `repoos mv <id> done` is **not** this pipeline: it only changes task metadata.
 Never use it as a substitute for landing a branch through Move to done.
 
+### Integration conflicts: narrow resolution vs full cycle
+
+When another task lands first and a task that already passed review now
+conflicts with `main`, the close-out tries a **narrow resolution** before
+restarting anything (#0692, `src/server/conflict-resolution.ts`): if the
+conflict is *provably safe* — both sides purely add distinct lines at distinct
+places, generated output, a lockfile, or the task's own bookkeeping file — and
+the task has a prior successful review, RepoOS resolves it in an isolated
+candidate against current main, reviews only the resolution delta, runs the
+combined gate once on the resolved tree, and resumes the authorized Move to
+done. The original review stays tied to the commit it approved.
+
+Eligibility is **semantic, never path-based, and fails closed**: an edit rather
+than an append, overlapping hunks, an unclassifiable path, or no prior review
+takes the full engineering/review handback — staying inside a conflict hunk is
+not proof of semantic safety. Never widen the allowlist in
+`conflict-resolution.ts` without a test proving the new class is
+behavior-preserving, and never auto-resolve a conflict on a task with no prior
+review. A resolution candidate whose tree is not the one its combined gate
+validated must not publish.
+
 ## Interactive / external sessions working on RepoOS tasks
 
 Being outside a managed runner changes how you coordinate with RepoOS, not
@@ -387,7 +408,7 @@ cannot tell from the code alone:
   worked example.
 - **Explicitly authorized manual recovery only:** if the human directs you to
   hand-land a stale branch outside the normal pipeline, check other tasks' files —
-  `git diff main...HEAD --name-only | grep '^work/'` — and
+  `git diff main...HEAD --name-only | grep -E '^(work|inputs|stories)/'` — and
   `git checkout main -- <them>` before merging. Anything but the task's own
   file is drift that will pollute another task's record. Background:
   `docs/close-out-pipeline.md`.

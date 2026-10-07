@@ -10,6 +10,8 @@ import { loadConfig } from "../../core/config.js";
 import { patchTaskFile } from "../../server/write.js";
 import type { Task } from "../../core/types.js";
 
+import { evaluateAutoApprove } from "../../server/approval-policy.js";
+
 const CLEAN = "## Verdict\ngood to go\n";
 
 function minimalTask(overrides: Partial<Task> = {}): Task {
@@ -82,5 +84,19 @@ status: review
       { task: minimalTask({ tags: ["human-only"] }), reviewMarkdown: CLEAN },
     );
     expect(r).toMatchObject({ eligible: false, reason: "human-only" });
+  });
+});
+
+it("disabled approval never inspects a branch or runs preflight (#0737)", async () => {
+  const task = minimalTask();
+  Object.defineProperty(task, "branch", {
+    get() {
+      throw new Error("disabled policy inspected branch");
+    },
+  });
+  const config = { approval: { enabled: false } } as ReturnType<typeof loadConfig>;
+  expect(await evaluateAutoApprove(config, task, CLEAN)).toEqual({
+    eligible: false,
+    reason: "disabled",
   });
 });

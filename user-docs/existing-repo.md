@@ -27,14 +27,17 @@ It creates only what isn't already there:
 | `repoos/work/0001-set-up-repoos.md` | A worked example of a task file, marked `done` — it's not work to do. |
 | `repoos/work/0002-read-the-codebase.md` | An `inbox` starter task: read this codebase and propose `repoos/docs/` + an initial task backlog. Promote it with `repoos mv 0002 ready` when you want it picked up. |
 | `.env.example` | Documents the secrets a fuller setup expects. |
-| `.gitignore` entries | Ignore RepoOS runtime state — the derived cache (`repoos/.repoos/`), the root `.repoos/` runtime directory, and macOS `.DS_Store` files at any depth — plus local secrets (`.env`). |
+| `.gitignore` entries | Ignore RepoOS runtime state — the derived cache (`repoos/.repoos/`), the root `.repoos/` runtime directory, and macOS `.DS_Store` files at any depth — plus local secrets (`.env`, `.env*.local`) and installed dependencies (`node_modules/`). |
 
 With the default layout, `repoos.toml` persists the configured paths:
 
 ```toml
-workDir  = "repoos/work"
-docsDir  = "repoos/docs"
-cacheDir = "repoos/.repoos"
+workDir    = "repoos/work"
+docsDir    = "repoos/docs"
+skillsDir  = "repoos/skills"
+storiesDir = "repoos/stories"
+inputsDir  = "repoos/inputs"
+cacheDir   = "repoos/.repoos"
 ```
 
 If `.gitignore` already exists, it is only *appended* to for the RepoOS

@@ -224,15 +224,31 @@ state**:
 
 - A conflict on the closing task's own bookkeeping file is resolved from that
   task branch.
-- A conflict on **anything else** is non-retryable — retrying would derive the
-  same conflict. RepoOS automatically hands off to an engineer session **in the
-  feature branch's own worktree** to merge the primary branch into the branch and resolve it
-  there. When that session finishes, close-out is re-enqueued and retries on its
-  own.
+- A **narrow, provably-safe conflict** on a task that already passed review —
+  both sides purely *adding* distinct lines at distinct places (the classic
+  "two tasks each registered a new CLI command" shape), a lockfile, or
+  generated output — is resolved by RepoOS **in an isolated candidate**
+  against current main, without sending the work back through engineering or a
+  full feature review. The pipeline shows **resolving integration conflict**;
+  the original review stays tied to the commit it approved, only the resolution
+  delta is reviewed, and the combined gate runs once on the resolved candidate
+  before it publishes.
+- A conflict on **anything else** (an edit rather than an append, files that
+  overlap, a path RepoOS cannot classify confidently, or a task with no prior
+  review) is non-retryable — retrying would derive the same conflict. RepoOS
+  automatically hands off to an engineer session **in the feature branch's own
+  worktree** to merge the primary branch into the branch and resolve it there.
+  When that session finishes, close-out is re-enqueued and retries on its own.
+
+The narrow path is deliberately conservative: staying inside a conflict hunk is
+**not** treated as proof of semantic safety. If a resolution would change
+behaviour, expand scope, or cannot be classified with confidence, it takes the
+full engineering-and-review path instead.
 
 So a task that appears to bounce between `active` and `review`, or re-runs its
 engineer, is usually a conflict repairing itself. You don't have to click
-anything; watch the activity log for the reason.
+anything; watch the activity log for the reason — a conflict resolved in the
+candidate says so plainly, and never looks like failed development.
 
 ### Seeing the conflict, and keeping the error
 
