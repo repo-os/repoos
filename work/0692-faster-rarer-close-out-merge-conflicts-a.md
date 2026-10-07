@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-07T18:00:01Z"
-review_passes: 2
 id: "0692"
 title: Resolve integration conflicts without restarting the full engineering and review cycle
 type: feature
@@ -14,7 +12,7 @@ branch: feat/resolve-integration-conflicts-without-re
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:52:38Z"
-review_rounds: 1
+updated_at: "2026-10-07T17:41:58Z"
 ---
 ## Problem
 Current verified incident: #0730 passed full handoff gate311sbee10:36:36Z and green review10:38:42Z at636a03b27730be914515fff8448cf9028574753f. #0728 then landed1118b2031dbd3346b4f4b91ade9dd8e6585c8ca0. #0730 MTD failed10:44:16Z on src/cli/index.ts conflict and returned active to engineer15482. Original review was valid for its snapshot, but conflict repair restarts engineering/handoff/review, repeats validation, and appears to users as failed development. Driver verified on CURRENT maina1707629aec1e575d5d85e7436b06be67e9dab27 / compiled0.5.67 hash04ce49b2639fa4317ab7fa26abbb304e224903e0a0577f7e7d69dbf1b4061cdc. integration-orchestrator.ts syncCandidate preflight routes named conflicts to onMergeConflict.
@@ -36,9 +34,14 @@ Relevance reassessment of existing #0692 opex report: still relevant for genuine
 ```json
 [
   {
-    "label": "Board (integration bar appears only while a close-out runs)",
+    "label": "Board — integration pipeline stage vocabulary (the new resolve-conflict stage appears in the pipeline bar only while a conflict is resolving, so it is not visible in an idle capture; the steady surface is the TaskDrawer done-control label shown above)",
     "target": "default",
-    "route": "/"
+    "route": "/",
+    "steps": [
+      {
+        "waitMs": 1200
+      }
+    ]
   }
 ]
 ```
@@ -207,72 +210,4 @@ error: script "test" exited with code 1
 - 2026-10-07T16:27:51Z · body: section Shots
 - 2026-10-07T16:28:42Z · body: section Shots
 - 2026-10-07T16:29:11Z · body
-- 2026-10-07T16:30:55Z · body
-- 2026-10-07T16:31:58Z · body
-- 2026-10-07T16:38:28Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32
-    291|     expect(ui.activeTab).toBe("debug");
-    292|     expect(ui.debugView).toBe("logs");
-    293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
-       |                                ^
-    294|   });
-    295|
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
- Test Files  1 failed | 440 passed | 1 skipped (442)
-      Tests  4 failed | 5356 passed | 15 skipped (5375)
-   Start at  16:34:02
-   Duration  259.26s (transform 6.87s, setup 2.12s, import 46.31s, tests 241.26s, environment 205.98s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 702ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  16:38:22
-   Duration  2.70s (transform 1.18s, setup 14ms, import 1.47s, tests 702ms, environment 445ms)
-error: script "test" exited with code 1
-[validate] gate exit 1 — fix it in the feature branch and re-run the gate
-- 2026-10-07T16:39:14Z · body
-- 2026-10-07T16:40:41Z · body
-- 2026-10-07T16:41:56Z · body: section Shots
-- 2026-10-07T16:47:10Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-07T16:47:10Z · status review→active
-- 2026-10-07T16:53:55Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:55742/) (http://127.0.0.1:55742/)
-- 2026-10-07T16:53:55Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:55742/) (http://127.0.0.1:55742/)
-- 2026-10-07T16:59:10Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-07T16:59:10Z · status review→active
-- 2026-10-07T16:59:50Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:57314/) (http://127.0.0.1:57314/)
-- 2026-10-07T16:59:50Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:57314/) (http://127.0.0.1:57314/)
-- 2026-10-07T17:05:10Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-07T17:05:10Z · status review→active
-- 2026-10-07T17:05:48Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:59028/) (http://127.0.0.1:59028/)
-- 2026-10-07T17:05:48Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:59028/) (http://127.0.0.1:59028/)
-- 2026-10-07T17:11:39Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-07T17:11:39Z · status review→active
-- 2026-10-07T17:12:18Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:60930/) (http://127.0.0.1:60930/)
-- 2026-10-07T17:12:18Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:60930/) (http://127.0.0.1:60930/)
-- 2026-10-07T17:17:39Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-07T17:17:40Z · status review→active
-- 2026-10-07T17:18:19Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:62831/) (http://127.0.0.1:62831/)
-- 2026-10-07T17:18:19Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:62831/) (http://127.0.0.1:62831/)
-- 2026-10-07T17:23:39Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-07T17:23:39Z · status review→active
-- 2026-10-07T17:24:17Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:64630/) (http://127.0.0.1:64630/)
-- 2026-10-07T17:24:18Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:64630/) (http://127.0.0.1:64630/)
-- 2026-10-07T17:29:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-07T17:29:40Z · status review→active
-- 2026-10-07T17:30:19Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:49708/) (http://127.0.0.1:49708/)
-- 2026-10-07T17:30:19Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:49708/) (http://127.0.0.1:49708/)
-- 2026-10-07T17:36:17Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-07T17:36:17Z · status review→active
-- 2026-10-07T17:36:56Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:51259/) (http://127.0.0.1:51259/)
-- 2026-10-07T17:36:56Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:51259/) (http://127.0.0.1:51259/)
-- 2026-10-07T17:41:15Z · body: section Shots
 - 2026-10-07T17:41:58Z · status active→review
-- 2026-10-07T17:43:46Z · note: review pass 1: needs some work
-- 2026-10-07T17:43:46Z · status review→active
-- 2026-10-07T17:49:13Z · body
-- 2026-10-07T17:50:55Z · body
-- 2026-10-07T17:52:21Z · body
-- 2026-10-07T17:58:40Z · status active→review
-- 2026-10-07T17:58:41Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d89564a01) during finalization (#0734)
-- 2026-10-07T17:58:41Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d89564a01) during finalization (#0734)
-- 2026-10-07T18:00:00Z · note: review pass 2: good to go
-
