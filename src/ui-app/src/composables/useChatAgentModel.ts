@@ -61,9 +61,7 @@ export function useAgentsListChatAgent(nameMatcher: (a: Agent) => boolean): Chat
   const model = computed(() => agent.value?.model ?? "");
 
   const cliOptions = computed(() => cliOptionsFrom(config.agentsMeta.clis ?? [], cli.value));
-  const modelOptions = computed(() =>
-    config.modelsFor(cli.value, model.value || undefined),
-  );
+  const modelOptions = computed(() => config.modelsFor(cli.value, model.value || undefined));
 
   async function setAgentModel(nextCli: string, nextModel: string): Promise<void> {
     const list = config.agents ?? [];
@@ -80,15 +78,14 @@ export function useAgentsListChatAgent(nameMatcher: (a: Agent) => boolean): Chat
 
 /** The CTO chat's agent + model, from `config.agents`. */
 export function useCtoChatAgent(): ChatAgentModel {
-  return useAgentsListChatAgent(
-    (a) => a.enabled && a.name.toLowerCase() === "cto",
-  );
+  return useAgentsListChatAgent((a) => a.enabled && a.name.toLowerCase() === "cto");
 }
 
 /** Ross's agent + model, from `config.agents`. */
 export function useRossChatAgent(): ChatAgentModel {
   return useAgentsListChatAgent(
-    (a) => a.enabled && (a.name.toLowerCase() === "ross" || a.name.toLowerCase() === "repoos guide"),
+    (a) =>
+      a.enabled && (a.name.toLowerCase() === "ross" || a.name.toLowerCase() === "repoos guide"),
   );
 }
 
@@ -109,9 +106,7 @@ export function useDebuggerChatAgent(): ChatAgentModel {
   const model = computed(() => state.value.model?.trim() || defaults.model);
 
   const cliOptions = computed(() => cliOptionsFrom(config.agentsMeta.clis ?? [], cli.value));
-  const modelOptions = computed(() =>
-    config.modelsFor(cli.value, model.value || undefined),
-  );
+  const modelOptions = computed(() => config.modelsFor(cli.value, model.value || undefined));
 
   async function setAgentModel(nextCli: string, nextModel: string): Promise<void> {
     const data = config.data as Record<string, unknown> | null;

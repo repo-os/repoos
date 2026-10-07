@@ -175,13 +175,13 @@ watch(
     description="Ask Ross about this repository."
     @close="emit('close')"
   >
-    <header class="guide-header">
-      <div class="guide-avatar" aria-hidden="true">
+    <header class="agent-chat-header">
+      <div class="agent-chat-avatar" aria-hidden="true">
         <img src="/assets/repoos-ross-from-friends-square.webp" alt="Ross" />
       </div>
-      <div class="guide-identity">
+      <div class="agent-chat-id">
         <strong>{{ agent?.name ?? "Ross" }}</strong>
-        <span v-if="!enabled" class="guide-off"><i></i>Disabled on Agents page</span>
+        <span v-if="!enabled" class="agent-chat-off"><i></i>Disabled on Agents page</span>
       </div>
       <ChatAgentModelChip
         :cli-options="rossAgent.cliOptions.value"
@@ -310,54 +310,9 @@ watch(
 </template>
 
 <style scoped>
-.guide-header {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 13px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--topbar-bg);
-}
-.guide-avatar {
-  width: 38px;
-  height: 38px;
-  flex: none;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1px solid var(--border-bright);
-}
-.guide-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.guide-identity {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
-}
-.guide-identity strong {
-  font-size: 13.5px;
-  letter-spacing: -0.01em;
-}
-/* Only the disabled state carries a line now (#0669). */
-.guide-off {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font:
-    500 10px "JetBrains Mono",
-    monospace;
-  color: var(--txt-dim);
-}
-.guide-off i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--txt-faint);
-}
+/* The header (avatar + name + chip + close) is the shared `.agent-chat-header`
+   set in style.css (#0669); the panel is body-teleported, so header chrome
+   lives globally rather than in a scoped block here. */
 /* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
 .guide-log-wrap {
   position: relative;

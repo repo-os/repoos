@@ -516,9 +516,10 @@ describe("every AI chat surface follows the standard", () => {
         // to `.ai-chat-compose`, so every chat focuses the same way.
         for (const rule of rules(scoped)) {
           if (!/compose/.test(rule.selector)) continue;
-          expect(rule.body, `${surface.file}: ${rule.selector} must not set a focus ring`).not.toMatch(
-            /box-shadow:/,
-          );
+          expect(
+            rule.body,
+            `${surface.file}: ${rule.selector} must not set a focus ring`,
+          ).not.toMatch(/box-shadow:/);
         }
       });
 
