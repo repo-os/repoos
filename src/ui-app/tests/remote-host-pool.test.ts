@@ -472,80 +472,95 @@ function poolFixture(opts: {
     bundleRepo: vi.fn(async () => ({ ok: true })),
     uploadFile: vi.fn(async () => ({ ok: true })),
     downloadDir: vi.fn(async () => {}),
-    runRemote: vi.fn(async (host, cmd, onChunk, timeoutMs, remoteOpts): Promise<RemoteExecResult> => {
-      if (cmd.startsWith("rm -f ") && cmd.includes(".bundle") && cmd.includes("rm -rf")) {
-        cleanupCmds.push(cmd);
-        return { code: 0, output: "", timedOut: false };
-      }
-      // The hang watchdog's idle probe (#0729): report the configured load.
-      if (cmd.includes("__UPTIME__") && cmd.includes("uptime")) {
-        return {
-          code: 0,
-          output: `__UPTIME__\n 12:00  up 1 day, load averages: ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0}\n__CPU__\n1\n`,
-          timedOut: false,
-        };
-      }
-      // The hang kill (#0729): record the named container and let the pending
-      // run resolve as if docker rm -f ended it.
-      if (cmd.startsWith("docker rm -f ") && cmd.includes("repoos-validate-")) {
-        const name = cmd.split("'")[1] ?? cmd.split(" ").pop()!;
-        killed.push(name);
-        if (opts.hangKillNeverCompletes) {
-          await tick(timeoutMs + 5);
-          return { code: null, output: "", timedOut: true };
+    runRemote: vi.fn(
+      async (host, cmd, onChunk, timeoutMs, remoteOpts): Promise<RemoteExecResult> => {
+        if (cmd.startsWith("rm -f ") && cmd.includes(".bundle") && cmd.includes("rm -rf")) {
+          cleanupCmds.push(cmd);
+          return { code: 0, output: "", timedOut: false };
         }
-        if (opts.delayKill) {
-          await new Promise<void>((resolve) => {
-            killGate = { resolve };
-          });
-        }
-        return { code: 137, output: "", timedOut: false };
-      }
-      if (cmd.includes("__HOST_LOCK__")) {
-        const n = opts.hostLockOccupancy?.[host.ip] ?? 0;
-        let output = "__HOST_LOCK__\n";
-        for (let i = 0; i < n; i++) {
-          output += `hold\t${i}\t120\n{"taskId":"0694","phase":"self-check","worktree":"/wt/feat"}\n`;
-        }
-        return { code: 0, output, timedOut: false };
-      }
-      if (cmd.includes(PREREQ_OK_TOKEN)) {
-        if (opts.unreachable?.includes(host.ip) || down.has(host.ip)) {
+        // The hang watchdog's idle probe (#0729): report the configured load.
+        if (cmd.includes("__UPTIME__") && cmd.includes("uptime")) {
           return {
-            code: 255,
-            output: "ssh: connect to host 100.x.x.x port 22: Connection timed out",
+            code: 0,
+            output: `__UPTIME__\n 12:00  up 1 day, load averages: ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0}\n__CPU__\n1\n`,
             timedOut: false,
           };
         }
-        return {
-          code: 0,
-          output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
-          timedOut: false,
-        };
-      }
-      if (opts.timeoutRunOn?.includes(host.ip)) {
+        // The hang kill (#0729): record the named container and let the pending
+        // run resolve as if docker rm -f ended it.
+        if (cmd.startsWith("docker rm -f ") && cmd.includes("repoos-validate-")) {
+          const name = cmd.split("'")[1] ?? cmd.split(" ").pop()!;
+          killed.push(name);
+          if (opts.hangKillNeverCompletes) {
+            await tick(timeoutMs + 5);
+            return { code: null, output: "", timedOut: true };
+          }
+          if (opts.delayKill) {
+            await new Promise<void>((resolve) => {
+              killGate = { resolve };
+            });
+          }
+          return { code: 137, output: "", timedOut: false };
+        }
+        if (cmd.includes("__HOST_LOCK__")) {
+          const n = opts.hostLockOccupancy?.[host.ip] ?? 0;
+          let output = "__HOST_LOCK__\n";
+          for (let i = 0; i < n; i++) {
+            output += `hold\t${i}\t120\n{"taskId":"0694","phase":"self-check","worktree":"/wt/feat"}\n`;
+          }
+          return { code: 0, output, timedOut: false };
+        }
+        if (cmd.includes(PREREQ_OK_TOKEN)) {
+          if (opts.unreachable?.includes(host.ip) || down.has(host.ip)) {
+            return {
+              code: 255,
+              output: "ssh: connect to host 100.x.x.x port 22: Connection timed out",
+              timedOut: false,
+            };
+          }
+          return {
+            code: 0,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            timedOut: false,
+          };
+        }
+        if (opts.timeoutRunOn?.includes(host.ip)) {
+          (cmds[host.ip] ??= []).push(cmd);
+          return { code: 0, output: "build running…", timedOut: true };
+        }
+        if (opts.failRunOn?.includes(host.ip)) {
+          (cmds[host.ip] ??= []).push(cmd);
+          return { code: 1, output: "1 test failed\nFAIL src/x.test.ts", timedOut: false };
+        }
+        if (opts.dropFirstRunOn === host.ip && !dropped.has(host.ip)) {
+          // Mark the run as one that WILL drop its ssh connection when released
+          // (a mid-run failure, not an instant one), so jobs can queue behind it.
+          dropped.add(host.ip);
+          if (opts.stayDown?.includes(host.ip)) down.add(host.ip);
+          (cmds[host.ip] ??= []).push(cmd);
+          inFlight++;
+          peak = Math.max(peak, inFlight);
+          await new Promise<void>((resolve) => pending.push({ host: host.ip, resolve }));
+          inFlight--;
+          return { code: 255, output: "ssh: Connection reset by peer", timedOut: false };
+        }
+        if (opts.gateExitStallOn?.includes(host.ip)) {
+          (cmds[host.ip] ??= []).push(cmd);
+          onChunk?.("[validate] gate exit 1\n");
+          inFlight++;
+          peak = Math.max(peak, inFlight);
+          await new Promise<void>((resolve) => {
+            const entry = { host: host.ip, resolve };
+            pending.push(entry);
+            remoteOpts?.registerAbort?.(() => {
+              const i = pending.indexOf(entry);
+              if (i !== -1) pending.splice(i, 1)[0]!.resolve();
+            });
+          });
+          inFlight--;
+          return { code: 1, output: "[validate] gate exit 1\n", timedOut: false };
+        }
         (cmds[host.ip] ??= []).push(cmd);
-        return { code: 0, output: "build running…", timedOut: true };
-      }
-      if (opts.failRunOn?.includes(host.ip)) {
-        (cmds[host.ip] ??= []).push(cmd);
-        return { code: 1, output: "1 test failed\nFAIL src/x.test.ts", timedOut: false };
-      }
-      if (opts.dropFirstRunOn === host.ip && !dropped.has(host.ip)) {
-        // Mark the run as one that WILL drop its ssh connection when released
-        // (a mid-run failure, not an instant one), so jobs can queue behind it.
-        dropped.add(host.ip);
-        if (opts.stayDown?.includes(host.ip)) down.add(host.ip);
-        (cmds[host.ip] ??= []).push(cmd);
-        inFlight++;
-        peak = Math.max(peak, inFlight);
-        await new Promise<void>((resolve) => pending.push({ host: host.ip, resolve }));
-        inFlight--;
-        return { code: 255, output: "ssh: Connection reset by peer", timedOut: false };
-      }
-      if (opts.gateExitStallOn?.includes(host.ip)) {
-        (cmds[host.ip] ??= []).push(cmd);
-        onChunk?.("[validate] gate exit 1\n");
         inFlight++;
         peak = Math.max(peak, inFlight);
         await new Promise<void>((resolve) => {
@@ -557,22 +572,9 @@ function poolFixture(opts: {
           });
         });
         inFlight--;
-        return { code: 1, output: "[validate] gate exit 1\n", timedOut: false };
-      }
-      (cmds[host.ip] ??= []).push(cmd);
-      inFlight++;
-      peak = Math.max(peak, inFlight);
-      await new Promise<void>((resolve) => {
-        const entry = { host: host.ip, resolve };
-        pending.push(entry);
-        remoteOpts?.registerAbort?.(() => {
-          const i = pending.indexOf(entry);
-          if (i !== -1) pending.splice(i, 1)[0]!.resolve();
-        });
-      });
-      inFlight--;
-      return { code: 0, output: "ok", timedOut: false };
-    }),
+        return { code: 0, output: "ok", timedOut: false };
+      },
+    ),
     probeTcp: vi.fn(async () => true),
   };
   const runner = new TailscaleRunner(config, undefined, {

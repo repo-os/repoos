@@ -760,9 +760,7 @@ export function remoteRunCleanupCommand(paths: RemoteRunPaths): string {
  * only touches `~/.repoos-*-*.bundle` older than one day.
  */
 export function staleBundlePruneCommand(): string {
-  return (
-    'find "$HOME" -maxdepth 1 -name \'.repoos-*-*.bundle\' -mtime +1 -delete 2>/dev/null || true'
-  );
+  return "find \"$HOME\" -maxdepth 1 -name '.repoos-*-*.bundle' -mtime +1 -delete 2>/dev/null || true";
 }
 
 /**
@@ -3160,11 +3158,7 @@ export class TailscaleHostPool {
    * and keeps a bounded recent-hung list so the cleanup is visible after the
    * retry moved elsewhere.
    */
-  markHung(
-    host: string,
-    detail?: string,
-    opts?: { history?: boolean; taskId?: string },
-  ): void {
+  markHung(host: string, detail?: string, opts?: { history?: boolean; taskId?: string }): void {
     const s = this.hosts.find((c) => c.spec.host === host);
     if (!s) return;
     const at = new Date().toISOString();
