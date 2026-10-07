@@ -170,6 +170,7 @@ done wait by default in human mode).
 | `repoos agents` | `GET /api/agents/running` |
 | `repoos stats` | `GET /api/stats/board` |
 | `repoos decisions` (`repoos attention`) | `GET /api/decisions` — CTO escalation digest with cause, evidence, and actions |
+| `repoos driver brief` | `GET /api/driver/brief` — the CTO board brief from live state (#0731) |
 
 Pass `--port N` when the server is not on the default port. If the server is
 down, the CLI exits with a clear message instead of a generic fetch error.
