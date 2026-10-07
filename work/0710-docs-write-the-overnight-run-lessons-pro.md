@@ -2,7 +2,7 @@
 id: "0710"
 title: "Docs: write the overnight-run lessons (provider-failure scraper, self-check starvation, driver tips) into the repo"
 type: chore
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
@@ -50,4 +50,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-07T01:38:22Z · status review→active
 - 2026-10-07T01:58:46Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-07T02:06:17Z · status active→review
-
+- 2026-10-07T02:06:17Z · status review→active
