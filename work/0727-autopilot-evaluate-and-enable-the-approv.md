@@ -2,7 +2,7 @@
 id: "0727"
 title: "Give the CTO the routine: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
 type: feature
-status: ready
+status: review
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/give-the-cto-the-routine-evaluate-and-en
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:31Z"
-updated_at: "2026-10-07T07:05:28Z"
+updated_at: "2026-10-07T09:17:47Z"
 review_passes: 1
 ---
 ## Problem
@@ -111,3 +111,4 @@ Rationale: land routine docs/chore work only; machinery paths and UI screenshot 
 - 2026-10-07T05:40:03Z · body: section Proposed conservative policy (owner approval required)
 - 2026-10-07T05:40:03Z · body: section Shots
 - 2026-10-07T07:05:28Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-07T09:17:47Z · status ready→review
