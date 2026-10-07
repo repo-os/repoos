@@ -80,7 +80,13 @@ async function flush(): Promise<void> {
 function pipeline(taskId: string): IntegrationPipelineSnapshot {
   return {
     empty: false,
-    active: { taskId, stage: "check", failed: false, startedAt: "2026-09-20T00:00:00Z" },
+    active: {
+      taskId,
+      stage: "check",
+      failed: false,
+      startedAt: "2026-09-20T00:00:00Z",
+      lastProgressAt: "2026-09-20T00:00:00Z",
+    },
     queue: [],
     at: "2026-09-20T00:00:00Z",
   };

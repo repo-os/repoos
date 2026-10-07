@@ -66,6 +66,7 @@ function makeCtx(root: string, repoos: ReturnType<typeof createRepoOS>): RouteCo
     rootLock: {} as RouteContext["rootLock"],
     jobCoordinator: {} as RouteContext["jobCoordinator"],
     reportedStages: {},
+    reportedStageAt: {},
     triggerJobProcessing: () => {},
     pendingReview: new Set(),
     uiDir: null,

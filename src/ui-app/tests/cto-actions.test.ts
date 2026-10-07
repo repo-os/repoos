@@ -61,6 +61,7 @@ describe("CTO safe action gate", () => {
         emitEvent: vi.fn(),
         triggerJobProcessing: vi.fn(),
         reportedStages: {},
+        reportedStageAt: {},
       },
       "refresh-main-install",
       { actor: "human" },
@@ -141,6 +142,7 @@ describe("kill-hung-validation safe action (#0729)", () => {
       emitEvent: vi.fn(),
       triggerJobProcessing: vi.fn(),
       reportedStages: {},
+      reportedStageAt: {},
       remoteValidator: { killHungValidation: kill } as never,
     };
   }
@@ -256,6 +258,7 @@ describe("automation kill switch (#0727)", () => {
         emitEvent: vi.fn(),
         triggerJobProcessing: vi.fn(),
         reportedStages: {},
+        reportedStageAt: {},
       },
       "refresh-main-install",
       { actor: "cto" },
@@ -284,6 +287,7 @@ describe("automation kill switch (#0727)", () => {
         emitEvent: vi.fn(),
         triggerJobProcessing: vi.fn(),
         reportedStages: {},
+        reportedStageAt: {},
       },
       "refresh-main-install",
       { actor: "human" },
