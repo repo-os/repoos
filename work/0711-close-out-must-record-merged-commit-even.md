@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-07T01:11:24Z"
-review_passes: 2
 id: "0711"
 title: "Close-out must record merged_commit even when the branch is deleted, so dependents are not blocked as cancelled"
 type: bug
@@ -13,6 +11,8 @@ branch: feat/close-out-must-record-merged-commit-even
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:46Z"
+updated_at: "2026-10-07T01:15:54Z"
+review_passes: 2
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 22: tasks closed out do not get merged_commit recorded when the branch is deleted; dependencyMergeState (src/core/task-dependencies.ts) then reports dependents as cancelled.
 
