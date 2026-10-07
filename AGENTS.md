@@ -387,7 +387,7 @@ cannot tell from the code alone:
   worked example.
 - **Explicitly authorized manual recovery only:** if the human directs you to
   hand-land a stale branch outside the normal pipeline, check other tasks' files —
-  `git diff main...HEAD --name-only | grep '^work/'` — and
+  `git diff main...HEAD --name-only | grep -E '^(work|inputs|stories)/'` — and
   `git checkout main -- <them>` before merging. Anything but the task's own
   file is drift that will pollute another task's record. Background:
   `docs/close-out-pipeline.md`.
