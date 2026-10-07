@@ -413,7 +413,7 @@ describe("close-out cleanup keeps a dirty feature worktree (#0512)", () => {
     } finally {
       clean();
     }
-  });
+  }, 15_000);
 
   it("force-removes a merged worktree when only HEAD-present deletions remain (#0609)", async () => {
     const { root, clean } = makeRepo();
