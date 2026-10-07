@@ -10,6 +10,7 @@ import {
   rmSync,
   symlinkSync,
   writeFileSync,
+  utimesSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { rmFixture } from "./helpers";
@@ -18,6 +19,7 @@ import {
   ensureWorktree,
   linkInheritedEnv,
   worktreeStatus,
+  worktreeStatusAsync,
   resetWorktree,
   removeWorktree,
   listWorktrees,
@@ -1002,6 +1004,36 @@ describe("branchChangedPaths (#0727)", () => {
     const { root, clean } = makeRepo();
     try {
       expect(await branchChangedPaths(root, "does-not-exist", "main")).toBeNull();
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("observational worktree status (#0737)", () => {
+  it("does not refresh the staging index during synchronous or asynchronous reads", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/status-read");
+      expect(wt.ok).toBe(true);
+      const path = wt.path!;
+      writeFileSync(join(path, "tracked.txt"), "unchanged\n");
+      git(path, ["add", "tracked.txt"]);
+      git(path, ["commit", "-m", "tracked fixture"]);
+      const indexPath = git(path, ["rev-parse", "--path-format=absolute", "--git-path", "index"]);
+      const before = readFileSync(indexPath);
+      // Force status to inspect a changed stat cache without changing content.
+      const future = new Date(Date.now() + 60_000);
+      utimesSync(join(path, "tracked.txt"), future, future);
+      expect(
+        worktreeStatus(root, "feat/status-read", { baseBranch: "feat/status-read" }).dirty,
+      ).toBe(false);
+      expect(readFileSync(indexPath)).toEqual(before);
+      expect(
+        (await worktreeStatusAsync(root, "feat/status-read", { baseBranch: "feat/status-read" }))
+          .dirty,
+      ).toBe(false);
+      expect(readFileSync(indexPath)).toEqual(before);
     } finally {
       clean();
     }

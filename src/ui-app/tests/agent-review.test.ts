@@ -235,9 +235,7 @@ async function requestReview(server: ServerHandle, id: string, absPath?: string)
       // means it finished and something moved the task back (or refused it) —
       // and the file's Activity log is where that reason is recorded.
       const t = await api(server, "GET", `/api/tasks/${id}`);
-      const tail = absPath
-        ? `\n--- file ---\n${readFileSync(absPath, "utf8").split("\n## ")[0]}`
-        : "";
+      const tail = absPath ? `\n--- file ---\n${readFileSync(absPath, "utf8")}` : "";
       throw new Error(
         `timed out waiting for #${id} to reach review (status=${t.body.status}, ` +
           `pendingHandoff=${t.body.pendingHandoff})${tail}`,
@@ -372,7 +370,7 @@ describe("agent review before human sign-off (#0101)", () => {
 
       const returned = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "active" });
       expect(returned.status).toBe(200);
-      expect(returned.body.status).toBe("active");
+      expect(returned.body.status, readFileSync(task.absPath, "utf8")).toBe("active");
       await requestReview(server, task.id, task.absPath);
       await waitFor(
         () => /^review_passes: 2$/m.test(readFileSync(task.absPath, "utf8")),
