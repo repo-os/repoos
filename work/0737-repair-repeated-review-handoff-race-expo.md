@@ -11,7 +11,7 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T15:08:03Z"
+updated_at: "2026-10-07T15:15:14Z"
 review_passes: 3
 last_close_out_gate_ms: 1954980
 last_close_out_gate_at: "2026-10-07T14:22:21.634Z"
@@ -114,3 +114,23 @@ error: script "test" exited with code 1
 - 2026-10-07T15:02:56Z · status review→active
 - 2026-10-07T15:08:02Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T15:08:03Z · status review→active
+- 2026-10-07T15:15:14Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —     765|     origin?: unknown;
+    766|   };
+    767|   appendFileSync(
+       |   ^
+    768|     "/private/tmp/repoos-0737-body-" + process.pid + ".ndjson",
+    769|     JSON.stringify({ body, prev: existing.status, root: config.root })…
+ ❯ tests/task-underspecified-flag.test.ts:371:13
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/43]⎯
+ Test Files  10 failed | 420 passed | 1 skipped (431)
+      Tests  43 failed | 5177 passed | 15 skipped (5235)
+   Start at  15:09:37
+   Duration  331.32s (transform 10.31s, setup 3.14s, import 70.04s, tests 239.77s, environment 313.61s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 410ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  15:15:08
+   Duration  2.24s (transform 1.03s, setup 12ms, import 1.28s, tests 410ms, environment 457ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
