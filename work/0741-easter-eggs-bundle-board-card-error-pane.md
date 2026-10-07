@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-07T18:05:13Z"
+review_passes: 1
 id: "0741"
 title: "Easter eggs bundle: board card error panel (flush, square, below the action button) and hide a stale close-out error while a new close-out runs"
 type: chore
@@ -11,7 +13,6 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
-updated_at: "2026-10-07T18:05:13Z"
 last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)"
 ---
 ## Problem
@@ -73,3 +74,4 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 - 2026-10-07T18:04:27Z · status active→review
 - 2026-10-07T18:04:28Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-10-07T18:05:13Z · note: review pass 1: needs some work
+
