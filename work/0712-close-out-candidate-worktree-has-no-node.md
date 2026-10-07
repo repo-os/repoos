@@ -2,7 +2,7 @@
 id: "0712"
 title: "Close-out candidate worktree has no node_modules: check plan fails with 'prettier: command not found'"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -111,4 +111,4 @@ error: script "test" exited with code 1
 - 2026-10-07T01:07:14Z · note: OWNER clarification: cross-repo reports (private-tuk/tuk-private/opex) may describe an outdated RepoOS version. Verify CURRENT main behavior and the combined current-main/task-branch tree before treating the report or diagnosis as accurate. Record exact version/commit, reproduction, and whether still relevant, partly fixed, already fixed, or misdiagnosed. Do not implement a stale request; preserve regression evidence for already-fixed behavior. This reinforces Verify first and also applies to integration repairs.
 - 2026-10-07T01:07:29Z · body
 - 2026-10-07T01:09:18Z · body
-- 2026-10-07T01:15:19Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-07T01:15:19Z · status active→review
