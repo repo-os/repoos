@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T00:35:48Z"
-updated_at: "2026-10-07T00:35:48Z"
+updated_at: "2026-10-07T00:37:22Z"
 ---
 ## Problem
 
@@ -37,6 +37,18 @@ Owner suspected the stories dir is not handled like the work and inputs dirs. Ch
 
 VERIFY each gap on current main before changing it (some may have been fixed by #0637/#0674/#0711). Related: #0703, #0711, #0713.
 
+## Config / Settings parity (added 2026-10-07)
+
+Checked how the three dirs are defined in src/core/config.ts:
+
+- `storiesDir`: parsed through `normalizeRelativeDir` (#0637: rejects absolute, `~`, backslash and `..` paths, falls back to the default with a warning), has a Settings entry (label 'Stories directory', tier guarded, restartRequired) and is listed in SUPPORTED_TOML_KEYS.
+- `inputsDir`: listed in SUPPORTED_TOML_KEYS but parsed with only `typeof === 'string'` (no validation: an absolute or `..` path is accepted and would point RepoOS outside the repo) and has NO Settings schema entry (the layout group has workDir, docsDir, skillsDir, storiesDir, cacheDir only), so it cannot be changed or even seen in Settings.
+- `workDir` / `docsDir`: Settings entries exist; confirm they go through the same relative-dir validation.
+- `repoos init` writes none of storiesDir / inputsDir (see #0703) and nothing warns when a configured dir does not exist; `repoos doctor` checks work and inputs but not stories.
+
+Desired: validate all layout dirs with normalizeRelativeDir, give inputsDir a Settings entry matching storiesDir (guarded, restartRequired, same description style), make init write all three for non-default layouts, and have doctor check all three. Tests: inputsDir '../x' falls back with a warning; Settings schema lists all three; init for the repoos/ layout writes storiesDir and inputsDir.
+
 ## Activity
 
 - 2026-10-07T00:35:48Z · created · unknown
+- 2026-10-07T00:37:22Z · body
