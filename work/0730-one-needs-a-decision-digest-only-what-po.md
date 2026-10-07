@@ -82,3 +82,4 @@ Owner wants release soon. Verify diagnosis independently against CURRENT main an
    Duration  2.75s (transform 1.16s, setup 14ms, import 1.46s, tests 738ms, environment 455ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T10:09:11Z · handoff failed · handoff recovery attempted · finalization failed
