@@ -94,6 +94,41 @@ missed timers are how overnight runs lose hours.
   liveness. When routine work is waiting and no heartbeat arrives, the bell shows
   **CTO silent N min** via `GET /api/attention`.
 
+### Read the board's brief, don't hand-write a handoff
+
+Rotating drivers used to write a handoff document by hand. It went stale in
+minutes. `repoos driver brief` **generates** the handoff from live state, so a
+new driver (the CTO, a person, or an external agent session) starts from the
+board's actual condition:
+
+```bash
+repoos driver brief          # human-readable
+repoos driver brief --json   # load it into a driver agent
+```
+
+The brief covers:
+
+- **Next actions**, each tagged `CTO` (policy can take it) or `you` (a person
+  must) — stalled engineers to restart, failed close-outs to retry, reviews
+  waiting at the sign-off gate, ready tasks no one has started.
+- **The board by status**, every task with the cause it is where it is
+  (waiting on a human, branch drifted from main, awaiting sign-off, …).
+- **Merged since the last tag**, with short SHAs and the task each commit came
+  from.
+- **Running agents** (flagging any that have gone quiet), the **close-out
+  queue**, and **failed close-outs** with their reason.
+- **Host health** and **recent slow/hung runs**, with a best-guess cause.
+- **Config keys changed since the last release tag** — what moved, from the
+  `chore(config):` commits, and the keys themselves diffed against the baseline.
+- **The AGENTS.md rules that matter to a driver**, pulled from the operating
+  loop / rules / review sections so they travel with the brief instead of being
+  re-read by hand.
+
+The same snapshot is on **`GET /api/driver/brief`**. Lessons a driver learns
+belong in the repo, not in a private memory store: append them to the driver
+notes file (see `AGENTS.md` → "Where project knowledge goes"), so the next
+session inherits them.
+
 ## 4. The review loop
 
 - For UI tasks, **handoff runs a browser verification gate** before review: declared
