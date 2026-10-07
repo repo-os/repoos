@@ -46,10 +46,14 @@ const makeTask = (over: Partial<Task> = {}): Task => ({
   ...over,
 });
 
-function pipeline(taskId: string, startedAt: string): IntegrationPipelineSnapshot {
+function pipeline(
+  taskId: string,
+  startedAt: string,
+  lastProgressAt: string = startedAt,
+): IntegrationPipelineSnapshot {
   return {
     empty: false,
-    active: { taskId, stage: "check", failed: false, startedAt },
+    active: { taskId, stage: "check", failed: false, startedAt, lastProgressAt },
     queue: [],
     at: startedAt,
   };
@@ -77,7 +81,7 @@ describe("TaskCard done-error footer (#0741)", () => {
     setActivePinia(pinia);
     const repo = useRepoStore();
     seedDoneError(repo);
-    repo.integration = pipeline("0042", "2026-09-20T12:00:00.000Z");
+    repo.integration = pipeline("0042", new Date().toISOString());
 
     const wrapper = mount(TaskCard, {
       props: { task: makeTask(), dragEnabled: false },
@@ -109,7 +113,7 @@ describe("TaskCard done-error footer (#0741)", () => {
     setActivePinia(pinia);
     const repo = useRepoStore();
     seedDoneError(repo);
-    repo.integration = pipeline("0042", "2026-09-20T12:00:00.000Z");
+    repo.integration = pipeline("0042", new Date().toISOString());
 
     const wrapper = mount(TaskCard, {
       props: { task: makeTask(), dragEnabled: false },
@@ -136,7 +140,7 @@ describe("TaskCard done-error footer (#0741)", () => {
         failedAt: "2026-09-20T12:05:00.000Z",
       },
     };
-    repo.integration = pipeline("0042", "2026-09-20T12:00:00.000Z");
+    repo.integration = pipeline("0042", "2026-09-20T12:00:00.000Z", new Date().toISOString());
 
     const wrapper = mount(TaskCard, {
       props: { task: makeTask(), dragEnabled: false },
