@@ -2,13 +2,13 @@
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
-status: ready
+status: active
 priority: p2
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
@@ -42,3 +42,4 @@ This digest is the CTO's escalation surface: what it did automatically (audit) a
 - 2026-10-07T02:11:14Z · title, body
 - 2026-10-07T09:29:38Z · status inbox→ready
 - 2026-10-07T09:46:40Z · cli_override, model_override
+- 2026-10-07T09:46:40Z · status ready→active, branch
