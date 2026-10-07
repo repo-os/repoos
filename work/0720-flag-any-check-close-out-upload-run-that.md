@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
@@ -150,3 +151,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T12:55:31Z · note: review pass 7: good to go
 - 2026-10-07T15:13:21Z · status review→active
 - 2026-10-07T15:13:21Z · note: close-out repair: merge-conflict
+
