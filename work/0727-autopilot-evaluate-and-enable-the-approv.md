@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/give-the-cto-the-routine-evaluate-and-en
 created_at: "2026-10-07T02:05:31Z"
-updated_at: "2026-10-07T04:53:39Z"
+updated_at: "2026-10-07T05:10:45Z"
 ---
 ## Problem
 
@@ -34,6 +34,18 @@ Related: #0686, #0688, #0693, #0679, #0720, #0723.
 
 No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.ts) is the one that takes over the routine landing/restart/retry work, under the owner's policy and with the existing allowlist, rate limits and audit trail. External driver sessions (Claude Code, Codex) stay optional. Anything outside policy is escalated to the human through the attention feed.
 
+## Shots
+```json
+[
+  {
+    "label": "Settings General: new automation kill switch, blocked paths and p0 controls",
+    "target": "default",
+    "route": "/settings?tab=general",
+    "highlight": "#setting-automation.paused"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-07T02:05:31Z · created · unknown
@@ -44,3 +56,4 @@ No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.
 - 2026-10-07T04:35:45Z · status ready→active, branch
 - 2026-10-07T04:52:10Z · body
 - 2026-10-07T04:53:39Z · body
+- 2026-10-07T05:10:45Z · body: section Shots
