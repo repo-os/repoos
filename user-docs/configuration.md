@@ -261,7 +261,7 @@ taskExtensions = [".md"]
 | `workDir` | string | `work` | yes | Directory holding task markdown files, relative to the repo root. This is the board. |
 | `docsDir` | string | `docs` | yes | Directory holding context docs an agent reads before working. |
 | `skillsDir` | string | `skills` | yes | Directory holding reusable skills (`skills/<name>/SKILL.md`). |
-| `inputsDir` | string | `inputs` | yes | Directory holding user-submitted inputs and their attachments. |
+| `inputsDir` | string | `inputs` | yes | Directory holding user-submitted inputs and their attachments. Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `storiesDir` | string | `stories` | yes | Directory holding story definitions (used when Stories are enabled). Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `cacheDir` | string | `.repoos` | yes | Derived state only — logs, indexes, cached databases. Delete it and RepoOS rebuilds from the task files; nothing of record is lost. |
 | `taskExtensions` | array of strings | `[".md"]` | yes | File extensions treated as tasks. |
@@ -275,6 +275,14 @@ the board and project docs from exactly these directories. If another tool or a
 set of project docs assumes a different layout, change `repoos.toml` (or
 reconcile the docs) — never move the directories so the config no longer matches
 where your content lives.
+
+On the `repoos/` layout, `repoos init` writes `workDir`, `docsDir`,
+`skillsDir`, `storiesDir`, `inputsDir` and `cacheDir` together, all under the
+namespace, so every RepoOS-owned directory stays in one place. A layout where
+`workDir` is namespaced but `storiesDir` is still top-level (as init wrote
+before #0703) scatters stories to the repo root; `repoos doctor` warns about that
+mismatch and suggests `storiesDir = "<namespace>/stories"`, but never moves
+anything for you.
 
 ## Board behavior
 

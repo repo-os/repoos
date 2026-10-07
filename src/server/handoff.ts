@@ -68,6 +68,7 @@ import {
   BRANCH_ADDS_PROJECT_NO_CHECK_PLAN,
   branchAddsBuildableProjectMarker,
 } from "../core/check-buildable-project.js";
+import { buildLastCheckFailureSummary } from "../core/check-failure-summary.js";
 
 export type HandoffStep = "validate" | "check" | "verify" | "commit" | "review" | "main" | "done";
 
@@ -598,10 +599,10 @@ async function runHandoffFinalization(
       changedBase,
     );
     checkHandle?.done(check.status);
-    if (check.status !== 0) {
-      return fail("check", `repoos check failed: ${concise(check)}`);
-    }
     const checkOutput = `${check.stdout}\n${check.stderr}`;
+    if (check.status !== 0) {
+      return fail("check", `repoos check failed: ${buildLastCheckFailureSummary(checkOutput)}`);
+    }
     if (checkRunSkipped(checkOutput)) {
       const baseBranch = currentBranch(config.root) ?? "main";
       if (branchAddsBuildableProjectMarker(workdir, baseBranch)) {
@@ -893,6 +894,17 @@ const MAX_CHECK_FAILURE_DETAIL = 500;
  * collapsed, so the record survives parse → serialize and stays greppable in
  * the raw file.
  */
+/** Prefer step + error line when `detail` still carries raw gate output (#0700). */
+function summarizeForLastCheckFailure(detail: string): string {
+  if (/^repoos check failed:\s*[^:]+\s+—\s+/i.test(detail.replace(/\s+/g, " "))) {
+    return detail;
+  }
+  const body = detail.replace(/^repoos check failed(?:\s+with\s+exit\s+\d+)?[:\s]*/i, "").trim();
+  const summary = buildLastCheckFailureSummary(body || detail);
+  if (summary !== "check failed") return `repoos check failed: ${summary}`;
+  return detail;
+}
+
 export function formatCheckFailure(detail: string, exitCode?: string | null): string {
   const flat = detail.replace(/\s+/g, " ").trim();
   const shown =
@@ -941,6 +953,7 @@ export function scheduleCheckFailureRetry(
   let retries = task.extra?.check_retry_count as number | undefined;
   if (typeof retries !== "number") retries = 0;
   const detail = result.detail ?? "repoos check failed";
+  const lastFailureDetail = summarizeForLastCheckFailure(detail);
 
   if (retries >= MAX_CHECK_RETRY_ATTEMPTS) {
     runner.persistHandoffFailure(
@@ -995,7 +1008,7 @@ export function scheduleCheckFailureRetry(
       // code and detail — the only record of why the check failed. See
       // `formatCheckFailure` for why a nested mapping isn't the answer.
       doc.data.last_check_failure = formatCheckFailure(
-        detail,
+        lastFailureDetail,
         result.detail?.match(/exit (\d+)/)?.[1],
       );
 

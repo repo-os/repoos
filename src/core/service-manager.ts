@@ -138,6 +138,18 @@ function findEntry(entries: ServiceEntry[], root: string): ServiceEntry | undefi
   });
 }
 
+/**
+ * Whether this repo has a RepoOS-managed OS service installed (via
+ * `repoos service install`). Best-effort and synchronous (the registry file
+ * only) so callers like `repoos status` can pick the right restart hint without
+ * querying launchd/systemd. A hand-run `repoos serve` writes a serve lock but
+ * never appears in this registry — which is exactly the distinction the status
+ * line needs (#0701).
+ */
+export function isManagedService(root: string): boolean {
+  return findEntry(readRegistry(), root) !== undefined;
+}
+
 // ── Platform detection ───────────────────────────────────────────────────────
 
 export function detectPlatform(): ServicePlatform {

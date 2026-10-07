@@ -114,6 +114,10 @@ import {
 import { TaskFieldValidationError } from "../../core/task-fields.js";
 import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
+import {
+  conflictResolutionSnapshot,
+  createResolutionProvenanceStore,
+} from "../conflict-resolution.js";
 import { pendingCloseOutJobs } from "../integration-job.js";
 import { createCloseOutOutcomeStore } from "../close-out-outcome.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
@@ -2839,7 +2843,7 @@ export const pmInterrupt: RouteHandler = (ctx, req, res, params) => {
 };
 
 export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
-  const { jobCoordinator } = ctx;
+  const { jobCoordinator, config } = ctx;
   const id = params.param1;
   const job = jobCoordinator.getJob(id);
   if (!job) {
@@ -2847,6 +2851,14 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
   }
   const pendingJobs = pendingCloseOutJobs(jobCoordinator.allJobs());
   const queuePos = pendingJobs.findIndex((j) => j.taskId === job.taskId);
+  let conflictResolution = null;
+  try {
+    conflictResolution = conflictResolutionSnapshot(
+      createResolutionProvenanceStore(config.root, config.cacheDir).get(id),
+    );
+  } catch {
+    conflictResolution = null;
+  }
   return json(res, 200, {
     ok: true,
     job: {
@@ -2861,6 +2873,7 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
       logPath: job.logPath,
       queuePosition: queuePos,
       queueLength: pendingJobs.length,
+      conflictResolution,
     },
   });
 };

@@ -37,6 +37,7 @@ describe("readBuildMetaFrom", () => {
     expect(readBuildMetaFrom(dir)).toEqual({
       version: "0.5.32",
       buildAt: "2026-08-30T00:00:00.000Z",
+      hash: "abc",
     });
   });
 
@@ -49,6 +50,7 @@ describe("readBuildMetaFrom", () => {
     expect(readBuildMetaFrom(dir)).toEqual({
       version: "0.5.30",
       buildAt: "2026-08-01T00:00:00.000Z",
+      hash: null,
     });
   });
 
@@ -57,9 +59,13 @@ describe("readBuildMetaFrom", () => {
     const src = join(repo, "src");
     mkdirSync(src, { recursive: true });
     mkdirSync(join(repo, "dist"), { recursive: true });
-    writeFileSync(join(repo, "dist", ".build-info.json"), JSON.stringify({ version: "0.5.33" }));
+    writeFileSync(
+      join(repo, "dist", ".build-info.json"),
+      JSON.stringify({ version: "0.5.33", hash: "deadbeef" }),
+    );
     // markerDir = <repo>/src (no markers) → falls through to <repo>/dist
     expect(readBuildMetaFrom(src).version).toBe("0.5.33");
+    expect(readBuildMetaFrom(src).hash).toBe("deadbeef");
   });
 
   it("does not throw when no marker sits beside the module", () => {
