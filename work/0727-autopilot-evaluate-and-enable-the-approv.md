@@ -13,7 +13,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:31Z"
 updated_at: "2026-10-07T09:12:43Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-07T09:10:21.076Z: server-side finalization timed out (deadline exceeded)"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: e1e86d410e6b27872e1ddd020132b9be009f9f01
@@ -123,3 +122,4 @@ Rationale: land routine docs/chore work only; machinery paths and UI screenshot 
 - 2026-10-07T08:58:57Z · needs_input
 - 2026-10-07T09:11:26Z · body
 - 2026-10-07T09:12:43Z · note: Driver diagnosis of thinkpad09:11 failure: #0711 merged_commit regression assertion uses literal unquoted YAML text; actual correct SHA was quoted because it began00aef. Same assertion exists current MAIN, not727sourcebug. Keep new policy machinery scope focused; do not weaken gate or alter production serializer. If fixing test only, preserve semantic assertion via parser and explicitly record baseline-current-main evidence for review; no unrelated source edits.
+
