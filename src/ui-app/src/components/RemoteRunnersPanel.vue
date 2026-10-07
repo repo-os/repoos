@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, onUnmounted, ref } from "vue";
-import { type RouteLocationNormalizedLoaded, routeLocationKey } from "vue-router";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { ArrowDown, ArrowUp, Check, RefreshCw } from "lucide-vue-next";
 import { api } from "../api";
-import { remoteRunnersHungShotFixture } from "../lib/remote-runners-shot-fixture";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
 import Button from "./ui/button.vue";
@@ -16,7 +14,6 @@ import type { RemoteHostStatusView, RemoteValidationStatusView } from "../types"
  * endpoint every 3s while the tab is visible.
  */
 
-const route = inject<RouteLocationNormalizedLoaded | null>(routeLocationKey, null);
 const status = ref<RemoteValidationStatusView | null>(null);
 const config = useConfigStore();
 const repo = useRepoStore();
@@ -69,15 +66,7 @@ onUnmounted(() => {
   if (tickTimer) clearInterval(tickTimer);
 });
 
-const shotFixture = computed(() => (route?.query?.rvFixture === "hung-runs" ? "hung-runs" : null));
-const shotFixtureLabel = computed(() =>
-  shotFixture.value === "hung-runs" ? "Shot fixture — not live runner state" : "",
-);
-
-const hosts = computed(() => {
-  if (shotFixture.value === "hung-runs") return [remoteRunnersHungShotFixture()];
-  return status.value?.hosts ?? [];
-});
+const hosts = computed(() => status.value?.hosts ?? []);
 const totalQueued = computed(() => hosts.value.reduce((n, h) => n + (h.queued ?? 0), 0));
 
 async function moveHost(index: number, offset: -1 | 1): Promise<void> {
@@ -190,9 +179,6 @@ function fmtAgo(iso: string): string {
       </span>
       <span class="rr-note">auto 3s · host locks 3s · server stats 15s</span>
     </div>
-    <p v-if="shotFixtureLabel" class="rr-shot-fixture ff-notice" role="status">
-      {{ shotFixtureLabel }}
-    </p>
     <p v-if="hosts.length" class="rr-tie-note">
       Jobs go to the host with the fewest active runs. Hosts with equal load are tried top to
       bottom, so the first host gets the work when all are idle.
