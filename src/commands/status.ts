@@ -411,6 +411,15 @@ export async function collectStatus(
     startedAtSource = "health";
   }
   const uptimeMs = startedAt !== null ? Math.max(0, now.getTime() - Date.parse(startedAt)) : null;
+
+  // ── cli (this process's own build — the stale-server reference) ──
+  const cliMeta = readBuildMeta();
+  const cli = {
+    version: cliMeta.version,
+    buildHash: cliMeta.hash,
+    buildAt: cliMeta.buildAt,
+  };
+
   const server: StatusServer = {
     lifecycle,
     running,
@@ -426,18 +435,14 @@ export async function collectStatus(
     buildHash: health.state === "ok" ? health.buildHash : null,
     buildAt: health.state === "ok" ? health.buildAt : null,
     managedService: isManagedService(root),
+    buildState: "unknown",
     health: health.state,
     healthRoot: health.root,
     locks: locks.length,
   };
-
-  // ── cli (this process's own build — the stale-server reference) ──
-  const cliMeta = readBuildMeta();
-  const cli = {
-    version: cliMeta.version,
-    buildHash: cliMeta.hash,
-    buildAt: cliMeta.buildAt,
-  };
+  // Fill in the comparison now that both sides exist — the same pure function
+  // `renderStatus` warns with, exposed raw for `--json` scripts (#0701).
+  server.buildState = serverBuildState(server, cli);
 
   // ── build (of THIS repo's checkout — not the running RepoOS install) ──
   const check = checkBuildForRoot(root);
