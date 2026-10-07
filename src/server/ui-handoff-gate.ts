@@ -1,8 +1,18 @@
 /**
- * UI handoff verification gate (#0680): for tasks with a shot capture plan,
- * run declared/auto shots through the managed preview while recording browser
- * console errors, failed requests, and horizontal overflow at configured
- * viewport widths. Failures block handoff and persist evidence under the cache dir.
+ * UI handoff verification gate (#0680, #0734): for tasks with a shot capture
+ * plan, run declared/auto shots through the managed preview while recording
+ * browser console errors, failed requests, and horizontal overflow at
+ * configured viewport widths. Failures block handoff and persist evidence
+ * under the cache dir.
+ *
+ * #0734 closes the "green handoff on empty evidence" hole: a declared
+ * `highlight`/`selector` that matched NOTHING is now a blocking issue (it used
+ * to be a log-only warning), the FINAL URL after redirects is compared to the
+ * declared route (a login/redirect to a different page can no longer pass as
+ * the shot), and declared `assert` conditions (element present/count/text) are
+ * evaluated on the captured page. Each capture's exact URL, matched
+ * assertions, stored PNG path (in the MAIN checkout, where the reviewer looks)
+ * and the tested tree identity are recorded in the evidence.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -16,25 +26,64 @@ import {
   type PageGateListenerPage,
 } from "../core/page-browser-gate.js";
 import { resolvedUiVerification } from "../core/ui-verification-config.js";
+import {
+  evaluateShotAssertions,
+  formatAssertionSummary,
+  type AssertionPage,
+  type ShotAssertionOutcome,
+} from "../core/shot-assertions.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import type { CaptureEntry } from "../core/shot-plan.js";
-import { provenanceCaption } from "../core/shot-plan.js";
+import { provenanceCaption, parseShotPlan, shotPlanFingerprint } from "../core/shot-plan.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
+import { runGit, worktreePathForBranch } from "../core/git.js";
 import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
 import { captureEntryPage, planAutoCapture, type ShotCaptureResult } from "./shot-capture.js";
 import type { PreviewManager } from "./preview.js";
-import { localShotStore } from "./shots.js";
+import { localShotStore, shotsDir, shotUrl, type ShotMeta } from "./shots.js";
 import { patchTaskFile } from "./write.js";
 
 const INSTALL_ADVICE = "Install: bun add -d @playwright/test && bunx playwright install webkit";
 const AUTO_SETTLE_MS = 900;
+
+/** Per-capture evidence (#0734): exact URL, assertions, and the stored PNG. */
+export interface UiHandoffGateCapture {
+  target: string;
+  route: string;
+  label?: string;
+  /** The exact URL navigated to (with the preview origin). */
+  url: string;
+  /** The final pathname after any login/redirect, as the browser landed. */
+  finalRoute: string;
+  /** Set when the final route differed from the declared one (login/redirect). */
+  redirectNote?: string;
+  /** Whether the final route matched the declared route. */
+  routeMatched: boolean;
+  /** Assertion outcomes evaluated against this captured page. */
+  assertions: ShotAssertionOutcome[];
+  /** Count of assertions that passed (and how many were checked). */
+  assertionsPassed: number;
+  assertionsChecked: number;
+  /** Stored PNG metadata (main-checkout storage, where the reviewer looks). */
+  shot?: { name: string; path: string; url: string };
+}
 
 export interface UiHandoffGateEvidence {
   at: string;
   issues: PageGateIssue[];
   blankShots: string[];
   captures: number;
+  /** #0734: the plan identity the captures were produced from. */
+  planFingerprint?: string;
+  /** #0734: the tested tree identity (HEAD sha of the worktree that was captured). */
+  sourceIdentity?: string;
+  /** #0734: absolute worktree path the captures were taken from. */
+  sourceWorktree?: string;
+  /** #0734: absolute directory holding the stored PNGs (main checkout). */
+  evidenceDir?: string;
+  /** #0734: per-capture detail — URL, assertions, stored PNG path. */
+  captureDetails?: UiHandoffGateCapture[];
 }
 
 export interface UiHandoffGateResult {
@@ -55,6 +104,16 @@ function evidenceFile(config: RepoOSConfig, taskId: string): string {
   return join(cacheRoot(config.root, config.cacheDir), "ui-verification", `${taskId}.json`);
 }
 
+/**
+ * The MAIN-checkout directory holding a task's captured PNGs (#0734). Captures
+ * are written through the root config on purpose — the reviewer and the server
+ * read `config.root`, while a worktree's own copy has no `.attachments` — so
+ * the reviewer prompt must point here, not at the worktree.
+ */
+export function taskEvidenceDir(config: RepoOSConfig, taskId: string): string {
+  return shotsDir(config.root, config.workDir, taskId);
+}
+
 export function readUiHandoffGateEvidence(
   config: RepoOSConfig,
   taskId: string,
@@ -68,12 +127,101 @@ export function readUiHandoffGateEvidence(
   }
 }
 
-/** Whether this task should run the gate during handoff finalization. */
+/** Whether this task should run the gate during handoff. */
 export function taskNeedsUiHandoffVerification(config: RepoOSConfig, task: Task): boolean {
   const policy = resolvedUiVerification(config);
   if (!policy.enabled) return false;
   const plan = planAutoCapture(config, task);
   return !("reason" in plan);
+}
+
+/** A preflight outcome: ok (go ahead), block (fail with detail), or skip. */
+export interface UiEvidencePreflight {
+  ok: boolean;
+  skipped?: boolean;
+  detail: string;
+}
+
+/**
+ * Cheap evidence preflight (#0734), run AFTER the commit gate's build but
+ * BEFORE the expensive handoff suite (remote validation + full `repoos check`).
+ *
+ * It does no browsing: it only resolves the declared capture plan and inspects
+ * the identity of any prior automatic captures. Its job is to fail fast — and
+ * actionably — when a declaration that REQUIRES visual acceptance cannot even
+ * produce a plan entry (an unresolvable target, a docs-only route, a
+ * malformed declaration), rather than after minutes of remote checks. It also
+ * reports whether prior evidence is stale (plan/tree changed) so the following
+ * capture is expected, not surprising.
+ */
+export async function preflightUiEvidence(
+  config: RepoOSConfig,
+  task: Task,
+): Promise<UiEvidencePreflight> {
+  const policy = resolvedUiVerification(config);
+  if (!policy.enabled) return { ok: true, skipped: true, detail: "ui verification disabled" };
+  // Detect required assertions straight from the declaration, so a plan that
+  // produced no entries (an unresolvable target, a docs-only route) still
+  // blocks here rather than silently skipping past the requirement.
+  const declared = parseShotPlan(task.body ?? "");
+  const declaredRequiredAssertions = declared.shots.some((s) =>
+    (s.assert ?? []).some((a) => a.optional !== true),
+  );
+  const assertParseErrors = declared.errors.filter((e) => /assert/i.test(e));
+  if (assertParseErrors.length > 0) {
+    return {
+      ok: false,
+      detail: `ui evidence preflight: declared assertions are malformed — ${assertParseErrors.join("; ")}`,
+    };
+  }
+  const plan = planAutoCapture(config, task);
+  if ("reason" in plan) {
+    if (declaredRequiredAssertions) {
+      return {
+        ok: false,
+        detail:
+          "ui evidence preflight: the task declares required visual assertions but no capture " +
+          `can be produced — ${plan.reason}`,
+      };
+    }
+    return { ok: true, skipped: true, detail: plan.reason };
+  }
+  const assertErrors = plan.errors.filter((e) => /assert/i.test(e));
+  if (assertErrors.length > 0) {
+    return {
+      ok: false,
+      detail: `ui evidence preflight: declared assertions could not be resolved — ${assertErrors.join("; ")}`,
+    };
+  }
+  if (plan.entries.length === 0 && declaredRequiredAssertions) {
+    return {
+      ok: false,
+      detail:
+        "ui evidence preflight: the task declares required visual assertions but no capture " +
+        `entry was produced (${[...plan.errors, ...plan.skips].join("; ") || "no captures planned"})`,
+    };
+  }
+  // Stale-evidence note (never blocking): the capture below will refresh it.
+  const planFingerprint = shotPlanFingerprint(plan.entries);
+  const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+  const sourceIdentity = worktree
+    ? (await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000)).stdout.trim()
+    : "";
+  const prior = localShotStore(config, task.id)
+    .list()
+    .filter((s) => s.origin === "auto");
+  const stale = prior.filter(
+    (s) =>
+      s.planFingerprint !== planFingerprint ||
+      (sourceIdentity && s.sourceIdentity !== sourceIdentity),
+  );
+  if (prior.length > 0 && stale.length > 0) {
+    return {
+      ok: true,
+      detail: `${stale.length} prior handoff capture(s) do not match the current plan/tree — a fresh capture will run`,
+    };
+  }
+  return { ok: true, detail: `ui evidence preflight: ${plan.entries.length} capture(s) planned` };
 }
 
 async function startTargetPreview(
@@ -89,18 +237,58 @@ async function startTargetPreview(
   return { url: started.url.replace(/\/$/, "") };
 }
 
+/** Normalize a route/URL pathname for comparison (trailing slash, query kept). */
+function normalizePath(path: string): string {
+  const withSlash = path.startsWith("/") ? path : `/${path}`;
+  // Trailing slash on a non-root path is insignificant for route matching.
+  return withSlash.length > 1 ? withSlash.replace(/\/+$/, "") : withSlash;
+}
+
+/** The pathname+search of a final URL, for route-match reporting. */
+function finalRouteOf(finalUrl: string): string {
+  try {
+    const u = new URL(finalUrl);
+    return `${u.pathname}${u.search}` || "/";
+  } catch {
+    return finalUrl;
+  }
+}
+
+/**
+ * Compare the browser's final route to the declared one. A preview app that
+ * redirects an unauthenticated request to `/login`, or a client-side guard
+ * that bounces to another page, means the captured PNG is NOT the declared
+ * evidence (#0734). We compare pathname only — the preview origin differs per
+ * run and the query string is part of the route when the declaration set one.
+ */
+function routeMatches(declared: string, finalRoute: string): boolean {
+  const declaredPath = normalizePath(declared.split("?")[0] ?? declared);
+  const finalPath = normalizePath((finalRoute.split("?")[0] ?? finalRoute) || "/");
+  return declaredPath === finalPath;
+}
+
 /**
  * Capture one entry and collect browser gate issues on the same page session.
+ * #0734: the final URL (after redirects) and assertion outcomes are returned so
+ * the caller can block on a wrong route or an unmet required assertion.
  */
 async function captureEntryWithGate(
   context: SmokeContext,
   pageUrl: string,
   entry: CaptureEntry,
   viewports: number[],
-): Promise<{ png: Buffer; issues: PageGateIssue[]; blank: boolean; warnings: string[] }> {
+): Promise<{
+  png: Buffer;
+  issues: PageGateIssue[];
+  blank: boolean;
+  warnings: string[];
+  finalUrl: string;
+  assertions: ShotAssertionOutcome[];
+}> {
   const warnings: string[] = [];
   const collector = createPageGateCollector(pageUrl);
-  const page = (await context.newPage()) as unknown as ShotDriverPage & PageGateListenerPage;
+  const page = (await context.newPage()) as unknown as ShotDriverPage &
+    PageGateListenerPage & { url?(): string };
   collector.attach(page);
   const issues: PageGateIssue[] = [];
   try {
@@ -118,6 +306,15 @@ async function captureEntryWithGate(
       },
     );
     issues.push(...collector.drain());
+    // #0734: where did the browser actually land? A login redirect silently
+    // produces a screenshot of the wrong page.
+    const finalUrl = typeof page.url === "function" ? page.url() : pageUrl;
+    // Assertions run on the SAME page session that produced the PNG, before the
+    // overflow re-checks resize the viewport.
+    const assertionReport = await evaluateShotAssertions(
+      page as unknown as AssertionPage,
+      entry.assert,
+    );
     for (const width of viewports) {
       const overflow = await checkHorizontalOverflowAtViewport(
         page,
@@ -126,7 +323,14 @@ async function captureEntryWithGate(
       );
       if (overflow) issues.push(overflow);
     }
-    return { png, issues, blank: pngLooksBlank(png), warnings };
+    return {
+      png,
+      issues,
+      blank: pngLooksBlank(png),
+      warnings,
+      finalUrl,
+      assertions: assertionReport.outcomes,
+    };
   } finally {
     await page.close().catch(() => {});
   }
@@ -138,6 +342,17 @@ export interface UiHandoffGateDeps {
   captureEntry?: typeof captureEntryWithGate;
   /** When set, bypasses Playwright and runs this hook instead (unit tests). */
   syntheticIssues?: PageGateIssue[];
+  /** Test hook: the tested tree identity, when git is unavailable. */
+  sourceIdentity?: string;
+}
+
+/** A blocking issue from a required assertion that failed (#0734). */
+function assertionIssue(entry: CaptureEntry, url: string, message: string): PageGateIssue {
+  return {
+    kind: "assertion",
+    message: `${entry.label ?? `${entry.target}${entry.route}`}: ${message} (captured ${url})`,
+    url,
+  };
 }
 
 /**
@@ -185,7 +400,20 @@ export async function runUiHandoffGate(
   const entries = plan.entries;
   const allIssues: PageGateIssue[] = [];
   const blankShots: string[] = [];
+  const captureDetails: UiHandoffGateCapture[] = [];
   let captured = 0;
+
+  // #0734: identity of what is being captured, so a reviewer can tie the
+  // evidence to the tested source/plan rather than trusting a timestamp.
+  const planFingerprint = shotPlanFingerprint(entries);
+  const sourceWorktree =
+    (task.branch ? worktreePathForBranch(config.root, task.branch) : null) ?? config.root;
+  let sourceIdentity = deps.sourceIdentity ?? "";
+  if (!sourceIdentity) {
+    const head = await runGit(sourceWorktree, ["rev-parse", "--short", "HEAD"], 10_000);
+    if (head.status === 0) sourceIdentity = head.stdout.trim();
+  }
+  const evidenceDir = taskEvidenceDir(config, task.id);
 
   let browser: SmokeBrowser | undefined;
   let context: SmokeContext | undefined;
@@ -240,12 +468,16 @@ export async function runUiHandoffGate(
       let issues: PageGateIssue[];
       let warnings: string[] = [];
       let blank = false;
+      let finalUrl = pageUrl;
+      let assertionOutcomes: ShotAssertionOutcome[] = [];
       try {
         const result = await captureEntry(context!, pageUrl, entry, viewports);
         png = result.png;
         issues = result.issues;
         warnings = result.warnings;
         blank = result.blank;
+        finalUrl = result.finalUrl;
+        assertionOutcomes = result.assertions;
       } catch (err) {
         return {
           ok: false,
@@ -253,15 +485,45 @@ export async function runUiHandoffGate(
         };
       }
       allIssues.push(...issues);
+
+      // #0734: a declared highlight/selector that matched NOTHING is missing
+      // evidence, not a note. It blocks: a capture that does not show the thing
+      // the declaration claims is exactly the #0720/#0727/#0733 failure.
+      for (const msg of warnings) {
+        allIssues.push({
+          kind: "missing-target",
+          message: `${msg} (captured ${finalUrl})`,
+          url: finalUrl,
+        });
+      }
+
+      // #0734: the browser must have LANDED on the declared route. A login
+      // redirect (or any client-side bounce) means the PNG is not the evidence
+      // the task declared.
+      const finalRoute = finalRouteOf(finalUrl);
+      const matched = routeMatches(entry.route, finalRoute);
+      let redirectNote: string | undefined;
+      if (!matched) {
+        redirectNote = `declared route ${entry.route} but the browser landed on ${finalRoute} (login or redirect?)`;
+        allIssues.push({
+          kind: "route",
+          message: `${entry.label ?? `${entry.target}${entry.route}`}: ${redirectNote} (captured ${finalUrl})`,
+          url: finalUrl,
+        });
+      }
+
+      // #0734: required assertions must hold.
+      const blockingAssertions = assertionOutcomes.filter((o) => o.blocking);
+      for (const outcome of blockingAssertions) {
+        allIssues.push(assertionIssue(entry, finalUrl, outcome.detail));
+      }
+
       if (blank) {
         allIssues.push({
           kind: "blank",
           message: `blank-looking screenshot for ${entry.target}${entry.route}`,
         });
         blankShots.push(`${entry.target}${entry.route}`);
-      }
-      for (const msg of warnings) {
-        log(task.id, "warn", `shots: ${msg}`);
       }
 
       const store = localShotStore(config, task.id);
@@ -275,6 +537,8 @@ export async function runUiHandoffGate(
         route: entry.route,
         ...(entry.label ? { label: entry.label } : {}),
         provenance: provenanceCaption(entry.provenance),
+        planFingerprint,
+        ...(sourceIdentity ? { sourceIdentity } : {}),
         data: png.toString("base64"),
       });
       if ("error" in stored) {
@@ -284,6 +548,36 @@ export async function runUiHandoffGate(
         };
       }
       captured++;
+
+      const storedMeta = stored as ShotMeta;
+      captureDetails.push({
+        target: entry.target,
+        route: entry.route,
+        ...(entry.label ? { label: entry.label } : {}),
+        url: finalUrl,
+        finalRoute,
+        ...(redirectNote ? { redirectNote } : {}),
+        routeMatched: matched,
+        assertions: assertionOutcomes,
+        assertionsPassed: assertionOutcomes.filter((o) => o.passed).length,
+        assertionsChecked: assertionOutcomes.length,
+        shot: {
+          name: storedMeta.name,
+          path: storedMeta.path,
+          url: shotUrl(task.id, storedMeta.name),
+        },
+      });
+
+      if (assertionOutcomes.length > 0) {
+        log(
+          task.id,
+          "info",
+          `ui verification: ${entry.label ?? entry.route} — ${formatAssertionSummary({
+            outcomes: assertionOutcomes,
+            failures: [],
+          })}`,
+        );
+      }
     }
   } finally {
     await context?.close().catch(() => {});
@@ -297,6 +591,11 @@ export async function runUiHandoffGate(
     issues: allIssues,
     blankShots,
     captures: captured,
+    planFingerprint,
+    sourceIdentity,
+    sourceWorktree,
+    evidenceDir,
+    captureDetails,
   };
   try {
     mkdirSync(join(path, ".."), { recursive: true });
@@ -326,5 +625,3 @@ export async function runUiHandoffGate(
     shotResult: { status: "captured", detail: shotDetail, count: captured },
   };
 }
-
-/** Test helper: run gate logic against captureEntryPage without monitoring (legacy path). */
