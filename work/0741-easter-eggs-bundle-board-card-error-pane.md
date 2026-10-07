@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
-updated_at: "2026-10-07T18:52:26Z"
+updated_at: "2026-10-07T19:08:38Z"
 review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)"
@@ -149,3 +149,4 @@ src/ui-app/tests/close-out-attempt.test.ts(27,7): error TS2741: Property 'lastPr
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-07T18:52:26Z · status active→review
 - 2026-10-07T18:52:26Z · note: Task body is underspecified: missing sections: Desired UX
+- 2026-10-07T19:08:38Z · note: review pass 3: failed — no usable report
