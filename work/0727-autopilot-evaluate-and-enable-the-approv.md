@@ -41,26 +41,21 @@ No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.
 ```json
 [
   {
-    "label": "Settings automation pause control",
+    "label": "Mission control",
     "target": "default",
-    "route": "/settings?tab=general&focus=automation.paused",
-    "highlight": "[data-config-key=\"automation.paused\"]",
-    "steps": [
-      {
-        "waitMs": 800
-      }
-    ]
+    "route": "/"
   },
   {
-    "label": "Settings auto approval machinery guard",
+    "label": "Auto-approve blocked paths control",
     "target": "default",
     "route": "/settings?tab=general&focus=approval.autoApprove.machineryPaths",
-    "highlight": "[data-config-key=\"approval.autoApprove.machineryPaths\"]",
-    "steps": [
-      {
-        "waitMs": 800
-      }
-    ]
+    "highlight": "[data-config-key=\"approval.autoApprove.machineryPaths\"]"
+  },
+  {
+    "label": "Kill switch on General",
+    "target": "default",
+    "route": "/settings?tab=general&focus=automation.paused",
+    "highlight": "[data-config-key=\"automation.paused\"]"
   }
 ]
 ```
@@ -114,3 +109,4 @@ Rationale: land routine docs/chore work only; machinery paths and UI screenshot 
 - 2026-10-07T05:37:32Z · status review→active
 - 2026-10-07T05:37:56Z · cli_override, model_override
 - 2026-10-07T05:40:03Z · body: section Proposed conservative policy (owner approval required)
+- 2026-10-07T05:40:03Z · body: section Shots
