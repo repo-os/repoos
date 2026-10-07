@@ -733,11 +733,9 @@ async function runHandoffFinalization(
     // Do not await: this walks git state and can outlast a fast automatic
     // review (#0737). Finalization must return and release the in-flight slot
     // while the handoff marker still covers the review-status write above.
-    void recordWorktreeHandoffProtection(config, task.id, task.branch, workdir).catch(
-      () => {
-        /* best-effort — close-out still has the dirty-worktree guards */
-      },
-    );
+    void recordWorktreeHandoffProtection(config, task.id, task.branch, workdir).catch(() => {
+      /* best-effort — close-out still has the dirty-worktree guards */
+    });
   }
 
   clearHandoffFailureLoopMetadata(config, task);
