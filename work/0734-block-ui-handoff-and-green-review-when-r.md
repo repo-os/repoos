@@ -2,14 +2,14 @@
 id: "0734"
 title: Block UI handoff and green review when required visual evidence is missing or stale
 type: bug
-status: ready
+status: active
 priority: p1
 area: [server, web]
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/block-ui-handoff-and-green-review-when-r
 created_at: "2026-10-07T05:39:18Z"
-updated_at: "2026-10-07T14:35:31Z"
+updated_at: "2026-10-07T14:35:47Z"
 ---
 ## Problem
 Current-main investigation after #0720/#0727/#0733: a shot can show a wrong route, lack its declared target, or contain no feature data and still report a successful handoff. Reviewers sometimes issue good-to-go while explicitly saying visual proof is absent. #0727 saved Mission Control for a Settings claim; #0733 lacked review rows; #0720 reused stale captures after plan changes.
@@ -45,3 +45,4 @@ Additional verified cause: handoff.ts constructs uiTask with worktreeTask.body, 
 - 2026-10-07T05:39:56Z · body: section Notes for AI
 - 2026-10-07T09:25:57Z · needs_input
 - 2026-10-07T14:35:31Z · status inbox→ready
+- 2026-10-07T14:35:47Z · status ready→active, branch
