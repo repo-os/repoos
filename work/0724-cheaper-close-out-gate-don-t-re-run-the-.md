@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T10:26:38.467Z: repoos check failed: build complete in 3.72s. · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-ico… (truncated)"
 id: "0724"
 title: "Cheaper close-out gate: don't re-run the full suite on what the handoff gate already proved"
 type: feature
@@ -57,3 +59,4 @@ Timing: I could NOT measure real before/after close-out medians from this sandbo
 - 2026-10-07T10:16:02Z · body: section Implementation notes
 - 2026-10-07T10:18:07Z · body
 - 2026-10-07T10:19:41Z · body
+
