@@ -12,7 +12,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-07T12:00:40Z"
+updated_at: "2026-10-07T12:01:01Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-10-07T02:57:53.598Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -51,12 +51,12 @@ Read src/server/attention-feed.ts and attention-notify.ts (silent-run items), sr
     "highlight": "[data-config-key=\"attention.slowRunMultiplier\"]",
     "steps": [
       {
-        "waitMs": 1000
+        "waitMs": 1500
       }
     ]
   },
   {
-    "label": "Remote runners; slow badge requires a live slow run",
+    "label": "Checks remote runners tab (slow badge only when a run is live)",
     "target": "default",
     "route": "/checks?tab=remote",
     "steps": [
@@ -142,3 +142,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T11:08:10Z · needs_input
 - 2026-10-07T11:56:00Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-10-07T11:58:21Z · needs_input
+- 2026-10-07T12:01:01Z · body: section Shots
