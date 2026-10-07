@@ -243,6 +243,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   },
   attention: {
     spendAlertUsd: 0,
+    slowRunMultiplier: 1.5,
   },
   // Check-gate defaults (#0655): how many times a failing test file is
   // re-run in isolation for the informational flake-triage label.
@@ -1649,9 +1650,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     }
 
     const spendAlert = parsed["attention.spendAlertUsd"];
+    const attention = { ...cfg.attention };
     if (spendAlert !== undefined) {
       if (typeof spendAlert === "number" && Number.isFinite(spendAlert) && spendAlert >= 0) {
-        cfg.attention = { spendAlertUsd: spendAlert };
+        attention.spendAlertUsd = spendAlert;
       } else {
         console.warn(
           `[attention] spendAlertUsd must be a number >= 0 (0 disables the alert), ` +
@@ -1659,6 +1661,22 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         );
       }
     }
+    const slowRunMultiplier = parsed["attention.slowRunMultiplier"];
+    if (slowRunMultiplier !== undefined) {
+      if (
+        typeof slowRunMultiplier === "number" &&
+        Number.isFinite(slowRunMultiplier) &&
+        slowRunMultiplier >= 1
+      ) {
+        attention.slowRunMultiplier = slowRunMultiplier;
+      } else {
+        console.warn(
+          `[attention] slowRunMultiplier must be a number >= 1, ` +
+            `got ${JSON.stringify(slowRunMultiplier)} — using ${DEFAULT_CONFIG.attention?.slowRunMultiplier ?? 1.5}`,
+        );
+      }
+    }
+    cfg.attention = attention;
 
     const approvalEnabled = parsed["approval.enabled"];
     const approvalAreas = normalizeStringList(parsed["approval.autoApprove.areas"]);
@@ -2072,6 +2090,18 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description:
         "Show a notice in the bell when provider-reported board spend reaches this total. " +
         "0 disables the alert. Estimates and unknown costs are never counted toward the total.",
+    },
+    {
+      key: "attention.slowRunMultiplier",
+      label: "Flag slow checks above (× median)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.attention?.slowRunMultiplier ?? 1.5,
+      description:
+        "While a check, handoff gate, close-out stage or bundle upload is running, " +
+        "flag it in the bell when its elapsed time exceeds this multiple of the median " +
+        "of recent passing runs of the same kind (at least 5 samples). Default 1.5.",
     },
     {
       key: "closeOut.timeoutMs",
@@ -2668,6 +2698,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "worktrees.candidate",
   "worktrees.installCommand",
   "attention.spendAlertUsd",
+  "attention.slowRunMultiplier",
   "approval.enabled",
   "approval.autoApprove.areas",
   "approval.autoApprove.types",

@@ -114,6 +114,8 @@ describe("notifications store defaults + persistence", () => {
       closeOutTimedOut: false,
       providerFailure: false,
       silentRun: false,
+      slowRun: false,
+      slowRunsRecently: false,
       spendThreshold: false,
       awaitingVisualCheck: false,
       remoteFallback: false,
@@ -325,6 +327,8 @@ describe("NOTIFICATION_TYPE_LABELS", () => {
       "remoteFallback",
       "review",
       "silentRun",
+      "slowRun",
+      "slowRunsRecently",
       "spendThreshold",
       "stuck",
     ]);

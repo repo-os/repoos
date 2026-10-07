@@ -82,6 +82,9 @@ export function resolveSettingLocation(
     if (!field) return null;
     return { tab: "toml", hasUiRow: false };
   }
+  if (key === "attention.slowRunMultiplier") {
+    return { tab: "general", hasUiRow: true };
+  }
   if (key === "ntfyEnabled" || key === "ntfyTopic" || key === "attention.spendAlertUsd") {
     return { tab: "notifications", hasUiRow: true };
   }
