@@ -2,7 +2,7 @@
 id: "0728"
 title: "Event-driven CTO: react to server events instead of a timer, and expose the same feed as a watch command for external sessions"
 type: feature
-status: active
+status: review
 priority: p1
 area: [cli, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -50,4 +50,4 @@ Owner wants release soon. Verify diagnosis independently against CURRENT main an
 - 2026-10-07T09:46:37Z · status ready→active, branch
 - 2026-10-07T09:47:41Z · body
 - 2026-10-07T09:55:53Z · body
-- 2026-10-07T10:11:17Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-07T10:11:17Z · status active→review
