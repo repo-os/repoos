@@ -11,7 +11,7 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T10:36:24Z"
+updated_at: "2026-10-07T10:38:48Z"
 ---
 ## Problem
 Current main 541f9b3c78567799f5d0f5b5b44cfef7f9babf8b, compiled version0.5.67 hashfb4bf9051342bd324397256c375a881b7621b9ccf675853ab448e140f7e9465c. Pre-release bun run test:coverage failed agent-review.test.ts:361 second requestReview after human PATCH active: expected202 got200. Isolated single-worker reproduction also failed expected202 got409. Evidence /private/tmp/repoos-pre-release-coverage.log and /private/tmp/repoos-review-reproduction.log. Do not assume a flake or broaden timeouts.
@@ -32,3 +32,4 @@ Read AGENTS.md. Use existing task worktree, Cursor/composer-2.5. Independently v
 - 2026-10-07T10:18:04Z · status inbox→ready
 - 2026-10-07T10:18:13Z · status ready→active, branch
 - 2026-10-07T10:36:24Z · body
+- 2026-10-07T10:38:48Z · body
