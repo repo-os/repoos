@@ -2,7 +2,7 @@
 id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
-status: active
+status: ready
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-07T02:50:35Z"
+updated_at: "2026-10-07T04:49:28Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 404c1109cf8aa78b7446c56733747d534bb744ae
 merge_conflict_retry_count: 2
@@ -127,3 +127,4 @@ error: script "test" exited with code 1
 - 2026-10-07T02:44:07Z · body
 - 2026-10-07T02:45:48Z · body
 - 2026-10-07T02:50:35Z · needs_input
+- 2026-10-07T04:49:28Z · watchdog: auto-surfaced stuck task · status active→ready · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation unavailable: ssh upload of candidate bundle to mini failed: ssh: connect to host 100.126.187.126 port 22: Operation timed out · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
