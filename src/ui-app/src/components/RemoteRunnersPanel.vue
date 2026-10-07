@@ -69,9 +69,7 @@ onUnmounted(() => {
   if (tickTimer) clearInterval(tickTimer);
 });
 
-const shotFixture = computed(() =>
-  route?.query?.rvFixture === "hung-runs" ? "hung-runs" : null,
-);
+const shotFixture = computed(() => (route?.query?.rvFixture === "hung-runs" ? "hung-runs" : null));
 const shotFixtureLabel = computed(() =>
   shotFixture.value === "hung-runs" ? "Shot fixture — not live runner state" : "",
 );
