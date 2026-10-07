@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-07T19:10:13Z"
-review_passes: 3
+last_close_out_gate_ms: 98915
+last_close_out_gate_at: "2026-10-07T19:13:49.454Z"
 id: "0741"
 title: "Easter eggs bundle: board card error panel (flush, square, below the action button) and hide a stale close-out error while a new close-out runs"
 type: chore
@@ -13,6 +13,8 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
+updated_at: "2026-10-07T19:13:49Z"
+review_passes: 3
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)"
 ---
@@ -158,4 +160,5 @@ src/ui-app/tests/close-out-attempt.test.ts(27,7): error TS2741: Property 'lastPr
 - 2026-10-07T19:08:53Z · body
 - 2026-10-07T19:08:53Z · needs_input
 - 2026-10-07T19:10:13Z · note: review pass 4: good to go
+- 2026-10-07T19:13:49Z · close-out gate completed in 99s
 
