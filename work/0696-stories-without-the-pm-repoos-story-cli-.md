@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/stories-without-the-pm-repoos-story-cli-
 created_at: "2026-10-06T03:15:42Z"
-updated_at: "2026-10-07T19:29:02Z"
+updated_at: "2026-10-07T19:34:10Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 30a982bbba860d2ef236967725ba77ad5f30d347
 ---
@@ -116,3 +116,23 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T19:29:02Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/story-cli-and-verbatim-api.test.ts:358:37 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-07T19:29:02Z · status review→active
+- 2026-10-07T19:34:10Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/story-cli-and-verbatim-api.test.ts:358:37
+    356|     try {
+    357|       await withCwd(root, () => cmdStoryShow(["Launch checklist"]));
+    358|       expect(process.exitCode ?? 0).toBe(0);
+       |                                     ^
+    359|       const out = logs.join("\n");
+    360|       expect(out).toContain("tag-only");
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 440 passed | 1 skipped (442)
+      Tests  1 failed | 5373 passed | 15 skipped (5389)
+   Start at  19:29:46
+   Duration  259.29s (transform 6.65s, setup 2.15s, import 45.65s, tests 244.42s, environment 203.51s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 759ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  19:34:06
+   Duration  2.74s (transform 1.16s, setup 13ms, import 1.45s, tests 759ms, environment 444ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
