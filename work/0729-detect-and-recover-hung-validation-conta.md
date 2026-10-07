@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-07T06:29:17Z"
-review_passes: 2
 id: "0729"
 title: "Detect and recover hung validation containers on runner hosts (kill, retry on another host, isolate the bun cache per run); CTO safe action"
 type: bug
@@ -14,6 +12,8 @@ branch: feat/detect-and-recover-hung-validation-conta
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:35Z"
+updated_at: "2026-10-07T06:33:26Z"
+review_passes: 2
 error: "script \\"test\\" exited with code 1 — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.\""
 review_rounds: 1
 dev_error_count: 1
@@ -132,4 +132,23 @@ error: script "test" exited with code 1 — fix it in the feature branch and re-
 - 2026-10-07T06:28:16Z · status active→review
 - 2026-10-07T06:28:17Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-07T06:29:16Z · note: review pass 2: good to go
-
+- 2026-10-07T06:33:26Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
+     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+     35|     expect(missing).toEqual([]);
+       |                     ^
+     36|   });
+     37|
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+ Test Files  1 failed | 427 passed | 1 skipped (429)
+      Tests  2 failed | 5179 passed | 15 skipped (5196)
+   Start at  06:28:48
+   Duration  272.96s (transform 6.49s, setup 2.35s, import 50.91s, tests 221.43s, environment 244.29s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 422ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  06:33:22
+   Duration  2.29s (transform 1.05s, setup 11ms, import 1.31s, tests 422ms, environment 470ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
