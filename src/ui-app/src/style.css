@@ -4702,27 +4702,46 @@
 .drawer-done-error {
   margin-top: 12px;
 }
-.review-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 6px;
-  font-size: 10px;
-  color: var(--txt-faint);
-  font-family: "JetBrains Mono", monospace;
-}
-.review-history {
-  list-style: none;
-  padding: 0;
+/* Review pass records (#0733): a simple table matching the Tokens page. */
+.review-history-wrap {
   margin: 0 0 8px;
-  font-size: 10px;
-  color: var(--txt-muted);
-  font-family: "JetBrains Mono", monospace;
+  overflow-x: auto;
 }
-.review-history li + li {
-  margin-top: 4px;
+.review-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  color: var(--txt-dim);
+  white-space: nowrap;
+}
+.review-history-table th,
+.review-history-table td {
+  padding: 4px 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.review-history-table td:first-child,
+.review-history-table th:first-child {
+  padding-left: 0;
+}
+.review-history-table th {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--txt-faint);
+  font-weight: 600;
+}
+.review-history-pass {
+  font-family: "JetBrains Mono", monospace;
+  color: var(--txt-muted);
+}
+.review-history-reviewer {
+  color: var(--cyan);
+}
+.review-history-model {
+  font-family: "JetBrains Mono", monospace;
+  color: var(--txt-muted);
 }
 .review-card {
   cursor: default;
