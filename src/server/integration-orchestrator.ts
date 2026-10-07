@@ -1224,8 +1224,7 @@ export class CloseOutOrchestrator {
             "validating",
             validateRes.reason,
             conflict
-              ? () =>
-                  this.routeConflictRecovery(job, validateRes.reason!, job.baseMainSha ?? "")
+              ? () => this.routeConflictRecovery(job, validateRes.reason!, job.baseMainSha ?? "")
               : undefined,
           );
         }
@@ -1444,9 +1443,7 @@ export class CloseOutOrchestrator {
     let hasPriorFeatureApproval = false;
     try {
       const passes = listReviewPasses(this.config, job.taskId);
-      hasPriorFeatureApproval = passes.some(
-        (p) => p.state === "ok" && p.verdict === "good to go",
-      );
+      hasPriorFeatureApproval = passes.some((p) => p.state === "ok" && p.verdict === "good to go");
     } catch {
       hasPriorFeatureApproval = false;
     }
@@ -1548,11 +1545,12 @@ export class CloseOutOrchestrator {
       // Fast-forward or already-merged: nothing to resolve.
       return { ok: true };
     }
-    const conflicted =
-      (await runGit(wtPath, ["diff", "--name-only", "--diff-filter=U"], 10_000)).stdout
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean);
+    const conflicted = (
+      await runGit(wtPath, ["diff", "--name-only", "--diff-filter=U"], 10_000)
+    ).stdout
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
     // The set must be exactly what the classifier approved — no extra file may
     // be resolved by this narrow path.
     const approved = new Set(conflictPaths);
