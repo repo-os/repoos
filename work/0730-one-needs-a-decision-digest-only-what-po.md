@@ -2,7 +2,7 @@
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -146,4 +146,4 @@ error: script "test" exited with code 1
 - 2026-10-07T11:43:26Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T11:43:26Z · status review→active
 - 2026-10-07T11:56:00Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-- 2026-10-07T11:58:31Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-07T11:58:31Z · status active→review
