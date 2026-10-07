@@ -3,9 +3,6 @@ id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: degenerate-output
-needs_input_detail: Degenerate output loop detected after one automatic retry.
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -15,7 +12,7 @@ branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-06T07:36:39Z"
+updated_at: "2026-10-07T02:12:47Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 404c1109cf8aa78b7446c56733747d534bb744ae
 merge_conflict_retry_count: 2
@@ -103,3 +100,25 @@ Close-out failed twice with 'merge conflict in src/server/server.ts' because mai
 - 2026-10-06T07:26:16Z · needs_input
 - 2026-10-06T07:26:54Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
 - 2026-10-06T07:36:39Z · model_override
+- 2026-10-06T13:49:16Z · handoff failed · ui-review handoff failed at check · remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202);
+       |                      ^
+    213|   expect(res.body.status).toBe("active");
+    214|   const deadline = Date.now() + 30_000;
+ ❯ tests/agent-review.test.ts:349:13
+ ❯ withServer tests/agent-review.test.ts:279:11
+ ❯ tests/agent-review.test.ts:341:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 423 passed | 1 skipped (425)
+      Tests  1 failed | 5086 passed | 15 skipped (5102)
+   Start at  13:45:06
+   Duration  245.32s (transform 6.47s, setup 2.03s, import 42.41s, tests 228.19s, environment 195.98s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 782ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  13:49:12
+   Duration  2.72s (transform 1.13s, setup 13ms, import 1.41s, tests 782ms, environment 440ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T02:12:40Z · needs_input
+- 2026-10-07T02:12:44Z · note: DRIVER recovery 2026-10-07: no live engineer/reviewer; clean existing worktree, 694 commits behind current main acb6cf309. Previous failed integration names src/server/server.ts conflict; later handoff failed agent-review.test.ts:349. Current main default closeOut.timeoutMs remains360000 and existing conflict recovery exists, so independently verify every acceptance claim and identify remaining gaps before changing code. Current compiled build hash0c80617fbf0a version0.5.66; cross-repo report came from older running builds, not proof of current behavior. Use FRESH cursor/composer-2.5 session because prior session was loop-poisoned. Read current AGENTS and latest owner runbook/log. Merge current main in recorded worktree, preserve current source and task bookkeeping via supported RepoOS operations; never hand-edit work/stories. Diagnose reviewer failures with evidence, do not weaken assertions or widen timeouts to pass. Scoped check once after actual repairs, rebuild as needed, re-handoff, new review. No main commit/push/PR/release/host/config/server changes. Keep source changes intrinsic0679; no unrelated easter eggs. Record current commit/build, reproduction and still relevant/partly fixed/already fixed/misdiagnosed per item.

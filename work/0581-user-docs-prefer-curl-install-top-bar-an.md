@@ -3,6 +3,9 @@ id: "0581"
 title: "User docs: prefer curl install, top bar and mobile menu fixes"
 type: feature
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: named mobile hardware)"
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/user-docs-prefer-curl-install-top-bar-an
 model_override: opencode-go/mimo-v2.6-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T09:55:42Z"
-updated_at: "2026-09-29T11:09:49Z"
+updated_at: "2026-10-06T23:48:17Z"
 ---
 ## Goal
 
@@ -89,3 +92,4 @@ Mirror the style and layout of the repoos.org mobile menu (the landing site in
 - 2026-09-29T09:56:58Z · status ready→active, branch
 - 2026-09-29T10:54:29Z · status active→review
 - 2026-09-29T11:09:49Z · status review→done, release:success
+- 2026-10-06T23:48:17Z · needs_input

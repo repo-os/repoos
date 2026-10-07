@@ -48,6 +48,7 @@ export const NEEDS_INPUT_REASONS = [
   "watchdog-stuck",
   "cto-escalation",
   "underspecified",
+  "needs-human-step",
 ] as const;
 export type NeedsInputReason = (typeof NEEDS_INPUT_REASONS)[number];
 

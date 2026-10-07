@@ -47,6 +47,7 @@ import { isProviderFailureReason } from "../core/attention.js";
 import {
   creditIdleMs,
   DegenerateOutputTracker,
+  degenerateHitDetail,
   scrapeProviderFailure,
 } from "../core/agent-run-health.js";
 import { notifyAttentionAfterSession, notifyAttentionAgentStalled } from "./attention-notify.js";
@@ -56,6 +57,7 @@ import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { buildStoryContext, storyContextSummary } from "../core/story-context.js";
 import { unresolvedReviewFindingsBlock } from "../core/review-findings.js";
+import { needsInputClearsOnNewEngineerRun } from "../core/needs-input.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
 import type { Logger } from "../core/logger.js";
@@ -223,6 +225,8 @@ export interface RunningAgentInfo {
   id: string;
   pid: number;
   startedAt: string;
+  /** Server time of the last streamed output line for this turn, if any (#0719). */
+  lastOutputAt?: string | null;
   /** Working directory the agent runs in (worktree path, or repo root). */
   workdir?: string;
 }
@@ -296,6 +300,8 @@ interface Entry {
    * and one-shot degenerate retries.
    */
   abortKind?: "provider-failure" | "degenerate-output" | "degenerate-retry";
+  /** Which degenerate-output rule tripped, with an excerpt (#0718). */
+  degenerateDetail?: string;
   /** When `abortKind` is `degenerate-retry`, respawn after cleanup. */
   degenerateRetry?: {
     task: Task;
@@ -1064,6 +1070,8 @@ export interface AgentRunnerOptions {
   now?: () => Date;
   /** Resolve a task from the repo task index by ID. Used to populate task/branch on resume turns. */
   getTask?: (taskId: string) => Task | null;
+  /** Notify the live index after the runner patches a task file (#0716). */
+  onTaskFilePatched?: (absPath: string) => void;
 }
 
 /** Best-effort session-id extraction from agent output (opencode / claude). */
@@ -2617,6 +2625,27 @@ function entryBytes(e: AgentOutputEntry): number {
   return JSON.stringify(e).length + 1;
 }
 
+/**
+ * What the degenerate-output tracker may scan from one recorded entry (#0718).
+ *
+ * The tracker must see only the agent's own assistant text. A structured
+ * `tool` entry is a tool call or its result (an edit payload, a file read) and
+ * is passed as no text with `hadToolCall`, so it resets the no-tool budget and
+ * is never scored for repetition. A legacy raw line is scored only when it is
+ * plain `out` output — stderr and `sys` notices are not assistant prose.
+ */
+export function degenerateScanInput(entry: AgentOutputEntry | undefined): {
+  text: string | undefined;
+  hadToolCall: boolean;
+} {
+  if (!entry) return { text: undefined, hadToolCall: false };
+  if ("type" in entry) {
+    if (entry.type === "text") return { text: entry.text, hadToolCall: false };
+    return { text: undefined, hadToolCall: entry.type === "tool" };
+  }
+  return { text: entry.s === "out" ? entry.d : undefined, hadToolCall: false };
+}
+
 /** Branch derived from a task title, mirroring the UI's `feat/<slug>` rule. */
 export function deriveBranch(title: string): string {
   const slug = title
@@ -3622,6 +3651,18 @@ export function missionFor(
   }
 
   parts.push(agent.instructions?.trim() ? agent.instructions.trim() : "Implement this task.", "");
+
+  if (agent.name === "engineer") {
+    parts.push(
+      "## Evidence — never invent",
+      "",
+      "Do not fabricate device test results, network measurements, external account IDs,",
+      "registration confirmations, or live API outcomes you did not observe in this run.",
+      "Leave those fields blank in the task body or your report and say a human must",
+      "supply the proof.",
+      "",
+    );
+  }
 
   // Skills are intentionally explicit: a repository may contain many
   // procedures, but an agent sees only the skills enabled for its role. Resolve
@@ -4903,6 +4944,7 @@ export class AgentRunner {
 
   /** Resolve a task from the repo task index by ID. Used to populate task/branch on resume turns. */
   private readonly getTask?: (taskId: string) => Task | null;
+  private readonly onTaskFilePatched?: (absPath: string) => void;
 
   /**
    * `opts.stallTimeoutMs` overrides the 90s default (tests use a small value
@@ -4940,6 +4982,7 @@ export class AgentRunner {
     this.onReviewDone = opts.onReviewDone;
     this.onDiagnosableFailure = opts.onDiagnosableFailure;
     this.getTask = opts.getTask;
+    this.onTaskFilePatched = opts.onTaskFilePatched;
     this.db = getRepoOSDb(config.root);
     this.cacheDir = join(config.root, config.cacheDir);
     this.sessionsDir = join(this.cacheDir, "sessions");
@@ -5435,10 +5478,12 @@ export class AgentRunner {
   running(): RunningAgentInfo[] {
     const out: RunningAgentInfo[] = [];
     for (const [id, e] of this.entries) {
+      const session = this.sessions.get(id);
       out.push({
         id,
         pid: e.adoptedPid ?? e.proc?.pid ?? -1,
         startedAt: e.startedAt,
+        lastOutputAt: session?.lastOutputAt ?? null,
         workdir: e.workdir,
       });
     }
@@ -5955,6 +6000,32 @@ export class AgentRunner {
    * Spawn one turn and attach streaming. Everything after the spawn is async;
    * failures surface as agent.exited via cleanup.
    */
+  /** Clear recoverable run-health needs_input when a new engineer turn starts (#0716). */
+  private clearRecoverableNeedsInput(task: Task): Task {
+    let current = task;
+    try {
+      current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+    } catch {
+      /* fall back to the in-memory snapshot */
+    }
+    if (!current.needsInput || !needsInputClearsOnNewEngineerRun(current.needsInputReason)) {
+      return current;
+    }
+    const cleared = patchTaskFile(this.config, current.absPath, {
+      needsInput: false,
+      needsInputReason: null,
+      needsInputDetail: null,
+    });
+    this.onTaskFilePatched?.(cleared.absPath);
+    return cleared;
+  }
+
   private spawnTurn(
     taskId: string,
     cmd: string,
@@ -5981,6 +6052,11 @@ export class AgentRunner {
       if (lockRefusal) return { ok: false, reason: lockRefusal };
     }
     const runId = randomUUID();
+    if (task && !opts.review) {
+      task = this.clearRecoverableNeedsInput(task);
+      const session = this.sessions.get(taskId);
+      if (session) session.task = task;
+    }
     // A new turn means the task is active again — a human restarted a paused
     // task, or sent a follow-up — so the pause marker no longer applies.
     this.pausedTasks.delete(taskId);
@@ -6242,8 +6318,7 @@ export class AgentRunner {
       entry = this.applySignals(taskId, raw, entry, session);
     }
     this.recordEntry(taskId, session, stream, entry);
-    const hadTool = "type" in entry && entry.type === "tool";
-    this.lineTouched(taskId, session, raw, hadTool);
+    this.lineTouched(taskId, session, raw);
   }
 
   /**
@@ -6302,6 +6377,7 @@ export class AgentRunner {
       stream: stream === "sys" ? "out" : stream,
       at: now(),
     });
+    this.scanDegenerate(taskId, session, stamped);
     if ("type" in stamped && stamped.type === "tool" && stamped.tool === "shell" && stamped.input) {
       const warn = patternKillWarning(stamped.input);
       if (warn) {
@@ -6323,30 +6399,36 @@ export class AgentRunner {
    * a stall warning immediately — the periodic check only ever needs to raise
    * the flag, never lower it.
    */
-  private lineTouched(taskId: string, session: Session, raw: string, hadToolCall = false): void {
+  private lineTouched(taskId: string, session: Session, raw: string): void {
     const usageChanged = this.applyUsage(taskId, session, raw);
     session.lastOutputAt = now();
     session.silentAwakeMs = 0;
     const stallCleared = session.stalledEmitted;
     session.stalledEmitted = false;
     if (usageChanged || stallCleared) this.emitStats(taskId);
-    this.checkOutputHealth(taskId, session, raw, hadToolCall);
+    this.checkOutputHealth(taskId, session, raw);
   }
 
-  private checkOutputHealth(
-    taskId: string,
-    session: Session,
-    raw: string,
-    hadToolCall: boolean,
-  ): void {
-    const entry = this.entries.get(taskId);
-    if (!entry || entry.review) return;
+  private checkOutputHealth(taskId: string, session: Session, raw: string): void {
+    const running = this.entries.get(taskId);
+    if (!running || running.review) return;
     const provider = scrapeProviderFailure(raw);
     if (provider) {
       this.abortForProviderFailure(taskId, session, provider);
-      return;
     }
-    const verdict = session.degenerate?.observe(raw, hadToolCall) ?? "ok";
+  }
+
+  /**
+   * Feed one recorded entry to the degenerate-output tracker (#0718). Every
+   * entry — assistant text, a tool call/result, a legacy plain line — passes
+   * through here, so a single choke point decides what counts: only the
+   * agent's own assistant text is scored, and a tool call resets the no-tool
+   * budget. Tool payloads and results are never scanned.
+   */
+  private scanDegenerate(taskId: string, session: Session, entry: AgentOutputEntry): void {
+    if (!session.degenerate) return;
+    const { text, hadToolCall } = degenerateScanInput(entry);
+    const verdict = session.degenerate.observe(text, hadToolCall);
     if (verdict === "degenerate") void this.handleDegenerateOutput(taskId, session);
   }
 
@@ -6369,6 +6451,9 @@ export class AgentRunner {
     const agentName = session.agent;
     const agents = agentsForConfig(this.config);
     const agent = agentName ? agents.find((a) => a.name === agentName) : undefined;
+    // Name the rule and show a short excerpt so a human can tell a real model
+    // loop from a stale false positive (#0718). Read before `reset()` clears it.
+    entry.degenerateDetail = degenerateHitDetail(session.degenerate?.lastHit() ?? null);
     if (!session.degenerateRetried && task && agent && entry.workdir) {
       session.degenerateRetried = true;
       entry.abortKind = "degenerate-retry";
@@ -6381,7 +6466,7 @@ export class AgentRunner {
       session.degenerate?.reset();
       this.recordEntry(taskId, session, "sys", {
         type: "sys",
-        d: "↻ Degenerate output detected — stopping and retrying this turn once.",
+        d: "↻ Degenerate output detected — stopping and retrying with a fresh session once.",
       });
       this.killTurnProcess(taskId);
       return;
@@ -6389,7 +6474,7 @@ export class AgentRunner {
     entry.abortKind = "degenerate-output";
     this.recordEntry(taskId, session, "sys", {
       type: "sys",
-      d: "✗ Degenerate output loop detected — agent stopped.",
+      d: `✗ Degenerate output loop detected — agent stopped. ${entry.degenerateDetail}`,
     });
     this.killTurnProcess(taskId);
   }
@@ -7546,8 +7631,10 @@ export class AgentRunner {
     ) {
       if (abortKind === "degenerate-retry" && degenerateRetry) {
         const { task, agent, branch, cwd } = degenerateRetry;
+        // A fresh session, never a resume: the poisoned conversation replays
+        // the same loop when resumed (#0717, #0679).
         queueMicrotask(() => {
-          void this.start(task, branch, agent, { cwd });
+          void this.start(task, branch, agent, { cwd, freshSession: true });
         });
       } else if (abortKind === "provider-failure") {
         this.escalateFailedExit(
@@ -7562,7 +7649,7 @@ export class AgentRunner {
           taskId,
           taskForHandoff,
           session,
-          "Degenerate output loop detected after one automatic retry.",
+          entry.degenerateDetail ?? "Degenerate output loop detected after one automatic retry.",
           "degenerate-output",
         );
       } else if (!exitedCleanly) {

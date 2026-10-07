@@ -3,13 +3,16 @@ id: "0068"
 title: Add Cloudflare Tunnel + Zero Trust publishing for local apps
 type: feature
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p2
 area: cli
 assigned_to: ai
 created_by: ""
 branch: feat/add-cloudflare-tunnel-zero-trust-publish
 created_at: "2026-08-11T01:44:17Z"
-updated_at: "2026-08-11T05:39:53Z"
+updated_at: "2026-10-06T23:48:14Z"
 ---
 ## Problem
 
@@ -211,3 +214,4 @@ support, per-app custom Access session durations or MFA policy tuning.
 - 2026-08-11T13:06:00Z · status ready→active
 - 2026-08-11T13:06:00Z · status active→review
 - 2026-08-11T05:39:53Z · status review→done
+- 2026-10-06T23:48:14Z · needs_input

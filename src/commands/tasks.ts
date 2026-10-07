@@ -13,7 +13,7 @@ import { boardRoot, loadConfig, resolveColumnLabels } from "../core/config.js";
 import { STATUSES, PRIORITIES, TASK_TYPES, type Status, type Task } from "../core/types.js";
 import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
-import { flagUnderspecifiedIfNeeded } from "../server/task-underspecified-flag.js";
+import { flagTaskSpecFlagsIfNeeded } from "../server/task-underspecified-flag.js";
 import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
 import { isAncestor } from "../core/git.js";
 import {
@@ -353,6 +353,13 @@ export function cmdMv(
       return;
     }
     if (status === "review" && handoffRequestFromRunner(id)) return;
+    if (status === "review") {
+      console.error(
+        c.dim(
+          `  For a synchronous handoff with checks, use \`repoos review ${id}\` instead of \`repoos mv review\`.`,
+        ),
+      );
+    }
     if (status === "done" && !opts.force) {
       const existing = repoos.getTask(id);
       if (existing && existing.status !== "done" && existing.branch) {
@@ -372,7 +379,7 @@ export function cmdMv(
           console.error(
             c.dim(
               `  "repoos mv done" only flips the status flag; it never merges code. ` +
-                `Merge the branch into ${mainBranch} yourself first (see docs/close-out-pipeline.md), ` +
+                `Use \`repoos done ${id}\` for the real close-out pipeline, or merge the branch into ${mainBranch} yourself first (see docs/close-out-pipeline.md), ` +
                 `or pass --force-not-merged if you have already landed the code some other way.`,
             ),
           );
@@ -810,7 +817,7 @@ export function cmdNew(args: string[]): void {
   // #0668: `repoos new` writes the task directly (no server in the loop), so it
   // assesses the stub itself. The boot sweep is the backstop for tasks created
   // while the server was down or by another client.
-  const flagged = flagUnderspecifiedIfNeeded(repoos.config, t);
+  const flagged = flagTaskSpecFlagsIfNeeded(repoos.config, t);
   if (flagged) {
     console.log(
       "  " +

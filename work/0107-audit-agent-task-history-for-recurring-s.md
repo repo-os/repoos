@@ -3,6 +3,9 @@ id: "0107"
 title: Audit agent task history for recurring skill gaps and propose reusable skills
 type: task
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 needs_merge: true
 priority: p2
 area: agent
@@ -12,7 +15,7 @@ branch: feat/audit-agent-task-history-for-recurring-s
 cli_override: opencode
 model_override: opencode-go/qwen3.8-max
 created_at: "2026-08-11T19:49:57Z"
-updated_at: "2026-08-12T08:24:46Z"
+updated_at: "2026-10-06T23:48:15Z"
 ---
 ## Problem
 
@@ -58,3 +61,4 @@ This is an analysis and documentation task, not permission to create or install 
 - 2026-08-12T05:31:54Z · needs_merge
 - 2026-08-12T13:40:00Z · audit v3 per review feedback: F1 sync-commit count corrected and scoped (main has 56, not 13; 6 on 08-07, 32 on 08-11, 18 on 08-12 through 13:05, +3 on unmerged branches); added new evidence — 3 further sync commits 13:31–13:34 during this audit's own review cycle (incl. 351ea0c on this branch)
 - 2026-08-12T08:24:46Z · status review→done
+- 2026-10-06T23:48:15Z · needs_input

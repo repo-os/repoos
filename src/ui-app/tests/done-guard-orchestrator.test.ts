@@ -12,7 +12,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { rmFixture } from "./helpers";
-import { ensureWorktree, listWorktrees } from "../../core/git.js";
+import { ensureWorktree, listWorktrees, removeWorktree } from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
 import { createRepositoryLock, createRootLock } from "../../server/repo-lock.js";
 import {
@@ -119,6 +119,49 @@ describe("publish-time dirty-main guard (#0211)", () => {
       expect(result.reason).not.toMatch(/overwritten by merge/i);
       // The candidate was NOT merged into main.
       expect(git(root, ["rev-parse", "main"])).toBe(mainSha);
+    } finally {
+      clean();
+    }
+  });
+
+  it("publishes when the only dirty files on main are shot captures under work/.attachments (#0713)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, "work"), { recursive: true });
+      const branch = "repoos/integrate/T-shot";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T-shot", branch } as any);
+      coordinator.updateJob("T-shot", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
+
+      const shotDir = join(root, "work", ".attachments", "0599", "shots");
+      mkdirSync(shotDir, { recursive: true });
+      writeFileSync(join(shotDir, "default-1.png"), "png\n");
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      expect(result.ok).toBe(true);
+      expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
     } finally {
       clean();
     }
@@ -372,6 +415,51 @@ describe("close-out cleanup keeps a dirty feature worktree (#0512)", () => {
       clean();
     }
   });
+
+  it("records merged_commit from job.branchSha when the feature branch is already gone (#0711)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const id = "0711";
+      const branch = `feat/${id}`;
+      taskFile(root, id);
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "implemented\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "the work"]);
+      const branchSha = git(wt.path, ["rev-parse", "HEAD"]);
+      git(root, ["merge", "--ff-only", branch]);
+      removeWorktree(root, branch, { force: true });
+      git(root, ["branch", "-D", branch]);
+
+      const coordinator = createJobCoordinator(root);
+      expect(coordinator.enqueue({ id, branch } as any, { handoffSha: branchSha })).toBeTruthy();
+      const updated = coordinator.updateJob(id, {
+        phase: "cleanup",
+        startedAt: new Date().toISOString(),
+        branchSha,
+        handoffSha: branchSha,
+      });
+      expect(updated?.branchSha).toBe(branchSha);
+      expect(coordinator.getJob(id)?.branchSha).toBe(branchSha);
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      expect(result.ok).toBe(true);
+      expect(readFileSync(join(root, "work", `${id}-cleanup.md`), "utf8")).toContain(
+        `merged_commit: ${branchSha}`,
+      );
+    } finally {
+      clean();
+    }
+  }, 30_000);
 
   it("force-removes a merged worktree when only HEAD-present deletions remain (#0609)", async () => {
     const { root, clean } = makeRepo();

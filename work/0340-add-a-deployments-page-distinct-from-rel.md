@@ -3,6 +3,9 @@ id: "0340"
 title: Add a Deployments page (distinct from Releases)
 type: feature
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/add-a-deployments-page-distinct-from-rel
 pm_model_override: opencode-go/hy3
 review_model_override: opencode-go/deepseek-v4-pro
 created_at: "2026-09-13T04:13:55Z"
-updated_at: "2026-09-14T07:17:36Z"
+updated_at: "2026-10-06T23:48:18Z"
 ---
 ## Why a new page, not an extension of Releases
 
@@ -162,3 +165,4 @@ One real fix to the spec: the per-branch summary section's wording ("per branch 
 - 2026-09-14T05:35:15Z · status ready→active, branch
 - 2026-09-14T06:25:12Z · status active→review
 - 2026-09-14T07:17:36Z · status review→done, release:success
+- 2026-10-06T23:48:18Z · needs_input

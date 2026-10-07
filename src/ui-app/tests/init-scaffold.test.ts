@@ -445,6 +445,14 @@ describe("scaffoldInto starter tasks", () => {
     expect(agents).toContain("`docs/`");
   });
 
+  it("AGENTS.md tells agents not to invent evidence (#0698)", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "", "new");
+    const agents = readFileSync(join(root, "AGENTS.md"), "utf8");
+    expect(agents).toMatch(/never invent evidence/i);
+    expect(agents).toMatch(/human-only/i);
+  });
+
   it("AGENTS.md makes the configured repoos.toml paths authoritative", () => {
     const root = scratch();
     scaffoldInto(root, "", "repoos", "new");

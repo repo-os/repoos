@@ -3,6 +3,9 @@ id: "0538"
 title: "Add Telegram settings, connection status, and test-message controls"
 type: feature
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p1
 area: web
 story: RepoOS Telegram Bot
@@ -14,7 +17,7 @@ model_override: copilot-auto-balance
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-27T07:33:10Z"
-updated_at: "2026-09-28T05:48:36Z"
+updated_at: "2026-10-06T23:48:13Z"
 merge_conflict_retry_count: 1
 review_passes: 1
 ---
@@ -64,3 +67,4 @@ Use the shared dialog components (`ui/dialog/*`, body-teleported) and the global
 - 2026-09-28T05:09:47Z · status ready→active
 - 2026-09-28T05:37:50Z · status active→review
 - 2026-09-28T05:48:36Z · status review→done, release:success
+- 2026-10-06T23:48:13Z · needs_input
