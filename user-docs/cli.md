@@ -136,12 +136,42 @@ an agent moving its own task out of `active` would have its turn killed
 mid-flight.
 
 `done` is refused when the task's branch still exists and is not merged into
-`main`; `repoos mv done` only flips the flag, it never merges. Use **Move to
-done** in the UI, or merge the branch yourself first.
+`main`; `repoos mv done` only flips the flag, it never merges. Use
+`repoos done <id>` (the real close-out pipeline), **Move to done** in the UI,
+or merge the branch yourself first.
+
+For server-backed actions (start, pause, handoff, close-out, previews, config,
+runners, running agents, board stats), use the **Control plane** commands below
+instead of hand-rolled `curl` — they authenticate once (loopback token or stored
+session, with transparent dev-login re-auth on 401).
 
 An archived task is refused too: archiving is orthogonal to status, and the
 only way back is to unarchive it (from the Archived list in the UI, or
 `POST /api/tasks/:id/unarchive`).
+
+## Control plane (running server)
+
+These commands talk to the live RepoOS server (`repoos serve`). They reuse the
+loopback CLI token when auth is on, or a stored session after dev-login, and
+support `--json` on every command. Long operations accept `--wait` (review and
+done wait by default in human mode).
+
+| Command | API |
+| --- | --- |
+| `repoos start <id> [--fresh]` | `POST /api/tasks/:id/start` |
+| `repoos pause <id>` | `POST /api/tasks/:id/pause` |
+| `repoos message <id> "…"` | `POST /api/tasks/:id/message` |
+| `repoos review <id> [--wait]` | `PATCH /api/tasks/:id` (`status: review`) |
+| `repoos done <id> [--commit-dirty] [--wait]` | `POST /api/tasks/:id/done` |
+| `repoos override <id> --cli X --model Y` | `PATCH /api/tasks/:id` |
+| `repoos preview <id> [--stop]` | `POST /api/tasks/:id/preview` (+ `/stop`) |
+| `repoos config get\|set <key> [value]` | `GET` / `PATCH /api/config` |
+| `repoos runners [--probe]` | remote-validation status + test |
+| `repoos agents` | `GET /api/agents/running` |
+| `repoos stats` | `GET /api/stats/board` |
+
+Pass `--port N` when the server is not on the default port. If the server is
+down, the CLI exits with a clear message instead of a generic fetch error.
 
 ### `repoos update <id>`
 
