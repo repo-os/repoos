@@ -40,6 +40,9 @@ can't assume any.
 - `field-reports/` — dated evidence from running RepoOS on real projects (what happened, error text, numbers, what to fix), with an index and a recipe for adding one. Start with the first agent-driven run (opex, 2026-10-05).
 - `debugging-check-failures.md` — triage order for a `repoos check` failure you
   can't explain. Read before assuming "flake".
+- `agent-run-operations.md` — driving a busy board (CLI control plane, false
+  provider-failure kills #0709/#0718, remote slot starvation #0705, re-handoff
+  and `commitDirty` rules). From the 2026-10-06 overnight triage (story #0008).
 - `easter-eggs-bundles.md` — how to land many small, independent, low-risk fixes
   in one task (one worktree, one gate run, one review, one close-out) instead of
   one task each or a hotfix to `main`. #0721 is the worked example.
