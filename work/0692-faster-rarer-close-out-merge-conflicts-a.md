@@ -263,3 +263,4 @@ error: script "test" exited with code 1
 - 2026-10-07T17:29:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-07T17:29:40Z · status review→active
 - 2026-10-07T17:30:19Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:49708/) (http://127.0.0.1:49708/)
+- 2026-10-07T17:30:19Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:49708/) (http://127.0.0.1:49708/)
