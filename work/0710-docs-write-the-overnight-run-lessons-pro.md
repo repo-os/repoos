@@ -59,3 +59,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-07T02:40:46Z · status review→active
 - 2026-10-07T02:42:52Z · body
 - 2026-10-07T02:43:07Z · status active→review
+- 2026-10-07T02:43:07Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
