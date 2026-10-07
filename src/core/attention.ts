@@ -31,7 +31,8 @@ export type AttentionKind =
   | "spendThreshold"
   | "awaitingVisualCheck"
   | "remoteFallback"
-  | "ctoAction";
+  | "ctoAction"
+  | "ctoSilent";
 
 export interface AttentionItem {
   /** Stable per event — dedupe key for clients and dismiss markers. */
@@ -94,6 +95,10 @@ export interface AttentionFeedInput {
   /** Running engineer/task agents whose output has gone quiet. */
   silentRuns: Array<{ taskId: string; lastOutputAt: string | null; detail: string }>;
   previewTargetAreas: string[];
+  /** Last CTO heartbeat ISO time; null when none recorded this process. */
+  ctoHeartbeatAt?: string | null;
+  /** How long without a heartbeat before `ctoSilent` is raised. */
+  ctoSilentThresholdMs?: number;
 }
 
 const CLOSE_OUT_KIND: Record<
@@ -122,7 +127,16 @@ const SEVERITY: Record<AttentionKind, AttentionSeverity> = {
   spendThreshold: "warning",
   remoteFallback: "warning",
   ctoAction: "info",
+  ctoSilent: "warning",
 };
+
+/** Attention kinds that imply the CTO (or a driver) should be acting (#0728). */
+export const CTO_ACTIONABLE_ATTENTION_KINDS: ReadonlySet<AttentionKind> = new Set([
+  "closeOutFailed",
+  "closeOutTimedOut",
+  "taskReview",
+  "silentRun",
+]);
 
 /** Provider/credit/auth failures that should surface in the bell (#0687, #0678). */
 export function isProviderFailureReason(reason: string | null | undefined): boolean {
@@ -354,6 +368,30 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
       link: `/work?task=${s.taskId}`,
       at: s.lastOutputAt ?? generatedAt,
     });
+  }
+
+  const ctoThreshold = input.ctoSilentThresholdMs ?? 15 * 60 * 1000;
+  const ctoActionable = items.some((i) => CTO_ACTIONABLE_ATTENTION_KINDS.has(i.kind));
+  if (ctoActionable) {
+    const lastBeat = input.ctoHeartbeatAt ?? null;
+    const silentMs = lastBeat
+      ? Date.parse(generatedAt) - Date.parse(lastBeat)
+      : Number.POSITIVE_INFINITY;
+    if (silentMs >= ctoThreshold) {
+      const mins = Math.max(1, Math.round(silentMs / 60_000));
+      pushItem(items, {
+        id: `ctoSilent:${lastBeat ?? "never"}`,
+        kind: "ctoSilent",
+        severity: SEVERITY.ctoSilent,
+        taskId: null,
+        message: `CTO silent ${mins} min`,
+        detail:
+          "Routine board work is waiting but no CTO heartbeat was recorded. " +
+          "POST /api/cto/heartbeat from the monitor, or keep `repoos watch` running in a driver session.",
+        link: "/agents?tab=cto",
+        at: generatedAt,
+      });
+    }
   }
 
   const threshold = input.config.attention?.spendAlertUsd ?? 0;

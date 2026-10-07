@@ -47,29 +47,44 @@ jobs:
             install: npm install -g @openai/codex
             secret: OPENAI_API_KEY
 
-    # Skip a harness if its secret is absent or if the dispatch targeted a
-    # different one.
-    if: >
-      (github.event.inputs.harness == '' || github.event.inputs.harness == matrix.harness)
-
     steps:
+      # The matrix context is not available in a job-level `if`, so filter by
+      # dispatch input here and gate every later step on the result.
+      - name: Select harness
+        id: gate
+        env:
+          WANTED: ${{ github.event.inputs.harness }}
+        run: |
+          if [ -z "$WANTED" ] || [ "$WANTED" = "${{ matrix.harness }}" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping ${{ matrix.harness }}: dispatch targeted $WANTED"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
 
       - uses: oven-sh/setup-bun@v2
+        if: steps.gate.outputs.run == 'true'
         with:
           bun-version: latest
 
       - name: Install dependencies
+        if: steps.gate.outputs.run == 'true'
         run: bun install --frozen-lockfile
 
       - name: Build repoos
+        if: steps.gate.outputs.run == 'true'
         run: bun run build
 
       - name: Install ${{ matrix.harness }}
+        if: steps.gate.outputs.run == 'true'
         run: ${{ matrix.install }}
 
       - name: Certify ${{ matrix.harness }}
         id: certify
+        if: steps.gate.outputs.run == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets[matrix.secret] }}
           OPENAI_API_KEY: ${{ secrets[matrix.secret] }}
@@ -85,7 +100,7 @@ jobs:
 
       - name: Check for manifest change
         id: diff
-        if: steps.certify.outputs.skip != 'true'
+        if: steps.gate.outputs.run == 'true' && steps.certify.outputs.skip != 'true'
         run: |
           if git diff --quiet src/core/agent-compatibility.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"

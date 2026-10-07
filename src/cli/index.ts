@@ -43,6 +43,7 @@ import {
   cmdStats,
   cmdDecisions,
 } from "../commands/control-api.js";
+import { cmdWatch } from "../commands/watch.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
 import { reexecAfterStaleBuild, reexecUnderBunIfRequested } from "../core/runtime.js";
@@ -280,6 +281,11 @@ function main(): void {
     case "decisions":
     case "attention":
       void cmdDecisions(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "watch":
+      void cmdWatch(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
       });
       break;

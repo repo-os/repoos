@@ -55,7 +55,14 @@ export type RepoEvent =
   | { type: "task.updated"; task: Task; prev: Partial<Task>; at: string }
   | { type: "task.deleted"; id: string; path: string; at: string }
   | { type: "agent.running"; id: string; at: string }
-  | { type: "agent.exited"; id: string; at: string }
+  | {
+      type: "agent.exited";
+      id: string;
+      at: string;
+      exitCode?: number | null;
+      cause?: string;
+      logPath?: string;
+    }
   /** A start/send/chat was accepted but held for a free maxConcurrentAgents slot. */
   | { type: "agent.queued"; id: string; at: string }
   /** A queued id left the queue — about to spawn (an agent.running follows immediately). */
@@ -196,6 +203,23 @@ export type RepoEvent =
   | { type: "close-out.outcome"; outcome: CloseOutOutcomeEvent; at: string }
   /** The unified attention feed changed (#0687) — clients poll `GET /api/attention`. */
   | { type: "attention.updated"; at: string }
+  /**
+   * Board automation alert (#0728): silent agent runs, slow validation, or host
+   * hangs. Carries normalized cause and evidence for `repoos watch`.
+   */
+  | {
+      type: "board.alert";
+      alert: "silentRun" | "slowRun" | "hostHang";
+      taskId: string;
+      cause: string;
+      evidence: {
+        task?: string;
+        logPath?: string;
+        closeOutOutcomes?: string;
+        attention?: string;
+      };
+      at: string;
+    }
   /** Full-suite test run (Control page): started, a raw stdout/stderr chunk, or exited. */
   | { type: "test-run.started"; at: string }
   | { type: "test-run.output"; chunk: string; at: string }

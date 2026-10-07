@@ -19,6 +19,7 @@ export const getAttention: RouteHandler = async (ctx, _req, res) => {
     getReleaseRun: () => getReleaseRunState(),
     getReleaseNotesRun: () => getReleaseNotesRunState(),
     previewTargetAreas,
+    ctoHeartbeat: ctx.ctoHeartbeat,
   });
   return json(res, 200, { ok: true, ...feed });
 };
