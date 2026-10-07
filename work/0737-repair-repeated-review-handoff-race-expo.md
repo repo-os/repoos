@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: fc20b00a12b63dd636b257d5be443a3c4f5b5303
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
@@ -103,3 +105,4 @@ error: script "test" exited with code 1
 - 2026-10-07T14:32:00Z · status review→active
 - 2026-10-07T14:38:27Z · note: DRIVER CURRENT SOURCE OWNERSHIP: interactive driver is diagnosing/repairing existing ACTIVE worktree, no competing engineer. New automatic/owner handoff14:32 began while driver WIP; wait terminal before further source changes/new handoff. Stress10trials baseline6/10, narrowedguard8/10; remaining two now proven Git index.lock collisions at secondhandoff commit (could not clear staging index/unstage artifacts), full failure logs /private/tmp/repoos-0737-stress-2.log and -6.log. Deterministic deferredguard2testsPASS; need read-only gitstatus optional-lock prevention and10/10 before finalhandoff. Do not approve currentgatealone.
 - 2026-10-07T14:42:00Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
