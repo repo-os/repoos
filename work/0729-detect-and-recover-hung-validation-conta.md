@@ -2,7 +2,7 @@
 id: "0729"
 title: "Detect and recover hung validation containers on runner hosts (kill, retry on another host, isolate the bun cache per run); CTO safe action"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/detect-and-recover-hung-validation-conta
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T09:22:35Z"
+updated_at: "2026-10-07T09:26:10Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from afd774dc to 282c0c91) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: afd774dc2b28ebd2b3cf4007b79467803438f340
 review_passes: 3
@@ -159,4 +159,4 @@ error: script "test" exited with code 1
 - 2026-10-07T09:13:50Z · body: section Shots
 - 2026-10-07T09:15:50Z · body
 - 2026-10-07T09:22:05Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from afd774dc to 282c0c91) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-
+- 2026-10-07T09:26:10Z · status active→review
