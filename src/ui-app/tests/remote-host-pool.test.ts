@@ -2121,7 +2121,7 @@ describe("hung container cleanup (#0729)", () => {
     const doc = readFileSync(join(process.cwd(), "docs/remote-validation.md"), "utf8");
     expect(doc).toMatch(/Confirmed.*workdir|Confirmed:.*startup/i);
     expect(doc).toMatch(/unproven|Not proven|plausible/i);
-    expect(doc).toMatch(/EXIT trap/);
+    expect(doc).toMatch(/EXIT[`']? trap/);
     expect(doc).not.toMatch(/corruption behind the 2026-10-06\/07 hangs/);
   });
 
