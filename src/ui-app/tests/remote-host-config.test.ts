@@ -284,7 +284,11 @@ describe("remoteValidation.hangIdleMinutes (#0729)", () => {
     // The flat-TOML subset parses only `^-?\d+$` as a number, so `1.5` arrives
     // as a string and is ignored; minutes are whole by design. 0 is rejected so
     // a disabled detector can't be configured by accident.
-    for (const bad of ["hangIdleMinutes = 0\n", "hangIdleMinutes = 1.5\n", 'hangIdleMinutes = "soon"\n']) {
+    for (const bad of [
+      "hangIdleMinutes = 0\n",
+      "hangIdleMinutes = 1.5\n",
+      'hangIdleMinutes = "soon"\n',
+    ]) {
       const root = repo(base + bad);
       expect(loadConfig(root).remoteValidation?.hangIdleMinutes).toBe(5);
       await cleanup();
