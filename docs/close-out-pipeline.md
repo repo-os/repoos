@@ -25,6 +25,32 @@ after three identical consecutive failures parks the task (`needs_input` reason
 from watchdog surfacing and from the CTO monitor's idle completion nudge when no engineer
 session is running. See `src/server/handoff-failure-loop.ts` and `src/server/task-watchdog.ts`.
 
+## Driving close-out on a busy board
+
+When a human or agent is landing many tasks in one session (overnight triage,
+release soak), a few patterns recur. Full CLI table and incident notes:
+[`agent-run-operations.md`](agent-run-operations.md).
+
+- **Use `repoos done <id>`** (optionally `--commit-dirty`, `--wait`) for the
+  merge pipeline — not `repoos mv <id> done`. Use **`repoos review <id>`** for
+  synchronous handoff when you need the validation result in the terminal.
+- **`--commit-dirty` on `main`:** only when uncommitted paths are **`work/*.md`
+  bookkeeping** (or an intentional config commit you mean to land with that
+  close-out). Never commit another task's dirty source or an owner's WIP via
+  this flag.
+- **Branch work after a failed handoff (driver):** `repoos mv <id> active` (or
+  API) **before** worktree merges/commits, then merge/check/commit and
+  `repoos review <id>`. Automated close-out conflict repair stays in `review` —
+  see [`agent-run-operations.md`](agent-run-operations.md#handoff-and-status-flips).
+  A **conflict-free `main` merge on the branch** while in `review` can still pass
+  close-out integrity (#0624); not every tip advance is "HEAD moved" drift.
+- **Close-out waits for a remote host slot** while engineers hold standalone
+  self-check locks: see [Remote validation → host lock](remote-validation.md#cross-process-limit-the-host-lock)
+  and the #0705 dispatcher/tab behavior in
+  [`agent-run-operations.md`](agent-run-operations.md#remote-runner-slot-starvation-0694-0705-0706).
+- **Task previews** rooted in a worktree can commit bookkeeping onto that branch
+  and break handoff; stop previews when done.
+
 ## Running the control-plane server: choose one owner
 
 There are two supported ways to run the server on port 7171. **Use exactly one at a
