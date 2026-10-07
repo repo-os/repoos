@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0726"
 title: Stories (and inputs) dirs don't get the same close-out bookkeeping handling as the work dir
 type: bug
@@ -64,3 +65,4 @@ Desired: validate all layout dirs with normalizeRelativeDir, give inputsDir a Se
 - 2026-10-07T17:14:40Z · note: review pass 1: good to go
 - 2026-10-07T17:15:37Z · status review→active
 - 2026-10-07T17:15:37Z · note: close-out repair: merge-conflict
+
