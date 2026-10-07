@@ -57,7 +57,7 @@ function makeOrchestrator(root: string, closeOut?: { timeoutMs: number }) {
     cacheDir: ".repoos",
     defaultStatus: "inbox",
     defaultAssignee: "unassigned",
-    ...(closeOut ? { closeOut } : {}),
+    ...(closeOut ? { closeOut: { ...closeOut, timeoutMsFromToml: true as const } } : {}),
   } as RepoOSConfig;
   const coordinator = createJobCoordinator(root);
   const orch = new CloseOutOrchestrator(config, coordinator);
@@ -77,20 +77,26 @@ function makeOrchestrator(root: string, closeOut?: { timeoutMs: number }) {
 const AGED = (ms: number): string => new Date(Date.now() - ms).toISOString();
 
 describe("close-out pipeline budget helpers (#0573)", () => {
-  it("defaults to 6 minutes, honours 0 = disabled, and reads the config value", () => {
-    expect(closeOutTimeoutMs({})).toBe(360_000);
-    expect(closeOutTimeoutMs({ closeOut: { timeoutMs: 0 } })).toBe(0);
-    expect(closeOutTimeoutMs({ closeOut: { timeoutMs: 900_000 } })).toBe(900_000);
+  it("defaults to 10 minutes adaptive, honours 0 = disabled, and reads explicit config", () => {
+    expect(closeOutTimeoutMs({} as never)).toBe(600_000);
+    expect(
+      closeOutTimeoutMs({ closeOut: { timeoutMs: 0, timeoutMsFromToml: true } } as never),
+    ).toBe(0);
+    expect(
+      closeOutTimeoutMs({ closeOut: { timeoutMs: 900_000, timeoutMsFromToml: true } } as never),
+    ).toBe(900_000);
   });
 
   it("derives the deadline from startedAt + timeoutMs, or none when disabled", () => {
     const startedAt = "2026-09-28T10:00:00.000Z";
-    expect(closeOutDeadline({}, startedAt)).toBe(Date.parse(startedAt) + 360_000);
-    expect(closeOutDeadline({ closeOut: { timeoutMs: 0 } }, startedAt)).toBeNull();
+    expect(closeOutDeadline({} as never, startedAt)).toBe(Date.parse(startedAt) + 600_000);
+    expect(
+      closeOutDeadline({ closeOut: { timeoutMs: 0, timeoutMsFromToml: true } } as never, startedAt),
+    ).toBeNull();
     // Not left `queued` yet → no clock, exactly as before #0573.
-    expect(closeOutDeadline({}, null)).toBeNull();
-    expect(closeOutDeadline({}, undefined)).toBeNull();
-    expect(closeOutDeadline({}, "not-a-date")).toBeNull();
+    expect(closeOutDeadline({} as never, null)).toBeNull();
+    expect(closeOutDeadline({} as never, undefined)).toBeNull();
+    expect(closeOutDeadline({} as never, "not-a-date")).toBeNull();
   });
 
   it("records a stable, grep-friendly reason naming the budget", () => {
@@ -120,14 +126,14 @@ describe("pipeline timeout enforcement (#0573)", () => {
         }
       ).syncCandidate(coordinator.getJob("0601"));
       expect(synced.ok).toBe(true);
-      // Simulate a run whose 6-minute budget (startedAt 10 minutes ago) is spent.
+      // Simulate a run whose adaptive 10-minute budget (startedAt 10 minutes ago) is spent.
       coordinator.updateJob("0601", { phase: "syncing", startedAt: AGED(600_000) });
 
       const res = await orch.processNext();
 
       expect(res.ok).toBe(false);
       expect(res.reason).toBe(
-        "close-out timed out after 6m — increase closeOut.timeoutMs or retry when the runner is less loaded",
+        "close-out timed out after 10m — increase closeOut.timeoutMs or retry when the runner is less loaded",
       );
       // A normal failed-job record (NOT a silent cancel-style removal) …
       const job = coordinator.getJob("0601");

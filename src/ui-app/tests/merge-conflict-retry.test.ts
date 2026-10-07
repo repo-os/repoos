@@ -1,13 +1,5 @@
 /**
- * scheduleMergeConflictRetry (#0271 follow-up).
- *
- * When a close-out's `validating` phase fails on a REAL, named merge
- * conflict, the engineer session is auto-resumed with the conflict detail
- * and asked to merge main into its OWN branch, resolve it, and re-submit —
- * mirroring `scheduleCheckFailureRetry`'s existing pattern for check
- * failures. Capped at MAX_MERGE_CONFLICT_RETRY_ATTEMPTS (2); on exhaustion
- * (or no engineer configured, or the resume itself fails) it gives up via
- * `persistHandoffFailure` instead of retrying forever.
+ * scheduleMergeConflictRetry (#0271 follow-up, repair handback #0679).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -57,6 +49,7 @@ function makeFixture(extra = ""): Fixture {
       defaultStatus: "inbox",
       defaultAssignee: "unassigned",
       cacheDir: ".repoos",
+      agents: [{ name: "engineer", enabled: true, cli: "cursor", model: "test" }],
     },
     clean: () => rmSync(root, { recursive: true, force: true }),
   };
@@ -106,7 +99,7 @@ function makeFakeRunner(sendOk = true): { runner: AgentRunner; calls: FakeRunner
 const REASON =
   "merge conflict in src/ui-app/src/components/TaskDrawer.vue — resolve it in the feature branch's own worktree (merge main into the branch), then retry";
 
-describe("scheduleMergeConflictRetry (#0271 follow-up)", () => {
+describe("scheduleMergeConflictRetry (#0271 follow-up, #0679)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -114,41 +107,24 @@ describe("scheduleMergeConflictRetry (#0271 follow-up)", () => {
     vi.useRealTimers();
   });
 
-  it("resumes the engineer with the conflict detail and persists an incrementing retry count", async () => {
+  it("moves the task to active and resumes the engineer with the conflict detail", async () => {
     const fx = makeFixture();
     try {
       const task = readTask(fx);
       const { runner, calls } = makeFakeRunner();
       const scheduled = scheduleMergeConflictRetry(fx.config, task, REASON, runner);
       expect(scheduled).toBe(true);
-      expect(calls.sent).toHaveLength(0); // delayed, not immediate
+      expect(calls.sent).toHaveLength(0);
 
       await vi.runAllTimersAsync();
 
       expect(calls.sent).toHaveLength(1);
-      expect(calls.sent[0].taskId).toBe("0001");
       expect(calls.sent[0].message).toContain(REASON);
-      expect(calls.sent[0].message).toContain("merge main into your branch");
+      expect(calls.sent[0].message).toContain("Merge main into your branch");
       expect(calls.failures).toHaveLength(0);
 
       const updated = readTask(fx);
-      expect(updated.extra?.merge_conflict_retry_count).toBe(1);
-    } finally {
-      fx.clean();
-    }
-  });
-
-  it("gives up via persistHandoffFailure after the retry cap is reached", async () => {
-    // Simulate the task already having failed twice before (at the cap).
-    const fx = makeFixture("merge_conflict_retry_count: 2\n");
-    try {
-      const task = readTask(fx);
-      const { runner, calls } = makeFakeRunner();
-      const scheduled = scheduleMergeConflictRetry(fx.config, task, REASON, runner);
-      expect(scheduled).toBe(false);
-      expect(calls.sent).toHaveLength(0);
-      expect(calls.failures).toHaveLength(1);
-      expect(calls.failures[0].reason).toContain("unresolved after 2 automatic retries");
+      expect(updated.status).toBe("active");
     } finally {
       fx.clean();
     }
@@ -165,7 +141,7 @@ describe("scheduleMergeConflictRetry (#0271 follow-up)", () => {
       await vi.runAllTimersAsync();
 
       expect(calls.failures).toHaveLength(1);
-      expect(calls.failures[0].reason).toContain("could not auto-retry");
+      expect(calls.failures[0].reason).toContain("could not resume engineer");
     } finally {
       fx.clean();
     }

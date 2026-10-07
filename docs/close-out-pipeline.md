@@ -706,7 +706,7 @@ to tell apart:
 
 | Outcome | How it ends | Badge | Job record | What to do |
 |---|---|---|---|---|
-| **Pipeline timeout** | Automatically, once the attempt spends `closeOut.timeoutMs` (default 6 min) of wall clock from `startedAt` | Inline error card | `failed` — reason starts `close-out timed out after ` | Raise the budget (Settings → General → "Close-out timeout", or `[closeOut] timeoutMs` in `repoos.toml`) or retry when the runner is less loaded. Retryable: the task stays `review`, feature branch/worktree untouched. |
+| **Pipeline timeout** | Automatically, once the attempt spends its close-out budget from `startedAt` (monotonic elapsed time — laptop sleep does not count, #0679) | Inline error card | `failed` — reason starts `close-out timed out after ` | Raise the budget (Settings → General → "Close-out timeout", or `[closeOut] timeoutMs` in `repoos.toml`) or retry when the runner is less loaded. Retryable: the task stays `review`, feature branch/worktree untouched. |
 | **Stop MTD** (#0459) | You clicked Stop | none — a cancel is not a failure | job record removed, no `failed` state | Inspect what happened, then click **Move to done** again. |
 | **Genuine gate failure** | The gate itself failed | Inline error card with the check's Results summary | `failed` — `check failed: …`, `merge conflict in …`, … | Fix per the reason; a real conflict resolves on the feature branch. |
 
@@ -727,9 +727,34 @@ to tell apart:
   **last** checkpoint is the one immediately before the publish merge — once
   main is mutated, `cleanup` finishes as `done` and is deliberately never
   failed out from under a landed merge.
+- When `[closeOut] timeoutMs` is **not** set in `repoos.toml`, the effective
+  budget is adaptive (#0679): `max(10 min, 3 × last successful merge-gate
+  duration)`, persisted in `.repoos/close-out-gate-timing.json`. Each successful
+  close-out also records `last_close_out_gate_ms` on the task file for tuning.
 - `closeOut.timeoutMs = 0` disables the ceiling (the unbounded pre-#0573
   behaviour); invalid or negative values fall back to the default with a
   `[closeOut] timeoutMs …` console warning.
+
+## Merge conflicts, semantic gate failures, and engineer handback (#0679)
+
+When Move to done fails on a **real merge conflict** or on a **merge-gate check
+failure that reproduces identically on retry** (the branch passed handoff review
+but the merged candidate is red — e.g. a semantic conflict), RepoOS:
+
+1. Marks the close-out job `failed` (unchanged).
+2. Moves the task from `review` → `active`, clears the handoff snapshot/lock so
+   the worktree is editable again.
+3. Messages the engineer with the conflict list or check output and the
+   instruction to merge main, resolve, re-run `repoos check`, and hand off again.
+
+**Lockfile-only conflicts** (`bun.lock`, `package-lock.json`, …) are resolved
+automatically during the candidate merge by regenerating the lockfile (`bun
+install`) when possible — no engineer round-trip.
+
+**Follow-up messages while in `review`:** `POST /api/tasks/:id/message` moves
+the task to `active` first (unless a close-out job is still in-flight), so fixes
+can be committed and re-handoffed instead of leaving the task in `review` with a
+dirty worktree Move to done will refuse.
 - Release cuts (`release.ts`) still pass no deadline of their own — sharing
   this budget helper there is a possible follow-up, deliberately out of scope
   for #0573.

@@ -76,7 +76,7 @@ async function runGateWithBudget(timeoutMs: number) {
       root,
       workDir: "work",
       cacheDir: ".repoos",
-      closeOut: { timeoutMs },
+      closeOut: { timeoutMs, timeoutMsFromToml: true },
       remoteValidation: { enabled: true },
     } as RepoOSConfig;
     const coordinator = createJobCoordinator(root);
@@ -96,6 +96,7 @@ async function runGateWithBudget(timeoutMs: number) {
       undefined, // onProgress
       undefined, // logger
       undefined, // onMergeConflict
+      undefined, // onCloseOutGateFailure
       remoteValidator as never,
     );
 
