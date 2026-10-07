@@ -33,6 +33,7 @@ import {
   GitDirtyCheckError,
   commitTaskFile,
   branchChangedPaths,
+  preflightMerge,
 } from "../../core/git.js";
 import { worktreesDir } from "../../core/config.js";
 
@@ -1034,6 +1035,66 @@ describe("observational worktree status (#0737)", () => {
           .dirty,
       ).toBe(false);
       expect(readFileSync(indexPath)).toEqual(before);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("read-only merge preflight (#0737)", () => {
+  it("preserves a concurrent task write, index and HEAD", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, "work"));
+      const file = join(root, "work", "0001.md");
+      writeFileSync(file, "status: review\n");
+      git(root, ["add", "."]);
+      git(root, ["commit", "-m", "task"]);
+      const base = git(root, ["branch", "--show-current"]);
+      git(root, ["checkout", "-b", "feat/preflight"]);
+      writeFileSync(join(root, "feature.txt"), "feature\n");
+      git(root, ["add", "."]);
+      git(root, ["commit", "-m", "feature"]);
+      git(root, ["checkout", base]);
+      writeFileSync(join(root, "staged.txt"), "owner edit\n");
+      git(root, ["add", "staged.txt"]);
+      const index = readFileSync(join(root, ".git", "index"));
+      const head = git(root, ["rev-parse", "HEAD"]);
+      const pending = preflightMerge(root, "feat/preflight");
+      writeFileSync(file, "status: active\n");
+      expect(await pending).toMatchObject({ ok: true, conflicts: [] });
+      expect(readFileSync(file, "utf8")).toBe("status: active\n");
+      expect(readFileSync(join(root, ".git", "index"))).toEqual(index);
+      expect(git(root, ["rev-parse", "HEAD"])).toBe(head);
+      expect(existsSync(join(root, "feature.txt"))).toBe(false);
+      expect(existsSync(join(root, ".git", "MERGE_HEAD"))).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+  it("reports conflict paths without changing main", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const file = join(root, "same.txt");
+      writeFileSync(file, "base\n");
+      git(root, ["add", "."]);
+      git(root, ["commit", "-m", "base"]);
+      const base = git(root, ["branch", "--show-current"]);
+      git(root, ["checkout", "-b", "feat/conflict"]);
+      writeFileSync(file, "feature\n");
+      git(root, ["commit", "-am", "feature"]);
+      git(root, ["checkout", base]);
+      writeFileSync(file, "main\n");
+      git(root, ["commit", "-am", "main"]);
+      expect(await preflightMerge(root, "feat/conflict")).toMatchObject({
+        ok: false,
+        conflicts: ["same.txt"],
+      });
+      expect(
+        await preflightMerge(root, "feat/conflict", { autoResolve: ["same.txt"] }),
+      ).toMatchObject({ ok: true, conflicts: [] });
+      expect(readFileSync(file, "utf8")).toBe("main\n");
+      expect(existsSync(join(root, ".git", "MERGE_HEAD"))).toBe(false);
     } finally {
       clean();
     }
