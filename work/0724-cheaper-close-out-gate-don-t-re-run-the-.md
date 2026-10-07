@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 696914
+last_close_out_gate_at: "2026-10-07T12:48:22.345Z"
 id: "0724"
 title: "Cheaper close-out gate: don't re-run the full suite on what the handoff gate already proved"
 type: feature
@@ -10,7 +12,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
-updated_at: "2026-10-07T12:43:31Z"
+updated_at: "2026-10-07T12:48:22Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-07T12:21:44.271Z: server-side finalization timed out (deadline exceeded)"
 review_passes: 2
@@ -103,3 +105,5 @@ Still open by design: reuse requires a recorded green FULL pre-review row (no re
 - 2026-10-07T12:00:05Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-07T12:01:02Z · note: review pass 2: good to go
 - 2026-10-07T12:43:31Z · body
+- 2026-10-07T12:48:22Z · close-out gate completed in 697s
+
