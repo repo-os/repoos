@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/init-for-the-repoos-layout-set-storiesdi
 created_at: "2026-10-06T03:15:57Z"
-updated_at: "2026-10-07T16:51:35Z"
+updated_at: "2026-10-07T16:58:42Z"
 ---
 ## Problem
 
@@ -37,3 +37,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-07T16:44:44Z · status inbox→ready
 - 2026-10-07T16:44:53Z · status ready→active, branch
 - 2026-10-07T16:51:35Z · body
+- 2026-10-07T16:58:42Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
