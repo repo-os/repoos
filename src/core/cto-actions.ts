@@ -3,7 +3,6 @@
  * the UI) may invoke when listed in `cto.actions`.
  */
 import type { RepoOSConfig } from "./types.js";
-import type { DeadAgentClassification } from "../server/task-watchdog.js";
 
 /** Every action id the server implements. */
 export const CTO_SAFE_ACTION_IDS = [
@@ -30,6 +29,12 @@ export const CTO_ACTION_RATE_LIMITS: Record<
   "requeue-closeout-after-env-fix": { maxPerHour: 6, scope: "task" },
 };
 
+/** Minimal shape of a dead-session classification; mirrors task-watchdog. */
+export interface CtoDeadAgentClassification {
+  kind: "never-started" | "crashed" | "exited-without-handoff";
+  reason: string;
+}
+
 /**
  * Restart strategy for a dead engineer (#0727): resume keeps the conversation,
  * fresh abandons it. A network stall or an interrupted turn is a resumed
@@ -50,7 +55,7 @@ export const CTO_FRESH_SESSION_RESTART_THRESHOLD = 2;
  * Every other death (a real crash, an exit without handoff) starts fresh.
  */
 export function decideRestartStrategy(
-  classification: Pick<DeadAgentClassification, "kind" | "reason">,
+  classification: Pick<CtoDeadAgentClassification, "kind" | "reason">,
   priorRestarts: number,
 ): CtoRestartStrategy {
   if (priorRestarts >= CTO_FRESH_SESSION_RESTART_THRESHOLD) return "fresh";
