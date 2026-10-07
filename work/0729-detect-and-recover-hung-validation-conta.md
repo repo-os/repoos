@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/detect-and-recover-hung-validation-conta
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T05:10:41Z"
+updated_at: "2026-10-07T05:11:51Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ The hang recovery (kill that run's container, retry once on another host) is a C
 - 2026-10-07T05:08:21Z · note: Owner-authorized recovery05:07: confirmed onbee three abandoned0712containers by artifact mounts/starttimes, all sharingrepoos-bun-cache:37868edddfbf(/artifacts/0712-05a05ddc,04:47:59),3a3dfd946962(0712-d979207f,02:59:31),d727277d2748(0712-c83f1abb,02:10:11). Latestlog repeated missing forks.js; older serverattempts had timedout/fallback/completed butcontainerspersisted. Removed onlythese0712containers; current0733b661fb4c38ee untouched. Latest712remove releasedoldawait05:07:01;733started05:07:02;712ONEretryqueuedafterterminal. Confirms orphan cleanup failure, not yet proof cache concurrent-writer rootcause. No serverrestart/config/cache-volume deletion.
 - 2026-10-07T05:10:05Z · body
 - 2026-10-07T05:10:41Z · note: CONFIRMED CURRENT ROOT CAUSE05:09: installed validate.sh and main scripts/remote-runner/validate.sh lines46-53 startup loops ALL $HOME/.repoos-validate.* and rm-rf each without checking livecontainers. A concurrent/new run deletes another ACTIVE /repo mount. Current733containerb661fb4c38ee artifact0733-a4cab256 /home/nick/.repoos-validate.2DVaje/repo: initially installed422deps/build/tests, then forks.jsmissing; dockerexec-w/tmp ls shows /repo empty and node_modules absent. Earlier712dockerexec failedcwdoutside mount. This is strong directevidence of working-directory deletion, NOT proofshared-cache corruption. Include regression concurrentrunB startup preservesactiveA workspace. Ownerauthorizedoperationalrecovery; driverpreparingbackup+disableunsafeinstalledstartup sweep only, retainownrunEXITcleanup; no source/maincommit.
+- 2026-10-07T05:11:51Z · body
