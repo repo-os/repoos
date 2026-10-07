@@ -11,12 +11,16 @@ import {
 } from "../core/approval-policy.js";
 import { localShotStore } from "./shots.js";
 import { patchTaskFile } from "./write.js";
+import type { AttentionEventStore } from "./attention-events.js";
 import type { CloseOutEnqueueDeps } from "./request-close-out.js";
 import { enqueueCloseOutForTask, gatherApprovalPreflight } from "./request-close-out.js";
 import type { LiveIndex } from "./live-index.js";
 import { localBranches } from "../core/git.js";
 
-export type ApprovalPolicyRunnerDeps = CloseOutEnqueueDeps;
+export type ApprovalPolicyRunnerDeps = CloseOutEnqueueDeps & {
+  /** Durable attention bell (#0687) — a policy auto-approval must be visible there. */
+  attentionEvents?: AttentionEventStore;
+};
 
 function uiVisualEvidenceOk(config: RepoOSConfig, task: Task): boolean {
   if (taskBodyHasShotFailure(task.body)) return false;
@@ -33,12 +37,16 @@ export async function evaluateAutoApprove(
   let branchMissing = !branch;
   let mergePreflightFailed = false;
   let handoffDrift = false;
+  let mainDirty = false;
+  let changedPaths: string[] | null = null;
 
   if (branch && localBranches(config.root).has(branch)) {
     const preflight = await gatherApprovalPreflight(config, task);
     branchMissing = preflight.branchMissing;
     mergePreflightFailed = preflight.mergePreflightFailed;
     handoffDrift = preflight.handoffDrift;
+    mainDirty = preflight.mainDirty;
+    changedPaths = preflight.changedPaths;
   } else if (branch) {
     branchMissing = true;
   }
@@ -60,6 +68,8 @@ export async function evaluateAutoApprove(
     branchMissing,
     mergePreflightFailed,
     handoffDrift,
+    mainDirty,
+    changedPaths,
     uiVisualEvidenceOk: uiVisualEvidenceOk(config, task),
   });
 }
@@ -69,6 +79,10 @@ export async function tryAutoApproveAfterCleanReview(
   task: Task,
   report: ReviewReport,
 ): Promise<void> {
+  // The master kill switch (#0727) halts auto-approval even when the policy
+  // itself is configured and enabled.
+  if (deps.config.automation?.paused === true) return;
+
   const fresh = deps.index.getTask(task.id) ?? task;
   const decision = await evaluateAutoApprove(deps.config, fresh, report.markdown);
   if (!decision.eligible || !decision.rule) return;
@@ -100,5 +114,21 @@ export async function tryAutoApproveAfterCleanReview(
   }
 
   const at = new Date().toISOString();
+  // Record in the durable attention bell too, so a policy landing is visible
+  // exactly like a CTO safe action (#0727).
+  try {
+    deps.attentionEvents?.record({
+      kind: "ctoAction",
+      taskId: fresh.id,
+      message: `CTO: auto-approved #${fresh.id}`,
+      detail: `Moved to done by approval policy (${rule}). Main clean, gate green, review clean.`,
+      at,
+    });
+    deps.emitEvent({ type: "attention.updated", at });
+  } catch (err) {
+    console.error(
+      `[repoos] approval policy: auto-approved #${fresh.id} but bell entry failed: ${(err as Error).message}`,
+    );
+  }
   deps.emitEvent({ type: "task.autoApproved", id: fresh.id, rule, at });
 }

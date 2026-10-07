@@ -137,6 +137,10 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
   "closeOut.postPublishCommand":
     "close out post publish merge lockfile refresh main install dependencies",
   "approval.enabled": "auto approve clean reviews policy move to done rubber stamp low risk",
+  "approval.autoApprove.machineryPaths":
+    "auto approve blocked paths machinery server core cli config architecture human only",
+  "approval.autoApprove.allowP0": "auto approve p0 critical incident human only",
+  "automation.paused": "kill switch pause stop automatic actions autopilot halt",
   "uiVerification.enabled":
     "handoff browser gate playwright console overflow screenshot verification review block",
   "uiVerification.viewportWidths": "handoff ui verification mobile desktop overflow viewport width",
