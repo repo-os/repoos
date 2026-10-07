@@ -2,7 +2,7 @@
 id: "0741"
 title: "Easter eggs bundle: board card error panel (flush, square, below the action button) and hide a stale close-out error while a new close-out runs"
 type: chore
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
-updated_at: "2026-10-07T17:58:35Z"
+updated_at: "2026-10-07T18:04:27Z"
 last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)"
 ---
 ## Problem
@@ -70,3 +70,4 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 - 2026-10-07T17:42:21Z · handoff failed · ui-review handoff failed at verify · ui verification: capture of / failed — goto: Timeout 30000ms exceeded.
 - 2026-10-07T17:58:35Z · note: ui verification failed (4 issue(s)): [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=cursor); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=antigravity); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=kiro); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=crush
 - 2026-10-07T17:58:35Z · handoff failed · ui-review handoff failed at verify · ui verification failed (4 issue(s)): [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=cursor); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=antigravity); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=kiro); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=crush)
+- 2026-10-07T18:04:27Z · status active→review
