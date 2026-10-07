@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/stories-and-inputs-dirs-don-t-get-the-sa
 created_at: "2026-10-07T00:35:48Z"
-updated_at: "2026-10-07T17:17:52Z"
+updated_at: "2026-10-07T17:19:23Z"
 close_out_repair_count: 1
 review_passes: 1
 ---
@@ -66,3 +66,4 @@ Desired: validate all layout dirs with normalizeRelativeDir, give inputsDir a Se
 - 2026-10-07T17:15:37Z · status review→active
 - 2026-10-07T17:15:37Z · note: close-out repair: merge-conflict
 - 2026-10-07T17:17:52Z · body
+- 2026-10-07T17:19:23Z · body
