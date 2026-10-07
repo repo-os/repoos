@@ -28,7 +28,6 @@ import {
   listStoryDefinitions,
   markStoryPmChat,
   rewriteStoryDefinition,
-  setStoryPmWorking,
   writeStoryDefinition,
 } from "../../core/story-definition-files.js";
 import { deleteStoryFile, PathGuardError, WriteError } from "../write.js";
