@@ -89,3 +89,4 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 - 2026-10-07T16:39:44Z · body
 - 2026-10-07T16:41:27Z · body
 - 2026-10-07T16:49:15Z · handoff failed · check failed after 2 automatic retries · ui verification: capture of / failed — waitFor: Timeout 5000ms exceeded.
+- 2026-10-07T16:49:15Z · handoff failed · handoff recovery attempted · finalization failed
