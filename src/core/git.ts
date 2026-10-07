@@ -1493,8 +1493,23 @@ export function parsePorcelainStatus(stdout: string): DirtyFileEntry[] {
  * FAILS CLOSED exactly as documented on {@link GitDirtyCheckError}: `[]` only
  * for a genuinely clean tree, a throw for anything git could not answer.
  */
-export async function dirtyFilesDetailed(root: string): Promise<DirtyFileEntry[]> {
-  const out = await runGit(root, ["status", "--porcelain"], 4000);
+export interface DirtyFilesOptions {
+  /**
+   * `all` lists every untracked file (git `-uall`). Close-out guards on `main`
+   * use this so shot captures under an otherwise-untracked `work/` tree are
+   * visible as `work/.attachments/...` paths instead of a single `work/`
+   * directory entry that would bypass attachment filtering (#0713).
+   */
+  untrackedFiles?: "normal" | "all";
+}
+
+export async function dirtyFilesDetailed(
+  root: string,
+  opts: DirtyFilesOptions = {},
+): Promise<DirtyFileEntry[]> {
+  const statusArgs = ["status", "--porcelain"];
+  if (opts.untrackedFiles === "all") statusArgs.push("-uall");
+  const out = await runGit(root, statusArgs, 4000);
   // A genuinely clean tree is git exit 0 with empty output.
   if (out.status === 0 && (!out.stdout || out.stdout.trim() === "")) return [];
   // Fail closed: a timeout, a spawn failure (status null), or a non-zero exit
@@ -1517,8 +1532,8 @@ export async function dirtyFilesDetailed(root: string): Promise<DirtyFileEntry[]
  * the status column dropped. See that function for the fail-closed contract
  * this also inherits (empty means clean, never "git failed").
  */
-export async function dirtyFiles(root: string): Promise<string[]> {
-  return (await dirtyFilesDetailed(root)).map((f) => f.path);
+export async function dirtyFiles(root: string, opts: DirtyFilesOptions = {}): Promise<string[]> {
+  return (await dirtyFilesDetailed(root, opts)).map((f) => f.path);
 }
 
 /**
@@ -1590,9 +1605,11 @@ export interface MainDirtyPathFilter {
 export function isLocalAttachmentPath(path: string, dirs: MainDirtyPathFilter = {}): boolean {
   const workDir = dirs.workDir ?? "work";
   const inputsDir = dirs.inputsDir ?? "inputs";
-  const workAtt = `${withTrailingSlash(workDir)}.attachments/`;
-  const inputsAtt = `${withTrailingSlash(inputsDir)}.attachments/`;
-  return path.startsWith(workAtt) || path.startsWith(inputsAtt);
+  const workAtt = `${withTrailingSlash(workDir)}.attachments`;
+  const inputsAtt = `${withTrailingSlash(inputsDir)}.attachments`;
+  const norm = path.replace(/\/+$/, "");
+  if (norm === workAtt || norm === inputsAtt) return true;
+  return path.startsWith(`${workAtt}/`) || path.startsWith(`${inputsAtt}/`);
 }
 
 /**
@@ -1614,7 +1631,10 @@ export async function mainDirtyFilesForCloseOut(
   root: string,
   dirs: MainDirtyPathFilter = {},
 ): Promise<string[]> {
-  return filterIgnorableMainDirtyPaths(await dirtyFiles(root), dirs);
+  return filterIgnorableMainDirtyPaths(
+    await dirtyFiles(root, { untrackedFiles: "all" }),
+    dirs,
+  );
 }
 
 /** Repo-relative path is a committed task markdown file under `workDir` (board bookkeeping). */

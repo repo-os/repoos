@@ -681,7 +681,7 @@ describe("main dirty paths for close-out (#0713)", () => {
       writeFileSync(join(root, ".repoos", "logs", "system.log"), "log\n");
       writeFileSync(join(root, "blocking.txt"), "real work\n");
 
-      const raw = await dirtyFiles(root);
+      const raw = await dirtyFiles(root, { untrackedFiles: "all" });
       expect(raw).toContain("work/.attachments/0999/shots/default-1.png");
       expect(raw).toContain("blocking.txt");
 
