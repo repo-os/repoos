@@ -2,7 +2,7 @@
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T12:44:12Z"
+updated_at: "2026-10-07T12:44:13Z"
 last_check_failure: "repoos check at 2026-10-07T12:21:44.677Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -46,3 +46,4 @@ Read AGENTS.md. Use existing task worktree, Cursor/composer-2.5. Independently v
 - 2026-10-07T12:04:31Z · body
 - 2026-10-07T12:43:46Z · body
 - 2026-10-07T12:44:12Z · status active→review
+- 2026-10-07T12:44:13Z · status review→active
