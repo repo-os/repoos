@@ -806,6 +806,50 @@ but the merged candidate is red — e.g. a semantic conflict), RepoOS:
 automatically during the candidate merge by regenerating the lockfile (`bun
 install`) when possible — no engineer round-trip.
 
+### Narrow resolution of an eligible conflict (#0692)
+
+A real conflict that is *provably safe to resolve mechanically* — and on a task
+that already passed review — does **not** restart the full engineering/review
+cycle. `src/server/conflict-resolution.ts` owns the deterministic core:
+
+- `classifyConflictResolution` / `classifyConflictForTask` decide eligibility from
+  the conflict set the real merge produced (via `git merge-tree`, which never
+  touches a worktree, index or ref). The allowlist is **semantic, not path-based**:
+  the closing task's own bookkeeping file; generated output; a regenerated
+  lockfile; and *disjoint, insertions-only* declarations (both sides purely add
+  distinct lines at distinct places — the #0728 watch vs #0730
+  decisions/attention CLI registration shape). Anything else fails closed to the
+  full cycle: an edit rather than an append, overlapping hunks, an unclassifiable
+  path, or no prior review.
+- `resolveConflictByUnion` applies the union resolution (both sides preserved)
+  only for a proven-insertions region; a diff3 base section (a genuine edit)
+  refuses.
+- The sync-phase **pre-flight** dry-run (`preflightConflict`) still detects
+  conflicts early for the full handback path, but when the narrow path is
+  enabled and `merge-tree` agrees on the same paths, sync **continues** so
+  `applyUnionResolution` can run in the candidate instead of failing the job
+  after only logging/SSE.
+- `applyUnionResolution` (orchestrator) re-runs the merge in the candidate,
+  resolves only the classifier-approved paths, commits, records a
+  **resolution-delta** review (marker-free union verification), then continues
+  to the **combined gate** on the exact resolved tree — one gate run, not two.
+- The candidate records provenance (`createResolutionProvenanceStore`):
+  approved feature SHA, main base SHA, conflict paths, resolution
+  commit/tree, the **resolution-only** review verdict, and the gate result. The
+  original review is never rewritten — the resolution has its own record.
+- At publish, `assertResolvedTreeUnchanged` calls
+  `canResumeAuthorizedCloseOut` and refuses to land a candidate whose tree is
+  not the one the gate validated. A main advance that is code (not bookkeeping)
+  still resyncs; a dirty tree, a cancellation, or a stale provenance generation
+  cannot resume.
+- `GET /api/tasks/:id/integration-job` includes `conflictResolution` when
+  provenance exists (CLI/UI parity).
+
+The UI shows the stage as **resolving integration conflict**
+(`resolve-conflict` in `PIPELINE_STAGES`) — distinct from new development — and
+the task card names the original feature review separately from the pending or
+passed resolution review.
+
 **Follow-up messages while in `review`:** `POST /api/tasks/:id/message` moves
 the task to `active` first (unless a close-out job is still in-flight), so fixes
 can be committed and re-handoffed instead of leaving the task in `review` with a
@@ -829,7 +873,8 @@ the deadline still reaches `runRemotePreReviewGate` in
 | `could not get main SHA` | Stale job from before the prefix fix, or genuinely broken git state | Retry `POST .../done` — jobs re-enqueue cleanly now (commit `d66c7877`) |
 | `merge conflict in dist/...` or `merge conflict in work/<id>-*.md` | Should not happen post-`e34485c7` — if it does, `autoResolve` regressed | Check `validateCandidate()`'s `autoResolve` array still includes `dist/` and the task's own path |
 | `dist/` dirty on `main` after a plain `bun run build` | Build determinism regressed — a timestamp/random value is back in `dist/.build-info.json` | Check `scripts/copy-assets.mjs`: the marker holds `{ hash, version }` only; `generatedAt` belongs in the gitignored `dist/.build-stamp.json` |
-| `merge conflict in <any other file>` | Real source conflict between the feature branch and main | Fix it in the feature branch's own worktree, not the candidate |
+| `merge conflict in <any other file>` | Real source conflict between the feature branch and main | If the conflict is provably-safe and the task already passed review it is resolved in the candidate (see #0692 above); otherwise fix it in the feature branch's own worktree, not the candidate |
+| `resolved candidate tree … no longer matches the tree the combined gate validated` | A resolution candidate was rebuilt (drift resync / stray write) after its gate ran | Re-run Move to done so the resolution and its combined gate are rederived (#0692) |
 | `check failed: <unhelpful shell preamble>` | Should not happen post-`3fbbd707` — if it does, the tail-line diagnostic or local-CLI-first ordering regressed | Reproduce manually: `cd` into the candidate worktree, run `node dist/cli/index.js check` directly |
 | `check failed: <real reason>`, and it reproduces manually in the candidate worktree | The task's actual code has a real bug | Fix it on the feature branch, not the candidate (the candidate is discarded and rebuilt from the branch every retry) |
 | API call to `/done` or `/integration-job` returns nothing / times out | Reload churn (see above) | Check `/api/health`, wait, retry — don't assume corruption |

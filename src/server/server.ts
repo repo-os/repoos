@@ -1488,6 +1488,23 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             bumpAttention();
           },
           recordRemoteFallbackAttention,
+          (taskId, reason, verdict) => {
+            // #0692: the close-out resolved an integration conflict in the
+            // candidate instead of restarting engineering/review. Surface it on
+            // the task's progress stream with the distinct reason so the UI can
+            // show "Resolving integration conflict" rather than "failed".
+            logger.task(taskId, "info", "resolving integration conflict in candidate", {
+              reason,
+              classes: verdict.eligible ? verdict.classes : [],
+            });
+            emitEvent({
+              type: "task.progress",
+              id: taskId,
+              step: "resolve-conflict",
+              detail: reason,
+              at: new Date().toISOString(),
+            });
+          },
         );
         const jobBefore = jobCoordinator.peekNext();
         // Defer auto-reload for the duration of this job's processing: a

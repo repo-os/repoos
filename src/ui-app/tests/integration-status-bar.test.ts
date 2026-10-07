@@ -36,6 +36,18 @@ function render() {
   });
 }
 
+/**
+ * The `.stage` button whose visible name is `name`. Tests must target a stage
+ * by its name, not a numeric index: `INTEGRATION_STAGES` grows over time (e.g.
+ * `resolve-conflict` was inserted between `merge` and `build` in #0692), and an
+ * index silently points at the wrong stage after any insertion.
+ */
+function stage(wrapper: ReturnType<typeof render>, name: string) {
+  const el = wrapper.findAll(".stage").find((s) => s.get(".stage-name").text() === name);
+  if (!el) throw new Error(`no .stage named "${name}"`);
+  return el;
+}
+
 beforeEach(() => {
   pinia = createPinia();
   setActivePinia(pinia);
@@ -148,7 +160,7 @@ describe("IntegrationStatusBar", () => {
     const wrapper = render();
     await nextTick();
 
-    const checkStage = wrapper.findAll(".stage")[3];
+    const checkStage = stage(wrapper, "check");
     // The native tooltip is gone in favour of the pane.
     expect(checkStage.attributes("title")).toBeUndefined();
 
@@ -171,7 +183,7 @@ describe("IntegrationStatusBar", () => {
     const wrapper = render();
     await nextTick();
 
-    await wrapper.findAll(".stage")[3].trigger("mouseenter");
+    await stage(wrapper, "check").trigger("mouseenter");
     const text = wrapper.get(".stage-pane").text();
     // #0592: nothing verifies here — the copy must say that plainly, offer
     // the print-plan command, and never suggest a pass.
@@ -250,7 +262,7 @@ describe("IntegrationStatusBar", () => {
     // A broken declared plan fails red — it is NOT "no checks configured".
     expect(wrapper.find(".ibar-plan-empty").exists()).toBe(false);
 
-    await wrapper.findAll(".stage")[3].trigger("mouseenter");
+    await stage(wrapper, "check").trigger("mouseenter");
     const text = wrapper.get(".stage-pane").text();
     expect(text).toMatch(/plan is broken/);
     expect(text).toContain("FAILS red");
@@ -265,12 +277,12 @@ describe("IntegrationStatusBar", () => {
 
     expect(wrapper.find(".stage-pane").exists()).toBe(false);
 
-    await wrapper.findAll(".stage")[0].trigger("mouseenter");
+    await stage(wrapper, "sync").trigger("mouseenter");
     expect(wrapper.get(".stage-pane").text()).toContain("Syncing: fast-forwarding");
 
     // Moving straight to an adjacent stage swaps the copy without spawning a
     // second pane.
-    await wrapper.findAll(".stage")[1].trigger("mouseenter");
+    await stage(wrapper, "merge").trigger("mouseenter");
     expect(wrapper.findAll(".stage-pane")).toHaveLength(1);
     expect(wrapper.get(".stage-pane").text()).toContain("Merge: merging the branch");
 
@@ -287,7 +299,7 @@ describe("IntegrationStatusBar", () => {
     const wrapper = render();
     await nextTick();
 
-    await wrapper.findAll(".stage")[3].trigger("click");
+    await stage(wrapper, "check").trigger("click");
     expect(ui.activeTab).toBe("debug");
     expect(ui.debugView).toBe("logs");
     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "merge-gate" });
@@ -301,7 +313,7 @@ describe("IntegrationStatusBar", () => {
     const wrapper = render();
     await nextTick();
 
-    await wrapper.findAll(".stage")[0].trigger("click");
+    await stage(wrapper, "sync").trigger("click");
     expect(ui.activeTab).toBe("debug");
     expect(ui.debugCheckFocus).toBeNull();
   });
@@ -330,7 +342,7 @@ describe("IntegrationStatusBar", () => {
       toJSON: () => {},
     } as DOMRect);
 
-    await wrapper.findAll(".stage")[0].trigger("mouseenter");
+    await stage(wrapper, "sync").trigger("mouseenter");
     const pane = wrapper.find(".stage-pane");
     expect(pane.exists()).toBe(true);
     const style = pane.attributes("style");
@@ -359,7 +371,7 @@ describe("IntegrationStatusBar", () => {
       toJSON: () => {},
     } as DOMRect);
 
-    await wrapper.findAll(".stage")[0].trigger("mouseenter");
+    await stage(wrapper, "sync").trigger("mouseenter");
     const pane = wrapper.find(".stage-pane");
     const style = pane.attributes("style");
     // min-width clamped to max-width (400px), max-width = min(80vw=400, 500-28=472) = 400px
