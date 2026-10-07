@@ -148,7 +148,10 @@ can't leave your working tree dirty.
    straight to the automatic repair below, without building a candidate. Otherwise
    it creates (or resets) the candidate worktree from the current primary branch.
    When the primary checkout already has `node_modules`, it reuses that directory by
-   symlink rather than performing a cold install.
+   symlink rather than performing a cold install. If the candidate still has no
+   usable `node_modules` (for example the primary checkout was never installed),
+   close-out runs a frozen install in the candidate before the gate — unless the
+   check plan's first full-profile step already installs dependencies.
 2. **syncing → validating** — merges the task's feature branch into the
    candidate. RepoOS preserves the closing task's own bookkeeping file from the
    task branch; a source conflict is left for the repair flow below.

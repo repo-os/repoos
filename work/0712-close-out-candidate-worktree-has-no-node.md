@@ -1,6 +1,4 @@
 ---
-last_close_out_gate_ms: 1342962
-last_close_out_gate_at: "2026-10-07T04:47:30.722Z"
 id: "0712"
 title: "Close-out candidate worktree has no node_modules: check plan fails with 'prettier: command not found'"
 type: bug
@@ -13,8 +11,9 @@ branch: feat/close-out-candidate-worktree-has-no-node
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:49Z"
-updated_at: "2026-10-07T04:47:30Z"
-review_passes: 1
+updated_at: "2026-10-07T01:15:19Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 75ecc5c804367fa512aab520f4212af2a15d5d6f
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 24: unless the check plan starts with an install step. Install deps (or reuse) in the candidate worktree, or fail with advice.
 
@@ -109,12 +108,4 @@ error: script "test" exited with code 1
 - 2026-10-07T00:38:18Z · status review→active
 - 2026-10-07T00:48:18Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-07T00:53:18Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
-- 2026-10-07T01:07:14Z · note: OWNER clarification: cross-repo reports (private-tuk/tuk-private/opex) may describe an outdated RepoOS version. Verify CURRENT main behavior and the combined current-main/task-branch tree before treating the report or diagnosis as accurate. Record exact version/commit, reproduction, and whether still relevant, partly fixed, already fixed, or misdiagnosed. Do not implement a stale request; preserve regression evidence for already-fixed behavior. This reinforces Verify first and also applies to integration repairs.
-- 2026-10-07T01:07:29Z · body
-- 2026-10-07T01:09:18Z · body
 - 2026-10-07T01:15:19Z · status active→review
-- 2026-10-07T01:15:19Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria; empty sections: Notes for AI
-- 2026-10-07T01:15:20Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-07T01:15:54Z · note: review pass 1: good to go
-- 2026-10-07T04:47:30Z · close-out gate completed in 1343s
-
