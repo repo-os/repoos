@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0729"
 title: "Detect and recover hung validation containers on runner hosts (kill, retry on another host, isolate the bun cache per run); CTO safe action"
 type: bug
@@ -164,3 +165,4 @@ error: script "test" exited with code 1
 - 2026-10-07T09:29:03Z · note: review pass 5: good to go
 - 2026-10-07T09:32:24Z · status review→active
 - 2026-10-07T09:32:24Z · note: close-out repair: merge-conflict
+
