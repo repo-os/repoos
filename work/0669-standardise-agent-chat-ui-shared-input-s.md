@@ -11,7 +11,7 @@ branch: feat/standardise-agent-chat-ui-shared-input-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T15:01:24Z"
-updated_at: "2026-10-07T18:27:14Z"
+updated_at: "2026-10-07T18:27:27Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-07T18:25:28.512Z: repoos check failed: ui verification: capture of / failed — click: Timeout 5000ms exceeded."
 handoff_signal_retry_count: 2
@@ -55,10 +55,7 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
     "highlight": ".floating-head-panel .agent-chat-header",
     "steps": [
       {
-        "waitFor": ".floating-heads .stack"
-      },
-      {
-        "waitMs": 500
+        "waitFor": "[data-test-id=\"floating-head-cto\"]"
       },
       {
         "click": "[data-test-id=\"floating-head-cto\"]"
@@ -78,10 +75,7 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
     "highlight": ".floating-head-panel .agent-chat-header",
     "steps": [
       {
-        "waitFor": ".floating-heads .stack"
-      },
-      {
-        "waitMs": 500
+        "waitFor": "[data-test-id=\"floating-head-debugger\"]"
       },
       {
         "click": "[data-test-id=\"floating-head-debugger\"]"
@@ -101,10 +95,7 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
     "highlight": ".floating-head-panel .agent-chat-header",
     "steps": [
       {
-        "waitFor": ".floating-heads .stack"
-      },
-      {
-        "waitMs": 500
+        "waitFor": "[data-test-id=\"floating-head-ross\"]"
       },
       {
         "click": "[data-test-id=\"floating-head-ross\"]"
@@ -222,3 +213,4 @@ error: script "test" exited with code 1
 - 2026-10-07T18:18:07Z · body
 - 2026-10-07T18:18:52Z · body: section Shots
 - 2026-10-07T18:27:14Z · body: section Shots
+- 2026-10-07T18:27:27Z · body: section Shots
