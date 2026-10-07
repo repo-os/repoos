@@ -2,7 +2,7 @@
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-07T15:23:07Z"
+updated_at: "2026-10-07T15:23:09Z"
 close_out_repair_count: 1
 review_passes: 6
 last_check_failure: "repoos check at 2026-10-07T12:21:44.451Z: server-side finalization timed out (deadline exceeded)"
@@ -152,4 +152,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T15:13:21Z · status review→active
 - 2026-10-07T15:13:21Z · note: close-out repair: merge-conflict
 - 2026-10-07T15:15:31Z · body
-- 2026-10-07T15:23:07Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-07T15:23:09Z · status active→review
