@@ -12,7 +12,7 @@ branch: feat/board-card-says-queued-for-close-out-for
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:13:12Z"
-updated_at: "2026-10-07T17:57:59Z"
+updated_at: "2026-10-07T17:59:39Z"
 ---
 ## Problem
 
@@ -211,3 +211,4 @@ error: script "test" exited with code 1
    Duration  2.42s (transform 1.13s, setup 12ms, import 1.41s, tests 411ms, environment 502ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T17:59:39Z · body
