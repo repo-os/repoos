@@ -12,7 +12,7 @@ branch: feat/detect-and-recover-hung-validation-conta
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T09:44:04Z"
+updated_at: "2026-10-07T09:44:42Z"
 close_out_repair_count: 1
 review_passes: 5
 error: "script \\"test\\" exited with code 1 — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.\""
