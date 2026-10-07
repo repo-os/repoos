@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/standardise-agent-chat-ui-shared-input-s
 created_at: "2026-10-05T15:01:24Z"
-updated_at: "2026-10-07T17:24:40Z"
+updated_at: "2026-10-07T17:29:47Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -49,3 +49,23 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 - 2026-10-07T17:17:27Z · body
 - 2026-10-07T17:24:39Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T17:24:40Z · status review→active
+- 2026-10-07T17:29:47Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/debugger-floating-close.test.ts:56:55
+     54|
+     55|     // A render-time ReferenceError leaves the slot unrendered, so the…
+     56|     expect(wrapper.find(".debugger-header").exists()).toBe(true);
+       |                                                       ^
+     57|     expect(wrapper.find(".debugger-close").exists()).toBe(true);
+     58|     expect(wrapper.text()).toContain("diagnosis ready");
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 439 passed | 1 skipped (441)
+      Tests  1 failed | 5353 passed | 15 skipped (5369)
+   Start at  17:25:23
+   Duration  259.23s (transform 6.72s, setup 2.20s, import 45.68s, tests 244.08s, environment 203.82s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 776ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:29:43
+   Duration  2.74s (transform 1.14s, setup 13ms, import 1.43s, tests 776ms, environment 445ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
