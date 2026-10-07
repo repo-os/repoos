@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 9dae6a6e8b0e2eb094e46e9fa572f31677ba30d5
 id: "0733"
 title: Show review records in a table
 type: feature
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-review-records-in-a-table
 created_at: "2026-10-07T02:52:02Z"
-updated_at: "2026-10-07T03:51:08Z"
+updated_at: "2026-10-07T03:56:58Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 9dae6a6e8b0e2eb094e46e9fa572f31677ba30d5
 dev_error_count: 1
 ---
 ## Problem
@@ -77,4 +77,4 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T03:41:29Z · note: shot removed: Review records table on #0679 with real review history, newest pass first
 - 2026-10-07T03:41:31Z · note: Driver verification: stopped a redundant scoped check after an unchanged tree had already passed (thinkpad48s/local24s, subsequent bee300s also gate exit0). No live engineer and clean source tree before repoos review request. Inspected diff: descending pass sort, one table row per pass, stored agent/cli/model fields and legacy-empty fallback tests. UI evidence remains incomplete: sanctioned preview uses branch-local review cache; both task0733 and existing0679 show No agent review yet, so table highlight did not match. Deleted those misleading captures via API; do not accept them as evidence. Reviewer must verify table rendering with genuine review records, including latest-first, reviewer/model and narrow-width layout before approval. No fabricated records, source edits, config/host changes or review-blocker overrides.
 - 2026-10-07T03:51:08Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-10-07T03:56:58Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
