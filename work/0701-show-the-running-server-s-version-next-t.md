@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/show-the-running-server-s-version-next-t
 created_at: "2026-10-06T03:15:53Z"
-updated_at: "2026-10-07T17:42:11Z"
+updated_at: "2026-10-07T17:43:02Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -43,3 +43,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-07T17:34:17Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T17:34:17Z · status review→active
 - 2026-10-07T17:42:11Z · status active→review
+- 2026-10-07T17:43:02Z · note: review pass 1: needs some work
