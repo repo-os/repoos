@@ -382,12 +382,20 @@ export interface RemoteHostStatus {
     phase?: string;
     label?: string;
     source?: "server" | "host-lock";
+    /** True while this run is being killed as hung (#0729). */
+    hung?: boolean;
   }[];
   /** Task ids of the queued runs waiting for THIS host, FIFO order (#0564). */
   queuedTasks?: string[];
   serverStats?: RemoteServerStats;
   /** Host-side lock holders + waiters sampled over SSH (#0705). */
   hostLock?: HostLockSnapshot;
+  /**
+   * Runs killed as hung on this host, most recent first (#0729) — the Remote
+   * runners tab shows "hung #0693 · killed 2m ago" so a hang is visible, not
+   * just a silent retry elsewhere. Bounded to the last few.
+   */
+  hungRuns?: { taskId: string; at: string; detail?: string }[];
   /**
    * Whether the installed `validate.sh` supports incremental bundle upload
    * (mirror path argument). Set by the prerequisite probe; absent until probed.
@@ -443,6 +451,12 @@ export interface RemoteValidator {
    * (#0521 review). Optional: Hetzner has no pool to rebuild.
    */
   applyConfig?(): void;
+  /**
+   * Kill a hung run's container and record it as hung (#0729) — the CTO
+   * `kill-hung-validation` safe action's implementation. Optional: a provider
+   * with no host pool (Hetzner) has nothing to target by name.
+   */
+  killHungValidation?(taskId: string): Promise<{ ok: boolean; detail: string }>;
 }
 
 interface RunnerState {
@@ -465,7 +479,17 @@ export interface RunnerTimings {
   healthRetryMs: number;
   /** Re-probe hosts that are still unprobed or unhealthy (#0683). */
   backgroundProbeIntervalMs: number;
+  /** Minutes a run's output may sit unchanged, on an idle host, before it is
+   *  called hung and its container killed (#0729). Default 5. */
+  hangIdleMinutes: number;
+  /** How often the hang watchdog checks a running job (#0729). */
+  hangCheckIntervalMs: number;
+  /** How often a running job re-samples its host's load (#0729). */
+  loadSampleIntervalMs: number;
 }
+
+/** Default minutes with no output before a run is called hung (#0729). */
+export const DEFAULT_HANG_IDLE_MINUTES = 5;
 
 const DEFAULT_TIMINGS: RunnerTimings = {
   provisionPollMs: 4_000,
@@ -476,6 +500,9 @@ const DEFAULT_TIMINGS: RunnerTimings = {
   probeTimeoutMs: 20_000,
   healthRetryMs: 30_000,
   backgroundProbeIntervalMs: 60_000,
+  hangIdleMinutes: DEFAULT_HANG_IDLE_MINUTES,
+  hangCheckIntervalMs: 30_000,
+  loadSampleIntervalMs: 45_000,
 };
 
 /** Contention-shaped failure text — matches runDoneStep's heuristic in done.ts. */
@@ -637,6 +664,203 @@ export function isRunnerBundleTransportMismatch(output: string, exitCode: number
  *  third round: a named volume, not a host bind-mount — see that script's
  *  own comment for why). */
 export const CACHE_VOLUME_NAME = "repoos-bun-cache";
+/**
+ * Per-slot cache volume (#0729): concurrent runs on ONE host shared the single
+ * `repoos-bun-cache` volume and their `bun install` writers corrupted each
+ * other, which surfaced as the host idling at load 0 while the log looped
+ * `error: Module not found "/repo/node_modules/vitest/dist/workers/forks.js"`.
+ * Isolating the cache per host-lock slot means two runs that may run at once
+ * (a host with `maxConcurrent > 1`) never write the same cache directory, so a
+ * partial install can no longer be observed by a sibling run. Slot 0 keeps the
+ * original name so a host's existing warm cache is reused by the first run.
+ */
+export function cacheVolumeForSlot(base: string, slotIndex: number): string {
+  const slot = Number.isInteger(slotIndex) && slotIndex > 0 ? slotIndex : 0;
+  return slot === 0 ? base : `${base}-slot${slot}`;
+}
+
+/** Prefix every validation container name carries, so stale ones are findable. */
+export const VALIDATE_CONTAINER_PREFIX = "repoos-validate";
+
+/**
+ * Name for one run's container, so a hang can `docker rm -f` exactly that run
+ * and never a sibling's (#0729). `runId` is unique per run (a random suffix);
+ * sanitized to the Docker name charset.
+ */
+export function validateContainerName(runId: string): string {
+  const safe = runId.replace(/[^A-Za-z0-9_.-]/g, "_").slice(0, 48) || "run";
+  return `${VALIDATE_CONTAINER_PREFIX}-${safe}`;
+}
+
+/**
+ * Remove containers from finished/killed runs (they still carry the prefix) —
+ * a `docker run --rm` that was SIGKILLed leaves its container behind. Run at
+ * probe time and before a fresh run so a hung predecessor's leftovers are
+ * cleared.
+ *
+ * Only **not-running** containers are selected: a probe fires on a background
+ * timer and can run while a sibling job (a host with `maxConcurrent > 1`) is
+ * still executing, so sweeping every prefixed container would kill an
+ * in-flight run. `--filter status=created|exited|dead` (Docker OR-combines
+ * repeated `status` filters) restricts the sweep to leftovers — plus the
+ * fixed name prefix, so a container validate.sh did not create is never
+ * touched. `killContainerCommand` above is the only path that removes a
+ * *running* container, and only the one run it names.
+ */
+export function staleContainerCleanupCommand(): string {
+  return (
+    `docker ps -aq --filter ${shellQuote(`name=${VALIDATE_CONTAINER_PREFIX}-`)} ` +
+    "--filter status=created --filter status=exited --filter status=dead 2>/dev/null | " +
+    "xargs -r docker rm -f >/dev/null 2>&1 || true"
+  );
+}
+
+/**
+ * Kill exactly one run's container by name (#0729) — never a blanket
+ * `docker kill`. Best effort: a missing container or a dead SSH link is fine.
+ */
+export function killContainerCommand(containerName: string): string {
+  const safe = containerName.replace(/[^A-Za-z0-9_.-]/g, "");
+  return `docker rm -f ${shellQuote(safe)} >/dev/null 2>&1 || true`;
+}
+
+/**
+ * Load average (per CPU) below which the host is "idle" — a run that has gone
+ * quiet on a busy host may simply be queued behind real work, but a run quiet
+ * while the box does nothing is a hang. 0.5 is deliberately loose: a real
+ * build+test pegs multiple cores far above it, and a machine merely idling at
+ * its desktop sits well below.
+ */
+export const HANG_IDLE_LOAD_THRESHOLD = 0.5;
+
+/** Idle-output threshold in ms from a configurable minute count. */
+export function hangIdleThresholdMs(minutes?: number): number {
+  const m =
+    typeof minutes === "number" && Number.isFinite(minutes) && minutes > 0
+      ? minutes
+      : DEFAULT_HANG_IDLE_MINUTES;
+  return Math.round(m * 60_000);
+}
+
+/** 1-min `uptime` load average normalised per CPU; Infinity when unknown. */
+export function loadPerCpu(
+  loadAverage: readonly [number, number, number] | undefined | null,
+  cpuCount: number | undefined | null,
+): number {
+  if (!loadAverage || loadAverage.length < 1 || !Number.isFinite(loadAverage[0])) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const cpus =
+    typeof cpuCount === "number" && Number.isFinite(cpuCount) && cpuCount >= 1 ? cpuCount : 1;
+  return loadAverage[0] / cpus;
+}
+
+/**
+ * Whether a running job is hung (#0729): its output has not advanced for at
+ * least `thresholdMs` AND the host is idle (load per CPU below
+ * {@link HANG_IDLE_LOAD_THRESHOLD}). Pure so the detector is unit-testable;
+ * the runner calls it on a timer and, when true, kills that run's container.
+ *
+ * Unknown load (`Infinity`) is deliberately NOT idle: without evidence the box
+ * is doing nothing, a quiet run is not called hung — the failure mode this
+ * guards against is exactly a hang on an idle host.
+ */
+export function detectHungRun(opts: {
+  lastOutputAt: number;
+  now: number;
+  thresholdMs: number;
+  loadPerCpu: number;
+  idleLoadThreshold?: number;
+}): boolean {
+  const idleThreshold = opts.idleLoadThreshold ?? HANG_IDLE_LOAD_THRESHOLD;
+  const quietMs = opts.now - opts.lastOutputAt;
+  if (quietMs < opts.thresholdMs) return false;
+  return opts.loadPerCpu < idleThreshold;
+}
+
+/** A cheap `uptime`-only probe for the hang watchdog's idle check (#0729). */
+export function hostLoadCommand(): string {
+  return (
+    "printf '__UPTIME__\\n'; uptime 2>/dev/null || true; " +
+    "printf '\\n__CPU__\\n'; (getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null || " +
+    "sysctl -n hw.ncpu 2>/dev/null) || true"
+  );
+}
+
+/**
+ * Watch one running job for a hang (#0729): `noteOutput()` on every streamed
+ * chunk resets the idle clock; a periodic tick calls {@link detectHungRun}
+ * using the latest host load and, when it fires, invokes `onHung` exactly once
+ * (which kills that run's container). Deliberately tiny and synchronous — the
+ * runner supplies `loadPerCpu` from its own sampling timer and `now` so tests
+ * drive it deterministically.
+ */
+export class HangWatchdog {
+  private lastOutputAt: number;
+  private timer?: ReturnType<typeof setInterval>;
+  private fired = false;
+
+  constructor(
+    private readonly opts: {
+      thresholdMs: number;
+      /** Latest per-CPU 1-min load; Infinity when unknown (never "idle"). */
+      loadPerCpu: () => number;
+      onHung: () => void;
+      checkIntervalMs: number;
+      now?: () => number;
+    },
+  ) {
+    this.lastOutputAt = this.now();
+  }
+
+  private now(): number {
+    return this.opts.now ? this.opts.now() : Date.now();
+  }
+
+  /** Record that output moved — resets the idle clock. */
+  noteOutput(): void {
+    this.lastOutputAt = this.now();
+  }
+
+  /** Start periodic checking. No-op if already started or already fired. */
+  start(): void {
+    if (this.timer || this.fired) return;
+    this.timer = setInterval(() => this.check(), this.opts.checkIntervalMs);
+    this.timer.unref?.();
+  }
+
+  /** Evaluate once — exposed so tests need no real timers. */
+  check(): boolean {
+    if (this.fired) return false;
+    if (
+      !detectHungRun({
+        lastOutputAt: this.lastOutputAt,
+        now: this.now(),
+        thresholdMs: this.opts.thresholdMs,
+        loadPerCpu: this.opts.loadPerCpu(),
+      })
+    ) {
+      return false;
+    }
+    this.fired = true;
+    this.stop();
+    this.opts.onHung();
+    return true;
+  }
+
+  /** Whether the watchdog fired (the run is being killed as hung). */
+  get hung(): boolean {
+    return this.fired;
+  }
+
+  stop(): void {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = undefined;
+    }
+  }
+}
+
 /** Exit code a host-lock timeout uses — never a test suite's own exit. */
 export const HOST_LOCK_TIMEOUT_EXIT = 75;
 /** Default a run waits inside the host lock before giving up (15 min). */
@@ -942,6 +1166,12 @@ export function prereqProbeCommand(
             '{ echo "bun cache dir $_rvcache is not writable"; exit 1; }',
         ]
       : [
+          // Reap containers left behind by a killed/hung run (#0729): the
+          // Remote runners tab shows the cleanup, and a stale container only
+          // wastes the host until it is removed. Name-prefixed so we never
+          // touch a container validate.sh did not create, and best-effort so a
+          // probe never fails merely because the cleanup could not run.
+          staleContainerCleanupCommand(),
           // Docker: the cache is a named volume validate.sh chowns to uid
           // 1000 (the bun base image's user) before every real run — NOT a
           // host bind-mount. An earlier version of this check tested a host
@@ -2340,6 +2570,12 @@ export interface HostSlot {
   /** Effective per-host cap in THIS process (the host lock enforces it across processes). */
   limit: number;
   release(): void;
+  /**
+   * Register this run's container name once it is known (#0729), so the pool's
+   * status and the CTO `kill-hung-validation` action can name exactly this
+   * run's container. Optional so a test double/older caller stays valid.
+   */
+  setContainer?(name: string): void;
 }
 
 interface PoolHostState {
@@ -2369,12 +2605,18 @@ interface PoolHostState {
   hostLock?: HostLockSnapshot;
   hostLockRequestedAt?: number;
   hostLockSampling?: Promise<void>;
+  /** Recent hung-run records for the Remote runners tab (#0729). */
+  hungRuns?: { taskId: string; at: string; detail?: string }[];
 }
 
 /** One in-flight remote run, attributed to the host executing it (#0564). */
 export interface ActiveRemoteRun {
   taskId: string;
   startedAt: string;
+  /** Set while this run is being killed as hung (#0729). */
+  hung?: boolean;
+  /** This run's container name, once known (#0729) — how a hang is killed. */
+  container?: string;
 }
 
 interface PoolWaiter {
@@ -2851,6 +3093,55 @@ export class TailscaleHostPool {
     }
   }
 
+  /**
+   * Record that a run on this host was killed as hung (#0729). Flags the
+   * in-flight run so the Remote runners tab can badge it while the kill lands,
+   * and keeps a bounded recent-hung list so the cleanup is visible after the
+   * retry moved elsewhere.
+   */
+  markHung(host: string, detail?: string): void {
+    const s = this.hosts.find((c) => c.spec.host === host);
+    if (!s) return;
+    const at = new Date().toISOString();
+    const active = s.activeRuns[s.activeRuns.length - 1];
+    if (active) active.hung = true;
+    s.hungRuns = [{ taskId: active?.taskId ?? "?", at, detail }, ...(s.hungRuns ?? [])].slice(0, 5);
+  }
+
+  /**
+   * Human/CTO-driven recovery for a hung run (#0729): find the in-flight run
+   * for `taskId`, remove its container by name, and record it as hung. Returns
+   * what happened so the action can report it. `docker rm -f` is scoped to the
+   * recorded container name — never a blanket kill of the host.
+   */
+  async killHungRun(taskId: string): Promise<{ ok: boolean; detail: string }> {
+    for (const s of this.hosts) {
+      const run = [...s.activeRuns].reverse().find((r) => r.taskId === taskId);
+      if (!run) continue;
+      if (!run.container) {
+        return {
+          ok: false,
+          detail: `#${taskId} is running on ${s.spec.host} but its container is not known yet`,
+        };
+      }
+      const container = run.container;
+      try {
+        await this.exec.runRemote(s.ssh, killContainerCommand(container), () => {}, 15_000);
+      } catch (e) {
+        return {
+          ok: false,
+          detail: `could not kill ${container} on ${s.spec.host}: ${(e as Error).message}`,
+        };
+      }
+      this.markHung(s.spec.host, `killed on request (#${taskId})`);
+      return {
+        ok: true,
+        detail: `Removed container ${container} for #${taskId} on ${s.spec.host}`,
+      };
+    }
+    return { ok: false, detail: `no in-flight remote validation run for #${taskId}` };
+  }
+
   /** Whether incremental bundle upload is safe for this host (#0725). */
   validateScriptMirrorSupported(host: string): boolean {
     const s = this.hosts.find((c) => c.spec.host === host);
@@ -2908,6 +3199,7 @@ export class TailscaleHostPool {
           activeRuns: s.activeRuns.map((r) => ({ ...r })),
           queuedTasks: [...(queuedOn.get(s)?.taskIds ?? [])],
           serverStats: s.serverStats ?? { available: false },
+          hungRuns: s.hungRuns ? s.hungRuns.map((r) => ({ ...r })) : undefined,
           validateScriptMirrorSupported: s.validateScriptMirrorSupported,
           validateScriptInstallCommand: validateScriptInstallCommand(s.ssh.user, s.spec.host),
         },
@@ -3137,6 +3429,9 @@ export class TailscaleHostPool {
       host: s.spec,
       ssh: s.ssh,
       limit: s.limit,
+      setContainer: (name: string) => {
+        run.container = name;
+      },
       release: () => {
         if (released) return;
         released = true;
@@ -3346,8 +3641,9 @@ export interface HostPoolOptions {
  * say `cancelled` — the Runs tab exists to tell "the gate was cancelled"
  * apart from "the gate caught something".
  */
-function classifyRunOutcome(summary: CheckSummary): "pass" | "fail" | "cancelled" {
+function classifyRunOutcome(summary: CheckSummary): "pass" | "fail" | "cancelled" | "hung" {
   if (summary.ok) return "pass";
+  if (summary.hung) return "hung";
   return summary.cancelled ? "cancelled" : "fail";
 }
 
@@ -3371,7 +3667,7 @@ function recordRemoteRunHistory(
   opts: ValidateOptions,
   startedAt: number,
   machine: string | null,
-  outcome: "pass" | "fail" | "cancelled",
+  outcome: "pass" | "fail" | "cancelled" | "hung",
   detail?: string | null,
   summary?: CheckSummary,
 ): void {
@@ -3397,7 +3693,8 @@ function recordRemoteRunHistory(
           ? `changed:${summary.remoteTestScopeRef}`
           : "full",
       startedAt: new Date(startedAt).toISOString(),
-      durationMs: outcome === "cancelled" ? null : Math.max(0, Date.now() - startedAt),
+      durationMs:
+        outcome === "cancelled" || outcome === "hung" ? null : Math.max(0, Date.now() - startedAt),
       outcome,
       failedStep: meta.failedStep,
       skippedSteps: [],
@@ -3535,6 +3832,11 @@ export class TailscaleRunner implements RemoteValidator {
 
   refreshHostLocks(): void {
     this.pool.refreshHostLocks();
+  }
+
+  /** Kill a hung run's container on its host (#0729). */
+  killHungValidation(taskId: string): Promise<{ ok: boolean; detail: string }> {
+    return this.pool.killHungRun(taskId);
   }
 
   /**
@@ -3708,6 +4010,9 @@ export class TailscaleRunner implements RemoteValidator {
     const rv = this.config.remoteValidation ?? {};
     const host = slot.ssh;
     const paths = remoteRunPaths(opts.taskId);
+    // Unique per run so a hang kills exactly this run's container (#0729).
+    const containerName = validateContainerName(paths.artifacts.split("/").pop() ?? opts.taskId);
+    slot.setContainer?.(containerName);
     const startedAt = Date.now();
     let remoteTestRef: string | null = null;
     const withScope = (summary: CheckSummary): CheckSummary =>
@@ -3796,13 +4101,16 @@ export class TailscaleRunner implements RemoteValidator {
             message: `running build + test in ${image} on ${host.ip}${changedNote}`,
           },
         );
-        const inner = `REPOOS_CI_IMAGE=${shellQuote(image)} ${validateScriptArgs(
-          remoteBundle,
-          opts.candidateSha,
-          paths.artifacts,
-          remoteTestRef ?? undefined,
-          upload.mirrorPath || undefined,
-        )}`;
+        const inner =
+          `REPOOS_SLOT="$_rvslot" REPOOS_CONTAINER=${shellQuote(containerName)} ` +
+          `REPOOS_CACHE_VOLUME=${shellQuote(CACHE_VOLUME_NAME)} REPOOS_CI_IMAGE=${shellQuote(image)} ` +
+          validateScriptArgs(
+            remoteBundle,
+            opts.candidateSha,
+            paths.artifacts,
+            remoteTestRef ?? undefined,
+            upload.mirrorPath || undefined,
+          );
         const waitSecs =
           opts.deadlineAt !== undefined
             ? deadlineLockWaitSecs(opts.deadlineAt)
@@ -3825,7 +4133,89 @@ export class TailscaleRunner implements RemoteValidator {
           priority: lockPriority,
         });
         outerTimeoutMs = this.timings.remoteRunTimeoutMs + waitSecs * 1000;
-        run = await this.exec.runRemote(host, cmd, emit, outerTimeoutMs);
+
+        // Hang watchdog (#0729): a run whose output stops advancing while the
+        // host sits idle is hung (the 2026-10-06/07 incidents looped
+        // "Module not found …/forks.js" at load 0). We sample the host's own
+        // load and, when both conditions hold, remove exactly this run's
+        // container — which makes the remote `docker run` exit — and mark the
+        // summary `hung` so the caller retries on another host.
+        let loadNow = Number.POSITIVE_INFINITY;
+        const loadTimer = setInterval(() => {
+          void this.exec
+            .runRemote(host, hostLoadCommand(), () => {}, this.timings.probeTimeoutMs)
+            .then((stats) => {
+              if (stats.code === 0 && !stats.timedOut) {
+                const parsed = parseRemoteServerStats(stats.output);
+                loadNow = loadPerCpu(parsed.loadAverage, parsed.cpuCount);
+              }
+            })
+            .catch(() => {
+              /* best effort — unknown load never counts as idle */
+            });
+        }, this.timings.loadSampleIntervalMs);
+        loadTimer.unref?.();
+        const watchdog = new HangWatchdog({
+          thresholdMs: hangIdleThresholdMs(this.timings.hangIdleMinutes),
+          checkIntervalMs: this.timings.hangCheckIntervalMs,
+          loadPerCpu: () => loadNow,
+          onHung: () => {
+            this.logger?.system(
+              "warn",
+              `remote validation run for #${opts.taskId} looks hung on ${host.ip} — killing ${containerName}`,
+            );
+            void this.exec
+              .runRemote(host, killContainerCommand(containerName), () => {}, 15_000)
+              .catch(() => {
+                /* the run will fall to its outer timeout if the kill cannot land */
+              });
+          },
+        });
+        watchdog.start();
+        const emitStream = (s: string): void => {
+          watchdog.noteOutput();
+          emit(s);
+        };
+        try {
+          run = await this.exec.runRemote(host, cmd, emitStream, outerTimeoutMs);
+        } finally {
+          watchdog.stop();
+          clearInterval(loadTimer);
+        }
+        if (watchdog.hung) {
+          // Killed as a hang: no test result exists. Transient so the caller
+          // retries on another host (the pool excludes this one, #0632).
+          this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
+          emit(
+            `\n[remote validation HUNG on ${host.ip} — container ${containerName} killed; ` +
+              "retrying on another host]\n",
+          );
+          const detail =
+            `remote validation hung on ${host.ip} — no output for ` +
+            `${this.timings.hangIdleMinutes}m while the host was idle; the run's container ` +
+            `(${containerName}) was removed and the run retried on another host`;
+          this.record(
+            { taskId: opts.taskId, host: host.ip, phase: "result" },
+            {
+              level: "warn",
+              phase: "result",
+              message: detail,
+              host: host.ip,
+              exitCode: null,
+              infra: true,
+            },
+          );
+          this.pool.markHung(host.ip, detail);
+          return withScope({
+            ok: false,
+            stage: "check",
+            transient: true,
+            hung: true,
+            exitCode: null,
+            output: tail(run.output, 40, 4000),
+            detail,
+          });
+        }
         if (
           incrementalUpload &&
           transportAttempt === 0 &&

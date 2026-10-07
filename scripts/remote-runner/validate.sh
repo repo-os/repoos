@@ -39,8 +39,25 @@ MIRROR="${5:-}"
 # a package.json"). $HOME is real disk everywhere and Docker-Desktop-shared.
 ART="${3:-$HOME/.repoos-artifacts}"
 
-CACHE_VOLUME="repoos-bun-cache"
+# Run-scoped container name (#0729): a hang is killed precisely by name, never
+# by a blanket docker kill that could take a sibling run's container. RepoOS
+# passes a unique name; a standalone run without one gets a pid-based default.
+CONTAINER="${REPOOS_CONTAINER:-repoos-validate-$$}"
+# Per-slot cache base (#0729): the shared `repoos-bun-cache` volume let
+# concurrent runs on one host corrupt each other's `bun install`. The slot
+# index acquired by the host lock below is appended, so runs that may overlap
+# (a host with maxConcurrent > 1) never write the same cache dir.
+CACHE_VOLUME_BASE="${REPOOS_CACHE_VOLUME:-repoos-bun-cache}"
 IMAGE="${REPOOS_CI_IMAGE:-repoos-ci}"
+
+# Remove containers left by finished/killed runs — a `docker run --rm` that was
+# SIGKILLed (ssh dropped, host rebooted) leaves its container behind (#0729).
+# Only NOT-RUNNING containers (status=created|exited|dead) are swept: this run
+# may start while a sibling run on the same host (maxConcurrent > 1) is still
+# executing, and removing that one would be a false hang kill.
+docker ps -aq --filter "name=repoos-validate-" \
+  --filter status=created --filter status=exited --filter status=dead 2>/dev/null \
+  | xargs -r docker rm -f >/dev/null 2>&1 || true
 
 # Clean up any stale work dirs from crashed/killed previous runs.  Old
 # validate.sh ran Docker as uid 1000, leaving files that the SSH user could
@@ -60,9 +77,22 @@ find "$HOME/.repoos-artifacts" -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec r
 _rvcleanup() {
   # All files are created by the SSH user's uid (--user flag on the Docker
   # run below), so a plain rm is sufficient — no chown container needed.
+  # Kill THIS run's container too: a signal (or a runner-side hang kill that
+  # races our exit) must not leave it running (#0729).
+  docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
   rm -rf "$WORK" "$BUNDLE"
 }
 trap _rvcleanup EXIT
+
+# The host-lock wrapper exports the acquired slot index as REPOOS_SLOT (#0729);
+# a standalone run has no slot and uses the base volume.
+SLOT="${REPOOS_SLOT:-0}"
+case "$SLOT" in ""|*[!0-9]*) SLOT=0 ;; esac
+if [ "$SLOT" = "0" ]; then
+  CACHE_VOLUME="$CACHE_VOLUME_BASE"
+else
+  CACHE_VOLUME="${CACHE_VOLUME_BASE}-slot${SLOT}"
+fi
 
 if [ -n "$MIRROR" ]; then
   # ── incremental path (#0717) ──────────────────────────────────────────────
@@ -128,6 +158,7 @@ docker run --rm -v "$CACHE_VOLUME":/bun-cache -u 0 "$IMAGE" \
 
 set +e
 docker run --rm \
+  --name "$CONTAINER" \
   -v "$WORK/repo":/repo \
   -v "$CACHE_VOLUME":/bun-cache \
   -v "$ART":/artifacts \

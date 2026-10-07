@@ -1964,7 +1964,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "audited in the bell). restart-stalled-agent restarts a dead active engineer with the " +
         "last failure text. refresh-main-install runs the lockfile install in main. " +
         "requeue-closeout-after-env-fix refreshes main and re-queues a failed close-out when " +
-        "the failure was environmental. Empty means report-only.",
+        "the failure was environmental. kill-hung-validation removes a remote validation run's " +
+        "container when its output stalled on an idle host (the run then retries on another " +
+        "host). Empty means report-only.",
     },
     {
       key: "skillSuggestions",

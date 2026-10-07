@@ -2016,6 +2016,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       emitEvent,
       triggerJobProcessing,
       reportedStages,
+      remoteValidator,
     }),
   );
   // Run the monitor cadence unconditionally: `checkNow` no-ops while the CTO
