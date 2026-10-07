@@ -38,6 +38,7 @@ import {
   commitTaskFile,
   commitDirtyFiles,
   mergeBranch,
+  mainDirtyFilesForCloseOut,
   dirtyFiles,
   uncommittedWorkFiles,
   workFileFilter,
@@ -2177,7 +2178,7 @@ export class CloseOutOrchestrator {
       // "clean", so we never merge blindly.
       let dirtyOnMain: string[];
       try {
-        dirtyOnMain = await dirtyFiles(root);
+        dirtyOnMain = await mainDirtyFilesForCloseOut(root, this.config);
       } catch (err) {
         if (err instanceof GitDirtyCheckError) {
           return {
@@ -2187,14 +2188,6 @@ export class CloseOutOrchestrator {
         }
         throw err;
       }
-      // The configured cache is entirely RepoOS runtime state: locks, job
-      // checkpoints, logs, and the local database. It must never block a
-      // publish, including for older projects whose cache was accidentally
-      // committed before their ignore rule was corrected. Fall back to the
-      // documented default when a partial config omits it (loadConfig always
-      // fills it; a hand-built fixture may not).
-      const cachePrefix = `${(this.config.cacheDir ?? ".repoos").replace(/\/+$/, "")}/`;
-      dirtyOnMain = dirtyOnMain.filter((path) => !path.startsWith(cachePrefix));
       const handoffGuard = await this.assertHandoffWorktreeUnchanged(job);
       if (!handoffGuard.ok) {
         return { ok: false, reason: handoffGuard.reason };

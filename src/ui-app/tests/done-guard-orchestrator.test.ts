@@ -124,6 +124,49 @@ describe("publish-time dirty-main guard (#0211)", () => {
     }
   });
 
+  it("publishes when the only dirty files on main are shot captures under work/.attachments (#0713)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, "work"), { recursive: true });
+      const branch = "repoos/integrate/T-shot";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T-shot", branch } as any);
+      coordinator.updateJob("T-shot", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
+
+      const shotDir = join(root, "work", ".attachments", "0599", "shots");
+      mkdirSync(shotDir, { recursive: true });
+      writeFileSync(join(shotDir, "default-1.png"), "png\n");
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      expect(result.ok).toBe(true);
+      expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
+    } finally {
+      clean();
+    }
+  });
+
   it("auto-checkpoints and publishes when the only dirty files are task bookkeeping under work/ (#0271 follow-up)", async () => {
     // Confirmed live: #0293's close-out was refused at publish time because
     // an UNRELATED task's work/*.md file — a routine activity-log stamp —
