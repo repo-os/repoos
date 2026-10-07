@@ -2,7 +2,7 @@
 id: "0692"
 title: Resolve integration conflicts without restarting the full engineering and review cycle
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/resolve-integration-conflicts-without-re
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:52:38Z"
-updated_at: "2026-10-07T17:52:21Z"
+updated_at: "2026-10-07T17:58:40Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -271,3 +271,4 @@ error: script "test" exited with code 1
 - 2026-10-07T17:49:13Z · body
 - 2026-10-07T17:50:55Z · body
 - 2026-10-07T17:52:21Z · body
+- 2026-10-07T17:58:40Z · status active→review
