@@ -2,7 +2,7 @@
 id: "0696"
 title: "Stories without the PM: `repoos story` CLI and an API create that writes exactly what it is given"
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/stories-without-the-pm-repoos-story-cli-
 created_at: "2026-10-06T03:15:42Z"
-updated_at: "2026-10-07T19:23:17Z"
+updated_at: "2026-10-07T19:29:02Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 30a982bbba860d2ef236967725ba77ad5f30d347
 ---
@@ -114,3 +114,4 @@ error: script "test" exited with code 1
    Duration  2.78s (transform 1.18s, setup 13ms, import 1.48s, tests 768ms, environment 441ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T19:29:02Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/story-cli-and-verbatim-api.test.ts:358:37 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
