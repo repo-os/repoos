@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T01:25:57.253Z: server-side finalization timed out (deadline exceeded)"
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
@@ -112,3 +114,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T01:11:50Z · body: section Shots
 - 2026-10-07T01:15:21Z · body
 - 2026-10-07T01:18:16Z · body: section Shots
+
