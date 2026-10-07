@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/detect-and-recover-hung-validation-conta
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T05:12:43Z"
+updated_at: "2026-10-07T05:15:31Z"
 ---
 ## Problem
 
@@ -70,3 +70,4 @@ The hang recovery (kill that run's container, retry once on another host) is a C
 - 2026-10-07T05:10:41Z · note: CONFIRMED CURRENT ROOT CAUSE05:09: installed validate.sh and main scripts/remote-runner/validate.sh lines46-53 startup loops ALL $HOME/.repoos-validate.* and rm-rf each without checking livecontainers. A concurrent/new run deletes another ACTIVE /repo mount. Current733containerb661fb4c38ee artifact0733-a4cab256 /home/nick/.repoos-validate.2DVaje/repo: initially installed422deps/build/tests, then forks.jsmissing; dockerexec-w/tmp ls shows /repo empty and node_modules absent. Earlier712dockerexec failedcwdoutside mount. This is strong directevidence of working-directory deletion, NOT proofshared-cache corruption. Include regression concurrentrunB startup preservesactiveA workspace. Ownerauthorizedoperationalrecovery; driverpreparingbackup+disableunsafeinstalledstartup sweep only, retainownrunEXITcleanup; no source/maincommit.
 - 2026-10-07T05:11:51Z · body
 - 2026-10-07T05:12:43Z · body: section Shots
+- 2026-10-07T05:15:31Z · note: Owner installed emergencybee fix05:15 verified sha2560801359952ad988407de02eaf448a353409eb18a6ef6b90bbf74904aaa2bb345 andbash-nPASS. RemovedunsafeALLworkspace startup sweep, ownrunEXITcleanup retained; backup /opt/repoos/validate.sh.before-recovery-20261007. Thisoperationalguard MUSTland in source via729 withconcurrentactiveworkspace regression, not be overwrittenbyunfixedrunnerrefresh. Thinkpad/mini notchanged (exactauthorization/sudo pending). Current712controlledrunonbee started05:12 butcancelledflagtrue; letitend,noflagclearing/requeuewhilealive.733previousfailedterminal, onecontrolledretryqueuedafterfix.
