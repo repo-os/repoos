@@ -1362,6 +1362,8 @@ const doneLabel = computed(() => {
   switch (step) {
     case "merge":
       return "Merging branch…";
+    case "resolve-conflict":
+      return "Resolving integration conflict…";
     case "build":
       return "Building…";
     case "check":
