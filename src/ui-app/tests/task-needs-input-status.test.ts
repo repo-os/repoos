@@ -435,7 +435,7 @@ describe("agent questions needs_input (#0566)", () => {
     const textarea = wrapper.find('textarea[aria-label="Message PM"]');
     expect((textarea.element as HTMLTextAreaElement).value).toBe("");
     await textarea.setValue("Postgres with migrations.");
-    await wrapper.find("form.pm-compose").trigger("submit.prevent");
+    await wrapper.find("form.ai-chat-compose").trigger("submit.prevent");
     await flush();
 
     expect(posts).toHaveLength(1);
@@ -505,7 +505,7 @@ describe("agent questions needs_input (#0566)", () => {
     await flush();
     const textarea = wrapper.find('textarea[aria-label="Message PM"]');
     await textarea.setValue("Reply on task B only.");
-    await wrapper.find("form.pm-compose").trigger("submit.prevent");
+    await wrapper.find("form.ai-chat-compose").trigger("submit.prevent");
     await flush();
 
     expect(posts).toHaveLength(1);
@@ -572,7 +572,7 @@ describe("agent questions needs_input (#0566)", () => {
     await flush();
     const textarea = wrapper.find('textarea[aria-label="Message PM"]');
     await textarea.setValue("Answer for task A.");
-    const sendPromise = wrapper.find("form.pm-compose").trigger("submit.prevent");
+    const sendPromise = wrapper.find("form.ai-chat-compose").trigger("submit.prevent");
     await flush();
 
     ui.open(taskB);
