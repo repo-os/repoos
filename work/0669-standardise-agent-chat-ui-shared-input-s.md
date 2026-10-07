@@ -1,16 +1,16 @@
 ---
-handoff_signal_retry_count: 2
 id: "0669"
 title: "Standardise agent chat UI: shared input style, markdown replies, simplified headers with inline agent+model picker"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/standardise-agent-chat-ui-shared-input-s
 created_at: "2026-10-05T15:01:24Z"
-updated_at: "2026-10-07T17:17:27Z"
+updated_at: "2026-10-07T17:24:39Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 
@@ -47,5 +47,4 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 - 2026-10-05T22:32:55Z · status inbox→ready
 - 2026-10-07T17:06:44Z · status ready→active, branch
 - 2026-10-07T17:17:27Z · body
-
-
+- 2026-10-07T17:24:39Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
