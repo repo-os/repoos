@@ -2,17 +2,18 @@
 id: "0710"
 title: "Docs: write the overnight-run lessons (provider-failure scraper, self-check starvation, driver tips) into the repo"
 type: chore
-status: review
+status: done
 priority: p2
 area: docs
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 782b40806e09b6c073461c588140509cb5f84739
 assigned_to: ai
 created_by: ""
 branch: feat/docs-write-the-overnight-run-lessons-pro
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T08:37:40Z"
-updated_at: "2026-10-07T01:38:22Z"
+updated_at: "2026-10-07T02:55:19Z"
 ---
 ## Problem
 
@@ -39,3 +40,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-07T01:16:17Z · status inbox→ready
 - 2026-10-07T01:16:22Z · status ready→active, branch
 - 2026-10-07T01:38:22Z · status active→review
+- 2026-10-07T02:55:19Z · status review→done, release:success
