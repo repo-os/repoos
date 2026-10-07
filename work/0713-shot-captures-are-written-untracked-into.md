@@ -11,7 +11,7 @@ branch: feat/shot-captures-are-written-untracked-into
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:53Z"
-updated_at: "2026-10-07T00:17:05Z"
+updated_at: "2026-10-07T00:17:40Z"
 last_check_failure: "repoos check at 2026-10-07T00:10:23.966Z: repoos check failed: ⏭ user-docs-build — skipped — no changed path matches user-docs/** · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transpa… (truncated)"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 25. Captures should be gitignored/ignored by the dirty-main check.
@@ -39,3 +39,4 @@ VERIFY FIRST: in this repo .gitignore already ignores work/.attachments/ and inp
 - 2026-10-07T00:17:04Z · status active→review
 - 2026-10-07T00:17:04Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria, Notes for AI
 - 2026-10-07T00:17:05Z · note: shots: skipped — the diff (9 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T00:17:40Z · note: review pass 1: good to go
