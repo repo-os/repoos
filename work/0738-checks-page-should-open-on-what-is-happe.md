@@ -1,0 +1,35 @@
+---
+id: "0738"
+title: "Checks page should open on what is happening now (live runs), not the static Check plan tab"
+type: feature
+status: inbox
+priority: p1
+area: web
+story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+assigned_to: ai
+created_by: ""
+branch: ""
+created_at: "2026-10-07T14:04:03Z"
+updated_at: "2026-10-07T14:04:03Z"
+---
+## Problem
+
+Opening Checks lands on the 'Check plan' tab (src/ui-app/src/views/ChecksView.vue, default tab 'plan'), which is static configuration. The thing a person (or the CTO's escalations) needs on that page is what is running and what is queued right now: remote runs per host, the close-out queue, hung/slow runs. The owner had to click through to 'Remote runners' to see why close-outs were stuck.
+
+## Desired UX
+
+- The default tab is the live view. If anything is running, queued, hung or slow (remote runs, close-out pipeline, local checks), open on a live tab that shows it (Remote runners today; consider one 'Now' tab combining the close-out pipeline stage + queue + runner hosts + latest runs). If nothing is in flight, open on 'Runs' (the recent history), never on the static plan.
+- 'Check plan' and 'Test suite' stay available as secondary tabs; `?tab=plan` still deep-links. Remember nothing in localStorage that overrides a deep link.
+- The live tab shows the close-out pipeline (active task, stage, queued task ids) at the top so 'I clicked Move to done on three tasks, where are they?' is answered on the page, including 'waiting behind #0737 which is validating on thinkpad'.
+
+## Acceptance criteria
+
+- Tests: default tab is live when something is in flight, Runs when idle, deep links keep working; the pipeline strip renders active + queue. Uses the shared components. repoos check passes.
+
+## Notes for AI
+
+Read ChecksView.vue and the Remote runners panel (RemoteRunnersPanel.vue); the close-out pipeline snapshot is GET /api/integration/pipeline. Related: #0720, #0730.
+
+## Activity
+
+- 2026-10-07T14:04:03Z · created · unknown
