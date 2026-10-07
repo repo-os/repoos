@@ -2,14 +2,14 @@
 id: "0669"
 title: "Standardise agent chat UI: shared input style, markdown replies, simplified headers with inline agent+model picker"
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/standardise-agent-chat-ui-shared-input-s
 created_at: "2026-10-05T15:01:24Z"
-updated_at: "2026-10-05T22:32:55Z"
+updated_at: "2026-10-07T17:06:44Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 
 - 2026-10-05T15:01:24Z · created · unknown
 - 2026-10-05T22:32:55Z · status inbox→ready
+- 2026-10-07T17:06:44Z · status ready→active, branch
