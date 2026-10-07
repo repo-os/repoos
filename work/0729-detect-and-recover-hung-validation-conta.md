@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/detect-and-recover-hung-validation-conta
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T05:31:56Z"
+updated_at: "2026-10-07T05:31:57Z"
 ---
 ## Problem
 
@@ -95,3 +95,4 @@ error: script "test" exited with code 1 — fix it in the feature branch and re-
 - 2026-10-07T05:26:56Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) — "" · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-07T05:26:57Z · status review→active
 - 2026-10-07T05:31:56Z · status active→review
+- 2026-10-07T05:31:57Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
