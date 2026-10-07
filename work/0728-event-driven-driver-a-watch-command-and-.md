@@ -2,7 +2,7 @@
 id: "0728"
 title: "Event-driven CTO: react to server events instead of a timer, and expose the same feed as a watch command for external sessions"
 type: feature
-status: active
+status: ready
 priority: p1
 area: [cli, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/event-driven-cto-react-to-server-events-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:33Z"
-updated_at: "2026-10-07T09:46:37Z"
+updated_at: "2026-10-07T10:43:12Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ The CTO monitor wakes on ctoMonitorIntervalMs (a timer; 5 min here). Move it to 
 - 2026-10-07T09:11:18Z · status inbox→ready
 - 2026-10-07T09:46:37Z · cli_override, model_override
 - 2026-10-07T09:46:37Z · status ready→active, branch
+- 2026-10-07T10:43:12Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
