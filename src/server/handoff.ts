@@ -251,6 +251,15 @@ export interface HandoffSink {
   previews?: PreviewManager;
   /** Optional task log sink for UI verification lines. */
   onTaskLog?: (taskId: string, level: LogLevel, message: string) => void;
+  /**
+   * Fires once the task is durably in `review` on the canonical board copy,
+   * before post-handoff housekeeping (underspecified notes, worktree protection
+   * recording). Callers use this to drop an in-flight handoff marker while
+   * those best-effort steps still run — otherwise a fast automatic review can
+   * finish and a human can ask to hand off again while the slot is still held
+   * (#0737).
+   */
+  onHandoffSlotReleased?: () => void;
 }
 
 /** Options for the non-capability entry point (`finalizeReviewHandoff`). */
@@ -446,6 +455,7 @@ async function runHandoffFinalization(
   const handoffDeadlineAt = Date.now() + HANDOFF_DEADLINE_MS;
 
   if (task.status === "review" && worktreeTask.status === "review") {
+    opts.onHandoffSlotReleased?.();
     onProgress?.("done");
     return { ok: true, step: "done", detail: "handoff was already finalized" };
   }
@@ -697,6 +707,8 @@ async function runHandoffFinalization(
       return fail("main", `could not update the canonical task: ${(error as Error).message}`);
     }
   }
+
+  opts.onHandoffSlotReleased?.();
 
   // #0613: at handoff-to-review, surface an underspecified body as a visible
   // activity note — never needs_input here (that would fight review dismissals
