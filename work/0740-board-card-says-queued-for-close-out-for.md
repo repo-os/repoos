@@ -12,7 +12,7 @@ branch: feat/board-card-says-queued-for-close-out-for
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:13:12Z"
-updated_at: "2026-10-07T16:32:03Z"
+updated_at: "2026-10-07T16:33:06Z"
 ---
 ## Problem
 
@@ -31,6 +31,24 @@ updated_at: "2026-10-07T16:32:03Z"
 
 Read TaskCard.vue (pipelineStage, inPipeline computed), the pipeline bar, and src/server integration snapshot. Related: #0738, #0720.
 
+## Shots
+```json
+[
+  {
+    "label": "Board cards distinguish active integrating vs queued close-out",
+    "target": "default",
+    "route": "/",
+    "highlight": ".task-card .tc-hint.tc-moving"
+  },
+  {
+    "label": "Integration bar stall actions when close-out hangs",
+    "target": "default",
+    "route": "/",
+    "highlight": ".ibar-wrap"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-07T14:13:12Z · created · unknown
@@ -38,3 +56,4 @@ Read TaskCard.vue (pipelineStage, inPipeline computed), the pipeline bar, and sr
 - 2026-10-07T16:24:57Z · status inbox→ready
 - 2026-10-07T16:24:58Z · status ready→active, branch
 - 2026-10-07T16:32:03Z · body
+- 2026-10-07T16:33:06Z · body: section Shots
