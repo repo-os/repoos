@@ -1526,10 +1526,16 @@ async function triageIsolatedFailures(
 
 async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   // The close-out pipeline can hand the suite to the Remote Validation Runner
-  // and then run only the cheap local guards (REPOOS_SKIP_TESTS=1).
+  // and then run only the cheap local guards (REPOOS_SKIP_TESTS=1), or reuse a
+  // handoff-proven result entirely (#0724). Either way the step is skipped —
+  // say which, so the Checks tab is not misleading.
   if (process.env.REPOOS_SKIP_TESTS === "1") {
+    const reuseNote = process.env[REPOOS_CHECK_GATE_NOTE]?.trim();
+    const viaReuse = reuseNote ? /reus|identical|bookkeeping/i.test(reuseNote) : false;
     return skipped(
-      "skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)",
+      viaReuse
+        ? `skipped — full suite reused from the handoff gate (${reuseNote})`
+        : "skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)",
     );
   }
   const hasTestScript = Boolean(ctx.scriptPkg.scripts?.test);

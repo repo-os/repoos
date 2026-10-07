@@ -302,7 +302,7 @@ latest green full pre-review run) and picks a mode from `closeOut.gate`
 
 | Mode | When | What runs |
 | --- | --- | --- |
-| **reuse** | The candidate tree is identical to the handoff-tested tree, or main advanced with bookkeeping only (`work/`, `inputs/`, `stories/`, `dist/`) | Cheap steps only; the tests step records `skipped` and the run detail says the full suite was reused |
+| **reuse** | The candidate tree is identical to the handoff-tested tree, or main advanced with bookkeeping only (`work/`, `inputs/`, `stories/`, `dist/`) | Cheap steps only; the tests step records `skipped — full suite reused from the handoff gate` |
 | **scoped** | Main advanced with real code | The full profile, with the tests step scoped to `--changed <tested base>` (#0695), locally and on the runner |
 | **full** | `closeOut.gate = full`, a declared `[[check.fullSuitePaths]]` prefix changed, or a release | The whole suite, as before |
 
@@ -311,11 +311,13 @@ prefixes that always force the full suite — machinery the changed-path scoping
 cannot reason about, such as a CI pipeline or the check engine's own config.
 
 A **scoped** run that fails is re-run once as the identical **full** suite
-before the close-out fails, so scoping can cost time but never correctness.
-Without a recorded tested tree (no remote validation, or no green full
-pre-review run) there is nothing to reuse and no base to scope against, so the
-close-out runs the full suite exactly as before. The Checks → Runs tab shows the
-chosen mode and why in the run's detail.
+before the close-out fails — on the runner (dropping the changed ref) and
+locally — so scoping can cost time but never correctness. Without a recorded
+tested tree (no remote validation, or no green full pre-review run) there is
+nothing to reuse and no base to scope against, so the close-out runs the full
+suite exactly as before. The Checks → Runs tab shows the chosen mode and why in
+the run's detail; a reused suite's tests step reads
+`skipped — full suite reused from the handoff gate`.
 
 ### Cross-cutting steps
 

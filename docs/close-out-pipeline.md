@@ -347,9 +347,11 @@ Releases and branch-less releases always run the full suite. Without a recorded
 tested tree (no remote validation, or no green full pre-review run) there is
 nothing to reuse and no base to scope against, so the close-out runs the full
 suite exactly as before. A **scoped** run that fails is not proof the branch is
-broken: the close-out re-runs the identical full suite once before failing, so
-a scoped miss costs time, never correctness. The run's `detail` in the Checks
-tab records the mode and why (`REPOOS_CHECK_GATE_NOTE`).
+broken: the close-out re-runs the identical full suite once before failing — on
+the runner (dropping `changedRef`) and locally (dropping `REPOOS_CHECK_CHANGED`)
+— so a scoped miss costs time, never correctness. The run's `detail` in the
+Checks tab records the mode and why (`REPOOS_CHECK_GATE_NOTE`), and a reused
+suite's tests step reads `skipped — full suite reused from the handoff gate`.
 
 **Diagnosing a `check failed: ...` reason (#0428):** the reason now leads with the
 gate's own `── Results ──` summary — which checks failed (`✗ check-fmt:check`,

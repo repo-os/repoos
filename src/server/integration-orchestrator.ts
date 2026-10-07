@@ -1546,7 +1546,6 @@ export class CloseOutOrchestrator {
       config: this.config,
     });
   }
-
   /**
    * Merge the feature branch into the candidate, then run the gate on it.
    *
@@ -1943,25 +1942,55 @@ export class CloseOutOrchestrator {
       // only the cheap local steps. Scoped runs pass `--changed <tested base>`
       // so the runner exercises just the affected tests.
       const reuseRemoteTests = gatePlan?.reuseTests === true;
-      if (
-        hasBuildStep &&
-        !reuseRemoteTests &&
-        this.remoteValidator &&
-        this.config.remoteValidation?.enabled
-      ) {
+      const remoteGateEnabled =
+        hasBuildStep && this.remoteValidator && this.config.remoteValidation?.enabled;
+      // Set when a scoped remote run failed and its full-suite retry succeeded:
+      // the local cheap checks must then also run unscoped, or they would
+      // disagree with what the runner actually verified.
+      let remoteScopedFellBackToFull = false;
+      if (remoteGateEnabled && !reuseRemoteTests) {
         this.onProgress?.("check");
-        remoteGateOutcome = await runRemotePreReviewGate({
-          config: this.config,
-          remoteValidator: this.remoteValidator,
-          worktreePath: wtPath,
-          taskId: job.taskId,
-          phase: "close-out",
-          ...(gatePlan?.scoped && gatePlan.changedRef ? { changedRef: gatePlan.changedRef } : {}),
-          // The pool queue and a stuck SSH session must spend the SAME budget
-          // as the rest of the pipeline (#0573 → #0521's queue-deadline path):
-          // without this, remote validation could sit past any local cap.
-          ...(deadlineAt !== undefined ? { deadlineAt } : {}),
-        });
+        const runRemoteGate = (changedRef?: string) =>
+          runRemotePreReviewGate({
+            config: this.config,
+            remoteValidator: this.remoteValidator!,
+            worktreePath: wtPath,
+            taskId: job.taskId,
+            phase: "close-out",
+            ...(changedRef ? { changedRef } : {}),
+            // The pool queue and a stuck SSH session must spend the SAME budget
+            // as the rest of the pipeline (#0573 → #0521's queue-deadline path):
+            // without this, remote validation could sit past any local cap.
+            ...(deadlineAt !== undefined ? { deadlineAt } : {}),
+          });
+
+        const scopedRemoteRef =
+          gatePlan?.scoped && gatePlan.changedRef ? gatePlan.changedRef : undefined;
+        remoteGateOutcome = await runRemoteGate(scopedRemoteRef);
+
+        // #0724 escape hatch, remote half: a SCOPED remote run that fails on a
+        // real (non-transient) red suite is not proof the branch is broken — it
+        // only says the affected tests failed, and the runner stops before the
+        // local check would. Retry once WITHOUT `changedRef` (the full suite on
+        // the runner) before failing the close-out, mirroring the local path. A
+        // transient infra failure keeps its existing retryable resume-from-check
+        // handling, and a genuine full-run failure still fails.
+        if (
+          remoteGateOutcome.kind === "fail" &&
+          scopedRemoteRef &&
+          !remoteGateOutcome.retryable &&
+          !this.pipelineTimedOut(job)
+        ) {
+          this.logger?.integration(
+            job.taskId,
+            "warn",
+            "scoped remote close-out gate failed — re-running the full suite once on the runner before failing the close-out",
+            { detail: remoteGateOutcome.detail },
+          );
+          remoteGateOutcome = await runRemoteGate();
+          remoteScopedFellBackToFull = remoteGateOutcome.kind !== "fail";
+        }
+
         if (remoteGateOutcome.kind === "fail") {
           return {
             ok: false,
@@ -2053,12 +2082,20 @@ export class CloseOutOrchestrator {
           ...(reuseRemoteTests ? { REPOOS_SKIP_TESTS: "1" } : {}),
           // Scoped: the local cheap guards still run against the same changed
           // base the runner used, so a change that breaks a static guard is
-          // caught here even when the test step is scoped.
-          ...(gatePlan?.scoped && gatePlan.changedRef
+          // caught here even when the test step is scoped. When a scoped remote
+          // run already fell back to the full suite, run the local checks
+          // unscoped too so both halves describe the same scope (#0724 review).
+          ...(gatePlan?.scoped && gatePlan.changedRef && !remoteScopedFellBackToFull
             ? { REPOOS_CHECK_CHANGED: gatePlan.changedRef }
             : {}),
           // #0724: record which gate mode ran and why in the run history.
-          ...(gatePlan ? { REPOOS_CHECK_GATE_NOTE: gatePlan.reason } : {}),
+          ...(gatePlan
+            ? {
+                REPOOS_CHECK_GATE_NOTE: remoteScopedFellBackToFull
+                  ? "scoped remote gate failed — re-ran the full suite once before the local checks"
+                  : gatePlan.reason,
+              }
+            : {}),
           // Identify the caller to the check-run history (#0564): the child
           // records its own completed run in THIS repo's store.
           REPOOS_CHECK_TASK_ID: job.taskId,
@@ -2067,8 +2104,11 @@ export class CloseOutOrchestrator {
         };
         const baseCheckArgs = spawnedRepoosCheckArgs(this.config, remoteGateOutcome);
         // #0724: a scoped run drops `--changed` for its fallback full pass; a
-        // reuse run keeps the `REPOOS_SKIP_TESTS` env and no changed ref.
-        const scopedRef = gatePlan?.scoped ? gatePlan.changedRef : undefined;
+        // reuse run keeps the `REPOOS_SKIP_TESTS` env and no changed ref. A
+        // remote scoped failure that already retried as full is treated the
+        // same — the local pass must not re-scope what the runner ran in full.
+        const scopedRef =
+          gatePlan?.scoped && !remoteScopedFellBackToFull ? gatePlan.changedRef : undefined;
         const localCli = join(wtPath, "dist", "cli", "index.js");
         const localCliPresent = existsSync(localCli);
         const checkHandle =
