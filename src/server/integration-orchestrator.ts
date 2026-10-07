@@ -2682,10 +2682,11 @@ export class CloseOutOrchestrator {
         // blind auto-commit. All three dirs are server-written main-owned
         // bookkeeping, so a dirty moment there is the same routine churn as a
         // task file (#0726).
+        const churnDirs = bookkeepingDirs(this.config);
         const bookkeepingDirsForChurn = [
-          bookkeepingDirs(this.config).workDir,
-          bookkeepingDirs(this.config).inputsDir,
-          bookkeepingDirs(this.config).storiesDir,
+          churnDirs.workDir,
+          churnDirs.inputsDir,
+          churnDirs.storiesDir,
         ].map(withDirSlash);
         const isSafeChurn = (p: string): boolean =>
           bookkeepingDirsForChurn.some((prefix) => p.startsWith(prefix)) || p === "repoos.toml";
