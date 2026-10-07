@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
-updated_at: "2026-10-07T16:19:15Z"
+updated_at: "2026-10-07T16:22:18Z"
 ---
 ## Problem
 
@@ -33,6 +33,32 @@ Also, that message was STALE: it came from an earlier failed close-out attempt (
 
 Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fix action) and its styles; follow the AGENTS.md conventions (shared components, no native title tooltips). This is an easter eggs bundle: keep each item as its own small commit. Related: #0740 (card label for the integrating job); do not duplicate it.
 
+## Shots
+```json
+[
+  {
+    "label": "Board card flush square done-error footer (light)",
+    "target": "default",
+    "route": "/",
+    "highlight": ".task-card[data-status=review] .tc-card-footer, .task-card .tc-done-error"
+  },
+  {
+    "label": "Board card done-error footer (dark)",
+    "target": "default",
+    "route": "/",
+    "highlight": ".task-card .tc-card-footer",
+    "steps": [
+      {
+        "click": "button[data-test-id=theme-toggle]"
+      },
+      {
+        "waitMs": 200
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-07T16:19:09Z · created · unknown
@@ -40,3 +66,4 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 - 2026-10-07T16:19:12Z · cli_override, model_override
 - 2026-10-07T16:19:14Z · status inbox→ready
 - 2026-10-07T16:19:15Z · status ready→active, needs_input, branch
+- 2026-10-07T16:22:18Z · body: section Shots
