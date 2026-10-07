@@ -73,3 +73,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T15:43:21Z · body
 - 2026-10-07T15:44:49Z · body
 - 2026-10-07T15:52:53Z · status active→review
+- 2026-10-07T15:52:53Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
