@@ -1,20 +1,21 @@
 ---
-last_close_out_gate_ms: 72902
-last_close_out_gate_at: "2026-10-07T18:28:32.585Z"
 id: "0740"
 title: Board card says 'queued for close-out' for the job that is actively integrating (stage not reported yet)
 type: bug
-status: review
+status: done
 priority: p2
 area: web
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: 7a909378599c69f55758968ea9cbe9b5f723f4a2
 assigned_to: ai
 created_by: ""
 branch: feat/board-card-says-queued-for-close-out-for
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:13:12Z"
-updated_at: "2026-10-07T18:28:32Z"
+updated_at: "2026-10-07T18:28:44Z"
+last_close_out_gate_ms: 72902
+last_close_out_gate_at: "2026-10-07T18:28:32.585Z"
 review_passes: 2
 close_out_repair_count: 1
 last_check_failure: "repoos check at 2026-10-07T18:07:41.275Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-hint.tc-moving matched nothing on / (captured http://127.0.0.1:60065/) (http://127.0.0.1:60065/); [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:60065/) (http://127.0.0.1:60065/)"
@@ -231,4 +232,4 @@ error: script "test" exited with code 1
 - 2026-10-07T18:25:37Z · status active→review
 - 2026-10-07T18:26:46Z · note: review pass 2: good to go
 - 2026-10-07T18:28:32Z · close-out gate completed in 73s
-
+- 2026-10-07T18:28:44Z · status review→done, release:success
