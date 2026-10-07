@@ -2,7 +2,7 @@
 id: "0739"
 title: "Hung validation run leaves a leaked host slot: 'HUNG · KILLING' never clears, and the run's bundle file is left on the host"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/hung-validation-run-leaves-a-leaked-host
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:05Z"
-updated_at: "2026-10-07T16:25:59Z"
+updated_at: "2026-10-07T16:26:48Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-07T16:16:48.550Z: repoos check failed: ⏭ user-docs-build — skipped — no changed path matches user-docs/** · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transpa… (truncated)"
 close_out_repair_count: 1
@@ -84,3 +84,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T16:08:38Z · body
 - 2026-10-07T16:16:45Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-07T16:25:59Z · body
+- 2026-10-07T16:26:48Z · status active→review
