@@ -3,9 +3,6 @@ id: "0579"
 title: Wire notarization and ticket stapling into the RepoOS Hub release workflow
 type: feature
 status: ready
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p1
 area: macos
 story: MacOS Native App
@@ -13,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:43:47Z"
-updated_at: "2026-10-07T15:47:01Z"
+updated_at: "2026-10-07T16:08:42Z"
 ---
 After the release app and its DMG are signed as specified by #0578, the macOS Hub release job must submit the DMG to Apple's notary service, wait for approval, staple Apple's ticket to that same DMG, and verify the result before attaching it to a GitHub Release. This completes the distribution path needed for Gatekeeper to trust the downloaded artifact, including offline verification from the stapled ticket.
 
@@ -59,3 +56,4 @@ There is no UI change in this task: users receive a notarized, stapled DMG, whil
 - 2026-10-07T14:00:10Z · needs_input
 - 2026-10-07T14:01:41Z · body
 - 2026-10-07T15:47:01Z · needs_input
+- 2026-10-07T16:08:42Z · needs_input
