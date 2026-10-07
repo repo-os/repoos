@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
-updated_at: "2026-10-07T10:14:25Z"
+updated_at: "2026-10-07T10:16:02Z"
 ---
 ## Problem
 
@@ -34,6 +34,18 @@ Close-out is not strictly redundant: the candidate is the branch MERGED with cur
 
 VERIFY the assumption first: confirm from src/server/integration-orchestrator.ts what the close-out validate step runs today and whether the candidate tree can be compared to the handoff-tested tree (lock sha, check_runs.candidate_sha in checks.db). If skipping is unsafe for some reason, say so in the task and implement only the scoped mode. Related: #0717 (smaller uploads), #0720 (slow-run alert), #0679 (close-out reliability), #0695 (scoped remote self-checks).
 
+## Implementation notes
+VERIFIED the assumption first: `validateCandidate` (src/server/integration-orchestrator.ts) ran the FULL plan at every close-out via `CLOSEOUT_CHECK_ARGS` (--profile full), and the handoff-tested tree IS recoverable — `check_runs.candidate_sha` in checks.db holds the exact SHA the latest green, full, remote pre-review run validated (#0694). So both reuse and scoping are safe to implement; no fallback to scoped-only was needed.
+
+What landed:
+- New pure decision module `src/core/close-out-gate.ts` (planCloseOutGate + touchedFullSuitePath) and `planCloseOutGateFromGit` (exported from integration-orchestrator) that compares the merged candidate TREE (git diff --quiet) against the tested tree and main's advance.
+- Modes: reuse (identical tree, or bookkeeping-only drift) → cheap steps only, tests step records skipped; scoped → `--changed <tested base>` locally (REPOOS_CHECK_CHANGED) and on the runner (changedRef); full → `closeOut.gate = full`, a `[[check.fullSuitePaths]]` prefix, or a release.
+- Scoped failure re-runs the identical full suite once before failing (bounded; the pipeline budget still gates it).
+- `check_runs.detail` records the mode and why via REPOOS_CHECK_GATE_NOTE, visible in Checks → Runs.
+- Settings → General → "Close-out gate scope" (select) and Advanced → "Always-full-suite paths" (array), plus docs (docs/close-out-pipeline.md, user-docs/check.md, user-docs/configuration.md, docs/contrast-audit.md).
+
+Timing: I could NOT measure real before/after close-out medians from this sandbox — the worktree has no `.repoos/checks.db` and I must not read the main checkout, so no historical close-out rows are available here. What I did measure is the mechanism's ceiling: this repo has 433 test files under src/ui-app/tests; a reuse close-out runs 0 of them (only build/lint/static guards), and a scoped close-out runs only the files the task's + main's changes affect. The concrete before/after medians still need a live board: compare `check_runs` close-out `duration_ms` before and after this lands (the run `scope`/`detail` now names the mode). I did not invent numbers for it.
+
 ## Activity
 
 - 2026-10-06T15:55:13Z · created · unknown
@@ -42,3 +54,4 @@ VERIFY the assumption first: confirm from src/server/integration-orchestrator.ts
 - 2026-10-07T10:11:18Z · body
 - 2026-10-07T10:12:50Z · body
 - 2026-10-07T10:14:25Z · body
+- 2026-10-07T10:16:02Z · body: section Implementation notes
