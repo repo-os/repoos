@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T18:07:41.275Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-hint.tc-moving matched nothing on / (captured http://127.0.0.1:60065/) (http://127.0.0.1:60065/); [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:60065/) (http://127.0.0.1:60065/)"
 id: "0740"
 title: Board card says 'queued for close-out' for the job that is actively integrating (stage not reported yet)
 type: bug
@@ -214,3 +216,4 @@ error: script "test" exited with code 1
 - 2026-10-07T17:59:39Z · body
 - 2026-10-07T18:01:13Z · body
 - 2026-10-07T18:07:38Z · note: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-hint.tc-moving matched nothing on / (captured http://127.0.0.1:60065/) (http://127.0.0.1:60065/); [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:60065/) (http://127.0.0.1:60065/)
+
