@@ -4339,7 +4339,7 @@ export class TailscaleRunner implements RemoteValidator {
         // summary `hung` so the caller retries on another host.
         let loadNow = Number.POSITIVE_INFINITY;
         let lastKnownLoadPerCpu: number | undefined;
-        let loadUnknownSince = Date.now();
+        let loadUnknownSince: number | undefined = Date.now();
         let gateFinished = false;
         let streamBuf = "";
         let abortMainRemote: (() => void) | undefined;
