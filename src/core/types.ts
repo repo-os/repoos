@@ -1541,7 +1541,16 @@ export interface AttentionConfig {
    * omitted disables the alert. Estimates are never counted (#0676).
    */
   spendAlertUsd?: number;
+  /**
+   * A running check/close-out/upload run is flagged when its elapsed time
+   * exceeds this multiple of the rolling median of recent passing runs of the
+   * same kind (#0720). Default 1.5.
+   */
+  slowRunMultiplier?: number;
 }
+
+/** Default `attention.slowRunMultiplier` (#0720). */
+export const DEFAULT_SLOW_RUN_MULTIPLIER = 1.5;
 
 /** Close-out (Move to done) pipeline budget (#0573). */
 export interface CloseOutConfig {

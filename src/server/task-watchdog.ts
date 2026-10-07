@@ -461,6 +461,15 @@ export class TaskWatchdog {
     }
   }
 
+  /**
+   * Wall time of the most recent watchdog tick, and its cadence (#0720) — so
+   * the slow-run detector can tell a genuine long run from a laptop that was
+   * asleep, using the same awake-time logic as the staleness watchdog (#0678).
+   */
+  awakeClock(): { lastTickMs: number; intervalMs: number } {
+    return { lastTickMs: this.lastWatchdogTickMs, intervalMs: WATCHDOG_INTERVAL_MS };
+  }
+
   /** Run one full scan now (used by the timer and by tests). */
   async checkNow(): Promise<void> {
     if (this.canRun && !this.canRun()) return;
