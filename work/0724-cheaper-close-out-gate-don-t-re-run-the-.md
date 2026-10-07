@@ -2,7 +2,7 @@
 id: "0724"
 title: "Cheaper close-out gate: don't re-run the full suite on what the handoff gate already proved"
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
-updated_at: "2026-10-07T11:59:43Z"
+updated_at: "2026-10-07T12:00:04Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T10:26:38.467Z: repoos check failed: build complete in 3.72s. · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-ico… (truncated)"
@@ -98,3 +98,4 @@ Still open by design: reuse requires a recorded green FULL pre-review row (no re
 - 2026-10-07T11:58:10Z · body
 - 2026-10-07T11:59:31Z · body: section Review round 2
 - 2026-10-07T11:59:43Z · body: section Review round 2
+- 2026-10-07T12:00:04Z · status active→review
