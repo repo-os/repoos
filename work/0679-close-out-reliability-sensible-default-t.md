@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T02:59:34.698Z: server-side finalization timed out (deadline exceeded)"
 id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
@@ -18,7 +20,6 @@ last_handoff_failure_sha: 404c1109cf8aa78b7446c56733747d534bb744ae
 merge_conflict_retry_count: 2
 review_passes: 2
 handoff_signal_retry_count: 1
-last_check_failure: "repoos check at 2026-10-06T03:42:59.088Z: ui verification failed (1 issue(s)): [pageerror] No identifiers allowed directly after numeric literal"
 dev_error_count: 11
 ---
 ## Problem
@@ -127,3 +128,4 @@ error: script "test" exited with code 1
 - 2026-10-07T02:44:07Z · body
 - 2026-10-07T02:45:48Z · body
 - 2026-10-07T02:50:35Z · needs_input
+
