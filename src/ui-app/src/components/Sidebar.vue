@@ -48,15 +48,20 @@ onBeforeUnmount(() => {
 
 const version = computed(() => (health.value?.version ? `v${health.value.version}` : ""));
 const nav = computed(() => navFromConfig(config.data));
-const age = computed(() => relTime(health.value?.buildAt ?? null, new Date(now.value)));
+// Prefer the running server's OWN build timestamp (`serverBuildAt`), falling
+// back to `buildAt` for servers too old to report it — the same build the
+// hash/version beside it names, so the widget never mixes two different builds
+// (#0701).
+const serverBuildAt = computed(() => health.value?.serverBuildAt ?? health.value?.buildAt ?? null);
+const age = computed(() => relTime(serverBuildAt.value, new Date(now.value)));
 /** Short server build hash (`serverBuildHash`, falling back to `buildHash`). */
 const buildHash = computed(() =>
   (health.value?.serverBuildHash ?? health.value?.buildHash ?? "").slice(0, 7),
 );
 const buildTitle = computed(() => {
   const hash = health.value?.serverBuildHash ?? health.value?.buildHash ?? null;
-  const built = health.value?.buildAt
-    ? `Built ${new Date(health.value.buildAt).toLocaleString()}`
+  const built = serverBuildAt.value
+    ? `Built ${new Date(serverBuildAt.value).toLocaleString()}`
     : "Build info unavailable";
   return hash ? `${built} · build ${hash}` : built;
 });
