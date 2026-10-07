@@ -37,3 +37,4 @@ VERIFY FIRST: in this repo .gitignore already ignores work/.attachments/ and inp
 - 2026-10-07T00:14:14Z · body
 - 2026-10-07T00:16:04Z · body
 - 2026-10-07T00:17:04Z · status active→review
+- 2026-10-07T00:17:04Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria, Notes for AI
