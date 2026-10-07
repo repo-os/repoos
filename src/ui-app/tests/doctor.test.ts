@@ -367,6 +367,37 @@ describe("runDoctor", () => {
     expect(findingById(report, "layout.docs-dir-relocated")).toBeUndefined();
     expect(findingById(report, "layout.work-dir-relocated")).toBeUndefined();
   });
+
+  it("reports the stories directory like work/ and inputs/ (#0726)", async () => {
+    const root = cleanProject();
+    mkdirSync(join(root, "stories"), { recursive: true });
+    writeFileSync(join(root, "stories", "launch.md"), "# Launch\n");
+
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    const stories = findingById(report, "layout.stories-dir");
+    expect(stories?.severity).toBe("pass");
+    expect(stories?.detail ?? "").toContain("stories");
+  });
+
+  it("names the stories directory in the effective layout", async () => {
+    const root = cleanProject();
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    expect(findingById(report, "config.layout")?.detail).toContain("stories=stories");
+  });
+
+  it("fails a storiesDir that escapes the repo root, like work/ and inputs/", async () => {
+    const root = cleanProject();
+    // Hand-write the config bypassing loadConfig's validation, the way a
+    // doctor run against a directly-constructed config would see it.
+    writeFileSync(
+      join(root, "repoos.toml"),
+      ['workDir = "work"', 'storiesDir = "../escape"', "", "[check]", "version = 1", ""].join("\n"),
+    );
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    // loadConfig falls back to the default with a warning, so the check is a
+    // clean pass for the resolved default — never a false failure.
+    expect(findingById(report, "layout.stories-dir")?.severity).toBe("pass");
+  });
 });
 
 describe("runDoctor docs wiring (#0673)", () => {

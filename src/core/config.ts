@@ -950,6 +950,39 @@ export function normalizeRelativeDir(raw: unknown, key: string): string | null {
 }
 
 /**
+ * The managed bookkeeping directories, each resolved through the documented
+ * defaults when config omits it (#0726).
+ *
+ * These three directories are RepoOS's own churn rather than a task's
+ * implementation: task files under the work dir, human-submitted inputs, and
+ * story definitions. Every close-out guard that must distinguish "the server's
+ * bookkeeping" from "the branch's real work" derives its prefixes from this one
+ * helper, so adding a new managed directory is a one-line change here instead
+ * of a hunt through the reset, conflict-resolution and dirty-main paths.
+ *
+ * Deliberately excludes `docs/`, `user-docs/` and `dist/`: docs changes can
+ * alter a validation result (the check plan builds user-docs and tests may read
+ * docs), and `dist/` is generated output handled separately.
+ */
+export interface BookkeepingDirs {
+  workDir: string;
+  inputsDir: string;
+  storiesDir: string;
+}
+
+export function bookkeepingDirs(config: {
+  workDir?: string;
+  inputsDir?: string;
+  storiesDir?: string;
+}): BookkeepingDirs {
+  return {
+    workDir: config.workDir || "work",
+    inputsDir: config.inputsDir || "inputs",
+    storiesDir: config.storiesDir || "stories",
+  };
+}
+
+/**
  * The preview-only override keys a repo's `repoos.toml` declares that the
  * runtime will actually apply (supported base keys only), sorted. Fail-soft: a
  * missing/unreadable file yields `[]`. Used by the preview manager to report
@@ -1010,18 +1043,35 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       if (appliedOverrides.length) cfg.previewOverrides = appliedOverrides;
     }
     const get = (k: string) => parsed[k] ?? parsed[`repoos.${k}`];
-    if (typeof get("workDir") === "string") cfg.workDir = get("workDir") as string;
-    if (typeof get("docsDir") === "string") cfg.docsDir = get("docsDir") as string;
-    if (typeof get("skillsDir") === "string") cfg.skillsDir = get("skillsDir") as string;
-    if (typeof get("inputsDir") === "string") cfg.inputsDir = get("inputsDir") as string;
-    // storiesDir (#0637): validated, not trusted — an absolute or escaping
-    // value falls back to the default ("stories") with a warning, so a bad
-    // entry can never point the story registry or the close-out drift check
-    // outside the repo. Present-but-wrong-typed values warn the same way.
+    // Every layout directory is validated, not trusted (#0637, #0726): an
+    // absolute, home-relative, backslash or `..`-escaping value falls back to
+    // the documented default with a warning, so a bad entry can never point the
+    // task board, story registry, inputs or close-out drift checks outside the
+    // repo. Present-but-wrong-typed values warn the same way.
+    const workDirRaw = get("workDir");
+    if (workDirRaw !== undefined) {
+      cfg.workDir = normalizeRelativeDir(workDirRaw, "workDir") ?? DEFAULT_CONFIG.workDir;
+    }
+    const docsDirRaw = get("docsDir");
+    if (docsDirRaw !== undefined) {
+      cfg.docsDir = normalizeRelativeDir(docsDirRaw, "docsDir") ?? DEFAULT_CONFIG.docsDir;
+    }
+    const skillsDirRaw = get("skillsDir");
+    if (skillsDirRaw !== undefined) {
+      cfg.skillsDir = normalizeRelativeDir(skillsDirRaw, "skillsDir") ?? DEFAULT_CONFIG.skillsDir;
+    }
+    const inputsDirRaw = get("inputsDir");
+    if (inputsDirRaw !== undefined) {
+      cfg.inputsDir = normalizeRelativeDir(inputsDirRaw, "inputsDir") ?? DEFAULT_CONFIG.inputsDir;
+    }
     const storiesDirRaw = get("storiesDir");
     if (storiesDirRaw !== undefined) {
       cfg.storiesDir =
         normalizeRelativeDir(storiesDirRaw, "storiesDir") ?? DEFAULT_CONFIG.storiesDir;
+    }
+    const cacheDirRaw = get("cacheDir");
+    if (cacheDirRaw !== undefined) {
+      cfg.cacheDir = normalizeRelativeDir(cacheDirRaw, "cacheDir") ?? DEFAULT_CONFIG.cacheDir;
     }
     if (Array.isArray(get("taskExtensions")))
       cfg.taskExtensions = get("taskExtensions") as string[];
@@ -1029,7 +1079,6 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       cfg.defaultStatus = get("defaultStatus") as Status;
     if (typeof get("defaultAssignee") === "string")
       cfg.defaultAssignee = get("defaultAssignee") as Assignee;
-    if (typeof get("cacheDir") === "string") cfg.cacheDir = get("cacheDir") as string;
     if (typeof get("strictBuild") === "boolean") cfg.strictBuild = get("strictBuild") as boolean;
     const tunnelEnabled = parsed["tunnel.enabled"];
     if (typeof tunnelEnabled === "boolean") cfg.tunnelEnabled = tunnelEnabled;
@@ -1967,6 +2016,15 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: DEFAULT_CONFIG.storiesDir,
       description: "Directory holding story definitions (relative to repo root)",
+    },
+    {
+      key: "inputsDir",
+      label: "Inputs directory",
+      type: "string",
+      tier: "guarded",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.inputsDir,
+      description: "Directory holding human-submitted inputs (relative to repo root)",
     },
     {
       key: "taskExtensions",

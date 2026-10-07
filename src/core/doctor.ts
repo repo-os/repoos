@@ -857,6 +857,7 @@ function checkConfig(root: string, config: RepoOSConfig): DoctorFinding[] {
       "pass",
       "Effective layout",
       `work=${config.workDir} · docs=${config.docsDir} · inputs=${config.inputsDir ?? "inputs"} · ` +
+        `stories=${config.storiesDir ?? "stories"} · ` +
         `cache=${config.cacheDir} · worktrees=${worktreesDir(root)}`,
     ),
   );
@@ -932,6 +933,7 @@ function checkLayout(root: string, config: RepoOSConfig): DoctorFinding[] {
     checkDir(root, "layout.work-dir", "Task", "workDir", config.workDir, { required: true }),
     checkDir(root, "layout.docs-dir", "Docs", "docsDir", config.docsDir),
     checkDir(root, "layout.inputs-dir", "Inputs", "inputsDir", config.inputsDir ?? "inputs"),
+    checkDir(root, "layout.stories-dir", "Stories", "storiesDir", config.storiesDir ?? "stories"),
     checkDir(root, "layout.cache-dir", "Cache", "cacheDir", config.cacheDir),
   ];
 

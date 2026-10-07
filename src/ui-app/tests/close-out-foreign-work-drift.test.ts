@@ -100,7 +100,7 @@ describe("resetForeignWorkFiles (close-out drift guard)", () => {
       const reset = await resetForeignWorkFiles({
         candidateWtPath: fx.candidate,
         baseMainSha: fx.baseSha,
-        workDir: "work",
+        dirs: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
         ownWorkFile: "work/0001-own.md",
       });
 
@@ -135,7 +135,7 @@ describe("resetForeignWorkFiles (close-out drift guard)", () => {
       const reset = await resetForeignWorkFiles({
         candidateWtPath: fx.candidate,
         baseMainSha: fx.baseSha,
-        workDir: "work",
+        dirs: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
         ownWorkFile: "work/0001-own.md",
       });
 
@@ -157,7 +157,7 @@ describe("resetForeignWorkFiles (close-out drift guard)", () => {
       await resetForeignWorkFiles({
         candidateWtPath: fx.candidate,
         baseMainSha: fx.baseSha,
-        workDir: "work",
+        dirs: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
         ownWorkFile: "work/0001-own.md",
       });
       const head = git(fx.candidate, ["rev-parse", "HEAD"]);
@@ -166,11 +166,130 @@ describe("resetForeignWorkFiles (close-out drift guard)", () => {
       const reset = await resetForeignWorkFiles({
         candidateWtPath: fx.candidate,
         baseMainSha: fx.baseSha,
-        workDir: "work",
+        dirs: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
         ownWorkFile: "work/0001-own.md",
       });
       expect(reset).toEqual([]);
       expect(git(fx.candidate, ["rev-parse", "HEAD"])).toBe(head);
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
+/**
+ * Same drift class as the work-dir tests above, extended to the other two
+ * managed bookkeeping dirs (#0726): a branch editing another story definition
+ * or another input capture must have main's copy restored at close-out, and a
+ * custom layout (e.g. `repoos/stories`) must behave identically to the
+ * defaults. Before #0726 only `work/` was reset, so a stale `stories/*.md` or
+ * `inputs/*.md` on the branch published to main as-is.
+ */
+function makeStoryInputFixture(
+  opts: { storiesDir?: string; inputsDir?: string; workDir?: string } = {},
+): {
+  root: string;
+  candidate: string;
+  baseSha: string;
+  dirs: { workDir: string; inputsDir: string; storiesDir: string };
+  clean: () => void;
+} {
+  const workDir = opts.workDir ?? "work";
+  const inputsDir = opts.inputsDir ?? "inputs";
+  const storiesDir = opts.storiesDir ?? "stories";
+  const root = mkdtempSync(join(tmpdir(), "repoos-foreign-stories-"));
+  mkdirSync(join(root, workDir), { recursive: true });
+  mkdirSync(join(root, inputsDir), { recursive: true });
+  mkdirSync(join(root, storiesDir), { recursive: true });
+  git(root, ["init", "-q", "-b", "main"]);
+  git(root, ["config", "user.email", "t@example.com"]);
+  git(root, ["config", "user.name", "Test"]);
+  writeFileSync(join(root, workDir, "0001-own.md"), '---\nid: "0001"\n---\nown body\n');
+  writeFileSync(join(root, storiesDir, "launch.md"), "# Launch — MAIN\n");
+  writeFileSync(join(root, inputsDir, "0007-email.md"), "# Email — MAIN\n");
+  writeFileSync(join(root, "src.ts"), "export const v = 1;\n");
+  git(root, ["add", "-A"]);
+  git(root, ["commit", "-q", "-m", "init"]);
+  const baseSha = git(root, ["rev-parse", "HEAD"]);
+
+  // Feature branch edits the story and the input (both foreign, server-owned).
+  git(root, ["checkout", "-q", "-b", "feat/x"]);
+  writeFileSync(join(root, "src.ts"), "export const v = 2;\n");
+  writeFileSync(join(root, storiesDir, "launch.md"), "# Launch — STALE BRANCH\n");
+  writeFileSync(join(root, inputsDir, "0007-email.md"), "# Email — STALE BRANCH\n");
+  git(root, ["add", "-A"]);
+  git(root, ["commit", "-q", "-m", "feat(0001): work + story/input drift"]);
+  git(root, ["checkout", "-q", "main"]);
+
+  const candidate = `${root}-candidate`;
+  git(root, ["worktree", "add", "-q", "-b", "repoos/integrate/0001", candidate, "main"]);
+  const merge = git(candidate, ["merge", "--no-edit", "feat/x"]);
+  expect(merge).not.toMatch(/conflict/i);
+
+  return {
+    root,
+    candidate,
+    baseSha,
+    dirs: { workDir, inputsDir, storiesDir },
+    clean: () => {
+      rmSync(root, { recursive: true, force: true });
+      rmSync(candidate, { recursive: true, force: true });
+    },
+  };
+}
+
+describe("resetForeignWorkFiles covers stories/ and inputs/ (#0726)", () => {
+  it("restores main's copy of another story and another input the branch edited", async () => {
+    const fx = makeStoryInputFixture();
+    try {
+      expect(readFileSync(join(fx.candidate, "stories", "launch.md"), "utf8")).toContain(
+        "STALE BRANCH",
+      );
+      expect(readFileSync(join(fx.candidate, "inputs", "0007-email.md"), "utf8")).toContain(
+        "STALE BRANCH",
+      );
+
+      const reset = await resetForeignWorkFiles({
+        candidateWtPath: fx.candidate,
+        baseMainSha: fx.baseSha,
+        dirs: fx.dirs,
+        ownWorkFile: "work/0001-own.md",
+      });
+
+      expect(reset.sort()).toEqual(["inputs/0007-email.md", "stories/launch.md"]);
+      expect(readFileSync(join(fx.candidate, "stories", "launch.md"), "utf8")).toBe(
+        "# Launch — MAIN\n",
+      );
+      expect(readFileSync(join(fx.candidate, "inputs", "0007-email.md"), "utf8")).toBe(
+        "# Email — MAIN\n",
+      );
+      // Committed, not left dirty, and the branch's own source change survives.
+      expect(git(fx.candidate, ["status", "--porcelain"])).toBe("");
+      expect(readFileSync(join(fx.candidate, "src.ts"), "utf8")).toContain("v = 2");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("behaves the same for a custom repoos/ layout", async () => {
+    const fx = makeStoryInputFixture({
+      workDir: "repoos/work",
+      inputsDir: "repoos/inputs",
+      storiesDir: "repoos/stories",
+    });
+    try {
+      const reset = await resetForeignWorkFiles({
+        candidateWtPath: fx.candidate,
+        baseMainSha: fx.baseSha,
+        dirs: fx.dirs,
+        ownWorkFile: "repoos/work/0001-own.md",
+      });
+
+      expect(reset.sort()).toEqual(["repoos/inputs/0007-email.md", "repoos/stories/launch.md"]);
+      expect(readFileSync(join(fx.candidate, "repoos", "stories", "launch.md"), "utf8")).toBe(
+        "# Launch — MAIN\n",
+      );
+      expect(git(fx.candidate, ["status", "--porcelain"])).toBe("");
     } finally {
       fx.clean();
     }
