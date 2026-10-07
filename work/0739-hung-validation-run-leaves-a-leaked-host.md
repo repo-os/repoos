@@ -12,7 +12,7 @@ branch: feat/hung-validation-run-leaves-a-leaked-host
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:05Z"
-updated_at: "2026-10-07T16:08:38Z"
+updated_at: "2026-10-07T16:16:45Z"
 close_out_repair_count: 1
 review_passes: 5
 review_rounds: 1
@@ -80,3 +80,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T16:05:27Z · note: close-out repair: merge-conflict
 - 2026-10-07T16:07:09Z · body
 - 2026-10-07T16:08:38Z · body
+- 2026-10-07T16:16:45Z · handoff failed · handoff recovery attempted · finalization failed
