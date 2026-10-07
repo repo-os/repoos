@@ -222,6 +222,14 @@ export async function enqueueCloseOutForTask(
     reload?.releaseCloseOut();
     return { ok: false, reason: "could not enqueue close-out job" };
   }
+  // Deferred behind a cancelled attempt that is still executing (#0736).
+  if (job.cancelled) {
+    reload?.releaseCloseOut();
+    return {
+      ok: false,
+      reason: `the previous close-out attempt for #${id} was stopped but is still shutting down; retry once it finishes`,
+    };
+  }
 
   if (handoffSha) {
     writeWorktreeReviewLock(config.root, config.cacheDir, id, {
