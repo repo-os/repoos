@@ -34,6 +34,7 @@ const CONTROL_API_MATCHERS: Matcher[] = [
   exact("POST", "/api/remote-validation/test"),
   exact("GET", "/api/agents/running"),
   exact("GET", "/api/stats/board"),
+  exact("GET", "/api/driver/brief"),
   exact("GET", "/api/events"),
   exact("POST", "/api/cto/heartbeat"),
   // `repoos review` → PATCH status=review; `repoos override` → PATCH overrides

@@ -53,6 +53,7 @@ export interface CtoActionDeps {
   emitEvent: (e: RepoEvent) => void;
   triggerJobProcessing: () => void;
   reportedStages: Record<string, DoneStep>;
+  reportedStageAt: Record<string, string>;
   /** The live remote validator, when one exists — needed to kill a hung run (#0729). */
   remoteValidator?: RemoteValidator;
 }
@@ -228,6 +229,7 @@ export async function runCtoSafeAction(
         deps.jobCoordinator,
         deps.reportedStages,
         resolvePipelineCheckPlan(deps.config),
+        deps.reportedStageAt,
       ),
     });
     recordRate(deps, action, taskId);

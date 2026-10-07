@@ -92,6 +92,8 @@ export interface RouteContext {
    * refresh mid-pipeline (0207 follow-up).
    */
   reportedStages: Record<string, DoneStep>;
+  /** ISO timestamp per task id when {@link reportedStages} last changed (#0740). */
+  reportedStageAt: Record<string, string>;
   triggerJobProcessing: () => void;
   pendingReview: Set<string>;
   uiDir: string | null;

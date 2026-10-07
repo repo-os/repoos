@@ -1,5 +1,6 @@
 export * from "./attention.js";
 export * from "./decisions.js";
+export * from "./driver.js";
 export * from "./agents.js";
 export * from "./check-plan.js";
 export * from "./check-runs.js";

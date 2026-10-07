@@ -70,6 +70,7 @@
  *   GET  /api/supervisor/status -> { ok, enabled, mode, latestHeartbeat } supervisor status
  *   GET  /api/supervisor/heartbeats -> { ok, heartbeats } recent supervisor heartbeats
  *   POST /api/supervisor/check-now -> { ok } run a supervisor check immediately
+ *   GET  /api/driver/brief     -> the CTO board brief from live state (#0731)
  *   GET  /api/events           -> SSE stream of RepoEvent
  *
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
@@ -320,6 +321,7 @@ import {
   getCloseOutOutcomes,
   getAttention,
   getDecisions,
+  getDriverBrief,
   getIntegrationPipeline,
   retryIntegration,
   refreshInstallAndRetryIntegration,
@@ -1429,6 +1431,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // orchestrator's DoneStep callbacks drive the pinned status bar's stage
   // indicator; recorded here so the live `integration` snapshot is accurate.
   const reportedStages: Record<string, DoneStep> = {};
+  const reportedStageAt: Record<string, string> = {};
 
   /** Emit the current integration-pipeline snapshot to every SSE client (0207). */
   const emitIntegration = (): void => {
@@ -1438,6 +1441,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         jobCoordinator,
         reportedStages,
         resolvePipelineCheckPlan(config),
+        reportedStageAt,
       ),
     });
   };
@@ -1459,12 +1463,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           (step) => {
             const job = jobCoordinator.peekNext();
             if (job) {
+              const at = new Date().toISOString();
               reportedStages[job.taskId] = step;
+              reportedStageAt[job.taskId] = at;
               emitEvent({
                 type: "task.progress",
                 id: job.taskId,
                 step,
-                at: new Date().toISOString(),
+                at,
               });
               emitIntegration();
             }
@@ -2095,6 +2101,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       emitEvent,
       triggerJobProcessing,
       reportedStages,
+      reportedStageAt,
       remoteValidator,
     }),
   );
@@ -3072,6 +3079,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/close-out/outcomes", getCloseOutOutcomes);
   router.register("GET", "/api/attention", getAttention);
   router.register("GET", "/api/decisions", getDecisions);
+  router.register("GET", "/api/driver/brief", getDriverBrief);
   router.register("GET", "/api/check-plan", getCheckPlan);
   // Durable check-run history across all tasks (#0564) — the Runs tab.
   router.register("GET", "/api/check-runs", getCheckRuns);
@@ -3487,6 +3495,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         taskChecks,
         awakeClock: watchdog ? () => watchdog!.awakeClock() : undefined,
         reportedStages,
+        reportedStageAt,
         triggerJobProcessing,
         pendingReview,
         uiDir,

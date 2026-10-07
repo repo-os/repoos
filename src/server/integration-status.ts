@@ -36,6 +36,9 @@ export interface IntegrationSnapshot {
     /** When this job started processing (ISO), for the live stopwatch. Falls
      *  back to the enqueue time when processing hasn't been marked started. */
     startedAt: string | null;
+    /** When stage progress was last reported for this job (ISO). Used for
+     *  stall detection (#0740); falls back to {@link startedAt}. */
+    lastProgressAt: string | null;
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];
@@ -94,6 +97,7 @@ export function buildIntegrationSnapshot(
   coordinator: JobCoordinator,
   reported: Record<string, DoneStep>,
   checkPlan?: PipelineCheckPlan,
+  reportedAt: Record<string, string> = {},
   at = new Date().toISOString(),
 ): IntegrationSnapshot {
   const live = coordinator
@@ -121,6 +125,8 @@ export function buildIntegrationSnapshot(
   }
 
   const failed = inFlight.phase === "failed";
+  const startedAt = inFlight.startedAt ?? inFlight.enqueuedAt;
+  const lastProgressAt = reportedAt[inFlight.taskId] ?? startedAt;
   return {
     empty: false,
     active: {
@@ -128,7 +134,8 @@ export function buildIntegrationSnapshot(
       stage: stageForJob(inFlight, reported[inFlight.taskId]),
       failed,
       error: failed ? inFlight.reason : undefined,
-      startedAt: inFlight.startedAt ?? inFlight.enqueuedAt,
+      startedAt,
+      lastProgressAt,
     },
     queue,
     queueEnqueuedAt: queue.length ? queueEnqueuedAt : undefined,

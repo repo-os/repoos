@@ -167,6 +167,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--json · --task · --port",
       },
       {
+        name: "driver",
+        usage: "driver brief [--json] [--port N]",
+        desc: "Print the CTO's board brief from live state (GET /api/driver/brief)",
+        flags: "--json · --port",
+      },
+      {
         name: "rm",
         usage: "rm <id> --yes",
         desc: "Delete a task file from the repo (same as the UI Delete button)",
