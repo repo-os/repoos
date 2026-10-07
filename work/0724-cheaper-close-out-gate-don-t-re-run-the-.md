@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 696914
-last_close_out_gate_at: "2026-10-07T12:48:22.345Z"
 id: "0724"
 title: "Cheaper close-out gate: don't re-run the full suite on what the handoff gate already proved"
 type: feature
-status: review
+status: done
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 60e2c0160070a87e19b3b3ec458569a87413f0a7
 assigned_to: ai
 created_by: ""
 branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
-updated_at: "2026-10-07T12:48:22Z"
+updated_at: "2026-10-07T12:48:32Z"
+last_close_out_gate_ms: 696914
+last_close_out_gate_at: "2026-10-07T12:48:22.345Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-07T12:21:44.271Z: server-side finalization timed out (deadline exceeded)"
 review_passes: 2
@@ -106,4 +107,4 @@ Still open by design: reuse requires a recorded green FULL pre-review row (no re
 - 2026-10-07T12:01:02Z · note: review pass 2: good to go
 - 2026-10-07T12:43:31Z · body
 - 2026-10-07T12:48:22Z · close-out gate completed in 697s
-
+- 2026-10-07T12:48:32Z · status review→done, release:success
