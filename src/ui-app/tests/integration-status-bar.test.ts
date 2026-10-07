@@ -43,9 +43,7 @@ function render() {
  * index silently points at the wrong stage after any insertion.
  */
 function stage(wrapper: ReturnType<typeof render>, name: string) {
-  const el = wrapper
-    .findAll(".stage")
-    .find((s) => s.get(".stage-name").text() === name);
+  const el = wrapper.findAll(".stage").find((s) => s.get(".stage-name").text() === name);
   if (!el) throw new Error(`no .stage named "${name}"`);
   return el;
 }
