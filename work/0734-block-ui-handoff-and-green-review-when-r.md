@@ -53,3 +53,4 @@ Additional verified cause: handoff.ts constructs uiTask with worktreeTask.body, 
 - 2026-10-07T15:02:43Z · body
 - 2026-10-07T15:06:12Z · body
 - 2026-10-07T15:13:12Z · status active→review
+- 2026-10-07T15:13:12Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
