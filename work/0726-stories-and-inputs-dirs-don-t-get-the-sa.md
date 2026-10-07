@@ -2,15 +2,15 @@
 id: "0726"
 title: Stories (and inputs) dirs don't get the same close-out bookkeeping handling as the work dir
 type: bug
-status: ready
+status: active
 priority: p2
 area: [server, cli]
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/stories-and-inputs-dirs-don-t-get-the-sa
 created_at: "2026-10-07T00:35:48Z"
-updated_at: "2026-10-07T16:44:26Z"
+updated_at: "2026-10-07T16:44:55Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ Desired: validate all layout dirs with normalizeRelativeDir, give inputsDir a Se
 - 2026-10-07T00:35:48Z · created · unknown
 - 2026-10-07T00:37:22Z · body
 - 2026-10-07T16:44:26Z · status inbox→ready
+- 2026-10-07T16:44:55Z · status ready→active, branch
