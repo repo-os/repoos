@@ -186,7 +186,9 @@ than one day are pruned on every host probe (`staleBundlePruneCommand()`).
 **Not a hang after the gate exits (#0739).** Once the stream contains
 `[validate] gate exit N`, the watchdog stops: a container that lingers after a
 real red gate is a finished failure (`transient: false`), not a hung retry on
-another host.
+another host. If the main validate SSH stays open after that marker, the runner
+SIGKILLs it after the same 30 s cap used for hang kills and reports exit `N`
+from the streamed output.
 
 **Visibility.** The Remote runners tab shows a run being killed as `hung ·
 killing`, and a per-host **Hung runs** row listing the recent kills and when

@@ -489,6 +489,8 @@ export interface RunnerTimings {
   loadSampleIntervalMs: number;
   /** Cap on the hang-kill SSH (#0739). */
   hangKillTimeoutMs: number;
+  /** After `[validate] gate exit N`, cap how long the main SSH may linger (#0739). */
+  gateExitLingerTimeoutMs: number;
 }
 
 /** Default minutes with no output before a run is called hung (#0729). */
@@ -510,6 +512,7 @@ const DEFAULT_TIMINGS: RunnerTimings = {
   hangCheckIntervalMs: 30_000,
   loadSampleIntervalMs: 45_000,
   hangKillTimeoutMs: HANG_KILL_TIMEOUT_MS,
+  gateExitLingerTimeoutMs: HANG_KILL_TIMEOUT_MS,
 };
 
 /** Contention-shaped failure text — matches runDoneStep's heuristic in done.ts. */
@@ -2676,6 +2679,8 @@ export interface ActiveRemoteRun {
   container?: string;
   bundle?: string;
   artifacts?: string;
+  /** Release this run's pool slot (#0739 manual kill / bounded hang recovery). */
+  releaseSlot?: () => void;
 }
 
 interface PoolWaiter {
@@ -3175,7 +3180,7 @@ export class TailscaleHostPool {
    * what happened so the action can report it. `docker rm -f` is scoped to the
    * recorded container name — never a blanket kill of the host.
    */
-  async killHungRun(taskId: string): Promise<{ ok: boolean; detail: string }> {
+  async killHungRun(taskId: string): Promise<{ ok: boolean; detail: string; container?: string }> {
     for (const s of this.hosts) {
       const run = [...s.activeRuns].reverse().find((r) => r.taskId === taskId);
       if (!run) continue;
@@ -3186,7 +3191,9 @@ export class TailscaleHostPool {
         };
       }
       const container = run.container;
+      const releaseSlot = run.releaseSlot;
       let killTimedOut = false;
+      let killErr: string | undefined;
       try {
         const killRes = await this.exec.runRemote(
           s.ssh,
@@ -3196,9 +3203,15 @@ export class TailscaleHostPool {
         );
         killTimedOut = killRes.timedOut;
       } catch (e) {
+        killErr = (e as Error).message;
+      } finally {
+        releaseSlot?.();
+      }
+      if (killErr) {
         return {
           ok: false,
-          detail: `could not kill ${container} on ${s.spec.host}: ${(e as Error).message}`,
+          detail: `could not kill ${container} on ${s.spec.host}: ${killErr}`,
+          container,
         };
       }
       if (run.bundle && run.artifacts) {
@@ -3221,6 +3234,7 @@ export class TailscaleHostPool {
       return {
         ok: true,
         detail: `Removed container ${container} for #${taskId} on ${s.spec.host}`,
+        container,
       };
     }
     return { ok: false, detail: `no in-flight remote validation run for #${taskId}` };
@@ -3509,6 +3523,16 @@ export class TailscaleHostPool {
     const run: ActiveRemoteRun = { taskId: taskId ?? "?", startedAt: new Date().toISOString() };
     s.activeRuns.push(run);
     let released = false;
+    const releaseSlot = (): void => {
+      if (released) return;
+      released = true;
+      s.active = Math.max(0, s.active - 1);
+      const i = s.activeRuns.indexOf(run);
+      if (i !== -1) s.activeRuns.splice(i, 1);
+      this.dropIfIdle(s);
+      this.dispatch();
+    };
+    run.releaseSlot = releaseSlot;
     return {
       host: s.spec,
       ssh: s.ssh,
@@ -3520,15 +3544,7 @@ export class TailscaleHostPool {
         run.bundle = paths.bundle;
         run.artifacts = paths.artifacts;
       },
-      release: () => {
-        if (released) return;
-        released = true;
-        s.active = Math.max(0, s.active - 1);
-        const i = s.activeRuns.indexOf(run);
-        if (i !== -1) s.activeRuns.splice(i, 1);
-        this.dropIfIdle(s);
-        this.dispatch();
-      },
+      release: releaseSlot,
     };
   }
 
@@ -3813,7 +3829,7 @@ export class TailscaleRunner implements RemoteValidator {
   private readonly timings: RunnerTimings;
   private readonly keyPath: string;
   private readonly pool: TailscaleHostPool;
-  /** SIGKILL the in-flight validate SSH for a task (#0739). */
+  /** SIGKILL the in-flight validate SSH, keyed by this run's container name (#0739). */
   private readonly activeRunAbort = new Map<string, () => void>();
 
   constructor(
@@ -3927,7 +3943,7 @@ export class TailscaleRunner implements RemoteValidator {
   /** Kill a hung run's container on its host (#0729). */
   async killHungValidation(taskId: string): Promise<{ ok: boolean; detail: string }> {
     const result = await this.pool.killHungRun(taskId);
-    this.activeRunAbort.get(taskId)?.();
+    if (result.container) this.activeRunAbort.get(result.container)?.();
     return result;
   }
 
@@ -4287,6 +4303,14 @@ export class TailscaleRunner implements RemoteValidator {
         let streamBuf = "";
         let abortMainRemote: (() => void) | undefined;
         let hangRecovery: Promise<void> | undefined;
+        let gateLingerTimer: ReturnType<typeof setTimeout> | undefined;
+        const scheduleGateLingerAbort = (): void => {
+          if (gateLingerTimer) return;
+          gateLingerTimer = setTimeout(() => {
+            abortMainRemote?.();
+          }, this.timings.gateExitLingerTimeoutMs);
+          gateLingerTimer.unref?.();
+        };
         const loadTimer = setInterval(() => {
           void this.exec
             .runRemote(host, hostLoadCommand(), () => {}, this.timings.probeTimeoutMs)
@@ -4331,6 +4355,7 @@ export class TailscaleRunner implements RemoteValidator {
           if (!gateFinished && remoteRunHasGateExit(streamBuf)) {
             gateFinished = true;
             watchdog.stop();
+            scheduleGateLingerAbort();
           }
           watchdog.noteOutput();
           emit(s);
@@ -4339,13 +4364,14 @@ export class TailscaleRunner implements RemoteValidator {
           run = await this.exec.runRemote(host, cmd, emitStream, outerTimeoutMs, {
             registerAbort: (abort) => {
               abortMainRemote = abort;
-              this.activeRunAbort.set(opts.taskId, abort);
+              this.activeRunAbort.set(containerName, abort);
             },
           });
         } finally {
           watchdog.stop();
           clearInterval(loadTimer);
-          this.activeRunAbort.delete(opts.taskId);
+          if (gateLingerTimer) clearTimeout(gateLingerTimer);
+          this.activeRunAbort.delete(containerName);
           if (hangRecovery) await hangRecovery;
           // Server-side container cleanup on cancel/timeout (#0729 review): a
           // run the outer timeout SIGKILLs (or the caller's deadline cancels)
@@ -4360,6 +4386,16 @@ export class TailscaleRunner implements RemoteValidator {
               .catch(() => {
                 /* the next probe's stale sweep reaps an exited leftover */
               });
+          }
+        }
+        if (gateFinished) {
+          const gateCode = parseRemoteGateExitCode(streamBuf);
+          if (gateCode !== null) {
+            run = {
+              code: gateCode,
+              output: streamBuf,
+              timedOut: run?.timedOut ?? false,
+            };
           }
         }
         if (watchdog.hung) {
