@@ -1,16 +1,19 @@
 ---
-review_rounds: 2
 id: "0181"
 title: Add true vibe-coding capability in all text areas like th…
 type: feature
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p2
 area: general
 assigned_to: ai
 created_by: ""
 branch: feat/add-true-vibe-coding-capability-in-all-t
 created_at: "2026-08-13T17:57:26Z"
-updated_at: "2026-08-14T09:08:00Z"
+updated_at: "2026-10-06T23:48:15Z"
+review_rounds: 2
 ---
 ## Context
 
@@ -93,4 +96,4 @@ If `provider`/`apiKey` resolve to nothing, voice is disabled (mic hidden). The k
 - 2026-08-14T00:27:09Z · status ready→active
 - 2026-08-14T00:35:42Z · status active→review
 - 2026-08-14T09:08:00Z · status review→done
-
+- 2026-10-06T23:48:15Z · needs_input

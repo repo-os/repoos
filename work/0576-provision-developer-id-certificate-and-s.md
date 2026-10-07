@@ -3,6 +3,9 @@ id: "0576"
 title: Provision Developer ID certificate and store CI secrets for macOS Hub signing
 type: feature
 status: ready
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys, store or portal setup)"
 priority: p1
 area: macos
 story: MacOS Native App
@@ -10,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:42:44Z"
-updated_at: "2026-10-05T15:51:55Z"
+updated_at: "2026-10-06T23:48:11Z"
 ---
 Now that RepoOS has joined the Apple Developer Program, set up the one-time credential provisioning needed for automated Developer ID signing and notarization of RepoOS Hub.
 
@@ -62,3 +65,4 @@ This task has no end-user UI; there is no screen to change, and that is stated h
 - 2026-10-05T15:49:33Z · story
 - 2026-10-05T15:49:37Z · needs_input
 - 2026-10-05T15:51:45Z · body
+- 2026-10-06T23:48:11Z · needs_input

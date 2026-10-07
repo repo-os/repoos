@@ -1,21 +1,32 @@
 #!/usr/bin/env bash
 #
-# Runs on the Hetzner runner VM. Invoked by RepoOS over ssh as:
+# Runs on the Hetzner runner VM or a Tailscale host. Invoked by RepoOS over ssh:
 #
-#   /opt/repoos/validate.sh <bundle-path> <expected-sha> [artifacts-dir] [changed-ref]
+#   /opt/repoos/validate.sh <bundle-path> <expected-sha> [artifacts-dir] [changed-ref] [mirror-path]
 #
 # Restores the candidate tree from a git bundle, hard-verifies it is exactly the
 # SHA RepoOS asked for, then runs `bun install && bun run build && bun run test`
 # inside the prebuilt `repoos-ci` container with a persistent bun cache.
 #
-# Exit codes: 0 = green. 3 = SHA mismatch (never a test failure — a transport
-# bug). Anything else = the gate's own non-zero exit (build or test failed).
+# When `mirror-path` is given, the bundle is fetched into a persistent bare
+# mirror on the host (`~/.repoos-cache/<repo>.git`) and the candidate is checked
+# out from there. That lets RepoOS upload only the commits the host does not
+# already have (#0717): a partial `<base>..HEAD` bundle a few KB in size instead
+# of the full ~100 MB history every run. The mirror is maintained locally; a run
+# whose bundle does not apply to it fails the SHA check rather than guessing.
+#
+# Exit codes: 0 = green. 3 = SHA mismatch or a bundle/mirror transport problem
+# (never a test failure — a transport bug). Anything else = the gate's own
+# non-zero exit (build or test failed).
 set -euo pipefail
 
 BUNDLE="${1:?usage: validate.sh <bundle-path> <expected-sha>}"
 SHA="${2:?usage: validate.sh <bundle-path> <expected-sha>}"
 # Optional: vitest changed-path ref (e.g. main) for engineer self-checks (#0695).
 CHANGED_REF="${4:-}"
+# Optional: persistent per-repo bare mirror (#0717). Empty = legacy full-bundle
+# clone, so an older RepoOS against a newer script still works.
+MIRROR="${5:-}"
 # Per-run artifacts dir (#0520): RepoOS passes a unique one so overlapping runs
 # never wipe each other's logs. Without it, fall back to the shared default.
 # Under $HOME, not /tmp or /var/tmp: on Linux, /tmp is commonly a RAM-backed
@@ -53,8 +64,52 @@ _rvcleanup() {
 }
 trap _rvcleanup EXIT
 
-echo "[validate] cloning bundle $BUNDLE"
-git clone -q "$BUNDLE" "$WORK/repo"
+if [ -n "$MIRROR" ]; then
+  # ── incremental path (#0717) ──────────────────────────────────────────────
+  # Fetch the bundle into the persistent mirror, then check the candidate out
+  # of it. A partial bundle only applies when the mirror already holds its
+  # prerequisite base; if it does not, the fetch fails and exit 3 is a
+  # transport error, not a test result.
+  if [ ! -d "$MIRROR" ]; then
+    mkdir -p "$(dirname "$MIRROR")"
+    git init -q --bare "$MIRROR"
+  fi
+  # Bundle refs are per-run (`refs/repoos/candidate-<id>`); normalize them onto
+  # the stable names the mirror keeps so the next run can probe and reuse them.
+  # git bundles reject wildcard refspecs, so discover the exact refs first.
+  CANDIDATE_SRC="$(git bundle list-heads "$BUNDLE" | awk '$2 ~ /^refs\/repoos\/candidate/ {print $2; exit}')"
+  if [ -z "$CANDIDATE_SRC" ]; then
+    echo "[validate] FATAL: $BUNDLE carries no refs/repoos/candidate ref" >&2
+    exit 3
+  fi
+  if ! git -C "$MIRROR" fetch -q --no-tags --force "$BUNDLE" \
+      "+${CANDIDATE_SRC}:refs/repoos/candidate" 2>/dev/null; then
+    echo "[validate] FATAL: could not fetch $BUNDLE into the mirror $MIRROR" >&2
+    echo "[validate] (a partial bundle whose base the mirror does not hold, or a corrupt bundle)" >&2
+    exit 3
+  fi
+  if [ -n "$CHANGED_REF" ]; then
+    # Bring the scope ref (the changed-ref base) in under its own name so the
+    # in-container `--changed <ref>` resolves (#0695).
+    SCOPE_SRC="$(git bundle list-heads "$BUNDLE" | awk '$2 ~ /^refs\/repoos\/scope/ {print $2; exit}')"
+    if [ -n "$SCOPE_SRC" ]; then
+      git -C "$MIRROR" fetch -q --no-tags --force "$BUNDLE" \
+        "+${SCOPE_SRC}:refs/heads/${CHANGED_REF}" 2>/dev/null || true
+    fi
+  fi
+  MIRROR_SHA="$(git -C "$MIRROR" rev-parse --verify --quiet refs/repoos/candidate || true)"
+  if [ "$MIRROR_SHA" != "$SHA" ]; then
+    echo "[validate] FATAL: mirror candidate $MIRROR_SHA != expected $SHA" >&2
+    exit 3
+  fi
+  echo "[validate] cloning mirror $MIRROR at $SHA"
+  git clone -q "$MIRROR" "$WORK/repo"
+else
+  # ── full-history fallback ─────────────────────────────────────────────────
+  echo "[validate] cloning bundle $BUNDLE"
+  git clone -q "$BUNDLE" "$WORK/repo"
+fi
+
 cd "$WORK/repo"
 git checkout -q "$SHA" 2>/dev/null || git checkout -q -b _validate "$SHA"
 

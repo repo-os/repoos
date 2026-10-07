@@ -152,14 +152,20 @@ who owns approval and merging:
 - If explicitly taking over a newly created task, claim it through RepoOS
   directly as `active`, without leaving it in `ready` for auto-dispatch to grab.
   Managed starts should use RepoOS's Start action, which owns worktree setup.
-- Request review through the UI/API or `repoos mv <id> review`. Outside the
-  task's runner, the CLI writes metadata that the server intercepts
-  asynchronously and routes through handoff validation. Wait for actual
-  completion; a successful CLI return is not proof that checks/review finished.
+- Drive the running server from the CLI, not ad-hoc `curl`: `repoos start`,
+  `pause`, `message`, `review` (synchronous handoff), `done` (close-out),
+  `override`, `preview`, `config`, `runners`, `agents`, and `stats` wrap the
+  HTTP API with one-shot auth (loopback token or stored session; dev-login
+  re-auth on 401). See `user-docs/cli.md` (Control plane).
+- Request review through the UI, `repoos review <id>`, or `repoos mv <id> review`.
+  `repoos mv review` writes task metadata that the server intercepts
+  asynchronously; prefer `repoos review` when you need to wait for handoff
+  completion. A successful `repoos mv` return is not proof that checks finished.
 - A status write is not a synchronous cancellation of a background process.
   Use the supported pause/stop action and verify the run has ended before
   taking over. Wait for an active reviewer before requesting close-out.
-- After explicit human approval, invoke Move to done/the `/done` endpoint.
+- After explicit human approval, invoke `repoos done <id>`, Move to done in the
+  UI, or `POST /api/tasks/:id/done` — not `repoos mv <id> done`.
   Do not bypass review with `active` → `done` or repair a stuck task by merely
   reissuing `repoos mv <id> done`. Inspect the review/check/integration state.
   If the control-plane server is unavailable, report it rather than emulate
@@ -361,6 +367,24 @@ cannot tell from the code alone:
   the formatter collapsed the now-short elements to one line, the hook didn't
   fire, and MTD failed twice on `oxfmt --check` before the formatting commit was
   added.
+- **Small fixes: bundle them as easter eggs, don't hotfix.** Never commit to
+  `main` on your own initiative (the direct-to-`main` caveat above). When a run
+  turns up several small, independent, low-risk fixes — cosmetic, copy,
+  test-race hardening, tiny UI or data-source corrections, docs follow-ups —
+  collect them into ONE task titled `Easter eggs bundle: <themes>` instead of
+  filing one task each or committing each straight to `main`. A bundle pays the
+  per-task overhead — one worktree, one `repoos check` run, one review, one
+  close-out and its server reload — once instead of once per item. The bundle
+  body lists every item with its source task id, a one-line fix and one test per
+  item; commit per item so a reviewer can read them separately; and mark each
+  source task superseded when the bundle lands. Never fold easter eggs INTO a
+  release-critical or machinery task — a failing small item would hold up the
+  big one. Keep a bundle to about 3–6 items in one area family, file it p2/p3,
+  and run it while big tasks soak or wait. A bundle is an ordinary task: it still
+  runs the gate and goes to review — it just pays that overhead once for several
+  fixes. When the human explicitly asks for a hotfix on `main`, the direct-commit
+  exception above still applies. See `docs/easter-eggs-bundles.md`; #0721 is the
+  worked example.
 - **Explicitly authorized manual recovery only:** if the human directs you to
   hand-land a stale branch outside the normal pipeline, check other tasks' files —
   `git diff main...HEAD --name-only | grep '^work/'` — and

@@ -3,13 +3,16 @@ id: "0372"
 title: Add a Releases/Changelog page to the docs.repoos.org VitePress site
 type: feature
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p3
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-a-releases-changelog-page-to-the-doc
 created_at: "2026-09-16T06:55:11Z"
-updated_at: "2026-09-16T16:54:54Z"
+updated_at: "2026-10-06T23:48:19Z"
 ---
 ## Problem
 
@@ -85,3 +88,4 @@ add this preemptively without evidence it's needed.
 - 2026-09-16T07:45:21Z · status ready→active, branch
 - 2026-09-16T07:49:08Z · status active→review
 - 2026-09-16T16:54:54Z · status review→done, release:success
+- 2026-10-06T23:48:19Z · needs_input

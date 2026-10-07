@@ -62,7 +62,7 @@
  *   POST /api/stories/:key/pm/message   -> send a message to the PM agent about this story (0515)
  *   POST /api/stories/:key/pm/interrupt -> stop the in-flight PM turn about this story
  *   GET  /api/stories/:key/pm/output    -> { lines, stats } the story PM transcript + live run stats
- *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
+ *   GET  /api/agents/running   -> [{ id, pid, startedAt, lastOutputAt? }] running agents
  *   GET  /api/agents/queued    -> [{ id, queuedAt }] agents waiting for a free maxConcurrentAgents slot
  *   GET  /api/agents/detect        -> { agents, cachedAt } — cached results, instant
  *   GET  /api/agents/detect/stream -> SSE: event:agent per agent, event:done at end
@@ -83,6 +83,7 @@ import { fileURLToPath } from "node:url";
 import type { Agent, RepoOSConfig, SkillMeta, Status, Task } from "../core/types.js";
 import { STATUSES } from "../core/types.js";
 import { readBuildMeta } from "../core/build.js";
+import { injectBuildHashIntoUiIndex } from "../core/ui-index.js";
 import { createRepoOS } from "../core/repoos.js";
 import { ensureInputNumbers } from "../core/input.js";
 import { ensureStoryNumbers } from "../core/story-definition-files.js";
@@ -192,9 +193,10 @@ import { TestRunManager } from "./test-run.js";
 import { TaskCheckManager, type TaskCheckListener } from "./task-check.js";
 import { CTOManager } from "./cto.js";
 import { CTOMonitor } from "./cto-monitor.js";
-import { ReloadManager, readBuildHash, isDevBuild, substituteUiIndexBuildHash } from "./reload.js";
+import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { ServeReaper, isPortListening } from "./serve-reaper.js";
 import { isLoopbackAddress, localTokenMatches, writeLocalCliToken } from "./local-token.js";
+import { recordApiRouteCatalog } from "./api-route-catalog.js";
 import { testModelCombination } from "./model-test.js";
 import {
   generateReleaseNotes,
@@ -872,9 +874,9 @@ const UI_MIME: Record<string, string> = {
 function serveStaticUi(res: ServerResponse, uiDir: string, urlPath: string): boolean {
   const rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
   if (rel.includes("..")) return false;
-  // Never serve index.html through the static path — it contains the
-  // __REPOOS_BUILD_HASH_VALUE__ placeholder that must be substituted at read time
-  // (not the window property name — replaceAll would corrupt `window.__REPOOS_BUILD_HASH__`).
+  // Never serve index.html through the static path — `__REPOOS_BUILD_HASH_VALUE__`
+  // must be substituted at read time (not the window property name — replaceAll would
+  // corrupt `window.__REPOOS_BUILD_HASH__`).
   // The SPA fallback below handles it via readUiIndex().
   if (!rel || rel === "index.html") return false;
   const abs = resolve(uiDir, rel);
@@ -1142,7 +1144,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // ephemeral port is requested (nothing stable to hand off).
   const loadedHash = readBuildHash(config.root);
   const readUiIndex = (indexPath: string): string =>
-    substituteUiIndexBuildHash(readFileSync(indexPath, "utf8"), loadedHash || "unknown");
+    injectBuildHashIntoUiIndex(readFileSync(indexPath, "utf8"), loadedHash ?? "");
   const reloadEnabled =
     !isDevBuild() && process.env.REPOOS_PREVIEW_CHILD !== "1" && opts.port !== 0;
   let reload: ReloadManager | null = null;
@@ -1651,6 +1653,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     {
       logger,
       getTask: (taskId) => index.getTask(taskId),
+      onTaskFilePatched: (absPath) => index.applyFileChange(absPath),
       onDiagnosableFailure: (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
       onHandoff: async (request) => {
         let reachedFinalization = false;
@@ -3171,6 +3174,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/service/disable", disableAutoStartRoute);
   router.register("POST", "/api/service/remove", removeServiceRoute);
   router.register("POST", "/api/service/health", healthCheckRoute);
+
+  recordApiRouteCatalog(router);
 
   // UI routes
   router.register("GET", "/manifest.webmanifest", serveManifest);

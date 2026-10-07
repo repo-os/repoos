@@ -3,6 +3,9 @@ id: "0665"
 title: "Lifecycle: deletion, retention, orphan cleanup, recovery"
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p1
 area: core
 story: Cloud attachment storage
@@ -11,7 +14,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T08:29:30Z"
-updated_at: "2026-10-05T12:06:10Z"
+updated_at: "2026-10-06T23:48:10Z"
 ---
 ---
 Slice 8: Deletion, retention, orphan cleanup, recovery documented and tested. State behavior on clone, move to another machine, restore, worktree access.
@@ -43,3 +46,4 @@ This is slice 8 of the Cloud attachment storage story; it depends on 0661 (stabl
 - 2026-10-05T11:15:29Z · needs_input
 - 2026-10-05T12:04:49Z · needs_input
 - 2026-10-05T12:05:54Z · body
+- 2026-10-06T23:48:10Z · needs_input

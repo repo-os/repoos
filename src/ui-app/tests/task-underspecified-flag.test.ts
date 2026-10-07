@@ -12,6 +12,8 @@ import { parseTask } from "../../core/task.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import { createTask, patchTask, pmMessage, taskAction } from "../../server/routes/tasks.js";
 import {
+  flagNeedsHumanStepIfNeeded,
+  flagTaskSpecFlagsIfNeeded,
   flagUnderspecifiedIfNeeded,
   sweepUnderspecifiedTasks,
 } from "../../server/task-underspecified-flag.js";
@@ -493,6 +495,66 @@ ${extraFrontmatter}---
 ${body}`;
 }
 
+describe("needs-human-step flag (#0698)", () => {
+  const humanOnlyBody = WELL_SPECIFIED_BODY.replace(
+    "- [ ] The flow works end to end",
+    "- [ ] Verify on a real device with production credentials",
+  );
+
+  it("keeps needs-human-step after start when acceptance criteria still need a human", () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(
+        fx.taskPath,
+        taskFileText(
+          "0698",
+          "active",
+          humanOnlyBody,
+          "needs_input: true\nneeds_input_reason: needs-human-step\nneeds_input_detail: device\n",
+        ),
+      );
+      const task = readTaskFile(fx);
+      expect(task.needsInputReason).toBe("needs-human-step");
+      flagTaskSpecFlagsIfNeeded(fx.config, task);
+      const onDisk = readTaskFile(fx);
+      expect(onDisk.needsInput).toBe(true);
+      expect(onDisk.needsInputReason).toBe("needs-human-step");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("flags needs-human-step when human-only acceptance criteria are added while active", () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(fx.taskPath, taskFileText("0698", "active", humanOnlyBody));
+      const flagged = flagNeedsHumanStepIfNeeded(fx.config, readTaskFile(fx));
+      expect(flagged).not.toBeNull();
+      expect(flagged!.needsInputReason).toBe("needs-human-step");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("clears needs-human-step when acceptance criteria no longer mention human-only work", () => {
+    const fx = makeFixture("inbox", "needs_input: true\nneeds_input_reason: needs-human-step\n");
+    try {
+      writeFileSync(
+        fx.taskPath,
+        taskText("inbox", "needs_input: true\nneeds_input_reason: needs-human-step\n").replace(
+          STUB_BODY,
+          WELL_SPECIFIED_BODY,
+        ),
+      );
+      const cleared = flagNeedsHumanStepIfNeeded(fx.config, readTaskFile(fx));
+      expect(cleared).not.toBeNull();
+      expect(cleared!.needsInput).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
 describe("underspecified flag on plain create (#0668)", () => {
   it("flags a stub task created through POST /api/tasks", async () => {
     const fx = makeFixture("inbox");
@@ -524,6 +586,31 @@ describe("underspecified flag on plain create (#0668)", () => {
         "Task body is underspecified at creation",
         expect.objectContaining({ needsInputRaised: true }),
       );
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("flags needs-human-step when acceptance criteria require a real device (#0698)", async () => {
+    const humanBody = WELL_SPECIFIED_BODY.replace(
+      "- [ ] The flow works end to end",
+      "- [ ] Verify on a real device with production credentials",
+    );
+    const fx = makeFixture("inbox");
+    try {
+      const ctx = makeCtx(fx);
+      ctx.repoos = {
+        createTask: () => {
+          writeFileSync(fx.taskPath, taskFileText("0698", "inbox", humanBody));
+          return readTaskFile(fx);
+        },
+      } as any;
+      const { res, fake } = makeRes();
+      await createTask(ctx, makeReq({ title: "Device task", body: humanBody }), res, {});
+      expect(fake.status).toBe(201);
+      const onDisk = readTaskFile(fx);
+      expect(onDisk.needsInput).toBe(true);
+      expect(onDisk.needsInputReason).toBe("needs-human-step");
     } finally {
       fx.clean();
     }
