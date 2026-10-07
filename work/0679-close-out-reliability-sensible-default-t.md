@@ -14,8 +14,6 @@ model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
 updated_at: "2026-10-07T03:08:37Z"
 last_check_failure: "repoos check at 2026-10-07T02:59:34.698Z: server-side finalization timed out (deadline exceeded)"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 404c1109cf8aa78b7446c56733747d534bb744ae
 merge_conflict_retry_count: 2
 review_passes: 2
 handoff_signal_retry_count: 1
@@ -130,3 +128,4 @@ error: script "test" exited with code 1
 - 2026-10-07T03:01:13Z · body
 - 2026-10-07T03:02:56Z · body
 - 2026-10-07T03:08:37Z · status active→review
+
