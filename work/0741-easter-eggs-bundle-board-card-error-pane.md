@@ -148,3 +148,4 @@ src/ui-app/tests/close-out-attempt.test.ts(9,7): error TS2741: Property 'lastPro
 src/ui-app/tests/close-out-attempt.test.ts(27,7): error TS2741: Property 'lastProgressAt' is missing in type '{ taskId: string; stage: "merge"; failed: false; startedAt: string; }' but required in type '{ taskId: string; stage: "done" | "build" | "check" | "merge" | "sync" | "resolve-conflict" | null; failed: boolean; error?: string | undefined; startedAt: string | null; lastProgressAt: string | null; }'.
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-07T18:52:26Z · status active→review
+- 2026-10-07T18:52:26Z · note: Task body is underspecified: missing sections: Desired UX
