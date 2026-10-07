@@ -5,12 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: [server, web]
-story: "Autopilot: a driver that only handles exceptions"
+story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T02:05:38Z"
+updated_at: "2026-10-07T02:10:58Z"
 ---
 ## Problem
 
@@ -32,3 +32,4 @@ Read src/server/attention-feed.ts and the done-error debug tl;dr first and reuse
 ## Activity
 
 - 2026-10-07T02:05:38Z · created · unknown
+- 2026-10-07T02:10:58Z · story
