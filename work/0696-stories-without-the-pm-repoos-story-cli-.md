@@ -137,4 +137,4 @@ error: script "test" exited with code 1
 - 2026-10-07T19:40:02Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-07T19:45:15Z · body
 - 2026-10-07T19:51:25Z · status active→review
-
+- 2026-10-07T19:51:25Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
