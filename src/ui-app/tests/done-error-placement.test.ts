@@ -105,7 +105,8 @@ describe("move-to-done inline error placement", () => {
       const card = wrapper.find(".task-card");
       expect(card.element.contains(err.element)).toBe(true);
       // No Move to done button on the card while the error is showing.
-      expect(wrapper.find(".tc-foot").exists()).toBe(false);
+      expect(wrapper.find(".tc-card-footer").exists()).toBe(true);
+      expect(wrapper.find(".tc-card-footer-action").exists()).toBe(false);
       expect(wrapper.text()).not.toContain("Move to done");
       // No "review passed · ready to finish" hint either — it would read as
       // contradictory right next to a failure banner.

@@ -2375,6 +2375,16 @@
   align-items: center;
   gap: 6px;
 }
+/* Board card: action + move-to-done error share one flush footer (#0741). */
+.tc-card-footer {
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+.tc-card-footer .tc-card-footer-action {
+  border-radius: 0;
+}
 .tc-coding {
   color: var(--violet);
 }
@@ -4734,14 +4744,56 @@
   justify-content: center;
   padding: 8px 12px;
   font-size: 12px;
+  border-radius: 0;
+}
+.done-error-stale {
+  width: 100%;
+  min-width: 0;
+}
+.done-error-stale-summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--txt-dim);
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+.done-error-stale-summary::-webkit-details-marker {
+  display: none;
+}
+.done-error-stale[open] .done-error-stale-summary {
+  border-bottom: 1px solid var(--border);
+}
+.done-error--stale.done-error--card {
+  opacity: 0.92;
 }
 /* Keep a failing check readable without consuming the entire drawer. The
    output is still expandable, and collapses automatically for Debugger. */
 .done-error--panel .done-error-pre {
   max-height: min(30vh, 220px);
 }
-.tc-done-error {
-  margin-top: 10px;
+.tc-done-error.done-error--card {
+  margin: 0;
+  width: 100%;
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  padding: 0;
+}
+.tc-card-footer .done-error--card .done-error-row {
+  padding: 10px 12px 0;
+}
+.tc-card-footer .done-error--card .done-error-fix {
+  margin-top: 0;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 0;
+}
+.tc-card-footer .done-error--card .done-error-stale .done-error-row {
+  padding: 10px 12px 0;
 }
 .drawer-done-error {
   margin-top: 12px;
