@@ -269,6 +269,37 @@ The scripts on hosts are **copies**: after updating RepoOS re-run the setup
 above, otherwise an old `validate.sh` ignores the third (artifacts) argument —
 the per-host prerequisite check below reports exactly that.
 
+#### Rolling out incremental bundle upload (#0717 / #0725)
+
+RepoOS 2026-10-07+ uploads partial git bundles when the host's installed
+`validate.sh` understands the optional **mirror-path** argument (the copy in
+`scripts/remote-runner/validate.sh` in this repo). The prerequisite probe
+(`grep MIRROR` on `/opt/repoos/validate.sh`) caches that per host:
+
+- **Current script** — RepoOS probes the host mirror, uploads only new commits
+  when possible, and passes the mirror path as the fifth argument.
+- **Older script (pre-mirror)** — RepoOS still works: it sends a full `HEAD`
+  bundle and calls `validate.sh` with the legacy four-argument layout (bundle,
+  sha, artifacts dir, optional changed ref). The server logs that the runner
+  script is old and surfaces **legacy (full bundle only)** plus a one-line
+  install command on the Remote runners tab and in Settings → Remote validation.
+- **Mismatch** — If an incremental bundle fails with "cloned an empty
+  repository" or a transport exit 3, the server retries **once** with the legacy
+  full bundle and remembers that host as legacy until you update `validate.sh`.
+
+Update every pool host after pulling a RepoOS release that includes #0717:
+
+```bash
+# Example — replace bee with your host alias; needs sudo on the host.
+ssh bee 'git clone --depth 1 git@github.com:repo-os/repoos.git ~/.repoos-build && \
+  sudo install -Dm755 ~/.repoos-build/scripts/remote-runner/validate.sh /opt/repoos/validate.sh && \
+  rm -rf ~/.repoos-build && echo done'
+```
+
+Or re-run `just setup-<host>` / `just setup-<host>-native`, which installs the
+same file. No server restart is required — the probe result refreshes on the
+next health check.
+
 #### The gate container (`repoos-ci`) and project-specific images
 
 The default `remoteValidation.containerImage` is **`repoos-ci`**: the image RepoOS
@@ -343,7 +374,8 @@ container on macOS/Colima, whose bind-mount view maps a host directory to
 root:root 0755 inside the VM regardless of the real host-side permissions.
 A named volume sidesteps that host-filesystem-mapping problem entirely) —
 and an **up-to-date `validate.sh` that accepts the artifacts dir as
-its third argument**. A host that fails is reported instead
+its third argument** (mirror upload support is detected separately — see
+"Rolling out incremental bundle upload" above). A host that fails is reported instead
 of failing jobs — its state and reason show in Settings → Remote validation
 (Hosts) and in `GET /api/remote-validation/status` (`hosts[]` with `probed`,
 `healthy`, `detail`, `inFlight`, `queued` — each waiting run counted against the
