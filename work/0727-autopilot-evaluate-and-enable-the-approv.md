@@ -64,3 +64,4 @@ No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.
 - 2026-10-07T05:20:24Z · body
 - 2026-10-07T05:21:58Z · body
 - 2026-10-07T05:28:40Z · status active→review
+- 2026-10-07T05:28:40Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
