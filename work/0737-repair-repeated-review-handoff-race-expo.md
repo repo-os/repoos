@@ -2,7 +2,7 @@
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T15:08:02Z"
+updated_at: "2026-10-07T15:08:03Z"
 review_passes: 3
 last_close_out_gate_ms: 1954980
 last_close_out_gate_at: "2026-10-07T14:22:21.634Z"
@@ -113,3 +113,4 @@ error: script "test" exited with code 1
 - 2026-10-07T15:01:48Z · note: review pass 3: good to go
 - 2026-10-07T15:02:56Z · status review→active
 - 2026-10-07T15:08:02Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-07T15:08:03Z · status review→active
