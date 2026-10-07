@@ -2,7 +2,7 @@
 id: "0692"
 title: Resolve integration conflicts without restarting the full engineering and review cycle
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -167,3 +167,4 @@ error: script "test" exited with code 1
 - 2026-10-07T16:10:03Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-07T16:10:03Z · status review→active
 - 2026-10-07T16:15:57Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-07T16:15:57Z · status review→active
