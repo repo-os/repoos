@@ -36,7 +36,7 @@ import {
   isAncestor,
   localBranches,
   runGit,
-  dirtyFiles,
+  mainDirtyFilesForCloseOut,
   GitDirtyCheckError,
   worktreePathForBranch,
 } from "../core/git.js";
@@ -577,7 +577,7 @@ async function completeTaskLocked(
   // merge git will refuse.
   let publishDirty: string[];
   try {
-    publishDirty = await dirtyFiles(root);
+    publishDirty = await mainDirtyFilesForCloseOut(root, config);
   } catch (err) {
     if (err instanceof GitDirtyCheckError) {
       return {
@@ -592,8 +592,6 @@ async function completeTaskLocked(
     }
     throw err;
   }
-  const cachePrefix = `${(config.cacheDir ?? ".repoos").replace(/\/+$/, "")}/`;
-  publishDirty = publishDirty.filter((path) => !path.startsWith(cachePrefix));
   if (publishDirty.length > 0) {
     return {
       ok: false,

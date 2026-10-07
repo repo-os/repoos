@@ -388,6 +388,13 @@ export interface RemoteHostStatus {
   serverStats?: RemoteServerStats;
   /** Host-side lock holders + waiters sampled over SSH (#0705). */
   hostLock?: HostLockSnapshot;
+  /**
+   * Whether the installed `validate.sh` supports incremental bundle upload
+   * (mirror path argument). Set by the prerequisite probe; absent until probed.
+   */
+  validateScriptMirrorSupported?: boolean;
+  /** One-line install command to refresh `validate.sh` on this host (#0725). */
+  validateScriptInstallCommand?: string;
   /** Standalone / host-lock waiters with phase and queue position (#0705). */
   lockWaiters?: {
     taskId: string;
@@ -630,6 +637,37 @@ interface RemoteEventContext {
 /** The gate script every host must carry, and the token a passing probe prints. */
 export const VALIDATE_SCRIPT = "/opt/repoos/validate.sh";
 export const PREREQ_OK_TOKEN = "REPOOS_PREREQ_OK";
+/** Printed by {@link prereqProbeCommand} when `validate.sh` supports mirror upload. */
+export const RUNNER_SCRIPT_MIRROR_TOKEN = "REPOOS_VALIDATE_MIRROR";
+
+/** One-line command an owner can run to install an up-to-date `validate.sh`. */
+export function validateScriptInstallCommand(user: string, host: string): string {
+  const target = `${user}@${host}`;
+  return (
+    `ssh ${target} 'git clone --depth 1 git@github.com:repo-os/repoos.git ~/.repoos-build && ` +
+    `sudo install -Dm755 ~/.repoos-build/scripts/remote-runner/validate.sh ${VALIDATE_SCRIPT} && ` +
+    `rm -rf ~/.repoos-build && echo done'`
+  );
+}
+
+/** Parse mirror support from a prerequisite-probe transcript (#0725). */
+export function parseValidateScriptMirrorSupport(output: string): boolean {
+  return output.includes(`${RUNNER_SCRIPT_MIRROR_TOKEN}=1`);
+}
+
+/**
+ * True when the runner likely rejected an incremental bundle (old `validate.sh`
+ * cloning a HEAD-less bundle, or validate.sh exit 3 transport).
+ */
+export function isRunnerBundleTransportMismatch(output: string, exitCode: number | null): boolean {
+  if (/cloned an empty repository/i.test(output)) return true;
+  if (exitCode === 3 || exitCode === 128) {
+    return /\[validate\] FATAL:|could not fetch .* into the mirror|carries no refs\/repoos\/candidate/i.test(
+      output,
+    );
+  }
+  return false;
+}
 /** The named Docker volume validate.sh caches bun installs in — must match
  *  `CACHE_VOLUME` in scripts/remote-runner/validate.sh exactly (#0521 review,
  *  third round: a named volume, not a host bind-mount — see that script's
@@ -968,6 +1006,7 @@ export function prereqProbeCommand(
     "grep -qF '${3' " +
       `${VALIDATE_SCRIPT} || ` +
       `{ echo "outdated ${VALIDATE_SCRIPT}: it must accept the artifacts dir as its third argument — re-run the per-host install"; exit 1; }`,
+    `grep -q MIRROR ${VALIDATE_SCRIPT} && echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 || echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=0`,
     `echo ${PREREQ_OK_TOKEN}`,
   );
   return lines.join(" &&\n");
@@ -1496,10 +1535,55 @@ export async function prepareCandidateUpload(
     /** The changed-ref base sha, when the run is scoped (#0695). */
     changedBaseSha?: string | null;
     mirrorPath: string;
+    /** When false, ship a full `HEAD` bundle and omit the mirror arg (#0725). */
+    incrementalUpload?: boolean;
     emit: (s: string) => void;
   },
 ): Promise<PreparedUpload> {
   const { host, bundlePath, remoteBundle, worktreePath, candidateSha, mirrorPath, emit } = opts;
+  const incrementalUpload = opts.incrementalUpload !== false;
+
+  if (!incrementalUpload) {
+    emit(
+      "[runner script is old: using full bundle; update /opt/repoos/validate.sh to enable incremental uploads]\n",
+    );
+    const bundle = await exec.bundleRepo(worktreePath, bundlePath, {
+      refs: ["HEAD"],
+      excludeRefs: [],
+    });
+    if (!bundle.ok) {
+      return { ok: false, stage: "bundle", detail: bundle.detail ?? "unknown", hostGone: false };
+    }
+    let bundleBytes = 0;
+    try {
+      bundleBytes = statSync(bundlePath).size;
+    } catch {
+      /* size is observability only */
+    }
+    const uploadStartedAt = Date.now();
+    let lastDetail = "";
+    for (let attempt = 1; attempt <= UPLOAD_ATTEMPTS; attempt++) {
+      const up = await exec.uploadFile(host, bundlePath, remoteBundle);
+      if (up.ok) {
+        const uploadSecs = Math.round((Date.now() - uploadStartedAt) / 100) / 10;
+        return {
+          ok: true,
+          bundlePath,
+          bundleBytes,
+          uploadSecs,
+          partial: false,
+          baseSha: null,
+          mirrorPath: "",
+        };
+      }
+      lastDetail = up.detail ?? "unknown";
+      if (attempt < UPLOAD_ATTEMPTS) {
+        emit(`[upload attempt ${attempt} failed (${lastDetail}) — retrying]\n`);
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+      }
+    }
+    return { ok: false, stage: "upload", detail: lastDetail, hostGone: true };
+  }
 
   // 1. Ask the host what its mirror already holds (one round-trip). A failed
   //    probe, or a runner with no probe at all, is not fatal: treat it as "no
@@ -1600,6 +1684,21 @@ async function updateRef(cwd: string, ref: string, sha: string): Promise<boolean
   return res.status === 0;
 }
 
+type SuccessfulUpload = Extract<PreparedUpload, { ok: true }>;
+
+function logUploadedBundle(
+  upload: SuccessfulUpload,
+  emit: (s: string) => void,
+  record?: (message: string) => void,
+): void {
+  emit(
+    `[uploaded bundle ${formatBytes(upload.bundleBytes)}${upload.partial ? ` (only new commits since ${upload.baseSha?.slice(0, 12)})` : " (full history — host had no usable base)"} in ${upload.uploadSecs}s]\n`,
+  );
+  record?.(
+    `uploaded bundle ${formatBytes(upload.bundleBytes)} in ${upload.uploadSecs}s${upload.partial ? " (incremental)" : " (full)"}`,
+  );
+}
+
 // ── the runner ──────────────────────────────────────────────────────────────
 
 export class RemoteValidationRunner implements RemoteValidator {
@@ -1621,6 +1720,8 @@ export class RemoteValidationRunner implements RemoteValidator {
   /** In-flight provisioning, so concurrent validate() calls share one VM. */
   private provisioning: Promise<RemoteHost> | null = null;
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Per-VM cache of whether `validate.sh` supports mirror upload (#0725). */
+  private readonly validateScriptMirrorByIp = new Map<string, boolean>();
   private lifetimeTimer: ReturnType<typeof setTimeout> | null = null;
   private activeJobs = 0;
   private readonly activeRunRegistry = new ActiveRemoteRunRegistry();
@@ -1753,6 +1854,14 @@ export class RemoteValidationRunner implements RemoteValidator {
 
   private setActiveRunStage(info: ActiveRemoteRunInfo | null, taskId: string): void {
     this.activeRunRegistry.set(info, taskId);
+  }
+
+  private async probeValidateScriptMirror(host: RemoteHost): Promise<boolean> {
+    const cmd =
+      `grep -q MIRROR ${VALIDATE_SCRIPT} && echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 || ` +
+      `echo ${RUNNER_SCRIPT_MIRROR_TOKEN}=0`;
+    const res = await this.exec.runRemote(host, cmd, () => {}, this.timings.probeTimeoutMs);
+    return parseValidateScriptMirrorSupport(res.output);
   }
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
@@ -1928,83 +2037,106 @@ export class RemoteValidationRunner implements RemoteValidator {
         },
         opts.taskId,
       );
-      const upload = await prepareCandidateUpload(this.exec, {
-        host,
-        bundlePath,
-        remoteBundle,
-        worktreePath: opts.worktreePath,
-        candidateSha: opts.candidateSha,
-        changedRef: opts.changedRef,
-        changedBaseSha: prepared.changedBaseSha,
-        mirrorPath: remoteMirrorPath(this.config.root),
-        emit,
-      });
-      if (!upload.ok) {
-        const what =
-          upload.stage === "bundle"
-            ? `git bundle failed: ${upload.detail}`
-            : `upload of candidate bundle failed: ${upload.detail}`;
-        return withScope(this.infraFail(what, { taskId: opts.taskId, host: host.ip }));
+      let incrementalUpload = this.validateScriptMirrorByIp.get(host.ip);
+      if (incrementalUpload !== true) {
+        if (incrementalUpload === undefined) {
+          incrementalUpload = await this.probeValidateScriptMirror(host);
+          this.validateScriptMirrorByIp.set(host.ip, incrementalUpload);
+        } else {
+          incrementalUpload = false;
+        }
       }
-      emit(
-        `[uploaded bundle ${formatBytes(upload.bundleBytes)}${upload.partial ? ` (only new commits since ${upload.baseSha?.slice(0, 12)})` : " (full history — host had no usable base)"} in ${upload.uploadSecs}s]\n`,
-      );
-      this.record(
-        { taskId: opts.taskId, host: host.ip, phase: "run" },
-        {
-          level: "info",
-          phase: "run",
-          message: `uploaded bundle ${formatBytes(upload.bundleBytes)} in ${upload.uploadSecs}s${upload.partial ? " (incremental)" : " (full)"}`,
-        },
-      );
-      const uploadSeconds = Math.round(upload.uploadSecs);
-      this.setActiveRunStage(
-        {
-          taskId: opts.taskId,
-          host: host.ip,
-          phase: opts.phase ?? "pre-review",
-          scope: runScope,
-          startedAt: runStartedIso,
-          stage: "run",
-          uploadBytes: upload.bundleBytes,
-          uploadSeconds,
-        },
-        opts.taskId,
-      );
-
-      // Provisioning + bundling can outlast the caller's deadline (#0521 spec
-      // item 5) — never start a suite for a caller that already gave up. The
-      // `cancelled` marker tells the history row apart from a real gate
-      // failure (0564 review: this used to land as `fail`).
-      if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
-        return withScope({
-          ...this.infraFail(
-            `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
-            { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
-          ),
-          cancelled: true,
+      let upload: SuccessfulUpload | null = null;
+      let run: RemoteExecResult | null = null;
+      for (let transportAttempt = 0; transportAttempt < 2; transportAttempt++) {
+        const preparedUpload = await prepareCandidateUpload(this.exec, {
+          host,
+          bundlePath,
+          remoteBundle,
+          worktreePath: opts.worktreePath,
+          candidateSha: opts.candidateSha,
+          changedRef: opts.changedRef,
+          changedBaseSha: prepared.changedBaseSha,
+          mirrorPath: remoteMirrorPath(this.config.root),
+          incrementalUpload,
+          emit,
         });
-      }
+        if (!preparedUpload.ok) {
+          const what =
+            preparedUpload.stage === "bundle"
+              ? `git bundle failed: ${preparedUpload.detail}`
+              : `upload of candidate bundle failed: ${preparedUpload.detail}`;
+          return withScope(this.infraFail(what, { taskId: opts.taskId, host: host.ip }));
+        }
+        upload = preparedUpload;
+        logUploadedBundle(upload, emit, (message) =>
+          this.record(
+            { taskId: opts.taskId, host: host.ip, phase: "run" },
+            { level: "info", phase: "run", message },
+          ),
+        );
+        const uploadSeconds = Math.round(upload.uploadSecs);
+        this.setActiveRunStage(
+          {
+            taskId: opts.taskId,
+            host: host.ip,
+            phase: opts.phase ?? "pre-review",
+            scope: runScope,
+            startedAt: runStartedIso,
+            stage: "run",
+            uploadBytes: upload.bundleBytes,
+            uploadSeconds,
+          },
+          opts.taskId,
+        );
 
-      // 3. run build + test inside the container
-      const changedNote = remoteTestRef ? ` (tests scoped to changed vs ${remoteTestRef})` : "";
-      emit(`[running build + test on ${host.ip}${changedNote}]\n`);
-      this.record(
-        { taskId: opts.taskId, host: host.ip, phase: "run" },
-        {
-          level: "info",
-          phase: "run",
-          message: `running build + test on ${host.ip}${changedNote}`,
-        },
-      );
-      const cmd = validateScriptArgs(
-        remoteBundle,
-        opts.candidateSha,
-        paths.artifacts,
-        remoteTestRef ?? undefined,
-        upload.mirrorPath || undefined,
-      );
-      const run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
+        // Provisioning + bundling can outlast the caller's deadline (#0521 spec
+        // item 5) — never start a suite for a caller that already gave up.
+        if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
+          return withScope({
+            ...this.infraFail(
+              `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
+              { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
+            ),
+            cancelled: true,
+          });
+        }
+
+        const changedNote = remoteTestRef ? ` (tests scoped to changed vs ${remoteTestRef})` : "";
+        emit(`[running build + test on ${host.ip}${changedNote}]\n`);
+        this.record(
+          { taskId: opts.taskId, host: host.ip, phase: "run" },
+          {
+            level: "info",
+            phase: "run",
+            message: `running build + test on ${host.ip}${changedNote}`,
+          },
+        );
+        const cmd = validateScriptArgs(
+          remoteBundle,
+          opts.candidateSha,
+          paths.artifacts,
+          remoteTestRef ?? undefined,
+          upload.mirrorPath || undefined,
+        );
+        run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
+        if (
+          incrementalUpload &&
+          transportAttempt === 0 &&
+          isRunnerBundleTransportMismatch(run.output, run.code)
+        ) {
+          this.validateScriptMirrorByIp.set(host.ip, false);
+          incrementalUpload = false;
+          emit("[bundle transport mismatch — retrying once with full HEAD bundle for this host]\n");
+          continue;
+        }
+        break;
+      }
+      if (!upload || !run) {
+        return withScope(
+          this.infraFail("remote validation did not start", { taskId: opts.taskId, host: host.ip }),
+        );
+      }
 
       // 4. pull artifacts (best effort)
       await this.exec.downloadDir(
@@ -2316,6 +2448,8 @@ interface PoolHostState {
   retryAt: number;
   /** Consecutive probe failures, capped so retries can't loop forever. */
   healthFails: number;
+  /** Cached from the prerequisite probe (#0725). */
+  validateScriptMirrorSupported?: boolean;
   probing?: Promise<void>;
   retryTimer?: ReturnType<typeof setTimeout>;
   lastRun?: { taskId: string; ok: boolean; at: string; durationMs?: number };
@@ -2807,6 +2941,18 @@ export class TailscaleHostPool {
     }
   }
 
+  /** Whether incremental bundle upload is safe for this host (#0725). */
+  validateScriptMirrorSupported(host: string): boolean {
+    const s = this.hosts.find((c) => c.spec.host === host);
+    return s?.validateScriptMirrorSupported === true;
+  }
+
+  /** Remember a host only accepts the legacy full bundle (#0725). */
+  markValidateScriptLegacy(host: string): void {
+    const s = this.hosts.find((c) => c.spec.host === host);
+    if (s) s.validateScriptMirrorSupported = false;
+  }
+
   /** Per-host state for `/api/remote-validation/status`. */
   status(): RemoteHostStatus[] {
     // Each queued run counts against exactly ONE host — the one dispatch would
@@ -2852,6 +2998,8 @@ export class TailscaleHostPool {
           activeRuns: s.activeRuns.map((r) => ({ ...r })),
           queuedTasks: [...(queuedOn.get(s)?.taskIds ?? [])],
           serverStats: s.serverStats ?? { available: false },
+          validateScriptMirrorSupported: s.validateScriptMirrorSupported,
+          validateScriptInstallCommand: validateScriptInstallCommand(s.ssh.user, s.spec.host),
         },
         s.hostLock,
       ),
@@ -3145,6 +3293,15 @@ export class TailscaleHostPool {
         this.probeTimeoutMs,
       );
       ok = res.code === 0 && res.output.includes(PREREQ_OK_TOKEN);
+      if (ok) {
+        s.validateScriptMirrorSupported = parseValidateScriptMirrorSupport(res.output);
+        if (!s.validateScriptMirrorSupported) {
+          this.logger?.system(
+            "info",
+            `remote validation host ${s.spec.host}: runner script is old (no mirror upload); using full bundles until ${VALIDATE_SCRIPT} is updated`,
+          );
+        }
+      }
       if (!ok) {
         const why = tail(res.output, 5, 600);
         detail = formatProbeReachabilityDetail(
@@ -3703,159 +3860,154 @@ export class TailscaleRunner implements RemoteValidator {
       const prepared = await prepareRemoteTestBundle(opts.worktreePath, opts.changedRef, emit);
       remoteTestRef = prepared.remoteTestRef;
       const remoteBundle = paths.bundle;
+      const runStartedIso = new Date(startedAt).toISOString();
       this.setActiveRunStage(
         {
           taskId: opts.taskId,
           host: host.ip,
           phase: opts.phase ?? "pre-review",
           scope: runScope,
-          startedAt: new Date(startedAt).toISOString(),
+          startedAt: runStartedIso,
           stage: "upload",
           uploadBytes: null,
           uploadSeconds: null,
         },
         opts.taskId,
       );
-      const upload = await prepareCandidateUpload(this.exec, {
-        host,
-        bundlePath,
-        remoteBundle,
-        worktreePath: opts.worktreePath,
-        candidateSha: opts.candidateSha,
-        changedRef: opts.changedRef,
-        changedBaseSha: prepared.changedBaseSha,
-        mirrorPath: remoteMirrorPath(this.config.root),
-        emit,
-      });
-      if (!upload.ok) {
-        const detail =
-          upload.stage === "bundle"
-            ? `git bundle failed: ${upload.detail}`
-            : `ssh upload of candidate bundle to ${host.ip} failed: ${upload.detail}`;
-        // Upload uses the SSH transport too. A failed transfer means this host
-        // may have gone away since its prerequisite probe; keep queued work
-        // from immediately selecting it again until the health retry probe.
-        if (upload.hostGone) {
-          this.pool.markUnhealthy(host.ip, detail);
-          this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
-        }
-        return withScope(this.infraFail(detail, { taskId: opts.taskId, host: host.ip }));
-      }
-      emit(
-        `[uploaded bundle ${formatBytes(upload.bundleBytes)}${upload.partial ? ` (only new commits since ${upload.baseSha?.slice(0, 12)})` : " (full history — host had no usable base)"} in ${upload.uploadSecs}s]\n`,
-      );
-      this.record(
-        { taskId: opts.taskId, host: host.ip, phase: "run" },
-        {
-          level: "info",
-          phase: "run",
-          message: `uploaded bundle ${formatBytes(upload.bundleBytes)} in ${upload.uploadSecs}s${upload.partial ? " (incremental)" : " (full)"}`,
-        },
-      );
-      const uploadSeconds = Math.round(upload.uploadSecs);
-      // The upload is done — from here the run waits for the host lock and then
-      // executes the suite, so the slow-run detector stops blaming the transfer.
-      this.setActiveRunStage(
-        {
-          taskId: opts.taskId,
-          host: host.ip,
-          phase: opts.phase ?? "pre-review",
-          scope: runScope,
-          startedAt: new Date(startedAt).toISOString(),
-          stage: "queue",
-          uploadBytes: upload.bundleBytes,
-          uploadSeconds,
-        },
-        opts.taskId,
-      );
-
       // 3. run build + test via validate.sh on the host (which calls docker run
       //    itself), wrapped in the host-side slot lock so this process's gate
       //    and every other repoos process share ONE per-host limit (#0521).
       const image = rv.containerImage ?? "repoos-ci";
-      // Never enter the host lock after the caller's deadline (#0521 spec
-      // item 5): a run whose caller already gave up (dispatch can win the race
-      // with the queue timer, or the deadline passes during bundle/upload) must
-      // not start a suite or hold a slot — cancel transiently, like a queued
-      // run. The `cancelled` marker keeps the history row from reading as a
-      // gate failure (0564 review).
-      if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
-        return withScope({
-          ...this.infraFail(
-            `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
-            { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
-          ),
-          cancelled: true,
+      let incrementalUpload = this.pool.validateScriptMirrorSupported(host.ip);
+      let upload: SuccessfulUpload | null = null;
+      let run: RemoteExecResult | null = null;
+      let outerTimeoutMs = this.timings.remoteRunTimeoutMs;
+      for (let transportAttempt = 0; transportAttempt < 2; transportAttempt++) {
+        const preparedUpload = await prepareCandidateUpload(this.exec, {
+          host,
+          bundlePath,
+          remoteBundle,
+          worktreePath: opts.worktreePath,
+          candidateSha: opts.candidateSha,
+          changedRef: opts.changedRef,
+          changedBaseSha: prepared.changedBaseSha,
+          mirrorPath: remoteMirrorPath(this.config.root),
+          incrementalUpload,
+          emit,
         });
-      }
-      const changedNote = remoteTestRef ? ` (tests scoped to changed vs ${remoteTestRef})` : "";
-      emit(`[running build + test in ${image} on ${host.ip}${changedNote}]\n`);
-      this.record(
-        { taskId: opts.taskId, host: host.ip, phase: "run" },
-        {
-          level: "info",
-          phase: "run",
-          message: `running build + test in ${image} on ${host.ip}${changedNote}`,
-        },
-      );
-      const inner = `REPOOS_CI_IMAGE=${shellQuote(image)} ${validateScriptArgs(
-        remoteBundle,
-        opts.candidateSha,
-        paths.artifacts,
-        remoteTestRef ?? undefined,
-        upload.mirrorPath || undefined,
-      )}`;
-      const waitSecs =
-        opts.deadlineAt !== undefined
-          ? deadlineLockWaitSecs(opts.deadlineAt)
-          : DEFAULT_HOST_LOCK_WAIT_SECS;
-      // Pass the ABSOLUTE deadline too (#0521 review), not just the relative
-      // `waitSecs` budget computed here — SSH connection time (which the
-      // remote script has no visibility into) happens after this point and
-      // before the script starts self-clocking, so a relative budget alone
-      // can let a run start well past the caller's real deadline.
-      const deadlineAtEpochSecs =
-        opts.deadlineAt !== undefined ? Math.floor(opts.deadlineAt / 1000) : undefined;
-      const lockPriority = hostLockPriority(opts.phase);
-      const metaJson = hostLockMetaJson({
-        taskId: opts.taskId,
-        phase: opts.phase,
-        worktree: opts.worktreePath,
-        priority: lockPriority,
-      });
-      const cmd = hostLockShell({
-        slots: slot.limit,
-        waitSecs,
-        deadlineAtEpochSecs,
-        inner,
-        metaJson,
-        priority: lockPriority,
-      });
-      // The outer SSH timeout must cover the lock wait AND the actual run —
-      // it wraps BOTH phases as one process, but was a fixed remoteRunTimeoutMs
-      // regardless of how long waitSecs allowed the lock to wait first
-      // (#0521 review). A run that legitimately waited most of its lock
-      // budget (queued behind other jobs, not stuck) then had only
-      // remoteRunTimeoutMs minus that wait left for build+test — a healthy
-      // suite could be SIGKILLed and reported as an infra failure purely
-      // because of how long it queued, not because anything was actually
-      // wrong. Add the wait budget on top so the full remoteRunTimeoutMs is
-      // always available for the run itself once it actually starts.
-      const outerTimeoutMs = this.timings.remoteRunTimeoutMs + waitSecs * 1000;
-      this.setActiveRunStage(
-        {
+        if (!preparedUpload.ok) {
+          const detail =
+            preparedUpload.stage === "bundle"
+              ? `git bundle failed: ${preparedUpload.detail}`
+              : `ssh upload of candidate bundle to ${host.ip} failed: ${preparedUpload.detail}`;
+          if (preparedUpload.hostGone) {
+            this.pool.markUnhealthy(host.ip, detail);
+            this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
+          }
+          return withScope(this.infraFail(detail, { taskId: opts.taskId, host: host.ip }));
+        }
+        upload = preparedUpload;
+        logUploadedBundle(upload, emit, (message) =>
+          this.record(
+            { taskId: opts.taskId, host: host.ip, phase: "run" },
+            { level: "info", phase: "run", message },
+          ),
+        );
+        const uploadSeconds = Math.round(upload.uploadSecs);
+        // Upload finished — from here the run may wait for the host lock.
+        this.setActiveRunStage(
+          {
+            taskId: opts.taskId,
+            host: host.ip,
+            phase: opts.phase ?? "pre-review",
+            scope: runScope,
+            startedAt: runStartedIso,
+            stage: "queue",
+            uploadBytes: upload.bundleBytes,
+            uploadSeconds,
+          },
+          opts.taskId,
+        );
+
+        if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
+          return withScope({
+            ...this.infraFail(
+              `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
+              { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
+            ),
+            cancelled: true,
+          });
+        }
+        const changedNote = remoteTestRef ? ` (tests scoped to changed vs ${remoteTestRef})` : "";
+        emit(`[running build + test in ${image} on ${host.ip}${changedNote}]\n`);
+        this.record(
+          { taskId: opts.taskId, host: host.ip, phase: "run" },
+          {
+            level: "info",
+            phase: "run",
+            message: `running build + test in ${image} on ${host.ip}${changedNote}`,
+          },
+        );
+        const inner = `REPOOS_CI_IMAGE=${shellQuote(image)} ${validateScriptArgs(
+          remoteBundle,
+          opts.candidateSha,
+          paths.artifacts,
+          remoteTestRef ?? undefined,
+          upload.mirrorPath || undefined,
+        )}`;
+        const waitSecs =
+          opts.deadlineAt !== undefined
+            ? deadlineLockWaitSecs(opts.deadlineAt)
+            : DEFAULT_HOST_LOCK_WAIT_SECS;
+        const deadlineAtEpochSecs =
+          opts.deadlineAt !== undefined ? Math.floor(opts.deadlineAt / 1000) : undefined;
+        const lockPriority = hostLockPriority(opts.phase);
+        const metaJson = hostLockMetaJson({
           taskId: opts.taskId,
-          host: host.ip,
-          phase: opts.phase ?? "pre-review",
-          scope: runScope,
-          startedAt: new Date(startedAt).toISOString(),
-          stage: "run",
-          uploadBytes: upload.bundleBytes,
-          uploadSeconds,
-        },
-        opts.taskId,
-      );
-      const run = await this.exec.runRemote(host, cmd, emit, outerTimeoutMs);
+          phase: opts.phase,
+          worktree: opts.worktreePath,
+          priority: lockPriority,
+        });
+        const cmd = hostLockShell({
+          slots: slot.limit,
+          waitSecs,
+          deadlineAtEpochSecs,
+          inner,
+          metaJson,
+          priority: lockPriority,
+        });
+        outerTimeoutMs = this.timings.remoteRunTimeoutMs + waitSecs * 1000;
+        this.setActiveRunStage(
+          {
+            taskId: opts.taskId,
+            host: host.ip,
+            phase: opts.phase ?? "pre-review",
+            scope: runScope,
+            startedAt: runStartedIso,
+            stage: "run",
+            uploadBytes: upload.bundleBytes,
+            uploadSeconds,
+          },
+          opts.taskId,
+        );
+        run = await this.exec.runRemote(host, cmd, emit, outerTimeoutMs);
+        if (
+          incrementalUpload &&
+          transportAttempt === 0 &&
+          isRunnerBundleTransportMismatch(run.output, run.code)
+        ) {
+          this.pool.markValidateScriptLegacy(host.ip);
+          incrementalUpload = false;
+          emit("[bundle transport mismatch — retrying once with full HEAD bundle for this host]\n");
+          continue;
+        }
+        break;
+      }
+      if (!upload || !run) {
+        return withScope(
+          this.infraFail("remote validation did not start", { taskId: opts.taskId, host: host.ip }),
+        );
+      }
 
       // 4. pull artifacts (best effort)
       await this.exec.downloadDir(

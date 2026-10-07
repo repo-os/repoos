@@ -2,20 +2,18 @@
 id: "0722"
 title: "Docs: the easter-eggs bundle workflow as the alternative to hotfix flows (AGENTS.md + docs/)"
 type: chore
-status: active
+status: done
 priority: p2
 area: docs
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: afa15e8bf86c667a1228cc1aafff94c5304eda89
 assigned_to: ai
 created_by: ""
 branch: feat/docs-the-easter-eggs-bundle-workflow-as-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-06T14:31:00Z"
-updated_at: "2026-10-06T17:22:23Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: [32m✓[39m tests/check-plan-proposal.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m · [32m✓[39m tests/repo-commit-route.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 209[2mms[22m[39m · [32m✓[39m tests/tunnel-assistant.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 83[2mms[22m[39m · [32m✓[39m tests/area-picker.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 100[2mms[22m[39m · [32m✓[39m tests/settings-location.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m · [32m✓[39m tests/needs-input-ui.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m · [32m✓[39m tests/telegram-chat-routes.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 34[2mms[22m[39m · [32m✓[39m tests/drawer-load.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 118[2mms[22m[39m"
-last_handoff_failure_sha: c7d0b9de8cafe603ae704776248d9502afa5b636
-dev_error_count: 1
+updated_at: "2026-10-06T17:31:19Z"
 ---
 ## Problem
 
@@ -45,42 +43,5 @@ Docs-only; do not touch src/. Edit AGENTS.md carefully: it is the single source 
 - 2026-10-06T14:57:06Z · cli_override, model_override
 - 2026-10-06T14:57:12Z · status inbox→ready
 - 2026-10-06T14:57:16Z · status ready→active, branch
-- 2026-10-06T15:07:10Z · body
-- 2026-10-06T15:18:24Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-10-06T15:55:42Z · needs_input
-- 2026-10-06T16:10:43Z · body
-- 2026-10-06T16:25:28Z · handoff failed · remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s
-[validate] cloning bundle /home/nick/.repoos-0722-e4edaebe.bundle
-warning: You appear to have cloned an empty repository.
-fatal: unable to read tree (c7d0b9de8cafe603ae704776248d9502afa5b636) — fix it in the feature branch and re-run the gate
-- 2026-10-06T16:30:44Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-06T16:30:44Z · status review→active
-- 2026-10-06T16:30:50Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s
-[validate] cloning bundle /home/nick/.repoos-0722-fc1b20e7.bundle
-warning: You appear to have cloned an empty repository.
-fatal: unable to read tree (c7d0b9de8cafe603ae704776248d9502afa5b636) — fix it in the feature branch and re-run the gate
-- 2026-10-06T16:36:44Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-06T16:36:44Z · status review→active
-- 2026-10-06T16:40:48Z · handoff failed · task-file handoff failed at check · repoos check failed: [32m✓[39m tests/check-plan-proposal.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m · [32m✓[39m tests/repo-commit-route.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 209[2mms[22m[39m · [32m✓[39m tests/tunnel-assistant.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 83[2mms[22m[39m · [32m✓[39m tests/area-picker.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 100[2mms[22m[39m · [32m✓[39m tests/settings-location.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m · [32m✓[39m tests/needs-input-ui.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m · [32m✓[39m tests/telegram-chat-routes.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 34[2mms[22m[39m · [32m✓[39m tests/drawer-load.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 118[2mms[22m[39m
-- 2026-10-06T16:46:44Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
-- 2026-10-06T17:04:32Z · handoff failed · remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s
-[validate] cloning bundle /home/nick/.repoos-0722-78213c79.bundle
-warning: You appear to have cloned an empty repository.
-fatal: unable to read tree (0755bd7d81e0810a547df2c7c594548c6a67297c) — fix it in the feature branch and re-run the gate
-- 2026-10-06T17:09:47Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-06T17:09:47Z · status review→active
-- 2026-10-06T17:10:00Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s
-[validate] cloning bundle /home/nick/.repoos-0722-0ac5bae9.bundle
-warning: You appear to have cloned an empty repository.
-fatal: unable to read tree (0755bd7d81e0810a547df2c7c594548c6a67297c) — fix it in the feature branch and re-run the gate
-- 2026-10-06T17:16:22Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-06T17:16:23Z · status review→active
-- 2026-10-06T17:16:53Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) — [lock] slot 0 acquired after 0s
-[validate] cloning mirror ~/.repoos-cache/repoos-746fff46.git at 0755bd7d81e0810a547df2c7c594548c6a67297c
-warning: You appear to have cloned an empty repository.
-[validate] HEAD verified at 0755bd7d81e0810a547df2c7c594548c6a67297c
-bun install v1.4.2 (744846f84)
-error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INSTALL
-[validate] gate exit 1 — fix it in the feature branch and re-run the gate
-- 2026-10-06T17:22:23Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-06T17:22:23Z · status review→active
+- 2026-10-06T17:27:50Z · status active→review
+- 2026-10-06T17:31:19Z · status review→done, release:success

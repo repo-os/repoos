@@ -3,6 +3,9 @@ id: "0452"
 title: Build a polyglot real-repo adoption test matrix
 type: feature
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p1
 area: core
 assigned_to: ai
@@ -12,7 +15,7 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-19T16:43:21Z"
-updated_at: "2026-09-20T00:10:47Z"
+updated_at: "2026-10-06T23:48:12Z"
 ---
 ## Outcome
 
@@ -80,3 +83,4 @@ P1 — Build a polyglot real-repo adoption test matrix.
 - 2026-09-19T23:08:42Z · status ready→active, branch
 - 2026-09-19T23:28:58Z · status active→review
 - 2026-09-20T00:10:47Z · status review→done, release:success
+- 2026-10-06T23:48:12Z · needs_input

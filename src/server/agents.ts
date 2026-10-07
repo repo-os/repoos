@@ -57,6 +57,7 @@ import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
 import { buildStoryContext, storyContextSummary } from "../core/story-context.js";
 import { unresolvedReviewFindingsBlock } from "../core/review-findings.js";
+import { needsInputClearsOnNewEngineerRun } from "../core/needs-input.js";
 import { patchTaskFile, type TaskPatch } from "./write.js";
 import { stripAnsi } from "./done.js";
 import type { Logger } from "../core/logger.js";
@@ -224,6 +225,8 @@ export interface RunningAgentInfo {
   id: string;
   pid: number;
   startedAt: string;
+  /** Server time of the last streamed output line for this turn, if any (#0719). */
+  lastOutputAt?: string | null;
   /** Working directory the agent runs in (worktree path, or repo root). */
   workdir?: string;
 }
@@ -1067,6 +1070,8 @@ export interface AgentRunnerOptions {
   now?: () => Date;
   /** Resolve a task from the repo task index by ID. Used to populate task/branch on resume turns. */
   getTask?: (taskId: string) => Task | null;
+  /** Notify the live index after the runner patches a task file (#0716). */
+  onTaskFilePatched?: (absPath: string) => void;
 }
 
 /** Best-effort session-id extraction from agent output (opencode / claude). */
@@ -3647,6 +3652,18 @@ export function missionFor(
 
   parts.push(agent.instructions?.trim() ? agent.instructions.trim() : "Implement this task.", "");
 
+  if (agent.name === "engineer") {
+    parts.push(
+      "## Evidence — never invent",
+      "",
+      "Do not fabricate device test results, network measurements, external account IDs,",
+      "registration confirmations, or live API outcomes you did not observe in this run.",
+      "Leave those fields blank in the task body or your report and say a human must",
+      "supply the proof.",
+      "",
+    );
+  }
+
   // Skills are intentionally explicit: a repository may contain many
   // procedures, but an agent sees only the skills enabled for its role. Resolve
   // names through the discovered list rather than constructing paths from
@@ -4927,6 +4944,7 @@ export class AgentRunner {
 
   /** Resolve a task from the repo task index by ID. Used to populate task/branch on resume turns. */
   private readonly getTask?: (taskId: string) => Task | null;
+  private readonly onTaskFilePatched?: (absPath: string) => void;
 
   /**
    * `opts.stallTimeoutMs` overrides the 90s default (tests use a small value
@@ -4964,6 +4982,7 @@ export class AgentRunner {
     this.onReviewDone = opts.onReviewDone;
     this.onDiagnosableFailure = opts.onDiagnosableFailure;
     this.getTask = opts.getTask;
+    this.onTaskFilePatched = opts.onTaskFilePatched;
     this.db = getRepoOSDb(config.root);
     this.cacheDir = join(config.root, config.cacheDir);
     this.sessionsDir = join(this.cacheDir, "sessions");
@@ -5459,10 +5478,12 @@ export class AgentRunner {
   running(): RunningAgentInfo[] {
     const out: RunningAgentInfo[] = [];
     for (const [id, e] of this.entries) {
+      const session = this.sessions.get(id);
       out.push({
         id,
         pid: e.adoptedPid ?? e.proc?.pid ?? -1,
         startedAt: e.startedAt,
+        lastOutputAt: session?.lastOutputAt ?? null,
         workdir: e.workdir,
       });
     }
@@ -5979,6 +6000,32 @@ export class AgentRunner {
    * Spawn one turn and attach streaming. Everything after the spawn is async;
    * failures surface as agent.exited via cleanup.
    */
+  /** Clear recoverable run-health needs_input when a new engineer turn starts (#0716). */
+  private clearRecoverableNeedsInput(task: Task): Task {
+    let current = task;
+    try {
+      current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+    } catch {
+      /* fall back to the in-memory snapshot */
+    }
+    if (!current.needsInput || !needsInputClearsOnNewEngineerRun(current.needsInputReason)) {
+      return current;
+    }
+    const cleared = patchTaskFile(this.config, current.absPath, {
+      needsInput: false,
+      needsInputReason: null,
+      needsInputDetail: null,
+    });
+    this.onTaskFilePatched?.(cleared.absPath);
+    return cleared;
+  }
+
   private spawnTurn(
     taskId: string,
     cmd: string,
@@ -6005,6 +6052,11 @@ export class AgentRunner {
       if (lockRefusal) return { ok: false, reason: lockRefusal };
     }
     const runId = randomUUID();
+    if (task && !opts.review) {
+      task = this.clearRecoverableNeedsInput(task);
+      const session = this.sessions.get(taskId);
+      if (session) session.task = task;
+    }
     // A new turn means the task is active again — a human restarted a paused
     // task, or sent a follow-up — so the pause marker no longer applies.
     this.pausedTasks.delete(taskId);

@@ -1,7 +1,5 @@
 ---
-merge_conflict_retry_count: 1
-updated_at: "2026-10-06T17:23:25Z"
-review_passes: 1
+merge_conflict_retry_count: 2
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
@@ -15,6 +13,9 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
+updated_at: "2026-10-06T18:04:38Z"
+review_passes: 3
+review_rounds: 1
 dev_error_count: 2
 ---
 ## Problem
@@ -79,5 +80,21 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-06T17:22:06Z · status active→review
 - 2026-10-06T17:22:06Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-06T17:23:25Z · note: review pass 1: good to go
+- 2026-10-06T17:30:53Z · status review→active
+- 2026-10-06T17:37:12Z · status active→review
+- 2026-10-06T17:37:13Z · note: shots: skipped — 2 handoff shots already captured during finalization (#0680)
+- 2026-10-06T17:38:10Z · body
+- 2026-10-06T17:38:57Z · note: review pass 2: needs some work
+- 2026-10-06T17:38:57Z · status review→active
+- 2026-10-06T17:42:39Z · body
+- 2026-10-06T17:44:20Z · body
+- 2026-10-06T17:54:28Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 128) — [lock] slot 1 acquired after 0s · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-06T17:54:28Z · status review→active
+- 2026-10-06T17:54:29Z · handoff failed · could not auto-retry after check failure · agent is busy — wait for the current turn or handoff to finish
+- 2026-10-06T17:55:14Z · status active→review
+- 2026-10-06T17:55:15Z · note: shots: skipped — 2 handoff shots already captured during finalization (#0680)
+- 2026-10-06T17:56:52Z · note: review pass 3: good to go
+- 2026-10-06T18:04:29Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
 
 
