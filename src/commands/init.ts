@@ -381,8 +381,14 @@ export function repoOSAgentsSectionAddition(existing: string, workDir = "work"):
 }
 
 function repoosToml(namespace: string, areas: string[] = [], previewStub = false): string {
+  // The `repoos/` layout keeps every RepoOS-owned directory under the
+  // namespace. workDir/docsDir/cacheDir were set here from the start; skills,
+  // stories and inputs default to top-level (`skills`, `stories`, `inputs`) and
+  // would otherwise land outside the namespace — the field report's #0703 (a
+  // `repoos/` project got a root `stories/`). Set them too so a fresh project's
+  // layout is uniform.
   const ns = namespace
-    ? `workDir = "${namespace}/work"\ndocsDir = "${namespace}/docs"\ncacheDir = "${namespace}/.repoos"\n`
+    ? `workDir = "${namespace}/work"\ndocsDir = "${namespace}/docs"\nskillsDir = "${namespace}/skills"\nstoriesDir = "${namespace}/stories"\ninputsDir = "${namespace}/inputs"\ncacheDir = "${namespace}/.repoos"\n`
     : "";
   return `# RepoOS configuration. All fields optional — these are the defaults.
 
@@ -815,6 +821,14 @@ export function scaffoldInto(
       line: canaryGitignoreNegation(config.cacheDir),
     },
     { comment: "# Local secrets — see .env.example", line: ".env" },
+    // Local env overrides (`*.local`). `.env` alone misses `.env.local`,
+    // `.env.development.local`, etc. — after the first `bun install` a project
+    // that writes one of those dirties main and can block Move to done (#0703).
+    { comment: "# Local env overrides", line: ".env*.local" },
+    // Installed dependencies. Without this rule the first `bun install` leaves
+    // a root `node_modules/` untracked, `repoos status` reports dirty, and
+    // Move to done can refuse (#0703).
+    { comment: "# Installed dependencies", line: "node_modules/" },
     // Runtime state (repoos.db, logs/, serve locks, integration jobs) is
     // hardcoded to a ROOT-level .repoos/ (src/core/db.ts, logger.ts,
     // serve-reaper.ts) — which differs from config.cacheDir in the namespaced

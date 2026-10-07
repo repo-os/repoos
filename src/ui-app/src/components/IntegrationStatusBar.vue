@@ -247,6 +247,8 @@ const STAGE_INFO: Record<string, string> = {
   sync: "Syncing: fast-forwarding the task's branch onto the latest main before validating, so it's tested against current main, not a stale base.",
   merge:
     "Merge: merging the branch into a temporary candidate alongside current main. Fast — a real hang here is unusual.",
+  "resolve-conflict":
+    "Resolve conflict: another task landed first and the merge conflicted. A provably-safe conflict on an already-reviewed task (both sides purely adding distinct lines, a lockfile, or generated output) is resolved here in the isolated candidate — the original review is preserved, only the resolution delta is reviewed, and one combined gate runs on the resolved tree. Anything else restarts the full engineering/review cycle instead.",
   build:
     "Build: building the merged candidate with the project's own build script, to catch build breaks the branch's diff alone couldn't see.",
   done: "Done: fast-forwarding main to the validated candidate and cleaning up the temporary worktree/branch.",

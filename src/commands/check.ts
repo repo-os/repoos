@@ -451,20 +451,22 @@ function dedupeRoots(roots: string[]): string[] {
  * stale screenshot churn). Product image assets — UI, icons, logos, docs —
  * live outside those folders and stay tracked.
  *
- * The folder names come from `repoos.toml` (`workDir`/`inputsDir`) so a managed
- * repo that renames them still gets the guard; they default to `work`/`inputs`.
+ * The folder names come from `repoos.toml` (`workDir`/`inputsDir`/`storiesDir`)
+ * so a managed repo that renames them still gets the guard; they default to
+ * `work`/`inputs`/`stories`.
  *
  * Pure (takes the tracked-file list) so it is unit-testable; the check block
  * feeds it `git ls-files`.
  */
 /**
- * Normalize a configured guard directory (`workDir`/`inputsDir`) for prefix
- * matching against `git ls-files` output, which is always repo-root-relative:
- * strip any leading `./` and trailing slashes. Returns empty for anything that
- * can't be a repo-relative directory — an explicit `""`, `"."`/`"./"`, an
- * absolute path, a home-relative `~/…`, or a path containing a `..` segment.
- * Those would all silently match nothing (or, for `""`, fatal git's pathspec),
- * so callers must treat empty as unusable rather than as "match everything".
+ * Normalize a configured guard directory (`workDir`/`inputsDir`/`storiesDir`)
+ * for prefix matching against `git ls-files` output, which is always
+ * repo-root-relative: strip any leading `./` and trailing slashes. Returns
+ * empty for anything that can't be a repo-relative directory — an explicit
+ * `""`, `"."`/`"./"`, an absolute path, a home-relative `~/…`, or a path
+ * containing a `..` segment. Those would all silently match nothing (or, for
+ * `""`, fatal git's pathspec), so callers must treat empty as unusable rather
+ * than as "match everything".
  */
 export function normalizeGuardDir(d: string): string {
   let trimmed = d;
@@ -479,10 +481,14 @@ export function normalizeGuardDir(d: string): string {
 
 export function taskAssetOffenders(
   trackedPaths: string[],
-  dirs: { workDir?: string; inputsDir?: string } = {},
+  dirs: { workDir?: string; inputsDir?: string; storiesDir?: string } = {},
 ): string[] {
   const IMG = /\.(png|jpe?g|gif|webp|avif|bmp|svg|ico|pdf)$/i;
-  const prefixes = [dirs.workDir ?? "work", dirs.inputsDir ?? "inputs"]
+  const prefixes = [
+    dirs.workDir ?? "work",
+    dirs.inputsDir ?? "inputs",
+    dirs.storiesDir ?? "stories",
+  ]
     .map(normalizeGuardDir)
     .filter(Boolean)
     .map((d) => `${d}/`);
@@ -1372,12 +1378,13 @@ async function stepBareRequire(ctx: StepContext): Promise<BuiltinOutcome> {
 }
 
 async function stepTaskAssets(ctx: StepContext): Promise<BuiltinOutcome> {
-  // Folder names are configurable (`workDir`/`inputsDir`), so a repo that
-  // renames them is still guarded.
+  // Folder names are configurable (`workDir`/`inputsDir`/`storiesDir`), so a
+  // repo that renames them is still guarded.
   const config = ctx.cfg;
   const dirs = [
     { label: "workDir", raw: config.workDir ?? "work" },
     { label: "inputsDir", raw: config.inputsDir ?? "inputs" },
+    { label: "storiesDir", raw: config.storiesDir ?? "stories" },
   ];
   const usable: string[] = [];
   const broken: string[] = [];
@@ -1412,6 +1419,7 @@ async function stepTaskAssets(ctx: StepContext): Promise<BuiltinOutcome> {
   const offenders = taskAssetOffenders(tracked, {
     workDir: config.workDir,
     inputsDir: config.inputsDir,
+    storiesDir: config.storiesDir,
   });
   const labels = usable.map((d) => `${d}/`).join(" or ");
   if (offenders.length === 0)

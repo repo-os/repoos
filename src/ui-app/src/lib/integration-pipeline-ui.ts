@@ -29,6 +29,7 @@ export function integrationQueuePosition(
 }
 
 export function integrationStageLabel(stage: string | null | undefined): string {
+  if (stage === "resolve-conflict") return "resolving conflict";
   return stage?.trim() ? stage : "starting…";
 }
 
@@ -94,7 +95,9 @@ export function integrationActiveCopy(
   return {
     label: `integrating · ${stage}${elapsedBit}`,
     title:
-      "Move to done is running — merging, building, and checking. See the pipeline bar for live progress.",
+      active.stage === "resolve-conflict"
+        ? "Resolving an integration conflict against current main in an isolated candidate — the original review is preserved and only the resolution delta is reviewed."
+        : "Move to done is running — merging, building, and checking. See the pipeline bar for live progress.",
     stalled: false,
   };
 }

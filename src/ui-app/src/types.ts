@@ -245,6 +245,12 @@ export interface Health {
   buildAt: string | null;
   /** Build hash the running server loaded, or null in dev mode. */
   buildHash: string | null;
+  /** The running server's OWN RepoOS version (the install it was loaded from). */
+  serverVersion?: string | null;
+  /** The running server's OWN RepoOS build hash — the value the CLI compares against its own. */
+  serverBuildHash?: string | null;
+  /** The running server's OWN build timestamp. */
+  serverBuildAt?: string | null;
   /** A newer build parked by a close-out (0143), or null when none is parked. */
   buildAvailableHash: string | null;
   /** On-disk build timestamp of the parked build, or null when none is parked. */
@@ -967,8 +973,45 @@ export interface AutoEngineeringDecision {
   error?: string;
 }
 
-/** The five discrete stages of the integration pipeline, in order (0207). */
-export const INTEGRATION_STAGES = ["sync", "merge", "build", "check", "done"] as const;
+/**
+ * The discrete stages of the integration pipeline, in order (0207).
+ * `resolve-conflict` (#0692) is the narrow resolution path: an integration
+ * conflict against current main is resolved in an isolated candidate and only
+ * the resolution delta is reviewed, instead of restarting engineering/review.
+ */
+/** Integration-conflict resolution provenance (#0692), from `/api/tasks/:id/integration-job`. */
+export interface ConflictResolutionSnapshot {
+  approvedFeatureSha: string;
+  mainBaseSha: string;
+  conflictPaths: string[];
+  resolutionClasses: string[];
+  resolutionCommit: string | null;
+  resolutionTree: string | null;
+  resolutionReview: {
+    reviewer: string;
+    verdict: "pass" | "fail" | "pending";
+    reviewedCommit: string | null;
+    at: string | null;
+    summary: string;
+  };
+  gate: {
+    result: "pass" | "fail" | "pending";
+    validatedTree: string | null;
+    at: string | null;
+    detail: string;
+  };
+  generation: number;
+  updatedAt: string;
+}
+
+export const INTEGRATION_STAGES = [
+  "sync",
+  "merge",
+  "resolve-conflict",
+  "build",
+  "check",
+  "done",
+] as const;
 export type IntegrationStage = (typeof INTEGRATION_STAGES)[number];
 
 /** One resolved step of the repo's `[[check.steps]]` plan (#0458) — what the

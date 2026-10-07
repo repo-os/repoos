@@ -56,6 +56,22 @@ describe("taskAssetOffenders", () => {
     ).toEqual(["tasks/.attachments/0350/screenshot.png", "inbox/.attachments/abc/spec.pdf"]);
   });
 
+  it("flags binaries under stories/ like work/ and inputs/ (#0726)", () => {
+    expect(
+      taskAssetOffenders([
+        "stories/launch.md",
+        "stories/.attachments/launch/mock.png",
+        "stories/diagram.pdf",
+      ]),
+    ).toEqual(["stories/.attachments/launch/mock.png", "stories/diagram.pdf"]);
+  });
+
+  it("flags binaries under a custom storiesDir from repoos.toml", () => {
+    expect(
+      taskAssetOffenders(["epics/slice.md", "epics/board.png"], { storiesDir: "epics" }),
+    ).toEqual(["epics/board.png"]);
+  });
+
   it("does not flag the default folders when custom ones are configured", () => {
     expect(
       taskAssetOffenders(["work/.attachments/1/a.png", "inputs/b.pdf"], {
