@@ -448,6 +448,7 @@ describe("every AI chat surface follows the standard", () => {
       "RepoGuideChat.vue",
       "DebuggerChat.vue",
       "TaskDebuggerChat.vue",
+      "CTOPanel.vue",
     ]);
   });
 
@@ -500,6 +501,26 @@ describe("every AI chat surface follows the standard", () => {
       it("does not override the shared message spacing", () => {
         // A scoped `gap` on the log beats the global class on specificity.
         expect(ruleBody(styleBlock(source), `.${surface.logClass}`)).not.toMatch(/gap:/);
+      });
+
+      it("uses the one shared compose box (#0669)", () => {
+        // Every chat input renders identically: the layout, focus outline and
+        // textarea live in the global `.ai-chat-compose`, never in a bespoke
+        // per-chat `-compose` block. The Model Playground is exempt by
+        // construction — a raw model call with its own sidebar, not an agent
+        // chat with an input to standardise.
+        if (surface.file === "ModelPlaygroundPanel.vue") return;
+        expect(source, `${surface.file} must use .ai-chat-compose`).toContain("ai-chat-compose");
+        const scoped = styleBlock(source);
+        // No scoped rule may own the shared box's focus outline — that belongs
+        // to `.ai-chat-compose`, so every chat focuses the same way.
+        for (const rule of rules(scoped)) {
+          if (!/compose/.test(rule.selector)) continue;
+          expect(
+            rule.body,
+            `${surface.file}: ${rule.selector} must not set a focus ring`,
+          ).not.toMatch(/box-shadow:/);
+        }
       });
 
       it("prints no helper line under the compose box", () => {
@@ -558,6 +579,51 @@ describe("every AI chat surface follows the standard", () => {
       });
     });
   }
+});
+
+describe("agent chat headers carry an inline agent+model chip (#0669)", () => {
+  const CHIP_HEADER_SURFACES = ["CTOPanel.vue", "DebuggerChat.vue", "RepoGuideChat.vue"];
+
+  it("the chip reuses the shared picker (AgentModelModal via AgentModelControl)", () => {
+    const chip = readSurface("ChatAgentModelChip.vue");
+    expect(chip).toContain("AgentModelControl");
+  });
+
+  for (const file of CHIP_HEADER_SURFACES) {
+    it(`${file} renders the chip wired to a memory key`, () => {
+      const source = readSurface(file);
+      expect(source, `${file} must render <ChatAgentModelChip>`).toContain("ChatAgentModelChip");
+      expect(source, `${file} must scope the chip's model memory`).toContain("memory-key");
+    });
+
+    it(`${file} header shows the name without a subtitle line`, () => {
+      // The subtitles ("Bug diagnostician", "Repository assistant",
+      // "CTO Board Monitor") were removed; only a disabled indicator remains.
+      const source = readSurface(file);
+      for (const phrase of [
+        "Bug diagnostician",
+        "Repository assistant",
+        "CTO Board Monitor",
+        "CTO agent is active",
+      ]) {
+        expect(source, `${file} still renders the "${phrase}" subtitle`).not.toContain(phrase);
+      }
+    });
+  }
+
+  it("the shared compose places its focus outline once, for everyone", () => {
+    const css = readFileSync(CSS_PATH, "utf8");
+    expect(ruleBody(css, ".ai-chat-compose:focus-within")).toMatch(/box-shadow:/);
+    expect(ruleBody(css, ".chat-agent-chip .am-control")).toMatch(/max-width:/);
+  });
+
+  it("floating-head launchers stay visible in preview builds for evidence capture (#0669)", () => {
+    const source = readSurface("FloatingHeads.vue");
+    expect(source).toContain("isPreviewBuild");
+    expect(source).toContain('data-test-id="floating-head-cto"');
+    expect(source).toContain('data-test-id="floating-head-debugger"');
+    expect(source).toContain('data-test-id="floating-head-ross"');
+  });
 });
 
 describe("no chat ships an animation it never defined", () => {

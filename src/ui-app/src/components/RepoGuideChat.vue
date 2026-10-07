@@ -10,10 +10,12 @@ import type { Agent, AgentOutputEntry, AgentSessionStats } from "../types";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import AiChatThinking from "./AiChatThinking.vue";
+import ChatAgentModelChip from "./ChatAgentModelChip.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
+import { useRossChatAgent, CHAT_AGENT_MEMORY_KEYS } from "../composables/useChatAgentModel";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
@@ -30,6 +32,19 @@ const hydratedEnabled = ref(true);
 const hydratedAgent = ref<Agent | null>(null);
 const log = ref<HTMLElement | null>(null);
 const draftTextarea = ref<HTMLTextAreaElement | null>(null);
+
+// Inline agent + model chip (#0669): Ross is an entry in config.agents,
+// persisted the same way the Agents page does.
+const rossAgent = useRossChatAgent();
+
+/** Persist the chip pick so it drives the next turn (Agents page path). */
+async function onAgentModelChange(cli: string, model: string): Promise<void> {
+  try {
+    await rossAgent.setAgentModel(cli, model);
+  } catch (error) {
+    repo.onError(error);
+  }
+}
 
 interface ChatResponse {
   ok: boolean;
@@ -160,17 +175,24 @@ watch(
     description="Ask Ross about this repository."
     @close="emit('close')"
   >
-    <header class="guide-header">
-      <div class="guide-avatar" aria-hidden="true">
+    <header class="agent-chat-header">
+      <div class="agent-chat-avatar" aria-hidden="true">
         <img src="/assets/repoos-ross-from-friends-square.webp" alt="Ross" />
       </div>
-      <div class="guide-identity">
+      <div class="agent-chat-id">
         <strong>{{ agent?.name ?? "Ross" }}</strong>
-        <span
-          ><i :class="{ off: !enabled }"></i
-          >{{ enabled ? "Repository assistant" : "Disabled on Agents page" }}</span
-        >
+        <span v-if="!enabled" class="agent-chat-off"><i></i>Disabled on Agents page</span>
       </div>
+      <ChatAgentModelChip
+        :cli-options="rossAgent.cliOptions.value"
+        :model-options="rossAgent.modelOptions.value"
+        :cli="rossAgent.cli.value"
+        :model="rossAgent.model.value"
+        :memory-key="CHAT_AGENT_MEMORY_KEYS.ross"
+        :disabled="!enabled"
+        @update:cli="(v) => onAgentModelChange(v, rossAgent.model.value)"
+        @update:model="(v) => onAgentModelChange(rossAgent.cli.value, v)"
+      />
       <button
         class="close-x guide-close"
         type="button"
@@ -242,7 +264,7 @@ watch(
       </button>
     </div>
 
-    <form class="guide-compose" @submit.prevent="send">
+    <form class="ai-chat-compose" @submit.prevent="send">
       <textarea
         ref="draftTextarea"
         v-model="draft"
@@ -257,7 +279,7 @@ watch(
       <button
         v-if="busy"
         type="button"
-        class="guide-stop"
+        class="ai-chat-stop guide-stop"
         aria-label="Stop response"
         title="Stop response"
         @click="interrupt"
@@ -288,58 +310,9 @@ watch(
 </template>
 
 <style scoped>
-.guide-header {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 13px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--topbar-bg);
-}
-.guide-avatar {
-  width: 38px;
-  height: 38px;
-  flex: none;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1px solid var(--border-bright);
-}
-.guide-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.guide-identity {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
-}
-.guide-identity strong {
-  font-size: 13.5px;
-  letter-spacing: -0.01em;
-}
-.guide-identity span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font:
-    500 10px "JetBrains Mono",
-    monospace;
-  color: var(--txt-dim);
-}
-.guide-identity i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
-}
-.guide-identity i.off {
-  background: var(--txt-faint);
-  box-shadow: none;
-}
+/* The header (avatar + name + chip + close) is the shared `.agent-chat-header`
+   set in style.css (#0669); the panel is body-teleported, so header chrome
+   lives globally rather than in a scoped block here. */
 /* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
 .guide-log-wrap {
   position: relative;
@@ -499,61 +472,5 @@ watch(
 }
 .guide-markdown :deep(a) {
   color: var(--cyan);
-}
-.guide-compose {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  margin: 0 12px 12px;
-  padding: 8px 9px 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel-solid);
-}
-.guide-compose:focus-within {
-  border-color: var(--border-bright);
-  box-shadow: 0 0 0 3px var(--cyan-dim);
-}
-.guide-compose textarea {
-  flex: 1;
-  min-height: 24px;
-  max-height: 120px;
-  overflow-y: auto;
-  resize: none;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--txt);
-  font: 12.5px/1.55 var(--font-sans);
-}
-.guide-compose textarea::placeholder {
-  color: var(--txt-faint);
-}
-.guide-compose button {
-  /* Deliberately no `background`/`color`: this scoped rule out-specifies
-     the shared .ai-chat-send, so setting a fill here would silently win
-     and leave the send button looking transparent. The send button takes
-     .ai-chat-send; .guide-stop sets its own. */
-  width: 31px;
-  height: 31px;
-  display: grid;
-  place-items: center;
-  flex: none;
-  border: 0;
-  border-radius: 9px;
-  cursor: pointer;
-}
-.guide-compose button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.guide-compose button svg {
-  width: 18px;
-  height: 18px;
-}
-.guide-compose button.guide-stop {
-  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
-  background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
-  color: var(--red, #ef5b5b);
 }
 </style>
