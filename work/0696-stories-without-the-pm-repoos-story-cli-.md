@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 275901
-last_close_out_gate_at: "2026-10-07T23:58:31.921Z"
 id: "0696"
 title: "Stories without the PM: `repoos story` CLI and an API create that writes exactly what it is given"
 type: feature
-status: review
+status: done
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: e925f88a6584b6d207e7dc23da35e501de42d6fa
 assigned_to: ai
 created_by: ""
 branch: feat/stories-without-the-pm-repoos-story-cli-
 created_at: "2026-10-06T03:15:42Z"
-updated_at: "2026-10-07T23:58:31Z"
+updated_at: "2026-10-07T23:58:41Z"
+last_close_out_gate_ms: 275901
+last_close_out_gate_at: "2026-10-07T23:58:31.921Z"
 review_passes: 1
 ---
 ## Problem
@@ -143,4 +144,4 @@ error: script "test" exited with code 1
 - 2026-10-07T19:51:25Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-07T19:52:09Z · note: review pass 1: good to go
 - 2026-10-07T23:58:31Z · close-out gate completed in 276s
-
+- 2026-10-07T23:58:41Z · status review→done, release:success
