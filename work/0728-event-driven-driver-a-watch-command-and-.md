@@ -9,8 +9,10 @@ story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-07T02:05:33Z"
-updated_at: "2026-10-07T09:11:18Z"
+updated_at: "2026-10-07T09:46:37Z"
 ---
 ## Problem
 
@@ -40,3 +42,4 @@ The CTO monitor wakes on ctoMonitorIntervalMs (a timer; 5 min here). Move it to 
 - 2026-10-07T02:10:58Z · story
 - 2026-10-07T02:11:12Z · title, body
 - 2026-10-07T09:11:18Z · status inbox→ready
+- 2026-10-07T09:46:37Z · cli_override, model_override
