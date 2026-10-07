@@ -454,9 +454,7 @@ describe("close-out cleanup keeps a dirty feature worktree (#0512)", () => {
       const result = await orchestrator.processNext();
 
       expect(result.ok).toBe(true);
-      const released = parseDocument(
-        readFileSync(join(root, "work", `${id}-cleanup.md`), "utf8"),
-      );
+      const released = parseDocument(readFileSync(join(root, "work", `${id}-cleanup.md`), "utf8"));
       // Writer quotes SHAs that start with a digit (#0711); compare parsed value.
       expect(released.data.merged_commit).toBe(branchSha);
       if (/^0/.test(branchSha)) {
