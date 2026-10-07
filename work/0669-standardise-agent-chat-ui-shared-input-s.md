@@ -11,7 +11,7 @@ branch: feat/standardise-agent-chat-ui-shared-input-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T15:01:24Z"
-updated_at: "2026-10-07T18:00:38Z"
+updated_at: "2026-10-07T18:03:36Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -118,3 +118,23 @@ error: script "test" exited with code 1
 - 2026-10-07T17:58:17Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/debugger-floating-close.test.ts:56:55 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T17:58:17Z · status review→active
 - 2026-10-07T18:00:38Z · cli_override, model_override
+- 2026-10-07T18:03:36Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/debugger-floating-close.test.ts:56:55
+     54|
+     55|     // A render-time ReferenceError leaves the slot unrendered, so the…
+     56|     expect(wrapper.find(".debugger-header").exists()).toBe(true);
+       |                                                       ^
+     57|     expect(wrapper.find(".debugger-close").exists()).toBe(true);
+     58|     expect(wrapper.text()).toContain("diagnosis ready");
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 439 passed | 1 skipped (441)
+      Tests  1 failed | 5353 passed | 15 skipped (5369)
+   Start at  17:59:01
+   Duration  270.25s (transform 6.97s, setup 2.32s, import 49.17s, tests 248.11s, environment 216.62s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 706ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  18:03:32
+   Duration  2.68s (transform 1.16s, setup 12ms, import 1.44s, tests 706ms, environment 442ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
