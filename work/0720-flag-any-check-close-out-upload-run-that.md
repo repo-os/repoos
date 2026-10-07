@@ -15,7 +15,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-07T03:08:52Z"
+updated_at: "2026-10-07T03:09:12Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-10-07T02:57:53.598Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -140,3 +140,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T03:07:23Z · status review→active
 - 2026-10-07T03:07:29Z · body: section Shots
 - 2026-10-07T03:08:52Z · note: shot removed: Slow-check multiplier in Settings
+- 2026-10-07T03:09:12Z · note: shot removed: Remote runners slow badge on active job
