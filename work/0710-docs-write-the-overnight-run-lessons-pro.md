@@ -12,7 +12,7 @@ branch: feat/docs-write-the-overnight-run-lessons-pro
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T08:37:40Z"
-updated_at: "2026-10-07T01:22:47Z"
+updated_at: "2026-10-07T01:37:56Z"
 ---
 ## Problem
 
@@ -39,3 +39,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-07T01:16:17Z · status inbox→ready
 - 2026-10-07T01:16:22Z · status ready→active, branch
 - 2026-10-07T01:22:47Z · body
+- 2026-10-07T01:37:56Z · handoff failed · handoff recovery attempted · finalization failed
