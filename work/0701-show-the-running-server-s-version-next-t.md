@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/show-the-running-server-s-version-next-t
 created_at: "2026-10-06T03:15:53Z"
-updated_at: "2026-10-07T18:02:36Z"
+updated_at: "2026-10-07T18:05:49Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -33,6 +33,19 @@ The tuk-private server had been running for five days (`up 4d 15h (since Oct 1 1
 ## Notes for AI
 
 Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private run, 2026-10-06), item 8.
+
+## Shots
+```json
+[
+  {
+    "label": "Sidebar build widget shows version + short build hash",
+    "target": "default",
+    "route": "/",
+    "selector": ".build-widget",
+    "highlight": ".build-widget"
+  }
+]
+```
 
 ## Activity
 
@@ -93,3 +106,4 @@ src/commands/status.ts(414,9): error TS2741: Property 'buildState' is missing in
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-07T18:01:44Z · body
 - 2026-10-07T18:02:36Z · body
+- 2026-10-07T18:05:49Z · body: section Shots
