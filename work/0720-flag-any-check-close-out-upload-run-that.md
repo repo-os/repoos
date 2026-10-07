@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-07T01:25:57.253Z: server-side finalization timed out (deadline exceeded)"
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
@@ -14,7 +12,9 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-07T01:18:16Z"
+updated_at: "2026-10-07T02:07:25Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T01:25:57.253Z: server-side finalization timed out (deadline exceeded)"
 merge_conflict_retry_count: 2
 review_passes: 3
 review_rounds: 1
@@ -114,4 +114,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T01:11:50Z · body: section Shots
 - 2026-10-07T01:15:21Z · body
 - 2026-10-07T01:18:16Z · body: section Shots
-
+- 2026-10-07T02:07:25Z · body
