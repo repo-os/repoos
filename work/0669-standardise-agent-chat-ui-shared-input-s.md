@@ -2,14 +2,14 @@
 id: "0669"
 title: "Standardise agent chat UI: shared input style, markdown replies, simplified headers with inline agent+model picker"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/standardise-agent-chat-ui-shared-input-s
 created_at: "2026-10-05T15:01:24Z"
-updated_at: "2026-10-07T17:29:47Z"
+updated_at: "2026-10-07T17:35:17Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -69,3 +69,4 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
    Duration  2.74s (transform 1.14s, setup 13ms, import 1.43s, tests 776ms, environment 445ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T17:35:17Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/debugger-floating-close.test.ts:56:55 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
