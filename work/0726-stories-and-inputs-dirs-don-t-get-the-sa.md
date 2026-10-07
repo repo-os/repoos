@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 79288
-last_close_out_gate_at: "2026-10-07T17:33:05.208Z"
 id: "0726"
 title: Stories (and inputs) dirs don't get the same close-out bookkeeping handling as the work dir
 type: bug
-status: review
+status: done
 priority: p2
 area: [server, cli]
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 90e1726259286bc1ab995ca351b2e84fa95f4a17
 assigned_to: ai
 created_by: ""
 branch: feat/stories-and-inputs-dirs-don-t-get-the-sa
 created_at: "2026-10-07T00:35:48Z"
-updated_at: "2026-10-07T17:33:05Z"
+updated_at: "2026-10-07T17:33:14Z"
+last_close_out_gate_ms: 79288
+last_close_out_gate_at: "2026-10-07T17:33:05.208Z"
 review_passes: 2
 close_out_repair_count: 1
 ---
@@ -74,4 +75,4 @@ Desired: validate all layout dirs with normalizeRelativeDir, give inputsDir a Se
 - 2026-10-07T17:28:26Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-07T17:29:12Z · note: review pass 2: good to go
 - 2026-10-07T17:33:05Z · close-out gate completed in 79s
-
+- 2026-10-07T17:33:14Z · status review→done, release:success
