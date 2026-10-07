@@ -2,7 +2,7 @@
 id: "0729"
 title: "Detect and recover hung validation containers on runner hosts (kill, retry on another host, isolate the bun cache per run); CTO safe action"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T02:11:13Z"
+updated_at: "2026-10-07T04:34:35Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ The hang recovery (kill that run's container, retry once on another host) is a C
 - 2026-10-07T02:05:35Z · created · unknown
 - 2026-10-07T02:10:58Z · story
 - 2026-10-07T02:11:13Z · title, body
+- 2026-10-07T04:34:35Z · status inbox→ready
