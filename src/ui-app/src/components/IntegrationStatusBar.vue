@@ -5,6 +5,12 @@ import { ChevronDown, ChevronUp } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { formatDuration } from "../lib/time";
+import {
+  integrationActiveCopy,
+  integrationBarActiveTitle,
+  integrationPipelineStalled,
+  integrationStageLabel,
+} from "../lib/integration-pipeline-ui";
 import { fileCheckSetupTask, isGenuinelyEmptyPlan } from "../lib/check-setup";
 import { api } from "../api";
 import {
@@ -187,6 +193,49 @@ function retry(): void {
   });
 }
 
+const pipelineStalled = computed(() =>
+  integrationPipelineStalled(snapshot.value, now.value),
+);
+
+const activeBarTitle = computed(() => {
+  const snap = snapshot.value;
+  if (!snap?.active || snap.active.failed) return "";
+  if (pipelineStalled.value) {
+    return integrationActiveCopy(snap, now.value).label;
+  }
+  return integrationBarActiveTitle(snap, now.value);
+});
+
+const pipelineRecoverBusy = ref(false);
+
+async function cancelStalledPipeline(): Promise<void> {
+  const id = active.value?.taskId;
+  if (!id || pipelineRecoverBusy.value) return;
+  pipelineRecoverBusy.value = true;
+  try {
+    await repo.cancelDone(id);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    pipelineRecoverBusy.value = false;
+  }
+}
+
+async function retryStalledPipeline(): Promise<void> {
+  const id = active.value?.taskId;
+  const task = id ? repo.tasks.find((t) => t.id === id) : undefined;
+  if (!id || !task || pipelineRecoverBusy.value) return;
+  pipelineRecoverBusy.value = true;
+  try {
+    await repo.cancelDone(id);
+    await repo.completeTask(task);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    pipelineRecoverBusy.value = false;
+  }
+}
+
 /**
  * What each of the pipeline's fixed orchestrator stages does, shown in the
  * stage's hover pane (#0460) so the bar isn't a black box. Worded stack-
@@ -360,13 +409,17 @@ async function fileSetupTask(): Promise<void> {
           <span class="mono">#{{ active.taskId }}</span>
           <template v-if="active.failed"> integration failed</template>
           <template v-else>
-            integrating… <span class="mono dim">{{ active.stage ?? "" }}</span>
-            <span
-              v-if="elapsed"
-              class="ibar-chip mono"
-              :title="'Elapsed since integration started'"
-              >{{ elapsed }}</span
-            >
+            <template v-if="pipelineStalled">{{ activeBarTitle }}</template>
+            <template v-else>
+              integrating…
+              <span class="mono dim">{{ integrationStageLabel(active.stage) }}</span>
+              <span
+                v-if="elapsed"
+                class="ibar-chip mono"
+                :title="'Elapsed since integration started'"
+                >{{ elapsed }}</span
+              >
+            </template>
           </template>
         </template>
         <template v-else>Integrating…</template>
@@ -400,14 +453,36 @@ async function fileSetupTask(): Promise<void> {
             <span class="bar-dot" :class="{ run: !active.failed, err: active.failed }"></span>
             <span class="mono">#{{ active.taskId }}</span>
             <template v-if="active.failed"> integration failed</template>
+            <template v-else-if="pipelineStalled">
+              <span class="ibar-stalled">{{ activeBarTitle }}</span>
+            </template>
             <template v-else> integrating</template>
             <span
-              v-if="elapsed"
+              v-if="elapsed && !pipelineStalled"
               class="ibar-chip mono"
               :title="'Elapsed since integration started'"
               >{{ elapsed }}</span
             >
           </span>
+
+          <div v-if="pipelineStalled && !active.failed" class="ibar-stall-actions">
+            <button
+              type="button"
+              class="bar-btn bar-btn-neutral"
+              :disabled="pipelineRecoverBusy"
+              @click="cancelStalledPipeline"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="bar-btn bar-btn-neutral primary"
+              :disabled="pipelineRecoverBusy"
+              @click="retryStalledPipeline"
+            >
+              {{ pipelineRecoverBusy ? "Working…" : "Retry" }}
+            </button>
+          </div>
 
           <ol class="stages" :aria-label="'Integration stages'" @mouseleave="hideStagePane">
             <li v-for="(s, i) in INTEGRATION_STAGES" :key="s" class="stage-item">
@@ -761,6 +836,35 @@ async function fileSetupTask(): Promise<void> {
   background: var(--red);
   /* hardcode-ok: theme-independent accent/status text color, verified by the rendered audit (#0596 triage) */
   color: #fff;
+}
+
+.ibar-stalled {
+  color: var(--amber);
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.ibar-stall-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.bar-btn-neutral {
+  border-color: var(--border);
+  background: var(--chip-bg);
+  color: var(--txt-dim);
+}
+
+.bar-btn-neutral:hover:not(:disabled) {
+  background: var(--panel-solid);
+  color: var(--txt);
+}
+
+.bar-btn-neutral.primary {
+  border-color: var(--cyan-border-tint, var(--border));
+  color: var(--cyan);
 }
 
 .ibar-queue {
