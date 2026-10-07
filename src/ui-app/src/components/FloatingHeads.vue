@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { useUiStore } from "../stores/ui";
@@ -10,8 +11,12 @@ import DebuggerChat from "./DebuggerChat.vue";
 const repo = useRepoStore();
 const config = useConfigStore();
 const ui = useUiStore();
+const { health } = storeToRefs(repo);
+/** Managed previews need the launcher visible even when an agent is off in config. */
+const isPreviewBuild = computed(() => health.value?.isPreviewBuild ?? false);
 
 function agentEnabled(head: string): boolean {
+  if (isPreviewBuild.value) return true;
   if (head === "cto") {
     return config.agents.some((a) => a.name.toLowerCase() === "cto" && a.enabled);
   }
@@ -56,6 +61,7 @@ onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDeb
       <button
         v-if="agentEnabled('debugger')"
         class="head-btn"
+        data-test-id="floating-head-debugger"
         :class="{ active: activeHead === 'debugger' }"
         title="Debugger — diagnose a bug"
         @click="toggle('debugger')"
@@ -65,6 +71,7 @@ onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDeb
       <button
         v-if="agentEnabled('cto')"
         class="head-btn"
+        data-test-id="floating-head-cto"
         :class="{ active: activeHead === 'cto' }"
         title="CTO Board Monitor"
         @click="toggle('cto')"
@@ -75,6 +82,7 @@ onBeforeUnmount(() => window.removeEventListener("repoos:open-debugger", openDeb
       <button
         v-if="agentEnabled('ross')"
         class="head-btn"
+        data-test-id="floating-head-ross"
         :class="{ active: activeHead === 'ross' }"
         title="Ross — Repo assistant"
         @click="toggle('ross')"

@@ -616,6 +616,14 @@ describe("agent chat headers carry an inline agent+model chip (#0669)", () => {
     expect(ruleBody(css, ".ai-chat-compose:focus-within")).toMatch(/box-shadow:/);
     expect(ruleBody(css, ".chat-agent-chip .am-control")).toMatch(/max-width:/);
   });
+
+  it("floating-head launchers stay visible in preview builds for evidence capture (#0669)", () => {
+    const source = readSurface("FloatingHeads.vue");
+    expect(source).toContain("isPreviewBuild");
+    expect(source).toContain('data-test-id="floating-head-cto"');
+    expect(source).toContain('data-test-id="floating-head-debugger"');
+    expect(source).toContain('data-test-id="floating-head-ross"');
+  });
 });
 
 describe("no chat ships an animation it never defined", () => {
