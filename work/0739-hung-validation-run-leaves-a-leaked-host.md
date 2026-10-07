@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0739"
 title: "Hung validation run leaves a leaked host slot: 'HUNG · KILLING' never clears, and the run's bundle file is left on the host"
 type: bug
@@ -77,3 +78,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T15:53:28Z · note: review pass 5: good to go
 - 2026-10-07T16:05:27Z · status review→active
 - 2026-10-07T16:05:27Z · note: close-out repair: merge-conflict
+
