@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 99cc00ab4def35b624a2b0c22ecb76d577ede6f1
 id: "0710"
 title: "Docs: write the overnight-run lessons (provider-failure scraper, self-check starvation, driver tips) into the repo"
 type: chore
@@ -49,3 +51,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-07T01:38:22Z · status active→review
 - 2026-10-07T01:38:22Z · status review→active
 - 2026-10-07T01:58:46Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
