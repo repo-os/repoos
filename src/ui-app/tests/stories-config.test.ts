@@ -104,3 +104,58 @@ describe("storiesDir (#0637)", () => {
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("storiesDir"));
   });
 });
+
+describe("inputsDir and layout-dir validation (#0726)", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("defaults to inputs", () => {
+    expect(load('workDir = "work"\n').inputsDir).toBe("inputs");
+  });
+
+  it("is exposed as a guarded, restart-required Settings control, like storiesDir", () => {
+    expect(getConfigSchema().find((f) => f.key === "inputsDir")).toMatchObject({
+      label: "Inputs directory",
+      type: "string",
+      tier: "guarded",
+      restartRequired: true,
+      default: "inputs",
+    });
+    expect(SUPPORTED_TOML_KEYS).toContain("inputsDir");
+  });
+
+  it("parses a custom relative inputs directory", () => {
+    expect(load('inputsDir = "inbox"\n').inputsDir).toBe("inbox");
+    expect(load('inputsDir = "meta/inbox"\n').inputsDir).toBe("meta/inbox");
+    expect(load('inputsDir = "./inbox/"\n').inputsDir).toBe("inbox");
+  });
+
+  it.each([
+    'inputsDir = ""\n',
+    'inputsDir = "/abs/inbox"\n',
+    'inputsDir = "../escape"\n',
+    'inputsDir = "ok/../escape"\n',
+    'inputsDir = "C:\\\\inbox"\n',
+    'inputsDir = "~/inbox"\n',
+    'inputsDir = "a//b"\n',
+    "inputsDir = 3\n",
+  ])("falls back to the default with a warning for %s", (toml) => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(load(toml).inputsDir).toBe("inputs");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("inputsDir"));
+  });
+
+  it("validates workDir/docsDir/cacheDir the same way (#0726)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const cfg = load(
+      ['workDir = "../tasks"', 'docsDir = "/abs/docs"', 'cacheDir = "~/cache"'].join("\n"),
+    );
+    expect(cfg.workDir).toBe("work");
+    expect(cfg.docsDir).toBe("docs");
+    expect(cfg.cacheDir).toBe(".repoos");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("workDir"));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("docsDir"));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("cacheDir"));
+  });
+});
