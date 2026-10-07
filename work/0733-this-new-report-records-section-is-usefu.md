@@ -2,14 +2,14 @@
 id: "0733"
 title: Show review records in a table
 type: feature
-status: active
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-review-records-in-a-table
 created_at: "2026-10-07T02:52:02Z"
-updated_at: "2026-10-07T04:34:38Z"
+updated_at: "2026-10-07T09:15:17Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-07T04:21:52.308Z: server-side finalization timed out (deadline exceeded)"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
@@ -87,3 +87,4 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T04:31:26Z · body
 - 2026-10-07T04:33:27Z · body
 - 2026-10-07T04:34:38Z · body
+- 2026-10-07T09:15:17Z · watchdog: auto-surfaced stuck task · status active→ready · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
