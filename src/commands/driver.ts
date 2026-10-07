@@ -151,6 +151,13 @@ function renderBrief(brief: BriefView): void {
       line(`    #${j.taskId} — ${j.reason ?? "close-out failed"}`);
     }
   }
+  const recentFailures = brief.recentCloseOutOutcomes.filter((o) => o.outcome !== "succeeded");
+  if (recentFailures.length) {
+    line(c.dim("  Recent close-out outcomes"));
+    for (const o of recentFailures.slice(0, 5)) {
+      line(c.dim(`    #${o.taskId} ${o.outcome} — ${o.reason || "no reason recorded"}`));
+    }
+  }
   line();
 
   // Host health and recent runs.
