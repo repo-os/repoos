@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
-updated_at: "2026-10-07T11:58:10Z"
+updated_at: "2026-10-07T11:59:31Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T10:26:38.467Z: repoos check failed: build complete in 3.72s. · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-ico… (truncated)"
@@ -66,6 +66,17 @@ Timing: I could NOT measure real before/after close-out medians from this sandbo
 ]
 ```
 
+## Review round 2
+Fixed the review's real bug: a SCOPED remote run that failed used to fail the close-out immediately (the runner stops before the local check ever runs), skipping the scoped->full escape hatch. `validateCandidate` now retries the runner once WITHOUT `changedRef` on a non-transient scoped remote failure, mirroring the local path; a transient infra failure keeps its retryable resume-from-check handling, and a genuine full-run failure still fails. When the remote retry succeeds as full, the local cheap checks also drop `REPOOS_CHECK_CHANGED` so both halves describe the same scope.
+
+Also addressed the misleading skip text: the tests step now reads `skipped — full suite reused from the handoff gate (<why>)` for a reuse close-out instead of claiming the remote runner ran when none did (REPOOS_CHECK_GATE_NOTE drives it).
+
+New orchestrator-level tests (`close-out-gate-remote-retry.test.ts`): scoped remote fail -> full retry passes -> close-out not failed (asserts the two runner calls: first with `changedRef` = tested SHA, second without); and scoped remote fail + full retry also fail -> close-out fails with the runner detail.
+
+Still open by design: reuse requires a recorded green FULL pre-review row (no remote validation => full suite, fail-safe); real before/after close-out `duration_ms` medians still need a live board — not invented here. A Settings shot for the new 'Close-out gate scope' select is declared.
+
+Note: fluct close-out wall time is unchanged for the reuse path's *build/lint* half; the suite is what is skipped.
+
 ## Activity
 
 - 2026-10-06T15:55:13Z · created · unknown
@@ -87,3 +98,4 @@ Timing: I could NOT measure real before/after close-out medians from this sandbo
 - 2026-10-07T11:08:31Z · note: Owner deadline12:07Z: complete fouractive tasks720/724/730/737 throughreviewanddone. Prioritize reviewer remote-scopedfailure->onefullfallback repair with orchestrator regression; keepscope. Buildthenonescopedcheck, handoffonce/endturn. Driver verifiesSettingscontrolactualshot andcombinedtreegate; no repeatedpassingfullgates forlocal-onlyfailures, nohost/config/releasewrites.
 - 2026-10-07T11:57:02Z · body: section Shots
 - 2026-10-07T11:58:10Z · body
+- 2026-10-07T11:59:31Z · body: section Review round 2
