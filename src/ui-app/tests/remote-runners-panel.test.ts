@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
-import { createMemoryHistory, createRouter } from "vue-router";
 import { createPinia, setActivePinia } from "pinia";
 import RemoteRunnersPanel from "../src/components/RemoteRunnersPanel.vue";
 import { useRepoStore } from "../src/stores/repo";
@@ -154,7 +153,9 @@ describe("RemoteRunnersPanel", () => {
     wrapper.unmount();
   });
 
-  it("rvFixture=hung-runs shows labeled hung UI without live runner data (#0729)", async () => {
+  it("renders hung runs and in-flight hung badge from the status API (#0729)", async () => {
+    const startedAt = new Date(Date.now() - 6 * 60_000).toISOString();
+    const killedAt = new Date(Date.now() - 90_000).toISOString();
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string | URL) => {
@@ -174,10 +175,14 @@ describe("RemoteRunnersPanel", () => {
                 user: "nick",
                 labels: [],
                 maxConcurrent: 1,
-                inFlight: 0,
+                inFlight: 1,
                 queued: 0,
                 probed: true,
                 healthy: true,
+                activeRuns: [
+                  { taskId: "0729", startedAt, phase: "test", label: "#0729", hung: true },
+                ],
+                hungRuns: [{ taskId: "0199", at: killedAt }],
               },
             ],
           });
@@ -185,22 +190,16 @@ describe("RemoteRunnersPanel", () => {
         throw new Error(`Unexpected ${path}`);
       }),
     );
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [{ path: "/checks", component: { template: "<div/>" } }],
-    });
-    await router.push("/checks?tab=remote&rvFixture=hung-runs");
     const pinia = createPinia();
     setActivePinia(pinia);
     const wrapper = mount(RemoteRunnersPanel, {
-      global: { plugins: [pinia, router], stubs: { "router-link": true } },
+      global: { plugins: [pinia], stubs: { "router-link": true } },
     });
     await flushPromises();
-    expect(wrapper.text()).toContain("Shot fixture — not live runner state");
     expect(wrapper.text()).toContain("Hung runs");
     expect(wrapper.text()).toContain("hung · killing");
     expect(wrapper.text()).toContain("#0199");
-    expect(wrapper.text()).not.toContain("nick@bee");
+    expect(wrapper.text()).toContain("nick@bee");
     wrapper.unmount();
   });
 });
