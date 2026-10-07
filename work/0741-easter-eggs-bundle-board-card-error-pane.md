@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
-updated_at: "2026-10-07T18:05:14Z"
+updated_at: "2026-10-07T18:06:30Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)"
@@ -40,9 +40,38 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 ```json
 [
   {
-    "label": "Board",
+    "label": "Review column — card footer flush below action (light)",
     "target": "default",
-    "route": "/"
+    "route": "/work?status=review",
+    "highlight": ".task-card .tc-card-footer",
+    "steps": [
+      {
+        "waitFor": ".task-card"
+      },
+      {
+        "waitFor": ".task-card .tc-card-footer"
+      },
+      {
+        "waitMs": 500
+      }
+    ]
+  },
+  {
+    "label": "Review column — card footer (dark)",
+    "target": "default",
+    "route": "/work?status=review",
+    "highlight": ".task-card .tc-card-footer",
+    "steps": [
+      {
+        "waitFor": ".task-card .tc-card-footer"
+      },
+      {
+        "click": "button.theme-toggle"
+      },
+      {
+        "waitMs": 500
+      }
+    ]
   }
 ]
 ```
@@ -76,3 +105,4 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 - 2026-10-07T18:04:28Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-10-07T18:05:13Z · note: review pass 1: needs some work
 - 2026-10-07T18:05:14Z · status review→active
+- 2026-10-07T18:06:30Z · body: section Shots
