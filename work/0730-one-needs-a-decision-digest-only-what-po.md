@@ -12,7 +12,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T10:14:59Z"
+updated_at: "2026-10-07T10:20:06Z"
 ---
 ## Problem
 
@@ -86,3 +86,23 @@ error: script "test" exited with code 1
 - 2026-10-07T10:14:41Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T10:14:41Z · status review→active
 - 2026-10-07T10:14:45Z · note: Driver full-gate repair: terminal failure10:09:11, no pending handoff/live writer now. Fix the two decision-digest regressions: gate mismatch with last_check_failure must outrank Auto-approval is off; automation-on stuck-run filtering must meet the acceptance criteria instead of retaining an item solely because generic message/pause actions are manual. Diagnose semantics, do not weaken assertions blindly. Run focused decision-digest tests first, build then one scoped check, handoff once/end turn. Baseline agent-review race is independently reproducible on main; preserve evidence separately.
+- 2026-10-07T10:20:06Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/decision-digest.test.ts:174:26
+    172|       approvalByTaskId: {},
+    173|     });
+    174|     expect(digest.items).toEqual([]);
+       |                          ^
+    175|   });
+    176| });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+ Test Files  1 failed | 431 passed | 1 skipped (433)
+      Tests  2 failed | 5189 passed | 15 skipped (5206)
+   Start at  10:15:23
+   Duration  277.42s (transform 6.66s, setup 2.45s, import 52.40s, tests 224.47s, environment 248.06s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 552ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:20:01
+   Duration  2.66s (transform 1.22s, setup 11ms, import 1.51s, tests 552ms, environment 503ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
