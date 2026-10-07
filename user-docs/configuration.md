@@ -971,6 +971,23 @@ belong to it. The story shows **PM is working** on the Stories page until the
 agent finishes. If the agent fails, the story stays as you wrote it and the
 reason appears in a notification.
 
+#### Verbatim stories (no PM)
+
+An agent or script that already has the finished story does not want the PM to
+rewrite it or retag tasks. Use the CLI or the API instead of the UI flow:
+
+```bash
+repoos story new "Project updates email" --body "Scope, outcomes, non-goals."
+repoos story update 0007 --body "Rewritten scope."   # keeps the stable number
+```
+
+`POST /api/stories { name?, body }` and `PATCH /api/stories/:key { name?, body? }`
+do the same over HTTP, and `POST /api/stories/freeform { …, pm: false }` is the
+freeform route with the flesh-out — and the task tagging — switched off. All of
+these write and commit the definition exactly as given, keep the story's number
+across a rename, and start no agent. The UI's **New story** keeps the PM
+flesh-out by default. See [`repoos story`](/cli#repoos-story-newlistshowupdate).
+
 A story counts as complete only when every one of its tasks is done, and there
 is no manual completion control.
 
