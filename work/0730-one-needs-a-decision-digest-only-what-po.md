@@ -109,3 +109,4 @@ error: script "test" exited with code 1
 - 2026-10-07T10:27:08Z · body
 - 2026-10-07T10:28:43Z · body
 - 2026-10-07T10:37:41Z · status active→review
+- 2026-10-07T10:37:41Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
