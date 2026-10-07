@@ -12,7 +12,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:53Z"
 updated_at: "2026-10-07T00:16:04Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-07T00:10:23.966Z: repoos check failed: ⏭ user-docs-build — skipped — no changed path matches user-docs/** · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transpa… (truncated)"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 25. Captures should be gitignored/ignored by the dirty-main check.
@@ -37,3 +36,4 @@ VERIFY FIRST: in this repo .gitignore already ignores work/.attachments/ and inp
 - 2026-10-07T00:04:41Z · body
 - 2026-10-07T00:14:14Z · body
 - 2026-10-07T00:16:04Z · body
+
