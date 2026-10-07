@@ -338,8 +338,7 @@ export function createJobCoordinator(root: string): JobCoordinator {
         // from the superseded attempt is refused by every attempt-scoped write
         // (#0736). The counter is read from a durable per-task file so it does
         // not reset when the previous record was removed.
-        attempt:
-          Math.max(existing?.attempt ?? 0, readGeneration(root, task.id)) + 1,
+        attempt: Math.max(existing?.attempt ?? 0, readGeneration(root, task.id)) + 1,
         branch: task.branch,
         phase: "queued",
         enqueuedAt: new Date().toISOString(),
