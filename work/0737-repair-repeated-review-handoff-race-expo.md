@@ -11,7 +11,7 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T15:16:54Z"
+updated_at: "2026-10-07T15:17:24Z"
 review_passes: 3
 last_close_out_gate_ms: 1954980
 last_close_out_gate_at: "2026-10-07T14:22:21.634Z"
@@ -134,3 +134,4 @@ error: script "test" exited with code 1
    Duration  2.24s (transform 1.03s, setup 12ms, import 1.28s, tests 410ms, environment 457ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T15:17:24Z · note: Driver owns ACTIVE source diagnosis. Do not start handoff or close-out while temporary tracing remains. Last untraced loaded run5/10; raw-writer tracing changes timing10/10, not proof repaired. Watchdog auto-handoff captured temporary diagnostics and failed; driver paused task and cancelled existing close-out through supported API. Wait actual old execution terminal before further work.
