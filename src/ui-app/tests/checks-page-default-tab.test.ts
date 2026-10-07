@@ -32,7 +32,7 @@ const emptyPlan = (): CheckPlanView =>
     lastRun: null,
   }) as CheckPlanView;
 
-const idleRemote = () => ({
+const idleRemote = (): RemoteValidationStatusView => ({
   enabled: true,
   running: false,
   provider: "tailscale",
