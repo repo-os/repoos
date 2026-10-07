@@ -157,3 +157,4 @@ error: script "test" exited with code 1
 - 2026-10-07T09:04:45Z · note: Driver review blocker: rvFixture=hung-runs currently swaps host data in production RemoteRunnersPanel.vue without a preview-only guard. This introduces a diagnostic product mode solely for screenshots and can leave real moveHost controls bound to fixture-hosts when hostPoolEditable is true. Remove production query-fixture plumbing and dedicated src fixture; capture labeled evidence in a temporary Playwright harness with route-intercepted /api/remote-validation/status only, no production state or config writes. Do not handoff until addressed. Existing source hang fix remains scope. --json
 - 2026-10-07T09:05:26Z · body
 - 2026-10-07T09:06:10Z · status active→review
+- 2026-10-07T09:06:10Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
