@@ -2,7 +2,7 @@
 id: "0741"
 title: "Easter eggs bundle: board card error panel (flush, square, below the action button) and hide a stale close-out error while a new close-out runs"
 type: chore
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -11,8 +11,9 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
-updated_at: "2026-10-07T18:04:27Z"
-check_retry_count: 2
+updated_at: "2026-10-07T18:06:30Z"
+review_rounds: 1
+review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)"
 ---
 ## Problem
@@ -39,13 +40,16 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 ```json
 [
   {
-    "label": "Board card footer flush below action (light)",
+    "label": "Review column — card footer flush below action (light)",
     "target": "default",
-    "route": "/",
-    "highlight": "[data-test-id=\"task-card-action-footer\"]",
+    "route": "/work?status=review",
+    "highlight": ".task-card .tc-card-footer",
     "steps": [
       {
-        "waitFor": "[data-test-id=\"task-card-action-footer\"]"
+        "waitFor": ".task-card"
+      },
+      {
+        "waitFor": ".task-card .tc-card-footer"
       },
       {
         "waitMs": 500
@@ -53,13 +57,13 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
     ]
   },
   {
-    "label": "Board card footer (dark)",
+    "label": "Review column — card footer (dark)",
     "target": "default",
-    "route": "/",
-    "highlight": "[data-test-id=\"task-card-action-footer\"]",
+    "route": "/work?status=review",
+    "highlight": ".task-card .tc-card-footer",
     "steps": [
       {
-        "waitFor": "[data-test-id=\"task-card-action-footer\"]"
+        "waitFor": ".task-card .tc-card-footer"
       },
       {
         "click": "button.theme-toggle"
@@ -87,4 +91,18 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 - 2026-10-07T16:35:08Z · body
 - 2026-10-07T16:36:44Z · note: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)
 - 2026-10-07T16:38:47Z · body: section Shots
+- 2026-10-07T16:39:44Z · body
+- 2026-10-07T16:41:27Z · body
+- 2026-10-07T16:49:15Z · handoff failed · check failed after 2 automatic retries · ui verification: capture of / failed — waitFor: Timeout 5000ms exceeded.
+- 2026-10-07T16:49:15Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-10-07T16:55:10Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · ui verification: capture of / failed — waitFor: Timeout 5000ms exceeded. · next step: the agent stalled or timed out — see DEFAULT_STALL_TIMEOUT_MS in src/server/agents.ts
+- 2026-10-07T17:41:17Z · body: section Shots
+- 2026-10-07T17:41:17Z · needs_input
+- 2026-10-07T17:42:21Z · handoff failed · ui-review handoff failed at verify · ui verification: capture of / failed — goto: Timeout 30000ms exceeded.
+- 2026-10-07T17:58:35Z · note: ui verification failed (4 issue(s)): [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=cursor); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=antigravity); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=kiro); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=crush
+- 2026-10-07T17:58:35Z · handoff failed · ui-review handoff failed at verify · ui verification failed (4 issue(s)): [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=cursor); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=antigravity); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=kiro); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56915/api/models?cli=crush)
 - 2026-10-07T18:04:27Z · status active→review
+- 2026-10-07T18:04:28Z · note: Task body is underspecified: missing sections: Desired UX
+- 2026-10-07T18:05:13Z · note: review pass 1: needs some work
+- 2026-10-07T18:05:14Z · status review→active
+- 2026-10-07T18:06:30Z · body: section Shots
