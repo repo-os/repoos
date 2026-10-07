@@ -11,7 +11,7 @@ branch: feat/standardise-agent-chat-ui-shared-input-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T15:01:24Z"
-updated_at: "2026-10-07T18:08:16Z"
+updated_at: "2026-10-07T18:09:46Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -138,3 +138,4 @@ error: script "test" exited with code 1
    Duration  2.68s (transform 1.16s, setup 12ms, import 1.44s, tests 706ms, environment 442ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T18:09:46Z · body
