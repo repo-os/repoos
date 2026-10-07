@@ -3,9 +3,6 @@ id: "0710"
 title: "Docs: write the overnight-run lessons (provider-failure scraper, self-check starvation, driver tips) into the repo"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
 priority: p2
 area: docs
 story: "Field report: first agent-driven project run (opex)"
@@ -15,7 +12,7 @@ branch: feat/docs-write-the-overnight-run-lessons-pro
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T08:37:40Z"
-updated_at: "2026-10-07T02:06:17Z"
+updated_at: "2026-10-07T02:08:34Z"
 last_check_failure: "repoos check at 2026-10-07T01:37:59.207Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -51,3 +48,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-07T01:58:46Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-07T02:06:17Z · status active→review
 - 2026-10-07T02:06:17Z · status review→active
+- 2026-10-07T02:08:34Z · needs_input
