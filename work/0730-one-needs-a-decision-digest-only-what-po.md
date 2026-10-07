@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
@@ -114,3 +115,4 @@ error: script "test" exited with code 1
 - 2026-10-07T10:38:42Z · note: review pass 1: good to go
 - 2026-10-07T10:44:25Z · status review→active
 - 2026-10-07T10:44:25Z · note: close-out repair: merge-conflict
+
