@@ -3099,12 +3099,13 @@ export class TailscaleHostPool {
    * and keeps a bounded recent-hung list so the cleanup is visible after the
    * retry moved elsewhere.
    */
-  markHung(host: string, detail?: string): void {
+  markHung(host: string, detail?: string, opts?: { history?: boolean }): void {
     const s = this.hosts.find((c) => c.spec.host === host);
     if (!s) return;
     const at = new Date().toISOString();
     const active = s.activeRuns[s.activeRuns.length - 1];
     if (active) active.hung = true;
+    if (opts?.history === false) return;
     s.hungRuns = [{ taskId: active?.taskId ?? "?", at, detail }, ...(s.hungRuns ?? [])].slice(0, 5);
   }
 
@@ -4167,6 +4168,9 @@ export class TailscaleRunner implements RemoteValidator {
               "warn",
               `remote validation run for #${opts.taskId} looks hung on ${host.ip} — killing ${containerName}`,
             );
+            this.pool.markHung(host.ip, `killing container ${containerName} (#${opts.taskId})`, {
+              history: false,
+            });
             void this.exec
               .runRemote(host, killContainerCommand(containerName), () => {}, 15_000)
               .catch(() => {
