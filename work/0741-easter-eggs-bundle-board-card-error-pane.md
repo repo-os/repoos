@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T16:31:19.608Z: ui verification: capture of / failed — click: Timeout 5000ms exceeded."
 id: "0741"
 title: "Easter eggs bundle: board card error panel (flush, square, below the action button) and hide a stale close-out error while a new close-out runs"
 type: chore
@@ -69,3 +71,4 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 - 2026-10-07T16:22:18Z · body: section Shots
 - 2026-10-07T16:23:08Z · body
 - 2026-10-07T16:24:06Z · body
+
