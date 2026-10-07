@@ -2,7 +2,7 @@
 id: "0701"
 title: Show the running server's version next to the CLI's and warn when the server is stale
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, cli]
 story: "Field report: first agent-driven project run (opex)"
@@ -41,3 +41,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-07T17:28:39Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T17:28:40Z · status review→active
 - 2026-10-07T17:34:17Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-07T17:34:17Z · status review→active
