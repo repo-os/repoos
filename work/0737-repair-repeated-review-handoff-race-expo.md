@@ -12,7 +12,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
 updated_at: "2026-10-07T12:43:46Z"
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-07T12:21:44.677Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -46,3 +45,4 @@ Read AGENTS.md. Use existing task worktree, Cursor/composer-2.5. Independently v
 - 2026-10-07T12:02:39Z · body
 - 2026-10-07T12:04:31Z · body
 - 2026-10-07T12:43:46Z · body
+
