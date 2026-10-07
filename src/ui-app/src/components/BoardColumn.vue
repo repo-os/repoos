@@ -297,6 +297,7 @@ const unackedBadge = computed(() =>
 <template>
   <div
     class="board-col"
+    :data-board-column="col.id"
     :class="{
       collapsed,
       scrollable,
