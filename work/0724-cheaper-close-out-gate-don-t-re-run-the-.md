@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
-updated_at: "2026-10-07T11:08:31Z"
+updated_at: "2026-10-07T11:57:02Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T10:26:38.467Z: repoos check failed: build complete in 3.72s. · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-ico… (truncated)"
@@ -49,6 +49,23 @@ What landed:
 
 Timing: I could NOT measure real before/after close-out medians from this sandbox — the worktree has no `.repoos/checks.db` and I must not read the main checkout, so no historical close-out rows are available here. What I did measure is the mechanism's ceiling: this repo has 433 test files under src/ui-app/tests; a reuse close-out runs 0 of them (only build/lint/static guards), and a scoped close-out runs only the files the task's + main's changes affect. The concrete before/after medians still need a live board: compare `check_runs` close-out `duration_ms` before and after this lands (the run `scope`/`detail` now names the mode). I did not invent numbers for it.
 
+## Shots
+```json
+[
+  {
+    "label": "Settings → General with the new Close-out gate scope select",
+    "target": "default",
+    "route": "/settings?tab=general",
+    "highlight": "#setting-closeOut\\.gate",
+    "steps": [
+      {
+        "waitMs": 500
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-06T15:55:13Z · created · unknown
@@ -68,3 +85,4 @@ Timing: I could NOT measure real before/after close-out medians from this sandbo
 - 2026-10-07T10:57:10Z · note: review pass 1: needs some work
 - 2026-10-07T10:57:11Z · status review→active
 - 2026-10-07T11:08:31Z · note: Owner deadline12:07Z: complete fouractive tasks720/724/730/737 throughreviewanddone. Prioritize reviewer remote-scopedfailure->onefullfallback repair with orchestrator regression; keepscope. Buildthenonescopedcheck, handoffonce/endturn. Driver verifiesSettingscontrolactualshot andcombinedtreegate; no repeatedpassingfullgates forlocal-onlyfailures, nohost/config/releasewrites.
+- 2026-10-07T11:57:02Z · body: section Shots
