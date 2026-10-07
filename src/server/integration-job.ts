@@ -40,6 +40,11 @@ export interface IntegrationJob {
   enqueuedAt: string;
   /** When job processing started (ISO string, null if not yet started) */
   startedAt: string | null;
+  /**
+   * `process.hrtime.bigint()` when `startedAt` was set (#0679). Close-out
+   * budget uses monotonic elapsed time so system sleep does not consume it.
+   */
+  budgetMonotonicStartNs?: string | null;
   /** Main checkout SHA at validation start (null if not yet validated) */
   baseMainSha: string | null;
   /** Feature branch SHA being merged */

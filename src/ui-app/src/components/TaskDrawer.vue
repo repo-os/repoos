@@ -1316,6 +1316,15 @@ const pipelineStage = computed(() => {
   return active && active.taskId === ui.active?.id ? active.stage : null;
 });
 
+/** Last successful merge-gate duration on this task (#0679), for close-out tuning. */
+const lastCloseOutGateLabel = computed(() => {
+  const ms = ui.active?.extra?.last_close_out_gate_ms;
+  if (typeof ms !== "number" || !(ms > 0)) return null;
+  const sec = Math.round(ms / 1000);
+  if (sec >= 60) return `${Math.round(sec / 60)} min`;
+  return `${sec} s`;
+});
+
 /** True while the merge+build+check+cleanup request is in flight. */
 const doingDone = ref(false);
 /** Elapsed seconds shown next to the progress label while the flow runs. */
@@ -4073,6 +4082,12 @@ watch(
               <RotateCcw class="size-3.5" />
               Reopen
             </Button>
+            <p
+              v-if="ui.active.status === 'review' && lastCloseOutGateLabel"
+              class="ff-notice close-out-gate-hint"
+            >
+              Last successful close-out gate: {{ lastCloseOutGateLabel }}
+            </p>
             <Button
               v-if="ui.active.status === 'review'"
               variant="status"

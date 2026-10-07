@@ -172,6 +172,7 @@ import {
   scheduleMergeConflictRetry,
   type HandoffOrigin,
 } from "./handoff.js";
+import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
 import {
   lastHandoffFailureFromBody,
   parkTaskForIdenticalHandoffFailures,
@@ -874,7 +875,8 @@ function serveStaticUi(res: ServerResponse, uiDir: string, urlPath: string): boo
   const rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
   if (rel.includes("..")) return false;
   // Never serve index.html through the static path — `__REPOOS_BUILD_HASH_VALUE__`
-  // must be substituted at read time (not the window property name).
+  // must be substituted at read time (not the window property name — replaceAll would
+  // corrupt `window.__REPOOS_BUILD_HASH__`).
   // The SPA fallback below handles it via readUiIndex().
   if (!rel || rel === "index.html") return false;
   const abs = resolve(uiDir, rel);
@@ -1418,6 +1420,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             if (!task) return;
             scheduleMergeConflictRetry(config, task, reason, runner, (absPath) =>
               index.applyFileChange(absPath, { guarded: true }),
+            );
+          },
+          (taskId, reason) => {
+            const task = index.getTask(taskId);
+            if (!task) return;
+            scheduleCloseOutRepairHandback(
+              config,
+              task,
+              "gate-failure",
+              reason,
+              runner,
+              (absPath) => index.applyFileChange(absPath, { guarded: true }),
             );
           },
           remoteValidator,
