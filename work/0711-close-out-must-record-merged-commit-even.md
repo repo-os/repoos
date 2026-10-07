@@ -11,7 +11,7 @@ branch: feat/close-out-must-record-merged-commit-even
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:46Z"
-updated_at: "2026-10-07T01:08:13Z"
+updated_at: "2026-10-07T01:09:44Z"
 review_passes: 1
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 22: tasks closed out do not get merged_commit recorded when the branch is deleted; dependencyMergeState (src/core/task-dependencies.ts) then reports dependents as cancelled.
@@ -40,3 +40,4 @@ VERIFY FIRST: the field report came from an older server build. Before changing 
 - 2026-10-07T01:04:03Z · status review→active
 - 2026-10-07T01:07:09Z · note: OWNER clarification: cross-repo reports (private-tuk/tuk-private/opex) may describe an outdated RepoOS version. Verify CURRENT main behavior and the combined current-main/task-branch tree before treating the report or diagnosis as accurate. Record exact version/commit, reproduction, and whether still relevant, partly fixed, already fixed, or misdiagnosed. Do not implement a stale request; preserve regression evidence for already-fixed behavior. This reinforces Verify first and also applies to integration repairs.
 - 2026-10-07T01:08:13Z · body
+- 2026-10-07T01:09:44Z · body
