@@ -2,16 +2,17 @@
 id: "0713"
 title: Shot captures are written untracked into the main checkout (work/.attachments) and block close-out of unrelated tasks
 type: bug
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: a905f58df089fc7efb28f8f46c3ea5c43f390124
 assigned_to: ai
 created_by: ""
 branch: feat/shot-captures-are-written-untracked-into
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:53Z"
-updated_at: "2026-10-07T00:17:04Z"
+updated_at: "2026-10-07T00:48:32Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 25. Captures should be gitignored/ignored by the dirty-main check.
 
@@ -23,3 +24,4 @@ Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoo
 - 2026-10-06T23:52:26Z · status inbox→ready
 - 2026-10-06T23:52:27Z · status ready→active, needs_input, branch
 - 2026-10-07T00:17:04Z · status active→review
+- 2026-10-07T00:48:32Z · status review→done, release:success
