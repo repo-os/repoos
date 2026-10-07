@@ -11,6 +11,7 @@ function snap(
   over: Partial<IntegrationPipelineSnapshot> = {},
   activeOver: Partial<NonNullable<IntegrationPipelineSnapshot["active"]>> = {},
 ): IntegrationPipelineSnapshot {
+  const { active: activeOverride, ...rest } = over;
   const active: IntegrationPipelineSnapshot["active"] = {
     taskId: "0730",
     stage: null,
@@ -18,14 +19,14 @@ function snap(
     startedAt: "2026-10-07T13:00:00.000Z",
     lastProgressAt: "2026-10-07T13:00:00.000Z",
     ...activeOver,
+    ...activeOverride,
   };
   return {
     empty: false,
-    active,
     queue: [],
     at: "2026-10-07T13:00:00.000Z",
-    ...over,
-    active: over.active === undefined ? active : over.active,
+    ...rest,
+    active,
   };
 }
 
