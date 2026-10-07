@@ -129,6 +129,30 @@ describe("buildAttentionFeed", () => {
   });
 });
 
+describe("buildAttentionFeed CTO silent (#0728)", () => {
+  it("raises ctoSilent when actionable work exists and the heartbeat is stale", () => {
+    const old = "2026-10-07T08:00:00.000Z";
+    const feed = buildAttentionFeed({
+      ...emptyFeedInput(),
+      tasks: [task({ id: "0001", status: "review", title: "Awaiting sign-off" })],
+      ctoHeartbeatAt: old,
+      ctoSilentThresholdMs: 60_000,
+    });
+    expect(feed.items.some((i) => i.kind === "ctoSilent")).toBe(true);
+  });
+
+  it("clears ctoSilent after a fresh heartbeat", () => {
+    const fresh = new Date().toISOString();
+    const feed = buildAttentionFeed({
+      ...emptyFeedInput(),
+      tasks: [task({ id: "0001", status: "review", title: "Awaiting sign-off" })],
+      ctoHeartbeatAt: fresh,
+      ctoSilentThresholdMs: 60_000,
+    });
+    expect(feed.items.some((i) => i.kind === "ctoSilent")).toBe(false);
+  });
+});
+
 describe("buildAttentionFeed close-out and release kinds", () => {
   it("maps a close-out outcome and a release run", () => {
     const feed = buildAttentionFeed({

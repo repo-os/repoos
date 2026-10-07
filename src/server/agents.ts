@@ -51,6 +51,7 @@ import {
   scrapeProviderFailure,
 } from "../core/agent-run-health.js";
 import { notifyAttentionAfterSession, notifyAttentionAgentStalled } from "./attention-notify.js";
+import { taskWorkLink } from "./board-events.js";
 import { parseTaskAreas } from "../core/areas.js";
 import { commitTaskFile, fileCommittedClean, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
@@ -74,7 +75,27 @@ import {
 /** The SSE events the runner emits. Subset of RepoEvent. */
 export type AgentEvent =
   | { type: "agent.running"; id: string; at: string }
-  | { type: "agent.exited"; id: string; at: string }
+  | {
+      type: "agent.exited";
+      id: string;
+      at: string;
+      exitCode?: number | null;
+      cause?: string;
+      logPath?: string;
+    }
+  | {
+      type: "board.alert";
+      alert: "silentRun" | "slowRun" | "hostHang";
+      taskId: string;
+      cause: string;
+      evidence: {
+        task?: string;
+        logPath?: string;
+        closeOutOutcomes?: string;
+        attention?: string;
+      };
+      at: string;
+    }
   /** A start/send/chat was accepted but held for a free maxConcurrentAgents slot. */
   | { type: "agent.queued"; id: string; at: string }
   /** A queued id left the queue — about to spawn (an agent.running follows immediately). */
@@ -6127,7 +6148,13 @@ export class AgentRunner {
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       this.logger?.agent(taskId, "error", `Failed to spawn agent: ${reason}`, { cmd, args });
-      this.emit({ type: "agent.exited", id: taskId, at: now() });
+      this.emit({
+        type: "agent.exited",
+        id: taskId,
+        at: now(),
+        exitCode: null,
+        cause: `Failed to spawn agent: ${reason}`,
+      });
       return { ok: false, reason };
     } finally {
       // spawn duplicates the descriptors into the child. The parent's copies
@@ -7208,6 +7235,15 @@ export class AgentRunner {
         session.stalledEmitted = true;
         this.emitStats(taskId);
         notifyAttentionAgentStalled(taskId);
+        const at = now();
+        this.emit({
+          type: "board.alert",
+          alert: "silentRun",
+          taskId,
+          cause: "No agent output while the process is still running",
+          evidence: { task: taskWorkLink(taskId), attention: "/api/attention" },
+          at,
+        });
       }
     }
   }
@@ -7595,7 +7631,25 @@ export class AgentRunner {
       this.captureCrushSession(session, entry.workdir, entry.crushSessionsBefore);
       if (session.sessionId) this.schedulePersist(taskId);
     }
-    this.emit({ type: "agent.exited", id: taskId, at: now() });
+    const logStem = entry.runId ?? taskId;
+    const logPath = join(this.cacheDir, "agent-logs", `${logStem}.out.log`);
+    let exitCause: string | undefined;
+    if (!exitedCleanly && session) {
+      const line = (session.providerFailureDetail ?? this.lastFailureLine(session)).trim();
+      exitCause =
+        line.slice(0, 240) ||
+        (exitCode != null && exitCode !== 0 ? `agent exited with code ${exitCode}` : undefined);
+    } else if (exitCode != null && exitCode !== 0) {
+      exitCause = `agent exited with code ${exitCode}`;
+    }
+    this.emit({
+      type: "agent.exited",
+      id: taskId,
+      at: now(),
+      exitCode,
+      cause: exitCause,
+      logPath,
+    });
     // A confirmed exit always clears any stall warning — silence is only
     // ambiguous while the process is still alive.
     if (session) this.emitStats(taskId);

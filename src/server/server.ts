@@ -193,6 +193,7 @@ import { TestRunManager } from "./test-run.js";
 import { TaskCheckManager, type TaskCheckListener } from "./task-check.js";
 import { CTOManager } from "./cto.js";
 import { CTOMonitor } from "./cto-monitor.js";
+import { CtoHeartbeatTracker } from "./cto-heartbeat.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { ServeReaper, isPortListening } from "./serve-reaper.js";
 import { isLoopbackAddress, localTokenMatches, writeLocalCliToken } from "./local-token.js";
@@ -332,6 +333,7 @@ import {
   getCTO,
   ctoMessage,
   ctoInterrupt,
+  postCtoHeartbeat,
   runCtoSafeActionRoute,
   pmMessage,
   pmInterrupt,
@@ -2004,7 +2006,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // The CTO agent (0174): always-on board monitor that detects stuck tasks,
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
   const cto = new CTOManager(config, emitEvent, runner);
+  const ctoHeartbeat = new CtoHeartbeatTracker();
   const ctoMonitor = new CTOMonitor(config, index, cto, runner);
+  ctoMonitor.wireHeartbeatTouch(() => {
+    ctoHeartbeat.touch();
+    bumpAttention();
+  });
   ctoMonitor.wireSafeActions(() =>
     runCtoMonitorSafeActions({
       config,
@@ -2515,7 +2522,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     } else if (e.type === "review") {
       ctoMonitor.onEvent(`review complete for task #${e.id}: ${e.state}`);
     } else if (e.type === "agent.exited") {
-      ctoMonitor.onEvent(`agent exited: task #${e.id}`);
+      const extra = e.cause ? ` — ${e.cause}` : "";
+      ctoMonitor.onEvent(`agent exited: task #${e.id}${extra}`);
+    } else if (e.type === "close-out.outcome") {
+      ctoMonitor.onEvent(
+        `close-out ${e.outcome.outcome} for task #${e.outcome.taskId}: ${e.outcome.reason || "(ok)"}`,
+      );
+    } else if (e.type === "task-check.done") {
+      ctoMonitor.onEvent(
+        `${e.checkKind} ${e.passed ? "passed" : "failed"} for task #${e.taskId} (check ${e.checkId})`,
+      );
+    } else if (e.type === "board.alert") {
+      ctoMonitor.onEvent(`${e.alert} on task #${e.taskId}: ${e.cause}`);
     }
   });
 
@@ -3005,6 +3023,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/cto", getCTO);
   router.register("POST", "/api/cto/message", ctoMessage);
   router.register("POST", "/api/cto/interrupt", ctoInterrupt);
+  router.register("POST", "/api/cto/heartbeat", postCtoHeartbeat);
   router.register("POST", /^\/api\/cto\/actions\/([^/]+)$/, runCtoSafeActionRoute);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/, pmMessage);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/interrupt$/, pmInterrupt);
@@ -3365,6 +3384,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         previews,
         reviews,
         cto,
+        ctoHeartbeat,
         freeformRuns,
         repoos,
         logger,
