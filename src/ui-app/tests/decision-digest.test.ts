@@ -39,10 +39,9 @@ const baseConfig = {
 
 describe("extractHandoffCause", () => {
   it("prefers debug tl;dr and extracts failing tests from check output", () => {
-    const output = [
-      "FAIL  src/foo.test.ts > suite > breaks",
-      "AssertionError: expected true",
-    ].join("\n");
+    const output = ["FAIL  src/foo.test.ts > suite > breaks", "AssertionError: expected true"].join(
+      "\n",
+    );
     const cause = extractHandoffCause(
       task({
         id: "1",

@@ -156,11 +156,7 @@ defineExpose({ refresh });
             </li>
           </ul>
           <div v-if="item.evidence.some((e) => e.path)" class="feed-meta digest-evidence">
-            <span
-              v-for="ev in item.evidence.filter((e) => e.path)"
-              :key="ev.path"
-              :title="ev.path"
-            >
+            <span v-for="ev in item.evidence.filter((e) => e.path)" :key="ev.path" :title="ev.path">
               {{ ev.label }}: {{ ev.path }}
             </span>
           </div>
