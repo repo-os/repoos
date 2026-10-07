@@ -38,8 +38,12 @@ release soak), a few patterns recur. Full CLI table and incident notes:
   bookkeeping** (or an intentional config commit you mean to land with that
   close-out). Never commit another task's dirty source or an owner's WIP via
   this flag.
-- **HEAD moved after conflict repair:** merge `main` on the branch, then
-  `repoos mv <id> active` and `repoos review <id>` so handoff records the new tip.
+- **Branch work after a failed handoff (driver):** `repoos mv <id> active` (or
+  API) **before** worktree merges/commits, then merge/check/commit and
+  `repoos review <id>`. Automated close-out conflict repair stays in `review` —
+  see [`agent-run-operations.md`](agent-run-operations.md#handoff-and-status-flips).
+  A **conflict-free `main` merge on the branch** while in `review` can still pass
+  close-out integrity (#0624); not every tip advance is "HEAD moved" drift.
 - **Close-out waits for a remote host slot** while engineers hold standalone
   self-check locks: see [Remote validation → host lock](remote-validation.md#cross-process-limit-the-host-lock)
   and the #0705 dispatcher/tab behavior in

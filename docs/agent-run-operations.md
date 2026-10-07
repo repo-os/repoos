@@ -39,15 +39,37 @@ Full table: [`user-docs/cli.md`](../user-docs/cli.md) (Control plane).
   handoff **interceptor** processing a `review` request (validation starting or
   finishing), not necessarily a failed review. Check Activity and `check_runs`
   before assuming the board is broken.
-- After the engineer **merges `main` into the branch** (conflict repair), the
-  branch tip moves but the recorded handoff SHA may still be the pre-merge tip.
-  Close-out and handoff refuse with **HEAD moved**. Re-handoff:
-  `repoos mv <id> active` then `repoos review <id>` (or one synchronous
-  `repoos review` after the merge commit exists).
-- **Handoff finalization** runs `repoos check` in the task worktree with a
-  **240 s** hard cap (`src/server/handoff.ts`). A full local gate under load can
-  hit `server-side finalization timed out` even when the branch is fine; that is
-  a deadline issue, not proof the code is wrong.
+- **Sending work back for branch fixes (driver):** move the task to **`active`
+  through the server first** (`repoos mv <id> active` or the equivalent API) —
+  **before** any worktree edits, merge, or new commits. Then let the engineer
+  (or a fresh turn via `repoos start` / `repoos message`) merge `main`, resolve,
+  run `repoos check`, and commit. When the tree is stable, request handoff again
+  (`repoos review <id>`). Do not merge in the worktree while the task is still
+  in `review` on your own initiative unless you are following the automated
+  close-out conflict-repair path below.
+- **Automated close-out conflict repair:** on a real merge conflict, RepoOS keeps
+  the task in **`review`**, resumes the engineer in the task worktree, and asks
+  them to merge `main` there — **without** re-emitting the handoff signal when
+  the merge is done (`src/server/handoff.ts`). Close-out retries when the turn
+  ends.
+- **HEAD past the recorded handoff SHA is not always blocked.** Move to done runs
+  `verifyWorktreeHandoffIntegrity` (`src/server/worktree-handoff-guard.ts`): a
+  clean worktree whose tip advanced from the handoff SHA can still pass when
+  every commit since handoff is **task-file bookkeeping only** (#0600) or a
+  **conflict-free merge of `main` into the branch** that matches a `merge-tree`
+  replay (#0624). Real implementation edits after handoff still block close-out.
+  That is separate from **handoff gate drift**: if `HEAD` or the working tree
+  changes **while** pre-review `repoos check` is running, finalization refuses
+  (`describeStateDrift` in `handoff.ts`) so the gate result still describes what
+  was tested.
+- **Handoff time limits** (`src/server/handoff.ts`): the whole finalization is
+  capped at **`HANDOFF_DEADLINE_MS` = 600 s (10 minutes)** via
+  `withHandoffDeadline` (remote pre-review uses the same deadline). Each local
+  **`repoos check` child** invoked during that finalization gets its own
+  **`240_000` ms** subprocess timeout in `runCheck` — a single step can fail or
+  hang at 240 s even when the outer budget has not expired, and the outer cap can
+  still fire as `server-side finalization timed out (deadline exceeded)` on a
+  slow remote + local combination.
 
 ### `commitDirty` / `--commit-dirty`
 
@@ -67,12 +89,22 @@ the pipeline (#0637); that is separate from the `commitDirty` escape on `main`.
 
 ### Previews and second servers
 
-A **task preview** is a server rooted in that task's worktree. It can commit
-other tasks' bookkeeping onto **that branch** and cause **HEAD moved** handoff
-refusals. Stop previews when finished (`repoos preview <id> --stop`). Never run
-`just serve-noauth` (or any second `repoos serve`) from a task worktree — the
-same class of bookkeeping pollution blocked handoff on #0705 during the overnight
-run.
+**Current operating rules** (see `AGENTS.md`): one **control-plane** `repoos
+serve` per repo root; managed task **previews** are server-owned (request/stop
+via UI or `repoos preview <id> [--stop]`); runner agents must not start `repoos
+serve` themselves. For interactive browser work without OTP, `just serve-noauth`
+is a **separate preview-mode** process on another port — only when no non-preview
+server is already serving that directory, and never from the checkout where the
+real server is running (two processes on one root both watch `work/` and fight
+watchdog/reload semantics).
+
+**Incident context (#0705, 2026-10-06):** a driver-started `just serve-noauth`
+**rooted in that task's worktree** wrote many **bookkeeping commits onto the task
+branch**, which then failed handoff with **HEAD moved** / gate drift. That is why
+drivers should not spin up an extra serve/preview rooted in a worktree they are
+about to hand off or close out — not a blanket ban on `serve-noauth` in every
+context. A **managed task preview** has the same bookkeeping risk if left running:
+stop it when finished (`repoos preview <id> --stop`).
 
 ## False "provider or credit" kills (#0709, #0718)
 
