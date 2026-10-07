@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-runner-state-root-cau
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T09:29:29Z"
-updated_at: "2026-10-07T10:48:08Z"
+updated_at: "2026-10-07T10:55:41Z"
 ---
 ## Problem
 Driver verification on 2026-10-07 found three small, independent follow-ups while landing #0727/#0729. Keep them out of the release-critical machinery branch.
@@ -43,3 +43,4 @@ Owner explicitly authorizes transferring the uncommitted .github/workflows/certi
 - 2026-10-07T10:39:17Z · body
 - 2026-10-07T10:45:54Z · body
 - 2026-10-07T10:48:08Z · body
+- 2026-10-07T10:55:41Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
