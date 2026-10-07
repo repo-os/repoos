@@ -12,7 +12,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T10:20:06Z"
+updated_at: "2026-10-07T10:24:42Z"
 ---
 ## Problem
 
