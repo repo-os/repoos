@@ -39,6 +39,7 @@ import {
   TailscaleRunner,
   cacheVolumeForSlot,
   deadlineLockWaitSecs,
+  deleteActiveRunControlEntry,
   detectHungRun,
   execRemoteWithHardDeadline,
   hangIdleThresholdMs,
@@ -446,6 +447,8 @@ function poolFixture(opts: {
   hangKillNeverResolves?: boolean;
   /** Load idle probes always fail — hang must still be bounded (#0739). */
   loadProbeFails?: boolean;
+  /** Validation SSH never resolves and ignores registerAbort (#0739 wedge). */
+  validateStallNoAbortOn?: string[];
 }): Fixture {
   const root = tmpRoot();
   const config = {
@@ -575,6 +578,15 @@ function poolFixture(opts: {
           });
           inFlight--;
           return { code: 1, output: "[validate] gate exit 1\n", timedOut: false };
+        }
+        if (opts.validateStallNoAbortOn?.includes(host.ip)) {
+          (cmds[host.ip] ??= []).push(cmd);
+          remoteOpts?.registerAbort?.(() => {
+            /* no-op — hang recovery must settle the transport race */
+          });
+          await new Promise<void>(() => {
+            /* never */
+          });
         }
         if (opts.gateExitSplitChunksOn?.includes(host.ip)) {
           (cmds[host.ip] ??= []).push(cmd);
@@ -2170,6 +2182,18 @@ describe("hang detector (#0729)", () => {
   });
 });
 
+describe("active run control generation (#0739)", () => {
+  it("deleteActiveRunControlEntry removes only the matching generation", () => {
+    const map = new Map<string, { generation: number; abort: () => void }>();
+    const newer = vi.fn();
+    map.set("repoos-validate-x", { generation: 2, abort: newer });
+    expect(deleteActiveRunControlEntry(map, "repoos-validate-x", 1)).toBe(false);
+    expect(map.get("repoos-validate-x")?.generation).toBe(2);
+    expect(deleteActiveRunControlEntry(map, "repoos-validate-x", 2)).toBe(true);
+    expect(map.has("repoos-validate-x")).toBe(false);
+  });
+});
+
 describe("hung container cleanup (#0729)", () => {
   it("names one run's container uniquely and safely", () => {
     const name = validateContainerName("0729-ab12cd34");
@@ -2390,6 +2414,54 @@ describe("hung run recovery end to end (#0729)", () => {
     const hung = f.runner.hostStatus()?.flatMap((h) => h.hungRuns ?? []) ?? [];
     expect(hung).toHaveLength(1);
     expect(hung[0]!.taskId).toBe("0729");
+  });
+
+  it("settles validate when hang kill completes but main SSH never resolves and abort is a no-op (#0739)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      validateStallNoAbortOn: ["a"],
+      fixedLoad: 0,
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const started = Date.now();
+    const summary = await Promise.race([
+      f.runner.validate(opts("0739-wedge")),
+      tick(8_000).then(() => {
+        throw new Error("validate() did not settle after hang kill");
+      }),
+    ]);
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(summary.hung).toBe(true);
+    expect(f.runner.hostStatus()?.[0]?.activeRuns ?? []).toHaveLength(0);
+    expect(f.killed).toHaveLength(1);
+  });
+
+  it("manual killHungValidation settles validate when main SSH never resolves (#0739)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      validateStallNoAbortOn: ["a"],
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const started = Date.now();
+    const resultPromise = f.runner.validate(opts("0739-manual-wedge"));
+    let attempts = 0;
+    while (attempts++ < 200 && (f.runner.hostStatus()?.[0]?.activeRuns ?? []).length === 0) {
+      await tick(5);
+    }
+    const killResult = await f.runner.killHungValidation!("0739-manual-wedge");
+    expect(killResult.ok).toBe(true);
+    const summary = await Promise.race([
+      resultPromise,
+      tick(3_000).then(() => {
+        throw new Error("validate() did not settle after manual kill");
+      }),
+    ]);
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(summary.hung).toBe(true);
+    expect(f.runner.hostStatus()?.[0]?.activeRuns ?? []).toHaveLength(0);
   });
 
   it("releases the pool slot when hang kill completes (#0739)", async () => {
