@@ -12,7 +12,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T11:58:31Z"
+updated_at: "2026-10-07T12:04:37Z"
 close_out_repair_count: 1
 review_passes: 1
 ---
@@ -146,3 +146,4 @@ error: script "test" exited with code 1
 - 2026-10-07T11:56:00Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-07T11:58:31Z · status active→review
 - 2026-10-07T11:58:31Z · status review→active
+- 2026-10-07T12:04:37Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
