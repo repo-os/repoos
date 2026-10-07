@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-07T14:04:13Z"
+review_passes: 3
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
@@ -12,8 +14,6 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T14:04:12Z"
-review_passes: 2
 close_out_repair_count: 1
 ---
 ## Problem
@@ -158,3 +158,4 @@ error: script "test" exited with code 1
 - 2026-10-07T14:02:52Z · status active→review
 - 2026-10-07T14:02:52Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-07T14:04:12Z · note: review pass 4: good to go
+
