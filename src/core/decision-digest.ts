@@ -333,6 +333,15 @@ function reviewBlockedCause(
 ): DecisionCause {
   const verdict = parseReviewVerdict(reviewMarkdown);
   const gate = task.extra?.last_check_failure;
+  if (verdict === "good to go" && typeof gate === "string" && gate.trim()) {
+    const failingTests = extractFailedTests(gate);
+    return {
+      headline: "Review is clean but the handoff check gate is still red",
+      detail: gate.trim(),
+      step: "check",
+      failingTests: failingTests.length ? failingTests : undefined,
+    };
+  }
   if (result.reason === "gate-not-green" && typeof gate === "string" && gate.trim()) {
     const failingTests = extractFailedTests(gate);
     return {
@@ -483,6 +492,9 @@ export function buildDecisionDigest(input: DecisionDigestInput): DecisionDigest 
   }
 
   for (const run of input.silentRuns) {
+    if (ctoAuto("restart-stalled-agent", input.config)) {
+      continue;
+    }
     const item: DecisionDigestItem = {
       id: `stuck-run:${run.taskId}`,
       kind: "stuck-run",
