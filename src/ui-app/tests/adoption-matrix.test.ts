@@ -202,6 +202,11 @@ for (const fixture of ADOPTION_FIXTURES) {
         expect(namespaced.workDir).toBe("repoos/work");
         expect(namespaced.docsDir).toBe("repoos/docs");
         expect(namespaced.cacheDir).toBe("repoos/.repoos");
+        // Skills/stories/inputs follow the namespace too, so a `repoos/`
+        // layout does not scatter them to the repo root (#0703).
+        expect(namespaced.skillsDir).toBe("repoos/skills");
+        expect(namespaced.storiesDir).toBe("repoos/stories");
+        expect(namespaced.inputsDir).toBe("repoos/inputs");
       },
     );
 
