@@ -112,3 +112,4 @@ error: script "test" exited with code 1
 - 2026-10-07T01:07:29Z · body
 - 2026-10-07T01:09:18Z · body
 - 2026-10-07T01:15:19Z · status active→review
+- 2026-10-07T01:15:19Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria; empty sections: Notes for AI
