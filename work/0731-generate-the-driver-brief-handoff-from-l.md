@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0731"
 title: Generate the CTO's board brief from live state (also usable as the handoff for any human or agent session)
 type: feature
@@ -43,3 +44,4 @@ The brief is produced by the CTO from live state (merged since the last tag, tas
 - 2026-10-07T17:12:04Z · status ready→active, branch
 - 2026-10-07T17:21:56Z · body
 - 2026-10-07T17:23:49Z · body
+
