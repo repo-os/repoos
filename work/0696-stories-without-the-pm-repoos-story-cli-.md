@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/stories-without-the-pm-repoos-story-cli-
 created_at: "2026-10-06T03:15:42Z"
-updated_at: "2026-10-07T18:19:36Z"
+updated_at: "2026-10-07T18:27:51Z"
 ---
 ## Problem
 
@@ -43,3 +43,23 @@ Code: `src/server/routes/stories.ts` (`createFreeformStory`), `src/core/story-de
 - 2026-10-07T18:15:21Z · body
 - 2026-10-07T18:17:01Z · body
 - 2026-10-07T18:19:36Z · body
+- 2026-10-07T18:27:51Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/story-cli-and-verbatim-api.test.ts:358:37
+    356|     try {
+    357|       await withCwd(root, () => cmdStoryShow(["Launch checklist"]));
+    358|       expect(process.exitCode ?? 0).toBe(0);
+       |                                     ^
+    359|       const out = logs.join("\n");
+    360|       expect(out).toContain("tag-only");
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 440 passed | 1 skipped (442)
+      Tests  1 failed | 5373 passed | 15 skipped (5389)
+   Start at  18:21:07
+   Duration  394.14s (transform 9.60s, setup 4.19s, import 81.11s, tests 262.22s, environment 393.13s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 780ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  18:27:42
+   Duration  4.74s (transform 2.37s, setup 18ms, import 2.91s, tests 780ms, environment 872ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
