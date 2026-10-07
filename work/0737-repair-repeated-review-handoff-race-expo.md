@@ -11,7 +11,7 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T14:02:27Z"
+updated_at: "2026-10-07T14:11:46Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T12:21:44.677Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
@@ -88,3 +88,4 @@ error: script "test" exited with code 1
 - 2026-10-07T13:07:25Z · note: review pass 1: good to go
 - 2026-10-07T14:02:24Z · body
 - 2026-10-07T14:02:24Z · status review→active
+- 2026-10-07T14:11:46Z · note: Driver latest release-blocker evidence14:07:56: #730 fullhandoff failed on bee after301s, tests/agent-review.test.ts reviews again after human returns to engineering; gate exit1 is real product/test failure. Current automatic fallbackmini remainslive; no driver identicalretry. Existing owner acceptance10 consecutive localpasses underload remains required. Verify first/secondresponse bodies, on-diskstatus and index around PATCHactive and requestReview; do not weaken snapshot guards. #739 owns false-hung/slotcleanup separate scope.
