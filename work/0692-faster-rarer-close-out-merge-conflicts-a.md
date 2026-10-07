@@ -9,6 +9,8 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: feat/resolve-integration-conflicts-without-re
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T23:52:38Z"
 updated_at: "2026-10-07T16:24:15Z"
 ---
@@ -188,3 +190,4 @@ error: script "test" exited with code 1
    Duration  2.36s (transform 1.10s, setup 11ms, import 1.37s, tests 413ms, environment 490ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T16:24:15Z · cli_override, model_override
