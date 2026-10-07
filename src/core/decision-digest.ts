@@ -162,8 +162,7 @@ export function extractHandoffCause(task: Task): DecisionCause {
   return {
     headline: summary ?? headline,
     detail: detail && detail !== headline ? detail : undefined,
-    step:
-      reason === "check-failed-after-retries" || reason === "dev-error" ? "check" : undefined,
+    step: reason === "check-failed-after-retries" || reason === "dev-error" ? "check" : undefined,
     failingTests: failingTests?.length ? failingTests : undefined,
   };
 }
@@ -187,10 +186,7 @@ function closeOutKind(job: CloseOutJobDigestSource): CloseOutFailureKind {
   return classifyFailure(job.failedPhase, job.reason ?? "");
 }
 
-export function actionsForHandoffFailure(
-  task: Task,
-  config: RepoOSConfig,
-): DecisionAction[] {
+export function actionsForHandoffFailure(task: Task, config: RepoOSConfig): DecisionAction[] {
   const reason = task.needsInputReason ?? "";
   const actions: DecisionAction[] = [];
   if (task.status === "review" && /review-failed|watchdog-stuck/.test(reason)) {
@@ -217,11 +213,7 @@ export function actionsForHandoffFailure(
     label: "Dismiss needs-input flag",
     policyAutomatic: false,
   });
-  if (
-    task.status === "active" &&
-    ctoAuto("restart-stalled-agent", config) &&
-    !task.needsInput
-  ) {
+  if (task.status === "active" && ctoAuto("restart-stalled-agent", config) && !task.needsInput) {
     actions.unshift({
       id: "cto-restart",
       label: "Restart stalled engineer (CTO)",
@@ -383,7 +375,7 @@ export function buildDecisionDigest(input: DecisionDigestInput): DecisionDigest 
         cause: { headline: "Assigned to you" },
         evidence: [{ label: "Task", href: taskLink(task.id) }],
         actions: [{ id: "open-task", label: "Open task", policyAutomatic: false }],
-        at: task.updated_at,
+        at: task.updated_at ?? generatedAt,
         link: taskLink(task.id),
       };
       if (itemRequiresHumanDecision(item, paused)) pushItem(items, item);
@@ -405,7 +397,7 @@ export function buildDecisionDigest(input: DecisionDigestInput): DecisionDigest 
             policyAutomatic: false,
           },
         ],
-        at: task.updated_at,
+        at: task.updated_at ?? generatedAt,
         link: taskLink(task.id),
       };
       pushItem(items, item);
@@ -425,7 +417,7 @@ export function buildDecisionDigest(input: DecisionDigestInput): DecisionDigest 
         cause,
         evidence,
         actions: actionsForHandoffFailure(task, input.config),
-        at: task.updated_at,
+        at: task.updated_at ?? generatedAt,
         link: taskLink(task.id),
       };
       if (itemRequiresHumanDecision(item, paused)) pushItem(items, item);
@@ -463,7 +455,7 @@ export function buildDecisionDigest(input: DecisionDigestInput): DecisionDigest 
           { label: "Task", href: taskLink(task.id) },
         ],
         actions: actionsForReviewBlocked(approval, input.config),
-        at: task.updated_at,
+        at: task.updated_at ?? generatedAt,
         link: taskLink(task.id),
       };
       if (itemRequiresHumanDecision(item, paused)) pushItem(items, item);
@@ -472,9 +464,7 @@ export function buildDecisionDigest(input: DecisionDigestInput): DecisionDigest 
 
   for (const job of input.failedCloseOutJobs) {
     const cause = extractCloseOutCause(job);
-    const evidence: DecisionEvidence[] = [
-      { label: "Task", href: taskLink(job.taskId) },
-    ];
+    const evidence: DecisionEvidence[] = [{ label: "Task", href: taskLink(job.taskId) }];
     if (job.logPath) {
       evidence.push({ label: "Close-out log", path: job.logPath });
     }
@@ -537,7 +527,11 @@ export function buildDecisionDigest(input: DecisionDigestInput): DecisionDigest 
         ...(pf.taskId ? [{ label: "Task", href: taskLink(pf.taskId) }] : []),
       ],
       actions: [
-        { id: "fix-provider", label: "Fix provider credentials or billing", policyAutomatic: false },
+        {
+          id: "fix-provider",
+          label: "Fix provider credentials or billing",
+          policyAutomatic: false,
+        },
       ],
       at: pf.at,
       link: pf.taskId ? taskLink(pf.taskId) : "/agents",
