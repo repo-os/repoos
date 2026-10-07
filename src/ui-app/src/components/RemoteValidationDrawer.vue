@@ -6,6 +6,7 @@ import { copyToClipboard } from "../lib/clipboard";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import Button from "./ui/button.vue";
+import Input from "./ui/input.vue";
 import Switch from "./ui/switch.vue";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
@@ -101,6 +102,20 @@ const engineerSelfCheckRemote = computed({
   get: () => config.form["remoteValidation.engineerSelfCheckRemote"] !== false,
   set: (v: boolean) => {
     void config.setConfigValues({ "remoteValidation.engineerSelfCheckRemote": v });
+  },
+});
+// Hang timeout (#0729): minutes of no output on an idle host before a run is
+// killed and retried elsewhere. 0/blank leaves the config default (5).
+const hangIdleMinutes = computed({
+  get: () => {
+    const v = config.form["remoteValidation.hangIdleMinutes"];
+    return typeof v === "number" ? v : 5;
+  },
+  set: (v: number) => {
+    const n = Math.round(Number(v));
+    if (Number.isFinite(n) && n > 0) {
+      void config.setConfigValues({ "remoteValidation.hangIdleMinutes": n });
+    }
   },
 });
 
@@ -291,6 +306,21 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
           <Switch
             :checked="fallbackToLocal"
             @update:checked="(v: boolean) => (fallbackToLocal = v)"
+          />
+
+          <label style="display: flex; flex-direction: column; gap: 2px">
+            Hang timeout (minutes)
+            <span class="tunnel-help" style="margin: 0">
+              A run whose output stops changing this long while its host is idle is treated as hung:
+              its container is killed and the run retried once on another host. Default 5.
+            </span>
+          </label>
+          <Input
+            type="number"
+            min="1"
+            style="width: 84px"
+            :model-value="String(hangIdleMinutes)"
+            @update:model-value="(v: string) => (hangIdleMinutes = Number(v))"
           />
         </div>
 

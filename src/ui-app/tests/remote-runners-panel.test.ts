@@ -152,4 +152,54 @@ describe("RemoteRunnersPanel", () => {
     expect(wrapper.text()).toContain("Updated");
     wrapper.unmount();
   });
+
+  it("renders hung runs and in-flight hung badge from the status API (#0729)", async () => {
+    const startedAt = new Date(Date.now() - 6 * 60_000).toISOString();
+    const killedAt = new Date(Date.now() - 90_000).toISOString();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL) => {
+        const path = String(url);
+        if (path.startsWith("/api/remote-validation/status")) {
+          return jsonResponse({
+            enabled: true,
+            running: true,
+            provider: "tailscale",
+            tailscaleHosts: ["bee"],
+            tailscaleHost: "",
+            tailscaleHostPinsTop: false,
+            hostPoolEditable: true,
+            hosts: [
+              {
+                host: "bee",
+                user: "nick",
+                labels: [],
+                maxConcurrent: 1,
+                inFlight: 1,
+                queued: 0,
+                probed: true,
+                healthy: true,
+                activeRuns: [
+                  { taskId: "0729", startedAt, phase: "test", label: "#0729", hung: true },
+                ],
+                hungRuns: [{ taskId: "0199", at: killedAt }],
+              },
+            ],
+          });
+        }
+        throw new Error(`Unexpected ${path}`);
+      }),
+    );
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const wrapper = mount(RemoteRunnersPanel, {
+      global: { plugins: [pinia], stubs: { "router-link": true } },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain("Hung runs");
+    expect(wrapper.text()).toContain("hung · killing");
+    expect(wrapper.text()).toContain("#0199");
+    expect(wrapper.text()).toContain("nick@bee");
+    wrapper.unmount();
+  });
 });

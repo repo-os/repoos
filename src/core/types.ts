@@ -925,6 +925,12 @@ export interface RemoteValidationConfig {
    */
   maxConcurrent?: number;
   /**
+   * Minutes a remote run's output may sit unchanged, while its host is idle
+   * (load per CPU under 0.5), before the run is treated as hung: its container
+   * is killed and the run retried once on another host (#0729). Default 5.
+   */
+  hangIdleMinutes?: number;
+  /**
    * Opt a human-watched release cut into the remote runner. Default false.
    * Close-out uses the runner whenever `enabled` is true (it runs unattended,
    * so VM boot/provision latency is invisible); a release is something the
