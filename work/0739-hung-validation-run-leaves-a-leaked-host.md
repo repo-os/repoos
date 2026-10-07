@@ -12,7 +12,7 @@ branch: feat/hung-validation-run-leaves-a-leaked-host
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:05Z"
-updated_at: "2026-10-07T15:37:39Z"
+updated_at: "2026-10-07T15:38:22Z"
 review_passes: 3
 ---
 ## Problem
@@ -67,3 +67,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T15:34:43Z · body
 - 2026-10-07T15:37:08Z · status active→review
 - 2026-10-07T15:37:09Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T15:38:22Z · note: review pass 4: needs some work
