@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-07T09:10:21.076Z: server-side finalization timed out (deadline exceeded)"
 id: "0727"
 title: "Give the CTO the routine: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
 type: feature
@@ -14,7 +12,9 @@ branch: feat/give-the-cto-the-routine-evaluate-and-en
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:31Z"
-updated_at: "2026-10-07T08:58:57Z"
+updated_at: "2026-10-07T09:11:26Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T09:10:21.076Z: server-side finalization timed out (deadline exceeded)"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: e1e86d410e6b27872e1ddd020132b9be009f9f01
 review_passes: 1
@@ -121,4 +121,4 @@ Rationale: land routine docs/chore work only; machinery paths and UI screenshot 
 - 2026-10-07T06:49:40Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-07T06:49:40Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-10-07T08:58:57Z · needs_input
-
+- 2026-10-07T09:11:26Z · body
