@@ -12,7 +12,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T09:46:40Z"
+updated_at: "2026-10-07T09:47:41Z"
 ---
 ## Problem
 
@@ -35,6 +35,10 @@ Read src/server/attention-feed.ts and the done-error debug tl;dr first and reuse
 
 This digest is the CTO's escalation surface: what it did automatically (audit) and what it is handing to the human, with cause and evidence.
 
+## Driver constraints for engineer and reviewer
+
+Owner wants release soon. Verify diagnosis independently against CURRENT main and running build before implementation/approval; record commit/version and reproduction, classify external RepoOS-managed repo reports as still relevant, partly fixed, already fixed, or misdiagnosed. Do not implement stale reports blindly. These two tasks share attention-feed/CTO surfaces: preserve independent responsibilities and coordinate via task notes; no concurrent writer in a worktree. #0729 runner repair is release-critical, do not overwrite installed runner guards or change owner config/hosts/restart server. Build after UI/source changes BEFORE one scoped repoos check --changed main; handoff runs the full gate. If only one local step fails, rerun that step instead of the entire passing suite. Request handoff ONCE, then END TURN with no subsequent commits/task updates. Required UI shots must show actual changed screens/state; temporary browser route-interception fixtures stay outside production code and are labeled. No release/tag/push/PR/direct-main commit.
+
 ## Activity
 
 - 2026-10-07T02:05:38Z · created · unknown
@@ -43,3 +47,4 @@ This digest is the CTO's escalation surface: what it did automatically (audit) a
 - 2026-10-07T09:29:38Z · status inbox→ready
 - 2026-10-07T09:46:40Z · cli_override, model_override
 - 2026-10-07T09:46:40Z · status ready→active, branch
+- 2026-10-07T09:47:41Z · body
