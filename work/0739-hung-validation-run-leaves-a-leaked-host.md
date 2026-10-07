@@ -12,7 +12,7 @@ branch: feat/hung-validation-run-leaves-a-leaked-host
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:05Z"
-updated_at: "2026-10-07T16:26:48Z"
+updated_at: "2026-10-07T16:27:16Z"
 last_check_failure: "repoos check at 2026-10-07T16:16:48.550Z: repoos check failed: ⏭ user-docs-build — skipped — no changed path matches user-docs/** · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transpa… (truncated)"
 close_out_repair_count: 1
 review_passes: 5
