@@ -12,7 +12,7 @@ branch: feat/board-card-says-queued-for-close-out-for
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:13:12Z"
-updated_at: "2026-10-07T18:08:13Z"
+updated_at: "2026-10-07T18:08:47Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-07T18:07:41.275Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-hint.tc-moving matched nothing on / (captured http://127.0.0.1:60065/) (http://127.0.0.1:60065/); [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:60065/) (http://127.0.0.1:60065/)"
 ---
@@ -37,9 +37,16 @@ Read TaskCard.vue (pipelineStage, inPipeline computed), the pipeline bar, and sr
 ```json
 [
   {
-    "label": "Board",
+    "label": "Board and integration pipeline bar (card hints follow live close-out snapshot)",
     "target": "default",
-    "route": "/"
+    "route": "/work",
+    "highlight": ".ibar-wrap"
+  },
+  {
+    "label": "Checks Now tab — close-out pipeline summary",
+    "target": "default",
+    "route": "/checks?tab=now",
+    "highlight": ".ips"
   }
 ]
 ```
@@ -210,3 +217,4 @@ error: script "test" exited with code 1
 - 2026-10-07T18:01:13Z · body
 - 2026-10-07T18:07:38Z · note: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-hint.tc-moving matched nothing on / (captured http://127.0.0.1:60065/) (http://127.0.0.1:60065/); [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:60065/) (http://127.0.0.1:60065/)
 - 2026-10-07T18:08:13Z · body: section Shots
+- 2026-10-07T18:08:47Z · body: section Shots
