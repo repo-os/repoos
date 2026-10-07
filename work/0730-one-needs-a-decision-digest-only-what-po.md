@@ -12,7 +12,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T10:49:56Z"
+updated_at: "2026-10-07T10:55:55Z"
 close_out_repair_count: 1
 review_passes: 1
 ---
@@ -118,3 +118,23 @@ error: script "test" exited with code 1
 - 2026-10-07T10:45:14Z · note: Close-out10:44 failed before combined validation: merge conflict src/cli/index.ts after #728 landed. Merge current main into your existing branch, preserve #728 watch command AND #730 decisions/attention aliases and route parity. No duplicate command cases, no reset of unrelated task records. Correct panel evidence default2 already uploaded and independently viewed with zero errors; preserve it. Resolve only needed conflict, build then one scoped check, handoff once/end turn for fresh review. No main edits/host/config/release actions.
 - 2026-10-07T10:47:36Z · body
 - 2026-10-07T10:49:56Z · body
+- 2026-10-07T10:55:55Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     215|   expect(res.status).toBe(202);
+       |                      ^
+    216|   expect(res.body.status).toBe("active");
+    217|   const deadline = Date.now() + 30_000;
+ ❯ tests/agent-review.test.ts:361:13
+ ❯ withServer tests/agent-review.test.ts:282:11
+ ❯ tests/agent-review.test.ts:353:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 433 passed | 1 skipped (435)
+      Tests  1 failed | 5235 passed | 15 skipped (5251)
+   Start at  10:51:18
+   Duration  271.21s (transform 6.76s, setup 2.29s, import 51.33s, tests 222.99s, environment 239.47s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 409ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:55:50
+   Duration  2.31s (transform 1.08s, setup 11ms, import 1.33s, tests 409ms, environment 481ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
