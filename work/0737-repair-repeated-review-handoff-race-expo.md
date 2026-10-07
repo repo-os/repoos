@@ -5,11 +5,13 @@ type: bug
 status: inbox
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T10:16:47Z"
+updated_at: "2026-10-07T10:17:09Z"
 ---
 ## Problem
 Current main 541f9b3c78567799f5d0f5b5b44cfef7f9babf8b, compiled version0.5.67 hashfb4bf9051342bd324397256c375a881b7621b9ccf675853ab448e140f7e9465c. Pre-release bun run test:coverage failed agent-review.test.ts:361 second requestReview after human PATCH active: expected202 got200. Isolated single-worker reproduction also failed expected202 got409. Evidence /private/tmp/repoos-pre-release-coverage.log and /private/tmp/repoos-review-reproduction.log. Do not assume a flake or broaden timeouts.
@@ -26,3 +28,4 @@ Read AGENTS.md. Use existing task worktree, Cursor/composer-2.5. Independently v
 ## Activity
 
 - 2026-10-07T10:16:47Z · created · unknown
+- 2026-10-07T10:17:09Z · cli_override, model_override
