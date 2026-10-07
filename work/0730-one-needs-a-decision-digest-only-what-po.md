@@ -2,7 +2,7 @@
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -84,3 +84,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T10:09:11Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-07T10:14:41Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-07T10:14:41Z · status review→active
