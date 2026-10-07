@@ -5,12 +5,12 @@ type: bug
 status: inbox
 priority: p1
 area: server
-story: "Autopilot: a driver that only handles exceptions"
+story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T02:05:35Z"
+updated_at: "2026-10-07T02:10:58Z"
 ---
 ## Problem
 
@@ -34,3 +34,4 @@ Do not touch the owner's hosts from the engineer session. Related: #0717, #0720,
 ## Activity
 
 - 2026-10-07T02:05:35Z · created · unknown
+- 2026-10-07T02:10:58Z · story
