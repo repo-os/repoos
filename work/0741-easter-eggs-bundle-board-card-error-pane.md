@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-07T18:30:58Z"
-review_passes: 2
 id: "0741"
 title: "Easter eggs bundle: board card error panel (flush, square, below the action button) and hide a stale close-out error while a new close-out runs"
 type: chore
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -13,6 +11,8 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
+updated_at: "2026-10-07T18:41:25Z"
+review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)"
 ---
@@ -131,4 +131,4 @@ error: script "test" exited with code 1
 - 2026-10-07T18:29:39Z · status active→review
 - 2026-10-07T18:29:39Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-10-07T18:30:58Z · note: review pass 2: good to go
-
+- 2026-10-07T18:41:25Z · status review→active
