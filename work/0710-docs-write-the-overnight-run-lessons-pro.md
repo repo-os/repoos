@@ -2,7 +2,7 @@
 id: "0710"
 title: "Docs: write the overnight-run lessons (provider-failure scraper, self-check starvation, driver tips) into the repo"
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: docs
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: ""
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T08:37:40Z"
-updated_at: "2026-10-07T01:15:49Z"
+updated_at: "2026-10-07T01:16:17Z"
 ---
 ## Problem
 
@@ -36,3 +36,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-06T08:37:43Z · story
 - 2026-10-07T01:15:43Z · cli_override, model_override
 - 2026-10-07T01:15:49Z · note: DRIVER scope/current-version requirement: use the latest session-handoff-2026-10-07-am.md UPDATE00:40Z plus overnight-log current entries; older pm handoff is superseded. Independently check every proposed rule against current main and AGENTS.md. #0723 now provides authenticated CLI control-plane commands; document those rather than obsolete curl/session advice. Do not repeat unproven claims that task bookkeeping restarts validation, that stale host scripts alone caused the mirror bug, or that silence proves model/network failure. Preserve incident context separately from current operating rules. No code/config/main commit/server/host changes. Docs-only; do not modify unrelated docs or AGENTS rules outside the task scope.
+- 2026-10-07T01:16:17Z · status inbox→ready
