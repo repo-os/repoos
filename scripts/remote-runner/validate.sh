@@ -59,16 +59,11 @@ docker ps -aq --filter "name=repoos-validate-" \
   --filter status=created --filter status=exited --filter status=dead 2>/dev/null \
   | xargs -r docker rm -f >/dev/null 2>&1 || true
 
-# Clean up any stale work dirs from crashed/killed previous runs.  Old
-# validate.sh ran Docker as uid 1000, leaving files that the SSH user could
-# not rm.  Use a root Docker container to chown them first, then rm.
-for _stale in "$HOME"/.repoos-validate.*; do
-  [ -d "$_stale" ] || continue
-  docker run --rm -v "$_stale":/work -u 0 "$IMAGE" \
-    chown -R "$(id -u):$(id -g)" /work 2>/dev/null || true
-  rm -rf "$_stale" 2>/dev/null || true
-done
-unset _stale
+# No global sweep of $HOME/.repoos-validate.* at startup (#0729): it runs before
+# the host lock and before this run's container exists, so a sibling run's work
+# dir is invisible to any mount-based guard in the pre-container window and
+# gets `rm -rf`ed out from under a live /repo bind-mount. This run's EXIT
+# trap removes its own $WORK; stale dirs are left for a separate safe GC path.
 
 WORK="$(mktemp -d "$HOME/.repoos-validate.XXXXXX")"
 rm -rf "$ART" && mkdir -p "$ART"

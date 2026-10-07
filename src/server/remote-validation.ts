@@ -4013,6 +4013,9 @@ export class TailscaleRunner implements RemoteValidator {
     // Unique per run so a hang kills exactly this run's container (#0729).
     const containerName = validateContainerName(paths.artifacts.split("/").pop() ?? opts.taskId);
     slot.setContainer?.(containerName);
+    // Config `remoteValidation.hangIdleMinutes` wins; the injectable timing is
+    // the test/fallback knob (#0729).
+    const hangIdleMinutes = rv.hangIdleMinutes ?? this.timings.hangIdleMinutes;
     const startedAt = Date.now();
     let remoteTestRef: string | null = null;
     const withScope = (summary: CheckSummary): CheckSummary =>
@@ -4156,7 +4159,7 @@ export class TailscaleRunner implements RemoteValidator {
         }, this.timings.loadSampleIntervalMs);
         loadTimer.unref?.();
         const watchdog = new HangWatchdog({
-          thresholdMs: hangIdleThresholdMs(this.timings.hangIdleMinutes),
+          thresholdMs: hangIdleThresholdMs(hangIdleMinutes),
           checkIntervalMs: this.timings.hangCheckIntervalMs,
           loadPerCpu: () => loadNow,
           onHung: () => {
@@ -4181,6 +4184,20 @@ export class TailscaleRunner implements RemoteValidator {
         } finally {
           watchdog.stop();
           clearInterval(loadTimer);
+          // Server-side container cleanup on cancel/timeout (#0729 review): a
+          // run the outer timeout SIGKILLs (or the caller's deadline cancels)
+          // may leave its container running if the SSH channel that carried
+          // `docker run --rm` is gone before validate.sh's EXIT trap can fire.
+          // The watchdog already kills a hung run by name; this covers the
+          // deadline/cancel case with a fresh SSH attempt while we still know
+          // the exact container name — never a blanket kill.
+          if (!run || run.timedOut) {
+            void this.exec
+              .runRemote(host, killContainerCommand(containerName), () => {}, 15_000)
+              .catch(() => {
+                /* the next probe's stale sweep reaps an exited leftover */
+              });
+          }
         }
         if (watchdog.hung) {
           // Killed as a hang: no test result exists. Transient so the caller
@@ -4192,7 +4209,7 @@ export class TailscaleRunner implements RemoteValidator {
           );
           const detail =
             `remote validation hung on ${host.ip} — no output for ` +
-            `${this.timings.hangIdleMinutes}m while the host was idle; the run's container ` +
+            `${hangIdleMinutes}m while the host was idle; the run's container ` +
             `(${containerName}) was removed and the run retried on another host`;
           this.record(
             { taskId: opts.taskId, host: host.ip, phase: "result" },
