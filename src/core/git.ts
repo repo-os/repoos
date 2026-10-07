@@ -1358,10 +1358,8 @@ export interface PreflightMergeResult {
 }
 
 /**
- * Cheap, non-destructive pre-flight for merging `branch` into the CURRENT
- * checkout. Uses `git merge --no-commit` and always aborts, so the working
- * tree is left untouched (blocking files may be committed first, as the real
- * `mergeBranch` does, to keep the pre-flight honest).
+ * Read-only pre-flight for merging `branch` into the current committed tree.
+ * Uses `git merge-tree` without changing working files, the index, or refs.
  *
  * Returns `ok: true` for a clean merge (fast-forward or merge commit), and
  * `ok: false` with the conflict file list when source files would conflict.
@@ -1389,34 +1387,33 @@ export async function preflightMerge(
     };
   }
 
-  let run = await runGit(root, ["merge", "--no-commit", "--no-ff", branch], 60_000);
-  if (run.status !== 0 && /would be overwritten by merge/.test(run.stderr)) {
-    const blocking = blockingFiles(run.stderr);
-    if (blocking.length > 0) {
-      for (const p of blocking) git(root, ["add", "--", p]);
-      if (git(root, ["commit", "-m", "chore: sync working tree before merge"]) !== null) {
-        run = await runGit(root, ["merge", "--no-commit", "--no-ff", branch], 60_000);
-      }
-    }
+  // Analyze committed trees without touching main's working tree or index.
+  // A clean-review policy preflight runs in the background: merge/abort here
+  // could overwrite a concurrent human task PATCH (#0737).
+  const run = await runGit(
+    root,
+    ["merge-tree", "--write-tree", "--name-only", "-z", "HEAD", branch],
+    60_000,
+  );
+  if (run.status === 0) return { ok: true, drifted, conflicts: [] };
+  if (run.status !== 1) {
+    return {
+      ok: false,
+      drifted,
+      conflicts: [],
+      reason: `merge analysis failed: ${run.stderr.trim()}`,
+    };
   }
-
-  if (run.status === 0) {
-    await runGit(root, ["merge", "--abort"], 4000);
-    return { ok: true, drifted, conflicts: [] };
-  }
-
-  const conflicts =
-    git(root, ["diff", "--name-only", "--diff-filter=U"])?.split("\n").filter(Boolean) ?? [];
-
-  // Respect autoResolve semantics so generated files never surface as
-  // "conflicts" to the user.
-  const autoResolvable = (p: string): boolean =>
-    (opts.autoResolve ?? []).some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
-  const unresolved = conflicts.filter((p) => !autoResolvable(p));
-
-  await runGit(root, ["merge", "--abort"], 4000);
-
-  if (unresolved.length > 0) {
+  // -z emits the merged tree, conflict paths, an empty separator, then
+  // structured conflict messages. Do not parse filenames out of git prose.
+  const fields = run.stdout.split("\0");
+  const separator = fields.indexOf("", 1);
+  const conflicts = fields.slice(1, separator === -1 ? fields.length : separator);
+  const unresolved = conflicts.filter(
+    (p) =>
+      !(opts.autoResolve ?? []).some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/")),
+  );
+  if (unresolved.length) {
     return {
       ok: false,
       drifted,
@@ -1424,7 +1421,6 @@ export async function preflightMerge(
       reason: `merge conflict: ${unresolved.join(", ")}`,
     };
   }
-
   return { ok: true, drifted, conflicts: [] };
 }
 
