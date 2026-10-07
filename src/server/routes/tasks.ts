@@ -2541,6 +2541,7 @@ export const runCtoSafeActionRoute: RouteHandler = async (ctx, req, res, params)
       emitEvent: ctx.emitEvent,
       triggerJobProcessing: ctx.triggerJobProcessing,
       reportedStages: ctx.reportedStages,
+      remoteValidator: ctx.remoteValidator,
     },
     actionId,
     { taskId, actor: "human" },

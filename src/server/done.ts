@@ -76,6 +76,14 @@ export interface CheckSummary {
    */
   cancelled?: boolean;
   /**
+   * True when the run was killed as a hang (#0729): its output stopped
+   * advancing while the host sat idle, so the runner removed that run's
+   * container. Distinct from `cancelled` (the caller's deadline) — a hung run
+   * is infra, transient, and retried on another host; the check-run history
+   * records it as `hung`.
+   */
+  hung?: boolean;
+  /**
    * Effective vitest `--changed` ref on the runner (#0695). `null` means the
    * full suite ran (no `--changed`, or the ref did not resolve).
    */

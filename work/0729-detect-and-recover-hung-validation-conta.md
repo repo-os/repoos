@@ -1,6 +1,4 @@
 ---
-last_close_out_gate_ms: 364247
-last_close_out_gate_at: "2026-10-07T09:54:23.715Z"
 id: "0729"
 title: "Detect and recover hung validation containers on runner hosts (kill, retry on another host, isolate the bun cache per run); CTO safe action"
 type: bug
@@ -14,9 +12,9 @@ branch: feat/detect-and-recover-hung-validation-conta
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T09:54:23Z"
-review_passes: 6
+updated_at: "2026-10-07T09:45:11Z"
 close_out_repair_count: 1
+review_passes: 5
 error: "script \\"test\\" exited with code 1 — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.\""
 review_rounds: 1
 dev_error_count: 1
@@ -167,11 +165,4 @@ error: script "test" exited with code 1
 - 2026-10-07T09:29:03Z · note: review pass 5: good to go
 - 2026-10-07T09:32:24Z · status review→active
 - 2026-10-07T09:32:24Z · note: close-out repair: merge-conflict
-- 2026-10-07T09:33:44Z · note: Driver close-out repair guidance: #0727 landed09:25:55, MTD729 failed09:32:21 before validation on src/ui-app/tests/cto-actions.test.ts merge conflict. Automatic engineer77727 owns branch, no competing writer. Merge CURRENT main, preserve BOTH727 resume/fresh+pause-policy tests AND729 targeted hung cleanup tests. Resolve only true conflict, retain startup sweep removal/ownEXITcleanup/UI behavior; current-main cross-report requirement. Restore foreign task bookkeeping using supported RepoOS workflow (never handwrite work/*.md). Format/build if needed, ONE scoped check then ONE handoff signal and END TURN, no later branch/task commits. Driver will wait for fresh gate/review and retryserver-ownedMTD. Nohostdeploy/configenable/serverrestart/manualmainmerge.
-- 2026-10-07T09:38:14Z · body
-- 2026-10-07T09:44:04Z · body
 - 2026-10-07T09:45:11Z · status active→review
-- 2026-10-07T09:45:11Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-10-07T09:46:26Z · note: review pass 6: good to go
-- 2026-10-07T09:54:23Z · close-out gate completed in 364s
-
