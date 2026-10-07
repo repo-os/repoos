@@ -1,6 +1,6 @@
 ---
 id: "0728"
-title: "Event-driven driver: a watch command and event contract so a driver reacts to events instead of polling"
+title: "Event-driven CTO: react to server events instead of a timer, and expose the same feed as a watch command for external sessions"
 type: feature
 status: inbox
 priority: p1
@@ -10,17 +10,17 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T02:05:33Z"
-updated_at: "2026-10-07T02:10:58Z"
+updated_at: "2026-10-07T02:11:12Z"
 ---
 ## Problem
 
-The driver polled status every few minutes with timers; missed timers cost about 6 hours on 2026-10-07, and there was no way to notice that a driver had stopped.
+The CTO polled status every few minutes with timers; missed timers cost about 6 hours on 2026-10-07, and there was no way to notice that a CTO had stopped.
 
 ## Desired UX
 
-- /api/events (SSE) already exists. Document a stable contract for the events a driver needs (task status changes, handoff/review/close-out results with cause, agent exits with reason, host slow-run and hang alerts) and make sure each carries task id, cause and evidence links.
+- /api/events (SSE) already exists. Document a stable contract for the events a CTO needs (task status changes, handoff/review/close-out results with cause, agent exits with reason, host slow-run and hang alerts) and make sure each carries task id, cause and evidence links.
 - A `repoos watch [--json] [--task <id>]` command that streams those events with auto re-login after server reloads (depends on #0723 session handling) and exits non-zero when the server is unreachable.
-- A driver heartbeat: the driver (or its supervisor) can post 'driver alive' and the attention feed raises 'driver silent N min' when a board has actionable items and no heartbeat.
+- A CTO heartbeat: the CTO (or its supervisor) can post 'CTO alive' and the attention feed raises 'CTO silent N min' when a board has actionable items and no heartbeat.
 
 ## Acceptance criteria
 
@@ -30,7 +30,12 @@ The driver polled status every few minutes with timers; missed timers cost about
 
 Read src/server/events and the SSE route in server.ts first; verify which events already exist. Related: #0723, #0720.
 
+## Framing (2026-10-07)
+
+The CTO monitor wakes on ctoMonitorIntervalMs (a timer; 5 min here). Move it to event-driven wake-ups (with the timer only as a backstop), so it reacts to a review going green, a close-out failing or an agent exiting. The "driver heartbeat" below becomes a CTO-liveness alert: the attention feed raises 'CTO silent' when actionable items exist and the CTO has not acted. The watch command is for human-chosen external sessions, not a second automation role.
+
 ## Activity
 
 - 2026-10-07T02:05:33Z · created · unknown
 - 2026-10-07T02:10:58Z · story
+- 2026-10-07T02:11:12Z · title, body
