@@ -164,6 +164,16 @@ describe("evaluateApprovalPolicy (#0686)", () => {
     expect(r.reason).toBe("handoff-drift");
   });
 
+  it("blocks when the worktree lock SHA no longer equals HEAD (handoff drift)", () => {
+    const r = evaluateApprovalPolicy(enabledApi, {
+      task: task({ area: "api" }),
+      reviewMarkdown: CLEAN_REPORT,
+      changedPaths: ["docs/x.md"],
+      handoffDrift: true,
+    });
+    expect(r).toMatchObject({ eligible: false, reason: "handoff-drift" });
+  });
+
   it("blocks default UI areas without visual evidence", () => {
     const r = evaluateApprovalPolicy(
       { approval: { enabled: true, autoApprove: { areas: ["web"] } } },
