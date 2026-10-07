@@ -12,7 +12,7 @@ branch: feat/hung-validation-run-leaves-a-leaked-host
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:05Z"
-updated_at: "2026-10-07T14:17:17Z"
+updated_at: "2026-10-07T14:17:56Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T14:04:21Z · status ready→active, branch
 - 2026-10-07T14:11:03Z · note: Driver independent WIP review under owner fix-it authorization: gateFinished must do more than stop watchdog: bound lingering transport after parsed gate exit N, preserve actual failure and suppress infra retry. Test split-chunk marker plus runRemote pending until abort. Kill must settle/release even when kill dependency never resolves or throws; explicit timeout arg alone is not enough with injected deps. Bind activeRunAbort to execution generation rather than taskId alone, stale completion must not delete/abort newer run. Preserve diagnostic evidence before artifact cleanup. Message rejected busy, so findings persisted for next turn/reviewer; require these regressions before approving. No host/server changes.
 - 2026-10-07T14:17:17Z · body
+- 2026-10-07T14:17:56Z · body
