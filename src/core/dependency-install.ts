@@ -441,6 +441,7 @@ const ENV_PATTERNS: RegExp[] = [
   /\bpackage inputs changed but no recognized lockfile\b/i,
   /\bcommand not found\b/i,
   /\bENOENT\b.*\bnode_modules\b/i,
+  /\bclose-out candidate has no node_modules\b/i,
 ];
 
 /** True when a close-out gate reason is likely stale/missing deps, not branch code. */

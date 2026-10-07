@@ -49,6 +49,11 @@ describe("isCloseOutEnvironmentFailure (#0674)", () => {
       isCloseOutEnvironmentFailure("check failed: Denied ID /repo/node_modules/foo?worker&url"),
     ).toBe(true);
     expect(isCloseOutEnvironmentFailure("dependency install failed: bun missing")).toBe(true);
+    expect(
+      isCloseOutEnvironmentFailure(
+        "close-out candidate has no node_modules and the primary checkout does not either",
+      ),
+    ).toBe(true);
     expect(isCloseOutEnvironmentFailure("check failed: expect(received).toBe(1)")).toBe(false);
   });
 });
