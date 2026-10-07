@@ -116,6 +116,7 @@ function fakeStatus(root: string): StatusSnapshot {
       buildHash: null,
       buildAt: null,
       managedService: false,
+      buildState: "unknown",
       health: "unreachable",
       healthRoot: null,
       locks: 0,
