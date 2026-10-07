@@ -161,6 +161,7 @@ function makeCtx(
       peekNext: () => null,
     } as any,
     reportedStages: {},
+    reportedStageAt: {},
     triggerJobProcessing: () => {},
     pendingReview: new Set(),
     uiDir: null,
