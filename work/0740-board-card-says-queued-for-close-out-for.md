@@ -12,7 +12,7 @@ branch: feat/board-card-says-queued-for-close-out-for
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:13:12Z"
-updated_at: "2026-10-07T16:33:06Z"
+updated_at: "2026-10-07T16:38:43Z"
 ---
 ## Problem
 
@@ -57,3 +57,23 @@ Read TaskCard.vue (pipelineStage, inPipeline computed), the pipeline bar, and sr
 - 2026-10-07T16:24:58Z · status ready→active, branch
 - 2026-10-07T16:32:03Z · body
 - 2026-10-07T16:33:06Z · body: section Shots
+- 2026-10-07T16:38:43Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:381:35
+    379|
+    380|     const expandedChip = expanded.find(".ibar .ibar-chip");
+    381|     expect(expandedChip.exists()).toBe(true);
+       |                                   ^
+    382|     expect(expandedChip.text()).toBe("3m 07s");
+    383|
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 441 passed | 1 skipped (443)
+      Tests  1 failed | 5327 passed | 15 skipped (5343)
+   Start at  16:34:01
+   Duration  278.23s (transform 6.86s, setup 2.39s, import 53.44s, tests 223.56s, environment 249.61s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 402ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  16:38:40
+   Duration  2.33s (transform 1.09s, setup 11ms, import 1.35s, tests 402ms, environment 484ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
