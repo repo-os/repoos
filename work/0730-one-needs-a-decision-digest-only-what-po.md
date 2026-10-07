@@ -2,17 +2,18 @@
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
-status: inbox
+status: done
 priority: p2
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: 5762732d77aad155d4c03768efd8fec3a71e8247
 assigned_to: ai
 created_by: ""
 branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T15:29:54Z"
+updated_at: "2026-10-07T15:30:12Z"
 last_close_out_gate_ms: 322848
 last_close_out_gate_at: "2026-10-07T15:29:46.384Z"
 last_check_failure: "repoos check at 2026-10-07T14:12:54.640Z: server-side finalization timed out (deadline exceeded)"
@@ -166,3 +167,4 @@ error: script "test" exited with code 1
 - 2026-10-07T15:29:46Z · close-out gate completed in 323s
 - 2026-10-07T15:29:52Z · status review→inbox
 - 2026-10-07T15:29:54Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-07T15:30:12Z · status inbox→done, release:success
