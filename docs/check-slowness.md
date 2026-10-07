@@ -5,6 +5,12 @@ hours (multi-minute bundle uploads, local gates over 30 minutes) and nothing
 in the product surfaced it until a human asked. The data already lived in
 `.repoos/checks.db` (`check_runs.duration_ms`, phase, remote, scope).
 
+**Driver verification (2026-10-07):** On current RepoOS main the diagnosis still
+holds — `check_runs` records phase/remote/scope/duration and the server can
+compare in-flight runs to rolling medians. An unrelated close-out failure on
+`agent-review.test.ts` (review_passes counter under full-suite load) is outside
+this task; a focused run of that test on current main passes in isolation.
+
 ## Behaviour
 
 While a run is **in flight**, the server:

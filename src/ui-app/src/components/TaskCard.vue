@@ -457,8 +457,7 @@ const hint = computed<CardHint | null>(() => {
       return {
         label: slow ? `${base} · slow` : base,
         title: slow
-          ? (slow.detail ??
-            "Close-out is taking longer than usual — see the bell or Remote runners tab")
+          ? "Close-out is taking longer than usual — focus the slow badge for timing details"
           : "Move to done already started — merging, building, and checking. See the pipeline bar for live progress.",
         cls: "tc-moving",
       };
@@ -549,7 +548,7 @@ const hint = computed<CardHint | null>(() => {
       return {
         label: slow ? "running checks · slow" : "running checks",
         title: slow
-          ? (slow.detail ?? "This check is taking longer than usual — see the bell for details")
+          ? "Handoff checks are running slower than usual — focus the slow badge for timing details"
           : "RepoOS is committing and running the checks before moving this to review",
         cls: "tc-reviewing",
       };
@@ -1060,7 +1059,9 @@ async function openDebuggerFromError(): Promise<void> {
             v-if="slowCheck && (hint.cls === 'tc-reviewing' || hint.cls === 'tc-moving')"
             class="tc-slow-badge"
             data-test-id="task-card-slow"
-            :title="slowCheck.detail"
+            tabindex="0"
+            :aria-label="`Slow check. ${slowCheck.detail}`"
+            :data-tip="slowCheck.detail"
           >
             slow
           </span>

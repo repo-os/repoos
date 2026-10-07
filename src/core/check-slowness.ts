@@ -25,6 +25,8 @@ export interface CheckRunSample {
   scope: string;
   outcome: CheckRunOutcome;
   durationMs: number | null;
+  /** Short hostname when recorded in check_runs — used for persistent slow notices. */
+  machine?: string | null;
 }
 
 /**
@@ -288,14 +290,20 @@ export function persistentSlowNotices(input: PersistentNoticeInput): SlowKindNot
 }
 
 function commonFactorFor(slow: CheckRunSample[], recent: CheckRunSample[]): string {
-  const allRemoteSameHost = slow.length > 0 && slow.every((s) => s.remote === slow[0].remote);
   if (slow.every((s) => s.outcome !== "pass")) {
     return "the slow runs include failures — fix the branch before blaming the runner";
   }
-  if (allRemoteSameHost && slow[0].remote) {
-    return "the same remote host recurs across the slow runs";
+  const machines = slow.map((s) => s.machine?.trim()).filter((m): m is string => !!m);
+  if (machines.length === slow.length && machines.length > 0) {
+    const host = machines[0];
+    if (machines.every((m) => m === host)) {
+      return `runs on ${host} are consistently the slow ones`;
+    }
   }
-  if (allRemoteSameHost && !slow[0].remote) {
+  if (slow.every((s) => s.remote)) {
+    return "several remote runs were slow — check the Remote runners tab for host load";
+  }
+  if (slow.every((s) => !s.remote)) {
     return "local runs on this machine are trending slow (load or swapping)";
   }
   const scope = slow[0].scope;
