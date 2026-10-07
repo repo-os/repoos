@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-07T10:56:23Z"
-review_passes: 1
+last_close_out_gate_ms: 383561
+last_close_out_gate_at: "2026-10-07T11:06:25.042Z"
 id: "0735"
 title: "Easter eggs bundle: runner state, root-cause docs, and SHA assertion"
 type: chore
@@ -13,6 +13,8 @@ branch: feat/easter-eggs-bundle-runner-state-root-cau
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T09:29:29Z"
+updated_at: "2026-10-07T11:06:25Z"
+review_passes: 1
 ---
 ## Problem
 Driver verification on 2026-10-07 found three small, independent follow-ups while landing #0727/#0729. Keep them out of the release-critical machinery branch.
@@ -47,4 +49,5 @@ Owner explicitly authorizes transferring the uncommitted .github/workflows/certi
 - 2026-10-07T10:55:42Z · status active→review
 - 2026-10-07T10:55:43Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-07T10:56:22Z · note: review pass 1: good to go
+- 2026-10-07T11:06:25Z · close-out gate completed in 384s
 
