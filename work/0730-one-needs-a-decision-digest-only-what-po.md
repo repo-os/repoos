@@ -9,8 +9,10 @@ story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T09:29:38Z"
+updated_at: "2026-10-07T09:46:40Z"
 ---
 ## Problem
 
@@ -39,3 +41,4 @@ This digest is the CTO's escalation surface: what it did automatically (audit) a
 - 2026-10-07T02:10:58Z · story
 - 2026-10-07T02:11:14Z · title, body
 - 2026-10-07T09:29:38Z · status inbox→ready
+- 2026-10-07T09:46:40Z · cli_override, model_override
