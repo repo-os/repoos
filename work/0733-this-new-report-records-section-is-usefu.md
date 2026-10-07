@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-review-records-in-a-table
 created_at: "2026-10-07T02:52:02Z"
-updated_at: "2026-10-07T03:09:53Z"
+updated_at: "2026-10-07T03:11:12Z"
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T03:04:53Z · body
 - 2026-10-07T03:08:03Z · body
 - 2026-10-07T03:09:53Z · body
+- 2026-10-07T03:11:12Z · body
