@@ -367,6 +367,32 @@ describe("runDoctor", () => {
     expect(findingById(report, "layout.docs-dir-relocated")).toBeUndefined();
     expect(findingById(report, "layout.work-dir-relocated")).toBeUndefined();
   });
+
+  it("warns when storiesDir is top-level under a namespaced workDir (#0703)", async () => {
+    const root = namespacedProject();
+    // The pre-#0703 init wrote workDir/docsDir under repoos/ but left storiesDir
+    // at its "stories" default, so stories landed at the repo root.
+    writeFileSync(join(root, "repoos.toml"), 'workDir = "repoos/work"\nstoriesDir = "stories"\n');
+
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    const finding = findingById(report, "layout.stories-dir-top-level");
+    expect(finding?.severity).toBe("warn");
+    expect(finding?.detail).toContain('storiesDir is "stories"');
+    expect(finding?.remediation).toContain('storiesDir = "repoos/stories"');
+    // Advisory only — a warn must never flip the exit code.
+    expect(report.summary.fail).toBe(0);
+  });
+
+  it("does not warn about storiesDir when it sits under the namespace", async () => {
+    const root = namespacedProject();
+    writeFileSync(
+      join(root, "repoos.toml"),
+      'workDir = "repoos/work"\nstoriesDir = "repoos/stories"\n',
+    );
+
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    expect(findingById(report, "layout.stories-dir-top-level")).toBeUndefined();
+  });
 });
 
 describe("runDoctor docs wiring (#0673)", () => {
