@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-07T09:18:57Z"
-review_passes: 2
+last_close_out_gate_ms: 342810
+last_close_out_gate_at: "2026-10-07T09:25:44.164Z"
 id: "0727"
 title: "Give the CTO the routine: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
 type: feature
@@ -14,6 +14,8 @@ branch: feat/give-the-cto-the-routine-evaluate-and-en
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:31Z"
+updated_at: "2026-10-07T09:25:44Z"
+review_passes: 2
 last_check_failure: "repoos check at 2026-10-07T09:10:21.076Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -123,4 +125,5 @@ Rationale: land routine docs/chore work only; machinery paths and UI screenshot 
 - 2026-10-07T09:17:47Z · status active→review
 - 2026-10-07T09:17:47Z · note: shots: skipped — 10 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-07T09:18:57Z · note: review pass 2: good to go
+- 2026-10-07T09:25:44Z · close-out gate completed in 343s
 
