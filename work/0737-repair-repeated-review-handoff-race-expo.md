@@ -2,7 +2,7 @@
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
@@ -48,3 +48,4 @@ Read AGENTS.md. Use existing task worktree, Cursor/composer-2.5. Independently v
 - 2026-10-07T12:44:12Z · status active→review
 - 2026-10-07T12:44:13Z · status review→active
 - 2026-10-07T12:49:35Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-07T12:49:35Z · status review→active
