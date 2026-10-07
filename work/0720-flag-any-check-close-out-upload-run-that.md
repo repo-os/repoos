@@ -12,7 +12,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-07T00:57:22Z"
+updated_at: "2026-10-07T01:06:34Z"
 merge_conflict_retry_count: 2
 review_passes: 3
 review_rounds: 1
@@ -97,3 +97,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-06T18:04:29Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-07T00:56:08Z · body
 - 2026-10-07T00:57:22Z · body
+- 2026-10-07T01:06:34Z · note: Driver verification 2026-10-07: close-out at01:02:48Z failed agent-review.test.ts:691 final review_passes counter assertion after281s on bee. Focused current-main test (starts a fresh review run) passes1/1 in3.55s; full-suite race remains unproven. Holding another close-out pending repair/re-review. Current branch b06a77131 is clean but handoff snapshot/lock remains24b3ea891. Existing review explicitly calls UI evidence incomplete: Settings control not in frame and Agents capture was Default Agents, not Runners. Confirmed new TaskCard slowCheck :title violates AGENTS tooltip convention; commonFactorFor claims same host using only remote booleans. When an engineer slot frees, return active via API, fix scoped issues, recapture real setting/live slow badge with clean console, inspect counter race, run scoped check and re-handoff. No edits while in review; no infrastructure/config changes.
