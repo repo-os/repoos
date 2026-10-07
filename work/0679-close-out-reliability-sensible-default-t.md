@@ -12,7 +12,7 @@ branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-07T02:12:40Z"
+updated_at: "2026-10-07T02:12:44Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 404c1109cf8aa78b7446c56733747d534bb744ae
 merge_conflict_retry_count: 2
@@ -121,3 +121,4 @@ Close-out failed twice with 'merge conflict in src/server/server.ts' because mai
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T02:12:40Z · needs_input
+- 2026-10-07T02:12:44Z · note: DRIVER recovery 2026-10-07: no live engineer/reviewer; clean existing worktree, 694 commits behind current main acb6cf309. Previous failed integration names src/server/server.ts conflict; later handoff failed agent-review.test.ts:349. Current main default closeOut.timeoutMs remains360000 and existing conflict recovery exists, so independently verify every acceptance claim and identify remaining gaps before changing code. Current compiled build hash0c80617fbf0a version0.5.66; cross-repo report came from older running builds, not proof of current behavior. Use FRESH cursor/composer-2.5 session because prior session was loop-poisoned. Read current AGENTS and latest owner runbook/log. Merge current main in recorded worktree, preserve current source and task bookkeeping via supported RepoOS operations; never hand-edit work/stories. Diagnose reviewer failures with evidence, do not weaken assertions or widen timeouts to pass. Scoped check once after actual repairs, rebuild as needed, re-handoff, new review. No main commit/push/PR/release/host/config/server changes. Keep source changes intrinsic0679; no unrelated easter eggs. Record current commit/build, reproduction and still relevant/partly fixed/already fixed/misdiagnosed per item.
