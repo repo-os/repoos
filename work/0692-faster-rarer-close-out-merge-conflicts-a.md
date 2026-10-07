@@ -2,7 +2,7 @@
 id: "0692"
 title: Resolve integration conflicts without restarting the full engineering and review cycle
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -245,3 +245,4 @@ error: script "test" exited with code 1
 - 2026-10-07T16:59:50Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:57314/) (http://127.0.0.1:57314/)
 - 2026-10-07T16:59:50Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:57314/) (http://127.0.0.1:57314/)
 - 2026-10-07T17:05:10Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-07T17:05:10Z · status review→active
