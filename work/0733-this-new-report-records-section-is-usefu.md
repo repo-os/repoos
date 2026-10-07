@@ -43,22 +43,7 @@ This new report records section is useful but let's make it a proper table , lik
 
 ## Shots
 ```json
-[
-  {
-    "label": "Review records table on #0679 with real review history, newest pass first",
-    "target": "default",
-    "route": "/work?task=0679",
-    "highlight": ".review-history-table",
-    "steps": [
-      {
-        "click": "[data-test-id=\"task-tab-review\"]"
-      },
-      {
-        "waitMs": 600
-      }
-    ]
-  }
-]
+[]
 ```
 
 ## Screenshots
@@ -86,3 +71,5 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T03:40:29Z · body: section Shots
 - 2026-10-07T03:40:50Z · note: highlight .review-history-table matched nothing on /work?task=0679
 - 2026-10-07T03:41:29Z · note: shot removed: Task drawer Review tab: review records table (pass, when, reviewer, model, verdict)
+- 2026-10-07T03:41:29Z · body: section Shots
+- 2026-10-07T03:41:29Z · note: shot removed: Review records table on #0679 with real review history, newest pass first
