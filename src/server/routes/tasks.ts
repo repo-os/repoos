@@ -1882,6 +1882,19 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       ctx.reload?.releaseCloseOut();
       return json(res, 400, { error: `Task #${id} has no branch to merge` });
     }
+    // A requeue while the previous cancelled attempt is still executing must
+    // NOT start a second run for the same task (#0736): the old callback would
+    // otherwise lose its cancellation identity and could publish twice. The
+    // coordinator returned the still-executing cancelled record unchanged, so
+    // defer honestly and let the user retry once the old run reaches terminal.
+    if (job.cancelled) {
+      ctx.reload?.releaseCloseOut();
+      return json(res, 409, {
+        error: `Task #${id}'s previous close-out attempt was stopped but is still shutting down. Wait for it to finish, then click Move to done again.`,
+        needsRetry: true,
+        phase: job.phase,
+      });
+    }
 
     if (handoffSha) {
       writeWorktreeReviewLock(config.root, config.cacheDir, id, {
