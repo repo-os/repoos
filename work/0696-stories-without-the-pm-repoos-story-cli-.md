@@ -2,7 +2,7 @@
 id: "0696"
 title: "Stories without the PM: `repoos story` CLI and an API create that writes exactly what it is given"
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -138,4 +138,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T19:40:02Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-07T19:45:15Z · body
-- 2026-10-07T19:51:25Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-07T19:51:25Z · status active→review
