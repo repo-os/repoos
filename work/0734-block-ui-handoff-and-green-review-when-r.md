@@ -2,7 +2,7 @@
 id: "0734"
 title: Block UI handoff and green review when required visual evidence is missing or stale
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, web]
 assigned_to: ai
@@ -52,4 +52,4 @@ Additional verified cause: handoff.ts constructs uiTask with worktreeTask.body, 
 - 2026-10-07T15:01:15Z · body
 - 2026-10-07T15:02:43Z · body
 - 2026-10-07T15:06:12Z · body
-- 2026-10-07T15:13:12Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-07T15:13:12Z · status active→review
