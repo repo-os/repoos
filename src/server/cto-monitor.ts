@@ -122,8 +122,11 @@ export class CTOMonitor {
     if (!this.cto.enabled()) return;
 
     // This is deliberately independent of the CTO's longer report turn: an
-    // engineer nudge should still be timely if a report is in progress.
-    this.nudgeIdleActiveTasks();
+    // engineer nudge should still be timely if a report is in progress. The
+    // master kill switch (#0727) halts the automatic nudge too.
+    if (this.config.automation?.paused !== true) {
+      this.nudgeIdleActiveTasks();
+    }
     if (this.safeActions) {
       await this.safeActions();
     }

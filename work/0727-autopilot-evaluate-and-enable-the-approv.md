@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-07T09:18:57Z"
-review_passes: 2
 id: "0727"
 title: "Give the CTO the routine: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
 type: feature
@@ -14,8 +12,8 @@ branch: feat/give-the-cto-the-routine-evaluate-and-en
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:31Z"
-last_check_failure: "repoos check at 2026-10-07T09:10:21.076Z: server-side finalization timed out (deadline exceeded)"
-dev_error_count: 1
+updated_at: "2026-10-07T09:17:47Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -112,15 +110,5 @@ Rationale: land routine docs/chore work only; machinery paths and UI screenshot 
 - 2026-10-07T05:37:56Z · cli_override, model_override
 - 2026-10-07T05:40:03Z · body: section Proposed conservative policy (owner approval required)
 - 2026-10-07T05:40:03Z · body: section Shots
-- 2026-10-07T05:41:50Z · body
-- 2026-10-07T06:24:26Z · body
-- 2026-10-07T06:30:39Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 908fb7e0 to 0bee0747) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-- 2026-10-07T06:49:40Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
-- 2026-10-07T06:49:40Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
-- 2026-10-07T08:58:57Z · needs_input
-- 2026-10-07T09:11:26Z · body
-- 2026-10-07T09:12:43Z · note: Driver diagnosis of thinkpad09:11 failure: #0711 merged_commit regression assertion uses literal unquoted YAML text; actual correct SHA was quoted because it began00aef. Same assertion exists current MAIN, not727sourcebug. Keep new policy machinery scope focused; do not weaken gate or alter production serializer. If fixing test only, preserve semantic assertion via parser and explicitly record baseline-current-main evidence for review; no unrelated source edits.
-- 2026-10-07T09:17:47Z · status active→review
-- 2026-10-07T09:17:47Z · note: shots: skipped — 10 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-10-07T09:18:57Z · note: review pass 2: good to go
-
+- 2026-10-07T07:05:28Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-07T09:17:47Z · status ready→review

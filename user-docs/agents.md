@@ -216,7 +216,12 @@ These run as part of a task's life. They're what the `pm`, `engineer`, and
   stuck tasks, stale reviews and broken builds. By default it reports rather
   than acts; opt in to bounded recovery via `cto.actions` in Settings (restart a
   stalled engineer, refresh main's install, re-queue an environment close-out).
-  Each action is rate limited and recorded in the notification bell.
+  A restart **resumes** the conversation after a network stall and starts a
+  **fresh** one after a real crash or a task it has already restarted twice.
+  Each action is rate limited and recorded in the task activity log and the
+  notification bell. `automation.paused = true` is the kill switch: it halts
+  every automatic action — policy auto-approval, safe actions and the idle
+  nudge — while keeping your configuration, so you can resume with one flip.
   It runs read-only where its CLI supports it, and RepoOS quarantines any stray
   file a run still creates (moved under `.repoos/quarantine/` and reported in
   the run's report) so the main checkout is never left dirty.
