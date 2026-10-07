@@ -265,6 +265,16 @@ server belonging to a different repo.
 One-screen health snapshot: server, build freshness, board counts, worktrees,
 tunnel, and git state.
 
+The `server` line names the *running server's* own RepoOS version and build
+(`v0.5.66 (build abc1234)`), and when that build differs from the installed CLI's
+it prints a warning — `server is older than the installed CLI … restart to pick
+up fixes` — with the command that restarts it (`repoos service restart` for a
+managed service, `repoos serve` for a hand-run process). The `build` line
+describes this checkout, so in a project repo it reads `no RepoOS build` rather
+than implying the repo is a RepoOS source checkout. `--json` exposes `cli` and
+`server.buildState` (`same`/`stale`/`unknown`) so scripts can detect a stale
+server without parsing text.
+
 ### `repoos doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--binary <path>]`
 
 A read-only readiness preflight for a real project. It checks the repository

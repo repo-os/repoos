@@ -110,7 +110,8 @@ checkout's git state (branch, clean/dirty, ahead/behind `main`).
 It works with the server STOPPED — everything above is read from the
 lockfile, the build marker, `work/*.md`, and git directly. When the server IS
 up, the picture is enriched best-effort from `/api/health` (running
-confirmation, thin-lockfile start time, version) and
+confirmation, thin-lockfile start time, the **running server's own RepoOS build**
+— `serverVersion`/`serverBuildHash`/`serverBuildAt`) and
 `/api/tunnel/readiness` (tunnel running state + hostnames); those probes have
 tight timeouts and can never make the command hang. On auth-protected servers
 the readiness probe 401s (the CLI has no session), and the local computation —
@@ -121,6 +122,16 @@ traps. A "running" verdict is grounded in the port: a lockfile whose PID was
 recycled by an unrelated process (verified against the process's command
 line) with nothing listening on the port reports `stopped`.
 
+`repoos status` compares that server build with the CLI's **own** build
+(`readBuildMeta()` of the running process) and, when they differ, prints a
+banner naming both and the restart command that applies — `repoos service
+restart` for a managed OS service, `repoos serve` for a hand-run process
+(`managedService`, from the service registry, tells them apart; a hand-run serve
+writes a serve lock but never appears there). This is the tuk-private failure
+(#0701): a five-day-old server quietly kept serving stale code while nothing
+said so. The `build` line always describes *this checkout*, so for a project
+repo it reads "no RepoOS build" rather than the misleading "source checkout".
+
 `repoos status --json` emits the same snapshot for agents/tooling (stable
 shape, covered by test):
 
@@ -129,7 +140,10 @@ shape, covered by test):
   server: { lifecycle: "managed"|"unmanaged"|"stopped",
             running, port, pid, host, startedAt, startedAtSource,
             uptimeSeconds, health: "ok"|"foreign"|"unreachable",
-            healthRoot, locks },
+            healthRoot, locks,
+            version, buildHash, buildAt, managedService,
+            buildState: "stale"|"same"|"unknown" },
+  cli:    { version, buildHash, buildAt },
   build:  { code, stale, message, version, buildAt },
   board:  { taskCount, counts, active: [{ id, title, branch, worktreePath,
             worktreeMissing, updatedAt, needsInput }] },
@@ -138,6 +152,10 @@ shape, covered by test):
   tunnel: { configured, tunnelName, running, hostnames },
   git:    { branch, clean, dirtyFiles, isMainBranch, ahead, behind } }
 ```
+
+`server.version`/`buildHash`/`buildAt` are the running server's own build, and
+`server.buildState` is that build compared with `cli` — scripts can detect a
+stale server without parsing human output.
 
 ### src/server — the long-lived process
 

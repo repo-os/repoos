@@ -24,6 +24,10 @@ import {
   cmdStatus,
   readServeLocks,
   serverLifecycle,
+  serverBuildState,
+  serverIdentity,
+  restartHint,
+  shortHash,
 } from "../../commands/status.js";
 
 function git(root: string, args: string[]): string {
@@ -429,6 +433,182 @@ describe("renderStatus", () => {
     expect(out).toContain("fresh");
     expect(out).toContain("stopped");
   });
+
+  it("warns unmissably when the running server predates the installed CLI", async () => {
+    const fx = await makeGitFixture();
+    const s = await collectStatus(fx.config, { probeTimeoutMs: 300 });
+    // A live server reporting an older build than this CLI.
+    const live: typeof s = {
+      ...s,
+      server: {
+        ...s.server,
+        running: true,
+        version: "0.5.60",
+        buildHash: "1111111111111111",
+        buildAt: "2026-10-01T19:23:00Z",
+      },
+      cli: { version: "0.5.66", buildHash: "abcdef0123456789", buildAt: null },
+    };
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    });
+    renderStatus(live, new Date("2026-10-07T10:00:00Z"));
+    const out = lines.join("\n");
+    expect(out).toContain("server is older than the installed CLI");
+    expect(out).toContain("v0.5.60 → v0.5.66");
+    expect(out).toContain("restart to pick up fixes");
+    expect(out).toContain("repoos serve"); // hand-run default hint
+    // the server line names the running build, not just the port/pid (it may
+    // wrap across the narrow row, so check the two tokens independently)
+    expect(out).toContain("v0.5.60 (build");
+    expect(out).toContain("1111111)");
+  });
+
+  it("uses the managed-service restart hint when the server is an installed service", async () => {
+    const fx = await makeGitFixture();
+    const s = await collectStatus(fx.config, { probeTimeoutMs: 300 });
+    const live: typeof s = {
+      ...s,
+      server: {
+        ...s.server,
+        running: true,
+        managedService: true,
+        version: "0.5.60",
+        buildHash: "1111111111111111",
+      },
+      cli: { version: "0.5.66", buildHash: "abcdef0123456789", buildAt: null },
+    };
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    });
+    renderStatus(live);
+    const out = lines.join("\n");
+    expect(out).toContain("server is older than the installed CLI");
+    expect(out).toContain("repoos service restart");
+    expect(out).toContain("managed service");
+  });
+
+  it("prints no stale-server banner when the server matches the CLI", async () => {
+    const fx = await makeGitFixture();
+    const s = await collectStatus(fx.config, { probeTimeoutMs: 300 });
+    const live: typeof s = {
+      ...s,
+      server: {
+        ...s.server,
+        running: true,
+        version: "0.5.66",
+        buildHash: "abcdef0123456789",
+      },
+      cli: { version: "0.5.66", buildHash: "abcdef0123456789", buildAt: null },
+    };
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    });
+    renderStatus(live);
+    expect(lines.join("\n")).not.toContain("server is older than the installed CLI");
+  });
+});
+
+describe("stale-server helpers (#0701)", () => {
+  /** A minimal StatusServer with only the fields the helpers read. */
+  function srv(over: Partial<Parameters<typeof serverBuildState>[0]> = {}) {
+    return {
+      lifecycle: "managed" as const,
+      running: true,
+      port: 7171,
+      pid: 42,
+      host: "127.0.0.1",
+      startedAt: null,
+      startedAtSource: null,
+      uptimeSeconds: null,
+      version: null,
+      buildHash: null,
+      buildAt: null,
+      managedService: false,
+      buildState: "unknown" as const,
+      health: "ok" as const,
+      healthRoot: null,
+      locks: 1,
+      ...over,
+    };
+  }
+  const cliOf = (
+    over: Partial<{
+      version: string | null;
+      buildHash: string | null;
+      buildAt: string | null;
+    }> = {},
+  ) => ({
+    version: "0.5.66",
+    buildHash: "abcdef0123456789",
+    buildAt: "2026-10-01T19:23:00Z",
+    ...over,
+  });
+
+  it("shortHash trims a sha to 7 chars and passes null through", () => {
+    expect(shortHash("abcdef0123456789")).toBe("abcdef0");
+    expect(shortHash(null)).toBeNull();
+  });
+
+  describe("serverBuildState", () => {
+    it("is same when the server's build hash matches the CLI's", () => {
+      const s = srv({ buildHash: "abcdef0123456789" });
+      expect(serverBuildState(s, cliOf())).toBe("same");
+    });
+
+    it("is stale when the hashes differ — a restart would pick up fixes", () => {
+      const s = srv({ buildHash: "1111111111111111" });
+      expect(serverBuildState(s, cliOf())).toBe("stale");
+    });
+
+    it("is unknown while the server is not running, even with a build hash", () => {
+      const s = srv({ running: false, buildHash: "1111111111111111" });
+      expect(serverBuildState(s, cliOf())).toBe("unknown");
+    });
+
+    it("falls back to build timestamps when no hashes are reported", () => {
+      const older = srv({ buildAt: "2026-10-01T19:23:00Z" });
+      const newer = srv({ buildAt: "2026-10-07T00:00:00Z" });
+      const cliNoHash = cliOf({ buildHash: null, buildAt: "2026-10-06T00:00:00Z" });
+      expect(serverBuildState(older, cliNoHash)).toBe("stale");
+      expect(serverBuildState(newer, cliNoHash)).toBe("same");
+    });
+
+    it("falls back to the version string, then to unknown when nothing compares", () => {
+      const s = srv({ version: "0.5.60" });
+      expect(serverBuildState(s, cliOf({ buildHash: null, buildAt: null }))).toBe("stale");
+      const same = srv({ version: "0.5.66" });
+      expect(serverBuildState(same, cliOf({ buildHash: null, buildAt: null }))).toBe("same");
+      const nothing = srv({ version: null });
+      expect(serverBuildState(nothing, cliOf({ buildHash: null, buildAt: null }))).toBe("unknown");
+    });
+  });
+
+  describe("serverIdentity", () => {
+    it("prints version + short hash", () => {
+      expect(serverIdentity(srv({ version: "0.5.66", buildHash: "abcdef0123456789" }))).toBe(
+        "v0.5.66 (build abcdef0)",
+      );
+    });
+    it("degrades to the version alone without a hash", () => {
+      expect(serverIdentity(srv({ version: "0.5.66" }))).toBe("v0.5.66");
+    });
+    it("says version unknown when the server reports nothing", () => {
+      expect(serverIdentity(srv())).toBe("version unknown");
+    });
+  });
+
+  describe("restartHint", () => {
+    it("uses `repoos service restart` for a managed service", () => {
+      expect(restartHint(srv({ managedService: true }))).toBe("repoos service restart");
+    });
+    it("uses `repoos serve` for a hand-run server", () => {
+      expect(restartHint(srv({ managedService: false }))).toBe("repoos serve");
+    });
+  });
 });
 
 describe("status --json shape", () => {
@@ -439,6 +619,7 @@ describe("status --json shape", () => {
     expect(Object.keys(parsed).sort()).toEqual([
       "board",
       "build",
+      "cli",
       "generatedAt",
       "git",
       "root",
@@ -447,18 +628,24 @@ describe("status --json shape", () => {
       "worktrees",
     ]);
     expect(Object.keys(parsed.server as object).sort()).toEqual([
+      "buildAt",
+      "buildHash",
+      "buildState",
       "health",
       "healthRoot",
       "host",
       "lifecycle",
       "locks",
+      "managedService",
       "pid",
       "port",
       "running",
       "startedAt",
       "startedAtSource",
       "uptimeSeconds",
+      "version",
     ]);
+    expect(Object.keys(parsed.cli as object).sort()).toEqual(["buildAt", "buildHash", "version"]);
     expect(Object.keys(parsed.build as object).sort()).toEqual([
       "applicable",
       "buildAt",
@@ -515,6 +702,7 @@ describe("status --json shape", () => {
     expect(Object.keys(parsed).sort()).toEqual([
       "board",
       "build",
+      "cli",
       "generatedAt",
       "git",
       "root",

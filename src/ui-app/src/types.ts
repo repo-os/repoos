@@ -245,6 +245,12 @@ export interface Health {
   buildAt: string | null;
   /** Build hash the running server loaded, or null in dev mode. */
   buildHash: string | null;
+  /** The running server's OWN RepoOS version (the install it was loaded from). */
+  serverVersion?: string | null;
+  /** The running server's OWN RepoOS build hash — the value the CLI compares against its own. */
+  serverBuildHash?: string | null;
+  /** The running server's OWN build timestamp. */
+  serverBuildAt?: string | null;
   /** A newer build parked by a close-out (0143), or null when none is parked. */
   buildAvailableHash: string | null;
   /** On-disk build timestamp of the parked build, or null when none is parked. */
