@@ -159,6 +159,7 @@ function makeCtx(
     rootLock: {} as any,
     jobCoordinator: { enqueue: () => ({}), allJobs: () => [] } as any,
     reportedStages: {},
+    reportedStageAt: {},
     triggerJobProcessing: () => {},
     pendingReview: new Set(),
     uiDir: null,

@@ -93,7 +93,8 @@ export function integrationActiveCopy(
   const elapsedBit = elapsed !== null ? ` · ${formatDuration(elapsed)}` : "";
   return {
     label: `integrating · ${stage}${elapsedBit}`,
-    title: "Move to done is running — merging, building, and checking. See the pipeline bar for live progress.",
+    title:
+      "Move to done is running — merging, building, and checking. See the pipeline bar for live progress.",
     stalled: false,
   };
 }
@@ -110,9 +111,7 @@ export function integrationQueuedCopy(
   const pos = integrationQueuePosition(snap, taskId);
   if (!pos) return null;
   const behind = pos.behindTaskId;
-  const label = behind
-    ? `queued #${pos.position} (behind #${behind})`
-    : `queued #${pos.position}`;
+  const label = behind ? `queued #${pos.position} (behind #${behind})` : `queued #${pos.position}`;
   return {
     label,
     title: behind

@@ -361,9 +361,7 @@ const pipelineRole = computed(() => integrationPipelineRole(repo.integration, pr
 
 const inPipeline = computed(() => pipelineRole.value !== null);
 
-const pipelineStalled = computed(() =>
-  integrationPipelineStalled(repo.integration, now.value),
-);
+const pipelineStalled = computed(() => integrationPipelineStalled(repo.integration, now.value));
 
 const pipelineRecoverBusy = ref(false);
 
@@ -1110,17 +1108,10 @@ async function openDebuggerFromError(): Promise<void> {
             aria-hidden="true"
             >!</span
           >
-          <ActivityIndicator
-            v-else-if="hint.cls === 'tc-moving'"
-            label="Integrating…"
-          />
+          <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Integrating…" />
           {{ hint.label }}
           <span
-            v-if="
-              pipelineStalled &&
-              pipelineRole === 'active' &&
-              hint.cls === 'tc-stuck'
-            "
+            v-if="pipelineStalled && pipelineRole === 'active' && hint.cls === 'tc-stuck'"
             class="tc-pipeline-recover"
           >
             <button
