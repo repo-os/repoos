@@ -169,7 +169,8 @@ bun run contrast:audit     # ~9–14s; exit 1 lists every offender with
 ```
 
 `repoos check` runs it as the `rendered-contrast` step (`whenChanged =
-src/ui-app/**`; full profile, so close-out always runs it). It skips with
+src/ui-app/**`; full profile, so any close-out that runs the tests step also
+runs it). It skips with
 install advice when Playwright/WebKit is missing, exactly like the smoke step.
 
 Acceptance check you can re-run in a minute: add

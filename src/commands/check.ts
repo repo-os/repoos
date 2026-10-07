@@ -88,6 +88,7 @@ import {
   shouldRunCliRemotePreReviewGate,
   summarizeRemoteFallbackDetail,
   REPOOS_REMOTE_FALLBACK_DETAIL,
+  REPOOS_CHECK_GATE_NOTE,
 } from "../server/pre-review-remote-gate.js";
 
 /**
@@ -2420,10 +2421,18 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     detail: (() => {
       const fallback = process.env[REPOOS_REMOTE_FALLBACK_DETAIL]?.trim();
       const stepDetail = gatingFailures[0]?.detail ?? null;
-      if (!fallback) return stepDetail;
-      const summary = summarizeRemoteFallbackDetail(fallback);
-      if (!stepDetail) return summary;
-      return `${summary} — ${stepDetail}`;
+      // #0724: which close-out gate mode ran and why, so the Checks tab is
+      // auditable ("reused from handoff check <sha>" / "scoped N files").
+      const gateNote = process.env[REPOOS_CHECK_GATE_NOTE]?.trim();
+      const fallbackPart = (() => {
+        if (!fallback) return null;
+        const summary = summarizeRemoteFallbackDetail(fallback);
+        if (!stepDetail) return summary;
+        return `${summary} — ${stepDetail}`;
+      })();
+      const base = fallbackPart ?? stepDetail;
+      if (!gateNote) return base;
+      return base ? `${gateNote} — ${base}` : gateNote;
     })(),
     // The stored detail is a short log tail that routinely loses the failing
     // test's name; keep the names themselves so "which test?" is a query.

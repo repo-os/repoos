@@ -764,6 +764,7 @@ const ARRAY_PLACEHOLDERS: Record<string, string> = {
   "approval.autoApprove.areas": "docs, chore (comma-separated areas)",
   "approval.autoApprove.types": "chore (comma-separated types)",
   "approval.autoApprove.machineryPaths": "src/server/, src/core/ (comma-separated path prefixes)",
+  "check.fullSuitePaths": "src/server/close-out/, repoos.toml (comma-separated path prefixes)",
 };
 
 function arrayPlaceholder(key: string): string {
