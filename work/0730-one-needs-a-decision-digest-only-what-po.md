@@ -2,7 +2,7 @@
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -146,4 +146,4 @@ error: script "test" exited with code 1
 - 2026-10-07T11:56:00Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-07T11:58:31Z · status active→review
 - 2026-10-07T11:58:31Z · status review→active
-- 2026-10-07T12:04:37Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-07T12:04:37Z · status active→review
