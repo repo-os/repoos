@@ -1,5 +1,94 @@
 import { parseCheckResults } from "./check-results.js";
 
+const ANSI_RE = /\u001b\[[0-9;]*m/g;
+
+function stripAnsi(text: string): string {
+  return text.replace(ANSI_RE, "");
+}
+
+/** True when a line is a JS stack frame (`at fn (file:line:col)`). */
+export function isStackFrameLine(line: string): boolean {
+  return /^\s*at\s+/i.test(line.trim());
+}
+
+/** Result-block detail lines that carry no diagnosis on their own. */
+const TRIVIAL_STEP_DETAIL =
+  /^(?:exited \d+|tsc failed|command failed(?:\s+with exit \d+)?[.:]?)$/i;
+
+function outputBeforeResultsBlock(output: string): string {
+  const lines = stripAnsi(output).split("\n");
+  const idx = lines.findIndex((line) => /──\s*Results\s*──/.test(line));
+  if (idx <= 0) return "";
+  return lines.slice(0, idx).join("\n");
+}
+
+/**
+ * First non-stack line from step output, preferring compiler/test errors over
+ * generic "exited 1" headers. Returns null when only stack frames (or trivial
+ * headers above them) are present.
+ */
+export function pickErrorLineFromStepOutput(output: string): string | null {
+  const lines = stripAnsi(output)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return null;
+
+  const nonStack = lines.filter((line) => !isStackFrameLine(line));
+  const significant = nonStack.filter((line) => !TRIVIAL_STEP_DETAIL.test(line));
+
+  const errorish = significant.find(
+    (line) =>
+      /error TS\d+:/i.test(line) ||
+      /^(?:[A-Za-z]*Error|Error):/.test(line) ||
+      /^Error \[[A-Z0-9_]+\]:/.test(line),
+  );
+  if (errorish) return errorish;
+  if (significant.length > 0) return significant[0];
+  if (nonStack.length > 0 && lines.some(isStackFrameLine)) return null;
+  if (nonStack.length > 0) return nonStack[0];
+  if (lines.every(isStackFrameLine)) return null;
+
+  return lines[lines.length - 1] ?? null;
+}
+
+/**
+ * One-line diagnosis for `last_check_failure`: failing step name plus the first
+ * meaningful error line from that step's output (#0700).
+ */
+export function buildLastCheckFailureSummary(checkOutput: string): string {
+  const combined = checkOutput;
+  const parsed = parseCheckResults(combined);
+  if (parsed) {
+    const failed = parsed.filter((r) => r.status === "failed");
+    if (failed.length > 0) {
+      const step = failed[0]!;
+      if (step.name === "tests") {
+        const vitest = summarizeCheckFailure(combined);
+        if (vitest) return `tests — ${vitest}`;
+      }
+      const stepBody = step.detail ?? "";
+      let line = pickErrorLineFromStepOutput(stepBody);
+      if (!line) line = pickErrorLineFromStepOutput(outputBeforeResultsBlock(combined));
+      return `${step.name} — ${line ?? "failed"}`;
+    }
+  }
+
+  const vitest = summarizeCheckFailure(combined);
+  if (vitest) return `tests — ${vitest}`;
+
+  const tscLine = stripAnsi(combined)
+    .split("\n")
+    .map((l) => l.trim())
+    .find((l) => /error TS\d+:/i.test(l));
+  if (tscLine) return `build — ${tscLine}`;
+
+  const line = pickErrorLineFromStepOutput(combined);
+  if (line) return line;
+
+  return "check failed";
+}
+
 /**
  * Pull the useful, human-readable diagnosis out of a Vitest failure block.
  *
