@@ -12,7 +12,7 @@ branch: feat/resolve-integration-conflicts-without-re
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:52:38Z"
-updated_at: "2026-10-07T16:40:41Z"
+updated_at: "2026-10-07T16:41:56Z"
 ---
 ## Problem
 Current verified incident: #0730 passed full handoff gate311sbee10:36:36Z and green review10:38:42Z at636a03b27730be914515fff8448cf9028574753f. #0728 then landed1118b2031dbd3346b4f4b91ade9dd8e6585c8ca0. #0730 MTD failed10:44:16Z on src/cli/index.ts conflict and returned active to engineer15482. Original review was valid for its snapshot, but conflict repair restarts engineering/handoff/review, repeats validation, and appears to users as failed development. Driver verified on CURRENT maina1707629aec1e575d5d85e7436b06be67e9dab27 / compiled0.5.67 hash04ce49b2639fa4317ab7fa26abbb304e224903e0a0577f7e7d69dbf1b4061cdc. integration-orchestrator.ts syncCandidate preflight routes named conflicts to onMergeConflict.
@@ -34,12 +34,13 @@ Relevance reassessment of existing #0692 opex report: still relevant for genuine
 ```json
 [
   {
-    "label": "Board — integration pipeline stage vocabulary (the new resolve-conflict stage appears in the pipeline bar only while a conflict is resolving, so it is not visible in an idle capture; the steady surface is the TaskDrawer done-control label shown above)",
+    "label": "Board — integration pipeline bar (where the new resolve-conflict stage appears). The stage name is rendered only while a close-out is resolving a conflict, so an idle capture shows the bar collapsed; the new stage and its tooltip are exercised by the integration-status-bar unit tests instead.",
     "target": "default",
     "route": "/",
+    "highlight": ".ibar-wrap",
     "steps": [
       {
-        "waitMs": 1200
+        "waitMs": 1500
       }
     ]
   }
@@ -234,3 +235,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T16:39:14Z · body
 - 2026-10-07T16:40:41Z · body
+- 2026-10-07T16:41:56Z · body: section Shots
