@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/show-the-running-server-s-version-next-t
 created_at: "2026-10-06T03:15:53Z"
-updated_at: "2026-10-07T17:54:50Z"
+updated_at: "2026-10-07T17:57:57Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
