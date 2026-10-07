@@ -10,6 +10,23 @@ import { parseReviewVerdict } from "./review-verdict.js";
 /** Default area names treated as UI — never auto-approved without visual evidence. */
 export const DEFAULT_APPROVAL_UI_AREAS = ["web", "ui", "ui-app", "frontend", "mobile"];
 
+/**
+ * Repo-relative path prefixes whose change keeps a task on the human path
+ * (#0727). Deliberately conservative — the machinery an auto-approval must not
+ * silently rewrite: the server/engine, the CLI, the close-out hooks, the config
+ * that governs the policy itself, the agent contract, and architecture records.
+ */
+export const DEFAULT_APPROVAL_MACHINERY_PATHS = [
+  "src/server/",
+  "src/core/",
+  "src/cli/",
+  "src/commands/",
+  ".githooks/",
+  "repoos.toml",
+  "AGENTS.md",
+  "docs/adr/",
+];
+
 export type ApprovalPolicyRejectReason =
   | "disabled"
   | "human-only"
@@ -20,6 +37,9 @@ export type ApprovalPolicyRejectReason =
   | "blocking-bugs"
   | "gate-not-green"
   | "ui-without-visual-evidence"
+  | "blocked-paths"
+  | "p0-needs-human"
+  | "main-dirty"
   | "branch-conflict"
   | "branch-missing"
   | "handoff-drift";
@@ -36,6 +56,10 @@ export interface ApprovalPolicyInput {
   handoffDrift?: boolean;
   /** At least one handoff screenshot on disk with no `shots: failed` activity note. */
   uiVisualEvidenceOk?: boolean;
+  /** Repo-relative paths the branch changes vs its merge-base with main. */
+  changedPaths?: string[] | null;
+  /** True when the primary checkout has uncommitted files. */
+  mainDirty?: boolean;
 }
 
 export interface ApprovalPolicyResult {
@@ -53,6 +77,25 @@ function resolveUiAreas(config: RepoOSConfig): string[] {
   const fromCfg = config.approval?.autoApprove?.uiAreas;
   if (fromCfg?.length) return fromCfg.map((a) => a.trim().toLowerCase()).filter(Boolean);
   return DEFAULT_APPROVAL_UI_AREAS;
+}
+
+function resolveMachineryPaths(config: RepoOSConfig): string[] {
+  const fromCfg = config.approval?.autoApprove?.machineryPaths;
+  if (fromCfg?.length) return fromCfg.map((p) => p.trim()).filter(Boolean);
+  return DEFAULT_APPROVAL_MACHINERY_PATHS;
+}
+
+/**
+ * True when any changed path falls under a machinery prefix. File-boundary
+ * aware: `repoos.toml` matches the file, not `repoos.tomlx`, while a trailing
+ * `/` prefix matches everything beneath the directory.
+ */
+export function pathIsMachinery(path: string, machineryPaths: string[]): boolean {
+  const normalized = path.trim().replace(/^\.\//, "");
+  return machineryPaths.some((prefix) => {
+    if (prefix.endsWith("/")) return normalized.startsWith(prefix);
+    return normalized === prefix || normalized.startsWith(`${prefix}/`);
+  });
 }
 
 function taskTouchesUiArea(task: Task, uiAreas: string[]): boolean {
@@ -87,10 +130,13 @@ export function resolvedApprovalConfig(
 }
 
 export function evaluateApprovalPolicy(
-  config: Pick<RepoOSConfig, "approval">,
+  config: Pick<RepoOSConfig, "approval" | "automation">,
   input: ApprovalPolicyInput,
 ): ApprovalPolicyResult {
   const policy = resolvedApprovalConfig(config);
+  if (config.automation?.paused === true) {
+    return { eligible: false, reason: "disabled" };
+  }
   if (!policy.enabled) {
     return { eligible: false, reason: "disabled" };
   }
@@ -104,6 +150,12 @@ export function evaluateApprovalPolicy(
   }
   if (task.needsInput) {
     return { eligible: false, reason: "needs-input" };
+  }
+
+  // A p0 is a release- or incident-class change: it needs a human regardless of
+  // area/type, unless the owner opts in explicitly (#0727).
+  if (String(task.priority ?? "").toLowerCase() === "p0" && policy.autoApprove?.allowP0 !== true) {
+    return { eligible: false, reason: "p0-needs-human" };
   }
 
   const configuredAreas = policy.autoApprove?.areas ?? [];
@@ -131,6 +183,16 @@ export function evaluateApprovalPolicy(
     return { eligible: false, reason: "gate-not-green" };
   }
 
+  const machinery = resolveMachineryPaths(config as RepoOSConfig);
+  // Fail closed: when the preflight could not read the branch's paths, do not
+  // silently treat it as "no machinery touched".
+  if (input.changedPaths === null) {
+    return { eligible: false, reason: "blocked-paths" };
+  }
+  if (input.changedPaths?.some((p) => pathIsMachinery(p, machinery))) {
+    return { eligible: false, reason: "blocked-paths" };
+  }
+
   if (input.branchMissing) {
     return { eligible: false, reason: "branch-missing" };
   }
@@ -139,6 +201,9 @@ export function evaluateApprovalPolicy(
   }
   if (input.handoffDrift) {
     return { eligible: false, reason: "handoff-drift" };
+  }
+  if (input.mainDirty) {
+    return { eligible: false, reason: "main-dirty" };
   }
 
   const uiAreas = resolveUiAreas(config as RepoOSConfig);

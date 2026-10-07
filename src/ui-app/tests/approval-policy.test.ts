@@ -4,8 +4,10 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluateApprovalPolicy,
+  pathIsMachinery,
   taskBodyHasShotFailure,
   DEFAULT_APPROVAL_UI_AREAS,
+  DEFAULT_APPROVAL_MACHINERY_PATHS,
 } from "../../core/approval-policy.js";
 import type { Task } from "../../core/types.js";
 
@@ -162,6 +164,16 @@ describe("evaluateApprovalPolicy (#0686)", () => {
     expect(r.reason).toBe("handoff-drift");
   });
 
+  it("blocks when the worktree lock SHA no longer equals HEAD (handoff drift)", () => {
+    const r = evaluateApprovalPolicy(enabledApi, {
+      task: task({ area: "api" }),
+      reviewMarkdown: CLEAN_REPORT,
+      changedPaths: ["docs/x.md"],
+      handoffDrift: true,
+    });
+    expect(r).toMatchObject({ eligible: false, reason: "handoff-drift" });
+  });
+
   it("blocks default UI areas without visual evidence", () => {
     const r = evaluateApprovalPolicy(
       { approval: { enabled: true, autoApprove: { areas: ["web"] } } },
@@ -188,6 +200,132 @@ describe("evaluateApprovalPolicy (#0686)", () => {
 
   it("uses configured uiAreas list", () => {
     expect(DEFAULT_APPROVAL_UI_AREAS).toContain("ui-app");
+  });
+});
+
+describe("approval policy machinery/p0/main conditions (#0727)", () => {
+  const enabledChore = {
+    approval: { enabled: true, autoApprove: { types: ["chore"] } },
+  };
+
+  it("blocks when a changed path is under a default machinery prefix", () => {
+    const r = evaluateApprovalPolicy(enabledChore, {
+      task: task({ type: "chore" }),
+      reviewMarkdown: CLEAN_REPORT,
+      changedPaths: ["docs/readme.md", "src/server/server.ts"],
+    });
+    expect(r.reason).toBe("blocked-paths");
+  });
+
+  it("allows a changed path outside the machinery list", () => {
+    const r = evaluateApprovalPolicy(enabledChore, {
+      task: task({ type: "chore" }),
+      reviewMarkdown: CLEAN_REPORT,
+      changedPaths: ["docs/readme.md", "src/ui-app/src/views/Foo.vue"],
+    });
+    expect(r.eligible).toBe(true);
+  });
+
+  it("fails closed when changed paths could not be read", () => {
+    const r = evaluateApprovalPolicy(enabledChore, {
+      task: task({ type: "chore" }),
+      reviewMarkdown: CLEAN_REPORT,
+      changedPaths: null,
+    });
+    expect(r.reason).toBe("blocked-paths");
+  });
+
+  it("honours a configured machinery list over the default", () => {
+    const r = evaluateApprovalPolicy(
+      {
+        approval: {
+          enabled: true,
+          autoApprove: { types: ["chore"], machineryPaths: ["vendor/"] },
+        },
+      },
+      {
+        task: task({ type: "chore" }),
+        reviewMarkdown: CLEAN_REPORT,
+        changedPaths: ["src/server/server.ts"],
+      },
+    );
+    expect(r.eligible).toBe(true);
+  });
+
+  it("matches a bare file prefix exactly, not by partial name", () => {
+    const r = evaluateApprovalPolicy(enabledChore, {
+      task: task({ type: "chore" }),
+      reviewMarkdown: CLEAN_REPORT,
+      changedPaths: ["repoos.toml.bak", "docs/x.md"],
+    });
+    expect(r.eligible).toBe(true);
+  });
+
+  it("blocks p0 unless explicitly allowed", () => {
+    const r = evaluateApprovalPolicy(enabledChore, {
+      task: task({ type: "chore", priority: "p0" }),
+      reviewMarkdown: CLEAN_REPORT,
+      changedPaths: ["docs/x.md"],
+    });
+    expect(r.reason).toBe("p0-needs-human");
+  });
+
+  it("allows p0 when allowP0 is set", () => {
+    const r = evaluateApprovalPolicy(
+      {
+        approval: {
+          enabled: true,
+          autoApprove: { types: ["chore"], allowP0: true },
+        },
+      },
+      {
+        task: task({ type: "chore", priority: "p0" }),
+        reviewMarkdown: CLEAN_REPORT,
+        changedPaths: ["docs/x.md"],
+      },
+    );
+    expect(r.eligible).toBe(true);
+  });
+
+  it("blocks a dirty main checkout", () => {
+    const r = evaluateApprovalPolicy(enabledChore, {
+      task: task({ type: "chore" }),
+      reviewMarkdown: CLEAN_REPORT,
+      changedPaths: ["docs/x.md"],
+      mainDirty: true,
+    });
+    expect(r.reason).toBe("main-dirty");
+  });
+
+  it("blocks under the master kill switch even when enabled", () => {
+    const r = evaluateApprovalPolicy(
+      {
+        approval: { enabled: true, autoApprove: { types: ["chore"] } },
+        automation: { paused: true },
+      },
+      {
+        task: task({ type: "chore" }),
+        reviewMarkdown: CLEAN_REPORT,
+        changedPaths: ["docs/x.md"],
+      },
+    );
+    expect(r.reason).toBe("disabled");
+  });
+});
+
+describe("pathIsMachinery (#0727)", () => {
+  it("matches a directory prefix only beneath it", () => {
+    expect(pathIsMachinery("src/server/cto.ts", DEFAULT_APPROVAL_MACHINERY_PATHS)).toBe(true);
+    expect(pathIsMachinery("src/serverish/cto.ts", DEFAULT_APPROVAL_MACHINERY_PATHS)).toBe(false);
+  });
+
+  it("matches a bare file exactly, not a partial name", () => {
+    expect(pathIsMachinery("repoos.toml", DEFAULT_APPROVAL_MACHINERY_PATHS)).toBe(true);
+    expect(pathIsMachinery("repoos.toml.bak", DEFAULT_APPROVAL_MACHINERY_PATHS)).toBe(false);
+  });
+
+  it("ignores a leading ./", () => {
+    expect(pathIsMachinery("./AGENTS.md", DEFAULT_APPROVAL_MACHINERY_PATHS)).toBe(true);
   });
 });
 

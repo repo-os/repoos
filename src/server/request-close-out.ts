@@ -14,6 +14,7 @@ import {
   uncommittedWorkFiles,
   workFileFilter,
   worktreePathForBranch,
+  branchChangedPaths,
 } from "../core/git.js";
 import type { JobCoordinator } from "./integration-job.js";
 import type { ReloadManager } from "./reload.js";
@@ -51,20 +52,44 @@ export async function gatherApprovalPreflight(
   branchMissing: boolean;
   mergePreflightFailed: boolean;
   handoffDrift: boolean;
+  mainDirty: boolean;
+  changedPaths: string[] | null;
 }> {
   const branch = task.branch;
+  let mainDirty = false;
+  try {
+    mainDirty = (await mainDirtyFilesForCloseOut(config.root, config)).length > 0;
+  } catch {
+    // Treat an unreadable main as dirty: fail closed rather than auto-landing
+    // on top of a checkout we could not verify (#0727).
+    mainDirty = true;
+  }
   if (!branch) {
-    return { branchMissing: true, mergePreflightFailed: false, handoffDrift: false };
+    return {
+      branchMissing: true,
+      mergePreflightFailed: false,
+      handoffDrift: false,
+      mainDirty,
+      changedPaths: null,
+    };
   }
   if (!localBranches(config.root).has(branch)) {
-    return { branchMissing: true, mergePreflightFailed: false, handoffDrift: false };
+    return {
+      branchMissing: true,
+      mergePreflightFailed: false,
+      handoffDrift: false,
+      mainDirty,
+      changedPaths: null,
+    };
   }
 
   const preflight = await preflightMerge(config.root, branch);
   const mergePreflightFailed = !preflight.ok;
 
-  let handoffDrift = false;
   const worktree = task.hotfix === true ? null : worktreePathForBranch(config.root, branch);
+  const changedPaths = worktree ? await branchChangedPaths(config.root, branch) : null;
+
+  let handoffDrift = false;
   if (worktree) {
     try {
       const dirty = await uncommittedWorkFiles(worktree, workFileFilter(config));
@@ -82,7 +107,7 @@ export async function gatherApprovalPreflight(
     }
   }
 
-  return { branchMissing: false, mergePreflightFailed, handoffDrift };
+  return { branchMissing: false, mergePreflightFailed, handoffDrift, mainDirty, changedPaths };
 }
 
 /**
