@@ -2,7 +2,7 @@
 id: "0700"
 title: "Store a readable `last_check_failure`: the error line and failing step, not stack frames"
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -40,4 +40,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-07T16:25:04Z · status ready→active, branch
 - 2026-10-07T16:29:41Z · body
 - 2026-10-07T16:30:41Z · body
-- 2026-10-07T16:49:17Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T16:49:17Z · status active→review
