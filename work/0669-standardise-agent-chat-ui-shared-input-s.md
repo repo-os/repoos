@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/standardise-agent-chat-ui-shared-input-s
 created_at: "2026-10-05T15:01:24Z"
-updated_at: "2026-10-07T17:47:17Z"
+updated_at: "2026-10-07T17:52:36Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -93,3 +93,23 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T17:47:17Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/debugger-floating-close.test.ts:56:55 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T17:47:17Z · status review→active
+- 2026-10-07T17:52:36Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —      63|       attachTo: document.body,
+     64|       props: { open: true },
+     65|       global: { plugins: [pinia, router] },
+       |              ^
+     66|     });
+     67|     await flushPromises();
+ ❯ processTicksAndRejections ../../unknown:7:39
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 439 passed | 1 skipped (441)
+      Tests  1 failed | 5353 passed | 15 skipped (5369)
+   Start at  17:48:00
+   Duration  271.10s (transform 7.00s, setup 2.27s, import 48.46s, tests 251.01s, environment 216.08s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 713ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:52:31
+   Duration  2.69s (transform 1.15s, setup 13ms, import 1.44s, tests 713ms, environment 446ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
