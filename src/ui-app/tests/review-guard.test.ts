@@ -425,6 +425,35 @@ describe("PATCH /api/tasks/:id → review (0507: one finalization path)", () => 
 });
 
 describe("file-watch direct edit into review (0507: routed to the finalization)", () => {
+  for (const allowed of [true, false]) {
+    it(`does not overwrite a newer trusted transition when a delayed guard ${allowed ? "accepts" : "rejects"}`, async () => {
+      const fx = makeFixture();
+      try {
+        const index = new LiveIndex(fx.config);
+        index.refreshAll();
+        let resolve!: (allowed: boolean) => void;
+        index.setReviewGuard(
+          () =>
+            new Promise<boolean>((done) => {
+              resolve = done;
+            }),
+        );
+        writeFileSync(fx.taskPath, taskText("review"));
+        const pending = index.applyFileChange(fx.taskPath);
+        // The server finishes the handoff, then the human returns it to work.
+        index.applyFileChange(fx.taskPath, { guarded: true });
+        writeFileSync(fx.taskPath, taskText("active"));
+        index.applyFileChange(fx.taskPath, { guarded: true });
+        resolve(allowed);
+        await pending;
+        expect(index.getTask("0210")?.status).toBe("active");
+        expect(readFileSync(fx.taskPath, "utf8")).toContain("status: active");
+      } finally {
+        fx.clean();
+      }
+    });
+  }
+
   it("reverts a direct edit to review and asks the finalization instead", async () => {
     const fx = makeFixture();
     try {
