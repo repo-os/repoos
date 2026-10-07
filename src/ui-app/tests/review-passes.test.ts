@@ -31,7 +31,14 @@ function writePass(
   cfg: RepoOSConfig,
   taskId: string,
   pass: number,
-  fields: { at: string; state?: string; agent?: string; cli?: string; model?: string; body: string },
+  fields: {
+    at: string;
+    state?: string;
+    agent?: string;
+    cli?: string;
+    model?: string;
+    body: string;
+  },
 ): void {
   const file = reviewPassPath(cfg, taskId, pass);
   mkdirSync(join(cfg.root, cfg.cacheDir!, "reviews", taskId), { recursive: true });
