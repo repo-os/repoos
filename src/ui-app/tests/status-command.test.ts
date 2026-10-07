@@ -459,8 +459,10 @@ describe("renderStatus", () => {
     expect(out).toContain("v0.5.60 → v0.5.66");
     expect(out).toContain("restart to pick up fixes");
     expect(out).toContain("repoos serve"); // hand-run default hint
-    // the server line names the running build, not just the port/pid
-    expect(out).toContain("v0.5.60 (build 1111111)");
+    // the server line names the running build, not just the port/pid (it may
+    // wrap across the narrow row, so check the two tokens independently)
+    expect(out).toContain("v0.5.60 (build");
+    expect(out).toContain("1111111)");
   });
 
   it("uses the managed-service restart hint when the server is an installed service", async () => {
