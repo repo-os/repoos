@@ -19,7 +19,11 @@ Opt-in auto Move-to-done after a clean review. `evaluateApprovalPolicy` is the
 pure decision; `evaluateAutoApprove` gathers the server-side preflight (branch
 exists, merge preflights clean, worktree matches its handoff snapshot, changed
 paths, main clean); `tryAutoApproveAfterCleanReview` enqueues the close-out and
-writes the audit entry. Conditions already enforced before #0727:
+writes the audit entry. Disabled approval returns before gathering preflight. Merge
+analysis uses `git merge-tree`, which does not change main working files, its
+index or refs. A background `merge --no-commit` / `merge --abort` here can race
+a human task status write; #0737 exposed this during repeated review handoffs.
+Conditions already enforced before #0727:
 
 - `disabled` / `human-only` tag / `not-in-review` / `needs-input`
 - `no-rule-match` — must match a configured area or type
