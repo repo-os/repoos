@@ -15,6 +15,8 @@ const activeSnapshot = (over: Partial<IntegrationPipelineSnapshot["active"]> = {
       stage: "check",
       failed: false,
       startedAt: new Date(Date.now() - 187_000).toISOString(),
+      // Recent progress so #0740 stall UI does not replace the elapsed chip in these fixtures.
+      lastProgressAt: new Date().toISOString(),
       ...over,
     },
     queue: [],

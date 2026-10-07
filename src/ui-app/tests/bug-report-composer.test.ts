@@ -76,6 +76,7 @@ function makeCtx(root: string): RouteContext {
     rootLock: {} as RouteContext["rootLock"],
     jobCoordinator: {} as RouteContext["jobCoordinator"],
     reportedStages: {},
+    reportedStageAt: {},
     triggerJobProcessing: () => {},
     pendingReview: new Set(),
     uiDir: null,
