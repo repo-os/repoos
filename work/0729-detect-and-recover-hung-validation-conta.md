@@ -1,6 +1,6 @@
 ---
 id: "0729"
-title: "Detect and recover hung validation containers on runner hosts (kill, retry on another host, isolate the bun cache per run)"
+title: "Detect and recover hung validation containers on runner hosts (kill, retry on another host, isolate the bun cache per run); CTO safe action"
 type: bug
 status: inbox
 priority: p1
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T02:10:58Z"
+updated_at: "2026-10-07T02:11:13Z"
 ---
 ## Problem
 
@@ -31,7 +31,12 @@ On 2026-10-06/07 validation containers hung with the host idle (load about 0), t
 
 Do not touch the owner's hosts from the engineer session. Related: #0717, #0720, #0725.
 
+## Framing (2026-10-07)
+
+The hang recovery (kill that run's container, retry once on another host) is a CTO safe action (#0688 allowlist, rate limited, audited), not new driver logic.
+
 ## Activity
 
 - 2026-10-07T02:05:35Z · created · unknown
 - 2026-10-07T02:10:58Z · story
+- 2026-10-07T02:11:13Z · title, body
