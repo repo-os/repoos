@@ -146,3 +146,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T12:03:11Z · body
 - 2026-10-07T12:43:27Z · body
 - 2026-10-07T12:54:16Z · status active→review
+- 2026-10-07T12:54:16Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
