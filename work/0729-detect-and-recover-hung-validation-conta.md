@@ -9,8 +9,10 @@ story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
 branch: feat/detect-and-recover-hung-validation-conta
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T06:24:23Z"
+updated_at: "2026-10-07T06:24:24Z"
 error: "script \\"test\\" exited with code 1 — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.\""
 review_rounds: 1
 review_passes: 1
@@ -124,3 +126,4 @@ error: script "test" exited with code 1 — fix it in the feature branch and re-
    Duration  2.46s (transform 1.20s, setup 11ms, import 1.50s, tests 413ms, environment 468ms)
 error: script "test" exited with code 1 — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.
 - 2026-10-07T06:24:23Z · needs_input
+- 2026-10-07T06:24:24Z · cli_override, model_override
