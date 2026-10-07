@@ -1,3 +1,4 @@
+import { appendFileSync } from "node:fs";
 import type { Status, Agent, Task, RepoOSConfig } from "../../core/types.js";
 import type { RouteHandler, RouteContext } from "./types.js";
 import { json, readBody } from "./utils.js";
@@ -763,6 +764,10 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     /** #0507: which UI affordance asked, for the activity/progress record. */
     origin?: unknown;
   };
+  appendFileSync(
+    "/private/tmp/repoos-0737-body-" + process.pid + ".ndjson",
+    JSON.stringify({ body, prev: existing.status, root: config.root }) + "\n",
+  );
   // #0657: archiving has side-effect guards (live run/review/preview/close-out)
   // that a bare PATCH would skip. Force callers through the action routes.
   if (body.archived !== undefined || body.archiveDetail !== undefined) {
@@ -903,6 +908,16 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     throw error;
   }
 
+  appendFileSync(
+    "/private/tmp/repoos-0737-body-" + process.pid + ".ndjson",
+    JSON.stringify({
+      phase: "after-write",
+      body,
+      updated: updated.status,
+      indexed: index.getTask(id)?.status,
+      disk: readFileSync(updated.absPath, "utf8").match(/status: (\w+)/)?.[1],
+    }) + "\n",
+  );
   // Handoff finalization writes `review` on the worktree before main; returning
   // to engineering must mirror `active` there so a later handoff does not see
   // "already finalized" while the board copy is active (#0737).
@@ -930,6 +945,16 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   // Guarded: the #0210 gate already ran above for transitions into review.
   index.applyFileChange(updated.absPath, { guarded: true });
 
+  appendFileSync(
+    "/private/tmp/repoos-0737-body-" + process.pid + ".ndjson",
+    JSON.stringify({
+      phase: "after-index",
+      body,
+      updated: updated.status,
+      indexed: index.getTask(id)?.status,
+      disk: readFileSync(updated.absPath, "utf8").match(/status: (\w+)/)?.[1],
+    }) + "\n",
+  );
   // Re-run the underspecified check on every body change (#0613) — not only
   // draft promotion. If the body becomes well-specified again the flag clears;
   // clearing when underspecified persists is handled inside flagTaskSpecFlagsIfNeeded.
