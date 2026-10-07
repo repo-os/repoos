@@ -261,7 +261,7 @@ taskExtensions = [".md"]
 | `workDir` | string | `work` | yes | Directory holding task markdown files, relative to the repo root. This is the board. |
 | `docsDir` | string | `docs` | yes | Directory holding context docs an agent reads before working. |
 | `skillsDir` | string | `skills` | yes | Directory holding reusable skills (`skills/<name>/SKILL.md`). |
-| `inputsDir` | string | `inputs` | yes | Directory holding user-submitted inputs and their attachments. |
+| `inputsDir` | string | `inputs` | yes | Directory holding user-submitted inputs and their attachments. Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `storiesDir` | string | `stories` | yes | Directory holding story definitions (used when Stories are enabled). Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `cacheDir` | string | `.repoos` | yes | Derived state only — logs, indexes, cached databases. Delete it and RepoOS rebuilds from the task files; nothing of record is lost. |
 | `taskExtensions` | array of strings | `[".md"]` | yes | File extensions treated as tasks. |

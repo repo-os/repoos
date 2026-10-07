@@ -971,6 +971,44 @@ describe("mergeBranch conflict reporting (#0271)", () => {
       clean();
     }
   });
+
+  it("auto-resolves a stories/ conflict to main's copy (#0726)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/task120");
+      expect(wt.ok).toBe(true);
+      const wtPath = wt.path!;
+
+      // Branch: real source change + a stale edit of another, main-owned story
+      // definition.
+      commitFile(wtPath, "src/genuine.ts", "export const a = 1;\n", "branch: source change");
+      commitFile(wtPath, "stories/launch.md", "# Launch — BRANCH\n", "branch: stale story");
+
+      // Main: the same story gained newer, authoritative content.
+      commitFile(root, "stories/launch.md", "# Launch — MAIN\n", "main: story definition");
+
+      const candidate = ensureWorktree(root, "repoos/integrate/0120");
+      expect(candidate.ok).toBe(true);
+      const candPath = candidate.path!;
+      git(candPath, ["reset", "--hard", "main"]);
+
+      // The three managed bookkeeping dirs are the close-out's `autoResolveOurs`
+      // set (bookkeepingKeepOursPrefixes), so a conflict here keeps main's copy
+      // instead of blocking the merge.
+      const result = await mergeBranch(candPath, "feat/task120", {
+        autoResolve: ["dist/", "work/0120-some-task.md"],
+        autoResolveOurs: ["work/", "inputs/", "stories/"],
+      });
+
+      expect(result.merged).toBe(true);
+      expect(result.conflicts).toEqual([]);
+      // Main's story content won; the branch's source change still landed.
+      expect(git(candPath, ["show", "HEAD:stories/launch.md"])).toBe("# Launch — MAIN");
+      expect(git(candPath, ["show", "HEAD:src/genuine.ts"])).toContain("a = 1");
+    } finally {
+      clean();
+    }
+  });
 });
 
 describe("branchChangedPaths (#0727)", () => {

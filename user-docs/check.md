@@ -82,7 +82,7 @@ or a JS build:
 | `theme-contrast` | Button gradients valid; token pairs meet ≥3:1 | No `uiStylesheet`/`themeScopes` |
 | `hardcoded-colors` | No `#hex`/`rgba(255,…)` literals in component `<style>` blocks without a `/* hardcode-ok: <reason> */` marker | No `[check] hardcodedColorDirs` |
 | `bare-require` | No bare `require` in ESM source | The package isn't `"type": "module"`, or no source root |
-| `task-assets` | No committed binaries under your task/input dirs | Never — it reads `workDir`/`inputsDir` |
+| `task-assets` | No committed binaries under your task/input/story dirs | Never — it reads `workDir`/`inputsDir`/`storiesDir` |
 
 ## Opting the stylesheet guards in
 

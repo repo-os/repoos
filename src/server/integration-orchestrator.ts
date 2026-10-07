@@ -91,7 +91,8 @@ import {
   type CloseOutGatePlan,
 } from "../core/close-out-gate.js";
 import { detectRepoMarkers } from "../core/check-runner.js";
-import { DEFAULT_CONFIG, loadConfig } from "../core/config.js";
+import { DEFAULT_CONFIG, bookkeepingDirs, loadConfig } from "../core/config.js";
+import type { BookkeepingDirs } from "../core/config.js";
 import {
   effectiveCloseOutTimeoutMs,
   recordCloseOutGateTimingStats,
@@ -229,16 +230,29 @@ function bookkeepingDirPrefixes(dirs: {
   inputsDir?: string;
   storiesDir?: string;
 }): string[] {
-  return [
-    `${dirs.workDir || "work"}/`,
-    `${dirs.inputsDir || "inputs"}/`,
-    `${dirs.storiesDir || "stories"}/`,
-    "dist/",
-  ];
+  const resolved = bookkeepingDirs(dirs);
+  return [`${resolved.workDir}/`, `${resolved.inputsDir}/`, `${resolved.storiesDir}/`, "dist/"];
 }
 
 function isNonCodePublishDrift(path: string, prefixes: string[]): boolean {
   return prefixes.some((prefix) => path.startsWith(prefix));
+}
+
+/**
+ * The `autoResolveOurs` prefixes for a close-out merge: on a conflict in one of
+ * these directories, MAIN's copy wins (`--ours`), because the closing task's
+ * branch is not authoritative for other tasks' files, human inputs, or story
+ * definitions — all server-written, main-owned bookkeeping (#0726). The task's
+ * own `work/<id>-*.md` is listed separately in `autoResolve` (branch wins), so
+ * it is deliberately the one bookkeeping file that may differ.
+ */
+function bookkeepingKeepOursPrefixes(config: {
+  workDir?: string;
+  inputsDir?: string;
+  storiesDir?: string;
+}): string[] {
+  const resolved = bookkeepingDirs(config);
+  return [`${resolved.workDir}/`, `${resolved.inputsDir}/`, `${resolved.storiesDir}/`];
 }
 
 /**
@@ -413,13 +427,19 @@ export async function detectDroppedMerge(
 export async function resetForeignWorkFiles(opts: {
   candidateWtPath: string;
   baseMainSha: string;
-  workDir: string;
+  /** Managed bookkeeping dirs (work/inputs/stories), resolved from config. */
+  dirs: BookkeepingDirs;
+  /**
+   * The closing task's own task file (repo-relative), the one file under the
+   * work dir that legitimately differs and must NOT be reset.
+   */
   ownWorkFile: string | null;
 }): Promise<string[]> {
-  const { candidateWtPath, baseMainSha, workDir, ownWorkFile } = opts;
+  const { candidateWtPath, baseMainSha, dirs, ownWorkFile } = opts;
+  const prefixes = [dirs.workDir, dirs.inputsDir, dirs.storiesDir].map(withDirSlash);
   const changed = await runGit(
     candidateWtPath,
-    ["diff", "--name-only", `${baseMainSha}..HEAD`, "--", workDir],
+    ["diff", "--name-only", `${baseMainSha}..HEAD`, "--", ...prefixes],
     10_000,
   );
   if (changed.status !== 0) return [];
@@ -445,14 +465,14 @@ export async function resetForeignWorkFiles(opts: {
       15_000,
     );
     if (restore.status !== 0) {
-      throw new Error(`could not restore unrelated task files: ${restore.stderr.trim()}`);
+      throw new Error(`could not restore unrelated bookkeeping files: ${restore.stderr.trim()}`);
     }
     await runGit(candidateWtPath, ["add", "--", ...onMain], 10_000);
   }
   if (addedByBranch.length > 0) {
     const removed = await runGit(candidateWtPath, ["rm", "-q", "--", ...addedByBranch], 10_000);
     if (removed.status !== 0) {
-      throw new Error(`could not drop stray task files: ${removed.stderr.trim()}`);
+      throw new Error(`could not drop stray bookkeeping files: ${removed.stderr.trim()}`);
     }
   }
 
@@ -464,11 +484,16 @@ export async function resetForeignWorkFiles(opts: {
       "commit",
       "--no-edit",
       "-m",
-      `chore: keep main's copy of ${foreign.length} unrelated task file(s) during close-out`,
+      `chore: keep main's copy of ${foreign.length} unrelated bookkeeping file(s) during close-out`,
     ],
     10_000,
   );
   return foreign;
+}
+
+/** `dir` with exactly one trailing slash, for git pathspec prefixes. */
+function withDirSlash(dir: string): string {
+  return `${dir.replace(/\/+$/, "")}/`;
 }
 
 /**
@@ -1438,10 +1463,11 @@ export class CloseOutOrchestrator {
 
     const task = this.getTask?.(job.taskId);
     const autoResolve = task ? [relative(root, task.absPath)] : [];
-    // Same semantics as `validateCandidate`: unrelated task files keep main's
-    // side, everything else in `autoResolve` takes the branch's side. Only the
+    // Same semantics as `validateCandidate`: unrelated bookkeeping files
+    // (other tasks' under work/, inputs/, stories/) keep main's side,
+    // everything else in `autoResolve` takes the branch's side. Only the
     // real-conflict classification is needed here, so the direction is moot.
-    const autoResolveOurs = [`${this.config.workDir}/`];
+    const autoResolveOurs = bookkeepingKeepOursPrefixes(this.config);
 
     let preflight: MergeBranchResult;
     try {
@@ -1819,10 +1845,12 @@ export class CloseOutOrchestrator {
     // generated-output conflicts are deliberately left for an explicit repair.
     const task = this.getTask?.(job.taskId);
     const autoResolve = task ? [relative(root, task.absPath)] : [];
-    // The task currently closing is authoritative on its branch. Other task
-    // files can change independently on main (for example, a CTO nudge), so
-    // preserve main's version for those rather than blocking close-out.
-    const autoResolveOurs = [`${this.config.workDir}/`];
+    // The task currently closing is authoritative on its branch. Other
+    // bookkeeping files (other tasks' work/<id>.md, inputs/, stories/) can
+    // change independently on main (for example, a CTO nudge or a captured
+    // input), so preserve main's version for those rather than blocking
+    // close-out.
+    const autoResolveOurs = bookkeepingKeepOursPrefixes(this.config);
     this.onProgress?.("merge");
     const merge = await mergeBranch(wtPath, featureBranch, {
       autoResolve,
@@ -1861,15 +1889,16 @@ export class CloseOutOrchestrator {
     }
 
     // A clean merge still carries any edits the feature branch made to OTHER
-    // tasks' task files (branch changed them, main did not touch them since
-    // the merge-base → git merged them with no conflict, so `autoResolveOurs`,
-    // which only runs on conflicts, never fired). Restore main's copy of each.
-    // Observed live: #0319's close-out published #0202/#0275 frontmatter drift.
+    // bookkeeping files (other tasks' work/<id>.md, inputs/, stories/): the
+    // branch changed them, main did not touch them since the merge-base, so git
+    // merged them with no conflict and `autoResolveOurs`, which only runs on
+    // conflicts, never fired. Restore main's copy of each. Observed live:
+    // #0319's close-out published #0202/#0275 frontmatter drift.
     try {
       const reset = await resetForeignWorkFiles({
         candidateWtPath: wtPath,
         baseMainSha: currentMainSha,
-        workDir: this.config.workDir,
+        dirs: bookkeepingDirs(this.config),
         ownWorkFile: task ? relative(root, task.absPath) : null,
       });
       if (reset.length > 0) {
@@ -2645,13 +2674,21 @@ export class CloseOutOrchestrator {
         // moment there is the same class of routine churn, not a signal of
         // in-progress human work.
         //
-        // Scoped narrowly: only when EVERY dirty path is under the work dir
-        // or is exactly `repoos.toml` — anything else (source, other config,
-        // a stray build artifact) still fails closed exactly as before,
-        // since that's genuinely ambiguous and worth a human's attention
-        // rather than a blind auto-commit.
-        const workPrefix = `${this.config.workDir ?? "work"}/`;
-        const isSafeChurn = (p: string): boolean => p.startsWith(workPrefix) || p === "repoos.toml";
+        // Scoped narrowly: only when EVERY dirty path is under one of the
+        // managed bookkeeping dirs (work/, inputs/, stories/) or is exactly
+        // `repoos.toml` — anything else (source, other config, a stray build
+        // artifact) still fails closed exactly as before, since that's
+        // genuinely ambiguous and worth a human's attention rather than a
+        // blind auto-commit. All three dirs are server-written main-owned
+        // bookkeeping, so a dirty moment there is the same routine churn as a
+        // task file (#0726).
+        const bookkeepingDirsForChurn = [
+          bookkeepingDirs(this.config).workDir,
+          bookkeepingDirs(this.config).inputsDir,
+          bookkeepingDirs(this.config).storiesDir,
+        ].map(withDirSlash);
+        const isSafeChurn = (p: string): boolean =>
+          bookkeepingDirsForChurn.some((prefix) => p.startsWith(prefix)) || p === "repoos.toml";
         const onlySafeChurn = dirtyOnMain.every(isSafeChurn);
         if (onlySafeChurn) {
           try {
@@ -2683,12 +2720,12 @@ export class CloseOutOrchestrator {
       // its own bookkeeping commits for that same task file while the
       // candidate was in flight, a routine, expected divergence that should
       // never have blocked a merge in the first place).
-      // Every configured task-directory file keeps MAIN's copy — main is
-      // authoritative for task bookkeeping by publish time (routine writes land
-      // there throughout the task's lifetime), the reverse of the validate-phase
-      // merge above where the candidate's own file is what's being tested in
-      // isolation. Project source and generated-output conflicts are not
-      // auto-resolved at publish time.
+      // Every configured bookkeeping-directory file keeps MAIN's copy — main is
+      // authoritative for task/inputs/stories bookkeeping by publish time
+      // (routine writes land there throughout the task's lifetime), the reverse
+      // of the validate-phase merge above where the candidate's own file is
+      // what's being tested in isolation. Project source and generated-output
+      // conflicts are not auto-resolved at publish time.
       // Final cancellation checkpoint before the irreversible merge (#0459):
       // Stop MTD is only safe while main has not yet been mutated.
       if (this.isCancelled(job.taskId)) {
@@ -2706,7 +2743,7 @@ export class CloseOutOrchestrator {
         () =>
           mergeBranch(root, branch, {
             autoResolve: [],
-            autoResolveOurs: [`${this.config.workDir}/`],
+            autoResolveOurs: bookkeepingKeepOursPrefixes(this.config),
           }),
         (r) =>
           !r.merged && isGitLockContention(r.reason ?? "") ? (r.reason ?? "index.lock") : null,
