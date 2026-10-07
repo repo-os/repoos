@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 314751
-last_close_out_gate_at: "2026-10-07T16:10:44.838Z"
 id: "0736"
 title: Keep cancelled close-out execution ownership until the old run is terminal
 type: bug
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: 43b45880945bb2f701d8d816b223a55c54d8aa3f
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/keep-cancelled-close-out-execution-owner
 created_at: "2026-10-07T09:42:19Z"
-updated_at: "2026-10-07T16:10:44Z"
+updated_at: "2026-10-07T16:10:54Z"
+last_close_out_gate_ms: 314751
+last_close_out_gate_at: "2026-10-07T16:10:44.838Z"
 review_passes: 1
 ---
 ## Problem
@@ -39,4 +40,4 @@ Independently reproduce against current main and running server before implement
 - 2026-10-07T15:21:44Z · note: shots: skipped — the diff (9 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-07T15:22:58Z · note: review pass 1: good to go
 - 2026-10-07T16:10:44Z · close-out gate completed in 315s
-
+- 2026-10-07T16:10:54Z · status review→done, release:success
