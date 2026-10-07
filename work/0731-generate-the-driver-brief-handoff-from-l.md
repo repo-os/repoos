@@ -2,7 +2,7 @@
 id: "0731"
 title: Generate the CTO's board brief from live state (also usable as the handoff for any human or agent session)
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -44,4 +44,4 @@ The brief is produced by the CTO from live state (merged since the last tag, tas
 - 2026-10-07T17:12:04Z · status ready→active, branch
 - 2026-10-07T17:21:56Z · body
 - 2026-10-07T17:23:49Z · body
-- 2026-10-07T17:40:41Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-07T17:40:41Z · status active→review
