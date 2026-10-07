@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-07T13:07:26Z"
-review_passes: 1
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
@@ -13,6 +11,8 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
+updated_at: "2026-10-07T14:02:24Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T12:21:44.677Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -27,6 +27,17 @@ Deterministic regression covers the identified race; focused real server lifecyc
 
 ## Notes for AI
 Read AGENTS.md. Use existing task worktree, Cursor/composer-2.5. Independently verify diagnosis on current main and running build before implementation; external reports may be stale, record commit/version/repro and relevance. Inspect routes/tasks.ts patchTask, server.ts startUnifiedHandoff, agent-review test requestReview/waitForReviewRunning. Do not edit main or other task worktrees, config, hosts, releases, or restart server. No hand edits work/*.md. Do not weaken lifecycle/check guards or merely accept200/409. If conflicts with #0724/#0728 arise preserve both feature sets. One scoped check after building, handoff once then end turn.
+
+## Reproduction and evidence (2026-10-07, driver)
+
+The first fix (waitForHandoffSlotReleased in the test) is NOT sufficient. Evidence:
+
+- Deterministic locally: `bunx vitest run --config src/ui-app/vite.config.ts agent-review -t "reviews again after a human returns"` fails 3/3 on this branch AND on main with `AssertionError: expected 200 to be 202` at the second `requestReview` (tests/agent-review.test.ts ~line 215, after the human `PATCH status: active`).
+- On a remote runner (bee, full suite, 2026-10-07 13:17Z) the same test failed differently: `timed out waiting for #0001 to reach review (status=active, pendingHandoff=false)`.
+- Lead: src/server/routes/tasks.ts ~line 837 `if (body.status === "review" && prevStatus !== "review")` returns 202 with pendingHandoff. A 200 means `existing.status` was ALREADY `review` when the second PATCH arrived, i.e. the task was `review` again (or the index still said `review`) after the human's `PATCH status: active` returned 200. Find who writes `review` (the watcher/interceptor, a late finalization, the reviewer, or a stale index snapshot) and make the lifecycle deterministic. This is likely a PRODUCT race (a return-to-active followed by a new handoff request), not only a test wait.
+- Also note: the run on bee finished its gate with exit 1 and then the container stayed up for ~11 min, so the hang detector (#0729) killed it as 'hung' and retried on another host, hiding the real test failure. Do not fix that here; file a follow-up if confirmed.
+
+Done means: that test passes 10 times in a row locally under load, and the server behaviour is explained in the task notes.
 
 ## Activity
 
@@ -75,4 +86,4 @@ error: script "test" exited with code 1
 - 2026-10-07T13:06:15Z · status active→review
 - 2026-10-07T13:06:16Z · note: shots: skipped — the diff (2 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-07T13:07:25Z · note: review pass 1: good to go
-
+- 2026-10-07T14:02:24Z · body
