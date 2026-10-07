@@ -12,7 +12,7 @@ branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-07T02:12:44Z"
+updated_at: "2026-10-07T02:12:47Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 404c1109cf8aa78b7446c56733747d534bb744ae
 merge_conflict_retry_count: 2
