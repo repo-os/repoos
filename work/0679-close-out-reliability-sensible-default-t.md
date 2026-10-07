@@ -3,9 +3,6 @@ id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: degenerate-output
-needs_input_detail: Degenerate output loop detected after one automatic retry.
 priority: p2
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -15,7 +12,7 @@ branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-06T13:49:16Z"
+updated_at: "2026-10-07T02:12:40Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 404c1109cf8aa78b7446c56733747d534bb744ae
 merge_conflict_retry_count: 2
@@ -123,3 +120,4 @@ Close-out failed twice with 'merge conflict in src/server/server.ts' because mai
    Duration  2.72s (transform 1.13s, setup 13ms, import 1.41s, tests 782ms, environment 440ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T02:12:40Z · needs_input
