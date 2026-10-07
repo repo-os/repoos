@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-07T15:45:08Z"
+review_passes: 4
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
@@ -11,8 +13,6 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T15:45:08Z"
-review_passes: 3
 last_close_out_gate_ms: 1954980
 last_close_out_gate_at: "2026-10-07T14:22:21.634Z"
 last_check_failure: "repoos check at 2026-10-07T12:21:44.677Z: server-side finalization timed out (deadline exceeded)"
@@ -140,3 +140,4 @@ error: script "test" exited with code 1
 - 2026-10-07T15:44:24Z · status active→review
 - 2026-10-07T15:44:24Z · note: shots: skipped — the diff (10 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-07T15:45:08Z · note: review pass 4: good to go
+
