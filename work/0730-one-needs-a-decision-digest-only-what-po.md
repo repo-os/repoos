@@ -2,7 +2,7 @@
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T02:11:14Z"
+updated_at: "2026-10-07T09:29:38Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ This digest is the CTO's escalation surface: what it did automatically (audit) a
 - 2026-10-07T02:05:38Z · created · unknown
 - 2026-10-07T02:10:58Z · story
 - 2026-10-07T02:11:14Z · title, body
+- 2026-10-07T09:29:38Z · status inbox→ready
