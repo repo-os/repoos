@@ -937,8 +937,20 @@ export interface AutoEngineeringDecision {
   error?: string;
 }
 
-/** The five discrete stages of the integration pipeline, in order (0207). */
-export const INTEGRATION_STAGES = ["sync", "merge", "build", "check", "done"] as const;
+/**
+ * The discrete stages of the integration pipeline, in order (0207).
+ * `resolve-conflict` (#0692) is the narrow resolution path: an integration
+ * conflict against current main is resolved in an isolated candidate and only
+ * the resolution delta is reviewed, instead of restarting engineering/review.
+ */
+export const INTEGRATION_STAGES = [
+  "sync",
+  "merge",
+  "resolve-conflict",
+  "build",
+  "check",
+  "done",
+] as const;
 export type IntegrationStage = (typeof INTEGRATION_STAGES)[number];
 
 /** One resolved step of the repo's `[[check.steps]]` plan (#0458) — what the

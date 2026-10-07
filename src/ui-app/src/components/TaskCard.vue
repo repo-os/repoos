@@ -448,10 +448,12 @@ const hint = computed<CardHint | null>(() => {
     if (inPipeline.value) {
       return {
         label: pipelineStage.value
-          ? `moving to done · ${pipelineStage.value}`
+          ? `moving to done · ${pipelineStage.value === "resolve-conflict" ? "resolving conflict" : pipelineStage.value}`
           : "queued for close-out",
         title:
-          "Move to done already started — merging, building, and checking. See the pipeline bar for live progress.",
+          pipelineStage.value === "resolve-conflict"
+            ? "Resolving an integration conflict against current main in an isolated candidate — the original review is preserved and only the resolution delta is reviewed."
+            : "Move to done already started — merging, building, and checking. See the pipeline bar for live progress.",
         cls: "tc-moving",
       };
     }
