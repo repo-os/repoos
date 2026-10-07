@@ -45,7 +45,9 @@ function cliRegistrationConflict(): ConflictedFileSummary {
 
 const now = "2026-10-07T12:00:00Z";
 
-function provenance(overrides: Partial<IntegrationResolutionProvenance> = {}): IntegrationResolutionProvenance {
+function provenance(
+  overrides: Partial<IntegrationResolutionProvenance> = {},
+): IntegrationResolutionProvenance {
   return {
     taskId: "0730",
     approvedFeatureSha: "636a03b27730be914515fff8448cf9028574753f",
@@ -470,7 +472,15 @@ describe("parseConflictRegions / regionIsInsertionsOnly / regionsAreDisjoint", (
 
 describe("resolveConflictByUnion", () => {
   it("keeps both sides of a pure-insertion conflict", () => {
-    const merged = ['const x = [', "<<<<<<< HEAD", '  "watch",', "=======", '  "decisions",', ">>>>>>> f", "];"].join("\n");
+    const merged = [
+      "const x = [",
+      "<<<<<<< HEAD",
+      '  "watch",',
+      "=======",
+      '  "decisions",',
+      ">>>>>>> f",
+      "];",
+    ].join("\n");
     const r = resolveConflictByUnion(merged);
     expect(r.ok).toBe(true);
     if (r.ok) {
@@ -545,7 +555,9 @@ describe("analyzeConflictForResolution (real git)", () => {
   it("leaves the checkout and branch untouched (read-only)", async () => {
     await analyzeConflictForResolution(repo, "feature");
     expect(execSync("git status --porcelain", { cwd: repo }).toString()).toBe("");
-    expect(execSync("git rev-parse --abbrev-ref HEAD", { cwd: repo }).toString().trim()).toBe("main");
+    expect(execSync("git rev-parse --abbrev-ref HEAD", { cwd: repo }).toString().trim()).toBe(
+      "main",
+    );
   });
 
   it("fails closed (full cycle) when a git error prevents analysis", async () => {

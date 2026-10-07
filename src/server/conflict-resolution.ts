@@ -392,7 +392,13 @@ export function createResolutionProvenanceStore(
         resolutionClasses: [...input.resolutionClasses],
         resolutionCommit: null,
         resolutionTree: null,
-        resolutionReview: { reviewer: "", verdict: "pending", reviewedCommit: null, at: null, summary: "" },
+        resolutionReview: {
+          reviewer: "",
+          verdict: "pending",
+          reviewedCommit: null,
+          at: null,
+          summary: "",
+        },
         gate: { result: "pending", validatedTree: null, at: null, detail: "" },
         generation: 1,
         createdAt: now,
@@ -462,9 +468,7 @@ export interface CanResumeInput {
   expectedGeneration?: number;
 }
 
-export type CanResumeResult =
-  | { ok: true }
-  | { ok: false; reason: ResumeRefusal; detail: string };
+export type CanResumeResult = { ok: true } | { ok: false; reason: ResumeRefusal; detail: string };
 
 export type ResumeRefusal =
   | "not-authorized"
@@ -501,10 +505,7 @@ export function canResumeAuthorizedCloseOut(input: CanResumeInput): CanResumeRes
       detail: "no recorded conflict-resolution provenance for this task",
     };
   }
-  if (
-    input.expectedGeneration !== undefined &&
-    input.expectedGeneration !== p.generation
-  ) {
+  if (input.expectedGeneration !== undefined && input.expectedGeneration !== p.generation) {
     return {
       ok: false,
       reason: "stale-generation",
@@ -534,21 +535,14 @@ export function canResumeAuthorizedCloseOut(input: CanResumeInput): CanResumeRes
   }
   // The publication lock checks the EXACT validated tree, not a SHA the job
   // happens to be holding: a rebuilt candidate at a different tree is untested.
-  if (
-    !input.validatedTree ||
-    !input.candidateTree ||
-    input.validatedTree !== input.candidateTree
-  ) {
+  if (!input.validatedTree || !input.candidateTree || input.validatedTree !== input.candidateTree) {
     return {
       ok: false,
       reason: "tree-mismatch",
       detail: `candidate tree ${input.candidateTree ?? "?"} is not the validated tree ${input.validatedTree ?? "?"}`,
     };
   }
-  if (
-    input.currentMainSha !== input.validatedMainBaseSha &&
-    !input.mainAdvanceIsBookkeepingOnly
-  ) {
+  if (input.currentMainSha !== input.validatedMainBaseSha && !input.mainAdvanceIsBookkeepingOnly) {
     return {
       ok: false,
       reason: "main-advanced-with-code",
@@ -656,7 +650,13 @@ export interface AnalyzeConflictOptions {
 }
 
 /** The handful of lockfiles that are safe to resolve by re-running the installer. */
-const DEFAULT_LOCKFILES = ["bun.lock", "bun.lockb", "package-lock.json", "yarn.lock", "pnpm-lock.yaml"];
+const DEFAULT_LOCKFILES = [
+  "bun.lock",
+  "bun.lockb",
+  "package-lock.json",
+  "yarn.lock",
+  "pnpm-lock.yaml",
+];
 
 /**
  * Analyze the conflict between `branch` and the checkout's `HEAD` (main) using
@@ -678,7 +678,11 @@ export async function analyzeConflictForResolution(
   );
   if (run.status === 0) return { ok: true, files: [] };
   if (run.status !== 1) {
-    return { ok: false, files: [], error: (run.stderr.trim() || "git merge-tree failed").slice(0, 400) };
+    return {
+      ok: false,
+      files: [],
+      error: (run.stderr.trim() || "git merge-tree failed").slice(0, 400),
+    };
   }
   const [tree, ...paths] = run.stdout.split("\n").filter((l) => l.trim() !== "");
   if (!tree || !/^[0-9a-f]{40,64}$/.test(tree)) {
@@ -693,9 +697,7 @@ export async function analyzeConflictForResolution(
     const content = shown.status === 0 ? shown.stdout : "";
     const regions = parseConflictRegions(content);
     const isLockfile = lockfiles.includes(path.split("/").pop() ?? "");
-    const isGeneratedOutput = generated.some((p) =>
-      path.startsWith(p.endsWith("/") ? p : p + "/"),
-    );
+    const isGeneratedOutput = generated.some((p) => path.startsWith(p.endsWith("/") ? p : p + "/"));
     files.push({
       path,
       hunks: regions.map((r) => [r.startLine, r.startLine] as [number, number]),
@@ -766,7 +768,10 @@ export function resolveConflictByUnion(
 export async function classifyConflictForTask(
   root: string,
   branch: string,
-  opts: AnalyzeConflictOptions & { hasPriorFeatureApproval: boolean; editsOutsideConflictScope?: boolean },
+  opts: AnalyzeConflictOptions & {
+    hasPriorFeatureApproval: boolean;
+    editsOutsideConflictScope?: boolean;
+  },
 ): Promise<ConflictResolutionVerdict> {
   const analysis = await analyzeConflictForResolution(root, branch, opts);
   if (!analysis.ok) return { eligible: false, reason: "unresolvable-conflict" };
