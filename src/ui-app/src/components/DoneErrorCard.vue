@@ -51,11 +51,32 @@ const props = withDefaults(
     tldrDiagnosing?: boolean;
     /** One-click repair for environment failures (#0674). */
     action?: CloseOutFailureAction;
+    /** Prior failure while a new close-out runs (#0741). */
+    stale?: boolean;
+    /** Disable Fix while close-out is in flight for this task (#0741). */
+    fixDisabled?: boolean;
+    /** Shown when Fix is disabled (e.g. close-out running). */
+    fixDisabledTitle?: string;
   }>(),
   { mode: "card" },
 );
 
 const tldr = computed(() => props.tldr?.trim() || props.summary?.trim() || undefined);
+
+const staleShort = computed(() => {
+  const line = tldr.value ?? props.message;
+  const trimmed = line.trim();
+  if (trimmed.length <= 72) return trimmed;
+  return `${trimmed.slice(0, 69)}…`;
+});
+
+const fixTitle = computed(() => {
+  if (props.fixDisabled && props.fixDisabledTitle) return props.fixDisabledTitle;
+  if (props.retryHint) {
+    return "Starts a separate debugger investigation. RepoOS is already repairing this automatically, so this is additional, not a replacement.";
+  }
+  return undefined;
+});
 
 const displayLine = computed(() => {
   if (tldr.value && (props.mode === "card" || collapsed.value)) return tldr.value;
@@ -168,8 +189,26 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 </script>
 
 <template>
-  <div class="done-error" :class="`done-error--${mode}`" role="alert">
-    <div v-if="mode === 'card'" class="done-error-row">
+  <div
+    class="done-error"
+    :class="[`done-error--${mode}`, stale && mode === 'card' ? 'done-error--stale' : '']"
+    role="alert"
+  >
+    <details v-if="mode === 'card' && stale" class="done-error-stale">
+      <summary class="done-error-stale-summary">Previous attempt failed: {{ staleShort }}</summary>
+      <div class="done-error-row">
+        <button
+          type="button"
+          class="done-error-toggle"
+          :title="'Open the task panel to see the full error'"
+          @click="showMore"
+        >
+          <CircleAlert class="done-error-ico" aria-hidden="true" />
+          <span ref="msgEl" class="done-error-msg clamped">{{ displayLine }}</span>
+        </button>
+      </div>
+    </details>
+    <div v-else-if="mode === 'card'" class="done-error-row">
       <button
         type="button"
         class="done-error-toggle"
@@ -296,12 +335,8 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
       v-if="taskId && !collapsed"
       type="button"
       class="done-error-fix"
-      :disabled="fixing || fixSent"
-      :title="
-        retryHint
-          ? 'Starts a separate debugger investigation. RepoOS is already repairing this automatically, so this is additional, not a replacement.'
-          : undefined
-      "
+      :disabled="fixing || fixSent || fixDisabled"
+      :title="fixTitle"
       @click="fix"
     >
       <Wrench class="size-3.5" />
