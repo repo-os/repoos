@@ -180,6 +180,17 @@ describe("persistentSlowNotices", () => {
     const history: CheckRunSample[] = [...fiveAt(100_000), pass(400_000), pass(400_000)];
     expect(persistentSlowNotices({ history, multiplier: 1.5 })).toHaveLength(0);
   });
+
+  it("names the shared host when every slow run recorded the same machine", () => {
+    const history: CheckRunSample[] = [
+      ...fiveAt(100_000),
+      pass(400_000, { machine: "bee" }),
+      pass(400_000, { machine: "bee" }),
+      pass(400_000, { machine: "bee" }),
+    ];
+    const notices = persistentSlowNotices({ history, multiplier: 1.5 });
+    expect(notices[0]?.commonFactor).toContain("bee");
+  });
 });
 
 describe("effectiveElapsedMs", () => {

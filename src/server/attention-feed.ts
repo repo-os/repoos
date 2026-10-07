@@ -81,6 +81,7 @@ function readHistory(config: RepoOSConfig): CheckRunSample[] {
         scope: r.scope,
         outcome: r.outcome,
         durationMs: r.durationMs,
+        machine: r.machine ?? null,
       }));
   } catch {
     // Visibility only — a slow-run flag must never break the feed.

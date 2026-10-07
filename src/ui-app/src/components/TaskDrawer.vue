@@ -423,8 +423,8 @@ const checkChip = computed(() => {
       slow: !!slow,
       slowDetail: slow?.detail ?? null,
       label: `Checks running${machine ? ` on ${machine}` : ""} · ${elapsed}`,
-      title: slow?.detail
-        ? slow.detail
+      title: slow
+        ? "Checks are running slower than usual — focus the slow badge for timing details"
         : run.scope === "full"
           ? "The check gate is running — open the Debug tab for live output"
           : `Changed-path check (${run.scope}) — open the Debug tab for live output`,
@@ -3874,7 +3874,16 @@ watch(
               >
                 <ActivityIndicator v-if="checkChip.state === 'running'" class="ck-chip-spin" />
                 {{ checkChip.label }}
-                <span v-if="checkChip.slow" class="ck-slow-badge" data-test-id="task-check-slow">
+                <span
+                  v-if="checkChip.slow"
+                  class="ck-slow-badge"
+                  data-test-id="task-check-slow"
+                  tabindex="0"
+                  :aria-label="`Slow check. ${checkChip.slowDetail ?? ''}`"
+                  :data-tip="
+                    checkChip.slowDetail ?? 'This check is slower than typical for its kind'
+                  "
+                >
                   slow
                 </span>
               </button>

@@ -263,7 +263,14 @@ function fmtAgo(iso: string): string {
                 <span class="mono">{{ runLabel(r) }}</span>
                 <span v-if="r.phase" class="rr-dim"> · {{ r.phase }}</span>
                 · {{ elapsedSince(r.startedAt) }}
-                <span v-if="r.slow" class="rr-slow-badge" data-test-id="remote-run-slow">
+                <span
+                  v-if="r.slow"
+                  class="rr-slow-badge"
+                  data-test-id="remote-run-slow"
+                  tabindex="0"
+                  :aria-label="r.slowDetail ? `Slow run. ${r.slowDetail}` : 'Slow run'"
+                  :data-tip="r.slowDetail || 'This job is taking longer than typical for its kind'"
+                >
                   slow
                 </span>
               </span>
