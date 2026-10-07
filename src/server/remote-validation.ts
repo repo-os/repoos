@@ -314,6 +314,7 @@ export interface RemoteExecDeps {
     command: string,
     onChunk: (chunk: string) => void,
     timeoutMs: number,
+    opts?: { registerAbort?: (abort: () => void) => void },
   ): Promise<RemoteExecResult>;
   /** TCP connect probe (used to wait for sshd to come up). */
   probeTcp(ip: string, port: number, timeoutMs: number): Promise<boolean>;
@@ -522,10 +523,17 @@ export interface RunnerTimings {
   hangCheckIntervalMs: number;
   /** How often a running job re-samples its host's load (#0729). */
   loadSampleIntervalMs: number;
+  /** Cap on the hang-kill SSH (#0739). */
+  hangKillTimeoutMs: number;
+  /** After `[validate] gate exit N`, cap how long the main SSH may linger (#0739). */
+  gateExitLingerTimeoutMs: number;
 }
 
 /** Default minutes with no output before a run is called hung (#0729). */
 export const DEFAULT_HANG_IDLE_MINUTES = 5;
+
+/** Max wait for the hang-kill SSH before releasing the slot anyway (#0739). */
+export const HANG_KILL_TIMEOUT_MS = 30_000;
 
 const DEFAULT_TIMINGS: RunnerTimings = {
   provisionPollMs: 4_000,
@@ -539,6 +547,8 @@ const DEFAULT_TIMINGS: RunnerTimings = {
   hangIdleMinutes: DEFAULT_HANG_IDLE_MINUTES,
   hangCheckIntervalMs: 30_000,
   loadSampleIntervalMs: 45_000,
+  hangKillTimeoutMs: HANG_KILL_TIMEOUT_MS,
+  gateExitLingerTimeoutMs: HANG_KILL_TIMEOUT_MS,
 };
 
 /** Contention-shaped failure text — matches runDoneStep's heuristic in done.ts. */
@@ -760,6 +770,38 @@ export function killContainerCommand(containerName: string): string {
   return `docker rm -f ${shellQuote(safe)} >/dev/null 2>&1 || true`;
 }
 
+/** True once validate.sh has printed its gate result — not a hang (#0739). */
+export function remoteRunHasGateExit(output: string): boolean {
+  return /\[validate\] gate exit \d+/.test(output);
+}
+
+/** Parse the gate exit code from streamed output, when present (#0739). */
+export function parseRemoteGateExitCode(output: string): number | null {
+  const m = output.match(/\[validate\] gate exit (\d+)/);
+  if (!m) return null;
+  const code = Number(m[1]);
+  return Number.isFinite(code) ? code : null;
+}
+
+/**
+ * Remove a run's uploaded bundle and artifacts dir after a kill (#0739). The
+ * validate.sh EXIT trap normally does this; a SIGKILL'd container never runs it.
+ */
+export function remoteRunCleanupCommand(paths: RemoteRunPaths): string {
+  return (
+    `rm -f ${shellQuote(paths.bundle)} 2>/dev/null; ` +
+    `rm -rf ${shellQuote(paths.artifacts)} 2>/dev/null || true`
+  );
+}
+
+/**
+ * Prune stale per-run bundles left on a host (#0739). Runs on every probe;
+ * only touches `~/.repoos-*-*.bundle` older than one day.
+ */
+export function staleBundlePruneCommand(): string {
+  return "find \"$HOME\" -maxdepth 1 -name '.repoos-*-*.bundle' -mtime +1 -delete 2>/dev/null || true";
+}
+
 /**
  * Load average (per CPU) below which the host is "idle" — a run that has gone
  * quiet on a busy host may simply be queued behind real work, but a run quiet
@@ -797,21 +839,49 @@ export function loadPerCpu(
  * {@link HANG_IDLE_LOAD_THRESHOLD}). Pure so the detector is unit-testable;
  * the runner calls it on a timer and, when true, kills that run's container.
  *
- * Unknown load (`Infinity`) is deliberately NOT idle: without evidence the box
- * is doing nothing, a quiet run is not called hung — the failure mode this
- * guards against is exactly a hang on an idle host.
+ * When load is unknown (`Infinity`), a quiet run is still called hung once output
+ * has been idle for `thresholdMs` and either we never got a good sample or load
+ * has been unknown that long — unless the host was **busy** the last time we
+ * measured it (#0739: unreachable stats must not hold a slot until the outer SSH
+ * timeout).
  */
+/** Drop a generation-scoped in-flight control entry without touching a newer run (#0739). */
+export function deleteActiveRunControlEntry<T extends { generation: number }>(
+  map: Map<string, T>,
+  key: string,
+  generation: number,
+): boolean {
+  const entry = map.get(key);
+  if (entry?.generation !== generation) return false;
+  map.delete(key);
+  return true;
+}
+
 export function detectHungRun(opts: {
   lastOutputAt: number;
   now: number;
   thresholdMs: number;
   loadPerCpu: number;
   idleLoadThreshold?: number;
+  /** Gate already finished — a quiet container is not a hang (#0739). */
+  gateFinished?: boolean;
+  /** Last successful per-CPU load sample; used when `loadPerCpu` is unknown (#0739). */
+  lastKnownLoadPerCpu?: number;
+  /** When load became unknown (failed probe); defaults to `lastOutputAt` (#0739). */
+  loadUnknownSince?: number;
 }): boolean {
+  if (opts.gateFinished) return false;
   const idleThreshold = opts.idleLoadThreshold ?? HANG_IDLE_LOAD_THRESHOLD;
   const quietMs = opts.now - opts.lastOutputAt;
   if (quietMs < opts.thresholdMs) return false;
-  return opts.loadPerCpu < idleThreshold;
+  if (opts.loadPerCpu < idleThreshold) return true;
+  if (!Number.isFinite(opts.loadPerCpu)) {
+    const last = opts.lastKnownLoadPerCpu;
+    if (last !== undefined && last >= idleThreshold) return false;
+    const unknownSince = opts.loadUnknownSince ?? opts.lastOutputAt;
+    return opts.now - unknownSince >= opts.thresholdMs;
+  }
+  return false;
 }
 
 /** A cheap `uptime`-only probe for the hang watchdog's idle check (#0729). */
@@ -844,6 +914,10 @@ export class HangWatchdog {
       onHung: () => void;
       checkIntervalMs: number;
       now?: () => number;
+      /** When true, the gate already exited — never call hung (#0739). */
+      gateFinished?: () => boolean;
+      lastKnownLoadPerCpu?: () => number | undefined;
+      loadUnknownSince?: () => number | undefined;
     },
   ) {
     this.lastOutputAt = this.now();
@@ -874,6 +948,9 @@ export class HangWatchdog {
         now: this.now(),
         thresholdMs: this.opts.thresholdMs,
         loadPerCpu: this.opts.loadPerCpu(),
+        gateFinished: this.opts.gateFinished?.(),
+        lastKnownLoadPerCpu: this.opts.lastKnownLoadPerCpu?.(),
+        loadUnknownSince: this.opts.loadUnknownSince?.(),
       })
     ) {
       return false;
@@ -1208,6 +1285,7 @@ export function prereqProbeCommand(
           // touch a container validate.sh did not create, and best-effort so a
           // probe never fails merely because the cleanup could not run.
           staleContainerCleanupCommand(),
+          staleBundlePruneCommand(),
           // Docker: the cache is a named volume validate.sh chowns to uid
           // 1000 (the bun base image's user) before every real run — NOT a
           // host bind-mount. An earlier version of this check tested a host
@@ -1562,7 +1640,12 @@ function runLocalWithStdin(
 function runLocal(
   cmd: string,
   args: string[],
-  opts: { cwd?: string; timeoutMs: number; onChunk?: (c: string) => void },
+  opts: {
+    cwd?: string;
+    timeoutMs: number;
+    onChunk?: (c: string) => void;
+    registerAbort?: (abort: () => void) => void;
+  },
 ): Promise<RemoteExecResult> {
   return new Promise((resolve) => {
     const child = spawn(cmd, args, { cwd: opts.cwd });
@@ -1575,6 +1658,9 @@ function runLocal(
       clearTimeout(timer);
       resolve({ code, output, timedOut });
     };
+    opts.registerAbort?.(() => {
+      if (!settled) child.kill("SIGKILL");
+    });
     const onData = (b: Buffer): void => {
       const s = b.toString("utf8");
       output += s;
@@ -1592,6 +1678,24 @@ function runLocal(
       child.kill("SIGKILL");
     }, opts.timeoutMs);
   });
+}
+
+/**
+ * `runRemote` with a local hard deadline (#0739). Injected test doubles may
+ * ignore `timeoutMs` and never resolve; the pool still releases its slot.
+ */
+export async function execRemoteWithHardDeadline(
+  exec: RemoteExecDeps,
+  host: RemoteHost,
+  command: string,
+  onChunk: (c: string) => void,
+  timeoutMs: number,
+): Promise<RemoteExecResult> {
+  const hard = new Promise<RemoteExecResult>((resolve) => {
+    const t = setTimeout(() => resolve({ code: null, output: "", timedOut: true }), timeoutMs);
+    t.unref?.();
+  });
+  return Promise.race([exec.runRemote(host, command, onChunk, timeoutMs), hard]);
 }
 
 /** How engineer self-checks scope remote vitest (#0695). */
@@ -1700,10 +1804,11 @@ export function defaultRemoteExec(): RemoteExecDeps {
         { timeoutMs: 120_000 },
       ).catch(() => undefined);
     },
-    async runRemote(host, command, onChunk, timeoutMs) {
+    async runRemote(host, command, onChunk, timeoutMs, opts) {
       return runLocal("ssh", [...sshArgs(host), `${host.user}@${host.ip}`, command], {
         timeoutMs,
         onChunk,
+        registerAbort: opts?.registerAbort,
       });
     },
     probeTcp(ip, port, timeoutMs) {
@@ -2666,6 +2771,8 @@ export interface HostSlot {
    * run's container. Optional so a test double/older caller stays valid.
    */
   setContainer?(name: string): void;
+  /** Remember bundle/artifacts paths for post-kill cleanup (#0739). */
+  setRunPaths?(paths: RemoteRunPaths): void;
 }
 
 interface PoolHostState {
@@ -2707,6 +2814,10 @@ export interface ActiveRemoteRun {
   hung?: boolean;
   /** This run's container name, once known (#0729) — how a hang is killed. */
   container?: string;
+  bundle?: string;
+  artifacts?: string;
+  /** Release this run's pool slot (#0739 manual kill / bounded hang recovery). */
+  releaseSlot?: () => void;
 }
 
 interface PoolWaiter {
@@ -3189,14 +3300,15 @@ export class TailscaleHostPool {
    * and keeps a bounded recent-hung list so the cleanup is visible after the
    * retry moved elsewhere.
    */
-  markHung(host: string, detail?: string, opts?: { history?: boolean }): void {
+  markHung(host: string, detail?: string, opts?: { history?: boolean; taskId?: string }): void {
     const s = this.hosts.find((c) => c.spec.host === host);
     if (!s) return;
     const at = new Date().toISOString();
     const active = s.activeRuns[s.activeRuns.length - 1];
+    const taskId = opts?.taskId ?? active?.taskId ?? "?";
     if (active) active.hung = true;
     if (opts?.history === false) return;
-    s.hungRuns = [{ taskId: active?.taskId ?? "?", at, detail }, ...(s.hungRuns ?? [])].slice(0, 5);
+    s.hungRuns = [{ taskId, at, detail }, ...(s.hungRuns ?? [])].slice(0, 5);
   }
 
   /**
@@ -3205,7 +3317,7 @@ export class TailscaleHostPool {
    * what happened so the action can report it. `docker rm -f` is scoped to the
    * recorded container name — never a blanket kill of the host.
    */
-  async killHungRun(taskId: string): Promise<{ ok: boolean; detail: string }> {
+  async killHungRun(taskId: string): Promise<{ ok: boolean; detail: string; container?: string }> {
     for (const s of this.hosts) {
       const run = [...s.activeRuns].reverse().find((r) => r.taskId === taskId);
       if (!run) continue;
@@ -3216,18 +3328,50 @@ export class TailscaleHostPool {
         };
       }
       const container = run.container;
+      const releaseSlot = run.releaseSlot;
+      this.markHung(s.spec.host, `killed on request (#${taskId})`, { taskId });
+      let killTimedOut = false;
+      let killErr: string | undefined;
       try {
-        await this.exec.runRemote(s.ssh, killContainerCommand(container), () => {}, 15_000);
+        const killRes = await execRemoteWithHardDeadline(
+          this.exec,
+          s.ssh,
+          killContainerCommand(container),
+          () => {},
+          HANG_KILL_TIMEOUT_MS,
+        );
+        killTimedOut = killRes.timedOut;
       } catch (e) {
+        killErr = (e as Error).message;
+      } finally {
+        releaseSlot?.();
+      }
+      if (killErr) {
         return {
           ok: false,
-          detail: `could not kill ${container} on ${s.spec.host}: ${(e as Error).message}`,
+          detail: `could not kill ${container} on ${s.spec.host}: ${killErr}`,
+          container,
         };
       }
-      this.markHung(s.spec.host, `killed on request (#${taskId})`);
+      if (run.bundle && run.artifacts) {
+        void execRemoteWithHardDeadline(
+          this.exec,
+          s.ssh,
+          remoteRunCleanupCommand({ bundle: run.bundle, artifacts: run.artifacts }),
+          () => {},
+          HANG_KILL_TIMEOUT_MS,
+        ).catch(() => undefined);
+      }
+      if (killTimedOut) {
+        this.markUnhealthy(
+          s.spec.host,
+          `hang kill for #${taskId} timed out after ${HANG_KILL_TIMEOUT_MS / 1000}s — slot released`,
+        );
+      }
       return {
         ok: true,
         detail: `Removed container ${container} for #${taskId} on ${s.spec.host}`,
+        container,
       };
     }
     return { ok: false, detail: `no in-flight remote validation run for #${taskId}` };
@@ -3516,6 +3660,16 @@ export class TailscaleHostPool {
     const run: ActiveRemoteRun = { taskId: taskId ?? "?", startedAt: new Date().toISOString() };
     s.activeRuns.push(run);
     let released = false;
+    const releaseSlot = (): void => {
+      if (released) return;
+      released = true;
+      s.active = Math.max(0, s.active - 1);
+      const i = s.activeRuns.indexOf(run);
+      if (i !== -1) s.activeRuns.splice(i, 1);
+      this.dropIfIdle(s);
+      this.dispatch();
+    };
+    run.releaseSlot = releaseSlot;
     return {
       host: s.spec,
       ssh: s.ssh,
@@ -3523,15 +3677,11 @@ export class TailscaleHostPool {
       setContainer: (name: string) => {
         run.container = name;
       },
-      release: () => {
-        if (released) return;
-        released = true;
-        s.active = Math.max(0, s.active - 1);
-        const i = s.activeRuns.indexOf(run);
-        if (i !== -1) s.activeRuns.splice(i, 1);
-        this.dropIfIdle(s);
-        this.dispatch();
+      setRunPaths: (paths: RemoteRunPaths) => {
+        run.bundle = paths.bundle;
+        run.artifacts = paths.artifacts;
       },
+      release: releaseSlot,
     };
   }
 
@@ -3816,6 +3966,14 @@ export class TailscaleRunner implements RemoteValidator {
   private readonly timings: RunnerTimings;
   private readonly keyPath: string;
   private readonly pool: TailscaleHostPool;
+  /** SIGKILL the in-flight validate SSH, keyed by container name + generation (#0739). */
+  private readonly activeRunAbort = new Map<string, { generation: number; abort: () => void }>();
+  /** Resolve the validate() transport race after hang recovery (#0739). */
+  private readonly activeRunSettle = new Map<
+    string,
+    { generation: number; settle: (r: RemoteExecResult) => void }
+  >();
+  private runAbortGeneration = 0;
   private readonly activeRunRegistry = new ActiveRemoteRunRegistry();
 
   constructor(
@@ -3940,8 +4098,66 @@ export class TailscaleRunner implements RemoteValidator {
   }
 
   /** Kill a hung run's container on its host (#0729). */
-  killHungValidation(taskId: string): Promise<{ ok: boolean; detail: string }> {
-    return this.pool.killHungRun(taskId);
+  async killHungValidation(taskId: string): Promise<{ ok: boolean; detail: string }> {
+    const result = await this.pool.killHungRun(taskId);
+    if (result.container) {
+      const container = result.container;
+      this.activeRunAbort.get(container)?.abort();
+      this.activeRunSettle.get(container)?.settle({
+        code: null,
+        output: "",
+        timedOut: false,
+      });
+    }
+    return result;
+  }
+
+  /**
+   * Bounded hang recovery: kill the container, scrub bundle/artifacts, abort the
+   * main SSH, and release the pool slot (#0739).
+   */
+  private async finalizeHungKill(opts: {
+    host: RemoteHost;
+    containerName: string;
+    paths: RemoteRunPaths;
+    taskId: string;
+    abortMain: () => void;
+    releaseSlot: () => void;
+    settleMain: () => void;
+  }): Promise<void> {
+    let killTimedOut = false;
+    try {
+      const killRes = await execRemoteWithHardDeadline(
+        this.exec,
+        opts.host,
+        killContainerCommand(opts.containerName),
+        () => {},
+        this.timings.hangKillTimeoutMs,
+      );
+      killTimedOut = killRes.timedOut;
+    } catch {
+      /* best effort — still release the slot */
+    }
+    void execRemoteWithHardDeadline(
+      this.exec,
+      opts.host,
+      remoteRunCleanupCommand(opts.paths),
+      () => {},
+      this.timings.hangKillTimeoutMs,
+    ).catch(() => undefined);
+    opts.abortMain();
+    opts.releaseSlot();
+    opts.settleMain();
+    if (killTimedOut) {
+      this.pool.markUnhealthy(
+        opts.host.ip,
+        `hang kill for #${opts.taskId} timed out after ${this.timings.hangKillTimeoutMs / 1000}s — slot released`,
+      );
+      this.logger?.system(
+        "warn",
+        `remote validation hang kill for #${opts.taskId} on ${opts.host.ip} timed out`,
+      );
+    }
   }
 
   /**
@@ -4118,6 +4334,7 @@ export class TailscaleRunner implements RemoteValidator {
     // Unique per run so a hang kills exactly this run's container (#0729).
     const containerName = validateContainerName(paths.artifacts.split("/").pop() ?? opts.taskId);
     slot.setContainer?.(containerName);
+    slot.setRunPaths?.(paths);
     // Config `remoteValidation.hangIdleMinutes` wins; the injectable timing is
     // the test/fallback knob (#0729).
     const hangIdleMinutes = rv.hangIdleMinutes ?? this.timings.hangIdleMinutes;
@@ -4310,6 +4527,40 @@ export class TailscaleRunner implements RemoteValidator {
         // container — which makes the remote `docker run` exit — and mark the
         // summary `hung` so the caller retries on another host.
         let loadNow = Number.POSITIVE_INFINITY;
+        let lastKnownLoadPerCpu: number | undefined;
+        let loadUnknownSince: number | undefined = Date.now();
+        let gateFinished = false;
+        let streamBuf = "";
+        let abortMainRemote: (() => void) | undefined;
+        let runAbortGen: number | undefined;
+        let hangRecovery: Promise<void> | undefined;
+        let endedByHangRecovery = false;
+        let hangRecoveryResolve: ((r: RemoteExecResult) => void) | undefined;
+        const settleHangRecovery = (r: RemoteExecResult): void => {
+          endedByHangRecovery = true;
+          hangRecoveryResolve?.(r);
+        };
+        const hangRecoveryPromise = new Promise<RemoteExecResult>((resolve) => {
+          hangRecoveryResolve = resolve;
+        });
+        let gateLingerTimer: ReturnType<typeof setTimeout> | undefined;
+        let gateLingerResolve: ((r: RemoteExecResult) => void) | undefined;
+        const gateLingerPromise = new Promise<RemoteExecResult>((resolve) => {
+          gateLingerResolve = resolve;
+        });
+        const scheduleGateLingerAbort = (): void => {
+          if (gateLingerTimer) return;
+          gateLingerTimer = setTimeout(() => {
+            abortMainRemote?.();
+            const gateCode = parseRemoteGateExitCode(streamBuf);
+            gateLingerResolve?.({
+              code: gateCode ?? 1,
+              output: streamBuf,
+              timedOut: false,
+            });
+          }, this.timings.gateExitLingerTimeoutMs);
+          gateLingerTimer.unref?.();
+        };
         const loadTimer = setInterval(() => {
           void this.exec
             .runRemote(host, hostLoadCommand(), () => {}, this.timings.probeTimeoutMs)
@@ -4317,10 +4568,14 @@ export class TailscaleRunner implements RemoteValidator {
               if (stats.code === 0 && !stats.timedOut) {
                 const parsed = parseRemoteServerStats(stats.output);
                 loadNow = loadPerCpu(parsed.loadAverage, parsed.cpuCount);
+                lastKnownLoadPerCpu = loadNow;
+                loadUnknownSince = undefined;
+              } else if (loadUnknownSince === undefined) {
+                loadUnknownSince = Date.now();
               }
             })
             .catch(() => {
-              /* best effort — unknown load never counts as idle */
+              if (loadUnknownSince === undefined) loadUnknownSince = Date.now();
             });
         }, this.timings.loadSampleIntervalMs);
         loadTimer.unref?.();
@@ -4328,6 +4583,9 @@ export class TailscaleRunner implements RemoteValidator {
           thresholdMs: hangIdleThresholdMs(hangIdleMinutes),
           checkIntervalMs: this.timings.hangCheckIntervalMs,
           loadPerCpu: () => loadNow,
+          gateFinished: () => gateFinished,
+          lastKnownLoadPerCpu: () => lastKnownLoadPerCpu,
+          loadUnknownSince: () => loadUnknownSince,
           onHung: () => {
             this.logger?.system(
               "warn",
@@ -4335,24 +4593,64 @@ export class TailscaleRunner implements RemoteValidator {
             );
             this.pool.markHung(host.ip, `killing container ${containerName} (#${opts.taskId})`, {
               history: false,
+              taskId: opts.taskId,
             });
-            void this.exec
-              .runRemote(host, killContainerCommand(containerName), () => {}, 15_000)
-              .catch(() => {
-                /* the run will fall to its outer timeout if the kill cannot land */
-              });
+            hangRecovery = this.finalizeHungKill({
+              host,
+              containerName,
+              paths,
+              taskId: opts.taskId,
+              abortMain: () => abortMainRemote?.(),
+              releaseSlot: () => slot.release(),
+              settleMain: () => {
+                settleHangRecovery({
+                  code: null,
+                  output: streamBuf,
+                  timedOut: false,
+                });
+              },
+            });
           },
         });
         watchdog.start();
         const emitStream = (s: string): void => {
+          streamBuf += s;
+          if (!gateFinished && remoteRunHasGateExit(streamBuf)) {
+            gateFinished = true;
+            watchdog.stop();
+            scheduleGateLingerAbort();
+          }
           watchdog.noteOutput();
           emit(s);
         };
         try {
-          run = await this.exec.runRemote(host, cmd, emitStream, outerTimeoutMs);
+          run = await Promise.race([
+            this.exec.runRemote(host, cmd, emitStream, outerTimeoutMs, {
+              registerAbort: (abort) => {
+                abortMainRemote = abort;
+                runAbortGen = ++this.runAbortGeneration;
+                this.activeRunAbort.set(containerName, {
+                  generation: runAbortGen,
+                  abort,
+                });
+                this.activeRunSettle.set(containerName, {
+                  generation: runAbortGen,
+                  settle: settleHangRecovery,
+                });
+              },
+            }),
+            gateLingerPromise,
+            hangRecoveryPromise,
+          ]);
         } finally {
           watchdog.stop();
           clearInterval(loadTimer);
+          if (gateLingerTimer) clearTimeout(gateLingerTimer);
+          if (runAbortGen !== undefined) {
+            deleteActiveRunControlEntry(this.activeRunAbort, containerName, runAbortGen);
+            deleteActiveRunControlEntry(this.activeRunSettle, containerName, runAbortGen);
+          }
+          if (hangRecovery) await hangRecovery;
           // Server-side container cleanup on cancel/timeout (#0729 review): a
           // run the outer timeout SIGKILLs (or the caller's deadline cancels)
           // may leave its container running if the SSH channel that carried
@@ -4360,7 +4658,7 @@ export class TailscaleRunner implements RemoteValidator {
           // The watchdog already kills a hung run by name; this covers the
           // deadline/cancel case with a fresh SSH attempt while we still know
           // the exact container name — never a blanket kill.
-          if (!run || run.timedOut) {
+          if ((!run || run.timedOut) && !gateFinished) {
             void this.exec
               .runRemote(host, killContainerCommand(containerName), () => {}, 15_000)
               .catch(() => {
@@ -4368,7 +4666,17 @@ export class TailscaleRunner implements RemoteValidator {
               });
           }
         }
-        if (watchdog.hung) {
+        if (gateFinished) {
+          const gateCode = parseRemoteGateExitCode(streamBuf);
+          if (gateCode !== null) {
+            run = {
+              code: gateCode,
+              output: streamBuf,
+              timedOut: run?.timedOut ?? false,
+            };
+          }
+        }
+        if (watchdog.hung || endedByHangRecovery) {
           // Killed as a hang: no test result exists. Transient so the caller
           // retries on another host (the pool excludes this one, #0632).
           this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
@@ -4391,7 +4699,7 @@ export class TailscaleRunner implements RemoteValidator {
               infra: true,
             },
           );
-          this.pool.markHung(host.ip, detail);
+          this.pool.markHung(host.ip, detail, { taskId: opts.taskId });
           return withScope({
             ok: false,
             stage: "check",
