@@ -388,6 +388,8 @@ interface Fixture {
   peak(): number;
   /** Container names the hang watchdog killed (#0729). */
   killed: string[];
+  /** Unblock a delayed hang-kill `runRemote` (#0735). */
+  releaseKill(): void;
 }
 
 function poolFixture(opts: {
@@ -424,6 +426,8 @@ function poolFixture(opts: {
   hangIdleMinutes?: number;
   hangCheckIntervalMs?: number;
   loadSampleIntervalMs?: number;
+  /** Hold the hang-kill SSH until `releaseKill()` so status can show in-flight hung. */
+  delayKill?: boolean;
 }): Fixture {
   const root = tmpRoot();
   const config = {
@@ -450,6 +454,7 @@ function poolFixture(opts: {
   const dropped = new Set<string>();
   const down = new Set<string>();
   const killed: string[] = [];
+  let killGate: { resolve: () => void } | null = null;
   let inFlight = 0;
   let peak = 0;
   const exec: RemoteExecDeps = {
@@ -470,6 +475,11 @@ function poolFixture(opts: {
       if (cmd.startsWith("docker rm -f ") && cmd.includes("repoos-validate-")) {
         const name = cmd.split("'")[1] ?? cmd.split(" ").pop()!;
         killed.push(name);
+        if (opts.delayKill) {
+          await new Promise<void>((resolve) => {
+            killGate = { resolve };
+          });
+        }
         const i = pending.findIndex((p) => p.host === host.ip);
         if (i !== -1) pending.splice(i, 1)[0]!.resolve();
         return { code: 137, output: "", timedOut: false };
@@ -544,6 +554,10 @@ function poolFixture(opts: {
     pending: () => pending.map((p) => p.host),
     peak: () => peak,
     killed,
+    releaseKill() {
+      killGate?.resolve();
+      killGate = null;
+    },
     release(host?: string) {
       const i = host ? pending.findIndex((p) => p.host === host) : 0;
       if (i === -1) throw new Error(`no pending run on ${host}`);
@@ -2103,6 +2117,14 @@ describe("hung container cleanup (#0729)", () => {
     expect(cmd).not.toMatch(/--filter\s+'?name=repoos-validate-'?\s+2>/);
   });
 
+  it("docs distinguish confirmed workdir deletion from unproven cache corruption (#0735)", () => {
+    const doc = readFileSync(join(process.cwd(), "docs/remote-validation.md"), "utf8");
+    expect(doc).toMatch(/Confirmed.*workdir|Confirmed:.*startup/i);
+    expect(doc).toMatch(/unproven|Not proven|plausible/i);
+    expect(doc).toMatch(/EXIT[`']? trap/);
+    expect(doc).not.toMatch(/corruption behind the 2026-10-06\/07 hangs/);
+  });
+
   it("startup does not globally sweep sibling work dirs in the pre-container window (#0729 review)", async () => {
     // Confirmed root cause: a pre-lock `rm -rf` of $HOME/.repoos-validate.* hit
     // a sibling's $WORK before its container existed (invisible to mount guards)
@@ -2199,6 +2221,33 @@ describe("pool hung-run bookkeeping (#0729)", () => {
 });
 
 describe("hung run recovery end to end (#0729)", () => {
+  it("shows hung · killing on the active run while the kill SSH is still pending (#0735)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      fixedLoad: 0,
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+      delayKill: true,
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+
+    const resultPromise = f.runner.validate(opts("0735"));
+    let attempts = 0;
+    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
+    expect(f.killed).toHaveLength(1);
+
+    const inFlight = f.runner.hostStatus()?.[0];
+    expect(inFlight?.activeRuns?.some((r) => r.taskId === "0735" && r.hung)).toBe(true);
+    expect(inFlight?.hungRuns ?? []).toHaveLength(0);
+
+    f.releaseKill();
+    const summary = await resultPromise;
+    expect(summary.hung).toBe(true);
+    expect(f.runner.hostStatus()?.[0]?.activeRuns ?? []).toHaveLength(0);
+    expect(f.runner.hostStatus()?.[0]?.hungRuns).toHaveLength(1);
+  });
+
   it("kills a stalled run's container and retries it on another host", async () => {
     const f = poolFixture({
       hosts: [{ host: "a" }, { host: "b" }],
