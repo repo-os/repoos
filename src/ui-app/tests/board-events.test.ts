@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { projectBoardWatchEvent } from "../../server/board-events.js";
 import type { RepoEvent } from "../../server/live-index.js";
+import type { Task } from "../../core/types.js";
 
 describe("projectBoardWatchEvent", () => {
   it("maps task status changes with task id, cause, and evidence", () => {
@@ -25,7 +26,7 @@ describe("projectBoardWatchEvent", () => {
         updated_at: "2026-01-02T00:00:00Z",
         absPath: "/tmp/work/0728.md",
         path: "work/0728.md",
-      },
+      } as Task,
       prev: { status: "active" },
     };
     const ev = projectBoardWatchEvent(raw);
