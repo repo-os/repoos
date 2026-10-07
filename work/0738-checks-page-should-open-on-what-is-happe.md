@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 510c0d3c14374ec24238ee9f8a5efe1d46598ec1
 id: "0738"
 title: "Checks page should open on what is happening now (live runs), not the static Check plan tab"
 type: feature
@@ -65,3 +67,4 @@ Read ChecksView.vue and the Remote runners panel (RemoteRunnersPanel.vue); the c
 - 2026-10-07T14:26:22Z · status active→review
 - 2026-10-07T14:26:22Z · status review→active
 - 2026-10-07T14:36:22Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
