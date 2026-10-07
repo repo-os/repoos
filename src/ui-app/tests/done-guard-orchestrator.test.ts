@@ -268,6 +268,56 @@ describe("publish-time dirty-main guard (#0211)", () => {
     }
   });
 
+  it("auto-checkpoints and publishes when the only dirty file is a story/input the server wrote (#0726)", async () => {
+    // The stories/ and inputs/ dirs are server-written, main-owned bookkeeping
+    // exactly like work/ — a dirty moment there is routine churn, not a signal
+    // of ambiguous human work, so it must not block close-out.
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "repoos/integrate/T6";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T6", branch } as any);
+      coordinator.updateJob("T6", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
+
+      // A story definition and an input capture the server wrote but has not
+      // yet committed — the exact stale-write window the guard must tolerate.
+      mkdirSync(join(root, "stories"), { recursive: true });
+      mkdirSync(join(root, "inputs"), { recursive: true });
+      writeFileSync(join(root, "stories", "launch.md"), "# Launch\n");
+      writeFileSync(join(root, "inputs", "0007-email.md"), "# email\n");
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      expect(result.ok).toBe(true);
+      expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
+      expect(git(root, ["status", "--porcelain"])).toBe("");
+      expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint bookkeeping\/config/);
+    } finally {
+      clean();
+    }
+  });
+
   it("still refuses when repoos.toml is dirty ALONGSIDE a non-bookkeeping file", async () => {
     // The allowlist is per-file, not "any dirty set that happens to include
     // an allowed file" — a genuinely ambiguous file riding along with
