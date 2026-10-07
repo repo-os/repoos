@@ -12,7 +12,7 @@ branch: feat/give-the-cto-the-routine-evaluate-and-en
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:31Z"
-updated_at: "2026-10-07T05:37:56Z"
+updated_at: "2026-10-07T05:40:03Z"
 review_passes: 1
 ---
 ## Problem
@@ -65,6 +65,31 @@ No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.
 ]
 ```
 
+## Proposed conservative policy (owner approval required)
+Owner approval required before enabling in `repoos.toml`. See `docs/cto-autopilot.md` for full context.
+
+```toml
+approval.enabled = true
+approval.autoApprove.areas = ["docs", "chore"]
+approval.autoApprove.types = ["chore"]
+approval.autoApprove.machineryPaths = [
+  "src/server/",
+  "src/core/",
+  "src/cli/",
+  "src/commands/",
+  ".githooks/",
+  "repoos.toml",
+  "AGENTS.md",
+  "docs/adr/",
+]
+approval.autoApprove.allowP0 = false
+
+cto.actions = ["restart-stalled-agent", "requeue-closeout-after-env-fix"]
+automation.paused = false
+```
+
+Rationale: land routine docs/chore work only; machinery paths and UI screenshot rules keep engine/policy/architecture and unverified UI human; p0 never automatic; `refresh-main-install` omitted from the repo allowlist for now; `automation.paused` is the kill switch.
+
 ## Activity
 
 - 2026-10-07T02:05:31Z · created · unknown
@@ -88,3 +113,4 @@ No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.
 - 2026-10-07T05:36:02Z · body: section Shots
 - 2026-10-07T05:37:32Z · status review→active
 - 2026-10-07T05:37:56Z · cli_override, model_override
+- 2026-10-07T05:40:03Z · body: section Proposed conservative policy (owner approval required)
