@@ -100,7 +100,9 @@ export async function evaluateShotAssertion(
     try {
       probed = await probe(page, assertion.selector);
     } catch (error) {
-      return fail(`selector ${assertion.selector} could not be evaluated: ${(error as Error).message}`);
+      return fail(
+        `selector ${assertion.selector} could not be evaluated: ${(error as Error).message}`,
+      );
     }
     const min = assertion.minCount ?? (assertion.count === undefined ? 1 : assertion.count);
     if (assertion.count !== undefined) {

@@ -72,9 +72,10 @@ describe("declared shot assertions (#0734)", () => {
     const fp1 = shotPlanFingerprint(plan.entries);
     // A plan with a DIFFERENT assertion fingerprints differently, so a stale
     // capture can never be reused for it.
-    const other = buildCapturePlan(["default"], [
-      { route: "/", label: "Board", assert: [{ selector: ".row", minCount: 3 }] },
-    ]);
+    const other = buildCapturePlan(
+      ["default"],
+      [{ route: "/", label: "Board", assert: [{ selector: ".row", minCount: 3 }] }],
+    );
     expect(shotPlanFingerprint(other.entries)).not.toBe(fp1);
   });
 

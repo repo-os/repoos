@@ -211,7 +211,9 @@ export async function preflightUiEvidence(
     .list()
     .filter((s) => s.origin === "auto");
   const stale = prior.filter(
-    (s) => s.planFingerprint !== planFingerprint || (sourceIdentity && s.sourceIdentity !== sourceIdentity),
+    (s) =>
+      s.planFingerprint !== planFingerprint ||
+      (sourceIdentity && s.sourceIdentity !== sourceIdentity),
   );
   if (prior.length > 0 && stale.length > 0) {
     return {
@@ -309,7 +311,10 @@ async function captureEntryWithGate(
     const finalUrl = typeof page.url === "function" ? page.url() : pageUrl;
     // Assertions run on the SAME page session that produced the PNG, before the
     // overflow re-checks resize the viewport.
-    const assertionReport = await evaluateShotAssertions(page as unknown as AssertionPage, entry.assert);
+    const assertionReport = await evaluateShotAssertions(
+      page as unknown as AssertionPage,
+      entry.assert,
+    );
     for (const width of viewports) {
       const overflow = await checkHorizontalOverflowAtViewport(
         page,
@@ -485,7 +490,11 @@ export async function runUiHandoffGate(
       // evidence, not a note. It blocks: a capture that does not show the thing
       // the declaration claims is exactly the #0720/#0727/#0733 failure.
       for (const msg of warnings) {
-        allIssues.push({ kind: "missing-target", message: `${msg} (captured ${finalUrl})`, url: finalUrl });
+        allIssues.push({
+          kind: "missing-target",
+          message: `${msg} (captured ${finalUrl})`,
+          url: finalUrl,
+        });
       }
 
       // #0734: the browser must have LANDED on the declared route. A login
