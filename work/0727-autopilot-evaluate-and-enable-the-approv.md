@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T09:10:21.076Z: server-side finalization timed out (deadline exceeded)"
 id: "0727"
 title: "Give the CTO the routine: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
 type: feature
@@ -119,3 +121,4 @@ Rationale: land routine docs/chore work only; machinery paths and UI screenshot 
 - 2026-10-07T06:49:40Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-07T06:49:40Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-10-07T08:58:57Z · needs_input
+
