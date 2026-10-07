@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
-updated_at: "2026-10-07T11:59:31Z"
+updated_at: "2026-10-07T11:59:43Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T10:26:38.467Z: repoos check failed: build complete in 3.72s. · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-ico… (truncated)"
@@ -75,8 +75,6 @@ New orchestrator-level tests (`close-out-gate-remote-retry.test.ts`): scoped rem
 
 Still open by design: reuse requires a recorded green FULL pre-review row (no remote validation => full suite, fail-safe); real before/after close-out `duration_ms` medians still need a live board — not invented here. A Settings shot for the new 'Close-out gate scope' select is declared.
 
-Note: fluct close-out wall time is unchanged for the reuse path's *build/lint* half; the suite is what is skipped.
-
 ## Activity
 
 - 2026-10-06T15:55:13Z · created · unknown
@@ -99,3 +97,4 @@ Note: fluct close-out wall time is unchanged for the reuse path's *build/lint* h
 - 2026-10-07T11:57:02Z · body: section Shots
 - 2026-10-07T11:58:10Z · body
 - 2026-10-07T11:59:31Z · body: section Review round 2
+- 2026-10-07T11:59:43Z · body: section Review round 2
