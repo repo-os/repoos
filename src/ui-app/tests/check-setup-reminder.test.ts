@@ -138,7 +138,7 @@ describe("ChecksView — no-check-plan reminder (#0592)", () => {
       history: createMemoryHistory(),
       routes: [{ path: "/", component: { template: "<div/>" } }],
     });
-    router.push("/checks");
+    router.push({ path: "/checks", query: { tab: "plan" } });
     await router.isReady();
     return await mount(ChecksView, {
       global: { plugins: [pinia, router], stubs: { teleport: true, Transition: true } },
