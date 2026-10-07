@@ -2,14 +2,14 @@
 id: "0733"
 title: Show review records in a table
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-review-records-in-a-table
 created_at: "2026-10-07T02:52:02Z"
-updated_at: "2026-10-07T02:58:15Z"
+updated_at: "2026-10-07T04:44:22Z"
 ---
 ## Problem
 
@@ -51,3 +51,4 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T02:52:23Z · status draft→inbox, title, area, body
 - 2026-10-07T02:58:15Z · status inbox→ready
 - 2026-10-07T02:58:15Z · status ready→active, branch
+- 2026-10-07T04:44:22Z · status active→review
