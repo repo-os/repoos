@@ -1927,8 +1927,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       type: "integration",
       pipeline: buildIntegrationSnapshot(
         ctx.jobCoordinator,
-        {},
+        ctx.reportedStages,
         resolvePipelineCheckPlan(ctx.config),
+        ctx.reportedStageAt,
       ),
     });
 
@@ -2578,6 +2579,7 @@ export const runCtoSafeActionRoute: RouteHandler = async (ctx, req, res, params)
       emitEvent: ctx.emitEvent,
       triggerJobProcessing: ctx.triggerJobProcessing,
       reportedStages: ctx.reportedStages,
+      reportedStageAt: ctx.reportedStageAt,
       remoteValidator: ctx.remoteValidator,
     },
     actionId,
@@ -2912,6 +2914,7 @@ export const getIntegrationPipeline: RouteHandler = (ctx, _req, res) => {
       ctx.jobCoordinator,
       ctx.reportedStages,
       resolvePipelineCheckPlan(ctx.config),
+      ctx.reportedStageAt,
     ),
   });
 };
@@ -2944,7 +2947,12 @@ export const refreshInstallAndRetryIntegration: RouteHandler = async (ctx, _req,
   const reenqueued = jobCoordinator.getJob(id);
   ctx.emitEvent({
     type: "integration",
-    pipeline: buildIntegrationSnapshot(jobCoordinator, {}, resolvePipelineCheckPlan(ctx.config)),
+    pipeline: buildIntegrationSnapshot(
+      jobCoordinator,
+      ctx.reportedStages,
+      resolvePipelineCheckPlan(ctx.config),
+      ctx.reportedStageAt,
+    ),
   });
   ctx.triggerJobProcessing();
   return json(res, 200, {
@@ -2981,7 +2989,12 @@ export const retryIntegration: RouteHandler = (ctx, _req, res, params) => {
   }
   ctx.emitEvent({
     type: "integration",
-    pipeline: buildIntegrationSnapshot(jobCoordinator, {}, resolvePipelineCheckPlan(ctx.config)),
+    pipeline: buildIntegrationSnapshot(
+      jobCoordinator,
+      ctx.reportedStages,
+      resolvePipelineCheckPlan(ctx.config),
+      ctx.reportedStageAt,
+    ),
   });
   ctx.triggerJobProcessing();
   return json(res, 200, {
@@ -3063,7 +3076,12 @@ export const cancelDone: RouteHandler = (ctx, _req, res, params) => {
   // pipeline bar (and re-enables the drawer's Move to done) immediately.
   ctx.emitEvent({
     type: "integration",
-    pipeline: buildIntegrationSnapshot(jobCoordinator, {}, resolvePipelineCheckPlan(ctx.config)),
+    pipeline: buildIntegrationSnapshot(
+      jobCoordinator,
+      ctx.reportedStages,
+      resolvePipelineCheckPlan(ctx.config),
+      ctx.reportedStageAt,
+    ),
   });
   return json(res, 200, { ok: true });
 };

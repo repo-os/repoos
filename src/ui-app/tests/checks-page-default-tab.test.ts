@@ -57,6 +57,7 @@ function pipelineActive(taskId = "0737"): IntegrationPipelineSnapshot {
       stage: "check",
       failed: false,
       startedAt: new Date().toISOString(),
+      lastProgressAt: new Date().toISOString(),
     },
     queue: ["0738", "0739"],
     at: new Date().toISOString(),

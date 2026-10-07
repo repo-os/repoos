@@ -2413,6 +2413,37 @@
 .tc-moving {
   color: var(--cyan);
 }
+.tc-hint .tc-pipeline-recover {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.tc-pipeline-recover-btn {
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--txt-dim);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.tc-pipeline-recover-btn:hover:not(:disabled) {
+  color: var(--txt);
+  border-color: var(--border-bright);
+}
+.tc-pipeline-recover-btn.primary {
+  border-color: var(--cyan-border-tint, var(--border));
+  color: var(--cyan);
+}
+.tc-pipeline-recover-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
 .tc-needs-input {
   color: var(--amber);
 }

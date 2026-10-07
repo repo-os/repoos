@@ -15,6 +15,7 @@ const activeSnapshot = (over: Partial<IntegrationPipelineSnapshot["active"]> = {
       stage: "check",
       failed: false,
       startedAt: new Date(Date.now() - 187_000).toISOString(),
+      lastProgressAt: new Date(Date.now() - 187_000).toISOString(),
       ...over,
     },
     queue: [],
