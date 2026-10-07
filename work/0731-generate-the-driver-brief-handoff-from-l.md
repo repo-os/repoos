@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-07T18:15:38Z"
-review_passes: 2
 id: "0731"
 title: Generate the CTO's board brief from live state (also usable as the handoff for any human or agent session)
 type: feature
@@ -12,6 +10,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/generate-the-cto-s-board-brief-from-live
 created_at: "2026-10-07T02:05:40Z"
+updated_at: "2026-10-07T18:21:05Z"
+review_passes: 2
 last_close_out_gate_ms: 290058
 last_close_out_gate_at: "2026-10-07T17:47:49.796Z"
 handoff_signal_retry_count: 1
