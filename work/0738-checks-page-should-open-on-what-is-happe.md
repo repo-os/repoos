@@ -1,20 +1,21 @@
 ---
-last_close_out_gate_ms: 297864
-last_close_out_gate_at: "2026-10-07T15:35:20.973Z"
 id: "0738"
 title: "Checks page should open on what is happening now (live runs), not the static Check plan tab"
 type: feature
-status: review
+status: done
 priority: p1
 area: web
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: 510c0d3c14374ec24238ee9f8a5efe1d46598ec1
 assigned_to: ai
 created_by: ""
 branch: feat/checks-page-should-open-on-what-is-happe
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:03Z"
-updated_at: "2026-10-07T15:35:20Z"
+updated_at: "2026-10-07T15:35:35Z"
+last_close_out_gate_ms: 297864
+last_close_out_gate_at: "2026-10-07T15:35:20.973Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T14:25:03.639Z: server-side finalization timed out (deadline exceeded)"
 ---
@@ -76,4 +77,4 @@ Read ChecksView.vue and the Remote runners panel (RemoteRunnersPanel.vue); the c
 - 2026-10-07T14:43:39Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-07T14:44:45Z · note: review pass 1: good to go
 - 2026-10-07T15:35:20Z · close-out gate completed in 298s
-
+- 2026-10-07T15:35:35Z · status review→done, release:success
