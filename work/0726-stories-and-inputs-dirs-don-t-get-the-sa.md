@@ -2,7 +2,7 @@
 id: "0726"
 title: Stories (and inputs) dirs don't get the same close-out bookkeeping handling as the work dir
 type: bug
-status: active
+status: review
 priority: p2
 area: [server, cli]
 story: "Field report: first agent-driven project run (opex)"
@@ -68,4 +68,4 @@ Desired: validate all layout dirs with normalizeRelativeDir, give inputsDir a Se
 - 2026-10-07T17:17:52Z · body
 - 2026-10-07T17:19:23Z · body
 - 2026-10-07T17:20:17Z · body
-- 2026-10-07T17:28:25Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-07T17:28:25Z · status active→review
