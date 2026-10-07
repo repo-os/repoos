@@ -53,6 +53,7 @@ import {
   staleBundlePruneCommand,
   remoteRunCleanupCommand,
   remoteRunHasGateExit,
+  parseRemoteGateExitCode,
   remoteRunPaths,
   validateContainerName,
   type RemoteExecDeps,
@@ -436,6 +437,8 @@ function poolFixture(opts: {
   delayKill?: boolean;
   /** Stall after printing a failed gate exit — must not be classified as hung (#0739). */
   gateExitStallOn?: string[];
+  /** Split the gate-exit marker across stream chunks (#0739). */
+  gateExitSplitChunksOn?: string[];
   /** Hang-kill SSH never completes until `releaseKill()` (#0739 timeout test). */
   hangKillNeverCompletes?: boolean;
 }): Fixture {
@@ -547,6 +550,23 @@ function poolFixture(opts: {
         if (opts.gateExitStallOn?.includes(host.ip)) {
           (cmds[host.ip] ??= []).push(cmd);
           onChunk?.("[validate] gate exit 1\n");
+          inFlight++;
+          peak = Math.max(peak, inFlight);
+          await new Promise<void>((resolve) => {
+            const entry = { host: host.ip, resolve };
+            pending.push(entry);
+            remoteOpts?.registerAbort?.(() => {
+              const i = pending.indexOf(entry);
+              if (i !== -1) pending.splice(i, 1)[0]!.resolve();
+            });
+          });
+          inFlight--;
+          return { code: 1, output: "[validate] gate exit 1\n", timedOut: false };
+        }
+        if (opts.gateExitSplitChunksOn?.includes(host.ip)) {
+          (cmds[host.ip] ??= []).push(cmd);
+          onChunk?.("[validate] gate e");
+          onChunk?.("xit 1\n");
           inFlight++;
           peak = Math.max(peak, inFlight);
           await new Promise<void>((resolve) => {
@@ -2212,6 +2232,8 @@ describe("hung container cleanup (#0729)", () => {
     expect(cmd).toContain(paths.bundle);
     expect(cmd).toContain(paths.artifacts);
     expect(remoteRunHasGateExit("log\n[validate] gate exit 1\n")).toBe(true);
+    expect(remoteRunHasGateExit("[validate] gate e" + "xit 42\n")).toBe(true);
+    expect(parseRemoteGateExitCode("[validate] gate exit 42\n")).toBe(42);
   });
 
   it("does not sweep containers on a native host", () => {
@@ -2418,6 +2440,53 @@ describe("hung run recovery end to end (#0729)", () => {
     expect(summary.hung).toBeFalsy();
     expect(summary.ok).toBe(false);
     expect(summary.transient).toBe(false);
+  });
+
+  it("bounds a stalled SSH after a split-chunk gate exit marker (#0739)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      gateExitSplitChunksOn: ["a"],
+      fixedLoad: 0,
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+    });
+    const runner = new TailscaleRunner(f.config, undefined, {
+      exec: f.exec,
+      timings: {
+        healthRetryMs: 40,
+        probeTimeoutMs: 1_000,
+        hangIdleMinutes: 0.0005,
+        hangCheckIntervalMs: 15,
+        loadSampleIntervalMs: 10,
+        gateExitLingerTimeoutMs: 50,
+      },
+    });
+    for (let i = 0; i < 40 && !runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const summary = await runner.validate(opts("0739-split"));
+    expect(f.killed).toHaveLength(0);
+    expect(summary.hung).toBeFalsy();
+    expect(summary.ok).toBe(false);
+    expect(summary.exitCode).toBe(1);
+    expect(summary.transient).toBe(false);
+  });
+
+  it("manual killHungValidation releases the pool slot (#0739)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = f.runner.validate(opts("0739-manual"));
+    let attempts = 0;
+    while (attempts++ < 200 && f.pending().length === 0) await tick(5);
+    expect(f.pending()).toHaveLength(1);
+    const killResult = await f.runner.killHungValidation!("0739-manual");
+    expect(killResult.ok).toBe(true);
+    expect(f.killed).toHaveLength(1);
+    for (let i = 0; i < 30; i++) {
+      if ((f.runner.hostStatus()?.[0]?.activeRuns ?? []).length === 0) break;
+      await tick(5);
+    }
+    expect(f.runner.hostStatus()?.[0]?.activeRuns ?? []).toHaveLength(0);
+    await resultPromise;
   });
 
   it("cleans up bundle and artifacts after a hang kill (#0739)", async () => {
