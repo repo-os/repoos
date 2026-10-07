@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
-updated_at: "2026-10-07T10:16:02Z"
+updated_at: "2026-10-07T10:18:07Z"
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ Timing: I could NOT measure real before/after close-out medians from this sandbo
 - 2026-10-07T10:12:50Z · body
 - 2026-10-07T10:14:25Z · body
 - 2026-10-07T10:16:02Z · body: section Implementation notes
+- 2026-10-07T10:18:07Z · body
