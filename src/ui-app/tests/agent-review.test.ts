@@ -372,6 +372,7 @@ describe("agent review before human sign-off (#0101)", () => {
 
       const returned = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "active" });
       expect(returned.status).toBe(200);
+      expect(returned.body.status).toBe("active");
       await requestReview(server, task.id, task.absPath);
       await waitFor(
         () => /^review_passes: 2$/m.test(readFileSync(task.absPath, "utf8")),

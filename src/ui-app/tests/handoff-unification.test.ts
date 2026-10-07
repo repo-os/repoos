@@ -449,6 +449,31 @@ describe("skip checks records the override (#0507)", () => {
   });
 });
 
+describe("handoff in-flight slot release (#0737)", () => {
+  it("invokes onHandoffSlotReleased once review is on the canonical copy", async () => {
+    const fx = fixture();
+    const { finalizeReviewHandoff } = await import("../../server/handoff");
+    const task = parseTask({
+      content: readFileSync(fx.taskFile, "utf8"),
+      absPath: fx.taskFile,
+      root: fx.root,
+      defaultStatus: fx.config.defaultStatus,
+      defaultAssignee: fx.config.defaultAssignee,
+    });
+    let releaseCount = 0;
+    const result = await finalizeReviewHandoff(fx.config, task, {
+      origin: "ui-review",
+      skipChecks: true,
+      onHandoffSlotReleased: () => {
+        releaseCount += 1;
+        expect(readStatus(fx)).toBe("review");
+      },
+    });
+    expect(result.ok).toBe(true);
+    expect(releaseCount).toBe(1);
+  });
+});
+
 describe("a deliberate stop is not a dev error (#0507)", () => {
   it("does not set needs_input or bump dev_error_count", async () => {
     const fx = fixture();
