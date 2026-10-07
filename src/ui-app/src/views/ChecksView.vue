@@ -1,38 +1,80 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { api } from "../api";
 import Button from "../components/ui/button.vue";
 import TestRunPanel from "../components/TestRunPanel.vue";
 import CheckRunsPanel from "../components/CheckRunsPanel.vue";
 import RemoteRunnersPanel from "../components/RemoteRunnersPanel.vue";
+import IntegrationPipelineSummary from "../components/IntegrationPipelineSummary.vue";
 import Select from "../components/ui/select/root.vue";
 import SelectContent from "../components/ui/select/content.vue";
 import SelectItem from "../components/ui/select/item.vue";
 import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
-import type { CheckPlanStepView, CheckPlanView } from "../types";
+import type { CheckPlanStepView, CheckPlanView, RemoteValidationStatusView } from "../types";
 import NoCheckPlanReminder from "../components/NoCheckPlanReminder.vue";
 import { isGenuinelyEmptyPlan } from "../lib/check-setup";
-
-type ChecksTab = "plan" | "test-suite" | "runs" | "remote";
+import {
+  type ChecksTab,
+  checksActivityLive,
+  checksTabQuery,
+  parseChecksTab,
+  resolveChecksDefaultTab,
+} from "../lib/checks-page";
+import { useRepoStore } from "../stores/repo";
 
 const route = useRoute();
 const router = useRouter();
+const repo = useRepoStore();
+const { testRun } = storeToRefs(repo);
 
-const TABS: ChecksTab[] = ["plan", "test-suite", "runs", "remote"];
-
-const activeTab = computed<ChecksTab>(() =>
-  TABS.includes(route.query.tab as ChecksTab) ? (route.query.tab as ChecksTab) : "plan",
-);
+const explicitTab = computed(() => parseChecksTab(route.query.tab));
+const activeTab = computed<ChecksTab>(() => explicitTab.value ?? "runs");
 
 function setTab(tab: ChecksTab): void {
   void router.replace({
     name: "checks",
-    query: tab === "plan" ? {} : { tab },
+    query: checksTabQuery(tab),
   });
 }
+
+/** When `/checks` has no `?tab=`, pick Now vs Runs from live activity (never plan). */
+async function applyDefaultTabIfNeeded(): Promise<void> {
+  if (explicitTab.value !== null) return;
+  try {
+    await repo.refreshIntegration();
+    let remoteStatus: RemoteValidationStatusView | null = null;
+    try {
+      remoteStatus = await api<RemoteValidationStatusView>("/api/remote-validation/status");
+    } catch {
+      /* optional — pipeline + test run still drive the default */
+    }
+    const live = checksActivityLive({
+      integration: repo.integration,
+      remoteStatus,
+      testRunRunning: testRun.value.running,
+    });
+    const tab = resolveChecksDefaultTab(live);
+    if (parseChecksTab(route.query.tab) === null) {
+      await router.replace({ name: "checks", query: checksTabQuery(tab) });
+    }
+  } catch {
+    /* non-fatal — the page still renders on the interim Runs tab */
+  }
+}
+
+watch(
+  () => route.query.tab,
+  () => {
+    void applyDefaultTabIfNeeded();
+  },
+  { immediate: true },
+);
+
+onMounted(load);
 
 const plan = ref<CheckPlanView | null>(null);
 const loading = ref(true);
@@ -61,8 +103,6 @@ async function load(): Promise<void> {
     loading.value = false;
   }
 }
-
-onMounted(load);
 
 function onProfile(value: string): void {
   profile.value = value;
@@ -143,8 +183,8 @@ const RESULT_ICON: Record<string, string> = {
             answer.
           </template>
           <template v-else>
-            Each configured remote host: health, what is running on it right now, what is queued,
-            and what ran last. Live — refreshes every few seconds.
+            Close-out queue and each remote host: what is running, queued, or hung right now. Live —
+            refreshes every few seconds.
           </template>
         </p>
       </div>
@@ -173,21 +213,11 @@ const RESULT_ICON: Record<string, string> = {
         type="button"
         role="tab"
         class="tab-btn"
-        :class="{ active: activeTab === 'plan' }"
-        :aria-selected="activeTab === 'plan'"
-        @click="setTab('plan')"
+        :class="{ active: activeTab === 'now' }"
+        :aria-selected="activeTab === 'now'"
+        @click="setTab('now')"
       >
-        Check plan
-      </button>
-      <button
-        type="button"
-        role="tab"
-        class="tab-btn"
-        :class="{ active: activeTab === 'test-suite' }"
-        :aria-selected="activeTab === 'test-suite'"
-        @click="setTab('test-suite')"
-      >
-        Test suite
+        Now
       </button>
       <button
         type="button"
@@ -203,25 +233,36 @@ const RESULT_ICON: Record<string, string> = {
         type="button"
         role="tab"
         class="tab-btn"
-        :class="{ active: activeTab === 'remote' }"
-        :aria-selected="activeTab === 'remote'"
-        @click="setTab('remote')"
+        :class="{ active: activeTab === 'test-suite' }"
+        :aria-selected="activeTab === 'test-suite'"
+        @click="setTab('test-suite')"
       >
-        Remote runners
+        Test suite
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab-btn"
+        :class="{ active: activeTab === 'plan' }"
+        :aria-selected="activeTab === 'plan'"
+        @click="setTab('plan')"
+      >
+        Check plan
       </button>
     </nav>
 
-    <div v-if="activeTab === 'test-suite'" class="ck-test-suite">
+    <div v-if="activeTab === 'now'" class="ck-test-suite">
+      <IntegrationPipelineSummary />
+      <RemoteRunnersPanel />
+    </div>
+    <div v-else-if="activeTab === 'test-suite'" class="ck-test-suite">
       <TestRunPanel embedded />
     </div>
     <div v-else-if="activeTab === 'runs'" class="ck-test-suite">
       <CheckRunsPanel />
     </div>
-    <div v-else-if="activeTab === 'remote'" class="ck-test-suite">
-      <RemoteRunnersPanel />
-    </div>
 
-    <template v-else>
+    <template v-else-if="activeTab === 'plan'">
       <div v-if="loading" class="ck-loading">Loading the check plan…</div>
       <p v-else-if="error" class="ck-err">{{ error }}</p>
 
