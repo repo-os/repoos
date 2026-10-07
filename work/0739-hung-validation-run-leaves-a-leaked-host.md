@@ -12,7 +12,7 @@ branch: feat/hung-validation-run-leaves-a-leaked-host
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:05Z"
-updated_at: "2026-10-07T14:37:27Z"
+updated_at: "2026-10-07T14:37:30Z"
 review_passes: 1
 ---
 ## Problem
@@ -48,3 +48,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T14:28:35Z · status review→active
 - 2026-10-07T14:30:43Z · body
 - 2026-10-07T14:37:27Z · body
+- 2026-10-07T14:37:30Z · note: Additional current evidence14:37Z: #730 mini run started14:22:32 last output14:23:07; owner otherdriver recorded SSH timeout/unreachable14:35, cancelled/requeuedjob14:35:36, but runners APIstill oldmini activeRun0730. Unknown/unavailable load must NOT disable bounded no-output/liveness detection indefinitely; include regression for unavailable host stats and cancellation cleanup. Do not SSH/changehosts. Existingboundedownershipfix applies, preserve realgate failures.
