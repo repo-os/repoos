@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-review-records-in-a-table
 created_at: "2026-10-07T02:52:02Z"
-updated_at: "2026-10-07T03:40:02Z"
+updated_at: "2026-10-07T03:40:29Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -45,9 +45,9 @@ This new report records section is useful but let's make it a proper table , lik
 ```json
 [
   {
-    "label": "Task drawer Review tab: review records table (pass, when, reviewer, model, verdict)",
+    "label": "Review records table on #0679 with real review history, newest pass first",
     "target": "default",
-    "route": "/work?task=0733",
+    "route": "/work?task=0679",
     "highlight": ".review-history-table",
     "steps": [
       {
@@ -83,3 +83,4 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T03:34:46Z · body: section Shots
 - 2026-10-07T03:39:59Z · body
 - 2026-10-07T03:40:02Z · note: highlight .review-history-table matched nothing on /work?task=0733
+- 2026-10-07T03:40:29Z · body: section Shots
