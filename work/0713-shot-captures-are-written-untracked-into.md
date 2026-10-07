@@ -2,7 +2,7 @@
 id: "0713"
 title: Shot captures are written untracked into the main checkout (work/.attachments) and block close-out of unrelated tasks
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -36,4 +36,4 @@ VERIFY FIRST: in this repo .gitignore already ignores work/.attachments/ and inp
 - 2026-10-07T00:04:41Z · body
 - 2026-10-07T00:14:14Z · body
 - 2026-10-07T00:16:04Z · body
-- 2026-10-07T00:17:04Z · note: shots: skipped — the diff (9 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T00:17:04Z · status active→review
