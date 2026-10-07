@@ -12,7 +12,7 @@ branch: feat/detect-and-recover-hung-validation-conta
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T09:12:40Z"
+updated_at: "2026-10-07T09:13:50Z"
 review_passes: 3
 error: "script \\"test\\" exited with code 1 — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.\""
 review_rounds: 1
@@ -49,12 +49,6 @@ The hang recovery (kill that run's container, retry once on another host) is a C
     "target": "default",
     "route": "/checks?tab=remote",
     "highlight": ".rr-panel"
-  },
-  {
-    "label": "Hung runs UI (shot fixture — not live runner state)",
-    "target": "default",
-    "route": "/checks?tab=remote&rvFixture=hung-runs",
-    "highlight": ".rr-hung-badge"
   }
 ]
 ```
@@ -160,3 +154,4 @@ error: script "test" exited with code 1
 - 2026-10-07T09:06:10Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-07T09:07:39Z · note: review pass 3: good to go
 - 2026-10-07T09:12:40Z · status review→active
+- 2026-10-07T09:13:50Z · body: section Shots
