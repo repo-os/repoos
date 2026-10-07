@@ -20,6 +20,13 @@ export const REPOOS_REMOTE_VALIDATION_DONE = "REPOOS_REMOTE_VALIDATION_DONE";
 export const REPOOS_REMOTE_FALLBACK_DETAIL = "REPOOS_REMOTE_FALLBACK_DETAIL";
 
 /**
+ * A close-out gate's one-line mode note (#0724) — "reused / scoped N files /
+ * full" and why. Carried through to the check-run history's `detail` so the
+ * Checks tab shows which mode ran, not just an outcome.
+ */
+export const REPOOS_CHECK_GATE_NOTE = "REPOOS_CHECK_GATE_NOTE";
+
+/**
  * Short label for check-run history and the attention bell when remote validation
  * was on but the gate fell back to this machine (#0683).
  */

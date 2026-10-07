@@ -2,15 +2,22 @@
 id: "0724"
 title: "Cheaper close-out gate: don't re-run the full suite on what the handoff gate already proved"
 type: feature
-status: active
+status: done
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 60e2c0160070a87e19b3b3ec458569a87413f0a7
 assigned_to: ai
 created_by: ""
 branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
-updated_at: "2026-10-07T10:16:02Z"
+updated_at: "2026-10-07T12:48:32Z"
+last_close_out_gate_ms: 696914
+last_close_out_gate_at: "2026-10-07T12:48:22.345Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T12:21:44.271Z: server-side finalization timed out (deadline exceeded)"
+review_passes: 2
+review_rounds: 1
 ---
 ## Problem
 
@@ -46,6 +53,32 @@ What landed:
 
 Timing: I could NOT measure real before/after close-out medians from this sandbox — the worktree has no `.repoos/checks.db` and I must not read the main checkout, so no historical close-out rows are available here. What I did measure is the mechanism's ceiling: this repo has 433 test files under src/ui-app/tests; a reuse close-out runs 0 of them (only build/lint/static guards), and a scoped close-out runs only the files the task's + main's changes affect. The concrete before/after medians still need a live board: compare `check_runs` close-out `duration_ms` before and after this lands (the run `scope`/`detail` now names the mode). I did not invent numbers for it.
 
+## Shots
+```json
+[
+  {
+    "label": "Settings → General with the new Close-out gate scope select",
+    "target": "default",
+    "route": "/settings?tab=general",
+    "highlight": "#setting-closeOut\\.gate",
+    "steps": [
+      {
+        "waitMs": 500
+      }
+    ]
+  }
+]
+```
+
+## Review round 2
+Fixed the review's real bug: a SCOPED remote run that failed used to fail the close-out immediately (the runner stops before the local check ever runs), skipping the scoped->full escape hatch. `validateCandidate` now retries the runner once WITHOUT `changedRef` on a non-transient scoped remote failure, mirroring the local path; a transient infra failure keeps its retryable resume-from-check handling, and a genuine full-run failure still fails. When the remote retry succeeds as full, the local cheap checks also drop `REPOOS_CHECK_CHANGED` so both halves describe the same scope.
+
+Also addressed the misleading skip text: the tests step now reads `skipped — full suite reused from the handoff gate (<why>)` for a reuse close-out instead of claiming the remote runner ran when none did (REPOOS_CHECK_GATE_NOTE drives it).
+
+New orchestrator-level tests (`close-out-gate-remote-retry.test.ts`): scoped remote fail -> full retry passes -> close-out not failed (asserts the two runner calls: first with `changedRef` = tested SHA, second without); and scoped remote fail + full retry also fail -> close-out fails with the runner detail.
+
+Still open by design: reuse requires a recorded green FULL pre-review row (no remote validation => full suite, fail-safe); real before/after close-out `duration_ms` medians still need a live board — not invented here. A Settings shot for the new 'Close-out gate scope' select is declared.
+
 ## Activity
 
 - 2026-10-06T15:55:13Z · created · unknown
@@ -55,3 +88,23 @@ Timing: I could NOT measure real before/after close-out medians from this sandbo
 - 2026-10-07T10:12:50Z · body
 - 2026-10-07T10:14:25Z · body
 - 2026-10-07T10:16:02Z · body: section Implementation notes
+- 2026-10-07T10:18:07Z · body
+- 2026-10-07T10:19:41Z · body
+- 2026-10-07T10:35:34Z · note: Owner requests current engineering/review tasks through to done for next release, after v0.5.67 release. Driver sees remote gate PASS302sbee10:26:07 and processlastoutput10:26:48. If implementation and scoped check are complete, request handoff ONCE then end turn. Do not repeatedly run passing full suites. Record why gate reuse is safe for combined current-main tree and what forces full rerun; preserve full fallback. If provider has stalled, report it explicitly. No source writes after handoff, owner config/hosts/releases/main untouched.
+- 2026-10-07T10:51:59Z · body
+- 2026-10-07T10:53:27Z · body
+- 2026-10-07T10:55:26Z · status active→review
+- 2026-10-07T10:55:28Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-07T10:57:10Z · note: review pass 1: needs some work
+- 2026-10-07T10:57:11Z · status review→active
+- 2026-10-07T11:08:31Z · note: Owner deadline12:07Z: complete fouractive tasks720/724/730/737 throughreviewanddone. Prioritize reviewer remote-scopedfailure->onefullfallback repair with orchestrator regression; keepscope. Buildthenonescopedcheck, handoffonce/endturn. Driver verifiesSettingscontrolactualshot andcombinedtreegate; no repeatedpassingfullgates forlocal-onlyfailures, nohost/config/releasewrites.
+- 2026-10-07T11:57:02Z · body: section Shots
+- 2026-10-07T11:58:10Z · body
+- 2026-10-07T11:59:31Z · body: section Review round 2
+- 2026-10-07T11:59:43Z · body: section Review round 2
+- 2026-10-07T12:00:04Z · status active→review
+- 2026-10-07T12:00:05Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-07T12:01:02Z · note: review pass 2: good to go
+- 2026-10-07T12:43:31Z · body
+- 2026-10-07T12:48:22Z · close-out gate completed in 697s
+- 2026-10-07T12:48:32Z · status review→done, release:success

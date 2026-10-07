@@ -132,8 +132,13 @@ Set it in `repoos.toml` (`remoteValidation.retryOtherHosts`), in Settings → Re
 On 2026-10-06/07 two validation containers hung with the host idle (load ~0)
 while the log looped `error: Module not found
 "/repo/node_modules/vitest/dist/workers/forks.js"` — the run never finished on
-its own and a human had to notice. The probable cause was the shared named
-bun-cache volume written by concurrent runs on one host.
+its own and a human had to notice. **Confirmed root cause (2026-10-07, #0729):**
+an older `validate.sh` startup loop removed every `$HOME/.repoos-validate.*`
+workdir before the sibling run's container existed, which could empty `/repo`
+mid-run (direct `docker exec` evidence on a live host). **Not proven for that
+incident:** concurrent writers corrupting the shared `repoos-bun-cache` volume —
+that remains a plausible failure mode the per-slot cache change guards against,
+not something the forks.js loop alone established.
 
 Three changes close that hole:
 
@@ -160,11 +165,14 @@ Three changes close that hole:
   `repoos.toml` /
   Settings (`remoteValidation.hangIdleMinutes`).
 
-**Cleanup.** Containers left behind by a killed/hung run are reaped two ways:
-each run's `EXIT` trap removes its own container, and the host prerequisite
-probe sweeps any remaining `repoos-validate-*` containers
-(`staleContainerCleanupCommand()`) — name-prefixed, so a container RepoOS did
-not create is never touched.
+**Cleanup.** Each run removes **only its own** `$WORK` tree and container in
+`validate.sh`'s `EXIT` trap — there is no global workdir sweep at startup
+anymore. Containers left behind by a killed/hung run are reaped two ways: that
+per-run trap, and the host prerequisite probe's **stale-container** sweep
+(`staleContainerCleanupCommand()`) — `repoos-validate-*` name prefix only, and
+**not** `status=running`, so a live sibling run is never removed. Safe GC of
+abandoned workdirs (age-bound, mount-aware) is deliberately future work; until
+then, rely on per-run EXIT cleanup plus non-running container sweeps.
 
 **Visibility.** The Remote runners tab shows a run being killed as `hung ·
 killing`, and a per-host **Hung runs** row listing the recent kills and when
@@ -584,10 +592,13 @@ already executing is never interrupted mid-suite.
 
 A run can wedge without ever failing: on 2026-10-06/07 validation containers
 hung with the host idle at load ≈ 0, the log looping `error: Module not found
-"/repo/node_modules/vitest/dist/workers/forks.js"`. The probable cause was
-concurrent runs on one host writing the same shared `repoos-bun-cache` volume,
-corrupting each other's `bun install` (see "Per-slot cache isolation" below).
-Nothing detected it; a human did, 48 minutes later.
+"/repo/node_modules/vitest/dist/workers/forks.js"`. **Confirmed:** a startup
+`rm -rf` of every `$HOME/.repoos-validate.*` workdir could delete a sibling
+run's `/repo` mount before that container existed (#0729 review). **Unproven for
+that outage:** shared `repoos-bun-cache` corruption from overlapping installs —
+per-slot cache isolation below is preventive protection, not a re-litigation of
+the incident. Nothing detected the hang automatically; a human did, 48 minutes
+later.
 
 The runner now watches each in-flight run. It samples the host's own 1-minute
 load average (per CPU) on a timer, and every `hangCheckIntervalMs` (30 s) asks:
@@ -620,15 +631,15 @@ normal path, and the CTO re-issues it if that kill could not land.
 On Docker hosts the bun cache is a named volume. It used to be the single
 `repoos-bun-cache` for every run on the host, so two runs that overlap (a host
 with `maxConcurrent > 1`, or the host lock's slots) could write the same cache
-directory and observe each other's partial installs — the corruption behind the
-2026-10-06/07 hangs. The volume is now keyed to the host-lock **slot** the run
-holds: slot 0 keeps the original `repoos-bun-cache` name (so a host's existing
-warm cache is reused by the first run), and every other slot gets
-`repoos-bun-cache-slot<N>`. The host-lock wrapper exports the acquired slot
-index as `REPOOS_SLOT`, and `validate.sh` appends it to the base volume
-(`REPOOS_CACHE_VOLUME`), so runs that may overlap never share a cache dir.
-`cacheVolumeForSlot` in `src/server/remote-validation.ts` is the one place
-that names the volume.
+directory and observe each other's partial installs — a **plausible** failure
+mode that was never confirmed as the 2026-10-06/07 root cause (workdir deletion
+was). The volume is now keyed to the host-lock **slot** the run holds: slot 0
+keeps the original `repoos-bun-cache` name (so a host's existing warm cache is
+reused by the first run), and every other slot gets `repoos-bun-cache-slot<N>`.
+The host-lock wrapper exports the acquired slot index as `REPOOS_SLOT`, and
+`validate.sh` appends it to the base volume (`REPOOS_CACHE_VOLUME`), so runs
+that may overlap never share a cache dir. `cacheVolumeForSlot` in
+`src/server/remote-validation.ts` is the one place that names the volume.
 
 #### Concurrency
 

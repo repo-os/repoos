@@ -78,6 +78,22 @@ first, then come back here.
   package inputs; if close-out still fails with missing modules, use **Refresh
   install and retry** or set `[closeOut] candidate = "own-install"` for monorepos.
 
+### Drive the board by events (not polling)
+
+The control plane streams board events on **`GET /api/events`** (SSE). Prefer
+waking your session on those signals instead of polling task status on a timer —
+missed timers are how overnight runs lose hours.
+
+- **`repoos watch [--json] [--task <id>]`** prints the same feed the CTO monitor
+  reacts to. It reconnects after a server reload and re-logs in on HTTP 401.
+  Exit code is non-zero when the server is unreachable.
+- Each watch line carries **`taskId`**, **`cause`**, and **`evidence`** links
+  (task drawer route, attention feed, close-out outcomes). See
+  [Board events contract](../docs/board-events-contract.md).
+- **`POST /api/cto/heartbeat`** (or the monitor's own wake-ups) records CTO
+  liveness. When routine work is waiting and no heartbeat arrives, the bell shows
+  **CTO silent N min** via `GET /api/attention`.
+
 ## 4. The review loop
 
 - For UI tasks, **handoff runs a browser verification gate** before review: declared

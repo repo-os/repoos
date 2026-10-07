@@ -129,6 +129,25 @@ export class RepoOsApi {
     }
   }
 
+  /** Re-run dev backdoor login after a 401 (e.g. server reload). */
+  async reauthenticate(): Promise<boolean> {
+    return this.devBackdoorLogin();
+  }
+
+  /** Open `GET /api/events` with the same auth as other CLI calls. */
+  async fetchEventStream(): Promise<Response> {
+    try {
+      return await fetch(`${this.baseUrl}/api/events`, {
+        headers: { ...this.buildHeaders(false), accept: "text/event-stream" },
+      });
+    } catch (err) {
+      throw new RepoOsApiError(
+        `Can't reach the RepoOS server at ${this.baseUrl}. Is \`repoos serve\` running? ${(err as Error).message}`,
+        0,
+      );
+    }
+  }
+
   async request(
     method: string,
     path: string,

@@ -1,19 +1,22 @@
 ---
-updated_at: "2026-10-07T10:12:07Z"
-review_passes: 1
 id: "0728"
 title: "Event-driven CTO: react to server events instead of a timer, and expose the same feed as a watch command for external sessions"
 type: feature
-status: review
+status: done
 priority: p1
 area: [cli, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: 1118b2031dbd3346b4f4b91ade9dd8e6585c8ca0
 assigned_to: ai
 created_by: ""
 branch: feat/event-driven-cto-react-to-server-events-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:33Z"
+updated_at: "2026-10-07T10:44:03Z"
+last_close_out_gate_ms: 432851
+last_close_out_gate_at: "2026-10-07T10:40:09.367Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -54,4 +57,5 @@ Owner wants release soon. Verify diagnosis independently against CURRENT main an
 - 2026-10-07T10:11:17Z · status active→review
 - 2026-10-07T10:11:17Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-07T10:12:07Z · note: review pass 1: good to go
-
+- 2026-10-07T10:40:09Z · close-out gate completed in 433s
+- 2026-10-07T10:44:03Z · status review→done, release:success

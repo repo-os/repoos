@@ -1,8 +1,9 @@
 ---
+close_out_repair_count: 1
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -12,9 +13,9 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-07T12:54:16Z"
-review_passes: 5
-last_check_failure: "repoos check at 2026-10-07T02:57:53.598Z: server-side finalization timed out (deadline exceeded)"
+updated_at: "2026-10-07T15:13:21Z"
+review_passes: 6
+last_check_failure: "repoos check at 2026-10-07T12:21:44.451Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
 merge_conflict_retry_count: 2
 dev_error_count: 3
@@ -143,4 +144,11 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T11:56:00Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-10-07T11:58:21Z · needs_input
 - 2026-10-07T12:01:01Z · body: section Shots
+- 2026-10-07T12:03:11Z · body
+- 2026-10-07T12:43:27Z · body
 - 2026-10-07T12:54:16Z · status active→review
+- 2026-10-07T12:54:16Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-07T12:55:31Z · note: review pass 7: good to go
+- 2026-10-07T15:13:21Z · status review→active
+- 2026-10-07T15:13:21Z · note: close-out repair: merge-conflict
+
