@@ -1,5 +1,4 @@
 ---
-close_out_repair_count: 1
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
@@ -13,7 +12,8 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T10:44:25Z"
+updated_at: "2026-10-07T10:45:14Z"
+close_out_repair_count: 1
 review_passes: 1
 ---
 ## Problem
@@ -115,4 +115,4 @@ error: script "test" exited with code 1
 - 2026-10-07T10:38:42Z · note: review pass 1: good to go
 - 2026-10-07T10:44:25Z · status review→active
 - 2026-10-07T10:44:25Z · note: close-out repair: merge-conflict
-
+- 2026-10-07T10:45:14Z · note: Close-out10:44 failed before combined validation: merge conflict src/cli/index.ts after #728 landed. Merge current main into your existing branch, preserve #728 watch command AND #730 decisions/attention aliases and route parity. No duplicate command cases, no reset of unrelated task records. Correct panel evidence default2 already uploaded and independently viewed with zero errors; preserve it. Resolve only needed conflict, build then one scoped check, handoff once/end turn for fresh review. No main edits/host/config/release actions.
