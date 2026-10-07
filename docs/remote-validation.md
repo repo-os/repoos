@@ -180,8 +180,11 @@ client cannot hold the slot even when it ignores `timeoutMs`. When it finishes �
 or when either deadline fires — the runner SIGKILLs the main validate SSH if it
 is still open, releases the pool
 slot immediately (so `HUNG · KILLING` does not stick for the rest of the
-outer run timeout), and issues a follow-up cleanup SSH that removes that run's
-bundle and artifacts dir. A kill SSH timeout marks the host **unhealthy**
+outer run timeout), settles the in-flight `validate()` transport via a third
+`Promise.race` competitor (so a wedged main SSH with a no-op abort cannot stay
+pending after the slot frees — manual `killHungValidation` uses the same
+settle path), and issues a follow-up cleanup SSH that removes that run's bundle
+and artifacts dir. A kill SSH timeout marks the host **unhealthy**
 (degraded) with a clear detail string. Stale `~/.repoos-*-*.bundle` files older
 than one day are pruned on every host probe (`staleBundlePruneCommand()`).
 
