@@ -34,3 +34,4 @@ VERIFY FIRST: the field report came from an older server build. Before changing 
 - 2026-10-07T00:03:09Z · body
 - 2026-10-07T00:08:20Z · status active→review
 - 2026-10-07T00:08:20Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria, Notes for AI
+- 2026-10-07T00:08:20Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
