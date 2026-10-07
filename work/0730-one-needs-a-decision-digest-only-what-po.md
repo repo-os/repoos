@@ -12,7 +12,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T09:54:41Z"
+updated_at: "2026-10-07T09:55:30Z"
 ---
 ## Problem
 
@@ -39,6 +39,18 @@ This digest is the CTO's escalation surface: what it did automatically (audit) a
 
 Owner wants release soon. Verify diagnosis independently against CURRENT main and running build before implementation/approval; record commit/version and reproduction, classify external RepoOS-managed repo reports as still relevant, partly fixed, already fixed, or misdiagnosed. Do not implement stale reports blindly. These two tasks share attention-feed/CTO surfaces: preserve independent responsibilities and coordinate via task notes; no concurrent writer in a worktree. #0729 runner repair is release-critical, do not overwrite installed runner guards or change owner config/hosts/restart server. Build after UI/source changes BEFORE one scoped repoos check --changed main; handoff runs the full gate. If only one local step fails, rerun that step instead of the entire passing suite. Request handoff ONCE, then END TURN with no subsequent commits/task updates. Required UI shots must show actual changed screens/state; temporary browser route-interception fixtures stay outside production code and are labeled. No release/tag/push/PR/direct-main commit.
 
+## Shots
+```json
+[
+  {
+    "label": "Mission Control Needs a decision panel",
+    "target": "default",
+    "route": "/",
+    "highlight": ".digest-item, .panel-title"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-07T02:05:38Z · created · unknown
@@ -49,3 +61,4 @@ Owner wants release soon. Verify diagnosis independently against CURRENT main an
 - 2026-10-07T09:46:40Z · status ready→active, branch
 - 2026-10-07T09:47:41Z · body
 - 2026-10-07T09:54:41Z · body
+- 2026-10-07T09:55:30Z · body: section Shots
