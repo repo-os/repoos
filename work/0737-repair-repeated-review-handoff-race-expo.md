@@ -11,7 +11,7 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T12:49:35Z"
+updated_at: "2026-10-07T12:54:44Z"
 last_check_failure: "repoos check at 2026-10-07T12:21:44.677Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -49,3 +49,23 @@ Read AGENTS.md. Use existing task worktree, Cursor/composer-2.5. Independently v
 - 2026-10-07T12:44:13Z · status review→active
 - 2026-10-07T12:49:35Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T12:49:35Z · status review→active
+- 2026-10-07T12:54:44Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —     228|   expect(res.status).toBe(202);
+       |                      ^
+    229|   expect(res.body.status).toBe("active");
+    230|   const deadline = Date.now() + 30_000;
+ ❯ tests/agent-review.test.ts:375:13
+ ❯ withServer tests/agent-review.test.ts:295:11
+ ❯ tests/agent-review.test.ts:366:11
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 429 passed | 1 skipped (431)
+      Tests  1 failed | 5216 passed | 15 skipped (5232)
+   Start at  12:50:12
+   Duration  267.76s (transform 6.52s, setup 2.32s, import 49.69s, tests 220.48s, environment 236.96s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 417ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  12:54:41
+   Duration  2.25s (transform 1.03s, setup 11ms, import 1.29s, tests 417ms, environment 463ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
