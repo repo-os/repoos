@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T01:37:59.207Z: server-side finalization timed out (deadline exceeded)"
 id: "0710"
 title: "Docs: write the overnight-run lessons (provider-failure scraper, self-check starvation, driver tips) into the repo"
 type: chore
@@ -40,3 +42,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-07T01:16:22Z · status ready→active, branch
 - 2026-10-07T01:22:47Z · body
 - 2026-10-07T01:37:56Z · handoff failed · handoff recovery attempted · finalization failed
+
