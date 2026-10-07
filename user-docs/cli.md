@@ -247,6 +247,42 @@ line, plus short `product.md`, `architecture.md`, `conventions.md` and
 nothing is created unless you run the command (or answer yes to the scaffold
 prompt in the guided `repoos init` flow).
 
+## Stories
+
+### `repoos story new|list|show|update`
+
+Stories are an optional grouping over tasks (see
+[Stories](/configuration#stories)). The **New story** flow in the UI always
+hands the description to the PM agent, which writes up the scope and tags any
+existing untagged tasks that belong. When an agent or script already has the
+finished story, `repoos story` writes it verbatim instead: no PM, no tagging.
+
+```bash
+repoos story new "Project updates email" --body "Why this slice exists, scope, non-goals."
+repoos story new "Checkout rework" --body -            # body from stdin
+repoos story list                                       # numbers + paths
+repoos story list --json
+repoos story show 0007                                  # definition + member tasks with status
+repoos story show "Project updates email" --json
+repoos story update 0007 --body "Rewritten scope."      # keeps the stable number
+repoos story update 0007 --name "Project update emails" # rename keeps the number
+```
+
+`new` and `update` write and commit the definition under `storiesDir`, exactly
+like `repoos new` commits a task file, and print the story's number and path.
+`--body -` reads the body from stdin. `show` resolves the story by number,
+name, or key, prints the definition, and lists every member task with its
+status; a tag-only story (tasks tagged but no file under `stories/`) shows with
+`(tag-only, no definition)`. `list` and `show` accept `--json`.
+
+These commands are board-rooted like `repoos new`: run from inside a task
+worktree, they still write the MAIN checkout's `stories/`, which is the only
+copy the live board reads. `repoos new --story "…"` and
+`repoos update <id> --story "…"` tag tasks with a story and are unchanged.
+
+The same write is on the HTTP API for a script that prefers it:
+`POST /api/stories { name?, body }` and `PATCH /api/stories/:key { name?, body? }`.
+
 ## Running it
 
 ### `repoos serve [--port N]`

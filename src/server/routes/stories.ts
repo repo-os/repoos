@@ -1,6 +1,7 @@
 /**
  * Story definition routes (#0486): PM-assisted create under `stories/`, plus
- * the story panel's PM chat (#0515).
+ * the story panel's PM chat (#0515) and the verbatim create/update paths agents
+ * and scripts use to write a story exactly as given (#0696).
  */
 import type { RouteHandler } from "./types.js";
 import type { Agent } from "../../core/types.js";
@@ -14,20 +15,25 @@ import {
 } from "../agents.js";
 import { agentsForConfig } from "../../core/config.js";
 import { getCurrentUser } from "./auth.js";
-import { commitTaskFile } from "../../core/git.js";
-import { normalizeStoryName, storyPmSessionId } from "../../core/stories.js";
-import { mergeStoriesForDisplay, type MergedStoryGroup } from "../../core/story-display.js";
-import { fallbackStoryName } from "../../core/story-definition-files.js";
-import { deleteStoryFile, PathGuardError, WriteError } from "../write.js";
-import { dropPmImages, queuePmImages, type IncomingPmImage } from "../pm-attachments.js";
-import { fleshOutStory } from "../story-pm.js";
+import { commitTaskFile, commitFiles } from "../../core/git.js";
+import { normalizeStoryName, storyKey, storyPmSessionId } from "../../core/stories.js";
 import {
+  mergeStoriesForDisplay,
+  type MergedStoryGroup,
+  type StoryDefinition,
+} from "../../core/story-display.js";
+import {
+  fallbackStoryName,
   findStoryDefinitionByKey,
   listStoryDefinitions,
   markStoryPmChat,
+  rewriteStoryDefinition,
   setStoryPmWorking,
   writeStoryDefinition,
 } from "../../core/story-definition-files.js";
+import { deleteStoryFile, PathGuardError, WriteError } from "../write.js";
+import { dropPmImages, queuePmImages, type IncomingPmImage } from "../pm-attachments.js";
+import { fleshOutStory } from "../story-pm.js";
 
 function pmWithOverrides(base: Agent, body: Record<string, unknown>): Agent {
   const cli =
@@ -53,6 +59,11 @@ export const getStoryDefinitions: RouteHandler = (ctx, _req, res) => {
  * written and committed immediately — so `stories/` never leaves `main` dirty
  * and the pane can acknowledge right away — and the PM agent fleshes it out in
  * the background (`fleshOutStory`), mirroring the freeform New task flow.
+ *
+ * `pm: false` (#0696) turns the flesh-out and the task tagging off, leaving the
+ * definition exactly as submitted — the same behavior `POST /api/stories`
+ * gives unconditionally. The UI keeps `pm` implicitly true so **New story**
+ * still gets its PM prose.
  */
 export const createFreeformStory: RouteHandler = async (ctx, req, res) => {
   const { config, emitEvent } = ctx;
@@ -68,10 +79,12 @@ export const createFreeformStory: RouteHandler = async (ctx, req, res) => {
   const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
   const createdBy = getCurrentUser(req, config)?.email;
 
-  const pmBase =
-    typeof body?.agentOverride === "string" && body.agentOverride
+  const wantPm = body?.pm !== false;
+  const pmBase = wantPm
+    ? typeof body?.agentOverride === "string" && body.agentOverride
       ? (agentsForConfig(config).find((a) => a.enabled && a.name === body.agentOverride) ?? null)
-      : resolvePmAgent(config);
+      : resolvePmAgent(config)
+    : null;
   const pm = pmBase ? pmWithOverrides(pmBase, body) : null;
 
   let definition;
@@ -97,6 +110,111 @@ export const createFreeformStory: RouteHandler = async (ctx, req, res) => {
     void fleshOutStory(ctx, { path: definition.path, humanName, description, pm, runId });
   }
   return json(res, 201, { ok: true, pending: pm !== null, definition });
+};
+
+/**
+ * `POST /api/stories` (#0696): write a story definition exactly as given and
+ * commit it, without starting the PM flesh-out or tagging any task. This is the
+ * deterministic create an agent or script wants — `repoos story new` uses the
+ * same core call — and the difference from `/api/stories/freeform` is the whole
+ * point: the PM rewrites the body and tags untagged tasks, which is wrong when
+ * the caller already knows the finished story.
+ *
+ * Body: `{ name?, body, createdBy? }`. `body` is required; a `description`
+ * field is accepted as an alias so a caller can reuse the freeform payload
+ * shape. Name collisions return 409, same as the freeform route.
+ */
+export const createStoryDefinition: RouteHandler = async (ctx, req, res) => {
+  const { config, emitEvent } = ctx;
+  if (!storiesFeatureEnabled(config)) {
+    return json(res, 404, { ok: false, reason: "stories are not enabled" });
+  }
+  const body = (await readBody(req)) as Record<string, unknown>;
+  const text =
+    typeof body?.body === "string"
+      ? body.body
+      : typeof body?.description === "string"
+        ? body.description
+        : "";
+  if (!text.trim()) {
+    return json(res, 400, { ok: false, reason: "story body is required" });
+  }
+  const name = normalizeStoryName(typeof body?.name === "string" ? body.name : "");
+  const createdBy = getCurrentUser(req, config)?.email;
+
+  let definition: StoryDefinition;
+  try {
+    definition = writeStoryDefinition(config, {
+      name: name || fallbackStoryName(text),
+      body: text,
+      createdBy,
+    });
+  } catch (err) {
+    const message = (err as Error).message;
+    const status = message.includes("already exists") ? 409 : 400;
+    return json(res, status, { ok: false, reason: message });
+  }
+  commitTaskFile(
+    config.root,
+    join(config.root, definition.path),
+    `docs(stories): add "${definition.name}"`,
+  );
+  emitEvent({ type: "story.definitionsChanged", at: new Date().toISOString() });
+  return json(res, 201, { ok: true, definition });
+};
+
+/**
+ * `PATCH /api/stories/:key` (#0696): rename and/or rewrite a registered story's
+ * definition without the PM, keeping its stable number. Body:
+ * `{ name?, body? }`; at least one is required. The number, `created_at` and
+ * `created_by` survive, matching what the PM flesh-out rename guarantees. When
+ * the new name slugs to a different file the definition is renamed and both
+ * paths are committed in one commit; a name that collides with another story is
+ * a 409.
+ */
+export const updateStoryDefinition: RouteHandler = async (ctx, req, res, params) => {
+  const { config, emitEvent } = ctx;
+  if (!storiesFeatureEnabled(config)) {
+    return json(res, 404, { ok: false, reason: "stories are not enabled" });
+  }
+  let key = params.param1;
+  try {
+    key = decodeURIComponent(key);
+  } catch {
+    // Same lenient decoding as `deleteStory`.
+  }
+  const existing = findStoryDefinitionByKey(config, key.trim().toLowerCase());
+  if (!existing) {
+    return json(res, 404, { ok: false, reason: `story not found: ${params.param1}` });
+  }
+  const body = (await readBody(req)) as Record<string, unknown>;
+  const name = typeof body?.name === "string" ? normalizeStoryName(body.name) : undefined;
+  const text = typeof body?.body === "string" ? body.body : undefined;
+  if (name === undefined && text === undefined) {
+    return json(res, 400, { ok: false, reason: "name or body is required" });
+  }
+
+  let rewritten;
+  try {
+    rewritten = rewriteStoryDefinition(config, existing.path, {
+      name: name ?? existing.name,
+      body: text ?? existing.body,
+    });
+  } catch (err) {
+    const message = (err as Error).message;
+    const status = message.includes("already exists") ? 409 : 400;
+    return json(res, status, { ok: false, reason: message });
+  }
+  const paths = [rewritten.definition.path, rewritten.previousPath]
+    .filter((p): p is string => Boolean(p))
+    .map((p) => join(config.root, p));
+  commitFiles(
+    config.root,
+    paths,
+    `docs(stories): update "${rewritten.definition.name}" (#${rewritten.definition.number || storyKey(rewritten.definition.name)})`,
+  );
+  emitEvent({ type: "story.definitionsChanged", at: new Date().toISOString() });
+  return json(res, 200, { ok: true, definition: rewritten.definition });
 };
 
 // ---- story panel PM chat (#0515) ----
