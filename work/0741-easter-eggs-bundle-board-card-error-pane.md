@@ -3,6 +3,9 @@ id: "0741"
 title: "Easter eggs bundle: board card error panel (flush, square, below the action button) and hide a stale close-out error while a new close-out runs"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the cursor agent timed out after 900s
 priority: p2
 area: web
 assigned_to: ai
@@ -150,3 +153,4 @@ src/ui-app/tests/close-out-attempt.test.ts(27,7): error TS2741: Property 'lastPr
 - 2026-10-07T18:52:26Z · status active→review
 - 2026-10-07T18:52:26Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-10-07T19:08:38Z · note: review pass 3: failed — no usable report
+- 2026-10-07T19:08:38Z · needs_input
