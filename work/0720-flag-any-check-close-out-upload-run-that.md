@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-07T15:24:58Z"
-review_passes: 7
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
@@ -14,6 +12,8 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
+updated_at: "2026-10-07T15:39:52Z"
+review_passes: 7
 close_out_repair_count: 1
 last_check_failure: "repoos check at 2026-10-07T12:21:44.451Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -155,4 +155,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T15:23:09Z · status active→review
 - 2026-10-07T15:23:14Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-07T15:24:58Z · note: review pass 8: good to go
-
+- 2026-10-07T15:39:52Z · note: Independent15:36 sign-off preparation under existing explicit owner authorization: current worktree clean; fresh reviewer15:24:58 good-to-go no Bugs. Reviewed check-slowness thresholds1.4x quiet/1.6x one+clear, minimum5samples, phase/remote/scope grouping, persistent3slow and sleep-gap exclusion tests; actual Settings screenshot default-3 visibly shows1.5 control/focus, declared remote shot idle truthfully has no slow badge (not visual proof of live badge). Latest handoff check20 remote scopechanged6ac43e0c3 passed419921ms; source diff/config control/docs verified. Queue normal server-owned combined gate; do not claim landing until DONE+mergedancestor.
