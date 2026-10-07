@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-07T09:15:16Z"
+review_passes: 1
 id: "0729"
 title: "Detect and recover hung validation containers on runner hosts (kill, retry on another host, isolate the bun cache per run); CTO safe action"
 type: bug
@@ -10,7 +12,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/detect-and-recover-hung-validation-conta
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T09:15:16Z"
 ---
 ## Problem
 
@@ -44,3 +45,4 @@ The hang recovery (kill that run's container, retry once on another host) is a C
 - 2026-10-07T04:38:48Z · status ready→active, branch
 - 2026-10-07T05:31:56Z · status active→review
 - 2026-10-07T09:15:16Z · note: review pass 1: needs some work
+
