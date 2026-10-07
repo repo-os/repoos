@@ -3,6 +3,9 @@ id: "0710"
 title: "Docs: write the overnight-run lessons (provider-failure scraper, self-check starvation, driver tips) into the repo"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the cursor agent timed out after 900s
 priority: p2
 area: docs
 story: "Field report: first agent-driven project run (opex)"
@@ -52,3 +55,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-07T02:14:26Z · status active→review
 - 2026-10-07T02:14:26Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-07T02:30:48Z · note: review pass 1: failed — no usable report
+- 2026-10-07T02:30:48Z · needs_input
