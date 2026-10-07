@@ -235,13 +235,13 @@ watch(
     description="Paste a bug and diagnose it."
     @close="emit('close')"
   >
-    <header class="debugger-header">
-      <div class="debugger-avatar" aria-hidden="true">
+    <header class="agent-chat-header">
+      <div class="agent-chat-avatar" aria-hidden="true">
         <img :src="DEBUGGER_AVATAR" alt="Debugger" />
       </div>
-      <div class="debugger-identity">
+      <div class="agent-chat-id">
         <strong>Debugger</strong>
-        <span v-if="!enabled" class="debugger-off"><i></i>Disabled on Agents page</span>
+        <span v-if="!enabled" class="agent-chat-off"><i></i>Disabled on Agents page</span>
       </div>
       <ChatAgentModelChip
         :cli-options="debuggerAgent.cliOptions.value"
@@ -400,54 +400,9 @@ watch(
   opacity: 0.6;
   cursor: default;
 }
-.debugger-header {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 13px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--topbar-bg);
-}
-.debugger-avatar {
-  width: 38px;
-  height: 38px;
-  flex: none;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1px solid var(--border-bright);
-}
-.debugger-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.debugger-identity {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
-}
-.debugger-identity strong {
-  font-size: 13.5px;
-  letter-spacing: -0.01em;
-}
-/* Only the disabled state carries a line now (#0669). */
-.debugger-off {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font:
-    500 10px "JetBrains Mono",
-    monospace;
-  color: var(--txt-dim);
-}
-.debugger-off i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--txt-faint);
-}
+/* The header (avatar + name + chip + close) is the shared `.agent-chat-header`
+   set in style.css (#0669); the panel is body-teleported, so header chrome
+   lives globally rather than in a scoped block here. */
 .debugger-log-wrap {
   position: relative;
   flex: 1;

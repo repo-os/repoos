@@ -12180,13 +12180,14 @@
  * different from one another. */
 
 /* ── Shared agent-chat header (#0669) ──────────────────────────────────────
- * CTO, Debugger and Ross used to hand-roll a header with a redundant subtitle
- * ("Bug diagnostician", "CTO Board Monitor is active", "Repository assistant").
- * These classes are the one header: avatar + name, the inline agent/model chip
- * (`.chat-agent-chip`), and the close button, nothing else. They live here
- * rather than in each SFC because the panels are body-teleported drawers, where
- * scoped styles do not reach (AGENTS.md), and because a shared header should
- * have exactly one definition. */
+ * CTO, Debugger and Ross used to hand-roll the same header, each with its own
+ * scoped copy and a redundant subtitle ("Bug diagnostician", "CTO agent is
+ * active", "Repository assistant"). These classes are the one header: avatar +
+ * name, the inline agent/model chip (`.chat-agent-chip`), and the close button,
+ * nothing else — a short disabled line under the name is the one exception.
+ * They live here rather than in each SFC because the panels are
+ * body-teleported drawers, where scoped styles may not reach (AGENTS.md), and
+ * because a shared header should have exactly one definition. */
 .agent-chat-header {
   display: flex;
   align-items: center;
@@ -12196,8 +12197,8 @@
   background: var(--topbar-bg);
 }
 .agent-chat-avatar {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   flex: none;
   border-radius: 50%;
   overflow: hidden;
@@ -12208,30 +12209,39 @@
   height: 100%;
   object-fit: cover;
 }
-.agent-chat-name {
+/* The name column: it takes the header's free space so the chip and close
+   button sit at the right edge, and clips a long agent name (#0669). */
+.agent-chat-id {
   display: flex;
-  align-items: center;
-  gap: 7px;
   flex: 1;
   min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+.agent-chat-id strong {
   font-size: 13.5px;
-  font-weight: 700;
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.agent-chat-dot {
-  flex: none;
+/* The disabled indicator is the only line the header carries now; an active
+   agent needs no "is active" subtitle. */
+.agent-chat-off {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font:
+    500 10px "JetBrains Mono",
+    monospace;
+  color: var(--txt-dim);
+}
+.agent-chat-off i {
   width: 6px;
   height: 6px;
+  flex: none;
   border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
-}
-.agent-chat-dot.off {
   background: var(--txt-faint);
-  box-shadow: none;
 }
 
 /* The scrolling message list. Owns the vertical rhythm between messages — a

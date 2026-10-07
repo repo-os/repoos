@@ -31,7 +31,6 @@ const draftTextarea = ref<HTMLTextAreaElement | null>(null);
 // persists a pick the same way the Agents page does.
 const ctoAgent = useCtoChatAgent();
 
-
 const busy = computed(() => submitting.value || repo.cto.running);
 const enabled = computed(() => repo.cto.enabled);
 const running = computed(() => repo.cto.running);
@@ -126,13 +125,13 @@ watch(
     description="Ask the CTO about board health."
     @close="emit('close')"
   >
-    <header class="cto-header">
-      <div class="cto-avatar" aria-hidden="true">
+    <header class="agent-chat-header">
+      <div class="agent-chat-avatar" aria-hidden="true">
         <img src="/assets/repoos-cto-square.webp" alt="CTO" />
       </div>
-      <div class="cto-identity">
+      <div class="agent-chat-id">
         <strong>CTO</strong>
-        <span v-if="!enabled" class="cto-off"><i class="off"></i>Disabled on Agents page</span>
+        <span v-if="!enabled" class="agent-chat-off"><i></i>Disabled on Agents page</span>
       </div>
       <ChatAgentModelChip
         :cli-options="ctoAgent.cliOptions.value"
@@ -231,55 +230,9 @@ watch(
 </template>
 
 <style scoped>
-.cto-header {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 13px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--topbar-bg);
-}
-.cto-avatar {
-  width: 38px;
-  height: 38px;
-  flex: none;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1px solid var(--border-bright);
-}
-.cto-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.cto-identity {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
-}
-.cto-identity strong {
-  font-size: 13.5px;
-  letter-spacing: -0.01em;
-}
-/* Only the disabled state carries a line now (#0669): the subtitle was
-   redundant, and an active agent is conveyed by the panel working. */
-.cto-off {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font:
-    500 10px "JetBrains Mono",
-    monospace;
-  color: var(--txt-dim);
-}
-.cto-off i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--txt-faint);
-}
+/* The header (avatar + name + chip + close) is the shared `.agent-chat-header`
+   set in style.css (#0669); the panel is body-teleported, so header chrome
+   lives globally rather than in a scoped block here. */
 /* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
 .cto-log-wrap {
   position: relative;
@@ -384,7 +337,9 @@ watch(
   padding-left: 17px;
 }
 .cto-markdown :deep(code) {
-  font: 11px "JetBrains Mono", monospace;
+  font:
+    11px "JetBrains Mono",
+    monospace;
   background: var(--md-body-bg);
   border-radius: 4px;
   padding: 1px 4px;

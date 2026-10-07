@@ -478,7 +478,7 @@ describe("story panel PM tab (#0515)", () => {
     expect(tabpanel.classList.contains("drawer-body")).toBe(true);
     expect(tabpanel.classList.contains("drawer-session-body")).toBe(true);
     expect(tabpanel.querySelector(".pm-log-wrap")).toBeTruthy();
-    expect(tabpanel.querySelector(".pm-compose")).toBeTruthy();
+    expect(tabpanel.querySelector(".ai-chat-compose")).toBeTruthy();
     expect(tabpanel.textContent).toContain("Chat about this story");
   });
 
@@ -498,12 +498,12 @@ describe("story panel PM tab (#0515)", () => {
 
   it("sends a message to the story PM endpoint and shows it optimistically", async () => {
     await openPmTab();
-    const compose = panel()!.querySelector<HTMLTextAreaElement>(".pm-compose textarea")!;
+    const compose = panel()!.querySelector<HTMLTextAreaElement>(".ai-chat-compose textarea")!;
     compose.value = "Break this story down into tasks.";
     compose.dispatchEvent(new Event("input"));
     await flushPromises();
 
-    const form = panel()!.querySelector<HTMLFormElement>(".pm-compose")!;
+    const form = panel()!.querySelector<HTMLFormElement>(".ai-chat-compose")!;
     form.dispatchEvent(new Event("submit"));
     await flushPromises();
 
@@ -750,7 +750,7 @@ describe("story side panel styling contract", () => {
       "pm-empty",
       "pm-bubble",
       "pm-markdown",
-      "pm-compose",
+      "ai-chat-compose",
       "pm-canned-item",
     ]) {
       expect(surfaceSource, `${cls} missing from the shared surface`).toContain(cls);
@@ -761,7 +761,7 @@ describe("story side panel styling contract", () => {
     // Dev and Review chats, each registered in ai-chat.ts — so only assert that
     // the story host, which has no other chat, adds nothing of its own.)
     for (const host of [drawerSource, chatSource]) {
-      for (const cls of ["pm-log-wrap", "pm-bubble", "pm-compose"]) {
+      for (const cls of ["pm-log-wrap", "pm-bubble", "ai-chat-compose"]) {
         expect(host, `${cls} must not be re-declared in a host`).not.toContain(`.${cls} {`);
       }
     }
