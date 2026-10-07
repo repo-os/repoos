@@ -416,7 +416,7 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
       taskId: null,
       message: `Checks are slow lately: ${notice.slowCount} of the last ${notice.windowCount}`,
       detail: slowNoticeDetail(notice),
-      link: notice.remote ? "/agents?tab=runners" : "/checks",
+      link: notice.remote ? "/checks?tab=remote" : "/checks",
       at: generatedAt,
     });
   }
