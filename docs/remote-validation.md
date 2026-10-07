@@ -175,8 +175,10 @@ abandoned workdirs (age-bound, mount-aware) is deliberately future work; until
 then, rely on per-run EXIT cleanup plus non-running container sweeps.
 
 **Bounded kill and slot release (#0739).** The hang kill is a separate SSH
-round-trip (30 s cap). When it finishes — or when that SSH times out — the
-runner SIGKILLs the main validate SSH if it is still open, releases the pool
+round-trip (30 s cap), raced against a **local** hard deadline so a wedged SSH
+client cannot hold the slot even when it ignores `timeoutMs`. When it finishes —
+or when either deadline fires — the runner SIGKILLs the main validate SSH if it
+is still open, releases the pool
 slot immediately (so `HUNG · KILLING` does not stick for the rest of the
 outer run timeout), and issues a follow-up cleanup SSH that removes that run's
 bundle and artifacts dir. A kill SSH timeout marks the host **unhealthy**
@@ -620,10 +622,11 @@ The runner now watches each in-flight run. It samples the host's own 1-minute
 load average (per CPU) on a timer, and every `hangCheckIntervalMs` (30 s) asks:
 has this run's output been unchanged for `hangIdleMinutes` (default **5**) **and**
 is the host idle (load per CPU below `0.5`)? Both must hold — a quiet run on a
-**busy** host may simply be queued behind real work, and unknown load (an SSH
-probe that did not answer) deliberately does **not** count as idle, so a hang
-is only ever called with positive evidence the box is doing nothing. When both
-hold the runner removes **that run's** container by name (`docker rm -f
+**busy** host may simply be queued behind real work. When load probes fail, the
+runner still recovers: output idle for `hangIdleMinutes` while load has been
+unknown that long **and** the host was not busy the last time load was measured
+(#0739) — unreachable stats must not hold a slot until the outer SSH timeout.
+When both hold the runner removes **that run's** container by name (`docker rm -f
 repoos-validate-<run-id>`, never a blanket `docker kill`), marks the summary
 `hung` (transient, so the caller retries on another host, which the pool
 excludes per #0632), records the outcome as `hung` in the check-run history

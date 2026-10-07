@@ -40,6 +40,7 @@ import {
   cacheVolumeForSlot,
   deadlineLockWaitSecs,
   detectHungRun,
+  execRemoteWithHardDeadline,
   hangIdleThresholdMs,
   hostLoadCommand,
   hostLockShell,
@@ -441,6 +442,10 @@ function poolFixture(opts: {
   gateExitSplitChunksOn?: string[];
   /** Hang-kill SSH never completes until `releaseKill()` (#0739 timeout test). */
   hangKillNeverCompletes?: boolean;
+  /** Hang-kill SSH never resolves (ignores timeoutMs) — hard deadline must release (#0739). */
+  hangKillNeverResolves?: boolean;
+  /** Load idle probes always fail — hang must still be bounded (#0739). */
+  loadProbeFails?: boolean;
 }): Fixture {
   const root = tmpRoot();
   const config = {
@@ -483,6 +488,9 @@ function poolFixture(opts: {
         }
         // The hang watchdog's idle probe (#0729): report the configured load.
         if (cmd.includes("__UPTIME__") && cmd.includes("uptime")) {
+          if (opts.loadProbeFails) {
+            return { code: 255, output: "ssh: broken pipe", timedOut: false };
+          }
           return {
             code: 0,
             output: `__UPTIME__\n 12:00  up 1 day, load averages: ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0}\n__CPU__\n1\n`,
@@ -494,6 +502,11 @@ function poolFixture(opts: {
         if (cmd.startsWith("docker rm -f ") && cmd.includes("repoos-validate-")) {
           const name = cmd.split("'")[1] ?? cmd.split(" ").pop()!;
           killed.push(name);
+          if (opts.hangKillNeverResolves) {
+            await new Promise<void>(() => {
+              /* never */
+            });
+          }
           if (opts.hangKillNeverCompletes) {
             await tick(timeoutMs + 5);
             return { code: null, output: "", timedOut: true };
@@ -2043,13 +2056,25 @@ describe("hang detector (#0729)", () => {
     );
     // Host busy → not hung (the run may simply be queued behind real work).
     expect(detectHungRun({ lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 4 })).toBe(false);
-    // Unknown load (Infinity) → not hung.
+    // Unknown load with no prior busy sample → hung once unknown long enough (#0739).
     expect(
       detectHungRun({
         lastOutputAt: quiet,
         now,
         thresholdMs,
         loadPerCpu: Number.POSITIVE_INFINITY,
+        loadUnknownSince: quiet,
+      }),
+    ).toBe(true);
+    // Unknown load but host was busy when last measured → not hung.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: Number.POSITIVE_INFINITY,
+        lastKnownLoadPerCpu: 4,
+        loadUnknownSince: quiet,
       }),
     ).toBe(false);
     // Gate already finished — quiet container is not a hang (#0739).
@@ -2389,6 +2414,67 @@ describe("hung run recovery end to end (#0729)", () => {
     await resultPromise;
   });
 
+  it("releases the slot when hang kill SSH never resolves (hard deadline) (#0739)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      fixedLoad: 0,
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+      hangKillNeverResolves: true,
+    });
+    const runner = new TailscaleRunner(f.config, undefined, {
+      exec: f.exec,
+      timings: {
+        healthRetryMs: 40,
+        probeTimeoutMs: 1_000,
+        hangIdleMinutes: 0.0005,
+        hangCheckIntervalMs: 15,
+        loadSampleIntervalMs: 10,
+        hangKillTimeoutMs: 50,
+      },
+    });
+    for (let i = 0; i < 40 && !runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = runner.validate(opts("0739-never"));
+    let attempts = 0;
+    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
+    for (let i = 0; i < 40; i++) {
+      if ((runner.hostStatus()?.[0]?.activeRuns ?? []).length === 0) break;
+      await tick(10);
+    }
+    expect(runner.hostStatus()?.[0]?.activeRuns ?? []).toHaveLength(0);
+    await resultPromise;
+  });
+
+  it("kills a stalled run when load probes never succeed (#0739)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      loadProbeFails: true,
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = f.runner.validate(opts("0739-load"));
+    let attempts = 0;
+    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
+    expect(f.killed).toHaveLength(1);
+    await resultPromise;
+  });
+
+  it("execRemoteWithHardDeadline returns when runRemote ignores timeoutMs (#0739)", async () => {
+    const exec: RemoteExecDeps = {
+      bundleRepo: vi.fn(),
+      uploadFile: vi.fn(),
+      downloadDir: vi.fn(),
+      probeTcp: vi.fn(),
+      runRemote: vi.fn(() => new Promise(() => {})),
+    };
+    const host = { ip: "a", user: "u" };
+    const res = await execRemoteWithHardDeadline(exec, host, "true", () => {}, 40);
+    expect(res.timedOut).toBe(true);
+  });
+
   it("releases the slot when hang kill SSH times out and marks the host degraded (#0739)", async () => {
     const f = poolFixture({
       hosts: [{ host: "a" }],
@@ -2440,6 +2526,49 @@ describe("hung run recovery end to end (#0729)", () => {
     expect(summary.hung).toBeFalsy();
     expect(summary.ok).toBe(false);
     expect(summary.transient).toBe(false);
+  });
+
+  it("bounds a stalled SSH after gate exit when abort is a no-op (#0739)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      gateExitStallOn: ["a"],
+      fixedLoad: 0,
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+    });
+    const exec: RemoteExecDeps = {
+      ...f.exec,
+      runRemote: vi.fn(
+        async (host, cmd, onChunk, timeoutMs, remoteOpts): Promise<RemoteExecResult> => {
+          if (cmd.includes("__UPTIME__")) {
+            return f.exec.runRemote(host, cmd, onChunk, timeoutMs, remoteOpts);
+          }
+          return f.exec.runRemote(host, cmd, onChunk, timeoutMs, {
+            ...remoteOpts,
+            registerAbort: () => {
+              /* no-op — linger race must still settle */
+            },
+          });
+        },
+      ),
+    };
+    const runner = new TailscaleRunner(f.config, undefined, {
+      exec,
+      timings: {
+        healthRetryMs: 40,
+        probeTimeoutMs: 1_000,
+        hangIdleMinutes: 0.0005,
+        hangCheckIntervalMs: 15,
+        loadSampleIntervalMs: 10,
+        gateExitLingerTimeoutMs: 50,
+      },
+    });
+    for (let i = 0; i < 40 && !runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const summary = await runner.validate(opts("0739-abort-noop"));
+    expect(summary.hung).toBeFalsy();
+    expect(summary.ok).toBe(false);
+    expect(summary.exitCode).toBe(1);
   });
 
   it("bounds a stalled SSH after a split-chunk gate exit marker (#0739)", async () => {
