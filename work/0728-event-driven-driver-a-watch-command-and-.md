@@ -5,12 +5,12 @@ type: feature
 status: inbox
 priority: p1
 area: [cli, server]
-story: "Autopilot: a driver that only handles exceptions"
+story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T02:05:33Z"
-updated_at: "2026-10-07T02:05:33Z"
+updated_at: "2026-10-07T02:10:58Z"
 ---
 ## Problem
 
@@ -33,3 +33,4 @@ Read src/server/events and the SSE route in server.ts first; verify which events
 ## Activity
 
 - 2026-10-07T02:05:33Z · created · unknown
+- 2026-10-07T02:10:58Z · story
