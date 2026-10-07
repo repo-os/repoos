@@ -83,6 +83,7 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   exact("GET", "/api/system/run-tests"),
   exact("POST", "/api/system/run-tests"),
   exact("GET", "/api/attention"),
+  exact("GET", "/api/decisions"),
   exact("GET", "/api/check-runs"),
   (r) => r.pattern.startsWith("/api/integration"),
   exact("GET", "/api/close-out/outcomes"),
