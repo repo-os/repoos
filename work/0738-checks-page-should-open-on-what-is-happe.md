@@ -2,7 +2,7 @@
 id: "0738"
 title: "Checks page should open on what is happening now (live runs), not the static Check plan tab"
 type: feature
-status: active
+status: review
 priority: p1
 area: web
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -69,4 +69,4 @@ Read ChecksView.vue and the Remote runners panel (RemoteRunnersPanel.vue); the c
 - 2026-10-07T14:37:17Z · status review→active
 - 2026-10-07T14:43:00Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T14:43:00Z · status review→active
-- 2026-10-07T14:43:39Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-07T14:43:39Z · status active→review
