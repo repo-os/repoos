@@ -11,7 +11,7 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T11:03:31Z"
+updated_at: "2026-10-07T11:05:05Z"
 ---
 ## Problem
 Current main 541f9b3c78567799f5d0f5b5b44cfef7f9babf8b, compiled version0.5.67 hashfb4bf9051342bd324397256c375a881b7621b9ccf675853ab448e140f7e9465c. Pre-release bun run test:coverage failed agent-review.test.ts:361 second requestReview after human PATCH active: expected202 got200. Isolated single-worker reproduction also failed expected202 got409. Evidence /private/tmp/repoos-pre-release-coverage.log and /private/tmp/repoos-review-reproduction.log. Do not assume a flake or broaden timeouts.
@@ -36,3 +36,4 @@ Read AGENTS.md. Use existing task worktree, Cursor/composer-2.5. Independently v
 - 2026-10-07T10:52:31Z · body
 - 2026-10-07T11:00:30Z · note: Release blocker evidence10:55: #0730 post-conflict fullhandoff failed same repeated-review requestReview test215 expected202got200 on thinkpad, 5235 other tests passed. Please prioritize deterministic fix and handoff after build/scopedcheck; do not broaden into unrelated suite failures or retry fullpassingremotechecks for local-only failures. Driver holds #0730 identical gate retries pending your landing. Preserve actual200/409 response-body diagnosis and no duplicate-review semantics.
 - 2026-10-07T11:03:31Z · body
+- 2026-10-07T11:05:05Z · body
