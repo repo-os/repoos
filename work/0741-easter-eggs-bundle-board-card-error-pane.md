@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
-updated_at: "2026-10-07T18:09:05Z"
+updated_at: "2026-10-07T18:15:31Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)"
@@ -108,3 +108,23 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 - 2026-10-07T18:06:30Z · body: section Shots
 - 2026-10-07T18:07:38Z · body
 - 2026-10-07T18:09:05Z · body
+- 2026-10-07T18:15:31Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/remote-host-pool.test.ts:654:25
+    652|     const next = f.runner.validate(opts("0002"));
+    653|     await tick();
+    654|     expect(f.pending()).toEqual(["b"]);
+       |                         ^
+    655|     f.release("b");
+    656|     expect(await next).toEqual({ ok: true, stage: "check" });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 441 passed | 1 skipped (443)
+      Tests  1 failed | 5321 passed | 15 skipped (5337)
+   Start at  18:10:42
+   Duration  283.85s (transform 7.75s, setup 2.46s, import 52.92s, tests 256.61s, environment 229.39s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 762ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  18:15:26
+   Duration  2.74s (transform 1.15s, setup 12ms, import 1.44s, tests 762ms, environment 448ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
