@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 75ecc5c804367fa512aab520f4212af2a15d5d6f
 id: "0712"
 title: "Close-out candidate worktree has no node_modules: check plan fails with 'prettier: command not found'"
 type: bug
@@ -105,3 +107,4 @@ error: script "test" exited with code 1
 - 2026-10-07T00:38:18Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/mtd-remote-deadline.test.ts:147:28 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-07T00:38:18Z · status review→active
 - 2026-10-07T00:48:18Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
