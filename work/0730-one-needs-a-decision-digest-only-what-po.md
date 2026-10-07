@@ -2,7 +2,7 @@
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -108,4 +108,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T10:27:08Z · body
 - 2026-10-07T10:28:43Z · body
-- 2026-10-07T10:37:41Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-07T10:37:41Z · status active→review
