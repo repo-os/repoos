@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-review-records-in-a-table
 created_at: "2026-10-07T02:52:02Z"
-updated_at: "2026-10-07T03:34:46Z"
+updated_at: "2026-10-07T03:37:57Z"
 dev_error_count: 1
 ---
 ## Problem
