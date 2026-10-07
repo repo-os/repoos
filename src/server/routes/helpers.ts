@@ -68,7 +68,11 @@ export function findPackageRoot(): string | null {
   return null;
 }
 
-export function loadBuildInfo(): { version: string | null; buildAt: string | null } {
+export function loadBuildInfo(): {
+  version: string | null;
+  buildAt: string | null;
+  hash: string | null;
+} {
   // Reads `.build-info.json` / `.build-stamp.json` relative to the running
   // module — the only files that ship in a standalone (curl / `repoos upgrade`)
   // install. The old package.json-only path left those installs at "unknown".
