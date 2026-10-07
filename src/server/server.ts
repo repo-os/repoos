@@ -2530,7 +2530,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       );
     } else if (e.type === "task-check.done") {
       ctoMonitor.onEvent(
-        `${e.checkKind} ${e.passed ? "passed" : "failed"} for task #${e.taskId} (check ${e.checkId})`,
+        `task-check ${e.passed ? "passed" : "failed"} for task #${e.taskId} (check ${e.checkId})`,
       );
     } else if (e.type === "board.alert") {
       ctoMonitor.onEvent(`${e.alert} on task #${e.taskId}: ${e.cause}`);

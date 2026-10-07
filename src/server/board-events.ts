@@ -76,8 +76,12 @@ function closeOutCause(o: CloseOutOutcomeEvent): string {
  * Map a raw SSE `RepoEvent` to the watch contract, or `null` when the event is
  * not part of the CTO/driver feed.
  */
+function eventAt(e: RepoEvent): string {
+  return "at" in e && typeof e.at === "string" ? e.at : new Date().toISOString();
+}
+
 export function projectBoardWatchEvent(e: RepoEvent): BoardWatchEvent | null {
-  const at = e.at;
+  const at = eventAt(e);
   switch (e.type) {
     case "task.updated": {
       const prevStatus = e.prev?.status;
@@ -98,7 +102,7 @@ export function projectBoardWatchEvent(e: RepoEvent): BoardWatchEvent | null {
         type: e.type,
         at,
         taskId: e.taskId,
-        cause: `${e.checkKind} ${outcome} (scope ${e.scope})`,
+        cause: `task-check ${outcome} (scope ${e.scope}, id ${e.checkId})`,
         evidence: evidenceForTask(e.taskId),
       };
     }
