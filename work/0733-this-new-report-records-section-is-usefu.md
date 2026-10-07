@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-review-records-in-a-table
 created_at: "2026-10-07T02:52:02Z"
-updated_at: "2026-10-07T03:33:35Z"
+updated_at: "2026-10-07T03:34:46Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -45,6 +45,26 @@ This new report records section is useful but let's make it a proper table , lik
 
 ![Screenshot-2026-10-07-at-10.49.17](/api/tasks/0733/attachments/screenshot-1.png)
 
+## Shots
+```json
+[
+  {
+    "label": "Task drawer Review tab: review records table (pass, when, reviewer, model, verdict)",
+    "target": "default",
+    "route": "/work?task=0733",
+    "highlight": ".review-history-table",
+    "steps": [
+      {
+        "click": "[data-test-id=\"task-tab-review\"]"
+      },
+      {
+        "waitMs": 600
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-07T02:52:02Z · created · hello@repoos.org
@@ -60,3 +80,4 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T03:11:53Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-07T03:17:20Z · needs_input
 - 2026-10-07T03:33:35Z · body
+- 2026-10-07T03:34:46Z · body: section Shots
