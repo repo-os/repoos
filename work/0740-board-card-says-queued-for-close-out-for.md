@@ -12,7 +12,7 @@ branch: feat/board-card-says-queued-for-close-out-for
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:13:12Z"
-updated_at: "2026-10-07T18:11:38Z"
+updated_at: "2026-10-07T18:12:42Z"
 last_check_failure: "repoos check at 2026-10-07T18:07:41.275Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-hint.tc-moving matched nothing on / (captured http://127.0.0.1:60065/) (http://127.0.0.1:60065/); [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:60065/) (http://127.0.0.1:60065/)"
 ---
 ## Problem
@@ -219,3 +219,4 @@ error: script "test" exited with code 1
 - 2026-10-07T18:08:47Z · body: section Shots
 - 2026-10-07T18:10:14Z · body
 - 2026-10-07T18:11:38Z · status active→review
+- 2026-10-07T18:12:42Z · note: review pass 1: good to go
