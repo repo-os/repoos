@@ -2,7 +2,7 @@
 id: "0738"
 title: "Checks page should open on what is happening now (live runs), not the static Check plan tab"
 type: feature
-status: active
+status: review
 priority: p1
 area: web
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -62,4 +62,4 @@ Read ChecksView.vue and the Remote runners panel (RemoteRunnersPanel.vue); the c
 - 2026-10-07T14:13:37Z · body
 - 2026-10-07T14:14:47Z · body: section Shots
 - 2026-10-07T14:25:59Z · body
-- 2026-10-07T14:26:22Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-07T14:26:22Z · status active→review
