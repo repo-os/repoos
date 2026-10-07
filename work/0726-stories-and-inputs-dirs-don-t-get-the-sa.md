@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/stories-and-inputs-dirs-don-t-get-the-sa
 created_at: "2026-10-07T00:35:48Z"
-updated_at: "2026-10-07T16:44:55Z"
+updated_at: "2026-10-07T16:58:40Z"
 ---
 ## Problem
 
@@ -54,3 +54,4 @@ Desired: validate all layout dirs with normalizeRelativeDir, give inputsDir a Se
 - 2026-10-07T00:37:22Z · body
 - 2026-10-07T16:44:26Z · status inbox→ready
 - 2026-10-07T16:44:55Z · status ready→active, branch
+- 2026-10-07T16:58:40Z · body
