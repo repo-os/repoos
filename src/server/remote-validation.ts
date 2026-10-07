@@ -803,9 +803,11 @@ export function loadPerCpu(
  * {@link HANG_IDLE_LOAD_THRESHOLD}). Pure so the detector is unit-testable;
  * the runner calls it on a timer and, when true, kills that run's container.
  *
- * Unknown load (`Infinity`) is deliberately NOT idle: without evidence the box
- * is doing nothing, a quiet run is not called hung — the failure mode this
- * guards against is exactly a hang on an idle host.
+ * When load is unknown (`Infinity`), a quiet run is still called hung once output
+ * has been idle for `thresholdMs` and either we never got a good sample or load
+ * has been unknown that long — unless the host was **busy** the last time we
+ * measured it (#0739: unreachable stats must not hold a slot until the outer SSH
+ * timeout).
  */
 export function detectHungRun(opts: {
   lastOutputAt: number;
@@ -815,12 +817,23 @@ export function detectHungRun(opts: {
   idleLoadThreshold?: number;
   /** Gate already finished — a quiet container is not a hang (#0739). */
   gateFinished?: boolean;
+  /** Last successful per-CPU load sample; used when `loadPerCpu` is unknown (#0739). */
+  lastKnownLoadPerCpu?: number;
+  /** When load became unknown (failed probe); defaults to `lastOutputAt` (#0739). */
+  loadUnknownSince?: number;
 }): boolean {
   if (opts.gateFinished) return false;
   const idleThreshold = opts.idleLoadThreshold ?? HANG_IDLE_LOAD_THRESHOLD;
   const quietMs = opts.now - opts.lastOutputAt;
   if (quietMs < opts.thresholdMs) return false;
-  return opts.loadPerCpu < idleThreshold;
+  if (opts.loadPerCpu < idleThreshold) return true;
+  if (!Number.isFinite(opts.loadPerCpu)) {
+    const last = opts.lastKnownLoadPerCpu;
+    if (last !== undefined && last >= idleThreshold) return false;
+    const unknownSince = opts.loadUnknownSince ?? opts.lastOutputAt;
+    return opts.now - unknownSince >= opts.thresholdMs;
+  }
+  return false;
 }
 
 /** A cheap `uptime`-only probe for the hang watchdog's idle check (#0729). */
@@ -855,6 +868,8 @@ export class HangWatchdog {
       now?: () => number;
       /** When true, the gate already exited — never call hung (#0739). */
       gateFinished?: () => boolean;
+      lastKnownLoadPerCpu?: () => number | undefined;
+      loadUnknownSince?: () => number | undefined;
     },
   ) {
     this.lastOutputAt = this.now();
@@ -886,6 +901,8 @@ export class HangWatchdog {
         thresholdMs: this.opts.thresholdMs,
         loadPerCpu: this.opts.loadPerCpu(),
         gateFinished: this.opts.gateFinished?.(),
+        lastKnownLoadPerCpu: this.opts.lastKnownLoadPerCpu?.(),
+        loadUnknownSince: this.opts.loadUnknownSince?.(),
       })
     ) {
       return false;
@@ -1613,6 +1630,27 @@ function runLocal(
       child.kill("SIGKILL");
     }, opts.timeoutMs);
   });
+}
+
+/**
+ * `runRemote` with a local hard deadline (#0739). Injected test doubles may
+ * ignore `timeoutMs` and never resolve; the pool still releases its slot.
+ */
+export async function execRemoteWithHardDeadline(
+  exec: RemoteExecDeps,
+  host: RemoteHost,
+  command: string,
+  onChunk: (c: string) => void,
+  timeoutMs: number,
+): Promise<RemoteExecResult> {
+  const hard = new Promise<RemoteExecResult>((resolve) => {
+    const t = setTimeout(
+      () => resolve({ code: null, output: "", timedOut: true }),
+      timeoutMs,
+    );
+    t.unref?.();
+  });
+  return Promise.race([exec.runRemote(host, command, onChunk, timeoutMs), hard]);
 }
 
 /** How engineer self-checks scope remote vitest (#0695). */
@@ -3192,10 +3230,12 @@ export class TailscaleHostPool {
       }
       const container = run.container;
       const releaseSlot = run.releaseSlot;
+      this.markHung(s.spec.host, `killed on request (#${taskId})`, { taskId });
       let killTimedOut = false;
       let killErr: string | undefined;
       try {
-        const killRes = await this.exec.runRemote(
+        const killRes = await execRemoteWithHardDeadline(
+          this.exec,
           s.ssh,
           killContainerCommand(container),
           () => {},
@@ -3215,14 +3255,13 @@ export class TailscaleHostPool {
         };
       }
       if (run.bundle && run.artifacts) {
-        void this.exec
-          .runRemote(
-            s.ssh,
-            remoteRunCleanupCommand({ bundle: run.bundle, artifacts: run.artifacts }),
-            () => {},
-            HANG_KILL_TIMEOUT_MS,
-          )
-          .catch(() => undefined);
+        void execRemoteWithHardDeadline(
+          this.exec,
+          s.ssh,
+          remoteRunCleanupCommand({ bundle: run.bundle, artifacts: run.artifacts }),
+          () => {},
+          HANG_KILL_TIMEOUT_MS,
+        ).catch(() => undefined);
       }
       if (killTimedOut) {
         this.markUnhealthy(
@@ -3230,7 +3269,6 @@ export class TailscaleHostPool {
           `hang kill for #${taskId} timed out after ${HANG_KILL_TIMEOUT_MS / 1000}s — slot released`,
         );
       }
-      this.markHung(s.spec.host, `killed on request (#${taskId})`);
       return {
         ok: true,
         detail: `Removed container ${container} for #${taskId} on ${s.spec.host}`,
@@ -3829,8 +3867,9 @@ export class TailscaleRunner implements RemoteValidator {
   private readonly timings: RunnerTimings;
   private readonly keyPath: string;
   private readonly pool: TailscaleHostPool;
-  /** SIGKILL the in-flight validate SSH, keyed by this run's container name (#0739). */
-  private readonly activeRunAbort = new Map<string, () => void>();
+  /** SIGKILL the in-flight validate SSH, keyed by container name + generation (#0739). */
+  private readonly activeRunAbort = new Map<string, { generation: number; abort: () => void }>();
+  private runAbortGeneration = 0;
 
   constructor(
     private readonly config: RepoOSConfig,
@@ -3943,7 +3982,7 @@ export class TailscaleRunner implements RemoteValidator {
   /** Kill a hung run's container on its host (#0729). */
   async killHungValidation(taskId: string): Promise<{ ok: boolean; detail: string }> {
     const result = await this.pool.killHungRun(taskId);
-    if (result.container) this.activeRunAbort.get(result.container)?.();
+    if (result.container) this.activeRunAbort.get(result.container)?.abort();
     return result;
   }
 
@@ -3961,7 +4000,8 @@ export class TailscaleRunner implements RemoteValidator {
   }): Promise<void> {
     let killTimedOut = false;
     try {
-      const killRes = await this.exec.runRemote(
+      const killRes = await execRemoteWithHardDeadline(
+        this.exec,
         opts.host,
         killContainerCommand(opts.containerName),
         () => {},
@@ -3971,14 +4011,13 @@ export class TailscaleRunner implements RemoteValidator {
     } catch {
       /* best effort — still release the slot */
     }
-    void this.exec
-      .runRemote(
-        opts.host,
-        remoteRunCleanupCommand(opts.paths),
-        () => {},
-        this.timings.hangKillTimeoutMs,
-      )
-      .catch(() => undefined);
+    void execRemoteWithHardDeadline(
+      this.exec,
+      opts.host,
+      remoteRunCleanupCommand(opts.paths),
+      () => {},
+      this.timings.hangKillTimeoutMs,
+    ).catch(() => undefined);
     opts.abortMain();
     opts.releaseSlot();
     if (killTimedOut) {
@@ -4299,15 +4338,28 @@ export class TailscaleRunner implements RemoteValidator {
         // container — which makes the remote `docker run` exit — and mark the
         // summary `hung` so the caller retries on another host.
         let loadNow = Number.POSITIVE_INFINITY;
+        let lastKnownLoadPerCpu: number | undefined;
+        let loadUnknownSince = Date.now();
         let gateFinished = false;
         let streamBuf = "";
         let abortMainRemote: (() => void) | undefined;
+        let runAbortGen: number | undefined;
         let hangRecovery: Promise<void> | undefined;
         let gateLingerTimer: ReturnType<typeof setTimeout> | undefined;
+        let gateLingerResolve: ((r: RemoteExecResult) => void) | undefined;
+        const gateLingerPromise = new Promise<RemoteExecResult>((resolve) => {
+          gateLingerResolve = resolve;
+        });
         const scheduleGateLingerAbort = (): void => {
           if (gateLingerTimer) return;
           gateLingerTimer = setTimeout(() => {
             abortMainRemote?.();
+            const gateCode = parseRemoteGateExitCode(streamBuf);
+            gateLingerResolve?.({
+              code: gateCode ?? 1,
+              output: streamBuf,
+              timedOut: false,
+            });
           }, this.timings.gateExitLingerTimeoutMs);
           gateLingerTimer.unref?.();
         };
@@ -4318,10 +4370,14 @@ export class TailscaleRunner implements RemoteValidator {
               if (stats.code === 0 && !stats.timedOut) {
                 const parsed = parseRemoteServerStats(stats.output);
                 loadNow = loadPerCpu(parsed.loadAverage, parsed.cpuCount);
+                lastKnownLoadPerCpu = loadNow;
+                loadUnknownSince = undefined;
+              } else if (loadUnknownSince === undefined) {
+                loadUnknownSince = Date.now();
               }
             })
             .catch(() => {
-              /* best effort — unknown load never counts as idle */
+              if (loadUnknownSince === undefined) loadUnknownSince = Date.now();
             });
         }, this.timings.loadSampleIntervalMs);
         loadTimer.unref?.();
@@ -4330,6 +4386,8 @@ export class TailscaleRunner implements RemoteValidator {
           checkIntervalMs: this.timings.hangCheckIntervalMs,
           loadPerCpu: () => loadNow,
           gateFinished: () => gateFinished,
+          lastKnownLoadPerCpu: () => lastKnownLoadPerCpu,
+          loadUnknownSince: () => loadUnknownSince,
           onHung: () => {
             this.logger?.system(
               "warn",
@@ -4361,17 +4419,29 @@ export class TailscaleRunner implements RemoteValidator {
           emit(s);
         };
         try {
-          run = await this.exec.runRemote(host, cmd, emitStream, outerTimeoutMs, {
-            registerAbort: (abort) => {
-              abortMainRemote = abort;
-              this.activeRunAbort.set(containerName, abort);
-            },
-          });
+          run = await Promise.race([
+            this.exec.runRemote(host, cmd, emitStream, outerTimeoutMs, {
+              registerAbort: (abort) => {
+                abortMainRemote = abort;
+                runAbortGen = ++this.runAbortGeneration;
+                this.activeRunAbort.set(containerName, {
+                  generation: runAbortGen,
+                  abort,
+                });
+              },
+            }),
+            gateLingerPromise,
+          ]);
         } finally {
           watchdog.stop();
           clearInterval(loadTimer);
           if (gateLingerTimer) clearTimeout(gateLingerTimer);
-          this.activeRunAbort.delete(containerName);
+          if (runAbortGen !== undefined) {
+            const abortEntry = this.activeRunAbort.get(containerName);
+            if (abortEntry?.generation === runAbortGen) {
+              this.activeRunAbort.delete(containerName);
+            }
+          }
           if (hangRecovery) await hangRecovery;
           // Server-side container cleanup on cancel/timeout (#0729 review): a
           // run the outer timeout SIGKILLs (or the caller's deadline cancels)
@@ -4380,7 +4450,7 @@ export class TailscaleRunner implements RemoteValidator {
           // The watchdog already kills a hung run by name; this covers the
           // deadline/cancel case with a fresh SSH attempt while we still know
           // the exact container name — never a blanket kill.
-          if (!run || run.timedOut) {
+          if ((!run || run.timedOut) && !gateFinished) {
             void this.exec
               .runRemote(host, killContainerCommand(containerName), () => {}, 15_000)
               .catch(() => {
