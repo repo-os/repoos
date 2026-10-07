@@ -174,6 +174,20 @@ per-run trap, and the host prerequisite probe's **stale-container** sweep
 abandoned workdirs (age-bound, mount-aware) is deliberately future work; until
 then, rely on per-run EXIT cleanup plus non-running container sweeps.
 
+**Bounded kill and slot release (#0739).** The hang kill is a separate SSH
+round-trip (30 s cap). When it finishes — or when that SSH times out — the
+runner SIGKILLs the main validate SSH if it is still open, releases the pool
+slot immediately (so `HUNG · KILLING` does not stick for the rest of the
+outer run timeout), and issues a follow-up cleanup SSH that removes that run's
+bundle and artifacts dir. A kill SSH timeout marks the host **unhealthy**
+(degraded) with a clear detail string. Stale `~/.repoos-*-*.bundle` files older
+than one day are pruned on every host probe (`staleBundlePruneCommand()`).
+
+**Not a hang after the gate exits (#0739).** Once the stream contains
+`[validate] gate exit N`, the watchdog stops: a container that lingers after a
+real red gate is a finished failure (`transient: false`), not a hung retry on
+another host.
+
 **Visibility.** The Remote runners tab shows a run being killed as `hung ·
 killing`, and a per-host **Hung runs** row listing the recent kills and when
 they happened, so a hang is visible even after the retry moved elsewhere.
