@@ -11,7 +11,7 @@ branch: feat/close-out-candidate-worktree-has-no-node
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:49Z"
-updated_at: "2026-10-07T00:53:18Z"
+updated_at: "2026-10-07T01:05:45Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 75ecc5c804367fa512aab520f4212af2a15d5d6f
 ---
