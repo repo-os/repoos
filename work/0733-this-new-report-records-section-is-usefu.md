@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-review-records-in-a-table
 created_at: "2026-10-07T02:52:02Z"
-updated_at: "2026-10-07T03:17:20Z"
+updated_at: "2026-10-07T03:33:35Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -59,3 +59,4 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T03:11:12Z · body
 - 2026-10-07T03:11:53Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-07T03:17:20Z · needs_input
+- 2026-10-07T03:33:35Z · body
