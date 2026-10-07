@@ -216,6 +216,8 @@ describe("buildAttentionFeed slow runs (#0720)", () => {
     expect(slow?.taskId).toBe("0042");
     expect(slow?.message).toContain("slow");
     expect(feed.items.some((i) => i.kind === "slowRunsRecently")).toBe(true);
+    const lately = feed.items.find((i) => i.kind === "slowRunsRecently");
+    expect(lately?.link).toBe("/checks?tab=remote");
   });
 });
 
