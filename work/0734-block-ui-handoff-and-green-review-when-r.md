@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T05:39:18Z"
-updated_at: "2026-10-07T05:39:55Z"
+updated_at: "2026-10-07T05:39:56Z"
 ---
 ## Problem
 Current-main investigation after #0720/#0727/#0733: a shot can show a wrong route, lack its declared target, or contain no feature data and still report a successful handoff. Reviewers sometimes issue good-to-go while explicitly saying visual proof is absent. #0727 saved Mission Control for a Settings claim; #0733 lacked review rows; #0720 reused stale captures after plan changes.
@@ -37,8 +37,12 @@ Follow-up to #0680, source evidence #0720/#0727/#0733 and driver log2026-10-06. 
 ## Desired UX
 Block incomplete required visual evidence before expensive handoff validation; expose exact evidence and source/plan identity. A clean review requires verified visual acceptance, with explicit truthful exceptions.
 
+## Notes for AI
+Additional verified cause: handoff.ts constructs uiTask with worktreeTask.body, so canonical-main Shots edits can be ignored when the worktree task copy is stale. Use canonical task declarations without breaking branch source validation. Reviewer PNG resolution must point to actual main checkout storage. Do not implement merely a prompt-only fix or make warnings silently optional. This task is filed, not dispatched; keep runner recovery and current Settings repair moving.
+
 ## Activity
 
 - 2026-10-07T05:39:18Z · created · unknown
 - 2026-10-07T05:39:19Z · needs_input
 - 2026-10-07T05:39:55Z · body: section Desired UX
+- 2026-10-07T05:39:56Z · body: section Notes for AI
