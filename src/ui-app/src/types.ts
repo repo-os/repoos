@@ -438,7 +438,7 @@ export interface ReviewReport {
   markdown: string;
 }
 
-/** Persisted handoff UI verification evidence (#0680). */
+/** Persisted handoff UI verification evidence (#0680, #0734). */
 export interface UiHandoffVerificationIssue {
   kind: string;
   message: string;
@@ -446,11 +446,35 @@ export interface UiHandoffVerificationIssue {
   viewportWidth?: number;
 }
 
+/** One capture's detail in the handoff evidence (#0734). */
+export interface UiHandoffCaptureEvidence {
+  target: string;
+  route: string;
+  label?: string;
+  /** Exact URL the browser landed on. */
+  url: string;
+  /** Final pathname after redirects. */
+  finalRoute: string;
+  /** Set when the final route differed (login/redirect). */
+  redirectNote?: string;
+  routeMatched: boolean;
+  assertions: Array<{ description: string; passed: boolean; detail: string; blocking: boolean }>;
+  assertionsPassed: number;
+  assertionsChecked: number;
+  shot?: { name: string; path: string; url: string };
+}
+
 export interface UiHandoffVerificationEvidence {
   at: string;
   issues: UiHandoffVerificationIssue[];
   blankShots: string[];
   captures: number;
+  /** #0734: identity of the plan and tested tree behind the captures. */
+  planFingerprint?: string;
+  sourceIdentity?: string;
+  sourceWorktree?: string;
+  evidenceDir?: string;
+  captureDetails?: UiHandoffCaptureEvidence[];
 }
 
 /** Client-side view of a task's agent review. */
@@ -831,6 +855,12 @@ export interface RemoteHostStatusView {
     phase?: string;
     label?: string;
     source?: "server" | "host-lock";
+    /** #0720: this run exceeds its kind median while still running. */
+    slow?: boolean;
+    /** #0720: best-guess cause, e.g. "bundle upload …". */
+    slowDetail?: string | null;
+    /** #0720: elapsed ÷ median ratio. */
+    slowRatio?: number;
     /** True while this run is being killed as hung (#0729). */
     hung?: boolean;
   }[];

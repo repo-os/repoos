@@ -903,6 +903,23 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     throw error;
   }
 
+  // Handoff finalization writes `review` on the worktree before main; returning
+  // to engineering must mirror `active` there so a later handoff does not see
+  // "already finalized" while the board copy is active (#0737).
+  if (prevStatus === "review" && updated.status === "active" && updated.branch) {
+    const wtRoot = worktreePathForBranch(config.root, updated.branch);
+    if (wtRoot) {
+      const wtAbs = join(wtRoot, updated.path);
+      if (existsSync(wtAbs)) {
+        try {
+          patchTaskFile({ ...config, root: wtRoot }, wtAbs, { status: "active" });
+        } catch {
+          /* best-effort — the next handoff still resolves from branch state */
+        }
+      }
+    }
+  }
+
   if (body.status && body.status !== prevStatus) {
     logger.task(id, "info", `Task status changed`, {
       from: prevStatus,
@@ -1881,6 +1898,19 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (!job) {
       ctx.reload?.releaseCloseOut();
       return json(res, 400, { error: `Task #${id} has no branch to merge` });
+    }
+    // A requeue while the previous cancelled attempt is still executing must
+    // NOT start a second run for the same task (#0736): the old callback would
+    // otherwise lose its cancellation identity and could publish twice. The
+    // coordinator returned the still-executing cancelled record unchanged, so
+    // defer honestly and let the user retry once the old run reaches terminal.
+    if (job.cancelled) {
+      ctx.reload?.releaseCloseOut();
+      return json(res, 409, {
+        error: `Task #${id}'s previous close-out attempt was stopped but is still shutting down. Wait for it to finish, then click Move to done again.`,
+        needsRetry: true,
+        phase: job.phase,
+      });
     }
 
     if (handoffSha) {

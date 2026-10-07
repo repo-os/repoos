@@ -23,7 +23,11 @@ import { join, resolve } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
 import type { LogLevel } from "../core/logger.js";
 import type { PreviewManager } from "./preview.js";
-import { runUiHandoffGate, taskNeedsUiHandoffVerification } from "./ui-handoff-gate.js";
+import {
+  preflightUiEvidence,
+  runUiHandoffGate,
+  taskNeedsUiHandoffVerification,
+} from "./ui-handoff-gate.js";
 import {
   runGit,
   worktreePathForBranch,
@@ -491,6 +495,21 @@ async function runHandoffFinalization(
     return fail("commit", gate.detail ?? "the commit/vacuity gate rejected the transition");
   }
 
+  // #0734: cheap evidence preflight BEFORE the expensive suite. It resolves the
+  // declared capture plan and any stale prior evidence without browsing, so a
+  // declaration that requires visual acceptance but cannot produce a plan
+  // entry fails here — not after minutes of remote validation + full check.
+  // The CANONICAL task body is used (task.body), not the worktree copy's, so a
+  // `## Shots` edit on the board is honored even when the worktree's task file
+  // lags (#0734; the same reason `worktreeTask` cannot be trusted for the gate).
+  if (!opts.skipChecks && taskNeedsUiHandoffVerification(config, task)) {
+    const pre = await preflightUiEvidence(config, task);
+    if (!pre.ok) {
+      return fail("verify", pre.detail);
+    }
+    if (pre.detail) opts.onTaskLog?.(task.id, "info", pre.detail);
+  }
+
   if (!opts.skipChecks) {
     // The state the gate is about to test, captured BEFORE it runs so the
     // comparison afterwards is against what was committed (#0512).
@@ -609,7 +628,11 @@ async function runHandoffFinalization(
     if (drift) return fail("check", drift);
 
     if (!opts.skipChecks) {
-      const uiTask = { ...task, body: worktreeTask.body };
+      // #0734: use the CANONICAL task body for declarations (task.body), not a
+      // possibly-stale worktree copy — a `## Shots` edit on the board must be
+      // honored without breaking branch source validation (which still runs
+      // against the worktree).
+      const uiTask = { ...task };
       if (taskNeedsUiHandoffVerification(config, uiTask)) {
         onProgress?.("verify");
         const ui = await runUiHandoffGate(config, uiTask, opts.previews, (id, level, message) =>

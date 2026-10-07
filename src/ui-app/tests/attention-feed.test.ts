@@ -7,6 +7,7 @@ import {
   isProviderFailureReason,
   taskAwaitingVisualCheck,
 } from "../../core/attention.js";
+import { collectRunningRuns } from "../../server/attention-feed.js";
 import type { Task } from "../../core/types.js";
 import { DEFAULT_CONFIG } from "../../core/config.js";
 
@@ -126,6 +127,97 @@ describe("buildAttentionFeed", () => {
       expect(item.at).toMatch(/^\d{4}-/);
       expect(["info", "warning", "error"]).toContain(item.severity);
     }
+  });
+});
+
+describe("collectRunningRuns (#0720)", () => {
+  it("prefers the remote row when the same task is also in TaskCheckManager", () => {
+    const now = Date.parse("2026-10-06T12:00:00.000Z");
+    const runs = collectRunningRuns(
+      {
+        runningRuns: () => [
+          {
+            id: "handoff-finalize:1",
+            taskId: "0042",
+            kind: "handoff-finalize",
+            scope: "full",
+            machine: "mini",
+            startedAt: "2026-10-06T11:00:00.000Z",
+            finishedAt: null,
+            durationMs: null,
+            running: true,
+            passed: null,
+            code: null,
+            output: "",
+            skipped: false,
+          },
+        ],
+      } as import("../../server/task-check.js").TaskCheckManager,
+      [
+        {
+          taskId: "0042",
+          host: "bee",
+          phase: "pre-review",
+          scope: "full",
+          startedAt: "2026-10-06T11:00:00.000Z",
+          stage: "upload",
+          uploadBytes: 1024,
+          uploadSeconds: 120,
+        },
+      ],
+      now,
+      undefined,
+    );
+    expect(runs).toHaveLength(1);
+    expect(runs[0].remote).toBe(true);
+    expect(runs[0].id).toMatch(/^remote:/);
+  });
+});
+
+describe("buildAttentionFeed slow runs (#0720)", () => {
+  it("includes slowRun and slowRunsRecently from live flags", () => {
+    const feed = buildAttentionFeed({
+      ...emptyFeedInput(),
+      slowRuns: [
+        {
+          id: "slowRun:r1",
+          runId: "r1",
+          taskId: "0042",
+          phase: "pre-review",
+          remote: true,
+          scope: "full",
+          machine: "bee",
+          startedAt: "2026-10-06T10:00:00.000Z",
+          kindLabel: "handoff check on bee",
+          elapsedMs: 600_000,
+          medianMs: 300_000,
+          ratio: 2,
+          sampleCount: 10,
+          stage: "upload",
+          uploadBytes: null,
+          uploadSeconds: null,
+          likelyCause: "bundle upload",
+        },
+      ],
+      slowRunNotices: [
+        {
+          id: "slowKind:pre-review|remote|full",
+          phase: "pre-review",
+          remote: true,
+          scope: "full",
+          slowCount: 3,
+          windowCount: 10,
+          commonFactor: "the same remote host recurs",
+          medianMs: 300_000,
+        },
+      ],
+    });
+    const slow = feed.items.find((i) => i.kind === "slowRun");
+    expect(slow?.taskId).toBe("0042");
+    expect(slow?.message).toContain("slow");
+    expect(feed.items.some((i) => i.kind === "slowRunsRecently")).toBe(true);
+    const lately = feed.items.find((i) => i.kind === "slowRunsRecently");
+    expect(lately?.link).toBe("/checks?tab=remote");
   });
 });
 

@@ -169,6 +169,7 @@ done wait by default in human mode).
 | `repoos runners [--probe]` | remote-validation status + test |
 | `repoos agents` | `GET /api/agents/running` |
 | `repoos stats` | `GET /api/stats/board` |
+| `repoos decisions` (`repoos attention`) | `GET /api/decisions` — CTO escalation digest with cause, evidence, and actions |
 
 Pass `--port N` when the server is not on the default port. If the server is
 down, the CLI exits with a clear message instead of a generic fetch error.

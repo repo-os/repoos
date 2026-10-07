@@ -36,6 +36,7 @@ import { describeCloseOutFailure, classifyFailure } from "../core/close-out-fail
 import { parseTask, serializeTask, utcTimestamp } from "../core/task.js";
 import { commitTaskFile } from "../core/git.js";
 import type { IntegrationJob } from "./integration-job.js";
+import { jobAttempt } from "./integration-job.js";
 import { CANCEL_REASON } from "./integration-orchestrator.js";
 import { transcriptToText } from "./skill-suggestions.js";
 import { redactSecrets } from "./routes/debugger.js";
@@ -240,7 +241,11 @@ export interface DebugTldrDeps {
   onDiagnosisFinished?: (taskId: string) => void;
   /** Failed close-out job for Move-to-done tl;dr (#0595). */
   getCloseOutJob?: (taskId: string) => IntegrationJob | null;
-  updateCloseOutJob?: (taskId: string, update: Partial<IntegrationJob>) => IntegrationJob | null;
+  updateCloseOutJob?: (
+    taskId: string,
+    update: Partial<IntegrationJob>,
+    expectedAttempt?: number,
+  ) => IntegrationJob | null;
   /** Called after a done-error tl;dr is persisted (SSE to the UI). */
   onDoneErrorTldr?: (taskId: string, tldr: string) => void;
   logger?: Logger;
@@ -505,11 +510,15 @@ export class DebugTldrManager {
     const fp = doneErrorTldrFingerprint(mapped.step, mapped.message, mapped.detail);
     if (fp !== fingerprint) return { ok: false, reason: "failure cleared while diagnosing" };
 
-    const updated = updateJob(taskId, {
-      debugTldr: sentence,
-      debugTldrAt: utcTimestamp(),
-      debugTldrKey: fingerprint,
-    });
+    const updated = updateJob(
+      taskId,
+      {
+        debugTldr: sentence,
+        debugTldrAt: utcTimestamp(),
+        debugTldrKey: fingerprint,
+      },
+      jobAttempt(job),
+    );
     if (!updated) return { ok: false, reason: "persist failed" };
     this.deps.logger?.task(taskId, "info", "done-error debug tl;dr generated", {
       tldr: sentence,

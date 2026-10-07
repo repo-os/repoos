@@ -2,19 +2,20 @@
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
-status: active
+status: done
 priority: p1
 area: server
+merged_commit: 45abb5e1e1c4ea14d21e07606e1f631fa91dc515
 assigned_to: ai
 created_by: ""
 branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T14:32:00Z"
-last_close_out_gate_ms: 1954980
-last_close_out_gate_at: "2026-10-07T14:22:21.634Z"
-review_passes: 2
+updated_at: "2026-10-07T16:21:45Z"
+last_close_out_gate_ms: 317427
+last_close_out_gate_at: "2026-10-07T16:21:35.571Z"
+review_passes: 4
 last_check_failure: "repoos check at 2026-10-07T12:21:44.677Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -101,3 +102,44 @@ error: script "test" exited with code 1
 - 2026-10-07T14:23:47Z · status review→active
 - 2026-10-07T14:31:59Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T14:32:00Z · status review→active
+- 2026-10-07T14:38:27Z · note: DRIVER CURRENT SOURCE OWNERSHIP: interactive driver is diagnosing/repairing existing ACTIVE worktree, no competing engineer. New automatic/owner handoff14:32 began while driver WIP; wait terminal before further source changes/new handoff. Stress10trials baseline6/10, narrowedguard8/10; remaining two now proven Git index.lock collisions at secondhandoff commit (could not clear staging index/unstage artifacts), full failure logs /private/tmp/repoos-0737-stress-2.log and -6.log. Deterministic deferredguard2testsPASS; need read-only gitstatus optional-lock prevention and10/10 before finalhandoff. Do not approve currentgatealone.
+- 2026-10-07T14:42:00Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-07T14:49:03Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-07T14:49:09Z · status review→active
+- 2026-10-07T14:54:41Z · handoff failed · task-file handoff failed at check · repoos check failed: [plugin rolldown:vite-resolve] Module "node:os" has been externalized for browser compatibility, imported by "/Users/nick/code/nick/repoos-worktrees/feat/repair-repeated-review-handoff-race-expo/src/core/config.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details. · [plugin rolldown:vite-resolve] Module "node:fs" has been externalized for browser compatibility, imported by "/Users/nick/code/nick/repoos-worktrees/feat/repair-repeated-review-handoff-race-expo/src/core/storage/local.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details. · [plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/Users/nick/code/nick/repoos-worktrees/feat/repair-repeated-review-handoff-race-expo/src/core/storage/local.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details. · [plugin builtin:vite-reporter] · (!) Some chunks are larger than 500 kB after minification. Consider: · - Using dynamic import() to code-split the application · - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting · - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+- 2026-10-07T15:00:01Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-07T15:00:01Z · status review→active
+- 2026-10-07T15:00:49Z · status active→review
+- 2026-10-07T15:00:50Z · note: shots: skipped — the diff (7 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T15:01:48Z · note: review pass 3: good to go
+- 2026-10-07T15:02:56Z · status review→active
+- 2026-10-07T15:08:02Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-07T15:08:03Z · status review→active
+- 2026-10-07T15:15:14Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —     765|     origin?: unknown;
+    766|   };
+    767|   appendFileSync(
+       |   ^
+    768|     "/private/tmp/repoos-0737-body-" + process.pid + ".ndjson",
+    769|     JSON.stringify({ body, prev: existing.status, root: config.root })…
+ ❯ tests/task-underspecified-flag.test.ts:371:13
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/43]⎯
+ Test Files  10 failed | 420 passed | 1 skipped (431)
+      Tests  43 failed | 5177 passed | 15 skipped (5235)
+   Start at  15:09:37
+   Duration  331.32s (transform 10.31s, setup 3.14s, import 70.04s, tests 239.77s, environment 313.61s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 410ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  15:15:08
+   Duration  2.24s (transform 1.03s, setup 12ms, import 1.28s, tests 410ms, environment 457ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T15:17:24Z · note: Driver owns ACTIVE source diagnosis. Do not start handoff or close-out while temporary tracing remains. Last untraced loaded run5/10; raw-writer tracing changes timing10/10, not proof repaired. Watchdog auto-handoff captured temporary diagnostics and failed; driver paused task and cancelled existing close-out through supported API. Wait actual old execution terminal before further work.
+- 2026-10-07T15:23:20Z · note: 15:20 root-cause lead: ReviewManager.finalizeRun fires clean-review approval handler before bumpReviewPasses; evaluateAutoApprove calls gatherApprovalPreflight BEFORE checking policy.enabled. preflightMerge executes asynchronous git merge --no-commit then abort in canonical main. That external git writer explains active PATCH pre-file-write active but post-commit disk review with no intervening patchTaskFile. Require deterministic preflight/active-write overlap regression and read-only merge analysis; do not approve timing-only trace passes. Driver pause requested; cancelled close-out old run still retrying bee, do not duplicate.
+- 2026-10-07T15:39:50Z · note: Verified replacement15:34: all temporary tracing removed. Root repair now disabled approval returns before background preflight; preflightMerge uses read-only merge-tree instead of canonical main merge/abort. BuildPASS,57 targeted regressionsPASS, 10/10 loaded real repeated-review trialsPASS without tracing. Scoped repoos check --changed main PASS. Driver explicitly requested fresh handoff via repoos review once; pendingHandofftrue accepted. Require fresh advisory review and combined candidate gate before DONE. Preserve snapshot/slot guards; no sleeps or widened expected HTTP codes.
+- 2026-10-07T15:44:24Z · status active→review
+- 2026-10-07T15:44:24Z · note: shots: skipped — the diff (10 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T15:45:08Z · note: review pass 4: good to go
+- 2026-10-07T16:21:35Z · close-out gate completed in 317s
+- 2026-10-07T16:21:45Z · status review→done, release:success

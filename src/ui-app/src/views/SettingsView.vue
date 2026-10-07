@@ -703,6 +703,10 @@ watch(
           name: "settings",
           query: { ...route.query, tab: targetTab },
         });
+        await nextTick();
+        // Let the tab panel mount before we hunt for #setting-* rows (shot capture
+        // and ?focus= deep links otherwise stop on the Themes card at the top).
+        await new Promise<void>((r) => window.setTimeout(r, 150));
       }
       if (run !== focusNavigationRun) return;
 
@@ -1027,6 +1031,16 @@ onUnmounted(() => {
                   :checked="!!form[f.key]"
                   :disabled="config.saving"
                   @update:checked="(v: boolean) => (form[f.key] = v)"
+                />
+                <Input
+                  v-else-if="f.type === 'number'"
+                  :model-value="form[f.key] == null ? '' : String(form[f.key])"
+                  type="number"
+                  :min="f.key === 'attention.slowRunMultiplier' ? 1 : 0"
+                  :step="f.key === 'attention.slowRunMultiplier' ? 0.1 : 1"
+                  style="width: 100px"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
                 />
                 <Input
                   v-else-if="f.type === 'string'"

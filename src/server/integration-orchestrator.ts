@@ -21,6 +21,7 @@ import { spawn } from "node:child_process";
 import { notifyGitMutation } from "../core/git-activity.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator, JobPhase } from "./integration-job.js";
+import { jobAttempt } from "./integration-job.js";
 import type { CloseOutOutcome, CloseOutOutcomeEvent } from "./close-out-outcome.js";
 import type { RepositoryLock, RootLock } from "./repo-lock.js";
 import type { Logger } from "../core/logger.js";
@@ -768,6 +769,15 @@ async function prepareCandidateDependencies(
 
 /** Candidate validation and publication orchestrator for one job. */
 export class CloseOutOrchestrator {
+  /**
+   * The attempt generation this run owns (#0736), captured when `processJob`
+   * starts. Every coordinator write this run makes is scoped to it, so a late
+   * callback from a superseded attempt is refused rather than mutating the
+   * task's current job. `undefined` before a run starts (and for direct
+   * single-phase test calls), which means "no ownership claim".
+   */
+  private ownedAttempt: number | undefined = undefined;
+
   constructor(
     private config: RepoOSConfig,
     private coordinator: JobCoordinator,
@@ -933,9 +943,34 @@ export class CloseOutOrchestrator {
    * Whether the user asked to stop this close-out (#0459). Read fresh from the
    * durable job record so a "Stop MTD" issued from an HTTP request is observed
    * by this already-running orchestrator at its next checkpoint.
+   *
+   * Ownership-aware (#0736): when this run owns an attempt generation and the
+   * record now belongs to a DIFFERENT generation, the run has been superseded —
+   * it reports "cancelled" so it aborts at the next checkpoint, but its abort
+   * must not mutate the current job (guarded by `ownedAttempt` in every write
+   * below). See {@link jobWasSuperseded} to distinguish the two.
    */
   private isCancelled(taskId: string): boolean {
-    return this.coordinator.getJob(taskId)?.cancelled === true;
+    const job = this.coordinator.getJob(taskId);
+    // A record we were running that has since vanished means our job is gone:
+    // treat it as cancelled so the run stops. With no ownership claim
+    // (`ownedAttempt` undefined — direct single-phase calls), a missing record
+    // is not a cancellation, matching the pre-#0736 behaviour.
+    if (!job) return this.ownedAttempt !== undefined;
+    if (this.ownedAttempt !== undefined && jobAttempt(job) !== this.ownedAttempt) return true;
+    return job.cancelled === true;
+  }
+
+  /**
+   * Whether this run has lost ownership of the task's job to a newer attempt
+   * (#0736) — the task was requeued after this run was cancelled. A superseded
+   * run must stop WITHOUT touching the current job or the shared candidate.
+   */
+  private jobWasSuperseded(taskId: string): boolean {
+    if (this.ownedAttempt === undefined) return false;
+    const job = this.coordinator.getJob(taskId);
+    if (!job) return false;
+    return jobAttempt(job) !== this.ownedAttempt;
   }
 
   /**
@@ -1039,11 +1074,24 @@ export class CloseOutOrchestrator {
    * Never marks the task `done` and never records a `failed` job — a user
    * cancellation is not a failure, and a stale failure badge would be
    * misleading.
+   *
+   * Ownership-aware (#0736): if this run was superseded by a newer attempt, the
+   * candidate and the job record now belong to that attempt; tearing them down
+   * here would kill the live replacement run. Abort silently instead — the
+   * replacement owns cleanup.
    */
   private cancelJob(job: IntegrationJob): { ok: boolean; reason?: string } {
+    if (this.jobWasSuperseded(job.taskId)) {
+      this.logger?.integration(
+        job.taskId,
+        "info",
+        "cancelled attempt superseded by a newer close-out — releasing without touching the current job (#0736)",
+      );
+      return { ok: false, reason: CANCEL_REASON };
+    }
     this.removeCandidate(job.taskId);
     this.clearResolutionProvenance(job.taskId);
-    this.coordinator.removeJob(job.taskId);
+    this.coordinator.removeJob(job.taskId, this.ownedAttempt);
     this.logger?.integration(job.taskId, "info", "close-out cancelled by user (#0459)");
     return { ok: false, reason: CANCEL_REASON };
   }
@@ -1054,6 +1102,18 @@ export class CloseOutOrchestrator {
     reason: string | undefined,
     onRecorded?: () => void,
   ): { ok: boolean; reason?: string } {
+    // Ownership guard (#0736): a superseded run's failure belongs to the old
+    // attempt, whose record is gone. Never tear down the replacement's
+    // candidate or overwrite its job with `failed`.
+    if (this.jobWasSuperseded(job.taskId)) {
+      this.logger?.integration(
+        job.taskId,
+        "info",
+        "superseded attempt failed after a newer close-out started — not recording it (#0736)",
+        { reason },
+      );
+      return { ok: false, reason };
+    }
     this.removeCandidate(job.taskId);
     // #0692: a failed close-out abandons any in-flight resolution provenance.
     // The evidence it held described a resolution that never published; leaving
@@ -1066,14 +1126,19 @@ export class CloseOutOrchestrator {
         "close-out failure is moot — task already done; dropping job",
         { reason },
       );
-      this.coordinator.removeJob(job.taskId);
+      this.coordinator.removeJob(job.taskId, this.ownedAttempt);
       return { ok: true };
     }
-    const recorded = this.coordinator.updateJob(job.taskId, {
-      phase: PHASE_FAILED,
-      failedPhase,
-      reason,
-    });
+    const recorded = this.coordinator.updateJob(
+      job.taskId,
+      {
+        phase: PHASE_FAILED,
+        failedPhase,
+        reason,
+      },
+      this.ownedAttempt,
+    );
+    if (!recorded) return { ok: false, reason };
     restoreWorktreeReviewLockAfterFailedCloseOut(
       this.config.root,
       this.config.cacheDir ?? ".repoos",
@@ -1111,9 +1176,15 @@ export class CloseOutOrchestrator {
   private async processJob(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const root = this.config.root;
 
+    // Pin the execution generation this run owns (#0736). Every coordinator
+    // write below is scoped to it, so a late callback from a superseded
+    // attempt is refused instead of mutating the task's newer job.
+    this.ownedAttempt = job.attempt ?? jobAttempt(this.coordinator.getJob(job.taskId));
+
     this.logger?.integration(job.taskId, "info", `Processing job phase: ${job.phase}`, {
       taskId: job.taskId,
       phase: job.phase,
+      attempt: this.ownedAttempt,
     });
 
     try {
@@ -1127,6 +1198,13 @@ export class CloseOutOrchestrator {
         return this.cancelJob(job);
       }
 
+      // The record may have been superseded between peek and here — a requeue
+      // that created a new attempt while this one waited (#0736). Release
+      // without touching the replacement.
+      if (this.jobWasSuperseded(job.taskId)) {
+        return { ok: false, reason: "close-out attempt superseded" };
+      }
+
       // Budget check (#0573): a close-out that already spent its wall-clock
       // budget fails here — before any further work — with a retryable
       // `failed` job. `cleanup` is deliberately excluded: by then the publish
@@ -1138,12 +1216,16 @@ export class CloseOutOrchestrator {
 
       // Transition from queued to syncing.
       if (job.phase === "queued") {
-        const updated = this.coordinator.updateJob(job.taskId, {
-          phase: "syncing",
-          startedAt: new Date().toISOString(),
-          budgetMonotonicStartNs: process.hrtime.bigint().toString(),
-        });
-        if (!updated) return { ok: false, reason: "job disappeared" };
+        const updated = this.coordinator.updateJob(
+          job.taskId,
+          {
+            phase: "syncing",
+            startedAt: new Date().toISOString(),
+            budgetMonotonicStartNs: process.hrtime.bigint().toString(),
+          },
+          this.ownedAttempt,
+        );
+        if (!updated) return { ok: false, reason: "job disappeared or was superseded" };
         job = updated;
       }
 
@@ -1175,7 +1257,15 @@ export class CloseOutOrchestrator {
         }
         // Budget spent while syncing (#0573): fail before the gate starts.
         if (this.pipelineTimedOut(job)) return this.timeoutJob(job);
-        job = this.coordinator.updateJob(job.taskId, { phase: "validating" })!;
+        const validating = this.coordinator.updateJob(
+          job.taskId,
+          { phase: "validating" },
+          this.ownedAttempt,
+        );
+        if (!validating) {
+          return { ok: false, reason: "close-out attempt superseded before validation" };
+        }
+        job = validating;
       }
 
       // Validating phase: run the full gate (build, check) on the candidate.
@@ -1294,10 +1384,18 @@ export class CloseOutOrchestrator {
             recordTaskCloseOutGateDuration(this.config, absPath, validateRes.gateDurationMs);
           }
         }
-        job = this.coordinator.updateJob(job.taskId, {
-          phase: "publishing",
-          candidateSha: validateRes.candidateSha,
-        })!;
+        const promoted = this.coordinator.updateJob(
+          job.taskId,
+          {
+            phase: "publishing",
+            candidateSha: validateRes.candidateSha,
+          },
+          this.ownedAttempt,
+        );
+        if (!promoted) {
+          return { ok: false, reason: "close-out attempt superseded before publish" };
+        }
+        job = promoted;
       }
 
       // Publishing phase: merge candidate to live main, holding the repo lock.
@@ -1326,7 +1424,15 @@ export class CloseOutOrchestrator {
           });
           return this.failOrReconcile(job, "publishing", pubRes.reason);
         }
-        job = this.coordinator.updateJob(job.taskId, { phase: "cleanup" })!;
+        const afterPublish = this.coordinator.updateJob(
+          job.taskId,
+          { phase: "cleanup" },
+          this.ownedAttempt,
+        );
+        if (!afterPublish) {
+          return { ok: false, reason: "close-out attempt superseded after publish" };
+        }
+        job = afterPublish;
       }
 
       // Cleanup phase: remove candidate worktree, delete candidate branch, remove task worktree.
@@ -1339,7 +1445,11 @@ export class CloseOutOrchestrator {
           });
           console.warn(`Cleanup warning for task ${job.taskId}: ${cleanRes.reason}`);
         }
-        job = this.coordinator.updateJob(job.taskId, { phase: "done" })!;
+        const done = this.coordinator.updateJob(job.taskId, { phase: "done" }, this.ownedAttempt);
+        if (!done) {
+          return { ok: false, reason: "close-out attempt superseded during cleanup" };
+        }
+        job = done;
         // The one success path: the merge landed and cleanup ran. Record the
         // durable outcome the notices bell shows (#0640).
         this.emitOutcome(job.taskId, "succeeded", "", new Date().toISOString());
@@ -1719,7 +1829,7 @@ export class CloseOutOrchestrator {
     }
     const baseMainSha = mainShaRes.stdout.trim();
 
-    this.coordinator.updateJob(job.taskId, { baseMainSha });
+    this.coordinator.updateJob(job.taskId, { baseMainSha }, this.ownedAttempt);
 
     // Pre-flight (#0358): a real, non-auto-resolvable conflict against current
     // main is fully knowable from cheap git plumbing, so detect it BEFORE the
@@ -1782,7 +1892,7 @@ export class CloseOutOrchestrator {
       return { ok: false, reason: `feature branch ${taskBranch} worktree not found` };
     }
 
-    this.coordinator.updateJob(job.taskId, { branchSha });
+    this.coordinator.updateJob(job.taskId, { branchSha }, this.ownedAttempt);
 
     return { ok: true, candidateSha: baseMainSha };
   }
@@ -1804,7 +1914,7 @@ export class CloseOutOrchestrator {
   ): { ok: false; reason: string; failedChecks: string[] } {
     const attempt = (this.coordinator.getJob(job.taskId)?.checkAttempt ?? 0) + 1;
     const logPath = this.writeCheckLog(job.taskId, attempt, res.stdout, res.stderr);
-    this.coordinator.updateJob(job.taskId, { checkAttempt: attempt, logPath });
+    this.coordinator.updateJob(job.taskId, { checkAttempt: attempt, logPath }, this.ownedAttempt);
     const summary = summarizeCheckOutput(`${res.stdout}\n${res.stderr}`);
     const reason = summary
       ? `${label}: ${summary.summary}\nFull check output: ${logPath}`
@@ -1966,7 +2076,7 @@ export class CloseOutOrchestrator {
         // Bump the recorded base without touching the drift counter: these
         // commits are not resyncs, and MAX_VALIDATE_DRIFT_RETRIES keeps
         // bounding real code drift exactly as before.
-        this.coordinator.updateJob(job.taskId, { baseMainSha: currentMainSha });
+        this.coordinator.updateJob(job.taskId, { baseMainSha: currentMainSha }, this.ownedAttempt);
       } else {
         // Main advanced with a real code change: discard the candidate and
         // reset the job to `syncing` so the next processNext() rebuilds from
@@ -1995,12 +2105,16 @@ export class CloseOutOrchestrator {
           };
         }
         removeWorktree(root, branch, { force: true }); // throwaway candidate, rebuilt below
-        this.coordinator.updateJob(job.taskId, {
-          phase: "syncing",
-          baseMainSha: null,
-          candidateSha: null,
-          validateDriftCount: driftCount,
-        });
+        this.coordinator.updateJob(
+          job.taskId,
+          {
+            phase: "syncing",
+            baseMainSha: null,
+            candidateSha: null,
+            validateDriftCount: driftCount,
+          },
+          this.ownedAttempt,
+        );
         return {
           ok: false,
           resynced: true,
@@ -2819,9 +2933,13 @@ export class CloseOutOrchestrator {
             "main advanced with bookkeeping-only commits — publishing without a resync",
             { from: job.baseMainSha, to: currentMainSha },
           );
-          this.coordinator.updateJob(job.taskId, {
-            baseMainSha: currentMainSha,
-          });
+          this.coordinator.updateJob(
+            job.taskId,
+            {
+              baseMainSha: currentMainSha,
+            },
+            this.ownedAttempt,
+          );
         } else {
           // Main advanced with a real code change between validation and
           // publishing. Every OTHER retry path in this close-out pipeline is
@@ -2849,12 +2967,16 @@ export class CloseOutOrchestrator {
             };
           }
           removeWorktree(root, branch, { force: true }); // throwaway candidate, rebuilt below
-          this.coordinator.updateJob(job.taskId, {
-            phase: "syncing",
-            baseMainSha: null,
-            candidateSha: null,
-            publishDriftCount: driftCount,
-          });
+          this.coordinator.updateJob(
+            job.taskId,
+            {
+              phase: "syncing",
+              baseMainSha: null,
+              candidateSha: null,
+              publishDriftCount: driftCount,
+            },
+            this.ownedAttempt,
+          );
           return { ok: false, reason: "main advanced, revalidating" };
         }
       }

@@ -161,6 +161,7 @@ import { runCtoMonitorSafeActions } from "./cto-actions.js";
 import { wireAttentionNotifications } from "./attention-notify.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
+import { computeSlowRunFlags } from "./attention-feed.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
@@ -318,6 +319,7 @@ import {
   getIntegrationJobs,
   getCloseOutOutcomes,
   getAttention,
+  getDecisions,
   getIntegrationPipeline,
   retryIntegration,
   refreshInstallAndRetryIntegration,
@@ -700,6 +702,47 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
     return JSON.parse(Buffer.concat(chunks).toString("utf8"));
   } catch {
     return {};
+  }
+}
+
+/**
+ * Attach the slow-run flag (#0720) to each in-flight host run in the Remote
+ * runners status payload, so the panel can badge a slow run without opening the
+ * attention feed. Mutates the `activeRuns` entries in place.
+ */
+function annotateHostSlowRuns(
+  hosts: Array<{ activeRuns?: Array<{ taskId: string; startedAt: string }> }>,
+  config: RepoOSConfig,
+  remoteValidator: RemoteValidator | undefined,
+  opts?: {
+    taskChecks?: TaskCheckManager;
+    awakeClock?: () => { lastTickMs: number; intervalMs: number };
+  },
+): void {
+  const active = remoteValidator?.activeRemoteRuns?.();
+  if (!active || active.length === 0) return;
+  const flags = computeSlowRunFlags({
+    config,
+    remoteRuns: active,
+    taskChecks: opts?.taskChecks,
+    awakeClock: opts?.awakeClock?.(),
+  }).filter((f) => f.runId.startsWith("remote:"));
+  if (flags.length === 0) return;
+  // The validator's active-run registry and the host pool both key a run by
+  // task id + start time; match on both, falling back to task id alone when a
+  // host-lock row has no matching start.
+  const byKey = new Map(flags.map((f) => [`${f.taskId}:${f.startedAt}`, f]));
+  const byTask = new Map(flags.map((f) => [f.taskId ?? "", f]));
+  for (const h of hosts) {
+    for (const r of h.activeRuns ?? []) {
+      const flag = byKey.get(`${r.taskId}:${r.startedAt}`) ?? byTask.get(r.taskId);
+      if (!flag) continue;
+      Object.assign(r, {
+        slow: true,
+        slowDetail: flag.likelyCause ?? null,
+        slowRatio: flag.ratio,
+      });
+    }
   }
 }
 
@@ -1995,7 +2038,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     getTaskLogs: (taskId, limit) => logger.getTaskLogs(taskId, limit),
     onTaskFileChanged: (absPath) => index.applyFileChange(absPath),
     getCloseOutJob: (taskId) => jobCoordinator.getJob(taskId),
-    updateCloseOutJob: (taskId, update) => jobCoordinator.updateJob(taskId, update),
+    updateCloseOutJob: (taskId, update, expectedAttempt) =>
+      jobCoordinator.updateJob(taskId, update, expectedAttempt),
     onDoneErrorTldr: (taskId, tldr) =>
       emitEvent({
         type: "task.doneErrorTldr",
@@ -2886,6 +2930,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         serverStats: { available: false },
       })),
     ];
+    // Annotate each in-flight run with whether it exceeds its kind median
+    // (#0720) so the panel can badge it without opening the attention feed. The
+    // slow-run detail (stage, cause) also comes from the runner registry.
+    annotateHostSlowRuns(hosts, config, remoteValidator, {
+      taskChecks,
+      awakeClock: watchdog ? () => watchdog!.awakeClock() : undefined,
+    });
     return json(res, 200, {
       enabled: !!rv.enabled,
       running: !!remoteValidator,
@@ -3010,6 +3061,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Durable close-out outcomes (#0640) — the notices bell's hydrate/backstop.
   router.register("GET", "/api/close-out/outcomes", getCloseOutOutcomes);
   router.register("GET", "/api/attention", getAttention);
+  router.register("GET", "/api/decisions", getDecisions);
   router.register("GET", "/api/check-plan", getCheckPlan);
   // Durable check-run history across all tasks (#0564) — the Runs tab.
   router.register("GET", "/api/check-runs", getCheckRuns);
@@ -3422,6 +3474,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         attentionEvents,
         ctoActionRates,
         remoteValidator,
+        taskChecks,
+        awakeClock: watchdog ? () => watchdog!.awakeClock() : undefined,
         reportedStages,
         triggerJobProcessing,
         pendingReview,
