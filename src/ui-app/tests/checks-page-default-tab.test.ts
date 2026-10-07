@@ -10,7 +10,11 @@ import {
   parseChecksTab,
   resolveChecksDefaultTab,
 } from "../src/lib/checks-page";
-import type { CheckPlanView, IntegrationPipelineSnapshot } from "../src/types";
+import type {
+  CheckPlanView,
+  IntegrationPipelineSnapshot,
+  RemoteValidationStatusView,
+} from "../src/types";
 
 const jsonResponse = (body: unknown): Response =>
   ({
