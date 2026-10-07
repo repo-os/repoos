@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/resolve-integration-conflicts-without-re
 created_at: "2026-10-05T23:52:38Z"
-updated_at: "2026-10-07T15:07:47Z"
+updated_at: "2026-10-07T15:13:40Z"
 ---
 ## Problem
 Current verified incident: #0730 passed full handoff gate311sbee10:36:36Z and green review10:38:42Z at636a03b27730be914515fff8448cf9028574753f. #0728 then landed1118b2031dbd3346b4f4b91ade9dd8e6585c8ca0. #0730 MTD failed10:44:16Z on src/cli/index.ts conflict and returned active to engineer15482. Original review was valid for its snapshot, but conflict repair restarts engineering/handoff/review, repeats validation, and appears to users as failed development. Driver verified on CURRENT maina1707629aec1e575d5d85e7436b06be67e9dab27 / compiled0.5.67 hash04ce49b2639fa4317ab7fa26abbb304e224903e0a0577f7e7d69dbf1b4061cdc. integration-orchestrator.ts syncCandidate preflight routes named conflicts to onMergeConflict.
@@ -54,3 +54,23 @@ Relevance reassessment of existing #0692 opex report: still relevant for genuine
 - 2026-10-07T15:03:58Z · body
 - 2026-10-07T15:06:43Z · body
 - 2026-10-07T15:07:47Z · body: section Shots
+- 2026-10-07T15:13:40Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32
+    291|     expect(ui.activeTab).toBe("debug");
+    292|     expect(ui.debugView).toBe("logs");
+    293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
+       |                                ^
+    294|   });
+    295|
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+ Test Files  1 failed | 434 passed | 1 skipped (436)
+      Tests  4 failed | 5287 passed | 15 skipped (5306)
+   Start at  15:08:59
+   Duration  276.69s (transform 7.42s, setup 2.38s, import 51.20s, tests 248.96s, environment 225.62s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 780ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  15:13:36
+   Duration  2.74s (transform 1.14s, setup 12ms, import 1.42s, tests 780ms, environment 446ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
