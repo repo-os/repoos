@@ -2,7 +2,7 @@
 id: "0739"
 title: "Hung validation run leaves a leaked host slot: 'HUNG · KILLING' never clears, and the run's bundle file is left on the host"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -72,4 +72,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T15:38:22Z · status review→active
 - 2026-10-07T15:43:21Z · body
 - 2026-10-07T15:44:49Z · body
-- 2026-10-07T15:52:53Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T15:52:53Z · status active→review
