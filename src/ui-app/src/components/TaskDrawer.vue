@@ -1316,6 +1316,18 @@ const pipelineStage = computed(() => {
   return active && active.taskId === ui.active?.id ? active.stage : null;
 });
 
+/**
+ * Human label for the active pipeline stage (#0692). A `resolve-conflict`
+ * stage is the narrow resolution path resolving an integration conflict against
+ * current main — distinct from new engineering work — so it is named explicitly
+ * instead of showing the raw stage id.
+ */
+const pipelineStageLabel = computed(() => {
+  const stage = pipelineStage.value;
+  if (stage === "resolve-conflict") return "resolving integration conflict";
+  return stage;
+});
+
 /** Last successful merge-gate duration on this task (#0679), for close-out tuning. */
 const lastCloseOutGateLabel = computed(() => {
   const ms = ui.active?.extra?.last_close_out_gate_ms;
@@ -4135,7 +4147,7 @@ watch(
               <ActivityIndicator v-else />
               {{
                 inPipeline
-                  ? `Integrating…${pipelineStage ? ` (${pipelineStage})` : ""}`
+                  ? `Integrating…${pipelineStageLabel ? ` (${pipelineStageLabel})` : ""}`
                   : doingDone
                     ? doneProgress
                     : "Move to done"
