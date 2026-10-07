@@ -133,23 +133,20 @@ describe("CTO restart strategy (#0727)", () => {
   });
 
   it("resumes a never-started session", () => {
-    expect(
-      decideRestartStrategy({ kind: "never-started", reason: "agent never started" }, 0),
-    ).toBe("resume");
+    expect(decideRestartStrategy({ kind: "never-started", reason: "agent never started" }, 0)).toBe(
+      "resume",
+    );
   });
 
   it("starts fresh after a real crash", () => {
-    expect(
-      decideRestartStrategy({ kind: "crashed", reason: "agent crashed mid-turn" }, 0),
-    ).toBe("fresh");
+    expect(decideRestartStrategy({ kind: "crashed", reason: "agent crashed mid-turn" }, 0)).toBe(
+      "fresh",
+    );
   });
 
   it("starts fresh once a task has been restarted past the threshold", () => {
     expect(
-      decideRestartStrategy(
-        { kind: "crashed", reason: "the agent stalled or timed out" },
-        2,
-      ),
+      decideRestartStrategy({ kind: "crashed", reason: "the agent stalled or timed out" }, 2),
     ).toBe("fresh");
   });
 
@@ -250,7 +247,9 @@ describe("automation kill switch (#0727)", () => {
     const cfg = loadConfig(dir);
     expect(cfg.approval?.autoApprove?.machineryPaths).toEqual(["vendor/"]);
     expect(cfg.approval?.autoApprove?.allowP0).toBe(true);
-    expect(getConfigSchema().find((f) => f.key === "approval.autoApprove.machineryPaths")).toBeDefined();
+    expect(
+      getConfigSchema().find((f) => f.key === "approval.autoApprove.machineryPaths"),
+    ).toBeDefined();
     expect(getConfigSchema().find((f) => f.key === "approval.autoApprove.allowP0")).toBeDefined();
   });
 });
