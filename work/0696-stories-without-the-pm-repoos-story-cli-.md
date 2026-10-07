@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/stories-without-the-pm-repoos-story-cli-
 created_at: "2026-10-06T03:15:42Z"
-updated_at: "2026-10-07T18:06:15Z"
+updated_at: "2026-10-07T18:15:21Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ Code: `src/server/routes/stories.ts` (`createFreeformStory`), `src/core/story-de
 - 2026-10-06T03:15:42Z · created · unknown
 - 2026-10-07T18:06:11Z · status inbox→ready
 - 2026-10-07T18:06:15Z · status ready→active, branch
+- 2026-10-07T18:15:21Z · body
