@@ -30,6 +30,7 @@ import { buildIntegrationSnapshot } from "./integration-status.js";
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";
 import type { RepoEvent } from "./live-index.js";
 import type { DoneStep } from "./done.js";
+import type { RemoteValidator } from "./remote-validation.js";
 
 const STALENESS_MS = 5 * 60 * 1000;
 
@@ -50,6 +51,8 @@ export interface CtoActionDeps {
   emitEvent: (e: RepoEvent) => void;
   triggerJobProcessing: () => void;
   reportedStages: Record<string, DoneStep>;
+  /** The live remote validator, when one exists — needed to kill a hung run (#0729). */
+  remoteValidator?: RemoteValidator;
 }
 
 function auditAction(
@@ -220,6 +223,25 @@ export async function runCtoSafeAction(
     return { ok: true, detail };
   }
 
+  if (action === "kill-hung-validation") {
+    if (!deps.remoteValidator?.killHungValidation) {
+      return {
+        ok: false,
+        reason: "Remote validation is not running, so there is no hung container to kill",
+      };
+    }
+    const result = await deps.remoteValidator.killHungValidation(taskId);
+    if (!result.ok) {
+      return { ok: false, reason: result.detail };
+    }
+    recordRate(deps, action, taskId);
+    const detail = result.detail;
+    auditAction(deps, action, actor, detail, taskId);
+    // The run's container was removed; the caller's gate sees a transient
+    // failure and retries on another host, so no extra dispatch is needed here.
+    return { ok: true, detail };
+  }
+
   return { ok: false, reason: "Unhandled action" };
 }
 
@@ -263,6 +285,26 @@ export async function runCtoMonitorSafeActions(deps: CtoActionDeps): Promise<voi
         deps.logger.agent("cto", "info", "safe action requeue-closeout-after-env-fix", {
           taskId: task.id,
         });
+      }
+    }
+  }
+
+  if (allowed.has("kill-hung-validation")) {
+    // The watchdog auto-kills a hung run's container, but if that kill did not
+    // land (ssh dropped for the kill command too) the run stays flagged hung
+    // and in flight. The CTO retries the kill under its own rate limit.
+    const stuck = (deps.remoteValidator?.hostStatus?.() ?? [])
+      .flatMap((h) => (h.activeRuns ?? []).filter((r) => r.hung).map((r) => r.taskId))
+      .filter((id, i, all) => /^\d+$/.test(id) && all.indexOf(id) === i);
+    for (const taskId of stuck) {
+      const gate = checkAllowlistAndRate(deps, "kill-hung-validation", taskId);
+      if (gate) continue;
+      const result = await runCtoSafeAction(deps, "kill-hung-validation", {
+        taskId,
+        actor: "cto",
+      });
+      if (result.ok) {
+        deps.logger.agent("cto", "info", "safe action kill-hung-validation", { taskId });
       }
     }
   }

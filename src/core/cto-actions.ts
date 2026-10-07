@@ -9,6 +9,7 @@ export const CTO_SAFE_ACTION_IDS = [
   "restart-stalled-agent",
   "refresh-main-install",
   "requeue-closeout-after-env-fix",
+  "kill-hung-validation",
 ] as const;
 
 export type CtoSafeActionId = (typeof CTO_SAFE_ACTION_IDS)[number];
@@ -27,6 +28,10 @@ export const CTO_ACTION_RATE_LIMITS: Record<
   "restart-stalled-agent": { maxPerHour: 6, scope: "task" },
   "refresh-main-install": { maxPerHour: 4, scope: "global" },
   "requeue-closeout-after-env-fix": { maxPerHour: 6, scope: "task" },
+  // A hung run is killed once per task and retried elsewhere (#0729); a
+  // task-scoped cap lets a genuinely broken branch be retried a few times
+  // before the CTO escalates rather than looping the kill forever.
+  "kill-hung-validation": { maxPerHour: 6, scope: "task" },
 };
 
 export function configuredCtoActions(config: RepoOSConfig): CtoSafeActionId[] {
@@ -49,6 +54,7 @@ export const CTO_ACTION_LABELS: Record<CtoSafeActionId, string> = {
   "restart-stalled-agent": "Restart stalled engineer",
   "refresh-main-install": "Refresh install in main",
   "requeue-closeout-after-env-fix": "Re-queue close-out after env fix",
+  "kill-hung-validation": "Kill hung validation run",
 };
 
 /**

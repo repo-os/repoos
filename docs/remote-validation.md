@@ -117,6 +117,7 @@ capability routing exists to prevent.
 | no host provides a required capability (`configError`) | `false` | `false` | **non-retryable** fail — `remote validation cannot run…`; fix the `remoteValidation` host config, never a local fallback |
 | runner unreachable / provisioning failed / ssh dropped / timed out | `false` | `true` | **retryable** fail (close-out: task stays in `review`; pre-review handoff: may auto-resume the engineer) — unless `remoteValidation.fallbackToLocal`, then run the full gate locally |
 | transient failure on host A (`timeout`, `Killed`, `Broken pipe`) with `retryOtherHosts = true` | `false` | `true` | Retries on the next healthy, free host that hasn't been tried this run; only after every eligible host has failed does the table's retryable/fallback behaviour apply. Non-transient (red gate, `configError`) never retries. Default `true` when 2+ hosts configured. |
+| hung run (no output for `hangIdleMinutes` on an idle host) | `false` | `true` (`hung: true`) | The run's container is killed, the outcome is recorded as `hung`, and the run retries on another host exactly like a transient failure (#0729). |
 
 ### Retry on other hosts (`retryOtherHosts`)
 
@@ -125,6 +126,56 @@ When `remoteValidation.retryOtherHosts` is `true` (default when 2+ `tailscaleHos
 In the run log and structured events, each attempt records which host ran it (`[runner user@host]`), the exit code, and whether it was `infra` — so a retry history is fully visible in the task's Debug tab (`GET /api/tasks/:id/remote-validation/events`) without opening the raw log. Each attempt also lands its own check-run history row attributed to its host.
 
 Set it in `repoos.toml` (`remoteValidation.retryOtherHosts`), in Settings → Remote validation (the switch above the provider tabs), or via the CLI (`repoos update <id> --body` never edits it — the Settings form is the UI path).
+
+### Hung runs (`#0729`)
+
+On 2026-10-06/07 two validation containers hung with the host idle (load ~0)
+while the log looped `error: Module not found
+"/repo/node_modules/vitest/dist/workers/forks.js"` — the run never finished on
+its own and a human had to notice. The probable cause was the shared named
+bun-cache volume written by concurrent runs on one host.
+
+Three changes close that hole:
+
+- **Per-slot cache isolation.** Each run's `bun install` writes its own cache
+  volume, derived from the host-lock slot the run acquires
+  (`repoos-bun-cache-slot<N>`; slot 0 keeps the original `repoos-bun-cache` so a
+  warm cache is still reused by the first run). Two runs that may overlap on one
+  host (`maxConcurrent > 1`) can no longer observe each other's partial install.
+  `cacheVolumeForSlot()` is the pure helper; `validate.sh` reads the slot index
+  the host-lock wrapper exports as `REPOOS_SLOT`.
+- **A per-run container name.** Every run gets `--name repoos-validate-<runId>`,
+  and `validate.sh` removes *that* container in its `EXIT` trap. A hang is killed
+  precisely by name — never a blanket `docker kill` that could take a sibling
+  run's container. `validateContainerName()` / `killContainerCommand()` build the
+  name and the command.
+- **A hang watchdog.** While a run streams, the runner samples the host's load
+  and watches the output clock. If the output has not advanced for
+  `hangIdleMinutes` (default **5**) *and* the host is idle (1-min load per CPU
+  below `HANG_IDLE_LOAD_THRESHOLD`, `0.5`), the run is declared **hung**: the
+  runner removes that run's container, records the outcome as `hung`
+  (check-run history + structured event + the task's remote-validation log), and
+  returns a transient failure so `retryOtherHosts` retries it on another host.
+  Unknown load is never treated as idle. Tune the threshold with
+  `repoos.toml` /
+  Settings (`remoteValidation.hangIdleMinutes`).
+
+**Cleanup.** Containers left behind by a killed/hung run are reaped two ways:
+each run's `EXIT` trap removes its own container, and the host prerequisite
+probe sweeps any remaining `repoos-validate-*` containers
+(`staleContainerCleanupCommand()`) — name-prefixed, so a container RepoOS did
+not create is never touched.
+
+**Visibility.** The Remote runners tab shows a run being killed as `hung ·
+killing`, and a per-host **Hung runs** row listing the recent kills and when
+they happened, so a hang is visible even after the retry moved elsewhere.
+
+**CTO safe action.** The explicit kill-and-retry is the allowlisted
+`kill-hung-validation` action (`#0688` — rate limited, audited in the attention
+bell, invokable from the API/UI). The automatic watchdog is infra and always
+runs; the CTO action is the recovery path when the automatic kill did not land
+(e.g. the SSH connection dropped for the kill command too). Add it to
+`cto.actions` to let the CTO retry the kill itself.
 
 ## VM lifecycle
 
@@ -146,9 +197,11 @@ Set it in `repoos.toml` (`remoteValidation.retryOtherHosts`), in Settings → Re
   `mirror-path` is set, the bundle is fetched into the host mirror and the
   candidate is checked out from there; otherwise the script clones the bundle
   directly. Either way it asserts `git rev-parse HEAD == <sha>` and runs the
-  gate inside the prebuilt `repoos-ci` container with a persistent bun cache
-  volume. Combined output streams to `.repoos/logs/remote-validation/<taskId>.log`
-  and the caller's `onChunk`.
+  gate inside the prebuilt `repoos-ci` container with a per-slot bun cache
+  volume (isolated so concurrent runs can't corrupt each other's installs,
+  #0729) and a per-run `--name repoos-validate-<runId>` so a hang can be killed
+  precisely. Combined output streams to
+  `.repoos/logs/remote-validation/<taskId>.log` and the caller's `onChunk`.
 - **Teardown**: an idle timer (`idleShutdownMinutes`, default 8) deletes the VM
   after the last job; a hard `maxServerLifetimeMinutes` timer (default 120)
   force-deletes it even mid-job as a cost stop-loss.
@@ -364,7 +417,8 @@ got, #0521 review), or bun/git for a native host — see "Docker vs. native"
 above — **the bun cache is actually writable by whoever will write to it**
 (native: a plain host-path write-then-remove, since bun runs as the SSH
 user directly; Docker: the exact sequence `validate.sh` runs against the
-named `repoos-bun-cache` volume — chown it to the container's uid as root,
+named cache volume (`repoos-bun-cache`, or the per-slot
+`repoos-bun-cache-slot<N>` — see "Per-slot cache isolation") — chown it to the container's uid as root,
 then write as that uid — proved live against a real macOS/Colima host
 rather than approximated, after two earlier, narrower versions of this
 check both turned out insufficient in successive review rounds: first it
@@ -525,6 +579,56 @@ get there. The Hetzner runner honours `deadlineAt` the same way on its own
 in-process queue: a run still queued at the deadline is cancelled without ever
 holding a slot, and provisioning that overruns it never starts a suite. A run
 already executing is never interrupted mid-suite.
+
+#### Hang detection and recovery (#0729)
+
+A run can wedge without ever failing: on 2026-10-06/07 validation containers
+hung with the host idle at load ≈ 0, the log looping `error: Module not found
+"/repo/node_modules/vitest/dist/workers/forks.js"`. The probable cause was
+concurrent runs on one host writing the same shared `repoos-bun-cache` volume,
+corrupting each other's `bun install` (see "Per-slot cache isolation" below).
+Nothing detected it; a human did, 48 minutes later.
+
+The runner now watches each in-flight run. It samples the host's own 1-minute
+load average (per CPU) on a timer, and every `hangCheckIntervalMs` (30 s) asks:
+has this run's output been unchanged for `hangIdleMinutes` (default **5**) **and**
+is the host idle (load per CPU below `0.5`)? Both must hold — a quiet run on a
+**busy** host may simply be queued behind real work, and unknown load (an SSH
+probe that did not answer) deliberately does **not** count as idle, so a hang
+is only ever called with positive evidence the box is doing nothing. When both
+hold the runner removes **that run's** container by name (`docker rm -f
+repoos-validate-<run-id>`, never a blanket `docker kill`), marks the summary
+`hung` (transient, so the caller retries on another host, which the pool
+excludes per #0632), records the outcome as `hung` in the check-run history
+(never `fail` — there is no test result — and never `cancelled`, which is the
+caller's own deadline), and lists the run under **Hung runs** on the host's row
+in the Checks → Remote runners tab (`hungRuns` in the status payload) so the
+kill is visible after the retry has moved elsewhere.
+
+`validate.sh` names each container `repoos-validate-<unique-run-id>` (passed as
+`REPOOS_CONTAINER`) so a hang kills exactly one run, and sweeps
+`repoos-validate-`-prefixed leftovers at probe time and at the start of a run —
+a `docker run --rm` killed by a dropped SSH link or a rebooted host otherwise
+leaves its container behind. The engineer sets a unique id from the run's
+artifacts path; a standalone `validate.sh` run falls back to a pid-based name.
+Killing a hung run is also a CTO safe action (`kill-hung-validation`, task
+scoped, rate limited, audited — #0688): the watchdog's automatic kill is the
+normal path, and the CTO re-issues it if that kill could not land.
+
+#### Per-slot cache isolation (#0729)
+
+On Docker hosts the bun cache is a named volume. It used to be the single
+`repoos-bun-cache` for every run on the host, so two runs that overlap (a host
+with `maxConcurrent > 1`, or the host lock's slots) could write the same cache
+directory and observe each other's partial installs — the corruption behind the
+2026-10-06/07 hangs. The volume is now keyed to the host-lock **slot** the run
+holds: slot 0 keeps the original `repoos-bun-cache` name (so a host's existing
+warm cache is reused by the first run), and every other slot gets
+`repoos-bun-cache-slot<N>`. The host-lock wrapper exports the acquired slot
+index as `REPOOS_SLOT`, and `validate.sh` appends it to the base volume
+(`REPOOS_CACHE_VOLUME`), so runs that may overlap never share a cache dir.
+`cacheVolumeForSlot` in `src/server/remote-validation.ts` is the one place
+that names the volume.
 
 #### Concurrency
 
