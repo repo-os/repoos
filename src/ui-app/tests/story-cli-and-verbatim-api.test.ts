@@ -10,7 +10,7 @@
  * The PM flesh-out is mocked everywhere so "no PM run was started" is a hard
  * assertion, not an inference from timing.
  */
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { Readable, Writable } from "node:stream";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -261,6 +261,15 @@ describe("PATCH /api/stories/:key — update without the PM (#0696)", () => {
 // ---- CLI round-trip ----
 
 describe("repoos story CLI round-trip (#0696)", () => {
+  // `process.exitCode` is process-global and leaks across tests (and across
+  // test files sharing a worker). The CLI's success paths leave it alone, so a
+  // leftover `1` from another test would fail the "still 0" assertions below
+  // only on a runner whose ordering differed — exactly the kind of
+  // machine-fingerprint flake this suite must not have. Start every test clean.
+  beforeEach(() => {
+    process.exitCode = 0;
+  });
+
   it("new → list → show → update, committing and keeping the number", async () => {
     const { root, clean } = makeRepo();
     const prevExit = process.exitCode;
@@ -269,6 +278,7 @@ describe("repoos story CLI round-trip (#0696)", () => {
       logs.push(a.join(" "));
     });
     try {
+      process.exitCode = 0;
       await withCwd(root, () =>
         cmdStoryNew(["Launch checklist", "--body", "Scope and non-goals."]),
       );
@@ -354,6 +364,7 @@ describe("repoos story CLI round-trip (#0696)", () => {
       logs.push(a.join(" "));
     });
     try {
+      process.exitCode = 0;
       await withCwd(root, () => cmdStoryShow(["Launch checklist"]));
       expect(process.exitCode ?? 0).toBe(0);
       const out = logs.join("\n");
