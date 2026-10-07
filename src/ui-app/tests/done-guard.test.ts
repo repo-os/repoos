@@ -225,6 +225,33 @@ describe("move-to-done dirty-main guard (#0211)", () => {
     }
   });
 
+  it("does not block close-out when the only dirty files on main are shot captures (#0713)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      makeFeatureWorktree(root);
+      const shotDir = join(root, "work", ".attachments", "0599", "shots");
+      mkdirSync(shotDir, { recursive: true });
+      writeFileSync(join(shotDir, "default-1.png"), "png-bytes\n");
+      const enqueue = vi.fn(() => ({ taskId: "0211", phase: "queued", enqueuedAt: "now" }));
+      const res = makeRes();
+
+      await taskAction(
+        makeCtx(root, reviewTask(root), { onEnqueue: enqueue }),
+        makeReq(),
+        res as any,
+        {
+          param1: "0211",
+          param2: "done",
+        },
+      );
+
+      expect(res.statusCode).toBe(200);
+      expect(enqueue).toHaveBeenCalledTimes(1);
+    } finally {
+      clean();
+    }
+  });
+
   it("fails closed when the dirty check errors and never enqueues", async () => {
     // A directory that is NOT a git repo makes `dirtyFiles` throw
     // GitDirtyCheckError; the route must surface a 409 and not enqueue.

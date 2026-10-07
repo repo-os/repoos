@@ -3,13 +3,16 @@ id: "0003"
 title: On mobile online/offline should just be a colored dot
 type: chore
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: named mobile hardware)"
 priority: p3
 area: mobile
 assigned_to: ai
 created_by: ""
 branch: feat/on-mobile-online-offline-should-just-be-
 created_at: "2026-05-29T00:00:00Z"
-updated_at: "2026-08-13T13:04:55Z"
+updated_at: "2026-10-06T23:48:18Z"
 ---
 ## Problem
 
@@ -50,3 +53,4 @@ text or pill padding.
 - 2026-08-13T04:48:43Z · status inbox→ready
 - 2026-08-13T11:30:26Z · branch
 - 2026-08-13T13:04:55Z · status review→done, release:success
+- 2026-10-06T23:48:18Z · needs_input

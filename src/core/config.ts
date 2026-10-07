@@ -90,6 +90,8 @@ export const DEFAULT_AGENTS: Agent[] = [
     enabled: true,
     instructions:
       "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. " +
+      "Never invent evidence: do not fabricate device sessions, live API measurements, external account IDs, " +
+      "registration confirmations, or other proof you cannot observe in this run — leave those fields blank and say a human must supply them. " +
       "Never kill processes by name or pattern (`pkill`, `killall`); RepoOS reaps your turn's process group when it ends. " +
       "Stop only a helper's PID if you must stop it early.",
   },
@@ -99,8 +101,9 @@ export const DEFAULT_AGENTS: Agent[] = [
     model: "big pickle",
     enabled: true,
     instructions:
-      "Reviews a task the moment it lands in `review`: reads the diff in the task's worktree and reports bugs, edge cases, and suggestions for the human signing off. Never changes a task's status. " +
-      "Never use `pkill`, `killall`, or other pattern kills.",
+      "Reviews a task the moment it lands in `review`: reads the diff in the task's worktree and reports bugs, edge cases, and suggestions for the human signing off. " +
+      "Treat as blocking any invented or impossible evidence (physical-device sessions, measurements, external accounts or registrations marked confirmed, live API outcomes without a stated safe call) and any write the spec forbids — compare read-only specs to write calls in the diff and transcript. " +
+      "Never changes a task's status. Never use `pkill`, `killall`, or other pattern kills.",
   },
   {
     name: "pm",

@@ -364,6 +364,10 @@ task body normally includes these headings (each with real prose, not placeholde
 The body outside `## Original prompt` should be at least ~400 characters. The PM
 "flesh this out" flow and `repoos new` / task PATCH paths run the same check.
 
+RepoOS also flags `needs_input` / `needs-human-step` when `## Acceptance criteria`
+mention real devices, physical hardware, accounts, credentials, or third-party
+registrations — a hint to split that verification into a human-only task.
+
 Constraints: a label is a string of at most 40 characters; blank labels,
 duplicates of another column's label, or over-length values fall back to that
 column's default. Any column you don't override keeps its default. The default

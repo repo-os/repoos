@@ -7,7 +7,7 @@ import { existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import {
-  dirtyFiles,
+  mainDirtyFilesForCloseOut,
   GitDirtyCheckError,
   localBranches,
   preflightMerge,
@@ -133,7 +133,7 @@ export async function enqueueCloseOutForTask(
 
   let dirty: string[];
   try {
-    dirty = await dirtyFiles(config.root);
+    dirty = await mainDirtyFilesForCloseOut(config.root, config);
   } catch (err) {
     if (err instanceof GitDirtyCheckError) {
       return { ok: false, reason: "main dirty check failed" };

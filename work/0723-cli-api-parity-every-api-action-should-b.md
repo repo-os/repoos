@@ -2,19 +2,18 @@
 id: "0723"
 title: "CLI/API parity: every API action should be doable from the repoos CLI (start, pause, review, done, message, preview, config, runners, stats)"
 type: feature
-status: active
+status: done
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 877e6cb9ccaade3a6b1ac6cdaac668b268bed289
 assigned_to: ai
 created_by: ""
 branch: feat/cli-api-parity-every-api-action-should-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:59:25Z"
-updated_at: "2026-10-06T17:21:18Z"
-handoff_signal_retry_count: 1
-dev_error_count: 1
+updated_at: "2026-10-07T00:54:14Z"
 ---
 ## Problem
 
@@ -43,6 +42,5 @@ Read src/commands/tasks.ts and src/cli/ for the command registry and the HTTP ro
 - 2026-10-06T15:05:35Z · cli_override, model_override
 - 2026-10-06T15:05:48Z · status inbox→ready
 - 2026-10-06T15:05:55Z · status ready→active, branch
-- 2026-10-06T15:12:01Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
-- 2026-10-06T15:55:45Z · needs_input
-- 2026-10-06T17:21:18Z · body
+- 2026-10-06T17:43:27Z · status active→review
+- 2026-10-07T00:54:14Z · status review→done, release:success

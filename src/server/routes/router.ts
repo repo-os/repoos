@@ -14,6 +14,14 @@ export class Router {
     this.routes.push({ method, pattern, handler });
   }
 
+  /** Snapshot of registered routes (for CLI/API parity tests). */
+  listRoutes(): Array<{ method: string; pattern: string }> {
+    return this.routes.map((r) => ({
+      method: r.method,
+      pattern: typeof r.pattern === "string" ? r.pattern : r.pattern.source,
+    }));
+  }
+
   async dispatch(
     ctx: RouteContext,
     method: string,
