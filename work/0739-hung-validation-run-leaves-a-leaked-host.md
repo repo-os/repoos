@@ -2,7 +2,7 @@
 id: "0739"
 title: "Hung validation run leaves a leaked host slot: 'HUNG · KILLING' never clears, and the run's bundle file is left on the host"
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/hung-validation-run-leaves-a-leaked-host
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:05Z"
-updated_at: "2026-10-07T14:44:56Z"
+updated_at: "2026-10-07T15:02:59Z"
 review_passes: 2
 ---
 ## Problem
@@ -54,3 +54,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T14:39:34Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-07T14:41:22Z · note: review pass 2: needs some work
 - 2026-10-07T14:41:45Z · note: Independent driver currentcommit inspection14:42: killHungRun/finalizeHungKill still directly await exec.runRemote with timeout argument; no local Promise.race/deadline, so injected kill neverresolves stillblocks finally slotrelease. GateLinger timer only calls abort callback, main exec.runRemote neverresolves if abort callbackdoesnotsettle; need bounded settlement/realgate result. Require explicit fake deps IGNORING timeout/regAbort tests, not just fakesreturntimedOut. Do not mark these acceptance blockers green as edgecases.
+- 2026-10-07T15:02:59Z · status review→active
