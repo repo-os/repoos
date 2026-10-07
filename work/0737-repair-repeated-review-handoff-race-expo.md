@@ -11,7 +11,7 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T15:15:14Z"
+updated_at: "2026-10-07T15:16:54Z"
 review_passes: 3
 last_close_out_gate_ms: 1954980
 last_close_out_gate_at: "2026-10-07T14:22:21.634Z"
