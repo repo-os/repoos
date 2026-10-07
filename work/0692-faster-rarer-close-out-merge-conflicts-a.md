@@ -1,20 +1,21 @@
 ---
-last_close_out_gate_ms: 297510
-last_close_out_gate_at: "2026-10-07T18:08:19.975Z"
 id: "0692"
 title: Resolve integration conflicts without restarting the full engineering and review cycle
 type: feature
-status: review
+status: done
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: d89564a01d2885ce27765149e4cc447517be0058
 assigned_to: ai
 created_by: ""
 branch: feat/resolve-integration-conflicts-without-re
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T23:52:38Z"
-updated_at: "2026-10-07T18:08:19Z"
+updated_at: "2026-10-07T18:08:45Z"
+last_close_out_gate_ms: 297510
+last_close_out_gate_at: "2026-10-07T18:08:19.975Z"
 review_passes: 2
 review_rounds: 1
 ---
@@ -278,4 +279,4 @@ error: script "test" exited with code 1
 - 2026-10-07T17:58:41Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d89564a01) during finalization (#0734)
 - 2026-10-07T18:00:00Z · note: review pass 2: good to go
 - 2026-10-07T18:08:19Z · close-out gate completed in 298s
-
+- 2026-10-07T18:08:45Z · status review→done, release:success
