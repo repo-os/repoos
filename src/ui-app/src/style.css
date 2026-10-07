@@ -6677,6 +6677,9 @@
 .agent-input:focus {
   outline: none;
   border-color: var(--border-bright);
+  /* Matches the shared .ai-chat-compose focus outline (#0669) so the
+     Dev/Reviewer input and every wrapped composer glow the same way. */
+  box-shadow: 0 0 0 3px var(--cyan-dim);
 }
 .agent-input:disabled {
   opacity: 0.6;
@@ -12168,6 +12171,69 @@
  * Spec: docs/ai-chat-standards.md. Enforced by tests/ai-chat-standard.test.ts.
  */
 
+/* ── Shared chat compose (#0669) ───────────────────────────────────────────
+ * One composer, used by every chat surface — CTO, Debugger, Task Debugger,
+ * Ross, PM, and the task drawer's Dev/Reviewer input. It owns the box: border,
+ * radius, surface, spacing, and the focus outline. A chat adds only its own
+ * button-variant classes (.cto-stop, .pm-attach) on top; it never redefines the
+ * box or its focus treatment, which is what kept the surfaces looking slightly
+ * different from one another. */
+
+/* ── Shared agent-chat header (#0669) ──────────────────────────────────────
+ * CTO, Debugger and Ross used to hand-roll a header with a redundant subtitle
+ * ("Bug diagnostician", "CTO Board Monitor is active", "Repository assistant").
+ * These classes are the one header: avatar + name, the inline agent/model chip
+ * (`.chat-agent-chip`), and the close button, nothing else. They live here
+ * rather than in each SFC because the panels are body-teleported drawers, where
+ * scoped styles do not reach (AGENTS.md), and because a shared header should
+ * have exactly one definition. */
+.agent-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--topbar-bg);
+}
+.agent-chat-avatar {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--border-bright);
+}
+.agent-chat-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.agent-chat-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.agent-chat-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+.agent-chat-dot.off {
+  background: var(--txt-faint);
+  box-shadow: none;
+}
+
 /* The scrolling message list. Owns the vertical rhythm between messages — a
  * chat's own scoped styles must not set a competing `gap`. */
 .ai-chat-log {
@@ -12249,6 +12315,92 @@
   opacity: 0.4;
   cursor: default;
   box-shadow: none;
+}
+
+/* The one chat compose box (#0669). Every AI chat surface — CTO, Debugger,
+ * Task Debugger, Ross, PM — uses this class instead of its own `-compose`
+ * copy, so the input renders identically everywhere and shows the same
+ * active/focus outline. Per-chat stop/attach controls keep their own variant
+ * class (`.cto-stop`, `.pm-attach`, …) for their fill; the send button takes
+ * `.ai-chat-send` and a variant must never set a base `background`/`color`
+ * that would out-specify it (docs/ai-chat-standards.md).
+ */
+.ai-chat-compose {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 0 12px 12px;
+  padding: 8px 9px 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--panel-solid);
+}
+.ai-chat-compose:focus-within {
+  border-color: var(--border-bright);
+  box-shadow: 0 0 0 3px var(--cyan-dim);
+}
+.ai-chat-compose textarea {
+  flex: 1;
+  min-height: 24px;
+  max-height: 120px;
+  overflow-y: auto;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--txt);
+  font: 12.5px / 1.55 var(--font-sans);
+}
+.ai-chat-compose textarea::placeholder {
+  color: var(--txt-faint);
+}
+.ai-chat-compose button {
+  /* Deliberately no `background`/`color`: the shared `.ai-chat-send` owns the
+     send button's fill. A variant (`.ai-chat-stop`) sets its own. */
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+.ai-chat-compose button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.ai-chat-compose button svg {
+  width: 18px;
+  height: 18px;
+}
+/* Shared stop control: a muted danger fill, overridable per chat if needed. */
+.ai-chat-compose button.ai-chat-stop {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
+  background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
+  color: var(--red, #ef5b5b);
+}
+
+/* Inline "coding agent + model" chip in an agent-chat header (#0669). Compact
+ * by construction: capped at ~half the header, truncating the pair rather than
+ * pushing the close button off the edge. Reuses `.am-control` (Agents page /
+ * task panel) so it opens the same `AgentModelModal`. */
+.chat-agent-chip {
+  display: inline-flex;
+  flex: none;
+  min-width: 0;
+  max-width: min(50%, 260px);
+}
+.chat-agent-chip .am-control {
+  width: auto;
+  max-width: 100%;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.chat-agent-chip .am-control-icon {
+  width: 13px;
+  height: 13px;
 }
 
 /* ── PM chat (#0444 shared hooks above; these classes are the PM's own) ─────
@@ -12418,83 +12570,21 @@
   color: var(--cyan);
 }
 
-.pm-compose {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  margin: 0 12px 12px;
-  padding: 8px 9px 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel-solid);
-}
-
-.pm-compose:focus-within {
-  border-color: var(--border-bright);
-  box-shadow: 0 0 0 3px var(--violet-dim);
-}
-
-.pm-compose textarea {
-  flex: 1;
-  min-height: 24px;
-  max-height: 120px;
-  overflow-y: auto;
-  resize: none;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--txt);
-  font: 12.5px / 1.55 var(--font-sans);
-}
-
-.pm-compose textarea::placeholder {
-  color: var(--txt-faint);
-}
-
-.pm-compose button {
-  /* Deliberately no `background`/`color`: this rule out-specifies the shared
-     .ai-chat-send, so setting a fill here would silently win and leave the
-     send button looking transparent. The send button takes .ai-chat-send;
-     .pm-stop and .pm-attach set their own. */
-  width: 31px;
-  height: 31px;
-  display: grid;
-  place-items: center;
-  flex: none;
-  border: 0;
-  border-radius: 9px;
-  cursor: pointer;
-}
-
-.pm-compose button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.pm-compose button svg {
-  width: 18px;
-  height: 18px;
-}
-
-.pm-compose button.pm-stop {
-  background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
-  color: var(--red, #ef5b5b);
-}
-
-/* Compose-box attach — a muted sibling of the send button, plus the thumbnail
-   strip shown above the form while images are pending. */
-.pm-compose button.pm-attach {
+/* PM-only compose variants. The base box (layout, focus outline, textarea) is
+   the shared `.ai-chat-compose` (#0669); only the attach control is PM-specific
+   here. The stop button reuses the shared `.ai-chat-stop`. */
+.ai-chat-compose button.pm-attach {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--txt-dim);
 }
 
-.pm-compose button.pm-attach:hover:not(:disabled) {
+.ai-chat-compose button.pm-attach:hover:not(:disabled) {
   border-color: var(--violet);
   color: var(--violet);
 }
 
-.pm-compose button.pm-attach svg {
+.ai-chat-compose button.pm-attach svg {
   width: 16px;
   height: 16px;
 }

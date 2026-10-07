@@ -2,12 +2,15 @@
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { X, ArrowDown } from "lucide-vue-next";
 import { api } from "../api";
-import { renderMarkdown } from "../lib/markdown";
+import { renderChatMarkdown, renderMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import { useRepoStore } from "../stores/repo";
+import { useConfigStore } from "../stores/config";
+import { useCtoChatAgent, CHAT_AGENT_MEMORY_KEYS } from "../composables/useChatAgentModel";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import AiChatThinking from "./AiChatThinking.vue";
+import ChatAgentModelChip from "./ChatAgentModelChip.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
@@ -18,10 +21,16 @@ const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
 const repo = useRepoStore();
+const config = useConfigStore();
 const draft = ref("");
 const submitting = ref(false);
 const log = ref<HTMLElement | null>(null);
 const draftTextarea = ref<HTMLTextAreaElement | null>(null);
+
+// Inline agent + model chip (#0669): reads the CTO agent from config.agents and
+// persists a pick the same way the Agents page does.
+const ctoAgent = useCtoChatAgent();
+
 
 const busy = computed(() => submitting.value || repo.cto.running);
 const enabled = computed(() => repo.cto.enabled);
@@ -88,6 +97,15 @@ async function interrupt(): Promise<void> {
   }
 }
 
+/** Persist the chip pick (Agents page path) so it applies to the next turn. */
+async function onAgentModelChange(cli: string, model: string): Promise<void> {
+  try {
+    await ctoAgent.setAgentModel(cli, model);
+  } catch (error) {
+    repo.onError(error);
+  }
+}
+
 onMounted(() => {
   void repo.loadCTO();
 });
@@ -104,7 +122,7 @@ watch(
 <template>
   <FloatingHeadPanel
     :open="open"
-    title="CTO Board Monitor"
+    title="CTO"
     description="Ask the CTO about board health."
     @close="emit('close')"
   >
@@ -113,12 +131,19 @@ watch(
         <img src="/assets/repoos-cto-square.webp" alt="CTO" />
       </div>
       <div class="cto-identity">
-        <strong>CTO Board Monitor</strong>
-        <span
-          ><i :class="{ off: !enabled }"></i
-          >{{ enabled ? "CTO agent is active" : "Disabled on Agents page" }}</span
-        >
+        <strong>CTO</strong>
+        <span v-if="!enabled" class="cto-off"><i class="off"></i>Disabled on Agents page</span>
       </div>
+      <ChatAgentModelChip
+        :cli-options="ctoAgent.cliOptions.value"
+        :model-options="ctoAgent.modelOptions.value"
+        :cli="ctoAgent.cli.value"
+        :model="ctoAgent.model.value"
+        :memory-key="CHAT_AGENT_MEMORY_KEYS.cto"
+        :disabled="!enabled"
+        @update:cli="(v) => onAgentModelChange(v, ctoAgent.model.value)"
+        @update:model="(v) => onAgentModelChange(ctoAgent.cli.value, v)"
+      />
       <button
         class="close-x cto-close"
         type="button"
@@ -151,7 +176,12 @@ watch(
           />
           <ChatToolCallRow v-else-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
           <div v-else :class="`cto-line ${bubbleRole(row)}`" v-on="messageBubbleListeners(row)">
-            {{ row.text }}
+            <div
+              v-if="bubbleRole(row) === 'assistant'"
+              class="cto-markdown"
+              v-html="renderChatMarkdown(row.text)"
+            ></div>
+            <span v-else>{{ row.text }}</span>
             <!-- Every row carries its last-updated time (#0506), system rows
                  included: a `sys` entry is stamped like any other. -->
             <span v-if="row.at" class="msg-time">{{ fmtTime(row.at) }}</span>
@@ -166,7 +196,7 @@ watch(
       </button>
     </div>
 
-    <form class="cto-compose" @submit.prevent="send">
+    <form class="ai-chat-compose" @submit.prevent="send">
       <textarea
         ref="draftTextarea"
         v-model="draft"
@@ -179,7 +209,7 @@ watch(
       <button
         v-if="busy"
         type="button"
-        class="cto-stop"
+        class="ai-chat-stop"
         aria-label="Stop response"
         title="Stop response"
         @click="interrupt"
@@ -191,7 +221,7 @@ watch(
       <button
         v-else
         type="submit"
-        class="ai-chat-send"
+        class="ai-chat-send cto-send"
         :disabled="busy || !enabled || !draft.trim()"
       >
         Send
@@ -233,7 +263,9 @@ watch(
   font-size: 13.5px;
   letter-spacing: -0.01em;
 }
-.cto-identity span {
+/* Only the disabled state carries a line now (#0669): the subtitle was
+   redundant, and an active agent is conveyed by the panel working. */
+.cto-off {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -242,16 +274,11 @@ watch(
     monospace;
   color: var(--txt-dim);
 }
-.cto-identity i {
+.cto-off i {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
-}
-.cto-identity i.off {
   background: var(--txt-faint);
-  box-shadow: none;
 }
 /* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
 .cto-log-wrap {
@@ -331,6 +358,63 @@ watch(
   border: 1px solid var(--border);
   border-bottom-left-radius: 3px;
 }
+/* Assistant replies render as markdown (#0669). */
+.cto-markdown :deep(p) {
+  margin: 0 0 7px;
+}
+.cto-markdown :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.cto-markdown :deep(h1),
+.cto-markdown :deep(h2),
+.cto-markdown :deep(h3),
+.cto-markdown :deep(h4) {
+  margin: 8px 0 5px;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.cto-markdown :deep(h1:first-child),
+.cto-markdown :deep(h2:first-child),
+.cto-markdown :deep(h3:first-child) {
+  margin-top: 0;
+}
+.cto-markdown :deep(ul),
+.cto-markdown :deep(ol) {
+  margin: 5px 0;
+  padding-left: 17px;
+}
+.cto-markdown :deep(code) {
+  font: 11px "JetBrains Mono", monospace;
+  background: var(--md-body-bg);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.cto-markdown :deep(pre) {
+  margin: 6px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--md-body-bg);
+  overflow-x: auto;
+}
+.cto-markdown :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+.cto-markdown :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0;
+  font-size: 11.5px;
+}
+.cto-markdown :deep(th),
+.cto-markdown :deep(td) {
+  border: 1px solid var(--border);
+  padding: 4px 7px;
+  text-align: left;
+}
+.cto-markdown :deep(a) {
+  color: var(--cyan);
+}
 .cto-line.status {
   color: var(--txt-faint);
   font-style: italic;
@@ -347,64 +431,12 @@ watch(
     monospace;
   opacity: 0.8;
 }
-.cto-compose {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  /* #0444: the compose row was flush against the panel's bottom edge. */
-  margin: 0 12px 12px;
-  padding: 8px 9px 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel-solid);
-}
-.cto-compose textarea {
-  flex: 1;
-  min-height: 24px;
-  max-height: 120px;
-  overflow-y: auto;
-  resize: none;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--txt);
-  font: 12.5px/1.55 var(--font-sans);
-}
-.cto-compose textarea::placeholder {
-  color: var(--txt-faint);
-}
-.cto-compose button {
-  /* Deliberately no `background`/`color`: this scoped rule out-specifies
-     the shared .ai-chat-send, so setting a fill here would silently win
-     and leave the send button looking transparent. The send button takes
-     .ai-chat-send; .cto-stop sets its own. */
-
+/* Text send button — the shared compose sizes icon buttons at 31px; "Send"
+   needs its own width. No fill here: `.ai-chat-send` owns that (a fill would
+   out-specify the shared class and leave it transparent). */
+.cto-send {
   width: auto;
   padding: 0 12px;
-  height: 31px;
-  display: grid;
-  place-items: center;
-  flex: none;
-  border: 0;
-  border-radius: 9px;
-  cursor: pointer;
   font: 500 11px var(--font-sans);
-}
-.cto-compose button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.cto-compose button.cto-stop {
-  width: 31px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
-  color: var(--red, #ef5b5b);
-  background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
-}
-.cto-compose button.cto-stop svg {
-  width: 16px;
-  height: 16px;
 }
 </style>

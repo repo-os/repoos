@@ -269,7 +269,7 @@ defineExpose({ focusDraft });
       </div>
     </div>
 
-    <form class="pm-compose" @submit.prevent="emit('send')">
+    <form class="ai-chat-compose" @submit.prevent="emit('send')">
       <input
         ref="shotInput"
         v-if="canAttach"
@@ -305,7 +305,7 @@ defineExpose({ focusDraft });
       <button
         v-if="busy"
         type="button"
-        class="pm-stop"
+        class="ai-chat-stop pm-stop"
         aria-label="Stop PM response"
         title="Stop response"
         @click="emit('interrupt')"
