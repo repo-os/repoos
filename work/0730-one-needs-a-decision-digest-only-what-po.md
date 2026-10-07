@@ -12,7 +12,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T09:55:30Z"
+updated_at: "2026-10-07T10:09:11Z"
 ---
 ## Problem
 
@@ -62,3 +62,23 @@ Owner wants release soon. Verify diagnosis independently against CURRENT main an
 - 2026-10-07T09:47:41Z · body
 - 2026-10-07T09:54:41Z · body
 - 2026-10-07T09:55:30Z · body: section Shots
+- 2026-10-07T10:09:11Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/decision-digest.test.ts:174:26
+    172|       approvalByTaskId: {},
+    173|     });
+    174|     expect(digest.items).toEqual([]);
+       |                          ^
+    175|   });
+    176| });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+ Test Files  1 failed | 431 passed | 1 skipped (433)
+      Tests  2 failed | 5189 passed | 15 skipped (5206)
+   Start at  10:04:48
+   Duration  254.54s (transform 6.57s, setup 2.06s, import 44.46s, tests 239.71s, environment 200.65s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 738ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  10:09:03
+   Duration  2.75s (transform 1.16s, setup 14ms, import 1.46s, tests 738ms, environment 455ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
