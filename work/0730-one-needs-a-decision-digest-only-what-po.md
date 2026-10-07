@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-07T13:57:37Z"
+review_passes: 2
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
@@ -12,9 +14,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T13:57:37Z"
 close_out_repair_count: 1
-review_passes: 1
 ---
 ## Problem
 
@@ -152,3 +152,4 @@ error: script "test" exited with code 1
 - 2026-10-07T12:21:41Z · needs_input
 - 2026-10-07T13:56:12Z · needs_input (review-failed) cleared for review again by human
 - 2026-10-07T13:57:37Z · note: review pass 3: good to go
+
