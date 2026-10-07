@@ -11,13 +11,18 @@ branch: feat/close-out-candidate-worktree-has-no-node
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:49Z"
-updated_at: "2026-10-06T23:58:50Z"
+updated_at: "2026-10-07T00:00:13Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 24: unless the check plan starts with an install step. Install deps (or reuse) in the candidate worktree, or fail with advice.
 
 ## Verify first
 
 VERIFY FIRST: #0674 (merged 2026-10-06) already reuses the primary checkout's node_modules in a candidate worktree (integration-orchestrator.ts ~691-700). Reproduce on CURRENT main with a check plan that runs a locally installed tool (prettier) in the close-out candidate. If it already works, add a regression test, say so in your reply and the task notes, and stop.
+
+## Notes for AI
+## Verification (#0712)
+
+#0674 symlink-main reuses main's `node_modules` during candidate sync, but that alone does not cover a candidate with no usable install after merge (broken symlink, primary never installed, or plans that invoke local binaries like `prettier` without a leading install step). Implemented `shouldPrepareCandidateDependencies` in `dependency-install.ts` and wired it in `integration-orchestrator.ts` validating phase: frozen install when needed, skip when the full-profile check plan already installs, actionable advice when install is impossible. Regression tests in `close-out-dependency.test.ts`.
 
 ## Activity
 
@@ -30,3 +35,4 @@ VERIFY FIRST: #0674 (merged 2026-10-06) already reuses the primary checkout's no
 - 2026-10-06T23:57:16Z · body
 - 2026-10-06T23:57:25Z · body
 - 2026-10-06T23:58:50Z · body
+- 2026-10-07T00:00:13Z · body: section Notes for AI
