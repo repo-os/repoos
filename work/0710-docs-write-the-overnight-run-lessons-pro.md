@@ -2,7 +2,7 @@
 id: "0710"
 title: "Docs: write the overnight-run lessons (provider-failure scraper, self-check starvation, driver tips) into the repo"
 type: chore
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
@@ -46,4 +46,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-07T01:22:47Z · body
 - 2026-10-07T01:37:56Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-07T01:38:01Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-10-07T01:38:22Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T01:38:22Z · status active→review
