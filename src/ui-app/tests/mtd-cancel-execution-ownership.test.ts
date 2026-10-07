@@ -151,18 +151,30 @@ describe("Stop MTD keeps execution ownership until terminal (#0736)", () => {
   });
 
   it("attemptIsExecuting treats queued and terminal attempts as replaceable", () => {
-    const base = { taskId: "x", enqueuedAt: "", baseMainSha: null, branchSha: null, candidateSha: null };
+    const base = {
+      taskId: "x",
+      enqueuedAt: "",
+      baseMainSha: null,
+      branchSha: null,
+      candidateSha: null,
+    };
+    expect(attemptIsExecuting({ ...base, phase: "queued", startedAt: null } as never)).toBe(false);
     expect(
-      attemptIsExecuting({ ...base, phase: "queued", startedAt: null } as never),
-    ).toBe(false);
-    expect(
-      attemptIsExecuting({ ...base, phase: "validating", startedAt: new Date().toISOString() } as never),
+      attemptIsExecuting({
+        ...base,
+        phase: "validating",
+        startedAt: new Date().toISOString(),
+      } as never),
     ).toBe(true);
     expect(
       attemptIsExecuting({ ...base, phase: "done", startedAt: new Date().toISOString() } as never),
     ).toBe(false);
     expect(
-      attemptIsExecuting({ ...base, phase: "failed", startedAt: new Date().toISOString() } as never),
+      attemptIsExecuting({
+        ...base,
+        phase: "failed",
+        startedAt: new Date().toISOString(),
+      } as never),
     ).toBe(false);
   });
 

@@ -1387,11 +1387,7 @@ export class CloseOutOrchestrator {
           });
           console.warn(`Cleanup warning for task ${job.taskId}: ${cleanRes.reason}`);
         }
-        const done = this.coordinator.updateJob(
-          job.taskId,
-          { phase: "done" },
-          this.ownedAttempt,
-        );
+        const done = this.coordinator.updateJob(job.taskId, { phase: "done" }, this.ownedAttempt);
         if (!done) {
           return { ok: false, reason: "close-out attempt superseded during cleanup" };
         }
