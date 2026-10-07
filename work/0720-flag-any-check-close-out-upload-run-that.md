@@ -118,3 +118,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T02:11:09Z · body
 - 2026-10-07T02:12:52Z · body
 - 2026-10-07T02:14:23Z · status active→review
+- 2026-10-07T02:14:23Z · note: shots: skipped — 2 handoff shots already captured during finalization (#0680)
