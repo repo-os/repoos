@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T18:25:28.512Z: repoos check failed: ui verification: capture of / failed — click: Timeout 5000ms exceeded."
 id: "0669"
 title: "Standardise agent chat UI: shared input style, markdown replies, simplified headers with inline agent+model picker"
 type: feature
@@ -180,3 +182,4 @@ error: script "test" exited with code 1
 - 2026-10-07T18:16:34Z · body
 - 2026-10-07T18:18:07Z · body
 - 2026-10-07T18:18:52Z · body: section Shots
+
