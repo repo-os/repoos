@@ -18,7 +18,8 @@ import { basename, join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { boardRoot, loadConfig, resolveServePort } from "../core/config.js";
 import { buildIndex } from "../core/indexer.js";
-import { checkBuildForRoot, readBuildStamp } from "../core/build.js";
+import { checkBuildForRoot, readBuildMeta, readBuildStamp } from "../core/build.js";
+import { isManagedService } from "../core/service-manager.js";
 import { readTunnelConfig } from "../core/tunnel.js";
 import {
   readRegistry,
@@ -55,6 +56,23 @@ export interface StatusServer {
   startedAt: string | null;
   startedAtSource: "lockfile" | "health" | null;
   uptimeSeconds: number | null;
+  /**
+   * The running server's OWN RepoOS build, reported by /api/health
+   * (`serverVersion` / `serverBuildHash` / `serverBuildAt`) — the install the
+   * serve binary was loaded from, NOT this repo's checkout. Null when the
+   * server is down or too old to report them (#0701). Compared against the
+   * CLI's own build to flag a stale server.
+   */
+  version: string | null;
+  buildHash: string | null;
+  buildAt: string | null;
+  /**
+   * Whether this repo has a RepoOS-managed OS service (`repoos service
+   * install`). Distinguishes a managed service from a hand-run `repoos serve`
+   * — both write a serve lock, so `lifecycle` alone cannot tell them apart
+   * (#0701). Used to pick the restart hint.
+   */
+  managedService: boolean;
   /**
    * Result of probing /api/health on the port:
    *   "ok"          — answered and its root matches this repo
@@ -101,6 +119,12 @@ export interface StatusSnapshot {
   generatedAt: string;
   root: string;
   server: StatusServer;
+  /** The CLI's OWN build (this process's install) — the reference for the stale-server check (#0701). */
+  cli: {
+    version: string | null;
+    buildHash: string | null;
+    buildAt: string | null;
+  };
   build: StatusBuild;
   board: {
     taskCount: number;
@@ -236,6 +260,8 @@ interface HealthProbe {
   state: "ok" | "foreign" | "unreachable";
   root: string | null;
   version: string | null;
+  buildHash: string | null;
+  buildAt: string | null;
   serverStartedAt: string | null;
 }
 
@@ -244,6 +270,8 @@ async function probeHealth(port: number, root: string, timeoutMs: number): Promi
     state: "unreachable",
     root: null,
     version: null,
+    buildHash: null,
+    buildAt: null,
     serverStartedAt: null,
   };
   try {
@@ -255,13 +283,26 @@ async function probeHealth(port: number, root: string, timeoutMs: number): Promi
       ok?: unknown;
       root?: unknown;
       version?: unknown;
+      serverVersion?: unknown;
+      serverBuildHash?: unknown;
+      serverBuildAt?: unknown;
       serverStartedAt?: unknown;
     };
     if (body.ok !== true || typeof body.root !== "string") return miss;
     return {
       state: body.root === root ? "ok" : "foreign",
       root: body.root,
-      version: typeof body.version === "string" ? body.version : null,
+      // Prefer the running server's OWN build (serverVersion/serverBuildHash),
+      // falling back to `version` for servers too old to report them — the
+      // resolved server fields are what the CLI compares against its own build.
+      version:
+        typeof body.serverVersion === "string"
+          ? body.serverVersion
+          : typeof body.version === "string"
+            ? body.version
+            : null,
+      buildHash: typeof body.serverBuildHash === "string" ? body.serverBuildHash : null,
+      buildAt: typeof body.serverBuildAt === "string" ? body.serverBuildAt : null,
       serverStartedAt: typeof body.serverStartedAt === "string" ? body.serverStartedAt : null,
     };
   } catch {
@@ -372,19 +413,36 @@ export async function collectStatus(
     startedAt,
     startedAtSource,
     uptimeSeconds: uptimeMs !== null && Number.isFinite(uptimeMs) ? uptimeMs / 1000 : null,
+    // The running server's OWN build, from /api/health — only meaningful when
+    // the probe reached this repo's server.
+    version: health.state === "ok" ? health.version : null,
+    buildHash: health.state === "ok" ? health.buildHash : null,
+    buildAt: health.state === "ok" ? health.buildAt : null,
+    managedService: isManagedService(root),
     health: health.state,
     healthRoot: health.root,
     locks: locks.length,
   };
 
-  // ── build ──
+  // ── cli (this process's own build — the stale-server reference) ──
+  const cliMeta = readBuildMeta();
+  const cli = {
+    version: cliMeta.version,
+    buildHash: cliMeta.hash,
+    buildAt: cliMeta.buildAt,
+  };
+
+  // ── build (of THIS repo's checkout — not the running RepoOS install) ──
   const check = checkBuildForRoot(root);
   const build: StatusBuild = {
     code: check.code,
     stale: check.stale,
     applicable: check.applicable,
     message: check.message,
-    version: readVersionFromMarker(root) ?? health.version,
+    // The project root's own marker version. Deliberately NOT falling back to
+    // the server's RepoOS version: for a project repo (no marker) the build
+    // line must say so, and the server line carries the RepoOS version (#0701).
+    version: readVersionFromMarker(root),
     buildAt: readBuildStamp(root),
   };
 
@@ -486,6 +544,7 @@ export async function collectStatus(
     generatedAt: now.toISOString(),
     root,
     server,
+    cli,
     build,
     board: {
       taskCount: idx.taskCount,
@@ -555,6 +614,53 @@ function truncate(s: string, n: number): string {
   return s.length <= n ? s : s.slice(0, n - 1) + "…";
 }
 
+/** First 7 chars of a build hash, or null. A hash is a sha256 hex digest. */
+export function shortHash(hash: string | null): string | null {
+  if (!hash) return null;
+  return hash.slice(0, 7);
+}
+
+/**
+ * Is the running server's build different from this CLI's own build? `true`
+ * means the server predates (or otherwise diverges from) the installed CLI, so
+ * a restart would pick up fixes (#0701). `"unknown"` when neither a hash nor a
+ * timestamp is comparable — we never warn on a guess.
+ *
+ * Build hash is the precise signal; when a server is too old to report one we
+ * fall back to the build timestamp, then to the version.
+ */
+export function serverBuildState(
+  server: StatusServer,
+  cli: StatusSnapshot["cli"],
+): "stale" | "same" | "unknown" {
+  if (!server.running) return "unknown";
+  if (server.buildHash && cli.buildHash) {
+    return server.buildHash === cli.buildHash ? "same" : "stale";
+  }
+  const sAt = server.buildAt ? Date.parse(server.buildAt) : NaN;
+  const cAt = cli.buildAt ? Date.parse(cli.buildAt) : NaN;
+  if (Number.isFinite(sAt) && Number.isFinite(cAt)) {
+    return sAt < cAt ? "stale" : "same";
+  }
+  if (server.version && cli.version) {
+    return server.version === cli.version ? "same" : "stale";
+  }
+  return "unknown";
+}
+
+/** The command that restarts this repo's server — matches how it is running. */
+export function restartHint(server: StatusServer): string {
+  return server.managedService ? "repoos service restart" : "repoos serve";
+}
+
+/** `v0.5.66 (build abc123)` for the running server, degrading gracefully. */
+export function serverIdentity(server: StatusServer): string {
+  const hash = shortHash(server.buildHash);
+  if (!server.version && !hash) return "version unknown";
+  const ver = server.version ? `v${server.version}` : "version unknown";
+  return hash ? `${ver} (build ${hash})` : ver;
+}
+
 // ── Rendering ────────────────────────────────────────────────────────────────
 
 const LABEL = 10;
@@ -587,6 +693,21 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
     }
   }
 
+  // A running server older than the installed CLI is the tuk-private failure
+  // (#0701): it kept serving five-day-old code and nothing said so. Warn
+  // before the server line, with the restart that actually applies.
+  const serverState = serverBuildState(s.server, s.cli);
+  if (serverState === "stale") {
+    const from = s.server.version ? `v${s.server.version}` : "an older build";
+    const to = s.cli.version ? `v${s.cli.version}` : "the installed CLI";
+    console.log("");
+    console.log(
+      c.bold(c.yellow("  ⚠ server is older than the installed CLI")) +
+        c.dim(` (${from} → ${to}) — restart to pick up fixes`),
+    );
+    console.log(c.dim("    restart with ") + c.cyan(restartHint(s.server)));
+  }
+
   console.log("");
 
   // server
@@ -595,6 +716,7 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
     const bits: string[] = [];
     if (sv.port !== null) bits.push(`port ${sv.port}`);
     if (sv.pid !== null) bits.push(`pid ${sv.pid}`);
+    bits.push(serverIdentity(sv));
     if (sv.startedAt) {
       bits.push(
         `up ${formatUptime((sv.uptimeSeconds ?? 0) * 1000)} (since ${formatSince(sv.startedAt, now)})`,
@@ -605,7 +727,13 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
     row(
       "server",
       c.green("● running") +
-        c.dim(sv.lifecycle === "unmanaged" ? " · outside serve-lock lifecycle" : " · managed") +
+        c.dim(
+          sv.managedService
+            ? " · managed service"
+            : sv.lifecycle === "unmanaged"
+              ? " · outside serve-lock lifecycle"
+              : " · hand-run serve",
+        ) +
         c.dim(" · ") +
         bits.join(c.dim(" · ")),
     );
@@ -648,17 +776,27 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
     row("server", line);
   }
 
-  // build
+  // build (of THIS checkout — for a project repo there is no RepoOS marker, so
+  // say that plainly instead of the old "(no dist build — source checkout)",
+  // which read as if every project were a RepoOS source checkout. #0701)
   const buildBits = [
-    s.build.stale ? c.yellow("● stale") : c.green("● fresh"),
-    s.build.version ? c.dim("repoos v" + s.build.version) : c.dim("version unknown"),
+    s.build.applicable
+      ? s.build.stale
+        ? c.yellow("● stale")
+        : c.green("● fresh")
+      : c.dim("● n/a"),
+    s.build.version ? c.dim("v" + s.build.version) : c.dim("no RepoOS build"),
     s.build.buildAt
       ? c.dim("built " + formatSince(s.build.buildAt, now))
       : c.dim("build time unknown"),
   ];
   row("build", buildBits.join(c.dim(" · ")));
-  if (s.build.code === "no-build" || s.build.code === "published") {
-    sub(c.dim("(no dist build — source checkout)"));
+  if (!s.build.applicable) {
+    sub(
+      c.dim(
+        "(this checkout isn't a RepoOS build — the server line shows the running RepoOS build)",
+      ),
+    );
   }
 
   // board

@@ -874,7 +874,11 @@ export function explainBindFailure(
  * the last build (dist/.build-stamp.json, written by scripts/copy-assets.mjs).
  * Both are best-effort — null when unavailable so the UI can fall back.
  */
-function loadBuildInfo(): { version: string | null; buildAt: string | null } {
+function loadBuildInfo(): {
+  version: string | null;
+  buildAt: string | null;
+  hash: string | null;
+} {
   // Module-relative read of `.build-info.json` / `.build-stamp.json` — the
   // files that actually ship in a standalone install (see readBuildMeta).
   return readBuildMeta();
@@ -1183,13 +1187,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   const uiDir = findUiDir(repoos.config.root);
 
-  // The build hash of the code this process is running. Auto-reload (0066)
-  // triggers a replacement whenever the on-disk hash diverges. Skipped in dev
-  // mode (no compiled build to reload into), in preview children, and when an
-  // ephemeral port is requested (nothing stable to hand off).
+  // `loadedHash` — the build hash of the *served repo root* — drives auto-reload
+  // (0066): a replacement triggers whenever the on-disk root hash diverges. It
+  // is null for a project repo (no `dist/.build-info.json` at its root), which
+  // is why the injected UI hash used to read "unknown" there (#0701). The UI's
+  // injected hash and `/api/health`'s `buildHash` fall back to the *running
+  // install's* own build hash so a linked `repoos serve` serving a project repo
+  // still reports a real build; `serverBuildHash` on health is that same value
+  // for the CLI's stale-server check.
   const loadedHash = readBuildHash(config.root);
+  const serverBuildHash = readBuildMeta().hash;
+  const uiBuildHash = loadedHash ?? serverBuildHash;
   const readUiIndex = (indexPath: string): string =>
-    injectBuildHashIntoUiIndex(readFileSync(indexPath, "utf8"), loadedHash ?? "");
+    injectBuildHashIntoUiIndex(readFileSync(indexPath, "utf8"), uiBuildHash ?? "");
   const reloadEnabled =
     !isDevBuild() && process.env.REPOOS_PREVIEW_CHILD !== "1" && opts.port !== 0;
   let reload: ReloadManager | null = null;
@@ -2635,7 +2645,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   }
 
   // Initialize route handlers that need runtime configuration
-  initInfoHandlers(loadedHash || "", tunnelReadiness);
+  initInfoHandlers(uiBuildHash || "", tunnelReadiness);
   const pwaIconName = projectDisplayName(config.root);
   setIconRenderer((size: number, color?: string, theme?: "light" | "dark", maskable?: boolean) =>
     renderPwaIcon(pwaIconName, size, color, theme, maskable),
