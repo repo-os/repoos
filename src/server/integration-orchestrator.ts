@@ -1827,7 +1827,11 @@ export class CloseOutOrchestrator {
       ? null
       : await this.planCloseOutGateFor(job.taskId, wtPath, currentMainSha);
     if (gatePlan) {
-      this.logger?.integration(job.taskId, "info", `close-out gate: ${gatePlan.mode} — ${gatePlan.reason}`);
+      this.logger?.integration(
+        job.taskId,
+        "info",
+        `close-out gate: ${gatePlan.mode} — ${gatePlan.reason}`,
+      );
     }
     if (docsOnly) {
       this.logger?.integration(

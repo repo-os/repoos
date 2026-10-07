@@ -170,7 +170,8 @@ export function planCloseOutGate(input: CloseOutGateInput): CloseOutGatePlan {
       mode: "reuse",
       reuseTests: true,
       scoped: false,
-      reason: "main advanced with bookkeeping only — full suite reused from the handoff-tested tree",
+      reason:
+        "main advanced with bookkeeping only — full suite reused from the handoff-tested tree",
     };
   }
 

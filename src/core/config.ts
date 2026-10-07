@@ -1292,8 +1292,7 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // close-out suite even when the cheaper scoped/reuse modes would apply —
     // machinery the changed-path machinery cannot reason about. Empty rows are
     // dropped; an absent list is the same as none.
-    const checkFullSuitePaths =
-      parsed["check.fullSuitePaths"] ?? parsed["checks.fullSuitePaths"];
+    const checkFullSuitePaths = parsed["check.fullSuitePaths"] ?? parsed["checks.fullSuitePaths"];
     if (Array.isArray(checkFullSuitePaths)) {
       const paths = checkFullSuitePaths
         .filter((v): v is string => typeof v === "string" && v.trim() !== "")
