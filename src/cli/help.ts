@@ -161,6 +161,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--json · --port",
       },
       {
+        name: "watch",
+        usage: "watch [--json] [--task <id>] [--port N]",
+        desc: "Stream board SSE events for external driver sessions (GET /api/events)",
+        flags: "--json · --task · --port",
+      },
+      {
         name: "rm",
         usage: "rm <id> --yes",
         desc: "Delete a task file from the repo (same as the UI Delete button)",
