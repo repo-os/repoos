@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-07T19:10:13Z"
-review_passes: 3
 id: "0741"
 title: "Easter eggs bundle: board card error panel (flush, square, below the action button) and hide a stale close-out error while a new close-out runs"
 type: chore
@@ -13,6 +11,8 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
+updated_at: "2026-10-07T18:52:26Z"
+review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)"
 ---
@@ -21,10 +21,6 @@ last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification f
 Seen 2026-10-07 on a Review card (#0737): the action button 'Moving to done…' has square corners, but the failure message panel under it ('Leftover debug appendFileSync in tasks.ts broke 43 tests — …' with a Fix button) is a rounded box floating below the card with a gap, which looks detached from the card and clashes with the square buttons.
 
 Also, that message was STALE: it came from an earlier failed close-out attempt (the engineer had since removed the tracing: tasks.ts on the branch has no appendFileSync and the pipeline was already in 'check' with failed:false), but it stayed on the card while the new close-out ran, which reads as 'it failed again'.
-
-## Desired UX
-
-The failure panel on a board card sits flush under the action button with square corners and no gap, like the button; a stale close-out error is collapsed while a new close-out runs; the Fix button is disabled while a close-out runs (details in the items below).
 
 ## Items (one commit each, one test each)
 
@@ -136,26 +132,4 @@ error: script "test" exited with code 1
 - 2026-10-07T18:29:39Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-10-07T18:30:58Z · note: review pass 2: good to go
 - 2026-10-07T18:41:25Z · status review→active
-- 2026-10-07T18:42:09Z · handoff failed · ui-review handoff failed at check · remote validation failed: remote validation failed (exit 2) — …wind-merge@3.6.0
-+ tailwindcss@4.3.3
-+ typescript@5.9.3
-+ vite@8.2.0
-+ vitest@4.1.10
-+ vue@3.5.40
-+ vue-router@5.2.0
-+ vue-tsc@3.3.9
-422 packages installed [544.00ms]
-$ bun scripts/build.mjs
-$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
-$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
-src/ui-app/tests/close-out-attempt.test.ts(9,7): error TS2741: Property 'lastProgressAt' is missing in type '{ taskId: string; stage: "check"; failed: false; startedAt: string; }' but required in type '{ taskId: string; stage: "done" | "build" | "check" | "merge" | "sync" | "resolve-conflict" | null; failed: boolean; error?: string | undefined; startedAt: string | null; lastProgressAt: string | null; }'.
-src/ui-app/tests/close-out-attempt.test.ts(27,7): error TS2741: Property 'lastProgressAt' is missing in type '{ taskId: string; stage: "merge"; failed: false; startedAt: string; }' but required in type '{ taskId: string; stage: "done" | "build" | "check" | "merge" | "sync" | "resolve-conflict" | null; failed: boolean; error?: string | undefined; startedAt: string | null; lastProgressAt: string | null; }'.
-[validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-07T18:52:26Z · status active→review
-- 2026-10-07T18:52:26Z · note: Task body is underspecified: missing sections: Desired UX
-- 2026-10-07T19:08:38Z · note: review pass 3: failed — no usable report
-- 2026-10-07T19:08:38Z · needs_input
-- 2026-10-07T19:08:53Z · body
-- 2026-10-07T19:08:53Z · needs_input
-- 2026-10-07T19:10:13Z · note: review pass 4: good to go
-

@@ -1126,6 +1126,8 @@ export interface IntegrationPipelineSnapshot {
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];
+  /** Enqueue time (ISO) for each id in `queue`, for stale close-out UI (#0741). */
+  queueEnqueuedAt?: Record<string, string>;
   /** The repo's resolved check plan (`repoos.toml`), for data-driven tooltips (#0458). */
   checkPlan?: CheckPlanInfo;
   at: string;

@@ -42,6 +42,8 @@ export interface IntegrationSnapshot {
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];
+  /** Enqueue time (ISO) for each id in `queue`, for stale close-out UI. */
+  queueEnqueuedAt?: Record<string, string>;
   /**
    * The repo's resolved check plan (`repoos.toml`, #0446), so the pipeline's
    * tooltips describe the real merge-gate steps for THIS repo instead of a
@@ -103,14 +105,23 @@ export function buildIntegrationSnapshot(
     .filter((job) => !job.cancelled && job.phase !== "done" && job.phase !== "failed");
   const inFlight = live[0] ?? null;
   const queue: string[] = [];
+  const queueEnqueuedAt: Record<string, string> = {};
 
   for (const job of live) {
     if (inFlight && job.taskId === inFlight.taskId) continue;
     queue.push(job.taskId);
+    queueEnqueuedAt[job.taskId] = job.enqueuedAt;
   }
 
   if (!inFlight) {
-    return { empty: queue.length === 0, active: null, queue, checkPlan, at };
+    return {
+      empty: queue.length === 0,
+      active: null,
+      queue,
+      queueEnqueuedAt: queue.length ? queueEnqueuedAt : undefined,
+      checkPlan,
+      at,
+    };
   }
 
   const failed = inFlight.phase === "failed";
@@ -127,6 +138,7 @@ export function buildIntegrationSnapshot(
       lastProgressAt,
     },
     queue,
+    queueEnqueuedAt: queue.length ? queueEnqueuedAt : undefined,
     checkPlan,
     at,
   };

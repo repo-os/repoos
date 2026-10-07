@@ -31,6 +31,7 @@ import HotfixBadge from "./HotfixBadge.vue";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
 import DependencyChip from "./DependencyChip.vue";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
+import { closeOutAttemptStartedAt, isStaleDoneError } from "../lib/closeOutAttempt";
 import {
   integrationActiveCopy,
   integrationPipelineRole,
@@ -647,6 +648,20 @@ const doneErrorRetryHint = computed(() =>
   }),
 );
 
+const cardDoneError = computed(() => {
+  if (props.task.status !== "review") return null;
+  return repo.doneErrorFor(props.task.id);
+});
+
+const doneErrorStale = computed(() => {
+  if (!inPipeline.value || !cardDoneError.value) return false;
+  const startedAt = closeOutAttemptStartedAt(props.task.id, repo.integration);
+  return isStaleDoneError(cardDoneError.value.failedAt, startedAt);
+});
+
+const FIX_DISABLED_WHILE_CLOSE_OUT =
+  "Close-out is running — wait for it to finish before sending to Debugger";
+
 const IN_PIPELINE: CardAction = {
   label: "Moving to done…",
   title: "Already queued for close-out — no further action needed",
@@ -1164,9 +1179,14 @@ async function openDebuggerFromError(): Promise<void> {
       </div>
     </transition>
 
-    <div v-if="action" class="tc-foot tc-actions !ml-0 w-full">
+    <div
+      v-if="action || cardDoneError"
+      data-test-id="task-card-action-footer"
+      class="tc-foot tc-actions tc-card-footer !ml-0 w-full"
+    >
       <button
-        class="flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
+        v-if="action"
+        class="tc-card-footer-action flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
         :class="[actionFooterClass, reviewReady ? 'review-ready' : '']"
         :disabled="
           busy ||
@@ -1194,8 +1214,34 @@ async function openDebuggerFromError(): Promise<void> {
             stroke-linejoin="round"
           />
         </svg>
-        {{ busy ? "Working…" : action.label }}
+        {{ busy ? "Working…" : action?.label }}
       </button>
+      <DoneErrorCard
+        v-if="cardDoneError"
+        class="tc-done-error"
+        :message="cardDoneError.message"
+        :step="cardDoneError.step"
+        :conflicts="cardDoneError.conflicts"
+        :detail="cardDoneError.detail"
+        :log-path="cardDoneError.logPath"
+        :hint="cardDoneError.hint"
+        :failed-at="cardDoneError.failedAt"
+        :tldr="cardDoneError.tldr"
+        :summary="cardDoneError.summary"
+        :action="cardDoneError.action"
+        :tldr-diagnosing="!cardDoneError.tldr && repo.debugTldrWorkingFor(task.id)"
+        :retry-hint="doneErrorRetryHint"
+        :stale="doneErrorStale"
+        :fix-disabled="inPipeline"
+        :fix-disabled-title="FIX_DISABLED_WHILE_CLOSE_OUT"
+        :task-id="task.id"
+        :task-title="task.title"
+        @open-panel="openPanelFromError"
+        @open-debugger="openDebuggerFromError"
+        @dismiss="repo.dismissDoneError(task.id)"
+        @refresh-install-retry="repo.refreshInstallAndRetryIntegration(task.id)"
+        @click.stop
+      />
     </div>
     <!-- Fresh-done acknowledgement (0278): a steady Acknowledge footer that
          clears the persistent highlight. Done cards have no move action, so
@@ -1243,31 +1289,6 @@ async function openDebuggerFromError(): Promise<void> {
         Acknowledge
       </button>
     </div>
-    <!-- A failed move-to-done stays with the card that triggered it, directly
-         below the button, instead of detaching into a global toast. -->
-    <DoneErrorCard
-      v-if="task.status === 'review' && repo.doneErrorFor(task.id)"
-      class="tc-done-error"
-      :message="repo.doneErrorFor(task.id)!.message"
-      :step="repo.doneErrorFor(task.id)!.step"
-      :conflicts="repo.doneErrorFor(task.id)!.conflicts"
-      :detail="repo.doneErrorFor(task.id)!.detail"
-      :log-path="repo.doneErrorFor(task.id)!.logPath"
-      :hint="repo.doneErrorFor(task.id)!.hint"
-      :failed-at="repo.doneErrorFor(task.id)!.failedAt"
-      :tldr="repo.doneErrorFor(task.id)!.tldr"
-      :summary="repo.doneErrorFor(task.id)!.summary"
-      :action="repo.doneErrorFor(task.id)!.action"
-      :tldr-diagnosing="!repo.doneErrorFor(task.id)!.tldr && repo.debugTldrWorkingFor(task.id)"
-      :retry-hint="doneErrorRetryHint"
-      :task-id="task.id"
-      :task-title="task.title"
-      @open-panel="openPanelFromError"
-      @open-debugger="openDebuggerFromError"
-      @dismiss="repo.dismissDoneError(task.id)"
-      @refresh-install-retry="repo.refreshInstallAndRetryIntegration(task.id)"
-      @click.stop
-    />
   </article>
 
   <RestartTaskDialog
