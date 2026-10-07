@@ -1,6 +1,6 @@
 ---
 id: "0727"
-title: "Autopilot: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
+title: "Give the CTO the routine: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
 type: feature
 status: inbox
 priority: p1
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T02:05:31Z"
-updated_at: "2026-10-07T02:10:58Z"
+updated_at: "2026-10-07T02:11:10Z"
 ---
 ## Problem
 
@@ -30,8 +30,13 @@ updated_at: "2026-10-07T02:10:58Z"
 
 Related: #0686, #0688, #0693, #0679, #0720, #0723.
 
+## Framing (2026-10-07)
+
+No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.ts) is the one that takes over the routine landing/restart/retry work, under the owner's policy and with the existing allowlist, rate limits and audit trail. External driver sessions (Claude Code, Codex) stay optional. Anything outside policy is escalated to the human through the attention feed.
+
 ## Activity
 
 - 2026-10-07T02:05:31Z · created · unknown
 - 2026-10-07T02:06:09Z · note: Created as part of story 0009 (Autopilot).
 - 2026-10-07T02:10:58Z · story
+- 2026-10-07T02:11:10Z · title, body
