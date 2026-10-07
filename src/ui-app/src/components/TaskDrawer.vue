@@ -2318,13 +2318,13 @@ async function loadIntegrationConflictResolution(taskId: string): Promise<void> 
 }
 
 watch(
-  () => [ui.active?.id, inPipeline.value, ui.activeTab] as const,
-  ([id, inPipe, tab]) => {
-    if (!id) {
+  () => [ui.active?.id, inPipeline.value] as const,
+  ([id, inPipe]) => {
+    if (!id || !inPipe) {
       integrationConflictResolution.value = null;
       return;
     }
-    if (tab === "review" || inPipe) void loadIntegrationConflictResolution(id);
+    void loadIntegrationConflictResolution(id);
   },
 );
 
