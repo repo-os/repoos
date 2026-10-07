@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-07T14:17:13Z"
-review_passes: 2
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
@@ -13,6 +11,8 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
+updated_at: "2026-10-07T14:18:55Z"
+review_passes: 2
 last_check_failure: "repoos check at 2026-10-07T12:21:44.677Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -94,4 +94,4 @@ error: script "test" exited with code 1
 - 2026-10-07T14:16:20Z · status active→review
 - 2026-10-07T14:16:20Z · note: shots: skipped — the diff (7 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-07T14:17:13Z · note: review pass 2: good to go
-
+- 2026-10-07T14:18:55Z · note: BLOCKING independent review of fc20b00a1: releaseHandoffInFlight callback fires before remaining housekeeping/protection; recordWorktreeHandoffProtection again fire-and-forget despite prior guard instruction. Current tests only callback-count/existingtest, NO deferred protection race or owner10consecutivepassesunderload evidence. Require generation-safe protection: delayed old finalization must not overwrite new HEAD/status/snapshot/lock or release new handoff marker via old finally. Await protection before releasing slot or prove guarded per-generation completion. Counter double read is entirely synchronous with no await, so cannot itself fix same-process interleaving; provide actual reproducer demonstrating status clobber instead of asserting. Preserve minimal worktree active sync if supported but no safety regression. Do not approve/MTD current patch until these acceptance requirements verified. Pending remotehandoff should end before returningactive/newwriter.
