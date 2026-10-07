@@ -123,3 +123,4 @@ Rationale: land routine docs/chore work only; machinery paths and UI screenshot 
 - 2026-10-07T09:11:26Z · body
 - 2026-10-07T09:12:43Z · note: Driver diagnosis of thinkpad09:11 failure: #0711 merged_commit regression assertion uses literal unquoted YAML text; actual correct SHA was quoted because it began00aef. Same assertion exists current MAIN, not727sourcebug. Keep new policy machinery scope focused; do not weaken gate or alter production serializer. If fixing test only, preserve semantic assertion via parser and explicitly record baseline-current-main evidence for review; no unrelated source edits.
 - 2026-10-07T09:17:47Z · status active→review
+- 2026-10-07T09:17:47Z · note: shots: skipped — 10 shots already captured — an engineer-made capture pre-empts the automatic one
