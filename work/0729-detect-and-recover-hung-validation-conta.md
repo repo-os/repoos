@@ -12,7 +12,7 @@ branch: feat/detect-and-recover-hung-validation-conta
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T09:04:45Z"
+updated_at: "2026-10-07T09:05:26Z"
 review_passes: 2
 error: "script \\"test\\" exited with code 1 — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.\""
 review_rounds: 1
@@ -155,3 +155,4 @@ error: script "test" exited with code 1
 - 2026-10-07T09:02:46Z · body
 - 2026-10-07T09:03:51Z · body
 - 2026-10-07T09:04:45Z · note: Driver review blocker: rvFixture=hung-runs currently swaps host data in production RemoteRunnersPanel.vue without a preview-only guard. This introduces a diagnostic product mode solely for screenshots and can leave real moveHost controls bound to fixture-hosts when hostPoolEditable is true. Remove production query-fixture plumbing and dedicated src fixture; capture labeled evidence in a temporary Playwright harness with route-intercepted /api/remote-validation/status only, no production state or config writes. Do not handoff until addressed. Existing source hang fix remains scope. --json
+- 2026-10-07T09:05:26Z · body
