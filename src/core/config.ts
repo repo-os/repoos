@@ -226,6 +226,10 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     fallbackToLocal: false,
     retryOtherHosts: false,
     maxConcurrent: 1,
+    // #0729: minutes a remote run's output may sit unchanged on an idle host
+    // before it is called hung, its container killed, and the run retried on
+    // another host. 0 / unset falls back to DEFAULT_HANG_IDLE_MINUTES (5).
+    hangIdleMinutes: 5,
   },
   // Close-out (Move to done) pipeline budget (#0573): a 6-minute wall clock
   // from `queued → syncing` (`startedAt`) to a terminal job state. `0`
@@ -1515,6 +1519,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     ) {
       cfg.remoteValidation = { ...cfg.remoteValidation, maxConcurrent: rvMaxConcurrent };
     }
+    const rvHangIdle = parsed["remoteValidation.hangIdleMinutes"];
+    if (typeof rvHangIdle === "number" && Number.isFinite(rvHangIdle) && rvHangIdle > 0) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, hangIdleMinutes: rvHangIdle };
+    }
     const rvFallback = parsed["remoteValidation.fallbackToLocal"];
     if (typeof rvFallback === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, fallbackToLocal: rvFallback };
@@ -2283,6 +2291,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "How many remote validation runs may execute at once per host. Extra runs wait in a queue. Default 1: two full test suites on one machine cause load-induced timeouts that show up as a failed gate.",
     },
     {
+      key: "remoteValidation.hangIdleMinutes",
+      label: "Remote validation: hang timeout (minutes)",
+      type: "number",
+      tier: "guarded",
+      restartRequired: false,
+      default: 5,
+      description:
+        "A remote run whose output stops changing for this many minutes while its host is idle " +
+        "(load per CPU below 0.5) is treated as hung: its container is killed and the run is " +
+        "retried once on another host, recorded as 'hung'. Default 5. Raise it only for a suite " +
+        "that legitimately goes quiet for longer than that early on; too high and a real hang " +
+        "wastes the host before anything notices.",
+    },
+    {
       key: "remoteValidation.fallbackToLocal",
       label: "Remote validation: fall back to local",
       type: "boolean",
@@ -2553,6 +2575,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.idleShutdownMinutes",
   "remoteValidation.maxServerLifetimeMinutes",
   "remoteValidation.maxConcurrent",
+  "remoteValidation.hangIdleMinutes",
   "remoteValidation.fallbackToLocal",
   "remoteValidation.retryOtherHosts",
   "remoteValidation.engineerSelfCheckRemote",

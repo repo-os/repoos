@@ -78,6 +78,26 @@ function tmpRoot(): string {
 
 const tick = (ms = 10): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+function shippedValidateSh(): string {
+  let dir = process.cwd();
+  for (let i = 0; i < 6; i++) {
+    const candidate = join(dir, "scripts", "remote-runner", "validate.sh");
+    if (existsSync(candidate)) return readFileSync(candidate, "utf8");
+    dir = join(dir, "..");
+  }
+  return "";
+}
+
+/** Bash fragment validate.sh runs after parsing args, before allocating WORK. */
+function validatePreWorkStartup(script: string): string {
+  const workLine = 'WORK="$(mktemp -d "$HOME/.repoos-validate.XXXXXX")"';
+  const start = script.indexOf('docker ps -aq --filter "name=repoos-validate-"');
+  const end = script.indexOf(workLine);
+  expect(start).toBeGreaterThanOrEqual(0);
+  expect(end).toBeGreaterThan(start);
+  return script.slice(start, end).trim();
+}
+
 // ── config parsing ───────────────────────────────────────────────────────────
 
 describe("host pool config parsing", () => {
@@ -2083,6 +2103,34 @@ describe("hung container cleanup (#0729)", () => {
     expect(cmd).not.toMatch(/--filter\s+'?name=repoos-validate-'?\s+2>/);
   });
 
+  it("startup does not globally sweep sibling work dirs in the pre-container window (#0729 review)", async () => {
+    // Confirmed root cause: a pre-lock `rm -rf` of $HOME/.repoos-validate.* hit
+    // a sibling's $WORK before its container existed (invisible to mount guards)
+    // and emptied /repo mid-run. The fix is no global workdir sweep at startup;
+    // each run cleans only its own $WORK in the EXIT trap.
+    const script = shippedValidateSh();
+    expect(script).not.toBe("");
+    expect(script).not.toMatch(/for _stale in.*\.repoos-validate/);
+    expect(script).toMatch(/trap _rvcleanup EXIT/);
+    expect(script).toMatch(/rm -rf "\$WORK"/);
+
+    const startup = validatePreWorkStartup(script);
+    const root = tmpRoot();
+    const home = join(root, "home");
+    mkdirSync(home, { recursive: true });
+    const workA = join(home, ".repoos-validate.aaaaaa");
+    const marker = join(workA, "repo", "marker");
+
+    const hold = (async () => {
+      mkdirSync(join(workA, "repo"), { recursive: true });
+      writeFileSync(marker, "preserve");
+      await tick(300);
+    })();
+    const startupRun = sh(`export HOME=${JSON.stringify(home)} IMAGE=repoos-ci; ${startup}`);
+    await Promise.all([hold, startupRun]);
+    expect(readFileSync(marker, "utf8")).toBe("preserve");
+  });
+
   it("probes for stale containers when checking a docker host", () => {
     const cmd = prereqProbeCommand("docker", "repoos-ci");
     expect(cmd).toContain("name=repoos-validate-");
@@ -2229,5 +2277,36 @@ describe("hung run recovery end to end (#0729)", () => {
     expect(f.pending()).toHaveLength(1);
     f.release();
     expect((await resultPromise).ok).toBe(true);
+  });
+});
+
+// ── container cleanup on cancel/timeout (#0729 review) ───────────────────────
+
+describe("server-side container cleanup when a run is cancelled or times out (#0729)", () => {
+  it("removes the run's container by name when the run times out", async () => {
+    // A run the outer timeout SIGKILLs (or the caller's deadline cancels) can
+    // leave its container running if the SSH channel is gone before
+    // validate.sh's EXIT trap fires. The runner must therefore issue its own
+    // scoped `docker rm -f repoos-validate-<id>` — never a blanket kill.
+    const f = poolFixture({ hosts: [{ host: "a" }], timeoutRunOn: ["a"] });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+
+    const summary = await f.runner.validate(opts("0729"));
+    expect(summary.ok).toBe(false);
+    // The cleanup is fire-and-forget; give it a tick to land.
+    for (let i = 0; i < 20 && f.killed.length === 0; i++) await tick(5);
+    expect(f.killed).toHaveLength(1);
+    expect(f.killed[0]).toMatch(/^repoos-validate-/);
+  });
+
+  it("does not kill a container for a clean pass (validate.sh's own trap already removed it)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = f.runner.validate(opts("0729"));
+    for (let i = 0; i < 100 && f.pending().length === 0; i++) await tick();
+    f.release();
+    expect((await resultPromise).ok).toBe(true);
+    for (let i = 0; i < 10; i++) await tick(5);
+    expect(f.killed).toHaveLength(0);
   });
 });
