@@ -489,6 +489,52 @@ export async function cmdAgentsRunning(args: string[]): Promise<number> {
   }
 }
 
+export async function cmdDecisions(args: string[]): Promise<number> {
+  const { opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const data = await api.requestOk("GET", "/api/decisions");
+    if (opts.json) {
+      printJson(data);
+      return 0;
+    }
+    const digest = data as {
+      items?: Array<{
+        kind: string;
+        taskId: string | null;
+        title: string;
+        cause: { headline: string };
+        actions: Array<{ label: string; policyAutomatic: boolean }>;
+      }>;
+      automationPaused?: boolean;
+    };
+    const items = digest.items ?? [];
+    if (!items.length) {
+      console.log(c.green("  ✓ ") + c.dim("No decisions waiting — policy and CTO have the board."));
+      return 0;
+    }
+    const paused = digest.automationPaused ? " (automation paused)" : "";
+    console.log(c.yellow(`  ${items.length} item(s) need a decision${paused}:`));
+    for (const item of items) {
+      const id = item.taskId ? `#${item.taskId}` : item.kind;
+      console.log(`  · ${id} — ${item.cause.headline}`);
+      const auto = item.actions.filter((a) => a.policyAutomatic).map((a) => a.label);
+      const human = item.actions.filter((a) => !a.policyAutomatic).map((a) => a.label);
+      if (auto.length) console.log(c.dim(`      CTO/policy: ${auto.join("; ")}`));
+      if (human.length) console.log(c.dim(`      You: ${human.join("; ")}`));
+    }
+    return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
 export async function cmdStats(args: string[]): Promise<number> {
   const { opts, error } = parseCommonFlags(args);
   if (error) {
