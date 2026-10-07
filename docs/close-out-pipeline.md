@@ -735,6 +735,20 @@ to tell apart:
 |---|---|---|---|---|
 | **Pipeline timeout** | Automatically, once the attempt spends its close-out budget from `startedAt` (monotonic elapsed time — laptop sleep does not count, #0679) | Inline error card | `failed` — reason starts `close-out timed out after ` | Raise the budget (Settings → General → "Close-out timeout", or `[closeOut] timeoutMs` in `repoos.toml`) or retry when the runner is less loaded. Retryable: the task stays `review`, feature branch/worktree untouched. |
 | **Stop MTD** (#0459) | You clicked Stop | none — a cancel is not a failure | job record removed, no `failed` state | Inspect what happened, then click **Move to done** again. |
+
+**Stop MTD vs. an in-flight attempt (#0736).** A cancel is cooperative: the
+running orchestrator aborts at its next checkpoint, so a remote-validation
+await or a running child can stay alive for a moment after you click Stop.
+While that cancelled attempt is **still executing**, clicking **Move to done**
+again is **deferred** — the server returns a 409 ("still shutting down") and
+keeps the cancelled record, rather than replacing it with a new queued job. The
+old callback would otherwise outlive the record (its cancel flag and identity
+replaced), later mutate the fresh job, and let two close-outs publish for one
+task. Each attempt carries a durable, monotonically increasing generation
+(`.repoos/integration-jobs/<id>.gen`); a run's writes are scoped to the
+generation it started with, so a late callback from a superseded attempt is
+refused. Once the old run reaches terminal and drops its own record, clicking
+Move to done starts a normal new attempt.
 | **Genuine gate failure** | The gate itself failed | Inline error card with the check's Results summary | `failed` — `check failed: …`, `merge conflict in …`, … | Fix per the reason; a real conflict resolves on the feature branch. |
 
 **How the budget works:**

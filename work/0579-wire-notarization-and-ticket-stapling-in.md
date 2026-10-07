@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:43:47Z"
-updated_at: "2026-10-07T14:01:41Z"
+updated_at: "2026-10-07T16:09:27Z"
 ---
 After the release app and its DMG are signed as specified by #0578, the macOS Hub release job must submit the DMG to Apple's notary service, wait for approval, staple Apple's ticket to that same DMG, and verify the result before attaching it to a GitHub Release. This completes the distribution path needed for Gatekeeper to trust the downloaded artifact, including offline verification from the stapled ticket.
 
@@ -23,17 +23,17 @@ Developer ID signing identifies the publisher but does not by itself establish A
 There is no UI change in this task: users receive a notarized, stapled DMG, while maintainers get an automated release gate with actionable Apple rejection details and no per-release portal or Keychain work.
 
 ## Acceptance criteria
-
 - In `.github/workflows/macos-hub.yml`, the existing `release` job submits `RepoOSHub.dmg` after packaging and the DMG install-experience check, and before any release upload. It submits the signed DMG containing `RepoOS Hub.app`; do not submit the app separately or change the signing work owned by #0578.
-- Use the notarization credential provisioned by #0576: prefer `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`; use `APPLE_API_KEY`, `APPLE_API_KEY_ID`, and `APPLE_API_ISSUER_ID` instead only if that is the credential set actually provisioned. Never hard-code or print secret values. Document the chosen variant and briefly identify the supported alternative in the runbook.
+- Use the notarization secret group provisioned by #0576, without exposing its values. The chosen group and its exact variable names must be documented in the runbook; do not hard-code them into scripts or logs.
 - Run `xcrun notarytool submit RepoOSHub.dmg` with `--wait`, `--timeout 1800`, and `--output-format json`. Capture the submission `id` from that command's JSON output and retain it for diagnostics; use `set -o pipefail` if piping through `tee` so a failed submission cannot be masked.
-- A rejected submission or wait timeout fails the step/job. When an ID was returned, run `xcrun notarytool log "$ID"` using the same credential variant and include Apple's log output in CI; do not guess an ID. If submission fails before returning an ID, preserve the original nonzero failure and report that no submission ID was available. Never continue to stapling or upload after failure.
+- A rejected submission or wait timeout fails the step/job. When an ID was returned, run `xcrun notarytool log "$ID"` using the same authentication options and include Apple's log output in CI; do not guess an ID. If submission fails before returning an ID, preserve the original nonzero failure and report that no submission ID was available. Never continue to stapling or upload after failure.
 - Only after accepted notarization, run `xcrun stapler staple RepoOSHub.dmg`, then `xcrun stapler validate RepoOSHub.dmg`, and `spctl --assess --type open --context context:primary-signature RepoOSHub.dmg`. Each command is a fatal gate; do not suppress failures or upload a pre-stapling copy.
 - The GitHub Release upload occurs only after all notarization and verification gates succeed and attaches that exact `RepoOSHub.dmg` file.
-- Provide a non-publishing validation path (for example, an explicit `workflow_dispatch` dry-run input) that can exercise submission, stapling, and verification without creating or modifying a GitHub Release. It must not publish a test tag or bypass notarization. If required #0576 secrets are unavailable, fail clearly before upload; never treat missing credentials as permission to upload an unnotarized artifact. Make the dry-run behavior and any credential prerequisite visible in the workflow and logs.
+- Provide a non-publishing validation path (for example, an explicit `workflow_dispatch` dry-run input) that can exercise submission, stapling, and verification without creating or modifying a GitHub Release. It must not publish a test tag or bypass notarization. If the #0576 secret group is unavailable, fail clearly before upload; never treat missing values as permission to upload an unnotarized artifact. Make dry-run behavior and prerequisites visible in the workflow and logs.
 - Update `docs/macos-hub-release.md` to remove claims that the DMG is ad-hoc signed/not notarized or that a Gatekeeper warning is expected. Describe the automated submit/wait, staple, and verification sequence and add a release-checklist item confirming successful notarization and stapling before publication.
-- Do not commit, print, or expose passwords, API keys, certificates, or private-key material. Keep the release asset name `RepoOSHub.dmg` consistent.
+- Do not commit, print, or expose passwords, signing certificates, private keys, or any other secret values. Keep the release asset name `RepoOSHub.dmg` consistent.
 - Run `repoos check` and resolve any failures caused by this change.
+
 
 ## Notes for AI
 
@@ -55,3 +55,6 @@ There is no UI change in this task: users receive a notarized, stapled DMG, whil
 - 2026-10-06T23:48:11Z · needs_input
 - 2026-10-07T14:00:10Z · needs_input
 - 2026-10-07T14:01:41Z · body
+- 2026-10-07T15:47:01Z · needs_input
+- 2026-10-07T16:08:42Z · needs_input
+- 2026-10-07T16:09:27Z · body: section Acceptance criteria

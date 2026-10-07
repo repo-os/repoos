@@ -1,8 +1,10 @@
 ---
+updated_at: "2026-10-07T16:27:39Z"
+review_passes: 6
 id: "0739"
 title: "Hung validation run leaves a leaked host slot: 'HUNG · KILLING' never clears, and the run's bundle file is left on the host"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,8 +14,9 @@ branch: feat/hung-validation-run-leaves-a-leaked-host
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:05Z"
-updated_at: "2026-10-07T14:30:43Z"
-review_passes: 1
+last_check_failure: "repoos check at 2026-10-07T16:16:48.550Z: repoos check failed: ⏭ user-docs-build — skipped — no changed path matches user-docs/** · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transpa… (truncated)"
+close_out_repair_count: 1
+review_rounds: 1
 ---
 ## Problem
 
@@ -47,3 +50,40 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T14:25:09Z · note: review pass 1: good to go
 - 2026-10-07T14:28:35Z · status review→active
 - 2026-10-07T14:30:43Z · body
+- 2026-10-07T14:37:27Z · body
+- 2026-10-07T14:37:30Z · note: Additional current evidence14:37Z: #730 mini run started14:22:32 last output14:23:07; owner otherdriver recorded SSH timeout/unreachable14:35, cancelled/requeuedjob14:35:36, but runners APIstill oldmini activeRun0730. Unknown/unavailable load must NOT disable bounded no-output/liveness detection indefinitely; include regression for unavailable host stats and cancellation cleanup. Do not SSH/changehosts. Existingboundedownershipfix applies, preserve realgate failures.
+- 2026-10-07T14:38:46Z · body
+- 2026-10-07T14:39:34Z · status active→review
+- 2026-10-07T14:39:34Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T14:41:22Z · note: review pass 2: needs some work
+- 2026-10-07T14:41:45Z · note: Independent driver currentcommit inspection14:42: killHungRun/finalizeHungKill still directly await exec.runRemote with timeout argument; no local Promise.race/deadline, so injected kill neverresolves stillblocks finally slotrelease. GateLinger timer only calls abort callback, main exec.runRemote neverresolves if abort callbackdoesnotsettle; need bounded settlement/realgate result. Require explicit fake deps IGNORING timeout/regAbort tests, not just fakesreturntimedOut. Do not mark these acceptance blockers green as edgecases.
+- 2026-10-07T15:02:59Z · status review→active
+- 2026-10-07T15:05:05Z · body
+- 2026-10-07T15:21:59Z · body
+- 2026-10-07T15:23:08Z · body
+- 2026-10-07T15:25:15Z · body
+- 2026-10-07T15:25:45Z · status active→review
+- 2026-10-07T15:25:46Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T15:26:49Z · note: review pass 3: good to go
+- 2026-10-07T15:30:56Z · note: Independent15:30 inspection: gate-exit no-op abort Promise.race now fixed; hard kill deadline fixed. Remaining blocker: run=await Promise.race only exec.runRemote + gateLingerPromise. onHung assigns hangRecovery but never resolves a raced terminal promise; finalizeHungKill calls abortMain and releaseSlot, so main runRemote that ignores abort STILL leaves validate() pending forever even though slot is released. Manual kill same issue unless generation abort callback settles validator. Add test MAIN SSH never resolves + abort NOOP + no gate marker; trigger watchdog/manual kill, require validate() settles bounded AND exact slot cleared, preserving hung/cancelled classification. Do not approve current green report until this case passes. No edits while pending handoff; repair after terminal.
+- 2026-10-07T15:33:28Z · status review→active
+- 2026-10-07T15:34:43Z · body
+- 2026-10-07T15:37:08Z · status active→review
+- 2026-10-07T15:37:09Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T15:38:22Z · note: review pass 4: needs some work
+- 2026-10-07T15:38:22Z · status review→active
+- 2026-10-07T15:43:21Z · body
+- 2026-10-07T15:44:49Z · body
+- 2026-10-07T15:52:53Z · status active→review
+- 2026-10-07T15:52:53Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T15:53:28Z · note: review pass 5: good to go
+- 2026-10-07T16:05:27Z · status review→active
+- 2026-10-07T16:05:27Z · note: close-out repair: merge-conflict
+- 2026-10-07T16:07:09Z · body
+- 2026-10-07T16:08:38Z · body
+- 2026-10-07T16:16:45Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-10-07T16:25:59Z · body
+- 2026-10-07T16:26:48Z · status active→review
+- 2026-10-07T16:26:48Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T16:27:39Z · note: review pass 6: good to go
+

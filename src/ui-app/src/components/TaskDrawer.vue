@@ -46,6 +46,7 @@ import {
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
+import { useNoticesStore } from "../stores/notices";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtTime, formatDuration, relTime } from "../lib/time";
 import { fmtTokens } from "../lib/format";
@@ -129,6 +130,7 @@ import { defaultTaskArea, formatTaskAreas, parseTaskAreas } from "../../../core/
 
 const repo = useRepoStore();
 const ui = useUiStore();
+const notices = useNoticesStore();
 
 /** Every prerequisite, blocking ones flagged, each resolvable to a title. */
 const dependencyRows = computed(() => {
@@ -412,11 +414,18 @@ const checkChip = computed(() => {
   if (run) {
     const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
     const machine = checkMachine.value;
+    const taskId = ui.active?.id;
+    // #0720: the server flags an in-flight run past 1.5x its kind median; the
+    // badge keeps that visible on the task itself, not only in the bell.
+    const slow = taskId ? notices.slowRunByTask[taskId] : undefined;
     return {
       state: "running" as const,
+      slow: !!slow,
+      slowDetail: slow?.detail ?? null,
       label: `Checks running${machine ? ` on ${machine}` : ""} · ${elapsed}`,
-      title:
-        run.scope === "full"
+      title: slow
+        ? "Checks are running slower than usual — focus the slow badge for timing details"
+        : run.scope === "full"
           ? "The check gate is running — open the Debug tab for live output"
           : `Changed-path check (${run.scope}) — open the Debug tab for live output`,
     };
@@ -3907,6 +3916,18 @@ watch(
               >
                 <ActivityIndicator v-if="checkChip.state === 'running'" class="ck-chip-spin" />
                 {{ checkChip.label }}
+                <span
+                  v-if="checkChip.slow"
+                  class="ck-slow-badge"
+                  data-test-id="task-check-slow"
+                  tabindex="0"
+                  :aria-label="`Slow check. ${checkChip.slowDetail ?? ''}`"
+                  :data-tip="
+                    checkChip.slowDetail ?? 'This check is slower than typical for its kind'
+                  "
+                >
+                  slow
+                </span>
               </button>
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
@@ -5283,6 +5304,12 @@ watch(
               {{ repo.fmtDate(uiHandoffVerification.at) }}
               · {{ uiHandoffVerification.captures }} capture(s)
             </p>
+            <p v-if="uiHandoffVerification.sourceIdentity" class="ui-verification-detail">
+              Tested tree {{ uiHandoffVerification.sourceIdentity }}
+              <span v-if="uiHandoffVerification.evidenceDir">
+                · PNGs at {{ uiHandoffVerification.evidenceDir }}
+              </span>
+            </p>
             <p v-if="uiHandoffVerification.issues.length === 0" class="ui-verification-ok">
               No console errors, failed same-origin requests, overflow, or blank captures at
               handoff.
@@ -5296,6 +5323,24 @@ watch(
                 <span v-if="issue.url" class="ui-verification-detail" :title="issue.url">{{
                   issue.url
                 }}</span>
+              </li>
+            </ul>
+            <!-- #0734: exact URL + assertion outcomes per capture, so a reviewer
+                 sees what was actually verified, not just "clean console". -->
+            <ul
+              v-if="uiHandoffVerification.captureDetails?.length"
+              class="ui-verification-captures"
+            >
+              <li v-for="(cap, idx) in uiHandoffVerification.captureDetails" :key="idx">
+                <span class="mono">{{ cap.label || cap.target + cap.route }}</span>
+                <span class="ui-verification-detail">
+                  · {{ cap.routeMatched ? "route matched" : "WRONG ROUTE" }}
+                  <template v-if="cap.redirectNote"> — {{ cap.redirectNote }}</template>
+                  <template v-if="cap.assertionsChecked">
+                    · {{ cap.assertionsPassed }}/{{ cap.assertionsChecked }} assertion(s)
+                  </template>
+                </span>
+                <span class="ui-verification-detail" :title="cap.url">{{ cap.url }}</span>
               </li>
             </ul>
           </section>

@@ -53,6 +53,18 @@ export interface ShotMeta {
   /** "auto" when the server's handoff capture wrote it, so a re-capture may replace it. */
   origin?: "auto";
   /**
+   * #0734: the capture-plan fingerprint this shot was produced from. A re-handoff
+   * reuses an auto capture only when this matches the CURRENT plan, so a plan
+   * edited after a stale capture (a corrected route, a new assertion) forces a
+   * fresh capture instead of reusing evidence from the old plan.
+   */
+  planFingerprint?: string;
+  /**
+   * #0734: the tested tree identity (short HEAD sha) the shot was captured from,
+   * so reuse is bound to the source tree as well as the plan.
+   */
+  sourceIdentity?: string;
+  /**
    * The full declared entry a hand-added shot was captured from (#0627), so
    * delete can sync THE exact `## Shots` declaration — including selector and
    * steps, which the shallow fields alone cannot distinguish. Absent for
@@ -78,6 +90,10 @@ interface ShotManifestEntry {
   /** One-line capture reason (#0603): "declared: <label>" / "auto: matched <glob>". */
   provenance?: string;
   origin?: "auto";
+  /** #0734: capture-plan fingerprint the shot was produced from. */
+  planFingerprint?: string;
+  /** #0734: tested tree identity (short HEAD sha) the shot was captured from. */
+  sourceIdentity?: string;
   /** The hand-added shot's own declared entry (#0627), for exact delete sync. */
   declared?: DeclaredShot;
   mime: string;
@@ -99,6 +115,10 @@ export interface ShotStore {
     /** Why the shot exists (#0603), stored verbatim in the manifest. */
     provenance?: string;
     origin?: "auto";
+    /** #0734: capture-plan fingerprint this shot was produced from. */
+    planFingerprint?: string;
+    /** #0734: tested tree identity (short HEAD sha) this shot was captured from. */
+    sourceIdentity?: string;
     /** The hand-added shot's own declared entry (#0627), for exact delete sync. */
     declared?: DeclaredShot;
     mime?: string;
@@ -194,6 +214,8 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         ...(meta?.label ? { label: meta.label } : {}),
         ...(meta?.provenance ? { provenance: meta.provenance } : {}),
         ...(meta?.origin ? { origin: meta.origin } : {}),
+        ...(meta?.planFingerprint ? { planFingerprint: meta.planFingerprint } : {}),
+        ...(meta?.sourceIdentity ? { sourceIdentity: meta.sourceIdentity } : {}),
         ...(meta?.declared ? { declared: meta.declared } : {}),
         path: relPath(config, taskId, file),
         url: shotUrl(taskId, file),
@@ -249,6 +271,8 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         ...(input.label ? { label: input.label } : {}),
         ...(input.provenance ? { provenance: input.provenance } : {}),
         ...(input.origin ? { origin: input.origin } : {}),
+        ...(input.planFingerprint ? { planFingerprint: input.planFingerprint } : {}),
+        ...(input.sourceIdentity ? { sourceIdentity: input.sourceIdentity } : {}),
         ...(input.declared ? { declared: input.declared } : {}),
         mime,
         size: buf.length,
@@ -264,6 +288,8 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         ...(input.route ? { route: input.route } : {}),
         ...(input.label ? { label: input.label } : {}),
         ...(input.provenance ? { provenance: input.provenance } : {}),
+        ...(input.planFingerprint ? { planFingerprint: input.planFingerprint } : {}),
+        ...(input.sourceIdentity ? { sourceIdentity: input.sourceIdentity } : {}),
         ...(input.declared ? { declared: input.declared } : {}),
         path: relPath(config, taskId, file),
         url: shotUrl(taskId, file),
