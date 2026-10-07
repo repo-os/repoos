@@ -30,6 +30,7 @@ import type {
   PreviewServiceConfig,
   PreviewTargetConfig,
   ApprovalConfig,
+  AutomationConfig,
   UiVerificationConfig,
   RepoOSConfig,
   Status,
@@ -201,6 +202,9 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     pmVeto: false,
   },
   ctoSkipHealthy: true,
+  automation: {
+    paused: false,
+  },
   skillSuggestions: false,
   maxActiveTasks: 3,
   worktreeWarnThreshold: 20,
@@ -1634,11 +1638,15 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     const approvalAreas = normalizeStringList(parsed["approval.autoApprove.areas"]);
     const approvalTypes = normalizeStringList(parsed["approval.autoApprove.types"]);
     const approvalUiAreas = normalizeStringList(parsed["approval.autoApprove.uiAreas"]);
+    const approvalMachinery = normalizeStringList(parsed["approval.autoApprove.machineryPaths"]);
+    const approvalAllowP0 = parsed["approval.autoApprove.allowP0"];
     if (
       approvalEnabled !== undefined ||
       approvalAreas.length ||
       approvalTypes.length ||
-      approvalUiAreas.length
+      approvalUiAreas.length ||
+      approvalMachinery.length ||
+      approvalAllowP0 !== undefined
     ) {
       const approval: ApprovalConfig = {};
       if (typeof approvalEnabled === "boolean") approval.enabled = approvalEnabled;
@@ -1646,7 +1654,15 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       if (approvalAreas.length) approval.autoApprove.areas = approvalAreas;
       if (approvalTypes.length) approval.autoApprove.types = approvalTypes;
       if (approvalUiAreas.length) approval.autoApprove.uiAreas = approvalUiAreas;
+      if (approvalMachinery.length) approval.autoApprove.machineryPaths = approvalMachinery;
+      if (typeof approvalAllowP0 === "boolean") approval.autoApprove.allowP0 = approvalAllowP0;
       cfg.approval = approval;
+    }
+
+    const automationPaused = parsed["automation.paused"];
+    if (typeof automationPaused === "boolean") {
+      const automation: AutomationConfig = { paused: automationPaused };
+      cfg.automation = automation;
     }
 
     const uiVerifEnabled = parsed["uiVerification.enabled"];
@@ -2127,6 +2143,42 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Task types eligible for policy auto-approval (any match). Leave empty to match by area only.",
     },
     {
+      key: "approval.autoApprove.machineryPaths",
+      label: "Auto-approve blocked paths",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Repo-relative path prefixes that always keep a task on the human path, whatever its area or " +
+        "type. Leave empty for the built-in conservative list (src/server/, src/core/, src/cli/, " +
+        "src/commands/, .githooks/, repoos.toml, AGENTS.md, docs/adr/). Changing the server, the policy " +
+        "config or the architecture records is never routine.",
+    },
+    {
+      key: "approval.autoApprove.allowP0",
+      label: "Auto-approve p0 tasks",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description:
+        "Off by default: a p0 task always waits for a human, no matter which area or type rule it " +
+        "matches. Turn on only if you want p0 work to be eligible for policy auto-approval.",
+    },
+    {
+      key: "automation.paused",
+      label: "Pause all automatic actions",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description:
+        "Master kill switch. When on, nothing runs automatically: no policy auto-approval, no CTO " +
+        "safe actions, no idle-engineer nudge. Your configured policy and allowlist are kept, so you " +
+        "can turn it back off and resume. Honours a human's explicit action still.",
+    },
+    {
       key: "uiVerification.enabled",
       label: "UI handoff verification",
       type: "boolean",
@@ -2559,6 +2611,9 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "approval.autoApprove.areas",
   "approval.autoApprove.types",
   "approval.autoApprove.uiAreas",
+  "approval.autoApprove.machineryPaths",
+  "approval.autoApprove.allowP0",
+  "automation.paused",
   "uiVerification.enabled",
   "uiVerification.viewportWidths",
   // Remote validation
