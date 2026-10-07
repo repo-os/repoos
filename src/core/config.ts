@@ -1572,6 +1572,7 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         cfg.closeOut = {
           ...cfg.closeOut,
           timeoutMs: Math.floor(closeOutTimeout),
+          timeoutMsFromToml: true,
         };
       } else {
         console.warn(
@@ -2037,11 +2038,10 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         { value: "3600000", label: "60 min" },
       ],
       description:
-        "Total wall-clock budget for one close-out (Move to done) attempt — from when the job " +
-        "leaves the queue until it fails, completes, or you stop it. A close-out that runs past " +
-        "it is aborted with a retryable failure and the task stays in review; retries and remote " +
-        "validation share the same budget. 0 disables the ceiling. Set any value in repoos.toml " +
-        "(`[closeOut] timeoutMs`).",
+        "Budget for one close-out (Move to done) attempt — monotonic elapsed time from when the " +
+        "job leaves the queue (system sleep does not count, #0679). When unset in repoos.toml, " +
+        "defaults to max(10 min, 3× the last successful merge-gate duration). 0 disables the " +
+        "ceiling. Retries and remote validation share the same budget.",
     },
     {
       key: "closeOut.candidate",
