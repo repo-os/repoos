@@ -11,7 +11,10 @@ export function closeOutAttemptStartedAt(
     return active.startedAt;
   }
   if (pipeline.queue.includes(taskId)) {
-    return pipeline.queueEnqueuedAt?.[taskId] ?? null;
+    // Older snapshots may omit `queueEnqueuedAt`; `at` is the pipeline tick when
+    // the UI learned the task was queued — good enough to treat a prior failure
+    // as stale while waiting behind another close-out (#0741).
+    return pipeline.queueEnqueuedAt?.[taskId] ?? pipeline.at ?? null;
   }
   return null;
 }

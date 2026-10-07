@@ -21,6 +21,24 @@ describe("closeOutAttempt", () => {
     expect(closeOutAttemptStartedAt("0099", snap)).toBeNull();
   });
 
+  it("falls back to pipeline.at when a queued task has no queueEnqueuedAt (#0741)", () => {
+    const snap: IntegrationPipelineSnapshot = {
+      empty: false,
+      active: {
+        taskId: "0001",
+        stage: "merge",
+        failed: false,
+        startedAt: "2026-09-20T12:00:00.000Z",
+      },
+      queue: ["0002"],
+      at: "2026-09-20T12:05:00.000Z",
+    };
+    expect(closeOutAttemptStartedAt("0002", snap)).toBe("2026-09-20T12:05:00.000Z");
+    expect(
+      isStaleDoneError("2026-09-20T10:00:00.000Z", closeOutAttemptStartedAt("0002", snap)),
+    ).toBe(true);
+  });
+
   it("treats failures before the attempt start as stale", () => {
     expect(isStaleDoneError("2026-09-20T10:00:00.000Z", "2026-09-20T12:00:00.000Z")).toBe(true);
     expect(isStaleDoneError("2026-09-20T12:00:00.000Z", "2026-09-20T12:00:00.000Z")).toBe(false);
