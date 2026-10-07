@@ -2,7 +2,7 @@
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -137,4 +137,4 @@ error: script "test" exited with code 1
 - 2026-10-07T15:17:24Z · note: Driver owns ACTIVE source diagnosis. Do not start handoff or close-out while temporary tracing remains. Last untraced loaded run5/10; raw-writer tracing changes timing10/10, not proof repaired. Watchdog auto-handoff captured temporary diagnostics and failed; driver paused task and cancelled existing close-out through supported API. Wait actual old execution terminal before further work.
 - 2026-10-07T15:23:20Z · note: 15:20 root-cause lead: ReviewManager.finalizeRun fires clean-review approval handler before bumpReviewPasses; evaluateAutoApprove calls gatherApprovalPreflight BEFORE checking policy.enabled. preflightMerge executes asynchronous git merge --no-commit then abort in canonical main. That external git writer explains active PATCH pre-file-write active but post-commit disk review with no intervening patchTaskFile. Require deterministic preflight/active-write overlap regression and read-only merge analysis; do not approve timing-only trace passes. Driver pause requested; cancelled close-out old run still retrying bee, do not duplicate.
 - 2026-10-07T15:39:50Z · note: Verified replacement15:34: all temporary tracing removed. Root repair now disabled approval returns before background preflight; preflightMerge uses read-only merge-tree instead of canonical main merge/abort. BuildPASS,57 targeted regressionsPASS, 10/10 loaded real repeated-review trialsPASS without tracing. Scoped repoos check --changed main PASS. Driver explicitly requested fresh handoff via repoos review once; pendingHandofftrue accepted. Require fresh advisory review and combined candidate gate before DONE. Preserve snapshot/slot guards; no sleeps or widened expected HTTP codes.
-- 2026-10-07T15:44:24Z · note: shots: skipped — the diff (10 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T15:44:24Z · status active→review
