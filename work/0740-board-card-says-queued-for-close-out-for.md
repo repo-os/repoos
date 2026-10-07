@@ -2,7 +2,7 @@
 id: "0740"
 title: Board card says 'queued for close-out' for the job that is actively integrating (stage not reported yet)
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/board-card-says-queued-for-close-out-for
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:13:12Z"
-updated_at: "2026-10-07T17:30:40Z"
+updated_at: "2026-10-07T17:36:17Z"
 ---
 ## Problem
 
@@ -167,3 +167,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T17:30:39Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:381:35 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-07T17:30:40Z · status review→active
+- 2026-10-07T17:36:17Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:381:35 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
