@@ -1,6 +1,6 @@
 ---
-last_close_out_gate_ms: 3054149
-last_close_out_gate_at: "2026-10-07T15:13:17.143Z"
+last_close_out_gate_ms: 322848
+last_close_out_gate_at: "2026-10-07T15:29:46.384Z"
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
@@ -14,7 +14,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T15:13:17Z"
+updated_at: "2026-10-07T15:29:46Z"
 last_check_failure: "repoos check at 2026-10-07T14:12:54.640Z: server-side finalization timed out (deadline exceeded)"
 review_passes: 3
 close_out_repair_count: 1
@@ -163,4 +163,5 @@ error: script "test" exited with code 1
 - 2026-10-07T14:04:12Z · note: review pass 4: good to go
 - 2026-10-07T14:13:43Z · body
 - 2026-10-07T15:13:17Z · close-out gate completed in 3054s
+- 2026-10-07T15:29:46Z · close-out gate completed in 323s
 
