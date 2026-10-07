@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0740"
 title: Board card says 'queued for close-out' for the job that is actively integrating (stage not reported yet)
 type: bug
@@ -223,3 +224,4 @@ error: script "test" exited with code 1
 - 2026-10-07T18:12:42Z · note: review pass 1: good to go
 - 2026-10-07T18:15:10Z · status review→active
 - 2026-10-07T18:15:10Z · note: close-out repair: merge-conflict
+
