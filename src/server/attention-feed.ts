@@ -10,6 +10,8 @@ import type { AttentionEventStore } from "./attention-events.js";
 import type { ReleaseNotesRun, ReleaseRun } from "./routes/release.js";
 import { getRepoOSDb } from "../core/db.js";
 import { DEFAULT_STALL_TIMEOUT_MS } from "./agents.js";
+import type { CtoHeartbeatTracker } from "./cto-heartbeat.js";
+import { ctoSilentThresholdMs } from "./cto-heartbeat.js";
 
 export interface AttentionFeedDeps {
   config: RepoOSConfig;
@@ -20,6 +22,7 @@ export interface AttentionFeedDeps {
   getReleaseRun: () => ReleaseRun;
   getReleaseNotesRun: () => ReleaseNotesRun;
   previewTargetAreas: string[];
+  ctoHeartbeat?: CtoHeartbeatTracker;
 }
 
 export function assembleAttentionFeed(deps: AttentionFeedDeps): AttentionFeed {
@@ -57,5 +60,9 @@ export function assembleAttentionFeed(deps: AttentionFeedDeps): AttentionFeed {
     recentProviderFailures,
     silentRuns,
     previewTargetAreas: deps.previewTargetAreas,
+    ctoHeartbeatAt: deps.ctoHeartbeat?.last() ?? null,
+    ctoSilentThresholdMs: ctoSilentThresholdMs(
+      (deps.config as { ctoMonitorIntervalMs?: number }).ctoMonitorIntervalMs,
+    ),
   });
 }
