@@ -2,7 +2,7 @@
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T14:02:19Z"
+updated_at: "2026-10-07T14:02:52Z"
 review_passes: 2
 close_out_repair_count: 1
 ---
@@ -155,3 +155,4 @@ error: script "test" exited with code 1
 - 2026-10-07T13:59:42Z · status review→active
 - 2026-10-07T14:00:53Z · body
 - 2026-10-07T14:02:19Z · body
+- 2026-10-07T14:02:52Z · status active→review
