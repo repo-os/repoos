@@ -533,7 +533,13 @@ describe("stale-server helpers (#0701)", () => {
       ...over,
     };
   }
-  const cliOf = (over: Partial<{ version: string | null; buildHash: string | null; buildAt: string | null }> = {}) => ({
+  const cliOf = (
+    over: Partial<{
+      version: string | null;
+      buildHash: string | null;
+      buildAt: string | null;
+    }> = {},
+  ) => ({
     version: "0.5.66",
     buildHash: "abcdef0123456789",
     buildAt: "2026-10-01T19:23:00Z",
