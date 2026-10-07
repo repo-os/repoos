@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-07T12:55:31Z"
+review_passes: 6
 id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
@@ -12,9 +14,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-07T12:55:31Z"
 last_check_failure: "repoos check at 2026-10-07T12:21:44.451Z: server-side finalization timed out (deadline exceeded)"
-review_passes: 5
 review_rounds: 2
 merge_conflict_retry_count: 2
 dev_error_count: 3
@@ -148,3 +148,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T12:54:16Z · status active→review
 - 2026-10-07T12:54:16Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-07T12:55:31Z · note: review pass 7: good to go
+
