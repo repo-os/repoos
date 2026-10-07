@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T11:26:57.555Z: server-side finalization timed out (deadline exceeded)"
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
@@ -38,3 +40,4 @@ Read AGENTS.md. Use existing task worktree, Cursor/composer-2.5. Independently v
 - 2026-10-07T11:03:31Z · body
 - 2026-10-07T11:05:05Z · body
 - 2026-10-07T11:26:54Z · handoff failed · handoff recovery attempted · finalization failed
+
