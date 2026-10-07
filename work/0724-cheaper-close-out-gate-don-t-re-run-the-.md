@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
-updated_at: "2026-10-07T10:55:26Z"
+updated_at: "2026-10-07T10:55:28Z"
 last_check_failure: "repoos check at 2026-10-07T10:26:38.467Z: repoos check failed: build complete in 3.72s. · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-ico… (truncated)"
 ---
 ## Problem
@@ -62,3 +62,4 @@ Timing: I could NOT measure real before/after close-out medians from this sandbo
 - 2026-10-07T10:51:59Z · body
 - 2026-10-07T10:53:27Z · body
 - 2026-10-07T10:55:26Z · status active→review
+- 2026-10-07T10:55:28Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
