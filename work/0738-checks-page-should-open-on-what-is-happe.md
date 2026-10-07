@@ -13,8 +13,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:03Z"
 updated_at: "2026-10-07T14:37:17Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 510c0d3c14374ec24238ee9f8a5efe1d46598ec1
 last_check_failure: "repoos check at 2026-10-07T14:25:03.639Z: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -68,3 +66,4 @@ Read ChecksView.vue and the Remote runners panel (RemoteRunnersPanel.vue); the c
 - 2026-10-07T14:26:22Z · status review→active
 - 2026-10-07T14:36:22Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-07T14:37:17Z · status active→review
+
