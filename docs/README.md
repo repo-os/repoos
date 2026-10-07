@@ -50,6 +50,10 @@ can't assume any.
   scope × light/dark is measured in headless WebKit, the judgment calls
   (gradient worst-stops, WCAG incidental exemptions, the config-load barrier),
   and what the first full triage changed in the product.
+- `cto-autopilot.md` — the CTO's routine work (approval policy #0686, safe
+  actions #0688, the #0727 restart strategy, the kill switch) and the
+  conservative policy proposed for this repo. Read before touching
+  `approval-policy`/`cto-actions` or enabling them in `repoos.toml`.
 - `adr/` — Architecture Decision Records. Immutable once accepted: a changed
   decision gets a new ADR, not an edit.
 - `native-auth.md`, `remote-validation.md`, `tunnel-registry.md`, `releases.md` —

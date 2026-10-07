@@ -467,6 +467,12 @@ export interface ReviewState {
     at: string;
     state: string;
     verdict: string | null;
+    /** Reviewer coding agent that ran this pass. */
+    agent?: string;
+    /** Reviewer CLI family for this pass. */
+    cli?: string;
+    /** Reviewer model for this pass, when the run reported one. */
+    model?: string;
   }>;
   /**
    * The reviewer conversation, kept separate from the engineer session (0110).

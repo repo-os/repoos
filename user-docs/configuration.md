@@ -94,6 +94,11 @@ closeOut.timeoutMs = 360000  # 6-minute budget per close-out attempt; 0 = no lim
 # approval.autoApprove.areas = ["api", "data", "docs", "chore"]
 # approval.autoApprove.types = ["chore"]
 # approval.autoApprove.uiAreas = ["web", "ui-app", "frontend"]
+# approval.autoApprove.machineryPaths = ["src/server/", "src/core/", ".githooks/", "repoos.toml", "AGENTS.md"]
+# approval.autoApprove.allowP0 = false   # p0 always needs a human
+
+# ── Autopilot kill switch ────────────────────────────────────────────────
+# automation.paused = false   # true halts every automatic CTO/policy action
 
 # ── Agents ───────────────────────────────────────────────────────────────
 maxConcurrentAgents = 5  # omit to size from this machine's CPU count
@@ -446,19 +451,33 @@ approval.enabled = false
 approval.autoApprove.areas = ["api", "data", "docs", "chore"]
 approval.autoApprove.types = ["chore"]
 approval.autoApprove.uiAreas = ["web", "ui-app", "frontend", "mobile"]
+approval.autoApprove.machineryPaths = ["src/server/", "src/core/", ".githooks/", "repoos.toml", "AGENTS.md"]
+approval.autoApprove.allowP0 = false
+automation.paused = false
 ```
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
-| `approval.enabled` | boolean | `false` | yes | Master switch. When true, tasks in `review` that match configured areas or types, passed the handoff gate, received a clean reviewer verdict (`good to go`), have no blocking bugs in the report, are not tagged `human-only`, and pass branch/handoff checks can **Move to done** without a human click. Each auto-approval is recorded in the task activity log (`auto-approved by policy: …`) and can notify the bell. |
+| `approval.enabled` | boolean | `false` | yes | Master switch. When true, tasks in `review` that match configured areas or types, passed the handoff gate, received a clean reviewer verdict (`good to go`), have no blocking bugs in the report, are not tagged `human-only`, and pass branch/handoff checks can **Move to done** without a human click. Each auto-approval is recorded in the task activity log (`auto-approved by policy: …`) and in the notification bell. |
 | `approval.autoApprove.areas` | string[] | `[]` | yes | Task `area` values eligible for auto-approval (any match). Empty means match by type only. |
 | `approval.autoApprove.types` | string[] | `[]` | yes | Task `type` values eligible (any match). Empty means match by area only. |
 | `approval.autoApprove.uiAreas` | string[] | built-in UI list | yes | Areas treated as UI work. Tasks touching these areas are never auto-approved unless handoff screenshots succeeded (at least one capture, no `shots: failed` activity note). When unset, defaults to `web`, `ui`, `ui-app`, `frontend`, and `mobile`. |
+| `approval.autoApprove.machineryPaths` | string[] | built-in machinery list | yes | Repo-relative path prefixes that always keep a task on the human path, whatever its area or type. When unset, defaults to `src/server/`, `src/core/`, `src/cli/`, `src/commands/`, `.githooks/`, `repoos.toml`, `AGENTS.md`, and `docs/adr/`. A prefix ending in `/` matches the directory tree; a bare file name matches that file exactly. If RepoOS cannot read the branch's changed paths it fails closed (keeps the task human). |
+| `approval.autoApprove.allowP0` | boolean | `false` | yes | When false (the default), a `p0` task always waits for a human, no matter which area or type rule it matches. Set true only to let p0 work auto-approve. |
+| `automation.paused` | boolean | `false` | yes | Master kill switch for **all** automatic actions — policy auto-approval, CTO safe actions, and the idle-engineer nudge. Your configured policy and allowlist are kept, so turning it back off resumes them. A human's explicit action (a UI button or API call) still runs. |
 
-Edit **`approval.enabled`** and the area/type lists in **Settings → General**.
-Tag any task **`human-only`** to keep it on a human approval path regardless of
-policy. UI verification and console-error gates (#0680) may tighten the UI
-evidence rule later; until then, screenshot success is the guard.
+Edit these in **Settings → General**. Tag any task **`human-only`** to keep it on
+a human approval path regardless of policy. UI verification and console-error
+gates (#0680) may tighten the UI evidence rule later; until then, screenshot
+success is the guard.
+
+The conditions an auto-approval must pass, in order: not `human-only`; in
+`review`; not `needs-input`; not a `p0` (unless `allowP0`); matches an area or
+type; a clean `good to go` verdict with no blocking bugs; no lingering
+`last_check_failure`; no changed path under the machinery list; the branch exists
+and merges cleanly; the worktree matches its handoff snapshot (lock SHA equals
+HEAD); main is clean; and for UI areas, successful handoff screenshots. Any
+failure keeps the task for a human.
 
 ## Worktrees and runtime
 
@@ -506,7 +525,16 @@ provider = "none"
 | --- | --- | --- | --- | --- |
 | `maxConcurrentAgents` | number | derived from CPU count | yes | How many agent CLI processes (start/send/chat) may run at once; extras queue. Must be 1–16. The default is computed from this machine's CPU count and capped sensibly. |
 | `ctoSkipHealthy` | boolean | `true` | yes | When true (the default), the CTO monitor skips its model call while the board is healthy — no stuck tasks, a fresh build and a normal process check — and only calls the model when something needs attention. Set `false` to run a full CTO pass whenever the material signal changes. |
-| `cto.actions` | string[] | `[]` | yes | Opt-in allowlist of bounded recovery actions the CTO may run automatically (rate limited, audited in the bell). Values: `restart-stalled-agent` (dead active engineer), `refresh-main-install` (lockfile install in main), `requeue-closeout-after-env-fix` (refresh main then re-queue a failed env close-out). Empty means report-only. Humans can also invoke `POST /api/cto/actions/<id>`. |
+| `cto.actions` | string[] | `[]` | yes | Opt-in allowlist of bounded recovery actions the CTO may run automatically (rate limited, audited in the bell). Values: `restart-stalled-agent` (dead active engineer), `refresh-main-install` (lockfile install in main), `requeue-closeout-after-env-fix` (refresh main then re-queue a failed env close-out). Empty means report-only. Humans can also invoke `POST /api/cto/actions/<id>`. Every automatic action is recorded in the task activity log and the notification bell, and all of them stop at once when `automation.paused = true`. |
+
+**Restart strategy for a dead engineer.** `restart-stalled-agent` picks one of two
+shapes from how the previous session ended: a network stall, timeout, or
+interrupted turn **resumes** the same conversation; a real crash, an exit with no
+handoff, or a task the CTO has already restarted twice this episode starts a
+**fresh** conversation in the same worktree. The choice is written into the
+task's activity log (`CTO action: restart-stalled-agent (resume|fresh) · …`). The
+action is rate limited per task (6/hour by default) and never fires while the
+agent is running, the task is paused, or its worktree has recent activity.
 | `watchdog.enabled` | boolean | `true` | yes | Whether active-task staleness monitoring runs. |
 | `watchdog.stalenessMs` | number | `300000` (5 min) | yes | Milliseconds of silence before an `active` task is a candidate-stuck. Minimum `60000`; smaller values are ignored. |
 | `watchdog.autoTransition` | boolean | `true` | yes | Whether a stuck task auto-transitions out of `active` — to `review` when its worktree holds work, else back to `ready`. When false, it is only flagged `needsInput`. |

@@ -2,7 +2,7 @@
 id: "0728"
 title: "Event-driven CTO: react to server events instead of a timer, and expose the same feed as a watch command for external sessions"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: [cli, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T02:05:33Z"
-updated_at: "2026-10-07T02:11:12Z"
+updated_at: "2026-10-07T09:11:18Z"
 ---
 ## Problem
 
@@ -39,3 +39,4 @@ The CTO monitor wakes on ctoMonitorIntervalMs (a timer; 5 min here). Move it to 
 - 2026-10-07T02:05:33Z · created · unknown
 - 2026-10-07T02:10:58Z · story
 - 2026-10-07T02:11:12Z · title, body
+- 2026-10-07T09:11:18Z · status inbox→ready

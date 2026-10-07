@@ -761,6 +761,9 @@ watch(
 const ARRAY_PLACEHOLDERS: Record<string, string> = {
   areas: "web, core (comma-separated area names)",
   taskExtensions: ".md, .markdown",
+  "approval.autoApprove.areas": "docs, chore (comma-separated areas)",
+  "approval.autoApprove.types": "chore (comma-separated types)",
+  "approval.autoApprove.machineryPaths": "src/server/, src/core/ (comma-separated path prefixes)",
 };
 
 function arrayPlaceholder(key: string): string {
@@ -1023,6 +1026,21 @@ onUnmounted(() => {
                   :checked="!!form[f.key]"
                   :disabled="config.saving"
                   @update:checked="(v: boolean) => (form[f.key] = v)"
+                />
+                <Input
+                  v-else-if="f.type === 'string'"
+                  :model-value="String(form[f.key] ?? '')"
+                  type="text"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form[f.key] = v)"
+                />
+                <Input
+                  v-else-if="f.type === 'array'"
+                  :model-value="String(form[f.key] ?? '')"
+                  type="text"
+                  :placeholder="arrayPlaceholder(f.key)"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form[f.key] = v)"
                 />
               </div>
               <span v-if="f.restartRequired" class="restart-badge">restart required</span>

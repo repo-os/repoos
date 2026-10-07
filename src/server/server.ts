@@ -1932,6 +1932,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         runner,
         previews,
         reviews,
+        attentionEvents,
       },
       task,
       report,
