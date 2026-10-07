@@ -2,15 +2,15 @@
 id: "0724"
 title: "Cheaper close-out gate: don't re-run the full suite on what the handoff gate already proved"
 type: feature
-status: ready
+status: active
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
-updated_at: "2026-10-07T09:47:13Z"
+updated_at: "2026-10-07T09:47:15Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ VERIFY the assumption first: confirm from src/server/integration-orchestrator.ts
 
 - 2026-10-06T15:55:13Z · created · unknown
 - 2026-10-07T09:47:13Z · status inbox→ready
+- 2026-10-07T09:47:15Z · status ready→active, branch
