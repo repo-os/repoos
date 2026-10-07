@@ -2,7 +2,7 @@
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T11:00:20Z"
+updated_at: "2026-10-07T11:05:52Z"
 close_out_repair_count: 1
 review_passes: 1
 ---
@@ -139,3 +139,4 @@ error: script "test" exited with code 1
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T11:00:20Z · note: Driver10:59: post-conflict fullgate failed ONLY agent-review repeated-review test215 secondrequest expected202got200, current-main independently reproduced and #0737 actively repairing. Your decision-digest regressions passed. Avoid blind identical full-gate retries; wait for #0737 landing then merge current main preserving watch/decisions and re-handoff. No weakening assertions or gate bypass, no duplicate engineer until pending oldexecutionterminal (currentlyfalse/noagent).
+- 2026-10-07T11:05:52Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
