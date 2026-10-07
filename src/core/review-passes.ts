@@ -45,6 +45,11 @@ export function reviewPassPath(config: RepoOSConfig, taskId: string, pass: numbe
   return join(reviewsDir(config, taskId), `${pass}.md`);
 }
 
+/**
+ * Every review pass for a task, oldest pass first. Feeds the drawer's records
+ * table (#0733), which reverses this order (newest first) and shows each pass
+ * once — so this summary carries the per-run reviewer agent/model too.
+ */
 export function listReviewPasses(config: RepoOSConfig, taskId: string): ReviewPassSummary[] {
   const dir = reviewsDir(config, taskId);
   if (!existsSync(dir)) return [];
