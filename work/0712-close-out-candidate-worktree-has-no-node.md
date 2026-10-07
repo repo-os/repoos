@@ -11,7 +11,7 @@ branch: feat/close-out-candidate-worktree-has-no-node
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:49Z"
-updated_at: "2026-10-07T00:23:11Z"
+updated_at: "2026-10-07T00:32:56Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 24: unless the check plan starts with an install step. Install deps (or reuse) in the candidate worktree, or fail with advice.
 
@@ -82,3 +82,23 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T00:23:10Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/mtd-remote-deadline.test.ts:147:28 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-07T00:23:11Z · status review→active
+- 2026-10-07T00:32:56Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/mtd-remote-deadline.test.ts:147:28
+    145|     const { gateParams, validatorCalls } = await runGateWithBudget(0);
+    146|
+    147|     expect(gateParams).not.toBeNull();
+       |                            ^
+    148|     expect(gateParams!["deadlineAt"]).toBeUndefined();
+    149|     expect(validatorCalls[0]!["deadlineAt"]).toBeUndefined();
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+ Test Files  1 failed | 423 passed | 1 skipped (425)
+      Tests  2 failed | 5119 passed | 15 skipped (5136)
+   Start at  00:29:14
+   Duration  217.91s (transform 5.59s, setup 1.81s, import 29.68s, tests 197.98s, environment 186.95s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 345ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  00:32:52
+   Duration  1.93s (transform 959ms, setup 9ms, import 1.11s, tests 345ms, environment 402ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
