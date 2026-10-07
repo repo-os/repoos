@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-review-records-in-a-table
 created_at: "2026-10-07T02:52:02Z"
-updated_at: "2026-10-07T03:41:29Z"
+updated_at: "2026-10-07T03:41:31Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -73,3 +73,4 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T03:41:29Z · note: shot removed: Task drawer Review tab: review records table (pass, when, reviewer, model, verdict)
 - 2026-10-07T03:41:29Z · body: section Shots
 - 2026-10-07T03:41:29Z · note: shot removed: Review records table on #0679 with real review history, newest pass first
+- 2026-10-07T03:41:31Z · note: Driver verification: stopped a redundant scoped check after an unchanged tree had already passed (thinkpad48s/local24s, subsequent bee300s also gate exit0). No live engineer and clean source tree before repoos review request. Inspected diff: descending pass sort, one table row per pass, stored agent/cli/model fields and legacy-empty fallback tests. UI evidence remains incomplete: sanctioned preview uses branch-local review cache; both task0733 and existing0679 show No agent review yet, so table highlight did not match. Deleted those misleading captures via API; do not accept them as evidence. Reviewer must verify table rendering with genuine review records, including latest-first, reviewer/model and narrow-width layout before approval. No fabricated records, source edits, config/host changes or review-blocker overrides.
