@@ -12,7 +12,7 @@ branch: feat/checks-page-should-open-on-what-is-happe
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:03Z"
-updated_at: "2026-10-07T14:13:37Z"
+updated_at: "2026-10-07T14:14:47Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ Read ChecksView.vue and the Remote runners panel (RemoteRunnersPanel.vue); the c
 - 2026-10-07T14:11:16Z · body: section Shots
 - 2026-10-07T14:12:56Z · body
 - 2026-10-07T14:13:37Z · body
+- 2026-10-07T14:14:47Z · body: section Shots
