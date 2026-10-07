@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-07T17:14:40Z"
+review_passes: 1
 id: "0726"
 title: Stories (and inputs) dirs don't get the same close-out bookkeeping handling as the work dir
 type: bug
@@ -10,7 +12,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/stories-and-inputs-dirs-don-t-get-the-sa
 created_at: "2026-10-07T00:35:48Z"
-updated_at: "2026-10-07T17:14:40Z"
 ---
 ## Problem
 
@@ -61,3 +62,4 @@ Desired: validate all layout dirs with normalizeRelativeDir, give inputsDir a Se
 - 2026-10-07T17:13:17Z · status active→review
 - 2026-10-07T17:13:18Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-07T17:14:40Z · note: review pass 1: good to go
+
