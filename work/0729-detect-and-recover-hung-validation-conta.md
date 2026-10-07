@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/detect-and-recover-hung-validation-conta
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T05:31:57Z"
+updated_at: "2026-10-07T05:32:31Z"
 ---
 ## Problem
 
@@ -96,3 +96,4 @@ error: script "test" exited with code 1 — fix it in the feature branch and re-
 - 2026-10-07T05:26:57Z · status review→active
 - 2026-10-07T05:31:56Z · status active→review
 - 2026-10-07T05:31:57Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-07T05:32:31Z · note: BLOCKING DRIVER DIFF FINDING05:32: independent gitdiff main --scripts/remote-runner/validate.sh shows this branch STILL RETAINS the old for_stale ALL .repoos-validate.* startup rm-rf loop. New not-running-container sweep/cache isolation does NOT protect ACTIVEworkdirs from that loop. Do NOTapprove/land/deploy this branch until it removes/restricts startupworkspace sweep and adds concurrent-active-workspace preservation regression. Ownerinstalledguardall3 is alreadyverified operationally; taskmustpreserve equivalentguard inSOURCE. A release fromcurrentmain orcurrent729branch would reintroduce rootcause onrunnerinstallation. Fullgatepassed265smini doesnotverifythisconcurrency property. Respectpendinghandoff/reviewfreeze: returnactiveviaAPI beforefixes, coordinatewriter first.
