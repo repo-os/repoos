@@ -2,15 +2,18 @@
 id: "0727"
 title: "Give the CTO the routine: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
 branch: feat/give-the-cto-the-routine-evaluate-and-en
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-07T02:05:31Z"
-updated_at: "2026-10-07T05:28:40Z"
+updated_at: "2026-10-07T05:40:03Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -34,6 +37,54 @@ Related: #0686, #0688, #0693, #0679, #0720, #0723.
 
 No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.ts) is the one that takes over the routine landing/restart/retry work, under the owner's policy and with the existing allowlist, rate limits and audit trail. External driver sessions (Claude Code, Codex) stay optional. Anything outside policy is escalated to the human through the attention feed.
 
+## Shots
+```json
+[
+  {
+    "label": "Mission control",
+    "target": "default",
+    "route": "/"
+  },
+  {
+    "label": "Auto-approve blocked paths control",
+    "target": "default",
+    "route": "/settings?tab=general&focus=approval.autoApprove.machineryPaths",
+    "highlight": "[data-config-key=\"approval.autoApprove.machineryPaths\"]"
+  },
+  {
+    "label": "Kill switch on General",
+    "target": "default",
+    "route": "/settings?tab=general&focus=automation.paused",
+    "highlight": "[data-config-key=\"automation.paused\"]"
+  }
+]
+```
+
+## Proposed conservative policy (owner approval required)
+Owner approval required before enabling in `repoos.toml`. See `docs/cto-autopilot.md` for full context.
+
+```toml
+approval.enabled = true
+approval.autoApprove.areas = ["docs", "chore"]
+approval.autoApprove.types = ["chore"]
+approval.autoApprove.machineryPaths = [
+  "src/server/",
+  "src/core/",
+  "src/cli/",
+  "src/commands/",
+  ".githooks/",
+  "repoos.toml",
+  "AGENTS.md",
+  "docs/adr/",
+]
+approval.autoApprove.allowP0 = false
+
+cto.actions = ["restart-stalled-agent", "requeue-closeout-after-env-fix"]
+automation.paused = false
+```
+
+Rationale: land routine docs/chore work only; machinery paths and UI screenshot rules keep engine/policy/architecture and unverified UI human; p0 never automatic; `refresh-main-install` omitted from the repo allowlist for now; `automation.paused` is the kill switch.
+
 ## Activity
 
 - 2026-10-07T02:05:31Z · created · unknown
@@ -42,4 +93,20 @@ No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.
 - 2026-10-07T02:11:10Z · title, body
 - 2026-10-07T04:35:32Z · status inbox→ready
 - 2026-10-07T04:35:45Z · status ready→active, branch
+- 2026-10-07T04:52:10Z · body
+- 2026-10-07T04:53:39Z · body
+- 2026-10-07T05:10:45Z · body: section Shots
+- 2026-10-07T05:12:17Z · body
+- 2026-10-07T05:14:15Z · body
+- 2026-10-07T05:15:11Z · body
+- 2026-10-07T05:17:05Z · body
+- 2026-10-07T05:20:24Z · body
+- 2026-10-07T05:21:58Z · body
 - 2026-10-07T05:28:40Z · status active→review
+- 2026-10-07T05:28:40Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-07T05:29:52Z · note: review pass 1: good to go
+- 2026-10-07T05:36:02Z · body: section Shots
+- 2026-10-07T05:37:32Z · status review→active
+- 2026-10-07T05:37:56Z · cli_override, model_override
+- 2026-10-07T05:40:03Z · body: section Proposed conservative policy (owner approval required)
+- 2026-10-07T05:40:03Z · body: section Shots
