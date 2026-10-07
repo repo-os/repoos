@@ -810,17 +810,26 @@ cycle. `src/server/conflict-resolution.ts` owns the deterministic core:
 - `resolveConflictByUnion` applies the union resolution (both sides preserved)
   only for a proven-insertions region; a diff3 base section (a genuine edit)
   refuses.
+- The sync-phase **pre-flight** dry-run (`preflightConflict`) still detects
+  conflicts early for the full handback path, but when the narrow path is
+  enabled and `merge-tree` agrees on the same paths, sync **continues** so
+  `applyUnionResolution` can run in the candidate instead of failing the job
+  after only logging/SSE.
 - `applyUnionResolution` (orchestrator) re-runs the merge in the candidate,
-  resolves only the classifier-approved paths, commits, and continues to the
-  **combined gate** on the exact resolved tree — one gate run, not two.
+  resolves only the classifier-approved paths, commits, records a
+  **resolution-delta** review (marker-free union verification), then continues
+  to the **combined gate** on the exact resolved tree — one gate run, not two.
 - The candidate records provenance (`createResolutionProvenanceStore`):
   approved feature SHA, main base SHA, conflict paths, resolution
   commit/tree, the **resolution-only** review verdict, and the gate result. The
   original review is never rewritten — the resolution has its own record.
-- At publish, `assertResolvedTreeUnchanged` refuses to land a candidate whose
-  tree is not the one the gate validated. A main advance that is code (not
-  bookkeeping) still resyncs; a dirty tree, a cancellation, or a stale
-  provenance generation cannot resume (`canResumeAuthorizedCloseOut`).
+- At publish, `assertResolvedTreeUnchanged` calls
+  `canResumeAuthorizedCloseOut` and refuses to land a candidate whose tree is
+  not the one the gate validated. A main advance that is code (not bookkeeping)
+  still resyncs; a dirty tree, a cancellation, or a stale provenance generation
+  cannot resume.
+- `GET /api/tasks/:id/integration-job` includes `conflictResolution` when
+  provenance exists (CLI/UI parity).
 
 The UI shows the stage as **resolving integration conflict**
 (`resolve-conflict` in `PIPELINE_STAGES`) — distinct from new development — and

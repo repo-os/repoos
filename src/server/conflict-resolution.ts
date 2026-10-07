@@ -355,6 +355,38 @@ function isProvenance(v: unknown): v is IntegrationResolutionProvenance {
   );
 }
 
+/** API/CLI-facing slice of {@link IntegrationResolutionProvenance}. */
+export interface ConflictResolutionSnapshot {
+  approvedFeatureSha: string;
+  mainBaseSha: string;
+  conflictPaths: string[];
+  resolutionClasses: ConflictResolutionClass[];
+  resolutionCommit: string | null;
+  resolutionTree: string | null;
+  resolutionReview: ResolutionReviewRecord;
+  gate: GateRecord;
+  generation: number;
+  updatedAt: string;
+}
+
+export function conflictResolutionSnapshot(
+  provenance: IntegrationResolutionProvenance | null,
+): ConflictResolutionSnapshot | null {
+  if (!provenance) return null;
+  return {
+    approvedFeatureSha: provenance.approvedFeatureSha,
+    mainBaseSha: provenance.mainBaseSha,
+    conflictPaths: provenance.conflictPaths,
+    resolutionClasses: provenance.resolutionClasses,
+    resolutionCommit: provenance.resolutionCommit,
+    resolutionTree: provenance.resolutionTree,
+    resolutionReview: provenance.resolutionReview,
+    gate: provenance.gate,
+    generation: provenance.generation,
+    updatedAt: provenance.updatedAt,
+  };
+}
+
 export function createResolutionProvenanceStore(
   root: string,
   cacheDir: string = DEFAULT_CACHE_DIR,

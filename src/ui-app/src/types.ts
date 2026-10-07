@@ -973,6 +973,31 @@ export interface AutoEngineeringDecision {
  * conflict against current main is resolved in an isolated candidate and only
  * the resolution delta is reviewed, instead of restarting engineering/review.
  */
+/** Integration-conflict resolution provenance (#0692), from `/api/tasks/:id/integration-job`. */
+export interface ConflictResolutionSnapshot {
+  approvedFeatureSha: string;
+  mainBaseSha: string;
+  conflictPaths: string[];
+  resolutionClasses: string[];
+  resolutionCommit: string | null;
+  resolutionTree: string | null;
+  resolutionReview: {
+    reviewer: string;
+    verdict: "pass" | "fail" | "pending";
+    reviewedCommit: string | null;
+    at: string | null;
+    summary: string;
+  };
+  gate: {
+    result: "pass" | "fail" | "pending";
+    validatedTree: string | null;
+    at: string | null;
+    detail: string;
+  };
+  generation: number;
+  updatedAt: string;
+}
+
 export const INTEGRATION_STAGES = [
   "sync",
   "merge",
