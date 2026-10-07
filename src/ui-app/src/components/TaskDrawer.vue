@@ -46,6 +46,7 @@ import {
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
+import { useNoticesStore } from "../stores/notices";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtTime, formatDuration, relTime } from "../lib/time";
 import { fmtTokens } from "../lib/format";
@@ -129,6 +130,7 @@ import { defaultTaskArea, formatTaskAreas, parseTaskAreas } from "../../../core/
 
 const repo = useRepoStore();
 const ui = useUiStore();
+const notices = useNoticesStore();
 
 /** Every prerequisite, blocking ones flagged, each resolvable to a title. */
 const dependencyRows = computed(() => {
@@ -412,11 +414,18 @@ const checkChip = computed(() => {
   if (run) {
     const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
     const machine = checkMachine.value;
+    const taskId = ui.active?.id;
+    // #0720: the server flags an in-flight run past 1.5x its kind median; the
+    // badge keeps that visible on the task itself, not only in the bell.
+    const slow = taskId ? notices.slowRunByTask[taskId] : undefined;
     return {
       state: "running" as const,
+      slow: !!slow,
+      slowDetail: slow?.detail ?? null,
       label: `Checks running${machine ? ` on ${machine}` : ""} · ${elapsed}`,
-      title:
-        run.scope === "full"
+      title: slow
+        ? "Checks are running slower than usual — focus the slow badge for timing details"
+        : run.scope === "full"
           ? "The check gate is running — open the Debug tab for live output"
           : `Changed-path check (${run.scope}) — open the Debug tab for live output`,
     };
@@ -3893,6 +3902,18 @@ watch(
               >
                 <ActivityIndicator v-if="checkChip.state === 'running'" class="ck-chip-spin" />
                 {{ checkChip.label }}
+                <span
+                  v-if="checkChip.slow"
+                  class="ck-slow-badge"
+                  data-test-id="task-check-slow"
+                  tabindex="0"
+                  :aria-label="`Slow check. ${checkChip.slowDetail ?? ''}`"
+                  :data-tip="
+                    checkChip.slowDetail ?? 'This check is slower than typical for its kind'
+                  "
+                >
+                  slow
+                </span>
               </button>
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}

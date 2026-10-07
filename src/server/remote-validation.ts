@@ -452,11 +452,47 @@ export interface RemoteValidator {
    */
   applyConfig?(): void;
   /**
+   * In-flight remote runs with their current stage and host, for the
+   * slow-run detector (#0720). Optional so a runner that does not track
+   * stages (or a test double) stays a valid validator.
+   */
+  activeRemoteRuns?(): ActiveRemoteRunInfo[];
+  /**
    * Kill a hung run's container and record it as hung (#0729) — the CTO
    * `kill-hung-validation` safe action's implementation. Optional: a provider
    * with no host pool (Hetzner) has nothing to target by name.
    */
   killHungValidation?(taskId: string): Promise<{ ok: boolean; detail: string }>;
+}
+
+/** One in-flight remote run, as the slow-run detector (#0720) needs it. */
+export interface ActiveRemoteRunInfo {
+  taskId: string;
+  host: string;
+  phase: CheckRunPhase;
+  scope: string;
+  startedAt: string;
+  /** e.g. `bundle`, `upload`, `queue`, `lock`, `run`, `install`, `test`. */
+  stage: string | null;
+  uploadBytes: number | null;
+  uploadSeconds: number | null;
+}
+
+/**
+ * In-flight remote runs keyed by task id — shared by Hetzner and Tailscale
+ * runners so the slow-run detector (#0720) sees every provider the same way.
+ */
+export class ActiveRemoteRunRegistry {
+  private readonly runs = new Map<string, ActiveRemoteRunInfo>();
+
+  list(): ActiveRemoteRunInfo[] {
+    return [...this.runs.values()].map((r) => ({ ...r }));
+  }
+
+  set(info: ActiveRemoteRunInfo | null, taskId: string): void {
+    if (info) this.runs.set(taskId, info);
+    else this.runs.delete(taskId);
+  }
 }
 
 interface RunnerState {
@@ -1918,6 +1954,7 @@ export class RemoteValidationRunner implements RemoteValidator {
   private readonly validateScriptMirrorByIp = new Map<string, boolean>();
   private lifetimeTimer: ReturnType<typeof setTimeout> | null = null;
   private activeJobs = 0;
+  private readonly activeRunRegistry = new ActiveRemoteRunRegistry();
 
   constructor(
     private readonly config: RepoOSConfig,
@@ -2038,6 +2075,15 @@ export class RemoteValidationRunner implements RemoteValidator {
       host: event.host ?? ctx.host,
       exitCode: event.exitCode ?? ctx.exitCode,
     });
+  }
+
+  /** In-flight runs with stage metadata, for the slow-run detector (#0720). */
+  activeRemoteRuns(): ActiveRemoteRunInfo[] {
+    return this.activeRunRegistry.list();
+  }
+
+  private setActiveRunStage(info: ActiveRemoteRunInfo | null, taskId: string): void {
+    this.activeRunRegistry.set(info, taskId);
   }
 
   private async probeValidateScriptMirror(host: RemoteHost): Promise<boolean> {
@@ -2184,6 +2230,22 @@ export class RemoteValidationRunner implements RemoteValidator {
         { level: "info", phase: "run", message: `runner ${host.ip} ready` },
       );
 
+      const runScope = opts.changedRef ? `changed:${opts.changedRef}` : "full";
+      const runStartedIso = new Date(startedAt).toISOString();
+      this.setActiveRunStage(
+        {
+          taskId: opts.taskId,
+          host: host.ip,
+          phase: opts.phase ?? "pre-review",
+          scope: runScope,
+          startedAt: runStartedIso,
+          stage: "bundle",
+          uploadBytes: null,
+          uploadSeconds: null,
+        },
+        opts.taskId,
+      );
+
       // 1. bundle the candidate tree + 2. upload it, transferring only commits
       //    the host does not already have (#0717).
       tmp = mkdtempSync(join(tmpdir(), "repoos-rvr-"));
@@ -2192,6 +2254,19 @@ export class RemoteValidationRunner implements RemoteValidator {
       remoteTestRef = prepared.remoteTestRef;
       runMeta.remoteTestRef = remoteTestRef;
       const remoteBundle = paths.bundle;
+      this.setActiveRunStage(
+        {
+          taskId: opts.taskId,
+          host: host.ip,
+          phase: opts.phase ?? "pre-review",
+          scope: runScope,
+          startedAt: runStartedIso,
+          stage: "upload",
+          uploadBytes: null,
+          uploadSeconds: null,
+        },
+        opts.taskId,
+      );
       let incrementalUpload = this.validateScriptMirrorByIp.get(host.ip);
       if (incrementalUpload !== true) {
         if (incrementalUpload === undefined) {
@@ -2229,6 +2304,20 @@ export class RemoteValidationRunner implements RemoteValidator {
             { taskId: opts.taskId, host: host.ip, phase: "run" },
             { level: "info", phase: "run", message },
           ),
+        );
+        const uploadSeconds = Math.round(upload.uploadSecs);
+        this.setActiveRunStage(
+          {
+            taskId: opts.taskId,
+            host: host.ip,
+            phase: opts.phase ?? "pre-review",
+            scope: runScope,
+            startedAt: runStartedIso,
+            stage: "run",
+            uploadBytes: upload.bundleBytes,
+            uploadSeconds,
+          },
+          opts.taskId,
         );
 
         // Provisioning + bundling can outlast the caller's deadline (#0521 spec
@@ -2375,6 +2464,7 @@ export class RemoteValidationRunner implements RemoteValidator {
       return withScope(this.infraFail((e as Error).message, { taskId: opts.taskId }));
     } finally {
       if (tmp) rmSync(tmp, { recursive: true, force: true });
+      this.setActiveRunStage(null, opts.taskId);
       this.activeJobs = Math.max(0, this.activeJobs - 1);
       if (this.activeJobs === 0) this.armIdleTimer();
     }
@@ -3726,6 +3816,7 @@ export class TailscaleRunner implements RemoteValidator {
   private readonly timings: RunnerTimings;
   private readonly keyPath: string;
   private readonly pool: TailscaleHostPool;
+  private readonly activeRunRegistry = new ActiveRemoteRunRegistry();
 
   constructor(
     private readonly config: RepoOSConfig,
@@ -3825,6 +3916,19 @@ export class TailscaleRunner implements RemoteValidator {
   /** Per-host pool state for the status endpoint (#0521). */
   hostStatus(): RemoteHostStatus[] {
     return this.pool.status();
+  }
+
+  /** In-flight runs with their current stage, for the slow-run detector (#0720). */
+  activeRemoteRuns(): ActiveRemoteRunInfo[] {
+    return this.activeRunRegistry.list();
+  }
+
+  /**
+   * Record/advance the stage of one in-flight remote run. `null` clears the
+   * entry when the run finishes (or its host slot is released without a result).
+   */
+  private setActiveRunStage(info: ActiveRemoteRunInfo | null, taskId: string): void {
+    this.activeRunRegistry.set(info, taskId);
   }
 
   refreshHostStats(): void {
@@ -4039,6 +4143,22 @@ export class TailscaleRunner implements RemoteValidator {
     );
 
     let tmp: string | null = null;
+    // Register this run so the slow-run detector (#0720) can watch its stage
+    // and elapsed time while it is still in flight.
+    const runScope = opts.changedRef ? `changed:${opts.changedRef}` : "full";
+    this.setActiveRunStage(
+      {
+        taskId: opts.taskId,
+        host: host.ip,
+        phase: opts.phase ?? "pre-review",
+        scope: runScope,
+        startedAt: new Date(startedAt).toISOString(),
+        stage: "bundle",
+        uploadBytes: null,
+        uploadSeconds: null,
+      },
+      opts.taskId,
+    );
     try {
       // 1. bundle the candidate tree + 2. upload it, transferring only commits
       //    the host does not already have (#0717). A persistent bare mirror on
@@ -4049,6 +4169,23 @@ export class TailscaleRunner implements RemoteValidator {
       const prepared = await prepareRemoteTestBundle(opts.worktreePath, opts.changedRef, emit);
       remoteTestRef = prepared.remoteTestRef;
       const remoteBundle = paths.bundle;
+      const runStartedIso = new Date(startedAt).toISOString();
+      this.setActiveRunStage(
+        {
+          taskId: opts.taskId,
+          host: host.ip,
+          phase: opts.phase ?? "pre-review",
+          scope: runScope,
+          startedAt: runStartedIso,
+          stage: "upload",
+          uploadBytes: null,
+          uploadSeconds: null,
+        },
+        opts.taskId,
+      );
+      // 3. run build + test via validate.sh on the host (which calls docker run
+      //    itself), wrapped in the host-side slot lock so this process's gate
+      //    and every other repoos process share ONE per-host limit (#0521).
       const image = rv.containerImage ?? "repoos-ci";
       let incrementalUpload = this.pool.validateScriptMirrorSupported(host.ip);
       let upload: SuccessfulUpload | null = null;
@@ -4084,6 +4221,21 @@ export class TailscaleRunner implements RemoteValidator {
             { taskId: opts.taskId, host: host.ip, phase: "run" },
             { level: "info", phase: "run", message },
           ),
+        );
+        const uploadSeconds = Math.round(upload.uploadSecs);
+        // Upload finished — from here the run may wait for the host lock.
+        this.setActiveRunStage(
+          {
+            taskId: opts.taskId,
+            host: host.ip,
+            phase: opts.phase ?? "pre-review",
+            scope: runScope,
+            startedAt: runStartedIso,
+            stage: "queue",
+            uploadBytes: upload.bundleBytes,
+            uploadSeconds,
+          },
+          opts.taskId,
         );
 
         if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
@@ -4137,6 +4289,19 @@ export class TailscaleRunner implements RemoteValidator {
           priority: lockPriority,
         });
         outerTimeoutMs = this.timings.remoteRunTimeoutMs + waitSecs * 1000;
+        this.setActiveRunStage(
+          {
+            taskId: opts.taskId,
+            host: host.ip,
+            phase: opts.phase ?? "pre-review",
+            scope: runScope,
+            startedAt: runStartedIso,
+            stage: "run",
+            uploadBytes: upload.bundleBytes,
+            uploadSeconds,
+          },
+          opts.taskId,
+        );
 
         // Hang watchdog (#0729): a run whose output stops advancing while the
         // host sits idle is hung (the 2026-10-06/07 incidents looped
@@ -4372,6 +4537,7 @@ export class TailscaleRunner implements RemoteValidator {
       );
     } finally {
       if (tmp) rmSync(tmp, { recursive: true, force: true });
+      this.setActiveRunStage(null, opts.taskId);
     }
   }
 
