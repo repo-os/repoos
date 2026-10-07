@@ -92,3 +92,4 @@ error: script "test" exited with code 1
 - 2026-10-07T14:15:31Z · note: Independent driver baseline at14:13:46 current MAIN: bunx vitest run tests/agent-review.test.ts -t reviews-again (full phrase) --maxWorkers=1 PASSED once in6.04s, log /private/tmp/repoos-driver-0737-current-repro.log. Earlier sandbox attempt EPERM bind was harness permissions, excluded. This does not invalidate owner3/3 or repeated realgatefailures; race depends on interleaving/load. Require deterministic delayed-watcher/finalization regression plus owner10passesunderload, no passing-once releaseclaim. Running engineer stilllive, no driver sourceedit.
 - 2026-10-07T14:15:42Z · body
 - 2026-10-07T14:16:20Z · status active→review
+- 2026-10-07T14:16:20Z · note: shots: skipped — the diff (7 changed paths) touches no [[preview.paths]] globs — no UI change to capture
