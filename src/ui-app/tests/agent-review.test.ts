@@ -178,7 +178,12 @@ async function waitForReviewRunning(
   }
 }
 
-/** Server finalization can still be finishing housekeeping after review ends. */
+/**
+ * #0737: the automatic reviewer can finish before server finalization releases
+ * its in-flight slot (`handoffsInFlight` / `pendingHandoff`). A second
+ * `PATCH status: review` while the slot is held returns 409, not 202 — the
+ * harness must wait for `pendingHandoff === false`, not only `review.running`.
+ */
 async function waitForHandoffSlotReleased(server: ServerHandle, id: string): Promise<void> {
   await waitForAsync(async () => {
     const task = await api(server, "GET", `/api/tasks/${id}`);
