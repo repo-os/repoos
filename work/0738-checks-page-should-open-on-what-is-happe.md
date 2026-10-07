@@ -2,7 +2,7 @@
 id: "0738"
 title: "Checks page should open on what is happening now (live runs), not the static Check plan tab"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: web
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: ""
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:03Z"
-updated_at: "2026-10-07T14:04:12Z"
+updated_at: "2026-10-07T14:04:15Z"
 ---
 ## Problem
 
@@ -36,3 +36,4 @@ Read ChecksView.vue and the Remote runners panel (RemoteRunnersPanel.vue); the c
 
 - 2026-10-07T14:04:03Z · created · unknown
 - 2026-10-07T14:04:12Z · cli_override, model_override
+- 2026-10-07T14:04:15Z · status inbox→ready
