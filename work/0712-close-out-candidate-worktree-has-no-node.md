@@ -11,7 +11,7 @@ branch: feat/close-out-candidate-worktree-has-no-node
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:49Z"
-updated_at: "2026-10-07T00:02:16Z"
+updated_at: "2026-10-07T00:08:04Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 24: unless the check plan starts with an install step. Install deps (or reuse) in the candidate worktree, or fail with advice.
 
@@ -38,3 +38,23 @@ VERIFY FIRST: #0674 (merged 2026-10-06) already reuses the primary checkout's no
 - 2026-10-07T00:00:13Z · body: section Notes for AI
 - 2026-10-07T00:00:39Z · body
 - 2026-10-07T00:02:16Z · body
+- 2026-10-07T00:08:04Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/mtd-remote-deadline.test.ts:147:28
+    145|     const { gateParams, validatorCalls } = await runGateWithBudget(0);
+    146|
+    147|     expect(gateParams).not.toBeNull();
+       |                            ^
+    148|     expect(gateParams!["deadlineAt"]).toBeUndefined();
+    149|     expect(validatorCalls[0]!["deadlineAt"]).toBeUndefined();
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+ Test Files  1 failed | 423 passed | 1 skipped (425)
+      Tests  2 failed | 5119 passed | 15 skipped (5136)
+   Start at  00:03:33
+   Duration  266.77s (transform 6.31s, setup 2.27s, import 48.60s, tests 217.88s, environment 238.53s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 408ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  00:08:00
+   Duration  2.27s (transform 1.05s, setup 11ms, import 1.31s, tests 408ms, environment 470ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
