@@ -2,15 +2,15 @@
 id: "0727"
 title: "Give the CTO the routine: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
 type: feature
-status: ready
+status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/give-the-cto-the-routine-evaluate-and-en
 created_at: "2026-10-07T02:05:31Z"
-updated_at: "2026-10-07T04:35:32Z"
+updated_at: "2026-10-07T04:35:45Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.
 - 2026-10-07T02:10:58Z · story
 - 2026-10-07T02:11:10Z · title, body
 - 2026-10-07T04:35:32Z · status inbox→ready
+- 2026-10-07T04:35:45Z · status ready→active, branch
