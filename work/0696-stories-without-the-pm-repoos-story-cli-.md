@@ -2,7 +2,7 @@
 id: "0696"
 title: "Stories without the PM: `repoos story` CLI and an API create that writes exactly what it is given"
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/stories-without-the-pm-repoos-story-cli-
 created_at: "2026-10-06T03:15:42Z"
-updated_at: "2026-10-07T18:06:15Z"
+updated_at: "2026-10-07T19:51:25Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ Code: `src/server/routes/stories.ts` (`createFreeformStory`), `src/core/story-de
 - 2026-10-06T03:15:42Z · created · unknown
 - 2026-10-07T18:06:11Z · status inbox→ready
 - 2026-10-07T18:06:15Z · status ready→active, branch
+- 2026-10-07T19:51:25Z · status active→review
