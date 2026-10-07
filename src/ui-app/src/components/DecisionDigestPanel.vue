@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import Card from "./ui/card.vue";
 import Button from "./ui/button.vue";
-import { api } from "../lib/api";
+import { api } from "../api";
 
 export interface DecisionDigestAction {
   id: string;
