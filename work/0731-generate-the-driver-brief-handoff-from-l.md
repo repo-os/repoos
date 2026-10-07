@@ -1,6 +1,6 @@
 ---
 id: "0731"
-title: Generate the driver brief (handoff) from live state instead of writing it by hand
+title: Generate the CTO's board brief from live state (also usable as the handoff for any human or agent session)
 type: feature
 status: inbox
 priority: p2
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T02:05:40Z"
-updated_at: "2026-10-07T02:10:58Z"
+updated_at: "2026-10-07T02:11:16Z"
 ---
 ## Problem
 
@@ -29,8 +29,13 @@ Driver rotation needed a hand-written handoff doc (state, open tasks, config cha
 
 Related: #0710 (docs lessons), #0723.
 
+## Framing (2026-10-07)
+
+The brief is produced by the CTO from live state (merged since the last tag, tasks by status with cause, running agents, queued close-outs, host health, config changes, next recommended actions). It replaces the hand-written handoff doc for human or external-agent rotation.
+
 ## Activity
 
 - 2026-10-07T02:05:40Z · created · unknown
 - 2026-10-07T02:06:12Z · note: Created as part of story 0009 (Autopilot).
 - 2026-10-07T02:10:58Z · story
+- 2026-10-07T02:11:16Z · title, body
