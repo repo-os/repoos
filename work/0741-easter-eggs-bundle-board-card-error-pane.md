@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
-updated_at: "2026-10-07T18:41:25Z"
+updated_at: "2026-10-07T18:42:09Z"
 review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)"
@@ -132,3 +132,18 @@ error: script "test" exited with code 1
 - 2026-10-07T18:29:39Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-10-07T18:30:58Z · note: review pass 2: good to go
 - 2026-10-07T18:41:25Z · status review→active
+- 2026-10-07T18:42:09Z · handoff failed · ui-review handoff failed at check · remote validation failed: remote validation failed (exit 2) — …wind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [544.00ms]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+src/ui-app/tests/close-out-attempt.test.ts(9,7): error TS2741: Property 'lastProgressAt' is missing in type '{ taskId: string; stage: "check"; failed: false; startedAt: string; }' but required in type '{ taskId: string; stage: "done" | "build" | "check" | "merge" | "sync" | "resolve-conflict" | null; failed: boolean; error?: string | undefined; startedAt: string | null; lastProgressAt: string | null; }'.
+src/ui-app/tests/close-out-attempt.test.ts(27,7): error TS2741: Property 'lastProgressAt' is missing in type '{ taskId: string; stage: "merge"; failed: false; startedAt: string; }' but required in type '{ taskId: string; stage: "done" | "build" | "check" | "merge" | "sync" | "resolve-conflict" | null; failed: boolean; error?: string | undefined; startedAt: string | null; lastProgressAt: string | null; }'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
