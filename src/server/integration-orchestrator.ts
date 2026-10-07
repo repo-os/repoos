@@ -2220,6 +2220,10 @@ export class CloseOutOrchestrator {
             { failedAt: checkRes.status },
           );
           const { REPOOS_CHECK_CHANGED: _scoped, ...fullEnv } = checkEnv;
+          // The retry runs the WHOLE suite — say so in the retry's own run
+          // record rather than repeating the scoped note.
+          fullEnv.REPOOS_CHECK_GATE_NOTE =
+            "scoped close-out gate failed — re-ran the full suite once before failing the close-out";
           ({ checkRes, outcome } = await runGatePass(baseCheckArgs, fullEnv));
           if (checkRes.cancelled) {
             checkHandle?.done(checkRes.status);
