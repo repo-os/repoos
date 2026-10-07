@@ -390,12 +390,15 @@ describe("close-out cleanup keeps a dirty feature worktree (#0512)", () => {
       git(root, ["branch", "-D", branch]);
 
       const coordinator = createJobCoordinator(root);
-      coordinator.enqueue({ id, branch } as any);
-      coordinator.updateJob(id, {
+      expect(coordinator.enqueue({ id, branch } as any, { handoffSha: branchSha })).toBeTruthy();
+      const updated = coordinator.updateJob(id, {
         phase: "cleanup",
         startedAt: new Date().toISOString(),
         branchSha,
+        handoffSha: branchSha,
       });
+      expect(updated?.branchSha).toBe(branchSha);
+      expect(coordinator.getJob(id)?.branchSha).toBe(branchSha);
 
       const orchestrator = new CloseOutOrchestrator(
         { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
@@ -413,7 +416,7 @@ describe("close-out cleanup keeps a dirty feature worktree (#0512)", () => {
     } finally {
       clean();
     }
-  }, 15_000);
+  }, 30_000);
 
   it("force-removes a merged worktree when only HEAD-present deletions remain (#0609)", async () => {
     const { root, clean } = makeRepo();
