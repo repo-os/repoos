@@ -2,7 +2,7 @@
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -45,4 +45,4 @@ Read AGENTS.md. Use existing task worktree, Cursor/composer-2.5. Independently v
 - 2026-10-07T12:02:39Z · body
 - 2026-10-07T12:04:31Z · body
 - 2026-10-07T12:43:46Z · body
-- 2026-10-07T12:44:12Z · note: shots: skipped — the diff (2 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T12:44:12Z · status active→review
