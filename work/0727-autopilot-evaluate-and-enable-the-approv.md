@@ -5,12 +5,12 @@ type: feature
 status: inbox
 priority: p1
 area: server
-story: "Autopilot: a driver that only handles exceptions"
+story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T02:05:31Z"
-updated_at: "2026-10-07T02:06:24Z"
+updated_at: "2026-10-07T02:10:58Z"
 ---
 ## Problem
 
@@ -34,3 +34,4 @@ Related: #0686, #0688, #0693, #0679, #0720, #0723.
 
 - 2026-10-07T02:05:31Z · created · unknown
 - 2026-10-07T02:06:09Z · note: Created as part of story 0009 (Autopilot).
+- 2026-10-07T02:10:58Z · story
