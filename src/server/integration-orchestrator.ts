@@ -2445,7 +2445,19 @@ export class CloseOutOrchestrator {
   private async cleanup(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const root = this.config.root;
     const featureBranch = job.branch ?? job.taskId;
-    const mergedCommit = branchCommit(root, featureBranch);
+    // Prefer SHAs recorded at handoff/sync: cleanup deletes the feature branch,
+    // and a retry (or a partial run that deleted the branch before
+    // markTaskReleased) must still write merged_commit for dependency proof
+    // (#0711). Read both the in-flight job and the durable record — they are
+    // usually the same, but a reload can hand the orchestrator a job object
+    // that predates a persisted `branchSha`.
+    const persistedJob = this.coordinator.getJob(job.taskId);
+    const mergedCommit =
+      job.branchSha ??
+      persistedJob?.branchSha ??
+      job.handoffSha ??
+      persistedJob?.handoffSha ??
+      branchCommit(root, featureBranch);
 
     // Candidate worktree + throwaway branch.
     this.removeCandidate(job.taskId);
