@@ -242,8 +242,10 @@ mechanism for generated-file conflicts, and every repo has some. If you see `dis
 conflicting on every job again, determinism has regressed: check that
 `scripts/copy-assets.mjs` has not put a timestamp back into the marker.
 
-**If you see `merge conflict in <path>` for anything OTHER than `dist/`,
-or the task's own `work/<id>-*.md`: that is a REAL source conflict.** Do not force-resolve
+**If you see `merge conflict in <path>` for anything OTHER than `dist/`, or a
+bookkeeping file under `work/`, `inputs/` or `stories/` (the closing task's own
+`work/<id>-*.md` plus every other server-written file in those dirs auto-resolves
+to main's copy): that is a REAL source conflict.** Do not force-resolve
 it blindly — it means the task's branch and main both changed the same file. Resolve it
 properly in the feature branch's own worktree (merge main into the feature branch, fix
 the conflict there, let the branch re-validate), not in the candidate.
@@ -587,8 +589,8 @@ survive branch GC.
 
 Mechanism: on a badly stale branch (0306 was ~80 commits behind, its `work/`
 snapshot missing dozens of newer task files) *every* conflict is
-auto-resolvable, so `mergeBranch`'s `autoResolveOurs: ["work/"]` resolves them
-all and commits — yielding a tree identical to `main`. The gate then runs
+auto-resolvable, so `mergeBranch`'s `autoResolveOurs` bookkeeping-dir set
+resolves them all and commits — yielding a tree identical to `main`. The gate then runs
 against what is effectively bare `main` (trivially green), and publish
 fast-forwards `main` to itself. `saveDiffSnapshot` records an empty diff, so the
 Changes tab reads "No saved code changes are available for this completed task."
@@ -639,33 +641,45 @@ main's work-dir copies, as always). Real code drift — including `docs/` and
 `user-docs/` — still discards and resyncs, still bounded by
 `MAX_VALIDATE_DRIFT_RETRIES`; bookkeeping drift does not consume a retry.
 
-### 2. Foreign `work/*.md` drift published to main
+### 2. Foreign bookkeeping drift published to main
 
 Distinct from #1: this is *extra* stale content rather than dropped content. A
-feature branch accumulates edits to **other** tasks' `work/<id>-*.md` files
-(concurrent board writes, a `repoos` CLI call inside the worktree, a partial
-merge). `autoResolveOurs: ["work/"]` only forces main's copy **on a conflict** —
-a clean merge (main untouched since the merge-base) folds the stale copy
-straight to `main`.
+feature branch accumulates edits to **other** tasks' `work/<id>-*.md` files, to
+`inputs/*.md` captures, or to `stories/*.md` definitions (concurrent board
+writes, a `repoos` CLI call inside the worktree, a partial merge).
+`autoResolveOurs` — the managed bookkeeping dirs, from
+`bookkeepingKeepOursPrefixes` — only forces main's copy **on a conflict**; a
+clean merge (main untouched since the merge-base) folds the stale copy straight
+to `main`.
 
 Observed live: #0319's close-out (`0967dd37`) landed frontmatter drift on
 `work/0202` and `work/0275` — bumped `updated_at`/`review_passes`, reordered
 keys. Nothing was lost and it self-healed on the next board write, but it is
 real pollution of another task's record.
 
-**Guards** (both added `be3acd3f`, 2026-08-29):
+**Guards** (both added `be3acd3f`, 2026-08-29; extended to all three bookkeeping
+dirs in #0726):
 - `guardReviewTransition` (`review-guard.ts`) unstages every `work/*.md` that
   isn't the task's own after `git add -A`, so drift never reaches the branch.
 - `resetForeignWorkFiles` (`integration-orchestrator.ts`) restores main's copy of
-  every foreign work file the candidate changed, `git rm`s ones the branch newly
-  added, and commits — catching drift already committed in an earlier round.
+  every foreign bookkeeping file the candidate changed — under the work dir,
+  `inputs/` or `stories/`, per `bookkeepingDirs(config)` — `git rm`s ones the
+  branch newly added, and commits, catching drift already committed in an earlier
+  round. Only the closing task's OWN `work/<id>-*.md` may differ.
+
+The same three dirs are the close-out's `autoResolveOurs` set (merged into the
+candidate in the validate phase and into live `main` at publish), so a *conflict*
+in any of them resolves to main's copy instead of failing the close-out. And the
+publish-time dirty-main guard treats a dirty file under any of the three (plus
+`repoos.toml`) as routine, server-written churn it may auto-checkpoint — a dirty
+file anywhere else still fails closed.
 
 **Only if the human explicitly authorizes manual recovery outside the normal
 pipeline:** when hand-landing a stale branch, do this check yourself; the guards
 only run inside the pipeline:
 
 ```bash
-git diff main...HEAD --name-only | grep '^work/'   # anything but the task's own file
+git diff main...HEAD --name-only | grep -E '^(work|inputs|stories)/'   # anything but the task's own file
 git checkout main -- <those files>                  # before merging
 ```
 
