@@ -74,6 +74,13 @@ export interface StatusServer {
    */
   managedService: boolean;
   /**
+   * The running server's build vs this CLI's build: `stale` when they differ
+   * (a restart would pick up fixes), `same` when they match, `unknown` when the
+   * server is down or reports nothing comparable (#0701). Exposed so `--json`
+   * scripts can detect a stale server without parsing human output.
+   */
+  buildState: "stale" | "same" | "unknown";
+  /**
    * Result of probing /api/health on the port:
    *   "ok"          — answered and its root matches this repo
    *   "foreign"     — something answered, but it serves a different root
