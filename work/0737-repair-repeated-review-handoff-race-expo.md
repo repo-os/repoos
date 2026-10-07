@@ -2,7 +2,7 @@
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
@@ -87,3 +87,4 @@ error: script "test" exited with code 1
 - 2026-10-07T13:06:16Z · note: shots: skipped — the diff (2 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-07T13:07:25Z · note: review pass 1: good to go
 - 2026-10-07T14:02:24Z · body
+- 2026-10-07T14:02:24Z · status review→active
