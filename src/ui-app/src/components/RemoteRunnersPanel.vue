@@ -264,6 +264,16 @@ function fmtAgo(iso: string): string {
                 <span class="mono">{{ runLabel(r) }}</span>
                 <span v-if="r.phase" class="rr-dim"> · {{ r.phase }}</span>
                 · {{ elapsedSince(r.startedAt) }}
+                <span
+                  v-if="r.slow"
+                  class="rr-slow-badge"
+                  data-test-id="remote-run-slow"
+                  tabindex="0"
+                  :aria-label="r.slowDetail ? `Slow run. ${r.slowDetail}` : 'Slow run'"
+                  :data-tip="r.slowDetail || 'This job is taking longer than typical for its kind'"
+                >
+                  slow
+                </span>
                 <span v-if="r.hung" class="rr-hung-badge">hung · killing</span>
               </span>
             </template>
@@ -601,6 +611,17 @@ function fmtAgo(iso: string): string {
 }
 .rr-bad {
   color: var(--red);
+}
+.rr-slow-badge {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+  border: 1px solid var(--amber);
 }
 .rr-hung {
   color: var(--amber);

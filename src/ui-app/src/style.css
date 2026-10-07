@@ -2811,6 +2811,19 @@
   width: 10px;
   height: 10px;
 }
+.ck-slow-badge,
+.tc-slow-badge {
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--amber);
+  border: 1px solid var(--amber-border-tint);
+  background: var(--amber-tint);
+}
 .rs-incomplete {
   color: var(--amber);
   border: 1px solid var(--amber-border-tint);
@@ -5646,6 +5659,15 @@
   color: var(--txt-dim);
   font-size: 11px;
   word-break: break-all;
+}
+.ui-verification-captures {
+  margin: 8px 0 0;
+  padding-left: 1.1rem;
+  font-size: 12px;
+  color: var(--txt);
+}
+.ui-verification-captures li {
+  margin-bottom: 6px;
 }
 .shot-warning {
   font-size: 12px;

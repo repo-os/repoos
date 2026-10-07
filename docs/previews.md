@@ -140,12 +140,45 @@ a fenced JSON list (`src/core/shot-plan.ts`), one entry per capture —
 optional ordered `steps` (`click` / `fill`+`text` / `waitFor` / `waitMs`,
 plain CSS selectors). Routes and selectors only — no framework knowledge.
 
-**Shot hygiene (#0613).** When a declared `highlight` or `selector` matches
-zero elements at capture time, a visible warning is recorded on the task
-(for example: highlight `.x` matched nothing on /route) — capture still succeeds.
-Declared shots with the same `target` + `route` + `steps` + `selector` are
-collapsed to one capture, with `highlight` selectors merged (comma-joined),
-so near-duplicates become one capture.
+**Shot hygiene (#0613, tightened #0734).** When a declared `highlight` or
+`selector` matches zero elements at capture time, a visible warning is recorded
+on the task (for example: highlight `.x` matched nothing on /route). Since
+#0734 that miss is **blocking**: a capture that does not show the element the
+declaration claims is missing evidence, not a note, and the handoff fails with
+the exact selector and capture URL. The browser's FINAL route after any
+redirect is also compared to the declared route — a login bounce or a
+client-side guard that lands elsewhere fails the shot rather than passing a
+screenshot of the wrong page. Declared shots with the same `target` + `route` +
+`steps` + `selector` + `assert` are collapsed to one capture, with `highlight`
+selectors merged (comma-joined), so near-duplicates become one capture.
+
+**Meaningful assertions (#0734).** A declared entry may carry an `assert` list
+naming what the shot must actually prove — not merely that the page was
+non-blank:
+
+```json
+[{"route": "/reviews", "label": "Review rows", "highlight": ".review-row",
+  "assert": [{"selector": ".review-row", "minCount": 1, "label": "review rows present"}]}]
+```
+
+Each assertion checks an element count (`selector` + `count`/`minCount`), its
+text (`selector` + `text`, or `text` alone against the page body), and may set
+`optional: true` to record a best-effort outcome without blocking. Every
+non-optional assertion is evaluated against the live captured page; a failure
+blocks the handoff with the exact selector/text and the capture URL. This is
+what lets a task assert "review rows are populated" or "the Settings input is
+editable" instead of relying on a generic nonblank screenshot. It does not
+replace the reviewer's reading of the acceptance criteria — screenshot
+assertions cannot establish every semantic requirement.
+
+**Stale-capture reuse (#0734).** An automatic capture is reused on a
+re-handoff only when it is bound to the SAME capture plan and the SAME tested
+tree: the shot manifest records a plan fingerprint (target/route/selector/
+steps/highlights/assertions) and the worktree HEAD sha, and a plan or tree that
+changed forces a fresh capture. A metadata note alone never stands down a
+capture whose declaration changed — that was the #0720/#0727 stale-evidence
+failure. A capture taken before #0734 (no fingerprint) is deliberately NOT
+reusable, since it cannot be tied to the current plan.
 
 **Whole-window default (#0613).** Declared shots capture the whole visible
 viewport by default (`fullPage: false`) with changed elements outlined via

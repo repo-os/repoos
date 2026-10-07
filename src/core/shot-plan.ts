@@ -34,6 +34,37 @@ export type DeclaredStep =
   | { waitFor: string }
   | { waitMs: number };
 
+/**
+ * One meaningful, verifiable assertion about the captured page (#0734).
+ *
+ * A declared shot's `highlight`/`selector` only prove an element EXISTED at
+ * capture time; a generic nonblank screenshot with a clean console would pass
+ * even when the feature's data never rendered. `assert` names what the shot
+ * must actually show: an element (`selector`), an expected count
+ * (`count`/`minCount`), and/or text it must contain (`text`). The handoff gate
+ * checks every assertion against the live page and BLOCKS when a required one
+ * fails — a missing selector, an empty list, an uneditable input — with the
+ * exact selector/text and the capture URL in the failure detail.
+ *
+ * `optional: true` marks a best-effort assertion: its outcome is recorded but
+ * never blocks (for evidence that legitimately varies, e.g. a "no reviews yet"
+ * empty state in a fixture).
+ */
+export interface ShotAssertion {
+  /** CSS selector that must match at least `minCount` (default 1) elements. */
+  selector?: string;
+  /** Text the matched element(s) must contain (case-insensitive substring). */
+  text?: string;
+  /** Exact element count the selector must match. */
+  count?: number;
+  /** Minimum element count the selector must match (default 1 when only a selector is given). */
+  minCount?: number;
+  /** Mark this assertion best-effort: recorded, never blocking. */
+  optional?: boolean;
+  /** Human description of what this assertion proves, for the failure detail. */
+  label?: string;
+}
+
 /** One entry of the task's `## Shots` list. */
 export interface DeclaredShot {
   /** Human label captioning the shot in the drawer (default: the route). */
@@ -54,6 +85,11 @@ export interface DeclaredShot {
   highlight?: string;
   /** Ordered steps to reach the state before capturing. */
   steps?: DeclaredStep[];
+  /**
+   * Meaningful assertions the capture must satisfy (#0734). One entry may carry
+   * several; every non-optional one must pass or the handoff is blocked.
+   */
+  assert?: ShotAssertion[];
 }
 
 export interface ParsedShotPlan {
@@ -81,6 +117,12 @@ export interface CaptureEntry {
    */
   highlights?: string[];
   steps?: DeclaredStep[];
+  /**
+   * Meaningful assertions the capture must satisfy (#0734). Threaded from the
+   * declared shot so the handoff gate can check them and block on failure;
+   * absent for the server's blind `/` fallback, which asserts nothing.
+   */
+  assert?: ShotAssertion[];
   /**
    * Why this shot exists (#0603), recorded in `shots.json` and rendered in the
    * Changes tab: a declared shot captions itself with its label ("declared:
@@ -195,6 +237,58 @@ export function parseShotEntry(
   return parseShot(raw, where);
 }
 
+/** Validate one raw JSON assertion; returns the typed assertion or an error message. */
+function parseAssertion(
+  raw: unknown,
+  where: string,
+): { assertion?: ShotAssertion; error?: string } {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    return { error: `${where}: each assertion must be an object` };
+  }
+  const r = raw as Record<string, unknown>;
+  const assertion: ShotAssertion = {};
+  for (const key of ["selector", "label"] as const) {
+    if (r[key] !== undefined) {
+      if (typeof r[key] !== "string" || !r[key]) {
+        return { error: `${where}: "${key}" expects a non-empty string` };
+      }
+      assertion[key] = r[key];
+    }
+  }
+  if (r.text !== undefined) {
+    if (typeof r.text !== "string") {
+      return { error: `${where}: "text" expects a string` };
+    }
+    assertion.text = r.text;
+  }
+  for (const key of ["count", "minCount"] as const) {
+    if (r[key] !== undefined) {
+      const n = r[key];
+      if (typeof n !== "number" || !Number.isFinite(n) || n < 0 || !Number.isInteger(n)) {
+        return { error: `${where}: "${key}" expects a non-negative integer` };
+      }
+      assertion[key] = n;
+    }
+  }
+  if (r.optional !== undefined) {
+    if (typeof r.optional !== "boolean") {
+      return { error: `${where}: "optional" expects a boolean` };
+    }
+    assertion.optional = r.optional;
+  }
+  // An assertion with nothing to check cannot prove anything — reject it so a
+  // typo (`{"selctor": ".x"}`) is a visible parse error, not a silent no-op.
+  if (assertion.selector === undefined && assertion.text === undefined) {
+    return {
+      error: `${where}: an assertion needs a "selector" and/or "text" to check`,
+    };
+  }
+  if (assertion.count !== undefined && assertion.minCount !== undefined) {
+    return { error: `${where}: use either "count" or "minCount", not both` };
+  }
+  return { assertion };
+}
+
 /** Validate one raw JSON entry at list index `i`; returns the typed shot or an error message. */
 function parseShot(raw: unknown, where: string): { shot?: DeclaredShot; error?: string } {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
@@ -221,6 +315,18 @@ function parseShot(raw: unknown, where: string): { shot?: DeclaredShot; error?: 
       if (parsed.step) steps.push(parsed.step);
     }
     if (steps.length) shot.steps = steps;
+  }
+  if (r.assert !== undefined) {
+    if (!Array.isArray(r.assert)) {
+      return { error: `${where}: "assert" expects an array` };
+    }
+    const assertions: ShotAssertion[] = [];
+    for (let i = 0; i < r.assert.length; i++) {
+      const parsed = parseAssertion(r.assert[i], `${where} assert #${i + 1}`);
+      if (parsed.error) return { error: parsed.error };
+      if (parsed.assertion) assertions.push(parsed.assertion);
+    }
+    if (assertions.length) shot.assert = assertions;
   }
   return { shot };
 }
@@ -489,6 +595,7 @@ export function buildCapturePlan(
       ...(shot.highlight ? { highlight: shot.highlight } : {}),
       ...(shot.selector ? { selector: shot.selector } : {}),
       ...(shot.steps?.length ? { steps: shot.steps } : {}),
+      ...(shot.assert?.length ? { assert: shot.assert } : {}),
       provenance: { kind: "declared", ...(shot.label ? { label: shot.label } : {}) },
     });
   }
@@ -514,14 +621,16 @@ export function buildCapturePlan(
   // selector list). Near-duplicates arise when two declarations describe the
   // same evidence (e.g. two shots for `/agents` both with no tab-opening step
   // and the same selector). The surviving entry keeps the first label.
+  // #0734: assertions participate in the key — two entries that prove different
+  // things are NOT near-duplicates, and collapsing them would silently drop one
+  // set of assertions.
+  const collapseKey = (e: CaptureEntry): string =>
+    `${e.target}\0${e.route}\0${e.selector ?? ""}\0${JSON.stringify(e.steps ?? [])}\0${JSON.stringify(e.assert ?? [])}`;
   const collapsed: string[] = [];
   const deduped: CaptureEntry[] = [];
   for (const entry of entries) {
-    const key = `${entry.target}\0${entry.route}\0${entry.selector ?? ""}\0${JSON.stringify(entry.steps ?? [])}`;
-    const existing = deduped.find(
-      (d) =>
-        `${d.target}\0${d.route}\0${d.selector ?? ""}\0${JSON.stringify(d.steps ?? [])}` === key,
-    );
+    const key = collapseKey(entry);
+    const existing = deduped.find((d) => collapseKey(d) === key);
     if (existing) {
       if (entry.highlight) {
         const all = existing.highlights ?? (existing.highlight ? [existing.highlight] : []);
@@ -603,7 +712,44 @@ export function sameDeclaredShot(a: DeclaredShot, b: DeclaredShot): boolean {
   for (const field of ["label", "target", "route", "selector", "highlight"] as const) {
     if ((a[field] ?? undefined) !== (b[field] ?? undefined)) return false;
   }
-  return JSON.stringify(a.steps ?? []) === JSON.stringify(b.steps ?? []);
+  if (JSON.stringify(a.steps ?? []) !== JSON.stringify(b.steps ?? [])) return false;
+  return JSON.stringify(a.assert ?? []) === JSON.stringify(b.assert ?? []);
+}
+
+/**
+ * A stable, content-addressed identity for a capture plan (#0734). Binds a
+ * stored evidence capture to the exact declarations that produced it, so a
+ * handoff only reuses a prior capture when the plan has not changed: a shot
+ * list edited after a capture (a corrected route, a new assertion) produces a
+ * different fingerprint and forces the capture to run again instead of
+ * silently reusing stale evidence. Deliberately covers the fields that change
+ * what is captured and what is asserted — target, route, selector, steps,
+ * highlights, assertions — but not the human `label` (caption only).
+ */
+export function shotPlanFingerprint(entries: CaptureEntry[]): string {
+  const parts = entries.map((e) =>
+    JSON.stringify({
+      target: e.target,
+      route: e.route,
+      selector: e.selector ?? null,
+      steps: e.steps ?? [],
+      highlights: e.highlights ?? (e.highlight ? [e.highlight] : []),
+      assert: e.assert ?? [],
+    }),
+  );
+  return parts.join("\n");
+}
+
+/** One-line human description of an assertion, for a failure detail. */
+export function describeShotAssertion(assertion: ShotAssertion): string {
+  const bits: string[] = [];
+  if (assertion.label) bits.push(assertion.label);
+  if (assertion.selector) bits.push(`selector ${assertion.selector}`);
+  if (assertion.count !== undefined) bits.push(`exactly ${assertion.count}`);
+  else if (assertion.minCount !== undefined) bits.push(`at least ${assertion.minCount}`);
+  if (assertion.text !== undefined) bits.push(`text ${JSON.stringify(assertion.text)}`);
+  if (assertion.optional) bits.push("(optional)");
+  return bits.join(" · ") || "assertion";
 }
 
 /**

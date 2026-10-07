@@ -23,6 +23,7 @@ import {
   buildCapturePlan,
   parseShotPlan,
   provenanceCaption,
+  shotPlanFingerprint,
   type CaptureEntry,
   type DeclaredShot,
 } from "../core/shot-plan.js";
@@ -31,6 +32,7 @@ import { describeTargetPathMatches, resolveShotTargets } from "../core/shot-targ
 import type { LogLevel } from "../core/logger.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
+import { runGit, worktreePathForBranch } from "../core/git.js";
 import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
 import type { PreviewManager } from "./preview.js";
@@ -95,6 +97,21 @@ export async function captureEntryPage(
 
 /** In-flight captures, so duplicate review transitions never double-run. */
 const inFlight = new Set<string>();
+
+/**
+ * The tested tree identity for a task (#0734): the short HEAD sha of its
+ * worktree (resolved from the branch; the root when no worktree is linked).
+ * Undefined when git is unavailable — callers then treat the tree as unknown
+ * rather than failing.
+ */
+async function headIdentity(config: RepoOSConfig, task: Task): Promise<string | undefined> {
+  const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+  const dir = worktree ?? config.root;
+  const res = await runGit(dir, ["rev-parse", "--short", "HEAD"], 10_000);
+  if (res.status !== 0) return undefined;
+  const sha = res.stdout.trim();
+  return sha || undefined;
+}
 
 /**
  * One preview per task, so each new target must replace the running one
@@ -221,6 +238,26 @@ export function planAutoCapture(
 }
 
 /**
+ * Which prior automatic captures may be reused for the current plan/tree
+ * (#0734). Reusable means the shot records the SAME plan fingerprint and the
+ * SAME tested tree (when a tree identity is known). A shot with no recorded
+ * fingerprint predates #0734 and is never reusable — it cannot be tied to the
+ * current plan. Exported so the reuse rule is unit-testable without a browser.
+ */
+export function reusableAutoCaptures(
+  shots: ShotMeta[],
+  planFingerprint: string,
+  sourceIdentity: string | undefined,
+): ShotMeta[] {
+  return shots.filter(
+    (shot) =>
+      shot.planFingerprint !== undefined &&
+      shot.planFingerprint === planFingerprint &&
+      (sourceIdentity === undefined || shot.sourceIdentity === sourceIdentity),
+  );
+}
+
+/**
  * Run the automatic capture for `task` and record the outcome. Never throws
  * and never fails a caller: returns a structured result, writes a task-log
  * line, and appends an activity note for every skip/failure (the drawer's
@@ -261,13 +298,31 @@ export async function runAutoShotCapture(
   if ("reason" in plan) {
     return finish("skipped", plan.reason);
   }
+  // #0734: reuse an existing automatic capture ONLY when it is bound to the
+  // SAME plan and the SAME tested tree. A metadata note alone must not stand
+  // down a capture whose declaration changed (a corrected route, a new
+  // assertion) or whose source tree moved on — that was the stale-capture
+  // failure of #0720/#0727. A capture with no recorded fingerprint (taken
+  // before #0734) is NOT reusable: it cannot be tied to the current plan.
+  const planFingerprint = shotPlanFingerprint(plan.entries);
+  const sourceIdentity = await headIdentity(config, task);
   const autoExisting = localShotStore(config, task.id)
     .list()
     .filter((shot) => shot.origin === "auto");
-  if (autoExisting.length > 0) {
+  const reusable = reusableAutoCaptures(autoExisting, planFingerprint, sourceIdentity);
+  if (autoExisting.length > 0 && reusable.length === autoExisting.length) {
     return finish(
       "skipped",
-      `${autoExisting.length} handoff shot${autoExisting.length === 1 ? "" : "s"} already captured during finalization (#0680)`,
+      `${autoExisting.length} handoff shot${autoExisting.length === 1 ? "" : "s"} already captured ` +
+        `for this exact plan (${sourceIdentity ?? "unknown tree"}) during finalization (#0734)`,
+    );
+  }
+  if (autoExisting.length > 0 && reusable.length < autoExisting.length) {
+    log(
+      task.id,
+      "info",
+      `shots: ${autoExisting.length - reusable.length} prior handoff capture(s) do not match the ` +
+        `current plan/tree — recapturing`,
     );
   }
   const entries = plan.entries;
@@ -355,6 +410,10 @@ export async function runAutoShotCapture(
         route: entry.route,
         ...(entry.label ? { label: entry.label } : {}),
         provenance: provenanceCaption(entry.provenance),
+        // #0734: bind the capture to the plan and the tested tree so a later
+        // handoff can tell whether it may reuse this evidence.
+        planFingerprint,
+        ...(sourceIdentity ? { sourceIdentity } : {}),
         data: png.toString("base64"),
       });
       if ("error" in stored) {

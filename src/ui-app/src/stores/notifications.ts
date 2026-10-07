@@ -29,6 +29,8 @@ export type NotificationType =
   | "closeOutTimedOut"
   | "providerFailure"
   | "silentRun"
+  | "slowRun"
+  | "slowRunsRecently"
   | "spendThreshold"
   | "awaitingVisualCheck"
   | "remoteFallback"
@@ -49,6 +51,8 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   "closeOutTimedOut",
   "providerFailure",
   "silentRun",
+  "slowRun",
+  "slowRunsRecently",
   "spendThreshold",
   "awaitingVisualCheck",
   "remoteFallback",
@@ -238,6 +242,8 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   closeOutTimedOut: "Move to done timed out",
   providerFailure: "Provider or credit error",
   silentRun: "Agent output went quiet",
+  slowRun: "Check or close-out running slow",
+  slowRunsRecently: "Checks slow lately",
   spendThreshold: "Spend alert",
   awaitingVisualCheck: "Awaiting visual check",
   remoteFallback: "Ran locally (remote enabled)",
@@ -260,6 +266,9 @@ export const NOTIFICATION_TYPE_DESCRIPTIONS: Record<NotificationType, string> = 
   closeOutTimedOut: "A task's Move to done ran past its time budget and was stopped.",
   providerFailure: "An agent hit a provider credit, auth, or model error.",
   silentRun: "A running agent stopped producing output while the process is still alive.",
+  slowRun:
+    "A check, handoff gate, close-out stage, or bundle upload exceeded its typical duration.",
+  slowRunsRecently: "Several recent runs of the same kind were slower than usual.",
   spendThreshold: "Provider-reported board spend reached your alert threshold.",
   awaitingVisualCheck: "A UI task is in review — open the preview and verify it in a browser.",
   remoteFallback: "Remote validation was on but the gate ran on this machine instead.",

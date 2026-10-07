@@ -33,6 +33,8 @@ export type NoticeKind =
   | "closeOutTimedOut"
   | "providerFailure"
   | "silentRun"
+  | "slowRun"
+  | "slowRunsRecently"
   | "spendThreshold"
   | "awaitingVisualCheck"
   | "remoteFallback"
@@ -64,6 +66,8 @@ export const NOTICE_KIND_LABELS: Record<NoticeKind, string> = {
   closeOutTimedOut: "Move to done timed out",
   providerFailure: "Provider error",
   silentRun: "Silent agent run",
+  slowRun: "Slow check",
+  slowRunsRecently: "Checks slow lately",
   spendThreshold: "Spend alert",
   awaitingVisualCheck: "Awaiting visual check",
   remoteFallback: "Ran locally",
@@ -82,6 +86,8 @@ export const NOTICE_KIND_COLOR: Record<NoticeKind, string> = {
   closeOutTimedOut: "var(--amber)",
   providerFailure: "var(--red)",
   silentRun: "var(--amber)",
+  slowRun: "var(--amber)",
+  slowRunsRecently: "var(--amber)",
   spendThreshold: "var(--amber)",
   awaitingVisualCheck: "var(--violet)",
   remoteFallback: "var(--amber)",
@@ -98,6 +104,8 @@ const ATTENTION_NOTICE_KINDS = new Set<NoticeKind>([
   "closeOutTimedOut",
   "providerFailure",
   "silentRun",
+  "slowRun",
+  "slowRunsRecently",
   "spendThreshold",
   "awaitingVisualCheck",
   "remoteFallback",
@@ -107,6 +115,7 @@ const ATTENTION_NOTICE_KINDS = new Set<NoticeKind>([
 export interface AttentionFeedItem {
   id: string;
   kind: string;
+  taskId?: string | null;
   message: string;
   detail: string;
   link: string | null;
@@ -224,6 +233,17 @@ export const useNoticesStore = defineStore("notices", () => {
 
   const notices = ref<NoticeItem[]>([]);
 
+  /**
+   * Live "slow run" attention items (#0720), keyed by their stable id and
+   * replaced on every poll — unlike `notices`, these are NOT accumulated: the
+   * server raises one per in-flight run and drops it the moment the run ends, so
+   * this is a snapshot of what is slow RIGHT NOW. Components that badge a task
+   * card or a runner row read this; nothing persists or rings.
+   */
+  const slowRunItems = ref<
+    Array<{ id: string; taskId: string | null; message: string; detail: string }>
+  >([]);
+
   const unreadNotices = computed(() => notices.value.filter((n) => !n.dismissed && !n.read));
 
   /** Non-dismissed notices, newest first — the feed the bell/panel render. */
@@ -235,6 +255,15 @@ export const useNoticesStore = defineStore("notices", () => {
   );
 
   const dismissedCount = computed(() => notices.value.filter((n) => n.dismissed).length);
+
+  /** Live slow-run items keyed by task id (#0720), for the task card/drawer. */
+  const slowRunByTask = computed(() => {
+    const out: Record<string, { message: string; detail: string }> = {};
+    for (const item of slowRunItems.value) {
+      if (item.taskId) out[item.taskId] = { message: item.message, detail: item.detail };
+    }
+    return out;
+  });
 
   function saveMarkers(): void {
     persistMarkers({ ...markers.value });
@@ -414,7 +443,18 @@ export const useNoticesStore = defineStore("notices", () => {
   async function pollAttention(): Promise<void> {
     try {
       const res = await api<{ items: AttentionFeedItem[] }>("/api/attention");
-      for (const item of [...(res.items ?? [])].reverse()) ingestAttentionItem(item);
+      const items = res.items ?? [];
+      // A snapshot of what is slow right now (#0720): rebuild every poll so a
+      // finished run's badge clears without any dismiss action.
+      slowRunItems.value = items
+        .filter((i) => i.kind === "slowRun")
+        .map((i) => ({
+          id: i.id,
+          taskId: i.taskId ?? null,
+          message: i.message,
+          detail: i.detail,
+        }));
+      for (const item of [...items].reverse()) ingestAttentionItem(item);
     } catch {
       /* server restarting */
     }
@@ -489,6 +529,8 @@ export const useNoticesStore = defineStore("notices", () => {
     unreadNotices,
     activeNotices,
     dismissedCount,
+    slowRunItems,
+    slowRunByTask,
     start,
     stop,
     pollReleaseRun,

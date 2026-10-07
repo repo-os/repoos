@@ -2,14 +2,18 @@
 id: "0734"
 title: Block UI handoff and green review when required visual evidence is missing or stale
 type: bug
-status: inbox
+status: done
 priority: p1
 area: [server, web]
+merged_commit: 5ec31513a6b58d9ed5420dba899f23b24e8cc2ed
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/block-ui-handoff-and-green-review-when-r
 created_at: "2026-10-07T05:39:18Z"
-updated_at: "2026-10-07T09:25:57Z"
+updated_at: "2026-10-07T15:43:41Z"
+last_close_out_gate_ms: 469834
+last_close_out_gate_at: "2026-10-07T15:43:27.216Z"
+review_passes: 1
 ---
 ## Problem
 Current-main investigation after #0720/#0727/#0733: a shot can show a wrong route, lack its declared target, or contain no feature data and still report a successful handoff. Reviewers sometimes issue good-to-go while explicitly saying visual proof is absent. #0727 saved Mission Control for a Settings claim; #0733 lacked review rows; #0720 reused stale captures after plan changes.
@@ -44,3 +48,16 @@ Additional verified cause: handoff.ts constructs uiTask with worktreeTask.body, 
 - 2026-10-07T05:39:55Z · body: section Desired UX
 - 2026-10-07T05:39:56Z · body: section Notes for AI
 - 2026-10-07T09:25:57Z · needs_input
+- 2026-10-07T14:35:31Z · status inbox→ready
+- 2026-10-07T14:35:47Z · status ready→active, branch
+- 2026-10-07T14:50:22Z · body
+- 2026-10-07T14:51:42Z · body
+- 2026-10-07T14:59:42Z · body
+- 2026-10-07T15:01:15Z · body
+- 2026-10-07T15:02:43Z · body
+- 2026-10-07T15:06:12Z · body
+- 2026-10-07T15:13:12Z · status active→review
+- 2026-10-07T15:13:12Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-07T15:14:44Z · note: review pass 1: good to go
+- 2026-10-07T15:43:27Z · close-out gate completed in 470s
+- 2026-10-07T15:43:41Z · status review→done, release:success
