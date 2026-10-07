@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 346659
-last_close_out_gate_at: "2026-10-07T05:32:11.847Z"
 id: "0712"
 title: "Close-out candidate worktree has no node_modules: check plan fails with 'prettier: command not found'"
 type: bug
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: b0cb0e711742e1759b5fa7eda4dccf5bd1c9b3f4
 assigned_to: ai
 created_by: ""
 branch: feat/close-out-candidate-worktree-has-no-node
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:49Z"
-updated_at: "2026-10-07T05:32:11Z"
+updated_at: "2026-10-07T05:32:29Z"
+last_close_out_gate_ms: 346659
+last_close_out_gate_at: "2026-10-07T05:32:11.847Z"
 review_passes: 1
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 24: unless the check plan starts with an install step. Install deps (or reuse) in the candidate worktree, or fail with advice.
@@ -118,4 +119,4 @@ error: script "test" exited with code 1
 - 2026-10-07T01:15:54Z · note: review pass 1: good to go
 - 2026-10-07T04:47:30Z · close-out gate completed in 1343s
 - 2026-10-07T05:32:11Z · close-out gate completed in 347s
-
+- 2026-10-07T05:32:29Z · status review→done, release:success
