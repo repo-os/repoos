@@ -129,3 +129,4 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T18:29:39Z · status active→review
+- 2026-10-07T18:29:39Z · note: Task body is underspecified: missing sections: Desired UX
