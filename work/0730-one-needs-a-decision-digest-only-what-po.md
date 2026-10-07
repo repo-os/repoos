@@ -12,7 +12,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T10:24:42Z"
+updated_at: "2026-10-07T10:27:08Z"
 ---
 ## Problem
 
@@ -106,3 +106,4 @@ error: script "test" exited with code 1
    Duration  2.66s (transform 1.22s, setup 11ms, import 1.51s, tests 552ms, environment 503ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T10:27:08Z · body
