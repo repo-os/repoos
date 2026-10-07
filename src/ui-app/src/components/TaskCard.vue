@@ -31,10 +31,7 @@ import HotfixBadge from "./HotfixBadge.vue";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
 import DependencyChip from "./DependencyChip.vue";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
-import {
-  closeOutAttemptStartedAt,
-  isStaleDoneError,
-} from "../lib/closeOutAttempt";
+import { closeOutAttemptStartedAt, isStaleDoneError } from "../lib/closeOutAttempt";
 
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
@@ -1106,10 +1103,7 @@ async function openDebuggerFromError(): Promise<void> {
       </div>
     </transition>
 
-    <div
-      v-if="action || cardDoneError"
-      class="tc-foot tc-actions tc-card-footer !ml-0 w-full"
-    >
+    <div v-if="action || cardDoneError" class="tc-foot tc-actions tc-card-footer !ml-0 w-full">
       <button
         v-if="action"
         class="tc-card-footer-action flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"

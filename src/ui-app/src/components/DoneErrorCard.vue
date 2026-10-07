@@ -195,9 +195,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
     role="alert"
   >
     <details v-if="mode === 'card' && stale" class="done-error-stale">
-      <summary class="done-error-stale-summary">
-        Previous attempt failed: {{ staleShort }}
-      </summary>
+      <summary class="done-error-stale-summary">Previous attempt failed: {{ staleShort }}</summary>
       <div class="done-error-row">
         <button
           type="button"

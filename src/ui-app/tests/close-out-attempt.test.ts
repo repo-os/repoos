@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  closeOutAttemptStartedAt,
-  isStaleDoneError,
-} from "../src/lib/closeOutAttempt";
+import { closeOutAttemptStartedAt, isStaleDoneError } from "../src/lib/closeOutAttempt";
 import type { IntegrationPipelineSnapshot } from "../src/types";
 
 describe("closeOutAttempt", () => {
@@ -25,12 +22,8 @@ describe("closeOutAttempt", () => {
   });
 
   it("treats failures before the attempt start as stale", () => {
-    expect(isStaleDoneError("2026-09-20T10:00:00.000Z", "2026-09-20T12:00:00.000Z")).toBe(
-      true,
-    );
-    expect(isStaleDoneError("2026-09-20T12:00:00.000Z", "2026-09-20T12:00:00.000Z")).toBe(
-      false,
-    );
+    expect(isStaleDoneError("2026-09-20T10:00:00.000Z", "2026-09-20T12:00:00.000Z")).toBe(true);
+    expect(isStaleDoneError("2026-09-20T12:00:00.000Z", "2026-09-20T12:00:00.000Z")).toBe(false);
     expect(isStaleDoneError(undefined, "2026-09-20T12:00:00.000Z")).toBe(false);
   });
 });
