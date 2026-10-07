@@ -2,7 +2,7 @@
 id: "0733"
 title: Show review records in a table
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -86,4 +86,4 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T04:31:26Z · body
 - 2026-10-07T04:33:27Z · body
 - 2026-10-07T04:34:38Z · body
-- 2026-10-07T04:44:23Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-07T04:44:23Z · status active→review
