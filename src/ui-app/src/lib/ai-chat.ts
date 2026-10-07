@@ -82,6 +82,7 @@ export const AI_CHAT_BUBBLE_MARKDOWN_FILES: readonly string[] = [
   "RepoGuideChat.vue",
   "DebuggerChat.vue",
   "TaskDebuggerChat.vue",
+  "CTOPanel.vue",
 ] as const;
 
 /** True when the surface renders either allowed jump-to-latest control. */
