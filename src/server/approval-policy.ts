@@ -33,6 +33,10 @@ export async function evaluateAutoApprove(
   task: Task,
   reviewMarkdown: string,
 ): Promise<ApprovalPolicyResult> {
+  // Disabled policy must not start background merge analysis after review.
+  if (config.approval?.enabled !== true || config.automation?.paused === true) {
+    return { eligible: false, reason: "disabled" };
+  }
   const branch = task.branch;
   let branchMissing = !branch;
   let mergePreflightFailed = false;

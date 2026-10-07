@@ -178,6 +178,19 @@ async function waitForReviewRunning(
   }
 }
 
+/**
+ * #0737: the automatic reviewer can finish before server finalization releases
+ * its in-flight slot (`handoffsInFlight` / `pendingHandoff`). A second
+ * `PATCH status: review` while the slot is held returns 409, not 202 — the
+ * harness must wait for `pendingHandoff === false`, not only `review.running`.
+ */
+async function waitForHandoffSlotReleased(server: ServerHandle, id: string): Promise<void> {
+  await waitForAsync(async () => {
+    const task = await api(server, "GET", `/api/tasks/${id}`);
+    return task.body.pendingHandoff === false;
+  }, "handoff slot released");
+}
+
 /** Async poll for an observable outcome (the reviewer runs are fire-and-forget). */
 async function waitForAsync(fn: () => Promise<boolean>, label: string): Promise<void> {
   const deadline = Date.now() + 10_000;
@@ -222,9 +235,7 @@ async function requestReview(server: ServerHandle, id: string, absPath?: string)
       // means it finished and something moved the task back (or refused it) —
       // and the file's Activity log is where that reason is recorded.
       const t = await api(server, "GET", `/api/tasks/${id}`);
-      const tail = absPath
-        ? `\n--- file ---\n${readFileSync(absPath, "utf8").split("\n## ")[0]}`
-        : "";
+      const tail = absPath ? `\n--- file ---\n${readFileSync(absPath, "utf8")}` : "";
       throw new Error(
         `timed out waiting for #${id} to reach review (status=${t.body.status}, ` +
           `pendingHandoff=${t.body.pendingHandoff})${tail}`,
@@ -354,10 +365,12 @@ describe("agent review before human sign-off (#0101)", () => {
       const task = await taskWithWorktree(server, fx, "Review each handoff");
       await requestReview(server, task.id, task.absPath);
       await waitForReviewRunning(server, task.id, false);
+      await waitForHandoffSlotReleased(server, task.id);
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 1$/m);
 
       const returned = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "active" });
       expect(returned.status).toBe(200);
+      expect(returned.body.status, readFileSync(task.absPath, "utf8")).toBe("active");
       await requestReview(server, task.id, task.absPath);
       await waitFor(
         () => /^review_passes: 2$/m.test(readFileSync(task.absPath, "utf8")),
