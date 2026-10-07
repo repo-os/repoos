@@ -41,6 +41,7 @@ import {
   cmdRunners,
   cmdStart,
   cmdStats,
+  cmdDecisions,
 } from "../commands/control-api.js";
 import { cmdWatch } from "../commands/watch.js";
 import { checkBuild } from "../core/build.js";
@@ -274,6 +275,12 @@ function main(): void {
       break;
     case "stats":
       void cmdStats(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "decisions":
+    case "attention":
+      void cmdDecisions(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
       });
       break;

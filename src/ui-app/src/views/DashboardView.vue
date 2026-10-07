@@ -8,6 +8,7 @@ import Button from "../components/ui/button.vue";
 import StatCard from "../components/StatCard.vue";
 import FeedPanel from "../components/FeedPanel.vue";
 import NeedsYouPanel from "../components/NeedsYouPanel.vue";
+import DecisionDigestPanel from "../components/DecisionDigestPanel.vue";
 import SystemResourcePanel from "../components/SystemResourcePanel.vue";
 import UsagePanel from "../components/UsagePanel.vue";
 import AutoEngineeringPanel from "../components/AutoEngineeringPanel.vue";
@@ -188,6 +189,7 @@ const dashLabel = (status: string) => {
     <div class="dash-grid">
       <ReleaseTimeline />
       <FeedPanel />
+      <DecisionDigestPanel />
       <NeedsYouPanel />
     </div>
   </div>
