@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-07T16:59:13Z"
-review_passes: 1
+last_close_out_gate_ms: 65551
+last_close_out_gate_at: "2026-10-07T17:04:12.334Z"
 id: "0703"
 title: "init for the `repoos/` layout: set `storiesDir`, ignore `node_modules/` and `.env*.local`"
 type: feature
@@ -12,6 +12,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/init-for-the-repoos-layout-set-storiesdi
 created_at: "2026-10-06T03:15:57Z"
+updated_at: "2026-10-07T17:04:12Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -41,4 +43,5 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-07T16:58:43Z · status active→review
 - 2026-10-07T16:58:43Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-07T16:59:12Z · note: review pass 1: good to go
+- 2026-10-07T17:04:12Z · close-out gate completed in 66s
 
