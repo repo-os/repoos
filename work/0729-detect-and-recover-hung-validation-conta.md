@@ -2,7 +2,7 @@
 id: "0729"
 title: "Detect and recover hung validation containers on runner hosts (kill, retry on another host, isolate the bun cache per run); CTO safe action"
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/detect-and-recover-hung-validation-conta
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T05:26:56Z"
+updated_at: "2026-10-07T05:26:57Z"
 ---
 ## Problem
 
@@ -93,3 +93,4 @@ The hang recovery (kill that run's container, retry once on another host) is a C
    Duration  2.46s (transform 1.20s, setup 11ms, import 1.50s, tests 413ms, environment 468ms)
 error: script "test" exited with code 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T05:26:56Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) — "" · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-07T05:26:57Z · status review→active
