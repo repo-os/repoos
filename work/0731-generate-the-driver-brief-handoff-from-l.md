@@ -52,3 +52,4 @@ The brief is produced by the CTO from live state (merged since the last tag, tas
 - 2026-10-07T17:41:34Z · note: review pass 1: good to go
 - 2026-10-07T17:47:49Z · close-out gate completed in 290s
 - 2026-10-07T17:47:52Z · status review→inbox
+- 2026-10-07T17:47:52Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
