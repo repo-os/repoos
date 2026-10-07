@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/detect-and-recover-hung-validation-conta
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T05:11:51Z"
+updated_at: "2026-10-07T05:12:43Z"
 ---
 ## Problem
 
@@ -35,6 +35,26 @@ Do not touch the owner's hosts from the engineer session. Related: #0717, #0720,
 
 The hang recovery (kill that run's container, retry once on another host) is a CTO safe action (#0688 allowlist, rate limited, audited), not new driver logic.
 
+## Shots
+```json
+[
+  {
+    "label": "Remote runners tab: hung runs and the hung · killing badge",
+    "target": "default",
+    "route": "/checks?tab=remote",
+    "highlight": ".rr-facts",
+    "steps": [
+      {
+        "waitFor": ".rr-panel"
+      },
+      {
+        "waitMs": 500
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-07T02:05:35Z · created · unknown
@@ -49,3 +69,4 @@ The hang recovery (kill that run's container, retry once on another host) is a C
 - 2026-10-07T05:10:05Z · body
 - 2026-10-07T05:10:41Z · note: CONFIRMED CURRENT ROOT CAUSE05:09: installed validate.sh and main scripts/remote-runner/validate.sh lines46-53 startup loops ALL $HOME/.repoos-validate.* and rm-rf each without checking livecontainers. A concurrent/new run deletes another ACTIVE /repo mount. Current733containerb661fb4c38ee artifact0733-a4cab256 /home/nick/.repoos-validate.2DVaje/repo: initially installed422deps/build/tests, then forks.jsmissing; dockerexec-w/tmp ls shows /repo empty and node_modules absent. Earlier712dockerexec failedcwdoutside mount. This is strong directevidence of working-directory deletion, NOT proofshared-cache corruption. Include regression concurrentrunB startup preservesactiveA workspace. Ownerauthorizedoperationalrecovery; driverpreparingbackup+disableunsafeinstalledstartup sweep only, retainownrunEXITcleanup; no source/maincommit.
 - 2026-10-07T05:11:51Z · body
+- 2026-10-07T05:12:43Z · body: section Shots
