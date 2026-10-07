@@ -2,7 +2,7 @@
 id: "0741"
 title: "Easter eggs bundle: board card error panel (flush, square, below the action button) and hide a stale close-out error while a new close-out runs"
 type: chore
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
-updated_at: "2026-10-07T18:42:09Z"
+updated_at: "2026-10-07T18:52:26Z"
 review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)"
@@ -147,3 +147,4 @@ $ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app
 src/ui-app/tests/close-out-attempt.test.ts(9,7): error TS2741: Property 'lastProgressAt' is missing in type '{ taskId: string; stage: "check"; failed: false; startedAt: string; }' but required in type '{ taskId: string; stage: "done" | "build" | "check" | "merge" | "sync" | "resolve-conflict" | null; failed: boolean; error?: string | undefined; startedAt: string | null; lastProgressAt: string | null; }'.
 src/ui-app/tests/close-out-attempt.test.ts(27,7): error TS2741: Property 'lastProgressAt' is missing in type '{ taskId: string; stage: "merge"; failed: false; startedAt: string; }' but required in type '{ taskId: string; stage: "done" | "build" | "check" | "merge" | "sync" | "resolve-conflict" | null; failed: boolean; error?: string | undefined; startedAt: string | null; lastProgressAt: string | null; }'.
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-10-07T18:52:26Z · status active→review
