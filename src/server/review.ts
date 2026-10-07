@@ -1078,11 +1078,17 @@ export class ReviewManager {
         typeof current === "number" && Number.isFinite(current)
           ? Math.max(0, Math.floor(current))
           : 0;
-      doc.data.review_passes = passes + 1;
-      doc.data.updated_at = utcTimestamp();
-      const keys = Object.keys(doc.data).filter((k) => k !== "review_passes" && k !== "updated_at");
+      // Re-read immediately before writing so a concurrent return-to-active
+      // PATCH cannot be overwritten with a stale `status: review` (#0737).
+      const latestRaw = readFileSync(task.absPath, "utf8");
+      const latest = parseDocument(latestRaw);
+      latest.data.review_passes = passes + 1;
+      latest.data.updated_at = utcTimestamp();
+      const keys = Object.keys(latest.data).filter(
+        (k) => k !== "review_passes" && k !== "updated_at",
+      );
       keys.unshift("updated_at", "review_passes");
-      writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      writeFileSync(task.absPath, serializeDocument(latest.data, `\n${latest.body}\n`, keys));
       commitTaskFile(this.config.root, task.absPath, `docs(${task.id}): update task`);
     } catch (err) {
       console.error(

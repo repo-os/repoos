@@ -903,6 +903,23 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     throw error;
   }
 
+  // Handoff finalization writes `review` on the worktree before main; returning
+  // to engineering must mirror `active` there so a later handoff does not see
+  // "already finalized" while the board copy is active (#0737).
+  if (prevStatus === "review" && updated.status === "active" && updated.branch) {
+    const wtRoot = worktreePathForBranch(config.root, updated.branch);
+    if (wtRoot) {
+      const wtAbs = join(wtRoot, updated.path);
+      if (existsSync(wtAbs)) {
+        try {
+          patchTaskFile({ ...config, root: wtRoot }, wtAbs, { status: "active" });
+        } catch {
+          /* best-effort — the next handoff still resolves from branch state */
+        }
+      }
+    }
+  }
+
   if (body.status && body.status !== prevStatus) {
     logger.task(id, "info", `Task status changed`, {
       from: prevStatus,
