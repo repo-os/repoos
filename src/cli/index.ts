@@ -44,6 +44,7 @@ import {
   cmdDecisions,
 } from "../commands/control-api.js";
 import { cmdWatch } from "../commands/watch.js";
+import { cmdDriver } from "../commands/driver.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
 import { reexecAfterStaleBuild, reexecUnderBunIfRequested } from "../core/runtime.js";
@@ -286,6 +287,11 @@ function main(): void {
       break;
     case "watch":
       void cmdWatch(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "driver":
+      void cmdDriver(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
       });
       break;
