@@ -1,0 +1,130 @@
+---
+id: "0727"
+title: "Give the CTO the routine: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
+type: feature
+status: done
+priority: p1
+area: server
+story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: 0cd09a137f1c0a5840f726520b189b7c2fcfa903
+assigned_to: ai
+created_by: ""
+branch: feat/give-the-cto-the-routine-evaluate-and-en
+cli_override: cursor
+model_override: composer-2.5
+created_at: "2026-10-07T02:05:31Z"
+updated_at: "2026-10-07T09:25:54Z"
+last_close_out_gate_ms: 342810
+last_close_out_gate_at: "2026-10-07T09:25:44.164Z"
+review_passes: 2
+last_check_failure: "repoos check at 2026-10-07T09:10:21.076Z: server-side finalization timed out (deadline exceeded)"
+dev_error_count: 1
+---
+## Problem
+
+#0686 (approval policy) and #0688 (CTO safe actions) are merged but opt-in, and this repo's repoos.toml has no [approval] section, so neither helped during the 2026-10-06/07 run: every green review was approved by a human/driver, and every dead engineer was restarted by hand.
+
+## Desired UX
+
+- VERIFY FIRST: read src/core/approval-policy.ts, src/server/approval-policy.ts, src/core/cto-actions.ts and the Settings controls; list what each can do today.
+- Propose a conservative default policy for this repo (areas/types that may auto-land, conditions: gate green, review green, lock sha equals HEAD, main clean, not UI unless clean screenshots, not machinery paths, not p0 without a human) and document it. Do not enable it in repoos.toml without the owner (config is his): put the proposal in the task and enable only on his approval.
+- Close the gaps the run exposed: auto-sync main into a conflicted branch is #0679 (reference, do not duplicate); restart policy for a dead engineer (network stall: resume; degenerate loop: fresh session) as CTO safe actions with rate limits; serialize merges; every automatic action recorded in the activity log and the bell, with a kill switch.
+
+## Acceptance criteria
+
+- Tests per new safe action and per policy condition (lock sha mismatch blocks, dirty main blocks, UI without evidence blocks). Settings UI controls and docs (docs/, user-docs). repoos check passes.
+
+## Notes for AI
+
+Related: #0686, #0688, #0693, #0679, #0720, #0723.
+
+## Framing (2026-10-07)
+
+No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.ts) is the one that takes over the routine landing/restart/retry work, under the owner's policy and with the existing allowlist, rate limits and audit trail. External driver sessions (Claude Code, Codex) stay optional. Anything outside policy is escalated to the human through the attention feed.
+
+## Shots
+```json
+[
+  {
+    "label": "Mission control",
+    "target": "default",
+    "route": "/"
+  },
+  {
+    "label": "Auto-approve blocked paths control",
+    "target": "default",
+    "route": "/settings?tab=general&focus=approval.autoApprove.machineryPaths",
+    "highlight": "[data-config-key=\"approval.autoApprove.machineryPaths\"]"
+  },
+  {
+    "label": "Kill switch on General",
+    "target": "default",
+    "route": "/settings?tab=general&focus=automation.paused",
+    "highlight": "[data-config-key=\"automation.paused\"]"
+  }
+]
+```
+
+## Proposed conservative policy (owner approval required)
+Owner approval required before enabling in `repoos.toml`. See `docs/cto-autopilot.md` for full context.
+
+```toml
+approval.enabled = true
+approval.autoApprove.areas = ["docs", "chore"]
+approval.autoApprove.types = ["chore"]
+approval.autoApprove.machineryPaths = [
+  "src/server/",
+  "src/core/",
+  "src/cli/",
+  "src/commands/",
+  ".githooks/",
+  "repoos.toml",
+  "AGENTS.md",
+  "docs/adr/",
+]
+approval.autoApprove.allowP0 = false
+
+cto.actions = ["restart-stalled-agent", "requeue-closeout-after-env-fix"]
+automation.paused = false
+```
+
+Rationale: land routine docs/chore work only; machinery paths and UI screenshot rules keep engine/policy/architecture and unverified UI human; p0 never automatic; `refresh-main-install` omitted from the repo allowlist for now; `automation.paused` is the kill switch.
+
+## Activity
+
+- 2026-10-07T02:05:31Z · created · unknown
+- 2026-10-07T02:06:09Z · note: Created as part of story 0009 (Autopilot).
+- 2026-10-07T02:10:58Z · story
+- 2026-10-07T02:11:10Z · title, body
+- 2026-10-07T04:35:32Z · status inbox→ready
+- 2026-10-07T04:35:45Z · status ready→active, branch
+- 2026-10-07T04:52:10Z · body
+- 2026-10-07T04:53:39Z · body
+- 2026-10-07T05:10:45Z · body: section Shots
+- 2026-10-07T05:12:17Z · body
+- 2026-10-07T05:14:15Z · body
+- 2026-10-07T05:15:11Z · body
+- 2026-10-07T05:17:05Z · body
+- 2026-10-07T05:20:24Z · body
+- 2026-10-07T05:21:58Z · body
+- 2026-10-07T05:28:40Z · status active→review
+- 2026-10-07T05:28:40Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-07T05:29:52Z · note: review pass 1: good to go
+- 2026-10-07T05:36:02Z · body: section Shots
+- 2026-10-07T05:37:32Z · status review→active
+- 2026-10-07T05:37:56Z · cli_override, model_override
+- 2026-10-07T05:40:03Z · body: section Proposed conservative policy (owner approval required)
+- 2026-10-07T05:40:03Z · body: section Shots
+- 2026-10-07T05:41:50Z · body
+- 2026-10-07T06:24:26Z · body
+- 2026-10-07T06:30:39Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 908fb7e0 to 0bee0747) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-07T06:49:40Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-07T06:49:40Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-10-07T08:58:57Z · needs_input
+- 2026-10-07T09:11:26Z · body
+- 2026-10-07T09:12:43Z · note: Driver diagnosis of thinkpad09:11 failure: #0711 merged_commit regression assertion uses literal unquoted YAML text; actual correct SHA was quoted because it began00aef. Same assertion exists current MAIN, not727sourcebug. Keep new policy machinery scope focused; do not weaken gate or alter production serializer. If fixing test only, preserve semantic assertion via parser and explicitly record baseline-current-main evidence for review; no unrelated source edits.
+- 2026-10-07T09:17:47Z · status active→review
+- 2026-10-07T09:17:47Z · note: shots: skipped — 10 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-07T09:18:57Z · note: review pass 2: good to go
+- 2026-10-07T09:25:44Z · close-out gate completed in 343s
+- 2026-10-07T09:25:54Z · status review→done, release:success

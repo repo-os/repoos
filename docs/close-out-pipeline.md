@@ -25,6 +25,32 @@ after three identical consecutive failures parks the task (`needs_input` reason
 from watchdog surfacing and from the CTO monitor's idle completion nudge when no engineer
 session is running. See `src/server/handoff-failure-loop.ts` and `src/server/task-watchdog.ts`.
 
+## Driving close-out on a busy board
+
+When a human or agent is landing many tasks in one session (overnight triage,
+release soak), a few patterns recur. Full CLI table and incident notes:
+[`agent-run-operations.md`](agent-run-operations.md).
+
+- **Use `repoos done <id>`** (optionally `--commit-dirty`, `--wait`) for the
+  merge pipeline — not `repoos mv <id> done`. Use **`repoos review <id>`** for
+  synchronous handoff when you need the validation result in the terminal.
+- **`--commit-dirty` on `main`:** only when uncommitted paths are **`work/*.md`
+  bookkeeping** (or an intentional config commit you mean to land with that
+  close-out). Never commit another task's dirty source or an owner's WIP via
+  this flag.
+- **Branch work after a failed handoff (driver):** `repoos mv <id> active` (or
+  API) **before** worktree merges/commits, then merge/check/commit and
+  `repoos review <id>`. Automated close-out conflict repair stays in `review` —
+  see [`agent-run-operations.md`](agent-run-operations.md#handoff-and-status-flips).
+  A **conflict-free `main` merge on the branch** while in `review` can still pass
+  close-out integrity (#0624); not every tip advance is "HEAD moved" drift.
+- **Close-out waits for a remote host slot** while engineers hold standalone
+  self-check locks: see [Remote validation → host lock](remote-validation.md#cross-process-limit-the-host-lock)
+  and the #0705 dispatcher/tab behavior in
+  [`agent-run-operations.md`](agent-run-operations.md#remote-runner-slot-starvation-0694-0705-0706).
+- **Task previews** rooted in a worktree can commit bookkeeping onto that branch
+  and break handoff; stop previews when done.
+
 ## Running the control-plane server: choose one owner
 
 There are two supported ways to run the server on port 7171. **Use exactly one at a
@@ -680,7 +706,7 @@ to tell apart:
 
 | Outcome | How it ends | Badge | Job record | What to do |
 |---|---|---|---|---|
-| **Pipeline timeout** | Automatically, once the attempt spends `closeOut.timeoutMs` (default 6 min) of wall clock from `startedAt` | Inline error card | `failed` — reason starts `close-out timed out after ` | Raise the budget (Settings → General → "Close-out timeout", or `[closeOut] timeoutMs` in `repoos.toml`) or retry when the runner is less loaded. Retryable: the task stays `review`, feature branch/worktree untouched. |
+| **Pipeline timeout** | Automatically, once the attempt spends its close-out budget from `startedAt` (monotonic elapsed time — laptop sleep does not count, #0679) | Inline error card | `failed` — reason starts `close-out timed out after ` | Raise the budget (Settings → General → "Close-out timeout", or `[closeOut] timeoutMs` in `repoos.toml`) or retry when the runner is less loaded. Retryable: the task stays `review`, feature branch/worktree untouched. |
 | **Stop MTD** (#0459) | You clicked Stop | none — a cancel is not a failure | job record removed, no `failed` state | Inspect what happened, then click **Move to done** again. |
 | **Genuine gate failure** | The gate itself failed | Inline error card with the check's Results summary | `failed` — `check failed: …`, `merge conflict in …`, … | Fix per the reason; a real conflict resolves on the feature branch. |
 
@@ -701,9 +727,34 @@ to tell apart:
   **last** checkpoint is the one immediately before the publish merge — once
   main is mutated, `cleanup` finishes as `done` and is deliberately never
   failed out from under a landed merge.
+- When `[closeOut] timeoutMs` is **not** set in `repoos.toml`, the effective
+  budget is adaptive (#0679): `max(10 min, 3 × last successful merge-gate
+  duration)`, persisted in `.repoos/close-out-gate-timing.json`. Each successful
+  close-out also records `last_close_out_gate_ms` on the task file for tuning.
 - `closeOut.timeoutMs = 0` disables the ceiling (the unbounded pre-#0573
   behaviour); invalid or negative values fall back to the default with a
   `[closeOut] timeoutMs …` console warning.
+
+## Merge conflicts, semantic gate failures, and engineer handback (#0679)
+
+When Move to done fails on a **real merge conflict** or on a **merge-gate check
+failure that reproduces identically on retry** (the branch passed handoff review
+but the merged candidate is red — e.g. a semantic conflict), RepoOS:
+
+1. Marks the close-out job `failed` (unchanged).
+2. Moves the task from `review` → `active`, clears the handoff snapshot/lock so
+   the worktree is editable again.
+3. Messages the engineer with the conflict list or check output and the
+   instruction to merge main, resolve, re-run `repoos check`, and hand off again.
+
+**Lockfile-only conflicts** (`bun.lock`, `package-lock.json`, …) are resolved
+automatically during the candidate merge by regenerating the lockfile (`bun
+install`) when possible — no engineer round-trip.
+
+**Follow-up messages while in `review`:** `POST /api/tasks/:id/message` moves
+the task to `active` first (unless a close-out job is still in-flight), so fixes
+can be committed and re-handoffed instead of leaving the task in `review` with a
+dirty worktree Move to done will refuse.
 - Release cuts (`release.ts`) still pass no deadline of their own — sharing
   this budget helper there is a possible follow-up, deliberately out of scope
   for #0573.

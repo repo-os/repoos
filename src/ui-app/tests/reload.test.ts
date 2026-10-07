@@ -11,7 +11,13 @@ import { createServer as createHttpServer } from "node:http";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ReloadManager, readBuildHash, type ReloadManagerOptions } from "../../server/reload";
+import {
+  ReloadManager,
+  readBuildHash,
+  substituteUiIndexBuildHash,
+  UI_INDEX_BUILD_HASH_PLACEHOLDER,
+  type ReloadManagerOptions,
+} from "../../server/reload";
 import { closeOutPending } from "../../server/integration-job";
 import { startServer } from "../../server/server";
 import { reapStaleFixtures } from "./helpers";
@@ -307,6 +313,15 @@ beforeAll(() => {
 });
 
 describe("ReloadManager", () => {
+  it("substitutes index.html without turning digit-leading hashes into invalid JS", () => {
+    const shell = `<meta content="${UI_INDEX_BUILD_HASH_PLACEHOLDER}" /><script>window.__REPOOS_BUILD_HASH__ = "${UI_INDEX_BUILD_HASH_PLACEHOLDER}";</script>`;
+    const hash = "2deadbeef";
+    const out = substituteUiIndexBuildHash(shell, hash);
+    expect(out).toContain(`content="${hash}"`);
+    expect(out).toContain(`window.__REPOOS_BUILD_HASH__ = "${hash}"`);
+    expect(out).not.toContain(`window.${hash}`);
+  });
+
   it("reads the build hash from dist/.build-info.json", async () => {
     const fx = await makeFixture();
     try {

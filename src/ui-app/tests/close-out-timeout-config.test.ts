@@ -96,7 +96,7 @@ describe("[closeOut] timeoutMs (#0573)", () => {
     const values = field?.options?.map((o) => o.value) ?? [];
     expect(values).toContain("0");
     expect(field!.options!.find((o) => o.value === "360000")!.label).toContain("min");
-    expect(field!.description).toContain("wall-clock budget");
+    expect(field!.description).toMatch(/monotonic|system sleep|adaptive/i);
     expect(SUPPORTED_TOML_KEYS).toContain("closeOut.timeoutMs");
   });
 });

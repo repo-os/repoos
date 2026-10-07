@@ -30,6 +30,7 @@ import type {
   PreviewServiceConfig,
   PreviewTargetConfig,
   ApprovalConfig,
+  AutomationConfig,
   UiVerificationConfig,
   RepoOSConfig,
   Status,
@@ -201,6 +202,9 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     pmVeto: false,
   },
   ctoSkipHealthy: true,
+  automation: {
+    paused: false,
+  },
   skillSuggestions: false,
   maxActiveTasks: 3,
   worktreeWarnThreshold: 20,
@@ -226,6 +230,10 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     fallbackToLocal: false,
     retryOtherHosts: false,
     maxConcurrent: 1,
+    // #0729: minutes a remote run's output may sit unchanged on an idle host
+    // before it is called hung, its container killed, and the run retried on
+    // another host. 0 / unset falls back to DEFAULT_HANG_IDLE_MINUTES (5).
+    hangIdleMinutes: 5,
   },
   // Close-out (Move to done) pipeline budget (#0573): a 6-minute wall clock
   // from `queued → syncing` (`startedAt`) to a terminal job state. `0`
@@ -1516,6 +1524,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     ) {
       cfg.remoteValidation = { ...cfg.remoteValidation, maxConcurrent: rvMaxConcurrent };
     }
+    const rvHangIdle = parsed["remoteValidation.hangIdleMinutes"];
+    if (typeof rvHangIdle === "number" && Number.isFinite(rvHangIdle) && rvHangIdle > 0) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, hangIdleMinutes: rvHangIdle };
+    }
     const rvFallback = parsed["remoteValidation.fallbackToLocal"];
     if (typeof rvFallback === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, fallbackToLocal: rvFallback };
@@ -1573,6 +1585,7 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         cfg.closeOut = {
           ...cfg.closeOut,
           timeoutMs: Math.floor(closeOutTimeout),
+          timeoutMsFromToml: true,
         };
       } else {
         console.warn(
@@ -1643,11 +1656,15 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     const approvalAreas = normalizeStringList(parsed["approval.autoApprove.areas"]);
     const approvalTypes = normalizeStringList(parsed["approval.autoApprove.types"]);
     const approvalUiAreas = normalizeStringList(parsed["approval.autoApprove.uiAreas"]);
+    const approvalMachinery = normalizeStringList(parsed["approval.autoApprove.machineryPaths"]);
+    const approvalAllowP0 = parsed["approval.autoApprove.allowP0"];
     if (
       approvalEnabled !== undefined ||
       approvalAreas.length ||
       approvalTypes.length ||
-      approvalUiAreas.length
+      approvalUiAreas.length ||
+      approvalMachinery.length ||
+      approvalAllowP0 !== undefined
     ) {
       const approval: ApprovalConfig = {};
       if (typeof approvalEnabled === "boolean") approval.enabled = approvalEnabled;
@@ -1655,7 +1672,15 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       if (approvalAreas.length) approval.autoApprove.areas = approvalAreas;
       if (approvalTypes.length) approval.autoApprove.types = approvalTypes;
       if (approvalUiAreas.length) approval.autoApprove.uiAreas = approvalUiAreas;
+      if (approvalMachinery.length) approval.autoApprove.machineryPaths = approvalMachinery;
+      if (typeof approvalAllowP0 === "boolean") approval.autoApprove.allowP0 = approvalAllowP0;
       cfg.approval = approval;
+    }
+
+    const automationPaused = parsed["automation.paused"];
+    if (typeof automationPaused === "boolean") {
+      const automation: AutomationConfig = { paused: automationPaused };
+      cfg.automation = automation;
     }
 
     const uiVerifEnabled = parsed["uiVerification.enabled"];
@@ -1981,7 +2006,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "audited in the bell). restart-stalled-agent restarts a dead active engineer with the " +
         "last failure text. refresh-main-install runs the lockfile install in main. " +
         "requeue-closeout-after-env-fix refreshes main and re-queues a failed close-out when " +
-        "the failure was environmental. Empty means report-only.",
+        "the failure was environmental. kill-hung-validation removes a remote validation run's " +
+        "container when its output stalled on an idle host (the run then retries on another " +
+        "host). Empty means report-only.",
     },
     {
       key: "skillSuggestions",
@@ -2067,11 +2094,10 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         { value: "3600000", label: "60 min" },
       ],
       description:
-        "Total wall-clock budget for one close-out (Move to done) attempt — from when the job " +
-        "leaves the queue until it fails, completes, or you stop it. A close-out that runs past " +
-        "it is aborted with a retryable failure and the task stays in review; retries and remote " +
-        "validation share the same budget. 0 disables the ceiling. Set any value in repoos.toml " +
-        "(`[closeOut] timeoutMs`).",
+        "Budget for one close-out (Move to done) attempt — monotonic elapsed time from when the " +
+        "job leaves the queue (system sleep does not count, #0679). When unset in repoos.toml, " +
+        "defaults to max(10 min, 3× the last successful merge-gate duration). 0 disables the " +
+        "ceiling. Retries and remote validation share the same budget.",
     },
     {
       key: "closeOut.candidate",
@@ -2145,6 +2171,42 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       default: [],
       description:
         "Task types eligible for policy auto-approval (any match). Leave empty to match by area only.",
+    },
+    {
+      key: "approval.autoApprove.machineryPaths",
+      label: "Auto-approve blocked paths",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Repo-relative path prefixes that always keep a task on the human path, whatever its area or " +
+        "type. Leave empty for the built-in conservative list (src/server/, src/core/, src/cli/, " +
+        "src/commands/, .githooks/, repoos.toml, AGENTS.md, docs/adr/). Changing the server, the policy " +
+        "config or the architecture records is never routine.",
+    },
+    {
+      key: "approval.autoApprove.allowP0",
+      label: "Auto-approve p0 tasks",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description:
+        "Off by default: a p0 task always waits for a human, no matter which area or type rule it " +
+        "matches. Turn on only if you want p0 work to be eligible for policy auto-approval.",
+    },
+    {
+      key: "automation.paused",
+      label: "Pause all automatic actions",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description:
+        "Master kill switch. When on, nothing runs automatically: no policy auto-approval, no CTO " +
+        "safe actions, no idle-engineer nudge. Your configured policy and allowlist are kept, so you " +
+        "can turn it back off and resume. Honours a human's explicit action still.",
     },
     {
       key: "uiVerification.enabled",
@@ -2309,6 +2371,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       })),
       description:
         "How many remote validation runs may execute at once per host. Extra runs wait in a queue. Default 1: two full test suites on one machine cause load-induced timeouts that show up as a failed gate.",
+    },
+    {
+      key: "remoteValidation.hangIdleMinutes",
+      label: "Remote validation: hang timeout (minutes)",
+      type: "number",
+      tier: "guarded",
+      restartRequired: false,
+      default: 5,
+      description:
+        "A remote run whose output stops changing for this many minutes while its host is idle " +
+        "(load per CPU below 0.5) is treated as hung: its container is killed and the run is " +
+        "retried once on another host, recorded as 'hung'. Default 5. Raise it only for a suite " +
+        "that legitimately goes quiet for longer than that early on; too high and a real hang " +
+        "wastes the host before anything notices.",
     },
     {
       key: "remoteValidation.fallbackToLocal",
@@ -2566,6 +2642,9 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "approval.autoApprove.areas",
   "approval.autoApprove.types",
   "approval.autoApprove.uiAreas",
+  "approval.autoApprove.machineryPaths",
+  "approval.autoApprove.allowP0",
+  "automation.paused",
   "uiVerification.enabled",
   "uiVerification.viewportWidths",
   // Remote validation
@@ -2582,6 +2661,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.idleShutdownMinutes",
   "remoteValidation.maxServerLifetimeMinutes",
   "remoteValidation.maxConcurrent",
+  "remoteValidation.hangIdleMinutes",
   "remoteValidation.fallbackToLocal",
   "remoteValidation.retryOtherHosts",
   "remoteValidation.engineerSelfCheckRemote",

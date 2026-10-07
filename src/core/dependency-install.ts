@@ -8,8 +8,9 @@
  */
 
 import { spawn } from "node:child_process";
-import { existsSync, lstatSync, unlinkSync } from "node:fs";
+import { existsSync, lstatSync, readlinkSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
+import { FULL_PROFILE, selectSteps, type CheckPlan } from "./check-plan.js";
 import type { RepoOSConfig } from "./types.js";
 
 export type CloseOutCandidateMode = "symlink-main" | "own-install";
@@ -83,6 +84,96 @@ export function shouldRunCandidateInstall(
 ): boolean {
   if (!existsSync(join(config.root, "package.json"))) return false;
   return changedPaths !== null && hasDependencyInputChange(changedPaths);
+}
+
+const DEPENDENCY_INSTALL_CMD_RE =
+  /\b(npm\s+ci|npm\s+install|pnpm\s+install|yarn\s+install|bun\s+install)\b/i;
+
+/** Whether a shell command (or its leading `&&` segment) installs dependencies. */
+export function commandLooksLikeDependencyInstall(command: string): boolean {
+  const trimmed = command.trim();
+  if (!trimmed) return false;
+  const first = trimmed.split(/\s*&&\s*/)[0]?.trim() ?? trimmed;
+  return DEPENDENCY_INSTALL_CMD_RE.test(first);
+}
+
+/** True when `node_modules` exists and a symlink target resolves (#0712). */
+export function candidateHasUsableNodeModules(projectRoot: string): boolean {
+  const nodeModules = join(projectRoot, "node_modules");
+  try {
+    if (!existsSync(nodeModules)) return false;
+    const stat = lstatSync(nodeModules);
+    if (stat.isSymbolicLink()) {
+      const target = readlinkSync(nodeModules);
+      const resolved = target.startsWith("/") ? target : join(projectRoot, target);
+      return existsSync(resolved);
+    }
+    return stat.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether the full-profile gate's first runnable step installs dependencies
+ * (#0712). Close-out skips its own prep when the plan already owns install.
+ */
+export function checkPlanStartsWithDependencyInstall(
+  plan: CheckPlan,
+  config: RepoOSConfig,
+): boolean {
+  const customInstall = resolveInstallShellCommand(config);
+  const selected = selectSteps(plan, { profile: FULL_PROFILE });
+  const first = selected.find((entry) => !entry.skip);
+  if (!first) return false;
+  const step = first.step;
+  if (step.name === "install") return true;
+  const command = step.command?.trim();
+  if (!command) return false;
+  if (customInstall && command === customInstall) return true;
+  return commandLooksLikeDependencyInstall(command);
+}
+
+/**
+ * Whether close-out should run a candidate-local install before build/check.
+ * Package-input merges always install (#0449); otherwise install when the
+ * candidate has no usable `node_modules` unless the check plan leads with install.
+ */
+export function shouldPrepareCandidateDependencies(
+  config: RepoOSConfig,
+  candidateRoot: string,
+  changedPaths: readonly string[] | null,
+  plan: CheckPlan,
+): boolean {
+  if (!existsSync(join(candidateRoot, "package.json"))) return false;
+  if (shouldRunCandidateInstall(config, changedPaths)) return true;
+  if (checkPlanStartsWithDependencyInstall(plan, config)) return false;
+  return !candidateHasUsableNodeModules(candidateRoot);
+}
+
+/** Actionable failure when the candidate needs deps but nothing can install them (#0712). */
+export function candidateMissingDependenciesAdvice(
+  candidateRoot: string,
+  config: RepoOSConfig,
+): string {
+  const mainNm = join(config.root, "node_modules");
+  const mainMissing = !existsSync(mainNm);
+  const base =
+    "close-out candidate has no node_modules" +
+    (mainMissing
+      ? " and the primary checkout does not either"
+      : " and reusing the primary checkout's install did not succeed");
+  const canInstall =
+    resolveInstallShellCommand(config) !== undefined ||
+    inferLockfileInstallCommand(candidateRoot) !== null;
+  if (canInstall) {
+    return `${base} — dependency install was required but could not complete`;
+  }
+  return (
+    `${base} — install dependencies in the primary checkout, set ` +
+    `closeOut.candidate = "own-install", or add a dependency-install ` +
+    `[[check.steps]] entry as the first step in the full profile`
+  );
 }
 
 export interface RunInstallResult {
@@ -350,6 +441,7 @@ const ENV_PATTERNS: RegExp[] = [
   /\bpackage inputs changed but no recognized lockfile\b/i,
   /\bcommand not found\b/i,
   /\bENOENT\b.*\bnode_modules\b/i,
+  /\bclose-out candidate has no node_modules\b/i,
 ];
 
 /** True when a close-out gate reason is likely stale/missing deps, not branch code. */

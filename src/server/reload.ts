@@ -117,6 +117,14 @@ export function isDevBuild(): boolean {
   return fileURLToPath(import.meta.url).includes(`${pathSep}src${pathSep}`);
 }
 
+/** Injected at serve time only — never used as a JS property name (hashes may start with a digit). */
+export const UI_INDEX_BUILD_HASH_PLACEHOLDER = "__REPOOS_BUILD_HASH_VALUE__";
+
+/** Substitute the serve-time build hash into dist/ui/index.html. */
+export function substituteUiIndexBuildHash(html: string, hash: string): string {
+  return html.replaceAll(UI_INDEX_BUILD_HASH_PLACEHOLDER, hash);
+}
+
 /** Read the build hash from dist/.build-info.json, or null when absent. */
 export function readBuildHash(root: string): string | null {
   const file = join(root, "dist", ".build-info.json");

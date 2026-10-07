@@ -2,18 +2,20 @@
 id: "0712"
 title: "Close-out candidate worktree has no node_modules: check plan fails with 'prettier: command not found'"
 type: bug
-status: active
+status: done
 priority: p1
 area: server
+merged_commit: b0cb0e711742e1759b5fa7eda4dccf5bd1c9b3f4
 assigned_to: ai
 created_by: ""
 branch: feat/close-out-candidate-worktree-has-no-node
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:49Z"
-updated_at: "2026-10-07T01:09:18Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 75ecc5c804367fa512aab520f4212af2a15d5d6f
+updated_at: "2026-10-07T05:32:29Z"
+last_close_out_gate_ms: 346659
+last_close_out_gate_at: "2026-10-07T05:32:11.847Z"
+review_passes: 1
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 24: unless the check plan starts with an install step. Install deps (or reuse) in the candidate worktree, or fail with advice.
 
@@ -111,3 +113,10 @@ error: script "test" exited with code 1
 - 2026-10-07T01:07:14Z · note: OWNER clarification: cross-repo reports (private-tuk/tuk-private/opex) may describe an outdated RepoOS version. Verify CURRENT main behavior and the combined current-main/task-branch tree before treating the report or diagnosis as accurate. Record exact version/commit, reproduction, and whether still relevant, partly fixed, already fixed, or misdiagnosed. Do not implement a stale request; preserve regression evidence for already-fixed behavior. This reinforces Verify first and also applies to integration repairs.
 - 2026-10-07T01:07:29Z · body
 - 2026-10-07T01:09:18Z · body
+- 2026-10-07T01:15:19Z · status active→review
+- 2026-10-07T01:15:19Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria; empty sections: Notes for AI
+- 2026-10-07T01:15:20Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-07T01:15:54Z · note: review pass 1: good to go
+- 2026-10-07T04:47:30Z · close-out gate completed in 1343s
+- 2026-10-07T05:32:11Z · close-out gate completed in 347s
+- 2026-10-07T05:32:29Z · status review→done, release:success
