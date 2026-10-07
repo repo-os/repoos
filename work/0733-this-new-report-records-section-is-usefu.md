@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-review-records-in-a-table
 created_at: "2026-10-07T02:52:02Z"
-updated_at: "2026-10-07T03:37:57Z"
+updated_at: "2026-10-07T03:39:59Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -41,10 +41,6 @@ This task covers the presentation, ordering, and per-run reviewer/model informat
 
 This new report records section is useful but let's make it a proper table , like on the tokens page (that style is good, simple) . but re-order so the latest review is at the top (and don't duplicate the most recent review data, just show each once). also show the reviewer coding agent + model for each run.
 
-## Screenshots
-
-![Screenshot-2026-10-07-at-10.49.17](/api/tasks/0733/attachments/screenshot-1.png)
-
 ## Shots
 ```json
 [
@@ -65,6 +61,10 @@ This new report records section is useful but let's make it a proper table , lik
 ]
 ```
 
+## Screenshots
+
+![Screenshot-2026-10-07-at-10.49.17](/api/tasks/0733/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-10-07T02:52:02Z · created · hello@repoos.org
@@ -81,3 +81,4 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T03:17:20Z · needs_input
 - 2026-10-07T03:33:35Z · body
 - 2026-10-07T03:34:46Z · body: section Shots
+- 2026-10-07T03:39:59Z · body
