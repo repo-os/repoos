@@ -1978,7 +1978,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     getTaskLogs: (taskId, limit) => logger.getTaskLogs(taskId, limit),
     onTaskFileChanged: (absPath) => index.applyFileChange(absPath),
     getCloseOutJob: (taskId) => jobCoordinator.getJob(taskId),
-    updateCloseOutJob: (taskId, update) => jobCoordinator.updateJob(taskId, update),
+    updateCloseOutJob: (taskId, update, expectedAttempt) =>
+      jobCoordinator.updateJob(taskId, update, expectedAttempt),
     onDoneErrorTldr: (taskId, tldr) =>
       emitEvent({
         type: "task.doneErrorTldr",
