@@ -30,6 +30,7 @@ import {
   mergeBranch,
   GitDirtyCheckError,
   commitTaskFile,
+  branchChangedPaths,
 } from "../../core/git.js";
 import { worktreesDir } from "../../core/config.js";
 
@@ -963,6 +964,44 @@ describe("mergeBranch conflict reporting (#0271)", () => {
       expect(result.reason).toMatch(/merge conflict/);
       // The failed merge was aborted — nothing half-applied.
       expect(git(candPath, ["status", "--porcelain"])).toBe("");
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("branchChangedPaths (#0727)", () => {
+  function commitFile(root: string, rel: string, content: string, message: string): void {
+    const full = join(root, rel);
+    mkdirSync(dirname(full), { recursive: true });
+    writeFileSync(full, content);
+    git(root, ["add", rel]);
+    git(root, ["commit", "-q", "-m", message]);
+  }
+
+  it("returns the branch's own changed paths vs its merge-base with main", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      git(root, ["branch", "-M", "main"]);
+      commitFile(root, "docs/base.md", "base\n", "base");
+      git(root, ["checkout", "-q", "-b", "feat/x"]);
+      commitFile(root, "docs/x.md", "x\n", "branch change");
+      // main moves on; that file must not be counted as the branch's own work.
+      git(root, ["checkout", "-q", "main"]);
+      commitFile(root, "src/other.ts", "export const x = 1;\n", "main only");
+      git(root, ["checkout", "-q", "feat/x"]);
+
+      const paths = await branchChangedPaths(root, "feat/x", "main");
+      expect(paths).toEqual(["docs/x.md"]);
+    } finally {
+      clean();
+    }
+  });
+
+  it("returns null when the merge-base cannot be read", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      expect(await branchChangedPaths(root, "does-not-exist", "main")).toBeNull();
     } finally {
       clean();
     }

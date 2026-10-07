@@ -567,6 +567,8 @@ export interface RepoOSConfig {
    * screenshots succeeded.
    */
   approval?: ApprovalConfig;
+  /** Master kill switch for automatic actions (#0727). */
+  automation?: AutomationConfig;
   /** UI handoff browser verification (#0680). */
   uiVerification?: UiVerificationConfig;
   /**
@@ -1469,7 +1471,28 @@ export interface ApprovalConfig {
      * web/ui/ui-app/frontend/mobile when unset.
      */
     uiAreas?: string[];
+    /**
+     * Repo-relative path prefixes whose change always keeps a task on the human
+     * path (#0727). Defaults to a conservative machinery list when unset.
+     */
+    machineryPaths?: string[];
+    /**
+     * When true, `p0` tasks may auto-approve. Default false: a p0 always needs
+     * a human, whatever area or type it matches (#0727).
+     */
+    allowP0?: boolean;
   };
+}
+
+/**
+ * Master kill switch for automatic actions (#0727). Separate from the
+ * per-feature switches (`approval.enabled`, `cto.actions`) so a human can halt
+ * every autonomous action — auto-approval, CTO safe actions and the idle nudge
+ * — from one control without losing its configuration.
+ */
+export interface AutomationConfig {
+  /** When true, nothing runs automatically. Default false. */
+  paused?: boolean;
 }
 
 /**
