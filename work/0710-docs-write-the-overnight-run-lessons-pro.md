@@ -15,7 +15,7 @@ branch: feat/docs-write-the-overnight-run-lessons-pro
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T08:37:40Z"
-updated_at: "2026-10-07T01:38:01Z"
+updated_at: "2026-10-07T01:38:22Z"
 last_check_failure: "repoos check at 2026-10-07T01:37:59.207Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -46,4 +46,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-07T01:22:47Z · body
 - 2026-10-07T01:37:56Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-07T01:38:01Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-
+- 2026-10-07T01:38:22Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
