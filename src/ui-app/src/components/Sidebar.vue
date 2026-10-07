@@ -49,11 +49,17 @@ onBeforeUnmount(() => {
 const version = computed(() => (health.value?.version ? `v${health.value.version}` : ""));
 const nav = computed(() => navFromConfig(config.data));
 const age = computed(() => relTime(health.value?.buildAt ?? null, new Date(now.value)));
-const buildTitle = computed(() =>
-  health.value?.buildAt
-    ? `Built ${new Date(health.value.buildAt).toLocaleString()}`
-    : "Build info unavailable",
+/** Short server build hash (`serverBuildHash`, falling back to `buildHash`). */
+const buildHash = computed(() =>
+  (health.value?.serverBuildHash ?? health.value?.buildHash ?? "").slice(0, 7),
 );
+const buildTitle = computed(() => {
+  const hash = health.value?.serverBuildHash ?? health.value?.buildHash ?? null;
+  const built = health.value?.buildAt
+    ? `Built ${new Date(health.value.buildAt).toLocaleString()}`
+    : "Build info unavailable";
+  return hash ? `${built} · build ${hash}` : built;
+});
 </script>
 
 <template>
@@ -98,6 +104,7 @@ const buildTitle = computed(() =>
 
     <div class="build-widget" :title="buildTitle">
       <span v-if="version" class="build-ver">{{ version }}</span>
+      <span v-if="buildHash" class="build-hash">build {{ buildHash }}</span>
       <span class="build-age">{{ age }}</span>
       <button
         type="button"

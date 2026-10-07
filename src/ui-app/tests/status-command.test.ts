@@ -24,6 +24,10 @@ import {
   cmdStatus,
   readServeLocks,
   serverLifecycle,
+  serverBuildState,
+  serverIdentity,
+  restartHint,
+  shortHash,
 } from "../../commands/status.js";
 
 function git(root: string, args: string[]): string {
@@ -439,6 +443,7 @@ describe("status --json shape", () => {
     expect(Object.keys(parsed).sort()).toEqual([
       "board",
       "build",
+      "cli",
       "generatedAt",
       "git",
       "root",
@@ -447,18 +452,23 @@ describe("status --json shape", () => {
       "worktrees",
     ]);
     expect(Object.keys(parsed.server as object).sort()).toEqual([
+      "buildAt",
+      "buildHash",
       "health",
       "healthRoot",
       "host",
       "lifecycle",
       "locks",
+      "managedService",
       "pid",
       "port",
       "running",
       "startedAt",
       "startedAtSource",
       "uptimeSeconds",
+      "version",
     ]);
+    expect(Object.keys(parsed.cli as object).sort()).toEqual(["buildAt", "buildHash", "version"]);
     expect(Object.keys(parsed.build as object).sort()).toEqual([
       "applicable",
       "buildAt",
@@ -515,6 +525,7 @@ describe("status --json shape", () => {
     expect(Object.keys(parsed).sort()).toEqual([
       "board",
       "build",
+      "cli",
       "generatedAt",
       "git",
       "root",
