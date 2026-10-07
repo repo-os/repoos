@@ -2,7 +2,7 @@
 id: "0740"
 title: Board card says 'queued for close-out' for the job that is actively integrating (stage not reported yet)
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/board-card-says-queued-for-close-out-for
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:13:12Z"
-updated_at: "2026-10-07T16:24:58Z"
+updated_at: "2026-10-07T18:11:37Z"
 ---
 ## Problem
 
@@ -31,9 +31,28 @@ updated_at: "2026-10-07T16:24:58Z"
 
 Read TaskCard.vue (pipelineStage, inPipeline computed), the pipeline bar, and src/server integration snapshot. Related: #0738, #0720.
 
+## Shots
+```json
+[
+  {
+    "label": "Board and integration pipeline bar (card hints follow live close-out snapshot)",
+    "target": "default",
+    "route": "/work",
+    "highlight": ".ibar-wrap"
+  },
+  {
+    "label": "Checks Now tab — close-out pipeline summary",
+    "target": "default",
+    "route": "/checks?tab=now",
+    "highlight": ".ips"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-07T14:13:12Z · created · unknown
 - 2026-10-07T16:24:54Z · cli_override, model_override
 - 2026-10-07T16:24:57Z · status inbox→ready
 - 2026-10-07T16:24:58Z · status ready→active, branch
+- 2026-10-07T18:11:37Z · status active→review
