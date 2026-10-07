@@ -12,7 +12,7 @@ branch: feat/store-a-readable-last-check-failure-the-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:51Z"
-updated_at: "2026-10-07T16:30:41Z"
+updated_at: "2026-10-07T16:49:17Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-07T16:25:04Z · status ready→active, branch
 - 2026-10-07T16:29:41Z · body
 - 2026-10-07T16:30:41Z · body
+- 2026-10-07T16:49:17Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
