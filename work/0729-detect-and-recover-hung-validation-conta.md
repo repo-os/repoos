@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/detect-and-recover-hung-validation-conta
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T04:42:36Z"
+updated_at: "2026-10-07T04:51:23Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ The hang recovery (kill that run's container, retry once on another host) is a C
 - 2026-10-07T04:34:35Z · status inbox→ready
 - 2026-10-07T04:38:48Z · status ready→active, branch
 - 2026-10-07T04:42:36Z · note: Driver observed current-server reproduction: #0712 close-out started2026-10-07T04:01:19.634Z, thinkpad upload finished04:01:38Z; no final gate result before timeout after2411s at04:41:40. Cancellation API returned200 at04:31:02Z but remote await continued. New0712 job enqueued04:32 remains queued behind it. This supports current hang/cancellation symptom; shared-bun-cache corruption remains an unproven cause for THIS run (no current missing-worker evidence established). Independently verify diagnosis against current main and running build, record SHA/version and still/partly/already-fixed/misdiagnosed before implementing or approving cross-repo reports. Do not directly touch owner hosts/config; preserve logs and test scoped behavior.
+- 2026-10-07T04:51:23Z · note: Driver04:50 current-main diagnosis for cancellation/requeue: integration-job.ts enqueue treats existing.cancelled as stale and overwrites task-keyed job with startedAt:null and no cancelled flag BEFORE prior process returns. Remote close-out awaits runRemotePreReviewGate then checks isCancelled(taskId), so old process observes replacement record, loses cancellation, and updateJob can write its phases into new record. Live0712 exactly shows new enqueuedAt04:32 with phasevalidating but startedAtnull; old run timedout2411s then passed fallback304s04:46:45, main driftresync04:47:31 launched another fullgate04:47:57. Treat generation/running-attempt ownership as a separate verified current-code risk; do not assume shared Bun cache is sole cause. Need regression for cancel->requeue while old remote await still live, old attempt cannot mutate/publish/delete new job, cancellation propagates to remote await. No production recovery by fileediting/hostkill.
