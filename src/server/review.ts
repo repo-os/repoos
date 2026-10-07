@@ -230,15 +230,26 @@ export function reviewMission(
     "  worktree show exactly what changed. Start there.",
     "- Read the files the diff touches — judge the CODE, not just the diff hunks.",
     "- If the task changed UI, `repoos shot` captures (when present) live as PNGs",
-    "  under `work/.attachments/<task-id>/shots/` in the main checkout, and render in",
-    "  the task drawer's Changes tab — captured automatically at handoff; the task's",
-    "  own `## Shots` section, when present, lists what each capture shows. Shots",
-    "  are captioned with why each exists (`declared: <label>` / `auto: matched",
-    "  <glob>`); judge an unlabeled-looking fallback shot against the diff, not",
-    "  as a declared claim. A `shots: skipped` note (tests-only or docs-only",
-    "  diff, no declared route) is correct behavior, not a capture failure.",
-    "  Read them alongside the diff — they are read-only evidence, never something you",
-    "  edit.",
+    `  under \`${join(config.root, config.workDir, ".attachments", task.id, "shots")}\` — the MAIN`,
+    "  checkout, NOT the worktree — and render in the task drawer's Changes tab. The",
+    "  task's own `## Shots` section lists what each capture shows. Shots are",
+    "  captioned with why each exists (`declared: <label>` / `auto: matched <glob>`).",
+    "  A `shots: skipped` note (tests-only or docs-only diff, no declared route) is",
+    "  correct behavior, not a capture failure. Read them alongside the diff — they",
+    "  are read-only evidence, never something you edit.",
+    "- #0734: a UI task that declares required visual acceptance (a `## Shots` entry",
+    "  with `assert` conditions, a named feature state, populated rows, an editable",
+    "  input) MUST have that evidence verified before you can sign off. The handoff",
+    "  evidence JSON at",
+    `  \`${join(config.root, config.cacheDir, "ui-verification", `${task.id}.json`)}\``,
+    "  (and the Changes tab) records, per capture: the exact URL the browser landed",
+    "  on, whether the declared route matched (login/redirect), every assertion's",
+    "  outcome, and the stored PNG path. If a REQUIRED visual criterion is missing,",
+    "  stale, or unverifiable, your verdict is `needs some work` — say exactly which",
+    "  evidence is absent. Do NOT write `good to go` while saying visual proof is",
+    "  absent: that is the one contradiction this prompt forbids. An explicit",
+    "  truthful exception (an optional assertion, a documented reason a shot is not",
+    "  applicable) is fine — name it.",
     "- Check the implementation actually does what the spec asks, including every",
     "  acceptance criterion, and that its behaviour holds up beyond the happy path.",
     "- Look for real bugs: wrong logic, unhandled errors, races, resource leaks,",
@@ -275,9 +286,14 @@ export function reviewMission(
     "",
     "## UI verification evidence",
     "",
-    "For UI work, handoff captured screenshots (task drawer Changes tab) and a browser",
-    " console log. Read the PNGs — flag blank or error states. Comment on whether they",
-    " match the diff and whether the recorded console log looks acceptable.",
+    "For UI work, handoff captured screenshots (task drawer Changes tab, and the",
+    " evidence JSON named above) plus a browser console log. Read the PNGs — flag",
+    " blank or error states. The evidence JSON records the exact captured URL, the",
+    " declared route and whether the browser matched it (a login/redirect is a",
+    " mismatch, not a pass), each declared assertion's outcome, and the tested",
+    " tree/plan identity. Comment on whether the shots match the diff and whether the",
+    " recorded console log looks acceptable. If a required visual acceptance",
+    " criterion is unverified, that is blocking: `needs some work`, naming the gap.",
     "",
     "## What to output",
     "",
@@ -1758,10 +1774,28 @@ export class ReviewManager {
   uiVerificationSummary(taskId: string): string | null {
     const evidence = readUiHandoffGateEvidence(this.config, taskId);
     if (!evidence) return null;
+    // #0734: surface the exact capture URL, assertion outcomes, and the tested
+    // tree/plan identity so the reviewer can tie evidence to the diff, and can
+    // see plainly when required visual evidence is missing or wrong.
+    const identity: string[] = [];
+    if (evidence.sourceIdentity) identity.push(`tested tree ${evidence.sourceIdentity}`);
+    if (evidence.sourceWorktree) identity.push(evidence.sourceWorktree);
+    if (evidence.evidenceDir) identity.push(`PNGs at ${evidence.evidenceDir}`);
+    const identityLine = identity.length ? ` (${identity.join(" · ")})` : "";
     if (evidence.issues.length === 0) {
+      const captured = (evidence.captureDetails ?? [])
+        .map((c) => {
+          const asserts =
+            c.assertionsChecked > 0
+              ? `, ${c.assertionsPassed}/${c.assertionsChecked} assertion(s) passed`
+              : "";
+          return `${c.label ?? `${c.target}${c.route}`} → ${c.url}${asserts}`;
+        })
+        .join("; ");
       return (
-        `Handoff UI verification (${evidence.at}): ${evidence.captures} capture(s), ` +
-        `zero console errors recorded at capture time.`
+        `Handoff UI verification (${evidence.at})${identityLine}: ${evidence.captures} capture(s), ` +
+        `zero console errors recorded at capture time.` +
+        (captured ? `\nCaptures: ${captured}` : "")
       );
     }
     const lines = evidence.issues
@@ -1769,7 +1803,7 @@ export class ReviewManager {
       .map((i) => `- [${i.kind}] ${i.message}`)
       .join("\n");
     return (
-      `Handoff UI verification (${evidence.at}) recorded ${evidence.issues.length} issue(s) ` +
+      `Handoff UI verification (${evidence.at})${identityLine} recorded ${evidence.issues.length} issue(s) ` +
       `(this task should not have reached review — investigate):\n${lines}`
     );
   }
