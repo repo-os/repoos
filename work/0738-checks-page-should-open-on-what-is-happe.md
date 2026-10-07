@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T14:25:03.639Z: server-side finalization timed out (deadline exceeded)"
 id: "0738"
 title: "Checks page should open on what is happening now (live runs), not the static Check plan tab"
 type: feature
@@ -60,3 +62,4 @@ Read ChecksView.vue and the Remote runners panel (RemoteRunnersPanel.vue); the c
 - 2026-10-07T14:12:56Z · body
 - 2026-10-07T14:13:37Z · body
 - 2026-10-07T14:14:47Z · body: section Shots
+
