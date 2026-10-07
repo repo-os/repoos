@@ -801,8 +801,9 @@ export interface CheckRunRow {
   scope: string;
   startedAt: string;
   durationMs: number | null;
-  /** `skipped` (#0592): the gate ran nothing — this repo has no check plan. */
-  outcome: "pass" | "fail" | "cancelled" | "skipped";
+  /** `skipped` (#0592): the gate ran nothing — this repo has no check plan.
+   *  `hung` (#0729): a remote run was killed as a hang and retried elsewhere. */
+  outcome: "pass" | "fail" | "cancelled" | "hung" | "skipped";
   failedStep: string | null;
   skippedSteps: string[];
   failedTests: string[];
@@ -830,8 +831,12 @@ export interface RemoteHostStatusView {
     phase?: string;
     label?: string;
     source?: "server" | "host-lock";
+    /** True while this run is being killed as hung (#0729). */
+    hung?: boolean;
   }[];
   queuedTasks?: string[];
+  /** Recent hung runs on this host (#0729). */
+  hungRuns?: { taskId: string; at: string; detail?: string }[];
   hostLock?: {
     holders: Array<{
       state: "holding";

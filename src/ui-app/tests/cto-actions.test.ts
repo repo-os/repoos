@@ -119,6 +119,73 @@ describe("CTO action rate limits", () => {
   });
 });
 
+describe("kill-hung-validation safe action (#0729)", () => {
+  function depsWithValidator(
+    root: string,
+    kill: (taskId: string) => Promise<{ ok: boolean; detail: string }>,
+    actions: string[],
+  ) {
+    return {
+      config: { ...DEFAULT_CONFIG, root, cto: { actions } },
+      index: {
+        getTask: (id: string) => ({ id, status: "active", body: "", absPath: `${root}/w.md` }),
+        getTasks: () => [],
+        applyFileChange: () => {},
+        refreshBranches: () => {},
+      } as never,
+      runner: {} as never,
+      jobCoordinator: { allJobs: () => [], getJob: () => null, enqueue: () => null } as never,
+      attentionEvents: createAttentionEventStore(root),
+      rates: createCtoActionRateStore(root),
+      logger: { agent: vi.fn(), task: vi.fn(), system: vi.fn() } as never,
+      emitEvent: vi.fn(),
+      triggerJobProcessing: vi.fn(),
+      reportedStages: {},
+      remoteValidator: { killHungValidation: kill } as never,
+    };
+  }
+
+  it("kills the run's container and audits the action", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-cto-kill-"));
+    const kill = vi.fn(async () => ({ ok: true, detail: "Removed container repoos-validate-x" }));
+    const deps = depsWithValidator(root, kill, ["kill-hung-validation"]);
+    const result = await runCtoSafeAction(deps as never, "kill-hung-validation", {
+      taskId: "0729",
+      actor: "cto",
+    });
+    expect(result.ok).toBe(true);
+    expect(kill).toHaveBeenCalledWith("0729");
+    expect(deps.attentionEvents.list().some((e) => e.kind === "ctoAction")).toBe(true);
+  });
+
+  it("refuses when remote validation is not running", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-cto-kill-noval-"));
+    const deps = depsWithValidator(root, async () => ({ ok: true, detail: "x" }), [
+      "kill-hung-validation",
+    ]);
+    (deps as { remoteValidator?: unknown }).remoteValidator = undefined;
+    const result = await runCtoSafeAction(deps as never, "kill-hung-validation", {
+      taskId: "0729",
+      actor: "human",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toMatch(/not running/i);
+  });
+
+  it("reports a failed kill as a non-ok result", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-cto-kill-fail-"));
+    const deps = depsWithValidator(root, async () => ({ ok: false, detail: "no run" }), [
+      "kill-hung-validation",
+    ]);
+    const result = await runCtoSafeAction(deps as never, "kill-hung-validation", {
+      taskId: "0729",
+      actor: "api",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("no run");
+  });
+});
+
 describe("CTO restart strategy (#0727)", () => {
   it("resumes after a network stall", () => {
     expect(
