@@ -11,7 +11,7 @@ branch: feat/close-out-candidate-worktree-has-no-node
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:49Z"
-updated_at: "2026-10-07T00:00:39Z"
+updated_at: "2026-10-07T00:02:16Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 24: unless the check plan starts with an install step. Install deps (or reuse) in the candidate worktree, or fail with advice.
 
@@ -37,3 +37,4 @@ VERIFY FIRST: #0674 (merged 2026-10-06) already reuses the primary checkout's no
 - 2026-10-06T23:58:50Z · body
 - 2026-10-07T00:00:13Z · body: section Notes for AI
 - 2026-10-07T00:00:39Z · body
+- 2026-10-07T00:02:16Z · body
