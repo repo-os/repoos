@@ -85,3 +85,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T16:16:45Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-07T16:25:59Z · body
 - 2026-10-07T16:26:48Z · status active→review
+- 2026-10-07T16:26:48Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
