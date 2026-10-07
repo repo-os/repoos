@@ -108,6 +108,8 @@ import {
   WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX,
 } from "./worktree-handoff-guard.js";
 import {
+  analyzeConflictForResolution,
+  canResumeAuthorizedCloseOut,
   classifyConflictForTask,
   createResolutionProvenanceStore,
   resolveConflictByUnion,
@@ -1623,6 +1625,49 @@ export class CloseOutOrchestrator {
    * throws; a classification failure simply leaves `pendingResolutionVerdict`
    * unset and the full handback runs.
    */
+  /**
+   * When pre-flight sees a real conflict, only defer the sync failure when the
+   * narrow path is enabled AND merge-tree agrees with the dry-run paths — same
+   * classification `validateCandidate` will use when it merges in the candidate.
+   */
+  private async shouldDeferPreflightConflictFailure(
+    job: IntegrationJob,
+    baseMainSha: string,
+    preflightReason: string,
+  ): Promise<boolean> {
+    if (!this.onResolutionEligible) return false;
+    const preflightPaths = parseConflictPathsFromReason(preflightReason);
+    if (preflightPaths.length === 0) return false;
+    try {
+      const verdict = await this.classifyResolutionEligibility(job, baseMainSha, preflightPaths);
+      if (!verdict.eligible) return false;
+      const task = this.getTask?.(job.taskId);
+      const analysis = await analyzeConflictForResolution(
+        this.config.root,
+        job.branch ?? job.taskId,
+        {
+          ownTaskFile: task ? relative(this.config.root, task.absPath) : null,
+          generatedPrefixes: bookkeepingDirPrefixes(this.config),
+        },
+      );
+      if (!analysis.ok) return false;
+      const mergeTreePaths = [...new Set(analysis.files.map((f) => f.path))].sort();
+      const sortedPreflight = [...preflightPaths].sort();
+      if (mergeTreePaths.join(",") !== sortedPreflight.join(",")) {
+        this.logger?.integration(
+          job.taskId,
+          "warn",
+          "pre-flight conflict paths differ from merge-tree — not deferring pre-flight failure",
+          { preflight: sortedPreflight, mergeTree: mergeTreePaths },
+        );
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private async noteResolutionEligibility(
     job: IntegrationJob,
     reason: string,
@@ -1759,6 +1804,46 @@ export class CloseOutOrchestrator {
     return { ok: true };
   }
 
+  /**
+   * Record a resolution-only review after union resolution — separate from the
+   * combined gate, which runs later on the same tree (acceptance criteria 1/4).
+   */
+  private async recordResolutionDeltaReview(
+    taskId: string,
+    wtPath: string,
+    conflictPaths: string[],
+  ): Promise<{ ok: boolean }> {
+    for (const file of conflictPaths) {
+      let content: string;
+      try {
+        content = readFileSync(join(wtPath, file), "utf8");
+      } catch {
+        return { ok: false };
+      }
+      if (/^<{7}$|^={7}$|^>{7}$/m.test(content)) return { ok: false };
+    }
+    const commit = (await runGit(wtPath, ["rev-parse", "HEAD"], 4_000)).stdout.trim();
+    if (!commit) return { ok: false };
+    try {
+      const updated = createResolutionProvenanceStore(
+        this.config.root,
+        this.config.cacheDir,
+      ).update(taskId, {
+        resolutionReview: {
+          reviewer: "resolution-delta",
+          verdict: "pass",
+          reviewedCommit: commit,
+          at: new Date().toISOString(),
+          summary:
+            "resolution delta verified: proven-safe union with no remaining conflict markers",
+        },
+      });
+      return { ok: updated !== null };
+    } catch {
+      return { ok: false };
+    }
+  }
+
   private async assertResolvedTreeUnchanged(
     job: IntegrationJob,
     candidateWtPath: string,
@@ -1780,13 +1865,44 @@ export class CloseOutOrchestrator {
       return { ok: false, reason: "could not verify the resolved candidate tree before publish" };
     }
     const candidateTree = treeRes.stdout.trim();
-    if (candidateTree !== provenance.gate.validatedTree) {
+    const root = this.config.root;
+    const mainBranch = await resolveDefaultBranch(root);
+    const currentMainRes = await runGit(root, ["rev-parse", `${mainBranch}^{commit}`], 4_000);
+    const currentMainSha =
+      currentMainRes.status === 0 ? currentMainRes.stdout.trim() : (job.baseMainSha ?? "");
+    const mainAdvanceIsBookkeepingOnly =
+      job.baseMainSha && currentMainSha && job.baseMainSha !== currentMainSha
+        ? await mainDriftIsBookkeepingOnly({
+            root,
+            baseMainSha: job.baseMainSha,
+            currentMainSha,
+            dirs: this.config,
+          })
+        : true;
+    const featureBranch = job.branch ?? job.taskId;
+    const featureWt = worktreePathForBranch(root, featureBranch);
+    let worktreeDirty = false;
+    if (featureWt) {
+      const por = await runGit(featureWt, ["status", "--porcelain"], 5_000);
+      worktreeDirty = por.status === 0 && por.stdout.trim().length > 0;
+    }
+    const resume = canResumeAuthorizedCloseOut({
+      provenance,
+      authorized: true,
+      validatedTree: provenance.gate.validatedTree,
+      candidateTree,
+      currentMainSha,
+      validatedMainBaseSha: provenance.mainBaseSha,
+      mainAdvanceIsBookkeepingOnly,
+      worktreeDirty,
+      cancelled: this.isCancelled(job.taskId),
+    });
+    if (!resume.ok) {
       return {
         ok: false,
         reason:
-          `resolved candidate tree ${candidateTree} no longer matches the tree the combined gate ` +
-          `validated (${provenance.gate.validatedTree}); refusing to publish untested edits. ` +
-          "Re-run Move to done so the resolution and its gate are rederived.",
+          `refusing to publish resolved candidate (${resume.reason}): ${resume.detail}. ` +
+          "Re-run Move to done so the resolution, its review, and its gate are rederived.",
       };
     }
     return { ok: true };
@@ -1840,7 +1956,24 @@ export class CloseOutOrchestrator {
     // fail-open — fall through to the normal sync/validate flow unchanged.
     const preflightReason = await this.preflightConflict(job, baseMainSha);
     if (preflightReason) {
-      return { ok: false, conflict: true, reason: preflightReason };
+      // #0692: an eligible pre-flight conflict must reach `validateCandidate`,
+      // where `applyUnionResolution` runs in the isolated candidate. Failing
+      // sync here only logged/SSE'd via `onResolutionEligible` and never
+      // resolved — a dead end on every retry.
+      const deferFailure = await this.shouldDeferPreflightConflictFailure(
+        job,
+        baseMainSha,
+        preflightReason,
+      );
+      if (!deferFailure) {
+        return { ok: false, conflict: true, reason: preflightReason };
+      }
+      this.logger?.integration(
+        job.taskId,
+        "info",
+        "pre-flight conflict eligible for narrow resolution — continuing to candidate merge (#0692)",
+        { reason: preflightReason },
+      );
     }
 
     // Ensure candidate worktree exists and is on main.
@@ -2181,6 +2314,18 @@ export class CloseOutOrchestrator {
             merge.conflicts,
           );
           if (resolved.ok) {
+            const deltaReview = await this.recordResolutionDeltaReview(
+              job.taskId,
+              wtPath,
+              merge.conflicts,
+            );
+            if (!deltaReview.ok) {
+              return {
+                ok: false,
+                retryable: false,
+                reason: conflictReason,
+              };
+            }
             this.onProgress?.("resolve-conflict");
             this.logger?.integration(
               job.taskId,
@@ -2811,14 +2956,6 @@ export class CloseOutOrchestrator {
         const tree = (await runGit(wtPath, ["rev-parse", "HEAD^{tree}"], 4_000)).stdout.trim();
         const commit = candidateShaRes.stdout.trim();
         store.update(job.taskId, {
-          resolutionReview: {
-            reviewer: "combined-gate",
-            verdict: "pass",
-            reviewedCommit: commit,
-            at: new Date().toISOString(),
-            summary:
-              "resolution confined to proven-safe conflict hunks; combined gate passed on the resolved candidate",
-          },
           gate: {
             result: "pass",
             validatedTree: tree,

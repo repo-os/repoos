@@ -17,6 +17,7 @@ import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
 import {
   classifyConflictResolution,
+  conflictResolutionSnapshot,
   createResolutionProvenanceStore,
   canResumeAuthorizedCloseOut,
   parseConflictRegions,
@@ -205,6 +206,18 @@ describe("classifyConflictResolution", () => {
       hasPriorFeatureApproval: true,
     });
     expect(verdict).toEqual({ eligible: false, reason: "empty-conflict-set" });
+  });
+});
+
+describe("conflictResolutionSnapshot", () => {
+  it("exposes API-safe fields without taskId", () => {
+    const snap = conflictResolutionSnapshot(provenance());
+    expect(snap).toMatchObject({
+      approvedFeatureSha: "636a03b27730be914515fff8448cf9028574753f",
+      conflictPaths: ["src/cli/index.ts"],
+      resolutionReview: { verdict: "pass", reviewer: "reviewer" },
+    });
+    expect(snap && "taskId" in snap).toBe(false);
   });
 });
 
