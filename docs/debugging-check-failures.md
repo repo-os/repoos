@@ -93,6 +93,22 @@ concluding anything.
 - **Nothing enforced formatting before `665f6289`**, so source drifted while
   `dist/` built fine. `fmt:check` + `lint` are now part of the gate.
 
+## Misread as a check flake: output-health kills (#0709, #0718)
+
+During a long agent-driven run, engineers can die mid-turn while handoff or
+watchdog activity still cites **unrelated** gate failures. A separate failure
+mode is **`needs_input` · provider-failure** (or **degenerate output**) where the
+detail is a **random stream-json line** and **stderr is empty** — healthy agents
+killed because output health substring-matched tool output or timestamps (#0709),
+or scanned tool payloads as assistant text (#0718). That looks like a provider
+outage or a silent harness bug; it is **not** a `repoos check` regression and
+does not reproduce as a failing test on an idle machine.
+
+Current rules: `scrapeProviderFailure` only inspects structured error fields on
+JSON events and short plain lines; the degenerate tracker only scores assistant
+text blocks. Recognition, CLI steps, and overnight incident context:
+[`agent-run-operations.md`](agent-run-operations.md#false-provider-or-credit-kills-0709-0718).
+
 ## The structural fix: Remote Validation Runner
 
 When `[remoteValidation] enabled`, the close-out gate runs `bun install`,
