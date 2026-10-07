@@ -176,4 +176,17 @@ export class TaskCheckManager {
   getRuns(taskId: string): TaskCheckRun[] {
     return this.runsByTask.get(taskId) ?? [];
   }
+
+  /**
+   * Every run (across all tasks) that is still in flight right now (#0720) —
+   * so the attention feed can compare each one's elapsed time against its
+   * kind median while it runs, not only after it finishes.
+   */
+  runningRuns(): TaskCheckRun[] {
+    const out: TaskCheckRun[] = [];
+    for (const list of this.runsByTask.values()) {
+      for (const run of list) if (run.running) out.push(run);
+    }
+    return out;
+  }
 }

@@ -3,6 +3,7 @@
  * and timestamps for the notification bell and `GET /api/attention`.
  */
 import type { RepoOSConfig, Task } from "./types.js";
+import type { SlowKindNotice, SlowRunFlag } from "./check-slowness.js";
 
 export interface CloseOutOutcomeFeedEvent {
   taskId: string;
@@ -28,6 +29,8 @@ export type AttentionKind =
   | "taskAssigned"
   | "providerFailure"
   | "silentRun"
+  | "slowRun"
+  | "slowRunsRecently"
   | "spendThreshold"
   | "awaitingVisualCheck"
   | "remoteFallback"
@@ -94,6 +97,10 @@ export interface AttentionFeedInput {
   }>;
   /** Running engineer/task agents whose output has gone quiet. */
   silentRuns: Array<{ taskId: string; lastOutputAt: string | null; detail: string }>;
+  /** In-flight check/close-out/upload runs that exceed their kind median (#0720). */
+  slowRuns?: SlowRunFlag[];
+  /** Run kinds trending slow over their recent window (#0720). */
+  slowRunNotices?: SlowKindNotice[];
   previewTargetAreas: string[];
   /** Last CTO heartbeat ISO time; null when none recorded this process. */
   ctoHeartbeatAt?: string | null;
@@ -124,6 +131,8 @@ const SEVERITY: Record<AttentionKind, AttentionSeverity> = {
   taskNeedsMerge: "warning",
   providerFailure: "error",
   silentRun: "warning",
+  slowRun: "warning",
+  slowRunsRecently: "warning",
   spendThreshold: "warning",
   remoteFallback: "warning",
   ctoAction: "info",
@@ -192,6 +201,36 @@ function closeOutDetail(o: CloseOutOutcomeFeedEvent): string {
 function releaseTagFromMessage(message: string): string | null {
   const m = message.trim().match(/^(v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\b/);
   return m ? m[1] : null;
+}
+
+/** mm:ss (or h:mm:ss) for an elapsed ms value. */
+function formatDuration(ms: number): string {
+  const totalSecs = Math.max(0, Math.round(ms / 1000));
+  const h = Math.floor(totalSecs / 3600);
+  const m = Math.floor((totalSecs % 3600) / 60);
+  const s = totalSecs % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function slowRunTitle(flag: SlowRunFlag): string {
+  const who = flag.taskId ? `#${flag.taskId} · ` : "";
+  return `${who}${flag.kindLabel} is slow (${formatDuration(flag.elapsedMs)})`;
+}
+
+function slowRunDetail(flag: SlowRunFlag): string {
+  const typical = formatDuration(flag.medianMs);
+  const times = flag.ratio >= 10 ? Math.round(flag.ratio) : flag.ratio.toFixed(1);
+  const parts = [`${times}x its typical ${typical} over the last ${flag.sampleCount} runs`];
+  if (flag.stage) parts.push(`phase: ${flag.stage}`);
+  if (flag.likelyCause) parts.push(flag.likelyCause);
+  return parts.join(" — ");
+}
+
+function slowNoticeDetail(notice: SlowKindNotice): string {
+  const median = notice.medianMs != null ? ` (typical ${formatDuration(notice.medianMs)})` : "";
+  return `${notice.commonFactor}${median}.`;
 }
 
 /** True when a task in review likely needs a human browser check (#0687). */
@@ -367,6 +406,32 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
       detail: s.detail,
       link: `/work?task=${s.taskId}`,
       at: s.lastOutputAt ?? generatedAt,
+    });
+  }
+
+  for (const flag of input.slowRuns ?? []) {
+    pushItem(items, {
+      id: flag.id,
+      kind: "slowRun",
+      severity: SEVERITY.slowRun,
+      taskId: flag.taskId,
+      message: slowRunTitle(flag),
+      detail: slowRunDetail(flag),
+      link: flag.taskId ? `/work?task=${flag.taskId}` : "/checks",
+      at: generatedAt,
+    });
+  }
+
+  for (const notice of input.slowRunNotices ?? []) {
+    pushItem(items, {
+      id: notice.id,
+      kind: "slowRunsRecently",
+      severity: SEVERITY.slowRunsRecently,
+      taskId: null,
+      message: `Checks are slow lately: ${notice.slowCount} of the last ${notice.windowCount}`,
+      detail: slowNoticeDetail(notice),
+      link: notice.remote ? "/checks?tab=remote" : "/checks",
+      at: generatedAt,
     });
   }
 
