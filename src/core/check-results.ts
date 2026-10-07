@@ -12,10 +12,7 @@
  * each (files for a format failure, the `FAIL` test for a test failure), and
  * which later checks were skipped because an earlier one failed.
  */
-import {
-  pickErrorLineFromStepOutput,
-  summarizeCheckFailure,
-} from "./check-failure-summary.js";
+import { pickErrorLineFromStepOutput, summarizeCheckFailure } from "./check-failure-summary.js";
 
 /** ANSI SGR escapes; the gate's output is colored. Kept local so this module
  *  has no server dependency and can be reused by the CLI/UI. */
