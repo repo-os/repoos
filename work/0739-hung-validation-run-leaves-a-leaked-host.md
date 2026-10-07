@@ -12,7 +12,7 @@ branch: feat/hung-validation-run-leaves-a-leaked-host
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:05Z"
-updated_at: "2026-10-07T15:02:59Z"
+updated_at: "2026-10-07T15:03:36Z"
 review_passes: 2
 ---
 ## Problem
