@@ -12,7 +12,7 @@ branch: feat/checks-page-should-open-on-what-is-happe
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:03Z"
-updated_at: "2026-10-07T14:04:16Z"
+updated_at: "2026-10-07T14:11:16Z"
 ---
 ## Problem
 
@@ -32,9 +32,28 @@ Opening Checks lands on the 'Check plan' tab (src/ui-app/src/views/ChecksView.vu
 
 Read ChecksView.vue and the Remote runners panel (RemoteRunnersPanel.vue); the close-out pipeline snapshot is GET /api/integration/pipeline. Related: #0720, #0730.
 
+## Shots
+```json
+[
+  {
+    "label": "Checks Now tab with close-out pipeline strip",
+    "target": "default",
+    "route": "/checks?tab=now",
+    "highlight": ".ips"
+  },
+  {
+    "label": "Checks idle default Runs tab",
+    "target": "default",
+    "route": "/checks?tab=runs",
+    "highlight": ".ck-tabs"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-07T14:04:03Z · created · unknown
 - 2026-10-07T14:04:12Z · cli_override, model_override
 - 2026-10-07T14:04:15Z · status inbox→ready
 - 2026-10-07T14:04:16Z · status ready→active, branch
+- 2026-10-07T14:11:16Z · body: section Shots
