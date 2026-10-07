@@ -12,7 +12,7 @@ branch: feat/board-card-says-queued-for-close-out-for
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:13:12Z"
-updated_at: "2026-10-07T17:08:39Z"
+updated_at: "2026-10-07T17:14:05Z"
 ---
 ## Problem
 
@@ -123,3 +123,23 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T17:08:39Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:381:35 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-07T17:08:39Z · status review→active
+- 2026-10-07T17:14:05Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:381:35
+    379|
+    380|     const expandedChip = expanded.find(".ibar .ibar-chip");
+    381|     expect(expandedChip.exists()).toBe(true);
+       |                                   ^
+    382|     expect(expandedChip.text()).toBe("3m 07s");
+    383|
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 441 passed | 1 skipped (443)
+      Tests  1 failed | 5327 passed | 15 skipped (5343)
+   Start at  17:09:16
+   Duration  285.38s (transform 6.86s, setup 2.46s, import 55.93s, tests 228.44s, environment 255.86s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 409ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:14:02
+   Duration  2.42s (transform 1.15s, setup 11ms, import 1.42s, tests 409ms, environment 504ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
