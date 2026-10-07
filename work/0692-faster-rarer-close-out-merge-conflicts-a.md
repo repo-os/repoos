@@ -273,3 +273,4 @@ error: script "test" exited with code 1
 - 2026-10-07T17:52:21Z · body
 - 2026-10-07T17:58:40Z · status active→review
 - 2026-10-07T17:58:41Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d89564a01) during finalization (#0734)
+- 2026-10-07T17:58:41Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d89564a01) during finalization (#0734)
