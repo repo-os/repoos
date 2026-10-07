@@ -193,9 +193,7 @@ function retry(): void {
   });
 }
 
-const pipelineStalled = computed(() =>
-  integrationPipelineStalled(snapshot.value, now.value),
-);
+const pipelineStalled = computed(() => integrationPipelineStalled(snapshot.value, now.value));
 
 const activeBarTitle = computed(() => {
   const snap = snapshot.value;

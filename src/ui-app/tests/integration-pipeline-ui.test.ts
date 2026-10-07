@@ -8,27 +8,24 @@ import {
 import type { IntegrationPipelineSnapshot } from "../src/types";
 
 function snap(
-  over: Partial<IntegrationPipelineSnapshot> & {
-    active?: Partial<NonNullable<IntegrationPipelineSnapshot["active"]>>;
-  } = {},
+  over: Partial<IntegrationPipelineSnapshot> = {},
+  activeOver: Partial<NonNullable<IntegrationPipelineSnapshot["active"]>> = {},
 ): IntegrationPipelineSnapshot {
-  const baseActive = over.active
-    ? {
-        taskId: "0730",
-        stage: null as string | null,
-        failed: false,
-        startedAt: "2026-10-07T13:00:00.000Z",
-        lastProgressAt: "2026-10-07T13:00:00.000Z",
-        ...over.active,
-      }
-    : null;
+  const active: IntegrationPipelineSnapshot["active"] = {
+    taskId: "0730",
+    stage: null,
+    failed: false,
+    startedAt: "2026-10-07T13:00:00.000Z",
+    lastProgressAt: "2026-10-07T13:00:00.000Z",
+    ...activeOver,
+  };
   return {
     empty: false,
-    active: baseActive,
+    active,
     queue: [],
     at: "2026-10-07T13:00:00.000Z",
     ...over,
-    active: baseActive,
+    active: over.active === undefined ? active : over.active,
   };
 }
 
@@ -41,22 +38,20 @@ describe("integration-pipeline-ui (#0740)", () => {
   });
 
   it("renders queued position behind the active task", () => {
-    const pipeline = snap({
-      active: { taskId: "0730", stage: "check" },
-      queue: ["0720", "0712"],
-    });
+    const pipeline = snap({ queue: ["0720", "0712"] }, { taskId: "0730", stage: "check" });
     const queued = integrationQueuedCopy(pipeline, "0720");
     expect(queued?.label).toBe("queued #1 (behind #0730)");
   });
 
   it("flags a stall after the default threshold with no progress", () => {
     const now = Date.parse("2026-10-07T13:04:01.000Z");
-    const pipeline = snap({
-      active: {
+    const pipeline = snap(
+      {},
+      {
         lastProgressAt: "2026-10-07T13:00:00.000Z",
         startedAt: "2026-10-07T13:00:00.000Z",
       },
-    });
+    );
     expect(integrationPipelineStalled(pipeline, now)).toBe(true);
     const copy = integrationActiveCopy(pipeline, now);
     expect(copy.stalled).toBe(true);
@@ -65,11 +60,7 @@ describe("integration-pipeline-ui (#0740)", () => {
 
   it("does not flag a stall before the threshold", () => {
     const now = Date.parse("2026-10-07T13:02:59.000Z");
-    const pipeline = snap({
-      active: {
-        lastProgressAt: "2026-10-07T13:00:00.000Z",
-      },
-    });
+    const pipeline = snap({}, { lastProgressAt: "2026-10-07T13:00:00.000Z" });
     expect(integrationPipelineStalled(pipeline, now, DEFAULT_INTEGRATION_STALL_MS)).toBe(false);
   });
 });
