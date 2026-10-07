@@ -53,7 +53,7 @@ describe("DebuggerChat floating panel close (#0572)", () => {
     await flushPromises();
 
     // A render-time ReferenceError leaves the slot unrendered, so these vanish.
-    expect(wrapper.find(".debugger-header").exists()).toBe(true);
+    expect(wrapper.find(".agent-chat-header").exists()).toBe(true);
     expect(wrapper.find(".debugger-close").exists()).toBe(true);
     expect(wrapper.text()).toContain("diagnosis ready");
   });
@@ -80,6 +80,6 @@ describe("DebuggerChat floating panel close (#0572)", () => {
 
     await wrapper.setProps({ open: false });
     await flushPromises();
-    expect(wrapper.find(".debugger-header").exists()).toBe(false);
+    expect(wrapper.find(".agent-chat-header").exists()).toBe(false);
   });
 });
