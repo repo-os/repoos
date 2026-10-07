@@ -12,7 +12,7 @@ branch: feat/give-the-cto-the-routine-evaluate-and-en
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:31Z"
-updated_at: "2026-10-07T05:41:50Z"
+updated_at: "2026-10-07T06:24:26Z"
 review_passes: 1
 ---
 ## Problem
@@ -111,3 +111,4 @@ Rationale: land routine docs/chore work only; machinery paths and UI screenshot 
 - 2026-10-07T05:40:03Z · body: section Proposed conservative policy (owner approval required)
 - 2026-10-07T05:40:03Z · body: section Shots
 - 2026-10-07T05:41:50Z · body
+- 2026-10-07T06:24:26Z · body
