@@ -2,17 +2,17 @@
 id: "0739"
 title: "Hung validation run leaves a leaked host slot: 'HUNG · KILLING' never clears, and the run's bundle file is left on the host"
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/hung-validation-run-leaves-a-leaked-host
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:05Z"
-updated_at: "2026-10-07T14:04:20Z"
+updated_at: "2026-10-07T14:04:21Z"
 ---
 ## Problem
 
@@ -37,3 +37,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T14:04:05Z · created · unknown
 - 2026-10-07T14:04:17Z · cli_override, model_override
 - 2026-10-07T14:04:20Z · status inbox→ready
+- 2026-10-07T14:04:21Z · status ready→active, branch
