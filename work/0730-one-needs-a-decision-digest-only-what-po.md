@@ -1,6 +1,6 @@
 ---
 id: "0730"
-title: "One 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
+title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
 status: inbox
 priority: p2
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T02:10:58Z"
+updated_at: "2026-10-07T02:11:14Z"
 ---
 ## Problem
 
@@ -29,7 +29,12 @@ A driver (human or AI) had to reconstruct 'what needs me, and why' from task fil
 
 Read src/server/attention-feed.ts and the done-error debug tl;dr first and reuse them. Related: #0720, #0723.
 
+## Framing (2026-10-07)
+
+This digest is the CTO's escalation surface: what it did automatically (audit) and what it is handing to the human, with cause and evidence.
+
 ## Activity
 
 - 2026-10-07T02:05:38Z · created · unknown
 - 2026-10-07T02:10:58Z · story
+- 2026-10-07T02:11:14Z · title, body
