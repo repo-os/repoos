@@ -13,7 +13,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:03Z"
 updated_at: "2026-10-07T14:25:59Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-07T14:25:03.639Z: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -63,3 +62,4 @@ Read ChecksView.vue and the Remote runners panel (RemoteRunnersPanel.vue); the c
 - 2026-10-07T14:13:37Z · body
 - 2026-10-07T14:14:47Z · body: section Shots
 - 2026-10-07T14:25:59Z · body
+
