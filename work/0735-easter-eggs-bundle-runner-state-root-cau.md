@@ -2,7 +2,7 @@
 id: "0735"
 title: "Easter eggs bundle: runner state, root-cause docs, and SHA assertion"
 type: chore
-status: active
+status: review
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-runner-state-root-cau
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T09:29:29Z"
-updated_at: "2026-10-07T10:33:22Z"
+updated_at: "2026-10-07T10:55:40Z"
 ---
 ## Problem
 Driver verification on 2026-10-07 found three small, independent follow-ups while landing #0727/#0729. Keep them out of the release-critical machinery branch.
@@ -38,3 +38,4 @@ Owner explicitly authorizes transferring the uncommitted .github/workflows/certi
 - 2026-10-07T10:31:33Z · cli_override, model_override
 - 2026-10-07T10:32:24Z · status inbox→ready
 - 2026-10-07T10:33:22Z · status ready→active, branch
+- 2026-10-07T10:55:40Z · status active→review
