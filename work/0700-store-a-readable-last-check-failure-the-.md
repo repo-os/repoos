@@ -41,3 +41,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-07T16:29:41Z · body
 - 2026-10-07T16:30:41Z · body
 - 2026-10-07T16:49:17Z · status active→review
+- 2026-10-07T16:49:17Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
