@@ -46,6 +46,9 @@ can't assume any.
 - `easter-eggs-bundles.md` — how to land many small, independent, low-risk fixes
   in one task (one worktree, one gate run, one review, one close-out) instead of
   one task each or a hotfix to `main`. #0721 is the worked example.
+- `driver-notes.md` — the append-only lessons log for whoever is driving the
+  board (the CTO, a human, or an external agent session). Read it when starting
+  a shift; append to it instead of keeping lessons in private memory (#0731).
 - `contrast-audit.md` — the rendered contrast gate (#0596): how every theme
   scope × light/dark is measured in headless WebKit, the judgment calls
   (gradient worst-stops, WCAG incidental exemptions, the config-load barrier),

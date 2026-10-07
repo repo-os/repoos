@@ -10,11 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/generate-the-cto-s-board-brief-from-live
 created_at: "2026-10-07T02:05:40Z"
-updated_at: "2026-10-07T18:21:05Z"
-review_passes: 2
-last_close_out_gate_ms: 290058
-last_close_out_gate_at: "2026-10-07T17:47:49.796Z"
-handoff_signal_retry_count: 1
+updated_at: "2026-10-07T17:40:41Z"
 ---
 ## Problem
 
@@ -45,18 +41,4 @@ The brief is produced by the CTO from live state (merged since the last tag, tas
 - 2026-10-07T02:11:16Z · title, body
 - 2026-10-07T17:11:30Z · status inbox→ready
 - 2026-10-07T17:12:04Z · status ready→active, branch
-- 2026-10-07T17:21:56Z · body
-- 2026-10-07T17:23:49Z · body
 - 2026-10-07T17:40:41Z · status active→review
-- 2026-10-07T17:40:42Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-07T17:41:34Z · note: review pass 1: good to go
-- 2026-10-07T17:47:49Z · close-out gate completed in 290s
-- 2026-10-07T17:47:52Z · status review→inbox
-- 2026-10-07T17:47:52Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
-- 2026-10-07T18:11:02Z · status inbox→ready
-- 2026-10-07T18:11:28Z · status ready→active
-- 2026-10-07T18:14:19Z · body
-- 2026-10-07T18:14:59Z · status active→review
-- 2026-10-07T18:15:00Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-07T18:15:38Z · note: review pass 2: good to go
-
