@@ -51,3 +51,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T14:37:30Z · note: Additional current evidence14:37Z: #730 mini run started14:22:32 last output14:23:07; owner otherdriver recorded SSH timeout/unreachable14:35, cancelled/requeuedjob14:35:36, but runners APIstill oldmini activeRun0730. Unknown/unavailable load must NOT disable bounded no-output/liveness detection indefinitely; include regression for unavailable host stats and cancellation cleanup. Do not SSH/changehosts. Existingboundedownershipfix applies, preserve realgate failures.
 - 2026-10-07T14:38:46Z · body
 - 2026-10-07T14:39:34Z · status active→review
+- 2026-10-07T14:39:34Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
