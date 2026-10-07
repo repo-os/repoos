@@ -1292,6 +1292,17 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         .map((v) => v.trim());
       if (dirs.length) cfg.check = { ...cfg.check, hardcodedColorDirs: dirs };
     }
+    // [check] fullSuitePaths (#0724): path prefixes that force the full
+    // close-out suite even when the cheaper scoped/reuse modes would apply —
+    // machinery the changed-path machinery cannot reason about. Empty rows are
+    // dropped; an absent list is the same as none.
+    const checkFullSuitePaths = parsed["check.fullSuitePaths"] ?? parsed["checks.fullSuitePaths"];
+    if (Array.isArray(checkFullSuitePaths)) {
+      const paths = checkFullSuitePaths
+        .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+        .map((v) => v.trim());
+      if (paths.length) cfg.check = { ...cfg.check, fullSuitePaths: paths };
+    }
     // [check] rendered-contrast exemptions (#0596) — selector + reason rows.
     // A row without both halves is dropped rather than exempting silently: an
     // exemption nobody can explain is exactly what this allowlist exists to
@@ -1603,6 +1614,21 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     } else if (closeOutCandidate !== undefined) {
       console.warn(
         `[closeOut] candidate must be "symlink-main" or "own-install", got ${JSON.stringify(closeOutCandidate)} — using symlink-main`,
+      );
+    }
+    // [closeOut] gate (#0724) — how much of the merge gate a close-out re-runs.
+    // An invalid value falls back to the scoped default with a warning rather
+    // than failing config load, same rule as the other [closeOut] keys.
+    const closeOutGate = parsed["closeOut.gate"];
+    if (closeOutGate === "full" || closeOutGate === "scoped" || closeOutGate === "reuse") {
+      cfg.closeOut = {
+        timeoutMs: cfg.closeOut?.timeoutMs ?? DEFAULT_CONFIG.closeOut!.timeoutMs,
+        ...cfg.closeOut,
+        gate: closeOutGate,
+      };
+    } else if (closeOutGate !== undefined) {
+      console.warn(
+        `[closeOut] gate must be "full", "scoped" or "reuse", got ${JSON.stringify(closeOutGate)} — using scoped`,
       );
     }
     const closeOutInstallCommand = parsed["closeOut.installCommand"];
@@ -2070,6 +2096,26 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "ceiling. Retries and remote validation share the same budget.",
     },
     {
+      key: "closeOut.gate",
+      label: "Close-out gate scope",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "scoped",
+      options: [
+        { value: "scoped", label: "Scoped to what changed (default)" },
+        { value: "reuse", label: "Reuse handoff result (only when tree is identical)" },
+        { value: "full", label: "Always run the full suite" },
+      ],
+      description:
+        "How much of the merge gate a Move-to-done re-runs. The candidate already passed the " +
+        "identical full gate at handoff; this re-checks only the part main's advance could have " +
+        "invalidated. 'Scoped' reuses the handoff result when the candidate tree is identical to " +
+        "what was tested, otherwise runs the tests affected by the task's and main's changes " +
+        "(`repoos check --changed`). 'Full' always runs the whole suite. Releases and paths under " +
+        "[check] fullSuitePaths always run the full suite.",
+    },
+    {
       key: "closeOut.candidate",
       label: "Close-out candidate dependencies",
       type: "select",
@@ -2409,6 +2455,19 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "green, because passing alone does not prove a flake under load. 0 disables it.",
     },
     {
+      key: "check.fullSuitePaths",
+      label: "Always-full-suite paths",
+      type: "array",
+      tier: "guarded",
+      restartRequired: false,
+      default: [],
+      description:
+        "Repo-relative path prefixes that force the FULL close-out suite even when the cheaper " +
+        "scoped/reuse gate would apply — machinery the changed-path scoping cannot reason about " +
+        "(a build/CI pipeline, the check engine's own config, a global test fixture). " +
+        "Comma-separated; empty means none.",
+    },
+    {
       key: "dev.inspector.enabled",
       label: "Copy inspector",
       type: "boolean",
@@ -2530,6 +2589,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "check.bareRequireExcludes",
   "check.hardcodedColorDirs",
   "check.contrastExempts",
+  "check.fullSuitePaths",
   "check.themeScopes.selector",
   "check.themeScopes.name",
   "check.themeScopes.inherits",
@@ -2601,6 +2661,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "tunnel.apps",
   // Close-out (Move to done) pipeline budget (#0573)
   "closeOut.timeoutMs",
+  "closeOut.gate",
   "closeOut.candidate",
   "closeOut.installCommand",
   "closeOut.postPublishCommand",

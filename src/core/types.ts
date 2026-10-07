@@ -1094,6 +1094,14 @@ export interface CheckConfig {
    * here with a reason, never as scattered ignores in component styles.
    */
   contrastExempts?: CheckContrastExempt[];
+  /**
+   * Repo-relative path prefixes that force a FULL close-out suite even when
+   * the cheaper scoped/reuse modes would apply (#0724) — machinery the
+   * changed-path machinery cannot reason about (a build/CI pipeline, the
+   * check engine's own config, a global fixture). A task diff or main drift
+   * touching any of these runs the whole suite.
+   */
+  fullSuitePaths?: string[];
 }
 
 /**
@@ -1552,6 +1560,19 @@ export interface CloseOutConfig {
   installCommand?: string;
   /** Shell command run in main after a merge that changed package inputs (#0674). */
   postPublishCommand?: string;
+  /**
+   * How much of the merge gate a close-out re-runs (#0724). The candidate
+   * already passed the identical full gate at handoff; only the part main's
+   * advance could have invalidated needs re-checking.
+   * - `reuse`  — only when the candidate tree is byte-identical to what the
+   *              handoff gate tested (or main drifted with bookkeeping only):
+   *              run the cheap steps and record the suite as reused.
+   * - `scoped` (default) — reuse when the tree is identical, otherwise run
+   *              `repoos check --changed <tested base>` plus the cheap steps.
+   * - `full`   — always run the whole suite (the pre-#0724 behaviour).
+   * Releases and declared `[[check.fullSuitePaths]]` always run `full`.
+   */
+  gate?: "full" | "scoped" | "reuse";
 }
 
 /** Agent supervisor configuration. */
