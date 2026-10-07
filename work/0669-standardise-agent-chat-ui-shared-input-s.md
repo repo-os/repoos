@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/standardise-agent-chat-ui-shared-input-s
 created_at: "2026-10-05T15:01:24Z"
-updated_at: "2026-10-07T17:06:48Z"
+updated_at: "2026-10-07T17:06:50Z"
 ---
 ## Problem
 
