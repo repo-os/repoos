@@ -2,7 +2,7 @@
 id: "0710"
 title: "Docs: write the overnight-run lessons (provider-failure scraper, self-check starvation, driver tips) into the repo"
 type: chore
-status: active
+status: review
 priority: p2
 area: docs
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/docs-write-the-overnight-run-lessons-pro
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T08:37:40Z"
-updated_at: "2026-10-07T02:42:52Z"
+updated_at: "2026-10-07T02:43:07Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T01:37:59.207Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
@@ -58,3 +58,4 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-07T02:39:08Z · note: review pass 2: good to go
 - 2026-10-07T02:40:46Z · status review→active
 - 2026-10-07T02:42:52Z · body
+- 2026-10-07T02:43:07Z · status active→review
