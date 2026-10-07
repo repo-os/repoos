@@ -12,7 +12,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T11:43:26Z"
+updated_at: "2026-10-07T11:56:00Z"
 close_out_repair_count: 1
 review_passes: 1
 ---
@@ -143,3 +143,4 @@ error: script "test" exited with code 1
 - 2026-10-07T11:05:52Z · status review→active
 - 2026-10-07T11:43:26Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T11:43:26Z · status review→active
+- 2026-10-07T11:56:00Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
