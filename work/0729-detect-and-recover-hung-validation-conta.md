@@ -2,7 +2,7 @@
 id: "0729"
 title: "Detect and recover hung validation containers on runner hosts (kill, retry on another host, isolate the bun cache per run); CTO safe action"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -168,4 +168,4 @@ error: script "test" exited with code 1
 - 2026-10-07T09:33:44Z · note: Driver close-out repair guidance: #0727 landed09:25:55, MTD729 failed09:32:21 before validation on src/ui-app/tests/cto-actions.test.ts merge conflict. Automatic engineer77727 owns branch, no competing writer. Merge CURRENT main, preserve BOTH727 resume/fresh+pause-policy tests AND729 targeted hung cleanup tests. Resolve only true conflict, retain startup sweep removal/ownEXITcleanup/UI behavior; current-main cross-report requirement. Restore foreign task bookkeeping using supported RepoOS workflow (never handwrite work/*.md). Format/build if needed, ONE scoped check then ONE handoff signal and END TURN, no later branch/task commits. Driver will wait for fresh gate/review and retryserver-ownedMTD. Nohostdeploy/configenable/serverrestart/manualmainmerge.
 - 2026-10-07T09:38:14Z · body
 - 2026-10-07T09:44:04Z · body
-- 2026-10-07T09:45:11Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-07T09:45:11Z · status active→review
