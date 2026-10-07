@@ -2,15 +2,15 @@
 id: "0703"
 title: "init for the `repoos/` layout: set `storiesDir`, ignore `node_modules/` and `.env*.local`"
 type: feature
-status: ready
+status: active
 priority: p2
 area: cli
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/init-for-the-repoos-layout-set-storiesdi
 created_at: "2026-10-06T03:15:57Z"
-updated_at: "2026-10-07T16:44:44Z"
+updated_at: "2026-10-07T16:44:53Z"
 ---
 ## Problem
 
@@ -35,3 +35,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 
 - 2026-10-06T03:15:57Z · created · unknown
 - 2026-10-07T16:44:44Z · status inbox→ready
+- 2026-10-07T16:44:53Z · status ready→active, branch
