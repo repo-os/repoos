@@ -12,7 +12,8 @@ branch: feat/docs-write-the-overnight-run-lessons-pro
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T08:37:40Z"
-updated_at: "2026-10-07T02:08:34Z"
+updated_at: "2026-10-07T02:40:46Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T01:37:59.207Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -49,3 +50,10 @@ Source material: /Users/nick/code/jago/opex/repoos/docs/overnight-log-2026-10-06
 - 2026-10-07T02:06:17Z · status active→review
 - 2026-10-07T02:06:17Z · status review→active
 - 2026-10-07T02:08:34Z · needs_input
+- 2026-10-07T02:14:26Z · status active→review
+- 2026-10-07T02:14:26Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T02:30:48Z · note: review pass 1: failed — no usable report
+- 2026-10-07T02:30:48Z · needs_input
+- 2026-10-07T02:38:25Z · needs_input (review-failed) cleared for review again by human
+- 2026-10-07T02:39:08Z · note: review pass 2: good to go
+- 2026-10-07T02:40:46Z · status review→active
