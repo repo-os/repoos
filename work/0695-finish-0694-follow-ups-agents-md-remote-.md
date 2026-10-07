@@ -2,19 +2,18 @@
 id: "0695"
 title: "Finish #0694 follow-ups: AGENTS.md remote self-check wording, task attribution for cli Runs rows, WIP-checkpoint tests, load measurement"
 type: chore
-status: active
+status: done
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: dcaf4dc2a80e15059968d80cd9b10c8f9dc16c13
 assigned_to: ai
 created_by: ""
 branch: feat/finish-0694-follow-ups-agents-md-remote-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T01:38:21Z"
-updated_at: "2026-10-06T04:11:14Z"
-review_rounds: 1
-review_passes: 1
+updated_at: "2026-10-06T05:33:25Z"
 ---
 ## Problem
 
@@ -40,16 +39,6 @@ Read #0694 first (work/0694-*.md, its Driver note and review feedback sections) 
 ## Added item 5: changed-only remote self-checks (owner request)
 Owner priority: running checks FAST on the remote runners was a main reason for #0694. Today the runner always runs install + build + the FULL test suite (about 5 min per run, 8-11 min when two runs queue on one host), because the remote bundle is 'git bundle create ... HEAD' and --changed / REPOOS_CHECK_CHANGED only narrows local guards after REPOOS_SKIP_TESTS=1 (docs/remote-validation.md, #0694). Local scoped runs took about 47 s. Make engineer self-checks (the scoped 'repoos check --changed main' form) run changed-only tests on the runner: include the base commit (main) in the bundle, or send the changed-file list, so vitest --changed <ref> can compute the diff remotely; keep the FULL suite for handoff and close-out gates so what lands is still fully verified. Acceptance for this item: a changed-only self-check on a small diff finishes in about the local scoped time plus install/transport overhead (record before/after seconds on the task), the full suite still runs at handoff and close-out, and docs/remote-validation.md no longer says --changed does not skip the remote half. Also measure how often two runs queue on one host and consider preferring an idle host (bee at maxConcurrent 2).
 
-## Added item 6: self-checks must spill to idle hosts, not wait on thinkpad
-Found 2026-10-06 10:50: four engineers (0679, 0683, 0688, 0695) showed 'stuck' in the board because their remote self-checks sat blocked for 6-12 minutes. All 7 live ssh sessions pointed at nick@thinkpad (one slot, held by another pre-review/close-out run) while bee and mini showed inFlight 0. The standalone self-check path picks the first host in the list and waits on that host's lock ('[lock] waiting for a free slot on this host (up to 900s)') instead of choosing an idle host like the server dispatcher does. Fix: self-checks (and anything using the host-side lock) must pick the host with the fewest active runs and only queue when every eligible host is at its limit; show 'waiting for a runner (host, queue position)' in the engineer transcript and in the stuck badge text so a blocked check is not reported as a silent/stuck agent.
-
-## Load measurement
-**Before (#0694 field run, 4–5 parallel agents):** load average 20–86; ~9 GB of 10 GB swap used when engineers re-ran checks 15–20× per task (full local + remote suites).
-
-**After (#0695, scoped remote self-check):** engineer `repoos check --changed main` runs changed-path vitest on the runner plus local guards only. Measured in this worktree: ~7.7 min wall for `REPOOS_CHECK_CHANGED=main repoos check` (remote install/build/scoped tests + local gate) vs ~5–11 min per **full** remote suite per edit before.
-
-**Host queueing:** Tailscale pool dispatches to the host with lowest `inFlight` (`acquire`/`dispatch` sort). Two jobs on one host (e.g. bee at `maxConcurrent: 2`) still queue FIFO when both slots are busy.
-
 ## Activity
 
 - 2026-10-06T01:38:21Z · created · unknown
@@ -58,14 +47,5 @@ Found 2026-10-06 10:50: four engineers (0679, 0683, 0688, 0695) showed 'stuck' i
 - 2026-10-06T02:28:31Z · status inbox→ready
 - 2026-10-06T02:28:32Z · cli_override, model_override
 - 2026-10-06T02:28:32Z · status ready→active, branch
-- 2026-10-06T02:46:48Z · body: section Added item 6: self-checks must spill to idle hosts, not wait on thinkpad
-- 2026-10-06T02:54:37Z · body
-- 2026-10-06T03:04:02Z · body
-- 2026-10-06T03:04:46Z · body: section Load measurement
-- 2026-10-06T03:33:41Z · body
 - 2026-10-06T03:34:47Z · status active→review
-- 2026-10-06T03:34:47Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-06T03:35:33Z · note: review pass 1: needs some work
-- 2026-10-06T03:35:33Z · status review→active
-- 2026-10-06T03:37:49Z · body: section Load measurement
-- 2026-10-06T04:11:14Z · body
+- 2026-10-06T05:33:25Z · status review→done, release:success
