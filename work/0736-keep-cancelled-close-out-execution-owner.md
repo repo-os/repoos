@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/keep-cancelled-close-out-execution-owner
 created_at: "2026-10-07T09:42:19Z"
-updated_at: "2026-10-07T15:21:44Z"
+updated_at: "2026-10-07T15:22:58Z"
 ---
 ## Problem
 Verified driver incident #0712 on 2026-10-07: cancelling MTD while remote await remained alive, then requeueing the same task, replaced the job record/cancel flag. The old callback still owned the execution, leaving a new queued record with startedAt null and invalid cancellation identity. Recovery required waiting for old execution terminal before retry. #0729 repairs runner hangs but does not change integration-job/orchestrator ownership.
@@ -34,3 +34,4 @@ Independently reproduce against current main and running server before implement
 - 2026-10-07T15:13:10Z · body
 - 2026-10-07T15:21:41Z · status active→review
 - 2026-10-07T15:21:44Z · note: shots: skipped — the diff (9 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T15:22:58Z · note: review pass 1: good to go
