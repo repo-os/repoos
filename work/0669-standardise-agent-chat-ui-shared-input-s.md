@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 285956
-last_close_out_gate_at: "2026-10-07T18:46:15.538Z"
 id: "0669"
 title: "Standardise agent chat UI: shared input style, markdown replies, simplified headers with inline agent+model picker"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: fb2fded6f49939bdc137c58992a8a66be60c5ee3
 assigned_to: ai
 created_by: ""
 branch: feat/standardise-agent-chat-ui-shared-input-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T15:01:24Z"
-updated_at: "2026-10-07T18:46:15Z"
+updated_at: "2026-10-07T18:46:27Z"
+last_close_out_gate_ms: 285956
+last_close_out_gate_at: "2026-10-07T18:46:15.538Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-07T18:25:28.512Z: repoos check failed: ui verification: capture of / failed — click: Timeout 5000ms exceeded."
 handoff_signal_retry_count: 2
@@ -221,4 +222,4 @@ error: script "test" exited with code 1
 - 2026-10-07T18:36:53Z · status active→review
 - 2026-10-07T18:37:46Z · note: review pass 1: good to go
 - 2026-10-07T18:46:15Z · close-out gate completed in 286s
-
+- 2026-10-07T18:46:27Z · status review→done, release:success
