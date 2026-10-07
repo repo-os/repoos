@@ -2,7 +2,7 @@
 id: "0701"
 title: Show the running server's version next to the CLI's and warn when the server is stale
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, cli]
 story: "Field report: first agent-driven project run (opex)"
@@ -70,3 +70,4 @@ $ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
 src/commands/status.ts(414,9): error TS2741: Property 'buildState' is missing in type '{ lifecycle: "stopped" | "managed" | "unmanaged"; running: boolean; port: number; pid: number; host: string | null; startedAt: string | null; startedAtSource: "lockfile" | "health" | null; ... 7 more ...; locks: number; }' but required in type 'StatusServer'.
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-07T17:54:17Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — + lucide-vue-next@1.0.0 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-07T17:54:17Z · status review→active
