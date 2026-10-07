@@ -11,7 +11,7 @@ branch: feat/standardise-agent-chat-ui-shared-input-s
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T15:01:24Z"
-updated_at: "2026-10-07T18:13:46Z"
+updated_at: "2026-10-07T18:14:41Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -42,6 +42,54 @@ The built-in agent chats (CTO, Debugger, Ross/RepoGuide, plus PM and the task dr
 ## Notes for AI
 
 Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.vue`, `RepoGuideChat.vue`, `PmChatSurface.vue`, `TaskDrawer.vue`, `AgentModelModal.vue`. Contrast audit and CSS layering guards apply to any style change.
+
+## Shots
+```json
+[
+  {
+    "label": "CTO panel — simplified header, agent/model chip, shared compose input",
+    "target": "default",
+    "route": "/",
+    "highlight": ".floating-head-panel .agent-chat-header",
+    "steps": [
+      {
+        "click": "button.head-btn img[alt=\"CTO\"]"
+      },
+      {
+        "waitMs": 500
+      }
+    ]
+  },
+  {
+    "label": "Debugger panel — simplified header and agent/model chip",
+    "target": "default",
+    "route": "/",
+    "highlight": ".floating-head-panel .agent-chat-header",
+    "steps": [
+      {
+        "click": "button.head-btn img[alt=\"Debugger\"]"
+      },
+      {
+        "waitMs": 500
+      }
+    ]
+  },
+  {
+    "label": "Ross panel — simplified header and agent/model chip",
+    "target": "default",
+    "route": "/",
+    "highlight": ".floating-head-panel .agent-chat-header",
+    "steps": [
+      {
+        "click": "button.head-btn img[alt=\"Ross\"]"
+      },
+      {
+        "waitMs": 500
+      }
+    ]
+  }
+]
+```
 
 ## Activity
 
@@ -140,3 +188,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T18:09:46Z · body
 - 2026-10-07T18:13:46Z · body
+- 2026-10-07T18:14:41Z · body: section Shots
