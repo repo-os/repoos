@@ -809,6 +809,18 @@ export function loadPerCpu(
  * measured it (#0739: unreachable stats must not hold a slot until the outer SSH
  * timeout).
  */
+/** Drop a generation-scoped in-flight control entry without touching a newer run (#0739). */
+export function deleteActiveRunControlEntry<T extends { generation: number }>(
+  map: Map<string, T>,
+  key: string,
+  generation: number,
+): boolean {
+  const entry = map.get(key);
+  if (entry?.generation !== generation) return false;
+  map.delete(key);
+  return true;
+}
+
 export function detectHungRun(opts: {
   lastOutputAt: number;
   now: number;
@@ -3866,6 +3878,11 @@ export class TailscaleRunner implements RemoteValidator {
   private readonly pool: TailscaleHostPool;
   /** SIGKILL the in-flight validate SSH, keyed by container name + generation (#0739). */
   private readonly activeRunAbort = new Map<string, { generation: number; abort: () => void }>();
+  /** Resolve the validate() transport race after hang recovery (#0739). */
+  private readonly activeRunSettle = new Map<
+    string,
+    { generation: number; settle: (r: RemoteExecResult) => void }
+  >();
   private runAbortGeneration = 0;
 
   constructor(
@@ -3979,7 +3996,15 @@ export class TailscaleRunner implements RemoteValidator {
   /** Kill a hung run's container on its host (#0729). */
   async killHungValidation(taskId: string): Promise<{ ok: boolean; detail: string }> {
     const result = await this.pool.killHungRun(taskId);
-    if (result.container) this.activeRunAbort.get(result.container)?.abort();
+    if (result.container) {
+      const container = result.container;
+      this.activeRunAbort.get(container)?.abort();
+      this.activeRunSettle.get(container)?.settle({
+        code: null,
+        output: "",
+        timedOut: false,
+      });
+    }
     return result;
   }
 
@@ -3994,6 +4019,7 @@ export class TailscaleRunner implements RemoteValidator {
     taskId: string;
     abortMain: () => void;
     releaseSlot: () => void;
+    settleMain: () => void;
   }): Promise<void> {
     let killTimedOut = false;
     try {
@@ -4017,6 +4043,7 @@ export class TailscaleRunner implements RemoteValidator {
     ).catch(() => undefined);
     opts.abortMain();
     opts.releaseSlot();
+    opts.settleMain();
     if (killTimedOut) {
       this.pool.markUnhealthy(
         opts.host.ip,
@@ -4342,6 +4369,15 @@ export class TailscaleRunner implements RemoteValidator {
         let abortMainRemote: (() => void) | undefined;
         let runAbortGen: number | undefined;
         let hangRecovery: Promise<void> | undefined;
+        let endedByHangRecovery = false;
+        let hangRecoveryResolve: ((r: RemoteExecResult) => void) | undefined;
+        const settleHangRecovery = (r: RemoteExecResult): void => {
+          endedByHangRecovery = true;
+          hangRecoveryResolve?.(r);
+        };
+        const hangRecoveryPromise = new Promise<RemoteExecResult>((resolve) => {
+          hangRecoveryResolve = resolve;
+        });
         let gateLingerTimer: ReturnType<typeof setTimeout> | undefined;
         let gateLingerResolve: ((r: RemoteExecResult) => void) | undefined;
         const gateLingerPromise = new Promise<RemoteExecResult>((resolve) => {
@@ -4401,6 +4437,13 @@ export class TailscaleRunner implements RemoteValidator {
               taskId: opts.taskId,
               abortMain: () => abortMainRemote?.(),
               releaseSlot: () => slot.release(),
+              settleMain: () => {
+                settleHangRecovery({
+                  code: null,
+                  output: streamBuf,
+                  timedOut: false,
+                });
+              },
             });
           },
         });
@@ -4425,19 +4468,22 @@ export class TailscaleRunner implements RemoteValidator {
                   generation: runAbortGen,
                   abort,
                 });
+                this.activeRunSettle.set(containerName, {
+                  generation: runAbortGen,
+                  settle: settleHangRecovery,
+                });
               },
             }),
             gateLingerPromise,
+            hangRecoveryPromise,
           ]);
         } finally {
           watchdog.stop();
           clearInterval(loadTimer);
           if (gateLingerTimer) clearTimeout(gateLingerTimer);
           if (runAbortGen !== undefined) {
-            const abortEntry = this.activeRunAbort.get(containerName);
-            if (abortEntry?.generation === runAbortGen) {
-              this.activeRunAbort.delete(containerName);
-            }
+            deleteActiveRunControlEntry(this.activeRunAbort, containerName, runAbortGen);
+            deleteActiveRunControlEntry(this.activeRunSettle, containerName, runAbortGen);
           }
           if (hangRecovery) await hangRecovery;
           // Server-side container cleanup on cancel/timeout (#0729 review): a
@@ -4465,7 +4511,7 @@ export class TailscaleRunner implements RemoteValidator {
             };
           }
         }
-        if (watchdog.hung) {
+        if (watchdog.hung || endedByHangRecovery) {
           // Killed as a hang: no test result exists. Transient so the caller
           // retries on another host (the pool excludes this one, #0632).
           this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
