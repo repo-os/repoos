@@ -2,7 +2,7 @@
 id: "0727"
 title: "Give the CTO the routine: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/give-the-cto-the-routine-evaluate-and-en
 created_at: "2026-10-07T02:05:31Z"
-updated_at: "2026-10-07T05:36:02Z"
+updated_at: "2026-10-07T05:37:32Z"
 review_passes: 1
 ---
 ## Problem
@@ -84,3 +84,4 @@ No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.
 - 2026-10-07T05:28:40Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-07T05:29:52Z · note: review pass 1: good to go
 - 2026-10-07T05:36:02Z · body: section Shots
+- 2026-10-07T05:37:32Z · status review→active
