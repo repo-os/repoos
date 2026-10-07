@@ -3,9 +3,6 @@ id: "0720"
 title: "Flag any check/close-out/upload run that exceeds 1.5x its own median, in the UI and the attention feed, while it is still running"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p1
 area: [server, web]
 story: "Field report: first agent-driven project run (opex)"
@@ -15,7 +12,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-07T03:09:33Z"
+updated_at: "2026-10-07T11:08:10Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-10-07T02:57:53.598Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -142,3 +139,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T03:08:52Z · note: shot removed: Slow-check multiplier in Settings
 - 2026-10-07T03:09:12Z · note: shot removed: Remote runners slow badge on active job
 - 2026-10-07T03:09:33Z · note: DRIVER repaired visual evidence03:08Z via repoos shot --task0720 FROM MAIN canonicalcorrectedplan: default-3 multiplier1.5 visible/highlighted; default-4 Checks Remote runners correctpage, normalstate(no live slow job, truthful label). CLIreports2captures; previewstopped. Removedwrongolddefault1/2viaattachmentAPI. Sourceunchanged; reviewroundcounterNOTreset. AutomaticapprovalreviewREJECTEDclearingreview-rounds-exhausted becauseexplicitownerapprovalrequired. Keepblocker; awaitownerapprovaltore-review. Currentversion/buildverificationrequirementremains.
+- 2026-10-07T11:08:10Z · needs_input
