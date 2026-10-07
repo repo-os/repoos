@@ -2,7 +2,7 @@
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T12:54:44Z"
+updated_at: "2026-10-07T13:00:35Z"
 last_check_failure: "repoos check at 2026-10-07T12:21:44.677Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -69,3 +69,4 @@ Read AGENTS.md. Use existing task worktree, Cursor/composer-2.5. Independently v
    Duration  2.25s (transform 1.03s, setup 11ms, import 1.29s, tests 417ms, environment 463ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T13:00:35Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
