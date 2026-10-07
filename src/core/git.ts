@@ -1631,10 +1631,7 @@ export async function mainDirtyFilesForCloseOut(
   root: string,
   dirs: MainDirtyPathFilter = {},
 ): Promise<string[]> {
-  return filterIgnorableMainDirtyPaths(
-    await dirtyFiles(root, { untrackedFiles: "all" }),
-    dirs,
-  );
+  return filterIgnorableMainDirtyPaths(await dirtyFiles(root, { untrackedFiles: "all" }), dirs);
 }
 
 /** Repo-relative path is a committed task markdown file under `workDir` (board bookkeeping). */
