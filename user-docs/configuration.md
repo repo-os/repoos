@@ -441,10 +441,10 @@ uiVerification.viewportWidths = [1024, 375]
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
-| `uiVerification.enabled` | boolean | `true` | yes | When enabled, tasks with a shot capture plan run browser checks at handoff (console errors, failed same-origin requests, horizontal overflow, blank captures) before review. Missing Playwright skips with a visible note. |
+| `uiVerification.enabled` | boolean | `true` | yes | When enabled, tasks with a shot capture plan run browser checks at handoff (console errors, failed same-origin requests, horizontal overflow, blank captures) before review. It also blocks on missing or wrong visual evidence: a declared `highlight`/`selector` that matched nothing, a login/redirect that landed away from the declared route, or a declared `assert` condition (element count/text) that failed. Missing Playwright skips with a visible note. |
 | `uiVerification.viewportWidths` | number[] | `[1024, 375]` | yes | Viewport widths (px) used for horizontal overflow checks during handoff verification. |
 
-Edit both keys in **Settings → General**. Evidence is written under `.repoos/ui-verification/<task-id>.json` and surfaced on the task drawer **Changes** tab.
+Edit both keys in **Settings → General**. Evidence is written under `.repoos/ui-verification/<task-id>.json` and surfaced on the task drawer **Changes** tab; it records the exact captured URL, whether the declared route matched, every assertion's outcome, and the tested tree/plan identity. Captured PNGs live under `work/.attachments/<task-id>/shots/` in the **main checkout** (not the task worktree), which is where a reviewer looks.
 
 ## Approval policy (opt-in auto Move to done)
 

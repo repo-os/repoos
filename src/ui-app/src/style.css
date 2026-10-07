@@ -5647,6 +5647,15 @@
   font-size: 11px;
   word-break: break-all;
 }
+.ui-verification-captures {
+  margin: 8px 0 0;
+  padding-left: 1.1rem;
+  font-size: 12px;
+  color: var(--txt);
+}
+.ui-verification-captures li {
+  margin-bottom: 6px;
+}
 .shot-warning {
   font-size: 12px;
   color: var(--amber);
