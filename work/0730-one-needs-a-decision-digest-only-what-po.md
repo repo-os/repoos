@@ -3,6 +3,9 @@ id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the cursor agent timed out after 900s
 priority: p2
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -149,3 +152,4 @@ error: script "test" exited with code 1
 - 2026-10-07T12:04:37Z · status active→review
 - 2026-10-07T12:04:37Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-07T12:21:41Z · note: review pass 2: failed — no usable report
+- 2026-10-07T12:21:41Z · needs_input
