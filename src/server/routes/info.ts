@@ -47,6 +47,13 @@ export const health: RouteHandler = (ctx, req, res) => {
     version: build.version,
     buildAt: build.buildAt,
     buildHash: loadedHash,
+    // The running server's OWN build (the install the binary was loaded from),
+    // not `buildHash` above — that one is the *served repo root's* build, which
+    // is null for a project repo (tuk-private #0701). A client (the CLI or the
+    // UI) can compare this with its own build to spot a stale server.
+    serverVersion: build.version,
+    serverBuildHash: build.hash,
+    serverBuildAt: build.buildAt,
     buildAvailableHash: parked?.hash ?? null,
     buildAvailableAt: parked?.buildAt ?? null,
     // ISO start time of this serve process, derived from process.uptime(). Lets

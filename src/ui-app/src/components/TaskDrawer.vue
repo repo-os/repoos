@@ -34,6 +34,7 @@ import type {
   SessionUsage,
   DetectedAgent,
   CheckRunRow,
+  ConflictResolutionSnapshot,
 } from "../types";
 import {
   COLUMNS,
@@ -1325,6 +1326,18 @@ const pipelineStage = computed(() => {
   return active && active.taskId === ui.active?.id ? active.stage : null;
 });
 
+/**
+ * Human label for the active pipeline stage (#0692). A `resolve-conflict`
+ * stage is the narrow resolution path resolving an integration conflict against
+ * current main — distinct from new engineering work — so it is named explicitly
+ * instead of showing the raw stage id.
+ */
+const pipelineStageLabel = computed(() => {
+  const stage = pipelineStage.value;
+  if (stage === "resolve-conflict") return "resolving integration conflict";
+  return stage;
+});
+
 /** Last successful merge-gate duration on this task (#0679), for close-out tuning. */
 const lastCloseOutGateLabel = computed(() => {
   const ms = ui.active?.extra?.last_close_out_gate_ms;
@@ -1359,6 +1372,8 @@ const doneLabel = computed(() => {
   switch (step) {
     case "merge":
       return "Merging branch…";
+    case "resolve-conflict":
+      return "Resolving integration conflict…";
     case "build":
       return "Building…";
     case "check":
@@ -2286,6 +2301,32 @@ const reviewHistoryRows = computed(() => {
       model: h.model || "—",
     }));
 });
+
+/** Server-owned integration-conflict provenance (#0692), separate from feature review. */
+const integrationConflictResolution = ref<ConflictResolutionSnapshot | null>(null);
+
+async function loadIntegrationConflictResolution(taskId: string): Promise<void> {
+  try {
+    const r = await api<{
+      ok: boolean;
+      job: { conflictResolution?: ConflictResolutionSnapshot | null };
+    }>(`/api/tasks/${taskId}/integration-job`);
+    integrationConflictResolution.value = r.job?.conflictResolution ?? null;
+  } catch {
+    integrationConflictResolution.value = null;
+  }
+}
+
+watch(
+  () => [ui.active?.id, inPipeline.value] as const,
+  ([id, inPipe]) => {
+    if (!id || !inPipe) {
+      integrationConflictResolution.value = null;
+      return;
+    }
+    void loadIntegrationConflictResolution(id);
+  },
+);
 
 /** True while a "Review again" / reviewer-chat request is in flight. */
 const reviewBusy = ref(false);
@@ -4156,7 +4197,7 @@ watch(
               <ActivityIndicator v-else />
               {{
                 inPipeline
-                  ? `Integrating…${pipelineStage ? ` (${pipelineStage})` : ""}`
+                  ? `Integrating…${pipelineStageLabel ? ` (${pipelineStageLabel})` : ""}`
                   : doingDone
                     ? doneProgress
                     : "Move to done"
@@ -5147,8 +5188,57 @@ watch(
                 <span class="verdict-dot"></span>
                 <span class="verdict-label">{{ verdict.label }}</span>
               </div>
+              <div
+                v-if="integrationConflictResolution"
+                class="resolution-provenance-wrap ff-notice"
+                role="status"
+              >
+                <p class="resolution-provenance-title">Integration conflict resolution</p>
+                <dl class="kv-rows resolution-provenance-kv">
+                  <dt>Feature review (immutable)</dt>
+                  <dd class="kv-wrap">
+                    <code>{{ integrationConflictResolution.approvedFeatureSha.slice(0, 12) }}</code>
+                    on main
+                    <code>{{ integrationConflictResolution.mainBaseSha.slice(0, 12) }}</code>
+                  </dd>
+                  <dt>Conflict paths</dt>
+                  <dd class="kv-wrap">
+                    {{ integrationConflictResolution.conflictPaths.join(", ") }}
+                  </dd>
+                  <dt>Resolution review</dt>
+                  <dd>
+                    <span
+                      v-if="integrationConflictResolution.resolutionReview.verdict === 'pending'"
+                    >
+                      Pending
+                    </span>
+                    <span v-else>
+                      {{ integrationConflictResolution.resolutionReview.verdict }}
+                      <template v-if="integrationConflictResolution.resolutionReview.reviewer">
+                        · {{ integrationConflictResolution.resolutionReview.reviewer }}
+                      </template>
+                      <template v-if="integrationConflictResolution.resolutionReview.at">
+                        · {{ repo.fmtDate(integrationConflictResolution.resolutionReview.at) }}
+                      </template>
+                    </span>
+                    <span
+                      v-if="integrationConflictResolution.resolutionReview.summary"
+                      class="resolution-provenance-summary"
+                    >
+                      — {{ integrationConflictResolution.resolutionReview.summary }}
+                    </span>
+                  </dd>
+                  <dt>Combined gate</dt>
+                  <dd>
+                    {{ integrationConflictResolution.gate.result }}
+                    <template v-if="integrationConflictResolution.gate.at">
+                      · {{ repo.fmtDate(integrationConflictResolution.gate.at) }}
+                    </template>
+                  </dd>
+                </dl>
+              </div>
               <div v-if="reviewHistoryRows.length > 0" class="review-history-wrap">
-                <table class="review-history-table" aria-label="Review pass records">
+                <table class="review-history-table" aria-label="Feature review pass records">
                   <thead>
                     <tr>
                       <th class="ta-left">pass</th>

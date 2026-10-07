@@ -242,8 +242,10 @@ mechanism for generated-file conflicts, and every repo has some. If you see `dis
 conflicting on every job again, determinism has regressed: check that
 `scripts/copy-assets.mjs` has not put a timestamp back into the marker.
 
-**If you see `merge conflict in <path>` for anything OTHER than `dist/`,
-or the task's own `work/<id>-*.md`: that is a REAL source conflict.** Do not force-resolve
+**If you see `merge conflict in <path>` for anything OTHER than `dist/`, or a
+bookkeeping file under `work/`, `inputs/` or `stories/` (the closing task's own
+`work/<id>-*.md` plus every other server-written file in those dirs auto-resolves
+to main's copy): that is a REAL source conflict.** Do not force-resolve
 it blindly — it means the task's branch and main both changed the same file. Resolve it
 properly in the feature branch's own worktree (merge main into the feature branch, fix
 the conflict there, let the branch re-validate), not in the candidate.
@@ -587,8 +589,8 @@ survive branch GC.
 
 Mechanism: on a badly stale branch (0306 was ~80 commits behind, its `work/`
 snapshot missing dozens of newer task files) *every* conflict is
-auto-resolvable, so `mergeBranch`'s `autoResolveOurs: ["work/"]` resolves them
-all and commits — yielding a tree identical to `main`. The gate then runs
+auto-resolvable, so `mergeBranch`'s `autoResolveOurs` bookkeeping-dir set
+resolves them all and commits — yielding a tree identical to `main`. The gate then runs
 against what is effectively bare `main` (trivially green), and publish
 fast-forwards `main` to itself. `saveDiffSnapshot` records an empty diff, so the
 Changes tab reads "No saved code changes are available for this completed task."
@@ -639,33 +641,45 @@ main's work-dir copies, as always). Real code drift — including `docs/` and
 `user-docs/` — still discards and resyncs, still bounded by
 `MAX_VALIDATE_DRIFT_RETRIES`; bookkeeping drift does not consume a retry.
 
-### 2. Foreign `work/*.md` drift published to main
+### 2. Foreign bookkeeping drift published to main
 
 Distinct from #1: this is *extra* stale content rather than dropped content. A
-feature branch accumulates edits to **other** tasks' `work/<id>-*.md` files
-(concurrent board writes, a `repoos` CLI call inside the worktree, a partial
-merge). `autoResolveOurs: ["work/"]` only forces main's copy **on a conflict** —
-a clean merge (main untouched since the merge-base) folds the stale copy
-straight to `main`.
+feature branch accumulates edits to **other** tasks' `work/<id>-*.md` files, to
+`inputs/*.md` captures, or to `stories/*.md` definitions (concurrent board
+writes, a `repoos` CLI call inside the worktree, a partial merge).
+`autoResolveOurs` — the managed bookkeeping dirs, from
+`bookkeepingKeepOursPrefixes` — only forces main's copy **on a conflict**; a
+clean merge (main untouched since the merge-base) folds the stale copy straight
+to `main`.
 
 Observed live: #0319's close-out (`0967dd37`) landed frontmatter drift on
 `work/0202` and `work/0275` — bumped `updated_at`/`review_passes`, reordered
 keys. Nothing was lost and it self-healed on the next board write, but it is
 real pollution of another task's record.
 
-**Guards** (both added `be3acd3f`, 2026-08-29):
+**Guards** (both added `be3acd3f`, 2026-08-29; extended to all three bookkeeping
+dirs in #0726):
 - `guardReviewTransition` (`review-guard.ts`) unstages every `work/*.md` that
   isn't the task's own after `git add -A`, so drift never reaches the branch.
 - `resetForeignWorkFiles` (`integration-orchestrator.ts`) restores main's copy of
-  every foreign work file the candidate changed, `git rm`s ones the branch newly
-  added, and commits — catching drift already committed in an earlier round.
+  every foreign bookkeeping file the candidate changed — under the work dir,
+  `inputs/` or `stories/`, per `bookkeepingDirs(config)` — `git rm`s ones the
+  branch newly added, and commits, catching drift already committed in an earlier
+  round. Only the closing task's OWN `work/<id>-*.md` may differ.
+
+The same three dirs are the close-out's `autoResolveOurs` set (merged into the
+candidate in the validate phase and into live `main` at publish), so a *conflict*
+in any of them resolves to main's copy instead of failing the close-out. And the
+publish-time dirty-main guard treats a dirty file under any of the three (plus
+`repoos.toml`) as routine, server-written churn it may auto-checkpoint — a dirty
+file anywhere else still fails closed.
 
 **Only if the human explicitly authorizes manual recovery outside the normal
 pipeline:** when hand-landing a stale branch, do this check yourself; the guards
 only run inside the pipeline:
 
 ```bash
-git diff main...HEAD --name-only | grep '^work/'   # anything but the task's own file
+git diff main...HEAD --name-only | grep -E '^(work|inputs|stories)/'   # anything but the task's own file
 git checkout main -- <those files>                  # before merging
 ```
 
@@ -792,6 +806,50 @@ but the merged candidate is red — e.g. a semantic conflict), RepoOS:
 automatically during the candidate merge by regenerating the lockfile (`bun
 install`) when possible — no engineer round-trip.
 
+### Narrow resolution of an eligible conflict (#0692)
+
+A real conflict that is *provably safe to resolve mechanically* — and on a task
+that already passed review — does **not** restart the full engineering/review
+cycle. `src/server/conflict-resolution.ts` owns the deterministic core:
+
+- `classifyConflictResolution` / `classifyConflictForTask` decide eligibility from
+  the conflict set the real merge produced (via `git merge-tree`, which never
+  touches a worktree, index or ref). The allowlist is **semantic, not path-based**:
+  the closing task's own bookkeeping file; generated output; a regenerated
+  lockfile; and *disjoint, insertions-only* declarations (both sides purely add
+  distinct lines at distinct places — the #0728 watch vs #0730
+  decisions/attention CLI registration shape). Anything else fails closed to the
+  full cycle: an edit rather than an append, overlapping hunks, an unclassifiable
+  path, or no prior review.
+- `resolveConflictByUnion` applies the union resolution (both sides preserved)
+  only for a proven-insertions region; a diff3 base section (a genuine edit)
+  refuses.
+- The sync-phase **pre-flight** dry-run (`preflightConflict`) still detects
+  conflicts early for the full handback path, but when the narrow path is
+  enabled and `merge-tree` agrees on the same paths, sync **continues** so
+  `applyUnionResolution` can run in the candidate instead of failing the job
+  after only logging/SSE.
+- `applyUnionResolution` (orchestrator) re-runs the merge in the candidate,
+  resolves only the classifier-approved paths, commits, records a
+  **resolution-delta** review (marker-free union verification), then continues
+  to the **combined gate** on the exact resolved tree — one gate run, not two.
+- The candidate records provenance (`createResolutionProvenanceStore`):
+  approved feature SHA, main base SHA, conflict paths, resolution
+  commit/tree, the **resolution-only** review verdict, and the gate result. The
+  original review is never rewritten — the resolution has its own record.
+- At publish, `assertResolvedTreeUnchanged` calls
+  `canResumeAuthorizedCloseOut` and refuses to land a candidate whose tree is
+  not the one the gate validated. A main advance that is code (not bookkeeping)
+  still resyncs; a dirty tree, a cancellation, or a stale provenance generation
+  cannot resume.
+- `GET /api/tasks/:id/integration-job` includes `conflictResolution` when
+  provenance exists (CLI/UI parity).
+
+The UI shows the stage as **resolving integration conflict**
+(`resolve-conflict` in `PIPELINE_STAGES`) — distinct from new development — and
+the task card names the original feature review separately from the pending or
+passed resolution review.
+
 **Follow-up messages while in `review`:** `POST /api/tasks/:id/message` moves
 the task to `active` first (unless a close-out job is still in-flight), so fixes
 can be committed and re-handoffed instead of leaving the task in `review` with a
@@ -815,7 +873,8 @@ the deadline still reaches `runRemotePreReviewGate` in
 | `could not get main SHA` | Stale job from before the prefix fix, or genuinely broken git state | Retry `POST .../done` — jobs re-enqueue cleanly now (commit `d66c7877`) |
 | `merge conflict in dist/...` or `merge conflict in work/<id>-*.md` | Should not happen post-`e34485c7` — if it does, `autoResolve` regressed | Check `validateCandidate()`'s `autoResolve` array still includes `dist/` and the task's own path |
 | `dist/` dirty on `main` after a plain `bun run build` | Build determinism regressed — a timestamp/random value is back in `dist/.build-info.json` | Check `scripts/copy-assets.mjs`: the marker holds `{ hash, version }` only; `generatedAt` belongs in the gitignored `dist/.build-stamp.json` |
-| `merge conflict in <any other file>` | Real source conflict between the feature branch and main | Fix it in the feature branch's own worktree, not the candidate |
+| `merge conflict in <any other file>` | Real source conflict between the feature branch and main | If the conflict is provably-safe and the task already passed review it is resolved in the candidate (see #0692 above); otherwise fix it in the feature branch's own worktree, not the candidate |
+| `resolved candidate tree … no longer matches the tree the combined gate validated` | A resolution candidate was rebuilt (drift resync / stray write) after its gate ran | Re-run Move to done so the resolution and its combined gate are rederived (#0692) |
 | `check failed: <unhelpful shell preamble>` | Should not happen post-`3fbbd707` — if it does, the tail-line diagnostic or local-CLI-first ordering regressed | Reproduce manually: `cd` into the candidate worktree, run `node dist/cli/index.js check` directly |
 | `check failed: <real reason>`, and it reproduces manually in the candidate worktree | The task's actual code has a real bug | Fix it on the feature branch, not the candidate (the candidate is discarded and rebuilt from the branch every retry) |
 | API call to `/done` or `/integration-job` returns nothing / times out | Reload churn (see above) | Check `/api/health`, wait, retry — don't assume corruption |

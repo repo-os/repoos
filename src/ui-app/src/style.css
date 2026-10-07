@@ -10556,6 +10556,10 @@
   color: var(--cyan);
   font-weight: 600;
 }
+.build-hash {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .build-age {
   overflow: hidden;
   text-overflow: ellipsis;

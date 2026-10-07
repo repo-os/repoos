@@ -406,6 +406,35 @@ describe("scaffoldInto starter tasks", () => {
     expect(toml).toContain('cacheDir = "repoos/.repoos"');
   });
 
+  it("keeps stories, inputs and skills under the namespace too (#0703)", () => {
+    // A `repoos/` layout that leaves skillsDir/inputsDir/storiesDir at their
+    // top-level defaults scatters RepoOS files back to the repo root — the
+    // field report's root `stories/` directory.
+    const root = scratch();
+    scaffoldInto(root, "", "repoos", "new");
+    const toml = readFileSync(join(root, "repoos.toml"), "utf8");
+    expect(toml).toContain('skillsDir = "repoos/skills"');
+    expect(toml).toContain('storiesDir = "repoos/stories"');
+    expect(toml).toContain('inputsDir = "repoos/inputs"');
+  });
+
+  it("does not write storiesDir/inputsDir/skillsDir for the root layout", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "", "new");
+    const toml = readFileSync(join(root, "repoos.toml"), "utf8");
+    expect(toml).not.toContain("storiesDir");
+    expect(toml).not.toContain("inputsDir");
+    expect(toml).not.toContain("skillsDir");
+  });
+
+  it("gitignores node_modules/ and local env overrides (#0703)", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "", "new");
+    const gi = readFileSync(join(root, ".gitignore"), "utf8");
+    expect(gi).toContain("node_modules/");
+    expect(gi).toContain(".env*.local");
+  });
+
   it("does not write workDir/docsDir to repoos.toml for root layout", () => {
     const root = scratch();
     scaffoldInto(root, "", "", "new");
@@ -690,14 +719,16 @@ describe("scaffoldInto gitignore — screenshot attachments (#0682)", () => {
     expect(lines).toContain("inputs/.attachments/");
   });
 
-  it("namespaced layout ignores repoos/work/.attachments/ and inputs/.attachments/", () => {
+  it("namespaced layout ignores repoos/work/.attachments/ and repoos/inputs/.attachments/", () => {
     const root = scratch();
     scaffoldInto(root, "", "repoos", "new");
     const lines = readFileSync(join(root, ".gitignore"), "utf8")
       .split(/\r?\n/)
       .map((l) => l.trim());
     expect(lines).toContain("repoos/work/.attachments/");
-    expect(lines).toContain("inputs/.attachments/");
+    // Inputs follow the namespace too (#0703), so the rule tracks the
+    // configured dir instead of a top-level `inputs/`.
+    expect(lines).toContain("repoos/inputs/.attachments/");
   });
 
   it("a `repoos shot` attachment never dirties a fresh project", () => {
@@ -709,12 +740,12 @@ describe("scaffoldInto gitignore — screenshot attachments (#0682)", () => {
 
     mkdirSync(join(root, "repoos/work/.attachments"), { recursive: true });
     writeFileSync(join(root, "repoos/work/.attachments/shot.png"), "png");
-    mkdirSync(join(root, "inputs/.attachments"), { recursive: true });
-    writeFileSync(join(root, "inputs/.attachments/shot.png"), "png");
+    mkdirSync(join(root, "repoos/inputs/.attachments"), { recursive: true });
+    writeFileSync(join(root, "repoos/inputs/.attachments/shot.png"), "png");
 
     expect(git(root, ["status", "--porcelain"])).toBe("");
     expect(isIgnored(root, "repoos/work/.attachments/shot.png")).toBe(true);
-    expect(isIgnored(root, "inputs/.attachments/shot.png")).toBe(true);
+    expect(isIgnored(root, "repoos/inputs/.attachments/shot.png")).toBe(true);
   });
 
   it("is idempotent — a re-run does not duplicate the attachment rules", () => {
@@ -725,7 +756,7 @@ describe("scaffoldInto gitignore — screenshot attachments (#0682)", () => {
       .split(/\r?\n/)
       .map((l) => l.trim());
     expect(lines.filter((l) => l === "repoos/work/.attachments/")).toHaveLength(1);
-    expect(lines.filter((l) => l === "inputs/.attachments/")).toHaveLength(1);
+    expect(lines.filter((l) => l === "repoos/inputs/.attachments/")).toHaveLength(1);
   });
 });
 

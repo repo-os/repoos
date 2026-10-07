@@ -1,22 +1,24 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-07T16:16:48.550Z: repoos check failed: ⏭ user-docs-build — skipped — no changed path matches user-docs/** · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transpa… (truncated)"
 id: "0739"
 title: "Hung validation run leaves a leaked host slot: 'HUNG · KILLING' never clears, and the run's bundle file is left on the host"
 type: bug
-status: active
+status: done
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: 2380f196d1010ee489b2228ad1ea4ec670339a92
 assigned_to: ai
 created_by: ""
 branch: feat/hung-validation-run-leaves-a-leaked-host
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:04:05Z"
-updated_at: "2026-10-07T16:16:45Z"
+updated_at: "2026-10-07T16:43:04Z"
+last_close_out_gate_ms: 289346
+last_close_out_gate_at: "2026-10-07T16:42:48.249Z"
+review_passes: 6
+last_check_failure: "repoos check at 2026-10-07T16:16:48.550Z: repoos check failed: ⏭ user-docs-build — skipped — no changed path matches user-docs/** · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transpa… (truncated)"
 close_out_repair_count: 1
-review_passes: 5
 review_rounds: 1
 ---
 ## Problem
@@ -83,4 +85,9 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 - 2026-10-07T16:07:09Z · body
 - 2026-10-07T16:08:38Z · body
 - 2026-10-07T16:16:45Z · handoff failed · handoff recovery attempted · finalization failed
-
+- 2026-10-07T16:25:59Z · body
+- 2026-10-07T16:26:48Z · status active→review
+- 2026-10-07T16:26:48Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T16:27:39Z · note: review pass 6: good to go
+- 2026-10-07T16:42:48Z · close-out gate completed in 289s
+- 2026-10-07T16:43:04Z · status review→done, release:success

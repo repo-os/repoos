@@ -50,6 +50,7 @@ import {
   type CompatibilityStatus,
 } from "./agent-compatibility.js";
 import { parseDocument } from "./frontmatter.js";
+import { storiesDirOf } from "./story-definition-files.js";
 import { isGitRepo } from "./git.js";
 import { checkDocsWiringAt } from "./project-docs.js";
 import { portListening } from "./net-probe.js";
@@ -394,7 +395,41 @@ function checkMisplacedContent(root: string, config: RepoOSConfig): DoctorFindin
     }
   }
 
+  // A namespaced workDir (e.g. "repoos/work") with a top-level storiesDir is an
+  // inconsistent layout: stories land at the repo root while every other RepoOS
+  // file sits under the namespace (#0703, the field report's root `stories/`).
+  // Advisory only — name the move, never perform it. The check is on the
+  // configured values, not on what exists on disk, so it fires on the config
+  // that init used to write before this pairing was set together.
+  const workNs = namespacePrefix(config.workDir);
+  const storiesNs = namespacePrefix(storiesDirOf(config));
+  if (workNs && !storiesNs) {
+    const suggested = `${workNs}/stories`;
+    out.push(
+      finding(
+        "layout.stories-dir-top-level",
+        "layout",
+        "warn",
+        "Stories directory sits outside a namespaced workDir",
+        `repoos.toml sets workDir = "${config.workDir}", so RepoOS files live under ${workNs}/, but storiesDir is "${storiesDirOf(config)}" — a top-level directory. Story definitions then land at the repo root while the rest of the layout is namespaced.`,
+        `set \`storiesDir = "${suggested}"\` in repoos.toml and move any existing stories under ${suggested}/; RepoOS does not move them for you`,
+      ),
+    );
+  }
+
   return out;
+}
+
+/**
+ * The leading directory of a nested repo-relative path ("repoos/work" →
+ * "repoos"), or "" for a top-level path ("work", "stories"). Leading "./" and
+ * trailing "/" are stripped so a hand-written value is judged like init writes
+ * it.
+ */
+function namespacePrefix(dir: string): string {
+  const cleaned = dir.replace(/^\.\/+/, "").replace(/\/+$/, "");
+  const idx = cleaned.indexOf("/");
+  return idx === -1 ? "" : cleaned.slice(0, idx);
 }
 
 /**
@@ -857,6 +892,7 @@ function checkConfig(root: string, config: RepoOSConfig): DoctorFinding[] {
       "pass",
       "Effective layout",
       `work=${config.workDir} · docs=${config.docsDir} · inputs=${config.inputsDir ?? "inputs"} · ` +
+        `stories=${config.storiesDir ?? "stories"} · ` +
         `cache=${config.cacheDir} · worktrees=${worktreesDir(root)}`,
     ),
   );
@@ -932,6 +968,7 @@ function checkLayout(root: string, config: RepoOSConfig): DoctorFinding[] {
     checkDir(root, "layout.work-dir", "Task", "workDir", config.workDir, { required: true }),
     checkDir(root, "layout.docs-dir", "Docs", "docsDir", config.docsDir),
     checkDir(root, "layout.inputs-dir", "Inputs", "inputsDir", config.inputsDir ?? "inputs"),
+    checkDir(root, "layout.stories-dir", "Stories", "storiesDir", config.storiesDir ?? "stories"),
     checkDir(root, "layout.cache-dir", "Cache", "cacheDir", config.cacheDir),
   ];
 

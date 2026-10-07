@@ -2,15 +2,20 @@
 id: "0726"
 title: Stories (and inputs) dirs don't get the same close-out bookkeeping handling as the work dir
 type: bug
-status: inbox
+status: done
 priority: p2
 area: [server, cli]
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 90e1726259286bc1ab995ca351b2e84fa95f4a17
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/stories-and-inputs-dirs-don-t-get-the-sa
 created_at: "2026-10-07T00:35:48Z"
-updated_at: "2026-10-07T00:37:22Z"
+updated_at: "2026-10-07T17:33:14Z"
+last_close_out_gate_ms: 79288
+last_close_out_gate_at: "2026-10-07T17:33:05.208Z"
+review_passes: 2
+close_out_repair_count: 1
 ---
 ## Problem
 
@@ -52,3 +57,22 @@ Desired: validate all layout dirs with normalizeRelativeDir, give inputsDir a Se
 
 - 2026-10-07T00:35:48Z · created · unknown
 - 2026-10-07T00:37:22Z · body
+- 2026-10-07T16:44:26Z · status inbox→ready
+- 2026-10-07T16:44:55Z · status ready→active, branch
+- 2026-10-07T16:58:40Z · body
+- 2026-10-07T17:00:56Z · body
+- 2026-10-07T17:02:27Z · body
+- 2026-10-07T17:03:20Z · body
+- 2026-10-07T17:13:17Z · status active→review
+- 2026-10-07T17:13:18Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-07T17:14:40Z · note: review pass 1: good to go
+- 2026-10-07T17:15:37Z · status review→active
+- 2026-10-07T17:15:37Z · note: close-out repair: merge-conflict
+- 2026-10-07T17:17:52Z · body
+- 2026-10-07T17:19:23Z · body
+- 2026-10-07T17:20:17Z · body
+- 2026-10-07T17:28:25Z · status active→review
+- 2026-10-07T17:28:26Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-07T17:29:12Z · note: review pass 2: good to go
+- 2026-10-07T17:33:05Z · close-out gate completed in 79s
+- 2026-10-07T17:33:14Z · status review→done, release:success

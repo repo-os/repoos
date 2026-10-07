@@ -51,6 +51,7 @@ function makeOrchestrator(
   root: string,
   getTask?: (id: string) => Task | null,
   onMergeConflict?: (taskId: string, reason: string) => void,
+  onResolutionEligible?: (taskId: string, reason: string) => void,
 ) {
   const config = {
     root,
@@ -69,6 +70,13 @@ function makeOrchestrator(
     undefined,
     undefined,
     onMergeConflict,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    onResolutionEligible ? (taskId, reason) => onResolutionEligible(taskId, reason) : undefined,
   );
   const syncCandidate = (job: unknown): Promise<SyncResult> =>
     (orch as never as { syncCandidate: (j: unknown) => Promise<SyncResult> }).syncCandidate(job);
@@ -271,6 +279,67 @@ describe("syncCandidate pre-flight conflict check (#0358)", () => {
       expect(res.reason).toContain("worktree not found");
       // The normal flow ran and created the candidate before failing.
       expect(worktreePathForBranch(root, "repoos/integrate/0013")).not.toBeNull();
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("pre-flight eligible conflicts continue sync (#0692)", () => {
+  it("does not fail sync when the conflict is eligible for narrow resolution", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const cli = `import { register } from "./registry.js";
+register("watch", () => {});
+`;
+      const cliMain = `import { register } from "./registry.js";
+register("decisions", () => {});
+`;
+      commitFile(root, "src/cli/index.ts", cliMain, "main cli");
+      const wt = ensureWorktree(root, "feat/eligible").path!;
+      commitFile(wt, "src/cli/index.ts", cli, "branch cli");
+
+      const taskPath = join(root, "work/0692-task.md");
+      mkdirSync(dirname(taskPath), { recursive: true });
+      writeFileSync(taskPath, "# task\n");
+      git(root, ["add", "--", "work/0692-task.md"]);
+      git(root, ["commit", "-m", "task file"]);
+
+      const reviewsDir = join(root, ".repoos/reviews/0692");
+      mkdirSync(reviewsDir, { recursive: true });
+      writeFileSync(
+        join(reviewsDir, "1.md"),
+        `---
+pass: 1
+state: ok
+at: 2026-10-07T12:00:00Z
+agent: reviewer
+cli: test
+model: test
+---
+good to go
+`,
+      );
+
+      const getTask = (id: string): Task | null =>
+        id === "0692" ? ({ id, absPath: taskPath } as Task) : null;
+      let resolutionEligible = false;
+      const { coordinator, syncCandidate } = makeOrchestrator(
+        root,
+        getTask,
+        () => {},
+        () => {
+          resolutionEligible = true;
+        },
+      );
+      coordinator.enqueue({ id: "0692", branch: "feat/eligible" } as never);
+
+      const res = await syncCandidate(coordinator.getJob("0692"));
+
+      expect(res.ok).toBe(true);
+      expect(res.conflict).toBeFalsy();
+      expect(resolutionEligible).toBe(false);
+      expect(worktreePathForBranch(root, "repoos/integrate/0692")).not.toBeNull();
     } finally {
       clean();
     }

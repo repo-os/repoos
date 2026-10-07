@@ -114,6 +114,10 @@ import {
 import { TaskFieldValidationError } from "../../core/task-fields.js";
 import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
+import {
+  conflictResolutionSnapshot,
+  createResolutionProvenanceStore,
+} from "../conflict-resolution.js";
 import { pendingCloseOutJobs } from "../integration-job.js";
 import { createCloseOutOutcomeStore } from "../close-out-outcome.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
@@ -901,6 +905,23 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   } catch (error) {
     if (error instanceof DependencyValidationError) return json(res, 400, { error: error.message });
     throw error;
+  }
+
+  // Handoff finalization writes `review` on the worktree before main; returning
+  // to engineering must mirror `active` there so a later handoff does not see
+  // "already finalized" while the board copy is active (#0737).
+  if (prevStatus === "review" && updated.status === "active" && updated.branch) {
+    const wtRoot = worktreePathForBranch(config.root, updated.branch);
+    if (wtRoot) {
+      const wtAbs = join(wtRoot, updated.path);
+      if (existsSync(wtAbs)) {
+        try {
+          patchTaskFile({ ...config, root: wtRoot }, wtAbs, { status: "active" });
+        } catch {
+          /* best-effort — the next handoff still resolves from branch state */
+        }
+      }
+    }
   }
 
   if (body.status && body.status !== prevStatus) {
@@ -2820,7 +2841,7 @@ export const pmInterrupt: RouteHandler = (ctx, req, res, params) => {
 };
 
 export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
-  const { jobCoordinator } = ctx;
+  const { jobCoordinator, config } = ctx;
   const id = params.param1;
   const job = jobCoordinator.getJob(id);
   if (!job) {
@@ -2828,6 +2849,14 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
   }
   const pendingJobs = pendingCloseOutJobs(jobCoordinator.allJobs());
   const queuePos = pendingJobs.findIndex((j) => j.taskId === job.taskId);
+  let conflictResolution = null;
+  try {
+    conflictResolution = conflictResolutionSnapshot(
+      createResolutionProvenanceStore(config.root, config.cacheDir).get(id),
+    );
+  } catch {
+    conflictResolution = null;
+  }
   return json(res, 200, {
     ok: true,
     job: {
@@ -2842,6 +2871,7 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
       logPath: job.logPath,
       queuePosition: queuePos,
       queueLength: pendingJobs.length,
+      conflictResolution,
     },
   });
 };

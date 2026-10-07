@@ -11,10 +11,11 @@ import type { IntegrationJob, JobCoordinator } from "./integration-job.js";
 import type { DoneStep } from "./done.js";
 import type { PipelineCheckPlan } from "./check-plan-info.js";
 
-/** The five discrete stages surfaced to the user, in pipeline order. */
+/** The discrete stages surfaced to the user, in pipeline order (#0207). */
 export const PIPELINE_STAGES: readonly string[] = [
   "sync",
   "merge",
+  "resolve-conflict",
   "build",
   "check",
   "done",

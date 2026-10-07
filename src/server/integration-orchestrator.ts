@@ -91,7 +91,8 @@ import {
   type CloseOutGatePlan,
 } from "../core/close-out-gate.js";
 import { detectRepoMarkers } from "../core/check-runner.js";
-import { DEFAULT_CONFIG, loadConfig } from "../core/config.js";
+import { DEFAULT_CONFIG, bookkeepingDirs, loadConfig } from "../core/config.js";
+import type { BookkeepingDirs } from "../core/config.js";
 import {
   effectiveCloseOutTimeoutMs,
   recordCloseOutGateTimingStats,
@@ -107,6 +108,15 @@ import {
   verifyWorktreeHandoffIntegrity,
   WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX,
 } from "./worktree-handoff-guard.js";
+import {
+  analyzeConflictForResolution,
+  canResumeAuthorizedCloseOut,
+  classifyConflictForTask,
+  createResolutionProvenanceStore,
+  resolveConflictByUnion,
+  type ConflictResolutionVerdict,
+} from "./conflict-resolution.js";
+import { listReviewPasses } from "../core/review-passes.js";
 
 // Candidate branch prefix. Must be a valid git refname: a leading dot is
 // rejected by git (`'.repoos/integrate/…' is not a valid branch name`), which
@@ -211,6 +221,21 @@ function candidateBranchName(taskId: string): string {
 }
 
 /**
+ * Extract the conflicted paths from a close-out conflict reason, in the exact
+ * format `validateCandidate`/`preflightConflict` emit:
+ * `merge conflict in a.ts, b.ts — resolve it in …`. Returns `[]` for any other
+ * string so callers fall back to the full handback rather than guessing.
+ */
+export function parseConflictPathsFromReason(reason: string): string[] {
+  const m = /^merge conflict in (.+?)(?: —|$)/.exec(reason.trim());
+  if (!m) return [];
+  return m[1]
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
  * The bookkeeping directory prefixes (#0637): paths whose change on main can
  * never invalidate a build/test run that already passed on the candidate —
  * task bookkeeping under the work dir, human-submitted inputs, story
@@ -229,16 +254,29 @@ function bookkeepingDirPrefixes(dirs: {
   inputsDir?: string;
   storiesDir?: string;
 }): string[] {
-  return [
-    `${dirs.workDir || "work"}/`,
-    `${dirs.inputsDir || "inputs"}/`,
-    `${dirs.storiesDir || "stories"}/`,
-    "dist/",
-  ];
+  const resolved = bookkeepingDirs(dirs);
+  return [`${resolved.workDir}/`, `${resolved.inputsDir}/`, `${resolved.storiesDir}/`, "dist/"];
 }
 
 function isNonCodePublishDrift(path: string, prefixes: string[]): boolean {
   return prefixes.some((prefix) => path.startsWith(prefix));
+}
+
+/**
+ * The `autoResolveOurs` prefixes for a close-out merge: on a conflict in one of
+ * these directories, MAIN's copy wins (`--ours`), because the closing task's
+ * branch is not authoritative for other tasks' files, human inputs, or story
+ * definitions — all server-written, main-owned bookkeeping (#0726). The task's
+ * own `work/<id>-*.md` is listed separately in `autoResolve` (branch wins), so
+ * it is deliberately the one bookkeeping file that may differ.
+ */
+function bookkeepingKeepOursPrefixes(config: {
+  workDir?: string;
+  inputsDir?: string;
+  storiesDir?: string;
+}): string[] {
+  const resolved = bookkeepingDirs(config);
+  return [`${resolved.workDir}/`, `${resolved.inputsDir}/`, `${resolved.storiesDir}/`];
 }
 
 /**
@@ -413,13 +451,19 @@ export async function detectDroppedMerge(
 export async function resetForeignWorkFiles(opts: {
   candidateWtPath: string;
   baseMainSha: string;
-  workDir: string;
+  /** Managed bookkeeping dirs (work/inputs/stories), resolved from config. */
+  dirs: BookkeepingDirs;
+  /**
+   * The closing task's own task file (repo-relative), the one file under the
+   * work dir that legitimately differs and must NOT be reset.
+   */
   ownWorkFile: string | null;
 }): Promise<string[]> {
-  const { candidateWtPath, baseMainSha, workDir, ownWorkFile } = opts;
+  const { candidateWtPath, baseMainSha, dirs, ownWorkFile } = opts;
+  const prefixes = [dirs.workDir, dirs.inputsDir, dirs.storiesDir].map(withDirSlash);
   const changed = await runGit(
     candidateWtPath,
-    ["diff", "--name-only", `${baseMainSha}..HEAD`, "--", workDir],
+    ["diff", "--name-only", `${baseMainSha}..HEAD`, "--", ...prefixes],
     10_000,
   );
   if (changed.status !== 0) return [];
@@ -445,14 +489,14 @@ export async function resetForeignWorkFiles(opts: {
       15_000,
     );
     if (restore.status !== 0) {
-      throw new Error(`could not restore unrelated task files: ${restore.stderr.trim()}`);
+      throw new Error(`could not restore unrelated bookkeeping files: ${restore.stderr.trim()}`);
     }
     await runGit(candidateWtPath, ["add", "--", ...onMain], 10_000);
   }
   if (addedByBranch.length > 0) {
     const removed = await runGit(candidateWtPath, ["rm", "-q", "--", ...addedByBranch], 10_000);
     if (removed.status !== 0) {
-      throw new Error(`could not drop stray task files: ${removed.stderr.trim()}`);
+      throw new Error(`could not drop stray bookkeeping files: ${removed.stderr.trim()}`);
     }
   }
 
@@ -464,11 +508,16 @@ export async function resetForeignWorkFiles(opts: {
       "commit",
       "--no-edit",
       "-m",
-      `chore: keep main's copy of ${foreign.length} unrelated task file(s) during close-out`,
+      `chore: keep main's copy of ${foreign.length} unrelated bookkeeping file(s) during close-out`,
     ],
     10_000,
   );
   return foreign;
+}
+
+/** `dir` with exactly one trailing slash, for git pathspec prefixes. */
+function withDirSlash(dir: string): string {
+  return `${dir.replace(/\/+$/, "")}/`;
 }
 
 /**
@@ -795,7 +844,30 @@ export class CloseOutOrchestrator {
      * (#0687). Observation only — must never disturb the close-out.
      */
     private onRemoteFallback?: (taskId: string, detail: string) => void,
+    /**
+     * Fired INSTEAD of `onMergeConflict` when a real conflict is eligible for
+     * the narrow resolution path (#0692): the classifier proved the conflict
+     * safe AND the task has a prior successful feature review, so the close-out
+     * should resolve against current main and review only the resolution delta
+     * rather than restarting engineering/review. When absent (or when the
+     * conflict is not eligible) the existing `onMergeConflict` handback runs.
+     * Appended last so existing positional constructor callers are unaffected.
+     */
+    private onResolutionEligible?: (
+      taskId: string,
+      reason: string,
+      verdict: ConflictResolutionVerdict,
+    ) => void,
   ) {}
+
+  /** Discard any in-flight resolution provenance for a task (#0692). */
+  private clearResolutionProvenance(taskId: string): void {
+    try {
+      createResolutionProvenanceStore(this.config.root, this.config.cacheDir).clear(taskId);
+    } catch {
+      /* best-effort */
+    }
+  }
 
   /** Reuse the primary checkout's `node_modules` in a candidate worktree (#0674). */
   private symlinkMainNodeModulesIntoCandidate(candidatePath: string, root: string): void {
@@ -1045,6 +1117,7 @@ export class CloseOutOrchestrator {
       return { ok: false, reason: CANCEL_REASON };
     }
     this.removeCandidate(job.taskId);
+    this.clearResolutionProvenance(job.taskId);
     this.coordinator.removeJob(job.taskId, this.ownedAttempt);
     this.logger?.integration(job.taskId, "info", "close-out cancelled by user (#0459)");
     return { ok: false, reason: CANCEL_REASON };
@@ -1069,6 +1142,10 @@ export class CloseOutOrchestrator {
       return { ok: false, reason };
     }
     this.removeCandidate(job.taskId);
+    // #0692: a failed close-out abandons any in-flight resolution provenance.
+    // The evidence it held described a resolution that never published; leaving
+    // it would let a later attempt mistake it for a passed gate.
+    this.clearResolutionProvenance(job.taskId);
     if (this.taskIsDone(job.taskId)) {
       this.logger?.integration(
         job.taskId,
@@ -1194,8 +1271,13 @@ export class CloseOutOrchestrator {
             // found during `validating` — same reason format, same
             // non-retryable handling, same repair handoff. Recorded against
             // `validating` so nothing downstream can tell the timing moved.
+            //
+            // #0692: classify it first. An eligible conflict with a prior
+            // review routes to the narrow resolution path instead of bouncing
+            // the task to the engineer; anything else keeps the full handback.
+            await this.noteResolutionEligibility(job, syncRes.reason!, job.baseMainSha);
             return this.failOrReconcile(job, "validating", syncRes.reason, () =>
-              this.onMergeConflict?.(job.taskId, syncRes.reason!),
+              this.routeConflictRecovery(job, syncRes.reason!, job.baseMainSha ?? ""),
             );
           }
           return this.failOrReconcile(job, "syncing", syncRes.reason);
@@ -1253,11 +1335,14 @@ export class CloseOutOrchestrator {
           // leaving the job sitting `failed` until a human notices (#0271
           // follow-up).
           const conflict = validateRes.reason?.startsWith("merge conflict in ");
+          await this.noteResolutionEligibility(job, validateRes.reason ?? "", job.baseMainSha);
           return this.failOrReconcile(
             job,
             "validating",
             validateRes.reason,
-            conflict ? () => this.onMergeConflict?.(job.taskId, validateRes.reason!) : undefined,
+            conflict
+              ? () => this.routeConflictRecovery(job, validateRes.reason!, job.baseMainSha ?? "")
+              : undefined,
           );
         }
         if (!validateRes.ok) {
@@ -1438,10 +1523,11 @@ export class CloseOutOrchestrator {
 
     const task = this.getTask?.(job.taskId);
     const autoResolve = task ? [relative(root, task.absPath)] : [];
-    // Same semantics as `validateCandidate`: unrelated task files keep main's
-    // side, everything else in `autoResolve` takes the branch's side. Only the
+    // Same semantics as `validateCandidate`: unrelated bookkeeping files
+    // (other tasks' under work/, inputs/, stories/) keep main's side,
+    // everything else in `autoResolve` takes the branch's side. Only the
     // real-conflict classification is needed here, so the direction is moot.
-    const autoResolveOurs = [`${this.config.workDir}/`];
+    const autoResolveOurs = bookkeepingKeepOursPrefixes(this.config);
 
     let preflight: MergeBranchResult;
     try {
@@ -1465,6 +1551,387 @@ export class CloseOutOrchestrator {
       `merge conflict in ${preflight.conflicts.join(", ")} — resolve it in ` +
       `the feature branch's own worktree (merge main into the branch), then retry`
     );
+  }
+
+  /**
+   * Decide whether a REAL conflict (already classified non-auto-resolvable by
+   * the merge itself) is eligible for the narrow resolution path (#0692), and
+   * record its provenance when it is.
+   *
+   * Eligibility is deliberately conservative. It requires BOTH:
+   *   - a prior successful feature review for this task (`review_passes`), so
+   *     there is an approval to preserve rather than a cycle to skip; and
+   *   - a conflict set the classifier can PROVE safe from the real merge stage
+   *     (pure, disjoint insertions; generated output; a lockfile; the task's
+   *     own bookkeeping file).
+   *
+   * Anything else — no prior review, an edit rather than an append, an
+   * unclassifiable path, a git error — returns `eligible: false` and the caller
+   * runs the existing full engineering/review handback unchanged. Never throws:
+   * a failure to classify is the safe outcome (`full-handoff-required`).
+   */
+  private async classifyResolutionEligibility(
+    job: IntegrationJob,
+    baseMainSha: string,
+    conflictPaths: string[],
+  ): Promise<ConflictResolutionVerdict> {
+    const task = this.getTask?.(job.taskId);
+    // Prior feature approval: at least one recorded review pass whose verdict
+    // reads as an approval. Without one there is no shortcut to take.
+    let hasPriorFeatureApproval = false;
+    try {
+      const passes = listReviewPasses(this.config, job.taskId);
+      hasPriorFeatureApproval = passes.some((p) => p.state === "ok" && p.verdict === "good to go");
+    } catch {
+      hasPriorFeatureApproval = false;
+    }
+
+    const verdict = await classifyConflictForTask(this.config.root, job.branch ?? job.taskId, {
+      hasPriorFeatureApproval,
+      ownTaskFile: task ? relative(this.config.root, task.absPath) : null,
+      generatedPrefixes: bookkeepingDirPrefixes(this.config),
+    });
+    const eligible = verdict.eligible ? verdict : undefined;
+    if (eligible) {
+      try {
+        createResolutionProvenanceStore(this.config.root, this.config.cacheDir).begin({
+          taskId: job.taskId,
+          // The reviewed feature commit IS the handoff SHA when known; its
+          // absence means no immutable approval to bind to, so use the
+          // branch's current commit as the best available evidence.
+          approvedFeatureSha: job.handoffSha ?? job.branchSha ?? "",
+          mainBaseSha: baseMainSha,
+          conflictPaths,
+          resolutionClasses: eligible.classes,
+        });
+      } catch {
+        /* recording is best-effort; the verdict still stands */
+      }
+    }
+    return verdict;
+  }
+
+  /**
+   * Route a REAL conflict to the right recovery: the narrow resolution path
+   * when the classifier proves it eligible and a prior review exists (#0692),
+   * otherwise the existing full engineering/review handback. Both callbacks
+   * are observations — the job is already recorded `failed`, exactly as before,
+   * so a missing/erroring callback can never change the outcome.
+   */
+  private routeConflictRecovery(job: IntegrationJob, reason: string, baseMainSha: string): void {
+    const conflictPaths = parseConflictPathsFromReason(reason);
+    const verdict = this.pendingResolutionVerdict;
+    // `classifyResolutionEligibility` is async; we are inside a synchronous
+    // failOrReconcile `onRecorded` callback, so enter the resolution path only
+    // when a classification has already been computed for this conflict.
+    if (
+      this.onResolutionEligible &&
+      verdict?.verdict.eligible &&
+      conflictPaths.length > 0 &&
+      verdict.appliesTo === conflictPaths.join(", ")
+    ) {
+      this.onResolutionEligible(job.taskId, reason, verdict.verdict);
+      return;
+    }
+    this.onMergeConflict?.(job.taskId, reason);
+  }
+
+  /**
+   * Classification computed for the current conflict before the job was
+   * recorded failed. Set by `noteResolutionEligibility`, read by
+   * `routeConflictRecovery` (which runs inside a synchronous callback).
+   */
+  private pendingResolutionVerdict:
+    | { verdict: ConflictResolutionVerdict; appliesTo: string }
+    | undefined;
+
+  /**
+   * Classify the current conflict ahead of `failOrReconcile` and remember the
+   * result so the synchronous `onRecorded` callback can route on it. Never
+   * throws; a classification failure simply leaves `pendingResolutionVerdict`
+   * unset and the full handback runs.
+   */
+  /**
+   * When pre-flight sees a real conflict, only defer the sync failure when the
+   * narrow path is enabled AND merge-tree agrees with the dry-run paths — same
+   * classification `validateCandidate` will use when it merges in the candidate.
+   */
+  private async shouldDeferPreflightConflictFailure(
+    job: IntegrationJob,
+    baseMainSha: string,
+    preflightReason: string,
+  ): Promise<boolean> {
+    if (!this.onResolutionEligible) return false;
+    const preflightPaths = parseConflictPathsFromReason(preflightReason);
+    if (preflightPaths.length === 0) return false;
+    try {
+      const verdict = await this.classifyResolutionEligibility(job, baseMainSha, preflightPaths);
+      if (!verdict.eligible) return false;
+      const task = this.getTask?.(job.taskId);
+      const analysis = await analyzeConflictForResolution(
+        this.config.root,
+        job.branch ?? job.taskId,
+        {
+          ownTaskFile: task ? relative(this.config.root, task.absPath) : null,
+          generatedPrefixes: bookkeepingDirPrefixes(this.config),
+        },
+      );
+      if (!analysis.ok) return false;
+      const mergeTreePaths = [...new Set(analysis.files.map((f) => f.path))].sort();
+      const sortedPreflight = [...preflightPaths].sort();
+      if (mergeTreePaths.join(",") !== sortedPreflight.join(",")) {
+        this.logger?.integration(
+          job.taskId,
+          "warn",
+          "pre-flight conflict paths differ from merge-tree — not deferring pre-flight failure",
+          { preflight: sortedPreflight, mergeTree: mergeTreePaths },
+        );
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async noteResolutionEligibility(
+    job: IntegrationJob,
+    reason: string,
+    baseMainSha: string | null,
+  ): Promise<void> {
+    this.pendingResolutionVerdict = undefined;
+    if (!this.onResolutionEligible) return;
+    const paths = parseConflictPathsFromReason(reason);
+    if (paths.length === 0) return;
+    try {
+      const verdict = await this.classifyResolutionEligibility(job, baseMainSha ?? "", paths);
+      if (verdict.eligible) {
+        this.pendingResolutionVerdict = { verdict, appliesTo: paths.join(", ") };
+      }
+    } catch {
+      this.pendingResolutionVerdict = undefined;
+    }
+  }
+
+  private async applyUnionResolution(
+    taskId: string,
+    wtPath: string,
+    featureBranch: string,
+    conflictPaths: string[],
+  ): Promise<{ ok: boolean }> {
+    // Re-run the merge without auto-resolve side effects so the conflicted
+    // state is on disk for us to resolve; `mergeBranch` aborted the first one.
+    const merge = await runGit(wtPath, ["merge", "--no-commit", "--no-ff", featureBranch], 60_000);
+    if (merge.status === 0) {
+      // Fast-forward or already-merged: nothing to resolve.
+      return { ok: true };
+    }
+    const conflicted = (
+      await runGit(wtPath, ["diff", "--name-only", "--diff-filter=U"], 10_000)
+    ).stdout
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    // First apply the SAME auto-resolve semantics the normal merge uses for the
+    // closing task's own file and unrelated task files — those are routine
+    // bookkeeping conflicts, not the source conflict being resolved here, and
+    // `mergeBranch` would have resolved them had it not hit the real conflict.
+    const task = this.getTask?.(taskId);
+    const autoResolve = task ? [relative(this.config.root, task.absPath)] : [];
+    const autoResolveOurs = [`${this.config.workDir}/`];
+    const matchesRule = (p: string, rules: string[]): boolean =>
+      rules.some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
+    const approved = new Set(conflictPaths);
+    const remaining: string[] = [];
+    for (const p of conflicted) {
+      const ours = matchesRule(p, autoResolveOurs);
+      const theirs = matchesRule(p, autoResolve);
+      if (!ours && !theirs) {
+        remaining.push(p);
+        continue;
+      }
+      // Ambiguous only if the classifier ALSO claims it — then the union path
+      // owns it; otherwise take the bookkeeping side the normal merge would.
+      if (approved.has(p) && !ours) {
+        remaining.push(p);
+        continue;
+      }
+      const side = theirs ? "--theirs" : "--ours";
+      const resolved = await runGit(wtPath, ["checkout", side, "--", p], 10_000);
+      if (resolved.status !== 0) {
+        await runGit(wtPath, ["merge", "--abort"], 10_000);
+        return { ok: false };
+      }
+      await runGit(wtPath, ["add", "--", p], 10_000);
+    }
+
+    // What remains must be exactly what the classifier approved — no extra file
+    // may be resolved by this narrow path.
+    if (remaining.length === 0 || remaining.some((p) => !approved.has(p))) {
+      await runGit(wtPath, ["merge", "--abort"], 10_000);
+      return { ok: false };
+    }
+
+    for (const file of remaining) {
+      let content: string;
+      try {
+        content = readFileSync(join(wtPath, file), "utf8");
+      } catch {
+        await runGit(wtPath, ["merge", "--abort"], 10_000);
+        return { ok: false };
+      }
+      const union = resolveConflictByUnion(content);
+      if (!union.ok) {
+        await runGit(wtPath, ["merge", "--abort"], 10_000);
+        return { ok: false };
+      }
+      writeFileSync(join(wtPath, file), union.content);
+    }
+    const add = await runGit(wtPath, ["add", "-A", "--", ...remaining], 10_000);
+    if (add.status !== 0) {
+      await runGit(wtPath, ["merge", "--abort"], 10_000);
+      return { ok: false };
+    }
+    // A conflict marker that survived would make the later marker scan fail the
+    // candidate anyway; fail here with a clean abort instead.
+    for (const file of remaining) {
+      try {
+        if (/^<{7}$|^={7}$|^>{7}$/m.test(readFileSync(join(wtPath, file), "utf8"))) {
+          await runGit(wtPath, ["merge", "--abort"], 10_000);
+          return { ok: false };
+        }
+      } catch {
+        await runGit(wtPath, ["merge", "--abort"], 10_000);
+        return { ok: false };
+      }
+    }
+    const commit = await runGit(
+      wtPath,
+      ["commit", "--no-edit", "-m", "chore: resolve integration conflict by union (#0692)"],
+      15_000,
+    );
+    if (commit.status !== 0) {
+      await runGit(wtPath, ["merge", "--abort"], 10_000);
+      return { ok: false };
+    }
+    notifyGitMutation(wtPath, "merge");
+    // Record the resolution commit/tree for the provenance trail.
+    try {
+      const sha = (await runGit(wtPath, ["rev-parse", "HEAD"], 4_000)).stdout.trim();
+      const tree = (await runGit(wtPath, ["rev-parse", "HEAD^{tree}"], 4_000)).stdout.trim();
+      createResolutionProvenanceStore(this.config.root, this.config.cacheDir).update(taskId, {
+        resolutionCommit: sha,
+        resolutionTree: tree,
+      });
+    } catch {
+      /* provenance is best-effort */
+    }
+    return { ok: true };
+  }
+
+  /**
+   * Record a resolution-only review after union resolution — separate from the
+   * combined gate, which runs later on the same tree (acceptance criteria 1/4).
+   */
+  private async recordResolutionDeltaReview(
+    taskId: string,
+    wtPath: string,
+    conflictPaths: string[],
+  ): Promise<{ ok: boolean }> {
+    for (const file of conflictPaths) {
+      let content: string;
+      try {
+        content = readFileSync(join(wtPath, file), "utf8");
+      } catch {
+        return { ok: false };
+      }
+      if (/^<{7}$|^={7}$|^>{7}$/m.test(content)) return { ok: false };
+    }
+    const commit = (await runGit(wtPath, ["rev-parse", "HEAD"], 4_000)).stdout.trim();
+    if (!commit) return { ok: false };
+    try {
+      const updated = createResolutionProvenanceStore(
+        this.config.root,
+        this.config.cacheDir,
+      ).update(taskId, {
+        resolutionReview: {
+          reviewer: "resolution-delta",
+          verdict: "pass",
+          reviewedCommit: commit,
+          at: new Date().toISOString(),
+          summary:
+            "resolution delta verified: proven-safe union with no remaining conflict markers",
+        },
+      });
+      return { ok: updated !== null };
+    } catch {
+      return { ok: false };
+    }
+  }
+
+  private async assertResolvedTreeUnchanged(
+    job: IntegrationJob,
+    candidateWtPath: string,
+  ): Promise<{ ok: true } | { ok: false; reason: string }> {
+    let provenance;
+    try {
+      provenance = createResolutionProvenanceStore(this.config.root, this.config.cacheDir).get(
+        job.taskId,
+      );
+    } catch {
+      return { ok: true };
+    }
+    // No resolution in play: the ordinary publish path is unchanged.
+    if (!provenance || provenance.gate.result !== "pass" || !provenance.gate.validatedTree) {
+      return { ok: true };
+    }
+    const treeRes = await runGit(candidateWtPath, ["rev-parse", "HEAD^{tree}"], 4_000);
+    if (treeRes.status !== 0) {
+      return { ok: false, reason: "could not verify the resolved candidate tree before publish" };
+    }
+    const candidateTree = treeRes.stdout.trim();
+    const root = this.config.root;
+    const mainBranch = await resolveDefaultBranch(root);
+    const currentMainRes = await runGit(root, ["rev-parse", `${mainBranch}^{commit}`], 4_000);
+    const currentMainSha =
+      currentMainRes.status === 0 ? currentMainRes.stdout.trim() : (job.baseMainSha ?? "");
+    const mainAdvanceIsBookkeepingOnly =
+      job.baseMainSha && currentMainSha && job.baseMainSha !== currentMainSha
+        ? await mainDriftIsBookkeepingOnly({
+            root,
+            baseMainSha: job.baseMainSha,
+            currentMainSha,
+            dirs: this.config,
+          })
+        : true;
+    const featureBranch = job.branch ?? job.taskId;
+    const featureWt = worktreePathForBranch(root, featureBranch);
+    let worktreeDirty = false;
+    if (featureWt) {
+      const por = await runGit(featureWt, ["status", "--porcelain"], 5_000);
+      worktreeDirty = por.status === 0 && por.stdout.trim().length > 0;
+    }
+    const resume = canResumeAuthorizedCloseOut({
+      provenance,
+      authorized: true,
+      validatedTree: provenance.gate.validatedTree,
+      candidateTree,
+      currentMainSha,
+      validatedMainBaseSha: provenance.mainBaseSha,
+      mainAdvanceIsBookkeepingOnly,
+      worktreeDirty,
+      cancelled: this.isCancelled(job.taskId),
+    });
+    if (!resume.ok) {
+      return {
+        ok: false,
+        reason:
+          `refusing to publish resolved candidate (${resume.reason}): ${resume.detail}. ` +
+          "Re-run Move to done so the resolution, its review, and its gate are rederived.",
+      };
+    }
+    return { ok: true };
   }
 
   private async syncCandidate(job: IntegrationJob): Promise<{
@@ -1515,7 +1982,24 @@ export class CloseOutOrchestrator {
     // fail-open — fall through to the normal sync/validate flow unchanged.
     const preflightReason = await this.preflightConflict(job, baseMainSha);
     if (preflightReason) {
-      return { ok: false, conflict: true, reason: preflightReason };
+      // #0692: an eligible pre-flight conflict must reach `validateCandidate`,
+      // where `applyUnionResolution` runs in the isolated candidate. Failing
+      // sync here only logged/SSE'd via `onResolutionEligible` and never
+      // resolved — a dead end on every retry.
+      const deferFailure = await this.shouldDeferPreflightConflictFailure(
+        job,
+        baseMainSha,
+        preflightReason,
+      );
+      if (!deferFailure) {
+        return { ok: false, conflict: true, reason: preflightReason };
+      }
+      this.logger?.integration(
+        job.taskId,
+        "info",
+        "pre-flight conflict eligible for narrow resolution — continuing to candidate merge (#0692)",
+        { reason: preflightReason },
+      );
     }
 
     // Ensure candidate worktree exists and is on main.
@@ -1819,10 +2303,12 @@ export class CloseOutOrchestrator {
     // generated-output conflicts are deliberately left for an explicit repair.
     const task = this.getTask?.(job.taskId);
     const autoResolve = task ? [relative(root, task.absPath)] : [];
-    // The task currently closing is authoritative on its branch. Other task
-    // files can change independently on main (for example, a CTO nudge), so
-    // preserve main's version for those rather than blocking close-out.
-    const autoResolveOurs = [`${this.config.workDir}/`];
+    // The task currently closing is authoritative on its branch. Other
+    // bookkeeping files (other tasks' work/<id>.md, inputs/, stories/) can
+    // change independently on main (for example, a CTO nudge or a captured
+    // input), so preserve main's version for those rather than blocking
+    // close-out.
+    const autoResolveOurs = bookkeepingKeepOursPrefixes(this.config);
     this.onProgress?.("merge");
     const merge = await mergeBranch(wtPath, featureBranch, {
       autoResolve,
@@ -1833,13 +2319,77 @@ export class CloseOutOrchestrator {
       // A conflict is a property of the two trees, not of the machine. Retrying
       // re-derives the identical conflict; the fix is always to merge main into
       // the feature branch and resolve it there (see docs/close-out-pipeline.md).
-      return {
-        ok: false,
-        retryable: merge.conflicts.length > 0 ? false : true,
-        reason: merge.conflicts.length
-          ? `merge conflict in ${merge.conflicts.join(", ")} — resolve it in the feature branch's own worktree (merge main into the branch), then retry`
-          : (merge.reason ?? "merge failed"),
-      };
+      const conflictReason = merge.conflicts.length
+        ? `merge conflict in ${merge.conflicts.join(", ")} — resolve it in the feature branch's own worktree (merge main into the branch), then retry`
+        : (merge.reason ?? "merge failed");
+
+      // #0692: before handing the whole feature back to the engineer, try the
+      // narrow resolution path. If the conflict is eligible (proven-safe
+      // semantic class AND a prior feature review) resolve it in the candidate
+      // by taking the union of both sides, record provenance, and continue on
+      // to the combined gate rather than restarting engineering/review.
+      if (merge.conflicts.length > 0 && this.onResolutionEligible) {
+        const verdict = await this.classifyResolutionEligibility(
+          job,
+          currentMainSha,
+          merge.conflicts,
+        );
+        if (verdict.eligible) {
+          const resolved = await this.applyUnionResolution(
+            job.taskId,
+            wtPath,
+            featureBranch,
+            merge.conflicts,
+          );
+          if (resolved.ok) {
+            const deltaReview = await this.recordResolutionDeltaReview(
+              job.taskId,
+              wtPath,
+              merge.conflicts,
+            );
+            if (!deltaReview.ok) {
+              return {
+                ok: false,
+                retryable: false,
+                reason: conflictReason,
+              };
+            }
+            this.onProgress?.("resolve-conflict");
+            this.logger?.integration(
+              job.taskId,
+              "info",
+              "integration conflict eligible for narrow resolution — resolved in the candidate (#0692)",
+              { classes: verdict.classes, files: merge.conflicts },
+            );
+            try {
+              this.onResolutionEligible(job.taskId, conflictReason, verdict);
+            } catch {
+              /* observation only */
+            }
+            // Fall through to the post-merge guards below: the candidate now
+            // holds the resolved merge and must pass the same checks as any
+            // other candidate before it can publish.
+          } else {
+            return {
+              ok: false,
+              retryable: false,
+              reason: conflictReason,
+            };
+          }
+        } else {
+          return {
+            ok: false,
+            retryable: false,
+            reason: conflictReason,
+          };
+        }
+      } else {
+        return {
+          ok: false,
+          retryable: merge.conflicts.length > 0 ? false : true,
+          reason: conflictReason,
+        };
+      }
     }
 
     // The merge "succeeded" but must have actually changed something, unless
@@ -1861,15 +2411,16 @@ export class CloseOutOrchestrator {
     }
 
     // A clean merge still carries any edits the feature branch made to OTHER
-    // tasks' task files (branch changed them, main did not touch them since
-    // the merge-base → git merged them with no conflict, so `autoResolveOurs`,
-    // which only runs on conflicts, never fired). Restore main's copy of each.
-    // Observed live: #0319's close-out published #0202/#0275 frontmatter drift.
+    // bookkeeping files (other tasks' work/<id>.md, inputs/, stories/): the
+    // branch changed them, main did not touch them since the merge-base, so git
+    // merged them with no conflict and `autoResolveOurs`, which only runs on
+    // conflicts, never fired. Restore main's copy of each. Observed live:
+    // #0319's close-out published #0202/#0275 frontmatter drift.
     try {
       const reset = await resetForeignWorkFiles({
         candidateWtPath: wtPath,
         baseMainSha: currentMainSha,
-        workDir: this.config.workDir,
+        dirs: bookkeepingDirs(this.config),
         ownWorkFile: task ? relative(root, task.absPath) : null,
       });
       if (reset.length > 0) {
@@ -2422,6 +2973,30 @@ export class CloseOutOrchestrator {
     const snapshotStats = getDiffStats(wtPath, mainBranch);
     saveDiffSnapshot(root, this.config.cacheDir, job.taskId, snapshotStats, snapshotDiff);
 
+    // #0692: if this candidate resolved an integration conflict, the combined
+    // gate above just validated the EXACT resolved tree — record the gate and
+    // the resolution-only review against that tree so the resume gate
+    // (`canResumeAuthorizedCloseOut`) has real evidence, and so a reviewer sees
+    // the resolution separately from the original feature review.
+    try {
+      const store = createResolutionProvenanceStore(this.config.root, this.config.cacheDir);
+      const existing = store.get(job.taskId);
+      if (existing && !existing.gate.at) {
+        const tree = (await runGit(wtPath, ["rev-parse", "HEAD^{tree}"], 4_000)).stdout.trim();
+        const commit = candidateShaRes.stdout.trim();
+        store.update(job.taskId, {
+          gate: {
+            result: "pass",
+            validatedTree: tree,
+            at: new Date().toISOString(),
+            detail: `combined gate on ${commit}`,
+          },
+        });
+      }
+    } catch {
+      /* provenance recording is best-effort; the gate result is the authority */
+    }
+
     const gateDurationMs = Math.round(Number(process.hrtime.bigint() - gateStartedNs) / 1e6);
     return { ok: true, candidateSha: candidateShaRes.stdout.trim(), gateDurationMs };
   }
@@ -2645,13 +3220,22 @@ export class CloseOutOrchestrator {
         // moment there is the same class of routine churn, not a signal of
         // in-progress human work.
         //
-        // Scoped narrowly: only when EVERY dirty path is under the work dir
-        // or is exactly `repoos.toml` — anything else (source, other config,
-        // a stray build artifact) still fails closed exactly as before,
-        // since that's genuinely ambiguous and worth a human's attention
-        // rather than a blind auto-commit.
-        const workPrefix = `${this.config.workDir ?? "work"}/`;
-        const isSafeChurn = (p: string): boolean => p.startsWith(workPrefix) || p === "repoos.toml";
+        // Scoped narrowly: only when EVERY dirty path is under one of the
+        // managed bookkeeping dirs (work/, inputs/, stories/) or is exactly
+        // `repoos.toml` — anything else (source, other config, a stray build
+        // artifact) still fails closed exactly as before, since that's
+        // genuinely ambiguous and worth a human's attention rather than a
+        // blind auto-commit. All three dirs are server-written main-owned
+        // bookkeeping, so a dirty moment there is the same routine churn as a
+        // task file (#0726).
+        const churnDirs = bookkeepingDirs(this.config);
+        const bookkeepingDirsForChurn = [
+          churnDirs.workDir,
+          churnDirs.inputsDir,
+          churnDirs.storiesDir,
+        ].map(withDirSlash);
+        const isSafeChurn = (p: string): boolean =>
+          bookkeepingDirsForChurn.some((prefix) => p.startsWith(prefix)) || p === "repoos.toml";
         const onlySafeChurn = dirtyOnMain.every(isSafeChurn);
         if (onlySafeChurn) {
           try {
@@ -2683,12 +3267,12 @@ export class CloseOutOrchestrator {
       // its own bookkeeping commits for that same task file while the
       // candidate was in flight, a routine, expected divergence that should
       // never have blocked a merge in the first place).
-      // Every configured task-directory file keeps MAIN's copy — main is
-      // authoritative for task bookkeeping by publish time (routine writes land
-      // there throughout the task's lifetime), the reverse of the validate-phase
-      // merge above where the candidate's own file is what's being tested in
-      // isolation. Project source and generated-output conflicts are not
-      // auto-resolved at publish time.
+      // Every configured bookkeeping-directory file keeps MAIN's copy — main is
+      // authoritative for task/inputs/stories bookkeeping by publish time
+      // (routine writes land there throughout the task's lifetime), the reverse
+      // of the validate-phase merge above where the candidate's own file is
+      // what's being tested in isolation. Project source and generated-output
+      // conflicts are not auto-resolved at publish time.
       // Final cancellation checkpoint before the irreversible merge (#0459):
       // Stop MTD is only safe while main has not yet been mutated.
       if (this.isCancelled(job.taskId)) {
@@ -2702,11 +3286,21 @@ export class CloseOutOrchestrator {
         return this.timeoutResult();
       }
 
+      // #0692 resolution lock: when this candidate resolved an integration
+      // conflict, the publication must land the EXACT tree the combined gate
+      // validated. A rebuilt candidate (a drift resync, a stray write) at a
+      // different tree is untested and must never publish on the strength of
+      // the earlier gate — refuse and let the caller reclassify/revalidate.
+      const resolutionCheck = await this.assertResolvedTreeUnchanged(job, wtPath);
+      if (!resolutionCheck.ok) {
+        return { ok: false, reason: resolutionCheck.reason };
+      }
+
       const publishMerge = await retryOnGitLock(
         () =>
           mergeBranch(root, branch, {
             autoResolve: [],
-            autoResolveOurs: [`${this.config.workDir}/`],
+            autoResolveOurs: bookkeepingKeepOursPrefixes(this.config),
           }),
         (r) =>
           !r.merged && isGitLockContention(r.reason ?? "") ? (r.reason ?? "index.lock") : null,

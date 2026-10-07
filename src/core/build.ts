@@ -235,7 +235,11 @@ function readGeneratedAt(file: string): string | null {
  * reported its version as "unknown". `.build-info.json` is the source of truth
  * here; `package.json` is just the last-resort fallback for a source checkout.
  */
-export function readBuildMeta(): { version: string | null; buildAt: string | null } {
+export function readBuildMeta(): {
+  version: string | null;
+  buildAt: string | null;
+  hash: string | null;
+} {
   const here = dirname(fileURLToPath(import.meta.url)); // <x>/core
   return readBuildMetaFrom(dirname(here)); // <x>: installRoot | repo/dist | repo/src
 }
@@ -249,18 +253,24 @@ export function readBuildMeta(): { version: string | null; buildAt: string | nul
 export function readBuildMetaFrom(markerDir: string): {
   version: string | null;
   buildAt: string | null;
+  hash: string | null;
 } {
   const dirs = [markerDir, join(markerDir, "..", "dist")];
 
   let version: string | null = null;
   let buildAt: string | null = null;
+  let hash: string | null = null;
   for (const dir of dirs) {
-    if (version === null) {
+    if (version === null || hash === null) {
       try {
         const info = JSON.parse(readFileSync(join(dir, ".build-info.json"), "utf8")) as {
           version?: unknown;
+          hash?: unknown;
         };
-        if (typeof info.version === "string" && info.version) version = info.version;
+        if (version === null && typeof info.version === "string" && info.version) {
+          version = info.version;
+        }
+        if (hash === null && typeof info.hash === "string" && info.hash) hash = info.hash;
       } catch {
         /* no marker in this dir */
       }
@@ -286,7 +296,7 @@ export function readBuildMetaFrom(markerDir: string): {
     }
   }
 
-  return { version, buildAt };
+  return { version, buildAt, hash };
 }
 
 /** Platform path separator pattern for import.meta.url detection. */
