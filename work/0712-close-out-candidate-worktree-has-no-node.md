@@ -2,7 +2,7 @@
 id: "0712"
 title: "Close-out candidate worktree has no node_modules: check plan fails with 'prettier: command not found'"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-out-candidate-worktree-has-no-node
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:49Z"
-updated_at: "2026-10-07T00:08:04Z"
+updated_at: "2026-10-07T00:13:10Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 24: unless the check plan starts with an install step. Install deps (or reuse) in the candidate worktree, or fail with advice.
 
@@ -58,3 +58,4 @@ VERIFY FIRST: #0674 (merged 2026-10-06) already reuses the primary checkout's no
    Duration  2.27s (transform 1.05s, setup 11ms, import 1.31s, tests 408ms, environment 470ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-07T00:13:10Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/mtd-remote-deadline.test.ts:147:28 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
