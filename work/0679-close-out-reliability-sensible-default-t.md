@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-07T03:09:52Z"
+review_passes: 3
 id: "0679"
 title: "Close-out reliability: sensible default timeout, and hand merge/semantic conflicts back to the engineer automatically"
 type: feature
@@ -12,10 +14,8 @@ branch: feat/close-out-reliability-sensible-default-t
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T16:58:40Z"
-updated_at: "2026-10-07T03:09:52Z"
 last_check_failure: "repoos check at 2026-10-07T02:59:34.698Z: server-side finalization timed out (deadline exceeded)"
 merge_conflict_retry_count: 2
-review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 11
 ---
@@ -130,3 +130,4 @@ error: script "test" exited with code 1
 - 2026-10-07T03:08:37Z · status active→review
 - 2026-10-07T03:08:37Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-07T03:09:52Z · note: review pass 3: good to go
+
