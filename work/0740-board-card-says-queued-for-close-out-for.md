@@ -12,7 +12,7 @@ branch: feat/board-card-says-queued-for-close-out-for
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T14:13:12Z"
-updated_at: "2026-10-07T16:24:58Z"
+updated_at: "2026-10-07T16:32:03Z"
 ---
 ## Problem
 
@@ -37,3 +37,4 @@ Read TaskCard.vue (pipelineStage, inPipeline computed), the pipeline bar, and sr
 - 2026-10-07T16:24:54Z · cli_override, model_override
 - 2026-10-07T16:24:57Z · status inbox→ready
 - 2026-10-07T16:24:58Z · status ready→active, branch
+- 2026-10-07T16:32:03Z · body
