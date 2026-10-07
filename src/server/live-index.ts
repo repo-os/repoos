@@ -504,6 +504,21 @@ export class LiveIndex {
     } catch {
       allowed = false; // a failing guard must not leak the transition through
     }
+    // The guard yields while finalization or a human PATCH may publish a newer
+    // state. Its decision belongs only to the transition it observed: never
+    // overwrite a newer index entry or revert a later on-disk status.
+    if (this.byId.get(task.id) !== existing || !existsSync(absPath)) return;
+    const current = parseTask({
+      content: readFileSync(absPath, "utf8"),
+      absPath,
+      root: this.config.root,
+      defaultStatus: this.config.defaultStatus,
+      defaultAssignee: this.config.defaultAssignee,
+    });
+    if (current.status !== task.status) {
+      this.applyFileChange(absPath, { guarded: true });
+      return;
+    }
     if (!allowed) {
       try {
         patchTaskFile(this.config, absPath, { status: existing.status });

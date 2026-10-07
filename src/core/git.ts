@@ -22,9 +22,15 @@ import {
   tryCompleteMergeByRegeneratingLockfile,
 } from "./lockfile-conflict.js";
 
+// Status is observational. Its optional index refresh can otherwise hold
+// index.lock while a handoff stages/commits the same worktree (#0737).
+function observationalGitArgs(args: string[]): string[] {
+  return args[0] === "status" ? ["--no-optional-locks", ...args] : args;
+}
+
 function git(root: string, args: string[]): string | null {
   try {
-    return execFileSync("git", args, {
+    return execFileSync("git", observationalGitArgs(args), {
       cwd: root,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
@@ -42,7 +48,7 @@ function git(root: string, args: string[]): string | null {
  * because the branch is checked out elsewhere".
  */
 function gitCapture(root: string, args: string[]): GitRun {
-  const run = spawnSync("git", args, {
+  const run = spawnSync("git", observationalGitArgs(args), {
     cwd: root,
     encoding: "utf8",
     timeout: 4000,
@@ -76,9 +82,14 @@ function worktreeAddFailure(run: GitRun): string {
  */
 function gitAsync(root: string, args: string[]): Promise<string | null> {
   return new Promise((resolve) => {
-    execFile("git", args, { cwd: root, encoding: "utf8", timeout: 4000 }, (error, stdout) => {
-      resolve(error ? null : stdout.trim());
-    });
+    execFile(
+      "git",
+      observationalGitArgs(args),
+      { cwd: root, encoding: "utf8", timeout: 4000 },
+      (error, stdout) => {
+        resolve(error ? null : stdout.trim());
+      },
+    );
   });
 }
 
@@ -98,7 +109,7 @@ export interface GitRun {
  */
 export function runGit(root: string, args: string[], timeout: number): Promise<GitRun> {
   return new Promise((resolve) => {
-    const child = spawn("git", args, { cwd: root });
+    const child = spawn("git", observationalGitArgs(args), { cwd: root });
     let stdout = "";
     let stderr = "";
     let timer: ReturnType<typeof setTimeout> | undefined;
