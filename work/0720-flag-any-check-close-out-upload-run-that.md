@@ -12,7 +12,7 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-07T02:12:52Z"
+updated_at: "2026-10-07T02:14:23Z"
 last_check_failure: "repoos check at 2026-10-07T01:25:57.253Z: server-side finalization timed out (deadline exceeded)"
 merge_conflict_retry_count: 2
 review_passes: 3
@@ -117,4 +117,4 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-07T02:07:40Z · body
 - 2026-10-07T02:11:09Z · body
 - 2026-10-07T02:12:52Z · body
-
+- 2026-10-07T02:14:23Z · note: shots: skipped — 2 handoff shots already captured during finalization (#0680)
