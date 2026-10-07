@@ -24,22 +24,33 @@ import { resolveRemoteHosts, remoteHostUser, hostRunner } from "../../core/remot
 import { planJobCapabilities, resolveCheckPlan } from "../../core/check-plan.js";
 import {
   CACHE_VOLUME_NAME,
+  DEFAULT_HANG_IDLE_MINUTES,
   DEFAULT_HOST_LOCK_WAIT_SECS,
+  HANG_IDLE_LOAD_THRESHOLD,
   HOST_LOCK_HEARTBEAT_SECS,
   HOST_LOCK_STALE_MINUTES,
   HOST_LOCK_TIMEOUT_EXIT,
   PREREQ_OK_TOKEN,
   RUNNER_SCRIPT_MIRROR_TOKEN,
   HostsUnavailableError,
+  HangWatchdog,
   RemoteValidationRunner,
   TailscaleHostPool,
   TailscaleRunner,
+  cacheVolumeForSlot,
   deadlineLockWaitSecs,
+  detectHungRun,
+  hangIdleThresholdMs,
+  hostLoadCommand,
   hostLockShell,
   hostLockPriority,
+  killContainerCommand,
+  loadPerCpu,
   parseHostLockInspectOutput,
   parseRemoteServerStats,
   prereqProbeCommand,
+  staleContainerCleanupCommand,
+  validateContainerName,
   type RemoteExecDeps,
   type RemoteExecResult,
 } from "../../server/remote-validation.js";
@@ -66,6 +77,26 @@ function tmpRoot(): string {
 }
 
 const tick = (ms = 10): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+function shippedValidateSh(): string {
+  let dir = process.cwd();
+  for (let i = 0; i < 6; i++) {
+    const candidate = join(dir, "scripts", "remote-runner", "validate.sh");
+    if (existsSync(candidate)) return readFileSync(candidate, "utf8");
+    dir = join(dir, "..");
+  }
+  return "";
+}
+
+/** Bash fragment validate.sh runs after parsing args, before allocating WORK. */
+function validatePreWorkStartup(script: string): string {
+  const workLine = 'WORK="$(mktemp -d "$HOME/.repoos-validate.XXXXXX")"';
+  const start = script.indexOf('docker ps -aq --filter "name=repoos-validate-"');
+  const end = script.indexOf(workLine);
+  expect(start).toBeGreaterThanOrEqual(0);
+  expect(end).toBeGreaterThan(start);
+  return script.slice(start, end).trim();
+}
 
 // ── config parsing ───────────────────────────────────────────────────────────
 
@@ -355,6 +386,8 @@ interface Fixture {
   release(host?: string): string;
   pending(): string[];
   peak(): number;
+  /** Container names the hang watchdog killed (#0729). */
+  killed: string[];
 }
 
 function poolFixture(opts: {
@@ -382,6 +415,15 @@ function poolFixture(opts: {
   containerImage?: string;
   /** Simulated host-lock holders per host (#0705). */
   hostLockOccupancy?: Record<string, number>;
+  /** Every validation run on these hosts streams nothing and stays pending
+   *  forever — the hang watchdog (#0729) must kill it and retry elsewhere. */
+  hungRunOn?: string[];
+  /** Load average the hang watchdog's idle probe reports (#0729). 0 = idle. */
+  fixedLoad?: number;
+  /** Hang timings, shrunk so tests do not sleep for real (#0729). */
+  hangIdleMinutes?: number;
+  hangCheckIntervalMs?: number;
+  loadSampleIntervalMs?: number;
 }): Fixture {
   const root = tmpRoot();
   const config = {
@@ -407,6 +449,7 @@ function poolFixture(opts: {
   const pending: Array<{ host: string; resolve: () => void }> = [];
   const dropped = new Set<string>();
   const down = new Set<string>();
+  const killed: string[] = [];
   let inFlight = 0;
   let peak = 0;
   const exec: RemoteExecDeps = {
@@ -414,6 +457,23 @@ function poolFixture(opts: {
     uploadFile: vi.fn(async () => ({ ok: true })),
     downloadDir: vi.fn(async () => {}),
     runRemote: vi.fn(async (host, cmd): Promise<RemoteExecResult> => {
+      // The hang watchdog's idle probe (#0729): report the configured load.
+      if (cmd.includes("__UPTIME__") && cmd.includes("uptime")) {
+        return {
+          code: 0,
+          output: `__UPTIME__\n 12:00  up 1 day, load averages: ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0}\n__CPU__\n1\n`,
+          timedOut: false,
+        };
+      }
+      // The hang kill (#0729): record the named container and let the pending
+      // run resolve as if docker rm -f ended it.
+      if (cmd.startsWith("docker rm -f ") && cmd.includes("repoos-validate-")) {
+        const name = cmd.split("'")[1] ?? cmd.split(" ").pop()!;
+        killed.push(name);
+        const i = pending.findIndex((p) => p.host === host.ip);
+        if (i !== -1) pending.splice(i, 1)[0]!.resolve();
+        return { code: 137, output: "", timedOut: false };
+      }
       if (cmd.includes("__HOST_LOCK__")) {
         const n = opts.hostLockOccupancy?.[host.ip] ?? 0;
         let output = "__HOST_LOCK__\n";
@@ -467,7 +527,13 @@ function poolFixture(opts: {
   };
   const runner = new TailscaleRunner(config, undefined, {
     exec,
-    timings: { healthRetryMs: opts.healthRetryMs ?? 40, probeTimeoutMs: 1_000 },
+    timings: {
+      healthRetryMs: opts.healthRetryMs ?? 40,
+      probeTimeoutMs: 1_000,
+      hangIdleMinutes: opts.hangIdleMinutes,
+      hangCheckIntervalMs: opts.hangCheckIntervalMs,
+      loadSampleIntervalMs: opts.loadSampleIntervalMs,
+    },
   });
   return {
     runner,
@@ -477,6 +543,7 @@ function poolFixture(opts: {
     cmds,
     pending: () => pending.map((p) => p.host),
     peak: () => peak,
+    killed,
     release(host?: string) {
       const i = host ? pending.findIndex((p) => p.host === host) : 0;
       if (i === -1) throw new Error(`no pending run on ${host}`);
@@ -1864,5 +1931,382 @@ describe("hostRunner", () => {
   it('is "native" only when the row explicitly says so', () => {
     expect(hostRunner({ host: "mini", runner: "native" })).toBe("native");
     expect(hostRunner({ host: "mini", runner: "docker" })).toBe("docker");
+  });
+});
+
+// ── hang detection + container cleanup + cache isolation (#0729) ─────────────
+
+describe("hang detector (#0729)", () => {
+  it("thresholds: default 5 minutes, configurable, floored at a positive value", () => {
+    expect(hangIdleThresholdMs()).toBe(DEFAULT_HANG_IDLE_MINUTES * 60_000);
+    expect(hangIdleThresholdMs(2)).toBe(120_000);
+    expect(hangIdleThresholdMs(0)).toBe(DEFAULT_HANG_IDLE_MINUTES * 60_000);
+    expect(hangIdleThresholdMs(undefined)).toBe(300_000);
+  });
+
+  it("normalises load average per CPU; unknown load is never 'idle'", () => {
+    expect(loadPerCpu([4, 4, 4], 4)).toBe(1);
+    expect(loadPerCpu([0.2, 0.2, 0.2], 4)).toBeCloseTo(0.05);
+    // Missing / non-finite inputs → Infinity (never counted as idle).
+    expect(loadPerCpu(undefined, 8)).toBe(Number.POSITIVE_INFINITY);
+    expect(loadPerCpu([Number.NaN, 0, 0], 8)).toBe(Number.POSITIVE_INFINITY);
+    // Unknown CPU count falls back to 1 (conservative).
+    expect(loadPerCpu([3, 3, 3], undefined)).toBe(3);
+  });
+
+  it("fires only when output is idle AND the host is idle", () => {
+    const thresholdMs = 300_000;
+    const now = 10_000_000;
+    const quiet = now - thresholdMs - 1;
+    // Idle output + idle host → hung.
+    expect(detectHungRun({ lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 0.1 })).toBe(true);
+    // Output advanced recently → not hung, even on an idle host.
+    expect(detectHungRun({ lastOutputAt: now - 1_000, now, thresholdMs, loadPerCpu: 0.1 })).toBe(
+      false,
+    );
+    // Host busy → not hung (the run may simply be queued behind real work).
+    expect(detectHungRun({ lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 4 })).toBe(false);
+    // Unknown load (Infinity) → not hung.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: Number.POSITIVE_INFINITY,
+      }),
+    ).toBe(false);
+  });
+
+  it("treats exactly-threshold idle time as hung (inclusive)", () => {
+    const now = 1_000_000;
+    expect(
+      detectHungRun({ lastOutputAt: now - 300_000, now, thresholdMs: 300_000, loadPerCpu: 0 }),
+    ).toBe(true);
+  });
+
+  it("HangWatchdog fires onHung exactly once and stops after firing", () => {
+    let now = 0;
+    let load = 0.1;
+    let killed = 0;
+    const wd = new HangWatchdog({
+      thresholdMs: 300_000,
+      loadPerCpu: () => load,
+      onHung: () => {
+        killed++;
+      },
+      checkIntervalMs: 1,
+      now: () => now,
+    });
+    // Fresh output → not hung.
+    now = 100_000;
+    wd.noteOutput();
+    now = 200_000;
+    expect(wd.check()).toBe(false);
+    // Idle past the threshold on an idle host → fires once.
+    now = 500_000;
+    expect(wd.check()).toBe(true);
+    expect(killed).toBe(1);
+    expect(wd.hung).toBe(true);
+    // Never fires again, even if checked.
+    now = 900_000;
+    expect(wd.check()).toBe(false);
+    expect(killed).toBe(1);
+  });
+
+  it("HangWatchdog does NOT fire while output keeps moving", () => {
+    let now = 0;
+    let killed = 0;
+    const wd = new HangWatchdog({
+      thresholdMs: 300_000,
+      loadPerCpu: () => 0.1,
+      onHung: () => {
+        killed++;
+      },
+      checkIntervalMs: 1,
+      now: () => now,
+    });
+    // Output arrives every 4 minutes for an hour — never quiet past 5 min.
+    for (let i = 0; i < 15; i++) {
+      now += 240_000;
+      wd.noteOutput();
+      expect(wd.check()).toBe(false);
+    }
+    expect(killed).toBe(0);
+    expect(wd.hung).toBe(false);
+  });
+
+  it("HangWatchdog never kills a hive of output when the host is busy", () => {
+    let now = 0;
+    let load = 6;
+    let killed = 0;
+    const wd = new HangWatchdog({
+      thresholdMs: 300_000,
+      loadPerCpu: () => load,
+      onHung: () => {
+        killed++;
+      },
+      checkIntervalMs: 1,
+      now: () => now,
+    });
+    now = 3_600_000; // an hour with no output, but load 6/1cpu
+    expect(wd.check()).toBe(false);
+    // The moment the host goes idle, the same stalled run is hung.
+    load = 0;
+    expect(wd.check()).toBe(true);
+    expect(killed).toBe(1);
+  });
+
+  it("hostLoadCommand samples load and CPU count", () => {
+    const cmd = hostLoadCommand();
+    expect(cmd).toContain("uptime");
+    expect(cmd).toContain("__CPU__");
+    expect(cmd).toContain("nproc");
+  });
+});
+
+describe("hung container cleanup (#0729)", () => {
+  it("names one run's container uniquely and safely", () => {
+    const name = validateContainerName("0729-ab12cd34");
+    expect(name).toBe("repoos-validate-0729-ab12cd34");
+    // Unsafe characters are stripped to the Docker name charset.
+    expect(validateContainerName("a/b c$d")).toBe("repoos-validate-a_b_c_d");
+    // Empty / unusable ids still yield a named container.
+    expect(validateContainerName("")).toBe("repoos-validate-run");
+  });
+
+  it("kills only the named container, never by a pattern", () => {
+    const cmd = killContainerCommand("repoos-validate-0729-ab12cd34");
+    expect(cmd).toBe("docker rm -f 'repoos-validate-0729-ab12cd34' >/dev/null 2>&1 || true");
+    // A hostile name cannot inject a second command.
+    expect(killContainerCommand("bad; rm -rf /")).not.toContain("; rm -rf /");
+  });
+
+  it("sweeps stale containers by the repoos-validate- prefix only", () => {
+    const cmd = staleContainerCleanupCommand();
+    expect(cmd).toContain("docker ps -aq");
+    expect(cmd).toContain("name=repoos-validate-");
+    expect(cmd).toContain("xargs -r docker rm -f");
+    // Never a blanket kill of every container on the host.
+    expect(cmd).not.toMatch(/docker ps -aq\s*\|/);
+  });
+
+  it("sweeps only NOT-running containers, so a probe never kills a live sibling run", () => {
+    // Probes run on a background timer while a sibling job (maxConcurrent > 1)
+    // may still be executing; sweeping `docker ps -aq` unfiltered would remove
+    // that in-flight container (#0729 review). Only leftovers are removed.
+    const cmd = staleContainerCleanupCommand();
+    expect(cmd).toContain("status=created");
+    expect(cmd).toContain("status=exited");
+    expect(cmd).toContain("status=dead");
+    expect(cmd).not.toContain("status=running");
+    // `docker ps` with no status filter would include running containers.
+    expect(cmd).not.toMatch(/--filter\s+'?name=repoos-validate-'?\s+2>/);
+  });
+
+  it("startup does not globally sweep sibling work dirs in the pre-container window (#0729 review)", async () => {
+    // Confirmed root cause: a pre-lock `rm -rf` of $HOME/.repoos-validate.* hit
+    // a sibling's $WORK before its container existed (invisible to mount guards)
+    // and emptied /repo mid-run. The fix is no global workdir sweep at startup;
+    // each run cleans only its own $WORK in the EXIT trap.
+    const script = shippedValidateSh();
+    expect(script).not.toBe("");
+    expect(script).not.toMatch(/for _stale in.*\.repoos-validate/);
+    expect(script).toMatch(/trap _rvcleanup EXIT/);
+    expect(script).toMatch(/rm -rf "\$WORK"/);
+
+    const startup = validatePreWorkStartup(script);
+    const root = tmpRoot();
+    const home = join(root, "home");
+    mkdirSync(home, { recursive: true });
+    const workA = join(home, ".repoos-validate.aaaaaa");
+    const marker = join(workA, "repo", "marker");
+
+    const hold = (async () => {
+      mkdirSync(join(workA, "repo"), { recursive: true });
+      writeFileSync(marker, "preserve");
+      await tick(300);
+    })();
+    const startupRun = sh(`export HOME=${JSON.stringify(home)} IMAGE=repoos-ci; ${startup}`);
+    await Promise.all([hold, startupRun]);
+    expect(readFileSync(marker, "utf8")).toBe("preserve");
+  });
+
+  it("probes for stale containers when checking a docker host", () => {
+    const cmd = prereqProbeCommand("docker", "repoos-ci");
+    expect(cmd).toContain("name=repoos-validate-");
+  });
+
+  it("does not sweep containers on a native host", () => {
+    expect(prereqProbeCommand("native")).not.toContain("name=repoos-validate-");
+  });
+});
+
+describe("per-slot cache isolation (#0729)", () => {
+  it("slot 0 keeps the base volume so a warm cache is reused", () => {
+    expect(cacheVolumeForSlot(CACHE_VOLUME_NAME, 0)).toBe(CACHE_VOLUME_NAME);
+  });
+
+  it("every other slot gets its own volume", () => {
+    expect(cacheVolumeForSlot(CACHE_VOLUME_NAME, 1)).toBe(`${CACHE_VOLUME_NAME}-slot1`);
+    expect(cacheVolumeForSlot(CACHE_VOLUME_NAME, 5)).toBe(`${CACHE_VOLUME_NAME}-slot5`);
+    // Distinct slots never share a volume.
+    expect(cacheVolumeForSlot(CACHE_VOLUME_NAME, 2)).not.toBe(
+      cacheVolumeForSlot(CACHE_VOLUME_NAME, 3),
+    );
+  });
+
+  it("clamps nonsensical slot indices to the base volume", () => {
+    expect(cacheVolumeForSlot(CACHE_VOLUME_NAME, -1)).toBe(CACHE_VOLUME_NAME);
+    expect(cacheVolumeForSlot(CACHE_VOLUME_NAME, 1.5)).toBe(CACHE_VOLUME_NAME);
+    expect(cacheVolumeForSlot(CACHE_VOLUME_NAME, Number.NaN)).toBe(CACHE_VOLUME_NAME);
+  });
+
+  it("the host lock's slot index is what isolates the cache (validate.sh contract)", () => {
+    // validate.sh reads REPOOS_SLOT (exported by hostLockShell's inner) and
+    // appends it to the base volume — the same key hostLockShell computes.
+    const script = hostLockShell({
+      slots: 2,
+      waitSecs: 0,
+      inner: 'REPOOS_SLOT="$_rvslot" bash validate.sh a b c',
+    });
+    expect(script).toContain("_rvslot=");
+    expect(script).toContain('REPOOS_SLOT="$_rvslot"');
+  });
+});
+
+describe("pool hung-run bookkeeping (#0729)", () => {
+  it("markHung flags the in-flight run and keeps a bounded recent list", () => {
+    const pool = new TailscaleHostPool(
+      { enabled: true, provider: "tailscale", tailscaleHosts: [{ host: "a" }] },
+      { exec: {} as unknown as RemoteExecDeps },
+    );
+    // markHung on a fresh host with no active run records the cleanup event.
+    pool.markHung("a", "killed on request");
+    const status = pool.status();
+    expect(status[0]!.hungRuns).toHaveLength(1);
+    expect(status[0]!.hungRuns![0]!.detail).toBe("killed on request");
+  });
+
+  it("killHungRun reports when there is no in-flight run for the task", async () => {
+    const pool = new TailscaleHostPool(
+      { enabled: true, provider: "tailscale", tailscaleHosts: [{ host: "a" }] },
+      { exec: {} as unknown as RemoteExecDeps },
+    );
+    const result = await pool.killHungRun("0729");
+    expect(result.ok).toBe(false);
+    expect(result.detail).toMatch(/no in-flight remote validation run/);
+  });
+});
+
+describe("hung run recovery end to end (#0729)", () => {
+  it("kills a stalled run's container and retries it on another host", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }, { host: "b" }],
+      retryOtherHosts: true,
+      fixedLoad: 0, // both hosts idle — a stalled run there is hung
+      hangIdleMinutes: 0.0005, // ~30ms idle threshold
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+    });
+    // Hosts must be probed before dispatch.
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+
+    const resultPromise = f.runner.validate(opts("0729"));
+    // The run stalls on the first host with no output.
+    let attempts = 0;
+    while (attempts++ < 200) {
+      if (f.killed.length > 0) break;
+      await tick(5);
+    }
+    expect(f.killed).toHaveLength(1);
+    expect(f.killed[0]).toMatch(/^repoos-validate-/);
+
+    // The hung run is retried on the OTHER host (a fresh pending run).
+    attempts = 0;
+    while (attempts++ < 200) {
+      if (f.pending().length > 0) break;
+      await tick(5);
+    }
+    expect(f.pending()).toHaveLength(1);
+
+    // Finish the retry so validate() settles.
+    f.release();
+    const summary = await resultPromise;
+    expect(summary.ok).toBe(true);
+
+    // The pool recorded the hang for the Remote runners tab.
+    const hung = f.runner.hostStatus()?.flatMap((h) => h.hungRuns ?? []) ?? [];
+    expect(hung).toHaveLength(1);
+    expect(hung[0]!.taskId).toBe("0729");
+  });
+
+  it("records outcome 'hung' in the check-run history", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      fixedLoad: 0,
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = f.runner.validate(opts("0729"));
+    let attempts = 0;
+    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
+    const summary = await resultPromise;
+    expect(summary.ok).toBe(false);
+    expect(summary.hung).toBe(true);
+    expect(summary.transient).toBe(true);
+    // The durable history row says 'hung', not 'fail' or 'cancelled'.
+    const runs = getCheckStore(f.root, ".repoos").list({ taskId: "0729" });
+    expect(runs.some((r) => r.outcome === "hung")).toBe(true);
+  });
+
+  it("does not kill a stalled run while the host stays busy", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      fixedLoad: 8, // busy: a stalled run may just be queued behind real work
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = f.runner.validate(opts("0729"));
+    // Give the watchdog many chances to (wrongly) fire.
+    for (let i = 0; i < 30; i++) await tick(10);
+    expect(f.killed).toHaveLength(0);
+    expect(f.pending()).toHaveLength(1);
+    f.release();
+    expect((await resultPromise).ok).toBe(true);
+  });
+});
+
+// ── container cleanup on cancel/timeout (#0729 review) ───────────────────────
+
+describe("server-side container cleanup when a run is cancelled or times out (#0729)", () => {
+  it("removes the run's container by name when the run times out", async () => {
+    // A run the outer timeout SIGKILLs (or the caller's deadline cancels) can
+    // leave its container running if the SSH channel is gone before
+    // validate.sh's EXIT trap fires. The runner must therefore issue its own
+    // scoped `docker rm -f repoos-validate-<id>` — never a blanket kill.
+    const f = poolFixture({ hosts: [{ host: "a" }], timeoutRunOn: ["a"] });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+
+    const summary = await f.runner.validate(opts("0729"));
+    expect(summary.ok).toBe(false);
+    // The cleanup is fire-and-forget; give it a tick to land.
+    for (let i = 0; i < 20 && f.killed.length === 0; i++) await tick(5);
+    expect(f.killed).toHaveLength(1);
+    expect(f.killed[0]).toMatch(/^repoos-validate-/);
+  });
+
+  it("does not kill a container for a clean pass (validate.sh's own trap already removed it)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = f.runner.validate(opts("0729"));
+    for (let i = 0; i < 100 && f.pending().length === 0; i++) await tick();
+    f.release();
+    expect((await resultPromise).ok).toBe(true);
+    for (let i = 0; i < 10; i++) await tick(5);
+    expect(f.killed).toHaveLength(0);
   });
 });

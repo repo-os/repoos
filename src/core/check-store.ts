@@ -105,8 +105,15 @@ const MAX_DETAIL_CHARS = 4000;
 
 export type CheckRunPhase = "pre-review" | "close-out" | "release" | "cli";
 
-/** One recorded check run, as stored and as the API returns it. */
-export type CheckRunOutcome = "pass" | "fail" | "cancelled" | "skipped";
+/**
+ * One recorded check run, as stored and as the API returns it.
+ *
+ * `hung` (#0729): a remote run whose output stopped changing while the host
+ * sat idle — the container was killed as a hang and retried elsewhere. It is
+ * distinct from `cancelled` (the caller's own deadline) and from `fail` (a
+ * genuine red gate): a hung run is an infra fault with no test result at all.
+ */
+export type CheckRunOutcome = "pass" | "fail" | "cancelled" | "hung" | "skipped";
 
 /**
  * `skipped` (#0592): the gate ran nothing because this repo has no check plan

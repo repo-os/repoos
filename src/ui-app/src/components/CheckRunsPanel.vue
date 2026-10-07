@@ -76,12 +76,13 @@ function setSort(key: SortKey): void {
   }
 }
 
-/** Failures before cancellations before skips before passes — severity, not alphabet. */
+/** Failures before cancellations before hangs before skips before passes — severity, not alphabet. */
 const OUTCOME_SEVERITY: Record<CheckRunRow["outcome"], number> = {
   fail: 0,
   cancelled: 1,
-  skipped: 2,
-  pass: 3,
+  hung: 2,
+  skipped: 3,
+  pass: 4,
 };
 
 function sortValue(r: CheckRunRow, key: SortKey): string | number {
@@ -195,6 +196,7 @@ function scopeLabel(r: CheckRunRow): string {
 function outcomeLabel(r: CheckRunRow): string {
   if (r.outcome === "pass") return "passed";
   if (r.outcome === "cancelled") return "cancelled";
+  if (r.outcome === "hung") return "hung · container killed";
   if (r.outcome === "skipped") return "skipped · no checks configured";
   if (!r.failedStep) return "failed";
   const n = r.failedTests.length;
@@ -460,6 +462,10 @@ function outcomeLabel(r: CheckRunRow): string {
   color: var(--green);
 }
 .cr-outcome[data-outcome="cancelled"] span {
+  color: var(--amber);
+}
+.cr-outcome[data-outcome="hung"] span {
+  /* #0729: a hung run is an infra fault with no test result — amber. */
   color: var(--amber);
 }
 .cr-outcome[data-outcome="skipped"] span {
