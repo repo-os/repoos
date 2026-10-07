@@ -2,7 +2,7 @@
 id: "0701"
 title: Show the running server's version next to the CLI's and warn when the server is stale
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [server, cli]
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T03:15:53Z"
-updated_at: "2026-10-06T03:26:52Z"
+updated_at: "2026-10-07T17:10:12Z"
 ---
 ## Problem
 
@@ -35,3 +35,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 
 - 2026-10-06T03:15:53Z · created · unknown
 - 2026-10-06T03:26:52Z · note: Recheck after restarting the tuk-private server on current code: the served page still has repoos-build-hash 'unknown', and repoos status still prints 'no dist build — source checkout' and labels a hand-run terminal serve as 'managed'.
+- 2026-10-07T17:10:12Z · status inbox→ready
