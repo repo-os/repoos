@@ -3,7 +3,16 @@
  * (#0680) and test fakes. Keeps Playwright types out of core: callers pass a
  * page object with the event hooks the gate needs.
  */
-export type PageGateIssueKind = "console" | "pageerror" | "request" | "overflow" | "blank";
+export type PageGateIssueKind =
+  | "console"
+  | "pageerror"
+  | "request"
+  | "overflow"
+  | "blank"
+  // #0734: required visual evidence that is missing or wrong.
+  | "assertion"
+  | "missing-target"
+  | "route";
 
 export interface PageGateIssue {
   kind: PageGateIssueKind;

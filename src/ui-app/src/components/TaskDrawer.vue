@@ -5269,6 +5269,12 @@ watch(
               {{ repo.fmtDate(uiHandoffVerification.at) }}
               · {{ uiHandoffVerification.captures }} capture(s)
             </p>
+            <p v-if="uiHandoffVerification.sourceIdentity" class="ui-verification-detail">
+              Tested tree {{ uiHandoffVerification.sourceIdentity }}
+              <span v-if="uiHandoffVerification.evidenceDir">
+                · PNGs at {{ uiHandoffVerification.evidenceDir }}
+              </span>
+            </p>
             <p v-if="uiHandoffVerification.issues.length === 0" class="ui-verification-ok">
               No console errors, failed same-origin requests, overflow, or blank captures at
               handoff.
@@ -5282,6 +5288,24 @@ watch(
                 <span v-if="issue.url" class="ui-verification-detail" :title="issue.url">{{
                   issue.url
                 }}</span>
+              </li>
+            </ul>
+            <!-- #0734: exact URL + assertion outcomes per capture, so a reviewer
+                 sees what was actually verified, not just "clean console". -->
+            <ul
+              v-if="uiHandoffVerification.captureDetails?.length"
+              class="ui-verification-captures"
+            >
+              <li v-for="(cap, idx) in uiHandoffVerification.captureDetails" :key="idx">
+                <span class="mono">{{ cap.label || cap.target + cap.route }}</span>
+                <span class="ui-verification-detail">
+                  · {{ cap.routeMatched ? "route matched" : "WRONG ROUTE" }}
+                  <template v-if="cap.redirectNote"> — {{ cap.redirectNote }}</template>
+                  <template v-if="cap.assertionsChecked">
+                    · {{ cap.assertionsPassed }}/{{ cap.assertionsChecked }} assertion(s)
+                  </template>
+                </span>
+                <span class="ui-verification-detail" :title="cap.url">{{ cap.url }}</span>
               </li>
             </ul>
           </section>
