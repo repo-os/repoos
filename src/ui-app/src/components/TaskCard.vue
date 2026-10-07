@@ -459,12 +459,11 @@ const hint = computed<CardHint | null>(() => {
       const base = stageLabel ? `moving to done · ${stageLabel}` : "queued for close-out";
       return {
         label: slow ? `${base} · slow` : base,
-        title:
-          slow
-            ? "Close-out is taking longer than usual — focus the slow badge for timing details"
-            : stage === "resolve-conflict"
-              ? "Resolving an integration conflict against current main in an isolated candidate — the original review is preserved and only the resolution delta is reviewed."
-              : "Move to done already started — merging, building, and checking. See the pipeline bar for live progress.",
+        title: slow
+          ? "Close-out is taking longer than usual — focus the slow badge for timing details"
+          : stage === "resolve-conflict"
+            ? "Resolving an integration conflict against current main in an isolated candidate — the original review is preserved and only the resolution delta is reviewed."
+            : "Move to done already started — merging, building, and checking. See the pipeline bar for live progress.",
         cls: "tc-moving",
       };
     }
