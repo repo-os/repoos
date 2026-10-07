@@ -20,6 +20,7 @@ import {
   mainDriftIsBookkeepingOnly,
 } from "../../server/integration-orchestrator.js";
 import type { RepoOSConfig } from "../../core/types.js";
+import { parseDocument } from "../../core/frontmatter.js";
 
 function git(root: string, args: string[]): string {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
@@ -453,9 +454,16 @@ describe("close-out cleanup keeps a dirty feature worktree (#0512)", () => {
       const result = await orchestrator.processNext();
 
       expect(result.ok).toBe(true);
-      expect(readFileSync(join(root, "work", `${id}-cleanup.md`), "utf8")).toContain(
-        `merged_commit: ${branchSha}`,
+      const released = parseDocument(
+        readFileSync(join(root, "work", `${id}-cleanup.md`), "utf8"),
       );
+      // Writer quotes SHAs that start with a digit (#0711); compare parsed value.
+      expect(released.data.merged_commit).toBe(branchSha);
+      if (/^0/.test(branchSha)) {
+        expect(readFileSync(join(root, "work", `${id}-cleanup.md`), "utf8")).toMatch(
+          /merged_commit: "0/,
+        );
+      }
     } finally {
       clean();
     }
