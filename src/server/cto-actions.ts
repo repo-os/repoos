@@ -6,6 +6,8 @@ import type { RepoOSConfig, Task } from "../core/types.js";
 import {
   CTO_ACTION_LABELS,
   ctoActionRateLimitExceeded,
+  countCtoRestartsThisEpisode,
+  decideRestartStrategy,
   isCtoActionAllowlisted,
   isCtoSafeActionId,
   type CtoSafeActionId,
@@ -130,6 +132,12 @@ export async function runCtoSafeAction(
   const actor = opts.actor ?? "api";
   const taskId = opts.taskId ?? null;
 
+  // Master kill switch (#0727): halt automatic actions, but a human asking for
+  // one explicitly (UI button or API call) still runs.
+  if (actor === "cto" && deps.config.automation?.paused === true) {
+    return { ok: false, reason: "Automatic actions are paused (automation.paused)" };
+  }
+
   const gate = checkAllowlistAndRate(deps, action, taskId);
   if (gate) return gate;
 
@@ -162,13 +170,20 @@ export async function runCtoSafeAction(
       return { ok: false, reason: `Cannot restart engineer: ${block}` };
     }
     const { kind, reason } = classifyDeadAgentReason(task, deps.runner);
+    const priorRestarts = countCtoRestartsThisEpisode(task.body);
+    const strategy = decideRestartStrategy({ kind, reason }, priorRestarts);
     const instruction = [
       "The board monitor restarted this engineer session because the previous run ended without progress.",
       `Last session signal (${kind}): ${reason}`,
+      strategy === "fresh"
+        ? "The previous conversation was reset because it kept ending without progress — start the task again from the worktree's current state."
+        : "Continue the work from where the previous session left off.",
       "Read the failure, fix the root cause, run verification, then hand off when ready.",
     ].join("\n");
 
-    const launch = await relaunchEngineerOnActiveTask(deps, task, instruction);
+    const launch = await relaunchEngineerOnActiveTask(deps, task, instruction, {
+      freshSession: strategy === "fresh",
+    });
     if (!launch.ok) {
       return { ok: false, reason: launch.reason };
     }
@@ -181,7 +196,7 @@ export async function runCtoSafeAction(
         defaultStatus: deps.config.defaultStatus,
         defaultAssignee: deps.config.defaultAssignee,
       });
-      const note = `CTO action: restart-stalled-agent · ${reason}`;
+      const note = `CTO action: restart-stalled-agent (${strategy}) · ${reason}`;
       recordChange(current, note);
       writeFileSync(task.absPath, serializeTask(current));
       commitTaskFile(deps.config.root, task.absPath, `docs(${current.id}): CTO restart engineer`);
@@ -193,7 +208,7 @@ export async function runCtoSafeAction(
     }
 
     recordRate(deps, action, taskId);
-    const detail = `Restarted engineer for #${taskId}.`;
+    const detail = `Restarted engineer for #${taskId} (${strategy} session).`;
     auditAction(deps, action, actor, detail, taskId);
     return { ok: true, detail };
   }

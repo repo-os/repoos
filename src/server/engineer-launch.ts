@@ -25,12 +25,15 @@ export interface EngineerLaunchDeps {
 
 /**
  * Start or resume the engineer on an active task with an optional instruction
- * prepended to the resume preamble. Does not change task status.
+ * prepended to the resume preamble. Does not change task status. When
+ * `freshSession` is set the previous conversation is abandoned and a new one
+ * starts in the same worktree (#0727).
  */
 export async function relaunchEngineerOnActiveTask(
   deps: EngineerLaunchDeps,
   task: Task,
   instruction: string,
+  opts: { freshSession?: boolean } = {},
 ): Promise<EngineerLaunchResult> {
   const { config, index, runner, logger } = deps;
   const id = task.id;
@@ -90,6 +93,7 @@ export async function relaunchEngineerOnActiveTask(
     cwd,
     contextPack: pack.content,
     resumePreamble: preamble,
+    freshSession: opts.freshSession === true,
   });
 
   if (!spawnRes.ok) {
