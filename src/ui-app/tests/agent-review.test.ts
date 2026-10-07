@@ -178,6 +178,14 @@ async function waitForReviewRunning(
   }
 }
 
+/** Server finalization can still be finishing housekeeping after review ends. */
+async function waitForHandoffSlotReleased(server: ServerHandle, id: string): Promise<void> {
+  await waitForAsync(async () => {
+    const task = await api(server, "GET", `/api/tasks/${id}`);
+    return task.body.pendingHandoff === false;
+  }, "handoff slot released");
+}
+
 /** Async poll for an observable outcome (the reviewer runs are fire-and-forget). */
 async function waitForAsync(fn: () => Promise<boolean>, label: string): Promise<void> {
   const deadline = Date.now() + 10_000;
@@ -354,6 +362,7 @@ describe("agent review before human sign-off (#0101)", () => {
       const task = await taskWithWorktree(server, fx, "Review each handoff");
       await requestReview(server, task.id, task.absPath);
       await waitForReviewRunning(server, task.id, false);
+      await waitForHandoffSlotReleased(server, task.id);
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 1$/m);
 
       const returned = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "active" });
