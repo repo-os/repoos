@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/resolve-integration-conflicts-without-re
 created_at: "2026-10-05T23:52:38Z"
-updated_at: "2026-10-07T15:19:02Z"
+updated_at: "2026-10-07T15:25:39Z"
 ---
 ## Problem
 Current verified incident: #0730 passed full handoff gate311sbee10:36:36Z and green review10:38:42Z at636a03b27730be914515fff8448cf9028574753f. #0728 then landed1118b2031dbd3346b4f4b91ade9dd8e6585c8ca0. #0730 MTD failed10:44:16Z on src/cli/index.ts conflict and returned active to engineer15482. Original review was valid for its snapshot, but conflict repair restarts engineering/handoff/review, repeats validation, and appears to users as failed development. Driver verified on CURRENT maina1707629aec1e575d5d85e7436b06be67e9dab27 / compiled0.5.67 hash04ce49b2639fa4317ab7fa26abbb304e224903e0a0577f7e7d69dbf1b4061cdc. integration-orchestrator.ts syncCandidate preflight routes named conflicts to onMergeConflict.
@@ -76,3 +76,23 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T15:19:01Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-07T15:19:02Z · status review→active
+- 2026-10-07T15:25:39Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/integration-status-bar.test.ts:293:32
+    291|     expect(ui.activeTab).toBe("debug");
+    292|     expect(ui.debugView).toBe("logs");
+    293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
+       |                                ^
+    294|   });
+    295|
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+ Test Files  1 failed | 434 passed | 1 skipped (436)
+      Tests  4 failed | 5287 passed | 15 skipped (5306)
+   Start at  15:20:11
+   Duration  323.84s (transform 11.03s, setup 2.93s, import 67.11s, tests 250.30s, environment 294.50s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 411ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  15:25:35
+   Duration  2.26s (transform 1.05s, setup 11ms, import 1.31s, tests 411ms, environment 454ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
