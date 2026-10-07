@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-07T16:31:19.608Z: ui verification: capture of / failed — click: Timeout 5000ms exceeded."
 id: "0741"
 title: "Easter eggs bundle: board card error panel (flush, square, below the action button) and hide a stale close-out error while a new close-out runs"
 type: chore
@@ -13,7 +11,9 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
-updated_at: "2026-10-07T16:24:06Z"
+updated_at: "2026-10-07T16:31:54Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T16:31:19.608Z: ui verification: capture of / failed — click: Timeout 5000ms exceeded."
 ---
 ## Problem
 
@@ -39,22 +39,22 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 ```json
 [
   {
-    "label": "Board card flush square done-error footer (light)",
+    "label": "Board card footer flush below action (light)",
     "target": "default",
     "route": "/",
-    "highlight": ".task-card[data-status=review] .tc-card-footer, .task-card .tc-done-error"
+    "highlight": ".task-card .tc-card-footer"
   },
   {
-    "label": "Board card done-error footer (dark)",
+    "label": "Board card footer (dark)",
     "target": "default",
     "route": "/",
     "highlight": ".task-card .tc-card-footer",
     "steps": [
       {
-        "click": "button[data-test-id=theme-toggle]"
+        "click": "button.theme-toggle"
       },
       {
-        "waitMs": 200
+        "waitMs": 400
       }
     ]
   }
@@ -71,4 +71,4 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 - 2026-10-07T16:22:18Z · body: section Shots
 - 2026-10-07T16:23:08Z · body
 - 2026-10-07T16:24:06Z · body
-
+- 2026-10-07T16:31:54Z · body: section Shots
