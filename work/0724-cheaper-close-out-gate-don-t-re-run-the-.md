@@ -2,7 +2,7 @@
 id: "0724"
 title: "Cheaper close-out gate: don't re-run the full suite on what the handoff gate already proved"
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 story: "Field report: first agent-driven project run (opex)"
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/cheaper-close-out-gate-don-t-re-run-the-
 created_at: "2026-10-06T15:55:13Z"
-updated_at: "2026-10-07T10:55:25Z"
+updated_at: "2026-10-07T10:55:26Z"
 last_check_failure: "repoos check at 2026-10-07T10:26:38.467Z: repoos check failed: build complete in 3.72s. · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-ico… (truncated)"
 ---
 ## Problem
@@ -61,4 +61,4 @@ Timing: I could NOT measure real before/after close-out medians from this sandbo
 - 2026-10-07T10:35:34Z · note: Owner requests current engineering/review tasks through to done for next release, after v0.5.67 release. Driver sees remote gate PASS302sbee10:26:07 and processlastoutput10:26:48. If implementation and scoped check are complete, request handoff ONCE then end turn. Do not repeatedly run passing full suites. Record why gate reuse is safe for combined current-main tree and what forces full rerun; preserve full fallback. If provider has stalled, report it explicitly. No source writes after handoff, owner config/hosts/releases/main untouched.
 - 2026-10-07T10:51:59Z · body
 - 2026-10-07T10:53:27Z · body
-- 2026-10-07T10:55:25Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
+- 2026-10-07T10:55:26Z · status active→review
