@@ -2,7 +2,7 @@
 id: "0737"
 title: Repair repeated review handoff race exposed by pre-release coverage
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -110,4 +110,4 @@ error: script "test" exited with code 1
 - 2026-10-07T14:54:41Z · handoff failed · task-file handoff failed at check · repoos check failed: [plugin rolldown:vite-resolve] Module "node:os" has been externalized for browser compatibility, imported by "/Users/nick/code/nick/repoos-worktrees/feat/repair-repeated-review-handoff-race-expo/src/core/config.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details. · [plugin rolldown:vite-resolve] Module "node:fs" has been externalized for browser compatibility, imported by "/Users/nick/code/nick/repoos-worktrees/feat/repair-repeated-review-handoff-race-expo/src/core/storage/local.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details. · [plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/Users/nick/code/nick/repoos-worktrees/feat/repair-repeated-review-handoff-race-expo/src/core/storage/local.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details. · [plugin builtin:vite-reporter] · (!) Some chunks are larger than 500 kB after minification. Consider: · - Using dynamic import() to code-split the application · - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting · - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
 - 2026-10-07T15:00:01Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T15:00:01Z · status review→active
-- 2026-10-07T15:00:49Z · note: shots: skipped — the diff (7 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-07T15:00:49Z · status active→review
