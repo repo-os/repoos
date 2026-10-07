@@ -89,6 +89,7 @@ describe("TaskCard done-error footer (#0741)", () => {
     expect(footer.exists()).toBe(true);
     expect(footer.find(".tc-card-footer-action").exists()).toBe(true);
     expect(footer.text()).toContain("Moving to done");
+    expect(footer.attributes("data-test-id")).toBe("task-card-action-footer");
     const err = footer.find(".tc-done-error.done-error--card");
     expect(err.exists()).toBe(true);
     expect(err.element.parentElement).toBe(footer.element);
