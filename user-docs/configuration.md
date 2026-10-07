@@ -276,6 +276,14 @@ set of project docs assumes a different layout, change `repoos.toml` (or
 reconcile the docs) — never move the directories so the config no longer matches
 where your content lives.
 
+On the `repoos/` layout, `repoos init` writes `workDir`, `docsDir`,
+`skillsDir`, `storiesDir`, `inputsDir` and `cacheDir` together, all under the
+namespace, so every RepoOS-owned directory stays in one place. A layout where
+`workDir` is namespaced but `storiesDir` is still top-level (as init wrote
+before #0703) scatters stories to the repo root; `repoos doctor` warns about that
+mismatch and suggests `storiesDir = "<namespace>/stories"`, but never moves
+anything for you.
+
 ## Board behavior
 
 ```toml
