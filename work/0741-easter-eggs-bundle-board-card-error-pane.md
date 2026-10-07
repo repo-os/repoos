@@ -2,19 +2,16 @@
 id: "0741"
 title: "Easter eggs bundle: board card error panel (flush, square, below the action button) and hide a stale close-out error while a new close-out runs"
 type: chore
-status: ready
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX"
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
-updated_at: "2026-10-07T16:19:14Z"
+updated_at: "2026-10-07T16:19:15Z"
 ---
 ## Problem
 
@@ -42,3 +39,4 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 - 2026-10-07T16:19:10Z · needs_input
 - 2026-10-07T16:19:12Z · cli_override, model_override
 - 2026-10-07T16:19:14Z · status inbox→ready
+- 2026-10-07T16:19:15Z · status ready→active, needs_input, branch
