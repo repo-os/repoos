@@ -11,8 +11,6 @@ branch: feat/show-review-records-in-a-table
 created_at: "2026-10-07T02:52:02Z"
 updated_at: "2026-10-07T04:44:23Z"
 last_check_failure: "repoos check at 2026-10-07T04:21:52.308Z: server-side finalization timed out (deadline exceeded)"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 9dae6a6e8b0e2eb094e46e9fa572f31677ba30d5
 dev_error_count: 1
 ---
 ## Problem
@@ -87,3 +85,4 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T04:33:27Z · body
 - 2026-10-07T04:34:38Z · body
 - 2026-10-07T04:44:23Z · status active→review
+
