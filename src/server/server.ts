@@ -1429,6 +1429,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // orchestrator's DoneStep callbacks drive the pinned status bar's stage
   // indicator; recorded here so the live `integration` snapshot is accurate.
   const reportedStages: Record<string, DoneStep> = {};
+  const reportedStageAt: Record<string, string> = {};
 
   /** Emit the current integration-pipeline snapshot to every SSE client (0207). */
   const emitIntegration = (): void => {
@@ -1438,6 +1439,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         jobCoordinator,
         reportedStages,
         resolvePipelineCheckPlan(config),
+        reportedStageAt,
       ),
     });
   };
@@ -1459,12 +1461,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           (step) => {
             const job = jobCoordinator.peekNext();
             if (job) {
+              const at = new Date().toISOString();
               reportedStages[job.taskId] = step;
+              reportedStageAt[job.taskId] = at;
               emitEvent({
                 type: "task.progress",
                 id: job.taskId,
                 step,
-                at: new Date().toISOString(),
+                at,
               });
               emitIntegration();
             }
@@ -2095,6 +2099,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       emitEvent,
       triggerJobProcessing,
       reportedStages,
+      reportedStageAt,
       remoteValidator,
     }),
   );
@@ -3487,6 +3492,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         taskChecks,
         awakeClock: watchdog ? () => watchdog!.awakeClock() : undefined,
         reportedStages,
+        reportedStageAt,
         triggerJobProcessing,
         pendingReview,
         uiDir,

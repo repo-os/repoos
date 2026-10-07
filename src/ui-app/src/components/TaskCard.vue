@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, onBeforeUnmount } from "vue";
+import { computed, ref, onMounted, onUnmounted, onBeforeUnmount, watch } from "vue";
 import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
@@ -31,6 +31,12 @@ import HotfixBadge from "./HotfixBadge.vue";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
 import DependencyChip from "./DependencyChip.vue";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
+import {
+  integrationActiveCopy,
+  integrationPipelineRole,
+  integrationPipelineStalled,
+  integrationQueuedCopy,
+} from "../lib/integration-pipeline-ui";
 
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
@@ -234,11 +240,21 @@ onBeforeUnmount(() => {
  */
 const now = ref(Date.now());
 let nowTimer: ReturnType<typeof setInterval> | undefined;
-onMounted(() => {
+function syncNowTimer(): void {
+  const integrating =
+    props.task.status === "review" &&
+    integrationPipelineRole(repo.integration, props.task.id) === "active";
+  const ms = integrating ? 1_000 : 15_000;
+  if (nowTimer !== undefined) clearInterval(nowTimer);
   nowTimer = setInterval(() => {
     now.value = Date.now();
-  }, 15_000);
-});
+  }, ms);
+}
+onMounted(() => syncNowTimer());
+watch(
+  () => [props.task.status, repo.integration?.active?.taskId, repo.integration?.queue],
+  () => syncNowTimer(),
+);
 onUnmounted(() => {
   clearInterval(nowTimer);
 });
@@ -341,19 +357,38 @@ interface CardHint {
  *  `/done` request itself resolves as soon as the job is queued — status
  *  stays `review` for the whole pipeline run — so this is the only signal
  *  that MTD was already triggered and shouldn't be offered again. */
-const inPipeline = computed(() => {
-  const snap = repo.integration;
-  if (!snap) return false;
-  const t = props.task;
-  return snap.active?.taskId === t.id || snap.queue.includes(t.id);
-});
+const pipelineRole = computed(() => integrationPipelineRole(repo.integration, props.task.id));
 
-/** The active pipeline stage (sync/merge/build/check/done) for this task, or
- *  null when it's still queued behind another close-out. */
-const pipelineStage = computed(() => {
-  const snap = repo.integration;
-  return snap?.active?.taskId === props.task.id ? snap.active.stage : null;
-});
+const inPipeline = computed(() => pipelineRole.value !== null);
+
+const pipelineStalled = computed(() => integrationPipelineStalled(repo.integration, now.value));
+
+const pipelineRecoverBusy = ref(false);
+
+async function cancelStalledPipeline(): Promise<void> {
+  if (pipelineRecoverBusy.value) return;
+  pipelineRecoverBusy.value = true;
+  try {
+    await repo.cancelDone(props.task.id);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    pipelineRecoverBusy.value = false;
+  }
+}
+
+async function retryStalledPipeline(): Promise<void> {
+  if (pipelineRecoverBusy.value) return;
+  pipelineRecoverBusy.value = true;
+  try {
+    await repo.cancelDone(props.task.id);
+    await repo.completeTask(props.task);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    pipelineRecoverBusy.value = false;
+  }
+}
 
 /** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
  *  normal "coding" hint when it's still producing output. */
@@ -450,22 +485,31 @@ const hint = computed<CardHint | null>(() => {
     };
   }
   if (t.status === "review") {
-    if (inPipeline.value) {
+    const role = pipelineRole.value;
+    const snap = repo.integration;
+    if (role && snap) {
       const slow = slowCheck.value;
-      const stage = pipelineStage.value;
-      // #0692: `resolve-conflict` is the narrow resolution path, not new
-      // engineering work — name it for humans rather than showing the raw id.
-      const stageLabel = stage === "resolve-conflict" ? "resolving conflict" : stage;
-      const base = stageLabel ? `moving to done · ${stageLabel}` : "queued for close-out";
-      return {
-        label: slow ? `${base} · slow` : base,
-        title: slow
-          ? "Close-out is taking longer than usual — focus the slow badge for timing details"
-          : stage === "resolve-conflict"
-            ? "Resolving an integration conflict against current main in an isolated candidate — the original review is preserved and only the resolution delta is reviewed."
-            : "Move to done already started — merging, building, and checking. See the pipeline bar for live progress.",
-        cls: "tc-moving",
-      };
+      if (role === "active") {
+        const copy = integrationActiveCopy(snap, now.value);
+        const label = slow && !copy.stalled ? `${copy.label} · slow` : copy.label;
+        return {
+          label,
+          title: copy.stalled
+            ? copy.title
+            : slow
+              ? "Close-out is taking longer than usual — focus the slow badge for timing details"
+              : copy.title,
+          cls: copy.stalled ? "tc-stuck" : "tc-moving",
+        };
+      }
+      const queued = integrationQueuedCopy(snap, t.id);
+      if (queued) {
+        return {
+          label: queued.label,
+          title: queued.title,
+          cls: "tc-moving",
+        };
+      }
     }
     if (repo.reviewFor(t.id)?.running) {
       return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
@@ -614,7 +658,13 @@ const IN_PIPELINE: CardAction = {
  *  demotes to `ready` — the running-agent set (repo.isRunning) is the signal. */
 const action = computed<CardAction | null>(() => {
   const t = props.task;
-  if (t.status === "review" && inPipeline.value) return IN_PIPELINE;
+  if (
+    t.status === "review" &&
+    inPipeline.value &&
+    !(pipelineRole.value === "active" && pipelineStalled.value)
+  ) {
+    return IN_PIPELINE;
+  }
   if (awaitingFreshReview.value) return null;
   // A failed Move to done leaves its error banner + Fix button on the card
   // (below) — showing "Move to done" here too just invites clicking straight
@@ -1058,8 +1108,29 @@ async function openDebuggerFromError(): Promise<void> {
             aria-hidden="true"
             >!</span
           >
-          <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Moving to done…" />
+          <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Integrating…" />
           {{ hint.label }}
+          <span
+            v-if="pipelineStalled && pipelineRole === 'active' && hint.cls === 'tc-stuck'"
+            class="tc-pipeline-recover"
+          >
+            <button
+              type="button"
+              class="tc-pipeline-recover-btn"
+              :disabled="pipelineRecoverBusy"
+              @click.stop="cancelStalledPipeline"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="tc-pipeline-recover-btn primary"
+              :disabled="pipelineRecoverBusy"
+              @click.stop="retryStalledPipeline"
+            >
+              {{ pipelineRecoverBusy ? "Working…" : "Retry" }}
+            </button>
+          </span>
           <span
             v-if="slowCheck && (hint.cls === 'tc-reviewing' || hint.cls === 'tc-moving')"
             class="tc-slow-badge"
