@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: e1e86d410e6b27872e1ddd020132b9be009f9f01
 id: "0727"
 title: "Give the CTO the routine: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
 type: feature
@@ -13,8 +15,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:31Z"
 updated_at: "2026-10-07T06:49:40Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 908fb7e0 to 0bee0747) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 908fb7e006e7ece4cd7fb1aaccd68d163509bea4
 review_passes: 1
 ---
 ## Problem
@@ -116,3 +116,4 @@ Rationale: land routine docs/chore work only; machinery paths and UI screenshot 
 - 2026-10-07T06:24:26Z · body
 - 2026-10-07T06:30:39Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 908fb7e0 to 0bee0747) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-10-07T06:49:40Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
+
