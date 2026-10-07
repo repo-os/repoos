@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-07T04:21:52.308Z: server-side finalization timed out (deadline exceeded)"
 id: "0733"
 title: Show review records in a table
 type: feature
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-review-records-in-a-table
 created_at: "2026-10-07T02:52:02Z"
-updated_at: "2026-10-07T04:00:24Z"
+updated_at: "2026-10-07T04:31:26Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-07T04:21:52.308Z: server-side finalization timed out (deadline exceeded)"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 9dae6a6e8b0e2eb094e46e9fa572f31677ba30d5
 dev_error_count: 1
@@ -84,4 +84,4 @@ This new report records section is useful but let's make it a proper table , lik
 - 2026-10-07T03:58:11Z · note: Driver03:57: message rejected agent busy; preserve this for next turn/reviewer. Full handoff bee353s failed agent-review.test.ts second-review counter wait; fallback thinkpad325s failed done-guard-orchestrator.test.ts merged_commit from job.branchSha (#0711). Main log .repoos/logs/remote-validation/0733.log holds both. Independently compare current-main baseline before blaming this five-file diff; do not weaken assertions or blindly repeat unchanged checks. #0679 now landed e158ff714, buildhash434e1e974 version0.5.66. Visual table evidence still missing because branch preview lacks real review history; no fabricated production cache/task data. Verify genuine table latest-first, once per pass, agent/model and narrow width through sanctioned preview or meaningful rendering test. Stay existing task/worktree; no config/host changes.
 - 2026-10-07T03:59:01Z · body
 - 2026-10-07T04:00:24Z · body
-
+- 2026-10-07T04:31:26Z · body
