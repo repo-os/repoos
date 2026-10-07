@@ -12,8 +12,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:49Z"
 updated_at: "2026-10-07T01:15:19Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 75ecc5c804367fa512aab520f4212af2a15d5d6f
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 24: unless the check plan starts with an install step. Install deps (or reuse) in the candidate worktree, or fail with advice.
 
@@ -113,3 +111,4 @@ error: script "test" exited with code 1
 - 2026-10-07T01:09:18Z · body
 - 2026-10-07T01:15:19Z · status active→review
 - 2026-10-07T01:15:19Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria; empty sections: Notes for AI
+
