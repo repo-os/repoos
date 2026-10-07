@@ -2,13 +2,13 @@
 id: "0728"
 title: "Event-driven CTO: react to server events instead of a timer, and expose the same feed as a watch command for external sessions"
 type: feature
-status: ready
+status: active
 priority: p1
 area: [cli, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/event-driven-cto-react-to-server-events-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:33Z"
@@ -43,3 +43,4 @@ The CTO monitor wakes on ctoMonitorIntervalMs (a timer; 5 min here). Move it to 
 - 2026-10-07T02:11:12Z · title, body
 - 2026-10-07T09:11:18Z · status inbox→ready
 - 2026-10-07T09:46:37Z · cli_override, model_override
+- 2026-10-07T09:46:37Z · status ready→active, branch
