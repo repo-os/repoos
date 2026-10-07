@@ -30,6 +30,16 @@ export type JobPhase =
 export interface IntegrationJob {
   /** Unique ID: task ID */
   taskId: string;
+  /**
+   * Per-task execution generation (#0736). Monotonically increasing across every
+   * fresh attempt at the same task; a coordinated run captures the attempt it
+   * started with and every write it makes is scoped to it. When a cancelled
+   * attempt is still executing and the task is requeued, the replacement must
+   * become a NEW attempt — never reuse the old record — so a late callback from
+   * the old attempt can be detected and refused rather than mutating the new job.
+   * Absent on legacy records; treated as `1`.
+   */
+  attempt?: number;
   /** Feature branch to integrate (the task's `branch` field). */
   branch?: string;
   /** Current phase */
@@ -110,10 +120,31 @@ export function pendingCloseOutJobs(jobs: IntegrationJob[]): IntegrationJob[] {
   return jobs.filter((j) => j.phase !== "done" && j.phase !== "failed");
 }
 
+/** The attempt generation of a job, defaulting legacy records to the first attempt. */
+export function jobAttempt(job: IntegrationJob | null | undefined): number {
+  return job?.attempt ?? 1;
+}
+
+/**
+ * Whether an attempt has left the queue and is (or was) actively executing, so
+ * replacing its record would orphan a live callback (#0736). A queued attempt
+ * that never started (`startedAt` null) is safe to replace; a terminal
+ * `done`/`failed` attempt is finished and safe to replace.
+ */
+export function attemptIsExecuting(job: IntegrationJob): boolean {
+  if (job.phase === "done" || job.phase === "failed") return false;
+  return job.startedAt !== null && job.startedAt !== undefined;
+}
+
 export interface JobCoordinator {
   /**
-   * Enqueue a close-out job for the task. Returns the job if enqueued/already queued,
-   * or null if the task doesn't have a branch. Idempotent per task ID.
+   * Enqueue a close-out job for the task. Returns the job if enqueued/already
+   * queued, or null if the task doesn't have a branch. Idempotent per task ID.
+   *
+   * A cancelled attempt that is still EXECUTING is never replaced here (#0736):
+   * its record is returned as-is (still `cancelled`), so the caller can defer
+   * the requeue until the old run reaches a terminal phase. Replacing it would
+   * orphan the live callback, which would then mutate the new job.
    */
   enqueue(task: Task, opts?: { handoffSha?: string | null }): IntegrationJob | null;
 
@@ -134,19 +165,34 @@ export interface JobCoordinator {
   /**
    * Update a job's phase and state. Persists atomically. Called by the close-out
    * orchestrator as each phase completes.
+   *
+   * When `expectedAttempt` is given, the write is refused (returns null) if the
+   * on-disk job's attempt generation differs — a late callback from a
+   * superseded attempt must never mutate the task's current job (#0736).
    */
-  updateJob(taskId: string, update: Partial<IntegrationJob>): IntegrationJob | null;
+  updateJob(
+    taskId: string,
+    update: Partial<IntegrationJob>,
+    expectedAttempt?: number,
+  ): IntegrationJob | null;
 
-  /** Remove a job from the queue (after successful cleanup or explicit cancellation). */
-  removeJob(taskId: string): void;
+  /**
+   * Remove a job from the queue (after successful cleanup, explicit
+   * cancellation, or a moot/reconciled failure). With `expectedAttempt`, the
+   * removal is refused when the current job has been superseded (#0736).
+   */
+  removeJob(taskId: string, expectedAttempt?: number): void;
 
   /**
    * Mark an in-flight/queued job cancelled (#0459). Returns false when no job
    * exists or it already reached a terminal phase. The orchestrator observes
    * the flag and aborts at its next checkpoint; the pipeline snapshot hides
    * the job immediately so the UI reacts without waiting for that abort.
+   *
+   * With `expectedAttempt`, a superseded job is left untouched (#0736) and the
+   * call returns false.
    */
-  requestCancel(taskId: string): boolean;
+  requestCancel(taskId: string, expectedAttempt?: number): boolean;
 
   /**
    * Recover a job from an interrupted phase. Called on server startup to find
@@ -166,6 +212,35 @@ function jobPath(root: string, taskId: string): string {
   return join(root, JOBS_DIR, `${taskId}.json`);
 }
 
+/**
+ * Monotonic per-task attempt counter (#0736). Kept separately from the job
+ * record so the generation never resets when a cancelled/terminal job's record
+ * is removed — otherwise a requeue after removal would reuse the same
+ * generation and a late callback from the old run would still match.
+ */
+function genPath(root: string, taskId: string): string {
+  return join(root, JOBS_DIR, `${taskId}.gen`);
+}
+
+function readGeneration(root: string, taskId: string): number {
+  try {
+    const raw = readFileSync(genPath(root, taskId), "utf8");
+    const parsed = JSON.parse(raw) as { attempt?: unknown };
+    return typeof parsed.attempt === "number" && parsed.attempt > 0 ? parsed.attempt : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeGeneration(root: string, taskId: string, attempt: number): void {
+  ensureJobsDir(root);
+  try {
+    writeFileSync(genPath(root, taskId), JSON.stringify({ attempt }));
+  } catch {
+    /* best-effort: the job record's own `attempt` is the primary source */
+  }
+}
+
 function ensureJobsDir(root: string): void {
   const dir = join(root, JOBS_DIR);
   mkdirSync(dir, { recursive: true });
@@ -179,6 +254,7 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
     if (stored.version !== VERSION) return null;
     return {
       taskId: stored.taskId,
+      attempt: stored.attempt ?? 1,
       branch: stored.branch,
       phase: stored.phase,
       failedPhase: stored.failedPhase,
@@ -237,6 +313,16 @@ export function createJobCoordinator(root: string): JobCoordinator {
       // A CANCELLED job is stale too (#0459): the user stopped the close-out
       // and a fresh "Move to done" must enqueue a brand-new run rather than
       // hand back the cancelled record and refuse to start.
+      //
+      // But a cancelled attempt that is STILL EXECUTING is not stale yet
+      // (#0736): its callback is alive and may resolve late. Replacing the
+      // record now would orphan that callback, which would then mutate the
+      // replacement. Return the cancelled record unchanged so the caller can
+      // refuse/defer the requeue until the old run reaches a terminal phase
+      // (it removes its own record then), and only then start a new attempt.
+      if (existing?.cancelled && attemptIsExecuting(existing)) {
+        return existing;
+      }
       if (existing && existing.phase !== "failed" && !existing.cancelled && !staleDoneJob) {
         if (opts?.handoffSha && !existing.handoffSha) {
           const patched = { ...existing, handoffSha: opts.handoffSha };
@@ -248,6 +334,11 @@ export function createJobCoordinator(root: string): JobCoordinator {
 
       const job: IntegrationJob = {
         taskId: task.id,
+        // A fresh attempt gets a new, MONOTONIC generation so a late callback
+        // from the superseded attempt is refused by every attempt-scoped write
+        // (#0736). The counter is read from a durable per-task file so it does
+        // not reset when the previous record was removed.
+        attempt: Math.max(existing?.attempt ?? 0, readGeneration(root, task.id)) + 1,
         branch: task.branch,
         phase: "queued",
         enqueuedAt: new Date().toISOString(),
@@ -263,6 +354,7 @@ export function createJobCoordinator(root: string): JobCoordinator {
         // debugTldr* must not carry over — a retry is a fresh failure episode (#0595).
       };
       writeJob(root, job);
+      writeGeneration(root, task.id, job.attempt ?? 1);
       return job;
     },
 
@@ -290,18 +382,34 @@ export function createJobCoordinator(root: string): JobCoordinator {
       return pending.length > 0 ? pending[0] : null;
     },
 
-    updateJob(taskId: string, update: Partial<IntegrationJob>): IntegrationJob | null {
+    updateJob(
+      taskId: string,
+      update: Partial<IntegrationJob>,
+      expectedAttempt?: number,
+    ): IntegrationJob | null {
       const existing = readJob(root, taskId);
       if (!existing) return null;
+      // Ownership guard (#0736): a write from a superseded attempt must never
+      // land on the task's current job. `undefined` means "no ownership claim"
+      // (callers that predate generations, and non-orchestrator writers).
+      if (expectedAttempt !== undefined && jobAttempt(existing) !== expectedAttempt) {
+        return null;
+      }
 
       const updated: IntegrationJob = { ...existing, ...update, taskId: existing.taskId };
+      updated.attempt = expectedAttempt ?? jobAttempt(existing);
       if (update.phase === "failed") updated.failedAt ??= new Date().toISOString();
       else if (update.phase) delete updated.failedAt;
       writeJob(root, updated);
       return updated;
     },
 
-    removeJob(taskId: string): void {
+    removeJob(taskId: string, expectedAttempt?: number): void {
+      const existing = readJob(root, taskId);
+      if (expectedAttempt !== undefined && jobAttempt(existing) !== expectedAttempt) {
+        // The record now belongs to a newer attempt; leave it alone (#0736).
+        return;
+      }
       const path = jobPath(root, taskId);
       try {
         if (existsSync(path)) {
@@ -312,9 +420,11 @@ export function createJobCoordinator(root: string): JobCoordinator {
       }
     },
 
-    requestCancel(taskId: string): boolean {
+    requestCancel(taskId: string, expectedAttempt?: number): boolean {
       const existing = readJob(root, taskId);
       if (!existing || existing.phase === "done" || existing.phase === "failed") return false;
+      // A superseded attempt must not cancel the task's current job (#0736).
+      if (expectedAttempt !== undefined && jobAttempt(existing) !== expectedAttempt) return false;
       if (existing.cancelled) return true;
       writeJob(root, { ...existing, cancelled: true });
       return true;
