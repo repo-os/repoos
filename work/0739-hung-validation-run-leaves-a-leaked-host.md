@@ -9,8 +9,10 @@ story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-07T14:04:05Z"
-updated_at: "2026-10-07T14:04:05Z"
+updated_at: "2026-10-07T14:04:17Z"
 ---
 ## Problem
 
@@ -33,3 +35,4 @@ Read #0729's detector and kill path in src/server/remote-validation.ts and the r
 ## Activity
 
 - 2026-10-07T14:04:05Z · created · unknown
+- 2026-10-07T14:04:17Z · cli_override, model_override
