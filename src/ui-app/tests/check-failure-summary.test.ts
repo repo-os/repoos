@@ -1,5 +1,73 @@
 import { describe, expect, it } from "vitest";
-import { extractFailedTests, remoteRunHistoryMeta } from "../../core/check-failure-summary.js";
+import {
+  buildLastCheckFailureSummary,
+  extractFailedTests,
+  isStackFrameLine,
+  pickErrorLineFromStepOutput,
+  remoteRunHistoryMeta,
+} from "../../core/check-failure-summary.js";
+
+describe("buildLastCheckFailureSummary (#0700)", () => {
+  it("names the step and the error line for an ESM loader trace, not stack frames", () => {
+    const output = [
+      "  ── Results ──",
+      "  ✔ check-fmt:check",
+      "  ✗ build — Command failed with exit 1",
+      "Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@scope/missing'",
+      "    at afterLoad (node:internal/modules/esm/loader:506:29)",
+      "    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:419:12)",
+      "  1 check(s) failed.",
+    ].join("\n");
+    const summary = buildLastCheckFailureSummary(output);
+    expect(summary).toBe(
+      "build — Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@scope/missing'",
+    );
+    expect(summary).not.toMatch(/\bat afterLoad\b/);
+  });
+
+  it("never uses stack-frame-only output as the summary", () => {
+    const output = [
+      "  ── Results ──",
+      "  ✗ build — exited 1",
+      "    at afterLoad (node:internal/modules/esm/loader:506:29)",
+      "    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:419:12)",
+    ].join("\n");
+    expect(buildLastCheckFailureSummary(output)).toBe("build — failed");
+  });
+
+  it("names the failing Vitest test when the tests step failed", () => {
+    const output = [
+      " FAIL  src/auth/login.test.ts > rejects bad password",
+      "AssertionError: expected false to be true",
+      "❯ src/auth/login.test.ts:42:10",
+      "",
+      "  ── Results ──",
+      "  ✔ build",
+      "  ✗ tests — Command failed: bun run test",
+      "",
+      "  1 check(s) failed.",
+    ].join("\n");
+    const summary = buildLastCheckFailureSummary(output);
+    expect(summary).toContain("tests —");
+    expect(summary).toContain("login.test.ts");
+    expect(summary).toContain("rejects bad password");
+    expect(isStackFrameLine("    at afterLoad (node:internal/...)")).toBe(true);
+    expect(pickErrorLineFromStepOutput("    at foo\n    at bar")).toBeNull();
+  });
+
+  it("surfaces a TypeScript error from the build step", () => {
+    const output = [
+      "  ── Results ──",
+      "  ✔ check-fmt:check",
+      "  ✗ build — tsc failed",
+      "src/server/handoff.ts(12,5): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.",
+      "  1 check(s) failed.",
+    ].join("\n");
+    expect(buildLastCheckFailureSummary(output)).toBe(
+      "build — src/server/handoff.ts(12,5): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.",
+    );
+  });
+});
 
 describe("extractFailedTests", () => {
   it("lists each distinct failing test, ignoring colour codes and repeats", () => {

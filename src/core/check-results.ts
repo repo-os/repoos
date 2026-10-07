@@ -12,7 +12,7 @@
  * each (files for a format failure, the `FAIL` test for a test failure), and
  * which later checks were skipped because an earlier one failed.
  */
-import { summarizeCheckFailure } from "./check-failure-summary.js";
+import { pickErrorLineFromStepOutput, summarizeCheckFailure } from "./check-failure-summary.js";
 
 /** ANSI SGR escapes; the gate's output is colored. Kept local so this module
  *  has no server dependency and can be reused by the CLI/UI. */
@@ -157,6 +157,8 @@ function keyDetail(result: ParsedCheckResult, fullOutput: string): string {
     if (fromFull) return clip(fromFull, 240);
     return "test suite failed";
   }
+  const picked = pickErrorLineFromStepOutput(detail);
+  if (picked) return clip(picked, 200);
   const first = detail.split("\n").find((l) => l.trim()) ?? "";
   return clip(first, 200) || "failed";
 }
