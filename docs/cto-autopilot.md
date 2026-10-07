@@ -123,5 +123,12 @@ recoverable by flipping `approval.enabled` or emptying `cto.actions`.
 
 Anything the policy cannot decide — a new failure shape, a disputed reviewer
 finding, a hotfix on `main`, config/host/release changes — stays manual and shows
-up in the attention feed. The CTO does not invent work outside its allowlist; it
-reports and waits.
+up in the **needs-a-decision digest** (`GET /api/decisions`, `repoos decisions`
+or `repoos attention` in the CLI, Mission Control panel). Each item carries an
+extracted cause (failing step, test names, close-out log path), evidence links,
+and the safe actions available, with CTO/policy automatic actions labeled
+separately from what needs you. Routine items the approval policy or CTO safe
+actions would handle are omitted while automation is on. The broader notification
+bell (`GET /api/attention`) still lists informational events; the digest is the
+CTO's escalation surface only. The CTO does not invent work outside its allowlist;
+it reports and waits.

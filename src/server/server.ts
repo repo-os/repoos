@@ -317,6 +317,7 @@ import {
   getIntegrationJobs,
   getCloseOutOutcomes,
   getAttention,
+  getDecisions,
   getIntegrationPipeline,
   retryIntegration,
   refreshInstallAndRetryIntegration,
@@ -2974,6 +2975,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Durable close-out outcomes (#0640) — the notices bell's hydrate/backstop.
   router.register("GET", "/api/close-out/outcomes", getCloseOutOutcomes);
   router.register("GET", "/api/attention", getAttention);
+  router.register("GET", "/api/decisions", getDecisions);
   router.register("GET", "/api/check-plan", getCheckPlan);
   // Durable check-run history across all tasks (#0564) — the Runs tab.
   router.register("GET", "/api/check-runs", getCheckRuns);
