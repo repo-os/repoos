@@ -2519,6 +2519,13 @@ export const ctoInterrupt: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, { ok: true, ...result });
 };
 
+/** Record that the CTO (or its supervisor) is alive (#0728). */
+export const postCtoHeartbeat: RouteHandler = (ctx, _req, res) => {
+  const at = ctx.ctoHeartbeat?.touch() ?? new Date().toISOString();
+  ctx.emitEvent({ type: "attention.updated", at: new Date().toISOString() });
+  return json(res, 200, { ok: true, at });
+};
+
 /** Run one allowlisted CTO safe action (#0688). */
 export const runCtoSafeActionRoute: RouteHandler = async (ctx, req, res, params) => {
   const actionId = params.param1;
@@ -2541,6 +2548,7 @@ export const runCtoSafeActionRoute: RouteHandler = async (ctx, req, res, params)
       emitEvent: ctx.emitEvent,
       triggerJobProcessing: ctx.triggerJobProcessing,
       reportedStages: ctx.reportedStages,
+      remoteValidator: ctx.remoteValidator,
     },
     actionId,
     { taskId, actor: "human" },
