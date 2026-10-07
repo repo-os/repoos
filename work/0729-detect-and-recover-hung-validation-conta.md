@@ -169,3 +169,4 @@ error: script "test" exited with code 1
 - 2026-10-07T09:38:14Z · body
 - 2026-10-07T09:44:04Z · body
 - 2026-10-07T09:45:11Z · status active→review
+- 2026-10-07T09:45:11Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
