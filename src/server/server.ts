@@ -57,7 +57,9 @@
  *                                        records a `## Screenshots` section in the task body
  *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/stories          -> the registered story definitions under `stories/`
- *   POST /api/stories/freeform -> create a story from a freeform description (PM fleshes it out)
+ *   POST /api/stories          -> create a story definition verbatim (no PM, no tagging) #0696
+ *   PATCH /api/stories/:key    -> rename/rewrite a definition without the PM, keeping its number #0696
+ *   POST /api/stories/freeform -> create a story from a freeform description (PM fleshes it out; `pm: false` skips the PM)
  *   DELETE /api/stories/:key   -> remove a registered story's definition file (tasks keep their tag) #0634
  *   POST /api/stories/:key/pm/message   -> send a message to the PM agent about this story (0515)
  *   POST /api/stories/:key/pm/interrupt -> stop the in-flight PM turn about this story
@@ -291,6 +293,8 @@ import {
   getInputAttachment,
   getStoryDefinitions,
   createFreeformStory,
+  createStoryDefinition,
+  updateStoryDefinition,
   deleteStory,
   getStoryPmOutput,
   pmStoryMessage,
@@ -2710,6 +2714,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/skills/create", createSkillRoute);
   router.register("POST", "/api/skills/freeform", createFreeformSkillRoute);
   router.register("GET", "/api/stories", getStoryDefinitions);
+  // Verbatim create (#0696): writes exactly what it is given, starts no PM and
+  // tags nothing. `POST /api/stories/freeform` keeps the PM flesh-out.
+  router.register("POST", "/api/stories", createStoryDefinition);
+  router.register("PATCH", /^\/api\/stories\/([^/]+)$/, updateStoryDefinition);
   router.register("POST", "/api/stories/freeform", createFreeformStory);
   // Story delete (#0634) — registered definitions only; tag-only stories 404.
   router.register("DELETE", /^\/api\/stories\/([^/]+)$/, deleteStory);

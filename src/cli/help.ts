@@ -185,6 +185,13 @@ const GROUPS: readonly CommandGroup[] = [
         flags: `--title · --area · --priority ${PRIORITIES.join("|")} · --type ${TASK_TYPES.join("|")} · --body · --branch · --assigned-to`,
       },
       {
+        name: "story",
+        usage:
+          'story new "<name>" --body <text|-> | story list | story show <number|name> | story update <number|name> [--name …] [--body <text|->]',
+        desc: "Create, list, show or update story definitions verbatim (no PM agent)",
+        flags: "new/show/update: --body - · list/show: --json",
+      },
+      {
         name: "index",
         usage: "index [--json]",
         desc: "Rebuild the derived index cache",
@@ -303,6 +310,12 @@ const EXAMPLES: readonly Example[] = [
   { cmd: 'repoos mv 0012 active --note "Fix the regression in checkout; see review"' },
   { cmd: 'repoos note 0012 "Handle the reviewer\'s suggestions before the next review"' },
   { cmd: 'repoos update 0012 --title "New title" --area web,core' },
+  {
+    cmd: 'repoos story new "Project updates email" --body "Why this slice exists, scope and non-goals"',
+    comment: "verbatim story, no PM",
+  },
+  { cmd: "repoos story list", comment: "registered stories, with numbers" },
+  { cmd: "repoos story show 0007", comment: "definition + member tasks and their statuses" },
   { cmd: "repoos list ready" },
   { cmd: "repoos outline src/server/agents.ts", comment: "then read only the range you need" },
   { cmd: "repoos doctor", comment: "passing checks are hidden; --verbose shows all" },
@@ -323,6 +336,7 @@ const ALIASES: Record<string, string> = {
   add: "new",
   reindex: "index",
   server: "serve",
+  stories: "story",
 };
 
 /** Resolve an alias to its canonical command name (identity when not an alias). */
