@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-07T05:29:52Z"
-review_passes: 1
 id: "0727"
 title: "Give the CTO the routine: evaluate and enable the approval policy and CTO safe actions on this repo, and close the gaps the 2026-10-06 run exposed"
 type: feature
@@ -12,6 +10,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/give-the-cto-the-routine-evaluate-and-en
 created_at: "2026-10-07T02:05:31Z"
+updated_at: "2026-10-07T05:36:02Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -39,10 +39,26 @@ No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.
 ```json
 [
   {
-    "label": "Settings General: new automation kill switch, blocked paths and p0 controls",
+    "label": "Settings automation pause control",
     "target": "default",
-    "route": "/settings?tab=general",
-    "highlight": "#setting-automation.paused"
+    "route": "/settings?tab=general&focus=automation.paused",
+    "highlight": "[data-config-key=\"automation.paused\"]",
+    "steps": [
+      {
+        "waitMs": 800
+      }
+    ]
+  },
+  {
+    "label": "Settings auto approval machinery guard",
+    "target": "default",
+    "route": "/settings?tab=general&focus=approval.autoApprove.machineryPaths",
+    "highlight": "[data-config-key=\"approval.autoApprove.machineryPaths\"]",
+    "steps": [
+      {
+        "waitMs": 800
+      }
+    ]
   }
 ]
 ```
@@ -67,4 +83,4 @@ No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.
 - 2026-10-07T05:28:40Z · status active→review
 - 2026-10-07T05:28:40Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-07T05:29:52Z · note: review pass 1: good to go
-
+- 2026-10-07T05:36:02Z · body: section Shots
