@@ -12,8 +12,7 @@ export function isStackFrameLine(line: string): boolean {
 }
 
 /** Result-block detail lines that carry no diagnosis on their own. */
-const TRIVIAL_STEP_DETAIL =
-  /^(?:exited \d+|tsc failed|command failed(?:\s+with exit \d+)?[.:]?)$/i;
+const TRIVIAL_STEP_DETAIL = /^(?:exited \d+|tsc failed|command failed(?:\s+with exit \d+)?[.:]?)$/i;
 
 function outputBeforeResultsBlock(output: string): string {
   const lines = stripAnsi(output).split("\n");
