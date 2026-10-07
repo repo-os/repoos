@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-07T10:38:42Z"
-review_passes: 1
 id: "0730"
 title: "The CTO's 'needs a decision' digest: only what policy cannot handle, with cause and evidence attached"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -14,6 +12,8 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
+updated_at: "2026-10-07T10:44:25Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -112,4 +112,5 @@ error: script "test" exited with code 1
 - 2026-10-07T10:37:41Z · status active→review
 - 2026-10-07T10:37:41Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-07T10:38:42Z · note: review pass 1: good to go
-
+- 2026-10-07T10:44:25Z · status review→active
+- 2026-10-07T10:44:25Z · note: close-out repair: merge-conflict
