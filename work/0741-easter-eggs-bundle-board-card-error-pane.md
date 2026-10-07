@@ -11,7 +11,9 @@ branch: feat/easter-eggs-bundle-board-card-error-pane
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T16:19:09Z"
-updated_at: "2026-10-07T16:19:15Z"
+updated_at: "2026-10-07T16:38:47Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-07T16:36:48.254Z: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)"
 ---
 ## Problem
 
@@ -33,6 +35,43 @@ Also, that message was STALE: it came from an earlier failed close-out attempt (
 
 Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fix action) and its styles; follow the AGENTS.md conventions (shared components, no native title tooltips). This is an easter eggs bundle: keep each item as its own small commit. Related: #0740 (card label for the integrating job); do not duplicate it.
 
+## Shots
+```json
+[
+  {
+    "label": "Board card footer flush below action (light)",
+    "target": "default",
+    "route": "/",
+    "highlight": "[data-test-id=\"task-card-action-footer\"]",
+    "steps": [
+      {
+        "waitFor": "[data-test-id=\"task-card-action-footer\"]"
+      },
+      {
+        "waitMs": 500
+      }
+    ]
+  },
+  {
+    "label": "Board card footer (dark)",
+    "target": "default",
+    "route": "/",
+    "highlight": "[data-test-id=\"task-card-action-footer\"]",
+    "steps": [
+      {
+        "waitFor": "[data-test-id=\"task-card-action-footer\"]"
+      },
+      {
+        "click": "button.theme-toggle"
+      },
+      {
+        "waitMs": 500
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-07T16:19:09Z · created · unknown
@@ -40,3 +79,11 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 - 2026-10-07T16:19:12Z · cli_override, model_override
 - 2026-10-07T16:19:14Z · status inbox→ready
 - 2026-10-07T16:19:15Z · status ready→active, needs_input, branch
+- 2026-10-07T16:22:18Z · body: section Shots
+- 2026-10-07T16:23:08Z · body
+- 2026-10-07T16:24:06Z · body
+- 2026-10-07T16:31:54Z · body: section Shots
+- 2026-10-07T16:32:44Z · body
+- 2026-10-07T16:35:08Z · body
+- 2026-10-07T16:36:44Z · note: ui verification failed (2 issue(s)): [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/); [missing-target] highlight .task-card .tc-card-footer matched nothing on / (captured http://127.0.0.1:50603/) (http://127.0.0.1:50603/)
+- 2026-10-07T16:38:47Z · body: section Shots

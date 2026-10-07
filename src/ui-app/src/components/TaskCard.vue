@@ -1103,7 +1103,11 @@ async function openDebuggerFromError(): Promise<void> {
       </div>
     </transition>
 
-    <div v-if="action || cardDoneError" class="tc-foot tc-actions tc-card-footer !ml-0 w-full">
+    <div
+      v-if="action || cardDoneError"
+      data-test-id="task-card-action-footer"
+      class="tc-foot tc-actions tc-card-footer !ml-0 w-full"
+    >
       <button
         v-if="action"
         class="tc-card-footer-action flex w-full items-center justify-center gap-2 border-t px-4 py-[11px] font-mono text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
