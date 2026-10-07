@@ -2349,7 +2349,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       skipChecks: opts.skipChecks,
       actor: opts.actor,
       onStatusChange: onServerStatusChange,
-      onHandoffSlotReleased: () => runner.releaseHandoffInFlight(task.id),
       taskChecks,
       onTaskCheckEvent,
       remoteValidator,
