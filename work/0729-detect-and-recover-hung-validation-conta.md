@@ -14,8 +14,6 @@ model_override: composer-2.5
 created_at: "2026-10-07T02:05:35Z"
 updated_at: "2026-10-07T09:31:44Z"
 review_passes: 5
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from afd774dc to 282c0c91) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: afd774dc2b28ebd2b3cf4007b79467803438f340
 error: "script \\"test\\" exited with code 1 — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.\""
 review_rounds: 1
 dev_error_count: 1
@@ -164,4 +162,5 @@ error: script "test" exited with code 1
 - 2026-10-07T09:27:31Z · note: review pass 4: good to go
 - 2026-10-07T09:27:32Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-07T09:29:03Z · note: review pass 5: good to go
+
 
