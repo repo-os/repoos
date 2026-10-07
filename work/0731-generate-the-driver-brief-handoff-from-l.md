@@ -2,15 +2,15 @@
 id: "0731"
 title: Generate the CTO's board brief from live state (also usable as the handoff for any human or agent session)
 type: feature
-status: inbox
+status: active
 priority: p2
 area: [cli, server]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/generate-the-cto-s-board-brief-from-live
 created_at: "2026-10-07T02:05:40Z"
-updated_at: "2026-10-07T02:11:16Z"
+updated_at: "2026-10-07T17:12:04Z"
 ---
 ## Problem
 
@@ -39,3 +39,5 @@ The brief is produced by the CTO from live state (merged since the last tag, tas
 - 2026-10-07T02:06:12Z · note: Created as part of story 0009 (Autopilot).
 - 2026-10-07T02:10:58Z · story
 - 2026-10-07T02:11:16Z · title, body
+- 2026-10-07T17:11:30Z · status inbox→ready
+- 2026-10-07T17:12:04Z · status ready→active, branch
