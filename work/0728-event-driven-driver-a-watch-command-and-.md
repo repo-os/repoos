@@ -51,3 +51,4 @@ Owner wants release soon. Verify diagnosis independently against CURRENT main an
 - 2026-10-07T09:47:41Z · body
 - 2026-10-07T09:55:53Z · body
 - 2026-10-07T10:11:17Z · status active→review
+- 2026-10-07T10:11:17Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
