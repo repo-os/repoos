@@ -12,10 +12,12 @@ import type { AgentOutputEntry } from "../types";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import AiChatThinking from "./AiChatThinking.vue";
+import ChatAgentModelChip from "./ChatAgentModelChip.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
+import { useDebuggerChatAgent, CHAT_AGENT_MEMORY_KEYS } from "../composables/useChatAgentModel";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
@@ -40,6 +42,19 @@ const log = ref<HTMLElement | null>(null);
 const draftTextarea = ref<HTMLTextAreaElement | null>(null);
 const repairing = ref(false);
 const repaired = ref(false);
+
+// Inline agent + model chip (#0669): the Debugger's pair lives in
+// `builtInAgents.debugger`, persisted the same way the Agents page does it.
+const debuggerAgent = useDebuggerChatAgent();
+
+/** Persist the chip pick so it drives the next turn (Agents page path). */
+async function onAgentModelChange(cli: string, model: string): Promise<void> {
+  try {
+    await debuggerAgent.setAgentModel(cli, model);
+  } catch (error) {
+    repo.onError(error);
+  }
+}
 
 interface DebuggerResponse {
   ok: boolean;
@@ -220,17 +235,24 @@ watch(
     description="Paste a bug and diagnose it."
     @close="emit('close')"
   >
-    <header class="debugger-header">
-      <div class="debugger-avatar" aria-hidden="true">
+    <header class="agent-chat-header">
+      <div class="agent-chat-avatar" aria-hidden="true">
         <img :src="DEBUGGER_AVATAR" alt="Debugger" />
       </div>
-      <div class="debugger-identity">
+      <div class="agent-chat-id">
         <strong>Debugger</strong>
-        <span
-          ><i :class="{ off: !enabled }"></i
-          >{{ enabled ? "Bug diagnostician" : "Disabled on Agents page" }}</span
-        >
+        <span v-if="!enabled" class="agent-chat-off"><i></i>Disabled on Agents page</span>
       </div>
+      <ChatAgentModelChip
+        :cli-options="debuggerAgent.cliOptions.value"
+        :model-options="debuggerAgent.modelOptions.value"
+        :cli="debuggerAgent.cli.value"
+        :model="debuggerAgent.model.value"
+        :memory-key="CHAT_AGENT_MEMORY_KEYS.debugger"
+        :disabled="!enabled"
+        @update:cli="(v) => onAgentModelChange(v, debuggerAgent.model.value)"
+        @update:model="(v) => onAgentModelChange(debuggerAgent.cli.value, v)"
+      />
       <button
         class="close-x debugger-close"
         type="button"
@@ -320,7 +342,7 @@ watch(
       </button>
     </div>
 
-    <form class="debugger-compose" @submit.prevent="send">
+    <form class="ai-chat-compose" @submit.prevent="send">
       <textarea
         ref="draftTextarea"
         v-model="draft"
@@ -339,7 +361,7 @@ watch(
       <button
         v-if="busy"
         type="button"
-        class="debugger-stop"
+        class="ai-chat-stop debugger-stop"
         aria-label="Stop response"
         title="Stop response"
         @click="interrupt"
@@ -351,7 +373,7 @@ watch(
       <button
         v-else
         type="submit"
-        class="ai-chat-send"
+        class="ai-chat-send debugger-send"
         :disabled="!draft.trim() || busy || !enabled"
         aria-label="Diagnose"
       >
@@ -378,58 +400,9 @@ watch(
   opacity: 0.6;
   cursor: default;
 }
-.debugger-header {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 13px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--topbar-bg);
-}
-.debugger-avatar {
-  width: 38px;
-  height: 38px;
-  flex: none;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1px solid var(--border-bright);
-}
-.debugger-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.debugger-identity {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
-}
-.debugger-identity strong {
-  font-size: 13.5px;
-  letter-spacing: -0.01em;
-}
-.debugger-identity span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font:
-    500 10px "JetBrains Mono",
-    monospace;
-  color: var(--txt-dim);
-}
-.debugger-identity i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
-}
-.debugger-identity i.off {
-  background: var(--txt-faint);
-  box-shadow: none;
-}
+/* The header (avatar + name + chip + close) is the shared `.agent-chat-header`
+   set in style.css (#0669); the panel is body-teleported, so header chrome
+   lives globally rather than in a scoped block here. */
 .debugger-log-wrap {
   position: relative;
   flex: 1;
@@ -621,67 +594,11 @@ watch(
   border-color: var(--cyan);
   color: var(--cyan);
 }
-.debugger-compose {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  /* #0444: the helper line under the compose row is gone, so the row now owns
-     the panel's bottom spacing. */
-  margin: 0 12px 12px;
-  padding: 8px 9px 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel-solid);
-}
-.debugger-compose:focus-within {
-  border-color: var(--border-bright);
-  box-shadow: 0 0 0 3px var(--cyan-dim);
-}
-.debugger-compose textarea {
-  flex: 1;
-  min-height: 34px;
-  max-height: 120px;
-  overflow-y: auto;
-  resize: none;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--txt);
-  font: 12.5px/1.55 var(--font-sans);
-}
-.debugger-compose textarea::placeholder {
-  color: var(--txt-faint);
-}
-.debugger-compose button {
-  /* Deliberately no `background`/`color`: this scoped rule out-specifies
-     the shared .ai-chat-send, so setting a fill here would silently win
-     and leave the send button looking transparent. The send button takes
-     .ai-chat-send; .debugger-stop sets its own. */
-
+/* Text send button — the shared compose sizes icon buttons at 31px; "Diagnose"
+   needs its own width. No fill here: `.ai-chat-send` owns that. */
+.debugger-send {
   width: auto;
   padding: 0 11px;
-  height: 31px;
-  flex: none;
-  border: 0;
-  border-radius: 9px;
-  cursor: pointer;
   font: 500 11px var(--font-sans);
-}
-.debugger-compose button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.debugger-compose button.debugger-stop {
-  width: 31px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
-  color: var(--red, #ef5b5b);
-  background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
-}
-.debugger-compose button.debugger-stop svg {
-  width: 16px;
-  height: 16px;
 }
 </style>

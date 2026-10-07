@@ -282,7 +282,7 @@ watch(
         <button type="button" :disabled="busy" @click="openDispatch('pm')">Send to PM</button>
       </div>
 
-      <form class="td-compose" @submit.prevent="send">
+      <form class="ai-chat-compose td-compose" @submit.prevent="send">
         <textarea
           ref="draftTextarea"
           v-model="draft"
@@ -299,7 +299,7 @@ watch(
         <button
           v-if="busy"
           type="button"
-          class="td-stop"
+          class="ai-chat-stop td-stop"
           aria-label="Stop response"
           title="Stop response"
           @click="interrupt"
@@ -311,7 +311,7 @@ watch(
         <button
           v-else
           type="submit"
-          class="ai-chat-send"
+          class="ai-chat-send td-send"
           :disabled="!draft.trim() || busy || !enabled"
           aria-label="Diagnose"
         >
@@ -552,63 +552,16 @@ watch(
   cursor: default;
 }
 .td-compose {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 8px 9px 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel-solid);
+  /* The shared `.ai-chat-compose` owns layout, focus outline, textarea and
+     button sizing (#0669). The task drawer body already pads this row, so only
+     the shared margins are reset here. */
+  margin: 0;
 }
-.td-compose:focus-within {
-  border-color: var(--border-bright);
-  box-shadow: 0 0 0 3px var(--cyan-dim);
-}
-.td-compose textarea {
-  flex: 1;
-  min-height: 34px;
-  max-height: 120px;
-  overflow-y: auto;
-  resize: none;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--txt);
-  font: 12.5px/1.55 var(--font-sans);
-}
-.td-compose textarea::placeholder {
-  color: var(--txt-faint);
-}
-.td-compose button {
-  /* Deliberately no `background`/`color`: this scoped rule out-specifies
-     the shared .ai-chat-send, so setting a fill here would silently win
-     and leave the send button looking transparent. The send button takes
-     .ai-chat-send; .td-stop sets its own. */
-
+/* Text send button — the shared compose sizes icon buttons at 31px; "Diagnose"
+   needs its own width. No fill here: `.ai-chat-send` owns that. */
+.td-send {
   width: auto;
   padding: 0 11px;
-  height: 31px;
-  flex: none;
-  border: 0;
-  border-radius: 9px;
-  cursor: pointer;
   font: 500 11px var(--font-sans);
-}
-.td-compose button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.td-compose button.td-stop {
-  width: 31px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
-  color: var(--red, #ef5b5b);
-  background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
-}
-.td-compose button.td-stop svg {
-  width: 16px;
-  height: 16px;
 }
 </style>

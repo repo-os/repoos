@@ -32,10 +32,16 @@ than something each call site has to remember; adding a third PM surface means
 rendering this component, not reimplementing the standard.
 
 Visual rhythm is not per-component either: `.ai-chat-log` (message spacing),
-`.ai-chat-thinking` (the pulse) and `.ai-chat-send` (the send button's accent
-fill) live in `src/ui-app/src/style.css`. A chat's own `<style scoped>` block
-must **not** set a competing `gap` on its log, and must not set `background`
-or `color` on its compose buttons — the fill comes from the shared class.
+`.ai-chat-thinking` (the pulse), `.ai-chat-send` (the send button's accent
+fill) and `.ai-chat-compose` (the compose box: layout, focus outline, textarea
+and button sizing) live in `src/ui-app/src/style.css`. A chat's own
+`<style scoped>` block must **not** set a competing `gap` on its log, must not
+set a competing `background`/`color` on its compose buttons, and must not
+re-declare the compose box's focus ring — the fill comes from the shared class
+and the focus outline from `.ai-chat-compose:focus-within`. A per-chat variant
+that only re-sizes a text send button (`.cto-send`, `.debugger-send`,
+`.td-send`) or resets the shared margins is fine; those carry an extra class
+that keeps them out of the base rule's way.
 
 That second rule is a specificity trap, not a style preference. Vue rewrites a
 scoped `.x-compose button` into `.x-compose button[data-v-…]`, which is
@@ -173,12 +179,21 @@ model call with its own `{ role, text }` messages and no tool events at all.
    panels inside a Radix Dialog).
 4. Render `<AiChatThinking :active="busy" :label="..." />` at the end of the
    message list.
-5. Put `ai-chat-send` on the submit button.
+5. Put `ai-chat-send` on the submit button, and use the shared
+   `.ai-chat-compose` class on the composer (never a bespoke `-compose` block):
+   it owns the box, focus outline, textarea and icon-button sizing. A text send
+   button adds its own variant class (e.g. `.x-send`) to set a width.
 6. Run the transcript through `toDisplayRows(lines)` and render each row:
    `row.kind === "tools"` goes to `<ChatToolCallRow :calls="row.calls" :at="row.at" />`,
    everything else to your own bubbles (use `bubbleRole(row)` for the speaker and
    `row.text` / `row.at` for the body and its timestamp).
 7. Add the surface to `AI_CHAT_SURFACES` in `src/ui-app/src/lib/ai-chat.ts`.
+
+A built-in agent chat with a header (CTO, Debugger, Ross) shows only its name, an
+inline agent+model chip, and the close button (#0669): no subtitle line, and the
+chip is `<ChatAgentModelChip>` wired to `useChatAgentModel` so a pick persists
+the same way the Agents page does. A short-lived disabled indicator may render
+under the name when the agent is off.
 
 Then run `bun run test` — the standard test tells you if you missed one.
 
