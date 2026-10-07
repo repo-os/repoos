@@ -50,6 +50,10 @@ import {
   parseRemoteServerStats,
   prereqProbeCommand,
   staleContainerCleanupCommand,
+  staleBundlePruneCommand,
+  remoteRunCleanupCommand,
+  remoteRunHasGateExit,
+  remoteRunPaths,
   validateContainerName,
   type RemoteExecDeps,
   type RemoteExecResult,
@@ -390,6 +394,8 @@ interface Fixture {
   killed: string[];
   /** Unblock a delayed hang-kill `runRemote` (#0735). */
   releaseKill(): void;
+  /** Post-kill bundle/artifact cleanup SSH commands (#0739). */
+  cleanupCmds: string[];
 }
 
 function poolFixture(opts: {
@@ -428,6 +434,10 @@ function poolFixture(opts: {
   loadSampleIntervalMs?: number;
   /** Hold the hang-kill SSH until `releaseKill()` so status can show in-flight hung. */
   delayKill?: boolean;
+  /** Stall after printing a failed gate exit — must not be classified as hung (#0739). */
+  gateExitStallOn?: string[];
+  /** Hang-kill SSH never completes until `releaseKill()` (#0739 timeout test). */
+  hangKillNeverCompletes?: boolean;
 }): Fixture {
   const root = tmpRoot();
   const config = {
@@ -454,6 +464,7 @@ function poolFixture(opts: {
   const dropped = new Set<string>();
   const down = new Set<string>();
   const killed: string[] = [];
+  const cleanupCmds: string[] = [];
   let killGate: { resolve: () => void } | null = null;
   let inFlight = 0;
   let peak = 0;
@@ -461,7 +472,11 @@ function poolFixture(opts: {
     bundleRepo: vi.fn(async () => ({ ok: true })),
     uploadFile: vi.fn(async () => ({ ok: true })),
     downloadDir: vi.fn(async () => {}),
-    runRemote: vi.fn(async (host, cmd): Promise<RemoteExecResult> => {
+    runRemote: vi.fn(async (host, cmd, onChunk, timeoutMs, remoteOpts): Promise<RemoteExecResult> => {
+      if (cmd.startsWith("rm -f ") && cmd.includes(".bundle") && cmd.includes("rm -rf")) {
+        cleanupCmds.push(cmd);
+        return { code: 0, output: "", timedOut: false };
+      }
       // The hang watchdog's idle probe (#0729): report the configured load.
       if (cmd.includes("__UPTIME__") && cmd.includes("uptime")) {
         return {
@@ -475,13 +490,15 @@ function poolFixture(opts: {
       if (cmd.startsWith("docker rm -f ") && cmd.includes("repoos-validate-")) {
         const name = cmd.split("'")[1] ?? cmd.split(" ").pop()!;
         killed.push(name);
+        if (opts.hangKillNeverCompletes) {
+          await tick(timeoutMs + 5);
+          return { code: null, output: "", timedOut: true };
+        }
         if (opts.delayKill) {
           await new Promise<void>((resolve) => {
             killGate = { resolve };
           });
         }
-        const i = pending.findIndex((p) => p.host === host.ip);
-        if (i !== -1) pending.splice(i, 1)[0]!.resolve();
         return { code: 137, output: "", timedOut: false };
       }
       if (cmd.includes("__HOST_LOCK__")) {
@@ -526,10 +543,33 @@ function poolFixture(opts: {
         inFlight--;
         return { code: 255, output: "ssh: Connection reset by peer", timedOut: false };
       }
+      if (opts.gateExitStallOn?.includes(host.ip)) {
+        (cmds[host.ip] ??= []).push(cmd);
+        onChunk?.("[validate] gate exit 1\n");
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        await new Promise<void>((resolve) => {
+          const entry = { host: host.ip, resolve };
+          pending.push(entry);
+          remoteOpts?.registerAbort?.(() => {
+            const i = pending.indexOf(entry);
+            if (i !== -1) pending.splice(i, 1)[0]!.resolve();
+          });
+        });
+        inFlight--;
+        return { code: 1, output: "[validate] gate exit 1\n", timedOut: false };
+      }
       (cmds[host.ip] ??= []).push(cmd);
       inFlight++;
       peak = Math.max(peak, inFlight);
-      await new Promise<void>((resolve) => pending.push({ host: host.ip, resolve }));
+      await new Promise<void>((resolve) => {
+        const entry = { host: host.ip, resolve };
+        pending.push(entry);
+        remoteOpts?.registerAbort?.(() => {
+          const i = pending.indexOf(entry);
+          if (i !== -1) pending.splice(i, 1)[0]!.resolve();
+        });
+      });
       inFlight--;
       return { code: 0, output: "ok", timedOut: false };
     }),
@@ -554,6 +594,7 @@ function poolFixture(opts: {
     pending: () => pending.map((p) => p.host),
     peak: () => peak,
     killed,
+    cleanupCmds,
     releaseKill() {
       killGate?.resolve();
       killGate = null;
@@ -1989,6 +2030,10 @@ describe("hang detector (#0729)", () => {
         loadPerCpu: Number.POSITIVE_INFINITY,
       }),
     ).toBe(false);
+    // Gate already finished — quiet container is not a hang (#0739).
+    expect(
+      detectHungRun({ lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 0.1, gateFinished: true }),
+    ).toBe(false);
   });
 
   it("treats exactly-threshold idle time as hung (inclusive)", () => {
@@ -2156,6 +2201,15 @@ describe("hung container cleanup (#0729)", () => {
   it("probes for stale containers when checking a docker host", () => {
     const cmd = prereqProbeCommand("docker", "repoos-ci");
     expect(cmd).toContain("name=repoos-validate-");
+    expect(cmd).toContain(staleBundlePruneCommand());
+  });
+
+  it("builds a per-run cleanup command for bundle and artifacts (#0739)", () => {
+    const paths = remoteRunPaths("0739", "deadbeef");
+    const cmd = remoteRunCleanupCommand(paths);
+    expect(cmd).toContain(paths.bundle);
+    expect(cmd).toContain(paths.artifacts);
+    expect(remoteRunHasGateExit("log\n[validate] gate exit 1\n")).toBe(true);
   });
 
   it("does not sweep containers on a native host", () => {
@@ -2287,6 +2341,98 @@ describe("hung run recovery end to end (#0729)", () => {
     const hung = f.runner.hostStatus()?.flatMap((h) => h.hungRuns ?? []) ?? [];
     expect(hung).toHaveLength(1);
     expect(hung[0]!.taskId).toBe("0729");
+  });
+
+  it("releases the pool slot when hang kill completes (#0739)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      fixedLoad: 0,
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+      delayKill: true,
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = f.runner.validate(opts("0739-slot"));
+    let attempts = 0;
+    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
+    f.releaseKill();
+    for (let i = 0; i < 30; i++) {
+      if ((f.runner.hostStatus()?.[0]?.activeRuns ?? []).length === 0) break;
+      await tick(5);
+    }
+    expect(f.runner.hostStatus()?.[0]?.activeRuns ?? []).toHaveLength(0);
+    await resultPromise;
+  });
+
+  it("releases the slot when hang kill SSH times out and marks the host degraded (#0739)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      fixedLoad: 0,
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+      hangKillNeverCompletes: true,
+    });
+    const runner = new TailscaleRunner(f.config, undefined, {
+      exec: f.exec,
+      timings: {
+        healthRetryMs: 40,
+        probeTimeoutMs: 1_000,
+        hangIdleMinutes: 0.0005,
+        hangCheckIntervalMs: 15,
+        loadSampleIntervalMs: 10,
+        hangKillTimeoutMs: 50,
+      },
+    });
+    for (let i = 0; i < 40 && !runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = runner.validate(opts("0739-timeout"));
+    let attempts = 0;
+    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
+    for (let i = 0; i < 40; i++) {
+      if ((runner.hostStatus()?.[0]?.activeRuns ?? []).length === 0) break;
+      await tick(10);
+    }
+    expect(runner.hostStatus()?.[0]?.activeRuns ?? []).toHaveLength(0);
+    expect(runner.hostStatus()?.[0]?.healthy).toBe(false);
+    await resultPromise;
+  });
+
+  it("does not classify a run as hung after the gate has exited (#0739)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      gateExitStallOn: ["a"],
+      fixedLoad: 0,
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = f.runner.validate(opts("0739-gate"));
+    for (let i = 0; i < 50; i++) await tick(10);
+    expect(f.killed).toHaveLength(0);
+    f.release();
+    const summary = await resultPromise;
+    expect(summary.hung).toBeFalsy();
+    expect(summary.ok).toBe(false);
+    expect(summary.transient).toBe(false);
+  });
+
+  it("cleans up bundle and artifacts after a hang kill (#0739)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      fixedLoad: 0,
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = f.runner.validate(opts("0739-clean"));
+    let attempts = 0;
+    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
+    await resultPromise;
+    expect(f.cleanupCmds.length).toBeGreaterThan(0);
+    expect(f.cleanupCmds.some((c) => c.includes(".bundle"))).toBe(true);
   });
 
   it("records outcome 'hung' in the check-run history", async () => {
