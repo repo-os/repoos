@@ -1,9 +1,8 @@
 ---
-close_out_repair_count: 1
 id: "0729"
 title: "Detect and recover hung validation containers on runner hosts (kill, retry on another host, isolate the bun cache per run); CTO safe action"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -13,7 +12,8 @@ branch: feat/detect-and-recover-hung-validation-conta
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:35Z"
-updated_at: "2026-10-07T09:32:24Z"
+updated_at: "2026-10-07T09:45:11Z"
+close_out_repair_count: 1
 review_passes: 5
 error: "script \\"test\\" exited with code 1 — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.\""
 review_rounds: 1
@@ -165,4 +165,4 @@ error: script "test" exited with code 1
 - 2026-10-07T09:29:03Z · note: review pass 5: good to go
 - 2026-10-07T09:32:24Z · status review→active
 - 2026-10-07T09:32:24Z · note: close-out repair: merge-conflict
-
+- 2026-10-07T09:45:11Z · status active→review
