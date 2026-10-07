@@ -11,7 +11,7 @@ branch: feat/repair-repeated-review-handoff-race-expo
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T10:16:47Z"
-updated_at: "2026-10-07T15:17:24Z"
+updated_at: "2026-10-07T15:23:20Z"
 review_passes: 3
 last_close_out_gate_ms: 1954980
 last_close_out_gate_at: "2026-10-07T14:22:21.634Z"
@@ -135,3 +135,4 @@ error: script "test" exited with code 1
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T15:17:24Z · note: Driver owns ACTIVE source diagnosis. Do not start handoff or close-out while temporary tracing remains. Last untraced loaded run5/10; raw-writer tracing changes timing10/10, not proof repaired. Watchdog auto-handoff captured temporary diagnostics and failed; driver paused task and cancelled existing close-out through supported API. Wait actual old execution terminal before further work.
+- 2026-10-07T15:23:20Z · note: 15:20 root-cause lead: ReviewManager.finalizeRun fires clean-review approval handler before bumpReviewPasses; evaluateAutoApprove calls gatherApprovalPreflight BEFORE checking policy.enabled. preflightMerge executes asynchronous git merge --no-commit then abort in canonical main. That external git writer explains active PATCH pre-file-write active but post-commit disk review with no intervening patchTaskFile. Require deterministic preflight/active-write overlap regression and read-only merge analysis; do not approve timing-only trace passes. Driver pause requested; cancelled close-out old run still retrying bee, do not duplicate.
