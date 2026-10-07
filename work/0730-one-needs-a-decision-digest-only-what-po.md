@@ -12,7 +12,7 @@ branch: feat/the-cto-s-needs-a-decision-digest-only-w
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T02:05:38Z"
-updated_at: "2026-10-07T14:13:43Z"
+updated_at: "2026-10-07T14:17:04Z"
 last_check_failure: "repoos check at 2026-10-07T14:12:54.640Z: server-side finalization timed out (deadline exceeded)"
 review_passes: 3
 close_out_repair_count: 1
