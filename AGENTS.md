@@ -152,14 +152,20 @@ who owns approval and merging:
 - If explicitly taking over a newly created task, claim it through RepoOS
   directly as `active`, without leaving it in `ready` for auto-dispatch to grab.
   Managed starts should use RepoOS's Start action, which owns worktree setup.
-- Request review through the UI/API or `repoos mv <id> review`. Outside the
-  task's runner, the CLI writes metadata that the server intercepts
-  asynchronously and routes through handoff validation. Wait for actual
-  completion; a successful CLI return is not proof that checks/review finished.
+- Drive the running server from the CLI, not ad-hoc `curl`: `repoos start`,
+  `pause`, `message`, `review` (synchronous handoff), `done` (close-out),
+  `override`, `preview`, `config`, `runners`, `agents`, and `stats` wrap the
+  HTTP API with one-shot auth (loopback token or stored session; dev-login
+  re-auth on 401). See `user-docs/cli.md` (Control plane).
+- Request review through the UI, `repoos review <id>`, or `repoos mv <id> review`.
+  `repoos mv review` writes task metadata that the server intercepts
+  asynchronously; prefer `repoos review` when you need to wait for handoff
+  completion. A successful `repoos mv` return is not proof that checks finished.
 - A status write is not a synchronous cancellation of a background process.
   Use the supported pause/stop action and verify the run has ended before
   taking over. Wait for an active reviewer before requesting close-out.
-- After explicit human approval, invoke Move to done/the `/done` endpoint.
+- After explicit human approval, invoke `repoos done <id>`, Move to done in the
+  UI, or `POST /api/tasks/:id/done` — not `repoos mv <id> done`.
   Do not bypass review with `active` → `done` or repair a stuck task by merely
   reissuing `repoos mv <id> done`. Inspect the review/check/integration state.
   If the control-plane server is unavailable, report it rather than emulate

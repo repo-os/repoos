@@ -12,10 +12,10 @@ branch: feat/flag-any-check-close-out-upload-run-that
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T14:26:00Z"
-updated_at: "2026-10-06T18:04:38Z"
+updated_at: "2026-10-07T00:57:22Z"
+merge_conflict_retry_count: 2
 review_passes: 3
 review_rounds: 1
-merge_conflict_retry_count: 1
 dev_error_count: 2
 ---
 ## Problem
@@ -95,5 +95,5 @@ fatal: unable to read tree (d9943448816cf7b32c6ee799a27fbc365521fbce) — fix it
 - 2026-10-06T17:55:15Z · note: shots: skipped — 2 handoff shots already captured during finalization (#0680)
 - 2026-10-06T17:56:52Z · note: review pass 3: good to go
 - 2026-10-06T18:04:29Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-
-
+- 2026-10-07T00:56:08Z · body
+- 2026-10-07T00:57:22Z · body
