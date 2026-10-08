@@ -150,6 +150,7 @@ import {
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { runAreaMigrationPass } from "./area-migration.js";
+import { runTaskBodyMigrationPass } from "./task-body-migration.js";
 import { sweepUnderspecifiedTasks } from "./task-underspecified-flag.js";
 import { FreeformRunManager } from "./freeform-runs.js";
 import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.js";
@@ -1947,7 +1948,46 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       /* best-effort: the tolerant reader keeps legacy files working anyway */
     }
   };
-  void indexReady.then(runAreaMigration, () => {});
+  const runTaskBodyMigration = (): void => {
+    try {
+      if (!isControlPlane) return;
+      if (process.env.VITEST === "true") return;
+      if (process.env.REPOOS_SKIP_TASK_BODY_MIGRATION === "1") return;
+      const outcome = runTaskBodyMigrationPass(config, (absPaths) =>
+        commitFiles(
+          config.root,
+          absPaths,
+          "docs: normalize PM task bodies (single Activity, column-0 headings) (#0702)",
+        ),
+      );
+      if (!outcome.attempted) return;
+      if (!outcome.committed) {
+        logger.system(
+          "warn",
+          "task-body normalization (#0702): commit failed; will retry on boot",
+          {
+            rewritten: outcome.rewritten,
+            retried: outcome.retried,
+          },
+        );
+      } else {
+        logger.system("info", "task-body normalization (#0702)", {
+          rewritten: outcome.rewritten,
+          retried: outcome.retried,
+        });
+      }
+      index.refreshAll();
+    } catch {
+      /* best-effort */
+    }
+  };
+  void indexReady.then(
+    () => {
+      runAreaMigration();
+      runTaskBodyMigration();
+    },
+    () => {},
+  );
 
   // One-time underspecified sweep (#0668): tasks created before the create path
   // assessed them — or created by `repoos new` while the server was down — must
