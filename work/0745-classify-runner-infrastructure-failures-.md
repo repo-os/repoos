@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-08T16:00:04Z"
+review_passes: 1
 id: "0745"
 title: "Classify runner infrastructure failures (bun install EACCES, ssh, container, host permissions) as infra, not test failures: retry on another host and mark the host degraded"
 type: bug
@@ -12,7 +14,6 @@ branch: feat/classify-runner-infrastructure-failures-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:40:08Z"
-updated_at: "2026-10-08T16:00:03Z"
 ---
 ## Problem
 
@@ -155,3 +156,4 @@ error: script "test" exited with code 1
 - 2026-10-08T15:58:53Z · status active→review
 - 2026-10-08T15:59:08Z · note: highlight .rvr-host-state--bad matched nothing on /settings?tab=remote
 - 2026-10-08T16:00:03Z · note: review pass 1: good to go
+
