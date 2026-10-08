@@ -298,6 +298,29 @@ export function recordChange(task: Task, entry: string): void {
   task.body = appendActivityEntry(task.body, `- ${task.updated_at} · ${entry}`);
 }
 
+const STATUS_ACTIVITY_RE = /^- ([^\s]+) · status (\S+)→(\S+)\s*$/;
+
+/**
+ * Remove the last Activity entry when it records a specific status transition.
+ * Used when a provisional `review` write is reverted for server-side handoff
+ * (#0704) so the log shows one request line and the final transition only.
+ */
+export function stripLastStatusActivityEntry(body: string, from: Status, to: Status): string {
+  const section = extractSection(body, ACTIVITY_HEADING);
+  if (!section) return body;
+  const lines = section.split("\n");
+  const entryLines = lines.slice(1).filter((l) => l.trim().startsWith("- "));
+  if (entryLines.length === 0) return body;
+  const last = entryLines[entryLines.length - 1].trim();
+  const m = STATUS_ACTIVITY_RE.exec(last);
+  if (!m || m[2] !== from || m[3] !== to) return body;
+  const without = entryLines.slice(0, -1);
+  const rebuilt =
+    without.length > 0 ? `${ACTIVITY_HEADING}\n\n${without.join("\n")}\n` : `${ACTIVITY_HEADING}\n`;
+  const before = removeSection(body, ACTIVITY_HEADING).replace(/\s+$/, "");
+  return before ? `${before}\n\n${rebuilt}` : rebuilt;
+}
+
 /** Latest successful-close-out timestamp recorded in the append-only activity log. */
 export function releasedAtFromActivity(body: string): string | null {
   let releasedAt: string | null = null;

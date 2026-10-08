@@ -46,7 +46,7 @@ describe("task createdBy from the authenticated session", () => {
       });
       expect(res.status).toBe(201);
       const task = (await res.json()) as { absPath: string };
-      expect(readFileSync(task.absPath, "utf8")).toMatch(/created_by: ""/);
+      expect(readFileSync(task.absPath, "utf8")).toMatch(/created_by: "?api"?/);
     });
   });
 

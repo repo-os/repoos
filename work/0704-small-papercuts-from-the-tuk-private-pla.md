@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-08T17:58:29Z"
-review_passes: 2
 id: "0704"
 title: Small papercuts from the tuk-private planning run
 type: chore
@@ -14,7 +12,8 @@ branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-review_rounds: 1
+updated_at: "2026-10-08T17:50:42Z"
+check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -55,44 +54,11 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T15:41:14Z · body
 - 2026-10-08T15:43:26Z · body
 - 2026-10-08T15:44:13Z · body
-- 2026-10-08T15:46:02Z · body
-- 2026-10-08T15:46:49Z · body
-- 2026-10-08T15:57:31Z · handoff failed · check failed after 2 automatic retries · server-side finalization timed out (deadline exceeded)
-- 2026-10-08T16:02:39Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-10-08T16:02:40Z · status review→active
-- 2026-10-08T16:12:39Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-- 2026-10-08T16:21:38Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
-- 2026-10-08T16:23:16Z · body
-- 2026-10-08T16:24:38Z · body
-- 2026-10-08T16:32:23Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
-- 2026-10-08T16:32:24Z · handoff failed · handoff recovery attempted · finalization failed
-- 2026-10-08T16:37:36Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-10-08T16:37:36Z · status review→active
-- 2026-10-08T16:42:37Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-10-08T16:42:38Z · status review→active
-- 2026-10-08T16:57:39Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-- 2026-10-08T17:02:39Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
-- 2026-10-08T17:04:30Z · body
-- 2026-10-08T17:06:17Z · body
-- 2026-10-08T17:12:21Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
-- 2026-10-08T17:17:39Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-10-08T17:17:39Z · status review→active
-- 2026-10-08T17:23:09Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
-- 2026-10-08T17:28:39Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
-- 2026-10-08T17:40:24Z · body
 - 2026-10-08T17:46:17Z · status active→review
-- 2026-10-08T17:46:17Z · note: shots: skipped — the diff (20 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-08T17:47:45Z · note: review pass 1: needs some work
-- 2026-10-08T17:47:45Z · status review→active
-- 2026-10-08T17:49:28Z · note: Item 1 (repoos list): fixed — truncatePad() pads titles so the area column stays aligned.
-- 2026-10-08T17:49:30Z · note: Item 2 (created_by): fixed — resolveApiCreator/resolveCliCreator on API, CLI, and story creates; activity uses the resolved label.
-- 2026-10-08T17:49:33Z · note: Item 3 (intercepted handoff activity): fixed — handoff requested note without index churn; guard revert strips provisional active→review and skips review→active.
-- 2026-10-08T17:49:35Z · note: Item 4 (doctor AGENTS.md paths): fixed — warn-only findMissingAgentsMdPaths in repoos doctor.
-- 2026-10-08T17:49:37Z · note: Item 5 (repoos show header fields): declined — out of scope for this papercuts task; needs a dedicated UI/CLI task.
-- 2026-10-08T17:49:40Z · note: Item 6 (GET on POST-only API routes): declined — routing/auth behavior change; file separately from papercuts.
-- 2026-10-08T17:49:42Z · note: Item 21 (PATCH numeric maxActiveTasks): declined — config schema/validation change; not part of #0704 scope.
-- 2026-10-08T17:51:30Z · body
-- 2026-10-08T17:57:28Z · status active→review
-- 2026-10-08T17:57:29Z · note: shots: skipped — the diff (22 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-08T17:58:29Z · note: review pass 2: good to go
-
+- 2026-10-08T17:50:41Z · note: Item 1 (repoos list): fixed — truncatePad() pads titles so the area column stays aligned.
+- 2026-10-08T17:50:41Z · note: Item 2 (created_by): fixed — resolveApiCreator/resolveCliCreator on API, CLI, and story creates; activity uses the resolved label.
+- 2026-10-08T17:50:41Z · note: Item 3 (intercepted handoff activity): fixed — handoff requested note without index churn; guard revert strips provisional active→review and skips review→active.
+- 2026-10-08T17:50:42Z · note: Item 4 (doctor AGENTS.md paths): fixed — warn-only findMissingAgentsMdPaths in repoos doctor.
+- 2026-10-08T17:50:42Z · note: Item 5 (repoos show header fields): declined — out of scope for this papercuts task; needs a dedicated UI/CLI task.
+- 2026-10-08T17:50:42Z · note: Item 6 (GET on POST-only API routes): declined — routing/auth behavior change; file separately from papercuts.
+- 2026-10-08T17:50:42Z · note: Item 21 (PATCH numeric maxActiveTasks): declined — config schema/validation change; not part of #0704 scope.
