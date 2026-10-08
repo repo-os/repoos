@@ -1,3 +1,5 @@
+import { describeCapabilities } from "./remote-hosts.js";
+
 /** Live queue position while a job waits on {@link TailscaleHostPool} (#0706). */
 export interface RemotePoolQueueInfo {
   /** How many other runs are ahead in the pool (in-flight + earlier waiters). */
@@ -9,16 +11,21 @@ export interface RemotePoolQueueInfo {
 }
 
 const QUEUE_LINE_RE =
-  /waiting for a runner on ([^\s(]+) \(queue position (\d+)\)[^\n]*queued behind (\d+) other remote run/;
+  /waiting for a runner(?: on ([^\s(]+))? \(queue position (\d+)(?:[^)]*)?\)[^\n]*queued behind (\d+) other remote run/;
 
 /** Streamed to check logs / transcripts when the pool queue blocks (#0706). */
 export function formatRemotePoolQueueMessage(
   info: RemotePoolQueueInfo,
   capabilities: string[] = [],
 ): string {
-  const need = capabilities.length ? `waiting for a host with ${capabilities.join(", ")} — ` : "";
+  const need = capabilities.length
+    ? `waiting for a host with ${describeCapabilities(capabilities)} — `
+    : "";
+  const where = info.host
+    ? `waiting for a runner on ${info.host} (queue position ${info.position})`
+    : `waiting for a runner (queue position ${info.position} — eligible hosts recovering)`;
   return (
-    `[waiting for a runner on ${info.host} (queue position ${info.position}) — ` +
+    `[${where} — ` +
     `queued behind ${info.ahead} other remote run(s) — ${need}` +
     "every eligible host is at its per-host limit; starts when a slot frees]\n"
   );
@@ -32,5 +39,5 @@ export function parseRemotePoolQueueMessage(text: string): RemotePoolQueueInfo |
   const ahead = Number(last[3]);
   const position = Number(last[2]);
   if (!Number.isFinite(ahead) || !Number.isFinite(position)) return null;
-  return { host: last[1], position, ahead };
+  return { host: last[1] ?? "", position, ahead };
 }
