@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-08T14:15:55Z"
+review_passes: 1
 id: "0742"
 title: "Docs: add the missing second-night lessons to docs/agent-run-operations.md (loop guard, validate.sh rollout and arg order, hung/killed runs, unreachable hosts, previews)"
 type: chore
@@ -12,7 +14,6 @@ branch: feat/docs-add-the-missing-second-night-lesson
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-07T17:40:53Z"
-updated_at: "2026-10-08T14:15:55Z"
 ---
 ## Problem
 
@@ -47,3 +48,4 @@ Docs only. Related: #0710 (done), #0739, #0729, #0725.
 - 2026-10-08T14:14:41Z · status active→review
 - 2026-10-08T14:14:42Z · note: shots: skipped — the diff (3 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-08T14:15:55Z · note: review pass 1: good to go
+
