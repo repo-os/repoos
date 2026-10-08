@@ -27,7 +27,6 @@ import { normalizeStoryName } from "./stories.js";
 import { formatTaskAreas, parseTaskAreas } from "./areas.js";
 import { normalizeTaskDependencies, validateTaskDependencies } from "./task-dependencies.js";
 import { validateTaskFields } from "./task-fields.js";
-import { creationActivityLabel } from "./record-creator.js";
 
 export interface CreateTaskInput {
   title: string;
@@ -318,7 +317,7 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
         // the body, then append the creation activity entry.
         body: appendActivityEntry(
           withOriginalPromptSection(input.body ?? "", input.originalPrompt),
-          `- ${ts} · created · ${creationActivityLabel(input.createdBy ?? "")}`,
+          `- ${ts} · created · ${input.createdBy || "unknown"}`,
         ),
         extra: {},
         agentOverride: null,
