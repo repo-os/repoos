@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 249309
-last_close_out_gate_at: "2026-10-08T15:28:23.456Z"
 id: "0706"
 title: "Standalone self-check: prefer least-loaded remote host and stuck-badge copy"
 type: chore
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: 319c7b94a34066101ab293137612218b476d29d6
 assigned_to: ai
 created_by: ""
 branch: feat/standalone-self-check-prefer-least-loade
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-08T15:28:23Z"
+updated_at: "2026-10-08T15:28:34Z"
+last_close_out_gate_ms: 249309
+last_close_out_gate_at: "2026-10-08T15:28:23.456Z"
 review_passes: 2
 review_rounds: 1
 dev_error_count: 1
@@ -130,4 +131,4 @@ error: script "test" exited with code 1
 - 2026-10-08T15:15:06Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (319c7b94a) during finalization (#0734)
 - 2026-10-08T15:16:18Z · note: review pass 2: good to go
 - 2026-10-08T15:28:23Z · close-out gate completed in 249s
-
+- 2026-10-08T15:28:34Z · status review→done, release:success
