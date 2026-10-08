@@ -20,6 +20,10 @@ import CopyInspectorOverlay from "./components/CopyInspectorOverlay.vue";
 import ReleaseUpdateNotification from "./components/ReleaseUpdateNotification.vue";
 import DependencyOverrideDialog from "./components/DependencyOverrideDialog.vue";
 import { configureUiRecovery, checkUiBuild, showOffline } from "./lib/uiRecovery";
+import {
+  applyShotPreviewFixture,
+  readShotPreviewFixtureFromLocation,
+} from "./lib/shot-preview-fixtures";
 import { useUiStore } from "./stores/ui";
 
 const route = useRoute();
@@ -64,6 +68,10 @@ onMounted(async () => {
   // resolves, so it's normally already loaded by the time we mount.
   if (!auth.loaded) await auth.loadMe();
   await repo.init();
+  const shotFixture = readShotPreviewFixtureFromLocation(window.location);
+  if (shotFixture && repo.health?.isPreviewBuild) {
+    applyShotPreviewFixture(repo, shotFixture);
+  }
   // Release-event notices (#0606): poll /api/release/run from anywhere in the
   // app so the bell badge is live on every page, not just /releases.
   notices.start();
