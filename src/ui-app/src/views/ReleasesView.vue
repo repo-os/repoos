@@ -28,6 +28,8 @@ interface ReleaseStatus {
   latestTag: string | null;
   latestTagAt: string | null;
   latestTagSha: string | null;
+  /** Commits landed on the release branch since the latest tag; null if unknown. */
+  commitsBehindMain: number | null;
   latestStableTag: string | null;
   head: string | null;
   clean: boolean;
@@ -283,6 +285,35 @@ const lastStableTag = computed(() =>
     ? (status.value?.latestStableTag ?? null)
     : null,
 );
+
+/**
+ * How far the running code is ahead of the latest release, in commits — the
+ * number a human needs to judge whether cutting again is worthwhile. Null when
+ * there's no tag yet or git couldn't read the range.
+ */
+const commitsBehindMain = computed(() => status.value?.commitsBehindMain ?? null);
+/** "12 commits behind main" / "1 commit behind main", or "" when unknown. */
+const commitsBehindLabel = computed(() => {
+  const n = commitsBehindMain.value;
+  if (n === null) return "";
+  return `${n} ${n === 1 ? "commit" : "commits"} behind ${status.value?.branch ?? "main"}`;
+});
+/**
+ * Secondary line under the freshness pills: names where the shown tag points
+ * from, without repeating the branch (that is already in `rel-context`).
+ */
+const shippedMeta = computed(() => {
+  const s = status.value;
+  if (!s) return "";
+  const verb = s.released ? "shipped" : "last tag";
+  return s.latestTagSha ? `${verb} from ${s.latestTagSha}` : verb;
+});
+/** Freshness tone for the age/behind pill: fresh, aging, or stale. */
+const releaseFreshness = computed<"fresh" | "aging" | "stale">(() => {
+  const n = commitsBehindMain.value ?? 0;
+  if (n === 0) return "fresh";
+  return n < 25 ? "aging" : "stale";
+});
 
 /** A manifest version bumped but not yet tagged — ready to cut as-is. */
 const pendingVersion = computed(() =>
@@ -997,15 +1028,18 @@ onBeforeUnmount(() => {
             <div class="rel-current-version">
               <span class="rel-current-label">Current release</span>
               <span class="rel-current-number">{{ publishedTag ?? "Not released yet" }}</span>
-              <span v-if="status.released" class="rel-current-meta">
-                shipped {{ relativeTime(status.latestTagAt) || "—" }}
-                <template v-if="status.latestTagSha">
-                  · <code>{{ status.latestTagSha }}</code>
-                </template>
-              </span>
-              <span v-else-if="status.latestTag" class="rel-current-meta">
-                last tag · {{ relativeTime(status.latestTagAt) || "—" }}
-              </span>
+              <template v-if="status.latestTag">
+                <span class="rel-fresh-line">
+                  <span class="rel-fresh" :data-state="releaseFreshness">
+                    {{ isPrerelease ? "cut" : "released" }}
+                    {{ relativeTime(status.latestTagAt) || "—" }}
+                  </span>
+                  <span v-if="commitsBehindLabel" class="rel-behind" :data-state="releaseFreshness">
+                    {{ commitsBehindLabel }}
+                  </span>
+                </span>
+                <span class="rel-current-meta">{{ shippedMeta }}</span>
+              </template>
               <span v-if="lastStableTag" class="rel-current-meta">
                 last stable · <code>{{ lastStableTag }}</code>
               </span>
@@ -1601,6 +1635,53 @@ onBeforeUnmount(() => {
 .rel-current-meta code {
   font-family: var(--mono);
   color: var(--txt-dim);
+}
+/* Age + commit distance: the two facts a human weighs before cutting again,
+   so they sit together and read louder than the surrounding meta. */
+.rel-fresh-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.rel-fresh,
+.rel-behind {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.rel-fresh {
+  background: color-mix(in srgb, var(--border) 45%, transparent);
+  color: var(--txt-dim);
+}
+.rel-behind {
+  font-variant-numeric: tabular-nums;
+}
+/* Fresh release: up to date with main, nothing to cut. */
+.rel-fresh[data-state="fresh"],
+.rel-behind[data-state="fresh"] {
+  color: var(--green);
+  background: var(--green-tint);
+  border-color: var(--green-border-tint);
+}
+/* Aging: a handful of commits have landed since the release. */
+.rel-fresh[data-state="aging"],
+.rel-behind[data-state="aging"] {
+  color: var(--cyan);
+  background: var(--cyan-dim);
+  border-color: color-mix(in srgb, var(--cyan) 35%, transparent);
+}
+/* Stale: a release is likely overdue. */
+.rel-fresh[data-state="stale"],
+.rel-behind[data-state="stale"] {
+  color: var(--amber);
+  background: var(--amber-tint);
+  border-color: var(--amber-border-tint);
 }
 .rel-current-sync {
   margin-top: 8px;
