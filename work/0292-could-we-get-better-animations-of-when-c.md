@@ -22,14 +22,14 @@ current behavior as lacking the "magic" of seeing cards glide between columns.
 ## Desired UX
 
 - When a card changes state (e.g. moves from one column to another), it
-  animates smoothly, gliding between its old position and its new position
-  rather than appearing instantly in place.
+animates smoothly, gliding between its old position and its new position
+rather than appearing instantly in place.
 - The animation should feel fluid and magical (akin to a FLIP-style or layout
-  animation), making it clear where the card traveled from and to.
+animation), making it clear where the card traveled from and to.
 - This behavior is off by default. It is controlled by a toggle in the
-  settings UI that the user can turn on or off at any time.
+settings UI that the user can turn on or off at any time.
 - When disabled, cards change state exactly as they do today (instantly, no
-  animation).
+animation).
 
 ## Acceptance criteria
 
@@ -45,23 +45,23 @@ current behavior as lacking the "magic" of seeing cards glide between columns.
 
 - This is a UI (web) change only; there is no core engine or data-model impact.
 - Settings live in the UI-app settings area — follow the existing settings
-  pattern for adding a new toggle (persistence, default value, and reading the
-  value where cards render).
+pattern for adding a new toggle (persistence, default value, and reading the
+value where cards render).
 - Implement the animation client-side (e.g. FLIP / layout animation) so column
-  position changes animate; avoid rebuilding the existing state-change flow.
+position changes animate; avoid rebuilding the existing state-change flow.
 - Assume the animation should also respect the user's "reduce motion" system
-  preference as a reasonable default, but this is not a hard requirement.
+preference as a reasonable default, but this is not a hard requirement.
 - After any UI change, rebuild (`bun run build:ui` or `bun run build`) so the
-  worktree build stays fresh, and re-run `repoos check`.
+worktree build stays fresh, and re-run `repoos check`.
 - Do not add a runtime dependency — zero runtime dependencies is a hard
-  constraint; use what the existing UI stack already provides.
+constraint; use what the existing UI stack already provides.
 
 ## Scope
 
 - Covers: the settings toggle and the glide animation on card state changes.
 - Deferred: animations for other UI elements (board reorder, card content
-  changes, drag-and-drop interactions) unless they fall out naturally from the
-  same mechanism.
+changes, drag-and-drop interactions) unless they fall out naturally from the
+same mechanism.
 
 ## Related
 

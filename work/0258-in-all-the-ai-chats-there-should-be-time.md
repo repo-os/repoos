@@ -37,15 +37,15 @@ Every message bubble (both human and assistant) in the Debugger, Ross, CTO, and 
 
 - **Data model change is the right approach.** The SSE `agent.output` event already carries an `at` field, but the `AgentOutputEntry` itself does not. Adding `at` to the entry type means both persisted transcripts and live-streamed entries carry their own timestamp — no client-side guesswork needed.
 - Files to touch:
-  - `src/core/types.ts` — add `at?: string` to the `AgentOutputEntry` union (on every variant, or as an intersected optional on the union)
-  - `src/ui-app/src/types.ts` — mirror the same `at?: string` addition
-  - `src/server/agents.ts` — in `recordEntry()` (~line 2605) and wherever entries are constructed (e.g. `human` entries at ~line 2311, ~line 2354), stamp `at: new Date().toISOString()`
-  - `src/server/cto.ts` — stamp `at` on entries created by the CTO agent
-  - `src/server/review.ts` — stamp `at` on entries created by the review agent
-  - `src/ui-app/src/components/DebuggerChat.vue` — render `entry.at` as a timestamp in each row
-  - `src/ui-app/src/components/RepoGuideChat.vue` — same
-  - `src/ui-app/src/components/CTOPanel.vue` — same
-  - `src/ui-app/src/components/TaskDrawer.vue` — same for the PM tab rows
+- `src/core/types.ts` — add `at?: string` to the `AgentOutputEntry` union (on every variant, or as an intersected optional on the union)
+- `src/ui-app/src/types.ts` — mirror the same `at?: string` addition
+- `src/server/agents.ts` — in `recordEntry()` (~line 2605) and wherever entries are constructed (e.g. `human` entries at ~line 2311, ~line 2354), stamp `at: new Date().toISOString()`
+- `src/server/cto.ts` — stamp `at` on entries created by the CTO agent
+- `src/server/review.ts` — stamp `at` on entries created by the review agent
+- `src/ui-app/src/components/DebuggerChat.vue` — render `entry.at` as a timestamp in each row
+- `src/ui-app/src/components/RepoGuideChat.vue` — same
+- `src/ui-app/src/components/CTOPanel.vue` — same
+- `src/ui-app/src/components/TaskDrawer.vue` — same for the PM tab rows
 - Reuse `toLocaleTimeString()` (or a shared `fmtTime(iso)` helper) for consistent formatting. The project already uses this pattern in `AutoEngineeringPanel.vue` and `TaskCard.vue`.
 - Preserve backward compatibility: `at` is optional, so old persisted transcripts without it simply don't show a timestamp — no migration needed.
 - Legacy `{ s, d }` entries (pre-JSON sessions) will not have `at`. The UI should gracefully hide the timestamp when absent.

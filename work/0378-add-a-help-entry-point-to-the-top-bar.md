@@ -37,41 +37,41 @@ without navigating.
 
 - [ ] A "?" icon button renders in the top bar on every screen/route.
 - [ ] Clicking it opens a dropdown/popover with links to Docs, GitHub
-      Discussions, and GitHub Issues.
+Discussions, and GitHub Issues.
 - [ ] Icon uses inline SVG with `currentColor` and `1.8` stroke-width,
-      consistent with the icons in `nav.ts`.
+consistent with the icons in `nav.ts`.
 - [ ] The control is NOT added as an entry in `nav.ts` / the main
-      Control/Inputs/Work/Agents/Context/Settings nav.
+Control/Inputs/Work/Agents/Context/Settings nav.
 - [ ] External links (Discussions, Issues, and Docs if hosted externally)
-      open in a new tab with `rel="noopener noreferrer"`.
+open in a new tab with `rel="noopener noreferrer"`.
 - [ ] Menu closes on click-outside and on Escape.
 - [ ] Follows existing top-bar/header component conventions; no new runtime
-      dependency added.
+dependency added.
 - [ ] UI rebuilt (`bun run build:ui` or `bun run build`) after the change.
 
 ## Notes for AI
 
 - This lives in the **top-bar/header component**, separate from `nav.ts`.
-  Find the header via the UI layout in `src/ui-app/` — do not extend the nav
-  list.
+Find the header via the UI layout in `src/ui-app/` — do not extend the nav
+list.
 - Reuse the existing icon rendering style from `src/ui-app/src/nav.ts`
-  (inline SVG, `currentColor`, `1.8` stroke-width) for visual consistency.
+(inline SVG, `currentColor`, `1.8` stroke-width) for visual consistency.
 - Dialog/popover styling is body-teleported, so its CSS belongs in
-  `src/ui-app/src/style.css`, not a scoped view block — verify whether the
-  chosen dropdown implementation follows that pattern.
+`src/ui-app/src/style.css`, not a scoped view block — verify whether the
+chosen dropdown implementation follows that pattern.
 - **Assumed URLs** (the explanation did not pin exact links; adjust if the
-  repo's actual URLs differ):
-  - Discussions: `https://github.com/repo-os/repoos/discussions`
-  - Issues: `https://github.com/repo-os/repoos/issues`
+repo's actual URLs differ):
+- Discussions: `https://github.com/repo-os/repoos/discussions`
+- Issues: `https://github.com/repo-os/repoos/issues`
 - **Assumption — Docs link:** the explanation says "user-docs/, wherever
-  they're published" and does not name the published URL. Default to the
-  repo's published docs base URL if one is configured; otherwise point at the
-  `user-docs/` path in the repo and leave a single obvious constant to change
-  later. Do not hardcode multiple fallbacks.
+they're published" and does not name the published URL. Default to the
+repo's published docs base URL if one is configured; otherwise point at the
+`user-docs/` path in the repo and leave a single obvious constant to change
+later. Do not hardcode multiple fallbacks.
 - Keep the menu minimal — 2–3 links only. Do not add search, onboarding, or a
-  help center.
+help center.
 - Zero runtime dependencies is a hard constraint; build the dropdown from
-  existing components/patterns.
+existing components/patterns.
 
 ## Scope
 
@@ -85,7 +85,7 @@ docs rendering, and any docs-hosting changes.
 
 - `user-docs/` — destination for the Docs link.
 - `src/ui-app/src/nav.ts` — source of the icon style convention (not a place
-  to add this entry).
+to add this entry).
 
 ## Original prompt
 

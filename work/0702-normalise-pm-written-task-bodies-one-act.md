@@ -2,15 +2,21 @@
 id: "0702"
 title: "Normalise PM-written task bodies: one `## Activity` section, no common leading indent"
 type: feature
-status: inbox
+status: done
 priority: p2
 area: core
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 9a7c52169e5e77f041e73eff434dfb5802a74732
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/normalise-pm-written-task-bodies-one-act
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T03:15:55Z"
-updated_at: "2026-10-06T03:15:55Z"
+updated_at: "2026-10-08T14:58:17Z"
+last_close_out_gate_ms: 176099
+last_close_out_gate_at: "2026-10-08T14:58:07.545Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -35,3 +41,13 @@ Related: #0613 (protect task bodies from clobbering, done).
 ## Activity
 
 - 2026-10-06T03:15:55Z · created · unknown
+- 2026-10-08T14:41:31Z · cli_override, model_override
+- 2026-10-08T14:41:34Z · status inbox→ready
+- 2026-10-08T14:41:36Z · status ready→active, branch
+- 2026-10-08T14:45:58Z · body
+- 2026-10-08T14:46:47Z · body
+- 2026-10-08T14:53:29Z · status active→review
+- 2026-10-08T14:53:29Z · note: shots: skipped — the diff (6 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-08T14:54:46Z · note: review pass 1: good to go
+- 2026-10-08T14:58:07Z · close-out gate completed in 176s
+- 2026-10-08T14:58:17Z · status review→done, release:success

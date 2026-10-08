@@ -70,8 +70,8 @@ Add a server/core freeform path analogous to `POST /api/tasks/freeform`, `POST /
 
 - Input: `{ name?: string, description: string, agent?, cli?, model? }`.
 - PM writes a **story definition markdown file** with frontmatter at minimum:
-  - `name` — final display name (respect human-provided name when present; otherwise PM-generated).
-  - `created_at` / `created_by` — set by the system from auth/session, not the model.
+- `name` — final display name (respect human-provided name when present; otherwise PM-generated).
+- `created_at` / `created_by` — set by the system from auth/session, not the model.
 - Body: PM-fleshed markdown (scope, outcomes, non-goals, open questions — same “helpful PM doc” tone as task/doc freeform, but **not** a task file).
 - Filename: slug from normalized name; collision-safe (suffix `-2`, etc.).
 

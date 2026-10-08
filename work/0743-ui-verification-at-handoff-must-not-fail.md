@@ -1,19 +1,22 @@
 ---
-updated_at: "2026-10-08T14:37:26Z"
-review_passes: 1
 id: "0743"
 title: UI verification at handoff must not fail a task because a declared shot targets UI that only exists in a state the preview board lacks
 type: bug
-status: review
+status: done
 priority: p1
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: 2b3e63f0d75baf5bf1fb5108ed2dd7c3369a7f64
 assigned_to: ai
 created_by: ""
 branch: feat/ui-verification-at-handoff-must-not-fail
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:06:36Z"
+updated_at: "2026-10-08T14:46:32Z"
+last_close_out_gate_ms: 219434
+last_close_out_gate_at: "2026-10-08T14:46:22.477Z"
+review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -38,11 +41,11 @@ Read the handoff UI verification gate (src/server/ui-handoff-gate.ts, #0680), th
 ## Shots
 ```json
 [
-  {
-    "label": "Board",
-    "target": "default",
-    "route": "/"
-  }
+{
+"label": "Board",
+"target": "default",
+"route": "/"
+}
 ]
 ```
 
@@ -65,9 +68,9 @@ changes and commit them, and you can discard any commits you make in this
 state without impacting any branches by switching back to a branch.
 If you want to create a new branch to retain commits you create, you may
 do so (now or later) by using -c with the switch command. Example:
-  git switch -c <new-branch-name>
+git switch -c <new-branch-name>
 Or undo this operation with:
-  git switch -
+git switch -
 Turn off this advice by setting config variable advice.detachedHead to false
 [validate] HEAD verified at 36ab3693165cfd5ed559c021b614f11f2628cfa4
 bun install v1.4.2 (744846f84)
@@ -78,4 +81,5 @@ error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INST
 - 2026-10-08T14:35:13Z · body: section Shots
 - 2026-10-08T14:36:03Z · status active→review
 - 2026-10-08T14:37:26Z · note: review pass 1: good to go
-
+- 2026-10-08T14:46:22Z · close-out gate completed in 219s
+- 2026-10-08T14:46:32Z · status review→done, release:success

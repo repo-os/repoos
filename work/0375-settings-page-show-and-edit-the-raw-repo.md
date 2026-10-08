@@ -36,43 +36,43 @@ the curated fields (those stay; they're nicer for the common cases they
 cover), an addition/escape hatch for everything else:
 - Show the file's current content, syntax-highlighted as TOML.
 - Make it editable in place, saved back through whatever API already writes
-  config (check if `SettingsView.vue`'s existing save path can be reused/
-  extended, or if this needs a new endpoint — `repoos.toml` is a plain file,
-  so a `GET`/`PUT` pair rooted at it may be simplest, but verify against how
-  the curated form currently persists changes before assuming).
+config (check if `SettingsView.vue`'s existing save path can be reused/
+extended, or if this needs a new endpoint — `repoos.toml` is a plain file,
+so a `GET`/`PUT` pair rooted at it may be simplest, but verify against how
+the curated form currently persists changes before assuming).
 - Validate before writing: a malformed TOML save must not corrupt the file
-  or silently produce a config the server can't load on next start. Surface
-  a parse error inline rather than accepting anything.
+or silently produce a config the server can't load on next start. Surface
+a parse error inline rather than accepting anything.
 - Decide how this interacts with the curated fields editing the SAME
-  underlying file concurrently (e.g. does saving the raw view need to
-  re-sync the curated form's state, or vice versa) — don't ship a raw editor
-  that silently stomps a curated-field change made moments before, or vice
-  versa.
+underlying file concurrently (e.g. does saving the raw view need to
+re-sync the curated form's state, or vice versa) — don't ship a raw editor
+that silently stomps a curated-field change made moments before, or vice
+versa.
 
 ## Constraints
 
 - `repoos.toml` is git-tracked (per AGENTS.md's own config conventions) —
-  writing to it from the UI is normal (the curated form already does this),
-  but never write secrets into it; if a user pastes a secret into the raw
-  editor by mistake, that's a user error the UI can't fully prevent, but
-  don't make it easier by, say, auto-suggesting secret-shaped values.
+writing to it from the UI is normal (the curated form already does this),
+but never write secrets into it; if a user pastes a secret into the raw
+editor by mistake, that's a user error the UI can't fully prevent, but
+don't make it easier by, say, auto-suggesting secret-shaped values.
 - Follow the existing `SettingsView.vue` structure/patterns rather than
-  building a second, disconnected settings surface.
+building a second, disconnected settings surface.
 
 ## Acceptance criteria
 
 - [ ] The Settings page shows the current `repoos.toml` content.
 - [ ] It can be edited and saved from the UI, with TOML syntax highlighting.
 - [ ] An invalid save is rejected with a clear inline error, never silently
-      corrupting the file or leaving the server unable to start.
+corrupting the file or leaving the server unable to start.
 - [ ] Curated fields and the raw view stay consistent with each other (no
-      silent overwrite of one by the other).
+silent overwrite of one by the other).
 - [ ] `repoos check` passes.
 
 ## Related
 
 - #0370 — the task whose own preview config surfaced there's no way to see
-  `[preview]` from the UI at all today.
+`[preview]` from the UI at all today.
 
 ## Activity
 

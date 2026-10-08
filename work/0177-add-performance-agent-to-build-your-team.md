@@ -1,5 +1,4 @@
 ---
-review_rounds: 1
 id: "0177"
 title: Add Performance Agent to Build Your Team
 type: feature
@@ -11,6 +10,7 @@ created_by: ""
 branch: feat/add-performance-agent-to-build-your-team
 created_at: "2026-08-13T15:43:27Z"
 updated_at: "2026-08-14T09:00:00Z"
+review_rounds: 1
 ---
 ## Problem
 
@@ -26,11 +26,11 @@ A Performance Agent appears in the "Build Your Team" section on the agents page,
 alongside the Tech Debt Agent, with:
 
 - A card/component explaining what the agent does: keeps the app and its
-  processes snappy and catches slowdowns before they compound
+processes snappy and catches slowdowns before they compound
 - Configuration for run frequency (once daily, once weekly, on-demand)
 - A manual "Run Now" button to trigger an immediate run
 - Once run, the agent scans the app/repo and surfaces performance concerns as
-  tasks added to the Inbox list
+tasks added to the Inbox list
 - Shows the agent's status and when it last ran
 
 ## Acceptance criteria

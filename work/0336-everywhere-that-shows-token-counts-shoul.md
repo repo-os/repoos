@@ -35,9 +35,9 @@ Separately, in the task panel's tokens tab, the per-session table's **started** 
 ## Notes for AI
 
 - Token formatters to touch (all are duplicated local functions, not shared):
-  - `fmtTokens` in `src/ui-app/src/components/TaskDrawer.vue` (currently: `842` / `12.3k` / `1.2M`)
-  - `fmtTokens` in `src/ui-app/src/components/UsagePanel.vue` (same k logic)
-  - the `K` shorthand in `src/ui-app/src/components/ModelPlaygroundPanel.vue` (token-cost filter)
+- `fmtTokens` in `src/ui-app/src/components/TaskDrawer.vue` (currently: `842` / `12.3k` / `1.2M`)
+- `fmtTokens` in `src/ui-app/src/components/UsagePanel.vue` (same k logic)
+- the `K` shorthand in `src/ui-app/src/components/ModelPlaygroundPanel.vue` (token-cost filter)
 - Consider consolidating the duplicated token formatters into one shared helper (e.g. `src/ui-app/src/lib/`) so this can't drift again — but keep it UI-internal.
 - Timestamps: `fmtSessionTime` in `TaskDrawer.vue` already uses `toLocaleString` (local time) with month/day + hour/minute. Change the default to time-only and add the date on expand. Keep using `toLocale*` with explicit options — never manual UTC math.
 - For the click-to-expand, follow the existing `sessionAgentsExpanded` / `toggleSessionAgentExpand()` pattern on the agent/model column in the same table — it's the established affordance here.

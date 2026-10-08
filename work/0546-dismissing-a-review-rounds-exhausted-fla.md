@@ -48,14 +48,14 @@ whether a human just dismissed that exact flag seconds/minutes earlier.
 So the actual sequence that reproduces it:
 1. Task is `review`, flagged `review-rounds-exhausted` (rounds already at cap).
 2. Human clicks "Review again" (per the banner's own suggested action) —
-   this starts a fresh review in the background, which takes roughly a
-   minute.
+this starts a fresh review in the background, which takes roughly a
+minute.
 3. While it's running, or right after, the human clicks **Dismiss** on the
-   now-stale banner. `needs_input` clears correctly.
+now-stale banner. `needs_input` clears correctly.
 4. The in-flight review finishes. If its verdict is still not "good to go",
-   `autoBounce`'s exhausted-rounds branch fires again and re-sets the same
-   flag — reappearing "a moment later" with no indication to the human that
-   a review was still in flight or that this is what happened.
+`autoBounce`'s exhausted-rounds branch fires again and re-sets the same
+flag — reappearing "a moment later" with no indication to the human that
+a review was still in flight or that this is what happened.
 
 This is arguably not a bug in the dismiss action itself (which does its job),
 but a confusing product/UX gap: dismissing a flag whose underlying cause
@@ -65,16 +65,16 @@ resolved yet gives no signal that it can legitimately come right back.
 ## Suggested fixes (pick one or combine)
 
 - Suppress re-raising `review-rounds-exhausted` for some short grace window
-  (e.g. a few minutes) after a human dismissed it, OR track whether it was
-  dismissed since the review that's about to complete was kicked off, and
-  skip the re-raise if so.
+(e.g. a few minutes) after a human dismissed it, OR track whether it was
+dismissed since the review that's about to complete was kicked off, and
+skip the re-raise if so.
 - Make the banner/UI aware a review is in flight and disable/relabel
-  "Dismiss" while one is running, rather than letting a human dismiss a flag
-  whose cause hasn't resolved.
+"Dismiss" while one is running, rather than letting a human dismiss a flag
+whose cause hasn't resolved.
 - At minimum, when `autoBounce` re-raises the identical reason immediately
-  after a recent dismiss, record something in the activity log distinct from
-  a fresh escalation, so the "why did this come back" question is
-  answerable from the task's own history instead of requiring code tracing.
+after a recent dismiss, record something in the activity log distinct from
+a fresh escalation, so the "why did this come back" question is
+answerable from the task's own history instead of requiring code tracing.
 
 ## Repro / context
 
@@ -123,17 +123,17 @@ running.
 Root cause (`src/ui-app/src/components/TaskDrawer.vue`):
 
 - `reviewAgain()` (~line 1458) sets `reviewBusy = true` only for the
-  duration of `await repo.reviewAgain(id)` — the HTTP call that *starts* the
-  review job server-side — then sets it back to `false` once that POST
-  resolves, typically well under a second. It does not track the review
-  agent process itself, which keeps running for roughly a minute afterward.
+duration of `await repo.reviewAgain(id)` — the HTTP call that *starts* the
+review job server-side — then sets it back to `false` once that POST
+resolves, typically well under a second. It does not track the review
+agent process itself, which keeps running for roughly a minute afterward.
 - This banner's button (~line 3324) is disabled only on
-  `ui.saving || startingWork || reviewBusy || dismissNeedsInputBusy` — no
-  `review?.running`.
+`ui.saving || startingWork || reviewBusy || dismissNeedsInputBusy` — no
+`review?.running`.
 - The app already has and uses a proper `review.running` reactive flag
-  elsewhere for the exact same situation: the Review tab's own "Review
-  again" button (~line 3824) disables on `review?.running` and shows a
-  "Starting…" label. This banner's button just never wires into it.
+elsewhere for the exact same situation: the Review tab's own "Review
+again" button (~line 3824) disables on `review?.running` and shows a
+"Starting…" label. This banner's button just never wires into it.
 
 Fix: add `review?.running` to this button's `:disabled` condition (matching
 the Review tab's own button) and show a busy/"reviewing…" state on it too,

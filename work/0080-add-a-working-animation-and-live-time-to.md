@@ -35,116 +35,116 @@ with nothing in the UI distinguishing that from normal slow progress.
 ## Desired UX
 
 - While the agent is working/thinking, the Agent tab reuses the shared activity
-  indicator delivered by 0049 rather than introducing a second animation.
+indicator delivered by 0049 rather than introducing a second animation.
 - The Agent tab shows a compact live stats readout whose numbers **increase in
-  real time** as work proceeds:
-  - time spent (counting up while the agent works),
-  - tokens used (counting up as output arrives),
-  - cost (counting up in lockstep with token usage).
+real time** as work proceeds:
+- time spent (counting up while the agent works),
+- tokens used (counting up as output arrives),
+- cost (counting up in lockstep with token usage).
 - Any metric the underlying agent CLI does not report is hidden (or shown as
-  "—") rather than displaying a wrong or broken value — the readout must never
-  render `undefined`/`NaN`.
+"—") rather than displaying a wrong or broken value — the readout must never
+render `undefined`/`NaN`.
 - Opening a task whose status is `active` or `review` defaults to the Agent
-  tab, because the agent has started working and that's where the action is.
-  Tasks in other statuses still open on Details.
+tab, because the agent has started working and that's where the action is.
+Tasks in other statuses still open on Details.
 - If the agent produces no new output for a conservative, configurable period
-  (90 seconds by default) while the runner still reports it alive, the UI shows
-  a neutral "quiet / may be stalled" warning. Silence alone must never be
-  described as proof that a process is dead. The alert clears automatically
-  once new output arrives (it was a slow step, not a hang) or once the
-  session is confirmed exited/stopped.
+(90 seconds by default) while the runner still reports it alive, the UI shows
+a neutral "quiet / may be stalled" warning. Silence alone must never be
+described as proof that a process is dead. The alert clears automatically
+once new output arrives (it was a slow step, not a hang) or once the
+session is confirmed exited/stopped.
 
 ## Acceptance criteria
 
 - [x] The Agent tab reuses the activity indicator from 0049 while the agent is
-      working and does not add a competing animation implementation.
+working and does not add a competing animation implementation.
 - [x] A time-spent counter counts up live while the agent works and keeps
-      accumulating across turns (follow-up chat messages add to the same
-      running total rather than resetting it).
+accumulating across turns (follow-up chat messages add to the same
+running total rather than resetting it).
 - [x] Token and cost counters increase live as new agent output arrives,
-      sourced from usage/cost data in the agent's own output where the CLI
-      reports it.
+sourced from usage/cost data in the agent's own output where the CLI
+reports it.
 - [x] When a metric is unavailable (CLI emits no usage data), that counter is
-      hidden or shows "—" — never `undefined`, `NaN`, or a fabricated number.
+hidden or shows "—" — never `undefined`, `NaN`, or a fabricated number.
 - [x] Opening any task whose status is `active` or `review` defaults to the
-      Agent tab; opening tasks in other statuses still defaults to Details.
+Agent tab; opening tasks in other statuses still defaults to Details.
 - [x] Counters and the animation also work while the task sits in `review`
-      (logs/chat persist there per 0053).
+(logs/chat persist there per 0053).
 - [x] If 90 seconds pass with no new `agent.output` event while the runner
-      still considers the task running, the UI surfaces a clear, non-definitive
-      quiet/may-be-stalled alert distinct from the normal working state.
+still considers the task running, the UI surfaces a clear, non-definitive
+quiet/may-be-stalled alert distinct from the normal working state.
 - [x] The stalled alert clears automatically once new output arrives, or
-      once the session is confirmed exited/stopped.
+once the session is confirmed exited/stopped.
 - [x] Zero console errors in the UI; `repoos check` passes.
 
 ## Notes for AI
 
 - Observability only: reuse the existing `agent.output` / `agent.running` /
-  `agent.exited` SSE events and the `AgentRunner` registry. Do **not** change
-  the spawn/resume/stop contract.
+`agent.exited` SSE events and the `AgentRunner` registry. Do **not** change
+the spawn/resume/stop contract.
 - **0073 folded in here** (closed as a duplicate — see its Activity log for
-  the pointer back to this task). Its unique piece was the stall alert,
-  merged into Desired UX/Acceptance criteria above; everything else it asked
-  for (working animation, cumulative working-time) was already in scope here.
-  Implement all of it in this one task — do not split the animation/time work
-  from the stall alert across two branches.
+the pointer back to this task). Its unique piece was the stall alert,
+merged into Desired UX/Acceptance criteria above; everything else it asked
+for (working animation, cumulative working-time) was already in scope here.
+Implement all of it in this one task — do not split the animation/time work
+from the stall alert across two branches.
 - Stall detection: reset a per-task last-activity timestamp on every
-  `agent.output` event; if it goes stale by 90s while the task is still
-  marked running, flag it as potentially stalled; clear on `agent.exited`.
-  Combine output silence with process/runner state where available. Server-side
-  (alongside the `AgentRunner` registry) is likely more robust than
-  client-side off the SSE stream, since it still works with no client tab
-  open — pick a reasonable default and note the choice if you diverge.
+`agent.output` event; if it goes stale by 90s while the task is still
+marked running, flag it as potentially stalled; clear on `agent.exited`.
+Combine output silence with process/runner state where available. Server-side
+(alongside the `AgentRunner` registry) is likely more robust than
+client-side off the SSE stream, since it still works with no client tab
+open — pick a reasonable default and note the choice if you diverge.
 - "Working" must track actual activity (arrival of `agent.output`), not just
-  "a process is running" — a hung process that stops emitting output but
-  hasn't exited is exactly the case the stall alert exists to catch (this is
-  not hypothetical: it happened twice in one session before the underlying
-  cause — a missing CLI permission flag — was fixed).
+"a process is running" — a hung process that stops emitting output but
+hasn't exited is exactly the case the stall alert exists to catch (this is
+not hypothetical: it happened twice in one session before the underlying
+cause — a missing CLI permission flag — was fixed).
 - Token/cost is best-effort extraction from the agent's own output — e.g.
-  claude code print-mode's cost summary on stderr, codex `--json` usage
-  payloads, or a final usage line from opencode where one is emitted. Assumption
-  stated: no provider API is called, no polling, no new runtime dependency
-  (zero-runtime-deps is a hard constraint). If a CLI emits nothing usable, the
-  related counters stay hidden.
+claude code print-mode's cost summary on stderr, codex `--json` usage
+payloads, or a final usage line from opencode where one is emitted. Assumption
+stated: no provider API is called, no polling, no new runtime dependency
+(zero-runtime-deps is a hard constraint). If a CLI emits nothing usable, the
+related counters stay hidden.
 - Counters are live/in-memory per session; persisting them across a server
-  restart is explicitly out of scope. Note this assumption in the commit if you
-  take it.
+restart is explicitly out of scope. Note this assumption in the commit if you
+take it.
 - Default-tab behavior lives in `src/ui-app/src/stores/ui.ts`: `activeTab`
-  defaults to `"details"` in `open`/`openTask`/`close`. Set it to `"agent"`
-  when the opened task's status is `active` or `review`. Watch for existing
-  hard-coded agent-tab forces (`TaskCard.vue` ~line 114, `TaskDrawer.vue`
-  ~lines 167/1133) and make the status-based default consistent with them.
+defaults to `"details"` in `open`/`openTask`/`close`. Set it to `"agent"`
+when the opened task's status is `active` or `review`. Watch for existing
+hard-coded agent-tab forces (`TaskCard.vue` ~line 114, `TaskDrawer.vue`
+~lines 167/1133) and make the status-based default consistent with them.
 - Likely touch points: `src/server/agents.ts` (usage/timestamp tracking,
-  per-session counters), `src/server/server.ts` (SSE plumbing if a new event
-  type is needed), `src/ui-app/src/types.ts`, `src/ui-app/src/stores/repo.ts`,
-  `src/ui-app/src/stores/ui.ts`, `src/ui-app/src/components/TaskDrawer.vue`.
+per-session counters), `src/server/server.ts` (SSE plumbing if a new event
+type is needed), `src/ui-app/src/types.ts`, `src/ui-app/src/stores/repo.ts`,
+`src/ui-app/src/stores/ui.ts`, `src/ui-app/src/components/TaskDrawer.vue`.
 - Extend tests alongside existing patterns in
-  `src/ui-app/tests/repo-store.test.ts` and `src/ui-app/tests/agent-drivers.test.ts`.
+`src/ui-app/tests/repo-store.test.ts` and `src/ui-app/tests/agent-drivers.test.ts`.
 - After any UI change, rebuild (`bun run build:ui` for speed, or `bun run build`)
-  and use the managed, task-specific preview workflow from 0096. Request this
-  task's preview via
-  `curl -s -X POST "$REPOOS_API_URL/api/tasks/$REPOOS_TASK_ID/preview"` and probe
-  the returned `url`; never run `repoos serve` yourself or pick a port. Verify
-  the result before reporting done.
-  Run `repoos check` before moving to review. One task = one focused worktree.
+and use the managed, task-specific preview workflow from 0096. Request this
+task's preview via
+`curl -s -X POST "$REPOOS_API_URL/api/tasks/$REPOOS_TASK_ID/preview"` and probe
+the returned `url`; never run `repoos serve` yourself or pick a port. Verify
+the result before reporting done.
+Run `repoos check` before moving to review. One task = one focused worktree.
 
 ## Scope
 
 - Covers: the working/thinking animation, live time/tokens/cost counters on the
-  Agent tab, and status-based default to the Agent tab for `active`/`review`
-  tasks.
+Agent tab, and status-based default to the Agent tab for `active`/`review`
+tasks.
 - Deferred: persisting usage/counters across a server restart, provider-level
-  cost reporting beyond what the CLI already prints, and surfacing these
-  counters anywhere outside the Agent tab.
+cost reporting beyond what the CLI already prints, and surfacing these
+counters anywhere outside the Agent tab.
 
 ## Related
 
 - 0073 — closed duplicate whose unique stall-warning scope is folded here.
 - 0049 — delivered the shared activity indicator this task must reuse.
 - 0042 — added the per-task Agent tab with streaming output; this task adds its
-  activity/stats feedback and the default-tab behavior on top of those events.
+activity/stats feedback and the default-tab behavior on top of those events.
 - 0053 — keeps agent logs and chat available during `review`; the animation and
-  counters must behave consistently in that state too.
+counters must behave consistently in that state too.
 
 ## Activity
 
@@ -154,33 +154,33 @@ with nothing in the UI distinguishing that from normal slow progress.
 - 2026-08-11T19:03:12Z · status ready→active, branch
 - 2026-08-11T19:28:50Z · status ready→active · implementing
 - 2026-08-11T19:28:50Z · implemented · Server: `AgentRunner` (src/server/agents.ts) now tracks
-  per-session `accumulatedMs`/`turnStartedAt`/`lastOutputAt`/`tokens`/`costUsd`, folds turn
-  duration into the running total on every exit (so follow-up turns accumulate rather than
-  reset), and best-effort extracts token/cost usage from raw CLI output (JSON usage payloads
-  first, plain-text "Total cost: $x" / "N tokens" fallback) via the new exported `extractUsage`.
-  New `AgentSessionStats` type (src/core/types.ts) is returned by `runner.stats(id)` and
-  included on `GET /api/tasks/:id/output` so (re)opening the Agent tab always reflects the
-  CURRENT state, not just events observed while the tab was open. A new `agent.stats` SSE event
-  (live-index.ts, ui-app types.ts) pushes live updates. Stall detection is SERVER-side (per the
-  task's own suggested default): a single per-`AgentRunner` timer (default check cadence
-  scales with the stall window, ~5s at the 90s default; both are constructor-overridable for
-  tests) flags a still-running turn "stalled" once `lastOutputAt` goes stale, clears
-  immediately on new output or confirmed exit — silence is raised, never asserted as death.
-  Client: stores/repo.ts tracks `agentStats` keyed by task id; stores/ui.ts's `open()` now
-  defaults `activeTab` to "agent" for `active`/`review` tasks, "details" otherwise (matches
-  the existing explicit-force call sites in TaskCard.vue/TaskDrawer.vue, which still win for
-  their specific "just started/restarted work" moments). TaskDrawer.vue adds a compact
-  time/tokens/cost readout (ticks locally client-side from `accumulatedMs` + `turnStartedAt`,
-  no per-second server push) and a neutral amber "quiet — may be stalled" banner, both driven
-  off `agentStats`; unavailable metrics render "—", never `undefined`/NaN. Reuses the existing
-  `ActivityIndicator` — no second animation. Assumption/scope note: counters are in-memory
-  only, reset on server restart (explicitly out of scope per the task). Verified: `repoos
-  check` green (build, typecheck, tests, screenshots, UI smoke), 12 new/updated tests across
-  agent-drivers.test.ts and repo-store.test.ts (real spawned-process stall/accumulation/usage
-  assertions, SSE reactivity, default-tab logic), plus an ad hoc real-browser Playwright pass
-  against this worktree's own build confirming the default-tab behavior and zero console
-  errors (the sandboxed preview's API layer runs the main checkout's pre-0080 server code, so
-  it can't itself demonstrate live counters — the direct AgentRunner tests cover that instead).
+per-session `accumulatedMs`/`turnStartedAt`/`lastOutputAt`/`tokens`/`costUsd`, folds turn
+duration into the running total on every exit (so follow-up turns accumulate rather than
+reset), and best-effort extracts token/cost usage from raw CLI output (JSON usage payloads
+first, plain-text "Total cost: $x" / "N tokens" fallback) via the new exported `extractUsage`.
+New `AgentSessionStats` type (src/core/types.ts) is returned by `runner.stats(id)` and
+included on `GET /api/tasks/:id/output` so (re)opening the Agent tab always reflects the
+CURRENT state, not just events observed while the tab was open. A new `agent.stats` SSE event
+(live-index.ts, ui-app types.ts) pushes live updates. Stall detection is SERVER-side (per the
+task's own suggested default): a single per-`AgentRunner` timer (default check cadence
+scales with the stall window, ~5s at the 90s default; both are constructor-overridable for
+tests) flags a still-running turn "stalled" once `lastOutputAt` goes stale, clears
+immediately on new output or confirmed exit — silence is raised, never asserted as death.
+Client: stores/repo.ts tracks `agentStats` keyed by task id; stores/ui.ts's `open()` now
+defaults `activeTab` to "agent" for `active`/`review` tasks, "details" otherwise (matches
+the existing explicit-force call sites in TaskCard.vue/TaskDrawer.vue, which still win for
+their specific "just started/restarted work" moments). TaskDrawer.vue adds a compact
+time/tokens/cost readout (ticks locally client-side from `accumulatedMs` + `turnStartedAt`,
+no per-second server push) and a neutral amber "quiet — may be stalled" banner, both driven
+off `agentStats`; unavailable metrics render "—", never `undefined`/NaN. Reuses the existing
+`ActivityIndicator` — no second animation. Assumption/scope note: counters are in-memory
+only, reset on server restart (explicitly out of scope per the task). Verified: `repoos
+check` green (build, typecheck, tests, screenshots, UI smoke), 12 new/updated tests across
+agent-drivers.test.ts and repo-store.test.ts (real spawned-process stall/accumulation/usage
+assertions, SSE reactivity, default-tab logic), plus an ad hoc real-browser Playwright pass
+against this worktree's own build confirming the default-tab behavior and zero console
+errors (the sandboxed preview's API layer runs the main checkout's pre-0080 server code, so
+it can't itself demonstrate live counters — the direct AgentRunner tests cover that instead).
 - 2026-08-11T19:28:50Z · status active→review
 - 2026-08-11T20:05:56Z · cli_override, model_override
 - 2026-08-11T20:06:01Z · status review→active

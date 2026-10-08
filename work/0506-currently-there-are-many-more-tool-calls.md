@@ -25,19 +25,19 @@ agent said and decided — gets buried.
 Three specific complaints:
 
 1. **No grouping.** Ten tool calls in a row render as ten separate rows, each
-   with its own chrome. There is no at-a-glance sense of "the agent did a
-   batch of work here".
+with its own chrome. There is no at-a-glance sense of "the agent did a
+batch of work here".
 2. **No outcome signal.** Nothing on a row tells the user whether the batch
-   succeeded. You have to inspect every call to learn that one of them errored
-   and the agent had to retry.
+succeeded. You have to inspect every call to learn that one of them errored
+and the agent had to retry.
 3. **Extraneous rows.** The step-marker rows are noise. A `{ type: "step",
-   kind: "finish" }` entry renders as a bare "continue" chip with its own
-   "tool calls" timestamp (the `reason` is the string `"tool calls"` for
-   opencode). It carries no content the user cares about, and the timestamp it
-   displays is confusing — the user reasonably reads it as "these tool calls
-   happened at 14:32", which is both redundant and wrong. The corresponding
-   `kind: "start"` markers are already dropped in the UI; the `finish` ones
-   should go too rather than linger as decoration.
+kind: "finish" }` entry renders as a bare "continue" chip with its own
+"tool calls" timestamp (the `reason` is the string `"tool calls"` for
+opencode). It carries no content the user cares about, and the timestamp it
+displays is confusing — the user reasonably reads it as "these tool calls
+happened at 14:32", which is both redundant and wrong. The corresponding
+`kind: "start"` markers are already dropped in the UI; the `finish` ones
+should go too rather than linger as decoration.
 
 Timestamps on real rows are also inconsistent: a row's time is whatever was
 stamped on the entry that created it, so a batch of work reads as if it all
@@ -53,19 +53,19 @@ happened at the first call.
 ```
 
 - Click (or keyboard-activate) the row to expand it and see every individual
-  tool call with its own input and result, nested under the row. The expanded
-  list is read-only rendering of the same entries — it must not change what is
-  stored, streamed, or exported.
+tool call with its own input and result, nested under the row. The expanded
+list is read-only rendering of the same entries — it must not change what is
+stored, streamed, or exported.
 - The row carries a **total count** badge so the user knows how much is hidden
-  before expanding.
+before expanding.
 - The counts are **split by outcome**: successes in green, errors in red. If
-  all succeeded, show only the green success count (e.g. `6 ok`); only render
-  the failure segment when there is at least one error.
+all succeeded, show only the green success count (e.g. `6 ok`); only render
+the failure segment when there is at least one error.
 - The row's timestamp is the **latest** `at` among the tool calls it groups
-  (4 calls at 14:32:01–14:32:07 → the row reads 14:32:07), so it reflects when
-  the work actually finished.
+(4 calls at 14:32:01–14:32:07 → the row reads 14:32:07), so it reflects when
+the work actually finished.
 - A non-adjacent tool call (one separated by a text or human message) starts a
-  new row. Two tool-call runs are never merged across a real message.
+new row. Two tool-call runs are never merged across a real message.
 
 **Timestamps everywhere.** Every rendered row — text, human, tool-call group,
 system line — shows a last-updated timestamp sourced from the newest entry it
@@ -90,43 +90,43 @@ driver produced the entries.
 ## Acceptance criteria
 
 - [ ] A maximal run of adjacent `tool` entries renders as **one** tool-call
-      row; a text or human entry between two tool runs splits them into two
-      rows.
+   row; a text or human entry between two tool runs splits them into two
+   rows.
 - [ ] The tool-call row shows a **total count** of the tool calls it contains.
 - [ ] The row shows **separate success and error counts**, success styled green
-      and error styled red (existing theme success/danger tokens, not hardcoded
-      hex). A run with no errors shows the success count only; a run with errors
-      shows both.
+   and error styled red (existing theme success/danger tokens, not hardcoded
+   hex). A run with no errors shows the success count only; a run with errors
+   shows both.
 - [ ] Clicking the tool-call row expands/collapses it and shows each individual
-      tool call **with its input and result**, in original order. Expansion is
-      per-row and defaults to collapsed.
+   tool call **with its input and result**, in original order. Expansion is
+   per-row and defaults to collapsed.
 - [ ] The tool-call row's timestamp is the **maximum** `at` across the tool
-      calls it groups, not the first one.
+   calls it groups, not the first one.
 - [ ] Every rendered row (text, human, tool-call group, system) displays a
-      timestamp taken from the newest entry it represents.
+   timestamp taken from the newest entry it represents.
 - [ ] No "continue" / step-finish marker row is rendered. Step entries are
-      dropped from the display pipeline (alongside the existing `kind: "start"`
-      drop) rather than being converted into an empty row.
+   dropped from the display pipeline (alongside the existing `kind: "start"`
+   drop) rather than being converted into an empty row.
 - [ ] The grouping/count/timestamp logic is implemented **once** in a shared
-      place and reused by every chat, not copy-pasted per component.
+   place and reused by every chat, not copy-pasted per component.
 - [ ] The tool-call row is a **shared component**, and all chats that render
-      tool calls use it, instead of each chat hand-rolling its own row markup
-      (today several chats degrade tool entries to plain text like
-      `Checked with <tool> · <state>`; those must render the real grouped row).
+   tool calls use it, instead of each chat hand-rolling its own row markup
+   (today several chats degrade tool entries to plain text like
+   `Checked with <tool> · <state>`; those must render the real grouped row).
 - [ ] Behaviour is identical across all supported agents: opencode, claude
-      code, codex, github copilot, cursor, kiro, qwen, antigravity. Verified
-      for every engine listed in the agent-kind union, not just opencode.
+   code, codex, github copilot, cursor, kiro, qwen, antigravity. Verified
+   for every engine listed in the agent-kind union, not just opencode.
 - [ ] Streaming behaves sanely: a tool-call row grows as calls arrive during a
-      live run, updating its count and timestamp, and does not flicker or reset
-      the scroll position (respect the `useChatScroll` contract).
+   live run, updating its count and timestamp, and does not flicker or reset
+   the scroll position (respect the `useChatScroll` contract).
 - [ ] Grouping is a **view-layer** transform. The stored transcript, the SSE
-      `agent.output` events, and any export/debugger endpoint still see the
-      original individual entries in order.
+   `agent.output` events, and any export/debugger endpoint still see the
+   original individual entries in order.
 - [ ] New tests cover: run-splitting, counts, timestamp-max, and the removal of
-      step-marker rows; plus at least one test proving two different agents'
-      entries produce identical rendered grouping.
+   step-marker rows; plus at least one test proving two different agents'
+   entries produce identical rendered grouping.
 - [ ] `repoos check` passes (format, lint, build, tests, UI smoke). Run
-      `bun run fmt` before committing on the branch.
+   `bun run fmt` before committing on the branch.
 
 ## Notes for AI
 
@@ -136,25 +136,25 @@ to match the existing visual language rather than inventing a new look.
 **Where the pieces live (as of this task):**
 
 - Entry model: `AgentOutputEntry` in `src/core/types.ts` (`type: "tool"` with
-  `state: "completed" | "error"`, `type: "step"`, plus the `at` timestamp on
-  every variant) and its deliberate client mirror in
-  `src/ui-app/src/types.ts`. The union itself likely does not need a new
-  variant — a group is a view concern.
+`state: "completed" | "error"`, `type: "step"`, plus the `at` timestamp on
+every variant) and its deliberate client mirror in
+`src/ui-app/src/types.ts`. The union itself likely does not need a new
+variant — a group is a view concern.
 - Row rendering today:
-  - `src/ui-app/src/components/TaskDrawer.vue` — `DisplayEntry` +
-    `displayEntries` (engineer/PM log) and `reviewEntries` (reviewer log);
-    step `start` is dropped there today and `finish` renders the "continue"
-    chip (`entry.stepReason === "stop" ? "done" : "continue"`). This is the
-    main surface.
-  - `src/ui-app/src/components/RepoGuideChat.vue`, `DebuggerChat.vue`,
-    `TaskDebuggerChat.vue`, `CTOPanel.vue` — these currently flatten tool
-    entries to a single line of text and must be migrated to the shared row.
+- `src/ui-app/src/components/TaskDrawer.vue` — `DisplayEntry` +
+ `displayEntries` (engineer/PM log) and `reviewEntries` (reviewer log);
+ step `start` is dropped there today and `finish` renders the "continue"
+ chip (`entry.stepReason === "stop" ? "done" : "continue"`). This is the
+ main surface.
+- `src/ui-app/src/components/RepoGuideChat.vue`, `DebuggerChat.vue`,
+ `TaskDebuggerChat.vue`, `CTOPanel.vue` — these currently flatten tool
+ entries to a single line of text and must be migrated to the shared row.
 - Row styles live in `src/ui-app/src/style.css` under `.agent-tool*` /
-  `.agent-step*` — add group styles there, not in a component `<style scoped>`
-  block.
+`.agent-step*` — add group styles there, not in a component `<style scoped>`
+block.
 - Tests for chat UX live in `src/ui-app/tests/` (not next to the source).
-  `ai-chat-standard.test.ts` enforces the `useChatScroll` contract in chats —
-  respect it.
+`ai-chat-standard.test.ts` enforces the `useChatScroll` contract in chats —
+respect it.
 
 **Reuse is an explicit requirement.** Create one shared grouping function
 (turn a flat `AgentOutputEntry[]` into display rows, dropping step markers) and
@@ -178,15 +178,15 @@ is the whole point.
 
 **Assumptions made** (flag them if any are wrong):
 - "Green / red" means the existing theme success/danger colours, so it works
-  in both light and dark themes.
+in both light and dark themes.
 - Error detection keys off the existing `state: "error"` on tool entries; a
-  tool call whose output merely *contains* an error string is not counted as a
-  failure.
+tool call whose output merely *contains* an error string is not counted as a
+failure.
 - Expansion is collapsible again (not one-way), and there is no "expand all"
-  control — the user asked for a per-row affordance.
+control — the user asked for a per-row affordance.
 - Step entries stay in the data model and in the SSE stream; only their
-  rendering is removed, because other consumers (report extraction, skill
-  suggestions, debugger endpoints) read them.
+rendering is removed, because other consumers (report extraction, skill
+suggestions, debugger endpoints) read them.
 
 ## Scope
 
@@ -204,10 +204,10 @@ state across reloads.
 ## Related
 
 - `docs/architecture.md` — per-agent driver/parser description; update if the
-  rendering pipeline description there changes.
+rendering pipeline description there changes.
 - #0466 agent adapter contract — the per-agent capability probe; if grouping
-  needs any agent capability signal, wire it through that contract rather than
-  sniffing CLI names.
+needs any agent capability signal, wire it through that contract rather than
+sniffing CLI names.
 
 ## Original prompt
 

@@ -28,12 +28,12 @@ The inputs side panel (the detail drawer for the selected input) gains two
 action buttons:
 
 - **Create task** — sends the input to the PM agent to flesh out into a
-  properly spec'ed task (the same freeform flow used for new-task creation).
-  Show a progress state while generation runs. On success the input moves to
-  `processed` and the panel shows a link to the created task, so the user can
-  see at a glance how the input was resolved; the link navigates to the task.
+properly spec'ed task (the same freeform flow used for new-task creation).
+Show a progress state while generation runs. On success the input moves to
+`processed` and the panel shows a link to the created task, so the user can
+see at a glance how the input was resolved; the link navigates to the task.
 - **Do nothing** — moves the input to `processed` immediately and records that
-  the resolution was to take no action.
+the resolution was to take no action.
 
 A processed input always displays its resolution — either the link to the task
 it became, or a "no action taken" note — and that record survives reloads.
@@ -52,24 +52,24 @@ it became, or a "no action taken" note — and that record survives reloads.
 ## Notes for AI
 
 - Reuse the existing freeform machinery: `POST /api/tasks/freeform`
-  (`src/server/routes/tasks.ts`) already drives the PM agent via `pmPrompt`
-  and `parseGeneratedTask`, including failure fallbacks. Do NOT open a new
-  one-shot LLM call site — every LLM call must record its usage in the
-  `sessions` table (AGENTS.md), and the freeform path already does this.
+(`src/server/routes/tasks.ts`) already drives the PM agent via `pmPrompt`
+and `parseGeneratedTask`, including failure fallbacks. Do NOT open a new
+one-shot LLM call site — every LLM call must record its usage in the
+`sessions` table (AGENTS.md), and the freeform path already does this.
 - Input model and statuses (`new` | `reviewing` | `processed`) live in
-  `src/core/input.ts`; HTTP routes in `src/server/routes/inputs.ts`; the
-  detail drawer is the `activeInput` section of
-  `src/ui-app/src/views/InputsView.vue`.
+`src/core/input.ts`; HTTP routes in `src/server/routes/inputs.ts`; the
+detail drawer is the `activeInput` section of
+`src/ui-app/src/views/InputsView.vue`.
 - Input frontmatter has no resolution fields today — add e.g.
-  `resolved_task` / `resolution` keys and parse them in `listInputs`.
+`resolved_task` / `resolution` keys and parse them in `listInputs`.
 - Task creation must go through the normal create path; never hand-write a
-  `work/*.md` file (AGENTS.md rule).
+`work/*.md` file (AGENTS.md rule).
 - Assumption: the two buttons are hidden on inputs already in `processed`
-  (terminal state), and the existing manual status Select stays as-is.
+(terminal state), and the existing manual status Select stays as-is.
 - Assumption: what is sent to the PM agent is the input's text body;
-  forwarding attachments is not required by this task.
+forwarding attachments is not required by this task.
 - After any UI change, rebuild (`bun run build:ui`) so the worktree build is
-  fresh.
+fresh.
 
 ## Scope
 
@@ -84,7 +84,7 @@ come later — that is future work, not this task).
 ## Related
 
 - #0311 (freeform new-task flow), #0325 (background input creation), #0335
-  (freeform PM flesh-out progress) — the flows this builds on.
+(freeform PM flesh-out progress) — the flows this builds on.
 
 ## Original prompt
 

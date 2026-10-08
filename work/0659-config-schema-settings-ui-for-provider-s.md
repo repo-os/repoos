@@ -72,12 +72,12 @@ The deeper problem is honesty. `createStorageProvider` deliberately falls back t
 ## Shots
 ```json
 [
-  {
-    "label": "Attachment storage card on General — provider select with availability explanation",
-    "target": "default",
-    "route": "/settings?tab=general",
-    "highlight": "[id=\"setting-storage.provider\"]"
-  }
+{
+  "label": "Attachment storage card on General — provider select with availability explanation",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": "[id=\"setting-storage.provider\"]"
+}
 ]
 ```
 
@@ -102,23 +102,23 @@ The deeper problem is honesty. `createStorageProvider` deliberately falls back t
 - 2026-10-05T16:05:35Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T16:05:36Z · status review→active
 - 2026-10-05T16:10:39Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
-     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
-     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
-     35|     expect(missing).toEqual([]);
-       |                     ^
-     36|   });
-     37|
+   33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+   34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+   35|     expect(missing).toEqual([]);
+     |                     ^
+   36|   });
+   37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
- Test Files  1 failed | 390 passed | 1 skipped (392)
-      Tests  2 failed | 4775 passed | 15 skipped (4792)
-   Start at  16:07:13
-   Duration  201.24s (transform 5.11s, setup 1.64s, import 26.95s, tests 183.99s, environment 171.71s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 338ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  16:10:34
-   Duration  1.73s (transform 801ms, setup 9ms, import 927ms, tests 338ms, environment 394ms)
+Test Files  1 failed | 390 passed | 1 skipped (392)
+    Tests  2 failed | 4775 passed | 15 skipped (4792)
+ Start at  16:07:13
+ Duration  201.24s (transform 5.11s, setup 1.64s, import 26.95s, tests 183.99s, environment 171.71s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 338ms
+Test Files  1 passed (1)
+    Tests  2 passed (2)
+ Start at  16:10:34
+ Duration  1.73s (transform 801ms, setup 9ms, import 927ms, tests 338ms, environment 394ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T16:16:35Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
@@ -128,177 +128,177 @@ error: script "test" exited with code 1
 - 2026-10-05T16:32:37Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T16:32:38Z · status review→active
 - 2026-10-05T16:36:58Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
-     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
-     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
-     35|     expect(missing).toEqual([]);
-       |                     ^
-     36|   });
-     37|
+   33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+   34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+   35|     expect(missing).toEqual([]);
+     |                     ^
+   36|   });
+   37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
- Test Files  1 failed | 390 passed | 1 skipped (392)
-      Tests  2 failed | 4775 passed | 15 skipped (4792)
-   Start at  16:33:31
-   Duration  201.75s (transform 5.21s, setup 1.65s, import 27.17s, tests 183.96s, environment 172.56s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 334ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  16:36:53
-   Duration  1.72s (transform 797ms, setup 9ms, import 924ms, tests 334ms, environment 391ms)
+Test Files  1 failed | 390 passed | 1 skipped (392)
+    Tests  2 failed | 4775 passed | 15 skipped (4792)
+ Start at  16:33:31
+ Duration  201.75s (transform 5.21s, setup 1.65s, import 27.17s, tests 183.96s, environment 172.56s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 334ms
+Test Files  1 passed (1)
+    Tests  2 passed (2)
+ Start at  16:36:53
+ Duration  1.72s (transform 797ms, setup 9ms, import 924ms, tests 334ms, environment 391ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T16:43:29Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T16:43:29Z · status review→active
 - 2026-10-05T16:48:31Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
-     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
-     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
-     35|     expect(missing).toEqual([]);
-       |                     ^
-     36|   });
-     37|
+   33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+   34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+   35|     expect(missing).toEqual([]);
+     |                     ^
+   36|   });
+   37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
- Test Files  1 failed | 390 passed | 1 skipped (392)
-      Tests  2 failed | 4775 passed | 15 skipped (4792)
-   Start at  16:44:13
-   Duration  254.08s (transform 6.11s, setup 2.23s, import 46.83s, tests 206.75s, environment 227.45s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 411ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  16:48:28
-   Duration  2.17s (transform 959ms, setup 11ms, import 1.20s, tests 411ms, environment 470ms)
+Test Files  1 failed | 390 passed | 1 skipped (392)
+    Tests  2 failed | 4775 passed | 15 skipped (4792)
+ Start at  16:44:13
+ Duration  254.08s (transform 6.11s, setup 2.23s, import 46.83s, tests 206.75s, environment 227.45s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 411ms
+Test Files  1 passed (1)
+    Tests  2 passed (2)
+ Start at  16:48:28
+ Duration  2.17s (transform 959ms, setup 11ms, import 1.20s, tests 411ms, environment 470ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T16:54:29Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T16:54:30Z · status review→active
 - 2026-10-05T16:59:26Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
-     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
-     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
-     35|     expect(missing).toEqual([]);
-       |                     ^
-     36|   });
-     37|
+   33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+   34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+   35|     expect(missing).toEqual([]);
+     |                     ^
+   36|   });
+   37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
- Test Files  1 failed | 390 passed | 1 skipped (392)
-      Tests  2 failed | 4775 passed | 15 skipped (4792)
-   Start at  16:55:11
-   Duration  251.03s (transform 6.11s, setup 2.31s, import 44.83s, tests 205.26s, environment 224.75s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 409ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  16:59:22
-   Duration  2.13s (transform 957ms, setup 11ms, import 1.19s, tests 409ms, environment 446ms)
+Test Files  1 failed | 390 passed | 1 skipped (392)
+    Tests  2 failed | 4775 passed | 15 skipped (4792)
+ Start at  16:55:11
+ Duration  251.03s (transform 6.11s, setup 2.31s, import 44.83s, tests 205.26s, environment 224.75s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 409ms
+Test Files  1 passed (1)
+    Tests  2 passed (2)
+ Start at  16:59:22
+ Duration  2.13s (transform 957ms, setup 11ms, import 1.19s, tests 409ms, environment 446ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T17:04:29Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T17:04:30Z · status review→active
 - 2026-10-05T17:08:36Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
-     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
-     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
-     35|     expect(missing).toEqual([]);
-       |                     ^
-     36|   });
-     37|
+   33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+   34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+   35|     expect(missing).toEqual([]);
+     |                     ^
+   36|   });
+   37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
- Test Files  1 failed | 390 passed | 1 skipped (392)
-      Tests  2 failed | 4775 passed | 15 skipped (4792)
-   Start at  17:05:10
-   Duration  201.64s (transform 5.22s, setup 1.67s, import 27.21s, tests 184.07s, environment 172.04s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 332ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  17:08:32
-   Duration  1.82s (transform 866ms, setup 9ms, import 1.00s, tests 332ms, environment 409ms)
+Test Files  1 failed | 390 passed | 1 skipped (392)
+    Tests  2 failed | 4775 passed | 15 skipped (4792)
+ Start at  17:05:10
+ Duration  201.64s (transform 5.22s, setup 1.67s, import 27.21s, tests 184.07s, environment 172.04s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 332ms
+Test Files  1 passed (1)
+    Tests  2 passed (2)
+ Start at  17:08:32
+ Duration  1.82s (transform 866ms, setup 9ms, import 1.00s, tests 332ms, environment 409ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T17:13:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T17:13:41Z · status review→active
 - 2026-10-05T17:18:43Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
-     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
-     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
-     35|     expect(missing).toEqual([]);
-       |                     ^
-     36|   });
-     37|
+   33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+   34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+   35|     expect(missing).toEqual([]);
+     |                     ^
+   36|   });
+   37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
- Test Files  1 failed | 390 passed | 1 skipped (392)
-      Tests  2 failed | 4775 passed | 15 skipped (4792)
-   Start at  17:14:26
-   Duration  253.32s (transform 6.13s, setup 2.17s, import 46.42s, tests 207.14s, environment 225.97s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 402ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  17:18:40
-   Duration  2.16s (transform 967ms, setup 11ms, import 1.19s, tests 402ms, environment 478ms)
+Test Files  1 failed | 390 passed | 1 skipped (392)
+    Tests  2 failed | 4775 passed | 15 skipped (4792)
+ Start at  17:14:26
+ Duration  253.32s (transform 6.13s, setup 2.17s, import 46.42s, tests 207.14s, environment 225.97s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 402ms
+Test Files  1 passed (1)
+    Tests  2 passed (2)
+ Start at  17:18:40
+ Duration  2.16s (transform 967ms, setup 11ms, import 1.19s, tests 402ms, environment 478ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T17:24:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T17:24:41Z · status review→active
 - 2026-10-05T17:29:21Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
-     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
-     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
-     35|     expect(missing).toEqual([]);
-       |                     ^
-     36|   });
-     37|
+   33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+   34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+   35|     expect(missing).toEqual([]);
+     |                     ^
+   36|   });
+   37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
- Test Files  1 failed | 390 passed | 1 skipped (392)
-      Tests  2 failed | 4775 passed | 15 skipped (4792)
-   Start at  17:25:09
-   Duration  248.43s (transform 5.92s, setup 2.12s, import 45.36s, tests 205.04s, environment 220.08s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 411ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  17:29:18
-   Duration  2.14s (transform 934ms, setup 11ms, import 1.16s, tests 411ms, environment 480ms)
+Test Files  1 failed | 390 passed | 1 skipped (392)
+    Tests  2 failed | 4775 passed | 15 skipped (4792)
+ Start at  17:25:09
+ Duration  248.43s (transform 5.92s, setup 2.12s, import 45.36s, tests 205.04s, environment 220.08s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 411ms
+Test Files  1 passed (1)
+    Tests  2 passed (2)
+ Start at  17:29:18
+ Duration  2.14s (transform 934ms, setup 11ms, import 1.16s, tests 411ms, environment 480ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T17:34:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T17:34:41Z · status review→active
 - 2026-10-05T17:39:23Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
-     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
-     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
-     35|     expect(missing).toEqual([]);
-       |                     ^
-     36|   });
-     37|
+   33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+   34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+   35|     expect(missing).toEqual([]);
+     |                     ^
+   36|   });
+   37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
- Test Files  1 failed | 390 passed | 1 skipped (392)
-      Tests  2 failed | 4775 passed | 15 skipped (4792)
-   Start at  17:35:09
-   Duration  249.92s (transform 6.00s, setup 2.20s, import 45.35s, tests 205.29s, environment 222.48s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 415ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  17:39:20
-   Duration  2.15s (transform 951ms, setup 11ms, import 1.18s, tests 415ms, environment 465ms)
+Test Files  1 failed | 390 passed | 1 skipped (392)
+    Tests  2 failed | 4775 passed | 15 skipped (4792)
+ Start at  17:35:09
+ Duration  249.92s (transform 6.00s, setup 2.20s, import 45.35s, tests 205.29s, environment 222.48s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 415ms
+Test Files  1 passed (1)
+    Tests  2 passed (2)
+ Start at  17:39:20
+ Duration  2.15s (transform 951ms, setup 11ms, import 1.18s, tests 415ms, environment 465ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T17:44:54Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-05T17:44:54Z · status review→active
 - 2026-10-05T17:49:43Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
-     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
-     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
-     35|     expect(missing).toEqual([]);
-       |                     ^
-     36|   });
-     37|
+   33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+   34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+   35|     expect(missing).toEqual([]);
+     |                     ^
+   36|   });
+   37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
- Test Files  1 failed | 390 passed | 1 skipped (392)
-      Tests  2 failed | 4775 passed | 15 skipped (4792)
-   Start at  17:45:24
-   Duration  254.91s (transform 6.10s, setup 2.28s, import 46.52s, tests 206.64s, environment 228.92s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 414ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  17:49:40
-   Duration  2.15s (transform 952ms, setup 12ms, import 1.18s, tests 414ms, environment 472ms)
+Test Files  1 failed | 390 passed | 1 skipped (392)
+    Tests  2 failed | 4775 passed | 15 skipped (4792)
+ Start at  17:45:24
+ Duration  254.91s (transform 6.10s, setup 2.28s, import 46.52s, tests 206.64s, environment 228.92s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 414ms
+Test Files  1 passed (1)
+    Tests  2 passed (2)
+ Start at  17:49:40
+ Duration  2.15s (transform 952ms, setup 12ms, import 1.18s, tests 414ms, environment 472ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T17:57:17Z · status active→review

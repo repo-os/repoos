@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-19T01:34:27Z"
-skill_suggestion: "0435"
 id: "0433"
 title: "New Skill Suggestion: Cross-theme CSS variable audit"
 type: spec
@@ -12,6 +10,8 @@ created_by: ""
 branch: feat/new-skill-suggestion-cross-theme-css-var
 review_model_override: opencode-go/mimo-v2.5
 created_at: "2026-09-19T01:04:15Z"
+updated_at: "2026-09-19T01:34:27Z"
+skill_suggestion: "0435"
 ---
 ## Problem
 
@@ -48,14 +48,14 @@ Use this when a UI component has color, contrast, or visibility issues across **
 2. **Read the component's `<style>` block (or scoped styles).** Extract every CSS variable reference (`var(--something)`) the component uses, especially for `color`, `background`, and `border` properties.
 
 3. **Read the global theme definitions** in `style.css`. Find the theme token blocks (e.g. `:root`, `[data-theme="..."]`, `@media (prefers-color-scheme: dark)`). Build a mental map of the canonical variable names:
-   - Text: `--txt`, `--txt-dim`, `--txt-faint`
-   - Surfaces: `--panel`, `--panel-solid`, `--panel-gradient`
-   - Borders: `--border`, `--border-bright`
-   - Accents: `--accent` (tint/background only), `--accent-foreground` (text)
+- Text: `--txt`, `--txt-dim`, `--txt-faint`
+- Surfaces: `--panel`, `--panel-solid`, `--panel-gradient`
+- Borders: `--border`, `--border-bright`
+- Accents: `--accent` (tint/background only), `--accent-foreground` (text)
 
 4. **Compare step 2 against step 3.** Any variable the component uses that does NOT exist in the global definitions is silently falling back to its initial value (usually `transparent`, `currentColor`, or empty). Common telltale signs:
-   - `--text`, `--text-secondary`, `--surface`, `--border-light` — non-existent in this codebase, should map to `--txt`/`--txt-dim`, `--panel-solid`, `--border`
-   - `--accent` used as a text color — it is a translucent tint (`rgba(…)`) meant for backgrounds, not readable as foreground text. Use `--accent-foreground` instead.
+- `--text`, `--text-secondary`, `--surface`, `--border-light` — non-existent in this codebase, should map to `--txt`/`--txt-dim`, `--panel-solid`, `--border`
+- `--accent` used as a text color — it is a translucent tint (`rgba(…)`) meant for backgrounds, not readable as foreground text. Use `--accent-foreground` instead.
 
 5. **Fix by replacing undefined/misused variables with the correct canonical ones.** Match the semantic intent (dim text → `--txt-dim`, separator → `--border`, etc.).
 

@@ -29,7 +29,7 @@ Follow the same convention as the landing page (#0338) and Celleris:
 
 - `main` branch push → deploy to the dev/staging Cloudflare Pages environment.
 - `prod` branch push → deploy to the production environment, advanced only as an
-  infrequent, deliberate fast-forward merge of `main`.
+infrequent, deliberate fast-forward merge of `main`.
 
 ## Content source
 

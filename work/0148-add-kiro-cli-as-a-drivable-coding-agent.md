@@ -106,8 +106,8 @@ This lookup should be best-effort (fail-soft): if the command fails or returns n
 ```
 Available models (* = default):
 * auto                 1.00x credits      ...
-  claude-sonnet-4.5    1.30x credits      ...
-  ...
+claude-sonnet-4.5    1.30x credits      ...
+...
 ```
 
 Add a `kiroAdapter`:
@@ -122,7 +122,7 @@ Plain-text parsing (fallback): split on newlines, strip the leading `*` and ANSI
 `kiro-cli` prints a footer line on **stderr** at the end of every turn:
 
 ```
- ▸ Credits: 0.15 • Time: 12s
+▸ Credits: 0.15 • Time: 12s
 ```
 
 This is Kiro's own billing unit (credits, not USD), but it maps naturally onto the
@@ -136,8 +136,8 @@ Add a kiro-specific pattern to `extractUsage`:
 // Map credits → costUsd so the task panel shows the charge.
 const kiroCredits = raw.match(/▸\s*Credits:\s*([\d.]+)/i);
 if (kiroCredits) {
-  const n = Number(kiroCredits[1]);
-  if (Number.isFinite(n)) out.costUsd = n;
+const n = Number(kiroCredits[1]);
+if (Number.isFinite(n)) out.costUsd = n;
 }
 ```
 
@@ -150,8 +150,8 @@ Add a corresponding test case in `src/ui-app/tests/agent-drivers.test.ts`:
 
 ```ts
 it("extracts kiro credits as costUsd", () => {
-  expect(extractUsage(" ▸ Credits: 0.15 • Time: 12s")).toEqual({ costUsd: 0.15 });
-  expect(extractUsage(" ▸ Credits: 0.02 • Time: 2s")).toEqual({ costUsd: 0.02 });
+expect(extractUsage(" ▸ Credits: 0.15 • Time: 12s")).toEqual({ costUsd: 0.15 });
+expect(extractUsage(" ▸ Credits: 0.02 • Time: 2s")).toEqual({ costUsd: 0.02 });
 });
 ```
 

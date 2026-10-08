@@ -687,7 +687,7 @@ describe("captureShotPage highlight (#0603)", () => {
       "http://x/",
       { highlight: ".missing", route: "/board" },
       { waitMs: 0, fullPage: false },
-      (selector) => misses.push(selector),
+      { onHighlightMiss: (selector) => misses.push(selector) },
     );
     expect(misses).toEqual([".missing"]);
   });
@@ -703,7 +703,7 @@ describe("captureShotPage highlight (#0603)", () => {
       "http://x/",
       { highlight: ".live, .stale", highlights: [".live", ".stale"], route: "/board" },
       { waitMs: 0, fullPage: false },
-      (selector) => misses.push(selector),
+      { onHighlightMiss: (selector) => misses.push(selector) },
     );
     expect(misses).toEqual([".stale"]);
   });
@@ -739,7 +739,7 @@ describe("captureShotPage highlight (#0603)", () => {
       "http://x/",
       { highlight: ".item, div.item", highlights: [".item", "div.item"], route: "/board" },
       { waitMs: 0, fullPage: false },
-      (selector) => misses.push(selector),
+      { onHighlightMiss: (selector) => misses.push(selector) },
     );
     expect(misses).toEqual([]);
   });
@@ -757,8 +757,7 @@ describe("captureShotPage highlight (#0603)", () => {
       "http://x/",
       { selector: ".missing", route: "/board" },
       { waitMs: 0, fullPage: false },
-      undefined,
-      (selector) => misses.push(selector),
+      { onSelectorMiss: (selector) => misses.push(selector) },
     );
     expect(misses).toEqual([".missing"]);
     expect(png).toBeInstanceOf(Buffer);

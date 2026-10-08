@@ -38,6 +38,7 @@ import {
   integrationPipelineStalled,
   integrationQueuedCopy,
 } from "../lib/integration-pipeline-ui";
+import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
@@ -394,6 +395,10 @@ async function retryStalledPipeline(): Promise<void> {
 /** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
  *  normal "coding" hint when it's still producing output. */
 function codingOrStuckHint(taskId: string): CardHint {
+  const queued = remotePoolQueueHintForTaskChecks(repo.taskChecks[taskId]);
+  if (queued) {
+    return { label: queued.label, title: queued.title, cls: "tc-queued" };
+  }
   const lastActivity = lastActivityFor(taskId);
   const ms = silentMs(now.value, lastActivity);
   if (ms !== null && ms >= STUCK_SILENCE_MS) {
@@ -594,6 +599,10 @@ const hint = computed<CardHint | null>(() => {
     // hide the live handoff: the human already sent it back and it is
     // running checks to return to review.
     if (repo.handoffInFlight(t.id)) {
+      const queued = remotePoolQueueHintForTaskChecks(repo.taskChecks[t.id]);
+      if (queued) {
+        return { label: queued.label, title: queued.title, cls: "tc-queued" };
+      }
       const slow = slowCheck.value;
       return {
         label: slow ? "running checks · slow" : "running checks",

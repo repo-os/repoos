@@ -12,7 +12,7 @@ branch: feat/classify-runner-infrastructure-failures-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:40:08Z"
-updated_at: "2026-10-08T14:40:13Z"
+updated_at: "2026-10-08T15:44:38Z"
 ---
 ## Problem
 
@@ -33,9 +33,102 @@ updated_at: "2026-10-08T14:40:13Z"
 
 Read src/server/remote-validation.ts (pool, HangWatchdog, recordRun, infraFail), scripts/remote-runner/validate.sh exit codes, and the Remote runners panel. Do not touch the owner's hosts. Related: #0729, #0739, #0725, #0720.
 
+## Shots
+```json
+[
+{
+"label": "Remote runners degraded host state",
+"target": "default",
+"route": "/settings?tab=remote",
+"highlight": ".rvr-host-state--bad",
+"steps": [
+ {
+   "waitMs": 500
+ }
+]
+}
+]
+```
+
 ## Activity
 
 - 2026-10-08T14:40:08Z · created · unknown
 - 2026-10-08T14:40:10Z · cli_override, model_override
 - 2026-10-08T14:40:12Z · status inbox→ready
 - 2026-10-08T14:40:13Z · status ready→active, branch
+- 2026-10-08T14:51:52Z · body: section Shots
+- 2026-10-08T14:52:27Z · body
+- 2026-10-08T14:53:10Z · body
+- 2026-10-08T14:54:22Z · body
+- 2026-10-08T15:05:17Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/remote-validation.test.ts:394:24
+392|     expect(res.ok).toBe(false);
+393|     expect(res.transient).toBe(true);
+394|     expect(res.detail).toContain("unavailable");
+|                        ^
+395|     await r.dispose();
+396|   });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+Test Files  2 failed | 447 passed | 1 skipped (450)
+Tests  4 failed | 5483 passed | 15 skipped (5502)
+Start at  14:59:09
+Duration  363.83s (transform 10.61s, setup 3.43s, import 77.15s, tests 270.35s, environment 337.41s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 406ms
+Test Files  1 passed (1)
+Tests  2 passed (2)
+Start at  15:05:13
+Duration  2.40s (transform 1.15s, setup 11ms, import 1.42s, tests 406ms, environment 491ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-08T15:05:17Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-10-08T15:07:16Z · body
+- 2026-10-08T15:15:08Z · body
+- 2026-10-08T15:16:23Z · body
+- 2026-10-08T15:20:07Z · body
+- 2026-10-08T15:20:50Z · body
+- 2026-10-08T15:22:00Z · body
+- 2026-10-08T15:28:15Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     404|     const rows = getCheckStore(root).list();
+405|     expect(rows).toHaveLength(1);
+406|     expect(rows[0]).toMatchObject({
+|                     ^
+407|       taskId: "0564",
+408|       machine: null,
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+Test Files  1 failed | 448 passed | 1 skipped (450)
+Tests  3 failed | 5485 passed | 15 skipped (5503)
+Start at  15:23:08
+Duration  298.55s (transform 7.35s, setup 2.74s, import 57.98s, tests 230.09s, environment 275.43s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 904ms
+✓ binds the listener, and answers health, while the background index build is still parked (#0330)  300ms
+Test Files  1 passed (1)
+Tests  2 passed (2)
+Start at  15:28:08
+Duration  5.18s (transform 2.77s, setup 15ms, import 3.40s, tests 904ms, environment 728ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-08T15:30:22Z · body
+- 2026-10-08T15:33:17Z · body: section Shots
+- 2026-10-08T15:33:27Z · body: section Shots
+- 2026-10-08T15:39:26Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/remote-run-observability.test.ts:406:21
+404|     const rows = getCheckStore(root).list();
+405|     expect(rows).toHaveLength(1);
+406|     expect(rows[0]).toMatchObject({
+   |                     ^
+407|       taskId: "0564",
+408|       machine: null,
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+Test Files  1 failed | 448 passed | 1 skipped (450)
+  Tests  3 failed | 5485 passed | 15 skipped (5503)
+Start at  15:34:19
+Duration  302.34s (transform 7.65s, setup 2.67s, import 60.03s, tests 233.67s, environment 277.58s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 505ms
+Test Files  1 passed (1)
+  Tests  2 passed (2)
+Start at  15:39:22
+Duration  2.92s (transform 1.43s, setup 12ms, import 1.76s, tests 505ms, environment 558ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-08T15:44:38Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-08T15:44:38Z · status review→active
