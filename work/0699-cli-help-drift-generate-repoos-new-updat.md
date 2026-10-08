@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T03:15:49Z"
-updated_at: "2026-10-06T03:15:49Z"
+updated_at: "2026-10-08T14:06:40Z"
 ---
 ## Problem
 
@@ -31,6 +31,11 @@ updated_at: "2026-10-06T03:15:49Z"
 
 Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private run, 2026-10-06), item 6.
 
+## Verify first
+
+Verify first against current main: #0723 (merged) added control-plane CLI commands; check which help text is still hand-written and which flags (--paths, --hold on repoos new) are still missing before changing anything.
+
 ## Activity
 
 - 2026-10-06T03:15:49Z · created · unknown
+- 2026-10-08T14:06:40Z · body
