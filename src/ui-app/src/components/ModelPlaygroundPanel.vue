@@ -333,7 +333,7 @@ onMounted(() => {
           </button>
         </div>
 
-        <form class="playground-compose" @submit.prevent="send()">
+        <form class="ai-chat-compose playground-compose" @submit.prevent="send()">
           <textarea
             ref="draftTextarea"
             v-model="draft"
@@ -345,7 +345,7 @@ onMounted(() => {
           ></textarea>
           <button
             type="submit"
-            class="ai-chat-send"
+            class="ai-chat-send playground-send"
             :disabled="!draft.trim() || sending"
             aria-label="Send message"
           >
@@ -724,53 +724,18 @@ onMounted(() => {
   font-size: 11px;
   color: var(--red);
 }
+/* The box, focus ring, textarea and button sizing are the shared
+   `.ai-chat-compose` (#0746); the playground only resets the shared margins to
+   its own panel padding. */
 .playground-compose {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
   margin: 12px;
-  padding: 8px 9px 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel);
 }
-.playground-compose:focus-within {
-  border-color: var(--border-bright);
-  box-shadow: 0 0 0 3px var(--cyan-dim);
-}
-.playground-compose textarea {
-  flex: 1;
-  min-height: 24px;
-  max-height: 120px;
-  overflow-y: auto;
-  resize: none;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--txt);
-  font: 12.5px/1.55 var(--font-sans);
-}
-.playground-compose textarea::placeholder {
-  color: var(--txt-faint);
-}
-.playground-compose textarea:disabled {
-  opacity: 0.6;
-}
-.playground-compose button {
-  /* Deliberately no `background`/`color`: this scoped rule out-specifies
-     the shared .ai-chat-send, so setting a fill here would silently win
-     and leave the send button looking transparent. The send button takes
-     .ai-chat-send — there is no second button in this form. */
-  flex: none;
-  padding: 7px 14px;
-  border: 0;
-  border-radius: 9px;
+/* Text send control: the shared box sizes icon buttons at 31px, "Send" needs a
+   width of its own. No fill — `.ai-chat-send` owns that. */
+.playground-send {
+  width: auto;
+  padding: 0 14px;
   font: 600 11.5px var(--font-sans);
-  cursor: pointer;
-}
-.playground-compose button:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 @keyframes playground-shimmer {
   0% {
