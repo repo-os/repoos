@@ -12,7 +12,7 @@ branch: feat/classify-runner-infrastructure-failures-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:40:08Z"
-updated_at: "2026-10-08T15:15:08Z"
+updated_at: "2026-10-08T15:16:23Z"
 ---
 ## Problem
 
@@ -64,7 +64,7 @@ Read src/server/remote-validation.ts (pool, HangWatchdog, recordRun, infraFail),
 392|     expect(res.ok).toBe(false);
 393|     expect(res.transient).toBe(true);
 394|     expect(res.detail).toContain("unavailable");
- |                        ^
+|                        ^
 395|     await r.dispose();
 396|   });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
@@ -83,3 +83,4 @@ error: script "test" exited with code 1
 - 2026-10-08T15:05:17Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-08T15:07:16Z · body
 - 2026-10-08T15:15:08Z · body
+- 2026-10-08T15:16:23Z · body
