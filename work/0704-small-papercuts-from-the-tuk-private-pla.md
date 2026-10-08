@@ -12,7 +12,7 @@ branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-08T17:49:42Z"
+updated_at: "2026-10-08T17:51:30Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -91,3 +91,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:49:37Z · note: Item 5 (repoos show header fields): declined — out of scope for this papercuts task; needs a dedicated UI/CLI task.
 - 2026-10-08T17:49:40Z · note: Item 6 (GET on POST-only API routes): declined — routing/auth behavior change; file separately from papercuts.
 - 2026-10-08T17:49:42Z · note: Item 21 (PATCH numeric maxActiveTasks): declined — config schema/validation change; not part of #0704 scope.
+- 2026-10-08T17:51:30Z · body
