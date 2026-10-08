@@ -2,7 +2,7 @@
 id: "0714"
 title: "Reviewer must require evidence that guard tests fail on bad input, and fail on console errors"
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/reviewer-must-require-evidence-that-guar
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:56Z"
-updated_at: "2026-10-08T14:06:50Z"
+updated_at: "2026-10-08T14:23:01Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Rows 27 and 30: reviewer approved a change with a vue-i18n console error and a dead guard rule.
 
@@ -36,3 +36,4 @@ Trace the existing reviewer, browser-smoke, and guard-test flows before changing
 - 2026-10-07T17:42:50Z · status inbox→ready
 - 2026-10-08T14:06:47Z · cli_override, model_override
 - 2026-10-08T14:06:50Z · status ready→active, branch
+- 2026-10-08T14:23:01Z · status active→review
