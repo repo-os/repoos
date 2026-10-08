@@ -80,3 +80,4 @@ Verify first against current main: #0705 (merged) already made the dispatcher co
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-08T14:31:19Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .rr-panel matched nothing on /checks?tab=remote-runners (captured http://127.0.0.1:54974/checks?tab=runs) (http://127.0.0.1:54974/checks?tab=runs)
+- 2026-10-08T14:31:19Z · handoff failed · ui-review handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .rr-panel matched nothing on /checks?tab=remote-runners (captured http://127.0.0.1:54974/checks?tab=runs) (http://127.0.0.1:54974/checks?tab=runs)
