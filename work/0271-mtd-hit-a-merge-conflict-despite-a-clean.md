@@ -28,9 +28,9 @@ The live review→done path is `CloseOutOrchestrator` in `src/server/integration
 (`done.ts`'s `completeTask` is the legacy path, still exercised only by tests). The merge itself happens
 in `validateCandidate` at `integration-orchestrator.ts:464`:
 
- mergeBranch(wtPath, featureBranch, { autoResolve, autoResolveOurs })
-   autoResolve   = ["dist/", "screenshots/", work/<task-file>.md]
-   autoResolveOurs = ["work/"]
+mergeBranch(wtPath, featureBranch, { autoResolve, autoResolveOurs })
+  autoResolve   = ["dist/", "screenshots/", work/<task-file>.md]
+  autoResolveOurs = ["work/"]
 
 The candidate worktree is `git reset --hard main`-ed during `syncCandidate`, so the only way the merge
 conflicts is if the **feature branch and main disagree** on a path not covered by auto-resolve, OR if the
@@ -70,11 +70,11 @@ real source file). A clean main + only-task-file divergence should never reach t
 
 ## Acceptance criteria
 - [ ] Move to done on a task whose only divergence from a clean main is its own/task-file bookkeeping
-   completes (fast-forward or auto-resolved merge), never a "merge conflict" card.
+  completes (fast-forward or auto-resolved merge), never a "merge conflict" card.
 - [ ] A genuine competing source change on main still fails loudly, pinning the **real** conflicting path
-   (not the task file).
+  (not the task file).
 - [ ] No regression in the #0130 already-integrated retry, #0204 dirty/lock guards, or #0211 dirty-main
-   fail-closed checks.
+  fail-closed checks.
 - [ ] `repoos check` passes after the fix.
 
 ## Notes

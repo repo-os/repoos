@@ -56,78 +56,78 @@ surface (per-server settings stay where they are).
 **Entry point**
 
 - [ ] A `…` toolbar button is placed at the window's top-right (trailing)
-  placement, at app level — not inside any server's embedded web content.
+placement, at app level — not inside any server's embedded web content.
 - [ ] It carries a `.help(...)` tooltip and a descriptive accessibility label
-  (e.g. "RepoOS Hub settings").
+(e.g. "RepoOS Hub settings").
 - [ ] Activating it opens the Hub's settings window; `⌘,` opens the same
-  window. No second, competing app-level settings surface is left behind.
+window. No second, competing app-level settings surface is left behind.
 - [ ] It works on the declared **macOS 13** deployment target — any macOS 14+
-  only API (e.g. `SettingsLink` / `openSettings`) is guarded with a
-  macOS 13 fallback.
+only API (e.g. `SettingsLink` / `openSettings`) is guarded with a
+macOS 13 fallback.
 - [ ] The button is keyboard reachable (focusable, with a visible focus ring)
-  and the settings window is reachable without a pointer via `⌘,`.
+and the settings window is reachable without a pointer via `⌘,`.
 
 **Appearance (Hub shell theme)**
 
 - [ ] The Appearance section offers `System`, `Light`, and `Dark`; the default
-  is `System`, so existing users see no change.
+is `System`, so existing users see no change.
 - [ ] Changing it applies immediately, without a relaunch, to the sidebar,
-  workspace chrome, sheets, popovers, alerts, and the ⌘K palette.
+workspace chrome, sheets, popovers, alerts, and the ⌘K palette.
 - [ ] The choice persists across relaunch and survives an app update — stored
-  in `~/Library/Application Support/RepoOS Hub/` alongside the other Hub
-  preferences, via the existing document/`decodeIfPresent` pattern.
+in `~/Library/Application Support/RepoOS Hub/` alongside the other Hub
+preferences, via the existing document/`decodeIfPresent` pattern.
 - [ ] A registry file written before this change still loads, defaulting the
-  missing appearance value to `System`.
+missing appearance value to `System`.
 - [ ] The Dock icon variant follows the chosen appearance, including when the
-  system appearance differs from it.
+system appearance differs from it.
 - [ ] Appearance affects **only** the native Hub shell. Per-server web themes
-  are untouched: no theme is injected, forced, or bridged into any
-  `WKWebView`, and the per-server web UI keeps its own theme setting.
+are untouched: no theme is injected, forced, or bridged into any
+`WKWebView`, and the per-server web UI keeps its own theme setting.
 
 **Check for updates**
 
 - [ ] The About / updates area shows the running version
-  (`CFBundleShortVersionString`) and build (`CFBundleVersion`).
+(`CFBundleShortVersionString`) and build (`CFBundleVersion`).
 - [ ] "Check for Updates" queries the GitHub latest-release endpoint and
-  compares versions **numerically** (`1.10.0` > `1.9.0`), not lexically.
+compares versions **numerically** (`1.10.0` > `1.9.0`), not lexically.
 - [ ] Results are distinct and truthful: "You're up to date", "Version X.Y.Z
-  is available", and "Could not check" for network, rate-limit, or
-  malformed-response failures. A failed check never reports an update.
+is available", and "Could not check" for network, rate-limit, or
+malformed-response failures. A failed check never reports an update.
 - [ ] Only the latest **stable** release is offered — prereleases are not
-  suggested, matching the documented release contract.
+suggested, matching the documented release contract.
 - [ ] The check is **on demand only**: no network request at app launch, at
-  window open, or on a timer. The last result is cached locally (reuse the
-  six-hour convention already used for update checks in the web UI) and an
-  explicit re-check refreshes it.
+window open, or on a timer. The last result is cached locally (reuse the
+six-hour convention already used for update checks in the web UI) and an
+explicit re-check refreshes it.
 - [ ] The check is advisory only: it never downloads, installs, or replaces the
-  app, and it adds no third-party update dependency. An available update
-  offers a link that opens the releases page / DMG download in the default
-  browser.
+app, and it adds no third-party update dependency. An available update
+offers a link that opens the releases page / DMG download in the default
+browser.
 - [ ] The check is non-blocking and cannot crash or hang the UI on a timeout,
-  `403` rate limit, or an HTML-instead-of-JSON response; failures surface
-  as a normal, dismissible result.
+`403` rate limit, or an HTML-instead-of-JSON response; failures surface
+as a normal, dismissible result.
 
 **Consolidating the existing global settings**
 
 - [ ] **Native notifications** and **Dock badge total** live in the same
-  settings window, with unchanged labels, behavior, and defaults, still
-  persisted through the existing `HubGlobalPreferences` store.
+settings window, with unchanged labels, behavior, and defaults, still
+persisted through the existing `HubGlobalPreferences` store.
 - [ ] Per-server settings are unchanged: the sidebar context menu's
-  **Notifications…** sheet keeps its attention, capability, and
-  cross-server-search controls, and the app-level panel neither duplicates
-  nor overrides them.
+**Notifications…** sheet keeps its attention, capability, and
+cross-server-search controls, and the app-level panel neither duplicates
+nor overrides them.
 
 **Tests and docs**
 
 - [ ] Unit tests cover: version comparison, each update-result state
-  (up-to-date / available / could-not-check), and appearance persistence
-  plus the legacy-file default.
+(up-to-date / available / could-not-check), and appearance persistence
+plus the legacy-file default.
 - [ ] Both `xcodebuild` commands in `macos/README.md` (build and test) pass.
 - [ ] `user-docs/macos-hub.md` documents the new top-level settings entry
-  point, the appearance preference, the in-app update check, and the
-  relocated global notification toggles.
+point, the appearance preference, the in-app update check, and the
+relocated global notification toggles.
 - [ ] No server or web-UI behavior changes; nothing outside `macos/` and docs
-  is modified, so the normal RepoOS check plan still applies.
+is modified, so the normal RepoOS check plan still applies.
 
 ## Notes for AI
 

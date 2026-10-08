@@ -81,12 +81,12 @@ Original Prompt override, while Screenshots/Activity stay protected).
 
 - [x] A PM agent reply without frontmatter never overwrites a draft's title/body.
 - [x] `repoos update --body` can restore/correct a task's `## Original prompt`
-   section without needing to hand-edit the file.
+section without needing to hand-edit the file.
 - [x] `## Screenshots` / `## Activity` still can't be overwritten by a body patch.
 - [x] The "New task" panel opens the finished task if the user is still on it
-   when the PM agent finishes.
+when the PM agent finishes.
 - [x] Existing task #0345 itself is restored (done directly as a hotfix,
-   using `repoos update`, once the write.ts fix above unblocked it).
+using `repoos update`, once the write.ts fix above unblocked it).
 
 ## Notes for AI
 

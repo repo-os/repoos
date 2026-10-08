@@ -43,17 +43,17 @@ the mission;
 ## Acceptance criteria
 
 - [ ] A `ready` task shows a **Start work** button on its board card and in the
-  task drawer
+task drawer
 - [ ] Clicking **Start work** transitions the task to `active` with an Activity
-  log entry
+log entry
 - [ ] Starting work launches the repo's default agent (the `engineer` agent from
-  the Agents page) against the task, in the task's worktree, seeded with the
-  task file and the agent's instructions
+the Agents page) against the task, in the task's worktree, seeded with the
+task file and the agent's instructions
 - [ ] An `active` task shows a **Pause work** button instead
 - [ ] Clicking **Pause work** stops the running agent and returns the task to
-  `ready`, with an Activity log entry
+`ready`, with an Activity log entry
 - [ ] If the agent process exits on its own (crash or completion), the UI stops
-  showing "running" — the task is never stuck in a phantom running state
+showing "running" — the task is never stuck in a phantom running state
 - [ ] `repoos check` passes
 
 ## Notes for AI

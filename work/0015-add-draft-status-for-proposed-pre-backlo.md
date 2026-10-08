@@ -59,24 +59,24 @@ not a status hack.
 
 - [ ] `draft` added to the STATUSES enum as the lifecycle floor (before `inbox`)
 - [ ] EVERY status-aware surface handles it: the STATUSES constant, status sort
-  rank, CLI `mv` validation, UI board columns + status color map, counts,
-  and default `ros list` filtering. Missing one leaves it half-wired (e.g.
-  `mv` rejects `draft`, or the UI has no column for it).
+rank, CLI `mv` validation, UI board columns + status color map, counts,
+and default `ros list` filtering. Missing one leaves it half-wired (e.g.
+`mv` rejects `draft`, or the UI has no column for it).
 - [ ] Drafts are EXCLUDED from the default board and default `ros list` — shown
-  only via an explicit view ("Proposed"/"Drafts") or `ros list draft`. If
-  drafts render inline as just another column by default, the feature has
-  failed its purpose (the point is to keep noise out of the backlog).
+only via an explicit view ("Proposed"/"Drafts") or `ros list draft`. If
+drafts render inline as just another column by default, the feature has
+failed its purpose (the point is to keep noise out of the backlog).
 - [ ] `draft → inbox` promotion is the human curation gate. Agents may CREATE
-  drafts; promoting them is a human act. Reflect in AGENTS.md (and, once
-  orchestration lands, in agent permissions). A recommender agent must not
-  self-promote.
+drafts; promoting them is a human act. Reflect in AGENTS.md (and, once
+orchestration lands, in agent permissions). A recommender agent must not
+self-promote.
 - [ ] BACK-COMPAT: tasks with no explicit `status` still default to `inbox`, NOT
-  `draft`. This change must not reclassify existing work as draft. The
-  default-when-absent stays `inbox`; only explicitly-`draft` tasks are drafts.
+`draft`. This change must not reclassify existing work as draft. The
+default-when-absent stays `inbox`; only explicitly-`draft` tasks are drafts.
 - [ ] `ros new` and `config.defaultStatus` stay `inbox` — `draft` is set
-  explicitly (by agents/recommenders, or by a human choosing it).
+explicitly (by agents/recommenders, or by a human choosing it).
 - [ ] `draft` has a distinct, MUTED visual treatment (lower weight than inbox —
-  it's pre-backlog).
+it's pre-backlog).
 - [ ] Round-trip/parsing unaffected for draft-status tasks.
 
 ## Notes for AI

@@ -49,12 +49,12 @@ highlighted one. All behavior matches the existing drawer's Esc-close feel.
 
 - [ ] Search input in the TopBar with placeholder + ⌘K/Ctrl+K focus shortcut
 - [ ] Results dropdown groups Tasks / Context docs / Settings; empty query hides
-  it; no matches shows "No results"
+it; no matches shows "No results"
 - [ ] Case-insensitive substring matching per the spec above (task id/title/body,
-  doc title/path, setting label/key)
+doc title/path, setting label/key)
 - [ ] Clicking a task result opens the task drawer; clicking a doc result
-  navigates to Context and selects it; clicking a setting result navigates
-  to Settings and highlights the field
+navigates to Context and selects it; clicking a setting result navigates
+to Settings and highlights the field
 - [ ] Esc closes, ↑/↓ + Enter work
 - [ ] Works from every view (results are not view-local)
 - [ ] `ros check` passes; no new runtime dependencies

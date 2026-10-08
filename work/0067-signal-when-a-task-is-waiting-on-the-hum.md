@@ -44,30 +44,30 @@ the #0063 class of bug (board disagrees with the branch) cannot pass silently.
 ## Acceptance criteria
 
 - [ ] New frontmatter field `needs_input: bool` is modeled in `TaskFrontmatter`
-   (`src/core/types.ts`) and surfaced on `Task` (e.g. `needsInput: boolean`,
-   default `false`); it round-trips through `patchTaskFile`, the indexer, and
-   unknown-key preservation. False is never written when unset.
+(`src/core/types.ts`) and surfaced on `Task` (e.g. `needsInput: boolean`,
+default `false`); it round-trips through `patchTaskFile`, the indexer, and
+unknown-key preservation. False is never written when unset.
 - [ ] `missionFor` (`src/server/agents.ts`) is rewritten as a numbered
-   fail-safe checklist that (a) requires `repoos check` green before
-   anything else, (b) commits on the branch, (c) sets `status: review` in
-   BOTH copies — worktree copy committed, main-checkout copy edited WITHOUT
-   commit — then (d) **reads the main-checkout copy back and confirms it
-   shows `review`** before stopping, and (e) when blocked or needing a
-   decision, sets `needs_input: true` in BOTH copies (worktree committed,
-   main copy not) and stops — explicitly forbidding silently leaving the
-   task `active`.
+fail-safe checklist that (a) requires `repoos check` green before
+anything else, (b) commits on the branch, (c) sets `status: review` in
+BOTH copies — worktree copy committed, main-checkout copy edited WITHOUT
+commit — then (d) **reads the main-checkout copy back and confirms it
+shows `review`** before stopping, and (e) when blocked or needing a
+decision, sets `needs_input: true` in BOTH copies (worktree committed,
+main copy not) and stops — explicitly forbidding silently leaving the
+task `active`.
 - [ ] A fixture test asserts the mission text contains the both-copies
-   verification and the needs-input instruction (pattern: existing
-   `agent-drivers.test.ts`), so future mission edits can't silently drop
-   them.
+verification and the needs-input instruction (pattern: existing
+`agent-drivers.test.ts`), so future mission edits can't silently drop
+them.
 - [ ] `POST /api/tasks/:id/message` clears `needs_input` (main copy) before
-   resuming the session; `start` and `pause` also clear it.
+resuming the session; `start` and `pause` also clear it.
 - [ ] UI: a task with `needsInput` gets a pulsing "needs input" treatment on
-   its card (`TaskCard.vue` — reuse/extend the existing `flash`/pulse
-   styling) plus a visible badge; the task drawer's Agent tab shows a
-   "waiting for you" state (not "running") when `needsInput` is true; the
-   change surfaces live via the existing `task.updated` SSE path (the file
-   watcher already emits on frontmatter edits).
+its card (`TaskCard.vue` — reuse/extend the existing `flash`/pulse
+styling) plus a visible badge; the task drawer's Agent tab shows a
+"waiting for you" state (not "running") when `needsInput` is true; the
+change surfaces live via the existing `task.updated` SSE path (the file
+watcher already emits on frontmatter edits).
 - [ ] `repoos check` passes; zero new runtime dependencies.
 
 ## Notes for AI

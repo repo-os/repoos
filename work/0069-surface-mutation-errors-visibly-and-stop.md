@@ -53,37 +53,37 @@ the expensive build/check so it never wastes minutes just to fail.
 ## Acceptance criteria
 
 - [ ] **Toast error surface**: `onError` (and the `!ok` branches of
-   `startWork`, `pauseWork`, `completeTask`, `sendMessage`, `setStatus`,
-   `createFreeformTask`) push a dismissible error toast with the message;
-   toasts auto-dismiss (~6s), stack if several fire, and are click-to-close.
-   Feed history entries stay. Tests cover the store.
+`startWork`, `pauseWork`, `completeTask`, `sendMessage`, `setStatus`,
+`createFreeformTask`) push a dismissible error toast with the message;
+toasts auto-dismiss (~6s), stack if several fire, and are click-to-close.
+Feed history entries stay. Tests cover the store.
 - [ ] **Done-flow pre-flight**: before attempting the close-out, `completeTask`
-   detects a non-fast-forward/conflicting merge cheaply (e.g.
-   `git merge-tree` or an abortable `--no-commit` merge) and returns a
-   structured `{ ok:false, conflicts: string[], drifted: true }` **without**
-   running build/screenshots/check. The `/done` route
-   (`src/server/server.ts:612`) surfaces `conflicts` in the error payload.
+detects a non-fast-forward/conflicting merge cheaply (e.g.
+`git merge-tree` or an abortable `--no-commit` merge) and returns a
+structured `{ ok:false, conflicts: string[], drifted: true }` **without**
+running build/screenshots/check. The `/done` route
+(`src/server/server.ts:612`) surfaces `conflicts` in the error payload.
 - [ ] **Inline done-failure UI**: `TaskDrawer.vue` `moveToDone` renders the
-   failure inline (not only a toast): step reached, elapsed, conflicting file
-   list, and the "sync + resolve + retry" guidance; the confirm state resets
-   cleanly so retry is possible.
+failure inline (not only a toast): step reached, elapsed, conflicting file
+list, and the "sync + resolve + retry" guidance; the confirm state resets
+cleanly so retry is possible.
 - [ ] **Auto-sync on review**: when a task transitions to `review`
-   (`PATCH /api/tasks/:id`, `src/server/server.ts:547`), the server merges
-   `main` into the task's branch in its worktree (same semantics as
-   `mergeBranch`); on conflict it **aborts the merge** (nothing half-applied)
-   and sets a new additive frontmatter flag `needs_merge: true` on BOTH task
-   copies. Successful sync (or a later successful manual sync) clears it.
+(`PATCH /api/tasks/:id`, `src/server/server.ts:547`), the server merges
+`main` into the task's branch in its worktree (same semantics as
+`mergeBranch`); on conflict it **aborts the merge** (nothing half-applied)
+and sets a new additive frontmatter flag `needs_merge: true` on BOTH task
+copies. Successful sync (or a later successful manual sync) clears it.
 - [ ] **needs_merge surfacing**: modeled like `needs_input` from #0067
-   (`TaskFrontmatter`/`Task` in `src/core/types.ts`, round-trips through
-   `patchTaskFile`); the review card shows a small "drifted — needs merge"
-   chip when set; cleared on successful sync.
+(`TaskFrontmatter`/`Task` in `src/core/types.ts`, round-trips through
+`patchTaskFile`); the review card shows a small "drifted — needs merge"
+chip when set; cleared on successful sync.
 - [ ] **"Sync with main" action**: a drawer action on `review` tasks (and in the
-   drawer when `needs_merge` is set) that runs the main→branch sync, reports
-   success or the conflict file list inline, and clears `needs_merge` on
-   success. No new status — the task stays `review`.
+drawer when `needs_merge` is set) that runs the main→branch sync, reports
+success or the conflict file list inline, and clears `needs_merge` on
+success. No new status — the task stays `review`.
 - [ ] `repoos check` passes (build, tests incl. new ones, ui-smoke); zero new
-   runtime dependencies. Keep the smoke test green (toasts mount under the
-   existing WebKit probe).
+runtime dependencies. Keep the smoke test green (toasts mount under the
+existing WebKit probe).
 
 ## Notes for AI
 

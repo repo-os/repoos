@@ -31,21 +31,21 @@ pass; only the browser reveals it.
 1. Open the browser dev console + Network tab, reload, and read the actual error.
 2. It will be one of:
 - 404 / failed load on `/vendor/vue.global.prod.js` + "Vue/createApp is not
-  defined" → the vendored Vue runtime isn't served. Check: did `bun run
-  build` copy `src/ui/vendor/` → `dist/ui/vendor/`? Is the server's vendor
-  route intact? Is the file where the server resolves it?
+defined" → the vendored Vue runtime isn't served. Check: did `bun run
+build` copy `src/ui/vendor/` → `dist/ui/vendor/`? Is the server's vendor
+route intact? Is the file where the server resolves it?
 - SyntaxError / ReferenceError at a line in the inline script → a JS error in
-  `app.html` (likely introduced editing the UI) stops execution before
-  `.mount()`. Fix the error.
+`app.html` (likely introduced editing the UI) stops execution before
+`.mount()`. Fix the error.
 3. Report the exact console output and the root cause before fixing.
 
 ## Acceptance criteria
 
 - [ ] Root cause identified from the console, not assumed
 - [ ] Vue mounts: no raw mustache in the rendered DOM; exactly one overlay shows
-   at a time; the dashboard/board render real data
+ at a time; the dashboard/board render real data
 - [ ] If vendor-Vue serving was the cause, the build reliably copies it and the
-   server reliably serves it — verify from a clean `bun run build`
+ server reliably serves it — verify from a clean `bun run build`
 - [ ] Browser console is error-free on load
 - [ ] Verified in an actual browser (headless or manual), not just `curl`/200
 

@@ -61,23 +61,23 @@ file normalized to a single well-formed frontmatter block.
 ## Acceptance criteria
 
 - [ ] `parseDocument` treats a document that starts with `---` but has no
-   closing `---` as **frontmatter terminated by EOF** (YAML documents may
-   end without a trailing separator): parse the region after the opening
-   delimiter as frontmatter and return the remainder as body. (Confirm this
-   doesn't regress the `hadFrontmatter: false` path used by the raw-draft
-   fallback or the indexer.)
+closing `---` as **frontmatter terminated by EOF** (YAML documents may
+end without a trailing separator): parse the region after the opening
+delimiter as frontmatter and return the remainder as body. (Confirm this
+doesn't regress the `hadFrontmatter: false` path used by the raw-draft
+fallback or the indexer.)
 - [ ] Defense in depth: `explanationTitle` and the `parseGeneratedTask`
-   no-frontmatter fallback skip delimiter lines (a line that is exactly
-   `---`) when picking the title line, so a title can never be `---` even
-   when the lenient parse can't apply.
+no-frontmatter fallback skip delimiter lines (a line that is exactly
+`---`) when picking the title line, so a title can never be `---` even
+when the lenient parse can't apply.
 - [ ] Round-trip fix: `repoos new`-style rewrite of an affected file
-   (serialize via `serializeDocument`) yields ONE frontmatter block with the
-   real title, and the duplicated frontmatter keys (`type`/`priority`/
-   `area`/`assigned_to`) currently embedded in the body are not misparsed.
+(serialize via `serializeDocument`) yields ONE frontmatter block with the
+real title, and the duplicated frontmatter keys (`type`/`priority`/
+`area`/`assigned_to`) currently embedded in the body are not misparsed.
 - [ ] Freeform path test: a fixture feeding an unclosed-frontmatter agent
-   output through `parseGeneratedTask` → `createTask` produces a file whose
-   frontmatter `title` is the real title and whose body contains the
-   sections, not a second `---` block (fakebin pattern).
+output through `parseGeneratedTask` → `createTask` produces a file whose
+frontmatter `title` is the real title and whose body contains the
+sections, not a second `---` block (fakebin pattern).
 - [ ] `repoos check` passes; zero new runtime dependencies.
 
 ## Notes for AI

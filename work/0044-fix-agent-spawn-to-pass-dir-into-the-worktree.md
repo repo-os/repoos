@@ -50,8 +50,8 @@ is the same directory as the spawn cwd).
 
 - [ ] `repoos check` passes
 - [ ] Spawning a task whose branch has a linked worktree: the spawned
-  opencode run's session `directory` is the worktree path, and the agent
-  can read the task file without `external_directory` auto-rejects
+opencode run's session `directory` is the worktree path, and the agent
+can read the task file without `external_directory` auto-rejects
 - [ ] Follow-up turns (resume) also force `--dir`
 
 ## Activity

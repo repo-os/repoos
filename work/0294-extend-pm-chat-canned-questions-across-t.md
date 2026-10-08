@@ -47,7 +47,7 @@ status's entries so today's "flesh this out" flow is unchanged.
 - `active`: "what's going on with this task?", "what's wrong?", "what should I do next?"
 - `review`: "what's blocking this from being done?", "is this actually ready?"
 - Leave `ready`/`done` out for now unless an obvious set of questions falls out of the above
-  (don't force a list where there isn't a clear need yet).
+(don't force a list where there isn't a clear need yet).
 3. Update `showPmCanned` to key off the new map instead of the hardcoded draft/inbox check, and
 drop the `!pmHasConversation` condition — later-stage canned questions need to be askable
 repeatedly throughout a task's life, not just once before the first message. (The draft/inbox

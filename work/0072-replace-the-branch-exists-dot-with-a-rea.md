@@ -52,18 +52,18 @@ but readable at a glance — not just a colored dot.
 ## Acceptance criteria
 
 - [ ] The `tc-git` span and its `branch exists locally` dot are removed from
-  `TaskCard.vue`; no card renders a bare dot for branch existence.
+`TaskCard.vue`; no card renders a bare dot for branch existence.
 - [ ] The card footer's left side is a single status/hint slot that shows
-  (priority order when more than one could apply): running > needs
-  input > not running/paused (`active`, not running, not needing input) >
-  nothing.
+(priority order when more than one could apply): running > needs
+input > not running/paused (`active`, not running, not needing input) >
+nothing.
 - [ ] Each hint is a short text label with a clear meaning on hover/inspection
-  (e.g. via `title`), not an unlabeled glyph.
+(e.g. via `title`), not an unlabeled glyph.
 - [ ] `draft`, `inbox`, `ready`, and `done` tasks show no hint by default
-  (no false signal invented for states with nothing to report).
+(no false signal invented for states with nothing to report).
 - [ ] `task.git.branchExists` and the underlying git-status field are left
-  untouched everywhere else (e.g. `TaskDrawer.vue`'s git details) — only
-  the card-level dot is removed.
+untouched everywhere else (e.g. `TaskDrawer.vue`'s git details) — only
+the card-level dot is removed.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

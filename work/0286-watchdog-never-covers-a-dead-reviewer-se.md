@@ -26,7 +26,7 @@ async checkNow(): Promise<void> {
 if (this.canRun && !this.canRun()) return;
 for (const task of this.index.getTasks("active")) {
 if (this.isStuck(task)) {
-  await this.handleStuck(task);
+await this.handleStuck(task);
 }
 }
 }

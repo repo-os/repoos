@@ -55,10 +55,10 @@ these keys from the UI.
 containing six labeled text inputs — one per canonical column: `draft`,
 `inbox`, `ready`, `active`, `review`, `done`.
 - Row label should use the friendly column name (e.g. "Draft column",
- "Inbox column") and the description should say these are display labels
- only — the canonical status IDs, transitions, and frontmatter never change.
+"Inbox column") and the description should say these are display labels
+only — the canonical status IDs, transitions, and frontmatter never change.
 - Prefill each input with the resolved label (override, else default) and
- show the default in the placeholder/description.
+show the default in the placeholder/description.
 - **Persistence:** editing a field saves through the existing Settings
 auto-save, writing `[board.columns]` in `repoos.toml`. Reloading the page and
 the board (Work, Dashboard, CLI `repoos list`) shows the new labels.
@@ -76,20 +76,20 @@ and the ⌘K index must switch to the Advanced tab before focusing the field.
 
 - `SettingsView.vue`
 - Exclude `board.columns.*` from `generalFields` (add a
- `!field.key.startsWith("board.columns.")` clause, or a `group === "board"`
- filter if you prefer to tag the schema).
+`!field.key.startsWith("board.columns.")` clause, or a `group === "board"`
+filter if you prefer to tag the schema).
 - Add a `boardColumnFields` computed (`config.visibleFields.filter(f =>
- f.key.startsWith("board.columns."))`) and render it in a new Advanced `Card`.
- Order the six rows `draft, inbox, ready, active, review, done`.
+f.key.startsWith("board.columns."))`) and render it in a new Advanced `Card`.
+Order the six rows `draft, inbox, ready, active, review, done`.
 - In `buildBody()`, stop skipping `board.columns.*`. Normalize each value: if
- blank after trim, submit that field's schema `default` (which equals
- `DEFAULT_COLUMN_LABELS[status]`). This satisfies the server's non-empty
- `string` rule (~line 280) and makes blank mean "default" without a server
- change — `writeConfig` then persists the label explicitly.
+blank after trim, submit that field's schema `default` (which equals
+`DEFAULT_COLUMN_LABELS[status]`). This satisfies the server's non-empty
+`string` rule (~line 280) and makes blank mean "default" without a server
+change — `writeConfig` then persists the label explicitly.
 - Add per-field validation state; block `scheduleAutoSave` (or skip the key)
- while any board-column value is invalid, and surface the error inline.
+while any board-column value is invalid, and surface the error inline.
 - Add `board.columns.*` to `FIELD_TAB` (or teach the focus watcher the
- `board.columns.` prefix) so deep links land on Advanced.
+`board.columns.` prefix) so deep links land on Advanced.
 - Server/parser: no change expected for the default-substitution approach. If
 you'd rather not write explicit default labels to `repoos.toml`, the
 alternative is to let `patchConfig` accept a blank `board.columns.*` value and
@@ -122,12 +122,12 @@ TOML-only; update it.
 
 - [ ] General tab no longer shows the column-label rows.
 - [ ] Advanced tab shows a "Work board column labels" section with six text
-   inputs, each showing its resolved label.
+  inputs, each showing its resolved label.
 - [ ] Editing a label and leaving the field persists it to `[board.columns]`
-   and it appears on the board (UI + CLI `repoos list`).
+  and it appears on the board (UI + CLI `repoos list`).
 - [ ] Clearing a label restores and persists its default.
 - [ ] Over-length (>40) and duplicate labels are rejected with an inline error
-   and are not stored.
+  and are not stored.
 - [ ] `?focus=board.columns.draft` opens Advanced with the field focused.
 - [ ] `repoos check` passes.
 

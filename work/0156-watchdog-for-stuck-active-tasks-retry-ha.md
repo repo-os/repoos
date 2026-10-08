@@ -62,21 +62,21 @@ best-effort: a generic "stuck, needs a look" beats a wrong diagnosis.
 ## Acceptance criteria
 
 - [ ] The handoff-failure reason (interrupted turn, missing signal, timeout, etc.)
-   is persisted into the task file's own `## Activity` log, not just the
-   in-memory transcript, so it survives a server reload.
+is persisted into the task file's own `## Activity` log, not just the
+in-memory transcript, so it survives a server reload.
 - [ ] A watchdog process detects an `active` task with no running agent
-   (`runner.isRunning(id)` false) and no activity past a defined staleness
-   threshold.
+(`runner.isRunning(id)` false) and no activity past a defined staleness
+threshold.
 - [ ] On detection, the watchdog sends exactly one automatic resume/nudge message
-   (reusing the existing send-message path) asking the agent to finish and emit
-   the handoff signal, or explain the blocker.
+(reusing the existing send-message path) asking the agent to finish and emit
+the handoff signal, or explain the blocker.
 - [ ] If the retried turn still doesn't produce a clean handoff, the watchdog stops
-   retrying (bounded — never an infinite loop re-spawning the same agent), sets
-   `needsInput: true`, and the existing needs-input notification fires.
+retrying (bounded — never an infinite loop re-spawning the same agent), sets
+`needsInput: true`, and the existing needs-input notification fires.
 - [ ] The escalation note on the task includes the captured failure reason, and a
-   suggested fix/skill reference when one can be matched.
+suggested fix/skill reference when one can be matched.
 - [ ] Covered by a test that simulates a dead-process/no-activity task and asserts:
-   one resume attempt, then escalation — not silent, not an infinite retry loop.
+one resume attempt, then escalation — not silent, not an infinite retry loop.
 
 ## Notes for AI
 

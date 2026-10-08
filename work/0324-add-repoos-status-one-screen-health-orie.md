@@ -62,17 +62,17 @@ than requiring `/api/health`. When the server IS up, enrich from
 ## Acceptance criteria
 
 - [ ] `repoos status` with the server stopped prints server=stopped, the
-  board summary, worktree/tunnel/git lines — no crash, no hang.
+board summary, worktree/tunnel/git lines — no crash, no hang.
 - [ ] `repoos status` with the server running shows port, PID, and a
-  human-readable uptime derived from the lockfile `startedAt`.
+human-readable uptime derived from the lockfile `startedAt`.
 - [ ] Stale build is called out unmissably (not a quiet footnote).
 - [ ] `active` tasks are listed with branch + worktree path + last activity;
-  a task whose worktree is missing is flagged.
+a task whose worktree is missing is flagged.
 - [ ] Leaked-worktree count matches `repoos gc --dry-run`.
 - [ ] Tunnel line matches `repoos tunnel status`' top-level state.
 - [ ] `--json` emits a stable documented shape; covered by a test.
 - [ ] Output rendering + the server-down path are unit tested (fixture repo,
-  fake lockfile, stale vs fresh marker).
+fake lockfile, stale vs fresh marker).
 - [ ] Zero new runtime dependencies.
 - [ ] `repoos --help` COMMANDS list + `docs/` updated.
 

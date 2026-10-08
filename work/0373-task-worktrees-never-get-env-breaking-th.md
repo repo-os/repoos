@@ -101,17 +101,17 @@ than picking silently.
 ## Acceptance criteria
 
 - [ ] A repo can opt in (config flag, not automatic) to its task worktrees
-  having access to the main checkout's `.env`.
+having access to the main checkout's `.env`.
 - [ ] With opt-in enabled, a fresh task worktree can run a preview command
-  that depends on `.env` secrets (verify with this repo's own default
-  `[preview] command`, on a genuinely fresh worktree, auth enabled) —
-  set this repo's own `repoos.toml` to opt in as part of this task.
+that depends on `.env` secrets (verify with this repo's own default
+`[preview] command`, on a genuinely fresh worktree, auth enabled) —
+set this repo's own `repoos.toml` to opt in as part of this task.
 - [ ] Without opt-in (the default), worktree behavior is unchanged from
-  today — no `.env` copied, no new failure mode introduced for the
-  common case.
+today — no `.env` copied, no new failure mode introduced for the
+common case.
 - [ ] Whatever mechanism is chosen does not risk leaking `.env` into git
-  history (it must stay gitignored in the worktree too, if copied rather
-  than symlinked).
+history (it must stay gitignored in the worktree too, if copied rather
+than symlinked).
 - [ ] `repoos check` passes.
 
 ## Related

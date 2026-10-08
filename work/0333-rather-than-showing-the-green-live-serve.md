@@ -33,19 +33,19 @@ upper-right spot, carrying a meaningful tooltip such as
 ## Acceptance criteria
 
 - [ ] While connected (`connected === true` in the repo store), no green
-  "live" pill/dot/text renders in the top bar.
+"live" pill/dot/text renders in the top bar.
 - [ ] When the connection drops, a red indicator appears in the top bar's
-  upper-right area (same position as the old "live" pill).
+upper-right area (same position as the old "live" pill).
 - [ ] The red indicator has a meaningful tooltip reading "Server is
-  disconnected" (or equivalent wording).
+disconnected" (or equivalent wording).
 - [ ] On reconnect, the red indicator is removed again — it is only ever
-  visible while disconnected.
+visible while disconnected.
 - [ ] The initial "loading" connection state is treated the same as
-  connected: no indicator shown.
+connected: no indicator shown.
 - [ ] The indicator remains accessible when shown (screen-reader label /
-  `aria-label` reflecting the disconnected state).
+`aria-label` reflecting the disconnected state).
 - [ ] `bun run build:ui` (or full `bun run build`) passes and the UI smoke
-  test is clean.
+test is clean.
 
 ## Notes for AI
 

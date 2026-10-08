@@ -50,42 +50,42 @@ Owner guidance (important): do NOT make starter docs the default and do not impo
 - 2026-10-05T15:37:04Z · status inbox→ready
 - 2026-10-05T15:37:09Z · status ready→active, branch
 - 2026-10-05T16:41:48Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25
- 196|     // `zip -y` stores symlinks as links rather than following them.
- 197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
- 198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
-    |                         ^
- 199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
- 200|   });
+196|     // `zip -y` stores symlinks as links rather than following them.
+197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
+198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
+   |                         ^
+199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
+200|   });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 Test Files  1 failed | 391 passed | 1 skipped (393)
-   Tests  6 failed | 4804 passed | 15 skipped (4825)
+  Tests  6 failed | 4804 passed | 15 skipped (4825)
 Start at  16:38:22
 Duration  201.84s (transform 5.23s, setup 1.66s, import 27.28s, tests 183.80s, environment 172.77s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 326ms
 Test Files  1 passed (1)
-   Tests  2 passed (2)
+  Tests  2 passed (2)
 Start at  16:41:44
 Duration  1.75s (transform 821ms, setup 9ms, import 952ms, tests 326ms, environment 402ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-05T16:47:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-05T16:51:51Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25
- 196|     // `zip -y` stores symlinks as links rather than following them.
- 197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
- 198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
-    |                         ^
- 199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
- 200|   });
+196|     // `zip -y` stores symlinks as links rather than following them.
+197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
+198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
+   |                         ^
+199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
+200|   });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 Test Files  1 failed | 391 passed | 1 skipped (393)
-   Tests  6 failed | 4804 passed | 15 skipped (4825)
+  Tests  6 failed | 4804 passed | 15 skipped (4825)
 Start at  16:48:25
 Duration  201.73s (transform 5.54s, setup 1.64s, import 27.45s, tests 183.97s, environment 172.14s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 333ms
 Test Files  1 passed (1)
-   Tests  2 passed (2)
+  Tests  2 passed (2)
 Start at  16:51:47
 Duration  1.77s (transform 833ms, setup 9ms, import 962ms, tests 333ms, environment 402ms)
 error: script "test" exited with code 1
@@ -93,21 +93,21 @@ error: script "test" exited with code 1
 - 2026-10-05T16:57:30Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-05T16:57:30Z · status review→active
 - 2026-10-05T17:01:37Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25
- 196|     // `zip -y` stores symlinks as links rather than following them.
- 197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
- 198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
-    |                         ^
- 199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
- 200|   });
+196|     // `zip -y` stores symlinks as links rather than following them.
+197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
+198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
+   |                         ^
+199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
+200|   });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 Test Files  1 failed | 391 passed | 1 skipped (393)
-   Tests  6 failed | 4804 passed | 15 skipped (4825)
+  Tests  6 failed | 4804 passed | 15 skipped (4825)
 Start at  16:58:11
 Duration  201.71s (transform 5.32s, setup 1.70s, import 27.21s, tests 184.03s, environment 172.30s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 343ms
 Test Files  1 passed (1)
-   Tests  2 passed (2)
+  Tests  2 passed (2)
 Start at  17:01:33
 Duration  1.82s (transform 860ms, setup 9ms, import 1.00s, tests 343ms, environment 406ms)
 error: script "test" exited with code 1
@@ -115,21 +115,21 @@ error: script "test" exited with code 1
 - 2026-10-05T17:07:31Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-05T17:07:31Z · status review→active
 - 2026-10-05T17:12:30Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/project-docs.test.ts:198:25
- 196|     // `zip -y` stores symlinks as links rather than following them.
- 197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
- 198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
-    |                         ^
- 199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
- 200|   });
+196|     // `zip -y` stores symlinks as links rather than following them.
+197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
+198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
+   |                         ^
+199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
+200|   });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 Test Files  1 failed | 391 passed | 1 skipped (393)
-   Tests  6 failed | 4804 passed | 15 skipped (4825)
+  Tests  6 failed | 4804 passed | 15 skipped (4825)
 Start at  17:09:03
 Duration  202.03s (transform 5.38s, setup 1.68s, import 27.41s, tests 183.84s, environment 172.80s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 348ms
 Test Files  1 passed (1)
-   Tests  2 passed (2)
+  Tests  2 passed (2)
 Start at  17:12:25
 Duration  1.84s (transform 863ms, setup 9ms, import 1.00s, tests 348ms, environment 418ms)
 error: script "test" exited with code 1

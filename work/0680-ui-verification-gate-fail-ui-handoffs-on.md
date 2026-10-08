@@ -52,12 +52,12 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 "route": "/",
 "highlight": ".review-history",
 "steps": [
-  {
-    "click": "[data-task-id=\"0680\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": "[data-task-id=\"0680\"]"
+},
+{
+  "waitMs": 400
+}
 ]
 }
 ]

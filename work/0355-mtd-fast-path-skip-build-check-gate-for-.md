@@ -83,24 +83,24 @@ is conditionally skipped.
 ## Acceptance criteria
 
 - [ ] A task whose merged diff touches only `docs/`, `user-docs/`, `*.md`
-   files, and/or its own task file skips both the "Full build" and
-   "check" steps in `validateCandidate` and still successfully publishes.
+files, and/or its own task file skips both the "Full build" and
+"check" steps in `validateCandidate` and still successfully publishes.
 - [ ] A task whose diff touches even one file outside that allowlist (e.g.
-   one line in `src/`, or `repoos.toml`) runs the full existing gate,
-   unchanged — verify with a mixed diff (mostly docs + one `src/` line)
-   to make sure the predicate doesn't accidentally pass it.
+one line in `src/`, or `repoos.toml`) runs the full existing gate,
+unchanged — verify with a mixed diff (mostly docs + one `src/` line)
+to make sure the predicate doesn't accidentally pass it.
 - [ ] The transcript/log clearly states when and why the fast path was
-   taken, listing the qualifying changed paths.
+taken, listing the qualifying changed paths.
 - [ ] Human review (reviewer agent / manual sign-off) is untouched — this
-   only changes the automated gate that runs during close-out, after
-   review has already approved the task.
+only changes the automated gate that runs during close-out, after
+review has already approved the task.
 - [ ] Standalone `repoos check` behavior is completely unchanged (no edits
-   to `src/commands/check.ts`).
+to `src/commands/check.ts`).
 - [ ] Tests covering: a pure-docs diff takes the fast path, a mixed diff
-   does not, and the #0276/#0271-style retry/classification logic around
-   `validateCandidate` still behaves correctly when the fast path itself
-   fails for some reason (e.g. the merge step fails before the fast-path
-   check is even reached).
+does not, and the #0276/#0271-style retry/classification logic around
+`validateCandidate` still behaves correctly when the fast path itself
+fails for some reason (e.g. the merge step fails before the fast-path
+check is even reached).
 - [ ] `repoos check` passes.
 
 ## Related

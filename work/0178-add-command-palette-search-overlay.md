@@ -39,9 +39,9 @@ current theme the user has selected.
 - [ ] The overlay is large and centered on screen in the command-palette style.
 - [ ] Search input inside the overlay is focused automatically when it opens.
 - [ ] The overlay renders correctly with the app's various themes and matches
-  the active theme's color scheme.
+the active theme's color scheme.
 - [ ] Results from the existing search functionality still work inside the
-  overlay (existing search behavior is preserved, just re-presented).
+overlay (existing search behavior is preserved, just re-presented).
 - [ ] `repoos check` passes with the change.
 
 ## Notes for AI

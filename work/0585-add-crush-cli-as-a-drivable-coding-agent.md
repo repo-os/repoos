@@ -176,13 +176,13 @@ cannot silently turn RepoOS runs into daemon mode.
 
 ```json
 {"meta":{"id":"…","uuid":"…","title":"…","created":"…","modified":"…",
-       "cost":0.0016488,"prompt_tokens":13642,"completion_tokens":3,"total_tokens":13645},
+      "cost":0.0016488,"prompt_tokens":13642,"completion_tokens":3,"total_tokens":13645},
 "messages":[{"role":"assistant","model":"…","provider":"…","parts":[
- {"type":"reasoning","thinking":"…"},
- {"type":"text","text":"…"},
- {"type":"tool_call","tool_call_id":"…","name":"write","input":"{…}"},
- {"type":"tool_result","tool_call_id":"…","name":"write","content":"…"},
- {"type":"finish","reason":"tool_use"}]}]}
+{"type":"reasoning","thinking":"…"},
+{"type":"text","text":"…"},
+{"type":"tool_call","tool_call_id":"…","name":"write","input":"{…}"},
+{"type":"tool_result","tool_call_id":"…","name":"write","content":"…"},
+{"type":"finish","reason":"tool_use"}]}]}
 ```
 
 That covers the Tokens tab (map `cost` → `costUsd`, `extractUsage` source,
@@ -251,43 +251,43 @@ are the prior integration tasks to copy. Concretely:
 
 1. `src/core/config.ts:55-64` — add `"crush"` to `AGENT_CLIS`.
 2. `src/core/detect.ts:119-225` — `KNOWN_AGENTS` entry (`id: "crush"`,
- `name: "crush"`, `cli: "crush"`, `binary: "crush"`, `drivable: true`,
- install/auth hints, `capability` line).
+`name: "crush"`, `cli: "crush"`, `binary: "crush"`, `drivable: true`,
+install/auth hints, `capability` line).
 3. `src/core/agent-compatibility.json` — contract entry, all 11 fields, starting
- `newestCertifiedVersion` / `verifiedAt` / `verificationSource` at `null`
- (honest "not yet probed"), with `requiredCapabilities` limited to
- version, help, model-discovery, headless-one-shot, auto-permissions,
- cancellation (no structured-events / session-continuation, exactly as the
- kiro contract does).
+`newestCertifiedVersion` / `verifiedAt` / `verificationSource` at `null`
+(honest "not yet probed"), with `requiredCapabilities` limited to
+version, help, model-discovery, headless-one-shot, auto-permissions,
+cancellation (no structured-events / session-continuation, exactly as the
+kiro contract does).
 4. `user-docs/coding-harness-compatibility.md` — table row
- (`harness-compat-docs.test.ts:62-80` fails the gate without it).
+(`harness-compat-docs.test.ts:62-80` fails the gate without it).
 5. `src/core/agent-contract.ts:567-576` — `CONTRACT_TEMPLATES` entry plus a
- `CRUSH_CONTRACT` modelled on `KIRO_CONTRACT` (`:441-461`): `version: ["--version"]`,
- `help: ["--help"]`, `models: ["models"]`,
- `run: ["run", "--quiet", prompt]`, `resume: ["run", "--quiet", "--session", id, prompt]`,
- a custom `parseRun` (plain text: `sessionId: null`, `hasAnswer` = `/OK/i`
- on the last lines), and `skipSeams` for `structured-events` and
- `session-continuation` with the reasons above.
+`CRUSH_CONTRACT` modelled on `KIRO_CONTRACT` (`:441-461`): `version: ["--version"]`,
+`help: ["--help"]`, `models: ["models"]`,
+`run: ["run", "--quiet", prompt]`, `resume: ["run", "--quiet", "--session", id, prompt]`,
+a custom `parseRun` (plain text: `sessionId: null`, `hasAnswer` = `/OK/i`
+on the last lines), and `skipSeams` for `structured-events` and
+`session-continuation` with the reasons above.
 6. `src/core/models.ts:379-398` — a real `crush` adapter parsing
- `crush models` (`provider/model` lines), and add `crush` to the stub-loop
- skip list if it gets real discovery.
+`crush models` (`provider/model` lines), and add `crush` to the stub-loop
+skip list if it gets real discovery.
 7. `src/server/agents.ts` — `engineForCli` (`:981-990`), `Session.engine` union
- (`:302-311`) and the persisted-engine allowlist (`:6199-6209`),
- `DRIVABLE_CLIS` (`:2323`), `engineerPermissionGaps` (`:2439-2474`, no-flag
- case), `modelArgs`/flag builders, `cliCommand` (`:2510-2609`),
- `resumeCommand` (`:2620-2745`), `promptCommand` (`:3021-3062`), `pmCommand`
- (`:3078-3162`), `reviewCommand` (`:3187-3266`), `parseOneShotLine`
- (`:3278-3334`), an `appendLine` branch (`:4965-5015`) — the plain-text
- `{s:"out"}` fallback is sufficient — the post-run session capture (a
- crush analogue of `:6102-6148`, wired into `cleanup` at `:5934-5936`, also
- ingesting `session show --json` for usage), the cancel signal (`stop()`,
- `:5686-5726`), and `CRUSH_CLIENT_SERVER=0` in the child env at the spawn
- site (`:4826-4840`).
+(`:302-311`) and the persisted-engine allowlist (`:6199-6209`),
+`DRIVABLE_CLIS` (`:2323`), `engineerPermissionGaps` (`:2439-2474`, no-flag
+case), `modelArgs`/flag builders, `cliCommand` (`:2510-2609`),
+`resumeCommand` (`:2620-2745`), `promptCommand` (`:3021-3062`), `pmCommand`
+(`:3078-3162`), `reviewCommand` (`:3187-3266`), `parseOneShotLine`
+(`:3278-3334`), an `appendLine` branch (`:4965-5015`) — the plain-text
+`{s:"out"}` fallback is sufficient — the post-run session capture (a
+crush analogue of `:6102-6148`, wired into `cleanup` at `:5934-5936`, also
+ingesting `session show --json` for usage), the cancel signal (`stop()`,
+`:5686-5726`), and `CRUSH_CLIENT_SERVER=0` in the child env at the spawn
+site (`:4826-4840`).
 8. `src/core/agent-updates.ts:36-55` — homebrew formula entry.
 9. UI: `src/ui-app/src/views/AgentsView.vue:150-156` `CLI_LABELS`,
- `src/ui-app/src/stores/config.ts:7-24` / `:146-167` model lists and labels.
+`src/ui-app/src/stores/config.ts:7-24` / `:146-167` model lists and labels.
 10. `src/core/providers/spend.ts:23-34, 53-153` — a dispatch-provider row if
-  Crush is meant to appear in the Tokens/dispatch views.
+ Crush is meant to appear in the Tokens/dispatch views.
 
 Registration is string-keyed and there is no cli union in `types.ts`, so
 nothing else needs widening — but several tests enumerate the set and will fail

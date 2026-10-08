@@ -51,23 +51,23 @@ reading logs, not reproducing the issue manually.
 ## Acceptance criteria
 
 - [ ] A system-wide logging mechanism exists that captures errors and
-   fatal/crash-level failures in RepoOS, with enough detail (timestamp,
-   error, context) to diagnose the failure after the fact.
+fatal/crash-level failures in RepoOS, with enough detail (timestamp,
+error, context) to diagnose the failure after the fact.
 - [ ] Each task has an associated log (or log stream) covering its lifecycle
-   through the active → review → done pipeline, including state
-   transitions and errors encountered.
+through the active → review → done pipeline, including state
+transitions and errors encountered.
 - [ ] It's possible to look at a given task and quickly determine its current
-   state, how long it's been there, and what (if anything) is blocking it
-   from progressing, using only the logs.
+state, how long it's been there, and what (if anything) is blocking it
+from progressing, using only the logs.
 - [ ] Each agent (Performance agent, Ross, CTO agent, Tech Debt agent, and any
-   other agents in the system) produces logs of its activity and any
-   errors/problems it encounters.
+other agents in the system) produces logs of its activity and any
+errors/problems it encounters.
 - [ ] It's possible to look at a given agent's logs and tell whether it's
-   currently healthy, idle, stuck, or failing.
+currently healthy, idle, stuck, or failing.
 - [ ] Logs are written somewhere discoverable and consistent (e.g. a common
-   location/format) rather than scattered ad hoc per-component.
+location/format) rather than scattered ad hoc per-component.
 - [ ] Existing errors that previously went unlogged (crashes / silent
-   failures) are now captured by this logging solution.
+failures) are now captured by this logging solution.
 
 ## Notes for AI
 

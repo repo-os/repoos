@@ -114,12 +114,12 @@ perspective.
 ## Acceptance criteria
 
 - [ ] A freeform PM run's output survives a server reload — a run in flight
-   when the server restarts is not silently lost.
+when the server restarts is not silently lost.
 - [ ] A durable log file exists per freeform run, inspectable after the fact
-   regardless of whether the server that started it is still running.
+regardless of whether the server that started it is still running.
 - [ ] A freeform run that fails (not just "no agent configured") surfaces a
-   specific, durable error the user can still see after a page/server
-   reload — not just a generic draft with no error trace.
+specific, durable error the user can still see after a page/server
+reload — not just a generic draft with no error trace.
 - [ ] `repoos check` passes.
 
 ## Activity
