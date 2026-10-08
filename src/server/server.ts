@@ -1962,10 +1962,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       );
       if (!outcome.attempted) return;
       if (!outcome.committed) {
-        logger.system("warn", "task-body normalization (#0702): commit failed; will retry on boot", {
-          rewritten: outcome.rewritten,
-          retried: outcome.retried,
-        });
+        logger.system(
+          "warn",
+          "task-body normalization (#0702): commit failed; will retry on boot",
+          {
+            rewritten: outcome.rewritten,
+            retried: outcome.retried,
+          },
+        );
       } else {
         logger.system("info", "task-body normalization (#0702)", {
           rewritten: outcome.rewritten,
@@ -1977,10 +1981,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       /* best-effort */
     }
   };
-  void indexReady.then(() => {
-    runAreaMigration();
-    runTaskBodyMigration();
-  }, () => {});
+  void indexReady.then(
+    () => {
+      runAreaMigration();
+      runTaskBodyMigration();
+    },
+    () => {},
+  );
 
   // One-time underspecified sweep (#0668): tasks created before the create path
   // assessed them — or created by `repoos new` while the server was down — must
