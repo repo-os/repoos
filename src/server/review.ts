@@ -71,7 +71,10 @@ import { readUiHandoffGateEvidence } from "./ui-handoff-gate.js";
 import { getCheckStore } from "../core/check-store.js";
 import { extractTaskProofCommands } from "../core/task-proof-commands.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
-import { gatherReviewVerification } from "./review-verification-gather.js";
+import {
+  gatherReviewVerification,
+  gatherReviewVerificationWithoutWorktree,
+} from "./review-verification-gather.js";
 
 /** A stored agent review, as served to the UI. */
 export interface ReviewReport {
@@ -970,14 +973,18 @@ export class ReviewManager {
     };
     let reportText = result.output?.trim() ?? "";
     const hasReport = ok && reportText;
-    if (hasReport && task.branch) {
-      const workdir = worktreePathForBranch(this.config.root, task.branch);
-      if (workdir) {
-        const baseBranch = currentBranch(this.config.root) ?? "main";
-        const verification = gatherReviewVerification(this.config, task, workdir, baseBranch);
-        const applied = applyMechanicalReviewVerification(reportText, verification);
-        reportText = applied.markdown;
-      }
+    if (hasReport) {
+      const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+      const verification = workdir
+        ? gatherReviewVerification(
+            this.config,
+            task,
+            workdir,
+            currentBranch(this.config.root) ?? "main",
+          )
+        : gatherReviewVerificationWithoutWorktree(this.config, task);
+      const applied = applyMechanicalReviewVerification(reportText, verification);
+      reportText = applied.markdown;
     }
     const verdict = hasReport ? parseVerdict(reportText) : null;
     const state: ReviewReport["state"] = !hasReport ? "failed" : verdict ? "ok" : "incomplete";

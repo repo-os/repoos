@@ -3,10 +3,15 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ReviewVerificationResult } from "../core/review-verification.js";
-import { evaluateReviewVerification } from "../core/review-verification.js";
-import { changedPathsVsBase } from "../core/git.js";
 import { execFileSync } from "node:child_process";
+import type { ReviewVerificationResult } from "../core/review-verification.js";
+import {
+  evaluateReviewVerification,
+  reviewVerificationWithoutWorktree,
+} from "../core/review-verification.js";
+import { changedPathsVsBase } from "../core/git.js";
+import type { RepoOSConfig, Task } from "../core/types.js";
+import { readUiHandoffGateEvidence, taskNeedsUiHandoffVerification } from "./ui-handoff-gate.js";
 
 function gitDiff(worktree: string, baseBranch: string, path: string): string {
   try {
@@ -23,15 +28,15 @@ function gitDiff(worktree: string, baseBranch: string, path: string): string {
     return "";
   }
 }
-import type { RepoOSConfig, Task } from "../core/types.js";
-import { readUiHandoffGateEvidence, taskNeedsUiHandoffVerification } from "./ui-handoff-gate.js";
 
-function readChangedTestFiles(
+const TEST_FILE_GLOBS = ["*.test.ts", "*.test.tsx", "*.test.js", "*.test.mjs"];
+
+function readTestFileContents(
   worktree: string,
-  changedPaths: string[],
+  relPaths: string[],
 ): { path: string; content: string }[] {
   const out: { path: string; content: string }[] = [];
-  for (const rel of changedPaths) {
+  for (const rel of relPaths) {
     if (!/\.test\.(ts|tsx|js|mjs)$/.test(rel)) continue;
     const abs = join(worktree, rel);
     if (!existsSync(abs)) continue;
@@ -42,6 +47,31 @@ function readChangedTestFiles(
     }
   }
   return out;
+}
+
+function listTrackedTestFiles(worktree: string): string[] {
+  try {
+    const out = execFileSync("git", ["ls-files", "--", ...TEST_FILE_GLOBS], {
+      cwd: worktree,
+      encoding: "utf8",
+    });
+    return out
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/** Mechanical verification when the branch worktree is missing (still appends the section). */
+export function gatherReviewVerificationWithoutWorktree(
+  config: RepoOSConfig,
+  task: Task,
+): ReviewVerificationResult {
+  const uiVerificationRequired = taskNeedsUiHandoffVerification(config, task);
+  const evidence = readUiHandoffGateEvidence(config, task.id);
+  return reviewVerificationWithoutWorktree({ uiVerificationRequired, evidence });
 }
 
 /** Run mechanical verification for a task sitting in `review`. */
@@ -62,12 +92,16 @@ export function gatherReviewVerification(
     ? gitDiff(worktree, baseBranch, "repoos.toml")
     : "";
 
+  const allTestPaths = listTrackedTestFiles(worktree);
+  const changedTestPaths = paths.filter((p) => /\.test\.(ts|tsx|js|mjs)$/.test(p));
+
   return evaluateReviewVerification({
     uiVerificationRequired,
     evidence,
     changedPaths,
     checkTsDiff,
     repoosTomlDiff,
-    changedTestFiles: readChangedTestFiles(worktree, paths),
+    changedTestFiles: readTestFileContents(worktree, changedTestPaths),
+    branchTestFiles: readTestFileContents(worktree, allTestPaths),
   });
 }
