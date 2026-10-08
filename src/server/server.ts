@@ -2473,6 +2473,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
     };
     progress("started", opts.skipChecks ? "commit gate only (checks skipped)" : "repoos check");
+    try {
+      const sourceLabel =
+        opts.origin === "task-file" ? "cli" : opts.origin === "board-drag" ? "board" : opts.origin;
+      // Note-only patch: do not refresh the index here — `runReviewGuard` compares
+      // the indexed task to the pre-guard snapshot and must revert a raw file edit
+      // to `review` before finalization runs (#0704).
+      patchTaskFile(config, task.absPath, {
+        note: `handoff requested (${sourceLabel})`,
+      });
+    } catch {
+      /* best-effort — finalization still runs */
+    }
     void finalizeReviewHandoff(config, task, {
       origin: opts.origin,
       skipChecks: opts.skipChecks,

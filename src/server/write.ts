@@ -21,6 +21,7 @@ import {
   parseTask,
   serializeTask,
   recordChange,
+  stripLastStatusActivityEntry,
   utcTimestamp,
   extractSection,
   removeSection,
@@ -201,6 +202,10 @@ export interface PatchTaskOptions {
    * servers when a task leaves active/review (see preview.ts).
    */
   onStatusChange?: (task: Task, prev: Status, next: Status) => void;
+  /** Do not append a `status a→b` activity line for this status change (#0704). */
+  skipStatusActivity?: boolean;
+  /** Drop the last activity entry if it matches this transition before writing. */
+  stripStatusActivity?: { from: Status; to: Status };
 }
 
 export class WriteError extends Error {}
@@ -255,10 +260,18 @@ export function patchTaskFile(
   // Track changes for activity log
   const changes: string[] = [];
 
+  if (opts.stripStatusActivity) {
+    current.body = stripLastStatusActivityEntry(
+      current.body,
+      opts.stripStatusActivity.from,
+      opts.stripStatusActivity.to,
+    );
+  }
+
   // Merge requested fields onto the current state.
   if (patch.status !== undefined) {
     if (patch.status !== current.status) {
-      changes.push(`status ${current.status}→${patch.status}`);
+      if (!opts.skipStatusActivity) changes.push(`status ${current.status}→${patch.status}`);
       opts.onStatusChange?.(current, current.status, patch.status);
     }
     current.status = patch.status;

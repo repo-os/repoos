@@ -482,6 +482,34 @@ describe("file-watch direct edit into review (0507: routed to the finalization)"
     }
   });
 
+  it("strips a provisional active→review activity line when reverting an unvalidated review write (#0704)", async () => {
+    const fx = makeFixture();
+    try {
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      index.setReviewGuard(async () => false);
+
+      writeFileSync(
+        fx.taskPath,
+        `${taskText("review")}
+
+## Activity
+
+- 2026-01-01T00:00:00Z · status active→review
+`,
+      );
+      await index.applyFileChange(fx.taskPath);
+
+      const content = readFileSync(fx.taskPath, "utf8");
+      expect(content).toMatch(/^status: active$/m);
+      expect(content).not.toMatch(/active→review/);
+      expect(content).not.toMatch(/review→active/);
+      expect(index.getTask("0210")?.status).toBe("active");
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("commits the worker's work and moves to review, running the full check", async () => {
     const fx = makeFixture();
     try {
