@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/cto-conversation-show-reports-once-rende
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-07T02:45:50Z"
-updated_at: "2026-10-08T16:23:05Z"
+updated_at: "2026-10-08T16:23:06Z"
 last_close_out_gate_ms: 54280
 last_close_out_gate_at: "2026-10-08T16:23:05.347Z"
 review_passes: 2
@@ -101,3 +101,4 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 - 2026-10-08T16:22:09Z · close-out gate completed in 57s
 - 2026-10-08T16:23:05Z · close-out gate completed in 54s
 - 2026-10-08T16:23:05Z · status review→inbox
+- 2026-10-08T16:23:06Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
