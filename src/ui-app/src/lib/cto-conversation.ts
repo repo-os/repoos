@@ -29,9 +29,22 @@ export function reportAlreadyInConversation(
 ): boolean {
   const target = markdown.trim();
   if (!target) return false;
+
+  // Structured CLIs stream the report as a single `text` entry; non-JSON ones
+  // print it as plain stdout, which arrives as a run of `out` lines. Both are
+  // candidates for "the report is already here".
+  const candidates: string[] = [];
+  const outLines: string[] = [];
   for (const line of lines) {
-    if (!("type" in line) || line.type !== "text") continue;
-    const text = line.text.trim();
+    if ("type" in line) {
+      if (line.type === "text") candidates.push(line.text.trim());
+      continue;
+    }
+    if (line.s === "out") outLines.push(line.d);
+  }
+  if (outLines.length) candidates.push(outLines.join("\n").trim());
+
+  for (const text of candidates) {
     if (!text) continue;
     if (text === target) return true;
     // The saved report may append a quarantine note, or be capped at a fixed
