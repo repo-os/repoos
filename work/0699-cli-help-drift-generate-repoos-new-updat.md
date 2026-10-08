@@ -1,20 +1,21 @@
 ---
-last_close_out_gate_ms: 55769
-last_close_out_gate_at: "2026-10-08T14:35:18.878Z"
 id: "0699"
 title: "CLI help drift: generate `repoos new/update --help` from the flag tables; add `--paths` and `--hold` to `repoos new`"
 type: feature
-status: review
+status: done
 priority: p2
 area: cli
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: 50fa843c6cb349eff94bb1523e62c83f254806db
 assigned_to: ai
 created_by: ""
 branch: feat/cli-help-drift-generate-repoos-new-updat
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-06T03:15:49Z"
-updated_at: "2026-10-08T14:35:18Z"
+updated_at: "2026-10-08T14:35:39Z"
+last_close_out_gate_ms: 55769
+last_close_out_gate_at: "2026-10-08T14:35:18.878Z"
 review_passes: 1
 dev_error_count: 2
 ---
@@ -61,4 +62,4 @@ Verify first against current main: #0723 (merged) added control-plane CLI comman
 - 2026-10-08T14:31:37Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-08T14:32:46Z · note: review pass 1: good to go
 - 2026-10-08T14:35:18Z · close-out gate completed in 56s
-
+- 2026-10-08T14:35:39Z · status review→done, release:success
