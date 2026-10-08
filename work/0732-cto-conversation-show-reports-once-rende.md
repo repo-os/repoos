@@ -94,3 +94,4 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 - 2026-10-08T16:05:15Z · body
 - 2026-10-08T16:13:55Z · status active→review
 - 2026-10-08T16:13:55Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (c76c03d2b) during finalization (#0734)
+- 2026-10-08T16:13:55Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (c76c03d2b) during finalization (#0734)
