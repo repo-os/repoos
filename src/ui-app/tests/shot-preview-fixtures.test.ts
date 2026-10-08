@@ -9,9 +9,9 @@ import { useRepoStore } from "../src/stores/repo";
 
 describe("shot preview board fixtures (#0743)", () => {
   it("reads shotState from the location query", () => {
-    expect(
-      readShotPreviewFixtureFromLocation({ search: "?shotState=closeOut%3Aactive" }),
-    ).toBe("closeOut:active");
+    expect(readShotPreviewFixtureFromLocation({ search: "?shotState=closeOut%3Aactive" })).toBe(
+      "closeOut:active",
+    );
     expect(readShotPreviewFixtureFromLocation({ search: "" })).toBeNull();
   });
 

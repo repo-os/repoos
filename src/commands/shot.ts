@@ -577,26 +577,32 @@ export async function cmdShot(args: string[]): Promise<number> {
       const warnings: string[] = [];
       try {
         await page.setViewportSize(opts.viewport);
-        png = await captureShotPage(page, pageUrl, entry, { waitMs: opts.waitMs, fullPage: opts.fullPage }, {
-          onHighlightMiss: (selector, route) => {
-            warnings.push(`highlight ${selector} matched nothing on ${route}`);
-            console.error(
-              c.yellow("  · ") +
-                `highlight "${selector}" matched nothing on ${route} — capture went ahead unhighlighted`,
-            );
+        png = await captureShotPage(
+          page,
+          pageUrl,
+          entry,
+          { waitMs: opts.waitMs, fullPage: opts.fullPage },
+          {
+            onHighlightMiss: (selector, route) => {
+              warnings.push(`highlight ${selector} matched nothing on ${route}`);
+              console.error(
+                c.yellow("  · ") +
+                  `highlight "${selector}" matched nothing on ${route} — capture went ahead unhighlighted`,
+              );
+            },
+            onSelectorMiss: (selector, route) => {
+              warnings.push(`selector ${selector} matched nothing on ${route}`);
+              console.error(
+                c.yellow("  · ") +
+                  `selector "${selector}" matched nothing on ${route} — capture used the whole window`,
+              );
+            },
+            onStepMiss: (message, route) => {
+              warnings.push(`${message} on ${route}`);
+              console.error(c.yellow("  · ") + `${message} on ${route} — capture went ahead`);
+            },
           },
-          onSelectorMiss: (selector, route) => {
-            warnings.push(`selector ${selector} matched nothing on ${route}`);
-            console.error(
-              c.yellow("  · ") +
-                `selector "${selector}" matched nothing on ${route} — capture used the whole window`,
-            );
-          },
-          onStepMiss: (message, route) => {
-            warnings.push(`${message} on ${route}`);
-            console.error(c.yellow("  · ") + `${message} on ${route} — capture went ahead`);
-          },
-        });
+        );
       } catch (err) {
         const what = entry.selector ? `selector "${entry.selector}" on ${pageUrl}` : pageUrl;
         console.error(c.red("  ✗ ") + `capture of ${what} failed: ${(err as Error).message}`);
