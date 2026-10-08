@@ -12,7 +12,7 @@ branch: feat/classify-runner-infrastructure-failures-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:40:08Z"
-updated_at: "2026-10-08T14:52:27Z"
+updated_at: "2026-10-08T14:53:10Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ Read src/server/remote-validation.ts (pool, HangWatchdog, recordRun, infraFail),
 - 2026-10-08T14:40:13Z · status ready→active, branch
 - 2026-10-08T14:51:52Z · body: section Shots
 - 2026-10-08T14:52:27Z · body
+- 2026-10-08T14:53:10Z · body
