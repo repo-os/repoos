@@ -1789,13 +1789,21 @@ export class ReviewManager {
             c.assertionsChecked > 0
               ? `, ${c.assertionsPassed}/${c.assertionsChecked} assertion(s) passed`
               : "";
-          return `${c.label ?? `${c.target}${c.route}`} → ${c.url}${asserts}`;
+          const warns = c.targetWarnings?.length
+            ? `, ${c.targetWarnings.length} target warning(s)`
+            : "";
+          return `${c.label ?? `${c.target}${c.route}`} → ${c.url}${asserts}${warns}`;
         })
         .join("; ");
+      const warnLine =
+        evidence.warnings?.length
+          ? `\nShot warnings (non-blocking): ${evidence.warnings.slice(0, 4).join("; ")}`
+          : "";
       return (
         `Handoff UI verification (${evidence.at})${identityLine}: ${evidence.captures} capture(s), ` +
         `zero console errors recorded at capture time.` +
-        (captured ? `\nCaptures: ${captured}` : "")
+        (captured ? `\nCaptures: ${captured}` : "") +
+        warnLine
       );
     }
     const lines = evidence.issues

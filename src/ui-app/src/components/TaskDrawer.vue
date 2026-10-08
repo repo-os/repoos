@@ -5390,6 +5390,14 @@ watch(
               No console errors, failed same-origin requests, overflow, or blank captures at
               handoff.
             </p>
+            <ul
+              v-if="uiHandoffVerification.warnings?.length"
+              class="ui-verification-issues ui-verification-warnings"
+            >
+              <li v-for="(warn, idx) in uiHandoffVerification.warnings" :key="'w' + idx">
+                <span class="mono">[shot-warning]</span> {{ warn }}
+              </li>
+            </ul>
             <ul v-else class="ui-verification-issues">
               <li v-for="(issue, idx) in uiHandoffVerification.issues" :key="idx">
                 <span class="mono">[{{ issue.kind }}]</span> {{ issue.message }}

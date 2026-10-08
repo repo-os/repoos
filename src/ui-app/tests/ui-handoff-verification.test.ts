@@ -10,6 +10,10 @@ import {
   type UiHandoffGateDeps,
 } from "../../server/ui-handoff-gate.js";
 import * as shotCapture from "../../server/shot-capture.js";
+import {
+  resetPreviewVerificationSlot,
+  withPreviewVerificationSlot,
+} from "../../server/preview-verification-slot.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import type { Task } from "../../core/types.js";
 import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
@@ -19,6 +23,7 @@ import { tmpdir } from "node:os";
 describe("UI handoff verification gate (#0680)", () => {
   const temps: string[] = [];
   afterEach(() => {
+    resetPreviewVerificationSlot();
     for (const t of temps.splice(0)) rmSync(t, { recursive: true, force: true });
   });
 
@@ -201,7 +206,7 @@ describe("UI handoff verification gate (#0680)", () => {
     vi.restoreAllMocks();
   });
 
-  it("fails handoff when a declared highlight matches nothing (#0734)", async () => {
+  it("passes handoff with warnings when a declared highlight matches nothing (#0743)", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-uigate-"));
     temps.push(root);
     mkdirSync(join(root, "work"), { recursive: true });
@@ -253,9 +258,10 @@ describe("UI handoff verification gate (#0680)", () => {
         assertions: [],
       }),
     });
-    expect(result.ok).toBe(false);
-    expect(result.detail).toContain("missing-target");
-    expect(result.detail).toContain(".agent-row");
+    expect(result.ok).toBe(true);
+    expect(result.detail).toContain("shot warning");
+    const evidence = readUiHandoffGateEvidence(config, task.id);
+    expect(evidence?.warnings?.some((w) => w.includes(".agent-row"))).toBe(true);
     vi.restoreAllMocks();
   });
 
@@ -421,5 +427,92 @@ describe("UI handoff verification gate (#0680)", () => {
     });
     expect(result.ok).toBe(false);
     expect(result.detail).toContain("blank");
+  });
+
+  it("serializes concurrent verification runs on the preview slot (#0743)", async () => {
+    const order: string[] = [];
+    const p1 = withPreviewVerificationSlot("a", () => {}, async () => {
+      order.push("a-start");
+      await new Promise((r) => setTimeout(r, 40));
+      order.push("a-end");
+    });
+    const p2 = withPreviewVerificationSlot("b", () => {}, async () => {
+      order.push("b-start");
+      order.push("b-end");
+    });
+    await Promise.all([p1, p2]);
+    expect(order).toEqual(["a-start", "a-end", "b-start", "b-end"]);
+  });
+
+  it("retries capture once after a preview disconnect (#0743)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      workDir: "work",
+      uiVerification: { enabled: true },
+      preview: { targets: [{ name: "web", paths: ["src/ui-app/**"], command: "echo" }] },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "0743retry",
+      title: "t",
+      path: "work/0743retry.md",
+      absPath: join(root, "work/0743retry.md"),
+      status: "active",
+      branch: "feat/x",
+      area: "web",
+      body: "",
+    } as Task;
+    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+      entries: [
+        {
+          target: "web",
+          route: "/",
+          label: "home",
+          provenance: { kind: "declared", label: "home" },
+        },
+      ],
+      errors: [],
+      skips: [],
+      collapsed: [],
+    });
+    let captureCalls = 0;
+    const mockBrowser: NonNullable<UiHandoffGateDeps["launchBrowser"]> = async () =>
+      ({
+        browser: { close: async () => {}, newPage: async () => ({}), newContext: async () => ({}) },
+        context: { newPage: async () => ({}), close: async () => {} },
+      }) as unknown as Awaited<ReturnType<NonNullable<UiHandoffGateDeps["launchBrowser"]>>>;
+    const previews = {
+      stop: vi.fn(async () => {}),
+    } as unknown as import("../../server/preview.js").PreviewManager;
+    let previewStarts = 0;
+    const result = await runUiHandoffGate(config, task, previews, () => {}, {
+      launchBrowser: mockBrowser,
+      startPreview: async () => {
+        previewStarts++;
+        return { url: "http://127.0.0.1:9" };
+      },
+      captureEntry: async () => {
+        captureCalls++;
+        if (captureCalls === 1) {
+          throw new Error("Could not connect to the server");
+        }
+        return {
+          png: Buffer.alloc(5000),
+          issues: [],
+          blank: false,
+          warnings: [],
+          finalUrl: "http://127.0.0.1:9/",
+          assertions: [],
+        };
+      },
+    });
+    expect(result.ok).toBe(true);
+    expect(captureCalls).toBe(2);
+    expect(previewStarts).toBe(2);
+    expect(previews.stop).toHaveBeenCalled();
+    vi.restoreAllMocks();
   });
 });
