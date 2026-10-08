@@ -49,6 +49,10 @@ export interface CreateTaskInput {
   body?: string;
   needsInput?: boolean;
   questions?: string[];
+  /** Mark the task held (skipped by the auto-engineering picker) at creation (#0699). */
+  hold?: boolean;
+  /** Repo-relative files the task touches (#0699). */
+  paths?: string[];
   /**
    * The user's raw freeform prompt. When provided, it is preserved verbatim
    * under a `## Original prompt` section in the initial body so the user's
@@ -281,6 +285,11 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
         needsMerge: false,
         noSourceChange: false,
         isArchived: false,
+        isHeld: input.hold ?? false,
+        paths: (() => {
+          const paths = input.paths?.map((p) => String(p).trim()).filter(Boolean);
+          return paths && paths.length ? paths : undefined;
+        })(),
         priority: input.priority ?? "p2",
         // #0583: one canonical shape at both write and read time. Comma
         // string or list input, legacy "a + b" — parseTaskAreas handles all;
