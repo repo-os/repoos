@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-08T17:58:29Z"
-review_passes: 2
+last_close_out_gate_ms: 266234
+last_close_out_gate_at: "2026-10-08T22:27:25.204Z"
 id: "0704"
 title: Small papercuts from the tuk-private planning run
 type: chore
@@ -14,6 +14,8 @@ branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
+updated_at: "2026-10-08T22:27:25Z"
+review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
@@ -95,4 +97,5 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:57:28Z · status active→review
 - 2026-10-08T17:57:29Z · note: shots: skipped — the diff (22 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-08T17:58:29Z · note: review pass 2: good to go
+- 2026-10-08T22:27:25Z · close-out gate completed in 266s
 
