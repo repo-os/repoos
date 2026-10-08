@@ -2,14 +2,14 @@
 id: "0746"
 title: Unify chat input styling and structure
 type: refactor
-status: active
+status: review
 priority: p2
 area: [web, ui]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/unify-chat-input-styling-and-structure
 created_at: "2026-10-08T15:34:30Z"
-updated_at: "2026-10-08T16:19:13Z"
+updated_at: "2026-10-08T16:25:49Z"
 ---
 ## Problem
 
@@ -51,49 +51,49 @@ Task 669 was supposed to standardise and prettify the chat input field, but I th
 ```json
 [
 {
-  "label": "Ross chat open — shared ai-chat-compose box",
-  "target": "default",
-  "route": "/",
-  "highlight": ".ai-chat-compose",
-  "steps": [
-    {
-      "click": "[data-test-id=\"floating-head-ross\"]"
-    },
-    {
-      "waitMs": 400
-    }
-  ]
+"label": "Ross chat open — shared ai-chat-compose box",
+"target": "default",
+"route": "/",
+"highlight": ".ai-chat-compose",
+"steps": [
+  {
+    "click": "[data-test-id=\"floating-head-ross\"]"
+  },
+  {
+    "waitMs": 400
+  }
+]
 },
 {
-  "label": "Ross chat input focused — one rounded highlight on the box",
-  "target": "default",
-  "route": "/",
-  "highlight": ".ai-chat-compose",
-  "steps": [
-    {
-      "click": "[data-test-id=\"floating-head-ross\"]"
-    },
-    {
-      "waitMs": 400
-    },
-    {
-      "click": ".ai-chat-compose textarea"
-    },
-    {
-      "waitMs": 200
-    }
-  ]
+"label": "Ross chat input focused — one rounded highlight on the box",
+"target": "default",
+"route": "/",
+"highlight": ".ai-chat-compose",
+"steps": [
+  {
+    "click": "[data-test-id=\"floating-head-ross\"]"
+  },
+  {
+    "waitMs": 400
+  },
+  {
+    "click": ".ai-chat-compose textarea"
+  },
+  {
+    "waitMs": 200
+  }
+]
 },
 {
-  "label": "Model Playground — migrated onto the shared compose box",
-  "target": "default",
-  "route": "/agents?tab=playground",
-  "highlight": ".playground-compose",
-  "steps": [
-    {
-      "waitMs": 500
-    }
-  ]
+"label": "Model Playground — migrated onto the shared compose box",
+"target": "default",
+"route": "/agents?tab=playground",
+"highlight": ".playground-compose",
+"steps": [
+  {
+    "waitMs": 500
+  }
+]
 }
 ]
 ```
@@ -114,3 +114,4 @@ Task 669 was supposed to standardise and prettify the chat input field, but I th
 - 2026-10-08T16:17:06Z · body
 - 2026-10-08T16:18:16Z · body
 - 2026-10-08T16:19:13Z · body: section Shots
+- 2026-10-08T16:25:49Z · status active→review
