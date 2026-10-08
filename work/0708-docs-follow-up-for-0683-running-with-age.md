@@ -2,14 +2,14 @@
 id: "0708"
 title: "Docs follow-up for #0683: running-with-agents.md section 3 must describe startup host probing and local-fallback visibility"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: docs
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T05:24:59Z"
-updated_at: "2026-10-06T05:24:59Z"
+updated_at: "2026-10-08T16:41:49Z"
 ---
 ## Problem
 
@@ -30,3 +30,4 @@ Small docs-only task. Read #0683 and docs/remote-validation.md first.
 ## Activity
 
 - 2026-10-06T05:24:59Z · created · unknown
+- 2026-10-08T16:41:49Z · status inbox→ready
