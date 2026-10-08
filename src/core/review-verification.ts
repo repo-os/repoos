@@ -110,8 +110,8 @@ export const GUARD_REVIEW_MARKERS: Record<string, string[]> = {
  * input passes.
  */
 export function testContentDemonstratesGuardRejection(content: string): boolean {
-  if (/expect\([^)]*\)\.(toThrow|rejects)\b/.test(content)) return true;
-  if (/await expect\([^)]*\)\.(toThrow|rejects)\b/.test(content)) return true;
+  if (/\bexpect\(.+\)\.(toThrow|rejects)\b/.test(content)) return true;
+  if (/\bawait expect\(.+\)\.(toThrow|rejects)\b/.test(content)) return true;
   if (/\.not\.toEqual\(\s*\[\s*\]\s*\)/.test(content)) return true;
   if (/process\.exit\(1\)|exit code 1|\.status\)\.toBe\(1\)/.test(content)) return true;
   if (

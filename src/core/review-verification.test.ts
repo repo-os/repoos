@@ -91,7 +91,7 @@ describe("guard negative-test evidence (#0714)", () => {
   it("does not treat a bare rejects mention as negative evidence", () => {
     const prose = `// this module rejects bad input in theory\nit("ok", () => {});`;
     expect(testContentDemonstratesGuardRejection(prose)).toBe(false);
-    expect(testContentDemonstratesGuardRejection(`expect(fn()).toThrow()`)).toBe(true);
+    expect(testContentDemonstratesGuardRejection(`expect(fn()).toThrow();`)).toBe(true);
   });
 
   it("requires a rejection test, not happy-path only", () => {
