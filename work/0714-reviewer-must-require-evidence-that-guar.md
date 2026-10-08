@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 159038
-last_close_out_gate_at: "2026-10-08T14:38:19.693Z"
 id: "0714"
 title: "Reviewer must require evidence that guard tests fail on bad input, and fail on console errors"
 type: feature
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: c01eb3d5e6e2595a18a82be210fd768c4e74f863
 assigned_to: ai
 created_by: ""
 branch: feat/reviewer-must-require-evidence-that-guar
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:56Z"
-updated_at: "2026-10-08T14:38:19Z"
+updated_at: "2026-10-08T14:38:30Z"
+last_close_out_gate_ms: 159038
+last_close_out_gate_at: "2026-10-08T14:38:19.693Z"
 review_passes: 2
 review_rounds: 1
 dev_error_count: 1
@@ -55,4 +56,4 @@ Trace the existing reviewer, browser-smoke, and guard-test flows before changing
 - 2026-10-08T14:33:53Z · note: shots: skipped — the diff (8 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-08T14:35:02Z · note: review pass 2: good to go
 - 2026-10-08T14:38:19Z · close-out gate completed in 159s
-
+- 2026-10-08T14:38:30Z · status review→done, release:success
