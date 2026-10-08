@@ -2,17 +2,17 @@
 id: "0742"
 title: "Docs: add the missing second-night lessons to docs/agent-run-operations.md (loop guard, validate.sh rollout and arg order, hung/killed runs, unreachable hosts, previews)"
 type: chore
-status: ready
+status: active
 priority: p3
 area: docs
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/docs-add-the-missing-second-night-lesson
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T17:40:53Z"
-updated_at: "2026-10-08T14:06:55Z"
+updated_at: "2026-10-08T14:06:56Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Docs only. Related: #0710 (done), #0739, #0729, #0725.
 - 2026-10-07T17:40:53Z · created · unknown
 - 2026-10-08T14:06:52Z · cli_override, model_override
 - 2026-10-08T14:06:55Z · status inbox→ready
+- 2026-10-08T14:06:56Z · status ready→active, branch
