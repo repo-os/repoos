@@ -631,6 +631,15 @@ describe("agent chat headers carry an inline agent+model chip (#0669)", () => {
     expect(ruleBody(css, ".ai-chat-compose textarea")).toMatch(/border-radius:\s*\d/);
   });
 
+  it("dims every chat input the same way while it is busy (#0746)", () => {
+    // One disabled treatment lives on the shared box, so a busy chat reads as
+    // un-editable identically in the task drawer, the playground and the
+    // floating-head panels — rather than only the surface that remembered a
+    // bespoke `textarea:disabled` rule.
+    const css = readFileSync(CSS_PATH, "utf8");
+    expect(ruleBody(css, ".ai-chat-compose textarea:disabled")).toMatch(/opacity:/);
+  });
+
   it("floating-head launchers stay visible in preview builds for evidence capture (#0669)", () => {
     const source = readSurface("FloatingHeads.vue");
     expect(source).toContain("isPreviewBuild");

@@ -12429,6 +12429,13 @@
 .ai-chat-compose textarea::placeholder {
   color: var(--txt-faint);
 }
+/* One disabled treatment for every chat input (#0746): dim the textarea while a
+ * turn is in flight, so a busy chat reads as un-editable the same way in the
+ * task drawer, the playground and the floating-head panels. */
+.ai-chat-compose textarea:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
 /* The highlight for an active input is the rounded ring on the box
    (`.ai-chat-compose:focus-within`), never an outline on the textarea itself.
    A named theme's `[data-ui-theme] :focus-visible { outline: 2px solid
