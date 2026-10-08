@@ -80,7 +80,7 @@ system/post_turn_summary
 result/success         -> {"type":"result","subtype":"success","is_error":false,"num_turns":2,
 "duration_ms":4677,"total_cost_usd":0.0731223,"result":"Hello world greeting.",
 "usage":{"input_tokens":4,"output_tokens":91,
-         "cache_creation_input_tokens":9403,"cache_read_input_tokens":49071,…}}
+"cache_creation_input_tokens":9403,"cache_read_input_tokens":49071,…}}
 ```
 
 Notes that matter:

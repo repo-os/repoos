@@ -51,7 +51,7 @@ Code: `src/server/routes/stories.ts` (`createFreeformStory`), `src/core/story-de
 356|     try {
 357|       await withCwd(root, () => cmdStoryShow(["Launch checklist"]));
 358|       expect(process.exitCode ?? 0).toBe(0);
- |                                     ^
+|                                     ^
 359|       const out = logs.join("\n");
 360|       expect(out).toContain("tag-only");
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -73,7 +73,7 @@ error: script "test" exited with code 1
 356|     try {
 357|       await withCwd(root, () => cmdStoryShow(["Launch checklist"]));
 358|       expect(process.exitCode ?? 0).toBe(0);
- |                                     ^
+|                                     ^
 359|       const out = logs.join("\n");
 360|       expect(out).toContain("tag-only");
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -100,7 +100,7 @@ error: script "test" exited with code 1
 356|     try {
 357|       await withCwd(root, () => cmdStoryShow(["Launch checklist"]));
 358|       expect(process.exitCode ?? 0).toBe(0);
- |                                     ^
+|                                     ^
 359|       const out = logs.join("\n");
 360|       expect(out).toContain("tag-only");
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -122,7 +122,7 @@ error: script "test" exited with code 1
 356|     try {
 357|       await withCwd(root, () => cmdStoryShow(["Launch checklist"]));
 358|       expect(process.exitCode ?? 0).toBe(0);
- |                                     ^
+|                                     ^
 359|       const out = logs.join("\n");
 360|       expect(out).toContain("tag-only");
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯

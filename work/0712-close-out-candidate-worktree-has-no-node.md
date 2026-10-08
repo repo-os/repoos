@@ -46,7 +46,7 @@ VERIFY FIRST: #0674 (merged 2026-10-06) already reuses the primary checkout's no
 145|     const { gateParams, validatorCalls } = await runGateWithBudget(0);
 146|
 147|     expect(gateParams).not.toBeNull();
- |                            ^
+|                            ^
 148|     expect(gateParams!["deadlineAt"]).toBeUndefined();
 149|     expect(validatorCalls[0]!["deadlineAt"]).toBeUndefined();
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
@@ -68,7 +68,7 @@ error: script "test" exited with code 1
 145|     const { gateParams, validatorCalls } = await runGateWithBudget(0);
 146|
 147|     expect(gateParams).not.toBeNull();
- |                            ^
+|                            ^
 148|     expect(gateParams!["deadlineAt"]).toBeUndefined();
 149|     expect(validatorCalls[0]!["deadlineAt"]).toBeUndefined();
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
@@ -90,7 +90,7 @@ error: script "test" exited with code 1
 145|     const { gateParams, validatorCalls } = await runGateWithBudget(0);
 146|
 147|     expect(gateParams).not.toBeNull();
- |                            ^
+|                            ^
 148|     expect(gateParams!["deadlineAt"]).toBeUndefined();
 149|     expect(validatorCalls[0]!["deadlineAt"]).toBeUndefined();
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯

@@ -73,18 +73,18 @@ Do this: merge main into the branch first (resolve keeping both sides; take main
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
-   |                                ^
+ |                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
 Test Files  1 failed | 434 passed | 1 skipped (436)
-  Tests  4 failed | 5287 passed | 15 skipped (5306)
+Tests  4 failed | 5287 passed | 15 skipped (5306)
 Start at  15:08:59
 Duration  276.69s (transform 7.42s, setup 2.38s, import 51.20s, tests 248.96s, environment 225.62s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 780ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  15:13:36
 Duration  2.74s (transform 1.14s, setup 12ms, import 1.42s, tests 780ms, environment 446ms)
 error: script "test" exited with code 1
@@ -95,18 +95,18 @@ error: script "test" exited with code 1
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
-   |                                ^
+ |                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
 Test Files  1 failed | 434 passed | 1 skipped (436)
-  Tests  4 failed | 5287 passed | 15 skipped (5306)
+Tests  4 failed | 5287 passed | 15 skipped (5306)
 Start at  15:20:11
 Duration  323.84s (transform 11.03s, setup 2.93s, import 67.11s, tests 250.30s, environment 294.50s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 411ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  15:25:35
 Duration  2.26s (transform 1.05s, setup 11ms, import 1.31s, tests 411ms, environment 454ms)
 error: script "test" exited with code 1
@@ -117,18 +117,18 @@ error: script "test" exited with code 1
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
-   |                                ^
+ |                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
 Test Files  1 failed | 434 passed | 1 skipped (436)
-  Tests  4 failed | 5287 passed | 15 skipped (5306)
+Tests  4 failed | 5287 passed | 15 skipped (5306)
 Start at  15:31:45
 Duration  261.43s (transform 7.07s, setup 2.16s, import 46.78s, tests 242.31s, environment 208.28s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 786ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  15:36:07
 Duration  2.77s (transform 1.16s, setup 13ms, import 1.45s, tests 786ms, environment 446ms)
 error: script "test" exited with code 1
@@ -141,18 +141,18 @@ error: script "test" exited with code 1
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
-   |                                ^
+ |                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
 Test Files  1 failed | 434 passed | 1 skipped (436)
-  Tests  4 failed | 5287 passed | 15 skipped (5306)
+Tests  4 failed | 5287 passed | 15 skipped (5306)
 Start at  15:48:39
 Duration  275.68s (transform 6.62s, setup 2.36s, import 52.20s, tests 224.70s, environment 245.07s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 408ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  15:53:15
 Duration  2.35s (transform 1.09s, setup 11ms, import 1.36s, tests 408ms, environment 491ms)
 error: script "test" exited with code 1
@@ -163,18 +163,18 @@ error: script "test" exited with code 1
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
-   |                                ^
+ |                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
 Test Files  1 failed | 434 passed | 1 skipped (436)
-  Tests  4 failed | 5287 passed | 15 skipped (5306)
+Tests  4 failed | 5287 passed | 15 skipped (5306)
 Start at  15:59:50
 Duration  253.07s (transform 6.58s, setup 2.07s, import 44.69s, tests 236.07s, environment 200.94s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 712ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  16:04:04
 Duration  2.73s (transform 1.16s, setup 13ms, import 1.45s, tests 712ms, environment 461ms)
 error: script "test" exited with code 1
@@ -187,18 +187,18 @@ error: script "test" exited with code 1
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
-   |                                ^
+ |                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
 Test Files  2 failed | 433 passed | 1 skipped (436)
-  Tests  5 failed | 5286 passed | 15 skipped (5306)
+Tests  5 failed | 5286 passed | 15 skipped (5306)
 Start at  16:16:34
 Duration  272.74s (transform 6.61s, setup 2.36s, import 51.86s, tests 224.13s, environment 240.73s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 413ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  16:21:07
 Duration  2.36s (transform 1.10s, setup 11ms, import 1.37s, tests 413ms, environment 490ms)
 error: script "test" exited with code 1
@@ -216,18 +216,18 @@ error: script "test" exited with code 1
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
-   |                                ^
+ |                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
 Test Files  1 failed | 440 passed | 1 skipped (442)
-  Tests  4 failed | 5356 passed | 15 skipped (5375)
+Tests  4 failed | 5356 passed | 15 skipped (5375)
 Start at  16:34:02
 Duration  259.26s (transform 6.87s, setup 2.12s, import 46.31s, tests 241.26s, environment 205.98s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 702ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  16:38:22
 Duration  2.70s (transform 1.18s, setup 14ms, import 1.47s, tests 702ms, environment 445ms)
 error: script "test" exited with code 1

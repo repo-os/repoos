@@ -67,18 +67,18 @@ Read TaskCard.vue (pipelineStage, inPipeline computed), the pipeline bar, and sr
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
-   |                                   ^
+ |                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 441 passed | 1 skipped (443)
-  Tests  1 failed | 5327 passed | 15 skipped (5343)
+Tests  1 failed | 5327 passed | 15 skipped (5343)
 Start at  16:34:01
 Duration  278.23s (transform 6.86s, setup 2.39s, import 53.44s, tests 223.56s, environment 249.61s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 402ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  16:38:40
 Duration  2.33s (transform 1.09s, setup 11ms, import 1.35s, tests 402ms, environment 484ms)
 error: script "test" exited with code 1
@@ -89,18 +89,18 @@ error: script "test" exited with code 1
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
-   |                                   ^
+ |                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 441 passed | 1 skipped (443)
-  Tests  1 failed | 5327 passed | 15 skipped (5343)
+Tests  1 failed | 5327 passed | 15 skipped (5343)
 Start at  16:48:13
 Duration  265.68s (transform 7.12s, setup 2.22s, import 48.06s, tests 245.45s, environment 211.71s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 706ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  16:52:39
 Duration  2.67s (transform 1.15s, setup 12ms, import 1.44s, tests 706ms, environment 444ms)
 error: script "test" exited with code 1
@@ -111,18 +111,18 @@ error: script "test" exited with code 1
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
-   |                                   ^
+ |                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 441 passed | 1 skipped (443)
-  Tests  1 failed | 5327 passed | 15 skipped (5343)
+Tests  1 failed | 5327 passed | 15 skipped (5343)
 Start at  16:58:54
 Duration  271.80s (transform 7.03s, setup 2.38s, import 49.20s, tests 246.36s, environment 220.73s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 790ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  17:03:26
 Duration  2.77s (transform 1.15s, setup 13ms, import 1.45s, tests 790ms, environment 449ms)
 error: script "test" exited with code 1
@@ -133,18 +133,18 @@ error: script "test" exited with code 1
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
-   |                                   ^
+ |                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 441 passed | 1 skipped (443)
-  Tests  1 failed | 5327 passed | 15 skipped (5343)
+Tests  1 failed | 5327 passed | 15 skipped (5343)
 Start at  17:09:16
 Duration  285.38s (transform 6.86s, setup 2.46s, import 55.93s, tests 228.44s, environment 255.86s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 409ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  17:14:02
 Duration  2.42s (transform 1.15s, setup 11ms, import 1.42s, tests 409ms, environment 504ms)
 error: script "test" exited with code 1
@@ -155,18 +155,18 @@ error: script "test" exited with code 1
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
-   |                                   ^
+ |                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 441 passed | 1 skipped (443)
-  Tests  1 failed | 5327 passed | 15 skipped (5343)
+Tests  1 failed | 5327 passed | 15 skipped (5343)
 Start at  17:20:25
 Duration  266.63s (transform 7.04s, setup 2.25s, import 48.95s, tests 246.44s, environment 212.02s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 781ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  17:24:52
 Duration  2.72s (transform 1.13s, setup 12ms, import 1.41s, tests 781ms, environment 443ms)
 error: script "test" exited with code 1
@@ -179,18 +179,18 @@ error: script "test" exited with code 1
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
-   |                                   ^
+ |                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 441 passed | 1 skipped (443)
-  Tests  1 failed | 5327 passed | 15 skipped (5343)
+Tests  1 failed | 5327 passed | 15 skipped (5343)
 Start at  17:37:01
 Duration  377.54s (transform 12.40s, setup 3.77s, import 81.62s, tests 275.80s, environment 352.55s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 509ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  17:43:19
 Duration  2.91s (transform 1.40s, setup 13ms, import 1.72s, tests 509ms, environment 572ms)
 error: script "test" exited with code 1
@@ -201,18 +201,18 @@ error: script "test" exited with code 1
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
-   |                                   ^
+ |                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 441 passed | 1 skipped (443)
-  Tests  1 failed | 5327 passed | 15 skipped (5343)
+Tests  1 failed | 5327 passed | 15 skipped (5343)
 Start at  17:49:57
 Duration  287.65s (transform 6.92s, setup 2.51s, import 55.64s, tests 229.79s, environment 258.85s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 411ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  17:54:45
 Duration  2.42s (transform 1.13s, setup 12ms, import 1.41s, tests 411ms, environment 502ms)
 error: script "test" exited with code 1
