@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-08T16:00:04Z"
-review_passes: 1
 id: "0745"
 title: "Classify runner infrastructure failures (bun install EACCES, ssh, container, host permissions) as infra, not test failures: retry on another host and mark the host degraded"
 type: bug
@@ -14,6 +12,7 @@ branch: feat/classify-runner-infrastructure-failures-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:40:08Z"
+updated_at: "2026-10-08T15:58:52Z"
 ---
 ## Problem
 
@@ -44,7 +43,7 @@ Read src/server/remote-validation.ts (pool, HangWatchdog, recordRun, infraFail),
 "highlight": ".rvr-host-state--bad",
 "steps": [
 {
-"waitMs": 500
+ "waitMs": 500
 }
 ]
 }
@@ -115,7 +114,7 @@ error: script "test" exited with code 1
 404|     const rows = getCheckStore(root).list();
 405|     expect(rows).toHaveLength(1);
 406|     expect(rows[0]).toMatchObject({
-|                     ^
+ |                     ^
 407|       taskId: "0564",
 408|       machine: null,
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
@@ -134,26 +133,23 @@ error: script "test" exited with code 1
 - 2026-10-08T15:44:38Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-08T15:44:38Z · status review→active
 - 2026-10-08T15:49:52Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/remote-run-observability.test.ts:406:21
-404|     const rows = getCheckStore(root).list();
-405|     expect(rows).toHaveLength(1);
-406|     expect(rows[0]).toMatchObject({
-   |                     ^
-407|       taskId: "0564",
-408|       machine: null,
+  404|     const rows = getCheckStore(root).list();
+  405|     expect(rows).toHaveLength(1);
+  406|     expect(rows[0]).toMatchObject({
+     |                     ^
+  407|       taskId: "0564",
+  408|       machine: null,
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 Test Files  1 failed | 448 passed | 1 skipped (450)
-  Tests  3 failed | 5485 passed | 15 skipped (5503)
-Start at  15:45:17
-Duration  269.53s (transform 7.48s, setup 2.28s, import 49.32s, tests 248.62s, environment 214.82s)
+    Tests  3 failed | 5485 passed | 15 skipped (5503)
+ Start at  15:45:17
+ Duration  269.53s (transform 7.48s, setup 2.28s, import 49.32s, tests 248.62s, environment 214.82s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 849ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
-Start at  15:49:47
-Duration  3.24s (transform 1.41s, setup 15ms, import 1.77s, tests 849ms, environment 516ms)
+    Tests  2 passed (2)
+ Start at  15:49:47
+ Duration  3.24s (transform 1.41s, setup 15ms, import 1.77s, tests 849ms, environment 516ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
-- 2026-10-08T15:58:53Z · status active→review
-- 2026-10-08T15:59:08Z · note: highlight .rvr-host-state--bad matched nothing on /settings?tab=remote
-- 2026-10-08T16:00:03Z · note: review pass 1: good to go
-
+- 2026-10-08T15:58:52Z · status active→review

@@ -56,6 +56,10 @@ const statusLabel = computed(() => {
     if (!hosts.length) return "Needs setup — no tailscale host configured";
     if (!s.running) return "Enabled — restart server to apply";
     const down = (s.hosts ?? []).filter((h: any) => h.probed && !h.healthy).length;
+    const degraded = (s.hosts ?? []).filter((h: any) => h.degraded).length;
+    if (degraded > 0) {
+      return `${hosts.length} host${hosts.length > 1 ? "s" : ""} · ${degraded} degraded`;
+    }
     if (down > 0) return `${hosts.length} host${hosts.length > 1 ? "s" : ""} · ${down} unavailable`;
     return `Ready (tailscale, ${hosts.length} host${hosts.length > 1 ? "s" : ""})`;
   }
@@ -69,6 +73,10 @@ const statusLabel = computed(() => {
 function hostState(h: Record<string, any>): string {
   if (!h.probed) return "not checked yet";
   if (h.healthy) return "ready";
+  if (h.degraded) {
+    const cause = String(h.detail ?? "").replace(/^degraded:\s*/i, "");
+    return cause ? `degraded — ${cause}` : "degraded — waiting for probe";
+  }
   return h.detail || "unavailable — run Test connection";
 }
 function hostStateClass(h: Record<string, any>): string {

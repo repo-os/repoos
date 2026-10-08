@@ -20,6 +20,9 @@ export const getAttention: RouteHandler = async (ctx, _req, res) => {
     remoteActiveRuns: ctx.remoteValidator?.activeRemoteRuns
       ? () => ctx.remoteValidator!.activeRemoteRuns!()
       : undefined,
+    remoteHostStatus: ctx.remoteValidator?.hostStatus
+      ? () => ctx.remoteValidator!.hostStatus!()
+      : undefined,
     awakeClock: ctx.awakeClock,
     getReleaseRun: () => getReleaseRunState(),
     getReleaseNotesRun: () => getReleaseNotesRunState(),

@@ -84,6 +84,12 @@ export interface CheckSummary {
    */
   hung?: boolean;
   /**
+   * True when the remote run failed before a real gate result (install, ssh,
+   * container, host permissions) — check-run history records `infra`, not
+   * `fail` (#0745).
+   */
+  infraFailure?: boolean;
+  /**
    * Effective vitest `--changed` ref on the runner (#0695). `null` means the
    * full suite ran (no `--changed`, or the ref did not resolve).
    */
