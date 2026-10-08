@@ -2,17 +2,17 @@
 id: "0745"
 title: "Classify runner infrastructure failures (bun install EACCES, ssh, container, host permissions) as infra, not test failures: retry on another host and mark the host degraded"
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/classify-runner-infrastructure-failures-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:40:08Z"
-updated_at: "2026-10-08T14:40:12Z"
+updated_at: "2026-10-08T14:40:13Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ Read src/server/remote-validation.ts (pool, HangWatchdog, recordRun, infraFail),
 - 2026-10-08T14:40:08Z · created · unknown
 - 2026-10-08T14:40:10Z · cli_override, model_override
 - 2026-10-08T14:40:12Z · status inbox→ready
+- 2026-10-08T14:40:13Z · status ready→active, branch
