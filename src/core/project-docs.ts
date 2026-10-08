@@ -575,6 +575,37 @@ function isMarkdown(rel: string): boolean {
 }
 
 /**
+ * Backticked paths in AGENTS.md that look like repo files but are missing on
+ * disk. Advisory only (#0704).
+ */
+export function findMissingAgentsMdPaths(root: string, agentsMd: string): string[] {
+  const missing: string[] = [];
+  const seen = new Set<string>();
+  const re = /`([^`\n]+)`/g;
+  for (const m of agentsMd.matchAll(re)) {
+    let raw = m[1].trim();
+    if (!raw || /\s/.test(raw)) continue;
+    if (/^https?:/i.test(raw) || /^[a-z]+:/i.test(raw)) continue;
+    if (raw.startsWith("#")) continue;
+    if (/[$<>|]/.test(raw)) continue;
+    raw = raw.replace(/[?#].*$/, "").replace(/^\.\//, "");
+    if (!raw || raw === "." || raw === "..") continue;
+    const looksLikePath =
+      raw.includes("/") ||
+      (/^[A-Za-z0-9_.-]+$/.test(raw) &&
+        (raw.includes(".") ||
+          raw.endsWith("/") ||
+          ["justfile", "Makefile", "AGENTS.md", "CLAUDE.md"].includes(raw)));
+    if (!looksLikePath) continue;
+    if (seen.has(raw)) continue;
+    seen.add(raw);
+    const abs = resolve(root, raw);
+    if (!existsSync(abs)) missing.push(raw);
+  }
+  return missing;
+}
+
+/**
  * Gather the filesystem inputs the pure `checkDocsWiring` predicate needs, then
  * run it. Split out so the CLI/doctor can call one function.
  */

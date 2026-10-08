@@ -339,7 +339,17 @@ describe("release agent when a task leaves active (#0087)", () => {
       );
       expect(alive(info.pid)).toBe(false);
       // The board reflects what the finalization decided, not the raw edit.
-      expect(readFileSync(absPath, "utf8")).toMatch(/^status: review$/m);
+      const finalBody = readFileSync(absPath, "utf8");
+      expect(finalBody).toMatch(/^status: review$/m);
+      // #0704: one handoff request note and a single final status transition — no
+      // provisional review→active churn from the guard revert.
+      expect(finalBody).toMatch(/handoff requested \(cli\)/);
+      const statusOnlyLines = finalBody
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => /^- .+ · status \S+→\S+$/.test(l));
+      expect(statusOnlyLines.some((l) => l.endsWith("· status active→review"))).toBe(true);
+      expect(statusOnlyLines.some((l) => l.includes("review→active"))).toBe(false);
     } finally {
       killSpawns(fx);
       process.env.PATH = oldPath;

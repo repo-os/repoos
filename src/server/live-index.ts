@@ -46,7 +46,7 @@ import {
   writeWorktreeDirtyCache,
 } from "../core/indexer.js";
 import { isStoryPmWorking, listStoryDefinitions } from "../core/story-definition-files.js";
-import { patchTaskFile } from "./write.js";
+import { patchTaskFile, type PatchTaskOptions } from "./write.js";
 import { taskDependencyBlockers } from "../core/task-dependencies.js";
 import type { CloseOutOutcomeEvent } from "./close-out-outcome.js";
 
@@ -530,8 +530,9 @@ export class LiveIndex {
     }
     // The guard yields while finalization or a human PATCH may publish a newer
     // state. Its decision belongs only to the transition it observed: never
-    // overwrite a newer index entry or revert a later on-disk status.
-    if (this.byId.get(task.id) !== existing || !existsSync(absPath)) return;
+    // overwrite a later on-disk status. Body/note-only index updates must not
+    // skip the revert (#0704).
+    if (!this.byId.get(task.id) || !existsSync(absPath)) return;
     const current = parseTask({
       content: readFileSync(absPath, "utf8"),
       absPath,
@@ -545,7 +546,11 @@ export class LiveIndex {
     }
     if (!allowed) {
       try {
-        patchTaskFile(this.config, absPath, { status: existing.status });
+        const revertOpts: PatchTaskOptions = { skipStatusActivity: true };
+        if (existing.status !== task.status) {
+          revertOpts.stripStatusActivity = { from: existing.status, to: task.status };
+        }
+        patchTaskFile(this.config, absPath, { status: existing.status }, revertOpts);
       } catch {
         // If the revert fails, reflect what git actually shows rather than the
         // unvalidated review state.

@@ -333,7 +333,7 @@ export function writeStoryDefinition(
     throw new Error("invalid story definition path");
   }
   const createdAt = new Date().toISOString();
-  const createdBy = input.createdBy?.trim() || "unknown";
+  const createdBy = input.createdBy?.trim() || "api";
   // Every story gets its number on the way in, the same way a task gets its
   // id and an input its number — so the board can render `#0001` from the
   // first read and `ensureStoryNumbers` only ever has to backfill stories

@@ -10,6 +10,7 @@ import {
   type ApiJson,
 } from "../cli/repoos-api.js";
 import { effectiveEngineerFromApi } from "../cli/effective-from-api.js";
+import { HANDOFF_DEADLINE_MS } from "../server/handoff.js";
 
 interface CommonOpts {
   json: boolean;
@@ -199,7 +200,7 @@ export async function cmdReview(args: string[]): Promise<number> {
         }
         return null;
       },
-      { label: `handoff for #${id}`, timeoutMs: 600_000 },
+      { label: `handoff for #${id}`, timeoutMs: HANDOFF_DEADLINE_MS },
     );
     if (opts.json) printJson({ ok: true, task: result });
     else console.log(c.green("  ✓ ") + c.dim(`#${id} is in review`));

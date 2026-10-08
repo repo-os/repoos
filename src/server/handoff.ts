@@ -55,7 +55,7 @@ import {
   findReusableRemotePreReviewPass,
   remoteOutcomeFromReuse,
 } from "./engineer-remote-self-check.js";
-import type { RemoteValidator } from "./remote-validation.js";
+import { DEFAULT_HOST_LOCK_WAIT_SECS, type RemoteValidator } from "./remote-validation.js";
 import {
   remotePreReviewEnabled,
   runRemotePreReviewGate,
@@ -232,7 +232,8 @@ async function runCheck(
 }
 
 /** Hard cap on an entire finalization, whatever route asked for it. */
-const HANDOFF_DEADLINE_MS = 600_000; // 10 minutes
+/** Must exceed max host lock wait ({@link DEFAULT_HOST_LOCK_WAIT_SECS}) plus local/remote gate time. */
+export const HANDOFF_DEADLINE_MS = (DEFAULT_HOST_LOCK_WAIT_SECS + 15 * 60) * 1000; // 30 minutes
 
 /** Where a handoff came from. Diagnostics only — never trusted for authority. */
 export type HandoffOrigin =
@@ -445,9 +446,9 @@ async function runHandoffFinalization(
   const { workdir, isHotfix, worktreeTaskPath, worktreeTask } = resolved;
   const onProgress = opts.onProgress;
   const onStatusChange = opts.onStatusChange;
-  // Mirrors `withHandoffDeadline`'s 10-minute cap (armed moments before this
-  // body runs): a remote run still QUEUED at that point cancels itself and
-  // releases its host slot instead of orphaning it (#0521).
+  // Mirrors `withHandoffDeadline` (armed moments before this body runs): a remote
+  // run still QUEUED at that point cancels itself and releases its host slot
+  // instead of orphaning it (#0521).
   const handoffDeadlineAt = Date.now() + HANDOFF_DEADLINE_MS;
 
   if (task.status === "review" && worktreeTask.status === "review") {
