@@ -2,7 +2,8 @@
 
 Written 2026-10-07 from the **2026-10-06 overnight triage** on this repo (story
 [#0008](../stories/field-report-first-agent-driven-project-run-opex.md), tasks
-#0709, #0705, #0723). It is for a **human or agent driving a busy board** —
+#0709, #0705, #0723), with **2026-10-07 second-night** entries (#0693, #0717,
+#0725, #0729, #0739). It is for a **human or agent driving a busy board** —
 starting engineers, landing merges, reading failures with evidence. End-user
 workflow lives in [`user-docs/running-with-agents.md`](../user-docs/running-with-agents.md);
 check-gate triage lives in [`debugging-check-failures.md`](debugging-check-failures.md);
@@ -91,12 +92,13 @@ the pipeline (#0637); that is separate from the `commitDirty` escape on `main`.
 
 **Current operating rules** (see `AGENTS.md`): one **control-plane** `repoos
 serve` per repo root; managed task **previews** are server-owned (request/stop
-via UI or `repoos preview <id> [--stop]`); runner agents must not start `repoos
-serve` themselves. For interactive browser work without OTP, `just serve-noauth`
-is a **separate preview-mode** process on another port — only when no non-preview
-server is already serving that directory, and never from the checkout where the
-real server is running (two processes on one root both watch `work/` and fight
-watchdog/reload semantics).
+via UI, `repoos preview <id> [--stop]`, or `POST /api/tasks/:id/preview/stop`);
+runner agents must not start `repoos serve` themselves. For interactive browser
+work without OTP, `just serve-noauth` is a **separate preview-mode** process on
+another port — only when no non-preview server is already serving that directory,
+**never from a task worktree** (bookkeeping commits land on the task branch),
+and never from the checkout where the real server is running (two processes on
+one root both watch `work/` and fight watchdog/reload semantics).
 
 **Incident context (#0705, 2026-10-06):** a driver-started `just serve-noauth`
 **rooted in that task's worktree** wrote many **bookkeeping commits onto the task
@@ -104,7 +106,7 @@ branch**, which then failed handoff with **HEAD moved** / gate drift. That is wh
 drivers should not spin up an extra serve/preview rooted in a worktree they are
 about to hand off or close out — not a blanket ban on `serve-noauth` in every
 context. A **managed task preview** has the same bookkeeping risk if left running:
-stop it when finished (`repoos preview <id> --stop`).
+stop it when finished (`repoos preview <id> --stop` or the preview stop API above).
 
 ## False "provider or credit" kills (#0709, #0718)
 
@@ -191,6 +193,125 @@ UI for holders/waiters.
 
 Engineer self-check on runners plus reusing a green remote result at handoff:
 #0694, #0695; config keys in `remote-validation.md`.
+
+## Identical handoff failure loop guard (#0693)
+
+### Symptom
+
+Handoff or `repoos review` returns immediately with **unchanged branch tip with
+a known identical check failure** (or Activity shows **Server finalization
+skipped** with the same message). The watchdog may keep surfacing a task to
+`review` while remote checks burn slots on a branch that cannot pass yet.
+
+### Cause
+
+The server fingerprints the last **check-step** handoff failure on the branch tip
+(`last_handoff_failure_sha` / Activity). Re-running `repoos check` on the **same
+`HEAD`** cannot change the outcome until the tree moves.
+
+### What to do
+
+1. Read the last **handoff failed · …** line in Activity — fix the real gate
+   failure, or send the task **`active`** and let an engineer merge/fix/commit.
+2. After **three** identical consecutive failures on an unchanged tip, RepoOS
+   parks the task (`needs_input`, reason `identical-handoff-failures`) instead
+   of looping remote validation.
+3. To **unblock a deliberate re-review** after you believe the failure is stale
+   (wrong build, host infra, etc.), advance the branch tip — **`git commit
+   --allow-empty`** on the task branch is enough — then request handoff again.
+   Any new commit clears the unchanged-tip skip.
+
+Details: [`close-out-pipeline.md` → Watchdog ↔ handoff validation loops](close-out-pipeline.md#watchdog--handoff-validation-loops-0693);
+code: `src/server/handoff-failure-loop.ts`.
+
+## Host `validate.sh` rollout and SSH argument order (#0717, #0725)
+
+### Symptom
+
+Remote validation fails within seconds with **cloned an empty repository** (git
+exit **128**), or the Remote runners tab shows **legacy (full bundle only)** on
+a host you thought was updated.
+
+### Cause
+
+Pool hosts run a root-owned **`/opt/repoos/validate.sh`** (installed by
+`just setup-<host>` / `just setup-<host>-native` or the install snippet in
+[`remote-validation.md`](remote-validation.md#rolling-out-incremental-bundle-upload-0717--0725)).
+The server's SSH invocation is positional:
+
+`validate.sh <bundle> <sha> <artifacts-dir> [changed-ref] [mirror-path]`
+
+After incremental bundles (#0717), handoff and close-out pass a **mirror path**
+without a changed ref. **`$4` must still be present** as an empty placeholder
+(`''`); otherwise the mirror path is read as `$4`, the script clones a ref-only
+bundle, and you get an empty repo (#0725 server fix in `validateScriptArgs`;
+hotfix **0ae3dd82b**). Hosts still need the **current** script for the
+incremental path; older scripts get a compatibility layout and full bundles.
+
+### What to do
+
+1. Re-install `scripts/remote-runner/validate.sh` on every pool host after
+   pulling a release that includes #0717 — see the install block in
+   [`remote-validation.md`](remote-validation.md#rolling-out-incremental-bundle-upload-0717--0725).
+2. If one host keeps failing fast with exit 128, check its installed script age
+   and re-run setup; the server retries once with a full bundle for legacy hosts
+   but you want the current script for bandwidth and mirror reuse.
+
+## Hung and killed validation runs (#0729, #0739)
+
+### Symptom
+
+A close-out or handoff remote run runs for a long time with **no new log lines**
+while the runner host looks idle (Checks → **Remote runners** may show
+**hung · killing** on the active row, or **Hung runs** on that host). Less
+often, a **stale** `hung · killing` badge survives after the run already moved
+on — that was an in-memory UI leak fixed in #0739; **restart the control-plane
+server** to clear badges that predate the fix.
+
+### Cause
+
+A validation container can wedge (historically: sibling workdir cleanup emptying
+`/repo` mid-run — #0729). The runner now samples host load and output idle time,
+kills **that run's** container by name, records a **transient** `hung` outcome,
+and retries on another host when `retryOtherHosts` is enabled.
+
+**Not a hang:** once the stream contains **`[validate] gate exit N`**, the gate
+has finished — a red suite is a **finished failure** (`transient: false`), not
+infra to retry. The hang kill is **bounded** (separate SSH round-trip, slot
+released even if SSH wedges — #0739).
+
+### What to do
+
+1. Let automatic kill + retry run; watch **Remote runners** and the task's remote
+   validation log for the retry on another host.
+2. If kill did not land, use the CTO safe action **`kill-hung-validation`** when
+   enabled (#0688), or SSH to the host and inspect the named `repoos-validate-*`
+   container.
+3. Full mechanics: [`remote-validation.md` → Hung runs](remote-validation.md#hung-runs-0729).
+
+## Unreachable runner host mid-run
+
+### Symptom
+
+Close-out or remote validation stalls on one host; logs mention **host
+unreachable**, Tailscale, or SSH timeout. The job may not show **hung · killing**
+if the validate SSH session is wedged without satisfying the idle-host hang
+test — you can wait for the **outer SSH/deadline** while a slot still looks busy.
+
+### Cause
+
+The host dropped off the network mid-run. Probes and the validate stream stop
+advancing; recovery depends on timeouts, hang detection (#0739 treats long-unknown
+load carefully), and pool retry — not something to fix by spamming **Move to done**.
+
+### What to do
+
+1. **Cancel the close-out** — UI **Stop MTD** or `POST /api/tasks/:id/done/cancel`
+   (#0459) — then verify the machine (Tailscale login, `repoos runners --probe`).
+2. Retry **Move to done** / handoff when the host is healthy; other hosts may
+   have already taken the work if `retryOtherHosts` fired.
+
+Policy table: [`remote-validation.md` → Pre-review unreachable-runner policy](remote-validation.md#pre-review-unreachable-runner-policy).
 
 ## When to use cheap models
 
