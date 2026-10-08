@@ -34,6 +34,7 @@ export type AttentionKind =
   | "spendThreshold"
   | "awaitingVisualCheck"
   | "remoteFallback"
+  | "remoteHostDegraded"
   | "ctoAction"
   | "ctoSilent";
 
@@ -106,6 +107,8 @@ export interface AttentionFeedInput {
   ctoHeartbeatAt?: string | null;
   /** How long without a heartbeat before `ctoSilent` is raised. */
   ctoSilentThresholdMs?: number;
+  /** Remote runner hosts marked degraded until probe passes (#0745). */
+  degradedRemoteHosts?: Array<{ host: string; detail: string }>;
 }
 
 const CLOSE_OUT_KIND: Record<
@@ -135,6 +138,7 @@ const SEVERITY: Record<AttentionKind, AttentionSeverity> = {
   slowRunsRecently: "warning",
   spendThreshold: "warning",
   remoteFallback: "warning",
+  remoteHostDegraded: "warning",
   ctoAction: "info",
   ctoSilent: "warning",
 };
@@ -393,6 +397,20 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
       detail: firstLine(f.errorReason ?? "") || "Model or credit failure — check your provider.",
       link: f.taskId ? `/work?task=${f.taskId}` : "/agents?tab=tokens",
       at,
+    });
+  }
+
+  for (const h of input.degradedRemoteHosts ?? []) {
+    const cause = h.detail.replace(/^degraded:\s*/i, "").trim();
+    pushItem(items, {
+      id: `remoteHostDegraded:${h.host}`,
+      kind: "remoteHostDegraded",
+      severity: SEVERITY.remoteHostDegraded,
+      taskId: null,
+      message: `Remote runner ${h.host} degraded`,
+      detail: cause || "Skipped until a health probe passes.",
+      link: "/settings?tab=remote",
+      at: generatedAt,
     });
   }
 
