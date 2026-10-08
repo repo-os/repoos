@@ -5,9 +5,7 @@
  * configured viewport widths. Failures block handoff and persist evidence
  * under the cache dir.
  *
- * #0734 closes the "green handoff on empty evidence" hole: a declared
- * `highlight`/`selector` that matched NOTHING is now a blocking issue (it used
- * to be a log-only warning), the FINAL URL after redirects is compared to the
+ * #0734: the FINAL URL after redirects is compared to the
  * declared route (a login/redirect to a different page can no longer pass as
  * the shot), and declared `assert` conditions (element present/count/text) are
  * evaluated on the captured page. Each capture's exact URL, matched
@@ -32,6 +30,7 @@ import {
   type AssertionPage,
   type ShotAssertionOutcome,
 } from "../core/shot-assertions.js";
+import { shotCapturePageUrl } from "../core/shot-fixtures.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import type { CaptureEntry } from "../core/shot-plan.js";
 import { provenanceCaption, parseShotPlan, shotPlanFingerprint } from "../core/shot-plan.js";
@@ -42,10 +41,17 @@ import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/
 import { captureEntryPage, planAutoCapture, type ShotCaptureResult } from "./shot-capture.js";
 import type { PreviewManager } from "./preview.js";
 import { localShotStore, shotsDir, shotUrl, type ShotMeta } from "./shots.js";
+import { withPreviewVerificationSlot } from "./preview-verification-slot.js";
 import { patchTaskFile } from "./write.js";
 
 const INSTALL_ADVICE = "Install: bun add -d @playwright/test && bunx playwright install webkit";
 const AUTO_SETTLE_MS = 900;
+const PREVIEW_DISCONNECT_RE =
+  /could not connect|ECONNREFUSED|net::ERR_CONNECTION|Connection refused/i;
+
+function isPreviewDisconnectError(err: unknown): boolean {
+  return PREVIEW_DISCONNECT_RE.test((err as Error).message ?? "");
+}
 
 /** Per-capture evidence (#0734): exact URL, assertions, and the stored PNG. */
 export interface UiHandoffGateCapture {
@@ -67,6 +73,8 @@ export interface UiHandoffGateCapture {
   assertionsChecked: number;
   /** Stored PNG metadata (main-checkout storage, where the reviewer looks). */
   shot?: { name: string; path: string; url: string };
+  /** Non-blocking highlight/selector/step misses (#0743). */
+  targetWarnings?: string[];
 }
 
 export interface UiHandoffGateEvidence {
@@ -84,6 +92,8 @@ export interface UiHandoffGateEvidence {
   evidenceDir?: string;
   /** #0734: per-capture detail — URL, assertions, stored PNG path. */
   captureDetails?: UiHandoffGateCapture[];
+  /** Non-blocking shot target warnings across all captures (#0743). */
+  warnings?: string[];
 }
 
 export interface UiHandoffGateResult {
@@ -298,11 +308,16 @@ async function captureEntryWithGate(
       pageUrl,
       entry,
       { waitMs: AUTO_SETTLE_MS, fullPage: false },
-      (selector, route) => {
-        warnings.push(`highlight ${selector} matched nothing on ${route}`);
-      },
-      (selector, route) => {
-        warnings.push(`selector ${selector} matched nothing on ${route}`);
+      {
+        onHighlightMiss: (selector, route) => {
+          warnings.push(`highlight ${selector} matched nothing on ${route}`);
+        },
+        onSelectorMiss: (selector, route) => {
+          warnings.push(`selector ${selector} matched nothing on ${route}`);
+        },
+        onStepMiss: (message, route) => {
+          warnings.push(`${message} on ${route}`);
+        },
       },
     );
     issues.push(...collector.drain());
@@ -401,6 +416,7 @@ export async function runUiHandoffGate(
   const allIssues: PageGateIssue[] = [];
   const blankShots: string[] = [];
   const captureDetails: UiHandoffGateCapture[] = [];
+  const allWarnings: string[] = [];
   let captured = 0;
 
   // #0734: identity of what is being captured, so a reviewer can tie the
@@ -430,155 +446,176 @@ export async function runUiHandoffGate(
     });
 
   try {
-    if (deps.launchBrowser) {
-      const launched = await deps.launchBrowser();
-      browser = launched.browser;
-      context = launched.context;
-    } else {
-      try {
-        browser = await launchWebkit();
-        context = await browser.newContext({ serviceWorkers: "block" });
-      } catch (err) {
-        if (isShotCaptureUnavailable(err)) {
-          const detail = `Playwright/WebKit unavailable (${(err as Error).message.split("\n")[0]}). ${INSTALL_ADVICE}`;
-          log(task.id, "warn", `ui verification: skipped — ${detail}`);
-          return { ok: true, skipped: true, detail };
+    await withPreviewVerificationSlot(task.id, log, async () => {
+      if (deps.launchBrowser) {
+        const launched = await deps.launchBrowser();
+        browser = launched.browser;
+        context = launched.context;
+      } else {
+        try {
+          browser = await launchWebkit();
+          context = await browser.newContext({ serviceWorkers: "block" });
+        } catch (err) {
+          if (isShotCaptureUnavailable(err)) {
+            const detail = `Playwright/WebKit unavailable (${(err as Error).message.split("\n")[0]}). ${INSTALL_ADVICE}`;
+            log(task.id, "warn", `ui verification: skipped — ${detail}`);
+            throw Object.assign(new Error("__skip__"), { skip: true, detail });
+          }
+          throw err;
         }
-        return {
-          ok: false,
-          detail: `ui verification: could not launch browser — ${(err as Error).message}`,
-        };
       }
-    }
 
-    for (const entry of entries) {
-      if (entry.target !== currentTarget) {
-        const started = await startPreview(entry.target);
-        if ("error" in started) {
-          return {
-            ok: false,
-            detail: `ui verification: preview for "${entry.target}" did not start: ${started.error}`,
-          };
+      for (const entry of entries) {
+        if (entry.target !== currentTarget) {
+          const started = await startPreview(entry.target);
+          if ("error" in started) {
+            throw new Error(
+              `ui verification: preview for "${entry.target}" did not start: ${started.error}`,
+            );
+          }
+          currentUrl = started.url;
+          currentTarget = entry.target;
         }
-        currentUrl = started.url;
-        currentTarget = entry.target;
-      }
-      const pageUrl = `${currentUrl}${entry.route.startsWith("/") ? entry.route : `/${entry.route}`}`;
-      let png: Buffer;
-      let issues: PageGateIssue[];
-      let warnings: string[] = [];
-      let blank = false;
-      let finalUrl = pageUrl;
-      let assertionOutcomes: ShotAssertionOutcome[] = [];
-      try {
-        const result = await captureEntry(context!, pageUrl, entry, viewports);
-        png = result.png;
-        issues = result.issues;
-        warnings = result.warnings;
-        blank = result.blank;
-        finalUrl = result.finalUrl;
-        assertionOutcomes = result.assertions;
-      } catch (err) {
-        return {
-          ok: false,
-          detail: `ui verification: capture of ${entry.route} failed — ${(err as Error).message.split("\n")[0]}`,
-        };
-      }
-      allIssues.push(...issues);
+        const pageUrl = shotCapturePageUrl(currentUrl, entry);
+        let png: Buffer;
+        let issues: PageGateIssue[];
+        let warnings: string[] = [];
+        let blank = false;
+        let finalUrl = pageUrl;
+        let assertionOutcomes: ShotAssertionOutcome[] = [];
+        let disconnectRetries = 0;
+        for (;;) {
+          try {
+            const result = await captureEntry(context!, pageUrl, entry, viewports);
+            png = result.png;
+            issues = result.issues;
+            warnings = result.warnings;
+            blank = result.blank;
+            finalUrl = result.finalUrl;
+            assertionOutcomes = result.assertions;
+            break;
+          } catch (err) {
+            if (disconnectRetries === 0 && isPreviewDisconnectError(err)) {
+              disconnectRetries++;
+              log(
+                task.id,
+                "warn",
+                "ui verification: preview disconnected — restarting preview and retrying capture once",
+              );
+              if (previews) await previews.stop(task.id).catch(() => {});
+              currentTarget = undefined;
+              const restarted = await startPreview(entry.target);
+              if ("error" in restarted) {
+                throw new Error(
+                  `ui verification: preview for "${entry.target}" did not restart after disconnect: ${restarted.error}`,
+                );
+              }
+              currentUrl = restarted.url;
+              currentTarget = entry.target;
+              continue;
+            }
+            throw new Error(
+              `ui verification: capture of ${entry.route} failed — ${(err as Error).message.split("\n")[0]}`,
+            );
+          }
+        }
+        allIssues.push(...issues);
 
-      // #0734: a declared highlight/selector that matched NOTHING is missing
-      // evidence, not a note. It blocks: a capture that does not show the thing
-      // the declaration claims is exactly the #0720/#0727/#0733 failure.
-      for (const msg of warnings) {
-        allIssues.push({
-          kind: "missing-target",
-          message: `${msg} (captured ${finalUrl})`,
+        // #0743: missing highlight/selector/step targets are visible warnings only.
+        for (const msg of warnings) {
+          const line = `${msg} (captured ${finalUrl})`;
+          allWarnings.push(line);
+          log(task.id, "warn", `ui verification: shot warning — ${msg}`);
+        }
+
+        // #0734: the browser must have LANDED on the declared route. A login
+        // redirect (or any client-side bounce) means the PNG is not the evidence
+        // the task declared.
+        const finalRoute = finalRouteOf(finalUrl);
+        const matched = routeMatches(entry.route, finalRoute);
+        let redirectNote: string | undefined;
+        if (!matched) {
+          redirectNote = `declared route ${entry.route} but the browser landed on ${finalRoute} (login or redirect?)`;
+          allIssues.push({
+            kind: "route",
+            message: `${entry.label ?? `${entry.target}${entry.route}`}: ${redirectNote} (captured ${finalUrl})`,
+            url: finalUrl,
+          });
+        }
+
+        // #0734: required assertions must hold.
+        const blockingAssertions = assertionOutcomes.filter((o) => o.blocking);
+        for (const outcome of blockingAssertions) {
+          allIssues.push(assertionIssue(entry, finalUrl, outcome.detail));
+        }
+
+        if (blank) {
+          allIssues.push({
+            kind: "blank",
+            message: `blank-looking screenshot for ${entry.target}${entry.route}`,
+          });
+          blankShots.push(`${entry.target}${entry.route}`);
+        }
+
+        const store = localShotStore(config, task.id);
+        if (!cleared) {
+          store.removeAuto();
+          cleared = true;
+        }
+        const stored = store.save({
+          origin: "auto",
+          target: entry.target,
+          route: entry.route,
+          ...(entry.label ? { label: entry.label } : {}),
+          provenance: provenanceCaption(entry.provenance),
+          planFingerprint,
+          ...(sourceIdentity ? { sourceIdentity } : {}),
+          data: png.toString("base64"),
+        });
+        if ("error" in stored) {
+          throw new Error(`ui verification: shot store rejected image — ${stored.error}`);
+        }
+        captured++;
+
+        const storedMeta = stored as ShotMeta;
+        captureDetails.push({
+          target: entry.target,
+          route: entry.route,
+          ...(entry.label ? { label: entry.label } : {}),
           url: finalUrl,
+          finalRoute,
+          ...(redirectNote ? { redirectNote } : {}),
+          routeMatched: matched,
+          assertions: assertionOutcomes,
+          assertionsPassed: assertionOutcomes.filter((o) => o.passed).length,
+          assertionsChecked: assertionOutcomes.length,
+          ...(warnings.length ? { targetWarnings: warnings } : {}),
+          shot: {
+            name: storedMeta.name,
+            path: storedMeta.path,
+            url: shotUrl(task.id, storedMeta.name),
+          },
         });
-      }
 
-      // #0734: the browser must have LANDED on the declared route. A login
-      // redirect (or any client-side bounce) means the PNG is not the evidence
-      // the task declared.
-      const finalRoute = finalRouteOf(finalUrl);
-      const matched = routeMatches(entry.route, finalRoute);
-      let redirectNote: string | undefined;
-      if (!matched) {
-        redirectNote = `declared route ${entry.route} but the browser landed on ${finalRoute} (login or redirect?)`;
-        allIssues.push({
-          kind: "route",
-          message: `${entry.label ?? `${entry.target}${entry.route}`}: ${redirectNote} (captured ${finalUrl})`,
-          url: finalUrl,
-        });
+        if (assertionOutcomes.length > 0) {
+          log(
+            task.id,
+            "info",
+            `ui verification: ${entry.label ?? entry.route} — ${formatAssertionSummary({
+              outcomes: assertionOutcomes,
+              failures: [],
+            })}`,
+          );
+        }
       }
-
-      // #0734: required assertions must hold.
-      const blockingAssertions = assertionOutcomes.filter((o) => o.blocking);
-      for (const outcome of blockingAssertions) {
-        allIssues.push(assertionIssue(entry, finalUrl, outcome.detail));
-      }
-
-      if (blank) {
-        allIssues.push({
-          kind: "blank",
-          message: `blank-looking screenshot for ${entry.target}${entry.route}`,
-        });
-        blankShots.push(`${entry.target}${entry.route}`);
-      }
-
-      const store = localShotStore(config, task.id);
-      if (!cleared) {
-        store.removeAuto();
-        cleared = true;
-      }
-      const stored = store.save({
-        origin: "auto",
-        target: entry.target,
-        route: entry.route,
-        ...(entry.label ? { label: entry.label } : {}),
-        provenance: provenanceCaption(entry.provenance),
-        planFingerprint,
-        ...(sourceIdentity ? { sourceIdentity } : {}),
-        data: png.toString("base64"),
-      });
-      if ("error" in stored) {
-        return {
-          ok: false,
-          detail: `ui verification: shot store rejected image — ${stored.error}`,
-        };
-      }
-      captured++;
-
-      const storedMeta = stored as ShotMeta;
-      captureDetails.push({
-        target: entry.target,
-        route: entry.route,
-        ...(entry.label ? { label: entry.label } : {}),
-        url: finalUrl,
-        finalRoute,
-        ...(redirectNote ? { redirectNote } : {}),
-        routeMatched: matched,
-        assertions: assertionOutcomes,
-        assertionsPassed: assertionOutcomes.filter((o) => o.passed).length,
-        assertionsChecked: assertionOutcomes.length,
-        shot: {
-          name: storedMeta.name,
-          path: storedMeta.path,
-          url: shotUrl(task.id, storedMeta.name),
-        },
-      });
-
-      if (assertionOutcomes.length > 0) {
-        log(
-          task.id,
-          "info",
-          `ui verification: ${entry.label ?? entry.route} — ${formatAssertionSummary({
-            outcomes: assertionOutcomes,
-            failures: [],
-          })}`,
-        );
-      }
+    });
+  } catch (err) {
+    const skip = err as Error & { skip?: boolean; detail?: string };
+    if (skip.skip && skip.detail) {
+      return { ok: true, skipped: true, detail: skip.detail };
     }
+    const message = (err as Error).message;
+    return { ok: false, detail: message };
   } finally {
     await context?.close().catch(() => {});
     await browser?.close().catch(() => {});
@@ -596,6 +633,7 @@ export async function runUiHandoffGate(
     sourceWorktree,
     evidenceDir,
     captureDetails,
+    ...(allWarnings.length ? { warnings: allWarnings } : {}),
   };
   try {
     mkdirSync(join(path, ".."), { recursive: true });
@@ -615,7 +653,11 @@ export async function runUiHandoffGate(
     return { ok: false, detail, evidencePath: path };
   }
 
-  const shotDetail = `${captured} shot${captured === 1 ? "" : "s"} captured with clean console`;
+  const warnNote =
+    allWarnings.length > 0
+      ? ` (${allWarnings.length} shot warning${allWarnings.length === 1 ? "" : "s"})`
+      : "";
+  const shotDetail = `${captured} shot${captured === 1 ? "" : "s"} captured with clean console${warnNote}`;
   log(task.id, "info", `ui verification: ${shotDetail}`);
 
   return {
