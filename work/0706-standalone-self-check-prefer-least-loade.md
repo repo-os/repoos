@@ -11,7 +11,7 @@ branch: feat/standalone-self-check-prefer-least-loade
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-08T14:43:34Z"
+updated_at: "2026-10-08T14:44:47Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -39,9 +39,10 @@ Verify first against current main: #0705 (merged) already made the dispatcher co
 ```json
 [
   {
-    "label": "Remote runners tab",
+    "label": "Checks Now tab — remote runners, lock holders, refresh",
     "target": "default",
-    "route": "/checks?tab=remote-runners"
+    "route": "/checks?tab=now",
+    "highlight": ".rr-panel"
   }
 ]
 ```
@@ -91,3 +92,4 @@ error: script "test" exited with code 1
 - 2026-10-08T14:42:08Z · note: Task body is underspecified: missing sections: Notes for AI
 - 2026-10-08T14:43:34Z · note: review pass 1: needs some work
 - 2026-10-08T14:43:34Z · status review→active
+- 2026-10-08T14:44:47Z · body: section Shots
