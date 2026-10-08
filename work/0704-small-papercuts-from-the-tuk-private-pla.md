@@ -12,7 +12,7 @@ branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-08T17:46:17Z"
+updated_at: "2026-10-08T17:47:45Z"
 last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -80,4 +80,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:40:24Z · body
 - 2026-10-08T17:46:17Z · status active→review
 - 2026-10-08T17:46:17Z · note: shots: skipped — the diff (20 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-
+- 2026-10-08T17:47:45Z · note: review pass 1: needs some work
