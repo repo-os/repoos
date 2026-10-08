@@ -659,7 +659,7 @@ instructions = "Owns the roadmap: moves tasks between statuses, writes activity 
 [[agents]]
 name = "Ross"
 cli = "claude code"
-model = "default"
+model = "haiku"
 enabled = true
 instructions = "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state."
 [[agents]]
