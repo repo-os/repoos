@@ -140,12 +140,14 @@ a fenced JSON list (`src/core/shot-plan.ts`), one entry per capture —
 optional ordered `steps` (`click` / `fill`+`text` / `waitFor` / `waitMs`,
 plain CSS selectors). Routes and selectors only — no framework knowledge.
 
-**Shot hygiene (#0613, tightened #0734).** When a declared `highlight` or
-`selector` matches zero elements at capture time, a visible warning is recorded
-on the task (for example: highlight `.x` matched nothing on /route). Since
-#0734 that miss is **blocking**: a capture that does not show the element the
-declaration claims is missing evidence, not a note, and the handoff fails with
-the exact selector and capture URL. The browser's FINAL route after any
+**Shot hygiene (#0613, #0734, #0743).** When a declared `highlight`,
+`selector`, or `waitFor` step target is missing at capture time, the handoff
+gate records a **visible warning**, still saves the screenshot, and does **not**
+block handoff (#0743). Console errors, failed same-origin requests, overflow,
+blank captures, wrong-route redirects, and failed required `assert` entries
+still block. Prefer a `state` fixture (below) or a `?tab=` route over brittle
+`waitFor` steps when the UI only exists in a particular board state. The
+browser's FINAL route after any
 redirect is also compared to the declared route — a login bounce or a
 client-side guard that lands elsewhere fails the shot rather than passing a
 screenshot of the wrong page. Declared shots with the same `target` + `route` +
@@ -170,6 +172,18 @@ what lets a task assert "review rows are populated" or "the Settings input is
 editable" instead of relying on a generic nonblank screenshot. It does not
 replace the reviewer's reading of the acceptance criteria — screenshot
 assertions cannot establish every semantic requirement.
+
+**Preview board fixtures (#0743).** A declared entry may set `state` to a named
+fixture the preview applies before capture (preview builds only, via
+`?shotState=` on the capture URL):
+
+- `closeOut:active` — integration pipeline bar visible (active close-out)
+- `card:doneError` — review card with done-error footer (`#9999` fixture task)
+- `board:withReviewTask` — board shows a review-column fixture card
+
+Concurrent handoff verifications queue for the single preview slot instead of
+evicting each other; a mid-capture preview disconnect retries once on a fresh
+preview.
 
 **Stale-capture reuse (#0734).** An automatic capture is reused on a
 re-handoff only when it is bound to the SAME capture plan and the SAME tested

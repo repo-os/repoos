@@ -25,6 +25,7 @@
  * tests can share it without touching git, a server or Playwright.
  */
 import type { PreviewConfig } from "./types.js";
+import { isShotPreviewFixtureId } from "./shot-fixtures.js";
 import { DEFAULT_PREVIEW_TARGET as DEFAULT_FALLBACK_TARGET } from "./shot-targets.js";
 
 /** One ordered step within a declared shot. Exactly one key per object. */
@@ -86,6 +87,11 @@ export interface DeclaredShot {
   /** Ordered steps to reach the state before capturing. */
   steps?: DeclaredStep[];
   /**
+   * Named preview-board fixture applied before capture (#0743), e.g.
+   * `closeOut:active`, `card:doneError`, `board:withReviewTask`.
+   */
+  state?: string;
+  /**
    * Meaningful assertions the capture must satisfy (#0734). One entry may carry
    * several; every non-optional one must pass or the handoff is blocked.
    */
@@ -117,6 +123,8 @@ export interface CaptureEntry {
    */
   highlights?: string[];
   steps?: DeclaredStep[];
+  /** Preview fixture id (#0743), threaded from the declared shot. */
+  state?: string;
   /**
    * Meaningful assertions the capture must satisfy (#0734). Threaded from the
    * declared shot so the handoff gate can check them and block on failure;
@@ -327,6 +335,19 @@ function parseShot(raw: unknown, where: string): { shot?: DeclaredShot; error?: 
       if (parsed.assertion) assertions.push(parsed.assertion);
     }
     if (assertions.length) shot.assert = assertions;
+  }
+  if (r.state !== undefined) {
+    if (typeof r.state !== "string" || !r.state) {
+      return { error: `${where}: "state" expects a non-empty fixture name` };
+    }
+    if (!isShotPreviewFixtureId(r.state)) {
+      return {
+        error:
+          `${where}: unknown "state" fixture "${r.state}" — use one of: ` +
+          "closeOut:active, card:doneError, board:withReviewTask",
+      };
+    }
+    shot.state = r.state;
   }
   return { shot };
 }
@@ -596,6 +617,7 @@ export function buildCapturePlan(
       ...(shot.selector ? { selector: shot.selector } : {}),
       ...(shot.steps?.length ? { steps: shot.steps } : {}),
       ...(shot.assert?.length ? { assert: shot.assert } : {}),
+      ...(shot.state ? { state: shot.state } : {}),
       provenance: { kind: "declared", ...(shot.label ? { label: shot.label } : {}) },
     });
   }
@@ -625,7 +647,7 @@ export function buildCapturePlan(
   // things are NOT near-duplicates, and collapsing them would silently drop one
   // set of assertions.
   const collapseKey = (e: CaptureEntry): string =>
-    `${e.target}\0${e.route}\0${e.selector ?? ""}\0${JSON.stringify(e.steps ?? [])}\0${JSON.stringify(e.assert ?? [])}`;
+    `${e.target}\0${e.route}\0${e.selector ?? ""}\0${e.state ?? ""}\0${JSON.stringify(e.steps ?? [])}\0${JSON.stringify(e.assert ?? [])}`;
   const collapsed: string[] = [];
   const deduped: CaptureEntry[] = [];
   for (const entry of entries) {
@@ -735,6 +757,7 @@ export function shotPlanFingerprint(entries: CaptureEntry[]): string {
       steps: e.steps ?? [],
       highlights: e.highlights ?? (e.highlight ? [e.highlight] : []),
       assert: e.assert ?? [],
+      state: e.state ?? null,
     }),
   );
   return parts.join("\n");
