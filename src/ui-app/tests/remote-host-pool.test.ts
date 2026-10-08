@@ -421,6 +421,10 @@ function poolFixture(opts: {
   /** Every validation run on these hosts exits non-zero with ordinary output —
    *  a real red gate, `transient: false` (#0632). */
   failRunOn?: string[];
+  /** First validation run on these hosts fails with install/setup infra (exit 4). */
+  infraFailOn?: string[];
+  /** Like infraFailOn but only the first run per host (#0745 recovery). */
+  infraFailOnceOn?: string[];
   retryOtherHosts?: boolean;
   healthRetryMs?: number;
   containerImage?: string;
@@ -476,6 +480,7 @@ function poolFixture(opts: {
   const down = new Set<string>();
   const killed: string[] = [];
   const cleanupCmds: string[] = [];
+  const infraFailedOnce = new Set<string>();
   let killGate: { resolve: () => void } | null = null;
   let inFlight = 0;
   let peak = 0;
@@ -547,9 +552,36 @@ function poolFixture(opts: {
           (cmds[host.ip] ??= []).push(cmd);
           return { code: 0, output: "build running…", timedOut: true };
         }
+        if (opts.infraFailOn?.includes(host.ip)) {
+          (cmds[host.ip] ??= []).push(cmd);
+          return {
+            code: 4,
+            output:
+              "error: EACCES accessing temporary directory\n[validate] setup failed (exit 4)\n",
+            timedOut: false,
+          };
+        }
+        if (
+          opts.infraFailOnceOn?.includes(host.ip) &&
+          !infraFailedOnce.has(host.ip)
+        ) {
+          infraFailedOnce.add(host.ip);
+          (cmds[host.ip] ??= []).push(cmd);
+          return {
+            code: 4,
+            output:
+              "error: EACCES accessing temporary directory\n[validate] setup failed (exit 4)\n",
+            timedOut: false,
+          };
+        }
         if (opts.failRunOn?.includes(host.ip)) {
           (cmds[host.ip] ??= []).push(cmd);
-          return { code: 1, output: "1 test failed\nFAIL src/x.test.ts", timedOut: false };
+          return {
+            code: 1,
+            output:
+              "[validate] gate exit 1\n1 test failed\nFAIL src/x.test.ts > case\n",
+            timedOut: false,
+          };
         }
         if (opts.dropFirstRunOn === host.ip && !dropped.has(host.ip)) {
           // Mark the run as one that WILL drop its ssh connection when released
@@ -1126,6 +1158,68 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
   });
 });
 
+// ── infra vs test failure classification (#0745) ─────────────────────────────
+
+describe("infra vs test failure classification (#0745)", () => {
+  it("retries on another host after bun install EACCES and marks the host degraded", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "mini" }, { host: "bee" }],
+      retryOtherHosts: true,
+      infraFailOn: ["mini"],
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const run = f.runner.validate(opts("0745"));
+    for (let i = 0; i < 100 && !f.pending().includes("bee"); i++) await tick();
+    f.release("bee");
+    const res = await run;
+    expect(res.ok).toBe(true);
+    expect(f.cmds.mini).toHaveLength(1);
+    expect(f.cmds.bee).toHaveLength(1);
+    const mini = f.runner.hostStatus()?.find((h) => h.host === "mini");
+    expect(mini?.degraded).toBe(true);
+    expect(mini?.healthy).toBe(false);
+    const rows = getCheckStore(f.root).list({ taskId: "0745" });
+    expect(rows.map((r) => [r.machine, r.outcome])).toEqual([
+      ["bee", "pass"],
+      ["mini", "infra"],
+    ]);
+    expect(String(rows.find((r) => r.machine === "mini")?.detail)).toContain("host problem");
+  });
+
+  it("does not retry a finished gate failure (gate exit present)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }, { host: "b" }],
+      retryOtherHosts: true,
+      failRunOn: ["a"],
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const res = await f.runner.validate(opts("0745-gate"));
+    expect(res).toMatchObject({ ok: false, transient: false });
+    expect(res.infraFailure).toBeFalsy();
+    expect(String(res.detail)).toContain("test failure");
+    expect(f.cmds.b).toBeUndefined();
+  });
+
+  it("recovers a degraded host after a passing probe", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      infraFailOnceOn: ["a"],
+      healthRetryMs: 25,
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const first = await f.runner.validate(opts("0745-recover"));
+    expect(first.ok).toBe(false);
+    expect(f.runner.hostStatus()?.[0]?.degraded).toBe(true);
+    await tick(50);
+    const secondPromise = f.runner.validate(opts("0745-recover-2"));
+    for (let i = 0; i < 100 && f.pending().length === 0; i++) await tick();
+    f.release();
+    expect((await secondPromise).ok).toBe(true);
+    expect(f.runner.hostStatus()?.[0]?.healthy).toBe(true);
+    expect(f.runner.hostStatus()?.[0]?.degraded).toBeFalsy();
+  });
+});
+
 // ── failover to another host (#0632) ─────────────────────────────────────────
 
 describe("failover to another host (#0632)", () => {
@@ -1152,7 +1246,7 @@ describe("failover to another host (#0632)", () => {
     const retry = f.runner
       .remoteEvents("0632")
       .find((e) => e.phase === "run" && e.level === "warn");
-    expect(retry?.message).toContain("retrying on another host after transient failure on a");
+    expect(retry?.message).toContain("retrying on another host after host problem on a");
     // The check-run history shows EACH attempt and which host ran it
     // (newest first).
     expect(
@@ -1161,7 +1255,7 @@ describe("failover to another host (#0632)", () => {
         .map((r) => [r.machine, r.outcome]),
     ).toEqual([
       ["b", "pass"],
-      ["a", "fail"],
+      ["a", "infra"],
     ]);
   });
 
@@ -1220,7 +1314,7 @@ describe("failover to another host (#0632)", () => {
     const rows = getCheckStore(f.root).list();
     expect(rows.map((r) => [r.machine, r.outcome])).toEqual([
       [null, "fail"],
-      ["b", "fail"],
+      ["b", "infra"],
     ]);
     expect(rows[0]!.detail).toContain("was already tried this run");
   });
@@ -1433,7 +1527,7 @@ describe("health-cooldown arrivals and recovery (#0521 review)", () => {
     expect(resA.ok).toBe(false);
     expect(resA.transient).toBe(true);
     expect(f.runner.hostStatus()![0]).toMatchObject({ probed: true, healthy: false });
-    expect(f.runner.hostStatus()![0]!.detail).toContain("Connection reset");
+    expect(f.runner.hostStatus()![0]!.detail).toMatch(/degraded:|Connection reset/);
 
     // D arrives while the host is inside its 30 s (here: 300 ms) cooldown. It
     // must WAIT for the pending recovery — not fail the way a bare arrival

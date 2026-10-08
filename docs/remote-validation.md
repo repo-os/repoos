@@ -118,6 +118,10 @@ capability routing exists to prevent.
 | runner unreachable / provisioning failed / ssh dropped / timed out | `false` | `true` | **retryable** fail (close-out: task stays in `review`; pre-review handoff: may auto-resume the engineer) — unless `remoteValidation.fallbackToLocal`, then run the full gate locally |
 | transient failure on host A (`timeout`, `Killed`, `Broken pipe`) with `retryOtherHosts = true` | `false` | `true` | Retries on the next healthy, free host that hasn't been tried this run; only after every eligible host has failed does the table's retryable/fallback behaviour apply. Non-transient (red gate, `configError`) never retries. Default `true` when 2+ hosts configured. |
 | hung run (no output for `hangIdleMinutes` on an idle host) | `false` | `true` (`hung: true`) | The run's container is killed, the outcome is recorded as `hung`, and the run retries on another host exactly like a transient failure (#0729). |
+| install/clone/setup or container start failed on the host (`validate.sh` exit 4/5, EACCES, ENOSPC, docker daemon, …) | `false` | `true` (`infraFailure: true`) | Classified as **infra**, not a red gate: check-run history records `infra`, the host is marked **degraded** (skipped until a probe passes), and `retryOtherHosts` tries another machine (#0745). |
+| gate ran and build/tests failed (`[validate] gate exit N` in the log) | `false` | `false` | **TEST** failure — failing test names are the headline; never retried on another host as transient. |
+
+`validate.sh` exit codes: **0** green; **3** bundle/mirror transport; **4** setup/install before the gate; **5** container could not start; other non-zero after **`[validate] gate exit N`** = build/test.
 
 ### Retry on other hosts (`retryOtherHosts`)
 

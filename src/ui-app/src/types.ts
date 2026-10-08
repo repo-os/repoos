@@ -833,7 +833,7 @@ export interface CheckRunRow {
   durationMs: number | null;
   /** `skipped` (#0592): the gate ran nothing — this repo has no check plan.
    *  `hung` (#0729): a remote run was killed as a hang and retried elsewhere. */
-  outcome: "pass" | "fail" | "cancelled" | "hung" | "skipped";
+  outcome: "pass" | "fail" | "cancelled" | "hung" | "infra" | "skipped";
   failedStep: string | null;
   skippedSteps: string[];
   failedTests: string[];
