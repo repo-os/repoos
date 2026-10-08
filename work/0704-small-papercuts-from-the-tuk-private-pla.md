@@ -2,7 +2,7 @@
 id: "0704"
 title: Small papercuts from the tuk-private planning run
 type: chore
-status: active
+status: review
 priority: p3
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-08T16:32:24Z"
+updated_at: "2026-10-08T16:37:36Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 653cd53c83dc5b0ab28dd20e7479ff06215aa8ac
 check_retry_count: 2
@@ -67,3 +67,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T16:24:38Z · body
 - 2026-10-08T16:32:23Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
 - 2026-10-08T16:32:24Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-10-08T16:37:36Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
