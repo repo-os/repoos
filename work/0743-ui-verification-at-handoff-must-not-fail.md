@@ -2,7 +2,7 @@
 id: "0743"
 title: UI verification at handoff must not fail a task because a declared shot targets UI that only exists in a state the preview board lacks
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: feat/ui-verification-at-handoff-must-not-fail
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:06:36Z"
-updated_at: "2026-10-08T14:35:13Z"
+updated_at: "2026-10-08T14:36:03Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -75,3 +75,4 @@ error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INST
 - 2026-10-08T14:32:08Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:55450/) (http://127.0.0.1:55450/)
 - 2026-10-08T14:32:09Z · handoff failed · ui-review handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:55450/) (http://127.0.0.1:55450/)
 - 2026-10-08T14:35:13Z · body: section Shots
+- 2026-10-08T14:36:03Z · status active→review
