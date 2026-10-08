@@ -12,7 +12,7 @@ branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-08T17:46:17Z"
+updated_at: "2026-10-08T17:50:41Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
@@ -55,3 +55,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T15:43:26Z · body
 - 2026-10-08T15:44:13Z · body
 - 2026-10-08T17:46:17Z · status active→review
+- 2026-10-08T17:50:41Z · note: Item 1 (repoos list): fixed — truncatePad() pads titles so the area column stays aligned.
