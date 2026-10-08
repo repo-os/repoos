@@ -28,16 +28,16 @@ docs.repoos.org), doing BOTH of the two approaches discussed rather than
 picking one:
 
 1. **Fetch-and-embed**: at build time, fetch recent releases from GitHub's
-   API (`GET /repos/repo-os/repoos/releases`) and render them on the page —
-   version, date, and the notes body (the same markdown already written into
-   the tag/GitHub Release). Cap it to a reasonable recent window (e.g. last
-   10-20 releases, or last N months) rather than the entire history, to keep
-   the page and the build fetch bounded.
+API (`GET /repos/repo-os/repoos/releases`) and render them on the page —
+version, date, and the notes body (the same markdown already written into
+the tag/GitHub Release). Cap it to a reasonable recent window (e.g. last
+10-20 releases, or last N months) rather than the entire history, to keep
+the page and the build fetch bounded.
 2. **Link-out for the rest**: below (or alongside) the embedded recent
-   releases, a plain link to the full GitHub Releases page
-   (https://github.com/repo-os/repoos/releases) for anything older than the
-   embedded window, and as the authoritative source if the embed is ever
-   stale between deploys.
+releases, a plain link to the full GitHub Releases page
+(https://github.com/repo-os/repoos/releases) for anything older than the
+embedded window, and as the authoritative source if the embed is ever
+stale between deploys.
 
 No API key needed for the fetch: this is a PUBLIC repo, and GitHub's REST API
 serves public-repo releases unauthenticated
@@ -53,33 +53,33 @@ add this preemptively without evidence it's needed.
 ## Notes for AI
 
 - Source of truth for what a release's notes actually are:
-  `.github/workflows/release.yml` reads the annotated tag's body
-  (`git tag -l --format='%(contents:body)'`) into the GitHub Release. The
-  VitePress page should read from GitHub's Releases API (the `body` field on
-  each release object), not re-derive from tags directly — the API is the
-  simpler, already-public surface and matches what `repoos upgrade` (#0371)
-  and the GitHub Releases page itself show.
+`.github/workflows/release.yml` reads the annotated tag's body
+(`git tag -l --format='%(contents:body)'`) into the GitHub Release. The
+VitePress page should read from GitHub's Releases API (the `body` field on
+each release object), not re-derive from tags directly — the API is the
+simpler, already-public surface and matches what `repoos upgrade` (#0371)
+and the GitHub Releases page itself show.
 - This is a VitePress site (`user-docs/`) — check how its build is invoked
-  today (`just user-docs-build` per AGENTS.md) to decide whether the fetch
-  belongs in a `.vitepress/config.mts` `buildEnd`/data-loader hook (VitePress
-  has a documented data-loading pattern for build-time fetches — use it
-  rather than a bespoke script if it fits) or a separate pre-build script.
-  `repoos check` does NOT cover `user-docs/` (see docs/README.md /
-  user-docs/README.md) — verify locally with `just user-docs-dev` /
-  `just user-docs-build` instead.
-  markdown; render it as-is (VitePress/vue can render raw markdown-in-markdown
-  via its own pipeline, or a lightweight client-side render — avoid pulling in
-  a new heavy markdown-rendering dependency if VitePress's own tooling can do
-  it, since zero-runtime-deps is a hard constraint for the main repoos
-  package, though user-docs/ has its own separate package.json and existing
-  VitePress/markdown tooling to lean on).
+today (`just user-docs-build` per AGENTS.md) to decide whether the fetch
+belongs in a `.vitepress/config.mts` `buildEnd`/data-loader hook (VitePress
+has a documented data-loading pattern for build-time fetches — use it
+rather than a bespoke script if it fits) or a separate pre-build script.
+`repoos check` does NOT cover `user-docs/` (see docs/README.md /
+user-docs/README.md) — verify locally with `just user-docs-dev` /
+`just user-docs-build` instead.
+markdown; render it as-is (VitePress/vue can render raw markdown-in-markdown
+via its own pipeline, or a lightweight client-side render — avoid pulling in
+a new heavy markdown-rendering dependency if VitePress's own tooling can do
+it, since zero-runtime-deps is a hard constraint for the main repoos
+package, though user-docs/ has its own separate package.json and existing
+VitePress/markdown tooling to lean on).
 - Add the new page to `user-docs/.vitepress/config.mts`'s hand-curated sidebar
-  (it does not auto-generate from the file tree) or it won't appear in nav.
+(it does not auto-generate from the file tree) or it won't appear in nav.
 - Handle the fetch failing gracefully at build time (network blip, rate
-  limit) — don't hard-fail the whole docs build over a transient GitHub API
-  hiccup; consider whether a stale/missing embed with the link-out still
-  present is an acceptable degraded state, or whether the build should retry/
-  warn instead.
+limit) — don't hard-fail the whole docs build over a transient GitHub API
+hiccup; consider whether a stale/missing embed with the link-out still
+present is an acceptable degraded state, or whether the build should retry/
+warn instead.
 
 ## Activity
 

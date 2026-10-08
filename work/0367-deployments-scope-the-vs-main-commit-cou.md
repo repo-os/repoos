@@ -52,15 +52,15 @@ count is already 0 for that direction.
 ## Notes for AI
 
 - Relevant code: src/server/deployments.ts (branchVsMain for the pattern to
-  mirror scoped with a subdir pathspec; rowFreshness and its per-(branch,
-  subdir) caching in getDeploymentsStatus — extend rather than duplicate),
-  src/ui-app/src/views/DeploymentsView.vue (matrix cell rendering).
+mirror scoped with a subdir pathspec; rowFreshness and its per-(branch,
+subdir) caching in getDeploymentsStatus — extend rather than duplicate),
+src/ui-app/src/views/DeploymentsView.vue (matrix cell rendering).
 - Existing tests: src/ui-app/tests/deployments.test.ts's mockGit `counts` map
-  already supports arbitrary rev-list --count keys (including `A..B -- path`
-  once you push the pathspec into the args the mock keys off of — check how
-  the mock builds its lookup key from `args[args.length - 1]` and whether a
-  trailing `-- subdir` pathspec changes what that last arg is; adjust the mock
-  or the key format as needed, whichever is less invasive).
+already supports arbitrary rev-list --count keys (including `A..B -- path`
+once you push the pathspec into the args the mock keys off of — check how
+the mock builds its lookup key from `args[args.length - 1]` and whether a
+trailing `-- subdir` pathspec changes what that last arg is; adjust the mock
+or the key format as needed, whichever is less invasive).
 - `repoos check` passes.
 
 ## Activity

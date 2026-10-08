@@ -28,13 +28,13 @@ phase logged multiple `[preview] auto-launch failed — preview server for
 blocks on a real readiness-timeout wait before giving up. This is:
 
 - **Slow**: adds tens of seconds unrelated to the actual UI assertions,
-  scaling with however many tasks happen to be active/review at check time —
-  it gets *slower* as the board fills up, not stays constant.
+scaling with however many tasks happen to be active/review at check time —
+it gets *slower* as the board fills up, not stays constant.
 - **Nondeterministic**: the smoke test's pass/fail and duration depend on
-  unrelated board state (whether some other task's preview server happens to
-  be flaky right now), which has nothing to do with whether the UI renders.
+unrelated board state (whether some other task's preview server happens to
+be flaky right now), which has nothing to do with whether the UI renders.
 - **Wasteful**: none of this reconciliation work is needed to answer "does
-  the built SPA mount, with no console errors."
+the built SPA mount, with no console errors."
 
 ## Desired UX
 
@@ -48,34 +48,34 @@ constant regardless of board size, and the smoke test becomes deterministic.
 ## Acceptance criteria
 
 - [ ] `startPreviewServer()` in `src/commands/ui-harness.ts` accepts (or
-      always uses) an isolated fixture root instead of defaulting to the
-      real repo root when called from the smoke test.
+always uses) an isolated fixture root instead of defaulting to the
+real repo root when called from the smoke test.
 - [ ] Running `repoos check` no longer logs any `[preview] auto-launch
-      failed` / job-recovery lines during the UI smoke test phase.
+failed` / job-recovery lines during the UI smoke test phase.
 - [ ] The smoke test still exercises real rendering: title check, mounted
-      #app, Work/Settings navigation, the CSS utility-spacing regression
-      guard — all currently-covered assertions keep passing.
+#app, Work/Settings navigation, the CSS utility-spacing regression
+guard — all currently-covered assertions keep passing.
 - [ ] `disableAuth: true` (already set) is preserved so the smoke test can
-      still reach the dashboard when the real repo has native auth enabled.
+still reach the dashboard when the real repo has native auth enabled.
 - [ ] `repoos check` duration on the UI smoke test phase no longer scales
-      with the number of active/review tasks on the board.
+with the number of active/review tasks on the board.
 - [ ] `repoos check` passes.
 
 ## Notes for AI
 
 - Touch point: `src/commands/ui-harness.ts:61` (`startPreviewServer`) and its
-  one caller, `runUISmokeTest()` in `src/commands/check.ts`.
+one caller, `runUISmokeTest()` in `src/commands/check.ts`.
 - The screenshot script mentioned in ui-harness.ts's doc comment
-  ("harness in ui-harness.ts with the screenshot script (#0213)") shares this
-  same function — check whether it also wants isolation, or whether it
-  legitimately needs the real board (e.g. to screenshot real tasks). If it
-  needs the real board, split the two use cases instead of changing the
-  shared default for both.
+("harness in ui-harness.ts with the screenshot script (#0213)") shares this
+same function — check whether it also wants isolation, or whether it
+legitimately needs the real board (e.g. to screenshot real tasks). If it
+needs the real board, split the two use cases instead of changing the
+shared default for both.
 - Do NOT change the actual smoke assertions (title, mount check, nav,
-  spacing guard) — only what root/board the server boots against.
+spacing guard) — only what root/board the server boots against.
 - Do NOT touch the integration pipeline's own "check" invocation
-  (`src/server/integration-orchestrator.ts`) beyond it inheriting this fix
-  for free — no separate changes needed there.
+(`src/server/integration-orchestrator.ts`) beyond it inheriting this fix
+for free — no separate changes needed there.
 
 ## Original prompt
 

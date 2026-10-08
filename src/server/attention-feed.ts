@@ -18,6 +18,7 @@ import type { AgentRunner } from "./agents.js";
 import type { CloseOutOutcomeStore } from "./close-out-outcome.js";
 import type { AttentionEventStore } from "./attention-events.js";
 import type { TaskCheckManager } from "./task-check.js";
+import { parseRemotePoolQueueMessage } from "../core/remote-pool-queue.js";
 import type { ReleaseNotesRun, ReleaseRun } from "./routes/release.js";
 import { getRepoOSDb } from "../core/db.js";
 import { getCheckStore, type CheckRunPhase } from "../core/check-store.js";
@@ -182,6 +183,20 @@ export function assembleAttentionFeed(deps: AttentionFeedDeps): AttentionFeed {
   for (const run of deps.runner.running()) {
     const stats = deps.runner.stats(run.id);
     if (!stats.stalled) continue;
+    const checkOut = deps.taskChecks
+      ?.runningRuns()
+      .find((r) => r.taskId === run.id && r.running)?.output;
+    const poolQueue = checkOut ? parseRemotePoolQueueMessage(checkOut) : null;
+    if (poolQueue) {
+      silentRuns.push({
+        taskId: run.id,
+        lastOutputAt: stats.lastOutputAt,
+        detail:
+          `Waiting for a runner on ${poolQueue.host} (queue position ${poolQueue.position}) — ` +
+          `${poolQueue.ahead} other remote run(s) ahead; the agent is queued, not hung.`,
+      });
+      continue;
+    }
     silentRuns.push({
       taskId: run.id,
       lastOutputAt: stats.lastOutputAt,

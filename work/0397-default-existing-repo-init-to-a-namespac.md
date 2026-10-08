@@ -51,9 +51,9 @@ With the default selection, scaffold:
 repoos.toml
 AGENTS.md
 repoos/
-  work/
-  docs/
-  .repoos/   # derived cache, ignored
+work/
+docs/
+.repoos/   # derived cache, ignored
 ```
 
 The root config should persist the selected paths, for example:

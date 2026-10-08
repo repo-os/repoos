@@ -27,9 +27,9 @@ Detect FS support once at startup; pick the fastest available per platform.
 
 Fiddly bits:
 - Can't naively clone an existing linked worktree — its `.git` is a file pointing
-  at `<main>/.git/worktrees/<name>`, so a raw copy = two working trees sharing one
-  gitdir entry. Clone the main checkout's tree then wire up worktree registration
-  (or clone + `git worktree repair`).
+at `<main>/.git/worktrees/<name>`, so a raw copy = two working trees sharing one
+gitdir entry. Clone the main checkout's tree then wire up worktree registration
+(or clone + `git worktree repair`).
 - node_modules etc. are already symlinked by bootstrap.ts — keep that.
 
 Payoff is concentrated: bursts of concurrent agent starts. Bundle the Bun.spawn

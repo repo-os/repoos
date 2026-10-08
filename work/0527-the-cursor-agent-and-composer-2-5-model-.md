@@ -79,7 +79,7 @@ and happens permanently when the model simply omits the closer:
 
 ```
 "Here is the diff:\n\n```ts\nconst a = 1;\n\n\n"
-  →  <p>Here is the diff:</p><pre><code class="language-ts">const a = 1;\n\n\n\n</code></pre>
+→  <p>Here is the diff:</p><pre><code class="language-ts">const a = 1;\n\n\n\n</code></pre>
 ```
 
 **5. Invisible-only lines become real paragraphs.** JS `\s` does not match
@@ -102,23 +102,23 @@ cannot drift.
 Clamp whitespace **at the display boundary**, with one rule per leak above:
 
 - **A row that would render empty is not drawn at all.** If an entry's text is
-  whitespace-only — including strings made only of zero-width/BOM characters —
-  drop the row rather than emit an empty bubble. Applies to `text`, `human`,
-  `sys` and legacy `line`/`out`/`err` entries alike.
+whitespace-only — including strings made only of zero-width/BOM characters —
+drop the row rather than emit an empty bubble. Applies to `text`, `human`,
+`sys` and legacy `line`/`out`/`err` entries alike.
 - **Inside one message, never more than one blank line** (the "1 line" limit from
-  the original report): a run of 3+ blank lines collapses to at most one. One
-  blank line is a deliberate paragraph break and stays.
+the original report): a run of 3+ blank lines collapses to at most one. One
+blank line is a deliberate paragraph break and stays.
 - **At the end of a message, no trailing blank lines at all.** A message never
-  ends in visible whitespace, whether the run is in prose or inside a fenced
-  block.
+ends in visible whitespace, whether the run is in prose or inside a fenced
+block.
 - **A fenced code block's own interior blank lines are untouched** — leading
-  indentation, deliberate spacing inside a snippet, and the blank line a `sh`
-  block uses to separate commands must all survive verbatim. Only the *trailing*
-  run at the end of the block is clamped.
+indentation, deliberate spacing inside a snippet, and the blank line a `sh`
+block uses to separate commands must all survive verbatim. Only the *trailing*
+run at the end of the block is clamped.
 - **An unterminated fence still renders as a code block.** Do not "fix" the
-  mid-stream case by dropping the block or by inventing a closing fence in the
-  stored data; clamp the trailing whitespace and let the closer arrive on the
-  next stream event.
+mid-stream case by dropping the block or by inventing a closing fence in the
+stored data; clamp the trailing whitespace and let the closer arrive on the
+next stream event.
 
 ## Implementation notes
 
@@ -129,14 +129,14 @@ chat surfaces that draw agent rows (`PmChatSurface.vue`, `RepoGuideChat.vue`,
 a fix there covers every surface at once and cannot drift per-chat:
 
 - `src/ui-app/src/lib/chat-rows.ts` — the empty-row drop (leaks 1 and 2) and the
-  merge separator. `toDisplayRows` is the single place that decides what a row
-  is; the drop belongs next to the existing `!text` guard, and the whitespace
-  test should be `trim`-based over an invisible-character set rather than a
-  bare `!text`.
+merge separator. `toDisplayRows` is the single place that decides what a row
+is; the drop belongs next to the existing `!text` guard, and the whitespace
+test should be `trim`-based over an invisible-character set rather than a
+bare `!text`.
 - `src/ui-app/src/lib/markdown.ts` — the blank-run clamp and the code-block
-  trailing trim (leaks 3, 4 and 5). Clamp in `parseBlocks` (so it applies to
-  every block kind) or as a small exported helper that `parseBlocks` calls, and
-  keep the fence's `body` trim separate from the prose clamp.
+trailing trim (leaks 3, 4 and 5). Clamp in `parseBlocks` (so it applies to
+every block kind) or as a small exported helper that `parseBlocks` calls, and
+keep the fence's `body` trim separate from the prose clamp.
 
 **This must stay a view-layer transform, exactly as #0506 established.** Do not
 trim what is stored in the transcript, what is streamed over SSE as
@@ -154,46 +154,46 @@ the renderer is deliberately hand-rolled for that reason.
 ## Acceptance criteria
 
 1. No empty bubble is ever drawn. For a transcript of
-   `[text("All done."), tool, text("\n\n\n")]`, the chat draws two rows (the
-   message and the tool run), and no element with an empty `.pm-bubble-*` /
-   `.guide-bubble-*` / `.td-bubble-*` / `.debugger-bubble-*` body appears.
+`[text("All done."), tool, text("\n\n\n")]`, the chat draws two rows (the
+message and the tool run), and no element with an empty `.pm-bubble-*` /
+`.guide-bubble-*` / `.td-bubble-*` / `.debugger-bubble-*` body appears.
 2. The same holds for a whitespace-only `sys` entry and for a legacy
-   `{ s: "out", d: "\n" }` entry.
+`{ s: "out", d: "\n" }` entry.
 3. `"step one\n\n\n\n\n\nstep two"` renders as two paragraphs with a single
-   blank line between them — never three or more.
+blank line between them — never three or more.
 4. A message ending in trailing newlines renders no trailing vertical space, in
-   both the markdown path and the plain-`<span>` (human / status) path.
+both the markdown path and the plain-`<span>` (human / status) path.
 5. `"```sh\nnpm test\n\n\n\n```"` renders the code block with **no** trailing
-   blank lines inside the `<pre>`, while `"```sh\nnpm test\n\ncd dist\n\nnpm run build\n```"`
-   keeps both interior blank lines verbatim.
+blank lines inside the `<pre>`, while `"```sh\nnpm test\n\ncd dist\n\nnpm run build\n```"`
+keeps both interior blank lines verbatim.
 6. An unterminated fence still renders a `<pre>` containing the streamed code,
-   with no trailing blank lines.
+with no trailing blank lines.
 7. `"Done.\n\u200b\n\u200b\nBye."` renders two visible lines, not three.
 8. Streaming still looks right: a message that is mid-sentence, mid-list or
-   mid-fence renders progressively with no layout jump, and no blank gap appears
-   then disappears as parts arrive.
+mid-fence renders progressively with no layout jump, and no blank gap appears
+then disappears as parts arrive.
 9. **Nothing below the view layer changes.** The entries in the persisted
-   transcript, the `agent.output` SSE payloads and the debugger output are
-   unchanged — same text, same order, same count.
+transcript, the `agent.output` SSE payloads and the debugger output are
+unchanged — same text, same order, same count.
 10. No regression in the shared markdown renderer: existing
-    `src/ui-app/tests/markdown.test.ts` cases (soft-wrapped prose, explicit hard
-    breaks, tables, task checkboxes, Mermaid, intraword underscores, the
-    code-span literal cases) still pass untouched, and the AI-chat standard
-    conformance test still passes.
+ `src/ui-app/tests/markdown.test.ts` cases (soft-wrapped prose, explicit hard
+ breaks, tables, task checkboxes, Mermaid, intraword underscores, the
+ code-span literal cases) still pass untouched, and the AI-chat standard
+ conformance test still passes.
 
 ## Tests
 
 - `src/ui-app/tests/markdown.test.ts` — the blank-run clamp (3+ → 1), the
-  code-block trailing trim, interior blank lines preserved, the unterminated
-  fence, and the zero-width-line case.
+code-block trailing trim, interior blank lines preserved, the unterminated
+fence, and the zero-width-line case.
 - `src/ui-app/tests/chat-tool-rows.test.ts` (or a sibling
-  `chat-rows` suite if that is where row grouping is asserted) — the
-  empty-row drop for `text` / `sys` / `line`, including the isolated-between-
-  tool-runs and end-of-stream shapes from the table above, and the invariant
-  that the drop happens at row-build time and leaves the input array untouched.
+`chat-rows` suite if that is where row grouping is asserted) — the
+empty-row drop for `text` / `sys` / `line`, including the isolated-between-
+tool-runs and end-of-stream shapes from the table above, and the invariant
+that the drop happens at row-build time and leaves the input array untouched.
 - `bun run test` (not bare `bun test` — see `AGENTS.md`), then a green
-  `repoos check`, which includes the WebKit UI smoke test that fails on any
-  console error.
+`repoos check`, which includes the WebKit UI smoke test that fails on any
+console error.
 
 ## Scope
 
@@ -204,39 +204,39 @@ lines.
 Deferred / out of scope:
 
 - **Trimming the stored data.** Explicitly not doing this; see Implementation
-  notes. If a future task wants transcripts normalized at write time, that is a
-  separate decision with its own migration and export implications.
+notes. If a future task wants transcripts normalized at write time, that is a
+separate decision with its own migration and export implications.
 - Server-side driver parsing (`src/server/agents.ts`). The blank-text filters
-  there are correct and stay; this is a display concern.
+there are correct and stay; this is a display concern.
 - Any change to *what* the agents are told or how they are driven — this is a
-  rendering fix, not a prompt fix. Do not try to stop composer 2.5 emitting
-  trailing newlines.
+rendering fix, not a prompt fix. Do not try to stop composer 2.5 emitting
+trailing newlines.
 - Styling the bubbles, the log rhythm, `ai-chat-log` gaps, the jump-to-latest
-  control, or anything else in the chat standard's items 1–7.
+control, or anything else in the chat standard's items 1–7.
 - The model playground's and CTO panel's non-transcript markdown *sources*
-  (release notes, board reports, story and doc bodies). They share the renderer
-  and inherit the clamp for free — that is desirable, not a separate task.
+(release notes, board reports, story and doc bodies). They share the renderer
+and inherit the clamp for free — that is desirable, not a separate task.
 
 ## Related
 
 - `src/ui-app/src/lib/chat-rows.ts` — `toDisplayRows`, `rowText`, `bubbleRole`;
-  the module docblock states the view-layer-only invariant this task extends
+the module docblock states the view-layer-only invariant this task extends
 - `src/ui-app/src/lib/markdown.ts` — `parseBlocks`, `renderBlock`,
-  `renderSoftLines`, `renderMarkdown`
+`renderSoftLines`, `renderMarkdown`
 - `src/ui-app/src/components/PmChatSurface.vue`,
-  `src/ui-app/src/components/RepoGuideChat.vue`,
-  `src/ui-app/src/components/TaskDebuggerChat.vue`,
-  `src/ui-app/src/components/DebuggerChat.vue` — the four row-drawing surfaces
+`src/ui-app/src/components/RepoGuideChat.vue`,
+`src/ui-app/src/components/TaskDebuggerChat.vue`,
+`src/ui-app/src/components/DebuggerChat.vue` — the four row-drawing surfaces
 - `src/ui-app/src/style.css` — `.pm-bubble*` / `.pm-row*` and the
-  `.md-rendered` block margins; the clamp is a data fix, so this file should
-  need no change
+`.md-rendered` block margins; the clamp is a data fix, so this file should
+need no change
 - `src/ui-app/tests/markdown.test.ts`, `src/ui-app/tests/chat-tool-rows.test.ts`,
-  `src/ui-app/tests/ai-chat-standard.test.ts`
+`src/ui-app/tests/ai-chat-standard.test.ts`
 - `docs/ai-chat-standards.md` — the numbered chat contract; item 6 is the
-  #0506 tool-row precedent for "a display-boundary transform, never a data
-  change"
+#0506 tool-row precedent for "a display-boundary transform, never a data
+change"
 - `src/server/agents.ts` — `parseClaudeEvent` / `claudeAssistantEntry`, the
-  claude-style path the cursor driver uses (read for context; not modified)
+claude-style path the cursor driver uses (read for context; not modified)
 - `src/ui-app/tests/cursor-driver.test.ts` — existing cursor-driver coverage
 
 ## Original prompt

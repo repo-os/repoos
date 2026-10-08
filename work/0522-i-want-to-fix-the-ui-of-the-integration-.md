@@ -18,13 +18,13 @@ strip) drops the two pieces of information that tell you whether the pipeline is
 worth opening:
 
 - **The elapsed timer is nearly invisible when minimised.** The expanded bar
-  renders elapsed time as a pill — `background: var(--chip-bg)`, `border-radius:
-  999px`, bold, `tabular-nums` (`.ibar-elapsed`). In the strip the same value is
-  plain dim text mid-sentence (`· {{ elapsed }}`, `.strip-elapsed` supplies only
-  `tabular-nums`), so it reads as incidental punctuation rather than a readout.
+renders elapsed time as a pill — `background: var(--chip-bg)`, `border-radius:
+999px`, bold, `tabular-nums` (`.ibar-elapsed`). In the strip the same value is
+plain dim text mid-sentence (`· {{ elapsed }}`, `.strip-elapsed` supplies only
+`tabular-nums`), so it reads as incidental punctuation rather than a readout.
 - **The minimised strip shows no queue at all.** Queued task ids exist only in
-  the expanded bar's `.ibar-queue` row, so from the strip you cannot tell two
-  closings are waiting behind the one in flight — the main reason to expand.
+the expanded bar's `.ibar-queue` row, so from the strip you cannot tell two
+closings are waiting behind the one in flight — the main reason to expand.
 
 The expanded bar's queue row is also noisy for what it says: every entry repeats
 the word "queueing…" (`#0455 queueing…`), and a trailing `+{{ queue.length }}`
@@ -33,88 +33,88 @@ count adds nothing the pills next to it don't already say.
 ## Desired UX
 
 - **Minimised strip, while a task is integrating:** the elapsed time is styled
-  exactly like the expanded bar's timer pill — same pill treatment, not a new
-  style — so the number reads at a glance from across the screen. It stays
-  visually part of the line, not a separate trailing crumb.
+exactly like the expanded bar's timer pill — same pill treatment, not a new
+style — so the number reads at a glance from across the screen. It stays
+visually part of the line, not a separate trailing crumb.
 - **Minimised strip, queue:** a `Queue:` segment listing the queued task ids as
-  pills, e.g. `Queue: #0455 #0456`. It appears only when something is actually
-  queued and sits after the active-task line, so the strip reads roughly
-  `● #0455 integrating… check  3m 07s  Queue: #0456 #0457`.
+pills, e.g. `Queue: #0455 #0456`. It appears only when something is actually
+queued and sits after the active-task line, so the strip reads roughly
+`● #0455 integrating… check  3m 07s  Queue: #0456 #0457`.
 - **Expanded bar, queue:** less verbose — `Queue:` followed by one pill per
-  queued task id, nothing more. The per-entry `queueing…` wording and the
-  trailing `+N` count are gone; the ids alone convey what the row already says.
+queued task id, nothing more. The per-entry `queueing…` wording and the
+trailing `+N` count are gone; the ids alone convey what the row already says.
 - **Both states** use the same pill treatment for the timer and for each task id,
-  so the two views read as one component.
+so the two views read as one component.
 - Idle and failed states are unchanged: no timer, no queue, same copy.
 
 ## Acceptance criteria
 
 - [ ] With a task integrating and the bar **minimised**, the elapsed timer renders
-      with the same pill treatment as the expanded bar's `.ibar-elapsed`
-      (rounded/`--chip-bg` chip), not as bare dim text.
+with the same pill treatment as the expanded bar's `.ibar-elapsed`
+(rounded/`--chip-bg` chip), not as bare dim text.
 - [ ] With queued tasks and the bar **minimised**, the strip shows a `Queue:`
-      label followed by one pill per queued task id, in FIFO order — e.g.
-      `Queue: #0455 #0456`.
+label followed by one pill per queued task id, in FIFO order — e.g.
+`Queue: #0455 #0456`.
 - [ ] With an empty queue and the bar minimised, no `Queue:` segment is rendered.
 - [ ] In the **expanded** bar the queue row renders `Queue:` + one id-pill per
-      queued task; the per-entry `queueing…` text is gone.
+queued task; the per-entry `queueing…` text is gone.
 - [ ] The trailing `+{{ queue.length }}` queue count is no longer rendered in the
-      expanded bar.
+expanded bar.
 - [ ] Timer and task-id pills share one styling in both states (same background,
-      radius and type treatment); queue ids keep the mono/tabular treatment so
-      they line up.
+radius and type treatment); queue ids keep the mono/tabular treatment so
+they line up.
 - [ ] The strip still fits on one line and still ellipsises rather than
-      overflowing, including with a non-trivial queue and at mobile widths
-      (`max-width: 760px`).
+overflowing, including with a non-trivial queue and at mobile widths
+(`max-width: 760px`).
 - [ ] The strip's existing `title` tooltip still summarises the active task, and
-      the queue ids remain readable by assistive tech.
+the queue ids remain readable by assistive tech.
 - [ ] Idle, failed, stage hover/focus pane, stage click-to-Debug, collapse/expand
-      and auto-collapse behavior are unchanged.
+and auto-collapse behavior are unchanged.
 - [ ] `src/ui-app/tests/integration-status-bar.test.ts` is extended to cover the
-      minimised queue segment and the pill treatment (update rather than weaken
-      the existing assertions).
+minimised queue segment and the pill treatment (update rather than weaken
+the existing assertions).
 - [ ] `bun run build:ui` run after the change; `repoos check` passes; no console
-      errors.
+errors.
 
 ## Notes for AI
 
 - Everything here lives in one file:
-  `src/ui-app/src/components/IntegrationStatusBar.vue`. Relevant markup: the
-  collapsed strip `button.ibar-strip` (`.strip-label` currently renders
-      `#id … stage · {{ elapsed }}` via `.strip-elapsed`), and the expanded
-  queue row `.ibar-queue` (`.queue-label` + `.queue-item` + `.queue-count`).
+`src/ui-app/src/components/IntegrationStatusBar.vue`. Relevant markup: the
+collapsed strip `button.ibar-strip` (`.strip-label` currently renders
+`#id … stage · {{ elapsed }}` via `.strip-elapsed`), and the expanded
+queue row `.ibar-queue` (`.queue-label` + `.queue-item` + `.queue-count`).
 - The strip is a single `<button>` (clicking it expands the bar). Keep the queue
-  segment **non-interactive** inside it — no nested `<button>`/anchor. Nothing in
-  the request makes the queue pills clickable, so don't add a drawer-opening
-  affordance; if you want hover behaviour, use the element's `title`.
+segment **non-interactive** inside it — no nested `<button>`/anchor. Nothing in
+the request makes the queue pills clickable, so don't add a drawer-opening
+affordance; if you want hover behaviour, use the element's `title`.
 - The timer pill styling to reuse is `.ibar-elapsed` (`--chip-bg`,
-  `border-radius: 999px`, `padding: 1px 8px`, `font-weight: 600`,
-  `font-variant-numeric: tabular-nums`). Extract that into a shared class and use
-  it from both states rather than copying the declarations — the point of the
-  request is that the two views look the same. `.queue-item` is already a pill in
-  the same spirit; the queue ids should end up indistinguishable in style from
-  the timer pill apart from the mono font.
+`border-radius: 999px`, `padding: 1px 8px`, `font-weight: 600`,
+`font-variant-numeric: tabular-nums`). Extract that into a shared class and use
+it from both states rather than copying the declarations — the point of the
+request is that the two views look the same. `.queue-item` is already a pill in
+the same spirit; the queue ids should end up indistinguishable in style from
+the timer pill apart from the mono font.
 - Assumption: "less verbose" for the expanded row means dropping the repeated
-  `queueing…` wording and the redundant `+N` count, not reformatting or
-  reordering anything. Keep the `Queue` label in place, in its own row.
+`queueing…` wording and the redundant `+N` count, not reformatting or
+reordering anything. Keep the `Queue` label in place, in its own row.
 - Assumption: pills, not buttons. Don't give the pills hover/border states that
-  imply clickability.
+imply clickability.
 - Assumption: the minimised queue shows the **queued** task ids only. The task
-  being integrated is already shown by its own id in the strip's summary — the
-  user's example (`#0455 #0456`) reads as the two waiting tasks, not "the active
-  one plus the first queued one".
+being integrated is already shown by its own id in the strip's summary — the
+user's example (`#0455 #0456`) reads as the two waiting tasks, not "the active
+one plus the first queued one".
 - If the strip's content is getting wide, prefer keeping the ellipsis behaviour
-  already on `.strip-label` (and consider the same treatment for the queue
-  segment) over letting the strip's width grow unbounded — the desktop
-  `max-width: min(680px, …)` cap is what #0224 set up.
+already on `.strip-label` (and consider the same treatment for the queue
+segment) over letting the strip's width grow unbounded — the desktop
+`max-width: min(680px, …)` cap is what #0224 set up.
 - The desktop strip is already a floating rounded pill
-  (`border-radius: 999px` at `min-width: 761px`) — keep it looking like one chip,
-  don't let inner pills fight that silhouette.
+(`border-radius: 999px` at `min-width: 761px`) — keep it looking like one chip,
+don't let inner pills fight that silhouette.
 - `WorkView.vue` reserves space for the bar via `.ibar-spacer`; no change needed
-  there, but check the strip's height doesn't grow enough to leave a visible gap
-  once queue pills are in it.
+there, but check the strip's height doesn't grow enough to leave a visible gap
+once queue pills are in it.
 - Rebuild the UI (`bun run build:ui`) after the change so the worktree build is
-  fresh. No need to request a preview.
+fresh. No need to request a preview.
 
 ## Scope
 

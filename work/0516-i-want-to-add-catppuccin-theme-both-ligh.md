@@ -33,63 +33,63 @@ flavour, so a user can pick either.
 ## Desired UX
 
 - A user can choose Catppuccin Latte, Catppuccin Mocha, or the existing default
-  theme from the existing theme control in Settings.
+theme from the existing theme control in Settings.
 - Selecting a variant immediately re-themes the running app — backgrounds,
-  surfaces, text, borders, and accents all resolve to the correct Catppuccin
-  colour roles for that variant, with readable contrast in both light and dark.
+surfaces, text, borders, and accents all resolve to the correct Catppuccin
+colour roles for that variant, with readable contrast in both light and dark.
 - The selection persists across reloads, the same way the current theme selection
-  does.
+does.
 - All existing views (board, task drawer, dialogs, diffs/code, charts) render
-  correctly in both Catppuccin variants, with no hardcoded colours left behind
-  that clash with the palette.
+correctly in both Catppuccin variants, with no hardcoded colours left behind
+that clash with the palette.
 
 ## Acceptance criteria
 
 - [ ] Catppuccin Latte and Catppuccin Mocha are both selectable in Settings
-      alongside the existing default theme.
+alongside the existing default theme.
 - [ ] Selecting either variant repaints the whole app — every screen, drawer,
-      dialog, and shared form control — with no unthemed or hardcoded-colour
-      regions visible.
+dialog, and shared form control — with no unthemed or hardcoded-colour
+regions visible.
 - [ ] Text, borders, and interactive controls meet the repo's existing
-      theme-contrast guard (see `repoos check`) in both Catppuccin variants.
+theme-contrast guard (see `repoos check`) in both Catppuccin variants.
 - [ ] Code/diff rendering still uses the existing highlighter theme pipeline
-      correctly under both Catppuccin variants; if a Catppuccin shiki theme is
-      available, it is used rather than hand-rolled colours.
+correctly under both Catppuccin variants; if a Catppuccin shiki theme is
+available, it is used rather than hand-rolled colours.
 - [ ] The chosen variant survives a page reload, matching current theme
-      persistence behaviour.
+persistence behaviour.
 - [ ] If a "system" preference exists today, it still resolves sensibly and the
-      two new Catppuccin variants are reachable from the same control.
+two new Catppuccin variants are reachable from the same control.
 - [ ] Tests added covering theme selection/persistence and the resolved palette
-      for both variants.
+for both variants.
 - [ ] `repoos check` passes.
 
 ## Notes for AI
 
 - **Colours: use shikijs, do not hand-type or web-search a palette.** This repo
-  already has `shikijs` installed and it ships bundled Catppuccin themes. Read
-  the exact hex values out of the installed package rather than transcribing
-  them from memory or from the web — a typo'd hex is silent and hard to spot.
-  Derive the UI token values (background, surface, border, text, muted text,
-  accent) from that source of truth and keep the mapping in one place.
+already has `shikijs` installed and it ships bundled Catppuccin themes. Read
+the exact hex values out of the installed package rather than transcribing
+them from memory or from the web — a typo'd hex is silent and hard to spot.
+Derive the UI token values (background, surface, border, text, muted text,
+accent) from that source of truth and keep the mapping in one place.
 - The palette must be defined per variant (Latte light, Mocha dark) — do not
-  share a single set of values across both.
+share a single set of values across both.
 - Follow the existing theme mechanism rather than adding a parallel one: extend
-  the current theme token/palette definition and the existing Settings control
-  that drives it, and reuse the existing persistence path.
+the current theme token/palette definition and the existing Settings control
+that drives it, and reuse the existing persistence path.
 - Keep with the repo's CSS conventions: dialog/modal styling lives in
-  `src/ui-app/src/style.css` (body-teleported), not in a component's
-  `<style scoped>` block. Global theme tokens belong in the shared stylesheet.
+`src/ui-app/src/style.css` (body-teleported), not in a component's
+`<style scoped>` block. Global theme tokens belong in the shared stylesheet.
 - Do not hardcode hex values inside individual components — variants must be
-  selected by token/class, not by scattered per-component conditionals.
+selected by token/class, not by scattered per-component conditionals.
 - Preserve accessibility: both variants must pass the existing theme-contrast
-  guard, not just "look right".
+guard, not just "look right".
 - Do not widen the formatter's scope and do not add runtime dependencies —
-  shikijs is already a dev dependency in this repo, so pulling colour data out
-  of it does not change the zero-runtime-dependency constraint.
+shikijs is already a dev dependency in this repo, so pulling colour data out
+of it does not change the zero-runtime-dependency constraint.
 - Run `bun run fmt` before committing on the task branch, then `repoos check`.
 - If any existing doc describes the available themes (Settings copy, `user-docs/`
-  theme documentation, `AGENTS.md` theme-contrast rule), update the lines this
-  change makes wrong as part of the same task.
+theme documentation, `AGENTS.md` theme-contrast rule), update the lines this
+change makes wrong as part of the same task.
 
 ## Scope
 

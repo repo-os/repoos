@@ -46,43 +46,43 @@ tappable whenever the integration bar is shown.
 ## Acceptance criteria
 
 - [ ] On desktop widths, the integration bar (collapsed strip and expanded
-  panel) no longer stretches edge-to-edge; it renders as a floating, rounded
-  oblong panel near the bottom of the viewport, sized to its content up to a
-  reasonable max-width, with visible page/background around it.
+panel) no longer stretches edge-to-edge; it renders as a floating, rounded
+oblong panel near the bottom of the viewport, sized to its content up to a
+reasonable max-width, with visible page/background around it.
 - [ ] The floating panel remains legible and functional in both themes
-  (`clear`, `gen z`, and the default/`classic` theme) and preserves existing
-  visuals: the stage list with check/current/failed states, the queue row, the
-  error banner and Retry button, and the collapse/expand toggle all still
-  work.
+(`clear`, `gen z`, and the default/`classic` theme) and preserves existing
+visuals: the stage list with check/current/failed states, the queue row, the
+error banner and Retry button, and the collapse/expand toggle all still
+work.
 - [ ] On mobile widths (≤760px, matching the existing `.tabbar` breakpoint),
-  the bar's layout is unchanged (full width is acceptable) except that it no
-  longer overlaps `.tabbar` in either collapsed or expanded state — the tab
-  bar's icons/labels remain fully visible and clickable at all times.
+the bar's layout is unchanged (full width is acceptable) except that it no
+longer overlaps `.tabbar` in either collapsed or expanded state — the tab
+bar's icons/labels remain fully visible and clickable at all times.
 - [ ] Collapsed-state persistence (`localStorage` key
-  `repoos.integrationBar.collapsed`) and all existing interactions (expand,
-  collapse, retry) continue to work unchanged on both desktop and mobile.
+`repoos.integrationBar.collapsed`) and all existing interactions (expand,
+collapse, retry) continue to work unchanged on both desktop and mobile.
 - [ ] No regression to `IntegrationStatusBar`'s reactive behavior (idle state,
-  active task, failed state, queue count) — only layout/positioning changes.
+active task, failed state, queue count) — only layout/positioning changes.
 
 ## Notes for AI
 
 - Primary file: `src/ui-app/src/components/IntegrationStatusBar.vue`
-  (`<style scoped>` block, particularly `.ibar-wrap`, `.ibar`, and
-  `.ibar-strip`).
+(`<style scoped>` block, particularly `.ibar-wrap`, `.ibar`, and
+`.ibar-strip`).
 - Mobile tab bar for reference/coordination: `.tabbar` rules in
-  `src/ui-app/src/style.css` (around the `@media(max-width:760px)` block) —
-  note its height varies with `env(safe-area-inset-bottom)` via
-  `calc(var(--safe-bot) + 8px)` padding, so the offset/z-index fix should
-  account for that rather than a fixed pixel guess.
+`src/ui-app/src/style.css` (around the `@media(max-width:760px)` block) —
+note its height varies with `env(safe-area-inset-bottom)` via
+`calc(var(--safe-bot) + 8px)` padding, so the offset/z-index fix should
+account for that rather than a fixed pixel guess.
 - Use a `min-width`/breakpoint consistent with the existing mobile breakpoint
-  (760px) so desktop vs. mobile treatment doesn't flicker or diverge from the
-  tab bar's own breakpoint.
+(760px) so desktop vs. mobile treatment doesn't flicker or diverge from the
+tab bar's own breakpoint.
 - Don't change `IntegrationPipelineSnapshot`/store logic in
-  `src/ui-app/src/stores/repo.ts` or `src/ui-app/src/types.ts` — this is a
-  pure layout/CSS task.
+`src/ui-app/src/stores/repo.ts` or `src/ui-app/src/types.ts` — this is a
+pure layout/CSS task.
 - Verify visually with RepoOS's own managed preview at both a desktop width
-  and a narrow (≤760px) width, in at least the `clear` theme shown in the
-  screenshots that prompted this task.
+and a narrow (≤760px) width, in at least the `clear` theme shown in the
+screenshots that prompted this task.
 
 ## Activity
 

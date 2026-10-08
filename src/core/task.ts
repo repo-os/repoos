@@ -115,6 +115,89 @@ export function appendActivityEntry(body: string, line: string): string {
   return `${trimmed}\n${line}\n`;
 }
 
+/**
+ * Strip leading spaces when the PM indents an entire body (or a leading block)
+ * so `##` headings land at column 0 and parse as real Markdown sections.
+ */
+function stripCommonLeadingIndent(body: string): string {
+  const lines = body.split("\n");
+  const nonEmpty = lines.filter((l) => l.trim().length > 0);
+  if (nonEmpty.length === 0) return body;
+
+  let minSpaces = Infinity;
+  for (const line of nonEmpty) {
+    const leading = /^ */.exec(line)?.[0].length ?? 0;
+    minSpaces = Math.min(minSpaces, leading);
+  }
+  if (
+    minSpaces > 0 &&
+    nonEmpty.every((l) => l.startsWith(" ".repeat(minSpaces)) || l.trim().length === 0)
+  ) {
+    return lines.map((l) => (l.trim().length === 0 ? l : l.slice(minSpaces))).join("\n");
+  }
+
+  const indentedLines = nonEmpty.filter((l) => /^ /.test(l));
+  if (indentedLines.length === 0) return body;
+  const blockMin = Math.min(...indentedLines.map((l) => /^ */.exec(l)?.[0].length ?? 0));
+  if (blockMin <= 0) return body;
+  return lines
+    .map((l) => {
+      if (l.trim().length === 0) return l;
+      if (l.startsWith(" ".repeat(blockMin))) return l.slice(blockMin);
+      return l;
+    })
+    .join("\n");
+}
+
+/** Collect ordered `- …` activity lines from every `## Activity` block in `body`. */
+function collectActivityEntries(body: string): string[] {
+  const lines = body.split("\n");
+  const entries: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim() !== ACTIVITY_HEADING) continue;
+    for (let j = i + 1; j < lines.length; j++) {
+      const trimmed = lines[j].trim();
+      if (trimmed === ACTIVITY_HEADING) break;
+      if (/^##\s/.test(trimmed)) break;
+      if (trimmed.startsWith("- ")) entries.push(trimmed);
+    }
+  }
+  return entries;
+}
+
+/** Merge duplicate `## Activity` sections into one at the end of the body. */
+function mergeDuplicateActivitySections(body: string): string {
+  const lines = body.split("\n");
+  const activityCount = lines.filter((l) => l.trim() === ACTIVITY_HEADING).length;
+  if (activityCount <= 1) return body;
+
+  const entries = collectActivityEntries(body);
+  let without = body;
+  while (extractSection(without, ACTIVITY_HEADING) !== null) {
+    without = removeSection(without, ACTIVITY_HEADING);
+  }
+  const trimmed = without.replace(/\s+$/, "");
+  const activityBlock =
+    entries.length > 0
+      ? `${ACTIVITY_HEADING}\n\n${entries.join("\n")}\n`
+      : `${ACTIVITY_HEADING}\n\n`;
+  return trimmed ? `${trimmed}\n\n${activityBlock}` : activityBlock;
+}
+
+/**
+ * Canonical task-body shape for storage: spec sections at column 0 and a single
+ * trailing `## Activity` block. Applied on every task write (#0702).
+ */
+export function normalizeTaskBody(body: string): string {
+  const stripped = stripCommonLeadingIndent(body);
+  return mergeDuplicateActivitySections(stripped);
+}
+
+/** True when `body` would change under {@link normalizeTaskBody}. */
+export function taskBodyNeedsNormalize(body: string): boolean {
+  return normalizeTaskBody(body) !== body;
+}
+
 /** The line index where a top-level `## Heading` section starts, or -1. */
 function sectionStart(lines: string[], heading: string): number {
   return lines.findIndex((l) => l.trim() === heading);
@@ -494,5 +577,5 @@ export function serializeTask(task: Task): string {
   // re-attach preserved unknown keys
   for (const [k, v] of Object.entries(task.extra)) data[k] = v;
 
-  return serializeDocument(data, task.body, KEY_ORDER);
+  return serializeDocument(data, normalizeTaskBody(task.body), KEY_ORDER);
 }

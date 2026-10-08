@@ -20,6 +20,7 @@ import { c } from "../cli/colors.js";
 import { findRepoRoot, loadConfig, mainCheckoutRoot, resolveServePort } from "../core/config.js";
 import { changedPathsVsBase, currentBranch } from "../core/git.js";
 import { createRepoOS } from "../core/repoos.js";
+import { shotCapturePageUrl } from "../core/shot-fixtures.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import {
   buildCapturePlan,
@@ -570,9 +571,7 @@ export async function cmdShot(args: string[]): Promise<number> {
         currentPreviewUrl = started.url.replace(/\/$/, "");
         currentTarget = entry.target;
       }
-      const pageUrl = absolute
-        ? entry.route
-        : `${currentPreviewUrl}${normalizedRoute(entry.route)}`;
+      const pageUrl = absolute ? entry.route : shotCapturePageUrl(currentPreviewUrl, entry);
       const page = (await context.newPage()) as unknown as ShotDriverPage;
       let png: Buffer;
       const warnings: string[] = [];
@@ -583,19 +582,25 @@ export async function cmdShot(args: string[]): Promise<number> {
           pageUrl,
           entry,
           { waitMs: opts.waitMs, fullPage: opts.fullPage },
-          (selector, route) => {
-            warnings.push(`highlight ${selector} matched nothing on ${route}`);
-            console.error(
-              c.yellow("  · ") +
-                `highlight "${selector}" matched nothing on ${route} — capture went ahead unhighlighted`,
-            );
-          },
-          (selector, route) => {
-            warnings.push(`selector ${selector} matched nothing on ${route}`);
-            console.error(
-              c.yellow("  · ") +
-                `selector "${selector}" matched nothing on ${route} — capture used the whole window`,
-            );
+          {
+            onHighlightMiss: (selector, route) => {
+              warnings.push(`highlight ${selector} matched nothing on ${route}`);
+              console.error(
+                c.yellow("  · ") +
+                  `highlight "${selector}" matched nothing on ${route} — capture went ahead unhighlighted`,
+              );
+            },
+            onSelectorMiss: (selector, route) => {
+              warnings.push(`selector ${selector} matched nothing on ${route}`);
+              console.error(
+                c.yellow("  · ") +
+                  `selector "${selector}" matched nothing on ${route} — capture used the whole window`,
+              );
+            },
+            onStepMiss: (message, route) => {
+              warnings.push(`${message} on ${route}`);
+              console.error(c.yellow("  · ") + `${message} on ${route} — capture went ahead`);
+            },
           },
         );
       } catch (err) {

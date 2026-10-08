@@ -19,6 +19,7 @@
  * resolved target, and `core/shot-page.ts` provides the page choreography both
  * paths share.
  */
+import { shotCapturePageUrl } from "../core/shot-fixtures.js";
 import {
   buildCapturePlan,
   parseShotPlan,
@@ -82,11 +83,16 @@ export async function captureEntryPage(
       pageUrl,
       entry,
       { waitMs: settleMs, fullPage: false },
-      (selector, route) => {
-        warnings.push(`highlight ${selector} matched nothing on ${route}`);
-      },
-      (selector, route) => {
-        warnings.push(`selector ${selector} matched nothing on ${route}`);
+      {
+        onHighlightMiss: (selector, route) => {
+          warnings.push(`highlight ${selector} matched nothing on ${route}`);
+        },
+        onSelectorMiss: (selector, route) => {
+          warnings.push(`selector ${selector} matched nothing on ${route}`);
+        },
+        onStepMiss: (message, route) => {
+          warnings.push(`${message} on ${route}`);
+        },
       },
     );
     return { png, warnings };
@@ -377,7 +383,7 @@ export async function runAutoShotCapture(
         currentUrl = started.url;
         currentTarget = entry.target;
       }
-      const pageUrl = `${currentUrl}${entry.route.startsWith("/") ? entry.route : `/${entry.route}`}`;
+      const pageUrl = shotCapturePageUrl(currentUrl, entry);
       let png: Buffer;
       let warnings: string[] = [];
       try {
@@ -563,7 +569,7 @@ export async function captureDeclaredShot(
       url = startedPreview.url;
       startedPreviewForTask = !startedPreview.reused;
     }
-    const pageUrl = `${url}${entry.route.startsWith("/") ? entry.route : `/${entry.route}`}`;
+    const pageUrl = shotCapturePageUrl(url, entry);
     let captured: CapturedPage;
     try {
       captured = await captureEntryPage(context, pageUrl, entry);

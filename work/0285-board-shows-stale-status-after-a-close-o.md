@@ -24,7 +24,7 @@ Since #0271, the replacement no longer blocks `listen()` on a full synchronous r
 
 ```js
 void refresh().catch(() => {
-  /* connection state already reflects the successful SSE open */
+/* connection state already reflects the successful SSE open */
 });
 ```
 

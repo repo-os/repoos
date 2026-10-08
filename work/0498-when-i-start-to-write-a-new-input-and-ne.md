@@ -45,10 +45,10 @@ Closing the panel only flips `isNewInput` off; the next open then destroys whate
 ## Notes for AI
 
 - Files most likely to change:
-  - `src/ui-app/src/stores/ui.ts` — stop wiping the input draft inside `openNewInput()` (~lines 213-222); consider giving the New input draft its own screenshot queue following the `pmScreenshots` precedent (~lines 176-183) so `openNewTask()`'s `clearScreenshots()` cannot clobber it.
-  - `src/ui-app/src/components/NewInputPanel.vue` — remove the open-watch reset of text/screenshots (keep the `submitted` reset); add the Clear button at the top right of the freeform entry; keep the existing clear-after-`submit()`; keep the failure-recovery interplay with `repo.submitInput`.
-  - `src/ui-app/src/components/TaskDrawer.vue` — add the Clear button to the freeform New task field header (the `.field-header` beside the "Describe the task" label) that clears `freeformText` and the pending screenshots.
-  - Tests: extend/duplicate the patterns in `src/ui-app/tests/input-submit-ack.test.ts`.
+- `src/ui-app/src/stores/ui.ts` — stop wiping the input draft inside `openNewInput()` (~lines 213-222); consider giving the New input draft its own screenshot queue following the `pmScreenshots` precedent (~lines 176-183) so `openNewTask()`'s `clearScreenshots()` cannot clobber it.
+- `src/ui-app/src/components/NewInputPanel.vue` — remove the open-watch reset of text/screenshots (keep the `submitted` reset); add the Clear button at the top right of the freeform entry; keep the existing clear-after-`submit()`; keep the failure-recovery interplay with `repo.submitInput`.
+- `src/ui-app/src/components/TaskDrawer.vue` — add the Clear button to the freeform New task field header (the `.field-header` beside the "Describe the task" label) that clears `freeformText` and the pending screenshots.
+- Tests: extend/duplicate the patterns in `src/ui-app/tests/input-submit-ack.test.ts`.
 - Reference behavior to copy: the freeform New task draft comment at `TaskDrawer.vue` ~280-282 and its open-watch — "draft survives closing and reopening … cleared only after a successful create". Apply the same pattern to `ui.inputText` + the input's screenshot queue.
 - Mind the shared state: `ui.inputText` and `ui.pendingScreenshots` are shared between the New task and New input panels, and `openNewTask()` calls `clearScreenshots()`. Once the input draft persists this cross-talk becomes user-visible — isolate the input draft rather than relying on both panels never being opened in sequence.
 - The `submitInput` failure path restores the capture into `ui.inputText`/`ui.pendingScreenshots` (`src/ui-app/src/stores/repo.ts` ~2284-2288) — keep that retry behavior working; verify it still holds with a persistent draft.

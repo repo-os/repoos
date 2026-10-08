@@ -18,10 +18,10 @@ bump:
 
 \`\`\`
 repoos upgrade
-  Current version: v0.5.42
-  Checking latest release…
-  Upgrading v0.5.42 → v0.5.44…
-  Upgraded to v0.5.44.
+Current version: v0.5.42
+Checking latest release…
+Upgrading v0.5.42 → v0.5.44…
+Upgraded to v0.5.44.
 \`\`\`
 
 Since #0361, releases can carry human-readable (optionally AI-drafted) notes,
@@ -40,20 +40,20 @@ today's silent behavior, no "no notes available" filler.
 ## Notes for AI
 
 - Relevant code: src/commands/upgrade.ts (\`Release\` interface,
-  \`fetchLatestRelease\`, \`cmdUpgrade\`'s final console.log).
+\`fetchLatestRelease\`, \`cmdUpgrade\`'s final console.log).
 - The body is markdown (GitHub release body) — printing it close to raw in
-  the terminal is fine and matches how most CLIs show changelogs; no need to
-  strip markdown syntax, just maybe trim trailing whitespace and cap
-  pathological length if worth the trouble (use judgment, don't over-engineer
-  for a case that won't come up in practice).
+the terminal is fine and matches how most CLIs show changelogs; no need to
+strip markdown syntax, just maybe trim trailing whitespace and cap
+pathological length if worth the trouble (use judgment, don't over-engineer
+for a case that won't come up in practice).
 - Both the stable path (\`fetchLatestRelease(null)\`, hits \`/releases/latest\`)
-  and the channel path (\`fetchLatestRelease(channel)\`, hits \`/releases\` list)
-  return the same \`Release\` shape from GitHub's API — both already include
-  \`body\` for free once the type declares it, no extra API call needed.
+and the channel path (\`fetchLatestRelease(channel)\`, hits \`/releases\` list)
+return the same \`Release\` shape from GitHub's API — both already include
+\`body\` for free once the type declares it, no extra API call needed.
 - Existing tests: check for an upgrade.test.ts or similar covering
-  cmdUpgrade/fetchLatestRelease — extend it for this rather than skipping
-  coverage. If none exists, a small one exercising the new print (mock fetch
-  returning a release with/without a body) is worth adding.
+cmdUpgrade/fetchLatestRelease — extend it for this rather than skipping
+coverage. If none exists, a small one exercising the new print (mock fetch
+returning a release with/without a body) is worth adding.
 - \`repoos check\` passes.
 
 ## Activity

@@ -13,11 +13,6 @@ pm_model_override: default
 created_at: "2026-08-14T06:34:37Z"
 updated_at: "2026-08-16T12:06:05Z"
 ---
-## Activity
-
-- 2026-08-14T06:34:37Z · created · unknown
-
-
 ## Problem
 
 `src/ui-app/tests/release-agent.test.ts` was found leaking real orphaned
@@ -44,12 +39,12 @@ against the vitest process.
 
 **Same pattern, not yet fixed, confirmed leaking:**
 - `src/ui-app/tests/pause-resume.test.ts` — `mkdtempSync(tmpdir(), "repoos-pause-")`,
-  same try/finally-only cleanup.
+same try/finally-only cleanup.
 - `src/ui-app/tests/reload.test.ts` — `mkdtempSync(tmpdir(), "repoos-reload-")`,
-  same try/finally-only cleanup.
+same try/finally-only cleanup.
 - Confirmed by directory count in `/tmp` at time of filing: **730** leaked
-  `repoos-pause-*`/`repoos-reload-*` directories, same accumulation pattern
-  as the 900+ found for `repoos-release-*`.
+`repoos-pause-*`/`repoos-reload-*` directories, same accumulation pattern
+as the 900+ found for `repoos-release-*`.
 
 ## Desired UX
 
@@ -60,34 +55,35 @@ archaeology needed to notice or fix a leak.
 ## Acceptance criteria
 
 - [ ] `pause-resume.test.ts` and `reload.test.ts` get the same kind of fix as
-      `release-agent.test.ts` (737f031) — a `beforeAll`/equivalent sweep of
-      stale same-prefix fixtures, not a signal handler (confirmed not to work
-      under this project's vitest thread pool — see Problem).
+`release-agent.test.ts` (737f031) — a `beforeAll`/equivalent sweep of
+stale same-prefix fixtures, not a signal handler (confirmed not to work
+under this project's vitest thread pool — see Problem).
 - [ ] Consider extracting the sweep-and-reap logic (currently duplicated
-      inline in `release-agent.test.ts`) into a small shared test helper so
-      the next spawn-a-real-process fixture gets this for free instead of
-      needing its own copy-pasted implementation.
+inline in `release-agent.test.ts`) into a small shared test helper so
+the next spawn-a-real-process fixture gets this for free instead of
+needing its own copy-pasted implementation.
 - [ ] The 730 already-leaked `repoos-pause-*`/`repoos-reload-*` directories
-      in `/tmp` get cleaned up (either as part of this task, or confirm
-      they're stale enough that the new sweep logic reaps them on its own
-      next run).
+in `/tmp` get cleaned up (either as part of this task, or confirm
+they're stale enough that the new sweep logic reaps them on its own
+next run).
 - [ ] `repoos check` passes.
 
 ## Notes for AI
 
 - Read `src/ui-app/tests/release-agent.test.ts`'s `reapStaleFixtures()` and
-  its surrounding comment in full before starting — it explains exactly why
-  the naive signal-handler approach fails and documents the working
-  alternative. Don't re-litigate that; port the same approach.
+its surrounding comment in full before starting — it explains exactly why
+the naive signal-handler approach fails and documents the working
+alternative. Don't re-litigate that; port the same approach.
 - Do not attempt to fix this via `pool: "forks"` in `vite.config.ts` (switching
-  the whole suite off worker threads) as a shortcut — that's a much bigger,
-  riskier infra change than this task's scope, and wasn't verified to
-  actually solve the problem either (forked child processes might still be
-  killed abruptly rather than signaled cleanly by vitest's own interrupt
-  handling — untested).
+the whole suite off worker threads) as a shortcut — that's a much bigger,
+riskier infra change than this task's scope, and wasn't verified to
+actually solve the problem either (forked child processes might still be
+killed abruptly rather than signaled cleanly by vitest's own interrupt
+handling — untested).
 
 ## Activity
 
+- 2026-08-14T06:34:37Z · created · unknown
 - 2026-08-14T10:32:36Z · status inbox→ready
 - 2026-08-16T11:45:10Z · model_override
 - 2026-08-16T11:45:14Z · status ready→active, branch

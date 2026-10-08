@@ -31,8 +31,8 @@ an **optional release-notes text area**. Two ways to fill it:
 
 1. **Type it.** Write notes by hand in the text area before confirming the cut.
 2. **Generate it.** Click a button ("Generate with AI") that drafts release
-   notes from the git commits since the last release and fills the text area
-   with the draft.
+notes from the git commits since the last release and fills the text area
+with the draft.
 
 The generated draft lands in the same text area, so the human can review and
 edit it before cutting. The field stays optional end to end — cutting a
@@ -56,9 +56,9 @@ release with the notes left empty works exactly as it does today.
 - Use the repo's existing LLM plumbing for the generate action (`runPrompt` / `AgentRunner` in `src/server/agents.ts`) — **zero runtime dependencies is a hard constraint**, do not add an SDK. It's a one-shot call, so it must call `recordOneShotSession(...)` immediately after the await.
 - Keep the field optional; never block or gate the existing cut flow on notes.
 - Stated assumptions (reasonable defaults the user did not specify):
-  - Commit range = commits since the last release tag; fallback to the full history when no previous release exists.
-  - Notes are published as the GitHub release body when a GitHub release is cut; stored with the release record otherwise.
-  - One generate action that fills the textarea — no streaming preview, no regeneration history.
+- Commit range = commits since the last release tag; fallback to the full history when no previous release exists.
+- Notes are published as the GitHub release body when a GitHub release is cut; stored with the release record otherwise.
+- One generate action that fills the textarea — no streaming preview, no regeneration history.
 - After any UI change, rebuild (`bun run build:ui`). Do not request a preview as part of finishing — previews are on request from the human.
 
 ## Scope

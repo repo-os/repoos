@@ -46,7 +46,7 @@ newly selected CLI. Better options:
 - Remember a model per CLI, so switching away and back restores the pin.
 - Only reset when the saved model isn't valid for the new CLI.
 - At minimum, don't auto-save a CLI+model change instantly — or surface that
-  the pin was cleared, so it's recoverable.
+the pin was cleared, so it's recoverable.
 
 Whatever the fix, the wider principle: a destructive settings change should
 never be silent and instantly persisted.

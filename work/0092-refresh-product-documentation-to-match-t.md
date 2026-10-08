@@ -39,36 +39,36 @@ recurring.
 ## Acceptance criteria
 
 - [ ] Audit `README.md`, `docs/vision.md`, `docs/roadmap.md`,
-      `docs/concepts.md`, and `docs/architecture.md` against the current source
-      tree and completed task history.
+`docs/concepts.md`, and `docs/architecture.md` against the current source
+tree and completed task history.
 - [ ] Update the README and roadmap so agent orchestration is described as a
-      current capability, with unfinished hardening work clearly separated from
-      features that do not exist yet.
+current capability, with unfinished hardening work clearly separated from
+features that do not exist yet.
 - [ ] Update the architecture document to describe the Vite + Vue application
-      under `src/ui-app`; verify that task #0029's completed legacy-UI removal
-      is accurately reflected and remove obsolete dual-UI guidance.
+under `src/ui-app`; verify that task #0029's completed legacy-UI removal
+is accurately reflected and remove obsolete dual-UI guidance.
 - [ ] Reconcile command, endpoint, task-lifecycle, agent, worktree, build, and
-      runtime descriptions with the implementation; remove or qualify stale
-      claims.
+runtime descriptions with the implementation; remove or qualify stale
+claims.
 - [ ] Preserve the established product principles: repo-native truth,
-      local-first operation, human review, graceful degradation, and zero
-      runtime dependencies.
+local-first operation, human review, graceful degradation, and zero
+runtime dependencies.
 - [ ] Avoid duplicating volatile task-board detail in long-lived documents;
-      link readers to `repoos list` or `work/` for live status.
+link readers to `repoos list` or `work/` for live status.
 - [ ] Check all internal file references and command examples for accuracy.
 - [ ] `repoos check` passes after the documentation changes.
 
 ## Notes for AI
 
 - Treat `work/*.md` and the current source as authoritative when status details
-  disagree with narrative documentation.
+disagree with narrative documentation.
 - Do not present partially implemented or active work as complete. Use the task
-  board and code to distinguish shipped capabilities from current hardening.
+board and code to distinguish shipped capabilities from current hardening.
 - Keep the documents at their intended levels: vision for durable direction,
-  roadmap for the staged arc, architecture for current implementation, and the
-  README for the user-facing overview.
+roadmap for the staged arc, architecture for current implementation, and the
+README for the user-facing overview.
 - This task updates documentation only. Scheduling or automatically recreating
-  the audit belongs to #0093.
+the audit belongs to #0093.
 
 ## Related
 

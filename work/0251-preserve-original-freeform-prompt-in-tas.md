@@ -18,9 +18,9 @@ When a user creates a task via freeform input, the original prompt text is sent 
 ## Desired UX
 
 1. When the user clicks "Create" in freeform mode, the server **immediately** creates a draft task with:
-   - A title derived from the user's prompt (existing `explanationTitle()` logic)
-   - A body containing the user's original prompt text under a `## Original prompt` section
-   - Status: `draft`
+- A title derived from the user's prompt (existing `explanationTitle()` logic)
+- A body containing the user's original prompt text under a `## Original prompt` section
+- Status: `draft`
 2. The PM agent then runs asynchronously to flesh out the task body (problem, desired UX, acceptance criteria, etc.), replacing the draft body with the structured version.
 3. If the PM agent fails, the draft with the original prompt survives — the user never loses their input.
 4. The `## Original prompt` section is preserved in the final task even after the PM agent runs, so there's always an audit trail of what the user actually asked for.
