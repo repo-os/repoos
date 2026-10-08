@@ -856,7 +856,9 @@ export function classifyRemoteExecFailure(run: {
     /EACCES|ENOSPC|no space left|Cannot connect to the Docker daemon|error:.*(?:install|accessing temporary directory)|Module not found.*node_modules/i;
   if (infraPattern.test(output) && !remoteRunHasGateExit(output)) {
     const eacces = output.match(/EACCES[^\n]*/)?.[0];
-    const cause = eacces ? `bun install ${eacces.trim()}` : "host environment error before the gate";
+    const cause = eacces
+      ? `bun install ${eacces.trim()}`
+      : "host environment error before the gate";
     return { kind: "infra", transient: true, markHostDegraded: true, cause };
   }
   if (remoteRunHasGateExit(output)) {
@@ -901,8 +903,7 @@ export function formatRemoteFailureDetail(
 ): string {
   if (cls.kind === "test") {
     const tests = extractFailedTests(output);
-    const headline =
-      tests.length > 0 ? tests.slice(0, 3).join(", ") : cls.cause;
+    const headline = tests.length > 0 ? tests.slice(0, 3).join(", ") : cls.cause;
     let detail = `test failure: ${headline} on ${hostIp}`;
     if (retryHost) detail += ` (after retry on ${retryHost})`;
     return detail;
