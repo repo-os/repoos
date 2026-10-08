@@ -12,7 +12,7 @@ branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-08T17:57:28Z"
+updated_at: "2026-10-08T17:57:29Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -93,3 +93,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:49:42Z · note: Item 21 (PATCH numeric maxActiveTasks): declined — config schema/validation change; not part of #0704 scope.
 - 2026-10-08T17:51:30Z · body
 - 2026-10-08T17:57:28Z · status active→review
+- 2026-10-08T17:57:29Z · note: shots: skipped — the diff (22 changed paths) touches no [[preview.paths]] globs — no UI change to capture
