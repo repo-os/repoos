@@ -102,7 +102,7 @@ Close-out failed twice with 'merge conflict in src/server/server.ts' because mai
 - 2026-10-06T07:26:54Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
 - 2026-10-06T07:36:39Z · model_override
 - 2026-10-06T13:49:16Z · handoff failed · ui-review handoff failed at check · remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202);
- |                      ^
+|                      ^
 213|   expect(res.body.status).toBe("active");
 214|   const deadline = Date.now() + 30_000;
 ❯ tests/agent-review.test.ts:349:13

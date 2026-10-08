@@ -176,7 +176,7 @@ cannot silently turn RepoOS runs into daemon mode.
 
 ```json
 {"meta":{"id":"…","uuid":"…","title":"…","created":"…","modified":"…",
-     "cost":0.0016488,"prompt_tokens":13642,"completion_tokens":3,"total_tokens":13645},
+"cost":0.0016488,"prompt_tokens":13642,"completion_tokens":3,"total_tokens":13645},
 "messages":[{"role":"assistant","model":"…","provider":"…","parts":[
 {"type":"reasoning","thinking":"…"},
 {"type":"text","text":"…"},

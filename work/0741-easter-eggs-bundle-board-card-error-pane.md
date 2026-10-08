@@ -52,15 +52,15 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 "route": "/work?status=review",
 "highlight": ".task-card .tc-card-footer",
 "steps": [
-  {
-    "waitFor": ".task-card"
-  },
-  {
-    "waitFor": ".task-card .tc-card-footer"
-  },
-  {
-    "waitMs": 500
-  }
+{
+  "waitFor": ".task-card"
+},
+{
+  "waitFor": ".task-card .tc-card-footer"
+},
+{
+  "waitMs": 500
+}
 ]
 },
 {
@@ -69,15 +69,15 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 "route": "/work?status=review",
 "highlight": ".task-card .tc-card-footer",
 "steps": [
-  {
-    "waitFor": ".task-card .tc-card-footer"
-  },
-  {
-    "click": "button.theme-toggle"
-  },
-  {
-    "waitMs": 500
-  }
+{
+  "waitFor": ".task-card .tc-card-footer"
+},
+{
+  "click": "button.theme-toggle"
+},
+{
+  "waitMs": 500
+}
 ]
 }
 ]
@@ -119,18 +119,18 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 652|     const next = f.runner.validate(opts("0002"));
 653|     await tick();
 654|     expect(f.pending()).toEqual(["b"]);
-   |                         ^
+ |                         ^
 655|     f.release("b");
 656|     expect(await next).toEqual({ ok: true, stage: "check" });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 441 passed | 1 skipped (443)
-  Tests  1 failed | 5321 passed | 15 skipped (5337)
+Tests  1 failed | 5321 passed | 15 skipped (5337)
 Start at  18:10:42
 Duration  283.85s (transform 7.75s, setup 2.46s, import 52.92s, tests 256.61s, environment 229.39s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 762ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  18:15:26
 Duration  2.74s (transform 1.15s, setup 12ms, import 1.44s, tests 762ms, environment 448ms)
 error: script "test" exited with code 1

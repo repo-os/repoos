@@ -65,7 +65,7 @@ Done means: that test passes 10 times in a row locally under load, and the serve
 - 2026-10-07T12:49:35Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T12:49:35Z · status review→active
 - 2026-10-07T12:54:44Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —     228|   expect(res.status).toBe(202);
- |                      ^
+|                      ^
 229|   expect(res.body.status).toBe("active");
 230|   const deadline = Date.now() + 30_000;
 ❯ tests/agent-review.test.ts:375:13
@@ -118,7 +118,7 @@ error: script "test" exited with code 1
 - 2026-10-07T15:15:14Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —     765|     origin?: unknown;
 766|   };
 767|   appendFileSync(
- |   ^
+|   ^
 768|     "/private/tmp/repoos-0737-body-" + process.pid + ".ndjson",
 769|     JSON.stringify({ body, prev: existing.status, root: config.root })…
 ❯ tests/task-underspecified-flag.test.ts:371:13

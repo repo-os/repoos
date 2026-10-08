@@ -72,18 +72,18 @@ Owner wants release soon. Verify diagnosis independently against CURRENT main an
 172|       approvalByTaskId: {},
 173|     });
 174|     expect(digest.items).toEqual([]);
-   |                          ^
+ |                          ^
 175|   });
 176| });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 Test Files  1 failed | 431 passed | 1 skipped (433)
-  Tests  2 failed | 5189 passed | 15 skipped (5206)
+Tests  2 failed | 5189 passed | 15 skipped (5206)
 Start at  10:04:48
 Duration  254.54s (transform 6.57s, setup 2.06s, import 44.46s, tests 239.71s, environment 200.65s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 738ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  10:09:03
 Duration  2.75s (transform 1.16s, setup 14ms, import 1.46s, tests 738ms, environment 455ms)
 error: script "test" exited with code 1
@@ -96,18 +96,18 @@ error: script "test" exited with code 1
 172|       approvalByTaskId: {},
 173|     });
 174|     expect(digest.items).toEqual([]);
-   |                          ^
+ |                          ^
 175|   });
 176| });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 Test Files  1 failed | 431 passed | 1 skipped (433)
-  Tests  2 failed | 5189 passed | 15 skipped (5206)
+Tests  2 failed | 5189 passed | 15 skipped (5206)
 Start at  10:15:23
 Duration  277.42s (transform 6.66s, setup 2.45s, import 52.40s, tests 224.47s, environment 248.06s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 552ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  10:20:01
 Duration  2.66s (transform 1.22s, setup 11ms, import 1.51s, tests 552ms, environment 503ms)
 error: script "test" exited with code 1
@@ -123,7 +123,7 @@ error: script "test" exited with code 1
 - 2026-10-07T10:47:36Z · body
 - 2026-10-07T10:49:56Z · body
 - 2026-10-07T10:55:55Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     215|   expect(res.status).toBe(202);
-   |                      ^
+ |                      ^
 216|   expect(res.body.status).toBe("active");
 217|   const deadline = Date.now() + 30_000;
 ❯ tests/agent-review.test.ts:361:13
@@ -131,13 +131,13 @@ error: script "test" exited with code 1
 ❯ tests/agent-review.test.ts:353:11
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 433 passed | 1 skipped (435)
-  Tests  1 failed | 5235 passed | 15 skipped (5251)
+Tests  1 failed | 5235 passed | 15 skipped (5251)
 Start at  10:51:18
 Duration  271.21s (transform 6.76s, setup 2.29s, import 51.33s, tests 222.99s, environment 239.47s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 409ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  10:55:50
 Duration  2.31s (transform 1.08s, setup 11ms, import 1.33s, tests 409ms, environment 481ms)
 error: script "test" exited with code 1

@@ -54,7 +54,7 @@ PARKED (2026-10-05, human decision pending on closing this task). Three review r
 458|       const reaped = await sweep.cleanupOrphanedRoots();
 459|
 460|       expect(reaped).toBeGreaterThanOrEqual(1);
- |                      ^
+|                      ^
 461|       const outcome = await exited;
 462|       // The sweep's SIGTERM terminated it; the child must not have su…
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
