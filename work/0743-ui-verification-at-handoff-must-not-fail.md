@@ -12,7 +12,7 @@ branch: feat/ui-verification-at-handoff-must-not-fail
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:06:36Z"
-updated_at: "2026-10-08T14:32:08Z"
+updated_at: "2026-10-08T14:32:09Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -74,3 +74,4 @@ bun install v1.4.2 (744846f84)
 error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INSTALL
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-08T14:32:08Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:55450/) (http://127.0.0.1:55450/)
+- 2026-10-08T14:32:09Z · handoff failed · ui-review handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:55450/) (http://127.0.0.1:55450/)
