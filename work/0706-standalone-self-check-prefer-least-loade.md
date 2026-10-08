@@ -11,7 +11,7 @@ branch: feat/standalone-self-check-prefer-least-loade
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-08T15:15:05Z"
+updated_at: "2026-10-08T15:15:06Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -124,3 +124,4 @@ error: script "test" exited with code 1
 - 2026-10-08T15:08:22Z · body
 - 2026-10-08T15:15:05Z · status active→review
 - 2026-10-08T15:15:05Z · note: Task body is underspecified: missing sections: Notes for AI
+- 2026-10-08T15:15:06Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (319c7b94a) during finalization (#0734)
