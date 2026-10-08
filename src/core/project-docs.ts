@@ -592,10 +592,10 @@ export function findMissingAgentsMdPaths(root: string, agentsMd: string): string
     if (!raw || raw === "." || raw === "..") continue;
     const looksLikePath =
       raw.includes("/") ||
-      /^[A-Za-z0-9_.-]+$/.test(raw) &&
+      (/^[A-Za-z0-9_.-]+$/.test(raw) &&
         (raw.includes(".") ||
           raw.endsWith("/") ||
-          ["justfile", "Makefile", "AGENTS.md", "CLAUDE.md"].includes(raw));
+          ["justfile", "Makefile", "AGENTS.md", "CLAUDE.md"].includes(raw)));
     if (!looksLikePath) continue;
     if (seen.has(raw)) continue;
     seen.add(raw);

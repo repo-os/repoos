@@ -2435,11 +2435,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     progress("started", opts.skipChecks ? "commit gate only (checks skipped)" : "repoos check");
     try {
       const sourceLabel =
-        opts.origin === "task-file"
-          ? "cli"
-          : opts.origin === "board-drag"
-            ? "board"
-            : opts.origin;
+        opts.origin === "task-file" ? "cli" : opts.origin === "board-drag" ? "board" : opts.origin;
       const noted = patchTaskFile(config, task.absPath, {
         note: `handoff requested (${sourceLabel})`,
       });
