@@ -313,6 +313,33 @@ load carefully), and pool retry — not something to fix by spamming **Move to d
 
 Policy table: [`remote-validation.md` → Pre-review unreachable-runner policy](remote-validation.md#pre-review-unreachable-runner-policy).
 
+## Host infra vs test failure (#0745)
+
+### Symptom
+
+Handoff or close-out failed with **host problem:** or **test failure:** in the
+task/check detail, or Checks → **Remote runners** shows a host as **degraded**.
+
+### Cause
+
+The runner classifies each remote attempt:
+
+- **TEST** — `[validate] gate exit N` is in the log: build/lint/tests ran and
+  failed. Fix the branch; the pool does **not** retry on another host.
+- **INFRA / unreachable** — install (`EACCES`, `ENOSPC`), `validate.sh` exit **4**
+  (setup) or **5** (container), ssh drop, or outer timeout. Recorded as check-run
+  outcome **`infra`**, host marked **degraded** (skipped until probe passes), and
+  **`retryOtherHosts`** runs once on another machine when configured.
+
+### What to do
+
+1. For **test failure**, read the failing test names in the detail — same as a
+   local red gate.
+2. For **host problem**, check the degraded host (disk, permissions, Docker), use
+   **Test connection** on Remote runners; when the probe passes the host re-enters
+   the pool automatically.
+3. Full taxonomy: [`remote-validation.md` → Result handling](remote-validation.md#result-handling).
+
 ## When to use cheap models
 
 Guidance is advisory; see [`agent-model-recommendations.md`](agent-model-recommendations.md)

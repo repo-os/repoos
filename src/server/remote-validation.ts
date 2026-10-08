@@ -60,8 +60,8 @@ import {
   resolveRemoteHosts,
 } from "../core/remote-hosts.js";
 import type { Logger } from "../core/logger.js";
-import { remoteRunHistoryMeta } from "../core/check-failure-summary.js";
-import { getCheckStore, type CheckRunPhase } from "../core/check-store.js";
+import { extractFailedTests, remoteRunHistoryMeta } from "../core/check-failure-summary.js";
+import { getCheckStore, type CheckRunOutcome, type CheckRunPhase } from "../core/check-store.js";
 import type { CheckSummary } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import { runGit } from "../core/git.js";
@@ -371,6 +371,8 @@ export interface RemoteHostStatus {
   healthy: boolean;
   /** Why the host is unusable (prereq failure / unreachable), when it is. */
   detail?: string;
+  /** Mid-run infra fault — host is skipped until a probe passes (#0745). */
+  degraded?: boolean;
   /** Most recent run dispatched here, for the drawer's per-host state. */
   lastRun?: { taskId: string; ok: boolean; at: string; durationMs?: number };
   /**
@@ -781,6 +783,167 @@ export function parseRemoteGateExitCode(output: string): number | null {
   if (!m) return null;
   const code = Number(m[1]);
   return Number.isFinite(code) ? code : null;
+}
+
+/** validate.sh: bundle/mirror transport — never a test result (#0717). */
+export const VALIDATE_EXIT_TRANSPORT = 3;
+/** validate.sh: clone/install/setup failed before the gate ran (#0745). */
+export const VALIDATE_EXIT_SETUP = 4;
+/** validate.sh: container could not start (#0745). */
+export const VALIDATE_EXIT_CONTAINER = 5;
+
+export type RemoteFailureKind = "test" | "infra" | "unreachable";
+
+export interface RemoteFailureClassification {
+  kind: RemoteFailureKind;
+  transient: boolean;
+  markHostDegraded: boolean;
+  cause: string;
+}
+
+/**
+ * Classify a finished remote exec result (#0745): TEST (gate ran), INFRA
+ * (environment never got to a real gate), or UNREACHABLE (ssh/timeout).
+ * Uses structured markers and validate.sh exit codes, not exit code alone.
+ */
+export function classifyRemoteExecFailure(run: {
+  code: number | null;
+  output: string;
+  timedOut: boolean;
+}): RemoteFailureClassification {
+  const { output, timedOut, code } = run;
+  if (timedOut) {
+    return {
+      kind: "unreachable",
+      transient: true,
+      markHostDegraded: true,
+      cause: "remote validation timed out",
+    };
+  }
+  if (
+    code === 255 &&
+    /(?:Connection|ssh:|closed by remote host|Broken pipe|timed out)/i.test(output)
+  ) {
+    return {
+      kind: "unreachable",
+      transient: true,
+      markHostDegraded: true,
+      cause: "ssh connection dropped",
+    };
+  }
+  if (
+    code === VALIDATE_EXIT_SETUP ||
+    code === VALIDATE_EXIT_CONTAINER ||
+    code === VALIDATE_EXIT_TRANSPORT
+  ) {
+    const cause =
+      code === VALIDATE_EXIT_SETUP
+        ? "install/clone/setup failed"
+        : code === VALIDATE_EXIT_CONTAINER
+          ? "container could not start"
+          : "bundle/transport error";
+    return { kind: "infra", transient: true, markHostDegraded: true, cause };
+  }
+  if (/setup failed/i.test(output) && !remoteRunHasGateExit(output)) {
+    return {
+      kind: "infra",
+      transient: true,
+      markHostDegraded: true,
+      cause: "setup failed before the gate",
+    };
+  }
+  const infraPattern =
+    /EACCES|ENOSPC|no space left|Cannot connect to the Docker daemon|error:.*(?:install|accessing temporary directory)|Module not found.*node_modules/i;
+  if (infraPattern.test(output) && !remoteRunHasGateExit(output)) {
+    const eacces = output.match(/EACCES[^\n]*/)?.[0];
+    const cause = eacces ? `bun install ${eacces.trim()}` : "host environment error before the gate";
+    return { kind: "infra", transient: true, markHostDegraded: true, cause };
+  }
+  if (remoteRunHasGateExit(output)) {
+    const gate = parseRemoteGateExitCode(output);
+    return {
+      kind: "test",
+      transient: false,
+      markHostDegraded: false,
+      cause: gate != null ? `gate exit ${gate}` : "gate failed",
+    };
+  }
+  if (/^\s*FAIL\s+/m.test(output) || /Tests\s+\d+\s+failed/i.test(output)) {
+    return {
+      kind: "test",
+      transient: false,
+      markHostDegraded: false,
+      cause: "tests failed",
+    };
+  }
+  if (looksTransient(output)) {
+    return {
+      kind: "infra",
+      transient: true,
+      markHostDegraded: true,
+      cause: "resource pressure during the run",
+    };
+  }
+  return {
+    kind: "infra",
+    transient: true,
+    markHostDegraded: true,
+    cause: code != null ? `exit ${code}` : "unknown remote failure",
+  };
+}
+
+/** Human-facing failure line for tasks, logs, and check-run detail (#0745). */
+export function formatRemoteFailureDetail(
+  cls: RemoteFailureClassification,
+  hostIp: string,
+  output: string,
+  retryHost?: string,
+): string {
+  if (cls.kind === "test") {
+    const tests = extractFailedTests(output);
+    const headline =
+      tests.length > 0 ? tests.slice(0, 3).join(", ") : cls.cause;
+    let detail = `test failure: ${headline} on ${hostIp}`;
+    if (retryHost) detail += ` (after retry on ${retryHost})`;
+    return detail;
+  }
+  const label = cls.kind === "unreachable" ? "host unreachable" : "host problem";
+  let detail = `${label}: ${cls.cause} on ${hostIp}`;
+  if (retryHost) detail += `; retried on ${retryHost}`;
+  return detail;
+}
+
+export function summaryForRemoteExecFailure(
+  run: RemoteExecResult,
+  hostIp: string,
+): { summary: CheckSummary; classification: RemoteFailureClassification } {
+  const classification = classifyRemoteExecFailure(run);
+  const detail = formatRemoteFailureDetail(classification, hostIp, run.output);
+  if (classification.kind === "test") {
+    return {
+      classification,
+      summary: {
+        ok: false,
+        stage: "check",
+        exitCode: run.code,
+        transient: false,
+        output: tail(run.output, 40, 4000),
+        detail,
+      },
+    };
+  }
+  return {
+    classification,
+    summary: {
+      ok: false,
+      stage: "check",
+      exitCode: run.code,
+      transient: classification.transient,
+      infraFailure: true,
+      output: tail(run.output, 40, 4000),
+      detail,
+    },
+  };
 }
 
 /**
@@ -2144,6 +2307,7 @@ export class RemoteValidationRunner implements RemoteValidator {
       ok: false,
       stage: "check",
       transient: true,
+      infraFailure: true,
       detail: `remote validation unavailable: ${detail}`,
     };
   }
@@ -2506,6 +2670,7 @@ export class RemoteValidationRunner implements RemoteValidator {
           ok: false,
           stage: "check",
           transient: true,
+          infraFailure: true,
           exitCode: null,
           output: tail(run.output, 40, 4000),
           detail,
@@ -2527,44 +2692,25 @@ export class RemoteValidationRunner implements RemoteValidator {
         return withScope({ ok: true, stage: "check" });
       }
 
-      // Non-zero: the ssh transport itself could have dropped (code 255) — treat
-      // that as infra, not a real test failure.
-      if (
-        run.code === 255 &&
-        /(?:Connection|ssh:|closed by remote host|Broken pipe)/i.test(run.output)
-      ) {
-        return withScope(
-          this.infraFail(`ssh connection to the runner dropped mid-run: ${tail(run.output)}`, {
-            taskId: opts.taskId,
-            host: host.ip,
-            exitCode: 255,
-          }),
-        );
-      }
-      const transient = looksTransient(run.output);
-      emit(`\n[remote validation FAILED (exit ${run.code}) in ${elapsed}s]\n`);
-      this.logger?.integration(opts.taskId, "warn", `remote validation failed (exit ${run.code})`, {
-        transient,
+      const { summary, classification } = summaryForRemoteExecFailure(run, host.ip);
+      emit(
+        `\n[remote validation FAILED (${classification.kind}, exit ${run.code}) in ${elapsed}s]\n`,
+      );
+      this.logger?.integration(opts.taskId, "warn", summary.detail ?? "remote validation failed", {
+        transient: summary.transient,
       });
       this.record(
         { taskId: opts.taskId, host: host.ip, phase: "result" },
         {
-          level: transient ? "warn" : "error",
+          level: summary.transient ? "warn" : "error",
           phase: "result",
-          message: `remote validation failed (exit ${run.code}) on ${host.ip}`,
+          message: summary.detail ?? `remote validation failed (exit ${run.code}) on ${host.ip}`,
           host: host.ip,
           exitCode: run.code,
-          infra: transient,
+          infra: !!summary.infraFailure,
         },
       );
-      return withScope({
-        ok: false,
-        stage: "check",
-        exitCode: run.code,
-        transient,
-        output: tail(run.output, 40, 4000),
-        detail: `remote validation failed (exit ${run.code}) — ${tail(run.output)}`,
-      });
+      return withScope(summary);
     } catch (e) {
       return withScope(this.infraFail((e as Error).message, { taskId: opts.taskId }));
     } finally {
@@ -3286,6 +3432,11 @@ export class TailscaleHostPool {
     if (this.waiters.length) this.armHealthRetry(s);
   }
 
+  /** Infra fault on a host that may recover after probe (#0745). */
+  markDegraded(host: string, cause: string): void {
+    this.markUnhealthy(host, `degraded: ${cause}`);
+  }
+
   /** Record which host ran a job, for the status endpoint (#0521). */
   recordRun(host: string, taskId: string, ok: boolean, durationMs?: number): void {
     const s = this.hosts.find((c) => c.spec.host === host);
@@ -3430,6 +3581,7 @@ export class TailscaleHostPool {
           probed: s.probed,
           healthy: s.healthy,
           detail: s.detail,
+          degraded: !!s.detail?.startsWith("degraded:"),
           lastRun: s.lastRun,
           activeRuns: s.activeRuns.map((r) => ({ ...r })),
           queuedTasks: [...(queuedOn.get(s)?.taskIds ?? [])],
@@ -3882,10 +4034,12 @@ export interface HostPoolOptions {
  * say `cancelled` — the Runs tab exists to tell "the gate was cancelled"
  * apart from "the gate caught something".
  */
-function classifyRunOutcome(summary: CheckSummary): "pass" | "fail" | "cancelled" | "hung" {
+function classifyRunOutcome(summary: CheckSummary): CheckRunOutcome {
   if (summary.ok) return "pass";
   if (summary.hung) return "hung";
-  return summary.cancelled ? "cancelled" : "fail";
+  if (summary.cancelled) return "cancelled";
+  if (summary.infraFailure) return "infra";
+  return "fail";
 }
 
 /**
@@ -3908,7 +4062,7 @@ function recordRemoteRunHistory(
   opts: ValidateOptions,
   startedAt: number,
   machine: string | null,
-  outcome: "pass" | "fail" | "cancelled" | "hung",
+  outcome: CheckRunOutcome,
   detail?: string | null,
   summary?: CheckSummary,
 ): void {
@@ -3921,6 +4075,7 @@ function recordRemoteRunHistory(
           transient: summary.transient,
           configError: summary.configError,
           cancelled: summary.cancelled,
+          infraFailure: summary.infraFailure,
         })
       : remoteRunHistoryMeta(outcome, { detail: detail ?? null });
     getCheckStore(storeRoot, config.cacheDir).record({
@@ -4040,6 +4195,7 @@ export class TailscaleRunner implements RemoteValidator {
       ok: false,
       stage: "check",
       transient: true,
+      infraFailure: true,
       detail: `remote validation unavailable: ${detail}`,
     };
   }
@@ -4195,7 +4351,7 @@ export class TailscaleRunner implements RemoteValidator {
         opts,
         startedAt,
         null,
-        "fail",
+        "infra",
         "remote validation is disabled",
       );
       return this.infraFail("remote validation is disabled", dispatch);
@@ -4291,13 +4447,14 @@ export class TailscaleRunner implements RemoteValidator {
           retryEnabled &&
           triedHosts.size < maxAttempts
         ) {
-          emit(
-            `\n[retrying remote validation on another host — ${slot.host.host} failed transiently]\n`,
-          );
+          const retryNote = summary.infraFailure
+            ? `retrying on another host after host problem on ${slot.host.host}`
+            : `retrying on another host after transient failure on ${slot.host.host}`;
+          emit(`\n[${retryNote}]\n`);
           appendRemoteValidationEvent(this.config.root, opts.taskId, {
             level: "warn",
             phase: "run",
-            message: `retrying on another host after transient failure on ${slot.host.host}`,
+            message: retryNote,
             host: slot.host.host,
           });
           continue; // the slot releases in `finally`
@@ -4760,6 +4917,7 @@ export class TailscaleRunner implements RemoteValidator {
           ok: false,
           stage: "check",
           transient: true,
+          infraFailure: true,
           exitCode: null,
           output: tail(run.output, 40, 4000),
           detail,
@@ -4797,48 +4955,29 @@ export class TailscaleRunner implements RemoteValidator {
         return withScope({ ok: true, stage: "check" });
       }
 
-      // Non-zero: the ssh transport itself could have dropped (code 255) — treat
-      // that as infra, not a real test failure, and remember the host is sick.
-      if (
-        run.code === 255 &&
-        /(?:Connection|ssh:|closed by remote host|Broken pipe)/i.test(run.output)
-      ) {
-        const detail = `ssh connection to ${host.ip} dropped mid-run: ${tail(run.output)}`;
-        this.pool.markUnhealthy(host.ip, detail);
-        this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
-        return withScope(
-          this.infraFail(detail, {
-            taskId: opts.taskId,
-            host: host.ip,
-            exitCode: 255,
-          }),
-        );
+      const { summary, classification } = summaryForRemoteExecFailure(run, host.ip);
+      if (classification.markHostDegraded) {
+        this.pool.markDegraded(host.ip, classification.cause);
       }
-      const transient = looksTransient(run.output);
-      emit(`\n[remote validation FAILED (exit ${run.code}) in ${elapsed}s on ${host.ip}]\n`);
-      this.logger?.integration(opts.taskId, "warn", `remote validation failed (exit ${run.code})`, {
-        transient,
+      emit(
+        `\n[remote validation FAILED (${classification.kind}, exit ${run.code}) in ${elapsed}s on ${host.ip}]\n`,
+      );
+      this.logger?.integration(opts.taskId, "warn", summary.detail ?? "remote validation failed", {
+        transient: summary.transient,
       });
       this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
       this.record(
         { taskId: opts.taskId, host: host.ip, phase: "result" },
         {
-          level: transient ? "warn" : "error",
+          level: summary.transient ? "warn" : "error",
           phase: "result",
-          message: `remote validation failed (exit ${run.code}) on ${host.ip}`,
+          message: summary.detail ?? `remote validation failed (exit ${run.code}) on ${host.ip}`,
           host: host.ip,
           exitCode: run.code,
-          infra: transient,
+          infra: !!summary.infraFailure,
         },
       );
-      return withScope({
-        ok: false,
-        stage: "check",
-        exitCode: run.code,
-        transient,
-        output: tail(run.output, 40, 4000),
-        detail: `remote validation failed (exit ${run.code}) — ${tail(run.output)}`,
-      });
+      return withScope(summary);
     } catch (e) {
       return withScope(
         this.infraFail((e as Error).message, { taskId: opts.taskId, host: host.ip }),
