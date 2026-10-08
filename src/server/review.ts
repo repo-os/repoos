@@ -70,6 +70,11 @@ import {
 import { readUiHandoffGateEvidence } from "./ui-handoff-gate.js";
 import { getCheckStore } from "../core/check-store.js";
 import { extractTaskProofCommands } from "../core/task-proof-commands.js";
+import { applyMechanicalReviewVerification } from "../core/review-verification.js";
+import {
+  gatherReviewVerification,
+  gatherReviewVerificationWithoutWorktree,
+} from "./review-verification-gather.js";
 
 /** A stored agent review, as served to the UI. */
 export interface ReviewReport {
@@ -294,6 +299,11 @@ export function reviewMission(
     " tree/plan identity. Comment on whether the shots match the diff and whether the",
     " recorded console log looks acceptable. If a required visual acceptance",
     " criterion is unverified, that is blocking: `needs some work`, naming the gap.",
+    "- After your report, RepoOS appends `## Automated verification` with the",
+    "  console-error check (from handoff browser evidence) and guard negative-test",
+    "  evidence for any check guard this branch materially changed. A failed or",
+    "  not-run required check clamps `good to go` to `needs some work` — do not",
+    "  rely on the agent verdict alone when that section shows a failure.",
     "",
     "## What to output",
     "",
@@ -961,8 +971,21 @@ export class ReviewManager {
       totalTokens: session?.tokens,
       costUsd: session?.costUsd,
     };
-    const reportText = result.output?.trim() ?? "";
+    let reportText = result.output?.trim() ?? "";
     const hasReport = ok && reportText;
+    if (hasReport) {
+      const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+      const verification = workdir
+        ? gatherReviewVerification(
+            this.config,
+            task,
+            workdir,
+            currentBranch(this.config.root) ?? "main",
+          )
+        : gatherReviewVerificationWithoutWorktree(this.config, task);
+      const applied = applyMechanicalReviewVerification(reportText, verification);
+      reportText = applied.markdown;
+    }
     const verdict = hasReport ? parseVerdict(reportText) : null;
     const state: ReviewReport["state"] = !hasReport ? "failed" : verdict ? "ok" : "incomplete";
     const body = !hasReport
