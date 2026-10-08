@@ -41,8 +41,10 @@ can't assume any.
 - `debugging-check-failures.md` — triage order for a `repoos check` failure you
   can't explain. Read before assuming "flake".
 - `agent-run-operations.md` — driving a busy board (CLI control plane, false
-  provider-failure kills #0709/#0718, remote slot starvation #0705, re-handoff
-  and `commitDirty` rules). From the 2026-10-06 overnight triage (story #0008).
+  provider-failure kills #0709/#0718, remote slot starvation #0705, handoff loop
+  guard #0693, `validate.sh` rollout/args #0717/#0725, hung kills #0729/#0739,
+  unreachable hosts, previews/`serve-noauth`, re-handoff and `commitDirty`
+  rules). From the 2026-10-06/07 overnight triage (stories #0008, #0009).
 - `easter-eggs-bundles.md` — how to land many small, independent, low-risk fixes
   in one task (one worktree, one gate run, one review, one close-out) instead of
   one task each or a hotfix to `main`. #0721 is the worked example.
