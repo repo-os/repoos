@@ -59,3 +59,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:50:41Z · note: Item 2 (created_by): fixed — resolveApiCreator/resolveCliCreator on API, CLI, and story creates; activity uses the resolved label.
 - 2026-10-08T17:50:41Z · note: Item 3 (intercepted handoff activity): fixed — handoff requested note without index churn; guard revert strips provisional active→review and skips review→active.
 - 2026-10-08T17:50:42Z · note: Item 4 (doctor AGENTS.md paths): fixed — warn-only findMissingAgentsMdPaths in repoos doctor.
+- 2026-10-08T17:50:42Z · note: Item 5 (repoos show header fields): declined — out of scope for this papercuts task; needs a dedicated UI/CLI task.
