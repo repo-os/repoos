@@ -11,7 +11,7 @@ export interface RemotePoolQueueInfo {
 }
 
 const QUEUE_LINE_RE =
-  /waiting for a runner(?: on ([^\s(]+))? \(queue position (\d+)\)[^\n]*queued behind (\d+) other remote run/;
+  /waiting for a runner(?: on ([^\s(]+))? \(queue position (\d+)(?:[^)]*)?\)[^\n]*queued behind (\d+) other remote run/;
 
 /** Streamed to check logs / transcripts when the pool queue blocks (#0706). */
 export function formatRemotePoolQueueMessage(
