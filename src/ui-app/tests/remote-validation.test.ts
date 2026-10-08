@@ -391,7 +391,7 @@ describe("RemoteValidationRunner", () => {
     const res = await r.validate(opts());
     expect(res.ok).toBe(false);
     expect(res.transient).toBe(true);
-    expect(res.detail).toContain("unavailable");
+    expect(res.detail).toMatch(/host unreachable.*ssh connection dropped/i);
     await r.dispose();
   });
 
