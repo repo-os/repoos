@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-08T15:08:23.208Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0704"
 title: Small papercuts from the tuk-private planning run
 type: chore
@@ -45,3 +47,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T14:48:13Z · body
 - 2026-10-08T14:49:11Z · body
 - 2026-10-08T15:08:20Z · handoff failed · handoff recovery attempted · finalization failed
+
