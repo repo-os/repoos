@@ -21,4 +21,11 @@ describe("remote pool queue copy (#0706)", () => {
     expect(hint?.label).toBe("waiting for runner on bee (position 1)");
     expect(hint?.title).toMatch(/queued on bee/i);
   });
+
+  it("omits the host in the line when no healthy target exists yet", () => {
+    const line = formatRemotePoolQueueMessage({ host: "", ahead: 1, position: 2 }, []);
+    expect(line).toContain("waiting for a runner (queue position 2");
+    expect(line).not.toContain(" on  (");
+    expect(parseRemotePoolQueueMessage(line)?.host).toBe("");
+  });
 });
