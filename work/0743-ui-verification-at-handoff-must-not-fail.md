@@ -2,7 +2,7 @@
 id: "0743"
 title: UI verification at handoff must not fail a task because a declared shot targets UI that only exists in a state the preview board lacks
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: [server, web]
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -12,7 +12,7 @@ branch: ""
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:06:36Z"
-updated_at: "2026-10-08T14:06:41Z"
+updated_at: "2026-10-08T14:06:43Z"
 ---
 ## Problem
 
@@ -37,3 +37,4 @@ Read the handoff UI verification gate (src/server/ui-handoff-gate.ts, #0680), th
 
 - 2026-10-08T14:06:36Z · created · unknown
 - 2026-10-08T14:06:41Z · cli_override, model_override
+- 2026-10-08T14:06:43Z · status inbox→ready
