@@ -49,36 +49,36 @@ general host networking.
 ## Acceptance criteria
 
 - [ ] Replace the mission's mandatory agent-originated localhost `curl` with a
-    sandbox-compatible structured intent handled by `AgentRunner` and the
-    RepoOS server. A dedicated exact output signal or equivalent narrow IPC
-    is acceptable.
+sandbox-compatible structured intent handled by `AgentRunner` and the
+RepoOS server. A dedicated exact output signal or equivalent narrow IPC
+is acceptable.
 - [ ] Bind each preview request to a live server-issued run capability:
-    task ID, run ID, registered branch, and registered worktree. Reject
-    forged, expired, cross-task, and path-substitution requests.
+task ID, run ID, registered branch, and registered worktree. Reject
+forged, expired, cross-task, and path-substitution requests.
 - [ ] The agent cannot supply a port, command, executable, or arbitrary path.
-    RepoOS alone chooses and owns preview process/network lifecycle.
+RepoOS alone chooses and owns preview process/network lifecycle.
 - [ ] Starting/reusing a preview is idempotent per task and uses the existing
-    `PreviewManager`; do not create a parallel preview implementation.
+`PreviewManager`; do not create a parallel preview implementation.
 - [ ] Stream server-side progress and the final preview URL/probe result into
-    the task transcript using trusted system entries so the agent and human
-    can see what happened.
+the task transcript using trusted system entries so the agent and human
+can see what happened.
 - [ ] When the agent sandbox cannot open the returned URL, RepoOS performs a
-    server-side health/static-page probe and records the result. A UI smoke
-    check must still be part of `repoos check`; preview success must not
-    weaken the definition-of-done gate.
+server-side health/static-page probe and records the result. A UI smoke
+check must still be part of `repoos check`; preview success must not
+weaken the definition-of-done gate.
 - [ ] Preview failure gives an actionable reason and leaves the same agent
-    session/worktree resumable. It must not instruct the agent to retry an
-    impossible localhost call indefinitely.
+session/worktree resumable. It must not instruct the agent to retry an
+impossible localhost call indefinitely.
 - [ ] Update generated agent mission/context-pack instructions so all drivers
-    use the new path and the old `curl ${REPOOS_API_URL}` requirement is
-    removed.
+use the new path and the old `curl ${REPOOS_API_URL}` requirement is
+removed.
 - [ ] Preserve the existing human-facing `POST /api/tasks/:id/preview` API and
-    Preview button for trusted UI/host clients.
+Preview button for trusted UI/host clients.
 - [ ] Tests cover Codex-like no-network operation, valid intent, forged task or
-    run, expired request, repeated request, preview startup failure, server
-    transcript reporting, and cleanup when task state changes.
+run, expired request, repeated request, preview startup failure, server
+transcript reporting, and cleanup when task state changes.
 - [ ] Add an end-to-end fixture where a fake agent has no localhost access yet
-    successfully requests and receives server-verified preview completion.
+successfully requests and receives server-verified preview completion.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

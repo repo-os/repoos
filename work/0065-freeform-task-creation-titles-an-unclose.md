@@ -38,14 +38,14 @@ The real frontmatter (with the actual title) was written **into the body**, and
 the top-level `title` is `---`. Root cause (reproduced against the parser):
 
 1. The PM agent emitted a document with an opening `---` line but **no closing
- `---`** (unclosed frontmatter).
+`---`** (unclosed frontmatter).
 2. `parseDocument` (`src/core/frontmatter.ts:50`) only honors a closed
- frontmatter; an unclosed one returns `{ data: {}, hadFrontmatter: false }`
- with the whole input as body — no error, no signal.
+frontmatter; an unclosed one returns `{ data: {}, hadFrontmatter: false }`
+with the whole input as body — no error, no signal.
 3. `parseGeneratedTask` (`src/server/freeform.ts:47`) then takes the
- no-frontmatter fallback: `title: explanationTitle(output)`.
+no-frontmatter fallback: `title: explanationTitle(output)`.
 4. `explanationTitle` (`src/server/freeform.ts:28`) picks the **first non-empty
- line** as the title — which is the literal `---` delimiter.
+line** as the title — which is the literal `---` delimiter.
 
 So an agent's minor formatting slip turns into a corrupted task title that is
 also unfindable in search and confusing on the board. 0064 is the concrete
@@ -61,23 +61,23 @@ file normalized to a single well-formed frontmatter block.
 ## Acceptance criteria
 
 - [ ] `parseDocument` treats a document that starts with `---` but has no
-    closing `---` as **frontmatter terminated by EOF** (YAML documents may
-    end without a trailing separator): parse the region after the opening
-    delimiter as frontmatter and return the remainder as body. (Confirm this
-    doesn't regress the `hadFrontmatter: false` path used by the raw-draft
-    fallback or the indexer.)
+   closing `---` as **frontmatter terminated by EOF** (YAML documents may
+   end without a trailing separator): parse the region after the opening
+   delimiter as frontmatter and return the remainder as body. (Confirm this
+   doesn't regress the `hadFrontmatter: false` path used by the raw-draft
+   fallback or the indexer.)
 - [ ] Defense in depth: `explanationTitle` and the `parseGeneratedTask`
-    no-frontmatter fallback skip delimiter lines (a line that is exactly
-    `---`) when picking the title line, so a title can never be `---` even
-    when the lenient parse can't apply.
+   no-frontmatter fallback skip delimiter lines (a line that is exactly
+   `---`) when picking the title line, so a title can never be `---` even
+   when the lenient parse can't apply.
 - [ ] Round-trip fix: `repoos new`-style rewrite of an affected file
-    (serialize via `serializeDocument`) yields ONE frontmatter block with the
-    real title, and the duplicated frontmatter keys (`type`/`priority`/
-    `area`/`assigned_to`) currently embedded in the body are not misparsed.
+   (serialize via `serializeDocument`) yields ONE frontmatter block with the
+   real title, and the duplicated frontmatter keys (`type`/`priority`/
+   `area`/`assigned_to`) currently embedded in the body are not misparsed.
 - [ ] Freeform path test: a fixture feeding an unclosed-frontmatter agent
-    output through `parseGeneratedTask` → `createTask` produces a file whose
-    frontmatter `title` is the real title and whose body contains the
-    sections, not a second `---` block (fakebin pattern).
+   output through `parseGeneratedTask` → `createTask` produces a file whose
+   frontmatter `title` is the real title and whose body contains the
+   sections, not a second `---` block (fakebin pattern).
 - [ ] `repoos check` passes; zero new runtime dependencies.
 
 ## Notes for AI

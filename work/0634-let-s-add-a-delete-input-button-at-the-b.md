@@ -74,38 +74,38 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 ```json
 [
 {
-  "label": "Input detail drawer with Delete input control",
-  "target": "default",
-  "route": "/inputs",
-  "highlight": ".input-detail .delete-zone",
-  "steps": [
-    {
-      "click": ".input-row:nth-child(1)"
-    },
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "Input detail drawer with Delete input control",
+"target": "default",
+"route": "/inputs",
+"highlight": ".input-detail .delete-zone",
+"steps": [
+  {
+    "click": ".input-row:nth-child(1)"
+  },
+  {
+    "waitMs": 300
+  }
+]
 },
 {
-  "label": "Story Details panel with Delete story control",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".story-panel-facts .delete-zone",
-  "steps": [
-    {
-      "click": ".story-head:nth-child(1)"
-    },
-    {
-      "waitMs": 300
-    },
-    {
-      "click": ".drawer-tabs .tab-btn:nth-child(4)"
-    },
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "Story Details panel with Delete story control",
+"target": "default",
+"route": "/stories",
+"highlight": ".story-panel-facts .delete-zone",
+"steps": [
+  {
+    "click": ".story-head:nth-child(1)"
+  },
+  {
+    "waitMs": 300
+  },
+  {
+    "click": ".drawer-tabs .tab-btn:nth-child(4)"
+  },
+  {
+    "waitMs": 300
+  }
+]
 }
 ]
 ```

@@ -63,44 +63,44 @@ changes.
 ## Acceptance criteria
 
 - [ ] The stories side panel renders the standard scrim (`<DialogOverlay />`)
-    behind the sheet, picking up the shared `.overlay` styling — themed via
-    `var(--overlay-bg)`, z-index below `.drawer-wrap`.
+behind the sheet, picking up the shared `.overlay` styling — themed via
+`var(--overlay-bg)`, z-index below `.drawer-wrap`.
 - [ ] Clicking the scrim closes the stories panel.
 - [ ] `Escape` and the `×` still close the stories panel, and focus returns to
-    the story row that opened it.
+the story row that opened it.
 - [ ] The stories panel is no longer declared `:modal="false"`, and the
-    `keepOpenOnOutsideInteraction` handlers on `@pointer-down-outside` /
-    `@focus-outside` are removed (along with the function itself if nothing
-    else references it — do not leave dead code).
+`keepOpenOnOutsideInteraction` handlers on `@pointer-down-outside` /
+`@focus-outside` are removed (along with the function itself if nothing
+else references it — do not leave dead code).
 - [ ] The in-place content swap is retained and still covered: when the selected
-    story changes by a route that is not a click behind the scrim (deep link
-    `/stories?story=…`, story → task navigation, programmatic selection), the
-    same dialog shows the new story with the tab strip reset to the first tab
-    and the body scrolled to the top.
+story changes by a route that is not a click behind the scrim (deep link
+`/stories?story=…`, story → task navigation, programmatic selection), the
+same dialog shows the new story with the tab strip reset to the first tab
+and the body scrolled to the top.
 - [ ] Audit complete: every right-hand side panel binds `ui.drawerWidth` and
-    renders the `.drawer-resize` handle wired to `ui.startResize`. Any panel
-    that hardcodes a width or omits the handle is converted to the shared
-    binding; the list of panels checked and anything changed is recorded in
-    this task's transcript.
+renders the `.drawer-resize` handle wired to `ui.startResize`. Any panel
+that hardcodes a width or omits the handle is converted to the shared
+binding; the list of panels checked and anything changed is recorded in
+this task's transcript.
 - [ ] Audit complete: every right-hand side panel renders `<DialogOverlay />`,
-    except where a recorded reason makes it impossible (e.g.
-    `ScreenshotViewer`, which deliberately sits at a higher z-index). List any
-    exceptions and their reasons in the transcript.
+except where a recorded reason makes it impossible (e.g.
+`ScreenshotViewer`, which deliberately sits at a higher z-index). List any
+exceptions and their reasons in the transcript.
 - [ ] No per-panel width override survives: the default width for panels already
-    on `ui.drawerWidth` stays 680px, and the resize clamp in
-    `src/ui-app/src/stores/ui.ts` (`Math.max(360, Math.min(innerWidth - 40, …))`)
-    is unchanged.
+on `ui.drawerWidth` stays 680px, and the resize clamp in
+`src/ui-app/src/stores/ui.ts` (`Math.max(360, Math.min(innerWidth - 40, …))`)
+is unchanged.
 - [ ] `src/ui-app/tests/story-panel.test.ts` updated: the assertions
-    "declares the panel non-modal, with no scrim to block the list" and "blocks
-    both of radix's outside-dismissal paths" are replaced with assertions that
-    the scrim is present, that a scrim click dismisses the panel, and that the
-    in-place swap still resets tab and scroll.
+"declares the panel non-modal, with no scrim to block the list" and "blocks
+both of radix's outside-dismissal paths" are replaced with assertions that
+the scrim is present, that a scrim click dismisses the panel, and that the
+in-place swap still resets tab and scroll.
 - [ ] `src/ui-app/tests/deep-link-params.test.ts` still passes — it locates the
-    story drawer by its tablist, and a modal dialog adds a body
-    pointer-events lock, so it may need the same shim the other modal-drawer
-    tests use.
+story drawer by its tablist, and a modal dialog adds a body
+pointer-events lock, so it may need the same shim the other modal-drawer
+tests use.
 - [ ] `repoos check` passes in full (format, lint, build, tests, WebKit smoke),
-    including the CSS-layering and theme-contrast guards.
+including the CSS-layering and theme-contrast guards.
 
 ## Notes for AI
 

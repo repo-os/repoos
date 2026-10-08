@@ -38,17 +38,17 @@ restart, no manual toggle.
 ## Acceptance criteria
 
 - [ ] `AppIcon.appiconset` contains distinct light and dark (luminosity
-    appearance) variants at the required sizes (512@1x and 512@2x/1024).
+  appearance) variants at the required sizes (512@1x and 512@2x/1024).
 - [ ] The Dock icon switches automatically between the light and dark variants
-    when macOS appearance changes while the app is running.
+  when macOS appearance changes while the app is running.
 - [ ] The icon artwork uses the real brand mark with the colored gradient
-    border — the white border is gone.
+  border — the white border is gone.
 - [ ] The colored border's thickness proportionally matches the web app's
-    top-left `.logo-mark` ring, verified visually against the web app icon.
+  top-left `.logo-mark` ring, verified visually against the web app icon.
 - [ ] The icon remains legible at small Dock sizes in both variants.
 - [ ] `xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub
-    -configuration Debug -sdk macosx -derivedDataPath macos/.derived-data
-    CODE_SIGNING_ALLOWED=NO build` passes.
+  -configuration Debug -sdk macosx -derivedDataPath macos/.derived-data
+  CODE_SIGNING_ALLOWED=NO build` passes.
 
 ## Notes for AI
 
@@ -68,11 +68,11 @@ update the live Dock icon.
 login screen's `.login-logo` is the same mark.
 - **Assumptions made (from ambiguous details in the request):**
 - "As thick as it's supposed to be" is interpreted as proportional to the
-  web `.logo-mark` ring (3px on a 30px mark, i.e. ~10% of the mark's edge
-  length); final call is a visual match against the web app's icon.
+web `.logo-mark` ring (3px on a 30px mark, i.e. ~10% of the mark's edge
+length); final call is a visual match against the web app's icon.
 - Light and dark variants share the brand mark and gradient border colors;
-  what differs is the inner fill/contrast so the mark reads well against
-  light and dark Dock backgrounds.
+what differs is the inner fill/contrast so the mark reads well against
+light and dark Dock backgrounds.
 - `macos/` is a standalone target — `repoos check` does not cover it. Verify
 with the `xcodebuild` build/test commands in `macos/README.md`, not
 `repoos check`.

@@ -49,16 +49,16 @@ Two bugs in the pi driver's streaming path (introduced with #0616, now on
 `main`):
 
 1. `src/server/agents.ts` `parsePiEvent` surfaces every `message_update`
- `text_delta` as its own `{type:"text"}` transcript entry. The chat UI's
- `mergeAssistantText` (`src/ui-app/src/lib/chat-rows.ts`) joins consecutive
- assistant text parts with a blank line — it expects opencode's
- paragraph-sized `text` parts — so each token fragment becomes its own
- paragraph.
+`text_delta` as its own `{type:"text"}` transcript entry. The chat UI's
+`mergeAssistantText` (`src/ui-app/src/lib/chat-rows.ts`) joins consecutive
+assistant text parts with a blank line — it expects opencode's
+paragraph-sized `text` parts — so each token fragment becomes its own
+paragraph.
 2. Those streamed delta entries bypass `applySignals` (only the authoritative
- `message_end` runs it, and its text is then suppressed as a duplicate), so
- `::repoos-handoff-ready::` is never replaced by the `✓ agent requested
- server-side handoff` line and appears raw in the transcript. The handoff
- still fires (message_end is inspected), but the transcript is wrong.
+`message_end` runs it, and its text is then suppressed as a duplicate), so
+`::repoos-handoff-ready::` is never replaced by the `✓ agent requested
+server-side handoff` line and appears raw in the transcript. The handoff
+still fires (message_end is inspected), but the transcript is wrong.
 
 ## Fix
 

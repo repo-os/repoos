@@ -85,18 +85,18 @@ architecture gets designed automatically with no back-and-forth).
 ## Acceptance criteria
 
 - [ ] Documented finding on how squishy's 0002–0011 backlog actually got
-    created, and whether this task should build on that mechanism or
-    introduce a new one (with reasoning either way).
+created, and whether this task should build on that mechanism or
+introduce a new one (with reasoning either way).
 - [ ] A fresh `repoos init` (guided new-project flow) leaves at least one
-    concrete, actionable `ready` task on the board beyond 0001 — the board
-    is never empty immediately after init.
+concrete, actionable `ready` task on the board beyond 0001 — the board
+is never empty immediately after init.
 - [ ] `repoos init` inside an existing repo (not the guided flow) seeds an
-    appropriately different starter task reflecting that there's already a
-    codebase to read, not a blank slate to describe.
+appropriately different starter task reflecting that there's already a
+codebase to read, not a blank slate to describe.
 - [ ] Both starter tasks are genuinely workable by a human alone, not only by
-    an AI agent.
+an AI agent.
 - [ ] Verified with a real scratch run of both `repoos init` paths (new
-    project and existing repo), same way the 0001 fix was verified.
+project and existing repo), same way the 0001 fix was verified.
 - [ ] `repoos check` passes.
 
 ## Related

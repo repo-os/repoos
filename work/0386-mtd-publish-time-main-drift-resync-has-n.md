@@ -73,14 +73,14 @@ kinds already get their own hint.
 ## Acceptance criteria
 
 - [ ] The publish-time "main advanced, revalidating" resync is capped —
-    verify with a test that simulates repeated drift and confirms it stops
-    looping rather than cycling forever.
+verify with a test that simulates repeated drift and confirms it stops
+looping rather than cycling forever.
 - [ ] Whatever happens after the cap is hit (escalation, backoff, priority
-    bump) is a deliberate, tested behavior, not silence.
+bump) is a deliberate, tested behavior, not silence.
 - [ ] No regression to the legitimate self-healing case: a task that only
-    drifts once or twice before landing (the common case, per both
-    reproductions above) must keep working exactly as today — this is
-    about bounding the loop, not making it stricter for the normal case.
+drifts once or twice before landing (the common case, per both
+reproductions above) must keep working exactly as today — this is
+about bounding the loop, not making it stricter for the normal case.
 - [ ] `repoos check` passes.
 
 ## Related

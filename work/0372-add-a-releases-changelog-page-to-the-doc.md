@@ -28,16 +28,16 @@ docs.repoos.org), doing BOTH of the two approaches discussed rather than
 picking one:
 
 1. **Fetch-and-embed**: at build time, fetch recent releases from GitHub's
- API (`GET /repos/repo-os/repoos/releases`) and render them on the page —
- version, date, and the notes body (the same markdown already written into
- the tag/GitHub Release). Cap it to a reasonable recent window (e.g. last
- 10-20 releases, or last N months) rather than the entire history, to keep
- the page and the build fetch bounded.
+API (`GET /repos/repo-os/repoos/releases`) and render them on the page —
+version, date, and the notes body (the same markdown already written into
+the tag/GitHub Release). Cap it to a reasonable recent window (e.g. last
+10-20 releases, or last N months) rather than the entire history, to keep
+the page and the build fetch bounded.
 2. **Link-out for the rest**: below (or alongside) the embedded recent
- releases, a plain link to the full GitHub Releases page
- (https://github.com/repo-os/repoos/releases) for anything older than the
- embedded window, and as the authoritative source if the embed is ever
- stale between deploys.
+releases, a plain link to the full GitHub Releases page
+(https://github.com/repo-os/repoos/releases) for anything older than the
+embedded window, and as the authoritative source if the embed is ever
+stale between deploys.
 
 No API key needed for the fetch: this is a PUBLIC repo, and GitHub's REST API
 serves public-repo releases unauthenticated

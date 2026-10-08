@@ -44,25 +44,25 @@ reopening the panel.
 ## Acceptance criteria
 
 - [ ] Selecting a story in the stories view opens a side panel styled
-    consistently with the existing task and input side panels.
+consistently with the existing task and input side panels.
 - [ ] The panel's content is organised into tabs (at minimum: full story body,
-    and related tasks), using the same tab component/styling used elsewhere in
-    UI.
+and related tasks), using the same tab component/styling used elsewhere in
+UI.
 - [ ] The body tab renders the full, untruncated story body, including
-    markdown formatting, with the same renderer used for the task panel body.
+markdown formatting, with the same renderer used for the task panel body.
 - [ ] The related-tasks tab lists the story's related tasks; each row is
-    clickable and opens that task (reusing existing task navigation/panel
-    behaviour, not a new code path).
+clickable and opens that task (reusing existing task navigation/panel
+behaviour, not a new code path).
 - [ ] A story with no related tasks shows an empty state in that tab rather
-    than a blank panel.
+than a blank panel.
 - [ ] Selecting a different story while the panel is open updates the panel's
-    contents and the active tab resets to the first tab.
+contents and the active tab resets to the first tab.
 - [ ] The panel can be closed with the same affordance as the task/input
-    panels (close button and, where the existing panels support it, Escape).
+panels (close button and, where the existing panels support it, Escape).
 - [ ] The panel renders correctly on narrow viewports, matching the existing
-    task/input panel's responsive behaviour.
+task/input panel's responsive behaviour.
 - [ ] Keyboard and focus behaviour match the existing task/input side panels
-    (focus moves into the panel on open and returns sensibly on close).
+(focus moves into the panel on open and returns sensibly on close).
 
 ## Notes for AI
 

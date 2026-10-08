@@ -87,31 +87,31 @@ among the built-ins — every existing built-in agent is read-only (creates
 tasks or writes a report, never edits source). Getting the trivial/needs-
 human line right matters:
 - "Trivial" = a single, mechanical, high-confidence correction with
-  concrete evidence: a renamed path where the old one 404s and the new
-  one is unambiguous, a stale count/date, a dead link with one obvious
-  live replacement. Apply directly to the doc file (docs/AGENTS.md/
-  user-docs only — NEVER `src/`) and commit directly, with the specific
-  evidence (what was checked, what was found) in the commit message.
-  Cap how many trivial fixes land in one run (pick a conservative number,
-  e.g. 5-10) so a bad run can't rewrite large swaths of the docs
-  unsupervised — if the cap is hit, downgrade the rest to the task instead
-  of silently dropping them.
+concrete evidence: a renamed path where the old one 404s and the new
+one is unambiguous, a stale count/date, a dead link with one obvious
+live replacement. Apply directly to the doc file (docs/AGENTS.md/
+user-docs only — NEVER `src/`) and commit directly, with the specific
+evidence (what was checked, what was found) in the commit message.
+Cap how many trivial fixes land in one run (pick a conservative number,
+e.g. 5-10) so a bad run can't rewrite large swaths of the docs
+unsupervised — if the cap is hit, downgrade the rest to the task instead
+of silently dropping them.
 - "Needs human" = anything requiring judgment about intent (is this
-  behavior change deliberate or drift? does this claim need a rewrite,
-  not just a fact update? do two docs actually contradict, or is one
-  scoped narrower than the other?). Do NOT file one task per finding —
-  that produces the exact "10+ tasks per run" noise explicitly rejected
-  in the interview. Bundle ALL needs-human findings from one run into a
-  SINGLE task, one entry per finding with its location and evidence —
-  mirror `createTechDebtTasks`'s existing grouped-task pattern
-  (`built-in-agents.ts:551-620`, which already groups multiple issues
-  into one task per type) but collapse to exactly one group
-  ("docs-debt") regardless of category. If a run finds zero needs-human
-  issues, create no task at all — don't file an empty/no-op task.
+behavior change deliberate or drift? does this claim need a rewrite,
+not just a fact update? do two docs actually contradict, or is one
+scoped narrower than the other?). Do NOT file one task per finding —
+that produces the exact "10+ tasks per run" noise explicitly rejected
+in the interview. Bundle ALL needs-human findings from one run into a
+SINGLE task, one entry per finding with its location and evidence —
+mirror `createTechDebtTasks`'s existing grouped-task pattern
+(`built-in-agents.ts:551-620`, which already groups multiple issues
+into one task per type) but collapse to exactly one group
+("docs-debt") regardless of category. If a run finds zero needs-human
+issues, create no task at all — don't file an empty/no-op task.
 - Task creation writes directly under `config.workDir` the same way
-  `createTechDebtTasks` does (this is server-side code implementing the
-  task-creation path itself, not an external caller that should go through
-  `repoos new`/the HTTP API — same reasoning as the existing agents).
+`createTechDebtTasks` does (this is server-side code implementing the
+task-creation path itself, not an external caller that should go through
+`repoos new`/the HTTP API — same reasoning as the existing agents).
 - **Trigger: both schedule and on-demand**, via the existing "Build your
 team" schedule dropdown (Manual only / Daily / Weekly) and Run now button
 — no new trigger mechanism needed, `BuiltInAgentSchedule` already covers
@@ -120,23 +120,23 @@ this.
 ## Acceptance criteria
 
 - [ ] `scanForDocsDebt` (or similar) verifies concrete claims in
-    `AGENTS.md`/`docs/`/`user-docs/` against actual code/repo state, not
-    just internal doc consistency, and is bounded (scan cap analogous to
-    existing agents).
+  `AGENTS.md`/`docs/`/`user-docs/` against actual code/repo state, not
+  just internal doc consistency, and is bounded (scan cap analogous to
+  existing agents).
 - [ ] A run applies trivial, mechanical fixes directly to doc files (never
-    `src/`) and commits them, each with evidence in the commit message; a
-    cap limits how many land per run.
+  `src/`) and commits them, each with evidence in the commit message; a
+  cap limits how many land per run.
 - [ ] A run creates AT MOST ONE task per invocation, bundling every
-    needs-human finding; zero such findings means zero tasks created.
+  needs-human finding; zero such findings means zero tasks created.
 - [ ] New built-in agent wired end to end: dispatcher arm in
-    `runBuiltInAgent`, `BuiltInAgentCard` entry (name "Docs Debt Agent",
-    description, icon, result message), `AgentsView.vue` card list,
-    schedule + manual-trigger both work via existing mechanisms.
+  `runBuiltInAgent`, `BuiltInAgentCard` entry (name "Docs Debt Agent",
+  description, icon, result message), `AgentsView.vue` card list,
+  schedule + manual-trigger both work via existing mechanisms.
 - [ ] Tests covering: claim verification catching a deliberately-introduced
-    false claim (regression test for the #0343 failure mode), the
-    trivial/needs-human classification boundary, the single-task-bundling
-    behavior, and the trivial-fix cap — mirror existing test coverage for
-    `scanForTechDebt`/`createTechDebtTasks`.
+  false claim (regression test for the #0343 failure mode), the
+  trivial/needs-human classification boundary, the single-task-bundling
+  behavior, and the trivial-fix cap — mirror existing test coverage for
+  `scanForTechDebt`/`createTechDebtTasks`.
 - [ ] `repoos check` passes.
 
 ## Related

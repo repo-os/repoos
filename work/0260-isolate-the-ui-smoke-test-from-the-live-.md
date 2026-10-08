@@ -48,17 +48,17 @@ constant regardless of board size, and the smoke test becomes deterministic.
 ## Acceptance criteria
 
 - [ ] `startPreviewServer()` in `src/commands/ui-harness.ts` accepts (or
-    always uses) an isolated fixture root instead of defaulting to the
-    real repo root when called from the smoke test.
+always uses) an isolated fixture root instead of defaulting to the
+real repo root when called from the smoke test.
 - [ ] Running `repoos check` no longer logs any `[preview] auto-launch
-    failed` / job-recovery lines during the UI smoke test phase.
+failed` / job-recovery lines during the UI smoke test phase.
 - [ ] The smoke test still exercises real rendering: title check, mounted
-    #app, Work/Settings navigation, the CSS utility-spacing regression
-    guard — all currently-covered assertions keep passing.
+#app, Work/Settings navigation, the CSS utility-spacing regression
+guard — all currently-covered assertions keep passing.
 - [ ] `disableAuth: true` (already set) is preserved so the smoke test can
-    still reach the dashboard when the real repo has native auth enabled.
+still reach the dashboard when the real repo has native auth enabled.
 - [ ] `repoos check` duration on the UI smoke test phase no longer scales
-    with the number of active/review tasks on the board.
+with the number of active/review tasks on the board.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

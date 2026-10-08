@@ -58,33 +58,33 @@ human-visible signal should not be able to recur silently.
 ## Acceptance criteria
 
 - [ ] `missionFor()`'s step 5/6 readback instruction no longer suggests or
-    allows using `repoos show`/`list`/`index` for the main-checkout
-    verification — it should tell the agent to read the literal file path
-    (`task.path`, already given to it) directly, e.g. `cat` or its Read
-    tool, not the CLI.
+allows using `repoos show`/`list`/`index` for the main-checkout
+verification — it should tell the agent to read the literal file path
+(`task.path`, already given to it) directly, e.g. `cat` or its Read
+tool, not the CLI.
 - [ ] `findRepoRoot` (or a new helper) can distinguish "inside a linked
-    worktree" from "at a real repo root" (a worktree's `.git` is a file
-    containing `gitdir: ...`, not a directory) — a quick, cheap check.
-    Reasonable options, pick one and justify in the PR: (a) have `repoos`
-    commands that read board state resolve through to the MAIN checkout
-    even when invoked from a worktree, or (b) print a loud, unmissable
-    warning (not buried in normal output) when `repoos show`/`list` is run
-    from inside a worktree, making clear the result may not reflect the
-    live board. Do not silently change behavior with no signal either way.
+worktree" from "at a real repo root" (a worktree's `.git` is a file
+containing `gitdir: ...`, not a directory) — a quick, cheap check.
+Reasonable options, pick one and justify in the PR: (a) have `repoos`
+commands that read board state resolve through to the MAIN checkout
+even when invoked from a worktree, or (b) print a loud, unmissable
+warning (not buried in normal output) when `repoos show`/`list` is run
+from inside a worktree, making clear the result may not reflect the
+live board. Do not silently change behavior with no signal either way.
 - [ ] Defense-in-depth: when an agent's turn ends (process exit) and the
-    main-checkout task is still `active` but its worktree copy shows
-    `review` or `needs_input` with a real commit backing it, the server
-    (`AgentRunner` in `src/server/agents.ts`, near wherever it detects
-    process exit) detects the divergence and self-heals — patch the
-    main-checkout copy to match. Log or surface that this correction
-    happened (it indicates the checklist itself failed and is worth
-    knowing about, not just silently papering over it).
+main-checkout task is still `active` but its worktree copy shows
+`review` or `needs_input` with a real commit backing it, the server
+(`AgentRunner` in `src/server/agents.ts`, near wherever it detects
+process exit) detects the divergence and self-heals — patch the
+main-checkout copy to match. Log or surface that this correction
+happened (it indicates the checklist itself failed and is worth
+knowing about, not just silently papering over it).
 - [ ] A regression test reproducing the `#0068` shape: worktree copy at
-    `review` with a real commit, main copy still `active`, assert the
-    self-heal (or whatever mechanism you land on) brings main in sync
-    without a human noticing anything was ever wrong.
+`review` with a real commit, main copy still `active`, assert the
+self-heal (or whatever mechanism you land on) brings main in sync
+without a human noticing anything was ever wrong.
 - [ ] `repoos check` passes; verify with a real agent turn against a running
-    `repoos serve`, not just unit tests.
+`repoos serve`, not just unit tests.
 
 ## Notes for AI
 

@@ -88,22 +88,22 @@ error: script "test" exited with code 1
 - 2026-10-08T15:20:50Z · body
 - 2026-10-08T15:22:00Z · body
 - 2026-10-08T15:28:15Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     404|     const rows = getCheckStore(root).list();
-   405|     expect(rows).toHaveLength(1);
-   406|     expect(rows[0]).toMatchObject({
-      |                     ^
-   407|       taskId: "0564",
-   408|       machine: null,
+ 405|     expect(rows).toHaveLength(1);
+ 406|     expect(rows[0]).toMatchObject({
+    |                     ^
+ 407|       taskId: "0564",
+ 408|       machine: null,
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 Test Files  1 failed | 448 passed | 1 skipped (450)
-     Tests  3 failed | 5485 passed | 15 skipped (5503)
-  Start at  15:23:08
-  Duration  298.55s (transform 7.35s, setup 2.74s, import 57.98s, tests 230.09s, environment 275.43s)
+   Tests  3 failed | 5485 passed | 15 skipped (5503)
+Start at  15:23:08
+Duration  298.55s (transform 7.35s, setup 2.74s, import 57.98s, tests 230.09s, environment 275.43s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 904ms
-    ✓ binds the listener, and answers health, while the background index build is still parked (#0330)  300ms
+  ✓ binds the listener, and answers health, while the background index build is still parked (#0330)  300ms
 Test Files  1 passed (1)
-     Tests  2 passed (2)
-  Start at  15:28:08
-  Duration  5.18s (transform 2.77s, setup 15ms, import 3.40s, tests 904ms, environment 728ms)
+   Tests  2 passed (2)
+Start at  15:28:08
+Duration  5.18s (transform 2.77s, setup 15ms, import 3.40s, tests 904ms, environment 728ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate

@@ -40,14 +40,14 @@ task states.
 - [ ] A canned message list is rendered above the chat input.
 - [ ] The list appears only when the task state is `draft` or `inbox`.
 - [ ] The list appears only when no message has been sent to the PM agent for
-    that task yet.
+that task yet.
 - [ ] The canned list includes a "flesh this out" message (and may include any
-    other sensible defaults).
+other sensible defaults).
 - [ ] Clicking a canned message sends that message to the PM agent.
 - [ ] After a canned message is sent, the canned message list is hidden for the
-    task.
+task.
 - [ ] Once any message has been sent to the PM agent (canned or typed), the
-    canned message list no longer shows.
+canned message list no longer shows.
 
 ## Notes for AI
 

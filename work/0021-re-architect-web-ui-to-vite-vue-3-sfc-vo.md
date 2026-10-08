@@ -34,7 +34,7 @@ from "is the new thing wired wrong." Phases, ideally separate commits:
 - State: Pinia — lightweight, modular, officially recommended for Vue 3
 - Routing: Vue Router
 - Linter & Formatter: Oxlint + Oxfmt (`vite lint` / `vite fmt`) — Rust-based,
-  replaces ESLint/Prettier
+replaces ESLint/Prettier
 - Testing: Vitest (`vite test`) — fast, mirrors dev environment config
 - Styling: Tailwind CSS
 - Latest STABLE, mutually-compatible versions, pinned in the lockfile. Use
@@ -67,23 +67,23 @@ distinguishable when installed as PWAs.
 ## Acceptance criteria
 
 - [ ] Vite + Vue 3 SFC app builds via `bun run build` into `dist/ui/`; `ros
-    serve` serves the built output; vendored-Vue removed
+  serve` serves the built output; vendored-Vue removed
 - [ ] Latest STABLE, mutually-compatible versions, pinned; bleeding-edge choices
-    (Rolldown/Oxlint) used only if frictionless, with documented stable fallback
+  (Rolldown/Oxlint) used only if frictionless, with documented stable fallback
 - [ ] One coherent lint + format setup, documented; `bun run lint` works
 - [ ] BEHAVIOR PARITY: every screen and interaction matches the old `app.html`
-    — dashboard, board, drawer, new-task modal, context viewer, SSE live
-    updates, status changes, Esc-close, markdown view, theming. Verify each
-    against the kept reference file.
+  — dashboard, board, drawer, new-task modal, context viewer, SSE live
+  updates, status changes, Esc-close, markdown view, theming. Verify each
+  against the kept reference file.
 - [ ] Visual parity: the new app matches the current design (tokens, dark/neon/
-    glass) — Phase 2 introduces no new visual language
+  glass) — Phase 2 introduces no new visual language
 - [ ] `ros check` passes against the new app — it MOUNTS (no mustache), console
-    clean; the smoke check is updated to target the built app
+  clean; the smoke check is updated to target the built app
 - [ ] The old `app.html` is preserved in-repo for comparison (not deleted)
 - [ ] PWA: installable, valid manifest + service worker + icons, offline shell;
-    multiple installs are distinguishable (per-instance name/icon)
+  multiple installs are distinguishable (per-instance name/icon)
 - [ ] Build-time checking actually works: a broken template / bad type reference
-    now FAILS the build rather than shipping a blank page (demonstrate this)
+  now FAILS the build rather than shipping a blank page (demonstrate this)
 
 ## Notes for AI
 

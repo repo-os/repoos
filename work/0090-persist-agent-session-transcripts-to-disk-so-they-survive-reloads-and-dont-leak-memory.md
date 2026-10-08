@@ -19,9 +19,9 @@ replacement process starts with an empty session map, and every prior chat
 vanishes. The reload defers while agents run as a workaround, but that means:
 
 1. When an agent IS running and the reload fires, the new server can't show
- the transcript at all
+the transcript at all
 2. If the server stays up for weeks/months, thousands of sessions accumulate
- in memory with no eviction — a slow leak
+in memory with no eviction — a slow leak
 
 `PreviewManager` already persists to `<cacheDir>/previews.json`. Agent sessions
 should get the same treatment.
@@ -48,23 +48,23 @@ alone does not make an in-flight process safe to abandon.
 ## Acceptance criteria
 
 - [ ] `AgentRunner` serializes `Session` to `<cacheDir>/sessions/<id>.json`
-    on every line appended (debounced 500 ms)
+   on every line appended (debounced 500 ms)
 - [ ] `AgentRunner.start()` and `AgentRunner.output()` load from disk when
-    the in-memory Map doesn't have the session
+   the in-memory Map doesn't have the session
 - [ ] On boot, `AgentRunner` scans `<cacheDir>/sessions/` and pre-loads
-    sessions for tasks that are still `active` or `review`
+   sessions for tasks that are still `active` or `review`
 - [ ] The done flow flushes the final session, marks it completed, and evicts it
-    from RAM; a bounded age/count retention policy prunes old files from disk.
+   from RAM; a bounded age/count retention policy prunes old files from disk.
 - [ ] Transcript persistence alone does not remove the live-agent reload
-    deferral. Any future immediate-reload path must explicitly adopt or stop
-    the child process, preserve streamed output, and keep the runner registry
-    accurate without creating an orphan.
+   deferral. Any future immediate-reload path must explicitly adopt or stop
+   the child process, preserve streamed output, and keep the runner registry
+   accurate without creating an orphan.
 - [ ] `GET /api/tasks/:id/output` works for any task that has a session file
-    on disk, even if the in-memory Map was flushed
+   on disk, even if the in-memory Map was flushed
 - [ ] Tests: session serialization round-trip, disk load on boot, done-state RAM
-    eviction, retention cleanup, and output from disk when no RAM session
+   eviction, retention cleanup, and output from disk when no RAM session
 - [ ] Session files are versioned and written atomically; a corrupt or partial
-    file fails soft without preventing `repoos serve` from starting.
+   file fails soft without preventing `repoos serve` from starting.
 - [ ] `repoos check` passes, including browser smoke
 
 ## Notes for AI

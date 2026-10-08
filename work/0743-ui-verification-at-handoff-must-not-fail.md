@@ -42,9 +42,9 @@ Read the handoff UI verification gate (src/server/ui-handoff-gate.ts, #0680), th
 ```json
 [
 {
-  "label": "Board",
-  "target": "default",
-  "route": "/"
+"label": "Board",
+"target": "default",
+"route": "/"
 }
 ]
 ```

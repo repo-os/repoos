@@ -32,42 +32,42 @@ old compiled code or serves an old UI.
 
 Example warning (illustrative):
 
-  ⚠  Stale build: src/ has changed since the last `bun run build`.
-     You are running OLD compiled code, and `ros serve` serves the OLD UI.
-     Run `bun run build` to update.
+⚠  Stale build: src/ has changed since the last `bun run build`.
+   You are running OLD compiled code, and `ros serve` serves the OLD UI.
+   Run `bun run build` to update.
 
 ## Acceptance criteria
 
 - [ ] The check compares the running `ros` binary's OWN `dist/` against its OWN
-    `src/` — its build provenance — NOT the target repo's cwd. It only
-    activates when both `src/` and `dist/` exist beside the running binary
-    (a linked dev build). For a published install (dist-only, no `src/`), it
-    is a SILENT no-op — users must never see it.
+  `src/` — its build provenance — NOT the target repo's cwd. It only
+  activates when both `src/` and `dist/` exist beside the running binary
+  (a linked dev build). For a published install (dist-only, no `src/`), it
+  is a SILENT no-op — users must never see it.
 - [ ] Primary mechanism: a build marker (e.g. `dist/.build-info.json`) recording
-    a hash of `src/` at build time. At startup, recompute the `src/` hash and
-    compare. Prefer this over raw mtime comparison (see Notes).
+  a hash of `src/` at build time. At startup, recompute the `src/` hash and
+  compare. Prefer this over raw mtime comparison (see Notes).
 - [ ] The hash/marker covers ALL of `src/` including `src/ui/`, so a stale
-    served UI is caught (src/ui/app.html → dist/ui/app.html via asset copy).
+  served UI is caught (src/ui/app.html → dist/ui/app.html via asset copy).
 - [ ] On stale: clear warning to stderr naming that BOTH compiled code and the
-    served UI are old, with the exact fix (`bun run build`). Proceeds by
-    default (advisory).
+  served UI are old, with the exact fix (`bun run build`). Proceeds by
+  default (advisory).
 - [ ] Strict mode refuses with a non-zero exit instead of warning. Enabled via
-    `repoos.toml` (`strictBuild = true`), a `--strict-build` flag, or
-    `REPOOS_STRICT_BUILD=1`.
+  `repoos.toml` (`strictBuild = true`), a `--strict-build` flag, or
+  `REPOOS_STRICT_BUILD=1`.
 - [ ] Distinct messages for: stale (src newer than build) vs. no `dist/` at all
-    ("no build found — run `bun run build`") vs. no marker present (pre-feature
-    build — degrade gracefully: warn that freshness can't be verified, don't
-    hard-fail).
+  ("no build found — run `bun run build`") vs. no marker present (pre-feature
+  build — degrade gracefully: warn that freshness can't be verified, don't
+  hard-fail).
 - [ ] Runs on `ros serve` (mandatory — it's the long-lived, UI-serving command).
-    Decide whether to also run on every command (the check is cheap); exclude
-    `version`/`help`.
+  Decide whether to also run on every command (the check is cheap); exclude
+  `version`/`help`.
 - [ ] The build pipeline writes the marker (extend the existing build /
-    copy-assets step so every `bun run build` refreshes it).
+  copy-assets step so every `bun run build` refreshes it).
 - [ ] Update AGENTS.md: replace the "remember to detect staleness" framing in
-    the self-hosting section with response-to-signal framing — "`ros` warns
-    automatically when the build is stale; if you see that warning, run
-    `bun run build` before trusting any `ros` output or the UI." The tool
-    detects; the rule directs the response.
+  the self-hosting section with response-to-signal framing — "`ros` warns
+  automatically when the build is stale; if you see that warning, run
+  `bun run build` before trusting any `ros` output or the UI." The tool
+  detects; the rule directs the response.
 
 ## Notes for AI
 

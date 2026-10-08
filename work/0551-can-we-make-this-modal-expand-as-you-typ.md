@@ -36,21 +36,21 @@ lines) — the user's second option, and explicitly fine.
 ## Acceptance criteria
 
 - [ ] Typing multiple lines into the prompt composer increases the text area's
-    height so the newly typed lines are visible without scrolling.
+height so the newly typed lines are visible without scrolling.
 - [ ] The growth stops at a maximum height (roughly a full screen / a dozen or
-    so lines); beyond that the area scrolls internally and does not grow
-    further.
+so lines); beyond that the area scrolls internally and does not grow
+further.
 - [ ] Deleting text shrinks the text area back down proportionally.
 - [ ] Initial state (empty composer) is unchanged from today's default height.
 - [ ] The modal itself remains usable at the maximum text area height: its
-    footer/actions are still reachable and it still fits the viewport on a
-    small window without being cut off.
+footer/actions are still reachable and it still fits the viewport on a
+small window without being cut off.
 - [ ] Existing behaviour is preserved: focus, placeholder text, keyboard
-    shortcuts (submit, newline, escape) and the submit-disabled-when-empty
-    rule all still work.
+shortcuts (submit, newline, escape) and the submit-disabled-when-empty
+rule all still work.
 - [ ] Fallback option is acceptable if auto-grow proves impractical: a fixed
-    text area height a few lines larger than today, with the same
-    reachability and behaviour checks.
+text area height a few lines larger than today, with the same
+reachability and behaviour checks.
 - [ ] `repoos check` passes (build, lint/format, tests, UI smoke test).
 
 ## Notes for AI

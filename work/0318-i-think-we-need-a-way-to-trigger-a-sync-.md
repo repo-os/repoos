@@ -45,11 +45,11 @@ as today.
 - [ ] A "sync with main" trigger is added to the new debug tab.
 - [ ] The trigger is tied to a specific individual task (not applied globally).
 - [ ] The trigger is available for all tasks with a worktree/branch, not only
-    the large-divergence case.
+the large-divergence case.
 - [ ] Triggering it invokes the existing main-sync/reconcile logic (the same
-    mechanism behind the large-divergence flow).
+mechanism behind the large-divergence flow).
 - [ ] The existing automatic large-divergence detection and reconcile continues
-    to function as before.
+to function as before.
 - [ ] Success/failure of the sync is surfaced in the UI.
 
 ## Notes for AI

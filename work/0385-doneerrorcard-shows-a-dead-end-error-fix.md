@@ -74,19 +74,19 @@ drawer's reactive state without a manual reload, and fix if it doesn't.
 ## Acceptance criteria
 
 - [ ] Opening the task drawer while a covered check-failure/merge-conflict/
-    handoff-signal retry is in flight shows the same "being automatically
-    resolved" framing the board card already shows — not a bare red error
-    implying the human must act.
+handoff-signal retry is in flight shows the same "being automatically
+resolved" framing the board card already shows — not a bare red error
+implying the human must act.
 - [ ] The "Fix"/debugger button's behavior during an active retry is
-    explicit about what it does (starts something additional, doesn't
-    replace the automatic repair) rather than looking like the only path.
+explicit about what it does (starts something additional, doesn't
+replace the automatic repair) rather than looking like the only path.
 - [ ] Once retries are exhausted and `persistHandoffFailure` fires, the
-    drawer reverts to today's normal dead-end error + Fix button — this
-    case is unaffected.
+drawer reverts to today's normal dead-end error + Fix button — this
+case is unaffected.
 - [ ] Retry-hint logic lives in one place, imported by both `TaskCard.vue`
-    and `DoneErrorCard.vue`/`TaskDrawer.vue`, not duplicated.
+and `DoneErrorCard.vue`/`TaskDrawer.vue`, not duplicated.
 - [ ] Confirmed (and fixed if needed) that the messaging updates live via
-    SSE without requiring a manual page reload.
+SSE without requiring a manual page reload.
 - [ ] `repoos check` passes.
 
 ## Related

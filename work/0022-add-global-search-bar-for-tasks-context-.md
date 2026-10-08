@@ -49,12 +49,12 @@ highlighted one. All behavior matches the existing drawer's Esc-close feel.
 
 - [ ] Search input in the TopBar with placeholder + ⌘K/Ctrl+K focus shortcut
 - [ ] Results dropdown groups Tasks / Context docs / Settings; empty query hides
-    it; no matches shows "No results"
+  it; no matches shows "No results"
 - [ ] Case-insensitive substring matching per the spec above (task id/title/body,
-    doc title/path, setting label/key)
+  doc title/path, setting label/key)
 - [ ] Clicking a task result opens the task drawer; clicking a doc result
-    navigates to Context and selects it; clicking a setting result navigates
-    to Settings and highlights the field
+  navigates to Context and selects it; clicking a setting result navigates
+  to Settings and highlights the field
 - [ ] Esc closes, ↑/↓ + Enter work
 - [ ] Works from every view (results are not view-local)
 - [ ] `ros check` passes; no new runtime dependencies
@@ -71,9 +71,9 @@ connection dot — the search bar slots there naturally).
 - Data sources are the existing stores, all already loaded in the app:
 - `useRepoStore().tasks` — Task[] (id/title/body available per task)
 - `useDocsStore().docs` — DocMeta[] (title/path); open a result by calling
-  `loadDoc(path)` and `router.push("/repo")`
+`loadDoc(path)` and `router.push("/repo")`
 - `useConfigStore().visibleFields` — ConfigField[] (label/key); navigate with
-  `router.push("/settings")` and focus the field via its key
+`router.push("/settings")` and focus the field via its key
 - Opening a task result: `useUiStore().openTask(task)` — this already refreshes
 from `/api/tasks/:id` and shows the drawer.
 - Keyboard handling should live in the search component and attach/detach

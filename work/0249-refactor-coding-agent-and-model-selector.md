@@ -44,16 +44,16 @@ Selecting values in the modal updates the selection that the page-level
 ## Acceptance criteria
 
 - [ ] A single `[Coding Agent + Model]` control replaces the current
-    coding agent + model selector widgets wherever they appear.
+coding agent + model selector widgets wherever they appear.
 - [ ] Clicking the control opens a generously sized modal.
 - [ ] The modal shows a horizontal picker for selecting the coding agent.
 - [ ] Below the picker, a scrollable list shows the models available for
-    the selected coding agent.
+the selected coding agent.
 - [ ] The model list supports search/filtering by text.
 - [ ] Selecting a coding agent and a model in the modal updates the
-    state exposed through the `[Coding Agent + Model]` control.
+state exposed through the `[Coding Agent + Model]` control.
 - [ ] The existing scattered selection widgets are removed in favor of
-    the new control.
+the new control.
 
 ## Notes for AI
 

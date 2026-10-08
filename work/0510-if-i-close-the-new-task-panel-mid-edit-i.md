@@ -48,20 +48,20 @@ both drawers read identically.
 ## Acceptance criteria
 
 - [ ] Closing the "new task" panel without submitting preserves the draft
-    text, and the draft screenshots, and reopening the panel restores both.
+text, and the draft screenshots, and reopening the panel restores both.
 - [ ] Clicking the "clear" button in the "new task" panel still discards the
-    draft text and the draft screenshots together, as it does today.
+draft text and the draft screenshots together, as it does today.
 - [ ] Screenshots are never removed by closing or dismissing the panel, nor by
-    any other action short of the explicit "clear" button (or a successful
-    submit).
+any other action short of the explicit "clear" button (or a successful
+submit).
 - [ ] The "new input" drawer's screenshot button label matches the minimal
-    label used by the "new task" drawer's screenshot button (no additional
-    text on the "new input" button).
+label used by the "new task" drawer's screenshot button (no additional
+text on the "new input" button).
 - [ ] The "new input" drawer's screenshot button is moved to the same top
-    position in the form that the "new task" drawer's screenshot button
-    occupies.
+position in the form that the "new task" drawer's screenshot button
+occupies.
 - [ ] Existing screenshot attach, preview, and submit behaviour in both drawers
-    is unchanged apart from the label and placement above.
+is unchanged apart from the label and placement above.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

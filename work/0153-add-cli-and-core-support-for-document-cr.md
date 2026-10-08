@@ -39,14 +39,14 @@ the flag conventions in `cmdNew` (`src/commands/tasks.ts:167`).
 ## Acceptance criteria
 
 - [ ] `createDocument` and `createFreeformDocument` exist in core, not inlined in
-    `server.ts`.
+`server.ts`.
 - [ ] `/api/docs/create` and `/api/docs/freeform` are thin wrappers over the core
-    functions; existing behavior (incl. the frontmatter-based freeform format —
-    see Notes) is unchanged.
+functions; existing behavior (incl. the frontmatter-based freeform format —
+see Notes) is unchanged.
 - [ ] A new `repoos` CLI command creates a document, both freeform and manual, and
-    prints the created path (matching `cmdNew`'s output style).
+prints the created path (matching `cmdNew`'s output style).
 - [ ] The generated/given path is validated to stay under `config.docsDir` (or another
-    explicit allowlist) — see the constraint below.
+explicit allowlist) — see the constraint below.
 
 ## Notes for AI
 

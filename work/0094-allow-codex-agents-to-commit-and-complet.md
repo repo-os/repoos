@@ -54,28 +54,28 @@ appropriate RepoOS operation can exist.
 ## Acceptance criteria
 
 - [ ] Add one trusted, task-scoped handoff operation in the RepoOS server/API
-    layer; reuse it for initial and resumed agent runs.
+layer; reuse it for initial and resumed agent runs.
 - [ ] Document and preserve the API-first boundary: agents express intent and
-    RepoOS performs privileged repository mutations after validation.
+RepoOS performs privileged repository mutations after validation.
 - [ ] The handoff validates the task id, active run/session, expected worktree,
-    and expected branch before changing files or Git state.
+and expected branch before changing files or Git state.
 - [ ] RepoOS runs `repoos check` in the task worktree and refuses to move the
-    task to `review` if it fails.
+task to `review` if it fails.
 - [ ] On success, RepoOS commits all intended implementation changes and the
-    worktree task's `status: review`, then updates the canonical main-checkout
-    task using the existing guarded task-write path.
+worktree task's `status: review`, then updates the canonical main-checkout
+task using the existing guarded task-write path.
 - [ ] The operation is idempotent so a retry or process restart cannot create
-    duplicate commits or corrupt task state.
+duplicate commits or corrupt task state.
 - [ ] Handoff progress and failures appear in the retained transcript/UI, and a
-    finalization failure remains recoverable on the same worktree.
+finalization failure remains recoverable on the same worktree.
 - [ ] The agent does not receive write access to the main checkout or Git common
-    directory and does not use `danger-full-access` or sandbox bypass flags.
+directory and does not use `danger-full-access` or sandbox bypass flags.
 - [ ] If the agent must initiate handoff directly, use a task/run-scoped
-    capability and loopback-only transport. Prefer a structured runner signal
-    that requires no extra agent network access.
+capability and loopback-only transport. Prefer a structured runner signal
+that requires no extra agent network access.
 - [ ] Normal non-worktree Codex runs continue to work.
 - [ ] Automated tests cover successful, failed-check, invalid-session,
-    interrupted, and repeated linked-worktree handoffs.
+interrupted, and repeated linked-worktree handoffs.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

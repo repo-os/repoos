@@ -49,46 +49,46 @@ load, then persist so a reload without the query keeps the choice.
 ## Acceptance criteria
 
 - [ ] Design theme and appearance are two independent axes
-    (`classic|gruvbox` × `dark|light`); all four combinations render with
-    correct contrast and no hardcoded colour leaks from the old
-    single-identity palette.
+(`classic|gruvbox` × `dark|light`); all four combinations render with
+correct contrast and no hardcoded colour leaks from the old
+single-identity palette.
 - [ ] `data-theme` keeps its current `dark`/`light` meaning on `<html>`, and
-    the design theme is applied the way the app does it (`data-ui-theme`), so
-    the two codebases read alike.
+the design theme is applied the way the app does it (`data-ui-theme`), so
+the two codebases read alike.
 - [ ] Gruvbox landing tokens are lifted from `src/ui-app/src/style.css`
-    (`[data-ui-theme="gruvbox"]` and `[data-ui-theme="gruvbox"][data-theme="light"]`)
-    and re-expressed in the landing's own token vocabulary — every custom
-    property the landing declares in `:root` is overridden in both gruvbox
-    blocks, including the ones the app has no equivalent for
-    (`--glow-1`, `--glow-2`, `--code-bg`, `--code-bar-bg`, `--nav-bg`,
-    `--foot-bg`, `--shot-shadow`, `--glow-ring`, `--selection-bg`,
-    `--selection-txt`).
+(`[data-ui-theme="gruvbox"]` and `[data-ui-theme="gruvbox"][data-theme="light"]`)
+and re-expressed in the landing's own token vocabulary — every custom
+property the landing declares in `:root` is overridden in both gruvbox
+blocks, including the ones the app has no equivalent for
+(`--glow-1`, `--glow-2`, `--code-bg`, `--code-bar-bg`, `--nav-bg`,
+`--foot-bg`, `--shot-shadow`, `--glow-ring`, `--selection-bg`,
+`--selection-txt`).
 - [ ] The pre-paint script in `landing/index.html` resolves both axes before
-    first paint (still inline and synchronous), so no load shows the wrong
-    theme; `<meta name="theme-color">` reflects the resolved design theme *and*
-    appearance, not just the appearance.
+first paint (still inline and synchronous), so no load shows the wrong
+theme; `<meta name="theme-color">` reflects the resolved design theme *and*
+appearance, not just the appearance.
 - [ ] The chosen design theme survives a reload; a first-time visitor with no
-    stored choice still gets the OS appearance preference, and blocked
-    `localStorage` falls back cleanly to the current default instead of
-    throwing.
+stored choice still gets the OS appearance preference, and blocked
+`localStorage` falls back cleanly to the current default instead of
+throwing.
 - [ ] Existing visitors keep the appearance they already chose (the stored key
-    still means light/dark); the design theme gets its own new key.
+still means light/dark); the design theme gets its own new key.
 - [ ] The switcher is a real control: `aria-label`/`title` on each option,
-    keyboard operable, a focus-visible ring, and it works in the collapsed
-    mobile nav.
+keyboard operable, a focus-visible ring, and it works in the collapsed
+mobile nav.
 - [ ] The switcher doesn't break the existing nav layout at any breakpoint, and
-    it uses the same hand-rolled control styling as the rest of the site (no
-    unstyled `<select>`, no colours outside the `style.css` tokens).
+it uses the same hand-rolled control styling as the rest of the site (no
+unstyled `<select>`, no colours outside the `style.css` tokens).
 - [ ] `cd landing && bun run build` (vue-tsc + vite build) passes and
-    `repoos check` is green — including the `landing-build` step and the
-    app's theme-contrast guard, which must still pass unchanged for the app's
-    own themes.
+`repoos check` is green — including the `landing-build` step and the
+app's theme-contrast guard, which must still pass unchanged for the app's
+own themes.
 - [ ] `landing/README.md` documents the switcher and the two-axis model.
 - [ ] Query params `theme` and `appearance` (`mode` alias) resolve in the
-    pre-paint script with the same rules as `landing/src/theme-resolve.ts`
-    (keep both in sync). Invalid values are ignored per axis. Using the nav
-    switcher updates the query string via `history.replaceState` so the
-    address bar reflects a shareable link.
+pre-paint script with the same rules as `landing/src/theme-resolve.ts`
+(keep both in sync). Invalid values are ignored per axis. Using the nav
+switcher updates the query string via `history.replaceState` so the
+address bar reflects a shareable link.
 
 ## Notes for AI
 

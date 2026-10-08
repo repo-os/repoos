@@ -37,16 +37,16 @@ without navigating.
 
 - [ ] A "?" icon button renders in the top bar on every screen/route.
 - [ ] Clicking it opens a dropdown/popover with links to Docs, GitHub
-    Discussions, and GitHub Issues.
+Discussions, and GitHub Issues.
 - [ ] Icon uses inline SVG with `currentColor` and `1.8` stroke-width,
-    consistent with the icons in `nav.ts`.
+consistent with the icons in `nav.ts`.
 - [ ] The control is NOT added as an entry in `nav.ts` / the main
-    Control/Inputs/Work/Agents/Context/Settings nav.
+Control/Inputs/Work/Agents/Context/Settings nav.
 - [ ] External links (Discussions, Issues, and Docs if hosted externally)
-    open in a new tab with `rel="noopener noreferrer"`.
+open in a new tab with `rel="noopener noreferrer"`.
 - [ ] Menu closes on click-outside and on Escape.
 - [ ] Follows existing top-bar/header component conventions; no new runtime
-    dependency added.
+dependency added.
 - [ ] UI rebuilt (`bun run build:ui` or `bun run build`) after the change.
 
 ## Notes for AI

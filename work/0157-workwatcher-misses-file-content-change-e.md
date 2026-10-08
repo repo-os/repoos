@@ -54,23 +54,23 @@ agent, human).
 ## Acceptance criteria
 
 - [ ] `WorkWatcher` gains a periodic reconciliation pass (mirroring
-    `ReloadManager`'s watch+poll pattern in `reload.ts`) — e.g. every 5–10s,
-    `statSync` every tracked task file, compare mtime against a small in-memory
-    map the watcher maintains, and call `index.applyFileChange(path)` for any
-    file whose mtime has moved since the last poll.
+`ReloadManager`'s watch+poll pattern in `reload.ts`) — e.g. every 5–10s,
+`statSync` every tracked task file, compare mtime against a small in-memory
+map the watcher maintains, and call `index.applyFileChange(path)` for any
+file whose mtime has moved since the last poll.
 - [ ] The same pass also catches new files `fs.watch` missed (not yet in
-    `pathToId`) and deletions (`pathToId` entries whose file no longer exists) —
-    not just content changes to already-known files.
+`pathToId`) and deletions (`pathToId` entries whose file no longer exists) —
+not just content changes to already-known files.
 - [ ] `fs.watch` stays the primary, low-latency path; the poll is a bounded-latency
-    safety net only, not a replacement (avoid re-reading/re-parsing every file
-    every poll — mtime comparison first, `applyFileChange` only on drift).
+safety net only, not a replacement (avoid re-reading/re-parsing every file
+every poll — mtime comparison first, `applyFileChange` only on drift).
 - [ ] A regression test: write/modify a task file without going through any
-    server-owned write path (simulating an untracked external edit — e.g. an
-    `fs.writeFileSync` the test never tells the watcher about directly), and
-    assert the index reflects it within the poll window without requiring a
-    `touch` or any other nudge.
+server-owned write path (simulating an untracked external edit — e.g. an
+`fs.writeFileSync` the test never tells the watcher about directly), and
+assert the index reflects it within the poll window without requiring a
+`touch` or any other nudge.
 - [ ] No change to `fs.watch` debounce/dedup behavior for the common case — this is
-    additive, not a rewrite of the existing fast path.
+additive, not a rewrite of the existing fast path.
 
 ## Notes for AI
 

@@ -19,25 +19,25 @@ updated_at: "2026-10-06T23:48:18Z"
 Follow-up from #0365's Deployments redesign, per user feedback:
 
 1. Every matrix cell shows an identical "build status unknown" badge —
- noisy and unhelpful since it never varies and the explanatory note at the
- bottom of the page already covers it once. Remove the per-cell badge.
+noisy and unhelpful since it never varies and the explanatory note at the
+bottom of the page already covers it once. Remove the per-cell badge.
 2. `dashboardUrl` (DeploymentConfig.dashboardUrl / repoos.toml's `dashboard_url`)
- already exists and already renders a "Dashboard ↗" link per cell when set,
- but every row in this repo's own repoos.toml has it blank. The user
- confirmed only ONE URL is needed per service (not per branch) — Cloudflare's
- deployment history page for a Worker already lists every branch's builds:
- - Landing page (both branches): https://dash.cloudflare.com/55041dbc1231e6d4ef135135ccc7d4a2/workers/services/view/repoos-landing/production/deployments
- - Docs (both branches): https://dash.cloudflare.com/55041dbc1231e6d4ef135135ccc7d4a2/workers/services/view/repoos-docs/production/deployments
+already exists and already renders a "Dashboard ↗" link per cell when set,
+but every row in this repo's own repoos.toml has it blank. The user
+confirmed only ONE URL is needed per service (not per branch) — Cloudflare's
+deployment history page for a Worker already lists every branch's builds:
+- Landing page (both branches): https://dash.cloudflare.com/55041dbc1231e6d4ef135135ccc7d4a2/workers/services/view/repoos-landing/production/deployments
+- Docs (both branches): https://dash.cloudflare.com/55041dbc1231e6d4ef135135ccc7d4a2/workers/services/view/repoos-docs/production/deployments
 
 ## Desired outcome
 
 1. Remove the `.dep-status`/"build status unknown" badge from
- src/ui-app/src/views/DeploymentsView.vue's matrix cells. Keep the existing
- explanatory note at the bottom of the page as-is (it already covers this).
+src/ui-app/src/views/DeploymentsView.vue's matrix cells. Keep the existing
+explanatory note at the bottom of the page as-is (it already covers this).
 2. Set `dashboard_url` on all four [[deployments]] rows in repoos.toml to the
- two URLs above (same URL for both branches of a given service), so the
- "Dashboard ↗" link renders and gives a real, if manual, way to check build
- status on Cloudflare.
+two URLs above (same URL for both branches of a given service), so the
+"Dashboard ↗" link renders and gives a real, if manual, way to check build
+status on Cloudflare.
 
 ## Notes for AI
 

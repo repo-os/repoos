@@ -32,14 +32,14 @@ that can bootstrap a brand-new RepoOS project from scratch.
 guided, interactive flow by default (no flag needed).
 - Location is explicit and never surprising:
 - Default: create the new project in the CURRENT directory. The prompt says so
-  in plain words: "Create a new RepoOS project in the current directory
-  (</path/to/dir>)?"
+in plain words: "Create a new RepoOS project in the current directory
+(</path/to/dir>)?"
 - Entering a project name creates a subdirectory instead, and the flow
-  DOUBLE-CONFIRMS that choice before doing anything (e.g. "Create in new
-  subdirectory ./name? [y/N]").
+DOUBLE-CONFIRMS that choice before doing anything (e.g. "Create in new
+subdirectory ./name? [y/N]").
 - `repoos init <project-name>` with a positional arg means "create a subdir
-  named <project-name>" — but the prompt flow still double-confirms before
-  running.
+named <project-name>" — but the prompt flow still double-confirms before
+running.
 - The flow: confirm → `git init` → scaffold the same files `repoos init`
 already produces (work/, docs/, repoos.toml, AGENTS.md, .gitignore, sample
 task 0001) → report what it did.
@@ -84,22 +84,22 @@ detected (e.g. "Detected because <root>/repoos.toml exists").
 ## Acceptance criteria
 
 - [ ] `repoos init` in a non-git directory interactively guides: states the
-    current-dir default in plain words, accepts a project name for a
-    subdirectory, double-confirms the subdirectory choice, confirms before
-    running, then `git init` + scaffold in place
+  current-dir default in plain words, accepts a project name for a
+  subdirectory, double-confirms the subdirectory choice, confirms before
+  running, then `git init` + scaffold in place
 - [ ] `repoos init <project-name>` means subdir creation, still double-confirmed
 - [ ] Optionally prompts for a one-line project description (plainly skippable);
-    when provided, seeds it into the sample task 0001 body
+  when provided, seeds it into the sample task 0001 body
 - [ ] Existing-repo behavior unchanged (no prompts, idempotent)
 - [ ] Prompts for the initial commit (default yes); warns on git problems (not
-    installed, no identity) and fail-softs to "scaffolded, left uncommitted"
+  installed, no identity) and fail-softs to "scaffolded, left uncommitted"
 - [ ] Non-TTY invocation does not block on input; prints guidance and exits
-    non-zero
+  non-zero
 - [ ] Ends by offering to launch the web console: preferred-port prompt, free
-    port fallback when busy, browser opens, server serves the new project
+  port fallback when busy, browser opens, server serves the new project
 - [ ] Asks where the scaffold should live (root default vs `repoos/` subfolder);
-    config file at root in both cases; `repoos list`/server read the
-    namespace layout correctly
+  config file at root in both cases; `repoos list`/server read the
+  namespace layout correctly
 - [ ] No new runtime dependencies (prompts via `node:readline/promises`)
 - [ ] `repoos check` passes
 

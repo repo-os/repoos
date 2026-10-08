@@ -57,22 +57,22 @@ reasons, never because a child process was 200ms slower than a hard-coded
 ## Acceptance criteria
 
 - [ ] The process-spawning tests stop relying on short fixed `waitFor` polls
-    for real spawned processes. Options (pick a coherent set, don't do all):
-    - raise the poll timeout to a generous bound (e.g. 10-15s) with a fast
-      poll interval so they still fail fast when truly broken;
-    - make the fixture CLI stubs write output synchronously/instantly instead
-      of simulating latency;
-    - run the process-spawning files with an explicit longer vitest
-      `testTimeout`/`hookTimeout`;
-    - use vitest `pool: "forks"`/`maxWorkers` settings if default
-      parallelism is the amplifier.
+for real spawned processes. Options (pick a coherent set, don't do all):
+- raise the poll timeout to a generous bound (e.g. 10-15s) with a fast
+  poll interval so they still fail fast when truly broken;
+- make the fixture CLI stubs write output synchronously/instantly instead
+  of simulating latency;
+- run the process-spawning files with an explicit longer vitest
+  `testTimeout`/`hookTimeout`;
+- use vitest `pool: "forks"`/`maxWorkers` settings if default
+  parallelism is the amplifier.
 - [ ] The flake is reproducible before the fix: `for i in $(seq 1 10); do bun
-    run test; done` (or a similar stress loop) fails at least once under
-    load; after the fix the same loop is green 10/10.
+run test; done` (or a similar stress loop) fails at least once under
+load; after the fix the same loop is green 10/10.
 - [ ] `repoos check` passes on a clean run AND immediately after a `bun run
-    build`, and a stress re-check is stable.
+build`, and a stress re-check is stable.
 - [ ] No behavior change to the tested code paths; fixtures still verify the
-    same assertions.
+same assertions.
 - [ ] `repoos check` passes; zero new runtime dependencies.
 
 ## Notes for AI

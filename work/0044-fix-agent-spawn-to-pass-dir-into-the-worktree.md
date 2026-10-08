@@ -38,9 +38,9 @@ fine.
 
 - `src/server/agents.ts`:
 - `cliCommand(cli, mission, cwd)` — for the opencode path, emit
-  `["run", "--dir", cwd, mission]` (claude code unchanged).
+`["run", "--dir", cwd, mission]` (claude code unchanged).
 - `resumeCommand(cli, text, sessionId, cwd)` — same for the resume path
-  (`["run", "--session", id, "--dir", cwd, text]` / plain `--dir`).
+(`["run", "--session", id, "--dir", cwd, text]` / plain `--dir`).
 - `start()` and `send()` pass the working directory they already compute.
 - The `cwd` passed to `spawn` stays as-is (both are the worktree path).
 - No behavior change for non-worktree tasks (the main-checkout case: `--dir`
@@ -50,8 +50,8 @@ is the same directory as the spawn cwd).
 
 - [ ] `repoos check` passes
 - [ ] Spawning a task whose branch has a linked worktree: the spawned
-    opencode run's session `directory` is the worktree path, and the agent
-    can read the task file without `external_directory` auto-rejects
+  opencode run's session `directory` is the worktree path, and the agent
+  can read the task file without `external_directory` auto-rejects
 - [ ] Follow-up turns (resume) also force `--dir`
 
 ## Activity

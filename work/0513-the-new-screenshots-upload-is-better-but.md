@@ -46,37 +46,37 @@ server-served `/api/.../attachments/...` URL.
 ## Acceptance criteria
 
 - [ ] A single shared screenshot-viewer component exists (one component, not
-    per-site copies) and is used by every screenshot surface listed below.
+per-site copies) and is used by every screenshot surface listed below.
 - [ ] It renders all passed screenshots in order, in a scrollable, centered
-    modal, each at natural size, with its file name shown as a caption.
+modal, each at natural size, with its file name shown as a caption.
 - [ ] It closes on `[x]`, on a click of the dimmed background outside the
-    content, and on `Escape`.
+content, and on `Escape`.
 - [ ] The close `[x]` and the modal's own chrome are visually distinct from the
-    per-thumbnail **Remove screenshot** `x`, which keeps its current
-    behavior — removing a screenshot must never open the viewer.
+per-thumbnail **Remove screenshot** `x`, which keeps its current
+behavior — removing a screenshot must never open the viewer.
 - [ ] Each thumbnail exposes the expand affordance as a real `<button>` with an
-    accessible name and tooltip, and the viewer is also reachable by keyboard
-    (tab to the button, `Enter`/`Space` to open).
+accessible name and tooltip, and the viewer is also reachable by keyboard
+(tab to the button, `Enter`/`Space` to open).
 - [ ] New-task panel screenshot grid (`TaskDrawer.vue`, `ui.pendingScreenshots`)
-    uses it.
+uses it.
 - [ ] PM chat compose screenshot strip (`TaskDrawer.vue`, `ui.pmScreenshots`)
-    uses it.
+uses it.
 - [ ] New input panel attachment strip (`NewInputPanel.vue`,
-    `ui.inputScreenshots`) uses it.
+`ui.inputScreenshots`) uses it.
 - [ ] Input detail attachments (`InputsView.vue`, `activeInput.attachments`)
-    uses it; the existing "open in new tab" link for the raw file is kept and
-    still opens the file itself.
+uses it; the existing "open in new tab" link for the raw file is kept and
+still opens the file itself.
 - [ ] Bug report screenshot grid (`SettingsView.vue`,
-    `bugReportScreenshots`) uses it.
+`bugReportScreenshots`) uses it.
 - [ ] Non-image attachments (e.g. a PDF in the input detail list) keep their
-    existing link and get no expand button.
+existing link and get no expand button.
 - [ ] Agent/avatar images (`CTOPanel`, `FloatingHeads`, `DebuggerChat`,
-    `TaskDebuggerChat`, `RepoGuideChat`, `/assets/*.webp`) are unchanged.
+`TaskDebuggerChat`, `RepoGuideChat`, `/assets/*.webp`) are unchanged.
 - [ ] Viewer styles live in the shared stylesheet, not a component's
-    `<style scoped>` block, and the overlay is body-teleported (the modal must
-    not be trapped inside a drawer's stacking context).
+`<style scoped>` block, and the overlay is body-teleported (the modal must
+not be trapped inside a drawer's stacking context).
 - [ ] A UI test covers the shared component and at least one call site;
-    `repoos check` passes.
+`repoos check` passes.
 
 ## Notes for AI
 

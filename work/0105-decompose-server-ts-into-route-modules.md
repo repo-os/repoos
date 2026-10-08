@@ -30,15 +30,15 @@ setup.
 ## Acceptance criteria
 
 - [ ] Route handlers extracted to `src/server/routes/`:
-    - `src/server/routes/tasks.ts` — task CRUD, freeform, done, sync
-    - `src/server/routes/agents.ts` — agent start, pause, message, output, running
-    - `src/server/routes/config.ts` — config read/write PATCH
-    - `src/server/routes/models.ts` — model list, model test
-    - `src/server/routes/ui.ts` — static assets, manifest, favicon
+- `src/server/routes/tasks.ts` — task CRUD, freeform, done, sync
+- `src/server/routes/agents.ts` — agent start, pause, message, output, running
+- `src/server/routes/config.ts` — config read/write PATCH
+- `src/server/routes/models.ts` — model list, model test
+- `src/server/routes/ui.ts` — static assets, manifest, favicon
 - [ ] `src/server/server.ts` shrinks to ~200-300 lines (bootstrap, router,
-    SSE, auto-reload, health endpoint)
+SSE, auto-reload, health endpoint)
 - [ ] A simple router helper replaces the nested-if chain (e.g. `route("POST",
-    "/api/tasks/:id/start", handlers.startTask)`)
+"/api/tasks/:id/start", handlers.startTask)`)
 - [ ] No behavior changes — every existing API test passes without modification
 - [ ] `repoos check` passes (build + tests + UI smoke)
 - [ ] No new dependencies added

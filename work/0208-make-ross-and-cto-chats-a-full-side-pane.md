@@ -31,11 +31,11 @@ and feel like first-class panels rather than secondary, undersized views.
 ## Acceptance criteria
 
 - [ ] The Ross chat and the CTO chat are both rendered in a full side panel
-    layout.
+layout.
 - [ ] The side panel for each chat is the same size as the existing task panel.
 - [ ] Opening/activating a chat shows it in this full-size side panel.
 - [ ] The chat remains fully usable and readable in the new panel size (no
-    clipping, scrolling works for longer conversations).
+clipping, scrolling works for longer conversations).
 
 ## Notes for AI
 

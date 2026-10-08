@@ -50,27 +50,27 @@ call without a `mode` also keeps today's behavior (continue).
 ## Acceptance criteria
 
 - [ ] Task git info gains a dirtiness signal:
-    `git: { branchExists, ahead, uncommitted, lastCommit, lastCommitAt }`
-    where `ahead` is the commit count on the branch not in `main` and
-    `uncommitted` is true when the worktree has uncommitted or untracked
-    changes (`git status --porcelain` non-empty, gitignored files excluded).
-    Computed in `refreshBranches`/the indexer so `GET /api/tasks` carries it;
-    mirrored in `src/core/types.ts` `TaskGitInfo` and the UI `types.ts`.
+`git: { branchExists, ahead, uncommitted, lastCommit, lastCommitAt }`
+where `ahead` is the commit count on the branch not in `main` and
+`uncommitted` is true when the worktree has uncommitted or untracked
+changes (`git status --porcelain` non-empty, gitignored files excluded).
+Computed in `refreshBranches`/the indexer so `GET /api/tasks` carries it;
+mirrored in `src/core/types.ts` `TaskGitInfo` and the UI `types.ts`.
 - [ ] Dirtiness reads from the **worktree path** (via `git worktree list`),
-    never the main checkout; fail-soft to clean when git is missing, the
-    worktree is gone, or `main` has no commits to diff against.
+never the main checkout; fail-soft to clean when git is missing, the
+worktree is gone, or `main` has no commits to diff against.
 - [ ] `POST /api/tasks/:id/start` accepts an optional body
-    `{ mode: "continue" | "fresh" }` (absent ⇒ `continue`). `fresh` resets
-    the branch hard to `main` inside the existing worktree (reuses the
-    worktree path — no delete/recreate) before the agent spawns; the response
-    echoes `{ mode, reset: true }`.
+`{ mode: "continue" | "fresh" }` (absent ⇒ `continue`). `fresh` resets
+the branch hard to `main` inside the existing worktree (reuses the
+worktree path — no delete/recreate) before the agent spawns; the response
+echoes `{ mode, reset: true }`.
 - [ ] The TaskDrawer start action, when the task's worktree is dirty, presents
-    the continue/fresh choice with "Start fresh" requiring confirmation
-    (destructive warning). Clean tasks skip the dialog entirely.
+the continue/fresh choice with "Start fresh" requiring confirmation
+(destructive warning). Clean tasks skip the dialog entirely.
 - [ ] Unit tests for the dirtiness computation (ahead count, uncommitted
-    flag, ignored-file exclusion) and a fixture E2E proving `fresh` resets
-    the branch before spawning (fakebin pattern); `repoos check` passes; zero
-    new runtime dependencies.
+flag, ignored-file exclusion) and a fixture E2E proving `fresh` resets
+the branch before spawning (fakebin pattern); `repoos check` passes; zero
+new runtime dependencies.
 
 ## Notes for AI
 

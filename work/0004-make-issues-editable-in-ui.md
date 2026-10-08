@@ -79,23 +79,23 @@ separate feature.
 ## Acceptance criteria
 
 - [ ] title, type, priority, area, assigned_to, and body are all editable from
-    the drawer and persist to the task file on Save
+the drawer and persist to the task file on Save
 - [ ] branch is read-only; a planning-stage title edit derives
-    `feat/<slugified-title>` on Save, and an explicit branch is preserved
+`feat/<slugified-title>` on Save, and an explicit branch is preserved
 - [ ] title and branch render read-only once status is active/review/done
 - [ ] spec body renders as a readable card; clicking it opens a large
-    textarea, and Save applies and collapses it
+textarea, and Save applies and collapses it
 - [ ] Save sends a single PATCH with only the changed fields; no-op (disabled)
-    when the draft matches the on-disk task
+when the draft matches the on-disk task
 - [ ] After Save: the file on disk reflects the edits, the feed logs an
-    "updated #id (…)" entry, `updated_at` bumps, and other connected
-    clients update live (existing `task.updated` SSE path)
+"updated #id (…)" entry, `updated_at` bumps, and other connected
+clients update live (existing `task.updated` SSE path)
 - [ ] Closing the drawer without Save discards the draft and changes nothing
-    on disk
+on disk
 - [ ] A concurrent `task.updated` for the open task (e.g. an agent edit) does
-    not silently clobber unsaved draft edits
+not silently clobber unsaved draft edits
 - [ ] Non-editable fields render read-only: id, path, created_at, updated_at,
-    created_by, assignee (derived), git facts
+created_by, assignee (derived), git facts
 - [ ] `repoos check` passes
 
 ## Notes for AI

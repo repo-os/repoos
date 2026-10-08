@@ -62,11 +62,11 @@ trivial to wire from what `preview.ts` already tracks.
 ## Acceptance criteria
 
 - [ ] Starting a preview shows an active, visibly-progressing state (not
-    just a static disabled button) for the full duration of a slow start.
+just a static disabled button) for the full duration of a slow start.
 - [ ] A fast preview (sub-2s) still feels instant — no new artificial delay
-    or flash of a loading state that outlives the actual wait.
+or flash of a loading state that outlives the actual wait.
 - [ ] Verified against a genuinely slow command (this repo's own default
-    `[preview] command` is a real one to test against, per #0370).
+`[preview] command` is a real one to test against, per #0370).
 - [ ] `repoos check` passes.
 
 ## Related

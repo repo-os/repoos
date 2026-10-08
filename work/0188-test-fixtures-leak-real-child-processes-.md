@@ -55,17 +55,17 @@ archaeology needed to notice or fix a leak.
 ## Acceptance criteria
 
 - [ ] `pause-resume.test.ts` and `reload.test.ts` get the same kind of fix as
-    `release-agent.test.ts` (737f031) — a `beforeAll`/equivalent sweep of
-    stale same-prefix fixtures, not a signal handler (confirmed not to work
-    under this project's vitest thread pool — see Problem).
+`release-agent.test.ts` (737f031) — a `beforeAll`/equivalent sweep of
+stale same-prefix fixtures, not a signal handler (confirmed not to work
+under this project's vitest thread pool — see Problem).
 - [ ] Consider extracting the sweep-and-reap logic (currently duplicated
-    inline in `release-agent.test.ts`) into a small shared test helper so
-    the next spawn-a-real-process fixture gets this for free instead of
-    needing its own copy-pasted implementation.
+inline in `release-agent.test.ts`) into a small shared test helper so
+the next spawn-a-real-process fixture gets this for free instead of
+needing its own copy-pasted implementation.
 - [ ] The 730 already-leaked `repoos-pause-*`/`repoos-reload-*` directories
-    in `/tmp` get cleaned up (either as part of this task, or confirm
-    they're stale enough that the new sweep logic reaps them on its own
-    next run).
+in `/tmp` get cleaned up (either as part of this task, or confirm
+they're stale enough that the new sweep logic reaps them on its own
+next run).
 - [ ] `repoos check` passes.
 
 ## Notes for AI

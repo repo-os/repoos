@@ -53,34 +53,34 @@ navigational affordance, not a replacement for copy-to-clipboard.
 ## Acceptance criteria
 
 - [ ] A task with a story assigned shows a link-arrow button beside the Story
-    field in the drawer's Details tab; clicking it navigates to
-    `/stories?story=<number>` and the story panel opens with that story shown
-    (story tab, not a remembered tab from a previously opened story).
+field in the drawer's Details tab; clicking it navigates to
+`/stories?story=<number>` and the story panel opens with that story shown
+(story tab, not a remembered tab from a previously opened story).
 - [ ] The task drawer is not left open on top of / behind the story panel after
-    the click; unsaved edits in the drawer are handled the same way the
-    drawer's existing close-and-navigate affordances handle them.
+the click; unsaved edits in the drawer are handled the same way the
+drawer's existing close-and-navigate affordances handle them.
 - [ ] The button has an accessible name and tooltip naming the target story
-    (including its number when it has one).
+(including its number when it has one).
 - [ ] No button renders when the task has no story, and no button renders at all
-    when `[stories] enabled = false` — matching the existing `storiesEnabled`
-    gate on the Story field.
+when `[stories] enabled = false` — matching the existing `storiesEnabled`
+gate on the Story field.
 - [ ] A task tagged to a tag-only story (no definition file, so no number) still
-    gets a working button via the story key; no error toast, no blank route.
+gets a working button via the story key; no error toast, no blank route.
 - [ ] A story definition file with no `number:` is assigned one on load, and the
-    assigned number is not already used by another story.
+assigned number is not already used by another story.
 - [ ] Numbers are unique across all stories: if two story files somehow carry the
-    same `number:` (hand-edited or copy-pasted frontmatter), the collision is
-    resolved so each story keeps a distinct number, and no two stories render
-    the same `#0001` badge or resolve to the same deep link.
+same `number:` (hand-edited or copy-pasted frontmatter), the collision is
+resolved so each story keeps a distinct number, and no two stories render
+the same `#0001` badge or resolve to the same deep link.
 - [ ] Assignment is idempotent and non-destructive: a story that already has a
-    number keeps it across restarts, renames, and edits; deleting a story and
-    creating another does not hand a live story a duplicate.
+number keeps it across restarts, renames, and edits; deleting a story and
+creating another does not hand a live story a duplicate.
 - [ ] Tests cover: the button's render/hide conditions and the `?story=` value it
-    produces (including the tag-only key case), plus the number backfill
-    assigning a number to a numberless legacy story and keeping every number
-    unique — including the seeded-duplicate and delete-then-create cases.
+produces (including the tag-only key case), plus the number backfill
+assigning a number to a numberless legacy story and keeping every number
+unique — including the seeded-duplicate and delete-then-create cases.
 - [ ] `bun run fmt` run before committing on the task branch, then `repoos check`
-    passes.
+passes.
 
 ## Notes for AI
 

@@ -39,21 +39,21 @@ screen.
 ## Acceptance criteria
 
 - [ ] With a screenshot wider than the viewer, the whole image is visible within
-    the viewer's width and there is no horizontal scroll range / scrollbar.
+the viewer's width and there is no horizontal scroll range / scrollbar.
 - [ ] Scaling a wide screenshot down preserves its aspect ratio.
 - [ ] A screenshot narrower than the viewer is not upscaled beyond its natural
-    size.
+size.
 - [ ] With multiple screenshots the container scrolls vertically through them in
-    order, and the existing `startIndex` behaviour (opening scrolled to the
-    clicked shot) still holds.
+order, and the existing `startIndex` behaviour (opening scrolled to the
+clicked shot) still holds.
 - [ ] The behaviour holds at narrow window widths, with the viewer's own padding
-    accounted for — no image touches or overflows the container edges.
+accounted for — no image touches or overflows the container edges.
 - [ ] The viewer's visible copy no longer claims images are shown "at their
-    original size" if they are now scaled to fit; the description and captions
-    stay truthful.
+original size" if they are now scaled to fit; the description and captions
+stay truthful.
 - [ ] Existing screenshot-viewer tests are updated to the new behaviour, and at
-    least one regression test pins the fit-the-width / no-horizontal-scroll
-    contract.
+least one regression test pins the fit-the-width / no-horizontal-scroll
+contract.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

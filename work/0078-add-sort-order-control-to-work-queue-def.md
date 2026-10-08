@@ -37,13 +37,13 @@ column state is remembered today.
 ## Acceptance criteria
 
 - [x] A sort-order dropdown appears in the Work Queue header, offering "Most
-    recently updated" and "Current order"
+recently updated" and "Current order"
 - [x] Default sort (no saved preference) is "Most recently updated"
-    (`updated_at` descending)
+(`updated_at` descending)
 - [x] "Current order" reproduces today's behavior: status rank, then priority
-    rank, then task id
+rank, then task id
 - [x] Tasks with no `updated_at` sort to the bottom under "Most recently
-    updated" rather than erroring or floating to the top
+updated" rather than erroring or floating to the top
 - [x] Switching the dropdown re-orders all board columns immediately
 - [x] The selected sort order persists across page reloads (localStorage)
 - [x] `repoos check` passes; no new runtime dependencies

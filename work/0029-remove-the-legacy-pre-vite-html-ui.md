@@ -36,15 +36,15 @@ and docs/code stop referencing it.
 
 - [ ] `src/ui/` is deleted (app.html, favicon.svg, vendor/)
 - [ ] `src/server/server.ts` SPA fallback serves only the Vite `index.html`;
-    the legacy `app.html` branch is gone
+the legacy `app.html` branch is gone
 - [ ] `scripts/dev-compare.mjs` and the `compare` npm script are deleted
 - [ ] `src/commands/check.ts` keeps the /assets/ sanity assertion but no longer
-    references "legacy app.html"
+references "legacy app.html"
 - [ ] Docs updated to describe the current UI: `docs/architecture.md`
-    (src/ui tree + "a single self-contained app.html" section) and
-    `docs/concepts.md` now point at `src/ui-app` (Vite + Vue 3 SFC)
+(src/ui tree + "a single self-contained app.html" section) and
+`docs/concepts.md` now point at `src/ui-app` (Vite + Vue 3 SFC)
 - [ ] No remaining references to `src/ui`, `app.html`, or `dev-compare` outside
-    git history and closed task files
+git history and closed task files
 - [ ] `repoos check` passes (build + tests + UI smoke)
 - [ ] `repoos serve` serves the built UI (index.html, not app.html)
 

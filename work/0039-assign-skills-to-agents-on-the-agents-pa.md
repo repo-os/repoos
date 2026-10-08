@@ -41,16 +41,16 @@ added skills appear automatically.
 ## Acceptance criteria
 
 - [ ] Each agent card on the Agents page shows a Skills multi-select listing the
-    repo's discovered skills
+repo's discovered skills
 - [ ] Skills can be toggled per agent (multi-select, none allowed); the choice
-    persists through a reload and is round-tripped through the config API
+persists through a reload and is round-tripped through the config API
 - [ ] The `Agent` config gains a `skills` field (array of skill names),
-    validated like the other agent fields (strings; unknown names are ignored
-    or surfaced, never fatal)
+validated like the other agent fields (strings; unknown names are ignored
+or surfaced, never fatal)
 - [ ] When an agent is launched (`#0037`), the contents of its enabled skills
-    are included in the agent's launch context alongside its instructions
+are included in the agent's launch context alongside its instructions
 - [ ] New skills added to `skills/` appear in the per-agent pickers without a
-    server restart (shared discovery with the Context page)
+server restart (shared discovery with the Context page)
 - [ ] `repoos check` passes
 
 ## Notes for AI

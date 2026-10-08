@@ -154,32 +154,32 @@ the renderer is deliberately hand-rolled for that reason.
 ## Acceptance criteria
 
 1. No empty bubble is ever drawn. For a transcript of
- `[text("All done."), tool, text("\n\n\n")]`, the chat draws two rows (the
- message and the tool run), and no element with an empty `.pm-bubble-*` /
- `.guide-bubble-*` / `.td-bubble-*` / `.debugger-bubble-*` body appears.
+`[text("All done."), tool, text("\n\n\n")]`, the chat draws two rows (the
+message and the tool run), and no element with an empty `.pm-bubble-*` /
+`.guide-bubble-*` / `.td-bubble-*` / `.debugger-bubble-*` body appears.
 2. The same holds for a whitespace-only `sys` entry and for a legacy
- `{ s: "out", d: "\n" }` entry.
+`{ s: "out", d: "\n" }` entry.
 3. `"step one\n\n\n\n\n\nstep two"` renders as two paragraphs with a single
- blank line between them — never three or more.
+blank line between them — never three or more.
 4. A message ending in trailing newlines renders no trailing vertical space, in
- both the markdown path and the plain-`<span>` (human / status) path.
+both the markdown path and the plain-`<span>` (human / status) path.
 5. `"```sh\nnpm test\n\n\n\n```"` renders the code block with **no** trailing
- blank lines inside the `<pre>`, while `"```sh\nnpm test\n\ncd dist\n\nnpm run build\n```"`
- keeps both interior blank lines verbatim.
+blank lines inside the `<pre>`, while `"```sh\nnpm test\n\ncd dist\n\nnpm run build\n```"`
+keeps both interior blank lines verbatim.
 6. An unterminated fence still renders a `<pre>` containing the streamed code,
- with no trailing blank lines.
+with no trailing blank lines.
 7. `"Done.\n\u200b\n\u200b\nBye."` renders two visible lines, not three.
 8. Streaming still looks right: a message that is mid-sentence, mid-list or
- mid-fence renders progressively with no layout jump, and no blank gap appears
- then disappears as parts arrive.
+mid-fence renders progressively with no layout jump, and no blank gap appears
+then disappears as parts arrive.
 9. **Nothing below the view layer changes.** The entries in the persisted
- transcript, the `agent.output` SSE payloads and the debugger output are
- unchanged — same text, same order, same count.
+transcript, the `agent.output` SSE payloads and the debugger output are
+unchanged — same text, same order, same count.
 10. No regression in the shared markdown renderer: existing
-  `src/ui-app/tests/markdown.test.ts` cases (soft-wrapped prose, explicit hard
-  breaks, tables, task checkboxes, Mermaid, intraword underscores, the
-  code-span literal cases) still pass untouched, and the AI-chat standard
-  conformance test still passes.
+ `src/ui-app/tests/markdown.test.ts` cases (soft-wrapped prose, explicit hard
+ breaks, tables, task checkboxes, Mermaid, intraword underscores, the
+ code-span literal cases) still pass untouched, and the AI-chat standard
+ conformance test still passes.
 
 ## Tests
 

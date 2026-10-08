@@ -59,24 +59,24 @@ Apply the identical shape to build staleness, in the CLI entrypoint
 (`src/cli/index.ts`), before command dispatch:
 
 1. On startup, call `checkBuildForRoot(root)` (`src/core/build.ts:98` —
- already exists, already used by `stepStaleness`).
+already exists, already used by `stepStaleness`).
 2. If stale and applicable, and `process.env.REPOOS_STALENESS_REEXEC` is not
- already `"1"` (exactly one attempt, same guard shape as the Bun re-exec):
- run `bun run build` synchronously (inherit stdio so the human/agent sees
- it happen), then re-exec the SAME command/argv with
- `REPOOS_STALENESS_REEXEC=1` set — a genuinely fresh process now loads the
- just-rebuilt `dist/cli/index.js`, so `stepStaleness` in that process
- passes cleanly because the code really is fresh, not because the check
- was skipped or reordered.
+already `"1"` (exactly one attempt, same guard shape as the Bun re-exec):
+run `bun run build` synchronously (inherit stdio so the human/agent sees
+it happen), then re-exec the SAME command/argv with
+`REPOOS_STALENESS_REEXEC=1` set — a genuinely fresh process now loads the
+just-rebuilt `dist/cli/index.js`, so `stepStaleness` in that process
+passes cleanly because the code really is fresh, not because the check
+was skipped or reordered.
 3. If the rebuild itself fails, or staleness somehow still shows after one
- rebuild-and-re-exec attempt, fall through to today's behavior (hard fail
- with the existing message) rather than looping.
+rebuild-and-re-exec attempt, fall through to today's behavior (hard fail
+with the existing message) rather than looping.
 4. This should apply broadly — not just `repoos check` — since ANY `repoos`
- subcommand run against stale `dist/` risks running outdated logic; scope
- the actual trigger point to wherever `reexecUnderBunIfRequested()` is
- currently called from, so both re-exec concerns (runtime + staleness) sit
- together and compose (the two guard env vars are independent, so either
- or both can fire in one bootstrap without conflict).
+subcommand run against stale `dist/` risks running outdated logic; scope
+the actual trigger point to wherever `reexecUnderBunIfRequested()` is
+currently called from, so both re-exec concerns (runtime + staleness) sit
+together and compose (the two guard env vars are independent, so either
+or both can fire in one bootstrap without conflict).
 
 ## Acceptance criteria
 

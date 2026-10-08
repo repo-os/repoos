@@ -52,10 +52,10 @@ core/tunnel-assistant.ts, TunnelDrawer.vue, server.ts, and tests.
 
 - [x] \`repoos tunnel create\` never asks for or accepts an email whitelist.
 - [x] The CLI help text for \`tunnel create\` no longer mentions \`--allow\`,
-    \`allow\`, or \`deny\`.
+\`allow\`, or \`deny\`.
 - [x] The TunnelDrawer UI form has no email field.
 - [x] \`buildTunnelPublishPlan()\` in \`tunnel-assistant.ts\` never generates
-    an \`--allow\` flag.
+an \`--allow\` flag.
 - [x] \`TunnelApp\`/\`repoos.toml\` no longer has an \`access\` field.
 - [x] All tunnel tests pass; tests updated to match the no-Access behavior.
 - [x] \`repoos check\` passes (build, typecheck, full test suite all green).

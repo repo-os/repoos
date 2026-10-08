@@ -49,19 +49,19 @@ step, not a hang) or once the session is confirmed exited/stopped.
 ## Acceptance criteria
 
 - [ ] Agent tab shows an animated "working" indicator while the agent is
-    actively producing output; the indicator stops when the agent is idle
-    or has exited.
+actively producing output; the indicator stops when the agent is idle
+or has exited.
 - [ ] A total working time is tracked and displayed per task, accumulating
-    only while the agent is actively running — it excludes time spent
-    waiting for human input between turns.
+only while the agent is actively running — it excludes time spent
+waiting for human input between turns.
 - [ ] Working time accumulates correctly across multiple turns (e.g.
-    follow-up chat messages per 0042 phase 2) — each turn adds to the same
-    running total rather than resetting it.
+follow-up chat messages per 0042 phase 2) — each turn adds to the same
+running total rather than resetting it.
 - [ ] If 20 seconds pass with no new agent output while the runner still
-    considers the agent running, the UI surfaces a clear stalled/dead
-    alert.
+considers the agent running, the UI surfaces a clear stalled/dead
+alert.
 - [ ] The stalled alert clears automatically once new output arrives, or
-    once the session is confirmed exited/stopped.
+once the session is confirmed exited/stopped.
 - [ ] Zero console errors in the UI; `repoos check` passes.
 
 ## Notes for AI

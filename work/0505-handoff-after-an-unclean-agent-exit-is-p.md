@@ -41,29 +41,29 @@ which doesn't say the server is waiting on a restart.
 ## Fix
 
 1. **Don't wait for a restart that isn't coming.** In the
- `entry.handoffRequested && !exitedCleanly` branch of `cleanup()`, the server
- is demonstrably alive — the agent process ended, not the server. Finalize
- the handoff now through the same path as a clean exit (`onHandoff`, which
- re-runs `repoos check` server-side, so a half-finished turn can't slip
- through). Keep the persist-for-next-boot behavior only for the case it was
- designed for: the server itself going away mid-turn (already covered by the
- request being persisted at signal time).
+`entry.handoffRequested && !exitedCleanly` branch of `cleanup()`, the server
+is demonstrably alive — the agent process ended, not the server. Finalize
+the handoff now through the same path as a clean exit (`onHandoff`, which
+re-runs `repoos check` server-side, so a half-finished turn can't slip
+through). Keep the persist-for-next-boot behavior only for the case it was
+designed for: the server itself going away mid-turn (already covered by the
+request being persisted at signal time).
 2. **If finalization can't proceed, say so.** Any exit where the handoff is
- neither finalized nor in flight must escalate to `needs_input` with an
- honest detail (e.g. "agent exited with code N after requesting handoff —
- Restart work or click Review"). The watchdog must not treat a retained
- handoff as healthy indefinitely while the server that would recover it is
- the one running.
+neither finalized nor in flight must escalate to `needs_input` with an
+honest detail (e.g. "agent exited with code N after requesting handoff —
+Restart work or click Review"). The watchdog must not treat a retained
+handoff as healthy indefinitely while the server that would recover it is
+the one running.
 3. **Recovery must be a no-op for a task that already moved on.** Unverified
- today: if a human clicks Review (or Move to done) on a task that still has a
- pending handoff, the next server start's `recoverPendingHandoffs` re-fires
- it. `handoffTask` (`src/server/handoff.ts`) returns "already finalized" only
- when BOTH main's and the worktree's copy say `review`; the worktree copy
- usually still says `active` (see AGENTS.md, stuck-active section), so it may
- re-run the check and re-patch status. Verify and fix: clear the pending
- handoff whenever the task leaves `active` by any route (Review button,
- PATCH, `repoos mv`, done, abandon), and have recovery skip a request whose
- task is no longer `active`.
+today: if a human clicks Review (or Move to done) on a task that still has a
+pending handoff, the next server start's `recoverPendingHandoffs` re-fires
+it. `handoffTask` (`src/server/handoff.ts`) returns "already finalized" only
+when BOTH main's and the worktree's copy say `review`; the worktree copy
+usually still says `active` (see AGENTS.md, stuck-active section), so it may
+re-run the check and re-patch status. Verify and fix: clear the pending
+handoff whenever the task leaves `active` by any route (Review button,
+PATCH, `repoos mv`, done, abandon), and have recovery skip a request whose
+task is no longer `active`.
 
 ## Acceptance
 

@@ -30,10 +30,10 @@ This is two jobs, and the second is bigger than the first:
 
 1. **Add a light token set** — define light-mode values for every CSS variable.
 2. **Complete the tokenization** — audit the UI for hardcoded colors that
- DON'T use a variable (inline SVG fills, rgba glass highlights, gradients,
- the neon glows) and convert them to tokens, or give them theme-aware values.
- This audit IS most of the work. A theme swap only works if nothing is baked
- in.
+DON'T use a variable (inline SVG fills, rgba glass highlights, gradients,
+the neon glows) and convert them to tokens, or give them theme-aware values.
+This audit IS most of the work. A theme swap only works if nothing is baked
+in.
 
 A light theme is NOT a mechanical inversion of dark. The neon/glow/glass
 aesthetic is built for darkness — glows don't read on white, low-opacity white
@@ -47,19 +47,19 @@ accordingly.
 
 - [ ] Light token set defined for ALL theme variables
 - [ ] Audit complete: no hardcoded colors remain that ignore the theme — inline
-    SVG fills/strokes, rgba highlights, gradients, glow shadows all respond to
-    the active theme (or have explicit per-theme values)
+   SVG fills/strokes, rgba highlights, gradients, glow shadows all respond to
+   the active theme (or have explicit per-theme values)
 - [ ] `theme` setting in repoos.toml: `dark` | `light` | `system`
 - [ ] `system` follows OS `prefers-color-scheme` and updates live if the OS
-    setting changes while open
+   setting changes while open
 - [ ] Theme applies live (no restart) — it's the cosmetic, live-editable tier
 - [ ] Both themes are legible: text contrast, status colors (the status dot
-    palette: inbox/ready/active/review/done), priority badges, and the live
-    feed all read clearly in BOTH themes
+   palette: inbox/ready/active/review/done), priority badges, and the live
+   feed all read clearly in BOTH themes
 - [ ] Glows/glass that look wrong on light are handled (shadows or reduced
-    treatment in light), not just left glowing on white
+   treatment in light), not just left glowing on white
 - [ ] No flash of wrong theme on load (apply the resolved theme before first
-    paint, not after Vue mounts)
+   paint, not after Vue mounts)
 
 ## Notes for AI
 

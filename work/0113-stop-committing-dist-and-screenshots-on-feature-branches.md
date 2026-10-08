@@ -36,16 +36,16 @@ but the agent doesn't commit it).
 ## Acceptance criteria
 
 - [ ] The engineer agent mission text (in `src/server/agents.ts`) explicitly
-    instructs agents: run `repoos check` to verify, but only commit `src/`,
-    `work/`, `docs/`, and config changes — never `dist/` or `screenshots/`.
+instructs agents: run `repoos check` to verify, but only commit `src/`,
+`work/`, `docs/`, and config changes — never `dist/` or `screenshots/`.
 - [ ] `repoos check` still passes on feature branches (it builds locally,
-    just doesn't commit the output).
+just doesn't commit the output).
 - [ ] The done flow's build step still regenerates dist/ and screenshots/
-    after merge to main.
+after merge to main.
 - [ ] A `git merge` of a feature branch produces zero dist/ or screenshots/
-    conflicts (verify by merging a test branch end-to-end).
+conflicts (verify by merging a test branch end-to-end).
 - [ ] Existing agent behavior is unchanged: they still have a working dist/
-    to run `repoos check` against, they just stop committing it.
+to run `repoos check` against, they just stop committing it.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

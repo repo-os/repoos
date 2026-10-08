@@ -68,12 +68,12 @@ loading a saved colour.
 
 - **Where to touch:**
 - `src/ui-app/src/components/TopBar.vue` — make the `.repo-pill` a clickable
-  element, add the popover/template and the colour-read/write logic.
+element, add the popover/template and the colour-read/write logic.
 - `src/ui-app/src/components/TopBar.vue` (style section) — add styles for
-  the popover, swatch buttons, and the dynamic background/text colours on the
-  pill.
+the popover, swatch buttons, and the dynamic background/text colours on the
+pill.
 - No server-side changes. No changes to `src/stores/repo.ts` or
-  `src/stores/config.ts` — this is a self-contained local UI feature.
+`src/stores/config.ts` — this is a self-contained local UI feature.
 
 - **localStorage key convention:** Follow the existing `repoos.*` key pattern
 already used for `repoos.board.sortOrder`, `repoos.newVersion`, etc. The repo

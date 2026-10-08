@@ -16,16 +16,16 @@ updated_at: "2026-08-11T03:32:58Z"
 Two real failure modes, both observed this cycle:
 
 1. **Agents skip critical mission steps.** #0063's agent committed the worktree
- copy of the task file with `status: review`, ran a green `repoos check`, then
- stopped — but never updated the **main-checkout** copy, so the board on 7171
- kept showing `active`. The mission's step 3 is a dense wall of prose
- (`src/server/agents.ts` `missionFor`) and agents partial-complete it; there
- is no verification step that the board actually reflects the real status.
+copy of the task file with `status: review`, ran a green `repoos check`, then
+stopped — but never updated the **main-checkout** copy, so the board on 7171
+kept showing `active`. The mission's step 3 is a dense wall of prose
+(`src/server/agents.ts` `missionFor`) and agents partial-complete it; there
+is no verification step that the board actually reflects the real status.
 2. **Waiting-on-human is indistinguishable from stuck.** #0063's agent stopped
- on purpose to ask "Want me to commit?" — but the board showed a plain `active`
- task, so the human could not tell whether the task was stuck, dead, or waiting
- for their go-ahead. There is no explicit signal for "the agent needs the
- human", so every ambiguous stop looks identical to a token-exhaustion crash.
+on purpose to ask "Want me to commit?" — but the board showed a plain `active`
+task, so the human could not tell whether the task was stuck, dead, or waiting
+for their go-ahead. There is no explicit signal for "the agent needs the
+human", so every ambiguous stop looks identical to a token-exhaustion crash.
 
 ## Desired UX
 
@@ -44,30 +44,30 @@ the #0063 class of bug (board disagrees with the branch) cannot pass silently.
 ## Acceptance criteria
 
 - [ ] New frontmatter field `needs_input: bool` is modeled in `TaskFrontmatter`
-    (`src/core/types.ts`) and surfaced on `Task` (e.g. `needsInput: boolean`,
-    default `false`); it round-trips through `patchTaskFile`, the indexer, and
-    unknown-key preservation. False is never written when unset.
+   (`src/core/types.ts`) and surfaced on `Task` (e.g. `needsInput: boolean`,
+   default `false`); it round-trips through `patchTaskFile`, the indexer, and
+   unknown-key preservation. False is never written when unset.
 - [ ] `missionFor` (`src/server/agents.ts`) is rewritten as a numbered
-    fail-safe checklist that (a) requires `repoos check` green before
-    anything else, (b) commits on the branch, (c) sets `status: review` in
-    BOTH copies — worktree copy committed, main-checkout copy edited WITHOUT
-    commit — then (d) **reads the main-checkout copy back and confirms it
-    shows `review`** before stopping, and (e) when blocked or needing a
-    decision, sets `needs_input: true` in BOTH copies (worktree committed,
-    main copy not) and stops — explicitly forbidding silently leaving the
-    task `active`.
+   fail-safe checklist that (a) requires `repoos check` green before
+   anything else, (b) commits on the branch, (c) sets `status: review` in
+   BOTH copies — worktree copy committed, main-checkout copy edited WITHOUT
+   commit — then (d) **reads the main-checkout copy back and confirms it
+   shows `review`** before stopping, and (e) when blocked or needing a
+   decision, sets `needs_input: true` in BOTH copies (worktree committed,
+   main copy not) and stops — explicitly forbidding silently leaving the
+   task `active`.
 - [ ] A fixture test asserts the mission text contains the both-copies
-    verification and the needs-input instruction (pattern: existing
-    `agent-drivers.test.ts`), so future mission edits can't silently drop
-    them.
+   verification and the needs-input instruction (pattern: existing
+   `agent-drivers.test.ts`), so future mission edits can't silently drop
+   them.
 - [ ] `POST /api/tasks/:id/message` clears `needs_input` (main copy) before
-    resuming the session; `start` and `pause` also clear it.
+   resuming the session; `start` and `pause` also clear it.
 - [ ] UI: a task with `needsInput` gets a pulsing "needs input" treatment on
-    its card (`TaskCard.vue` — reuse/extend the existing `flash`/pulse
-    styling) plus a visible badge; the task drawer's Agent tab shows a
-    "waiting for you" state (not "running") when `needsInput` is true; the
-    change surfaces live via the existing `task.updated` SSE path (the file
-    watcher already emits on frontmatter edits).
+   its card (`TaskCard.vue` — reuse/extend the existing `flash`/pulse
+   styling) plus a visible badge; the task drawer's Agent tab shows a
+   "waiting for you" state (not "running") when `needsInput` is true; the
+   change surfaces live via the existing `task.updated` SSE path (the file
+   watcher already emits on frontmatter edits).
 - [ ] `repoos check` passes; zero new runtime dependencies.
 
 ## Notes for AI

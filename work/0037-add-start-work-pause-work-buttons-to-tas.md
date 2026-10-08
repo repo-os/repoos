@@ -28,10 +28,10 @@ button that drives an AI agent:
 
 - **Ready tasks** show a **Start work** button. Clicking it:
 - moves the task to `active` (same code path as `repoos mv`, so the Activity
-  log is written);
+log is written);
 - launches the repo's default coding agent on the task: checks out / creates
-  the task's worktree, and hands the agent the task file + its instructions as
-  the mission;
+the task's worktree, and hands the agent the task file + its instructions as
+the mission;
 - marks the task as *running* in the UI.
 - **Active tasks** show a **Pause work** button in the same spot. Clicking it:
 - signals the running agent to stop (graceful, then kill);
@@ -43,17 +43,17 @@ button that drives an AI agent:
 ## Acceptance criteria
 
 - [ ] A `ready` task shows a **Start work** button on its board card and in the
-    task drawer
+  task drawer
 - [ ] Clicking **Start work** transitions the task to `active` with an Activity
-    log entry
+  log entry
 - [ ] Starting work launches the repo's default agent (the `engineer` agent from
-    the Agents page) against the task, in the task's worktree, seeded with the
-    task file and the agent's instructions
+  the Agents page) against the task, in the task's worktree, seeded with the
+  task file and the agent's instructions
 - [ ] An `active` task shows a **Pause work** button instead
 - [ ] Clicking **Pause work** stops the running agent and returns the task to
-    `ready`, with an Activity log entry
+  `ready`, with an Activity log entry
 - [ ] If the agent process exits on its own (crash or completion), the UI stops
-    showing "running" — the task is never stuck in a phantom running state
+  showing "running" — the task is never stuck in a phantom running state
 - [ ] `repoos check` passes
 
 ## Notes for AI

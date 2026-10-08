@@ -21,8 +21,8 @@ Dev and PM both support per-task agent/CLI/model overrides, chosen from a select
 - `resolveReviewer(config)` (src/server/agents.ts:1160) takes only `config`, no `task` — it always resolves the single globally-enabled `reviewer`-role agent from `repoos.toml`, with no override path at all:
 ```ts
 export function resolveReviewer(config: RepoOSConfig): Agent | null {
-  const list = agentsForConfig(config);
-  return list.find((a) => a.enabled && matchesRole(a, "reviewer")) ?? null;
+const list = agentsForConfig(config);
+return list.find((a) => a.enabled && matchesRole(a, "reviewer")) ?? null;
 }
 ```
 - Every call site that starts or continues a review (`src/server/review.ts:493, 532, 736, 965` — `canRun`, `run`, and the follow-up/auto-bounce paths) calls `resolveReviewer(this.config)` directly, never anything task-aware.

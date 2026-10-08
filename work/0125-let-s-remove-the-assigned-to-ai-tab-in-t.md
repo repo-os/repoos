@@ -59,11 +59,11 @@ mobile widths (grids already collapse at ≤1000px).
 ## Acceptance criteria
 1. No "Assigned to AI" panel remains on Mission Control.
 2. The replacement panel shows exactly the tasks needing a human, each with a
- reason tag, and an empty state with a human-task creation CTA.
+reason tag, and an empty state with a human-task creation CTA.
 3. Feature releases render as one vertical timeline (no 2-col grid), correctly
- date-sorted and bounded.
+date-sorted and bounded.
 4. `repoos check` passes (build, typecheck, tests, headless UI smoke) with zero
- console errors.
+console errors.
 
 ## Files
 - src/ui-app/src/views/DashboardView.vue

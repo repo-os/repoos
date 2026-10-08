@@ -40,18 +40,18 @@ models** as the discovery action.
 - [ ] Every default and custom agent card has a per-card Test action
 - [ ] Clicking Test sends exactly one `{ cli, model }` combination to the server
 - [ ] Only the clicked card enters a disabled Testing… spinner state; other cards
-    remain usable and may be tested independently
+remain usable and may be tested independently
 - [ ] The card renders passed, failed, timed-out, or not-testable after completion
 - [ ] A failed/timed-out result includes a bounded sanitized diagnostic
 - [ ] Changing that card's CLI or model clears its previous result
 - [ ] Testing never writes `repoos.toml`; ordinary agent edits auto-save after a
-    short debounce with inline saving/saved/error feedback
+short debounce with inline saving/saved/error feedback
 - [ ] The manual Save button and unsaved-changes navigation prompt are removed
 - [ ] The global bulk Test models button and all-at-once matrix summary are removed
 - [ ] The server endpoint accepts a single combination and never expands it to other
-    discovered/configured models
+discovered/configured models
 - [ ] Tests prove one click produces one fake-binary spawn and cover success/failure,
-    loading state, result reset, and unsupported combinations
+loading state, result reset, and unsupported combinations
 - [ ] `repoos check` passes, including browser smoke and screenshot freshness
 
 ## Notes for AI

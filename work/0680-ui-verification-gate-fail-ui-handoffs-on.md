@@ -47,18 +47,18 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 ```json
 [
 {
-  "label": "Task drawer review history list",
-  "target": "default",
-  "route": "/",
-  "highlight": ".review-history",
-  "steps": [
-    {
-      "click": "[data-task-id=\"0680\"]"
-    },
-    {
-      "waitMs": 400
-    }
-  ]
+"label": "Task drawer review history list",
+"target": "default",
+"route": "/",
+"highlight": ".review-history",
+"steps": [
+  {
+    "click": "[data-task-id=\"0680\"]"
+  },
+  {
+    "waitMs": 400
+  }
+]
 }
 ]
 ```

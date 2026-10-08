@@ -31,8 +31,8 @@ an **optional release-notes text area**. Two ways to fill it:
 
 1. **Type it.** Write notes by hand in the text area before confirming the cut.
 2. **Generate it.** Click a button ("Generate with AI") that drafts release
- notes from the git commits since the last release and fills the text area
- with the draft.
+notes from the git commits since the last release and fills the text area
+with the draft.
 
 The generated draft lands in the same text area, so the human can review and
 edit it before cutting. The field stays optional end to end — cutting a

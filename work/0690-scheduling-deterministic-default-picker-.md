@@ -47,10 +47,10 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 ```json
 [
 {
-  "label": "PM veto for parallel conflicts setting",
-  "target": "default",
-  "route": "/settings?tab=board",
-  "highlight": "[data-config-key=\"autoEngineering.pmVeto\"]"
+"label": "PM veto for parallel conflicts setting",
+"target": "default",
+"route": "/settings?tab=board",
+"highlight": "[data-config-key=\"autoEngineering.pmVeto\"]"
 }
 ]
 ```

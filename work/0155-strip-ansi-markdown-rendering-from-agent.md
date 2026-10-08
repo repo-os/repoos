@@ -44,21 +44,21 @@ task or doc, ever.
 ## Acceptance criteria
 
 - [ ] `runPrompt`'s captured output has ANSI escape sequences stripped before it is
-    returned/parsed (reuse or generalize the existing `stripAnsi` helper in
-    `src/server/done.ts:243` rather than writing a second implementation).
+returned/parsed (reuse or generalize the existing `stripAnsi` helper in
+`src/server/done.ts:243` rather than writing a second implementation).
 - [ ] Investigate whether `kiro-cli chat` has a flag to disable markdown/box-drawing
-    rendering in `--no-interactive` mode (e.g. a `--plain`/`--raw`/`--no-color`
-    equivalent) and pass it from `promptCommand`/`reviewCommand`
-    (`src/server/agents.ts`). If no such flag exists, make the frontmatter
-    delimiter detection tolerant of a rendered horizontal rule (a line of
-    box-drawing characters, optionally under a `> ` blockquote prefix) as a
-    fallback — whichever is more robust.
+rendering in `--no-interactive` mode (e.g. a `--plain`/`--raw`/`--no-color`
+equivalent) and pass it from `promptCommand`/`reviewCommand`
+(`src/server/agents.ts`). If no such flag exists, make the frontmatter
+delimiter detection tolerant of a rendered horizontal rule (a line of
+box-drawing characters, optionally under a `> ` blockquote prefix) as a
+fallback — whichever is more robust.
 - [ ] A freeform task or doc created via the kiro agent parses correctly: real title,
-    real frontmatter fields (type/priority/area), clean body — verified against a
-    real `kiro-cli` run, not just a synthetic fixture.
+real frontmatter fields (type/priority/area), clean body — verified against a
+real `kiro-cli` run, not just a synthetic fixture.
 - [ ] Existing tests for `parseGeneratedTask`/`parseDocument`/`parseGeneratedDocument`
-    still pass; add a regression test using the captured raw kiro output shape
-    (ANSI codes + box-drawing rule + `> ` prefix) so this can't silently regress.
+still pass; add a regression test using the captured raw kiro output shape
+(ANSI codes + box-drawing rule + `> ` prefix) so this can't silently regress.
 
 ## Notes for AI
 

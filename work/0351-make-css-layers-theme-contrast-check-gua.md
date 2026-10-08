@@ -47,7 +47,7 @@ that same config, the way #0348 moved RepoOS's UI smoke test onto the generic
 - [ ] A project can point both guards at its own stylesheet and tokens.
 - [ ] Projects that don't configure them skip cleanly, as they do today.
 - [ ] RepoOS keeps its current coverage by declaring it through config, with
-    no hardcoded RepoOS-only path in `check.ts`.
+no hardcoded RepoOS-only path in `check.ts`.
 - [ ] `repoos check` passes.
 
 ## Related

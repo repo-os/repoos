@@ -41,21 +41,21 @@ than a CLI usage error.
 ## Acceptance criteria
 
 - [ ] `resumeCommand()` places exec-level options before the `resume`
-    subcommand. The resulting shape is equivalent to:
-    `codex exec --sandbox workspace-write resume --model <model> --json
-    <session-id> <prompt>`.
+subcommand. The resulting shape is equivalent to:
+`codex exec --sandbox workspace-write resume --model <model> --json
+<session-id> <prompt>`.
 - [ ] A known session ID is passed exactly once; when unavailable, `--last` is
-    used without changing the option ordering.
+used without changing the option ordering.
 - [ ] Explicit models and the `default` model behavior remain correct.
 - [ ] The resumed process stays in the task worktree and retains the same
-    workspace-write safety boundary as a fresh Codex turn.
+workspace-write safety boundary as a fresh Codex turn.
 - [ ] Add fixture tests for known-session and `--last` commands that fail if an
-    exec-only flag is placed after `resume`.
+exec-only flag is placed after `resume`.
 - [ ] Add an integration-style regression test that sends a follow-up through
-    `AgentRunner.send()` and proves the fake Codex resume turn receives and
-    streams the message instead of exiting with argument-parser failure.
+`AgentRunner.send()` and proves the fake Codex resume turn receives and
+streams the message instead of exiting with argument-parser failure.
 - [ ] Audit other driver resume commands for the same parent/subcommand option
-    ordering mistake; change them only if a test demonstrates the issue.
+ordering mistake; change them only if a test demonstrates the issue.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

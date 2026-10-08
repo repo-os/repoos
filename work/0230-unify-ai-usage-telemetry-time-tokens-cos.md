@@ -51,27 +51,27 @@ is visible at a glance.
 
 - [ ] `repoos check` passes with no console errors.
 - [ ] Engineer, PM, reviewer, CTO, Ross/guide, and other supported roles record
-    wall-clock elapsed time, input/output/total tokens, and cost for every
-    session where the CLI exposes usage.
+wall-clock elapsed time, input/output/total tokens, and cost for every
+session where the CLI exposes usage.
 - [ ] Task-specific sessions (including PM and reviewer follow-ups) are
-    attributed to the real task ID; PM sessions are no longer stored under
-    bare chat session IDs.
+attributed to the real task ID; PM sessions are no longer stored under
+bare chat session IDs.
 - [ ] Reviewer sessions persist nonzero elapsed time and token/cost data.
 - [ ] CTO runs are persisted to telemetry.
 - [ ] All completed, failed, and cancelled sessions are persisted in
-    `.repoos/repoos.db`; if SQLite is unavailable the existing graceful
-    fallback is preserved.
+`.repoos/repoos.db`; if SQLite is unavailable the existing graceful
+fallback is preserved.
 - [ ] Authoritative CLI-reported usage/cost is used when available; estimates
-    are clearly labeled, and Kiro credits are never presented as USD.
+are clearly labeled, and Kiro credits are never presented as USD.
 - [ ] Task totals include every associated role/session and expose role-level
-    breakdowns.
+breakdowns.
 - [ ] The task drawer shows a compact usage treatment: total elapsed time,
-    tokens, cost, and a role breakdown.
+tokens, cost, and a role breakdown.
 - [ ] Board-level totals are exposed where they fit naturally.
 - [ ] Live telemetry survives normal UI refreshes; durable totals survive
-    server restarts.
+server restarts.
 - [ ] Tests cover: role-to-task attribution, aggregation, zero/unknown usage,
-    failed turns, and no-SQLite fallback.
+failed turns, and no-SQLite fallback.
 
 ## Notes for AI
 

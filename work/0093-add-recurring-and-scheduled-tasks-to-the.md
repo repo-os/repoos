@@ -45,35 +45,35 @@ silently discarded.
 ## Acceptance criteria
 
 - [ ] Users can create one-time and recurring schedules from the Agents page,
-    using a task template with title, specification, type, area, priority,
-    assignee, and initial status.
+using a task template with title, specification, type, area, priority,
+assignee, and initial status.
 - [ ] Recurrence supports one-time, daily, and weekly schedules,
-    with an explicit IANA timezone and a readable next-run preview before
-    saving.
+with an explicit IANA timezone and a readable next-run preview before
+saving.
 - [ ] Schedule definitions are persisted in a repo-native, human-readable
-    format and survive server restarts; any derived scheduler state remains
-    disposable.
+format and survive server restarts; any derived scheduler state remains
+disposable.
 - [ ] When a schedule becomes due, RepoOS creates a standard `work/*.md` task
-    through the existing core facade rather than writing an alternate task
-    format or maintaining a second task database.
+through the existing core facade rather than writing an alternate task
+format or maintaining a second task database.
 - [ ] A schedule can be enabled, disabled, edited, run immediately, and deleted
-    from the UI. Destructive actions require the same confirmation patterns
-    used elsewhere in RepoOS.
+from the UI. Destructive actions require the same confirmation patterns
+used elsewhere in RepoOS.
 - [ ] The Agents page shows enabled state, cadence, timezone, last run, next
-    run, last result, and a link to the latest generated task.
+run, last result, and a link to the latest generated task.
 - [ ] Restart behavior is deterministic: a missed occurrence is handled once
-    according to a documented catch-up policy, without duplicate tasks.
+according to a documented catch-up policy, without duplicate tasks.
 - [ ] Concurrent servers or rapid reloads cannot create the same scheduled
-    occurrence twice.
+occurrence twice.
 - [ ] Schedule execution and failures are surfaced through the existing live
-    event system so the UI updates without polling.
+event system so the UI updates without polling.
 - [ ] A recurring documentation-audit schedule can be configured from task
-    #0092's specification as an end-to-end example.
+#0092's specification as an end-to-end example.
 - [ ] The feature degrades cleanly when no schedules exist, adds no required
-    hosted service, and introduces no runtime dependency without explicit
-    approval.
+hosted service, and introduces no runtime dependency without explicit
+approval.
 - [ ] Tests cover schedule parsing, timezone/next-run calculation, restart
-    catch-up, duplicate prevention, task creation, and UI error handling.
+catch-up, duplicate prevention, task creation, and UI error handling.
 - [ ] `repoos check` passes, including the browser smoke test.
 
 ## Notes for AI

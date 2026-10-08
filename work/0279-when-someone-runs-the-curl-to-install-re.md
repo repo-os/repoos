@@ -64,10 +64,10 @@ The overall aesthetic should feel polished, modern, and even prettier than the h
 
 when someone runs the curl to install repoos I want them to be met with some useful and pretty terminal output, like what herdr does: ```  curl -fsSL https://herdr.dev/install.sh | sh
 
-    ,ww
-   wWWWWWWW_)  herdr installer
-   `WWWWWW'    herdr.dev
-    II  II
+ ,ww
+wWWWWWWW_)  herdr installer
+`WWWWWW'    herdr.dev
+ II  II
 
 > detected linux/x86_64
 > fetching latest release manifest...

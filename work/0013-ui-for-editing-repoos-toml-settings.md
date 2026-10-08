@@ -51,25 +51,25 @@ Document the tier of each field. New settings must be classified when added.
 ## Acceptance criteria
 
 - [ ] `GET /api/config` returns the current resolved config + each field's tier
-    and whether it's restart-required (so the UI can render correctly)
+and whether it's restart-required (so the UI can render correctly)
 - [ ] `PATCH /api/config` writes changes back to `repoos.toml`, validating
-    values server-side (reject an out-of-range port, a non-existent
-    worktreeDir parent, an empty agent command, etc.) with clear errors
+values server-side (reject an out-of-range port, a non-existent
+worktreeDir parent, an empty agent command, etc.) with clear errors
 - [ ] Writing PRESERVES the rest of the toml — comments, unknown keys, and
-    formatting of untouched sections survive the round-trip. Do NOT rewrite
-    the whole file from a parsed object if that drops comments.
+formatting of untouched sections survive the round-trip. Do NOT rewrite
+the whole file from a parsed object if that drops comments.
 - [ ] Restart-required fields are visibly labelled as such; the UI does not
-    imply they applied live
+imply they applied live
 - [ ] Guarded fields are gated behind an explicit affordance (or read-only in
-    v1) — never freely editable alongside cosmetic ones
+v1) — never freely editable alongside cosmetic ones
 - [ ] Server-side validation is authoritative; the UI may pre-validate but the
-    server must reject bad values regardless of client
+server must reject bad values regardless of client
 - [ ] Settings view matches the existing UI design language
 - [ ] If a field is invalid or missing, the UI shows the effective default and
-    indicates it's a default, not an explicit value
+indicates it's a default, not an explicit value
 - [ ] Concurrent-edit safety: if the toml changed on disk since the UI loaded
-    it, re-read and merge / warn rather than clobbering (mirror the task
-    safe-write pattern)
+it, re-read and merge / warn rather than clobbering (mirror the task
+safe-write pattern)
 
 ## Notes for AI
 

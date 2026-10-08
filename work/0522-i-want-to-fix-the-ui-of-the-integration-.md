@@ -50,38 +50,38 @@ so the two views read as one component.
 ## Acceptance criteria
 
 - [ ] With a task integrating and the bar **minimised**, the elapsed timer renders
-    with the same pill treatment as the expanded bar's `.ibar-elapsed`
-    (rounded/`--chip-bg` chip), not as bare dim text.
+with the same pill treatment as the expanded bar's `.ibar-elapsed`
+(rounded/`--chip-bg` chip), not as bare dim text.
 - [ ] With queued tasks and the bar **minimised**, the strip shows a `Queue:`
-    label followed by one pill per queued task id, in FIFO order — e.g.
-    `Queue: #0455 #0456`.
+label followed by one pill per queued task id, in FIFO order — e.g.
+`Queue: #0455 #0456`.
 - [ ] With an empty queue and the bar minimised, no `Queue:` segment is rendered.
 - [ ] In the **expanded** bar the queue row renders `Queue:` + one id-pill per
-    queued task; the per-entry `queueing…` text is gone.
+queued task; the per-entry `queueing…` text is gone.
 - [ ] The trailing `+{{ queue.length }}` queue count is no longer rendered in the
-    expanded bar.
+expanded bar.
 - [ ] Timer and task-id pills share one styling in both states (same background,
-    radius and type treatment); queue ids keep the mono/tabular treatment so
-    they line up.
+radius and type treatment); queue ids keep the mono/tabular treatment so
+they line up.
 - [ ] The strip still fits on one line and still ellipsises rather than
-    overflowing, including with a non-trivial queue and at mobile widths
-    (`max-width: 760px`).
+overflowing, including with a non-trivial queue and at mobile widths
+(`max-width: 760px`).
 - [ ] The strip's existing `title` tooltip still summarises the active task, and
-    the queue ids remain readable by assistive tech.
+the queue ids remain readable by assistive tech.
 - [ ] Idle, failed, stage hover/focus pane, stage click-to-Debug, collapse/expand
-    and auto-collapse behavior are unchanged.
+and auto-collapse behavior are unchanged.
 - [ ] `src/ui-app/tests/integration-status-bar.test.ts` is extended to cover the
-    minimised queue segment and the pill treatment (update rather than weaken
-    the existing assertions).
+minimised queue segment and the pill treatment (update rather than weaken
+the existing assertions).
 - [ ] `bun run build:ui` run after the change; `repoos check` passes; no console
-    errors.
+errors.
 
 ## Notes for AI
 
 - Everything here lives in one file:
 `src/ui-app/src/components/IntegrationStatusBar.vue`. Relevant markup: the
 collapsed strip `button.ibar-strip` (`.strip-label` currently renders
-    `#id … stage · {{ elapsed }}` via `.strip-elapsed`), and the expanded
+`#id … stage · {{ elapsed }}` via `.strip-elapsed`), and the expanded
 queue row `.ibar-queue` (`.queue-label` + `.queue-item` + `.queue-count`).
 - The strip is a single `<button>` (clicking it expands the bar). Keep the queue
 segment **non-interactive** inside it — no nested `<button>`/anchor. Nothing in

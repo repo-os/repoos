@@ -43,17 +43,17 @@ agent from where it left off.
 ## Acceptance criteria
 
 - [ ] Pausing an `active` task stops the agent but leaves `task.status` as
-    `active` (does not fall back to `ready`).
+`active` (does not fall back to `ready`).
 - [ ] The task card button for a paused, still-`active` task reads "Restart
-    work" instead of "Pause work".
+work" instead of "Pause work".
 - [ ] Clicking "Restart work" resumes/relaunches the agent for that task
-    and the task remains `active`.
+and the task remains `active`.
 - [ ] The board/column view still shows the task under "Active" the whole
-    time — it never visually reappears in "Ready" as a side effect of
-    pausing.
+time — it never visually reappears in "Ready" as a side effect of
+pausing.
 - [ ] Existing pause behavior (stopping the underlying agent process, any
-    "running" indicator on the card) still works correctly, just without
-    the status change.
+"running" indicator on the card) still works correctly, just without
+the status change.
 
 ## Notes for AI
 

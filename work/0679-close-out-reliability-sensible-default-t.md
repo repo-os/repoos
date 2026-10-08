@@ -102,23 +102,23 @@ Close-out failed twice with 'merge conflict in src/server/server.ts' because mai
 - 2026-10-06T07:26:54Z · agent exited with an error (cursor) · Degenerate output loop detected after one automatic retry.
 - 2026-10-06T07:36:39Z · model_override
 - 2026-10-06T13:49:16Z · handoff failed · ui-review handoff failed at check · remote validation failed: remote validation failed (exit 1) —     212|   expect(res.status).toBe(202);
-      |                      ^
-   213|   expect(res.body.status).toBe("active");
-   214|   const deadline = Date.now() + 30_000;
+    |                      ^
+ 213|   expect(res.body.status).toBe("active");
+ 214|   const deadline = Date.now() + 30_000;
 ❯ tests/agent-review.test.ts:349:13
 ❯ withServer tests/agent-review.test.ts:279:11
 ❯ tests/agent-review.test.ts:341:11
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 423 passed | 1 skipped (425)
-     Tests  1 failed | 5086 passed | 15 skipped (5102)
-  Start at  13:45:06
-  Duration  245.32s (transform 6.47s, setup 2.03s, import 42.41s, tests 228.19s, environment 195.98s)
+   Tests  1 failed | 5086 passed | 15 skipped (5102)
+Start at  13:45:06
+Duration  245.32s (transform 6.47s, setup 2.03s, import 42.41s, tests 228.19s, environment 195.98s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 782ms
 Test Files  1 passed (1)
-     Tests  2 passed (2)
-  Start at  13:49:12
-  Duration  2.72s (transform 1.13s, setup 13ms, import 1.41s, tests 782ms, environment 440ms)
+   Tests  2 passed (2)
+Start at  13:49:12
+Duration  2.72s (transform 1.13s, setup 13ms, import 1.41s, tests 782ms, environment 440ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T02:12:40Z · needs_input

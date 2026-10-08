@@ -46,21 +46,21 @@ that clash with the palette.
 ## Acceptance criteria
 
 - [ ] Catppuccin Latte and Catppuccin Mocha are both selectable in Settings
-    alongside the existing default theme.
+alongside the existing default theme.
 - [ ] Selecting either variant repaints the whole app — every screen, drawer,
-    dialog, and shared form control — with no unthemed or hardcoded-colour
-    regions visible.
+dialog, and shared form control — with no unthemed or hardcoded-colour
+regions visible.
 - [ ] Text, borders, and interactive controls meet the repo's existing
-    theme-contrast guard (see `repoos check`) in both Catppuccin variants.
+theme-contrast guard (see `repoos check`) in both Catppuccin variants.
 - [ ] Code/diff rendering still uses the existing highlighter theme pipeline
-    correctly under both Catppuccin variants; if a Catppuccin shiki theme is
-    available, it is used rather than hand-rolled colours.
+correctly under both Catppuccin variants; if a Catppuccin shiki theme is
+available, it is used rather than hand-rolled colours.
 - [ ] The chosen variant survives a page reload, matching current theme
-    persistence behaviour.
+persistence behaviour.
 - [ ] If a "system" preference exists today, it still resolves sensibly and the
-    two new Catppuccin variants are reachable from the same control.
+two new Catppuccin variants are reachable from the same control.
 - [ ] Tests added covering theme selection/persistence and the resolved palette
-    for both variants.
+for both variants.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

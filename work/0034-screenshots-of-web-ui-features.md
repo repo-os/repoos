@@ -44,21 +44,21 @@ regenerate (`bun run screenshots`).
 ## Acceptance criteria
 
 - [ ] `screenshots/` contains one PNG per feature (dashboard, work board, task
-    drawer, docs context, settings), all generated from the built app
-    (`dist/`) served on an ephemeral port.
+drawer, docs context, settings), all generated from the built app
+(`dist/`) served on an ephemeral port.
 - [ ] `scripts/capture-screenshots.mjs` generates them against a fixture repo
-    (sample `repoos.toml` + sample `work/*.md` + sample `docs/*.md`) with
-    zero console/page errors, using the same WebKit + `startServer` pattern
-    as the `repoos check` UI smoke test.
+(sample `repoos.toml` + sample `work/*.md` + sample `docs/*.md`) with
+zero console/page errors, using the same WebKit + `startServer` pattern
+as the `repoos check` UI smoke test.
 - [ ] The generator never touches the developer's real `repoos.toml` or
-    `work/` files.
+`work/` files.
 - [ ] `repoos check` includes a screenshots-freshness gate that fails with
-    "Screenshots are stale — run `bun run screenshots`" when the UI source
-    hash differs from the committed one (skipped if Playwright is absent).
+"Screenshots are stale — run `bun run screenshots`" when the UI source
+hash differs from the committed one (skipped if Playwright is absent).
 - [ ] `bun run screenshots` regenerates everything and leaves a clean git
-    status for the PNGs and the freshness marker.
+status for the PNGs and the freshness marker.
 - [ ] `screenshots/README.md` documents the images and the regeneration
-    workflow.
+workflow.
 
 ## Notes for AI
 

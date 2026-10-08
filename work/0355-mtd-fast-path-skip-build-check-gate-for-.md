@@ -51,56 +51,56 @@ In `validateCandidate` (`src/server/integration-orchestrator.ts`), after the
 merge completes and BEFORE the "Full build" step (~line 826):
 
 1. Compute the merged diff's changed file paths against `mainBranch`
- (`git diff --name-only <mainBranch> HEAD` in `wtPath`, or add a small
- helper alongside the existing `getDiff`/`getDiffStats`/`getDiffStatsAsync`
- in `src/core/git.ts:865-905` if a reusable one doesn't already fit —
- those two return counts, not paths, so this needs a small addition).
+(`git diff --name-only <mainBranch> HEAD` in `wtPath`, or add a small
+helper alongside the existing `getDiff`/`getDiffStats`/`getDiffStatsAsync`
+in `src/core/git.ts:865-905` if a reusable one doesn't already fit —
+those two return counts, not paths, so this needs a small addition).
 2. Classify as docs-only ONLY if every changed path matches: starts with
- `docs/` or `user-docs/`, ends with `.md`, OR is the task's own
- `work/<id>-*.md` file (already expected to change on every task; this is
- NOT the same as the `autoResolveOurs`/`resetForeignWorkFiles` handling
- for OTHER tasks' work files a few lines above — don't conflate them).
- `repoos.toml`, `package.json`, anything under `src/`, `scripts/`,
- `.github/`, etc. — ANYTHING else — disqualifies the fast path.
+`docs/` or `user-docs/`, ends with `.md`, OR is the task's own
+`work/<id>-*.md` file (already expected to change on every task; this is
+NOT the same as the `autoResolveOurs`/`resetForeignWorkFiles` handling
+for OTHER tasks' work files a few lines above — don't conflate them).
+`repoos.toml`, `package.json`, anything under `src/`, `scripts/`,
+`.github/`, etc. — ANYTHING else — disqualifies the fast path.
 3. If docs-only: skip BOTH the "Full build" step (~line 826-833) and the
- entire "check" step (~line 842-950, which itself already runs
- staleness/lockfile/fmt/lint/build/tests/ui-smoke via the candidate's own
- `repoos check` — none of these can fail differently for a markdown-only
- diff than they would on main already). Go straight to capturing
- `candidateSha` (existing code after the check block, ~line 1005+).
- Otherwise, run the existing full path unchanged.
+entire "check" step (~line 842-950, which itself already runs
+staleness/lockfile/fmt/lint/build/tests/ui-smoke via the candidate's own
+`repoos check` — none of these can fail differently for a markdown-only
+diff than they would on main already). Go straight to capturing
+`candidateSha` (existing code after the check block, ~line 1005+).
+Otherwise, run the existing full path unchanged.
 4. Log clearly in the job's transcript/logger (`this.logger?.integration`,
- same pattern used elsewhere in this file) that the docs-only fast path
- was taken and list the changed paths that justified it — a human
- debugging a later incident must be able to see WHY build/test/ui-smoke
- didn't run for this merge, not just that they didn't.
+same pattern used elsewhere in this file) that the docs-only fast path
+was taken and list the changed paths that justified it — a human
+debugging a later incident must be able to see WHY build/test/ui-smoke
+didn't run for this merge, not just that they didn't.
 5. Everything else in `validateCandidate` stays unconditional: the merge
- itself, conflict-marker scanning (already runs on `.md` files too, see
- the `textExtensions` list ~line 772 — keep as is, it's cheap), dropped-
- merge detection, and `resetForeignWorkFiles`. Only the build/check block
- is conditionally skipped.
+itself, conflict-marker scanning (already runs on `.md` files too, see
+the `textExtensions` list ~line 772 — keep as is, it's cheap), dropped-
+merge detection, and `resetForeignWorkFiles`. Only the build/check block
+is conditionally skipped.
 
 ## Acceptance criteria
 
 - [ ] A task whose merged diff touches only `docs/`, `user-docs/`, `*.md`
-    files, and/or its own task file skips both the "Full build" and
-    "check" steps in `validateCandidate` and still successfully publishes.
+   files, and/or its own task file skips both the "Full build" and
+   "check" steps in `validateCandidate` and still successfully publishes.
 - [ ] A task whose diff touches even one file outside that allowlist (e.g.
-    one line in `src/`, or `repoos.toml`) runs the full existing gate,
-    unchanged — verify with a mixed diff (mostly docs + one `src/` line)
-    to make sure the predicate doesn't accidentally pass it.
+   one line in `src/`, or `repoos.toml`) runs the full existing gate,
+   unchanged — verify with a mixed diff (mostly docs + one `src/` line)
+   to make sure the predicate doesn't accidentally pass it.
 - [ ] The transcript/log clearly states when and why the fast path was
-    taken, listing the qualifying changed paths.
+   taken, listing the qualifying changed paths.
 - [ ] Human review (reviewer agent / manual sign-off) is untouched — this
-    only changes the automated gate that runs during close-out, after
-    review has already approved the task.
+   only changes the automated gate that runs during close-out, after
+   review has already approved the task.
 - [ ] Standalone `repoos check` behavior is completely unchanged (no edits
-    to `src/commands/check.ts`).
+   to `src/commands/check.ts`).
 - [ ] Tests covering: a pure-docs diff takes the fast path, a mixed diff
-    does not, and the #0276/#0271-style retry/classification logic around
-    `validateCandidate` still behaves correctly when the fast path itself
-    fails for some reason (e.g. the merge step fails before the fast-path
-    check is even reached).
+   does not, and the #0276/#0271-style retry/classification logic around
+   `validateCandidate` still behaves correctly when the fast path itself
+   fails for some reason (e.g. the merge step fails before the fast-path
+   check is even reached).
 - [ ] `repoos check` passes.
 
 ## Related

@@ -46,30 +46,30 @@ to row, and no Story control at all.
 ## Acceptance criteria
 
 - [ ] With `stories.enabled = true`, the details form shows no "Assigned to"
-    field, and the story control sits inside the same `field-row` as Area
-    rather than in a row of its own.
+field, and the story control sits inside the same `field-row` as Area
+rather than in a row of its own.
 - [ ] The story control uses the shared dropdown components
-    (`Select` / `SelectTrigger` / `SelectValue` / `SelectContent` /
-    `SelectViewport` / `SelectItem`) with the same classes as the adjacent
-    Priority control. No `<datalist>`, no plain `<Input list=...>`.
+(`Select` / `SelectTrigger` / `SelectValue` / `SelectContent` /
+`SelectViewport` / `SelectItem`) with the same classes as the adjacent
+Priority control. No `<datalist>`, no plain `<Input list=...>`.
 - [ ] The dropdown lists exactly `storyOptions` (registered definitions +
-    names already used on tasks, deduped, sorted), and the trigger displays
-    the task's current story name.
+names already used on tasks, deduped, sorted), and the trigger displays
+the task's current story name.
 - [ ] If the task's current story is not in that list (set via CLI, or
-    registered after the list was built), the trigger still shows it instead
-    of rendering blank.
+registered after the list was built), the trigger still shows it instead
+of rendering blank.
 - [ ] A "no story" / none option clears the task's story, and the task
-    immediately leaves the story's counts and progress.
+immediately leaves the story's counts and progress.
 - [ ] Saving after a story change PATCHes only `story`; a task with
-    `assigned_to: ai` on disk still has `assigned_to: ai` on disk afterwards.
+`assigned_to: ai` on disk still has `assigned_to: ai` on disk afterwards.
 - [ ] The drawer's dirty tracking is unaffected: the hidden `assignedTo` never
-    registers as a change, and the stored value survives unrelated saves.
+registers as a change, and the stored value survives unrelated saves.
 - [ ] With `stories.enabled = false`, the panel is identical to today (Area +
-    Assigned to row, no Story control).
+Assigned to row, no Story control).
 - [ ] A UI test mounts `TaskDrawer` with stories enabled and asserts: no
-    "Assigned to" label in the details form, the story dropdown renders in the
-    same `field-row` as Area, and its options are dropdown items rather than
-    datalist entries.
+"Assigned to" label in the details form, the story dropdown renders in the
+same `field-row` as Area, and its options are dropdown items rather than
+datalist entries.
 
 ## Notes for AI
 

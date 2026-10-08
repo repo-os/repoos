@@ -34,12 +34,12 @@ save.
 ## Acceptance criteria
 
 - [ ] Selecting an agent+model in a task's pm/dev/review tab does not change
-    the currently active tab.
+the currently active tab.
 - [ ] The user remains on the same tab after the model/agent save completes.
 - [ ] Tab switching only happens when the user explicitly clicks a different
-    tab.
+tab.
 - [ ] The agent+model selection still saves correctly (no regression in the
-    save behavior itself).
+save behavior itself).
 
 ## Notes for AI
 

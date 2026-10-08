@@ -48,14 +48,14 @@ whether a human just dismissed that exact flag seconds/minutes earlier.
 So the actual sequence that reproduces it:
 1. Task is `review`, flagged `review-rounds-exhausted` (rounds already at cap).
 2. Human clicks "Review again" (per the banner's own suggested action) —
- this starts a fresh review in the background, which takes roughly a
- minute.
+this starts a fresh review in the background, which takes roughly a
+minute.
 3. While it's running, or right after, the human clicks **Dismiss** on the
- now-stale banner. `needs_input` clears correctly.
+now-stale banner. `needs_input` clears correctly.
 4. The in-flight review finishes. If its verdict is still not "good to go",
- `autoBounce`'s exhausted-rounds branch fires again and re-sets the same
- flag — reappearing "a moment later" with no indication to the human that
- a review was still in flight or that this is what happened.
+`autoBounce`'s exhausted-rounds branch fires again and re-sets the same
+flag — reappearing "a moment later" with no indication to the human that
+a review was still in flight or that this is what happened.
 
 This is arguably not a bug in the dismiss action itself (which does its job),
 but a confusing product/UX gap: dismissing a flag whose underlying cause

@@ -40,14 +40,14 @@ activation works with Enter/Space.
 ## Acceptance criteria
 
 - [ ] Stat cards ordered draft, inbox, ready, active, review, done (matches the
-    board's column order)
+board's column order)
 - [ ] Clicking a card navigates to `/work?status=<id>` and the board shows only
-    that status's column
+that status's column
 - [ ] The filtered view shows a "Show all statuses" control that clears the
-    filter back to the full board
+filter back to the full board
 - [ ] An unknown/invalid status query behaves like no filter (full board)
 - [ ] Cards are keyboard-focusable with Enter/Space activation; hover shows a
-    click affordance
+click affordance
 - [ ] `repoos check` passes; no new runtime dependencies
 
 ## Notes for AI

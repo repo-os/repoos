@@ -18,26 +18,26 @@ and produced a garbage title/body. Root cause, traced from the actual
 committed history of `work/0345-...md`:
 
 1. The draft-first design (#0251) worked correctly — the raw prompt was saved
- under `## Original prompt` immediately, before any AI touched it.
+under `## Original prompt` immediately, before any AI touched it.
 2. The PM agent's flesh-out pass then replied with a plain status message
- ("Done. Wrote the structured task body into `work/0345-...md`. Key
- decisions captured...") instead of the requested frontmatter+body file
- content.
+("Done. Wrote the structured task body into `work/0345-...md`. Key
+decisions captured...") instead of the requested frontmatter+body file
+content.
 3. `parseGeneratedTask` (`src/server/freeform.ts`) has a fallback for
- unparsable output: when no `---` frontmatter is found, it treats the
- *entire raw reply* as the new body and derives a title from its first
- line. That fallback exists so a bad reply doesn't crash — but nothing
- downstream distinguished "fallback used" from "real content", so the
- PM's stray prose got written as if it were the real spec
- (`src/server/routes/tasks.ts`, the `parseGeneratedTask(output)` call).
+unparsable output: when no `---` frontmatter is found, it treats the
+*entire raw reply* as the new body and derives a title from its first
+line. That fallback exists so a bad reply doesn't crash — but nothing
+downstream distinguished "fallback used" from "real content", so the
+PM's stray prose got written as if it were the real spec
+(`src/server/routes/tasks.ts`, the `parseGeneratedTask(output)` call).
 4. Separately, `patchTaskFile`'s `PROTECTED_SECTIONS` mechanism
- (`src/server/write.ts`), which exists specifically to stop a body
- rewrite from dropping `## Original prompt` / `## Screenshots` /
- `## Activity`, offered no way for a caller to *correct* a
- Original Prompt section after the fact — any caller-supplied section
- with that heading was silently discarded in favor of the (possibly
- already-wrong or missing) on-disk copy. This blocked even a supported
- `repoos update --body` from restoring lost content.
+(`src/server/write.ts`), which exists specifically to stop a body
+rewrite from dropping `## Original prompt` / `## Screenshots` /
+`## Activity`, offered no way for a caller to *correct* a
+Original Prompt section after the fact — any caller-supplied section
+with that heading was silently discarded in favor of the (possibly
+already-wrong or missing) on-disk copy. This blocked even a supported
+`repoos update --body` from restoring lost content.
 
 ## Status
 
@@ -81,12 +81,12 @@ Original Prompt override, while Screenshots/Activity stay protected).
 
 - [x] A PM agent reply without frontmatter never overwrites a draft's title/body.
 - [x] `repoos update --body` can restore/correct a task's `## Original prompt`
-    section without needing to hand-edit the file.
+   section without needing to hand-edit the file.
 - [x] `## Screenshots` / `## Activity` still can't be overwritten by a body patch.
 - [x] The "New task" panel opens the finished task if the user is still on it
-    when the PM agent finishes.
+   when the PM agent finishes.
 - [x] Existing task #0345 itself is restored (done directly as a hotfix,
-    using `repoos update`, once the write.ts fix above unblocked it).
+   using `repoos update`, once the write.ts fix above unblocked it).
 
 ## Notes for AI
 

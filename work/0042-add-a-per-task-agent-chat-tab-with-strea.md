@@ -59,9 +59,9 @@ card's running badge links to the drawer's Agent tab.
 multiple sessions history.
 - **Acceptance (P1)**:
 - [ ] Starting a task streams its stdout/stderr into the Agent tab in real
-      time
+time
 - [ ] Reopening the drawer after pause/stop still shows the buffered
-      transcript
+transcript
 - [ ] Buffer is capped; no unbounded memory growth across many starts
 - [ ] Zero console errors in the UI; `repoos check` passes
 
@@ -88,7 +88,7 @@ not running); user messages appear in the transcript; `agent.output` streams
 the reply back in place.
 - **Acceptance (P2)**:
 - [ ] Sending a message resumes the SAME session (agent recalls its own prior
-      turns) and streams the reply into the log
+turns) and streams the reply into the log
 - [ ] A second message while a turn runs returns 409 and is not lost silently
 - [ ] Session continuity verified for opencode AND claude; behavior documented
 - [ ] Zero console errors; `repoos check` passes

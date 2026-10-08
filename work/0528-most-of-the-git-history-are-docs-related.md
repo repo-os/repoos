@@ -45,32 +45,32 @@ commits.
 ## Acceptance criteria
 
 - [ ] `GET /api/repo/log` accepts an opt-in query param (e.g. `includeDocs=1`);
-    when the param is absent, `docs(...)` commits are excluded from the page.
+when the param is absent, `docs(...)` commits are excluded from the page.
 - [ ] The exclusion happens in the git log invocation itself, not as a post-fetch
-    trim, so a page of `limit` returns `limit` *visible* commits and
-    `nextCursor` is computed after filtering.
+trim, so a page of `limit` returns `limit` *visible* commits and
+`nextCursor` is computed after filtering.
 - [ ] First load of the History tab with no saved preference shows no `docs(...)`
-    commits.
+commits.
 - [ ] The toolbar toggle switches between hidden and shown in one click, refetching
-    without the user pressing Apply.
+without the user pressing Apply.
 - [ ] The toggle composes with the branch and path filters; changing branch or path
-    keeps the current toggle value, and the toggle's refetch keeps both.
+keeps the current toggle value, and the toggle's refetch keeps both.
 - [ ] Toggling resets paging to the first page and clears the "load more" cursor
-    and any expanded rows.
+and any expanded rows.
 - [ ] The toggle's state persists across a page reload, using the existing
-    client-local preference pattern (see `stores/ui.ts`).
+client-local preference pattern (see `stores/ui.ts`).
 - [ ] When filtering hides everything, the empty state names the toggle as the way
-    to see the hidden commits.
+to see the hidden commits.
 - [ ] Day groups with zero visible commits render no header.
 - [ ] Commit detail expansion, the diff view (`/repo/commits/:sha`) and the
-    `/api/repo/commits/:sha` endpoint are unaffected — this is list filtering
-    only, and a hidden commit's diff stays reachable by URL.
+`/api/repo/commits/:sha` endpoint are unaffected — this is list filtering
+only, and a hidden commit's diff stays reachable by URL.
 - [ ] Tests cover: `listRepoLog` excludes `docs(` subjects by default, includes
-    them with the flag, and still returns a correct `nextCursor` under the
-    filter; the UI test covers the default-hidden state and that toggling
-    refetches with the flag.
+them with the flag, and still returns a correct `nextCursor` under the
+filter; the UI test covers the default-hidden state and that toggling
+refetches with the flag.
 - [ ] `bun run fmt` has been run before committing on the branch, and `repoos
-    check` is green.
+check` is green.
 
 ## Notes for AI
 

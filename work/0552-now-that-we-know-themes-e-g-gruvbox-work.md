@@ -60,60 +60,60 @@ mobile nav.
 ## Acceptance criteria
 
 - [ ] Classic and Gruvbox × dark and light all render on the docs site, with
-    correct contrast and no VitePress default blue leaking through in any of
-    the four combinations.
+correct contrast and no VitePress default blue leaking through in any of
+the four combinations.
 - [ ] Gruvbox tokens are ported from `landing/src/style.css`
-    (`[data-ui-theme="gruvbox"]` and `[data-ui-theme="gruvbox"][data-theme="light"]`,
-    which came from `src/ui-app/src/style.css`) and re-expressed as `--vp-*`
-    custom properties. Every `--vp-*` token the file declares today gets a
-    gruvbox value in both appearances — an unset one silently falls back to
-    VitePress's default palette, which is the failure mode to watch for.
+(`[data-ui-theme="gruvbox"]` and `[data-ui-theme="gruvbox"][data-theme="light"]`,
+which came from `src/ui-app/src/style.css`) and re-expressed as `--vp-*`
+custom properties. Every `--vp-*` token the file declares today gets a
+gruvbox value in both appearances — an unset one silently falls back to
+VitePress's default palette, which is the failure mode to watch for.
 - [ ] The existing selector strategy is kept, not restructured: `:root` holds the
-    light defaults and `.dark` overrides them (VitePress toggles a `dark` class,
-    not `data-theme`). Gruvbox is added alongside as its own blocks.
+light defaults and `.dark` overrides them (VitePress toggles a `dark` class,
+not `data-theme`). Gruvbox is added alongside as its own blocks.
 - [ ] The deliberate exceptions in `custom.css`'s file header survive the port:
-    code blocks stay dark in BOTH appearances (`markdown.theme` stays pinned to
-    `github-dark` both ways), the brand button keeps its fill, and inline code
-    and custom containers continue to follow the theme.
+code blocks stay dark in BOTH appearances (`markdown.theme` stays pinned to
+`github-dark` both ways), the brand button keeps its fill, and inline code
+and custom containers continue to follow the theme.
 - [ ] The design theme is applied the way the app and the landing page apply it —
-    `data-ui-theme="gruvbox"` on `<html>`, attribute absent for Classic — so
-    all three codebases read alike. Appearance keeps VitePress's `dark`-class
-    meaning.
+`data-ui-theme="gruvbox"` on `<html>`, attribute absent for Classic — so
+all three codebases read alike. Appearance keeps VitePress's `dark`-class
+meaning.
 - [ ] The design theme and appearance both resolve **before first paint**, with no
-    flash of Classic. `config.mts` already documents that VitePress injects its
-    own `check-dark-mode` script when `appearance` is enabled and that a manual
-    class script "would fight the toggle and flash on light mode" — the new
-    script must compose with or deliberately replace that behaviour, and the
-    comment there is updated to say which.
+flash of Classic. `config.mts` already documents that VitePress injects its
+own `check-dark-mode` script when `appearance` is enabled and that a manual
+class script "would fight the toggle and flash on light mode" — the new
+script must compose with or deliberately replace that behaviour, and the
+comment there is updated to say which.
 - [ ] `?theme=` and `?appearance=` (alias `?mode=`) are honoured on the docs site
-    using the same normalization rules as `landing/src/theme-resolve.ts`:
-    Classic is the absence of `theme`, appearance accepts only `dark`/`light`,
-    invalid values are ignored per axis rather than poisoning the other one,
-    and an unknown `?theme=` (a future id) falls back to Classic instead of
-    rendering an unstyled page.
+using the same normalization rules as `landing/src/theme-resolve.ts`:
+Classic is the absence of `theme`, appearance accepts only `dark`/`light`,
+invalid values are ignored per axis rather than poisoning the other one,
+and an unknown `?theme=` (a future id) falls back to Classic instead of
+rendering an unstyled page.
 - [ ] All four outbound links in `landing/src/App.vue` to
-    `https://docs.repoos.org` (nav `Docs`, mobile-menu `Docs`, the macos-hub
-    link, and the footer/hero link) carry the current design theme and
-    appearance, following the same rules `syncThemeToUrl` already applies —
-    including omitting `theme` when Classic — and keep whatever path and
-    existing query string they had.
+`https://docs.repoos.org` (nav `Docs`, mobile-menu `Docs`, the macos-hub
+link, and the footer/hero link) carry the current design theme and
+appearance, following the same rules `syncThemeToUrl` already applies —
+including omitting `theme` when Classic — and keep whatever path and
+existing query string they had.
 - [ ] Choices persist: a theme picked on the docs site survives a reload and
-    applies on every other docs page. Blocked or unavailable `localStorage`
-    degrades to the default instead of throwing.
+applies on every other docs page. Blocked or unavailable `localStorage`
+degrades to the default instead of throwing.
 - [ ] The switcher is a real control, per this repo's dropdown convention: the
-    custom styled component, never a native `<select>`; `aria-label`/`title` on
-    each option; keyboard operable; a visible focus ring; works in the collapsed
-    mobile nav.
+custom styled component, never a native `<select>`; `aria-label`/`title` on
+each option; keyboard operable; a visible focus ring; works in the collapsed
+mobile nav.
 - [ ] There is exactly one appearance control. The built-in VitePress appearance
-    toggle is either replaced by the new switcher or wired to write through the
-    same resolver — whichever is chosen, two controls fighting over
-    `<html class="dark">` is not an acceptable outcome.
+toggle is either replaced by the new switcher or wired to write through the
+same resolver — whichever is chosen, two controls fighting over
+`<html class="dark">` is not an acceptable outcome.
 - [ ] `cd user-docs && bun run build` (vitepress build) passes, and
-    `repoos check` is green including the `user-docs-build` step. No new runtime
-    dependencies anywhere (dev deps are fine).
+`repoos check` is green including the `user-docs-build` step. No new runtime
+dependencies anywhere (dev deps are fine).
 - [ ] `user-docs/README.md` documents the switcher, the two-axis model, and the
-    shared `?theme=` / `?appearance=` contract; `landing/README.md` gains a line
-    about the hand-off, since it already documents the switcher from #0547.
+shared `?theme=` / `?appearance=` contract; `landing/README.md` gains a line
+about the hand-off, since it already documents the switcher from #0547.
 
 ## Notes for AI
 
