@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-08T16:14:48Z"
+review_passes: 2
 id: "0732"
 title: "CTO conversation: show reports once, render Markdown, and add timestamp popups"
 type: bug
@@ -10,9 +12,7 @@ created_by: ""
 branch: feat/cto-conversation-show-reports-once-rende
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-07T02:45:50Z"
-updated_at: "2026-10-08T16:14:48Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 The CTO Board Monitor renders the latest saved report above its conversation history and also renders the same agent output in the history as plain text. This duplicates the report, exposes Markdown syntax, and collapses its line breaks.
@@ -96,3 +96,4 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 - 2026-10-08T16:13:55Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (c76c03d2b) during finalization (#0734)
 - 2026-10-08T16:13:55Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (c76c03d2b) during finalization (#0734)
 - 2026-10-08T16:14:48Z · note: review pass 2: good to go
+
