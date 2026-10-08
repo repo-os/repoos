@@ -125,3 +125,4 @@ error: script "test" exited with code 1
 - 2026-10-08T15:15:05Z · status active→review
 - 2026-10-08T15:15:05Z · note: Task body is underspecified: missing sections: Notes for AI
 - 2026-10-08T15:15:06Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (319c7b94a) during finalization (#0734)
+- 2026-10-08T15:15:06Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (319c7b94a) during finalization (#0734)
