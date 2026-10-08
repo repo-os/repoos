@@ -12,7 +12,7 @@ branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-08T14:49:11Z"
+updated_at: "2026-10-08T15:08:20Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T14:40:54Z · status ready→active, branch
 - 2026-10-08T14:48:13Z · body
 - 2026-10-08T14:49:11Z · body
+- 2026-10-08T15:08:20Z · handoff failed · handoff recovery attempted · finalization failed
