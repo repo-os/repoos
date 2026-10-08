@@ -2,7 +2,7 @@
 id: "0704"
 title: Small papercuts from the tuk-private planning run
 type: chore
-status: review
+status: active
 priority: p3
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -68,3 +68,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T16:32:23Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
 - 2026-10-08T16:32:24Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-08T16:37:36Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-08T16:37:36Z · status review→active
