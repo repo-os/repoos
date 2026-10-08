@@ -12,7 +12,7 @@ branch: feat/classify-runner-infrastructure-failures-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:40:08Z"
-updated_at: "2026-10-08T15:33:27Z"
+updated_at: "2026-10-08T15:39:26Z"
 ---
 ## Problem
 
@@ -36,17 +36,17 @@ Read src/server/remote-validation.ts (pool, HangWatchdog, recordRun, infraFail),
 ## Shots
 ```json
 [
- {
-   "label": "Remote runners degraded host state",
-   "target": "default",
-   "route": "/settings?tab=remote",
-   "highlight": ".rvr-host-state--bad",
-   "steps": [
-     {
-       "waitMs": 500
-     }
-   ]
- }
+{
+  "label": "Remote runners degraded host state",
+  "target": "default",
+  "route": "/settings?tab=remote",
+  "highlight": ".rvr-host-state--bad",
+  "steps": [
+    {
+      "waitMs": 500
+    }
+  ]
+}
 ]
 ```
 
@@ -110,3 +110,23 @@ error: script "test" exited with code 1
 - 2026-10-08T15:30:22Z · body
 - 2026-10-08T15:33:17Z · body: section Shots
 - 2026-10-08T15:33:27Z · body: section Shots
+- 2026-10-08T15:39:26Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/remote-run-observability.test.ts:406:21
+   404|     const rows = getCheckStore(root).list();
+   405|     expect(rows).toHaveLength(1);
+   406|     expect(rows[0]).toMatchObject({
+      |                     ^
+   407|       taskId: "0564",
+   408|       machine: null,
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+Test Files  1 failed | 448 passed | 1 skipped (450)
+     Tests  3 failed | 5485 passed | 15 skipped (5503)
+  Start at  15:34:19
+  Duration  302.34s (transform 7.65s, setup 2.67s, import 60.03s, tests 233.67s, environment 277.58s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 505ms
+Test Files  1 passed (1)
+     Tests  2 passed (2)
+  Start at  15:39:22
+  Duration  2.92s (transform 1.43s, setup 12ms, import 1.76s, tests 505ms, environment 558ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
