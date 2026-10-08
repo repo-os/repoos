@@ -42,41 +42,41 @@ live agent process and no activity for some threshold (e.g. a few minutes past t
 stall-timeout window used elsewhere, `DEFAULT_STALL_TIMEOUT_MS` in `agents.ts`):
 
 1. First attempt: automatically resume the task's own session in its existing
- worktree (same mechanism `POST /api/tasks/:id/message` already uses — see
- `runner.send` at `server.ts:1716`) with a nudge message along the lines of
- "finish up and emit the handoff signal `::repoos-handoff-ready::` when ready, or
- explain what's blocking you."
+worktree (same mechanism `POST /api/tasks/:id/message` already uses — see
+`runner.send` at `server.ts:1716`) with a nudge message along the lines of
+"finish up and emit the handoff signal `::repoos-handoff-ready::` when ready, or
+explain what's blocking you."
 2. If that resume also ends without a proper handoff (still no signal, or it fails
- again), don't retry forever — cap retries (e.g. 1–2 attempts), then escalate:
- set the existing `needsInput` flag on the task (`core/types.ts:73`) so it
- surfaces on the board and fires the existing `notifyNeedsInput` notification
- (`server/ntfy.ts:97`) — no new "needs human attention" concept required, reuse
- what's there.
+again), don't retry forever — cap retries (e.g. 1–2 attempts), then escalate:
+set the existing `needsInput` flag on the task (`core/types.ts:73`) so it
+surfaces on the board and fires the existing `notifyNeedsInput` notification
+(`server/ntfy.ts:97`) — no new "needs human attention" concept required, reuse
+what's there.
 3. When escalating, include a suggested next step if one can be inferred: check the
- captured failure reason (once persisted — see Acceptance criteria) against known
- patterns — e.g. an existing skill/best-practice doc under `skills/` or `docs/`
- that matches the failure shape (rendering/ANSI issues, timeout, permission
- prompt hang, etc.) — and reference it in the escalation note. Keep this
- best-effort: a generic "stuck, needs a look" beats a wrong diagnosis.
+captured failure reason (once persisted — see Acceptance criteria) against known
+patterns — e.g. an existing skill/best-practice doc under `skills/` or `docs/`
+that matches the failure shape (rendering/ANSI issues, timeout, permission
+prompt hang, etc.) — and reference it in the escalation note. Keep this
+best-effort: a generic "stuck, needs a look" beats a wrong diagnosis.
 
 ## Acceptance criteria
 
 - [ ] The handoff-failure reason (interrupted turn, missing signal, timeout, etc.)
-    is persisted into the task file's own `## Activity` log, not just the
-    in-memory transcript, so it survives a server reload.
+   is persisted into the task file's own `## Activity` log, not just the
+   in-memory transcript, so it survives a server reload.
 - [ ] A watchdog process detects an `active` task with no running agent
-    (`runner.isRunning(id)` false) and no activity past a defined staleness
-    threshold.
+   (`runner.isRunning(id)` false) and no activity past a defined staleness
+   threshold.
 - [ ] On detection, the watchdog sends exactly one automatic resume/nudge message
-    (reusing the existing send-message path) asking the agent to finish and emit
-    the handoff signal, or explain the blocker.
+   (reusing the existing send-message path) asking the agent to finish and emit
+   the handoff signal, or explain the blocker.
 - [ ] If the retried turn still doesn't produce a clean handoff, the watchdog stops
-    retrying (bounded — never an infinite loop re-spawning the same agent), sets
-    `needsInput: true`, and the existing needs-input notification fires.
+   retrying (bounded — never an infinite loop re-spawning the same agent), sets
+   `needsInput: true`, and the existing needs-input notification fires.
 - [ ] The escalation note on the task includes the captured failure reason, and a
-    suggested fix/skill reference when one can be matched.
+   suggested fix/skill reference when one can be matched.
 - [ ] Covered by a test that simulates a dead-process/no-activity task and asserts:
-    one resume attempt, then escalation — not silent, not an infinite retry loop.
+   one resume attempt, then escalation — not silent, not an infinite retry loop.
 
 ## Notes for AI
 

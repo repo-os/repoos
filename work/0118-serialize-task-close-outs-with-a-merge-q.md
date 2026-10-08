@@ -47,41 +47,41 @@ lose its phase. Only a fully verified candidate reaches main and `done`.
 ## Acceptance criteria
 
 - [ ] Add a repository-scoped, server-owned close-out coordinator. It
-    serializes publication across different tasks and exposes FIFO position.
+serializes publication across different tasks and exposes FIFO position.
 - [ ] Enqueue is idempotent per task; repeated `/done` requests return the
-    existing job instead of starting another `completeTask()`.
+existing job instead of starting another `completeTask()`.
 - [ ] Persist versioned integration-job state atomically under `.repoos/`.
-    After restart, RepoOS safely resumes or reports a recoverable phase and
-    never guesses that an interrupted job completed.
+After restart, RepoOS safely resumes or reports a recoverable phase and
+never guesses that an interrupted job completed.
 - [ ] Record `baseMainSha` when validation begins. Immediately before publish,
-    compare it with current main; if main changed, discard the stale
-    candidate, rebuild from the new SHA, and rerun the full gate.
+compare it with current main; if main changed, discard the stale
+candidate, rebuild from the new SHA, and rerun the full gate.
 - [ ] Build in a RepoOS-owned temporary integration worktree/branch based on
-    main. Merge the feature branch, rebuild generated artifacts, and run
-    `repoos check` there. Never dirty or partially merge live main while
-    validating.
+main. Merge the feature branch, rebuild generated artifacts, and run
+`repoos check` there. Never dirty or partially merge live main while
+validating.
 - [ ] Fail candidates with unmerged index entries, unexpected dirt, or text
-    containing unresolved `<<<<<<<`, `=======`, or `>>>>>>>` markers.
+containing unresolved `<<<<<<<`, `=======`, or `>>>>>>>` markers.
 - [ ] Publish only a green candidate while holding the repository lock, using
-    an ancestry-checked fast-forward/compare-and-swap operation.
+an ancestry-checked fast-forward/compare-and-swap operation.
 - [ ] Defer self-reload while an integration job owns the publication lock.
-    After durable outcome recording, perform one controlled handover; a
-    close-out build must not kill its coordinating server.
+After durable outcome recording, perform one controlled handover; a
+close-out build must not kill its coordinating server.
 - [ ] After publish, set and commit canonical task status `done`, remove the
-    task and integration worktrees, delete merged temporary/feature branches,
-    and leave main clean.
+task and integration worktrees, delete merged temporary/feature branches,
+and leave main clean.
 - [ ] Failures retain phase, main SHA, candidate SHA when present, reason, and
-    recovery action. Retry resumes safely and never repeats an already
-    published merge.
+recovery action. Retry resumes safely and never repeats an already
+published merge.
 - [ ] API/SSE expose queued/current jobs so task and Control views can explain
-    why work is waiting.
+why work is waiting.
 - [ ] Tests cover two different tasks closing concurrently, duplicate
-    requests, main advancing during validation, source conflicts, conflict
-    markers in otherwise mergeable Markdown, build/check failure, restart in
-    every phase, and cleanup after publish.
+requests, main advancing during validation, source conflicts, conflict
+markers in otherwise mergeable Markdown, build/check failure, restart in
+every phase, and cleanup after publish.
 - [ ] An end-to-end test launches at least three close-outs concurrently and
-    proves successful results are serialized, based on latest main, green,
-    and leave a clean repository.
+proves successful results are serialized, based on latest main, green,
+and leave a clean repository.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

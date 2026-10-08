@@ -36,34 +36,34 @@ card right now.
 - The hint reflects the most useful thing known about the task's current
 state, using signals already available on `Task`:
 - Agent actively running → keep today's "running" hint (already present,
-  just now understood as one case of the general hint slot rather than a
-  one-off).
+just now understood as one case of the general hint slot rather than a
+one-off).
 - `needsInput` true → a clear "needs you" style hint (the task is waiting
-  on a human decision).
+on a human decision).
 - `active`, but no agent process running and `needsInput` is false → an
-  honest neutral hint such as "not running" or, after 0070 lands, "paused".
-  Do not call it stalled/dead: RepoOS cannot currently distinguish an
-  intentional pause from a crashed process using this boolean alone.
+honest neutral hint such as "not running" or, after 0070 lands, "paused".
+Do not call it stalled/dead: RepoOS cannot currently distinguish an
+intentional pause from a crashed process using this boolean alone.
 - Nothing useful to report (e.g. `draft`, `inbox`, `ready`, `done`) → the
-  slot stays empty; don't invent a hint where there isn't one.
+slot stays empty; don't invent a hint where there isn't one.
 - The hint is a small text label, styled distinctly from the action button
 but readable at a glance — not just a colored dot.
 
 ## Acceptance criteria
 
 - [ ] The `tc-git` span and its `branch exists locally` dot are removed from
-    `TaskCard.vue`; no card renders a bare dot for branch existence.
+  `TaskCard.vue`; no card renders a bare dot for branch existence.
 - [ ] The card footer's left side is a single status/hint slot that shows
-    (priority order when more than one could apply): running > needs
-    input > not running/paused (`active`, not running, not needing input) >
-    nothing.
+  (priority order when more than one could apply): running > needs
+  input > not running/paused (`active`, not running, not needing input) >
+  nothing.
 - [ ] Each hint is a short text label with a clear meaning on hover/inspection
-    (e.g. via `title`), not an unlabeled glyph.
+  (e.g. via `title`), not an unlabeled glyph.
 - [ ] `draft`, `inbox`, `ready`, and `done` tasks show no hint by default
-    (no false signal invented for states with nothing to report).
+  (no false signal invented for states with nothing to report).
 - [ ] `task.git.branchExists` and the underlying git-status field are left
-    untouched everywhere else (e.g. `TaskDrawer.vue`'s git details) — only
-    the card-level dot is removed.
+  untouched everywhere else (e.g. `TaskDrawer.vue`'s git details) — only
+  the card-level dot is removed.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

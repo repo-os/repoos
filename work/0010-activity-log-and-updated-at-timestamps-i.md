@@ -17,12 +17,12 @@ A task file has no memory of its own evolution, and no reliable "when was this
 last touched" signal. Two related gaps:
 
 1. No timeline. A task shows current spec and status but not how it got there —
- what was tried, when it moved, what was decided. This is the gbrain
- compiled-truth (the spec) + timeline (the evidence trail) split, missing its
- timeline half.
+what was tried, when it moved, what was decided. This is the gbrain
+compiled-truth (the spec) + timeline (the evidence trail) split, missing its
+timeline half.
 2. No queryable freshness. There's no dependable field to sort/filter by "last
- changed" — needed for "what's active today," "what's gone stale," "most
- recently touched first."
+changed" — needed for "what's active today," "what's gone stale," "most
+recently touched first."
 
 These are two sides of one thing: the narrative belongs in the body (the log),
 the queryable projection belongs in frontmatter (`updated_at`). Same change,
@@ -51,20 +51,20 @@ Example log shape (illustrative):
 - [ ] Status changes auto-append a timestamped line (ISO-8601, seconds, UTC `Z`)
 - [ ] Existing log entries only ever APPENDED — never rewritten/reordered/deduped
 - [ ] `updated_at` set to a full ISO-8601 UTC timestamp on every content
-    mutation (field edit, body edit, status change)
+   mutation (field edit, body edit, status change)
 - [ ] `updated_at` does NOT change on a reindex / file re-read — only on an
-    actual content change
+   actual content change
 - [ ] The log line and `updated_at` are written ATOMICALLY in one operation, so
-    they cannot drift out of sync
+   they cannot drift out of sync
 - [ ] Tasks lacking an Activity section / `updated_at` still parse (back-compat)
 - [ ] Round-trips cleanly: parse → serialize → parse preserves log + field
 - [ ] Migration: decide and document whether to backfill a synthetic `created`
-    log line + `updated_at` into existing tasks, or start fresh from next
-    mutation
+   log line + `updated_at` into existing tasks, or start fresh from next
+   mutation
 - [ ] Decide the field name: keep existing `created`/`updated`, or rename to
-    `created_at`/`updated_at` for the `_at` convention (a frontmatter KEY
-    change — if renaming, migrate existing files in the same change). Do NOT
-    end up with both `updated` and `updated_at`.
+   `created_at`/`updated_at` for the `_at` convention (a frontmatter KEY
+   change — if renaming, migrate existing files in the same change). Do NOT
+   end up with both `updated` and `updated_at`.
 
 ## Notes for AI
 

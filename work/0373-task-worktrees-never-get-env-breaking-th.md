@@ -26,9 +26,9 @@ inside the task's worktree. Since this repo has `auth.enabled = true`, that
 `serve` fails immediately — it does not "work fine without .env," it does not
 start at all:
 
-  Failed to start server: Auth is enabled but no login provider is
-  configured. Set [auth.emailProvider] ... or [auth.google] ... in your
-  config, or disable auth.
+Failed to start server: Auth is enabled but no login provider is
+configured. Set [auth.emailProvider] ... or [auth.google] ... in your
+config, or disable auth.
 
 Reproduced directly: `rm -rf dist && bun run build && bun dist/cli/index.js
 serve --port N` from inside a real task worktree (no `.env` present) fails
@@ -101,17 +101,17 @@ than picking silently.
 ## Acceptance criteria
 
 - [ ] A repo can opt in (config flag, not automatic) to its task worktrees
-    having access to the main checkout's `.env`.
+  having access to the main checkout's `.env`.
 - [ ] With opt-in enabled, a fresh task worktree can run a preview command
-    that depends on `.env` secrets (verify with this repo's own default
-    `[preview] command`, on a genuinely fresh worktree, auth enabled) —
-    set this repo's own `repoos.toml` to opt in as part of this task.
+  that depends on `.env` secrets (verify with this repo's own default
+  `[preview] command`, on a genuinely fresh worktree, auth enabled) —
+  set this repo's own `repoos.toml` to opt in as part of this task.
 - [ ] Without opt-in (the default), worktree behavior is unchanged from
-    today — no `.env` copied, no new failure mode introduced for the
-    common case.
+  today — no `.env` copied, no new failure mode introduced for the
+  common case.
 - [ ] Whatever mechanism is chosen does not risk leaking `.env` into git
-    history (it must stay gitignored in the worktree too, if copied rather
-    than symlinked).
+  history (it must stay gitignored in the worktree too, if copied rather
+  than symlinked).
 - [ ] `repoos check` passes.
 
 ## Related

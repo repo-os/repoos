@@ -32,9 +32,9 @@ message (preserving the existing behavior).
 
 - [ ] The headless UI smoke test is re-enabled and runs as part of `repoos check`.
 - [ ] The test mounts the app, verifies no unrendered mustache in the DOM, and
-    verifies zero console errors.
+verifies zero console errors.
 - [ ] When Playwright or the browser binary isn't installed, the test still
-    skips with a clear message.
+skips with a clear message.
 - [ ] `repoos check` passes end-to-end with the smoke test running.
 
 ## Notes for AI

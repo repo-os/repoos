@@ -39,30 +39,30 @@ board.
 ## Acceptance criteria
 
 - [ ] A failed **Move to done** action from a Work card renders a red-ish error
-    card directly below the button on that task card.
+card directly below the button on that task card.
 - [ ] A failed **Move to done** action from the task panel renders the same
-    error card directly below the button in the panel.
+error card directly below the button in the panel.
 - [ ] The error displays the server-provided message, including useful details
-    such as conflicting file names; it does not replace a specific error with
-    generic copy.
+such as conflicting file names; it does not replace a specific error with
+generic copy.
 - [ ] Collapsed errors occupy at most two lines. When the message overflows,
-    the error is visibly interactive and clicking it expands the full text;
-    clicking again collapses it.
+the error is visibly interactive and clicking it expands the full text;
+clicking again collapses it.
 - [ ] Short messages do not imply that expansion is available when there is
-    nothing more to reveal.
+nothing more to reveal.
 - [ ] The interaction is keyboard accessible, exposes expanded/collapsed state
-    to assistive technology, and does not rely on color alone to communicate
-    that an error occurred.
+to assistive technology, and does not rely on color alone to communicate
+that an error occurred.
 - [ ] A move-to-done failure does not also create a global error toast. Toasts
-    for other failed actions are unchanged.
+for other failed actions are unchanged.
 - [ ] Retrying **Move to done** clears or replaces the previous inline error;
-    a successful retry removes it. Errors do not leak onto another task card
-    or remain after the task leaves `review`.
+a successful retry removes it. Errors do not leak onto another task card
+or remain after the task leaves `review`.
 - [ ] Card and panel layouts remain stable and usable at narrow/mobile widths,
-    including long unbroken paths or error text.
+including long unbroken paths or error text.
 - [ ] Focused UI/store tests cover card placement, panel placement, two-line
-    clamping/expansion, retry/success cleanup, and suppression of the duplicate
-    toast.
+clamping/expansion, retry/success cleanup, and suppression of the duplicate
+toast.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

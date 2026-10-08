@@ -36,18 +36,18 @@ already uses. No file hand-editing, no stale drawer.
 ## Acceptance criteria
 
 - [ ] The input drawer offers an edit affordance for the input's text (e.g. an
-    "Edit" button or pencil icon) that opens an "Edit Input" modal
+"Edit" button or pencil icon) that opens an "Edit Input" modal
 - [ ] The modal mirrors the spec edit modal: markdown textarea prefilled with
-    the current body, Cancel/Save actions, Escape and overlay-click close,
-    keyboard reachable, voice-dictate support matching the spec modal
+the current body, Cancel/Save actions, Escape and overlay-click close,
+keyboard reachable, voice-dictate support matching the spec modal
 - [ ] Save persists the new text: the core input update path accepts a body
-    change, the HTTP route carries it, and the store in
-    `src/ui-app/src/stores/repo.ts` exposes an action for it
+change, the HTTP route carries it, and the store in
+`src/ui-app/src/stores/repo.ts` exposes an action for it
 - [ ] After saving, the drawer and the inputs list reflect the new text
-    without a manual reload
+without a manual reload
 - [ ] Cancel (or closing without saving) leaves the input unchanged
 - [ ] Nonexistent input → 404; empty/whitespace-only body → 400, in the
-    route's existing validation style
+route's existing validation style
 - [ ] Tests cover the core update, the route, and the UI flow (`bun run test`)
 - [ ] `repoos check` passes
 

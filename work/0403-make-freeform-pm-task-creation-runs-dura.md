@@ -66,29 +66,29 @@ the natural key to use instead of a task id.
 ## Desired behavior
 
 1. **Durable logging**: every freeform PM run gets a real, durable output log
- (e.g. `.repoos/agent-logs/freeform-<runId>.{out,err}.log`), independent of
- whether the server process handling it is still alive when it finishes.
+(e.g. `.repoos/agent-logs/freeform-<runId>.{out,err}.log`), independent of
+whether the server process handling it is still alive when it finishes.
 2. **Durable run record**: a registry entry (mirroring `.repoos/agents.json`)
- recording enough to find and re-attach to the spawned process later:
- runId, pid, cwd, the original prompt/explanation text, and start time.
+recording enough to find and re-attach to the spawned process later:
+runId, pid, cwd, the original prompt/explanation text, and start time.
 3. **Detached spawn**: the freeform PM's CLI process survives a parent
- reload, the same way `reload.ts`'s replacement process and `AgentRunner`'s
- task-turn children already do.
+reload, the same way `reload.ts`'s replacement process and `AgentRunner`'s
+task-turn children already do.
 4. **Reload-resumable**: on boot, alongside `adoptRunningAgents()`, scan for
- freeform runs whose process is still alive and re-attach (resume
- streaming their output to any client still watching that `runId`, per the
- existing `repo.outputs[runId]` mechanism); for one whose process already
- exited while no server was up to receive the result, read its durable log
- and complete the normal post-processing (parse the PM's output, create the
- task) that would otherwise have run inline.
+freeform runs whose process is still alive and re-attach (resume
+streaming their output to any client still watching that `runId`, per the
+existing `repo.outputs[runId]` mechanism); for one whose process already
+exited while no server was up to receive the result, read its durable log
+and complete the normal post-processing (parse the PM's output, create the
+task) that would otherwise have run inline.
 5. **Durable, surfaced error state**: when a freeform run fails for a
- reason worth showing (crash, non-zero exit, timeout — not just "no PM
- agent configured"), persist that outcome against the runId and surface it
- like the task-card error states already shown elsewhere (review/MTD
- failures) — not just the current silent "draft" fallback with an
- ephemeral, page-reload-losable error string. A user who navigates away and
- back (or whose page reloaded because the server did) should still be able
- to see that their freeform submission failed and why.
+reason worth showing (crash, non-zero exit, timeout — not just "no PM
+agent configured"), persist that outcome against the runId and surface it
+like the task-card error states already shown elsewhere (review/MTD
+failures) — not just the current silent "draft" fallback with an
+ephemeral, page-reload-losable error string. A user who navigates away and
+back (or whose page reloaded because the server did) should still be able
+to see that their freeform submission failed and why.
 
 ## Notes for AI
 
@@ -114,12 +114,12 @@ perspective.
 ## Acceptance criteria
 
 - [ ] A freeform PM run's output survives a server reload — a run in flight
-    when the server restarts is not silently lost.
+   when the server restarts is not silently lost.
 - [ ] A durable log file exists per freeform run, inspectable after the fact
-    regardless of whether the server that started it is still running.
+   regardless of whether the server that started it is still running.
 - [ ] A freeform run that fails (not just "no agent configured") surfaces a
-    specific, durable error the user can still see after a page/server
-    reload — not just a generic draft with no error trace.
+   specific, durable error the user can still see after a page/server
+   reload — not just a generic draft with no error trace.
 - [ ] `repoos check` passes.
 
 ## Activity

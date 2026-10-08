@@ -64,9 +64,9 @@ building a second, disconnected settings surface.
 - [ ] The Settings page shows the current `repoos.toml` content.
 - [ ] It can be edited and saved from the UI, with TOML syntax highlighting.
 - [ ] An invalid save is rejected with a clear inline error, never silently
-    corrupting the file or leaving the server unable to start.
+corrupting the file or leaving the server unable to start.
 - [ ] Curated fields and the raw view stay consistent with each other (no
-    silent overwrite of one by the other).
+silent overwrite of one by the other).
 - [ ] `repoos check` passes.
 
 ## Related

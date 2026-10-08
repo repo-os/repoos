@@ -41,16 +41,16 @@ Read ChecksView.vue and the Remote runners panel (RemoteRunnersPanel.vue); the c
 ```json
 [
 {
-  "label": "Checks Now tab with close-out pipeline strip",
-  "target": "default",
-  "route": "/checks?tab=now",
-  "highlight": ".ips"
+"label": "Checks Now tab with close-out pipeline strip",
+"target": "default",
+"route": "/checks?tab=now",
+"highlight": ".ips"
 },
 {
-  "label": "Checks idle default Runs tab",
-  "target": "default",
-  "route": "/checks?tab=runs",
-  "highlight": ".ck-tabs"
+"label": "Checks idle default Runs tab",
+"target": "default",
+"route": "/checks?tab=runs",
+"highlight": ".ck-tabs"
 }
 ]
 ```

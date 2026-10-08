@@ -66,52 +66,52 @@ continues to show the existing model lists.
 ## Product rules
 
 1. **Test the real path.** The probe and normal agent execution must share the same
- model-to-CLI argument mapping. Do not create a test-only invocation that can pass while
- Start work or freeform creation fails.
+model-to-CLI argument mapping. Do not create a test-only invocation that can pass while
+Start work or freeform creation fails.
 2. **Models are CLI-specific.** Only test combinations a CLI can plausibly accept.
- OpenCode's live models belong to OpenCode; do not cross-product them onto Claude Code,
- Codex, Qwen, or other CLIs without a source/adapter for that CLI.
+OpenCode's live models belong to OpenCode; do not cross-product them onto Claude Code,
+Codex, Qwen, or other CLIs without a source/adapter for that CLI.
 3. **`default` is a real case.** Test it by omitting the model flag, matching normal CLI
- behavior. Explicit models use that driver's supported model argument.
+behavior. Explicit models use that driver's supported model argument.
 4. **Fail soft.** One broken or hung combination cannot fail the whole request, crash the
- server, or prevent remaining probes from completing.
+server, or prevent remaining probes from completing.
 5. **No side effects.** Tests run in the repo root with an inert prompt, never in a task
- worktree, never create a task/session visible in the board, and never edit files.
+worktree, never create a task/session visible in the board, and never edit files.
 6. **Do not expose secrets.** API and UI diagnostics may include exit code and bounded
- stderr/stdout, but must remove ANSI control sequences, cap output, and avoid echoing
- environment variables or credentials.
+stderr/stdout, but must remove ANSI control sequences, cap output, and avoid echoing
+environment variables or credentials.
 
 ## Acceptance criteria
 
 - [ ] The Agents page has a **Test models** button beside **Refresh models**, with overall
-    progress and protection against duplicate concurrent runs.
+   progress and protection against duplicate concurrent runs.
 - [ ] Testing covers every deduplicated, drivable CLI/model combination RepoOS currently
-    offers for that CLI, including `default`, without creating invalid cross-CLI pairs.
+   offers for that CLI, including `default`, without creating invalid cross-CLI pairs.
 - [ ] Normal start, resume, and one-shot/freeform invocations honor the configured model;
-    `default` omits a model flag and explicit models use the verified flag/argument for
-    OpenCode, Claude Code, Qwen Code, and Codex.
+   `default` omits a model flag and explicit models use the verified flag/argument for
+   OpenCode, Claude Code, Qwen Code, and Codex.
 - [ ] The test uses the same shared model-aware command builder/mapping as normal agent
-    execution, so a passing combination represents the command RepoOS will really run.
+   execution, so a passing combination represents the command RepoOS will really run.
 - [ ] Each combination resolves independently to passed, failed, timed out, or not
-    testable, and the endpoint returns partial results even when some probes fail.
+   testable, and the endpoint returns partial results even when some probes fail.
 - [ ] A passing result requires exit code 0 and the expected sentinel response; merely
-    launching the binary is not sufficient.
+   launching the binary is not sufficient.
 - [ ] Probes have a short configurable timeout, kill hung child processes, and run with
-    bounded concurrency (default no more than two at once).
+   bounded concurrency (default no more than two at once).
 - [ ] Failed and timed-out combinations are visible with a concise reason and disabled in
-    the matching CLI's model selector; passed combinations remain selectable.
+   the matching CLI's model selector; passed combinations remain selectable.
 - [ ] Changing an agent's CLI updates its model options and validation using that CLI's
-    results. A saved failed model remains displayed with a warning until the user chooses
-    another value.
+   results. A saved failed model remains displayed with a warning until the user chooses
+   another value.
 - [ ] Test results do not alter agent config, do not trigger the unsaved-changes bar, and
-    are not written to `repoos.toml` or task files.
+   are not written to `repoos.toml` or task files.
 - [ ] Before testing, after server restart, or when the endpoint fails, existing discovery
-    and selector behavior remains available with no models disabled.
+   and selector behavior remains available with no models disabled.
 - [ ] Fixture tests cover argument mapping for each supported CLI, default-model omission,
-    success, non-zero exit, malformed output, missing binary, timeout/kill, partial
-    results, concurrency bounds, and output sanitization.
+   success, non-zero exit, malformed output, missing binary, timeout/kill, partial
+   results, concurrency bounds, and output sanitization.
 - [ ] Agents-page tests cover progress, CLI-specific filtering, disabled failed options,
-    preservation of a saved failed value, rerun behavior, and fail-soft fallback.
+   preservation of a saved failed value, rerun behavior, and fail-soft fallback.
 - [ ] `repoos check` passes, including the browser smoke test.
 
 ## Implementation notes

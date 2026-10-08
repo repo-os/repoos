@@ -34,29 +34,29 @@ moves to review.
 ## Acceptance criteria
 
 - [ ] `ros check` runs, in sequence with clear per-stage output: `bun run
-    build`, typecheck, the test suite (if present), and a headless UI smoke
-    check.
+build`, typecheck, the test suite (if present), and a headless UI smoke
+check.
 - [ ] The UI smoke check launches a headless browser, loads the served UI, and
-    asserts:
-    - the app MOUNTED — no unrendered `{{ }}` mustache in the DOM, and a known
-      root element rendered with real content
-    - the browser console has ZERO errors
-    - (nice) exactly one overlay can be open at a time; key views render
+asserts:
+- the app MOUNTED — no unrendered `{{ }}` mustache in the DOM, and a known
+  root element rendered with real content
+- the browser console has ZERO errors
+- (nice) exactly one overlay can be open at a time; key views render
 - [ ] The smoke check MUST fail against the current broken state (raw mustache /
-    unmounted app) and pass once mounting is fixed. If it can't detect that,
-    it isn't doing its job.
+unmounted app) and pass once mounting is fixed. If it can't detect that,
+it isn't doing its job.
 - [ ] The headless browser library (Playwright recommended) is a DEV dependency
-    ONLY — never a runtime dep, never imported by anything in `dist/`, never
-    in the published package's dependencies. The zero-runtime-deps invariant
-    holds; verify the published dependency tree stays empty of it.
+ONLY — never a runtime dep, never imported by anything in `dist/`, never
+in the published package's dependencies. The zero-runtime-deps invariant
+holds; verify the published dependency tree stays empty of it.
 - [ ] If the browser binary isn't installed, the UI smoke check SKIPS with a
-    clear message ("UI smoke check skipped: run `npx playwright install
-    chromium`") and the other checks still run — it must not hard-crash
-    `ros check` for someone who hasn't installed the browser.
+clear message ("UI smoke check skipped: run `npx playwright install
+chromium`") and the other checks still run — it must not hard-crash
+`ros check` for someone who hasn't installed the browser.
 - [ ] `ros check` exits non-zero on any failure (usable in CI and as a gate).
 - [ ] Output clearly names which stage failed and why.
 - [ ] AGENTS.md: add a definition-of-done — "run `ros check` and confirm green
-    before moving a task to review." This replaces ad-hoc "remember to verify."
+before moving a task to review." This replaces ad-hoc "remember to verify."
 - [ ] (If 0012 has landed) fold the build-staleness check into `ros check` too.
 
 ## Notes for AI

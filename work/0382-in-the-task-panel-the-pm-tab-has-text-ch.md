@@ -67,25 +67,25 @@ task — copied into the task's own attachments and referenced in its
 ## Acceptance criteria
 
 - [ ] The PM tab compose box shows a small attach-screenshot control; selecting
-    one or more images (and drag/drop, if the panel already supports it)
-    uploads them against the current task id via
-    `POST /api/tasks/:id/attachments`, with a pending thumbnail that clears
-    on success.
+one or more images (and drag/drop, if the panel already supports it)
+uploads them against the current task id via
+`POST /api/tasks/:id/attachments`, with a pending thumbnail that clears
+on success.
 - [ ] Each uploaded screenshot appears in the task's `## Screenshots` section
-    exactly once, located before `## Activity`.
+exactly once, located before `## Activity`.
 - [ ] The PM message path passes the new screenshot reference(s) (URL and/or
-    repo-relative path) into the PM's context/prompt (`pmMessage`,
-    `taskPmPrompt` in `src/server/agents.ts:1862`) so the PM can link them in
-    the spec when appropriate.
+repo-relative path) into the PM's context/prompt (`pmMessage`,
+`taskPmPrompt` in `src/server/agents.ts:1862`) so the PM can link them in
+the spec when appropriate.
 - [ ] Resolving an input with attachments into a task copies those attachments
-    onto the created task and adds them to its `## Screenshots` section; no
-    input attachment is dropped.
+onto the created task and adds them to its `## Screenshots` section; no
+input attachment is dropped.
 - [ ] Regression tests cover: screenshot uploaded via the PM tab ends up in
-    `## Screenshots`; input attachments are carried onto the created task;
-    every task body-write path preserves `## Screenshots`; a screenshot
-    survives repeated spec edits/rewrites.
+`## Screenshots`; input attachments are carried onto the created task;
+every task body-write path preserves `## Screenshots`; a screenshot
+survives repeated spec edits/rewrites.
 - [ ] The screenshot-preservation audit is recorded (a test or an explicit
-    note in the task activity) for any write path that was found unprotected.
+note in the task activity) for any write path that was found unprotected.
 - [ ] `repoos check` passes and the UI is rebuilt (`bun run build:ui`).
 
 ## Notes for AI

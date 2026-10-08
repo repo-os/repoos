@@ -49,29 +49,29 @@ choice stays independent of the work board's own sort choice (separate
 ## Acceptance criteria
 
 - [ ] `SortOrder` in `src/ui-app/src/stores/repo.ts` includes a new `status`
-    member, and `SORT_ORDER_OPTIONS` includes an entry for it with a label
-    matching the pipeline order in the dropdown.
+member, and `SORT_ORDER_OPTIONS` includes an entry for it with a label
+matching the pipeline order in the dropdown.
 - [ ] `sortTasks(tasks, "status")` returns tasks grouped by status in
-    `draft, inbox, ready, active, review, done` order, stable within a group,
-    and does not mutate its input array.
+`draft, inbox, ready, active, review, done` order, stable within a group,
+and does not mutate its input array.
 - [ ] The persisted-value whitelist in `readSortOrderFromKey` accepts the new
-    value, so a user who picks "Status" keeps it after a reload instead of
-    silently falling back to `recent`.
+value, so a user who picks "Status" keeps it after a reload instead of
+silently falling back to `recent`.
 - [ ] The story panel's sort dropdown renders the new option and selecting it
-    reorders the visible task rows immediately.
+reorders the visible task rows immediately.
 - [ ] The work board's own sort dropdown is unchanged — "Status" is offered
-    there only if it is already shared deliberately; otherwise the new mode
-    must not appear on the board.
+there only if it is already shared deliberately; otherwise the new mode
+must not appear on the board.
 - [ ] The status pill in each story-panel task row is rendered in its status
-    color, using the store's `statusColor()` (the same values as the work page
-    column colors), with the border tinted from that same color.
+color, using the store's `statusColor()` (the same values as the work page
+column colors), with the border tinted from that same color.
 - [ ] A status with no configured color falls back without throwing, matching
-    the existing `statusColor` fallback.
+the existing `statusColor` fallback.
 - [ ] Unit tests cover the new sort mode (including stability within a status
-    and the non-numeric/unknown-status path) and the pill's color binding.
+and the non-numeric/unknown-status path) and the pill's color binding.
 - [ ] `bun run fmt` is clean and `repoos check --changed main` passes.
 - [ ] The UI bundle is rebuilt (`bun run build:ui`) so the worktree build is
-    fresh.
+fresh.
 
 ## Notes for AI
 

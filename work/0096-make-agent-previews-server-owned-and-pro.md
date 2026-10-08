@@ -48,36 +48,36 @@ the main RepoOS process.
 ## Acceptance criteria
 
 - [ ] Agent launch and resume missions explicitly prohibit direct `repoos
-    serve`/manual port selection and provide one structured, task-scoped way
-    to request a preview.
+serve`/manual port selection and provide one structured, task-scoped way
+to request a preview.
 - [ ] The request is handled by the trusted RepoOS server/runner and reuses
-    `PreviewManager`; agents do not receive a general process-launch API.
+`PreviewManager`; agents do not receive a general process-launch API.
 - [ ] RepoOS supplies the actual main API endpoint to the agent workflow rather
-    than assuming the control plane is always on port 7171.
+than assuming the control plane is always on port 7171.
 - [ ] Preview requests validate the task id, current run/session, registered
-    worktree and branch, and allowed task state before starting anything.
+worktree and branch, and allowed task state before starting anything.
 - [ ] Concurrent previews for at least three tasks receive distinct
-    OS-allocated ports and serve each task's own worktree build.
+OS-allocated ports and serve each task's own worktree build.
 - [ ] Repeated requests for the same task are idempotent and return the existing
-    healthy preview URL.
+healthy preview URL.
 - [ ] Add defense in depth for managed agent processes: an accidental direct
-    `repoos serve` attempt is rejected with guidance to request a managed
-    preview and cannot bind the main server port.
+`repoos serve` attempt is rejected with guidance to request a managed
+preview and cannot bind the main server port.
 - [ ] A port-allocation race, bind failure, failed health check, or failed
-    reload leaves no listenerless `repoos serve` process behind and does not
-    disturb the main server or other previews.
+reload leaves no listenerless `repoos serve` process behind and does not
+disturb the main server or other previews.
 - [ ] Reload handoff tests prove the old listener is retained or successfully
-    rebound unless a verified replacement remains healthy; a log line saying
-    "replacement is up" cannot precede a listenerless outcome.
+rebound unless a verified replacement remains healthy; a log line saying
+"replacement is up" cannot precede a listenerless outcome.
 - [ ] Preview processes and registry entries are reaped when their task leaves
-    `active`/`review`, when explicitly stopped, and during crash/restart
-    reconciliation.
+`active`/`review`, when explicitly stopped, and during crash/restart
+reconciliation.
 - [ ] Replace unsafe `repoos serve --port 7171` guidance in `AGENTS.md`, the
-    `repoos init` AGENTS template, docs, and non-done task specifications with
-    the managed-preview workflow.
+`repoos init` AGENTS template, docs, and non-done task specifications with
+the managed-preview workflow.
 - [ ] Integration test: run a real main server plus multiple fixture agents
-    requesting previews, rebuild one worktree, and assert continuously that
-    the main `/api/health` remains reachable on its original port.
+requesting previews, rebuild one worktree, and assert continuously that
+the main `/api/health` remains reachable on its original port.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

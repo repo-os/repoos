@@ -74,12 +74,12 @@ rendering the rows + status badges + "Check again" button hitting the
 endpoint (best-effort; panel hides if the endpoint is unavailable).
 - **Acceptance (P1)**:
 - [ ] On a machine with `claude` and a real `opencode` CLI installed, both
-      appear as installed & headless-ready
+appear as installed & headless-ready
 - [ ] When only the opencode desktop app shadows PATH, opencode shows as
-      installed-but-not-headless with the CLI install hint
+installed-but-not-headless with the CLI install hint
 - [ ] Missing CLIs show as not-installed with a copyable install hint
 - [ ] Probing never throws or hangs the endpoint (bad PATH entries, missing
-      binaries); `repoos check` passes
+binaries); `repoos check` passes
 
 ### Phase 2 — Driver wiring for qwen code and codex
 

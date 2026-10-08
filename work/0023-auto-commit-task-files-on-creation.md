@@ -42,15 +42,15 @@ files are NOT auto-committed — they stay with the implementing task's commit.
 ## Acceptance criteria
 
 - [ ] `ros new` writes the task file AND commits just that file (e.g.
-    `docs(0023): add task Auto-commit task files on creation`)
+`docs(0023): add task Auto-commit task files on creation`)
 - [ ] Only the new file is committed — other staged or dirty files are never
-    swept in (no `git add -A`, no plain `git commit` that would pick up
-    pre-staged files)
+swept in (no `git add -A`, no plain `git commit` that would pick up
+pre-staged files)
 - [ ] Uses the user's existing git identity/config; no amend, no force, no
-    bypass of hooks
+bypass of hooks
 - [ ] Fail-soft: if git is unavailable (not a repo, no identity, mid-conflict,
-    no HEAD), the task is still created, nothing is left partially staged, and
-    `ros new` prints a clear "file left uncommitted" warning
+no HEAD), the task is still created, nothing is left partially staged, and
+`ros new` prints a clear "file left uncommitted" warning
 - [ ] `ros new` output reports the commit outcome (short hash or the warning)
 - [ ] `ros check` passes; no new runtime dependencies (git runs as a subprocess)
 

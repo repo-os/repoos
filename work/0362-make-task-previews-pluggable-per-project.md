@@ -51,14 +51,14 @@ already reads `repoos.toml`.)
 run for a given task?** Candidate approaches to weigh, not a prescribed
 answer:
 - A single configured preview target per repo (simplest — matches today's
-  one-preview-slot-at-a-time FIFO-eviction constraint from #0271; punts
-  multi-target selection to a later task).
+one-preview-slot-at-a-time FIFO-eviction constraint from #0271; punts
+multi-target selection to a later task).
 - Multiple named targets in `repoos.toml` (e.g. `[[preview.targets]]` with a
-  `path`/glob and a `command`), selected by matching the task's changed
-  files or its `area:` frontmatter to a target.
+`path`/glob and a `command`), selected by matching the task's changed
+files or its `area:` frontmatter to a target.
 - Something else — worth a quick look at how other monorepo tooling (Nx,
-  Turborepo, etc.) scopes "which app does this change affect" before
-  inventing a new answer here.
+Turborepo, etc.) scopes "which app does this change affect" before
+inventing a new answer here.
 - **Mobile is a special case, not a fourth thing to solve separately**: per
 `docs/mobile-architecture.md` (#0297), the shipped mobile app is a Capacitor
 shell that opens the SAME web UI in an opaque InAppBrowser — there is no
@@ -72,16 +72,16 @@ changes.
 ## Acceptance criteria
 
 - [ ] `repoos.toml` gains a way to declare how to preview a project (command +
-    port placeholder, at minimum), following the `[check]` section's
-    existing config pattern rather than inventing a new one.
+  port placeholder, at minimum), following the `[check]` section's
+  existing config pattern rather than inventing a new one.
 - [ ] The monorepo multi-target question above is explicitly decided (not left
-    ambiguous) and the decision is written into this task or a doc before/as
-    part of implementation.
+  ambiguous) and the decision is written into this task or a doc before/as
+  part of implementation.
 - [ ] A repo with no `[preview]` config continues to get today's `repoos
-    serve`-on-worktree behavior unchanged (this repo's own previews must
-    keep working).
+  serve`-on-worktree behavior unchanged (this repo's own previews must
+  keep working).
 - [ ] A task in an area with no configured preview target gets a clear "no
-    preview configured" response instead of a spawn failure.
+  preview configured" response instead of a spawn failure.
 - [ ] `repoos check` passes with no regressions.
 
 ## Notes for AI

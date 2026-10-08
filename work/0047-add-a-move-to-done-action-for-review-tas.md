@@ -41,19 +41,19 @@ The reviewer never touches a terminal.
 - 400 unless the task is `review` and has a `branch`.
 - 409 if a runner turn is in progress for the task.
 - Merges `branch` into the main checkout (`cwd` = repo root). FF when main is
-  an ancestor; otherwise a merge commit. On conflict: `git merge --abort`,
-  task stays `review`, worktree and branch untouched, response lists the conflicted
-  files.
+an ancestor; otherwise a merge commit. On conflict: `git merge --abort`,
+task stays `review`, worktree and branch untouched, response lists the conflicted
+files.
 - After a successful merge, runs `bun run build` and `repoos check` in the repo
-  root; if either fails, the task stays `review` and the failure is reported
-  (branch already merged — report that state honestly).
+root; if either fails, the task stays `review` and the failure is reported
+(branch already merged — report that state honestly).
 - On green: set status `done` (with a `status review→done` activity entry via
-  `patchTaskFile`), then delete the branch and `git worktree remove` the task's
-  worktree (force if dirty — content is preserved in the merged main; tolerate
-  a missing worktree). Handle the branch-already-merged and
-  branch-without-worktree cases.
+`patchTaskFile`), then delete the branch and `git worktree remove` the task's
+worktree (force if dirty — content is preserved in the merged main; tolerate
+a missing worktree). Handle the branch-already-merged and
+branch-without-worktree cases.
 - Emits the normal SSE change event so the board updates live; returns the
-  updated task + a merge result summary (`{ merged, conflicts, ff, check }`).
+updated task + a merge result summary (`{ merged, conflicts, ff, check }`).
 - [ ] `git` helpers in `src/core/git.ts`: `mergeBranch` (returns conflict list or
 null), `deleteBranch`, `removeWorktree`, and an "is main an ancestor of branch"
 check — all via `execFileSync`, zero deps, mirroring the existing `git()`

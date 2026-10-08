@@ -131,29 +131,29 @@ Deliberately deferred to v2, not v1: genuine build-success/deploy-status would n
 
 Corrected config:
 
- [[deployments]]
- name     = "Landing page (prod)"
- branch   = "prod"
- provider = "cloudflare-workers"
- url      = "https://repoos.org"
+[[deployments]]
+name     = "Landing page (prod)"
+branch   = "prod"
+provider = "cloudflare-workers"
+url      = "https://repoos.org"
 
- [[deployments]]
- name     = "Landing page (dev)"
- branch   = "main"
- provider = "cloudflare-workers"
- url      = "https://main-repoos-landing.njachowski.workers.dev"
+[[deployments]]
+name     = "Landing page (dev)"
+branch   = "main"
+provider = "cloudflare-workers"
+url      = "https://main-repoos-landing.njachowski.workers.dev"
 
- [[deployments]]
- name     = "Docs (prod)"
- branch   = "prod"
- provider = "cloudflare-workers"
- url      = "https://docs.repoos.org"
+[[deployments]]
+name     = "Docs (prod)"
+branch   = "prod"
+provider = "cloudflare-workers"
+url      = "https://docs.repoos.org"
 
- [[deployments]]
- name     = "Docs (dev)"
- branch   = "main"
- provider = "cloudflare-workers"
- url      = "https://main-repoos-docs.njachowski.workers.dev"
+[[deployments]]
+name     = "Docs (dev)"
+branch   = "main"
+provider = "cloudflare-workers"
+url      = "https://main-repoos-docs.njachowski.workers.dev"
 
 Explicit product requirement (Nick, 2026-09-14): the whole point of this page is that Nick should never need to remember or type any of these URLs. Every row must render its url as a clickable link that opens the live site directly -- that's the primary interaction the page exists for, not a nice-to-have. Don't ship a version that just displays the URL as inert text.
 - 2026-09-14T02:47:18Z · note: New requirement (Nick, 2026-09-14): for a repo like this one where deploying IS pushing to GitHub (Cloudflare rebuilds on push), the page should show git push status and offer to do the push, not just link to the result.

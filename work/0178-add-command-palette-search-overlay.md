@@ -39,9 +39,9 @@ current theme the user has selected.
 - [ ] The overlay is large and centered on screen in the command-palette style.
 - [ ] Search input inside the overlay is focused automatically when it opens.
 - [ ] The overlay renders correctly with the app's various themes and matches
-    the active theme's color scheme.
+  the active theme's color scheme.
 - [ ] Results from the existing search functionality still work inside the
-    overlay (existing search behavior is preserved, just re-presented).
+  overlay (existing search behavior is preserved, just re-presented).
 - [ ] `repoos check` passes with the change.
 
 ## Notes for AI
@@ -53,10 +53,10 @@ only change the presentation.
 palette values.
 - Assumptions made where unspecified:
 - `cmd+k` should work globally in the app (any page/view), not only when
-  the search bar is in focus.
+the search bar is in focus.
 - The overlay is dismissible with `Esc` or by clicking outside of it.
 - Only the trigger and presentation change; querying behavior and results
-  are unchanged.
+are unchanged.
 - After any UI change, rebuild (`bun run build:ui` for speed, or
 `bun run build`) and verify the overlay in each theme before reporting done.
 - Do not change task file format, frontmatter schema, or the parser.

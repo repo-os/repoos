@@ -40,20 +40,20 @@ styles at `TaskDrawer.vue:3477-3507`.
 ## Fix direction
 
 1. Replace the flat `pmCannedMessages` array with a status-keyed map, e.g.
- `PM_CANNED_MESSAGES: Partial<Record<Status, string[]>>`, following the same shape/placement
- pattern as `STATUS_COLORS` in `repo.ts`. Keep the existing two draft/inbox prompts as that
- status's entries so today's "flesh this out" flow is unchanged.
+`PM_CANNED_MESSAGES: Partial<Record<Status, string[]>>`, following the same shape/placement
+pattern as `STATUS_COLORS` in `repo.ts`. Keep the existing two draft/inbox prompts as that
+status's entries so today's "flesh this out" flow is unchanged.
 2. Add a set for later stages, informed by the questions that prompted this task:
- - `active`: "what's going on with this task?", "what's wrong?", "what should I do next?"
- - `review`: "what's blocking this from being done?", "is this actually ready?"
- - Leave `ready`/`done` out for now unless an obvious set of questions falls out of the above
-   (don't force a list where there isn't a clear need yet).
+- `active`: "what's going on with this task?", "what's wrong?", "what should I do next?"
+- `review`: "what's blocking this from being done?", "is this actually ready?"
+- Leave `ready`/`done` out for now unless an obvious set of questions falls out of the above
+  (don't force a list where there isn't a clear need yet).
 3. Update `showPmCanned` to key off the new map instead of the hardcoded draft/inbox check, and
- drop the `!pmHasConversation` condition — later-stage canned questions need to be askable
- repeatedly throughout a task's life, not just once before the first message. (The draft/inbox
- behavior of "only offer this before the user has already started fleshing it out" was
- intentional there; confirm it still reads sensibly once the same gate also serves every other
- stage, or split the two concerns if it doesn't.)
+drop the `!pmHasConversation` condition — later-stage canned questions need to be askable
+repeatedly throughout a task's life, not just once before the first message. (The draft/inbox
+behavior of "only offer this before the user has already started fleshing it out" was
+intentional there; confirm it still reads sensibly once the same gate also serves every other
+stage, or split the two concerns if it doesn't.)
 4. Auto-send stays as-is (per the decision above — no edit step is being added here).
 
 ## Acceptance criteria

@@ -37,16 +37,16 @@ reload, and the selection is reflected in the control immediately.
 ## Acceptance criteria
 
 - [ ] The stories page renders a sort-by dropdown matching the work page's sort
-    dropdown in style and interaction.
+dropdown in style and interaction.
 - [ ] Exactly three sort options are offered, matching the work page's
-    non-priority options.
+non-priority options.
 - [ ] No priority-based sort option appears on the stories page.
 - [ ] The default sort is "most recently updated".
 - [ ] Selecting an option re-orders the rendered story list accordingly.
 - [ ] The dropdown uses the custom styled dropdown component, not a native
-    `<select>`.
+`<select>`.
 - [ ] Sorting is applied purely on the already-loaded story data — no new
-    server endpoint or fetch is required.
+server endpoint or fetch is required.
 - [ ] `repoos check` passes (format, lint, build, tests, UI smoke test).
 
 ## Notes for AI

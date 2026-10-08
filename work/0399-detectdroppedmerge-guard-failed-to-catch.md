@@ -82,10 +82,10 @@ in-memory still writes/leaves behind a `"done"` snapshot.
 ## Acceptance criteria
 
 - [ ] Root cause identified with a reproduction (a synthetic branch +
-    main-advance scenario that recreates `candidateSha === baseMainSha`
-    despite a real delta), not just a guess.
+main-advance scenario that recreates `candidateSha === baseMainSha`
+despite a real delta), not just a guess.
 - [ ] `detectDroppedMerge()` (or wherever the actual gap is) fixed so this
-    class of failure cannot reach `phase: "done"` silently again.
+class of failure cannot reach `phase: "done"` silently again.
 - [ ] A regression test added that would have caught this specific gap.
 - [ ] `repoos check` passes.
 

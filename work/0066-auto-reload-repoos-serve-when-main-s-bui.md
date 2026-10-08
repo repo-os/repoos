@@ -44,26 +44,26 @@ best-effort, same reload path.
 ## Acceptance criteria
 
 - [ ] On boot the server compares its loaded build hash against the current
-    `dist/.build-info.json`; if stale and no agent is running, it reloads
-    immediately (stale-boot self-heal).
+`dist/.build-info.json`; if stale and no agent is running, it reloads
+immediately (stale-boot self-heal).
 - [ ] While the server is running, a change to `dist/.build-info.json` (fs
-    watch on the file) schedules a reload. If any agent turn is running, the
-    reload is **deferred and retried** (or waits) until the runner is idle —
-    never kill mid-turn.
+watch on the file) schedules a reload. If any agent turn is running, the
+reload is **deferred and retried** (or waits) until the runner is idle —
+never kill mid-turn.
 - [ ] Reload: spawn a replacement `repoos serve` with the same host/port,
-    confirm it is ready (listening + health OK), then the old process exits
-    cleanly. If the replacement fails to bind, the old process keeps serving
-    (no outage). Zero-downtime via `SO_REUSEPORT` where the runtime supports
-    it; otherwise a brief graceful drain is acceptable.
+confirm it is ready (listening + health OK), then the old process exits
+cleanly. If the replacement fails to bind, the old process keeps serving
+(no outage). Zero-downtime via `SO_REUSEPORT` where the runtime supports
+it; otherwise a brief graceful drain is acceptable.
 - [ ] `POST /api/server/restart` triggers the same reload path (deferred while
-    agents run); returns the reload state (`reloading` / `deferred: n` /
-    `not-stale`).
+agents run); returns the reload state (`reloading` / `deferred: n` /
+`not-stale`).
 - [ ] Boot-time cleanup still removes previews (0054) and re-homes any state
-    the old process held (previews.json already persists to
-    `<cacheDir>/previews.json`; verify nothing else needs persisting).
+the old process held (previews.json already persists to
+`<cacheDir>/previews.json`; verify nothing else needs persisting).
 - [ ] Fixture tests: hash-change detection, deferred-while-running behavior,
-    replacement readiness handoff (fakebin pattern); `repoos check` passes;
-    zero new runtime dependencies.
+replacement readiness handoff (fakebin pattern); `repoos check` passes;
+zero new runtime dependencies.
 
 ## Notes for AI
 

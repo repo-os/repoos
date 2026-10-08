@@ -32,24 +32,24 @@ other general preferences.
 
 - [ ] The bottom-left theme switcher renders no more than 3 themes.
 - [ ] Favorited themes take priority; when the user has 1–3 favorites, exactly
-    those are shown in favorite order.
+those are shown in favorite order.
 - [ ] When the user has more than 3 favorites, only the first 3 (in favorite
-    order) are shown.
+order) are shown.
 - [ ] When the user has no favorites, the first 3 themes in the existing theme
-    list order are shown.
+list order are shown.
 - [ ] The cap applies on every render path (initial load, theme data refresh,
-    and after favoriting/unfavoriting a theme) — not only on first paint.
+and after favoriting/unfavoriting a theme) — not only on first paint.
 - [ ] The switcher itself still fits within the bottom-left corner at the cap of
-    3, with no overflow or clipping.
+3, with no overflow or clipping.
 - [ ] Clicking a theme in the switcher still applies it.
 - [ ] In General settings, the themes section is rendered first, above the other
-    general preferences.
+general preferences.
 - [ ] Favoriting/unfavoriting a theme from the settings section is still
-    possible, and the change is reflected in the switcher without a reload.
+possible, and the change is reflected in the switcher without a reload.
 - [ ] Existing favorites are not dropped, reordered, or truncated in storage —
-    the cap is presentational only.
+the cap is presentational only.
 - [ ] The 3-theme cap works in both light and dark appearance, and on narrow
-    viewports.
+viewports.
 
 ## Notes for AI
 

@@ -56,22 +56,22 @@ new functionality (the theme toggle itself) needs it.
 ## Acceptance criteria
 
 - [ ] A `uiTheme` config option (`"classic" | "clear"`, default `"classic"`)
-    exists in `repoos.toml`, is served by `/api/config`, and appears in the
-    schema-driven Settings page
+  exists in `repoos.toml`, is served by `/api/config`, and appears in the
+  schema-driven Settings page
 - [ ] Selecting the design theme applies `data-ui-theme="classic|clear"` on
-    `<html>` immediately and persists across sessions
+  `<html>` immediately and persists across sessions
 - [ ] The clear theme has intentional dark and light variants that follow the
-    existing `theme` (dark/light/system) preference — no neon-on-navy, no
-    pure-black, no inverted-light look
+  existing `theme` (dark/light/system) preference — no neon-on-navy, no
+  pure-black, no inverted-light look
 - [ ] The clear theme uses its own font (e.g. Plus Jakarta Sans) via a
-    `--font-sans` token — visually distinct from classic's Sora, with
-    comfortable density (roomier paddings/gaps) and clearer body text
+  `--font-sans` token — visually distinct from classic's Sora, with
+  comfortable density (roomier paddings/gaps) and clearer body text
 - [ ] Clear theme surfaces/text/borders/status/actions are defined as tokens
-    (CSS custom properties) so components restyle without per-component
-    hardcoded colors
+  (CSS custom properties) so components restyle without per-component
+  hardcoded colors
 - [ ] The dark/light/system preference, and classic's appearance, are unchanged
 - [ ] A theme toggle (Classic / Clear) is reachable from the app shell (e.g.
-    sidebar) and updates the UI live without a reload
+  sidebar) and updates the UI live without a reload
 - [ ] All existing screens remain functional; `repoos check` passes
 - [ ] No new runtime dependency
 
@@ -84,15 +84,15 @@ radius/shadow system, calm both-theme palettes.
 - Files:
 - `src/core/types.ts` — add `UiTheme` type + `uiTheme?: UiTheme`
 - `src/core/config.ts` — `DEFAULT_CONFIG.uiTheme`, toml parse of
-  `uiTheme`, schema field (`type: "select"`, tier live)
+`uiTheme`, schema field (`type: "select"`, tier live)
 - `src/ui-app/src/stores/config.ts` — `uiTheme` state, `applyUiTheme`,
-  `setUiTheme` (PATCH `/api/config`), apply on load/save
+`setUiTheme` (PATCH `/api/config`), apply on load/save
 - `src/ui-app/src/components/Sidebar.vue` — Classic/Clear segmented toggle
 - `src/ui-app/src/style.css` — `[data-ui-theme="clear"]` token blocks
-  (dark default + `[data-theme="light"]`) after the existing `:root` and
-  `[data-theme="light"]` blocks; targeted component overrides under
-  `[data-ui-theme="clear"]` (radius, shadows, button press, calm body
-  background); `prefers-reduced-motion` guard
+(dark default + `[data-theme="light"]`) after the existing `:root` and
+`[data-theme="light"]` blocks; targeted component overrides under
+`[data-ui-theme="clear"]` (radius, shadows, button press, calm body
+background); `prefers-reduced-motion` guard
 - Do NOT touch `src/ui-app/src/views/SettingsView.vue` — work/0006 is building
 the settings UI concurrently; the new schema field renders automatically.
 - Reuse the existing `theme` (dark/light/system) plumbing; the design theme is

@@ -46,21 +46,21 @@ No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.
 ```json
 [
 {
-  "label": "Mission control",
-  "target": "default",
-  "route": "/"
+"label": "Mission control",
+"target": "default",
+"route": "/"
 },
 {
-  "label": "Auto-approve blocked paths control",
-  "target": "default",
-  "route": "/settings?tab=general&focus=approval.autoApprove.machineryPaths",
-  "highlight": "[data-config-key=\"approval.autoApprove.machineryPaths\"]"
+"label": "Auto-approve blocked paths control",
+"target": "default",
+"route": "/settings?tab=general&focus=approval.autoApprove.machineryPaths",
+"highlight": "[data-config-key=\"approval.autoApprove.machineryPaths\"]"
 },
 {
-  "label": "Kill switch on General",
-  "target": "default",
-  "route": "/settings?tab=general&focus=automation.paused",
-  "highlight": "[data-config-key=\"automation.paused\"]"
+"label": "Kill switch on General",
+"target": "default",
+"route": "/settings?tab=general&focus=automation.paused",
+"highlight": "[data-config-key=\"automation.paused\"]"
 }
 ]
 ```

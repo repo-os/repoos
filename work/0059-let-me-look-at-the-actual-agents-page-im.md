@@ -45,17 +45,17 @@ confirmation instead of silently discarding edits.
 ## Acceptance criteria
 
 - [ ] A save bar on the Agents page is sticky/always visible while editing, so
-    the save button is on screen regardless of scroll position
+the save button is on screen regardless of scroll position
 - [ ] When the page has unsaved agent changes, the save button and an
-    "unsaved changes" indicator are visually prominent (highlighted accent
-    styling, clear copy); when clean, the affordance is subtle
+"unsaved changes" indicator are visually prominent (highlighted accent
+styling, clear copy); when clean, the affordance is subtle
 - [ ] The dirty state tracks the same data as today's `dirty` computed (any
-    difference between local agent edits and the loaded config)
+difference between local agent edits and the loaded config)
 - [ ] Navigating away from the Agents page with unsaved changes prompts for
-    confirmation before leaving; navigating away with no unsaved changes does
-    not prompt
+confirmation before leaving; navigating away with no unsaved changes does
+not prompt
 - [ ] Save still validates agent names, shows "Saving…" while saving, and
-    surfaces success/error messages as it does today
+surfaces success/error messages as it does today
 - [ ] `repoos check` passes
 
 ## Notes for AI

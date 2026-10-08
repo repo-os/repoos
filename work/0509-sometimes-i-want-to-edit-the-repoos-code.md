@@ -51,39 +51,39 @@ defines it, ready to edit.
 ## Acceptance criteria
 
 - [ ] On a dev/local build, clicking any rendered text (including strings defined
-    in a `.vue` template, not just in `<script setup>`) reveals the source file
-    it originates from, plus a line number when the build can attribute one.
+in a `.vue` template, not just in `<script setup>`) reveals the source file
+it originates from, plus a line number when the build can attribute one.
 - [ ] The reported path is repo-relative and resolves to a real file under
-    `src/`; at minimum the two motivating strings (`causes exactly this`,
-    `attached to the new task`) resolve to the file that defines them.
+`src/`; at minimum the two motivating strings (`causes exactly this`,
+`attached to the new task`) resolve to the file that defines them.
 - [ ] The inspector popup offers **Copy path**, which puts the path (with
-    `:line` when known) on the clipboard and works with no editor configured.
+`:line` when known) on the clipboard and works with no editor configured.
 - [ ] The inspector popup offers **Open in editor**, which opens the file (at the
-    line, when known) using the configured editor command.
+line, when known) using the configured editor command.
 - [ ] Two new user-facing settings exist in `repoos.toml` and are surfaced
-    through `getConfigSchema()` **and** the Settings UI with clear copy and a
-    test: an inspector enable toggle and an editor command string. Placeholders
-    `{file}` and `{line}` are substituted; if the command omits `{line}`, the
-    line is dropped rather than appended blindly.
+through `getConfigSchema()` **and** the Settings UI with clear copy and a
+test: an inspector enable toggle and an editor command string. Placeholders
+`{file}` and `{line}` are substituted; if the command omits `{line}`, the
+line is dropped rather than appended blindly.
 - [ ] The feature is inert on a non-dev build: the gate is the server's existing
-    `isDevBuild()` (`src/server/reload.ts`), not the config value alone, and the
-    open-in-editor endpoint is unreachable when that is false.
+`isDevBuild()` (`src/server/reload.ts`), not the config value alone, and the
+open-in-editor endpoint is unreachable when that is false.
 - [ ] The open-in-editor endpoint path-guards every request: the target must
-    resolve inside the repo root, and the configured command is spawned as an
-    argv array without a shell.
+resolve inside the repo root, and the configured command is spawned as an
+argv array without a shell.
 - [ ] The build emits whatever attribution the chosen mechanism needs (e.g.
-    source maps or dev-only file/line annotations) **without** materially
-    growing the shipped production bundle, and the build-staleness hash
-    behavior is unchanged.
+source maps or dev-only file/line annotations) **without** materially
+growing the shipped production bundle, and the build-staleness hash
+behavior is unchanged.
 - [ ] The inspector popup follows the existing hover-pane pattern in
-    `src/ui-app/src/components/IntegrationStatusBar.vue` (teleported to `<body>`,
-    themed, viewport-clamped) and does not trap itself in a drawer's stacking
-    context.
+`src/ui-app/src/components/IntegrationStatusBar.vue` (teleported to `<body>`,
+themed, viewport-clamped) and does not trap itself in a drawer's stacking
+context.
 - [ ] Unit tests cover the attribution helper and the path guard; `repoos check`
-    passes.
+passes.
 - [ ] The feature and the editor setting are documented in `user-docs/`
-    (configuration plus a dev-tooling note), including that it is dev/local
-    only.
+(configuration plus a dev-tooling note), including that it is dev/local
+only.
 
 ## Notes for AI
 

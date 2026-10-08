@@ -52,26 +52,26 @@ during implementation — see Notes).
 ## Acceptance criteria
 
 - [ ] Settings page has a new "Cloudflare Tunnel" (or similarly named)
-    setting with an enable/disable toggle, off by default, following the
-    existing `setting-row` / `Switch` pattern used elsewhere on the page.
+setting with an enable/disable toggle, off by default, following the
+existing `setting-row` / `Switch` pattern used elsewhere on the page.
 - [ ] Enabling the toggle opens a side panel, built as a slide-out drawer
-    matching the size/behavior conventions of `TaskDrawer.vue` (not a
-    modal, not inline expansion in the settings list).
+matching the size/behavior conventions of `TaskDrawer.vue` (not a
+modal, not inline expansion in the settings list).
 - [ ] The side panel presents the Cloudflare Tunnel setup/instructions
-    content (per #68's `repoos tunnel setup` flow) needed to get a tunnel
-    running, in enough detail that a user who has never touched
-    `cloudflared` can follow it from the UI alone.
+content (per #68's `repoos tunnel setup` flow) needed to get a tunnel
+running, in enough detail that a user who has never touched
+`cloudflared` can follow it from the UI alone.
 - [ ] The enabled/disabled state of the toggle persists (reflects and writes
-    back to RepoOS config, consistent with how other Settings fields are
-    persisted via `useConfigStore`).
+back to RepoOS config, consistent with how other Settings fields are
+persisted via `useConfigStore`).
 - [ ] Toggling off disables/hides the feature's affordances in the UI
-    (panel no longer auto-opens from Settings); it does not silently
-    delete existing tunnel configuration.
+(panel no longer auto-opens from Settings); it does not silently
+delete existing tunnel configuration.
 - [ ] Existing Settings page behavior (General/Advanced groups, save flow,
-    deep-link focus via `?focus=` query param) is unaffected.
+deep-link focus via `?focus=` query param) is unaffected.
 - [ ] Browser actions use narrow RepoOS tunnel/status/config API operations;
-    the UI never attempts to execute `cloudflared` or shell commands itself,
-    and no general command-execution endpoint is introduced.
+the UI never attempts to execute `cloudflared` or shell commands itself,
+and no general command-execution endpoint is introduced.
 
 ## Notes for AI
 

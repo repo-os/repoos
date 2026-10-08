@@ -36,30 +36,30 @@ saving a dynamic model works.
 ## Acceptance criteria
 
 - [ ] New `src/core/models.ts` defines a per-CLI **model-source adapter**
-    interface, e.g. `{ id, cli, supported, list(opts): Promise<Result> }`,
-    plus a registry keyed by `Agent.cli`. The opencode adapter is
-    implemented; **claude code and the other known CLIs are present as
-    `{ supported: false }` placeholders** so a future adapter is a
-    one-file change (scalability, no behavior now).
+interface, e.g. `{ id, cli, supported, list(opts): Promise<Result> }`,
+plus a registry keyed by `Agent.cli`. The opencode adapter is
+implemented; **claude code and the other known CLIs are present as
+`{ supported: false }` placeholders** so a future adapter is a
+one-file change (scalability, no behavior now).
 - [ ] `GET /api/models` returns
-    `{ byCli: { opencode: { supported, models, refreshable: true },
-    "claude code": { supported: false }, ... }, at }`. Never throws or hangs:
-    probe timeout, bad PATH entries, missing binary → fail-soft, mirroring
-    `detectAgents` in `src/core/detect.ts`.
+`{ byCli: { opencode: { supported, models, refreshable: true },
+"claude code": { supported: false }, ... }, at }`. Never throws or hangs:
+probe timeout, bad PATH entries, missing binary → fail-soft, mirroring
+`detectAgents` in `src/core/detect.ts`.
 - [ ] The opencode adapter spawns `opencode models` (cached list) and
-    `opencode models --refresh` on explicit refresh, parses `provider/model`
-    lines, runs in the repo-root cwd, and always offers `default`.
+`opencode models --refresh` on explicit refresh, parses `provider/model`
+lines, runs in the repo-root cwd, and always offers `default`.
 - [ ] Agents page dropdown (AgentsView.vue) renders `default` + static
-    `AGENT_MODELS` + live opencode models, fetched on mount, with a Refresh
-    affordance; degrades to static-only when the endpoint is unavailable
-    (best-effort, same pattern as the detected-agents panel).
+`AGENT_MODELS` + live opencode models, fetched on mount, with a Refresh
+affordance; degrades to static-only when the endpoint is unavailable
+(best-effort, same pattern as the detected-agents panel).
 - [ ] Save validation accepts `default` or any non-empty string — the static
-    `AGENT_MODELS` check is replaced so a dynamically-selected model saves;
-    `AGENT_MODELS` is retained as the fallback *suggested* list. The model
-    stays a RepoOS-side label (still never forwarded to a CLI).
+`AGENT_MODELS` check is replaced so a dynamically-selected model saves;
+`AGENT_MODELS` is retained as the fallback *suggested* list. The model
+stays a RepoOS-side label (still never forwarded to a CLI).
 - [ ] Fixture tests with a fake `opencode` binary assert spawn args (with and
-    without `--refresh`), line parsing, and fail-soft behavior (0042/0043
-    fakebin pattern); `repoos check` passes; zero new runtime dependencies.
+without `--refresh`), line parsing, and fail-soft behavior (0042/0043
+fakebin pattern); `repoos check` passes; zero new runtime dependencies.
 
 ## Notes for AI
 

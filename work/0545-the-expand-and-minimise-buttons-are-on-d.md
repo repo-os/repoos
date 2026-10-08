@@ -30,15 +30,15 @@ states, so the action stays anchored instead of jumping across the panel.
 ## Acceptance criteria
 
 - [ ] The expand control and the minimise control are both positioned on
-    the right-hand side of the integration UI, in the same slot.
+the right-hand side of the integration UI, in the same slot.
 - [ ] Toggling expand/minimise does not change the horizontal position of
-    the control — it stays on the right.
+the control — it stays on the right.
 - [ ] Collapsed and expanded states each keep their current label, icon
-    and click behaviour; only the placement changes.
+and click behaviour; only the placement changes.
 - [ ] The right-hand alignment holds in every width the integration panel
-    supports (no regression to narrow/compact layouts).
+supports (no regression to narrow/compact layouts).
 - [ ] The panel still renders and toggles correctly with a keyboard, and
-    any aria labels / titles on the buttons are unchanged.
+any aria labels / titles on the buttons are unchanged.
 - [ ] `repoos check` passes (build, format/lint, tests, UI smoke test).
 
 ## Notes for AI

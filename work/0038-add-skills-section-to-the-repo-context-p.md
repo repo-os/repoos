@@ -47,15 +47,15 @@ header, or a filter tab) so "reference" vs "procedure" reads at a glance.
 
 - [ ] A new **Skills** section appears on the Repo Context page, next to docs
 - [ ] Skills are read from a `skills/` dir at the repo root, one folder per
-    skill (`skills/<name>/SKILL.md`), and the page lists each skill's name +
-    description from frontmatter
+skill (`skills/<name>/SKILL.md`), and the page lists each skill's name +
+description from frontmatter
 - [ ] Clicking a skill opens its body in the content viewer (same read/browse
-    pattern as docs)
+pattern as docs)
 - [ ] The section renders an empty state when `skills/` has no skills, and
-    degrades gracefully if a skill file is missing/malformed frontmatter
-    (skips it — never breaks the page)
+degrades gracefully if a skill file is missing/malformed frontmatter
+(skips it — never breaks the page)
 - [ ] The repo ships at least one example skill so the feature is visible
-    out of the box
+out of the box
 - [ ] `repoos check` passes
 
 ## Notes for AI

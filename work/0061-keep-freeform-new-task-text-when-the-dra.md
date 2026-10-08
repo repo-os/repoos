@@ -39,13 +39,13 @@ must not regress.
 ## Acceptance criteria
 
 - [ ] Typing in the freeform textarea, closing the New task drawer, and
-    reopening it shows the previously typed text intact
+reopening it shows the previously typed text intact
 - [ ] Text survives both close paths: the drawer's close button and clicking
-    outside the drawer
+outside the drawer
 - [ ] Switching freeform → manual → freeform within the drawer does not clear
-    the typed text
+the typed text
 - [ ] Text still clears after a successful task creation, and stays put on a
-    failed/fallback PM-agent call (existing behavior, no regression)
+failed/fallback PM-agent call (existing behavior, no regression)
 - [ ] `repoos check` passes
 
 ## Notes for AI

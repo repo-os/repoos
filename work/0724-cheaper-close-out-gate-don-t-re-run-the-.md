@@ -57,15 +57,15 @@ Timing: I could NOT measure real before/after close-out medians from this sandbo
 ```json
 [
 {
-  "label": "Settings → General with the new Close-out gate scope select",
-  "target": "default",
-  "route": "/settings?tab=general",
-  "highlight": "#setting-closeOut\\.gate",
-  "steps": [
-    {
-      "waitMs": 500
-    }
-  ]
+"label": "Settings → General with the new Close-out gate scope select",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "#setting-closeOut\\.gate",
+"steps": [
+  {
+    "waitMs": 500
+  }
+]
 }
 ]
 ```

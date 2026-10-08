@@ -32,17 +32,17 @@ the lines of text to avoid wrapping.
 ## Acceptance criteria
 
 - [ ] Popup width is at least the rendered width of the integration bar,
-    derived from the bar's own width logic (not a new hardcoded constant).
+derived from the bar's own width logic (not a new hardcoded constant).
 - [ ] The popup can be wider than the bar when necessary so lines of text
-    don't need to wrap (i.e. it can size to its content).
+don't need to wrap (i.e. it can size to its content).
 - [ ] Popup width never exceeds 80% of the window width.
 - [ ] Where "at least as wide as the bar" and "≤ 80% of window" conflict
-    (narrow windows; mobile, where the bar spans nearly full width), the
-    80% cap wins.
+(narrow windows; mobile, where the bar spans nearly full width), the
+80% cap wins.
 - [ ] The popup remains anchored above the bar, centred and clamped into the
-    viewport, at the new widths — including across window resize.
+viewport, at the new widths — including across window resize.
 - [ ] Existing integration-bar behavior is unaffected: stage hover/focus,
-    click-to-open-task-drawer, collapse/expand, auto-collapse.
+click-to-open-task-drawer, collapse/expand, auto-collapse.
 - [ ] No console errors; `repoos check` passes.
 
 ## Notes for AI

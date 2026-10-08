@@ -71,27 +71,27 @@ not depend on knowing who it was.
 ## Fix
 
 1. **Commit before the gate.** In handoff finalization and the pre-review gate
- (including the remote path of #0520), commit the worktree first through the
- review guard's commit path, then run the gate against that `HEAD` (local or
- remote). Tested == committed.
+(including the remote path of #0520), commit the worktree first through the
+review guard's commit path, then run the gate against that `HEAD` (local or
+remote). Tested == committed.
 2. **Verify nothing changed underneath.** After the gate, check that
- `git status --porcelain` (ignoring gitignored paths) is clean and `HEAD` is
- unchanged. Otherwise fail loudly instead of moving to `review`.
+`git status --porcelain` (ignoring gitignored paths) is clean and `HEAD` is
+unchanged. Otherwise fail loudly instead of moving to `review`.
 3. **`removeWorktree` is non-force by default.** Add an explicit `force` option;
- only intentional discards pass it (restart/reset, and GC of worktrees that are
- merged AND clean). If cleanup is refused because the tree is dirty, keep the
- worktree, log the file list, and set `needs_input` (reason names the dirty
- files) instead of deleting.
+only intentional discards pass it (restart/reset, and GC of worktrees that are
+merged AND clean). If cleanup is refused because the tree is dirty, keep the
+worktree, log the file list, and set `needs_input` (reason names the dirty
+files) instead of deleting.
 4. **Guard close-out before enqueueing.** Check the task worktree with
- `git status --porcelain` (gitignored paths excluded). If dirty, return the file
- list like the dirty-main response and show the same style of modal:
- **Commit & continue** (commit on the task branch through the review guard's
- commit path, then close out; the merge gate still validates what was committed)
- or **Cancel**. Never remove a worktree with uncommitted changes unless the
- human chose to discard them explicitly.
+`git status --porcelain` (gitignored paths excluded). If dirty, return the file
+list like the dirty-main response and show the same style of modal:
+**Commit & continue** (commit on the task branch through the review guard's
+commit path, then close out; the merge gate still validates what was committed)
+or **Cancel**. Never remove a worktree with uncommitted changes unless the
+human chose to discard them explicitly.
 5. **Restart / reset (`resetWorktree`)** also force-discards. Decide whether it
- should warn or stash first; at minimum list what will be lost in the
- confirmation.
+should warn or stash first; at minimum list what will be lost in the
+confirmation.
 
 ## Acceptance
 

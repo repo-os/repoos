@@ -26,7 +26,7 @@ So when two RepoOS repos on the same box each publish an app:
 
 1. `repoos tunnel install` in repo A -> config has A's hostnames only
 2. later, `repoos tunnel install` in repo B -> config replaced, B's hostnames
- only; **A's hostnames silently drop to the `http_status:404` catch-all**
+only; **A's hostnames silently drop to the `http_status:404` catch-all**
 
 `repoos tunnel status` / `list` also only ever show the current repo's apps,
 so the machine's real published set is never visible from any one repo. This
@@ -66,27 +66,27 @@ existing single-repo setups are unaffected.
 ## Acceptance criteria
 
 - [ ] Two repos on one machine can each `repoos tunnel create` an app, and a
-    single `repoos tunnel install` (run from either) produces a
-    `~/.cloudflared/config.yml` containing BOTH hostnames + the 404 catch-all.
+   single `repoos tunnel install` (run from either) produces a
+   `~/.cloudflared/config.yml` containing BOTH hostnames + the 404 catch-all.
 - [ ] `repoos tunnel install` in repo B no longer removes repo A's ingress
-    routes.
+   routes.
 - [ ] `repoos tunnel status` shows all apps on the machine, each annotated
-    with its owning repo, and marks stale entries (owner checkout gone) and
-    dead origins (no listener on the service port).
+   with its owning repo, and marks stale entries (owner checkout gone) and
+   dead origins (no listener on the service port).
 - [ ] `repoos tunnel destroy <name>` removes the app from the repo toml, the
-    machine registry, and the regenerated ingress.
+   machine registry, and the regenerated ingress.
 - [ ] Conflicting `tunnelId` across repos makes `install` fail loudly, not
-    silently pick one.
+   silently pick one.
 - [ ] Existing single-repo setups: first `install` after upgrade seeds the
-    registry from `repoos.toml` and behaviour is unchanged (no lost routes,
-    no duplicate entries).
+   registry from `repoos.toml` and behaviour is unchanged (no lost routes,
+   no duplicate entries).
 - [ ] Registry read/write is covered by unit tests (union rendering, stale
-    detection, migration seeding, conflict detection).
+   detection, migration seeding, conflict detection).
 - [ ] Zero new runtime dependencies.
 - [ ] `docs/` updated: document the machine registry, the "one tunnel per
-    machine, many repos" model, and that `repoos tunnel` commands are
-    machine-global not repo-local. Refresh the Cloudflare publishing
-    assistant copy if it still implies per-repo tunnel ownership.
+   machine, many repos" model, and that `repoos tunnel` commands are
+   machine-global not repo-local. Refresh the Cloudflare publishing
+   assistant copy if it still implies per-repo tunnel ownership.
 
 ## Notes / pointers
 

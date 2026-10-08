@@ -66,13 +66,13 @@ streaming output, auto-commit/merge. Those stay separate tasks.
 
 - [ ] Starting a task no longer changes the repo root's checked-out branch
 - [ ] Each started task has its own worktree; the agent process `cwd` is inside
-    it
+it
 - [ ] Pausing kills the agent and returns the task to `ready`; the worktree is
-    preserved and a subsequent Start reuses it (no duplicate worktrees)
+preserved and a subsequent Start reuses it (no duplicate worktrees)
 - [ ] Two ready tasks can be started concurrently without interfering
 - [ ] Missing git / failed worktree creation degrades gracefully (task still
-    transitions, spawn still fails soft — no server crash), matching 0037's
-    best-effort contract
+transitions, spawn still fails soft — no server crash), matching 0037's
+best-effort contract
 - [ ] `repoos check` passes
 
 ## Notes for AI

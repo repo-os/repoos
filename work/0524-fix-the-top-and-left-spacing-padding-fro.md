@@ -42,30 +42,30 @@ the scroll area with no gap or content peeking around them.
 ## Acceptance criteria
 
 - [ ] The History tab's content is inset from the top edge of its card by
-    roughly 12–16px, and from the left edge by roughly 12–16px — pick one
-    value and apply it consistently, rather than leaving the current 4px /
-    0px mix.
+roughly 12–16px, and from the left edge by roughly 12–16px — pick one
+value and apply it consistently, rather than leaving the current 4px /
+0px mix.
 - [ ] Both the toolbar (`.hist-toolbar`) and the scrolling commit list
-    (`.hist-rail`) share that same top/left inset, so switching between
-    them does not visibly jump the content sideways.
+(`.hist-rail`) share that same top/left inset, so switching between
+them does not visibly jump the content sideways.
 - [ ] Right and bottom spacing are unchanged in character — the fix is
-    about the top and left edges only.
+about the top and left edges only.
 - [ ] The timeline geometry still holds: the vertical rail
-    (`.hist-commit::before`, `left: 10px`), the day ticks (`.hist-tick`,
-    `margin-left: 6px`) and the row dots/avatars remain aligned with one
-    another and with the day headers after the inset changes.
+(`.hist-commit::before`, `left: 10px`), the day ticks (`.hist-tick`,
+`margin-left: 6px`) and the row dots/avatars remain aligned with one
+another and with the day headers after the inset changes.
 - [ ] Sticky day headers (`.hist-day-head`, `position: sticky; top: 0`) still
-    stick flush to the top of the scroll container, with no content
-    scrolling visibly behind/above them and no translucent gap.
+stick flush to the top of the scroll container, with no content
+scrolling visibly behind/above them and no translucent gap.
 - [ ] The loading, empty, error and "End of history" states
-    (`.hist-state`, `.hist-more`) are inset consistently with the commit
-    rows, and none of them sit flush against the card edge.
+(`.hist-state`, `.hist-more`) are inset consistently with the commit
+rows, and none of them sit flush against the card edge.
 - [ ] The other three tabs (Docs, Skills, Discover) are visually unchanged.
 - [ ] Works at narrow widths too — the toolbar's existing `flex-wrap` and
-    `min-width: 160px` on `.hist-field-grow` behaviour are preserved and
-    the new inset does not cause the toolbar to wrap earlier than before.
+`min-width: 160px` on `.hist-field-grow` behaviour are preserved and
+the new inset does not cause the toolbar to wrap earlier than before.
 - [ ] `bun run build:ui` (or `bun run build`) is run so the worktree build is
-    fresh, and `repoos check` passes (including `oxfmt --check`/`oxlint`).
+fresh, and `repoos check` passes (including `oxfmt --check`/`oxlint`).
 
 ## Notes for AI
 

@@ -39,15 +39,15 @@ AGENTS.md template) says `repoos`.
 ## Acceptance criteria
 
 - [ ] `package.json` `bin` exposes `repoos` (not `ros`); after `bun link`,
-    `repoos <command>` works and `repoos --help` reads correctly
+`repoos <command>` works and `repoos --help` reads correctly
 - [ ] Every user-facing string references `repoos`: CLI help + usage errors,
-    staleness warning, `init` scaffold output + its sample task + its
-    AGENTS.md template, and the README/docs that point at the CLI
+staleness warning, `init` scaffold output + its sample task + its
+AGENTS.md template, and the README/docs that point at the CLI
 - [ ] `repoos check` is green (staleness, build, tests, UI smoke test)
 - [ ] This repo's own AGENTS.md operating loop + docs use `repoos`
 - [ ] No new runtime dependencies; dist is rebuilt so compiled strings follow
 - [ ] Historical `work/*.md` task files and ADRs are NOT rewritten — they are
-    records of the era when the command was `ros`
+records of the era when the command was `ros`
 
 ## Notes for AI
 

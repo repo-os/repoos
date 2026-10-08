@@ -31,9 +31,9 @@ text or pill padding.
 ## Acceptance criteria
 
 - [ ] At the existing mobile breakpoint, the connection indicator renders as a
-    compact colored dot without visible `live` / `offline` text.
+compact colored dot without visible `live` / `offline` text.
 - [ ] The mobile indicator exposes the full state through `aria-label` and
-    `title`; color is not the only information available to assistive tools.
+`title`; color is not the only information available to assistive tools.
 - [ ] Desktop/tablet appearance and SSE connection behavior are unchanged.
 - [ ] Both connected and disconnected mobile states are visually verified.
 - [ ] `repoos check` passes.

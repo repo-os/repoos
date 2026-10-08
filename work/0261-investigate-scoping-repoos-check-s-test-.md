@@ -41,26 +41,26 @@ than assuming any specific approach is right.
 ## Questions to answer (this is a research task, not a build-it-now task)
 
 - [ ] Does `vitest --changed` (scoped to files changed since main, using
-    vitest's own git-diff + import-graph analysis) reliably catch
-    cross-file regressions in this codebase, or does its coverage miss
-    indirect breakage (e.g. a shared type change, a config schema change)
-    often enough that scoping would weaken the merge gate in practice?
+vitest's own git-diff + import-graph analysis) reliably catch
+cross-file regressions in this codebase, or does its coverage miss
+indirect breakage (e.g. a shared type change, a config schema change)
+often enough that scoping would weaken the merge gate in practice?
 - [ ] Would enabling TS `incremental`/`composite` in `tsconfig.json` meaningfully
-    help, given build+typecheck is already only ~9s? (Likely marginal —
-    confirm before spending effort here.)
+help, given build+typecheck is already only ~9s? (Likely marginal —
+confirm before spending effort here.)
 - [ ] Is there a middle ground — e.g. always running the full suite for
-    `repoos check` invoked by a human/agent locally, but a fast/scoped
-    variant only for the pipeline's automated gate, with the full suite
-    still required before merge to catch anything scoping missed?
+`repoos check` invoked by a human/agent locally, but a fast/scoped
+variant only for the pipeline's automated gate, with the full suite
+still required before merge to catch anything scoping missed?
 - [ ] What's the actual expected time savings, measured, not estimated?
 
 ## Acceptance criteria
 
 - [ ] A written recommendation (in this task's Activity or a follow-up
-    comment) on whether to pursue test scoping, with a real before/after
-    timing comparison — not implemented without that data first.
+comment) on whether to pursue test scoping, with a real before/after
+timing comparison — not implemented without that data first.
 - [ ] If the recommendation is "do it," a properly scoped follow-up task with
-    the actual implementation, not bundled into this one.
+the actual implementation, not bundled into this one.
 
 ## Notes for AI
 

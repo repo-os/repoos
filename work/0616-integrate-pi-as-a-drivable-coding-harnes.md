@@ -59,22 +59,22 @@ SIGINT) empirically and encode it in `engineCancelSignal`.
 ## Work items
 
 1. `src/core/config.ts` — add `"pi"` to `AGENT_CLIS`; decide the model mapping
- (`AGENT_MODELS` → `--provider`/`--model`).
+(`AGENT_MODELS` → `--provider`/`--model`).
 2. `src/core/detect.ts` — flip the entry to `drivable: true`, add `cli: "pi"`,
- capability text, and an auth probe if useful (`pi auth check --json` prints
- `ready`/`not_ready`/`invalid` with exit 0/1/2).
+capability text, and an auth probe if useful (`pi auth check --json` prints
+`ready`/`not_ready`/`invalid` with exit 0/1/2).
 3. `src/server/agents.ts` — `parsePiEvent`, plus branches in `promptCommand`,
- `pmCommand`, `resumeCommand`, `engineForCli`, `engineCancelSignal`,
- `engineerPermissionGaps`, `modelArgs`, and usage/session-id extraction.
+`pmCommand`, `resumeCommand`, `engineForCli`, `engineCancelSignal`,
+`engineerPermissionGaps`, `modelArgs`, and usage/session-id extraction.
 4. `src/core/agent-contract.ts` — add a `PI_CONTRACT` to `CONTRACT_TEMPLATES`.
 5. `src/core/agent-compatibility.json` — add the manifest entry, starting with
- `verifiedAt: null` (honest "pending").
+`verifiedAt: null` (honest "pending").
 6. `src/ui-app/tests/agent-contract.test.ts` — deterministic fixture coverage
- proving the argument/event shapes (no credentials, no live runs).
+proving the argument/event shapes (no credentials, no live runs).
 7. `user-docs/coding-harness-compatibility.md` — add the table row (the
- `harness-compat-docs.test.ts` drift test enforces it matches the manifest).
+`harness-compat-docs.test.ts` drift test enforces it matches the manifest).
 8. Run `repoos doctor --probe pi --yes` (or `repoos certify pi --yes`) and, only
- if all seams pass, record the evidence and flip the manifest to verified.
+if all seams pass, record the evidence and flip the manifest to verified.
 
 ## Acceptance criteria
 

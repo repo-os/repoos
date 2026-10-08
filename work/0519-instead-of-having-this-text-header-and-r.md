@@ -40,19 +40,19 @@ order.
 
 - [ ] The literal `"TEXT"` header above the input panel's text block is gone.
 - [ ] Each input's text is rendered inside a card that visually matches the
-    task spec panel's card treatment (border/background/spacing idiom).
+task spec panel's card treatment (border/background/spacing idiom).
 - [ ] The card has no visible title and no edit/pencil button or other
-    explicit "Edit" affordance.
+explicit "Edit" affordance.
 - [ ] Clicking the card opens the same modal used to edit an input today.
 - [ ] Markdown in the input text renders as markdown in the card (e.g.
-    `**bold**`, links, lists, code spans) rather than as literal
-    asterisks/brackets.
+`**bold**`, links, lists, code spans) rather than as literal
+asterisks/brackets.
 - [ ] Text with no markdown still renders cleanly, with whitespace and
-    newlines preserved sensibly and no empty-card or raw-HTML artifacts.
+newlines preserved sensibly and no empty-card or raw-HTML artifacts.
 - [ ] The existing create-input flow still works; newly created inputs appear
-    as cards too.
+as cards too.
 - [ ] Inputs without text (empty body) render as a valid, clickable card
-    rather than collapsing or disappearing.
+rather than collapsing or disappearing.
 - [ ] `repoos check` passes (format, lint, build, tests, UI smoke).
 
 ## Notes for AI

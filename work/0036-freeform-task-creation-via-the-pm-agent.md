@@ -49,17 +49,17 @@ explanation if the agent fails.
 ## Acceptance criteria
 
 - [ ] New task drawer defaults to a freeform textarea flow; the manual form
-    remains reachable
+remains reachable
 - [ ] Submitting the freeform explanation routes through the PM agent (0035)
-    and produces a formatted `work/<id>-<slug>.md` task file with a fleshed
-    out body + acceptance criteria
+and produces a formatted `work/<id>-<slug>.md` task file with a fleshed
+out body + acceptance criteria
 - [ ] A settings option toggles between freeform (default) and manual creation;
-    the choice persists and is honored on the next drawer open
+the choice persists and is honored on the next drawer open
 - [ ] When no PM agent is configured/enabled, the drawer shows a reminder to
-    set one up on the Agents page AND still lets the user create the task
-    from the raw explanation (fallback), so input is never lost
+set one up on the Agents page AND still lets the user create the task
+from the raw explanation (fallback), so input is never lost
 - [ ] A failure/error in the agent call leaves the user's explanation intact in
-    the textarea with a visible error
+the textarea with a visible error
 - [ ] `repoos check` passes
 
 ## Notes for AI

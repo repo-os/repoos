@@ -64,19 +64,19 @@ preference, exactly like clear does.
 ## Acceptance criteria
 
 - [ ] `uiTheme` config accepts a third value (`"classic" | "clear" | "gen z"`,
-    default stays `"classic"`); `repoos.toml`, `/api/config`, schema-driven
-    Settings, and the sidebar toggle all support it
+default stays `"classic"`); `repoos.toml`, `/api/config`, schema-driven
+Settings, and the sidebar toggle all support it
 - [ ] Selecting it applies `data-ui-theme="gen z"` on `<html>` immediately and
-    persists across sessions
+persists across sessions
 - [ ] Gen z has intentional dark and light variants with bold, playful tokens
-    (bright accent/status colors, chunky radii, soft colored shadows) —
-    distinct from both classic and clear
+(bright accent/status colors, chunky radii, soft colored shadows) —
+distinct from both classic and clear
 - [ ] Playful motion (bouncy hovers/presses) is guarded by
-    `prefers-reduced-motion`
+`prefers-reduced-motion`
 - [ ] Casual microcopy + sticker-like empty states / icons are in place on at
-    least the main board view
+least the main board view
 - [ ] All tokens live in CSS custom properties (later blocks in style.css);
-    no new runtime dependency
+no new runtime dependency
 - [ ] Classic and clear appearances are unchanged; `repoos check` passes
 (including the theme-contrast gate — every gen-z fg/bg pair must hold ≥3:1
 and button tokens must be gradients)

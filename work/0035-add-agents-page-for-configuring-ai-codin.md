@@ -43,7 +43,7 @@ user-created).
 model select.
 - Coding agent select: `opencode` | `claude code` — **opencode is the default**.
 - Model select: `default` | `big pickle` | `deepseek v4` — **big pickle is the
-  default**; "default" means the coding agent's own default.
+default**; "default" means the coding agent's own default.
 - **Toggles**: agents are optional. A toggled-off agent renders as inactive and
 is not used; the toggle is per-agent and independent.
 - **Custom agents**: an "Add agent" affordance (name + coding agent + model)
@@ -57,17 +57,17 @@ config write path.
 
 - [ ] New **Agents** page reachable from the app nav
 - [ ] Default agents seeded at runtime: engineer, reviewer, pm — each `opencode`
-    + `big pickle`, on by default, and present even with a fresh config
+  + `big pickle`, on by default, and present even with a fresh config
 - [ ] Custom agents can be added (e.g. data analyst, refactor agent) with name,
-    coding agent, and model; added agents persist across a reload
+  coding agent, and model; added agents persist across a reload
 - [ ] Every agent has an on/off toggle; toggled-off agents render as inactive
-    and their setting persists
+  and their setting persists
 - [ ] Coding-agent select offers `opencode` and `claude code`, defaulting to
-    `opencode`
+  `opencode`
 - [ ] Model select offers `default`, `big pickle`, and `deepseek v4`, defaulting
-    to `big pickle`
+  to `big pickle`
 - [ ] Custom agents can be removed; removing one persists and clears it from the
-    list on reload
+  list on reload
 - [ ] `repoos check` passes
 
 ## Notes for AI

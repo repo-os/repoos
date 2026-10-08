@@ -40,11 +40,11 @@ stacked with spacing; see `src/ui-app/src/views/SettingsView.vue` ~lines
 332–460), NOT sections separated by a dashed line inside one continuous panel:
 
 1. **Task totals** — the totals grid (total time, total tokens, cache hit,
- total cost, turns, sessions), reading as "the whole-task summary".
+total cost, turns, sessions), reading as "the whole-task summary".
 2. **By role** — the per-role table (role / time / tokens / cost), reading as
- "who spent what".
+"who spent what".
 3. **Individual sessions** — the per-session table, reading as "the raw session
- log".
+log".
 
 A first-time reader should be able to glance at the tab and understand that
 different kinds of data are shown and what each section means, without needing
@@ -54,24 +54,24 @@ themselves (cache hit, turns, cache column) stay.
 ## Acceptance criteria
 
 - [x] The top-strip question is settled: the current live strip (spinner + time
-    / tokens / cost from the current session, the `showStats` `agent-stats`
-    block) STAYS — it is not the duplicate the original prompt referred to;
-    that legacy engineer-only strip was already removed by earlier work.
+   / tokens / cost from the current session, the `showStats` `agent-stats`
+   block) STAYS — it is not the duplicate the original prompt referred to;
+   that legacy engineer-only strip was already removed by earlier work.
 - [ ] The usage content is divided into three sections with clear headings
-    (at minimum: task totals, by role, individual sessions).
+   (at minimum: task totals, by role, individual sessions).
 - [ ] Each section is rendered as a visually distinct block/card — separate
-    panels like the Settings page's section blocks, matching the drawer/dark
-    theme — replacing the current single `task-usage` panel with its dashed
-    `border-top` separators between the roles and sessions parts.
+   panels like the Settings page's section blocks, matching the drawer/dark
+   theme — replacing the current single `task-usage` panel with its dashed
+   `border-top` separators between the roles and sessions parts.
 - [ ] Each section is self-explanatory: the heading conveys what the data
-    represents; section-level meaning does not depend on hover tooltips.
+   represents; section-level meaning does not depend on hover tooltips.
 - [ ] All existing data and interactions are preserved: the totals grid fields,
-    the by-role table, the sessions table with clickable started/ended time
-    expansion and agent/model expansion, cache-hover titles, and the
-    active-session row highlight.
+   the by-role table, the sessions table with clickable started/ended time
+   expansion and agent/model expansion, cache-hover titles, and the
+   active-session row highlight.
 - [ ] The empty state ("No token or usage data yet.") still renders when there
-    is no usage data, and the tab does not look broken in the partial states
-    (totals present but single role; totals present but no sessions, etc.).
+   is no usage data, and the tab does not look broken in the partial states
+   (totals present but single role; totals present but no sessions, etc.).
 - [ ] UI rebuilds cleanly and `repoos check` passes.
 
 ## Notes for AI

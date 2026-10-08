@@ -35,27 +35,27 @@ processes left behind.
 ## Acceptance criteria
 
 - [ ] `POST /api/tasks/:id/preview` starts a server rooted at the task's
-    worktree on an ephemeral (OS-assigned) port and returns
-    `{ port, url }`; returns 400 if the task has no branch or its worktree
-    doesn't exist, or if the task is not `active`/`review`.
+worktree on an ephemeral (OS-assigned) port and returns
+`{ port, url }`; returns 400 if the task has no branch or its worktree
+doesn't exist, or if the task is not `active`/`review`.
 - [ ] `POST /api/tasks/:id/preview/stop` (or `DELETE`) stops it and frees the
-    port; idempotent (stopping a stopped preview is a no-op success).
+port; idempotent (stopping a stopped preview is a no-op success).
 - [ ] `GET /api/tasks/:id` includes `preview: { port, url, startedAt } | null`;
-    the SSE feed emits a `preview` event on start/stop so the drawer updates
-    without a reload.
+the SSE feed emits a `preview` event on start/stop so the drawer updates
+without a reload.
 - [ ] Preview processes are killed when the task transitions out of
-    `active`/`review` (done, ready, paused), when the task is deleted, and on
-    main-server shutdown (SIGTERM/SIGINT). Boot-time cleanup removes previews
-    orphaned by a crashed main server.
+`active`/`review` (done, ready, paused), when the task is deleted, and on
+main-server shutdown (SIGTERM/SIGINT). Boot-time cleanup removes previews
+orphaned by a crashed main server.
 - [ ] The preview serves the **worktree's own** UI + API (its own `work/`
-    board) — i.e. the task's version. It is strictly read-only with respect
-    to the main checkout and never receives authoritative status edits.
+board) — i.e. the task's version. It is strictly read-only with respect
+to the main checkout and never receives authoritative status edits.
 - [ ] Port allocation is always ephemeral — never a hardcoded range.
 - [ ] UI: drawer shows a Preview button with disabled state when no branch or
-    worktree exists, then the link + Stop after start; failures surface in
-    the feed via the normal error path.
+worktree exists, then the link + Stop after start; failures surface in
+the feed via the normal error path.
 - [ ] Stale `dist/` in the worktree is rebuilt before serving (reuse the
-    existing staleness check), so the preview always shows current code.
+existing staleness check), so the preview always shows current code.
 - [ ] `repoos check` passes; zero new runtime dependencies.
 
 ## Notes for AI

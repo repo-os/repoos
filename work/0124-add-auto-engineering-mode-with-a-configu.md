@@ -44,53 +44,53 @@ engineering is waiting for more ready tasks.
 ## Acceptance criteria
 
 - [ ] RepoOS config and Settings UI expose an **Auto-engineering mode** boolean,
-    defaulting to off, and an integer **Maximum active tasks** setting,
-    defaulting to `3`.
+defaulting to off, and an integer **Maximum active tasks** setting,
+defaulting to `3`.
 - [ ] The maximum is validated as a safe positive integer. Invalid config or UI
-    input fails clearly and cannot create an unbounded launch policy.
+input fails clearly and cannot create an unbounded launch policy.
 - [ ] With the mode off, task transitions behave exactly as today and never
-    invoke the PM agent or automatically start work.
+invoke the PM agent or automatically start work.
 - [ ] With the mode on, an `active → review` transition calculates available
-    capacity and invokes the configured PM agent when at least one slot and
-    one `ready` task exist.
+capacity and invokes the configured PM agent when at least one slot and
+one `ready` task exist.
 - [ ] With the mode on, an `inbox → ready` transition does the same evaluation
-    when the active-task maximum has not been reached.
+when the active-task maximum has not been reached.
 - [ ] Enabling the mode, lowering/raising the maximum, and server startup/reload
-    reconcile current state once so automation does not depend on a future
-    transition to begin or recover.
+reconcile current state once so automation does not depend on a future
+transition to begin or recover.
 - [ ] The PM agent receives all current `ready` tasks with enough task metadata
-    and specification context to compare them, plus the exact number of open
-    slots. It returns a structured selection of zero or more task IDs and a
-    concise rationale, never more IDs than available slots.
+and specification context to compare them, plus the exact number of open
+slots. It returns a structured selection of zero or more task IDs and a
+concise rationale, never more IDs than available slots.
 - [ ] Before each selected task starts, the server re-reads task state and the
-    active count. Only tasks still in `ready` are started, and the configured
-    maximum is never exceeded even with concurrent transitions, human starts,
-    repeated events, or duplicate PM output.
+active count. Only tasks still in `ready` are started, and the configured
+maximum is never exceeded even with concurrent transitions, human starts,
+repeated events, or duplicate PM output.
 - [ ] Selected tasks use the existing server-owned Start work path rather than
-    directly patching status. Normal engineer resolution, worktree creation,
-    context generation, errors, events, and activity history are preserved.
+directly patching status. Normal engineer resolution, worktree creation,
+context generation, errors, events, and activity history are preserved.
 - [ ] If there are fewer ready tasks than open slots, RepoOS may start only the
-    available PM-selected tasks and leaves the remaining capacity visible.
+available PM-selected tasks and leaves the remaining capacity visible.
 - [ ] If capacity is available but there are no `ready` tasks, no PM run is
-    launched. The Control page displays a visible state such as **Waiting for
-    ready tasks**, prompting the human to add or promote work.
+launched. The Control page displays a visible state such as **Waiting for
+ready tasks**, prompting the human to add or promote work.
 - [ ] If no PM agent is configured, the PM run fails, or it returns no suitable
-    selection, RepoOS starts nothing, records the reason, and surfaces an
-    actionable Control-page status instead of silently looping or choosing a
-    task arbitrarily.
+selection, RepoOS starts nothing, records the reason, and surfaces an
+actionable Control-page status instead of silently looping or choosing a
+task arbitrarily.
 - [ ] The Control page shows whether auto-engineering is on, the configured
-    maximum, current active count/open slots, whether the PM is deciding, and
-    the latest decision/error/waiting state. Updates arrive live through the
-    existing event/store path.
+maximum, current active count/open slots, whether the PM is deciding, and
+the latest decision/error/waiting state. Updates arrive live through the
+existing event/store path.
 - [ ] Reconciliation is single-flight or serialized and coalesces bursts of
-    qualifying events. It does not repeatedly ask the PM about unchanged
-    queue state or start the same task twice.
+qualifying events. It does not repeatedly ask the PM about unchanged
+queue state or start the same task twice.
 - [ ] Disabling the mode prevents new automatic selections immediately but does
-    not pause, cancel, or demote tasks it previously started.
+not pause, cancel, or demote tasks it previously started.
 - [ ] Tests cover disabled behavior, both required transition triggers, enable
-    and config-change reconciliation, default/custom maxima, multi-slot
-    selection, no-ready waiting state, missing/failing PM agent, stale PM
-    choices, simultaneous triggers, human-start races, and restart recovery.
+and config-change reconciliation, default/custom maxima, multi-slot
+selection, no-ready waiting state, missing/failing PM agent, stale PM
+choices, simultaneous triggers, human-start races, and restart recovery.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

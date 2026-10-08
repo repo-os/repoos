@@ -25,9 +25,9 @@ Contrast with #0273, which hit the exact same failure mode (agent exited without
 async checkNow(): Promise<void> {
 if (this.canRun && !this.canRun()) return;
 for (const task of this.index.getTasks("active")) {
-  if (this.isStuck(task)) {
-    await this.handleStuck(task);
-  }
+if (this.isStuck(task)) {
+  await this.handleStuck(task);
+}
 }
 }
 ```

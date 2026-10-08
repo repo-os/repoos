@@ -59,30 +59,30 @@ skills line and no visible instructions field until opened.
 ## Acceptance criteria
 
 - [ ] The three agent panels no longer contain forked card markup: each
-    section renders its agents with a single shared card (component or
-    unified `v-for` structure). Section differences (editable name +
-    Remove for custom, `{ team: true }` CLI options + badge text, per-agent
-    instruction refs) are passed via props/emits/slots, not duplicated.
+section renders its agents with a single shared card (component or
+unified `v-for` structure). Section differences (editable name +
+Remove for custom, `{ team: true }` CLI options + badge text, per-agent
+instruction refs) are passed via props/emits/slots, not duplicated.
 - [ ] "Default agents" lists **PM, Engineer, Reviewer** in that order
-    regardless of seed/config order; other default agents (Ross, CTO) and
-    their placement are unaffected.
+regardless of seed/config order; other default agents (Ross, CTO) and
+their placement are unaffected.
 - [ ] Add-skills control is visually quieter (small/ghost/icon) and still
-    opens the existing skills modal for the right agent.
+opens the existing skills modal for the right agent.
 - [ ] Selected skills render inline to the right of the add-skills button on
-    one line (`(a.skills ?? []).join(", ") || "No default candidates"` kept).
+one line (`(a.skills ?? []).join(", ") || "No default candidates"` kept).
 - [ ] The ⓘ skills help hint is at most a tooltip/short inline note, not a
-    full line.
+full line.
 - [ ] Instructions are collapsed by default; the textarea shows only when
-    expanded; expand/collapse is per agent and VoiceDictate transcription
-    still works when the field is open.
+expanded; expand/collapse is per agent and VoiceDictate transcription
+still works when the field is open.
 - [ ] No behavior regressions: enable toggles, Coding-agent + Model control
-    (including the legacy-Gemini notice), Test agent, skills modal, and
-    custom-agent name editing/remove all still work.
+(including the legacy-Gemini notice), Test agent, skills modal, and
+custom-agent name editing/remove all still work.
 - [ ] Existing AgentsView-mounting tests pass (e.g.
-    `src/ui-app/tests/antigravity-driver.test.ts` indexes the default
-    panel as `.agent-tab-panel` index 0 and asserts `.am-cli-btn` contents)
-    and tests are added/updated for ordering + the new skills/instructions
-    layout where practical.
+`src/ui-app/tests/antigravity-driver.test.ts` indexes the default
+panel as `.agent-tab-panel` index 0 and asserts `.am-cli-btn` contents)
+and tests are added/updated for ordering + the new skills/instructions
+layout where practical.
 - [ ] `bun run build:ui` succeeds and `repoos check` is green on the branch.
 
 ## Notes for AI

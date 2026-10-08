@@ -38,13 +38,13 @@ marked/interrupted) so the user knows it was user-initiated.
 
 - [ ] A stop/interrupt control is visible while an AI chat response is in progress.
 - [ ] Activating the control sends an interrupt/stop signal that halts the
-    in-progress response.
+in-progress response.
 - [ ] The interrupted response is clearly marked as stopped/interrupted rather
-    than completed normally.
+than completed normally.
 - [ ] The interrupt works for the PM chat specifically.
 - [ ] The interrupt is available across AI chats generally, unless a specific
-    chat has an explicit reason to opt out (and such opt-outs are intentional,
-    not accidental).
+chat has an explicit reason to opt out (and such opt-outs are intentional,
+not accidental).
 
 ## Notes for AI
 

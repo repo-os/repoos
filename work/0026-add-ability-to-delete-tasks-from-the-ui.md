@@ -34,11 +34,11 @@ watcher path already does.
 ## Acceptance criteria
 
 - [ ] `DELETE /api/tasks/:id` endpoint that removes the task file and emits the
-    existing `task.deleted` SSE event (returns 404 for unknown id, 4xx for a
-    guarded failure)
+  existing `task.deleted` SSE event (returns 404 for unknown id, 4xx for a
+  guarded failure)
 - [ ] Delete button in the task drawer, danger-styled, with a confirmation step
 - [ ] After delete: drawer closes, task disappears from board/dashboard counts,
-    feed shows a deleted entry, other connected clients update live
+  feed shows a deleted entry, other connected clients update live
 - [ ] Deleting does not crash when the file is already gone (idempotent 404)
 - [ ] `ros check` passes
 
@@ -46,12 +46,12 @@ watcher path already does.
 
 - The plumbing mostly exists — reuse it, don't rebuild it:
 - SSE `task.deleted` is already emitted by the file watcher
-  (`src/server/live-index.ts` `applyFileDelete`) and handled in the UI store
-  (`src/ui-app/src/stores/repo.ts:110` — removes the task, pushes a red
-  "deleted" feed entry).
+(`src/server/live-index.ts` `applyFileDelete`) and handled in the UI store
+(`src/ui-app/src/stores/repo.ts:110` — removes the task, pushes a red
+"deleted" feed entry).
 - The gap is the write side: `src/server/write.ts` has `patchTaskFile` but no
-  delete helper, and `src/server/server.ts` has no `DELETE` route (see the
-  task handlers around server.ts:278-339).
+delete helper, and `src/server/server.ts` has no `DELETE` route (see the
+task handlers around server.ts:278-339).
 - New helper should `unlink` the task file (check it stays inside `work/`, mirror
 the path-guard used by `safeRepoFile`/patch), update the in-memory index, and
 emit `task.deleted`. Watch for double-emission: the file watcher may also fire

@@ -46,18 +46,18 @@ right task count — weaker than the original ordering guarantee, but honest.
 ## Real fix options (pick one)
 
 1. **Deterministic delay injection** — give `LiveIndex`/`buildIndexAsync` (or
- `startServer`'s options) a test-only seam to inject an artificial delay
- into the async build, so the race has a guaranteed winner independent of
- runtime speed, OS caching, or hardware. Cleanest, but touches
- production code paths (even if only to add an optional override).
+`startServer`'s options) a test-only seam to inject an artificial delay
+into the async build, so the race has a guaranteed winner independent of
+runtime speed, OS caching, or hardware. Cleanest, but touches
+production code paths (even if only to add an optional override).
 2. **Restructure `startServer` to call `listen()` immediately** after kicking
- off `refreshAllAsync()`, with zero intervening `await`s — makes the
- ordering a structural guarantee (synchronous call order) rather than a
- race, no test changes needed at all. Bigger, riskier change: the ~23
- awaits between them likely do real setup (auth config, route wiring, port
- resolution) that may need to move to run concurrently with or after
- `listen()` instead of before it — needs careful review of what actually
- must happen before the port opens vs what's safe to defer.
+off `refreshAllAsync()`, with zero intervening `await`s — makes the
+ordering a structural guarantee (synchronous call order) rather than a
+race, no test changes needed at all. Bigger, riskier change: the ~23
+awaits between them likely do real setup (auth config, route wiring, port
+resolution) that may need to move to run concurrently with or after
+`listen()` instead of before it — needs careful review of what actually
+must happen before the port opens vs what's safe to defer.
 
 Either way, re-verify under BOTH `bunx vitest run` (Node) and `bun run --bun
 vitest` (Bun) before calling it done — this bug only manifests on the fast

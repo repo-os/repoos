@@ -27,9 +27,9 @@ order dropdown** in the header action row (before the "New task" button's
 group, same flex row). Its behavior is a two-state toggle:
 
 1. **If at least one empty column is currently expanded** → clicking collapses
- every empty column at once. Columns containing tasks are left untouched.
+every empty column at once. Columns containing tasks are left untouched.
 2. **If all empty columns are already collapsed** → clicking instead expands
- **all** columns (empty and non-empty), restoring the full board.
+**all** columns (empty and non-empty), restoring the full board.
 
 The result is a single button that lets the user snap between "focus on
 columns with tasks" and "show everything". The change takes effect immediately

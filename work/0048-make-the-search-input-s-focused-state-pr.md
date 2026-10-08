@@ -36,19 +36,19 @@ working, and the dark default theme should keep its existing accent colors.
 ## Acceptance criteria
 
 - [ ] The focused/active state of the global search input no longer uses the
-    hard boxed look (solid border change + 1px outline ring via
-    `box-shadow: 0 0 0 1px …`)
+hard boxed look (solid border change + 1px outline ring via
+`box-shadow: 0 0 0 1px …`)
 - [ ] Focus is still clearly visible: the input is obviously active at a
-    glance, using a soft glow / accent tint / rounded pill treatment built
-    from existing CSS variables (e.g. `--cyan-dim`, `--border`, `--panel`)
+glance, using a soft glow / accent tint / rounded pill treatment built
+from existing CSS variables (e.g. `--cyan-dim`, `--border`, `--panel`)
 - [ ] The selected/focused state is noticeably less boxy than today (larger
-    radius and/or softer boundary), consistent with existing pill-shaped
-    elements in the UI
+radius and/or softer boundary), consistent with existing pill-shaped
+elements in the UI
 - [ ] Unfocused appearance is unchanged or only minimally adjusted; no
-    regression to layout or the 380px flex sizing of `.search-wrap`
+regression to layout or the 380px flex sizing of `.search-wrap`
 - [ ] Existing theme overrides keep working: `[data-ui-theme="clear"]`
-    (~line 646) and `[data-ui-theme="gen z"]` (~lines 753-754) in
-    `src/ui-app/src/style.css`
+(~line 646) and `[data-ui-theme="gen z"]` (~lines 753-754) in
+`src/ui-app/src/style.css`
 - [ ] ⌘K select-on-focus, keyboard navigation, and dropdown behavior unchanged
 - [ ] `repoos check` passes; no new runtime dependencies
 

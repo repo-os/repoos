@@ -57,54 +57,54 @@ the Activity log.
 ## Acceptance criteria
 
 - [ ] A pure, unit-tested server-side predicate (no LLM call) decides whether a
-    task is under-specified. It treats a task as under-specified when any of
-    these hold:
+  task is under-specified. It treats a task as under-specified when any of
+  these hold:
 - the body is missing one or more of `## Problem`, `## Desired UX`,
-  `## Acceptance criteria`, `## Notes for AI`;
+`## Acceptance criteria`, `## Notes for AI`;
 - the body has no substantive content outside a `## Original prompt`
-  section (the un-fleshed-out freeform draft case);
+section (the un-fleshed-out freeform draft case);
 - the body (excluding `## Original prompt`) is shorter than a small
-  threshold — assumption: 400 characters;
+threshold — assumption: 400 characters;
 - required headings exist but are empty, or the body still contains unfilled
-  placeholder markers (`TODO`, `TBD`, `<placeholder>`).
+placeholder markers (`TODO`, `TBD`, `<placeholder>`).
 - [ ] The flag is raised with a new machine-readable
-    `needs_input_reason` of `underspecified` and a
-    `needs_input_detail` naming the signals that tripped (e.g.
-    `missing sections: Desired UX, Acceptance criteria; body is only the
-    original prompt`).
+  `needs_input_reason` of `underspecified` and a
+  `needs_input_detail` naming the signals that tripped (e.g.
+  `missing sections: Desired UX, Acceptance criteria; body is only the
+  original prompt`).
 - [ ] The flag is raised on a status change **out of** `draft` to any status
-    (`inbox`, `ready`, and anything else), on the `PATCH /api/tasks/:id`
-    path — after the status write, and it is not cleared by that same write.
+  (`inbox`, `ready`, and anything else), on the `PATCH /api/tasks/:id`
+  path — after the status write, and it is not cleared by that same write.
 - [ ] The flag is raised on the freeform PM paths too: when a PM flesh-out run
-    fails (the existing `recordFreeformFailure` branch in
-    `finalizeFreeformRun`), and when it "succeeds" but the body it wrote still
-    trips the predicate.
+  fails (the existing `recordFreeformFailure` branch in
+  `finalizeFreeformRun`), and when it "succeeds" but the body it wrote still
+  trips the predicate.
 - [ ] The flag never clobbers an existing `needs_input` that was raised for a
-    different reason (`dev-error`, `watchdog-stuck`, `cto-escalation`,
-    questions, `review-failed`, …). Those keep their reason and detail.
+  different reason (`dev-error`, `watchdog-stuck`, `cto-escalation`,
+  questions, `review-failed`, …). Those keep their reason and detail.
 - [ ] The new reason is registered in all four copy maps in
-    `src/ui-app/src/lib/needs-input-ui.ts` (status label, banner text,
-    suggestion text, primary action) with a new primary-action kind for
-    "send to PM", so the card status line, header chip, drawer banner and
-    Needs You panel all say the same thing.
+  `src/ui-app/src/lib/needs-input-ui.ts` (status label, banner text,
+  suggestion text, primary action) with a new primary-action kind for
+  "send to PM", so the card status line, header chip, drawer banner and
+  Needs You panel all say the same thing.
 - [ ] The banner's primary action posts the existing canned
-    "Can you flesh this out?" message to the existing PM message route
-    (`POST /api/tasks/:id/pm`), clears `needs_input` on success, and switches
-    the drawer to the PM tab. No new PM code path, no second prompt string.
+  "Can you flesh this out?" message to the existing PM message route
+  (`POST /api/tasks/:id/pm`), clears `needs_input` on success, and switches
+  the drawer to the PM tab. No new PM code path, no second prompt string.
 - [ ] The action button is disabled/hidden when the response is not ok (PM not
-    configured, PM busy) and the error is surfaced as a toast; no silent
-    no-op.
+  configured, PM busy) and the error is surfaced as a toast; no silent
+  no-op.
 - [ ] `needsInputClearsOnSuccessfulReview` is **not** extended to the new
-    reason — a successful reviewer run must not silently clear
-    `underspecified`.
+  reason — a successful reviewer run must not silently clear
+  `underspecified`.
 - [ ] Dismiss still clears the new reason (existing
-    `POST /api/tasks/:id/dismiss-needs-input` → `dismissNeedsInputOnTask`
-    behaviour), and the activity entry names it.
+  `POST /api/tasks/:id/dismiss-needs-input` → `dismissNeedsInputOnTask`
+  behaviour), and the activity entry names it.
 - [ ] Tests: pure-predicate unit tests (each signal, and a well-formed task
-    that is NOT flagged); a server test that a `draft` → `ready` PATCH raises
-    the flag and leaves the status change in place; a server test that an
-    existing `dev-error` flag is not overwritten; a UI test for the new status
-    label, banner text and the "Send to PM" primary action wiring.
+  that is NOT flagged); a server test that a `draft` → `ready` PATCH raises
+  the flag and leaves the status change in place; a server test that an
+  existing `dev-error` flag is not overwritten; a UI test for the new status
+  label, banner text and the "Send to PM" primary action wiring.
 
 ## Notes for AI
 

@@ -48,12 +48,12 @@ fits a primitive cleanly).
 ## Acceptance criteria
 
 - [ ] shadcn-vue installed and its tokens mapped to the existing theme
-    variables (no default-look shadcn styling visible anywhere)
+variables (no default-look shadcn styling visible anywhere)
 - [ ] TaskDrawer uses an accessible dialog primitive (focus trap, Esc, overlay)
 - [ ] Status/priority controls use an accessible select/combobox
 - [ ] Toggles, inputs, and buttons use the primitives with matching visuals
 - [ ] Existing screens look and behave the same (compare against current
-    screenshots/`bun run compare` oracle), zero console errors
+screenshots/`bun run compare` oracle), zero console errors
 - [ ] `ros check` passes
 
 ## Notes for AI

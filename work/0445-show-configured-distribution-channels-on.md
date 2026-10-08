@@ -39,15 +39,15 @@ navigation page.
 For RepoOS itself, show exactly these three configured destinations:
 
 1. **GitHub Releases (curl)** — link to the GitHub release and provide the
- standalone installer command:
- `curl -fsSL https://repoos.org/install | bash`
+standalone installer command:
+`curl -fsSL https://repoos.org/install | bash`
 2. **npm** — link to `@repo-os/repoos`, show the published version/status, and
- offer the install commands for npm, Bun, pnpm, and mise:
- `npm install -g @repo-os/repoos`, `bun add -g @repo-os/repoos`,
- `pnpm add -g @repo-os/repoos`, and `mise use -g npm:@repo-os/repoos`.
+offer the install commands for npm, Bun, pnpm, and mise:
+`npm install -g @repo-os/repoos`, `bun add -g @repo-os/repoos`,
+`pnpm add -g @repo-os/repoos`, and `mise use -g npm:@repo-os/repoos`.
 3. **Homebrew** — link to the RepoOS tap/formula, show the formula
- version/status, and provide:
- `brew install repo-os/tap/repoos`.
+version/status, and provide:
+`brew install repo-os/tap/repoos`.
 
 Each command is independently copyable. A release should make the channel
 state easy to scan: published and matching, pending/unavailable, failed, or

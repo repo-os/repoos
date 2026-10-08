@@ -34,11 +34,11 @@ anywhere else it's appropriate and useful.
 - [ ] An equivalent `?input=<id>` / `?input=new` pattern works for inputs.
 - [ ] `/settings?setting=<id>` opens/scrolls to that setting.
 - [ ] Existing `?focus=` deep-linking into settings keeps working (add/alias
-    `?setting=`, don't replace or break `?focus=`).
+`?setting=`, don't replace or break `?focus=`).
 - [ ] The query param is cleared from the URL after the panel opens (matches
-    existing `router.replace` clear pattern), so a refresh doesn't re-open it.
+existing `router.replace` clear pattern), so a refresh doesn't re-open it.
 - [ ] Params work correctly even when they arrive during/before the login
-    redirect (survive the auth round-trip).
+redirect (survive the auth round-trip).
 
 ## Notes for AI
 

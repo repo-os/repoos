@@ -95,23 +95,23 @@ sensibly for non-CLI projects or scope a fix.
 ## Acceptance criteria
 
 - [ ] `ui-smoke` skips cleanly (`✔ ui-smoke — skipped — no smoke command
-    configured`, or similar wording matching the existing skip-message
-    style) for a project with no smoke command declared.
+configured`, or similar wording matching the existing skip-message
+style) for a project with no smoke command declared.
 - [ ] A project can declare a smoke command via a `package.json` script
-    (well-known name, matching existing script-detection conventions) and
-    have `check` run it instead of RepoOS's own dashboard assertions.
+(well-known name, matching existing script-detection conventions) and
+have `check` run it instead of RepoOS's own dashboard assertions.
 - [ ] `repoos.toml`'s `[check]` section can override the package.json
-    declaration when both are present.
+declaration when both are present.
 - [ ] RepoOS's own repo still gets its existing ui-smoke coverage (board
-    renders, no console errors, css-layers spacing invariant, etc.) —
-    whether via special-case or by dogfooding the new declaration
-    mechanism, per the note above.
+renders, no console errors, css-layers spacing invariant, etc.) —
+whether via special-case or by dogfooding the new declaration
+mechanism, per the note above.
 - [ ] No previously-passing project's `repoos check` newly fails because of
-    this change.
+this change.
 - [ ] Audit findings for `css-layers`/`theme-contrast`,
-    `bare-require`/`task-assets`/`lockfile-sync`, and the build-info
-    staleness marker are recorded (in this task or as linked follow-up
-    tasks), even if no code changes result from some of them.
+`bare-require`/`task-assets`/`lockfile-sync`, and the build-info
+staleness marker are recorded (in this task or as linked follow-up
+tasks), even if no code changes result from some of them.
 - [ ] `repoos check` passes.
 
 ## Related

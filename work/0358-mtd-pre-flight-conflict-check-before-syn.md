@@ -88,24 +88,24 @@ optimization.
 ## Acceptance criteria
 
 - [ ] A task whose branch has a real, non-auto-resolvable conflict against
-    current main is routed to the `onMergeConflict` repair engineer WITHOUT
-    a candidate worktree ever being created for that job attempt.
+current main is routed to the `onMergeConflict` repair engineer WITHOUT
+a candidate worktree ever being created for that job attempt.
 - [ ] A task whose branch merges cleanly, or only touches auto-resolvable
-    paths (dist/, screenshots/, its own work file, other tasks' work
-    files), proceeds through the full existing `syncCandidate` →
-    `validateCandidate` flow with no behavior change.
+paths (dist/, screenshots/, its own work file, other tasks' work
+files), proceeds through the full existing `syncCandidate` →
+`validateCandidate` flow with no behavior change.
 - [ ] The conflict-classification logic lives in exactly one place (reused
-    by both the pre-flight check and the real merge), not duplicated.
+by both the pre-flight check and the real merge), not duplicated.
 - [ ] A pre-flight check failure (git error, missing worktree, timeout) falls
-    back to the existing flow rather than blocking the job.
+back to the existing flow rather than blocking the job.
 - [ ] No regression in #0276 (self-resolving staleness absorption), #0216
-    (two-attempt validate retry/classification), or #0271 (merge-conflict
-    auto-repair itself) — these are all orthogonal to this task and their
-    existing tests must keep passing unchanged.
+(two-attempt validate retry/classification), or #0271 (merge-conflict
+auto-repair itself) — these are all orthogonal to this task and their
+existing tests must keep passing unchanged.
 - [ ] Tests cover: real-conflict pre-flight (no worktree created, repair
-    triggered), auto-resolvable-only pre-flight (normal flow proceeds),
-    clean branch (normal flow proceeds), and pre-flight-check-itself-fails
-    (falls back to existing flow).
+triggered), auto-resolvable-only pre-flight (normal flow proceeds),
+clean branch (normal flow proceeds), and pre-flight-check-itself-fails
+(falls back to existing flow).
 - [ ] `repoos check` passes.
 
 ## Related

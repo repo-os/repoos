@@ -42,7 +42,7 @@ same as it already does for `status` and `title` changes.
 - [ ] `created_at`, `updated_at` are added
 - [ ] Existing diff tests still pass (none should break — these are additive)
 - [ ] Manual verification: set `needsInput: true` in a task file, confirm
-    the UI updates via SSE without a page refresh
+the UI updates via SSE without a page refresh
 - [ ] `repoos check` passes
 
 ## Notes for AI

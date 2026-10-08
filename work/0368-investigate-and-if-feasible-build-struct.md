@@ -66,20 +66,20 @@ documenting that and closing it, not building unused plumbing.
 Three layers, in dependency order:
 
 1. **Per-driver parsing** that recognizes the CLI's native elicitation event
- (whatever form investigation finds) and normalizes it to one internal
- shape RepoOS controls — a question, a list of options (with an
- `allowFreeform`/"Other" flag), matching the loose shape of this
- conversation's own `AskUserQuestion` tool as a reference, not a spec to
- copy verbatim.
+(whatever form investigation finds) and normalizes it to one internal
+shape RepoOS controls — a question, a list of options (with an
+`allowFreeform`/"Other" flag), matching the loose shape of this
+conversation's own `AskUserQuestion` tool as a reference, not a spec to
+copy verbatim.
 2. **Wire it back**: the agent process is waiting on this answer the same
- way it waits on any stdin turn today — the click needs to become the next
- input to the SAME running session (reuse whatever `AgentRunner.send()` /
- session-resume path already exists; do not build a second, parallel
- send-a-message mechanism).
+way it waits on any stdin turn today — the click needs to become the next
+input to the SAME running session (reuse whatever `AgentRunner.send()` /
+session-resume path already exists; do not build a second, parallel
+send-a-message mechanism).
 3. **New chat UI** — a distinct bubble type in the task's chat feed (PM tab,
- engineer tab, wherever an agent can ask) rendering the question and
- clickable options plus a free-text field, sending the choice back through
- step 2's path on click.
+engineer tab, wherever an agent can ask) rendering the question and
+clickable options plus a free-text field, sending the choice back through
+step 2's path on click.
 
 ## Fallback for CLIs without native support
 
@@ -92,17 +92,17 @@ that some drivers get left behind by.
 ## Acceptance criteria
 
 - [ ] Documented findings, per driven CLI, on whether a structured
-    elicitation primitive exists in its headless/machine-readable output,
-    with evidence (not inference) for each.
+   elicitation primitive exists in its headless/machine-readable output,
+   with evidence (not inference) for each.
 - [ ] If feasible for at least one CLI: that CLI's structured questions
-    render as clickable options + free-text in the relevant task chat tab,
-    and the human's choice reaches the agent's running session correctly.
+   render as clickable options + free-text in the relevant task chat tab,
+   and the human's choice reaches the agent's running session correctly.
 - [ ] CLIs without native support are unaffected — plain-text chat Q&A keeps
-    working exactly as before.
+   working exactly as before.
 - [ ] If infeasible for every CLI, the task closes with the investigation
-    findings recorded (in this task or linked docs) rather than staying
-    open indefinitely or being force-built on a CLI that doesn't actually
-    support it.
+   findings recorded (in this task or linked docs) rather than staying
+   open indefinitely or being force-built on a CLI that doesn't actually
+   support it.
 - [ ] `repoos check` passes.
 
 ## Related

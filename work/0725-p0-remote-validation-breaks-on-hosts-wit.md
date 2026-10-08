@@ -47,9 +47,9 @@ URGENT: this blocks all remote validation on this board. Read #0717's diff (src/
 ```json
 [
 {
-  "label": "Remote runners tab",
-  "target": "default",
-  "route": "/checks?tab=remote-runners"
+"label": "Remote runners tab",
+"target": "default",
+"route": "/checks?tab=remote-runners"
 }
 ]
 ```

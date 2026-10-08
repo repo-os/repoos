@@ -45,19 +45,19 @@ remembered per column across reloads.
 ## Acceptance criteria
 
 - [ ] Column card bodies scroll independently (own `overflow-y`) on desktop;
-    the page header, New task button, and all column headers remain pinned —
-    scrolling a long column no longer scrolls the top matter away
+the page header, New task button, and all column headers remain pinned —
+scrolling a long column no longer scrolls the top matter away
 - [ ] Proposed / Drafts is the leftmost column (left of Inbox) with its gray
-    dot, "Proposed / Drafts" label, live count, and empty-state hint; the
-    below-board `.draft-section` is gone
+dot, "Proposed / Drafts" label, live count, and empty-state hint; the
+below-board `.draft-section` is gone
 - [ ] Clicking a column header toggles collapse/expand; collapsed shows a slim
-    colored bar with the status dot + name + live count; cards are hidden
-    while collapsed
+colored bar with the status dot + name + live count; cards are hidden
+while collapsed
 - [ ] Collapse state persists per column across reloads (e.g. localStorage)
 - [ ] Open columns keep today's card behavior (click → task drawer) and empty
-    state ("—" / drafts hint)
+state ("—" / drafts hint)
 - [ ] Graceful on small screens: the board still stacks to one column and the
-    page can scroll normally; collapse toggle still works
+page can scroll normally; collapse toggle still works
 - [ ] `repoos check` passes; no new runtime dependencies
 
 ## Notes for AI

@@ -41,11 +41,11 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 ```json
 [
 {
-  "label": "Sidebar build widget shows version + short build hash",
-  "target": "default",
-  "route": "/",
-  "selector": ".build-widget",
-  "highlight": ".build-widget"
+"label": "Sidebar build widget shows version + short build hash",
+"target": "default",
+"route": "/",
+"selector": ".build-widget",
+"highlight": ".build-widget"
 }
 ]
 ```

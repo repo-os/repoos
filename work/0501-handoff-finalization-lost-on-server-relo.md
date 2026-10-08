@@ -44,20 +44,20 @@ step anyway. That's separate from the bug but worth a clearer message.
 ## Fix (three parts, one incident)
 
 1. **Survive reload mid-finalization (root cause).** The persisted pending
- handoff (#0235, `persistPendingHandoff` / boot recovery in
- `src/server/agents.ts`) must stay on disk until finalization reaches a
- terminal result (ok or a recorded failure), not be cleared when it starts.
- On boot, a handoff whose finalization never finished is re-fired. The
- reload handover should also either wait for in-flight handoff finalizations
- or rely on this recovery explicitly.
+handoff (#0235, `persistPendingHandoff` / boot recovery in
+`src/server/agents.ts`) must stay on disk until finalization reaches a
+terminal result (ok or a recorded failure), not be cleared when it starts.
+On boot, a handoff whose finalization never finished is re-fired. The
+reload handover should also either wait for in-flight handoff finalizations
+or rely on this recovery explicitly.
 2. **CTO / watchdog must not treat an in-flight or pending handoff as idle.**
- Skip the idle nudge while `runner.isHandoffInFlight(id)` or a pending
- handoff exists (`src/server/cto.ts`, `src/server/task-watchdog.ts`).
+Skip the idle nudge while `runner.isHandoffInFlight(id)` or a pending
+handoff exists (`src/server/cto.ts`, `src/server/task-watchdog.ts`).
 3. **Honest failure detail.** When an agent exit is escalated while/after a
- finalization never produced a result, the dev-error detail should say so
- (e.g. "handoff finalization was interrupted (server reload) — restart work
- to hand off again"), not echo a progress line like `Server finalization:
- check`. Progress lines should not be picked as the failure reason.
+finalization never produced a result, the dev-error detail should say so
+(e.g. "handoff finalization was interrupted (server reload) — restart work
+to hand off again"), not echo a progress line like `Server finalization:
+check`. Progress lines should not be picked as the failure reason.
 
 ## Acceptance
 

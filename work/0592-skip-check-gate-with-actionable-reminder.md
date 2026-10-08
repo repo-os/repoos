@@ -17,7 +17,7 @@ updated_at: "2026-09-30T04:44:35Z"
 
 In a repo that has no code yet (early planning phase: stories/tasks/docs only), finalization fails at the check step:
 
-  ✗ Server finalization stopped at check: repoos check failed: ... No check plan: this repo declares no [[check.steps]] and nothing could be inferred from it ...
+✗ Server finalization stopped at check: repoos check failed: ... No check plan: this repo declares no [[check.steps]] and nothing could be inferred from it ...
 
 Every handoff to review is blocked until the user invents checks for code that doesn't exist. Reported from the `neung` repo on the canary.
 

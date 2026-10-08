@@ -35,14 +35,14 @@ no bytes exist to render.
 Two knock-on effects:
 
 1. **The stall/telemetry work from 0080 is blind on claude code.** Its
- quiet/may-be-stalled warning keys off `agent.output` arrival, and claude
- code emits nothing until exit — so every claude run looks "quiet" for its
- whole duration.
+quiet/may-be-stalled warning keys off `agent.output` arrival, and claude
+code emits nothing until exit — so every claude run looks "quiet" for its
+whole duration.
 2. **`extractUsage` (added by 0080) cannot see claude's numbers.**
- `tokensFromObject` reads `obj.usage`, but claude nests it at
- `message.usage` on `assistant` events, and reports authoritative totals on
- a final `result` event. So token/cost counters stay empty for claude code
- even though the CLI reports both precisely.
+`tokensFromObject` reads `obj.usage`, but claude nests it at
+`message.usage` on `assistant` events, and reports authoritative totals on
+a final `result` event. So token/cost counters stay empty for claude code
+even though the CLI reports both precisely.
 
 `session_id` is also still regex-scraped for claude (`SESSION_ID_PATTERNS`)
 even though the stream emits it as a real field.
@@ -78,9 +78,9 @@ user                   -> message.content[] = [{"type":"tool_result","tool_use_i
 assistant              -> message.content[] = [{"type":"text","text":"Hello world greeting."}]
 system/post_turn_summary
 result/success         -> {"type":"result","subtype":"success","is_error":false,"num_turns":2,
-                         "duration_ms":4677,"total_cost_usd":0.0731223,"result":"Hello world greeting.",
-                         "usage":{"input_tokens":4,"output_tokens":91,
-                                  "cache_creation_input_tokens":9403,"cache_read_input_tokens":49071,…}}
+                        "duration_ms":4677,"total_cost_usd":0.0731223,"result":"Hello world greeting.",
+                        "usage":{"input_tokens":4,"output_tokens":91,
+                                 "cache_creation_input_tokens":9403,"cache_read_input_tokens":49071,…}}
 ```
 
 Notes that matter:
@@ -99,30 +99,30 @@ without breaking the parse loop.
 ## Acceptance criteria
 
 - [ ] The claude driver passes `--output-format stream-json --verbose` on
-    **both** the first-turn command (`cliCommand`) and the resume command
-    (`resumeCommand`) in `src/server/agents.ts`.
+   **both** the first-turn command (`cliCommand`) and the resume command
+   (`resumeCommand`) in `src/server/agents.ts`.
 - [ ] A claude-specific parser branch maps the events above onto the existing
-    `AgentOutputEntry` shapes: `assistant` text -> `text`, `tool_use` ->
-    `tool` (name + input), `tool_result` -> that tool entry's output,
-    step/summary events -> `step` or `sys`. Unrecognised events and
-    non-JSON lines fall back to the existing plain-line path.
+   `AgentOutputEntry` shapes: `assistant` text -> `text`, `tool_use` ->
+   `tool` (name + input), `tool_result` -> that tool entry's output,
+   step/summary events -> `step` or `sys`. Unrecognised events and
+   non-JSON lines fall back to the existing plain-line path.
 - [ ] The session engine is no longer a two-value `"opencode" | "plain"`
-    switch that routes claude to the plain path — claude gets its own
-    branch in `appendLine` (`session.engine`, set in `start`).
+   switch that routes claude to the plain path — claude gets its own
+   branch in `appendLine` (`session.engine`, set in `start`).
 - [ ] `session_id` for claude comes from the `system/init` event, not
-    `SESSION_ID_PATTERNS` regex scraping. Resume (`--resume <id>`) still
-    works across turns — verify with a real follow-up chat message.
+   `SESSION_ID_PATTERNS` regex scraping. Resume (`--resume <id>`) still
+   works across turns — verify with a real follow-up chat message.
 - [ ] `extractUsage` picks up claude's numbers: `message.usage` on assistant
-    events, and `total_cost_usd` + `usage` on the terminal `result` event.
-    Cache-token fields are handled deliberately (documented choice), never
-    silently summed into the headline token count.
+   events, and `total_cost_usd` + `usage` on the terminal `result` event.
+   Cache-token fields are handled deliberately (documented choice), never
+   silently summed into the headline token count.
 - [ ] Fixture tests in `src/ui-app/tests/agent-drivers.test.ts` assert the new
-    flags on first turn and resume; parser unit tests cover each event shape
-    above **using the captured payloads in this task file**, including the
-    non-JSON warning line falling back cleanly.
+   flags on first turn and resume; parser unit tests cover each event shape
+   above **using the captured payloads in this task file**, including the
+   non-JSON warning line falling back cleanly.
 - [ ] Verified with a **real** claude code agent turn against a running
-    server — not only unit tests: confirm the Agent tab fills in live during
-    the run, and that token/cost counters populate.
+   server — not only unit tests: confirm the Agent tab fills in live during
+   the run, and that token/cost counters populate.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

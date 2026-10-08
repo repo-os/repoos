@@ -57,24 +57,24 @@ session is confirmed exited/stopped.
 ## Acceptance criteria
 
 - [x] The Agent tab reuses the activity indicator from 0049 while the agent is
-    working and does not add a competing animation implementation.
+working and does not add a competing animation implementation.
 - [x] A time-spent counter counts up live while the agent works and keeps
-    accumulating across turns (follow-up chat messages add to the same
-    running total rather than resetting it).
+accumulating across turns (follow-up chat messages add to the same
+running total rather than resetting it).
 - [x] Token and cost counters increase live as new agent output arrives,
-    sourced from usage/cost data in the agent's own output where the CLI
-    reports it.
+sourced from usage/cost data in the agent's own output where the CLI
+reports it.
 - [x] When a metric is unavailable (CLI emits no usage data), that counter is
-    hidden or shows "—" — never `undefined`, `NaN`, or a fabricated number.
+hidden or shows "—" — never `undefined`, `NaN`, or a fabricated number.
 - [x] Opening any task whose status is `active` or `review` defaults to the
-    Agent tab; opening tasks in other statuses still defaults to Details.
+Agent tab; opening tasks in other statuses still defaults to Details.
 - [x] Counters and the animation also work while the task sits in `review`
-    (logs/chat persist there per 0053).
+(logs/chat persist there per 0053).
 - [x] If 90 seconds pass with no new `agent.output` event while the runner
-    still considers the task running, the UI surfaces a clear, non-definitive
-    quiet/may-be-stalled alert distinct from the normal working state.
+still considers the task running, the UI surfaces a clear, non-definitive
+quiet/may-be-stalled alert distinct from the normal working state.
 - [x] The stalled alert clears automatically once new output arrives, or
-    once the session is confirmed exited/stopped.
+once the session is confirmed exited/stopped.
 - [x] Zero console errors in the UI; `repoos check` passes.
 
 ## Notes for AI

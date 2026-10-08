@@ -33,19 +33,19 @@ upper-right spot, carrying a meaningful tooltip such as
 ## Acceptance criteria
 
 - [ ] While connected (`connected === true` in the repo store), no green
-    "live" pill/dot/text renders in the top bar.
+  "live" pill/dot/text renders in the top bar.
 - [ ] When the connection drops, a red indicator appears in the top bar's
-    upper-right area (same position as the old "live" pill).
+  upper-right area (same position as the old "live" pill).
 - [ ] The red indicator has a meaningful tooltip reading "Server is
-    disconnected" (or equivalent wording).
+  disconnected" (or equivalent wording).
 - [ ] On reconnect, the red indicator is removed again — it is only ever
-    visible while disconnected.
+  visible while disconnected.
 - [ ] The initial "loading" connection state is treated the same as
-    connected: no indicator shown.
+  connected: no indicator shown.
 - [ ] The indicator remains accessible when shown (screen-reader label /
-    `aria-label` reflecting the disconnected state).
+  `aria-label` reflecting the disconnected state).
 - [ ] `bun run build:ui` (or full `bun run build`) passes and the UI smoke
-    test is clean.
+  test is clean.
 
 ## Notes for AI
 
@@ -59,12 +59,12 @@ repo store (`src/ui-app/src/stores/repo.ts`).
 No store changes expected.
 - **Stated assumptions:**
 - Tooltip wording "Server is disconnected" is used; exact copy may be
-  tweaked slightly as long as it is meaningful.
+tweaked slightly as long as it is meaningful.
 - The `loading` state is hidden too (the user's ask implies no indicator
-  unless something is wrong; a flash of "loading" on every page load would
-  defeat that).
+unless something is wrong; a flash of "loading" on every page load would
+defeat that).
 - The disconnected indicator is non-interactive (tooltip only, no click
-  action) — no retry button was requested.
+action) — no retry button was requested.
 - **Do NOT touch** the other places that surface connection state:
 `Sidebar.vue` ("server connected" row) and `FeedPanel.vue`
 ("connected / reconnecting" label) are out of scope for this task.

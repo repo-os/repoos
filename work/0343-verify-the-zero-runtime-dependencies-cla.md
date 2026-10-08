@@ -18,7 +18,7 @@ and claimed publicly on the repoos.org landing page ("the supply chain you ship
 is the one you read"). But `package.json` currently has a non-empty
 `dependencies`:
 
- "dependencies": { "mermaid": "^11.17.2" }
+"dependencies": { "mermaid": "^11.17.2" }
 
 ## What to check
 
@@ -41,8 +41,8 @@ imports mermaid at runtime, and that `dist/ui` genuinely carries the bundled
 copy.
 2. If confirmed, move it to `devDependencies` and verify end to end:
 - `bun run build` still produces working mermaid rendering in the UI
-  (render a task with a ```mermaid block and confirm the diagram appears —
-  `repoos check`'s UI smoke test will NOT catch a regression here).
+ (render a task with a ```mermaid block and confirm the diagram appears —
+ `repoos check`'s UI smoke test will NOT catch a regression here).
 - A clean install from the built package doesn't fetch mermaid.
 - `repoos check` passes.
 3. If it genuinely IS needed at runtime, then the claim is wrong rather than

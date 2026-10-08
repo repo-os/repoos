@@ -18,19 +18,19 @@ Concretely: the close-out **merge/validation step** reported a source conflict e
 just confirmed main was clean. A clean main must never produce a merge conflict on Move to done — if it
 does, one of two things went wrong and each is a bug:
 1. the conflict is in a path the close-out is *supposed* to auto-resolve (the task's own file, `dist/`,
- `screenshots/`, or any other `work/` task file), but auto-resolution silently failed; or
+`screenshots/`, or any other `work/` task file), but auto-resolution silently failed; or
 2. the tree the merge saw was **not** the tree the user verified — a real second-order change landed in
- the window between the user's clean check and the merge (dirty `dist`, a concurrent task edit, or a
- stale candidate).
+the window between the user's clean check and the merge (dirty `dist`, a concurrent task edit, or a
+stale candidate).
 
 ## Root-cause analysis (PM pass, 2026-08-24)
 The live review→done path is `CloseOutOrchestrator` in `src/server/integration-orchestrator.ts`
 (`done.ts`'s `completeTask` is the legacy path, still exercised only by tests). The merge itself happens
 in `validateCandidate` at `integration-orchestrator.ts:464`:
 
-  mergeBranch(wtPath, featureBranch, { autoResolve, autoResolveOurs })
-    autoResolve   = ["dist/", "screenshots/", work/<task-file>.md]
-    autoResolveOurs = ["work/"]
+ mergeBranch(wtPath, featureBranch, { autoResolve, autoResolveOurs })
+   autoResolve   = ["dist/", "screenshots/", work/<task-file>.md]
+   autoResolveOurs = ["work/"]
 
 The candidate worktree is `git reset --hard main`-ed during `syncCandidate`, so the only way the merge
 conflicts is if the **feature branch and main disagree** on a path not covered by auto-resolve, OR if the
@@ -54,27 +54,27 @@ auto-handling that pattern.
 Investigate and fix the root cause so a clean main never conflicts on merge. Expected scope:
 1. **Reproduce** the conflict deterministically (see Reproduction below).
 2. **Tighten auto-resolve** so the closing task's bookkeeping can never resurface as a hard conflict, and
- log when a non-auto-resolvable path legitimately blocks so the debugger gets the real culprit, not the
- task file.
+log when a non-auto-resolvable path legitimately blocks so the debugger gets the real culprit, not the
+task file.
 3. **Confirm the candidate/merge sees a truly clean, up-to-date main** at merge time — no second-order
- window between validation and publish.
+window between validation and publish.
 4. **Do not rely on the debugger detour** for a known self-resolving staleness pattern — that is #0276.
 
 ## Reproduction
 1. Create a branch-mode task, land a real source change on both the branch AND independent main changes
- (a CTO/DM nudge or another task's `work/` edit) so main and the branch diverge.
+(a CTO/DM nudge or another task's `work/` edit) so main and the branch diverge.
 2. Leave the task's own file with review-activity bookkeeping newer on main than on the branch.
 3. Move to done, verify main is clean right before the click.
 4. Observe the merge/validation step report a conflict (and whether it is pinned on the task file or a
- real source file). A clean main + only-task-file divergence should never reach the debugger.
+real source file). A clean main + only-task-file divergence should never reach the debugger.
 
 ## Acceptance criteria
 - [ ] Move to done on a task whose only divergence from a clean main is its own/task-file bookkeeping
-    completes (fast-forward or auto-resolved merge), never a "merge conflict" card.
+   completes (fast-forward or auto-resolved merge), never a "merge conflict" card.
 - [ ] A genuine competing source change on main still fails loudly, pinning the **real** conflicting path
-    (not the task file).
+   (not the task file).
 - [ ] No regression in the #0130 already-integrated retry, #0204 dirty/lock guards, or #0211 dirty-main
-    fail-closed checks.
+   fail-closed checks.
 - [ ] `repoos check` passes after the fix.
 
 ## Notes

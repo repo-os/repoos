@@ -41,26 +41,26 @@ running, so stale or custom clients cannot bypass the UI guard.
 ## Acceptance criteria
 
 - [ ] Work cards display an animated `Reviewing…` state when the automatic
-    reviewer is running for that task.
+reviewer is running for that task.
 - [ ] The task drawer shows the same state near the review report/action area,
-    including accessible status text (`role=status` or equivalent).
+including accessible status text (`role=status` or equivalent).
 - [ ] **Move to done** is disabled while automatic review is running and gives
-    a clear tooltip/helper explanation.
+a clear tooltip/helper explanation.
 - [ ] The `/done` server route returns `409` with a clear message when the
-    task's review manager is currently running. It must not cancel the review
-    or begin merge/build work.
+task's review manager is currently running. It must not cancel the review
+or begin merge/build work.
 - [ ] Review running/completed/failed transitions are delivered through the
-    existing SSE/store path so card and drawer update live after refresh or
-    reconnect; do not rely only on state local to the clicked drawer.
+existing SSE/store path so card and drawer update live after refresh or
+reconnect; do not rely only on state local to the clicked drawer.
 - [ ] Tasks with review disabled, no reviewer, a completed report, or a failed
-    review are not permanently blocked. The UI clearly distinguishes “no
-    automatic review” from “review currently running.”
+review are not permanently blocked. The UI clearly distinguishes “no
+automatic review” from “review currently running.”
 - [ ] Prevent duplicate review launches and handle a task leaving `review`
-    while its reviewer is running without leaving a stuck animation.
+while its reviewer is running without leaving a stuck animation.
 - [ ] Animation respects `prefers-reduced-motion` and does not cause card
-    layout shift.
+layout shift.
 - [ ] Tests cover card state, drawer/button state, live transition on review
-    completion/failure, refresh hydration, and the server-side `409` guard.
+completion/failure, refresh hydration, and the server-side `409` guard.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

@@ -106,12 +106,12 @@ provider: cloudflare
 name: repoos-local
 domain: repoos.org
 apps:
-  dashboard:
-    hostname: dashboard.repoos.org
-    service: http://localhost:3000
-    access:
-      - alice@example.com
-      - bob@example.com
+dashboard:
+  hostname: dashboard.repoos.org
+  service: http://localhost:3000
+  access:
+    - alice@example.com
+    - bob@example.com
 ```
 
 RepoOS generates/reconciles `cloudflared`'s ingress config and Access policies
@@ -121,47 +121,47 @@ authoritative.
 ## Acceptance criteria
 
 - [ ] `repoos tunnel setup` checks for `cloudflared` on PATH, offers to
-    install it if missing, drives `cloudflared tunnel login`, creates or
-    reuses one tunnel per machine, and persists non-secret tunnel config
-    (name, domain, tunnel UUID) to RepoOS's own config — never to
-    `cloudflared`'s config as the source of truth. Re-running it is a no-op
-    when already set up (idempotent).
+  install it if missing, drives `cloudflared tunnel login`, creates or
+  reuses one tunnel per machine, and persists non-secret tunnel config
+  (name, domain, tunnel UUID) to RepoOS's own config — never to
+  `cloudflared`'s config as the source of truth. Re-running it is a no-op
+  when already set up (idempotent).
 - [ ] `repoos tunnel create <name> --port <port> [--domain <hostname>] [--allow <emails>]`
-    adds an app entry to RepoOS config, runs the equivalent of
-    `cloudflared tunnel route dns <tunnel> <hostname>` to create the DNS
-    record, regenerates the tunnel's ingress config from RepoOS state
-    (one rule per configured app plus a trailing `http_status:404`
-    catch-all), and creates a Cloudflare Access application + policy scoped
-    to the allowed emails for that hostname.
+  adds an app entry to RepoOS config, runs the equivalent of
+  `cloudflared tunnel route dns <tunnel> <hostname>` to create the DNS
+  record, regenerates the tunnel's ingress config from RepoOS state
+  (one rule per configured app plus a trailing `http_status:404`
+  catch-all), and creates a Cloudflare Access application + policy scoped
+  to the allowed emails for that hostname.
 - [ ] When `--domain` is omitted and a base domain is configured,
-    `<name>.<base-domain>` is inferred automatically.
+  `<name>.<base-domain>` is inferred automatically.
 - [ ] `repoos tunnel allow <name> <email>` and `repoos tunnel deny <name> <email>`
-    add/remove an email from that app's allowlist in RepoOS config and
-    reconcile the corresponding Cloudflare Access policy.
+  add/remove an email from that app's allowlist in RepoOS config and
+  reconcile the corresponding Cloudflare Access policy.
 - [ ] `repoos tunnel start` runs `cloudflared tunnel run <tunnel>` in the
-    foreground (dev mode) using the reconciled config.
+  foreground (dev mode) using the reconciled config.
 - [ ] `repoos tunnel install` installs/configures `cloudflared` as a
-    persistent OS service (launchd on macOS, systemd on Linux) so the
-    tunnel survives reboot; `repoos tunnel stop` stops the running tunnel
-    (foreground process or installed service, whichever applies).
+  persistent OS service (launchd on macOS, systemd on Linux) so the
+  tunnel survives reboot; `repoos tunnel stop` stops the running tunnel
+  (foreground process or installed service, whichever applies).
 - [ ] `repoos tunnel list` shows configured apps with hostname, local
-    service, and allowlist. `repoos tunnel status` shows whether the
-    tunnel is installed, running, and reachable, plus per-app health.
+  service, and allowlist. `repoos tunnel status` shows whether the
+  tunnel is installed, running, and reachable, plus per-app health.
 - [ ] By default, every app created via `repoos tunnel create` is protected
-    by a Cloudflare Access policy restricted to its explicit email
-    allowlist — there is no way to end up with a publicly reachable app
-    with no allowlist through the normal `create` flow.
+  by a Cloudflare Access policy restricted to its explicit email
+  allowlist — there is no way to end up with a publicly reachable app
+  with no allowlist through the normal `create` flow.
 - [ ] No Cloudflare credentials, tokens, or tunnel secrets are ever written
-    into the RepoOS repo or committed to git; they're stored via the OS
-    keychain / user secret storage or left in `cloudflared`'s own
-    credentials file (`~/.cloudflared/<UUID>.json`) as Cloudflare already
-    does.
+  into the RepoOS repo or committed to git; they're stored via the OS
+  keychain / user secret storage or left in `cloudflared`'s own
+  credentials file (`~/.cloudflared/<UUID>.json`) as Cloudflare already
+  does.
 - [ ] Creating an app with a hostname deeper than one label under the base
-    domain (e.g. `dashboard.app.repoos.org`) succeeds but prints a warning
-    that the user's Cloudflare SSL/certificate configuration must cover
-    that hostname.
+  domain (e.g. `dashboard.app.repoos.org`) succeeds but prints a warning
+  that the user's Cloudflare SSL/certificate configuration must cover
+  that hostname.
 - [ ] Works on both macOS and Linux for `setup`, `start`, `install`, and
-    `stop`.
+  `stop`.
 
 ## Notes for AI
 

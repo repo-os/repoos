@@ -30,24 +30,24 @@ separate concerns even though both touch the preview quickbar.
 ## Desired outcome
 
 1. **Show the target name.** When a preview is starting/running, surface its
- `name` (e.g. "docs", "landing", "app") in the UI so it's clear which
- frontend is being served, not just "a preview is running."
+`name` (e.g. "docs", "landing", "app") in the UI so it's clear which
+frontend is being served, not just "a preview is running."
 
 2. **Handle a diff that touches multiple areas.** Today `resolvePreviewTarget`
- returns a single match. If a task's changed files span multiple targets'
- `areas`, decide and implement one of:
- - a selector/picker in the UI listing all matched target names, letting
-   the user choose which one to preview, or
- - some way to switch between matched targets without restarting from
-   scratch.
- Given the existing "one preview running at a time" constraint (see
- AGENTS.md preview section), switching between multiple simultaneously
- live previews is likely out of scope — a switcher that stops one and
- starts another is probably the right shape, but confirm against current
- `preview.ts` behavior before assuming.
+returns a single match. If a task's changed files span multiple targets'
+`areas`, decide and implement one of:
+- a selector/picker in the UI listing all matched target names, letting
+  the user choose which one to preview, or
+- some way to switch between matched targets without restarting from
+  scratch.
+Given the existing "one preview running at a time" constraint (see
+AGENTS.md preview section), switching between multiple simultaneously
+live previews is likely out of scope — a switcher that stops one and
+starts another is probably the right shape, but confirm against current
+`preview.ts` behavior before assuming.
 
- At minimum: never silently pick one target when multiple match — the user
- must be able to see/select which one they're getting.
+At minimum: never silently pick one target when multiple match — the user
+must be able to see/select which one they're getting.
 
 ## Constraints
 
@@ -61,10 +61,10 @@ target's name).
 
 - [ ] Preview quickbar shows the active/starting preview's target name.
 - [ ] A task whose diff matches multiple `[[preview.targets]]` areas lets the
-    user see and choose among the matched targets, rather than silently
-    previewing an arbitrary one.
+   user see and choose among the matched targets, rather than silently
+   previewing an arbitrary one.
 - [ ] A task matching exactly one target (today's common case) is unaffected
-    behaviorally, only gains the name label.
+   behaviorally, only gains the name label.
 - [ ] `repoos check` passes.
 
 ## Related

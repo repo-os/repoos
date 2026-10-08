@@ -57,18 +57,18 @@ runs on its own clock, outside anything the external caller can see or
 block on.
 - Concrete rules, roughly:
 1. To land something yourself without a human/reviewer in the loop, skip
-   \`review\` entirely (active -> done directly) — avoids spawning a
-   reviewer to race against.
+\`review\` entirely (active -> done directly) — avoids spawning a
+reviewer to race against.
 2. If you deliberately want the reviewer's advisory opinion first, enter
-   \`review\` and WAIT for it to actually finish (e.g. confirm
-   \`.repoos/reviews/<id>.md\` exists) before touching status again.
+\`review\` and WAIT for it to actually finish (e.g. confirm
+\`.repoos/reviews/<id>.md\` exists) before touching status again.
 3. Never assume a CLI status change synchronously cancels a running
-   background job — treat any spawned process as running to completion
-   regardless of what you do to the task file next.
+background job — treat any spawned process as running to completion
+regardless of what you do to the task file next.
 4. Claim a freshly created task by moving straight to \`active\` (skip
-   \`ready\`) so auto-dispatch never sees it queued to grab concurrently.
+\`ready\`) so auto-dispatch never sees it queued to grab concurrently.
 5. Re-check the task file against \`main\` immediately before merging, not
-   just once early — other machinery can commit to \`main\` at any point.
+just once early — other machinery can commit to \`main\` at any point.
 
 ## Notes for AI
 

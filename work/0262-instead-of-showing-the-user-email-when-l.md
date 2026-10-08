@@ -32,8 +32,8 @@ Replace the always-visible email text + inline logout button in the top-right co
 1. **Trigger element**: Replace the `.user-chip` with a clickable avatar/icon button. Use the `User` icon from `lucide-vue-next` (or a similar generic person icon). The button should be visually consistent with the other TopBar icon buttons (theme toggle, refresh, etc.).
 2. **Dropdown/popover**: On click (not hover), toggle a small dropdown positioned below the trigger, aligned to the right edge.
 3. **Dropdown content**:
- - The user's email displayed as plain text (mono font, truncated with ellipsis if long — keep existing `max-width: 180px` behaviour).
- - A "Log out" button (styled as a danger/red-tinted button) that calls `auth.logout()`.
+- The user's email displayed as plain text (mono font, truncated with ellipsis if long — keep existing `max-width: 180px` behaviour).
+- A "Log out" button (styled as a danger/red-tinted button) that calls `auth.logout()`.
 4. **Dismiss behaviour**: Clicking outside the dropdown closes it. Pressing Escape closes it. Clicking the trigger again toggles it closed.
 5. **Mobile**: The icon should always be visible (remove the `hidden sm:inline` that currently hides the email on small screens — the icon itself should always show).
 6. **Accessibility**: The trigger button needs `aria-label="User menu"` and `aria-expanded` bound to the open state. The dropdown should trap focus and be keyboard-navigable.

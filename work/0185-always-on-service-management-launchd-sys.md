@@ -35,14 +35,14 @@ Background mode is explicit, per repository, and off by default. Normal repoos s
 - The UI provides Start, Stop, Restart, Enable at login, Disable at login, and Remove service actions. Remove service stops it and deletes its OS service files.
 - RepoOS exposes a CLI escape hatch for use when the UI is unavailable:
 
-  repoos service list
-  repoos service status
-  repoos service start
-  repoos service stop
-  repoos service restart
-  repoos service enable
-  repoos service disable
-  repoos service remove
+repoos service list
+repoos service status
+repoos service start
+repoos service stop
+repoos service restart
+repoos service enable
+repoos service disable
+repoos service remove
 
 The commands without a repository selector operate on the current repo. repoos service list works from any checkout and inventories every RepoOS-managed service for the current user, including project path, port, auto-start state, and health.
 - A first-run experience may explain that background mode exists and can be enabled later, but must not prompt in a way that implies it is required or turn it on by default.

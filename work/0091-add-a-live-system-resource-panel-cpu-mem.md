@@ -64,50 +64,50 @@ retroactively clean up.
 ## Acceptance criteria
 
 - [x] A `GET /api/system` endpoint returns: machine facts (`cpuCount`,
-    `totalMem`, `freeMem`, `loadavg`), RepoOS totals (`cpuPercent`,
-    `memBytes`, `memPercent`), and a per-process array
-    (`{ pid, taskId | null, cpuPercent, memBytes, elapsed, orphaned }`).
+  `totalMem`, `freeMem`, `loadavg`), RepoOS totals (`cpuPercent`,
+  `memBytes`, `memPercent`), and a per-process array
+  (`{ pid, taskId | null, cpuPercent, memBytes, elapsed, orphaned }`).
 - [x] Stats cover the `serve` process **and** all spawned agent processes —
-    not just the server's own `process.memoryUsage()`, which would miss the
-    agents entirely and report a misleadingly tiny number.
+  not just the server's own `process.memoryUsage()`, which would miss the
+  agents entirely and report a misleadingly tiny number.
 - [x] Orphan detection: a live agent process not present in the `AgentRunner`
-    registry, or whose `ppid` is no longer the server's pid, is reported
-    with `orphaned: true`. Verify against the real case: kill and restart
-    `repoos serve` while an agent is running, then confirm the still-live
-    agent is reported as orphaned rather than silently dropped.
+  registry, or whose `ppid` is no longer the server's pid, is reported
+  with `orphaned: true`. Verify against the real case: kill and restart
+  `repoos serve` while an agent is running, then confirm the still-live
+  agent is reported as orphaned rather than silently dropped.
 - [x] RepoOS-owned process records are the primary attribution source when
-    available. A command-name match alone is labelled as an unverified
-    candidate and never presented as definitely owned by RepoOS.
+  available. A command-name match alone is labelled as an unverified
+  candidate and never presented as definitely owned by RepoOS.
 - [x] The panel renders on the Control page with headline CPU/memory (as
-    absolute + % of machine), a live sparkline over a rolling window, and
-    the per-process table with orphans visually distinct.
+  absolute + % of machine), a live sparkline over a rolling window, and
+  the per-process table with orphans visually distinct.
 - [x] Updates are pushed over the existing SSE stream as a new event type
-    (e.g. `system.stats`) on a sensible interval — **not** a client polling
-    loop. The README states the SSE stream is the heartbeat and "no
-    polling" is the design intent; follow that.
+  (e.g. `system.stats`) on a sensible interval — **not** a client polling
+  loop. The README states the SSE stream is the heartbeat and "no
+  polling" is the design intent; follow that.
 - [x] Sampling is cheap: **one** `ps` invocation per interval covering all
-    pids at once, never one call per process. The sampler must not become a
-    measurable share of the CPU it is reporting on.
+  pids at once, never one call per process. The sampler must not become a
+  measurable share of the CPU it is reporting on.
 - [x] Sampling stops (or idles to a slow interval) when no SSE client is
-    connected — a headless server should not burn cycles measuring itself
-    for nobody.
+  connected — a headless server should not burn cycles measuring itself
+  for nobody.
 - [x] Graceful degradation: on a platform where the `ps` invocation is
-    unavailable or its flags differ (notably Windows), the endpoint returns
-    the `node:os` machine facts with per-process data omitted, and the panel
-    hides the unavailable sections rather than rendering `undefined`/`NaN`
-    or erroring.
+  unavailable or its flags differ (notably Windows), the endpoint returns
+  the `node:os` machine facts with per-process data omitted, and the panel
+  hides the unavailable sections rather than rendering `undefined`/`NaN`
+  or erroring.
 - [x] Zero new runtime dependencies. `repoos check` passes; zero console
-    errors in the UI.
+  errors in the UI.
 
 ## Notes for AI
 
 - **Data sources, both dependency-free and already proven in this repo:**
 - `node:os` for machine facts — `os.cpus().length`, `os.totalmem()`,
-  `os.freemem()`, `os.loadavg()`.
+`os.freemem()`, `os.loadavg()`.
 - `ps -o pid=,ppid=,%cpu=,%mem=,rss=,etime= -p <pid1> <pid2> ...` for
-  per-process stats. Shelling out to a system binary is an established
-  pattern here — `src/core/git.ts` does exactly this for git — so it fits
-  the zero-runtime-deps constraint rather than violating it.
+per-process stats. Shelling out to a system binary is an established
+pattern here — `src/core/git.ts` does exactly this for git — so it fits
+the zero-runtime-deps constraint rather than violating it.
 - Agent pids are already tracked: `AgentRunner`'s registry holds
 `entry.proc.pid` per task (`src/server/agents.ts`), and
 `GET /api/agents/running` already exposes `{ id, pid, startedAt }`. Reuse
