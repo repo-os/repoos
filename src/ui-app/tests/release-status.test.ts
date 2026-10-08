@@ -85,6 +85,27 @@ describe("git-tag release status", () => {
     });
   });
 
+  it("reports how many commits land behind the latest tag", async () => {
+    const runner: ReleaseCommandRunner = async (_command, args) => {
+      const key = args.join(" ");
+      if (key === "rev-list --count v1.2.2..main") return { code: 0, stdout: "290\n", stderr: "" };
+      return git()("git", args, config().root);
+    };
+    const status = await getReleaseStatus(config(), runner);
+    expect(status.commitsBehindMain).toBe(290);
+  });
+
+  it("leaves the behind count unknown when there is no tag", async () => {
+    const noTag: ReleaseCommandRunner = async (_command, args) => {
+      const key = args.join(" ");
+      if (key === "describe --tags --abbrev=0") return { code: 1, stdout: "", stderr: "" };
+      return git()("git", args, config().root);
+    };
+    const status = await getReleaseStatus(config(), noTag);
+    expect(status.latestTag).toBeNull();
+    expect(status.commitsBehindMain).toBeNull();
+  });
+
   it("does not offer a duplicate or dirty release", async () => {
     const status = await getReleaseStatus(
       config(),
