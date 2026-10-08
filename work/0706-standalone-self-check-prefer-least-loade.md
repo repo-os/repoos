@@ -11,7 +11,7 @@ branch: feat/standalone-self-check-prefer-least-loade
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-08T14:42:07Z"
+updated_at: "2026-10-08T14:42:08Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -86,3 +86,4 @@ error: script "test" exited with code 1
 - 2026-10-08T14:41:33Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/serve-reaper.test.ts:460:22 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-08T14:41:33Z · status review→active
 - 2026-10-08T14:42:07Z · status active→review
+- 2026-10-08T14:42:08Z · note: Task body is underspecified: missing sections: Notes for AI
