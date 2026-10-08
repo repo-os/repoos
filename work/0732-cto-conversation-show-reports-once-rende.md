@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/cto-conversation-show-reports-once-rende
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-07T02:45:50Z"
-updated_at: "2026-10-08T15:49:59Z"
+updated_at: "2026-10-08T15:51:47Z"
 ---
 ## Problem
 The CTO Board Monitor renders the latest saved report above its conversation history and also renders the same agent output in the history as plain text. This duplicates the report, exposes Markdown syntax, and collapses its line breaks.
@@ -39,12 +39,12 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 "route": "/",
 "highlight": ".cto-log",
 "steps": [
-  {
-    "click": "[data-test-id=\"floating-head-cto\"]"
-  },
-  {
-    "waitMs": 500
-  }
+{
+  "click": "[data-test-id=\"floating-head-cto\"]"
+},
+{
+  "waitMs": 500
+}
 ]
 },
 {
@@ -53,18 +53,18 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 "route": "/",
 "highlight": ".msg-time",
 "steps": [
-  {
-    "click": "[data-test-id=\"floating-head-cto\"]"
-  },
-  {
-    "waitMs": 500
-  },
-  {
-    "click": ".msg-time"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "[data-test-id=\"floating-head-cto\"]"
+},
+{
+  "waitMs": 500
+},
+{
+  "click": ".msg-time"
+},
+{
+  "waitMs": 300
+}
 ]
 }
 ]
@@ -83,3 +83,4 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 - 2026-10-08T15:45:30Z · body
 - 2026-10-08T15:49:01Z · body: section Shots
 - 2026-10-08T15:49:59Z · body
+- 2026-10-08T15:51:47Z · body
