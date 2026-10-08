@@ -232,7 +232,12 @@ export class CTOManager {
       return { ok: false, reason: "the CTO agent is disabled" };
     }
 
-    this.resetSession();
+    // Preserve earlier monitoring runs (#0732): each pass appends to the board
+    // conversation instead of wiping it, so earlier reports stay readable
+    // alongside human messages. `ensureSession` also reloads the persisted
+    // buffer, so history survives a server reload. The saved latest report is
+    // now only a fallback for when this history is missing.
+    this.ensureSession();
 
     const run: Run = { cancelled: false };
     this.runs.set("cto", run);
@@ -330,9 +335,8 @@ export class CTOManager {
       return { ok: false, reason: "the CTO agent is disabled" };
     }
 
-    if (!this.hasSession()) {
-      this.sessions.set("cto", []);
-    }
+    // `appendEntry` loads the persisted buffer on first use, so a chat message
+    // after a reload continues the history rather than starting empty.
     this.appendEntry({ type: "human", text });
 
     const run: Run = { cancelled: false };
@@ -397,10 +401,7 @@ export class CTOManager {
   }
 
   session(): AgentOutputEntry[] {
-    const lines = this.sessions.get("cto");
-    if (lines) return lines;
-    const loaded = this.readSession();
-    return loaded ?? [];
+    return this.ensureSession();
   }
 
   cancel(): void {
@@ -663,10 +664,21 @@ ${body}
     return `${CTO_SESSION_ID_PREFIX}board`;
   }
 
-  private hasSession(): boolean {
-    if (this.sessions.has("cto")) return true;
-    const file = this.sessionFile();
-    return file !== null && existsSync(file);
+  /**
+   * The board conversation buffer, loaded from disk on first use. Every writer
+   * (a monitoring pass or a chat message) appends through this, so history
+   * continues across runs and survives a server reload instead of being wiped.
+   * The in-memory copy is capped to `SESSION_LINES_CAP`.
+   */
+  private ensureSession(): AgentOutputEntry[] {
+    const existing = this.sessions.get("cto");
+    if (existing) return existing;
+    this.readSession();
+    const loaded = this.sessions.get("cto");
+    if (loaded) return loaded;
+    const empty: AgentOutputEntry[] = [];
+    this.sessions.set("cto", empty);
+    return empty;
   }
 
   private sessionFile(): string | null {
@@ -716,29 +728,8 @@ ${body}
     this.sessionTimers.set("cto", timer);
   }
 
-  private resetSession(): void {
-    const timer = this.sessionTimers.get("cto");
-    if (timer) {
-      clearTimeout(timer);
-      this.sessionTimers.delete("cto");
-    }
-    this.sessions.delete("cto");
-    const file = this.sessionFile();
-    if (file) {
-      try {
-        if (existsSync(file)) unlinkSync(file);
-      } catch {
-        /* best-effort */
-      }
-    }
-  }
-
   private appendEntry(entry: AgentOutputEntry): void {
-    let lines = this.sessions.get("cto");
-    if (!lines) {
-      lines = [];
-      this.sessions.set("cto", lines);
-    }
+    const lines = this.ensureSession();
     if (!entry.at) entry = { ...entry, at: new Date().toISOString() };
     lines.push(entry);
     if (lines.length > SESSION_LINES_CAP) lines.splice(0, lines.length - SESSION_LINES_CAP);
