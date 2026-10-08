@@ -43,3 +43,4 @@ Related: #0613 (protect task bodies from clobbering, done).
 - 2026-10-08T14:45:58Z · body
 - 2026-10-08T14:46:47Z · body
 - 2026-10-08T14:53:29Z · status active→review
+- 2026-10-08T14:53:29Z · note: shots: skipped — the diff (6 changed paths) touches no [[preview.paths]] globs — no UI change to capture
