@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-08T17:06:45Z"
+review_passes: 1
 id: "0708"
 title: "Docs follow-up for #0683: running-with-agents.md section 3 must describe startup host probing and local-fallback visibility"
 type: chore
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/docs-follow-up-for-0683-running-with-age
 created_at: "2026-10-06T05:24:59Z"
-updated_at: "2026-10-08T17:06:45Z"
 ---
 ## Problem
 
@@ -37,3 +38,4 @@ Small docs-only task. Read #0683 and docs/remote-validation.md first.
 - 2026-10-08T17:06:15Z · status active→review
 - 2026-10-08T17:06:15Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-08T17:06:45Z · note: review pass 1: good to go
+
