@@ -530,8 +530,9 @@ export class LiveIndex {
     }
     // The guard yields while finalization or a human PATCH may publish a newer
     // state. Its decision belongs only to the transition it observed: never
-    // overwrite a newer index entry or revert a later on-disk status.
-    if (this.byId.get(task.id) !== existing || !existsSync(absPath)) return;
+    // overwrite a later on-disk status. Body/note-only index updates must not
+    // skip the revert (#0704).
+    if (!this.byId.get(task.id) || !existsSync(absPath)) return;
     const current = parseTask({
       content: readFileSync(absPath, "utf8"),
       absPath,
