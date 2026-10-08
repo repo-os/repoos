@@ -1,20 +1,21 @@
 ---
-last_close_out_gate_ms: 183436
-last_close_out_gate_at: "2026-10-08T16:26:22.056Z"
 id: "0745"
 title: "Classify runner infrastructure failures (bun install EACCES, ssh, container, host permissions) as infra, not test failures: retry on another host and mark the host degraded"
 type: bug
-status: review
+status: done
 priority: p1
 area: server
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
+merged_commit: ad6a9f90cb3b9c4a57faadef78a8148852ee0377
 assigned_to: ai
 created_by: ""
 branch: feat/classify-runner-infrastructure-failures-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:40:08Z"
-updated_at: "2026-10-08T16:26:22Z"
+updated_at: "2026-10-08T16:26:32Z"
+last_close_out_gate_ms: 183436
+last_close_out_gate_at: "2026-10-08T16:26:22.056Z"
 review_passes: 1
 ---
 ## Problem
@@ -139,7 +140,7 @@ error: script "test" exited with code 1
 404|     const rows = getCheckStore(root).list();
 405|     expect(rows).toHaveLength(1);
 406|     expect(rows[0]).toMatchObject({
- |                     ^
+|                     ^
 407|       taskId: "0564",
 408|       machine: null,
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
@@ -159,4 +160,4 @@ error: script "test" exited with code 1
 - 2026-10-08T15:59:08Z · note: highlight .rvr-host-state--bad matched nothing on /settings?tab=remote
 - 2026-10-08T16:00:03Z · note: review pass 1: good to go
 - 2026-10-08T16:26:22Z · close-out gate completed in 183s
-
+- 2026-10-08T16:26:32Z · status review→done, release:success
