@@ -2,7 +2,7 @@
 id: "0702"
 title: "Normalise PM-written task bodies: one `## Activity` section, no common leading indent"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: ""
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:55Z"
-updated_at: "2026-10-08T14:41:31Z"
+updated_at: "2026-10-08T14:41:34Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ Related: #0613 (protect task bodies from clobbering, done).
 
 - 2026-10-06T03:15:55Z · created · unknown
 - 2026-10-08T14:41:31Z · cli_override, model_override
+- 2026-10-08T14:41:34Z · status inbox→ready
