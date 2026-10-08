@@ -134,8 +134,9 @@ and `<ChatToolCallRow>` is the only thing that draws one:
   `---` / box-drawing rule lines (including mid-message) and omits `<hr>` blocks.
   Entire assistant rows that are only a rule are dropped in `toDisplayRows()`.
   Human messages are unchanged. The Model Playground keeps `renderMarkdown()` so
-  markdown can be previewed faithfully. CTO reports and task specs also keep
-  `renderMarkdown()`; bubble-only CSS hides stray `<hr>` under `.pm-markdown`,
+  markdown can be previewed faithfully; task specs keep it too. CTO reports are
+  chat bubbles now (#0732) and use `renderChatMarkdown()` like every other
+  reply. Bubble-only CSS hides stray `<hr>` under `.pm-markdown`,
   `.guide-markdown`, `.debugger-markdown`, and `.td-markdown` — not under the
   whole `.ai-chat-log`.
 - Expansion is per row, collapsible, and defaults to collapsed. It is native

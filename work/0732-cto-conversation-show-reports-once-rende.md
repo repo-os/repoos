@@ -1,6 +1,4 @@
 ---
-last_close_out_gate_ms: 56687
-last_close_out_gate_at: "2026-10-08T16:22:09.989Z"
 id: "0732"
 title: "CTO conversation: show reports once, render Markdown, and add timestamp popups"
 type: bug
@@ -12,9 +10,7 @@ created_by: ""
 branch: feat/cto-conversation-show-reports-once-rende
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-07T02:45:50Z"
-updated_at: "2026-10-08T16:22:09Z"
-review_passes: 2
-review_rounds: 1
+updated_at: "2026-10-08T16:01:54Z"
 ---
 ## Problem
 The CTO Board Monitor renders the latest saved report above its conversation history and also renders the same agent output in the history as plain text. This duplicates the report, exposes Markdown syntax, and collapses its line breaks.
@@ -34,46 +30,6 @@ On timestamp hover, show a styled popup containing human relative time (for exam
 ## Notes for AI
 src/ui-app/src/components/CTOPanel.vue separately renders report.markdown through renderMarkdown and conversation rows through plain text interpolation. src/server/cto.ts saves the latest report and retains up to 2,000 session entries. Account for streamed output, reloads, and legacy saved-report-only data when removing duplication. Keep this scoped to the CTO panel.
 
-## Shots
-```json
-[
-{
-"label": "CTO panel: two monitoring runs, each report shown once as Markdown",
-"target": "default",
-"route": "/",
-"highlight": ".cto-markdown",
-"steps": [
-{
-"click": "[data-test-id=\"floating-head-cto\"]"
-},
-{
-"waitMs": 500
-}
-]
-},
-{
-"label": "CTO timestamp popup: relative age + local weekday/date",
-"target": "default",
-"route": "/",
-"highlight": "[data-test-id=\"cto-msg-time-0\"]",
-"steps": [
-{
-"click": "[data-test-id=\"floating-head-cto\"]"
-},
-{
-"waitMs": 500
-},
-{
-"click": "[data-test-id=\"cto-msg-time-0\"]"
-},
-{
-"waitMs": 300
-}
-]
-}
-]
-```
-
 ## Activity
 
 - 2026-10-07T02:45:50Z · created · unknown
@@ -83,20 +39,4 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 - 2026-10-08T15:29:00Z · status inbox→ready
 - 2026-10-08T15:29:16Z · model_override
 - 2026-10-08T15:29:19Z · status ready→active, branch
-- 2026-10-08T15:43:53Z · body
-- 2026-10-08T15:45:30Z · body
-- 2026-10-08T15:49:01Z · body: section Shots
-- 2026-10-08T15:49:59Z · body
-- 2026-10-08T15:51:47Z · body
-- 2026-10-08T16:01:55Z · status active→review
-- 2026-10-08T16:02:30Z · note: click .msg-time: click: Error: strict mode violation: locator('.msg-time') resolved to 8 elements: on /
-- 2026-10-08T16:03:01Z · note: review pass 1: needs some work
-- 2026-10-08T16:03:03Z · status review→active
-- 2026-10-08T16:04:06Z · body: section Shots
-- 2026-10-08T16:05:15Z · body
-- 2026-10-08T16:13:55Z · status active→review
-- 2026-10-08T16:13:55Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (c76c03d2b) during finalization (#0734)
-- 2026-10-08T16:13:55Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (c76c03d2b) during finalization (#0734)
-- 2026-10-08T16:14:48Z · note: review pass 2: good to go
-- 2026-10-08T16:22:09Z · close-out gate completed in 57s
-
+- 2026-10-08T16:01:54Z · status active→review
