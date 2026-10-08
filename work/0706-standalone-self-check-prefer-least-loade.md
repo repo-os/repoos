@@ -11,7 +11,7 @@ branch: feat/standalone-self-check-prefer-least-loade
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-08T15:07:04Z"
+updated_at: "2026-10-08T15:08:22Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -39,10 +39,10 @@ Verify first against current main: #0705 (merged) already made the dispatcher co
 ```json
 [
 {
-  "label": "Checks Now tab — remote runners, lock holders, refresh",
-  "target": "default",
-  "route": "/checks?tab=now",
-  "highlight": ".rr-panel"
+ "label": "Checks Now tab — remote runners, lock holders, refresh",
+ "target": "default",
+ "route": "/checks?tab=now",
+ "highlight": ".rr-panel"
 }
 ]
 ```
@@ -65,18 +65,18 @@ Verify first against current main: #0705 (merged) already made the dispatcher co
 458|       const reaped = await sweep.cleanupOrphanedRoots();
 459|
 460|       expect(reaped).toBeGreaterThanOrEqual(1);
-  |                      ^
+ |                      ^
 461|       const outcome = await exited;
 462|       // The sweep's SIGTERM terminated it; the child must not have su…
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 447 passed | 1 skipped (449)
- Tests  1 failed | 5473 passed | 15 skipped (5489)
+Tests  1 failed | 5473 passed | 15 skipped (5489)
 Start at  14:19:18
 Duration  274.66s (transform 6.89s, setup 2.38s, import 51.59s, tests 223.82s, environment 244.81s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 507ms
 Test Files  1 passed (1)
- Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  14:23:54
 Duration  2.96s (transform 1.46s, setup 13ms, import 1.79s, tests 507ms, environment 565ms)
 error: script "test" exited with code 1
@@ -102,18 +102,18 @@ error: script "test" exited with code 1
 27|     expect(line).toContain("waiting for a runner (queue position 2");
 28|     expect(line).not.toContain(" on  (");
 29|     expect(parseRemotePoolQueueMessage(line)?.host).toBe("");
-  |                                                     ^
+ |                                                     ^
 30|   });
 31| });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 447 passed | 1 skipped (449)
- Tests  1 failed | 5474 passed | 15 skipped (5490)
+Tests  1 failed | 5474 passed | 15 skipped (5490)
 Start at  14:51:28
 Duration  280.74s (transform 6.88s, setup 2.38s, import 54.83s, tests 226.48s, environment 250.25s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 409ms
 Test Files  1 passed (1)
- Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  14:56:09
 Duration  2.36s (transform 1.10s, setup 12ms, import 1.37s, tests 409ms, environment 489ms)
 error: script "test" exited with code 1
@@ -121,3 +121,4 @@ error: script "test" exited with code 1
 - 2026-10-08T15:02:15Z · body
 - 2026-10-08T15:03:25Z · body: section Shots
 - 2026-10-08T15:07:04Z · body
+- 2026-10-08T15:08:22Z · body
