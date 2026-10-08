@@ -12,7 +12,7 @@ branch: feat/ui-verification-at-handoff-must-not-fail
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:06:36Z"
-updated_at: "2026-10-08T14:19:07Z"
+updated_at: "2026-10-08T14:19:57Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -34,6 +34,18 @@ On 2026-10-07 UI verification failed the handoff of #0692, #0741 and #0740 (and 
 
 Read the handoff UI verification gate (src/server/ui-handoff-gate.ts, #0680), the shot capture (src/server/shots.ts, src/commands/shot.ts) and the preview manager (#0271). Related: #0694, #0603, #0613.
 
+## Shots
+```json
+[
+  {
+    "label": "Close-out bar via shotState fixture",
+    "target": "default",
+    "route": "/",
+    "highlight": ".ibar-wrap"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-08T14:06:36Z · created · unknown
@@ -44,3 +56,4 @@ Read the handoff UI verification gate (src/server/ui-handoff-gate.ts, #0680), th
 - 2026-10-08T14:09:19Z · needs_input
 - 2026-10-08T14:17:48Z · body
 - 2026-10-08T14:19:07Z · body
+- 2026-10-08T14:19:57Z · body: section Shots
