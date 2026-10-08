@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 504
-last_close_out_gate_at: "2026-10-08T22:27:36.559Z"
 id: "0708"
 title: "Docs follow-up for #0683: running-with-agents.md section 3 must describe startup host probing and local-fallback visibility"
 type: chore
-status: review
+status: done
 priority: p3
 area: docs
+merged_commit: 257be65932c96610fcc5fb92de6fe49f052a9ceb
 assigned_to: ai
 created_by: ""
 branch: feat/docs-follow-up-for-0683-running-with-age
 created_at: "2026-10-06T05:24:59Z"
-updated_at: "2026-10-08T22:27:36Z"
+updated_at: "2026-10-08T22:27:38Z"
+last_close_out_gate_ms: 504
+last_close_out_gate_at: "2026-10-08T22:27:36.559Z"
 review_passes: 1
 ---
 ## Problem
@@ -41,4 +42,4 @@ Small docs-only task. Read #0683 and docs/remote-validation.md first.
 - 2026-10-08T17:06:15Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-08T17:06:45Z · note: review pass 1: good to go
 - 2026-10-08T22:27:36Z · close-out gate completed in 1s
-
+- 2026-10-08T22:27:38Z · status review→done, release:success
