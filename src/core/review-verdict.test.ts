@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseReviewRelevance, parseReviewVerdict } from "./review-verdict.js";
+import {
+  parseReviewRelevance,
+  parseReviewVerdict,
+  replaceReviewVerdict,
+} from "./review-verdict.js";
 
 describe("parseReviewVerdict", () => {
   it("returns null for empty/missing markdown", () => {
@@ -63,6 +67,16 @@ describe("parseReviewVerdict", () => {
         "## Summary\nStill reviewing.\n\n## Outcome\ngood to go — ship it when ready.",
       ),
     ).toBe("good to go");
+  });
+});
+
+describe("replaceReviewVerdict (#0714)", () => {
+  it("swaps the verdict label inside ## Verdict", () => {
+    const src = "## Verdict\n`good to go` — ship it.\n\n## Bugs\nNone found.\n";
+    expect(replaceReviewVerdict(src, "needs some work")).toContain("`needs some work`");
+    expect(parseReviewVerdict(replaceReviewVerdict(src, "needs some work"))).toBe(
+      "needs some work",
+    );
   });
 });
 
