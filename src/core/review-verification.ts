@@ -186,8 +186,7 @@ export function evaluateGuardNegativeTestChecks(input: {
     return {
       guardId,
       status: "failed",
-      detail:
-        `Guard \`${guardId}\` was materially changed on this branch but no changed test demonstrates rejection of bad input.`,
+      detail: `Guard \`${guardId}\` was materially changed on this branch but no changed test demonstrates rejection of bad input.`,
     };
   });
 }
@@ -211,7 +210,8 @@ export function evaluateReviewVerification(input: {
       {
         guardId: "(branch diff)",
         status: "not_run",
-        detail: "Could not read changed paths on the task branch — guard test evidence was not checked.",
+        detail:
+          "Could not read changed paths on the task branch — guard test evidence was not checked.",
       },
     ];
   } else {
@@ -305,22 +305,14 @@ export function applyMechanicalReviewVerification(
   markdown = replaceReviewVerdict(markdown, "needs some work");
   const bugLines = bugs.map((b) => `- ${b}`).join("\n");
   if (/^## Bugs\s*$/im.test(markdown)) {
-    markdown = markdown.replace(
-      /^## Bugs\s*\n([\s\S]*?)(?=^## |\z)/im,
-      (_, body: string) => {
-        const trimmed = body.trim();
-        const prefix =
-          trimmed && !/^none found$/i.test(trimmed)
-            ? `${trimmed}\n${bugLines}\n`
-            : `${bugLines}\n`;
-        return `## Bugs\n\n${prefix}`;
-      },
-    );
+    markdown = markdown.replace(/^## Bugs\s*\n([\s\S]*?)(?=^## |\z)/im, (_, body: string) => {
+      const trimmed = body.trim();
+      const prefix =
+        trimmed && !/^none found$/i.test(trimmed) ? `${trimmed}\n${bugLines}\n` : `${bugLines}\n`;
+      return `## Bugs\n\n${prefix}`;
+    });
   } else {
-    markdown = markdown.replace(
-      /^## Relevance\s*$/im,
-      `## Bugs\n\n${bugLines}\n\n## Relevance`,
-    );
+    markdown = markdown.replace(/^## Relevance\s*$/im, `## Bugs\n\n${bugLines}\n\n## Relevance`);
     if (!/^## Bugs\s*$/im.test(markdown)) {
       markdown = `${markdown.trimEnd()}\n\n## Bugs\n\n${bugLines}\n`;
     }

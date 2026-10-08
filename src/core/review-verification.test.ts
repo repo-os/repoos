@@ -84,7 +84,9 @@ describe("guard negative-test evidence (#0714)", () => {
 
     const checks = evaluateGuardNegativeTestChecks({
       guardIds: ["bare-require"],
-      changedTestFiles: [{ path: "src/ui-app/tests/check-bare-require.test.ts", content: happyOnly }],
+      changedTestFiles: [
+        { path: "src/ui-app/tests/check-bare-require.test.ts", content: happyOnly },
+      ],
     });
     expect(checks[0]?.status).toBe("failed");
 
