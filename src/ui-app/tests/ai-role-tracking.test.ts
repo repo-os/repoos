@@ -262,4 +262,33 @@ describe("CTO monitor passes record a 'cto' row (0331)", () => {
       process.env.PATH = old;
     }
   });
+
+  it("preserves earlier monitoring runs and continues them after a reload (#0732)", async () => {
+    const root = tempRoot();
+    const bin = installFakeOpenCode(root);
+    const old = process.env.PATH;
+    process.env.PATH = `${bin}:${old}`;
+    try {
+      const ctoAgent: Agent = { name: "cto", cli: "opencode", model: "test/m", enabled: true };
+      const cto = new CTOManager(configFor(root, [ctoAgent]), () => {});
+
+      expect((await cto.run("Board digest: run one.")).ok).toBe(true);
+      const afterFirst = cto.session().length;
+      expect(afterFirst).toBeGreaterThan(0);
+
+      // A second pass appends to the same conversation instead of wiping it.
+      expect((await cto.run("Board digest: run two.")).ok).toBe(true);
+      expect(cto.session().length).toBeGreaterThan(afterFirst);
+
+      // A fresh manager (a server reload) reads the persisted history back, and
+      // the next pass keeps growing it rather than starting empty.
+      const reloaded = new CTOManager(configFor(root, [ctoAgent]), () => {});
+      const loaded = reloaded.session().length;
+      expect(loaded).toBeGreaterThan(afterFirst);
+      expect((await reloaded.run("Board digest: run three.")).ok).toBe(true);
+      expect(reloaded.session().length).toBeGreaterThan(loaded);
+    } finally {
+      process.env.PATH = old;
+    }
+  });
 });

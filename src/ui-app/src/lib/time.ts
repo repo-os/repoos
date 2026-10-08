@@ -42,3 +42,30 @@ export function fmtTime(iso: string | null | undefined): string {
   if (Number.isNaN(t.getTime())) return "";
   return t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
+
+/**
+ * Local weekday, day and month of an ISO timestamp, e.g. "Wed, 4 Aug". Returns
+ * an empty string when the input is missing or unparseable. Locale-aware, so a
+ * reader sees their own ordering; the timezone is the browser's local one.
+ */
+export function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+/**
+ * The hover/focus popup text for a chat timestamp: human relative age plus the
+ * local weekday/date, e.g. "5 minutes ago · Wed, 4 Aug". `now` is injectable so
+ * the caller can keep the relative half accurate while its panel stays open.
+ */
+export function timestampTip(iso: string | null | undefined, now: Date = new Date()): string {
+  const rel = relTime(iso, now);
+  const date = fmtDate(iso);
+  return date ? `${rel} · ${date}` : rel;
+}
