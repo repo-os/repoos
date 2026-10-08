@@ -37,7 +37,7 @@ should be a small, self-contained change.
 ## Acceptance criteria
 
 - [ ] With `workDir = "tasks"`, a tracked image under `tasks/.attachments/`
-      fails the guard.
+fails the guard.
 - [ ] The default `work`/`inputs` layout behaves exactly as it does today.
 - [ ] Unit tests for `taskAssetOffenders()` cover a custom directory.
 - [ ] `repoos check` passes.

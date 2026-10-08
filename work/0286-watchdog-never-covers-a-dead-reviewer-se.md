@@ -23,12 +23,12 @@ Contrast with #0273, which hit the exact same failure mode (agent exited without
 `src/server/task-watchdog.ts`, `checkNow()`:
 ```ts
 async checkNow(): Promise<void> {
-  if (this.canRun && !this.canRun()) return;
-  for (const task of this.index.getTasks("active")) {
-    if (this.isStuck(task)) {
-      await this.handleStuck(task);
-    }
+if (this.canRun && !this.canRun()) return;
+for (const task of this.index.getTasks("active")) {
+  if (this.isStuck(task)) {
+    await this.handleStuck(task);
   }
+}
 }
 ```
 Hardcoded to the `active` status only. `isStuck()`'s own logic (no running process, no handoff in flight, not paused, not already surfaced, staleness threshold elapsed) is generic and would apply equally well to a `review`-status task whose reviewer process has died — it just never gets the chance to run.

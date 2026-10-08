@@ -29,30 +29,30 @@ configure it, including compatible model choices where verified.
 ## Acceptance criteria
 
 - [ ] Add a dedicated Copilot CLI adapter that launches headless prompt runs in
-  the task worktree with only the narrow, noninteractive tool permissions
-  required for RepoOS-managed engineering work.
+the task worktree with only the narrow, noninteractive tool permissions
+required for RepoOS-managed engineering work.
 - [ ] Parse Copilot's JSONL output into RepoOS transcript events, preserving
-  useful assistant text, tool activity, errors, and completion state.
+useful assistant text, tool activity, errors, and completion state.
 - [ ] Extract and persist the Copilot session ID, then implement the matching
-  resume command and output adapter for follow-up task-chat prompts.
+resume command and output adapter for follow-up task-chat prompts.
 - [ ] Detect Copilot CLI availability and expose its configuration in the Agents
-  UI with an accurate drivable status.
+UI with an accurate drivable status.
 - [ ] Probe model compatibility safely when the installed CLI supports it; live
-  model discovery may remain optional if it cannot be verified reliably.
+model discovery may remain optional if it cannot be verified reliably.
 - [ ] Add fake-binary tests for command construction, JSONL parsing,
-  session-ID extraction, resumption, detection, and model probing.
+session-ID extraction, resumption, detection, and model probing.
 - [ ] Document Copilot CLI setup, behavior, permissions, model support, and
-  any verified limitations.
+any verified limitations.
 
 ## Notes for AI
 
 - Do not implement Copilot support through an OpenCode fallback.
 - Do not use broad `--allow-all`, `--yolo`, or equivalent unrestricted
-  permission modes.
+permission modes.
 - Keep command construction, continuation, and transcript parsing specific to
-  Copilot rather than assuming existing CLI adapters are compatible.
+Copilot rather than assuming existing CLI adapters are compatible.
 - Preserve existing agent behavior and use the repository's established fake
-  executable test patterns.
+executable test patterns.
 
 ## Activity
 

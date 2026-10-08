@@ -26,9 +26,9 @@ inside the task's worktree. Since this repo has `auth.enabled = true`, that
 `serve` fails immediately — it does not "work fine without .env," it does not
 start at all:
 
-    Failed to start server: Auth is enabled but no login provider is
-    configured. Set [auth.emailProvider] ... or [auth.google] ... in your
-    config, or disable auth.
+  Failed to start server: Auth is enabled but no login provider is
+  configured. Set [auth.emailProvider] ... or [auth.google] ... in your
+  config, or disable auth.
 
 Reproduced directly: `rm -rf dist && bun run build && bun dist/cli/index.js
 serve --port N` from inside a real task worktree (no `.env` present) fails
@@ -62,18 +62,18 @@ default. Leaning **opt-in**, not "always copy it in the same way
 cleanly:
 
 - **Most projects don't need `.env` in a worktree at all.** Copying it
-  unconditionally means every task worktree for every project carries a copy
-  of secrets it will never use — pure downside (see next point), no benefit,
-  for what's likely the common case.
+unconditionally means every task worktree for every project carries a copy
+of secrets it will never use — pure downside (see next point), no benefit,
+for what's likely the common case.
 - **Blast radius.** Every worktree is a new place secrets physically live on
-  disk — more copies is more surface area if a worktree gets zipped up, handed
-  to a sandboxed agent environment, or just left around after a task closes
-  out. `node_modules` is huge-but-disposable; secrets are neither.
+disk — more copies is more surface area if a worktree gets zipped up, handed
+to a sandboxed agent environment, or just left around after a task closes
+out. `node_modules` is huge-but-disposable; secrets are neither.
 - So: a project that knows its build/preview genuinely needs secrets (this
-  repo, via its own `[preview] command`) should say so explicitly — a
-  `repoos.toml` flag (e.g. `worktrees.inheritEnv = true`, naming not
-  prescribed) that `ensureWorktree` checks before doing anything with `.env`.
-  Silence/absence means no `.env` in worktrees, same as today.
+repo, via its own `[preview] command`) should say so explicitly — a
+`repoos.toml` flag (e.g. `worktrees.inheritEnv = true`, naming not
+prescribed) that `ensureWorktree` checks before doing anything with `.env`.
+Silence/absence means no `.env` in worktrees, same as today.
 
 Report back if investigation finds a reason this repo-level opt-in isn't
 enough (e.g. some worktrees need it and others in the same repo don't) rather
@@ -87,39 +87,39 @@ opted in gets access to the main checkout's `.env` so its own preview (or any
 other worktree-local process depending on those secrets) can actually boot.
 Mechanism options to weigh, contingent on the opt-in design:
 - Symlink `.env` into the worktree the same way `node_modules` is symlinked
-  (`syncCandidate` in `src/server/integration-orchestrator.ts` is the
-  existing pattern to reference, though that's the close-out candidate
-  worktree, not every task worktree — check where task worktrees are
-  actually created, likely `ensureWorktree` in `src/core/git.ts`).
+(`syncCandidate` in `src/server/integration-orchestrator.ts` is the
+existing pattern to reference, though that's the close-out candidate
+worktree, not every task worktree — check where task worktrees are
+actually created, likely `ensureWorktree` in `src/core/git.ts`).
 - Copy `.env` at worktree-creation time instead of symlinking, if a symlink
-  risks a task's own process accidentally writing back and corrupting the
-  main checkout's secrets file.
+risks a task's own process accidentally writing back and corrupting the
+main checkout's secrets file.
 - Something else, if either has a real downside (secrets living in a
-  worktree that later gets torn down, e.g.) — surface the tradeoff rather
-  than picking silently.
+worktree that later gets torn down, e.g.) — surface the tradeoff rather
+than picking silently.
 
 ## Acceptance criteria
 
 - [ ] A repo can opt in (config flag, not automatic) to its task worktrees
-      having access to the main checkout's `.env`.
+    having access to the main checkout's `.env`.
 - [ ] With opt-in enabled, a fresh task worktree can run a preview command
-      that depends on `.env` secrets (verify with this repo's own default
-      `[preview] command`, on a genuinely fresh worktree, auth enabled) —
-      set this repo's own `repoos.toml` to opt in as part of this task.
+    that depends on `.env` secrets (verify with this repo's own default
+    `[preview] command`, on a genuinely fresh worktree, auth enabled) —
+    set this repo's own `repoos.toml` to opt in as part of this task.
 - [ ] Without opt-in (the default), worktree behavior is unchanged from
-      today — no `.env` copied, no new failure mode introduced for the
-      common case.
+    today — no `.env` copied, no new failure mode introduced for the
+    common case.
 - [ ] Whatever mechanism is chosen does not risk leaking `.env` into git
-      history (it must stay gitignored in the worktree too, if copied rather
-      than symlinked).
+    history (it must stay gitignored in the worktree too, if copied rather
+    than symlinked).
 - [ ] `repoos check` passes.
 
 ## Related
 
 - #0370 — the task whose own verification surfaced this; not a regression
-  #0370 introduced, a pre-existing gap it exposed.
+#0370 introduced, a pre-existing gap it exposed.
 - Commit `a44bce4a` — this repo's own `[preview] command`, the first thing to
-  actually depend on this working.
+actually depend on this working.
 
 ## Activity
 

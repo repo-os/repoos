@@ -38,32 +38,32 @@ friction for a human watching the board.
 ## Non-goals — read before touching this
 
 - **Do not change what counts as a real conflict.** `mergeBranch`
-  (`src/core/git.ts:1244`) already has the one true definition: a merge that
-  survives its own `autoResolve`/`autoResolveOurs` strategies (dist/,
-  screenshots/, the task's own work file get auto-resolved; other work/*.md
-  files take main's side) and still has unresolved paths. The pre-flight
-  check MUST reuse this exact logic, not a hand-rolled parse of `git
-  merge-tree` output — a second, drifting implementation of "is this a real
-  conflict" is exactly the kind of bug this codebase has been bitten by
-  before (see #0271's own history). Prefer adding a dry-run mode to
-  `mergeBranch` itself (e.g. an option that merges in a scratch/detached
-  context and never touches the working worktree's state) over duplicating
-  its conflict classification elsewhere.
+(`src/core/git.ts:1244`) already has the one true definition: a merge that
+survives its own `autoResolve`/`autoResolveOurs` strategies (dist/,
+screenshots/, the task's own work file get auto-resolved; other work/*.md
+files take main's side) and still has unresolved paths. The pre-flight
+check MUST reuse this exact logic, not a hand-rolled parse of `git
+merge-tree` output — a second, drifting implementation of "is this a real
+conflict" is exactly the kind of bug this codebase has been bitten by
+before (see #0271's own history). Prefer adding a dry-run mode to
+`mergeBranch` itself (e.g. an option that merges in a scratch/detached
+context and never touches the working worktree's state) over duplicating
+its conflict classification elsewhere.
 - **Do not touch the build/check gate, the self-resolving-staleness handling
-  (#0276), or the two-attempt retry/classification logic in `processJob`
-  (#0216).** This task is scoped to ONE thing: skip candidate-worktree
-  creation when a pre-flight check already knows the merge will hit a real
-  conflict. Every other failure mode (build failure, check failure, transient
-  infra) keeps going through the existing candidate-worktree flow unchanged.
+(#0276), or the two-attempt retry/classification logic in `processJob`
+(#0216).** This task is scoped to ONE thing: skip candidate-worktree
+creation when a pre-flight check already knows the merge will hit a real
+conflict. Every other failure mode (build failure, check failure, transient
+infra) keeps going through the existing candidate-worktree flow unchanged.
 - **Do not change the outcome for the non-conflict path.** A branch that
-  merges cleanly (or only touches auto-resolvable paths) must go through the
-  exact same `syncCandidate` → `validateCandidate` flow as today, with
-  identical behavior. This is purely an optimization to skip wasted work for
-  the conflict case, not a new code path for anything else.
+merges cleanly (or only touches auto-resolvable paths) must go through the
+exact same `syncCandidate` → `validateCandidate` flow as today, with
+identical behavior. This is purely an optimization to skip wasted work for
+the conflict case, not a new code path for anything else.
 - **Do not weaken the non-retryable classification.** A real conflict is
-  still `retryable: false` and still hands off to the same `onMergeConflict`
-  repair path — only the TIMING moves earlier (before candidate-worktree
-  creation), not the outcome or the recovery mechanism.
+still `retryable: false` and still hands off to the same `onMergeConflict`
+repair path — only the TIMING moves earlier (before candidate-worktree
+creation), not the outcome or the recovery mechanism.
 
 ## Direction
 
@@ -88,35 +88,35 @@ optimization.
 ## Acceptance criteria
 
 - [ ] A task whose branch has a real, non-auto-resolvable conflict against
-      current main is routed to the `onMergeConflict` repair engineer WITHOUT
-      a candidate worktree ever being created for that job attempt.
+    current main is routed to the `onMergeConflict` repair engineer WITHOUT
+    a candidate worktree ever being created for that job attempt.
 - [ ] A task whose branch merges cleanly, or only touches auto-resolvable
-      paths (dist/, screenshots/, its own work file, other tasks' work
-      files), proceeds through the full existing `syncCandidate` →
-      `validateCandidate` flow with no behavior change.
+    paths (dist/, screenshots/, its own work file, other tasks' work
+    files), proceeds through the full existing `syncCandidate` →
+    `validateCandidate` flow with no behavior change.
 - [ ] The conflict-classification logic lives in exactly one place (reused
-      by both the pre-flight check and the real merge), not duplicated.
+    by both the pre-flight check and the real merge), not duplicated.
 - [ ] A pre-flight check failure (git error, missing worktree, timeout) falls
-      back to the existing flow rather than blocking the job.
+    back to the existing flow rather than blocking the job.
 - [ ] No regression in #0276 (self-resolving staleness absorption), #0216
-      (two-attempt validate retry/classification), or #0271 (merge-conflict
-      auto-repair itself) — these are all orthogonal to this task and their
-      existing tests must keep passing unchanged.
+    (two-attempt validate retry/classification), or #0271 (merge-conflict
+    auto-repair itself) — these are all orthogonal to this task and their
+    existing tests must keep passing unchanged.
 - [ ] Tests cover: real-conflict pre-flight (no worktree created, repair
-      triggered), auto-resolvable-only pre-flight (normal flow proceeds),
-      clean branch (normal flow proceeds), and pre-flight-check-itself-fails
-      (falls back to existing flow).
+    triggered), auto-resolvable-only pre-flight (normal flow proceeds),
+    clean branch (normal flow proceeds), and pre-flight-check-itself-fails
+    (falls back to existing flow).
 - [ ] `repoos check` passes.
 
 ## Related
 
 - #0271 — established the merge-conflict auto-repair path this task makes
-  proactive rather than reactive; do not change its actual repair mechanism.
+proactive rather than reactive; do not change its actual repair mechanism.
 - #0276 — the self-resolving staleness absorption in the SAME validating
-  phase; explicitly out of scope, called out above to prevent scope creep.
+phase; explicitly out of scope, called out above to prevent scope creep.
 - #0350 — the real task run that surfaced this friction; see its activity
-  log for the actual timeline (branch fell behind main across #0348/#0349,
-  resolved manually rather than through the automated path this task adds).
+log for the actual timeline (branch fell behind main across #0348/#0349,
+resolved manually rather than through the automated path this task adds).
 
 ## Activity
 

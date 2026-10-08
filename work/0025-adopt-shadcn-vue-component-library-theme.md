@@ -34,54 +34,54 @@ themeable component layer to sit on top of it.
 ## Desired UX
 
 - Adopt shadcn-vue (Radix Vue primitives + shadcn-style wrappers) as the
-  component layer: buttons, dialog, select, switch, input, dropdown, card, etc.
+component layer: buttons, dialog, select, switch, input, dropdown, card, etc.
 - The EXISTING dark/neon/glass design language is preserved. shadcn-vue's
-  default styling is a NEW look — do NOT adopt it. Theme every component to the
-  existing CSS-variable tokens (`--bg`, `--panel`, `--cyan`, `--border`, etc.)
-  so the app looks the same, just with correct a11y and consistent behavior.
+default styling is a NEW look — do NOT adopt it. Theme every component to the
+existing CSS-variable tokens (`--bg`, `--panel`, `--cyan`, `--border`, etc.)
+so the app looks the same, just with correct a11y and consistent behavior.
 - Migrate the hand-built components in `src/ui-app/src/components/` to the new
-  primitives (TaskDrawer → Dialog, status select → Select, toggles → Switch,
-  buttons → Button, cards → Card, the search dropdown stays bespoke unless it
-  fits a primitive cleanly).
+primitives (TaskDrawer → Dialog, status select → Select, toggles → Switch,
+buttons → Button, cards → Card, the search dropdown stays bespoke unless it
+fits a primitive cleanly).
 - This is a behavioral consistency pass, not a visual redesign.
 
 ## Acceptance criteria
 
 - [ ] shadcn-vue installed and its tokens mapped to the existing theme
-      variables (no default-look shadcn styling visible anywhere)
+    variables (no default-look shadcn styling visible anywhere)
 - [ ] TaskDrawer uses an accessible dialog primitive (focus trap, Esc, overlay)
 - [ ] Status/priority controls use an accessible select/combobox
 - [ ] Toggles, inputs, and buttons use the primitives with matching visuals
 - [ ] Existing screens look and behave the same (compare against current
-      screenshots/`bun run compare` oracle), zero console errors
+    screenshots/`bun run compare` oracle), zero console errors
 - [ ] `ros check` passes
 
 ## Notes for AI
 
 - Context: this was deferred by 0021's Scope ("shadcn-vue adoption is a
-  component-library adoption that replaces hand-built components with a new
-  design language — that's a redesign, not a port... deferred to its own task").
-  The app today uses hand-built components matched to the tokens in
-  `src/ui-app/src/style.css`.
+component-library adoption that replaces hand-built components with a new
+design language — that's a redesign, not a port... deferred to its own task").
+The app today uses hand-built components matched to the tokens in
+`src/ui-app/src/style.css`.
 - **New runtime dependencies** — this task authorizes adding them to the UI app:
-  `radix-vue`, `class-variance-authority`, `clsx`, `tailwind-merge`,
-  `lucide-vue-next` (and whatever shadcn-vue's installer pulls). The core
-  engine's zero-runtime-dependency rule is unaffected (UI deps only, as with
-  vue/pinia/router/tailwind).
+`radix-vue`, `class-variance-authority`, `clsx`, `tailwind-merge`,
+`lucide-vue-next` (and whatever shadcn-vue's installer pulls). The core
+engine's zero-runtime-dependency rule is unaffected (UI deps only, as with
+vue/pinia/router/tailwind).
 - Do NOT restyle: the point is the same visuals with better a11y/consistency.
-  Map `--cyan`/`--violet`/glass styles onto the primitive slots.
+Map `--cyan`/`--violet`/glass styles onto the primitive slots.
 - Migrate incrementally, component by component, keeping `ros check` green
-  after each step; the UI smoke test (mounts, no console errors) is the net.
+after each step; the UI smoke test (mounts, no console errors) is the net.
 - `ros check` runs compiled JS from `dist/` — rebuild (`bun run build`) before
-  trusting output.
+trusting output.
 
 ## Scope
 
 - **This task**: adopt the library, theme it to the existing tokens, migrate
-  hand-built components.
+hand-built components.
 - **Defer to a SEPARATE task**: any deliberate visual redesign beyond mapping
-  the current tokens (new look, new layout), and removal of the old `app.html`
-  oracle (still needed for 0022/0024 parity checks).
+the current tokens (new look, new layout), and removal of the old `app.html`
+oracle (still needed for 0022/0024 parity checks).
 
 ## Related
 

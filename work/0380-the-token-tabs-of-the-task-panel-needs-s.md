@@ -20,15 +20,15 @@ several different kinds of data, but the usage content below the top strip is
 hard to parse:
 
 - A **top strip** of live agent stats (time / tokens / cost for the current
-  session). This stays as-is — an earlier draft of this task asked for its
-  removal, but that referred to a legacy engineer-only strip that had already
-  been removed; the current live strip is fine.
+session). This stays as-is — an earlier draft of this task asked for its
+removal, but that referred to a legacy engineer-only strip that had already
+been removed; the current live strip is fine.
 - Below it, the usage content (task-wide totals, per-role breakdown, per-session
-  table) sits in **one continuous bordered block** with only a faint
-  "usage — all roles & sessions" caption, an "individual sessions" sub-caption,
-  and thin **dashed lines** between the parts. Three different kinds of data run
-  together, so it is hard for a human to tell what each part represents without
-  parsing the tables.
+table) sits in **one continuous bordered block** with only a faint
+"usage — all roles & sessions" caption, an "individual sessions" sub-caption,
+and thin **dashed lines** between the parts. Three different kinds of data run
+together, so it is hard for a human to tell what each part represents without
+parsing the tables.
 
 ## Desired UX
 
@@ -40,11 +40,11 @@ stacked with spacing; see `src/ui-app/src/views/SettingsView.vue` ~lines
 332–460), NOT sections separated by a dashed line inside one continuous panel:
 
 1. **Task totals** — the totals grid (total time, total tokens, cache hit,
-   total cost, turns, sessions), reading as "the whole-task summary".
+ total cost, turns, sessions), reading as "the whole-task summary".
 2. **By role** — the per-role table (role / time / tokens / cost), reading as
-   "who spent what".
+ "who spent what".
 3. **Individual sessions** — the per-session table, reading as "the raw session
-   log".
+ log".
 
 A first-time reader should be able to glance at the tab and understand that
 different kinds of data are shown and what each section means, without needing
@@ -54,57 +54,57 @@ themselves (cache hit, turns, cache column) stay.
 ## Acceptance criteria
 
 - [x] The top-strip question is settled: the current live strip (spinner + time
-      / tokens / cost from the current session, the `showStats` `agent-stats`
-      block) STAYS — it is not the duplicate the original prompt referred to;
-      that legacy engineer-only strip was already removed by earlier work.
+    / tokens / cost from the current session, the `showStats` `agent-stats`
+    block) STAYS — it is not the duplicate the original prompt referred to;
+    that legacy engineer-only strip was already removed by earlier work.
 - [ ] The usage content is divided into three sections with clear headings
-      (at minimum: task totals, by role, individual sessions).
+    (at minimum: task totals, by role, individual sessions).
 - [ ] Each section is rendered as a visually distinct block/card — separate
-      panels like the Settings page's section blocks, matching the drawer/dark
-      theme — replacing the current single `task-usage` panel with its dashed
-      `border-top` separators between the roles and sessions parts.
+    panels like the Settings page's section blocks, matching the drawer/dark
+    theme — replacing the current single `task-usage` panel with its dashed
+    `border-top` separators between the roles and sessions parts.
 - [ ] Each section is self-explanatory: the heading conveys what the data
-      represents; section-level meaning does not depend on hover tooltips.
+    represents; section-level meaning does not depend on hover tooltips.
 - [ ] All existing data and interactions are preserved: the totals grid fields,
-      the by-role table, the sessions table with clickable started/ended time
-      expansion and agent/model expansion, cache-hover titles, and the
-      active-session row highlight.
+    the by-role table, the sessions table with clickable started/ended time
+    expansion and agent/model expansion, cache-hover titles, and the
+    active-session row highlight.
 - [ ] The empty state ("No token or usage data yet.") still renders when there
-      is no usage data, and the tab does not look broken in the partial states
-      (totals present but single role; totals present but no sessions, etc.).
+    is no usage data, and the tab does not look broken in the partial states
+    (totals present but single role; totals present but no sessions, etc.).
 - [ ] UI rebuilds cleanly and `repoos check` passes.
 
 ## Notes for AI
 
 - Markup lives in `src/ui-app/src/components/TaskDrawer.vue` — the Tokens tab
-  is the `ui.activeTab === 'tokens'` branch (top strip: the `showStats`
-  `agent-stats` block, currently ~line 3590; usage block: the `task-usage`
-  section). The strip stays; the redesign applies to the `task-usage` section.
+is the `ui.activeTab === 'tokens'` branch (top strip: the `showStats`
+`agent-stats` block, currently ~line 3590; usage block: the `task-usage`
+section). The strip stays; the redesign applies to the `task-usage` section.
 - Styles for the drawer live in `src/ui-app/src/style.css` (`.agent-stats`,
-  `.agent-stat`, `.task-usage*`, roughly lines 4826–4991) — the drawer is
-  body-teleported, so its CSS is global, not scoped. The dashed separators to
-  replace are `border-top: 1px dashed var(--border)` on `.task-usage-roles`
-  (~line 4911) and `.task-usage-sessions` (~line 4958). `.agent-stat` is
-  reused inside the totals grid; `.agent-stats` (plural) is used only by the
-  strip, which stays.
+`.agent-stat`, `.task-usage*`, roughly lines 4826–4991) — the drawer is
+body-teleported, so its CSS is global, not scoped. The dashed separators to
+replace are `border-top: 1px dashed var(--border)` on `.task-usage-roles`
+(~line 4911) and `.task-usage-sessions` (~line 4958). `.agent-stat` is
+reused inside the totals grid; `.agent-stats` (plural) is used only by the
+strip, which stays.
 - Visual reference for the block treatment: the Settings page renders each
-  section as its own `<Card>` with a `.sec-label` heading
-  (`src/ui-app/src/views/SettingsView.vue`, ~lines 332–460). Match the drawer's
-  existing panel look (bordered, rounded, `var(--panel-solid)`) in that spirit
-  rather than introducing a new style.
+section as its own `<Card>` with a `.sec-label` heading
+(`src/ui-app/src/views/SettingsView.vue`, ~lines 332–460). Match the drawer's
+existing panel look (bordered, rounded, `var(--panel-solid)`) in that spirit
+rather than introducing a new style.
 - Keep the data layer untouched: same `taskUsage` / `sessionStats` sources and
-  formatting helpers (`fmtTokens`, `fmtCost`, `fmtElapsed`, `cacheHitPct`);
-  this is a presentation redesign, not a data change.
+formatting helpers (`fmtTokens`, `fmtCost`, `fmtElapsed`, `cacheHitPct`);
+this is a presentation redesign, not a data change.
 - Do not break the interactive toggles in the sessions table
-  (`sessionTimesExpanded`, `sessionAgentsExpanded`) — relocate them intact.
-  The empty-state condition (`!showStats && (!taskUsage ||
-  taskUsage.totalSessions === 0)`) stays valid since the strip stays.
+(`sessionTimesExpanded`, `sessionAgentsExpanded`) — relocate them intact.
+The empty-state condition (`!showStats && (!taskUsage ||
+taskUsage.totalSessions === 0)`) stays valid since the strip stays.
 - Use the Claude frontend design skill for the visual treatment; match the
-  existing design language rather than introducing a new one.
+existing design language rather than introducing a new one.
 - Resolved 2026-09-17: an earlier draft of this task asked to remove the "top
-  section" from the Tokens tab. That referred to a legacy engineer-only strip
-  that had already been removed; the current live strip stays, and the
-  remaining work is the section split with distinct blocks below it.
+section" from the Tokens tab. That referred to a legacy engineer-only strip
+that had already been removed; the current live strip stays, and the
+remaining work is the section split with distinct blocks below it.
 
 ## Scope
 

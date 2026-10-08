@@ -17,9 +17,9 @@ Mission Control's "AI usage — all roles" panel only shows some roles. Playgrou
 
 - Panel: `UsagePanel.vue` (rendered by `DashboardView.vue`) reads `/api/stats/board` → `getSessionTypeStats()` (`src/core/db.ts:626`), which groups the `sessions` table by `sessionType` and drops nothing — a role appears iff at least one session row carries its sessionType.
 - Three recording paths, all must be covered:
-  1. Task runner sessions — `AgentRunner.recordSessionToDb` (`src/server/agents.ts:3904`), sessionType classified from agent name (agents.ts:3913-3921).
-  2. One-shot sessions — `recordOneShotSession` with explicit sessionType: playground, pm (docs/inputs/task-create), dispatch (auto-engineering).
-  3. CTO monitor — `CTOMonitor.recordRun` (`src/server/cto.ts:559`) writes sessionType "cto".
+1. Task runner sessions — `AgentRunner.recordSessionToDb` (`src/server/agents.ts:3904`), sessionType classified from agent name (agents.ts:3913-3921).
+2. One-shot sessions — `recordOneShotSession` with explicit sessionType: playground, pm (docs/inputs/task-create), dispatch (auto-engineering).
+3. CTO monitor — `CTOMonitor.recordRun` (`src/server/cto.ts:559`) writes sessionType "cto".
 
 ## Suspected root causes to verify first
 

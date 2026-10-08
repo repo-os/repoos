@@ -24,55 +24,55 @@ many cases, making the popup feel cramped and hard to read.
 ## Desired UX
 
 - Hovering a pipeline stage shows the popup at **at least as wide as the
-  integration bar itself**, reusing the same width logic the bar already uses.
+integration bar itself**, reusing the same width logic the bar already uses.
 - The popup may grow **wider than the bar** where that is what's needed for
-  the lines of text to avoid wrapping.
+the lines of text to avoid wrapping.
 - The popup **never exceeds 80% of the window width**, regardless of content.
 
 ## Acceptance criteria
 
 - [ ] Popup width is at least the rendered width of the integration bar,
-      derived from the bar's own width logic (not a new hardcoded constant).
+    derived from the bar's own width logic (not a new hardcoded constant).
 - [ ] The popup can be wider than the bar when necessary so lines of text
-      don't need to wrap (i.e. it can size to its content).
+    don't need to wrap (i.e. it can size to its content).
 - [ ] Popup width never exceeds 80% of the window width.
 - [ ] Where "at least as wide as the bar" and "≤ 80% of window" conflict
-      (narrow windows; mobile, where the bar spans nearly full width), the
-      80% cap wins.
+    (narrow windows; mobile, where the bar spans nearly full width), the
+    80% cap wins.
 - [ ] The popup remains anchored above the bar, centred and clamped into the
-      viewport, at the new widths — including across window resize.
+    viewport, at the new widths — including across window resize.
 - [ ] Existing integration-bar behavior is unaffected: stage hover/focus,
-      click-to-open-task-drawer, collapse/expand, auto-collapse.
+    click-to-open-task-drawer, collapse/expand, auto-collapse.
 - [ ] No console errors; `repoos check` passes.
 
 ## Notes for AI
 
 - The popup is the teleported stage hover pane (#0460): markup in
-  `src/ui-app/src/components/IntegrationStatusBar.vue` (`.stage-pane`,
-  teleported to `<body>`), CSS in `src/ui-app/src/style.css` (~line 8826),
-  width computed in JS by `positionPane()` — currently
-  `Math.min(window.innerWidth - 28, 560)`.
+`src/ui-app/src/components/IntegrationStatusBar.vue` (`.stage-pane`,
+teleported to `<body>`), CSS in `src/ui-app/src/style.css` (~line 8826),
+width computed in JS by `positionPane()` — currently
+`Math.min(window.innerWidth - 28, 560)`.
 - The bar's own width logic lives in the same component's scoped styles:
-  desktop `.ibar`/`.ibar-strip` are `width: fit-content` with
-  `max-width: min(680px, calc(100vw - 28px))`. `positionPane()` already
-  measures the bar via `barEl.getBoundingClientRect()`, so the bar's rendered
-  width is available at exactly the point the pane is sized — prefer deriving
-  the minimum from that measurement (or the same formula) over duplicating a
-  new constant.
+desktop `.ibar`/`.ibar-strip` are `width: fit-content` with
+`max-width: min(680px, calc(100vw - 28px))`. `positionPane()` already
+measures the bar via `barEl.getBoundingClientRect()`, so the bar's rendered
+width is available at exactly the point the pane is sized — prefer deriving
+the minimum from that measurement (or the same formula) over duplicating a
+new constant.
 - A shape that satisfies all three constraints: preferred `width: max-content`
-  (so text doesn't wrap), `min-width` = the bar's rendered width, and
-  `max-width` = `min(80vw, …)`. Any equivalent implementation is fine as long
-  as the acceptance criteria hold.
+(so text doesn't wrap), `min-width` = the bar's rendered width, and
+`max-width` = `min(80vw, …)`. Any equivalent implementation is fine as long
+as the acceptance criteria hold.
 - The `check` stage pane has the longest content (multi-line `checkTooltip`
-  built from `repoos.toml`) — use it as the sizing test case; short fixed
-  stage panes (sync/merge/build/done) should end up roughly bar-width.
+built from `repoos.toml`) — use it as the sizing test case; short fixed
+stage panes (sync/merge/build/done) should end up roughly bar-width.
 - Assumption: "the new popup on the integration bar" means the stage hover
-  pane only; no other integration-bar surface (error box, queue row) changes.
+pane only; no other integration-bar surface (error box, queue row) changes.
 - Keep the pane Teleported to `<body>` per repo convention for fixed
-  overlays — only its sizing/positioning math should change.
+overlays — only its sizing/positioning math should change.
 - `src/ui-app/tests/integration-status-bar.test.ts` may assert the current
-  560px width — update/extend rather than weaken it. Rebuild the UI
-  (`bun run build:ui`) after the change so the worktree build is fresh.
+560px width — update/extend rather than weaken it. Rebuild the UI
+(`bun run build:ui`) after the change so the worktree build is fresh.
 
 ## Scope
 

@@ -49,44 +49,44 @@ Two bugs in the pi driver's streaming path (introduced with #0616, now on
 `main`):
 
 1. `src/server/agents.ts` `parsePiEvent` surfaces every `message_update`
-   `text_delta` as its own `{type:"text"}` transcript entry. The chat UI's
-   `mergeAssistantText` (`src/ui-app/src/lib/chat-rows.ts`) joins consecutive
-   assistant text parts with a blank line — it expects opencode's
-   paragraph-sized `text` parts — so each token fragment becomes its own
-   paragraph.
+ `text_delta` as its own `{type:"text"}` transcript entry. The chat UI's
+ `mergeAssistantText` (`src/ui-app/src/lib/chat-rows.ts`) joins consecutive
+ assistant text parts with a blank line — it expects opencode's
+ paragraph-sized `text` parts — so each token fragment becomes its own
+ paragraph.
 2. Those streamed delta entries bypass `applySignals` (only the authoritative
-   `message_end` runs it, and its text is then suppressed as a duplicate), so
-   `::repoos-handoff-ready::` is never replaced by the `✓ agent requested
-   server-side handoff` line and appears raw in the transcript. The handoff
-   still fires (message_end is inspected), but the transcript is wrong.
+ `message_end` runs it, and its text is then suppressed as a duplicate), so
+ `::repoos-handoff-ready::` is never replaced by the `✓ agent requested
+ server-side handoff` line and appears raw in the transcript. The handoff
+ still fires (message_end is inspected), but the transcript is wrong.
 
 ## Fix
 
 Stream at *completed text block* granularity instead of per token:
 
 - In `parsePiEvent`'s `message_update` case, return an entry only for
-  `assistantMessageEvent.type === "text_end"` (its `content` is the whole
-  block); keep swallowing `text_delta`/`thinking_*`. pi emits `text_end` with
-  full `content` on the wire (verified in its provider adapters).
+`assistantMessageEvent.type === "text_end"` (its `content` is the whole
+block); keep swallowing `text_delta`/`thinking_*`. pi emits `text_end` with
+full `content` on the wire (verified in its provider adapters).
 - `appendPiLine`: a `text_end` entry is recorded through `applySignals` and
-  sets `piStreamedText`; at `message_end`, record the authoritative text only
-  when no block streamed (backfill), then clear the flag. Keep running
-  `applySignals` on the full `message_end` text so a signal split across blocks
-  still requests handoff.
+sets `piStreamedText`; at `message_end`, record the authoritative text only
+when no block streamed (backfill), then clear the flag. Keep running
+`applySignals` on the full `message_end` text so a signal split across blocks
+still requests handoff.
 - This matches how opencode's `text` parts stream, so the UI's existing merge
-  behaviour is correct and no UI change is needed.
+behaviour is correct and no UI change is needed.
 
 ## Acceptance criteria
 
 - A multi-word pi reply renders as normal prose (one entry per text block; no
-  blank line between fragments).
+blank line between fragments).
 - `::repoos-handoff-ready::` never appears raw in the transcript; it renders as
-  the system confirmation line, and the handoff request still fires.
+the system confirmation line, and the handoff request still fires.
 - `repoos check --changed main` passes; update `pi-driver.test.ts` and the pi
-  branch of `agent-drivers.test.ts` (the fake pi should emit a `text_end` block
-  plus `message_end` and assert one deduped text entry).
+branch of `agent-drivers.test.ts` (the fake pi should emit a `text_end` block
+plus `message_end` and assert one deduped text entry).
 - Optionally refresh the adapter-contract fixture/`parsePiRun` to exercise
-  `text_end` (the probe already passes via `message_end`).
+`text_end` (the probe already passes via `message_end`).
 
 ## Notes
 

@@ -49,30 +49,30 @@ of re-describing it — don't create a fifth place for a fact to go stale.
 ## Pages worth adding
 
 - **Built-in agents deep-dive** — Tech Debt, Performance, Architect, Design,
-  and Docs Debt (#0354, once built) on the "Build your team" page: what each
-  one scans for, its config (CLI/model/schedule), what "Run now" does, and
-  what good output looks like (inbox tasks for Tech Debt/Performance, a
-  markdown report under `docs/agents/<Name>/` for Architect/Design). The
-  Agents page added in #0341 should already carry one paragraph distinguishing
-  these from coding-agent roles and pointing here — don't duplicate that
-  distinction, just build on it.
+and Docs Debt (#0354, once built) on the "Build your team" page: what each
+one scans for, its config (CLI/model/schedule), what "Run now" does, and
+what good output looks like (inbox tasks for Tech Debt/Performance, a
+markdown report under `docs/agents/<Name>/` for Architect/Design). The
+Agents page added in #0341 should already carry one paragraph distinguishing
+these from coding-agent roles and pointing here — don't duplicate that
+distinction, just build on it.
 - **Authentication** — email OTP provider setup (`auth.emailProvider` in
-  `repoos.toml`, the Resend integration), the optional "Sign in with Google"
-  button (`auth.google.clientId`), and the dev-login backdoor for local
-  development (`REPOOS_AUTH_DEV_BACKDOOR_CODE` in `.env`, never honored when
-  `NODE_ENV=production`). Be careful with the backdoor's framing: it's a real
-  documented feature for local dev convenience, not something to bury, but
-  the page must be unambiguous that it's dev-only and never works in
-  production — check `src/server/routes/auth.ts` for the exact guard before
-  writing this claim. Lead the whole page with "auth is off by default" per
-  the note above — every subsection describing enabled-auth behavior should
-  read as conditional on having turned it on, not as default behavior.
+`repoos.toml`, the Resend integration), the optional "Sign in with Google"
+button (`auth.google.clientId`), and the dev-login backdoor for local
+development (`REPOOS_AUTH_DEV_BACKDOOR_CODE` in `.env`, never honored when
+`NODE_ENV=production`). Be careful with the backdoor's framing: it's a real
+documented feature for local dev convenience, not something to bury, but
+the page must be unambiguous that it's dev-only and never works in
+production — check `src/server/routes/auth.ts` for the exact guard before
+writing this claim. Lead the whole page with "auth is off by default" per
+the note above — every subsection describing enabled-auth behavior should
+read as conditional on having turned it on, not as default behavior.
 - **Deployments and releases** — the `[release]` block (git-tag-triggered
-  GitHub Releases via a workflow) and `[[deployments]]` rows (git-connected
-  provider deploys, one row per service+branch) in `repoos.toml`. Both are
-  opt-in and this repo's own `repoos.toml` is a real, working example to
-  crib the shape from (without copying its actual values) — same "opt-in,
-  off by default" framing applies here too.
+GitHub Releases via a workflow) and `[[deployments]]` rows (git-connected
+provider deploys, one row per service+branch) in `repoos.toml`. Both are
+opt-in and this repo's own `repoos.toml` is a real, working example to
+crib the shape from (without copying its actual values) — same "opt-in,
+off by default" framing applies here too.
 
 ## Constraints
 

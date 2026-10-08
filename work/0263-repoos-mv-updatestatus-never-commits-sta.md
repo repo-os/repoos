@@ -48,34 +48,34 @@ guarantee as the HTTP `PATCH .../review` path.
 ## Acceptance criteria
 
 - [ ] `repoos mv <id> <status>` commits the status change (a `docs(<id>):
-      status <old>→<new>` style message is fine, matching patchTaskFile's
-      convention).
+    status <old>→<new>` style message is fine, matching patchTaskFile's
+    convention).
 - [ ] Decide and document: should `cmdMv` route status changes — especially
-      transitions INTO `review` — through the same `guardReviewTransition`
-      gate the HTTP PATCH route uses (commits pending implementation
-      changes, rejects a vacuous transition), or is a plain commit of the
-      task file itself sufficient for the CLI path? The HTTP path's
-      guarantees exist for a reason; a CLI shortcut that skips them for
-      review transitions specifically is worth a deliberate decision, not
-      an accident of two similar-looking code paths.
+    transitions INTO `review` — through the same `guardReviewTransition`
+    gate the HTTP PATCH route uses (commits pending implementation
+    changes, rejects a vacuous transition), or is a plain commit of the
+    task file itself sufficient for the CLI path? The HTTP path's
+    guarantees exist for a reason; a CLI shortcut that skips them for
+    review transitions specifically is worth a deliberate decision, not
+    an accident of two similar-looking code paths.
 - [ ] `RepoOS.updateTask()` (also in `src/core/repoos.ts`, backing
-      whatever else calls it) — audit whether it has the same gap.
+    whatever else calls it) — audit whether it has the same gap.
 - [ ] Existing `repoos mv` tests/behavior for non-git-repo or detached
-      scenarios (if any) still pass — commit should be best-effort/fail-soft
-      like patchTaskFile's, not a hard failure that blocks the status write
-      itself.
+    scenarios (if any) still pass — commit should be best-effort/fail-soft
+    like patchTaskFile's, not a hard failure that blocks the status write
+    itself.
 - [ ] `repoos check` passes.
 
 ## Notes for AI
 
 - Compare directly against `patchTaskFile` in `src/server/write.ts` — it's
-  the known-good reference for "write + commit" semantics on a task file.
+the known-good reference for "write + commit" semantics on a task file.
 - `src/server/agents.ts`'s `healBoardDivergence` and `fileCommittedClean`
-  are the reason this gap is worth fixing rather than leaving as a curiosity
-  — they're the concrete mechanism whose guarantees this gap quietly
-  undermines.
+are the reason this gap is worth fixing rather than leaving as a curiosity
+— they're the concrete mechanism whose guarantees this gap quietly
+undermines.
 - Related: #0202 (the task whose activity log surfaced this), and the CLI
-  write-target fix landed in commit c5e39773 on main this same session.
+write-target fix landed in commit c5e39773 on main this same session.
 
 ## Original prompt
 

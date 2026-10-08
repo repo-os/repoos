@@ -30,20 +30,20 @@ behind conditionals — a lot of surface area for a feature that's no longer
 wanted. Scope was corrected to a full removal:
 
 - `repoos tunnel create` no longer accepts `--allow`; there is no email
-  concept in tunnel apps at all.
+concept in tunnel apps at all.
 - Removed `tunnel allow` / `tunnel deny` subcommands entirely.
 - Removed the Cloudflare Access API client (`cfFetch`, `reconcileAccessPolicy`,
-  `findAccessApp`, `findAccessPolicy`) and the Cloudflare API token keychain
-  storage — RepoOS never touches a Cloudflare API token anymore.
+`findAccessApp`, `findAccessPolicy`) and the Cloudflare API token keychain
+storage — RepoOS never touches a Cloudflare API token anymore.
 - `TunnelApp` no longer has an `access` field; `repoos.toml` no longer
-  serializes one.
+serializes one.
 - `TunnelDrawer.vue` no longer has an email input or a "Cloudflare token
-  permissions" panel; the readiness panel no longer shows `apiTokenStored`.
+permissions" panel; the readiness panel no longer shows `apiTokenStored`.
 - `docs/native-auth.md`'s Cloudflare Access section was rewritten to say
-  RepoOS doesn't manage Access — users who want it can configure it directly
-  in the Cloudflare dashboard.
+RepoOS doesn't manage Access — users who want it can configure it directly
+in the Cloudflare dashboard.
 - `repoos tunnel create` now just publishes the app; the printed next step
-  points at enabling `auth.enabled = true` for access control.
+points at enabling `auth.enabled = true` for access control.
 
 Net: -470 lines across core/tunnel.ts, commands/tunnel.ts,
 core/tunnel-assistant.ts, TunnelDrawer.vue, server.ts, and tests.
@@ -52,10 +52,10 @@ core/tunnel-assistant.ts, TunnelDrawer.vue, server.ts, and tests.
 
 - [x] \`repoos tunnel create\` never asks for or accepts an email whitelist.
 - [x] The CLI help text for \`tunnel create\` no longer mentions \`--allow\`,
-      \`allow\`, or \`deny\`.
+    \`allow\`, or \`deny\`.
 - [x] The TunnelDrawer UI form has no email field.
 - [x] \`buildTunnelPublishPlan()\` in \`tunnel-assistant.ts\` never generates
-      an \`--allow\` flag.
+    an \`--allow\` flag.
 - [x] \`TunnelApp\`/\`repoos.toml\` no longer has an \`access\` field.
 - [x] All tunnel tests pass; tests updated to match the no-Access behavior.
 - [x] \`repoos check\` passes (build, typecheck, full test suite all green).
@@ -63,11 +63,11 @@ core/tunnel-assistant.ts, TunnelDrawer.vue, server.ts, and tests.
 ## Notes for AI
 
 - Touch points spanned: \`src/core/tunnel.ts\`, \`src/commands/tunnel.ts\`,
-  \`src/core/tunnel-assistant.ts\`, \`src/ui-app/src/components/TunnelDrawer.vue\`,
-  \`src/server/server.ts\` (readiness route's \`apiTokenStored\`/token check),
-  \`docs/native-auth.md\`.
+\`src/core/tunnel-assistant.ts\`, \`src/ui-app/src/components/TunnelDrawer.vue\`,
+\`src/server/server.ts\` (readiness route's \`apiTokenStored\`/token check),
+\`docs/native-auth.md\`.
 - Cloudflare Tunnel/DNS-routing logic (cloudflared login/create/route dns)
-  is untouched — only Access management was removed.
+is untouched — only Access management was removed.
 
 ## Original prompt
 

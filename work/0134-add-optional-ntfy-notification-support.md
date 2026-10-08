@@ -22,10 +22,10 @@ RepoOS currently has no push notification mechanism for task lifecycle events. U
 - The user provides a **subscription topic** string (e.g. `repoos_myproject`) in a text input. This is the ntfy topic to which RepoOS will publish events.
 - A toggle switch controls whether ntfy notifications are enabled. When off, no notifications are sent even if a topic is configured.
 - When enabled, RepoOS publishes lightweight notification messages to the configured ntfy topic for key task lifecycle events:
-  - Task `<name>` moved from `active` to `review`
-  - Task `<name>` moved from `review` to `done` (review approved)
-  - Task `<name>` review returned with issues (moved from `review` back to `active` or a new status like `changes-requested`)
-  - (Stretch, if clean to implement) Task `<name>` created
+- Task `<name>` moved from `active` to `review`
+- Task `<name>` moved from `review` to `done` (review approved)
+- Task `<name>` review returned with issues (moved from `review` back to `active` or a new status like `changes-requested`)
+- (Stretch, if clean to implement) Task `<name>` created
 - Settings are persisted in the repo's config (same mechanism as other settings). The topic string and enabled toggle survive restarts.
 
 ## Acceptance criteria
@@ -46,9 +46,9 @@ RepoOS currently has no push notification mechanism for task lifecycle events. U
 - If the topic string is empty or the toggle is off, never send.
 - Do NOT add a runtime dependency. Use Node's built-in `fetch` or Bun's native fetch.
 - Files likely to touch:
-  - `src/ui-app/` — settings page component (add the ntfy section)
-  - Settings persistence layer (wherever Cloudflare settings are stored)
-  - Task transition logic (where status changes happen) — to emit notifications
+- `src/ui-app/` — settings page component (add the ntfy section)
+- Settings persistence layer (wherever Cloudflare settings are stored)
+- Task transition logic (where status changes happen) — to emit notifications
 - The ntfy logo/branding should not be used unless it has a permissive license. Use a generic bell icon or plain text instead.
 - The side panel content should include a sentence like: "ntfy is a free, open-source push notification service. Install the ntfy app on your phone from the App Store or Google Play, subscribe to a unique topic (e.g. `repoos_myproject`), and enter that topic below."
 

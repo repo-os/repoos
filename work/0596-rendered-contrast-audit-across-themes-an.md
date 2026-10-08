@@ -19,10 +19,10 @@ The theme-contrast check (`[[check.contrastPairs]]` in repoos.toml) only tests 9
 
 ## Approach
 1. **Rendered audit** in the existing headless WebKit smoke harness (scripts/ui-smoke.mjs):
-   - For every theme scope x light/dark, open a defined set of screens/states: board, drawer tabs (Changes, Tokens, Review, chat), Agents, Settings, Context/Docs, a modal or two, toasts.
-   - Walk every visible text node; read computed `color`; find the real background by compositing translucent ancestor backgrounds down to the first opaque one (skip elements with images/gradients behind them, report them as "unchecked").
-   - Fail text under 3:1 (large/UI text) or 4.5:1 (body text). Report theme, mode, screen, selector, fg/bg and ratio.
-   - Allowlist mechanism for intentionally dark blocks (code panes) via a data attribute or selector list in repoos.toml, not scattered ignores.
+- For every theme scope x light/dark, open a defined set of screens/states: board, drawer tabs (Changes, Tokens, Review, chat), Agents, Settings, Context/Docs, a modal or two, toasts.
+- Walk every visible text node; read computed `color`; find the real background by compositing translucent ancestor backgrounds down to the first opaque one (skip elements with images/gradients behind them, report them as "unchecked").
+- Fail text under 3:1 (large/UI text) or 4.5:1 (body text). Report theme, mode, screen, selector, fg/bg and ratio.
+- Allowlist mechanism for intentionally dark blocks (code panes) via a data attribute or selector list in repoos.toml, not scattered ignores.
 2. **Source guard**: flag new hard-coded `#hex` / `rgba(255,...)` colors in component `<style>` blocks unless annotated with a marker comment. Prevents regressions; the rendered audit finds what is already there.
 3. Wire both into `repoos.toml` `[[check.steps]]` (full profile; consider `whenChanged` on `src/ui-app/**`), and document in user-docs/check.md and docs/.
 

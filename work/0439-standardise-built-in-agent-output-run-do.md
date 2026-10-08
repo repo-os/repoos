@@ -46,8 +46,8 @@ When a task requires human input or decision before it can be implemented, the a
 ```yaml
 needs_input: true
 questions:
-  - "Should we fix the code issue or update the documentation?"
-  - "What's the acceptable performance threshold?"
+- "Should we fix the code issue or update the documentation?"
+- "What's the acceptable performance threshold?"
 ```
 
 This signals to the human that the task is blocked on their answers, and provides a clear next action via the PM chat. The human can then discuss and update the task body with their decisions, removing `needs_input` and `questions` before setting status to ready for implementation.

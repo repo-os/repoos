@@ -24,57 +24,57 @@ input can be opened and changed.
 ## Desired UX
 
 - Each input renders as a card in the same visual idiom the task spec panel
-  already uses, so the two panels feel like the same system.
+already uses, so the two panels feel like the same system.
 - The card has **no title** — in particular, not the current literal `"TEXT"`
-  header — and **no edit button**. The card itself is the affordance.
+header — and **no edit button**. The card itself is the affordance.
 - Clicking anywhere on the card opens the existing input edit modal, so the
-  user discovers editability by the modal popping up rather than by being told
-  up front.
+user discovers editability by the modal popping up rather than by being told
+up front.
 - Any markdown in the input's text is rendered inside the card (the same way
-  the task spec panel renders markdown) instead of being shown as raw
-  unformatted text.
+the task spec panel renders markdown) instead of being shown as raw
+unformatted text.
 - Multiple inputs in the panel each get their own card, in their existing
-  order.
+order.
 
 ## Acceptance criteria
 
 - [ ] The literal `"TEXT"` header above the input panel's text block is gone.
 - [ ] Each input's text is rendered inside a card that visually matches the
-      task spec panel's card treatment (border/background/spacing idiom).
+    task spec panel's card treatment (border/background/spacing idiom).
 - [ ] The card has no visible title and no edit/pencil button or other
-      explicit "Edit" affordance.
+    explicit "Edit" affordance.
 - [ ] Clicking the card opens the same modal used to edit an input today.
 - [ ] Markdown in the input text renders as markdown in the card (e.g.
-      `**bold**`, links, lists, code spans) rather than as literal
-      asterisks/brackets.
+    `**bold**`, links, lists, code spans) rather than as literal
+    asterisks/brackets.
 - [ ] Text with no markdown still renders cleanly, with whitespace and
-      newlines preserved sensibly and no empty-card or raw-HTML artifacts.
+    newlines preserved sensibly and no empty-card or raw-HTML artifacts.
 - [ ] The existing create-input flow still works; newly created inputs appear
-      as cards too.
+    as cards too.
 - [ ] Inputs without text (empty body) render as a valid, clickable card
-      rather than collapsing or disappearing.
+    rather than collapsing or disappearing.
 - [ ] `repoos check` passes (format, lint, build, tests, UI smoke).
 
 ## Notes for AI
 
 - Model this on the existing task spec card + edit-modal behaviour. Find the
-  component that renders a task's spec (the card that opens the spec edit
-  modal) and mirror its structure, styles and click handling for inputs,
-  rather than inventing a new pattern.
+component that renders a task's spec (the card that opens the spec edit
+modal) and mirror its structure, styles and click handling for inputs,
+rather than inventing a new pattern.
 - Reuse the existing input edit modal and the existing input update path — this
-  is a presentation change to the Input panel, not a data-model change.
+is a presentation change to the Input panel, not a data-model change.
 - Use whatever markdown renderer the spec card already uses; do not add a
-  runtime dependency (zero runtime dependencies is a hard constraint).
+runtime dependency (zero runtime dependencies is a hard constraint).
 - The click target should be the whole card. Keep the existing keyboard/ARIA
-  expectations of the spec card (an interactive card should still be
-  reachable and activatable by keyboard) — do not regress accessibility
-  relative to the component being mirrored.
+expectations of the spec card (an interactive card should still be
+reachable and activatable by keyboard) — do not regress accessibility
+relative to the component being mirrored.
 - If the Input panel currently distinguishes multiple kinds of input, only
-  change the text kind's presentation; leave other kinds as they are.
+change the text kind's presentation; leave other kinds as they are.
 - Do not rename or remove fields, do not change input storage, and do not
-  touch the task spec panel's existing behaviour.
+touch the task spec panel's existing behaviour.
 - Run `bun run fmt` before committing on the task branch, and rebuild
-  (`bun run build:ui`) after the UI change.
+(`bun run build:ui`) after the UI change.
 
 ## Scope
 
@@ -88,12 +88,12 @@ input kinds; the task spec panel.
 ## Related
 
 - `AGENTS.md` conventions: dialog/modal content is body-teleported and its CSS
-  lives in `src/ui-app/src/style.css`, not the view's `<style scoped>` block —
-  new drawer/dialog markup must use the shared `ui/dialog/*` components and
-  the global `field` / `btn-row` / `ff-*` form classes.
+lives in `src/ui-app/src/style.css`, not the view's `<style scoped>` block —
+new drawer/dialog markup must use the shared `ui/dialog/*` components and
+the global `field` / `btn-row` / `ff-*` form classes.
 - The task spec card it should match: the spec rendering path in
-  `src/ui-app/src/` (view + card component) — use it as the reference
-  implementation.
+`src/ui-app/src/` (view + card component) — use it as the reference
+implementation.
 
 ## Original prompt
 

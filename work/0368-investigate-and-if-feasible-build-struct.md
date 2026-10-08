@@ -42,20 +42,20 @@ current per-CLI capability matrix as a starting point, but verify against
 the live protocol, don't trust a doc that might itself be stale):
 
 - **opencode** (`--format json`) — the user specifically named this one as
-  having equivalent behavior in its own interactive mode. Confirm what its
-  structured JSON stream actually emits for a clarifying-question moment
-  (a distinct event type? a generic tool-call the built-in interactive UI
-  happens to render specially, not present in the headless JSON at all?).
+having equivalent behavior in its own interactive mode. Confirm what its
+structured JSON stream actually emits for a clarifying-question moment
+(a distinct event type? a generic tool-call the built-in interactive UI
+happens to render specially, not present in the headless JSON at all?).
 - **claude code** (`--output-format stream-json`) — likely has an
-  `AskUserQuestion`-shaped tool_use block; confirm the exact shape in
-  RepoOS's headless invocation, not just in interactive terminal use.
+`AskUserQuestion`-shaped tool_use block; confirm the exact shape in
+RepoOS's headless invocation, not just in interactive terminal use.
 - **codex** (app-server JSON protocol) — check its capability list/protocol
-  docs for an elicitation method.
+docs for an elicitation method.
 - **qwen code, github copilot, kiro** — the model-recommendations doc marks
-  these as having no machine-parseable output format or unknown capabilities;
-  confirm whether that's still true and whether it rules out this feature for
-  those drivers specifically (a text-only fallback may be the ceiling for
-  some CLIs, and that's fine — see Fallback below).
+these as having no machine-parseable output format or unknown capabilities;
+confirm whether that's still true and whether it rules out this feature for
+those drivers specifically (a text-only fallback may be the ceiling for
+some CLIs, and that's fine — see Fallback below).
 
 Do not design the UI or the wire format before this investigation is done —
 if zero drivers support it, the honest scope of this task shrinks to
@@ -66,20 +66,20 @@ documenting that and closing it, not building unused plumbing.
 Three layers, in dependency order:
 
 1. **Per-driver parsing** that recognizes the CLI's native elicitation event
-   (whatever form investigation finds) and normalizes it to one internal
-   shape RepoOS controls — a question, a list of options (with an
-   `allowFreeform`/"Other" flag), matching the loose shape of this
-   conversation's own `AskUserQuestion` tool as a reference, not a spec to
-   copy verbatim.
+ (whatever form investigation finds) and normalizes it to one internal
+ shape RepoOS controls — a question, a list of options (with an
+ `allowFreeform`/"Other" flag), matching the loose shape of this
+ conversation's own `AskUserQuestion` tool as a reference, not a spec to
+ copy verbatim.
 2. **Wire it back**: the agent process is waiting on this answer the same
-   way it waits on any stdin turn today — the click needs to become the next
-   input to the SAME running session (reuse whatever `AgentRunner.send()` /
-   session-resume path already exists; do not build a second, parallel
-   send-a-message mechanism).
+ way it waits on any stdin turn today — the click needs to become the next
+ input to the SAME running session (reuse whatever `AgentRunner.send()` /
+ session-resume path already exists; do not build a second, parallel
+ send-a-message mechanism).
 3. **New chat UI** — a distinct bubble type in the task's chat feed (PM tab,
-   engineer tab, wherever an agent can ask) rendering the question and
-   clickable options plus a free-text field, sending the choice back through
-   step 2's path on click.
+ engineer tab, wherever an agent can ask) rendering the question and
+ clickable options plus a free-text field, sending the choice back through
+ step 2's path on click.
 
 ## Fallback for CLIs without native support
 
@@ -92,23 +92,23 @@ that some drivers get left behind by.
 ## Acceptance criteria
 
 - [ ] Documented findings, per driven CLI, on whether a structured
-      elicitation primitive exists in its headless/machine-readable output,
-      with evidence (not inference) for each.
+    elicitation primitive exists in its headless/machine-readable output,
+    with evidence (not inference) for each.
 - [ ] If feasible for at least one CLI: that CLI's structured questions
-      render as clickable options + free-text in the relevant task chat tab,
-      and the human's choice reaches the agent's running session correctly.
+    render as clickable options + free-text in the relevant task chat tab,
+    and the human's choice reaches the agent's running session correctly.
 - [ ] CLIs without native support are unaffected — plain-text chat Q&A keeps
-      working exactly as before.
+    working exactly as before.
 - [ ] If infeasible for every CLI, the task closes with the investigation
-      findings recorded (in this task or linked docs) rather than staying
-      open indefinitely or being force-built on a CLI that doesn't actually
-      support it.
+    findings recorded (in this task or linked docs) rather than staying
+    open indefinitely or being force-built on a CLI that doesn't actually
+    support it.
 - [ ] `repoos check` passes.
 
 ## Related
 
 - #0364 — the onboarding task that surfaced the need; explicitly does not
-  depend on this one and should not be blocked waiting for it.
+depend on this one and should not be blocked waiting for it.
 
 ## Activity
 

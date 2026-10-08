@@ -31,32 +31,32 @@ and feel like first-class panels rather than secondary, undersized views.
 ## Acceptance criteria
 
 - [ ] The Ross chat and the CTO chat are both rendered in a full side panel
-      layout.
+    layout.
 - [ ] The side panel for each chat is the same size as the existing task panel.
 - [ ] Opening/activating a chat shows it in this full-size side panel.
 - [ ] The chat remains fully usable and readable in the new panel size (no
-      clipping, scrolling works for longer conversations).
+    clipping, scrolling works for longer conversations).
 
 ## Notes for AI
 
 - Only apply sizing/layout changes that make the chat panels match the task
-  panel size; there is no request to change the task panel itself.
+panel size; there is no request to change the task panel itself.
 - The "same size as the task panel" requirement is about the panel dimensions
-  and layout. Where anything is ambiguous, mirror the task panel's existing
-  sizing and spacing as the default.
+and layout. Where anything is ambiguous, mirror the task panel's existing
+sizing and spacing as the default.
 - This is a UI-only change. No chat behavior, message handling, or backend
-  logic should be altered.
+logic should be altered.
 - After the change, rebuild (`bun run build:ui`, or `bun run build`) and verify
-  with a browser probe before reporting done, per the repo conventions.
+with a browser probe before reporting done, per the repo conventions.
 - Touch only the UI source under `src/ui-app`; do not modify core, server, or
-  CLI.
+CLI.
 
 ## Scope
 
 - In scope: making the Ross chat and CTO chat full side panels sized to match
-  the task panel.
+the task panel.
 - Deferred: any changes to chat behavior, features, or the task panel itself.
-  Also deferred are any other panels or new panel types not mentioned.
+Also deferred are any other panels or new panel types not mentioned.
 
 ## Activity
 

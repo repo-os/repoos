@@ -22,11 +22,11 @@ about.
 ## Desired UX
 
 - Every input has a number, displayed alongside it in the UI (e.g. "Input #0001"),
-  matching the way task numbers are shown.
+matching the way task numbers are shown.
 - Numbers are stable: retroactively assigned to existing inputs and never
-  reused or renumbered afterward.
+reused or renumbered afterward.
 - Inputs are deep-linkable via URL, e.g. `/inputs?input=0001` opens the board
-  focused on that input.
+focused on that input.
 - New inputs automatically get the next number, same pattern as tasks.
 
 ## Acceptance criteria
@@ -41,18 +41,18 @@ about.
 ## Notes for AI
 
 - Follow the existing task-numbering implementation as the pattern — reuse its
-  approach (likely `src/core` for id assignment/migration and the inputs view
-  under `src/ui-app/src/views/` for display + URL param handling).
+approach (likely `src/core` for id assignment/migration and the inputs view
+under `src/ui-app/src/views/` for display + URL param handling).
 - Migration of existing inputs must be idempotent and written up front, since
-  it touches this repo's own data (same self-modifying caution as the task
-  format — see AGENTS.md).
+it touches this repo's own data (same self-modifying caution as the task
+format — see AGENTS.md).
 - Assumption: IDs are zero-padded 4-digit strings matching the task scheme
-  (`0001`), not plain integers, so URLs and display stay consistent.
+(`0001`), not plain integers, so URLs and display stay consistent.
 - Assumption: an unknown `?input=` param value should degrade gracefully (no
-  crash; just no selection).
+crash; just no selection).
 - Do not renumber on delete; deleted numbers stay retired.
 - All input manipulation must go through `repoos` commands / HTTP API — never
-  hand-write `inputs/*.md` files.
+hand-write `inputs/*.md` files.
 
 ## Scope
 

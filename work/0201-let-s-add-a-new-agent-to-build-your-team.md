@@ -22,8 +22,8 @@ He'll be a floating head next to Ross and CTO, and use one of the robot profile 
 ## Desired change
 
 1. **Debugger Agent in "Build your team"** — add a card in the "Build your team" section of the Agents page (src/ui-app/src/views/AgentsView.vue), following the <BuiltInAgentCard> pattern (src/ui-app/src/components/BuiltInAgentCard.vue) or a chat-style panel.
-   - Purpose: paste a bug / error → get a clear diagnosis (root cause + suggested fix).
-   - Interactive/conversational first — background-scan behaviour is out of scope unless desired.
+- Purpose: paste a bug / error → get a clear diagnosis (root cause + suggested fix).
+- Interactive/conversational first — background-scan behaviour is out of scope unless desired.
 2. **Floating head** — add a Debugger head next to Ross/CTO in src/ui-app/src/components/FloatingHeads.vue, gated by its enabled state, opening a bug-paste chat panel (mirror RepoGuideChat.vue). Use a robot-style profile pic.
 3. **Move Ross and CTO to "Build your team"** — currently rendered in the Default agents section (driven by DEFAULT_AGENTS in src/core/config.ts). Group Ross/CTO (talk/team agents) with the Debugger under "build your team", distinct from the headless task-engine defaults (engineer, reviewer, pm). Keep DEFAULT_AGENTS seeding and the legacy "RepoOS Guide"→"Ross" migration intact.
 

@@ -23,14 +23,14 @@ existing themes, which the current inline bar does not fully account for.
 ## Desired UX
 
 - Clicking the existing search bar opens a large search overlay instead of
-  behaving as an inline input.
+behaving as an inline input.
 - Pressing `cmd+k` anywhere in the app opens the same overlay.
 - The overlay takes up a large, prominent portion of the screen (the common
-  "command palette / spotlight" presentation), with the search input focused
-  and ready for typing.
+"command palette / spotlight" presentation), with the search input focused
+and ready for typing.
 - The overlay's colors, backgrounds, and accent colors follow the app's
-  existing theme system so it looks native in each theme, matching the
-  current theme the user has selected.
+existing theme system so it looks native in each theme, matching the
+current theme the user has selected.
 
 ## Acceptance criteria
 
@@ -39,26 +39,26 @@ existing themes, which the current inline bar does not fully account for.
 - [ ] The overlay is large and centered on screen in the command-palette style.
 - [ ] Search input inside the overlay is focused automatically when it opens.
 - [ ] The overlay renders correctly with the app's various themes and matches
-      the active theme's color scheme.
+    the active theme's color scheme.
 - [ ] Results from the existing search functionality still work inside the
-      overlay (existing search behavior is preserved, just re-presented).
+    overlay (existing search behavior is preserved, just re-presented).
 - [ ] `repoos check` passes with the change.
 
 ## Notes for AI
 
 - Work in `src/ui-app` (the Vite + Vue 3 web UI). Touch the search bar
-  component and the relevant styles; keep the existing search logic/API and
-  only change the presentation.
+component and the relevant styles; keep the existing search logic/API and
+only change the presentation.
 - Reuse the existing theme system for the overlay colors; do not hardcode
-  palette values.
+palette values.
 - Assumptions made where unspecified:
-  - `cmd+k` should work globally in the app (any page/view), not only when
-    the search bar is in focus.
-  - The overlay is dismissible with `Esc` or by clicking outside of it.
-  - Only the trigger and presentation change; querying behavior and results
-    are unchanged.
+- `cmd+k` should work globally in the app (any page/view), not only when
+  the search bar is in focus.
+- The overlay is dismissible with `Esc` or by clicking outside of it.
+- Only the trigger and presentation change; querying behavior and results
+  are unchanged.
 - After any UI change, rebuild (`bun run build:ui` for speed, or
-  `bun run build`) and verify the overlay in each theme before reporting done.
+`bun run build`) and verify the overlay in each theme before reporting done.
 - Do not change task file format, frontmatter schema, or the parser.
 
 ## Scope

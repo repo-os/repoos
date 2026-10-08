@@ -11,11 +11,6 @@ branch: feat/workwatcher-misses-file-content-change-e
 created_at: "2026-08-13T07:04:41Z"
 updated_at: "2026-08-13T14:22:46Z"
 ---
-## Activity
-
-- 2026-08-13T07:04:41Z · created · unknown
-
-
 ## Problem
 
 `WorkWatcher` (`src/server/watcher.ts`) is the *only* mechanism that tells the
@@ -59,42 +54,43 @@ agent, human).
 ## Acceptance criteria
 
 - [ ] `WorkWatcher` gains a periodic reconciliation pass (mirroring
-      `ReloadManager`'s watch+poll pattern in `reload.ts`) — e.g. every 5–10s,
-      `statSync` every tracked task file, compare mtime against a small in-memory
-      map the watcher maintains, and call `index.applyFileChange(path)` for any
-      file whose mtime has moved since the last poll.
+    `ReloadManager`'s watch+poll pattern in `reload.ts`) — e.g. every 5–10s,
+    `statSync` every tracked task file, compare mtime against a small in-memory
+    map the watcher maintains, and call `index.applyFileChange(path)` for any
+    file whose mtime has moved since the last poll.
 - [ ] The same pass also catches new files `fs.watch` missed (not yet in
-      `pathToId`) and deletions (`pathToId` entries whose file no longer exists) —
-      not just content changes to already-known files.
+    `pathToId`) and deletions (`pathToId` entries whose file no longer exists) —
+    not just content changes to already-known files.
 - [ ] `fs.watch` stays the primary, low-latency path; the poll is a bounded-latency
-      safety net only, not a replacement (avoid re-reading/re-parsing every file
-      every poll — mtime comparison first, `applyFileChange` only on drift).
+    safety net only, not a replacement (avoid re-reading/re-parsing every file
+    every poll — mtime comparison first, `applyFileChange` only on drift).
 - [ ] A regression test: write/modify a task file without going through any
-      server-owned write path (simulating an untracked external edit — e.g. an
-      `fs.writeFileSync` the test never tells the watcher about directly), and
-      assert the index reflects it within the poll window without requiring a
-      `touch` or any other nudge.
+    server-owned write path (simulating an untracked external edit — e.g. an
+    `fs.writeFileSync` the test never tells the watcher about directly), and
+    assert the index reflects it within the poll window without requiring a
+    `touch` or any other nudge.
 - [ ] No change to `fs.watch` debounce/dedup behavior for the common case — this is
-      additive, not a rewrite of the existing fast path.
+    additive, not a rewrite of the existing fast path.
 
 ## Notes for AI
 
 - Reuse the poll-interval / debounce constants style already in `reload.ts`
-  (`DEFAULT_POLL_MS`, etc.) rather than inventing new magic numbers from scratch.
+(`DEFAULT_POLL_MS`, etc.) rather than inventing new magic numbers from scratch.
 - `LiveIndex` currently has no mtime bookkeeping at all (`applyFileChange` always
-  re-reads unconditionally) — the mtime map belongs in `WorkWatcher`, which already
-  owns the `work/` directory listing/recursion logic (`watchTree`, `tryRecursive`).
+re-reads unconditionally) — the mtime map belongs in `WorkWatcher`, which already
+owns the `work/` directory listing/recursion logic (`watchTree`, `tryRecursive`).
 - Don't call `index.refreshAll()` on every poll tick — that's a full rebuild
-  (clears and reparses everything) and is the wrong granularity for a routine
-  reconciliation pass; use targeted `applyFileChange` calls per drifted path,
-  same as the watcher's own event-driven path already does.
+(clears and reparses everything) and is the wrong granularity for a routine
+reconciliation pass; use targeted `applyFileChange` calls per drifted path,
+same as the watcher's own event-driven path already does.
 - Related but distinct from #0156 (the stuck-active-task watchdog) — that task's
-  detection logic reads the live index and needs it to be trustworthy; this task is
-  what makes it trustworthy. No hard ordering dependency, but worth landing first
-  or together.
+detection logic reads the live index and needs it to be trustworthy; this task is
+what makes it trustworthy. No hard ordering dependency, but worth landing first
+or together.
 
 ## Activity
 
+- 2026-08-13T07:04:41Z · created · unknown
 - 2026-08-13T13:44:13Z · status inbox→ready
 - 2026-08-13T14:04:33Z · status ready→review, branch
 - 2026-08-13T14:22:46Z · status review→done, release:success

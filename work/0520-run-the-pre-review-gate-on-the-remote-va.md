@@ -31,27 +31,27 @@ passed in 135s on a quiet machine. The same gate passes in ~120–135s on the
 ## Changes
 
 1. Add a remote path for the pre-review gate: when `[remoteValidation]` is
-   enabled, run install + build + tests on the runner against the task
-   worktree's HEAD (git bundle, same transport as close-out), then run the
-   local guards with `REPOOS_SKIP_TESTS=1`, exactly as `validateCandidate` does.
+ enabled, run install + build + tests on the runner against the task
+ worktree's HEAD (git bundle, same transport as close-out), then run the
+ local guards with `REPOOS_SKIP_TESTS=1`, exactly as `validateCandidate` does.
 2. Make it reachable both from the engineer agent's handoff verification and
-   from `repoos check` (opt-in flag or setting), without changing default
-   behaviour for repos with remote validation off.
+ from `repoos check` (opt-in flag or setting), without changing default
+ behaviour for repos with remote validation off.
 3. Decide and document the unreachable-runner policy for pre-review: fail as
-   retryable (current MTD behaviour, `fallbackToLocal = false`) or fall back to
-   local. Add the Settings UI control per the AGENTS.md rule for user-facing
-   `repoos.toml` keys.
+ retryable (current MTD behaviour, `fallbackToLocal = false`) or fall back to
+ local. Add the Settings UI control per the AGENTS.md rule for user-facing
+ `repoos.toml` keys.
 4. Keep the remote log viewable per task (`.repoos/logs/remote-validation/`).
 
 ## Acceptance
 
 - Test: pre-review gate calls `remoteValidator.validate` with the worktree
-  path and HEAD sha when enabled, and skips local tests afterwards.
+path and HEAD sha when enabled, and skips local tests afterwards.
 - Test: red remote gate is a non-retryable failure; unreachable runner follows
-  the documented policy.
+the documented policy.
 - Test: with remote validation disabled, `repoos check` behaves as before.
 - `docs/remote-validation.md` updated: the "What runs where" table and hook
-  points now cover the pre-review path.
+points now cover the pre-review path.
 
 ## Out of scope
 

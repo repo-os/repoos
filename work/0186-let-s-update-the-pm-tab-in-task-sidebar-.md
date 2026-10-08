@@ -37,9 +37,9 @@ Update the PM (Project Management) tab in the task sidebar to match the visual l
 - Extract shared UI patterns into reusable components if needed
 - Add agent/model selector to PM tab component
 - Remove save button and implement auto-save behavior:
-  - Listen to selector changes and persist immediately
-  - Show brief confirmation (optional toast/feedback)
-  - Handle errors gracefully
+- Listen to selector changes and persist immediately
+- Show brief confirmation (optional toast/feedback)
+- Handle errors gracefully
 - Ensure selector state persists across tab switches and page reloads
 
 ## Testing

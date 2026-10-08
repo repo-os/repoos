@@ -22,10 +22,10 @@ So within a story with more than a handful of tasks, there is no way to see them
 
 - The Story panel's **Tasks** tab gets a sort dropdown, visually and behaviorally identical to the Work page's sort dropdown (same `Select` / `SelectTrigger` / `SelectContent` / `SelectItem` composition, same size and placement idiom, same option labels).
 - The four options are the Work page's set, unchanged in label and meaning:
-  - Most recently updated
-  - Priority level
-  - Task number newest
-  - Task number oldest
+- Most recently updated
+- Priority level
+- Task number newest
+- Task number oldest
 - Default is **Most recently updated**, matching the Work page default.
 - Choosing an option immediately reorders the task list in place, without closing or reopening the panel and without moving the user off the Tasks tab.
 - The chosen option persists across page reloads (localStorage), the same way the Work page's choice does.
@@ -55,10 +55,10 @@ So within a story with more than a handful of tasks, there is no way to see them
 - `StoryPanel.vue` currently iterates `story.tasks` directly (the `tab === 'tasks'` branch). Sort a derived array there rather than mutating the prop or the source list. Be aware the panel receives the story as a prop (`MergedStoryGroup<Task>`), not via the store — so either expose a store-level sorted accessor and read it in the panel, or sort in a `computed` in the panel using an exported comparator. Don't reach into `props.story` and reorder it in place.
 - Follow the repo conventions: the custom styled dropdown for any new dropdown, `src/ui-app/src/style.css` for shared/teleported styles rather than a component `<style scoped>` block, and no `position: fixed` overlay outside a `<Teleport>`.
 - Assumptions I made, since the request left them open:
-  - The option set is exactly the Work page's existing four — the request's "priority level…" was trailing off but the intent reads as the same four options, so no new mode is being invented.
-  - The story list's own persistence key is separate from the board's, so a user who prefers a different order on the board is not forced into the same choice inside a story panel.
-  - Sorting is purely presentational and applies to the whole story's task list, not per-status sub-grouping — the Story panel's Tasks tab shows a flat list today and this change does not restructure it.
-  - Default is "Most recently updated" (same as the board default) rather than preserving the incoming backend order.
+- The option set is exactly the Work page's existing four — the request's "priority level…" was trailing off but the intent reads as the same four options, so no new mode is being invented.
+- The story list's own persistence key is separate from the board's, so a user who prefers a different order on the board is not forced into the same choice inside a story panel.
+- Sorting is purely presentational and applies to the whole story's task list, not per-status sub-grouping — the Story panel's Tasks tab shows a flat list today and this change does not restructure it.
+- Default is "Most recently updated" (same as the board default) rather than preserving the incoming backend order.
 - Rebuild the UI after the change (`bun run build:ui`) so the worktree build is fresh. Do not start a server or request a preview as part of finishing.
 - No backend change, no schema change, and no new runtime dependency. If a genuinely new sort mode turns out to be needed, stop and file it rather than widening the option list silently.
 

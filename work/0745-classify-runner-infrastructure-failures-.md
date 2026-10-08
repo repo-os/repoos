@@ -36,17 +36,17 @@ Read src/server/remote-validation.ts (pool, HangWatchdog, recordRun, infraFail),
 ## Shots
 ```json
 [
-  {
-    "label": "Remote runners degraded host state",
-    "target": "default",
-    "route": "/settings?tab=remote",
-    "highlight": ".rvr-host-state--bad",
-    "steps": [
-      {
-        "waitMs": 500
-      }
-    ]
-  }
+{
+  "label": "Remote runners degraded host state",
+  "target": "default",
+  "route": "/settings?tab=remote",
+  "highlight": ".rvr-host-state--bad",
+  "steps": [
+    {
+      "waitMs": 500
+    }
+  ]
+}
 ]
 ```
 

@@ -32,64 +32,64 @@ has to squint at the story panel's pills.
 ## Desired UX
 
 - The story panel Tasks sort dropdown gains a **"Status"** option alongside the
-  existing four. Selecting it orders the rows by the pipeline stage
-  `draft → inbox → ready → active → review → done`, so a story's tasks read as a
-  natural progression.
+existing four. Selecting it orders the rows by the pipeline stage
+`draft → inbox → ready → active → review → done`, so a story's tasks read as a
+natural progression.
 - Within one status the existing order is preserved (the sort is stable, so
-  rows don't jump around arbitrarily between renders).
+rows don't jump around arbitrarily between renders).
 - Each row's status pill is colored with the same status color used by the work
-  board columns: the label text takes the status color and the border is a
-  matching tint. `ready` is cyan, `active` violet, `review` amber, `done` green,
-  `inbox` slate, `draft` faint. The existing dot keeps using the same
-  `statusColor(task.status)` source of truth, so dot and pill can never diverge.
+board columns: the label text takes the status color and the border is a
+matching tint. `ready` is cyan, `active` violet, `review` amber, `done` green,
+`inbox` slate, `draft` faint. The existing dot keeps using the same
+`statusColor(task.status)` source of truth, so dot and pill can never diverge.
 - Both the sort choice and the colors survive a page reload, and the sort
-  choice stays independent of the work board's own sort choice (separate
-  `localStorage` keys already exist for this).
+choice stays independent of the work board's own sort choice (separate
+`localStorage` keys already exist for this).
 
 ## Acceptance criteria
 
 - [ ] `SortOrder` in `src/ui-app/src/stores/repo.ts` includes a new `status`
-      member, and `SORT_ORDER_OPTIONS` includes an entry for it with a label
-      matching the pipeline order in the dropdown.
+    member, and `SORT_ORDER_OPTIONS` includes an entry for it with a label
+    matching the pipeline order in the dropdown.
 - [ ] `sortTasks(tasks, "status")` returns tasks grouped by status in
-      `draft, inbox, ready, active, review, done` order, stable within a group,
-      and does not mutate its input array.
+    `draft, inbox, ready, active, review, done` order, stable within a group,
+    and does not mutate its input array.
 - [ ] The persisted-value whitelist in `readSortOrderFromKey` accepts the new
-      value, so a user who picks "Status" keeps it after a reload instead of
-      silently falling back to `recent`.
+    value, so a user who picks "Status" keeps it after a reload instead of
+    silently falling back to `recent`.
 - [ ] The story panel's sort dropdown renders the new option and selecting it
-      reorders the visible task rows immediately.
+    reorders the visible task rows immediately.
 - [ ] The work board's own sort dropdown is unchanged — "Status" is offered
-      there only if it is already shared deliberately; otherwise the new mode
-      must not appear on the board.
+    there only if it is already shared deliberately; otherwise the new mode
+    must not appear on the board.
 - [ ] The status pill in each story-panel task row is rendered in its status
-      color, using the store's `statusColor()` (the same values as the work page
-      column colors), with the border tinted from that same color.
+    color, using the store's `statusColor()` (the same values as the work page
+    column colors), with the border tinted from that same color.
 - [ ] A status with no configured color falls back without throwing, matching
-      the existing `statusColor` fallback.
+    the existing `statusColor` fallback.
 - [ ] Unit tests cover the new sort mode (including stability within a status
-      and the non-numeric/unknown-status path) and the pill's color binding.
+    and the non-numeric/unknown-status path) and the pill's color binding.
 - [ ] `bun run fmt` is clean and `repoos check --changed main` passes.
 - [ ] The UI bundle is rebuilt (`bun run build:ui`) so the worktree build is
-      fresh.
+    fresh.
 
 ## Notes for AI
 
 **Files to touch**
 
 - `src/ui-app/src/stores/repo.ts` — `SortOrder` type, `SORT_ORDER_OPTIONS`,
-  `readSortOrderFromKey` validation, `sortTasks` switch, and the
-  `STATUS_COLORS`/`statusColor` exports are all here. Reuse `statusColor()`;
-  do not add a second color table for statuses.
+`readSortOrderFromKey` validation, `sortTasks` switch, and the
+`STATUS_COLORS`/`statusColor` exports are all here. Reuse `statusColor()`;
+do not add a second color table for statuses.
 - `src/ui-app/src/components/StoryPanel.vue` — the Tasks tab markup
-  (`sortedStoryTasks` rows and the `story-panel-task-status` span) and its
-  imports.
+(`sortedStoryTasks` rows and the `story-panel-task-status` span) and its
+imports.
 - `src/ui-app/src/style.css` — the `.story-panel-task-status` rule. Per repo
-  convention, shared/global styling for this component lives in `style.css`,
-  not a `<style scoped>` block.
+convention, shared/global styling for this component lives in `style.css`,
+not a `<style scoped>` block.
 - `src/ui-app/tests/repo-sort-order.test.ts` and
-  `src/ui-app/tests/story-panel.test.ts` — extend these rather than adding a
-  new suite.
+`src/ui-app/tests/story-panel.test.ts` — extend these rather than adding a
+new suite.
 
 **Status order source of truth.** `STATUS_ORDER`
 (`["draft","inbox","ready","active","review","done"]`) is duplicated in
@@ -101,23 +101,23 @@ files' behavior as part of this task.
 **Assumptions picked (state them in the PR body if either is wrong)**
 
 - The status dot already exists and already uses `statusColor`, so "color code
-  the statuses" is interpreted as coloring the **status label pill**, not adding
-  a new indicator.
+the statuses" is interpreted as coloring the **status label pill**, not adding
+a new indicator.
 - The pill is colored via an inline `style` bound to `statusColor(task.status)`,
-  matching the existing dot. A `color-mix` tint for the border is preferred over
-  a hard-coded rgba so the border tracks the color. Keep the tinted text
-  readable — `repoos check` runs CSS layering and theme-contrast guards, so if a
-  tint on a low-contrast status (e.g. `inbox` slate) fails the contrast guard,
-  keep the label text at the status color and lighten the border rather than
-  weakening the whole rule.
+matching the existing dot. A `color-mix` tint for the border is preferred over
+a hard-coded rgba so the border tracks the color. Keep the tinted text
+readable — `repoos check` runs CSS layering and theme-contrast guards, so if a
+tint on a low-contrast status (e.g. `inbox` slate) fails the contrast guard,
+keep the label text at the status color and lighten the border rather than
+weakening the whole rule.
 
 **Constraints**
 
 - The story panel's sort preference and the work board's sort preference must
-  remain independent (`repoos.storyPanel.sortOrder` vs
-  `repoos.board.sortOrder`) — existing tests assert this.
+remain independent (`repoos.storyPanel.sortOrder` vs
+`repoos.board.sortOrder`) — existing tests assert this.
 - Any new dropdown here is the existing Radix `Select`; do not introduce an
-  unstyled `<select>`.
+unstyled `<select>`.
 - Do not add a runtime dependency.
 - Do not auto-request a preview; previews are the human's call.
 
@@ -134,9 +134,9 @@ adding a sort-by-status mode to the work board.
 ## Related
 
 - `src/ui-app/src/stores/repo.ts` — `COLUMNS`, `STATUS_COLORS`, `statusColor`
-  (work-page status colors) and `SORT_ORDER_OPTIONS`/`sortTasks`.
+(work-page status colors) and `SORT_ORDER_OPTIONS`/`sortTasks`.
 - `src/ui-app/tests/repo-sort-order.test.ts` — existing sort and
-  per-surface-persistence tests this task extends.
+per-surface-persistence tests this task extends.
 - AGENTS.md, "UI sitemap" and "Conventions" — dropdown and shared-CSS rules.
 
 ## Original prompt

@@ -29,11 +29,11 @@ it ("speed up git operations on large repos? [y/N]").
 
 Two forms:
 - **gix CLI binary** (`cargo install gitoxide` or prebuilt download) — simplest,
-  but the CLI surface is less stable than git's and its output needs separate
-  parsing. Only captures the "gix does the git op faster" win.
+but the CLI surface is less stable than git's and its output needs separate
+parsing. Only captures the "gix does the git op faster" win.
 - **napi-rs native module** (downloaded per-platform on opt-in) — more setup,
-  but ZERO per-call process-spawn cost, which is the bigger win at repoos scale
-  (see estimates). Stable library API.
+but ZERO per-call process-spawn cost, which is the bigger win at repoos scale
+(see estimates). Stable library API.
 
 ## Estimated speedup (measure to confirm)
 
@@ -43,12 +43,12 @@ log pass over ~3600 commits), ~85ms branchAheadCounts, rest file parse.
 
 Where gix helps and by how much:
 - **Process-spawn overhead** (~5-15ms per `git` call): a long-lived gitoxide
-  library has zero. ~6-10 calls per index build → ~50-100ms saved. Compounds
-  hard on `refreshBranches` (fires every task mutation) and per-worktree sweeps.
+library has zero. ~6-10 calls per index build → ~50-100ms saved. Compounds
+hard on `refreshBranches` (fires every task mutation) and per-worktree sweeps.
 - **`git log` full-history pass**: gitoxide's commit-graph traversal ~2-4x
-  faster → 175ms → ~50-80ms here; much bigger on a deep-history monorepo.
+faster → 175ms → ~50-80ms here; much bigger on a deep-history monorepo.
 - **`git status` per worktree**: fsmonitor (#2) already got this to ~20ms warm;
-  gix maybe ~5-10ms. Marginal now.
+gix maybe ~5-10ms. Marginal now.
 - **ref enumeration**: ~85ms → ~10-20ms.
 
 Net for repoos-on-repoos today: index build ~700ms → ~350-450ms (~1.5-2x),
@@ -57,14 +57,14 @@ Net for repoos-on-repoos today: index build ~700ms → ~350-450ms (~1.5-2x),
 ## Does it depend on repo size?
 
 - **Worktree count**: mostly no after batching + the persisted status cache
-  (usually 0-3 worktrees need re-checking per build).
+(usually 0-3 worktrees need re-checking per build).
 - **File count (working tree size)**: YES for `git status` — a 100k+ file tree
-  is slow even with fsmonitor cold; gitoxide status scales better. Not a factor
-  for repoos (~800 tracked files).
+is slow even with fsmonitor cold; gitoxide status scales better. Not a factor
+for repoos (~800 tracked files).
 - **History depth**: YES for the log pass — repoos ~3600 commits = 175ms; a
-  100k-commit monorepo makes `git log` slow while gitoxide's commit-graph stays
-  fast. **This is where gix earns its keep — repoos managing a big external
-  monorepo, not repoos-on-repoos.**
+100k-commit monorepo makes `git log` slow while gitoxide's commit-graph stays
+fast. **This is where gix earns its keep — repoos managing a big external
+monorepo, not repoos-on-repoos.**
 - **Ref count**: minor (~50 branches here; thousands would matter).
 
 ## Recommendation

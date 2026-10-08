@@ -20,7 +20,7 @@ handoff_signal_retry_count: 1
 All five "Build your team" built-in agents (Tech Debt, Performance, Architect, Design, Docs Debt — `src/server/built-in-agents.ts`) are 100% deterministic static analysis today: regex over file contents, hardcoded file-extension lists, hardcoded scan roots. There is no LLM call anywhere in this file (confirmed by grep — no `runPrompt`/`AgentRunner` import). Yet every one of their UI cards shows a "Coding agent + Model" picker, implying they're AI-driven like the PM/Engineer/Reviewer/Debugger/CTO agents actually are. This is both misleading and a real capability gap:
 
 - **Doesn't generalize.** `SOURCE_EXTS = [".ts", ".tsx", ".js", ".jsx", ".vue"]` is shared by Tech Debt/Performance/Architect/Docs Debt — a Python, Go, or Rust project managed by RepoOS gets ~0 files matched and the agent reports "no issues found," which reads as a clean bill of health rather than "this tool can't see your code." Design is worse: it's hardcoded to the literal path `src/ui-app/src` and Vue-only file filters — RepoOS's own frontend, by name. Any other project gets nothing.
-  Verified live in this repo, 2026-09-17: re-ran `scanForDocsDebt` directly and found real false positives from this exact class of bug — `testTimeout`/`maxWorkers` genuinely exist in `src/ui-app/vite.config.ts` but were flagged as missing symbols because `MAX_SCAN_FILES = 400` is smaller than this repo's own 430-file `src/` tree, and which ~30 files get silently dropped is non-deterministic (depends on filesystem read order).
+Verified live in this repo, 2026-09-17: re-ran `scanForDocsDebt` directly and found real false positives from this exact class of bug — `testTimeout`/`maxWorkers` genuinely exist in `src/ui-app/vite.config.ts` but were flagged as missing symbols because `MAX_SCAN_FILES = 400` is smaller than this repo's own 430-file `src/` tree, and which ~30 files get silently dropped is non-deterministic (depends on filesystem read order).
 - **False positives that no exclusion list can fully catch.** Doc claims like `` `ignorePatterns` `` (oxfmt's own config key), `` `oldString`/`newString` `` (Claude Code's own Edit-tool parameter names, being discussed in a comparison table), `` `prepublishOnly` `` (npm's own lifecycle hook) all get flagged as "missing RepoOS symbols" because the regex classifier (`isSymbolClaim` in `built-in-agents.ts`) has no way to distinguish "a claim about this project's own code" from "prose mentioning another tool's naming convention." That's a semantic judgment, not a pattern match.
 - **#0243** ("Convert deterministic built-in scanners into configurable AI agents") already identified the first problem for 4 of these 5 agents and proposed converting them to real AI agents with configurable CLI/model. It's sound in direction but has failed twice as one large task (watchdog-stuck: agent exited without the handoff signal; then a monthly model quota error mid-run) and didn't include Docs Debt (added later, in #0354) or the auto-fix safety design below. Superseded by this task plus the per-agent migration tasks that follow it.
 
@@ -32,16 +32,16 @@ Each agent becomes a real agent run — same underlying mechanism as PM/Reviewer
 
 ```ts
 interface ProposedFix {
-  doc: string;
-  oldText: string;
-  newText: string;
+doc: string;
+oldText: string;
+newText: string;
 }
 
 // No model call in here — re-verifies the AI's claim independently.
 function isSafeToAutoCommit(fix: ProposedFix, repoRoot: string): boolean {
-  if (!docCurrentlyContains(fix.doc, fix.oldText)) return false; // claim is stale
-  if (!repoActuallyContains(repoRoot, fix.newText)) return false; // claim is wrong
-  return true;
+if (!docCurrentlyContains(fix.doc, fix.oldText)) return false; // claim is stale
+if (!repoActuallyContains(repoRoot, fix.newText)) return false; // claim is wrong
+return true;
 }
 ```
 

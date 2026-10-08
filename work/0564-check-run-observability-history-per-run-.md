@@ -61,16 +61,16 @@ Suggested schema:
 
 ```sql
 CREATE TABLE check_runs (
-  id          INTEGER PRIMARY KEY,
-  task_id     TEXT,        -- null for bare CLI runs
-  phase       TEXT,        -- 'pre-review' | 'close-out' | 'release' | 'cli'
-  machine     TEXT,        -- hostname or 'local'
-  remote      INTEGER,     -- 0 = local, 1 = remote tailscale host
-  scope       TEXT,        -- 'full' | 'changed:<ref>'
-  started_at  TEXT,        -- ISO-8601
-  duration_ms INTEGER,     -- wall-clock, null if cancelled before completion
-  outcome     TEXT,        -- 'pass' | 'fail' | 'cancelled'
-  failed_step TEXT         -- null when passing
+id          INTEGER PRIMARY KEY,
+task_id     TEXT,        -- null for bare CLI runs
+phase       TEXT,        -- 'pre-review' | 'close-out' | 'release' | 'cli'
+machine     TEXT,        -- hostname or 'local'
+remote      INTEGER,     -- 0 = local, 1 = remote tailscale host
+scope       TEXT,        -- 'full' | 'changed:<ref>'
+started_at  TEXT,        -- ISO-8601
+duration_ms INTEGER,     -- wall-clock, null if cancelled before completion
+outcome     TEXT,        -- 'pass' | 'fail' | 'cancelled'
+failed_step TEXT         -- null when passing
 );
 ```
 
@@ -108,9 +108,9 @@ changes and commit them, and you can discard any commits you make in this
 state without impacting any branches by switching back to a branch.
 If you want to create a new branch to retain commits you create, you may
 do so (now or later) by using -c with the switch command. Example:
-  git switch -c <new-branch-name>
+git switch -c <new-branch-name>
 Or undo this operation with:
-  git switch -
+git switch -
 Turn off this advice by setting config variable advice.detachedHead to false
 [validate] HEAD verified at 6695d61895c04464e2f05da4e660fc1c5c96ca9c
 bun install v1.4.2 (744846f84)

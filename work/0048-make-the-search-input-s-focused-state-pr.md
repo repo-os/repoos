@@ -29,55 +29,55 @@ drawn around it. The active state should:
 
 - Use a pill-shaped / more rounded silhouette instead of the boxy rectangle.
 - Signal focus with a soft treatment (subtle glow, accent tint, or gentle
-  shadow) rather than a hard outline ring.
+shadow) rather than a hard outline ring.
 - Blend with the current theme — the clear and gen z theme overrides must keep
-  working, and the dark default theme should keep its existing accent colors.
+working, and the dark default theme should keep its existing accent colors.
 
 ## Acceptance criteria
 
 - [ ] The focused/active state of the global search input no longer uses the
-      hard boxed look (solid border change + 1px outline ring via
-      `box-shadow: 0 0 0 1px …`)
+    hard boxed look (solid border change + 1px outline ring via
+    `box-shadow: 0 0 0 1px …`)
 - [ ] Focus is still clearly visible: the input is obviously active at a
-      glance, using a soft glow / accent tint / rounded pill treatment built
-      from existing CSS variables (e.g. `--cyan-dim`, `--border`, `--panel`)
+    glance, using a soft glow / accent tint / rounded pill treatment built
+    from existing CSS variables (e.g. `--cyan-dim`, `--border`, `--panel`)
 - [ ] The selected/focused state is noticeably less boxy than today (larger
-      radius and/or softer boundary), consistent with existing pill-shaped
-      elements in the UI
+    radius and/or softer boundary), consistent with existing pill-shaped
+    elements in the UI
 - [ ] Unfocused appearance is unchanged or only minimally adjusted; no
-      regression to layout or the 380px flex sizing of `.search-wrap`
+    regression to layout or the 380px flex sizing of `.search-wrap`
 - [ ] Existing theme overrides keep working: `[data-ui-theme="clear"]`
-      (~line 646) and `[data-ui-theme="gen z"]` (~lines 753-754) in
-      `src/ui-app/src/style.css`
+    (~line 646) and `[data-ui-theme="gen z"]` (~lines 753-754) in
+    `src/ui-app/src/style.css`
 - [ ] ⌘K select-on-focus, keyboard navigation, and dropdown behavior unchanged
 - [ ] `repoos check` passes; no new runtime dependencies
 
 ## Notes for AI
 
 - Assumption: "selected input state" = the focused/active state of the global
-  search input (click, Tab, or ⌘K). This task does NOT restyle the highlighted
-  dropdown row (`.search-row.hi`) unless it is trivially part of the same
-  polish.
+search input (click, Tab, or ⌘K). This task does NOT restyle the highlighted
+dropdown row (`.search-row.hi`) unless it is trivially part of the same
+polish.
 - This is intended to be a CSS-only change. Primary touchpoint:
-  `src/ui-app/src/style.css` — `.search-input` and `.search-input:focus-within`
-  (~lines 168-171). Only touch
-  `src/ui-app/src/components/SearchBar.vue` if a markup change is genuinely
-  needed.
+`src/ui-app/src/style.css` — `.search-input` and `.search-input:focus-within`
+(~lines 168-171). Only touch
+`src/ui-app/src/components/SearchBar.vue` if a markup change is genuinely
+needed.
 - Reuse existing CSS variables; do not introduce a new color palette or
-  hardcoded hex values that break the theme system.
+hardcoded hex values that break the theme system.
 - Keep the change minimal and consistent: match the softness/rounding already
-  used elsewhere in the UI (chips, `.conn` pills, glass panels) rather than
-  inventing a new visual language.
+used elsewhere in the UI (chips, `.conn` pills, glass panels) rather than
+inventing a new visual language.
 - After the change, rebuild (`bun run build:ui`) and verify `repoos check`.
-  Keep a `repoos serve` running and probe the UI to confirm the focus state
-  looks right in the browser.
+Keep a `repoos serve` running and probe the UI to confirm the focus state
+looks right in the browser.
 
 ## Scope
 
 - In scope: visual polish of the search input's focused/selected state — softer
-  border, rounding, and focus treatment.
+border, rounding, and focus treatment.
 - Deferred: search result dropdown restyling, search behavior, and the legacy
-  pre-vite `src/ui` UI.
+pre-vite `src/ui` UI.
 
 ## Related
 

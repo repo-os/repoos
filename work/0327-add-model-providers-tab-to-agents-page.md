@@ -26,16 +26,16 @@ A new "Model providers" tab on the Agents page, alongside the existing
 per-agent config. One row per provider, scoped to these four for v1:
 
 - **OpenRouter** — live data. `GET /api/v1/credits` (total_credits -
-  total_usage = remaining) and `GET /api/v1/key` (daily/weekly/monthly spend +
-  rate limits) both work off an API key. Needs a key.
+total_usage = remaining) and `GET /api/v1/key` (daily/weekly/monthly spend +
+rate limits) both work off an API key. Needs a key.
 - **opencode Go** — live, but partial. `GET /zen/go/v1/usage` returns rolling
-  usage windows (e.g. % of this window consumed), not a dollar/credit balance
-  — there is no wallet-balance endpoint for Go or Zen as of this writing.
-  Needs a key.
+usage windows (e.g. % of this window consumed), not a dollar/credit balance
+— there is no wallet-balance endpoint for Go or Zen as of this writing.
+Needs a key.
 - **opencode Zen** — no public balance API (open upstream feature request,
-  unresolved). Render this row as a dashboard link-out, not live data.
+unresolved). Render this row as a dashboard link-out, not live data.
 - **DeepInfra** — no public billing/usage API found. Dashboard-only. Render
-  as a dashboard link-out.
+as a dashboard link-out.
 
 For the two "needs a key" providers (OpenRouter, opencode Go), add a small
 inline form on that row to paste the key — do NOT try to read it out of
@@ -53,27 +53,27 @@ collection, no live number, no polling.
 ## Explicit non-goals for this task
 
 - Claude Code (Pro/Max subscription %) and Codex (ChatGPT Plus/Pro
-  subscription %) are OUT of scope — neither exposes a public API for
-  remaining subscription quota; that data only exists inside an interactive
-  CLI session (`/usage`, `/status`, `/cost`) and isn't fetchable externally.
-  Do not attempt to scrape or reconstruct it from RepoOS's own sessions-table
-  usage log — that log is RepoOS's own metering of what RepoOS itself sent,
-  not the account-wide subscription quota (which also includes usage from
-  claude.ai, ChatGPT web, and other tools RepoOS can't see). If a future task
-  wants to surface RepoOS's own recorded spend per agent, that's a different,
-  separate feature — don't fold it into this one under the same label.
+subscription %) are OUT of scope — neither exposes a public API for
+remaining subscription quota; that data only exists inside an interactive
+CLI session (`/usage`, `/status`, `/cost`) and isn't fetchable externally.
+Do not attempt to scrape or reconstruct it from RepoOS's own sessions-table
+usage log — that log is RepoOS's own metering of what RepoOS itself sent,
+not the account-wide subscription quota (which also includes usage from
+claude.ai, ChatGPT web, and other tools RepoOS can't see). If a future task
+wants to surface RepoOS's own recorded spend per agent, that's a different,
+separate feature — don't fold it into this one under the same label.
 - No auto-refresh/polling loop is required for v1 — a manual refresh button
-  per row is enough. Revisit polling cadence only if this ships and someone
-  asks for it.
+per row is enough. Revisit polling cadence only if this ships and someone
+asks for it.
 - Adding more providers beyond these four is a follow-up, not this task.
 
 ## Notes
 
 - Zero runtime dependencies is a hard constraint (see AGENTS.md) — implement
-  the OpenRouter/opencode-Go calls with a plain `fetch`, no new SDK/client
-  library.
+the OpenRouter/opencode-Go calls with a plain `fetch`, no new SDK/client
+library.
 - Nav entry lives in `src/ui-app/src/nav.ts`; the Agents page view and its
-  existing tabs are the place to add a new tab, not a new top-level route.
+existing tabs are the place to add a new tab, not a new top-level route.
 
 ## Activity
 

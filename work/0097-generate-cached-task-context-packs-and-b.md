@@ -49,7 +49,7 @@ message already knows:
 - nearby tests and existing patterns to reuse;
 - the correct build, test, check, and managed-preview workflow;
 - whether the current baseline is known green and which setup has already been
-  completed by RepoOS.
+completed by RepoOS.
 
 The pack is driver-neutral, visible/inspectable, bounded in size, and cached
 against authoritative repository state. Straightforward scoped tasks should
@@ -59,67 +59,67 @@ of spending several minutes on repeated orientation.
 ## Acceptance criteria
 
 - [ ] Add a RepoOS-owned bootstrap phase before initial and resumed engineer
-      turns; do not make the agent install dependencies or repair predictable
-      worktree setup itself.
+    turns; do not make the agent install dependencies or repair predictable
+    worktree setup itself.
 - [ ] Bootstrap validates the registered root/worktree/branch, makes required
-      development dependencies available using a safe reproducible strategy,
-      and ensures the RepoOS CLI/build used for orchestration is trustworthy.
+    development dependencies available using a safe reproducible strategy,
+    and ensures the RepoOS CLI/build used for orchestration is trustworthy.
 - [ ] Bootstrap never rewrites source, task content, lockfiles, or unrelated
-      user changes. Failures stop the launch with a clear actionable error and
-      remain recoverable on the same worktree.
+    user changes. Failures stop the launch with a clear actionable error and
+    remain recoverable on the same worktree.
 - [ ] Generate a deterministic task context pack containing the task spec,
-      applicable AGENTS constraints, branch/worktree status, summarized dirty
-      diff/untracked files, likely implementation files, relevant tests and
-      patterns, verification commands, and managed-preview instructions.
+    applicable AGENTS constraints, branch/worktree status, summarized dirty
+    diff/untracked files, likely implementation files, relevant tests and
+    patterns, verification commands, and managed-preview instructions.
 - [ ] File relevance uses repository evidence (task paths/symbols, area,
-      references, imports, tests, and recent related changes) rather than an
-      unbounded dump of the repository or an extra mandatory LLM call.
+    references, imports, tests, and recent related changes) rather than an
+    unbounded dump of the repository or an extra mandatory LLM call.
 - [ ] Context packs are path-guarded, driver-neutral, human-inspectable, and
-      capped by an explicit byte/token budget with relevance-ranked truncation.
+    capped by an explicit byte/token budget with relevance-ranked truncation.
 - [ ] Cache stable repository maps separately from task/worktree-specific data.
-      Invalidate the correct layer when HEAD, task content, AGENTS/docs/config,
-      dependency manifests, or the worktree diff changes.
+    Invalidate the correct layer when HEAD, task content, AGENTS/docs/config,
+    dependency manifests, or the worktree diff changes.
 - [ ] Initial and resumed turns receive the same context-pack format. A resume
-      after lost session state explicitly describes existing partial changes so
-      the new agent does not rediscover them blindly.
+    after lost session state explicitly describes existing partial changes so
+    the new agent does not rediscover them blindly.
 - [ ] Record orientation telemetry: launch requested, bootstrap duration,
-      context generation/cache hit, agent spawned, and first meaningful source
-      mutation. Surface it in the retained transcript for diagnosis.
+    context generation/cache hit, agent spawned, and first meaningful source
+    mutation. Surface it in the retained transcript for diagnosis.
 - [ ] Add a repeatable benchmark of at least five representative straightforward
-      UI/server/core tasks. With a warm repository-map cache, median
-      spawn-to-first-source-edit is at most 90 seconds and at least four of five
-      runs are at most 120 seconds on a supported agent/model combination.
+    UI/server/core tasks. With a warm repository-map cache, median
+    spawn-to-first-source-edit is at most 90 seconds and at least four of five
+    runs are at most 120 seconds on a supported agent/model combination.
 - [ ] Deterministic warm-cache context generation, excluding dependency network
-      installation, completes within two seconds for this repository.
+    installation, completes within two seconds for this repository.
 - [ ] The benchmark verifies correctness signals too: agents select the expected
-      file area and do not gain speed by skipping task/AGENTS constraints.
+    file area and do not gain speed by skipping task/AGENTS constraints.
 - [ ] Automated tests cover fresh and dirty worktrees, cache hits/invalidation,
-      bounded context, missing dependencies, bootstrap failure, initial launch,
-      and lost-session resume.
+    bounded context, missing dependencies, bootstrap failure, initial launch,
+    and lost-session resume.
 - [ ] `repoos check` passes.
 
 ## Notes for AI
 
 - Agent launch/mission construction is in `src/server/agents.ts`; worktree
-  creation and Git state helpers are under `src/core/git.ts` and the task-start
-  route in `src/server/server.ts`.
+creation and Git state helpers are under `src/core/git.ts` and the task-start
+route in `src/server/server.ts`.
 - Prefer a dedicated context/bootstrap module with pure, testable ranking and
-  cache-key functions rather than growing the mission builder indefinitely.
+cache-key functions rather than growing the mission builder indefinitely.
 - Use `rg`, imports, task metadata, and existing index data for deterministic
-  relevance. An optional model-enriched layer may be added later, but launch
-  must remain fast and functional without it.
+relevance. An optional model-enriched layer may be added later, but launch
+must remain fast and functional without it.
 - Cache derived data under the configured `.repoos` cache directory, never in
-  tracked source. Cache data must be safe to delete and rebuild.
+tracked source. Cache data must be safe to delete and rebuild.
 - A previously green baseline can be cached only against all inputs that affect
-  it. Do not claim a dirty resumed worktree is green merely because main passed.
+it. Do not claim a dirty resumed worktree is green merely because main passed.
 - Avoid symlinking mutable dependency state when it could let one worktree
-  corrupt another. Reuse package-manager caches/content stores safely and make
-  the chosen strategy explicit.
+corrupt another. Reuse package-manager caches/content stores safely and make
+the chosen strategy explicit.
 - Do not persist hidden model reasoning or transfer one task's conversational
-  history into another. The reusable artifact is verified repository context,
-  not chain of thought.
+history into another. The reusable artifact is verified repository context,
+not chain of thought.
 - Follow ADR-0005: RepoOS performs privileged setup; agents consume the result
-  and edit only their assigned workspace.
+and edit only their assigned workspace.
 
 ## Related
 

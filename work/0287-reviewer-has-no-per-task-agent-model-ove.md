@@ -19,12 +19,12 @@ Dev and PM both support per-task agent/CLI/model overrides, chosen from a select
 - `Task` (src/core/types.ts:106-116) has `agentOverride`/`cliOverride`/`modelOverride` (engineer) and `pmAgentOverride`/`pmCliOverride`/`pmModelOverride` (PM). There is no `reviewAgentOverride`/`reviewCliOverride`/`reviewModelOverride`.
 - `resolveAgentForTask(config, task, role)` (src/server/agents.ts:1170) is the shared resolver that honors per-task overrides, already used for both `"engineer"` and (per the PM tab's wiring) `"pm"` roles.
 - `resolveReviewer(config)` (src/server/agents.ts:1160) takes only `config`, no `task` — it always resolves the single globally-enabled `reviewer`-role agent from `repoos.toml`, with no override path at all:
-  ```ts
-  export function resolveReviewer(config: RepoOSConfig): Agent | null {
-    const list = agentsForConfig(config);
-    return list.find((a) => a.enabled && matchesRole(a, "reviewer")) ?? null;
-  }
-  ```
+```ts
+export function resolveReviewer(config: RepoOSConfig): Agent | null {
+  const list = agentsForConfig(config);
+  return list.find((a) => a.enabled && matchesRole(a, "reviewer")) ?? null;
+}
+```
 - Every call site that starts or continues a review (`src/server/review.ts:493, 532, 736, 965` — `canRun`, `run`, and the follow-up/auto-bounce paths) calls `resolveReviewer(this.config)` directly, never anything task-aware.
 - TaskDrawer.vue has a fully built override UI for Dev (`agent-override-bar` around line 2484, `overrideDraft`/`isCustom`/`overrideDirty`, autosave via `agentOverrideAutoSaveTimer`) and an equivalent for PM (around line 2997, `pmOverrideDraft`/`pmIsCustom`/`pmOverrideDirty`). The Review tab has neither the UI nor the underlying data model to support it.
 

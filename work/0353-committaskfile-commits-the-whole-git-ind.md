@@ -47,7 +47,7 @@ before merge").
 ## Acceptance criteria
 
 - [ ] With an unrelated file staged in the main checkout, a task update commits
-      only the task file, and the unrelated file is still staged afterwards.
+only the task file, and the unrelated file is still staged afterwards.
 - [ ] A test covers that case.
 - [ ] Any other automatic commit that should be single-path gets the same treatment.
 - [ ] `repoos check` passes.

@@ -52,8 +52,8 @@ The plumbing exists everywhere except the UI form. `POST /api/tasks` already rea
 This is the part that is easy to miss: **Freeform is the default mode.** `newMode` defaults to `config.form.defaultTaskMode`, which falls back to `"freeform"`, so a user who arrives from a story and simply types a description hits `createFreeformTask` — and that path takes no `story` argument today, so the tag would be silently dropped for most users.
 
 - Both submit paths read the same `ui.nt.story`:
-  - **Manual**: `createTask()` in `TaskDrawer.vue` → `repo.createTask({ ...ui.nt })` — the tag rides along once `story` is on the form and on `createTask`'s parameter type.
-  - **Freeform**: `createFreeformTask(explanation, runId, overrides, inputId)` gains a `story` argument, sent as `story` in the POST body, read and passed to `repoos.createTask` by the freeform route.
+- **Manual**: `createTask()` in `TaskDrawer.vue` → `repo.createTask({ ...ui.nt })` — the tag rides along once `story` is on the form and on `createTask`'s parameter type.
+- **Freeform**: `createFreeformTask(explanation, runId, overrides, inputId)` gains a `story` argument, sent as `story` in the POST body, read and passed to `repoos.createTask` by the freeform route.
 - Verify the tag survives the PM agent's flesh-out rewrite, which lands asynchronously after the draft is created. That rewrite is a body edit and `story` is frontmatter, so it should hold — but check it on a real freeform create, because a task that silently loses its story is the exact failure this task exists to prevent.
 
 ### Coming back to the story

@@ -27,8 +27,8 @@ Add a watchdog over `active` tasks (see #0112 AgentSupervisor / task-watchdog.ts
 
 1. Detects active tasks whose agent session has no live process and no recent step/output for a threshold (e.g. N minutes).
 2. On detection: record an explicit reason in the task transcript (agent exited / crashed / never started), and either
-   a. emit an event/notification (so the board surfaces it), and/or
-   b. auto-transition the task to a visible state (e.g. `review` if work is committed, `ready` if not) — configurable.
+a. emit an event/notification (so the board surfaces it), and/or
+b. auto-transition the task to a visible state (e.g. `review` if work is committed, `ready` if not) — configurable.
 3. Guards: never fire while the server itself is mid-reload, and never mark a task whose agent is legitimately paused.
 
 ## Acceptance

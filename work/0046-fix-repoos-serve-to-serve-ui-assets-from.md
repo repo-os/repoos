@@ -11,12 +11,6 @@ branch: feat/fix-repoos-serve-to-serve-ui-assets-from
 created_at: "2026-08-06T14:42:07Z"
 updated_at: "2026-08-10T22:05:00Z"
 ---
-## Activity
-
-- 2026-08-06T14:42:07Z · created · unknown
-- 2026-08-07T00:16:54Z · status ready→review
-
-
 ## Problem
 
 `findUiDir()` in `src/server/server.ts` resolves UI assets from
@@ -52,6 +46,8 @@ sees its own fresh UI.
 
 ## Activity
 
+- 2026-08-06T14:42:07Z · created · unknown
+- 2026-08-07T00:16:54Z · status ready→review
 - 2026-08-06T18:03:57Z · status inbox→ready
 - 2026-08-06T18:03:59Z · status ready→active, branch
 - 2026-08-10T22:05:00Z · status review→done

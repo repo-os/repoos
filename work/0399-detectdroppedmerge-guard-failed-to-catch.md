@@ -35,69 +35,69 @@ since it's a safety-critical guard for the close-out pipeline generally
 
 ```json
 {
-  "taskId": "0389",
-  "branch": "feat/build-the-shared-skill-guided-built-in-a",
-  "phase": "done",
-  "enqueuedAt": "2026-09-17T15:15:35.816Z",
-  "startedAt": "2026-09-17T15:15:35.866Z",
-  "baseMainSha": "21eb035097e7d58556052ec80f5785a2959b7f90",
-  "branchSha": "50376e60041d878ffe749e1f4af8b25f4ee5291c",
-  "candidateSha": "21eb035097e7d58556052ec80f5785a2959b7f90",
-  "version": 1
+"taskId": "0389",
+"branch": "feat/build-the-shared-skill-guided-built-in-a",
+"phase": "done",
+"enqueuedAt": "2026-09-17T15:15:35.816Z",
+"startedAt": "2026-09-17T15:15:35.866Z",
+"baseMainSha": "21eb035097e7d58556052ec80f5785a2959b7f90",
+"branchSha": "50376e60041d878ffe749e1f4af8b25f4ee5291c",
+"candidateSha": "21eb035097e7d58556052ec80f5785a2959b7f90",
+"version": 1
 }
 ```
 
 - `candidateSha === baseMainSha` — exactly the documented "Signature" of a
-  dropped merge in `docs/close-out-pipeline.md`.
+dropped merge in `docs/close-out-pipeline.md`.
 - `git diff 21eb0350 50376e60 --stat` shows a REAL 1346-line delta (the
-  runner, the gate, the skill docs, several `work/*.md` files) — so this is
-  not a "branch already merged, legitimately a no-op" case. The guard's own
-  `git diff --quiet mainBranch...featureBranch` check (in
-  `detectDroppedMerge`) should have detected this delta and failed the job
-  with a non-retryable reason. It evidently didn't, since the job's
-  recorded phase is `"done"`.
+runner, the gate, the skill docs, several `work/*.md` files) — so this is
+not a "branch already merged, legitimately a no-op" case. The guard's own
+`git diff --quiet mainBranch...featureBranch` check (in
+`detectDroppedMerge`) should have detected this delta and failed the job
+with a non-retryable reason. It evidently didn't, since the job's
+recorded phase is `"done"`.
 - Separately, `21eb0350` was NOT main's tip by the time this job finished —
-  main had already advanced to `57bb9598` (task #0397's implementation
-  commit landed in between). `validateCandidate()` is supposed to detect
-  "main advanced" and resync from the new tip; whether that resync path
-  interacts badly with `detectDroppedMerge` (e.g. a resync clearing/not
-  updating `baseMainSha`/`candidateSha` correctly, or the final "done"
-  transition reading a stale on-disk job snapshot that predates a
-  since-corrected in-memory state) is an open question worth checking first
-  — it's the most likely place a race or stale-read could let this through.
+main had already advanced to `57bb9598` (task #0397's implementation
+commit landed in between). `validateCandidate()` is supposed to detect
+"main advanced" and resync from the new tip; whether that resync path
+interacts badly with `detectDroppedMerge` (e.g. a resync clearing/not
+updating `baseMainSha`/`candidateSha` correctly, or the final "done"
+transition reading a stale on-disk job snapshot that predates a
+since-corrected in-memory state) is an open question worth checking first
+— it's the most likely place a race or stale-read could let this through.
 
 ## Where to look
 
 - `src/server/integration-orchestrator.ts`: `detectDroppedMerge()` (~line
-  140) and its two call sites (~line 940 in `validateCandidate`, ~line 1456
-  near publish).
+140) and its two call sites (~line 940 in `validateCandidate`, ~line 1456
+near publish).
 - The "main advanced → resync" branch in `validateCandidate()` (~line
-  870-885) — check whether `baseMainSha`/`candidateSha` bookkeeping across a
-  resync could leave the publish-phase check comparing against a stale
-  base.
+870-885) — check whether `baseMainSha`/`candidateSha` bookkeeping across a
+resync could leave the publish-phase check comparing against a stale
+base.
 - Whether `.repoos/integration-jobs/<id>.json` on disk can lag the
-  in-memory job state such that a job legitimately caught by the guard
-  in-memory still writes/leaves behind a `"done"` snapshot.
+in-memory job state such that a job legitimately caught by the guard
+in-memory still writes/leaves behind a `"done"` snapshot.
 
 ## Acceptance criteria
 
 - [ ] Root cause identified with a reproduction (a synthetic branch +
-      main-advance scenario that recreates `candidateSha === baseMainSha`
-      despite a real delta), not just a guess.
+    main-advance scenario that recreates `candidateSha === baseMainSha`
+    despite a real delta), not just a guess.
 - [ ] `detectDroppedMerge()` (or wherever the actual gap is) fixed so this
-      class of failure cannot reach `phase: "done"` silently again.
+    class of failure cannot reach `phase: "done"` silently again.
 - [ ] A regression test added that would have caught this specific gap.
 - [ ] `repoos check` passes.
 
 ## Background
 
 - #0389 itself needs to be manually landed for real (separate, already
-  being done by hand) — this task is about the pipeline gap that let its
-  done-marking through without the code, not about #0389's own content.
+being done by hand) — this task is about the pipeline gap that let its
+done-marking through without the code, not about #0389's own content.
 - `docs/close-out-pipeline.md` "Known failure classes and their guards" §1
-  is the existing writeup of this failure class from its first occurrence
-  (tasks 0306/0307/0309/0312, 2026-08-27). This is either a regression of
-  that fix or a gap the original fix didn't cover.
+is the existing writeup of this failure class from its first occurrence
+(tasks 0306/0307/0309/0312, 2026-08-27). This is either a regression of
+that fix or a gap the original fix didn't cover.
 
 ## Activity
 

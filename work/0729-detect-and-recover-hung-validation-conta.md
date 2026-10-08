@@ -48,12 +48,12 @@ The hang recovery (kill that run's container, retry once on another host) is a C
 ## Shots
 ```json
 [
-  {
-    "label": "Checks Remote runners tab",
-    "target": "default",
-    "route": "/checks?tab=remote",
-    "highlight": ".rr-panel"
-  }
+ {
+   "label": "Checks Remote runners tab",
+   "target": "default",
+   "route": "/checks?tab=remote",
+   "highlight": ".rr-panel"
+ }
 ]
 ```
 
@@ -75,24 +75,24 @@ The hang recovery (kill that run's container, retry once on another host) is a C
 - 2026-10-07T05:15:31Z · note: Owner installed emergencybee fix05:15 verified sha2560801359952ad988407de02eaf448a353409eb18a6ef6b90bbf74904aaa2bb345 andbash-nPASS. RemovedunsafeALLworkspace startup sweep, ownrunEXITcleanup retained; backup /opt/repoos/validate.sh.before-recovery-20261007. Thisoperationalguard MUSTland in source via729 withconcurrentactiveworkspace regression, not be overwrittenbyunfixedrunnerrefresh. Thinkpad/mini notchanged (exactauthorization/sudo pending). Current712controlledrunonbee started05:12 butcancelledflagtrue; letitend,noflagclearing/requeuewhilealive.733previousfailedterminal, onecontrolledretryqueuedafterfix.
 - 2026-10-07T05:19:48Z · note: All THREE installed runner scripts now repaired byowner; independentlyverifiedbee/thinkpad/mini sameSHA2560801359952ad988407de02eaf448a353409eb18a6ef6b90bbf74904aaa2bb345 andbash-nPASS. Backup on each /opt/repoos/validate.sh.before-recovery-20261007. No sourcefixlandedyet: preserveunsafe-active-workspace startup deletion regression and deploysafety. Current712runbegan05:12 beforeguardinstallation, cancelledflagretained; nextcontrolled733 queued05:15 willstartwithfixedscript. Avoidmanualjobflagreset/requeuewhilealive.
 - 2026-10-07T05:21:01Z · handoff failed · remote validation failed: remote validation failed (exit 1) — ""
- ❯ tests/agent-serve-guard.test.ts:110:22
-    108|       // Guidance points the agent at the managed preview — the one sa…
-    109|       // way to verify a UI.
-    110|       expect(stderr).toMatch(/may not launch `repoos serve`/i);
-       |                      ^
-    111|       expect(stderr).toMatch(/preview/i);
-    112|     } finally {
+❯ tests/agent-serve-guard.test.ts:110:22
+   108|       // Guidance points the agent at the managed preview — the one sa…
+   109|       // way to verify a UI.
+   110|       expect(stderr).toMatch(/may not launch `repoos serve`/i);
+      |                      ^
+   111|       expect(stderr).toMatch(/preview/i);
+   112|     } finally {
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
- Test Files  1 failed | 427 passed | 1 skipped (429)
-      Tests  1 failed | 5171 passed | 15 skipped (5187)
-   Start at  05:14:38
-   Duration  272.42s (transform 6.61s, setup 2.38s, import 50.98s, tests 221.70s, environment 242.93s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 413ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  05:19:11
-   Duration  2.46s (transform 1.20s, setup 11ms, import 1.50s, tests 413ms, environment 468ms)
+Test Files  1 failed | 427 passed | 1 skipped (429)
+     Tests  1 failed | 5171 passed | 15 skipped (5187)
+  Start at  05:14:38
+  Duration  272.42s (transform 6.61s, setup 2.38s, import 50.98s, tests 221.70s, environment 242.93s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 413ms
+Test Files  1 passed (1)
+     Tests  2 passed (2)
+  Start at  05:19:11
+  Duration  2.46s (transform 1.20s, setup 11ms, import 1.50s, tests 413ms, environment 468ms)
 error: script "test" exited with code 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T05:26:56Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) — "" · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-07T05:26:57Z · status review→active
@@ -102,24 +102,24 @@ error: script "test" exited with code 1 — fix it in the feature branch and re-
 - 2026-10-07T05:33:01Z · note: review pass 1: needs some work
 - 2026-10-07T05:33:01Z · status review→active
 - 2026-10-07T06:23:40Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: remote validation failed: remote validation failed (exit 1) — ""
- ❯ tests/agent-serve-guard.test.ts:110:22
-    108|       // Guidance points the agent at the managed preview — the one sa…
-    109|       // way to verify a UI.
-    110|       expect(stderr).toMatch(/may not launch `repoos serve`/i);
-       |                      ^
-    111|       expect(stderr).toMatch(/preview/i);
-    112|     } finally {
+❯ tests/agent-serve-guard.test.ts:110:22
+   108|       // Guidance points the agent at the managed preview — the one sa…
+   109|       // way to verify a UI.
+   110|       expect(stderr).toMatch(/may not launch `repoos serve`/i);
+      |                      ^
+   111|       expect(stderr).toMatch(/preview/i);
+   112|     } finally {
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
- Test Files  1 failed | 427 passed | 1 skipped (429)
-      Tests  1 failed | 5171 passed | 15 skipped (5187)
-   Start at  05:14:38
-   Duration  272.42s (transform 6.61s, setup 2.38s, import 50.98s, tests 221.70s, environment 242.93s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 413ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  05:19:11
-   Duration  2.46s (transform 1.20s, setup 11ms, import 1.50s, tests 413ms, environment 468ms)
+Test Files  1 failed | 427 passed | 1 skipped (429)
+     Tests  1 failed | 5171 passed | 15 skipped (5187)
+  Start at  05:14:38
+  Duration  272.42s (transform 6.61s, setup 2.38s, import 50.98s, tests 221.70s, environment 242.93s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 413ms
+Test Files  1 passed (1)
+     Tests  2 passed (2)
+  Start at  05:19:11
+  Duration  2.46s (transform 1.20s, setup 11ms, import 1.50s, tests 413ms, environment 468ms)
 error: script "test" exited with code 1 — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.
 - 2026-10-07T06:24:23Z · needs_input
 - 2026-10-07T06:24:24Z · cli_override, model_override
@@ -129,23 +129,23 @@ error: script "test" exited with code 1 — fix it in the feature branch and re-
 - 2026-10-07T06:28:17Z · note: shots: skipped — 1 handoff shot already captured during finalization (#0680)
 - 2026-10-07T06:29:16Z · note: review pass 2: good to go
 - 2026-10-07T06:33:26Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:35:21
-     33|     const normalized = configurationDoc.replace(/\[\]/g, "");
-     34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
-     35|     expect(missing).toEqual([]);
-       |                     ^
-     36|   });
-     37|
+    33|     const normalized = configurationDoc.replace(/\[\]/g, "");
+    34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
+    35|     expect(missing).toEqual([]);
+      |                     ^
+    36|   });
+    37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
- Test Files  1 failed | 427 passed | 1 skipped (429)
-      Tests  2 failed | 5179 passed | 15 skipped (5196)
-   Start at  06:28:48
-   Duration  272.96s (transform 6.49s, setup 2.35s, import 50.91s, tests 221.43s, environment 244.29s)
- RUN  v4.1.10 /repo/src/ui-app
- ✓ tests/boot-timing.test.ts (2 tests) 422ms
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  06:33:22
-   Duration  2.29s (transform 1.05s, setup 11ms, import 1.31s, tests 422ms, environment 470ms)
+Test Files  1 failed | 427 passed | 1 skipped (429)
+     Tests  2 failed | 5179 passed | 15 skipped (5196)
+  Start at  06:28:48
+  Duration  272.96s (transform 6.49s, setup 2.35s, import 50.91s, tests 221.43s, environment 244.29s)
+RUN  v4.1.10 /repo/src/ui-app
+✓ tests/boot-timing.test.ts (2 tests) 422ms
+Test Files  1 passed (1)
+     Tests  2 passed (2)
+  Start at  06:33:22
+  Duration  2.29s (transform 1.05s, setup 11ms, import 1.31s, tests 422ms, environment 470ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-07T08:58:17Z · status review→active

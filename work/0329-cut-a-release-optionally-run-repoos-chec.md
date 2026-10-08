@@ -27,17 +27,17 @@ Give `cutNewRelease` an optional `RemoteValidator`. When
 `integration-orchestrator.ts` does it):
 
 1. Before the local check step, call
-   `remoteValidator.validate({ taskId: "release", worktreePath: config.root, candidateSha })`
-   with `candidateSha` = `git rev-parse HEAD` after the version-bump commit.
+ `remoteValidator.validate({ taskId: "release", worktreePath: config.root, candidateSha })`
+ with `candidateSha` = `git rev-parse HEAD` after the version-bump commit.
 2. On a green remote pass, run the local `repoos check` with
-   `REPOOS_SKIP_TESTS=1` (same env var `check.ts` already understands) instead
-   of the full local check.
+ `REPOOS_SKIP_TESTS=1` (same env var `check.ts` already understands) instead
+ of the full local check.
 3. On failure, map the result the same way the release run already does today
-   (`ReleaseRun.phase`/`message`) so the Releases page's failure classification
-   (`failureSummary()` in `ReleasesView.vue`) and the "Send to Debugger" handoff
-   keep working. Distinguish the runner's `transient` (infra) vs a real
-   red gate the same way `done.ts`'s `CheckSummary` does, per
-   `docs/remote-validation.md`'s outcome table.
+ (`ReleaseRun.phase`/`message`) so the Releases page's failure classification
+ (`failureSummary()` in `ReleasesView.vue`) and the "Send to Debugger" handoff
+ keep working. Distinguish the runner's `transient` (infra) vs a real
+ red gate the same way `done.ts`'s `CheckSummary` does, per
+ `docs/remote-validation.md`'s outcome table.
 
 This is mechanically compatible with no new plumbing: the runner `git bundle`s
 the local worktree and scp's it up keyed on `candidateSha` — it doesn't need a
@@ -47,17 +47,17 @@ push or a remote branch, so it works on the not-yet-pushed release commit on
 ## Open questions to resolve while building (not blockers, just decide up front)
 
 - **Double build.** The release path already rebuilds locally right before
-  `check`, specifically to dodge the src/dist staleness gate; the remote VM
-  also runs its own `bun install && bun run build` for the actual test run.
-  That duplication already exists for close-out — just confirm it's
-  acceptable here too, not a surprise.
+`check`, specifically to dodge the src/dist staleness gate; the remote VM
+also runs its own `bun install && bun run build` for the actual test run.
+That duplication already exists for close-out — just confirm it's
+acceptable here too, not a surprise.
 - **Attended latency.** Close-out runs unattended, so VM boot/provision time
-  is invisible. Cutting a release is something a human watches in the modal —
-  a ~1-2 min remote-provision delay might read as a regression even though
-  it's more reliable. Consider making this default OFF even when
-  `remoteValidation.enabled` for close-out, with its own
-  `remoteValidation.useForReleases` (or similar) opt-in, rather than
-  inheriting the close-out flag automatically.
+is invisible. Cutting a release is something a human watches in the modal —
+a ~1-2 min remote-provision delay might read as a regression even though
+it's more reliable. Consider making this default OFF even when
+`remoteValidation.enabled` for close-out, with its own
+`remoteValidation.useForReleases` (or similar) opt-in, rather than
+inheriting the close-out flag automatically.
 
 ## Why (context)
 
