@@ -203,7 +203,8 @@ export function assembleAttentionFeed(deps: AttentionFeedDeps): AttentionFeed {
   const slowRuns = evaluateSlowness({ running, history, multiplier });
   const slowRunNotices = persistentSlowNotices({ history, multiplier });
   const degradedRemoteHosts =
-    deps.remoteHostStatus?.()
+    deps
+      .remoteHostStatus?.()
       .filter((h) => h.degraded)
       .map((h) => ({ host: h.host, detail: h.detail ?? "" })) ?? [];
 
