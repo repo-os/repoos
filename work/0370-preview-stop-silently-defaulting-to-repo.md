@@ -17,18 +17,18 @@ updated_at: "2026-09-16T08:00:36Z"
 configured" cases today, and only one of them behaves well:
 
 - `[preview]` section **present** but no target matches the task's `area` →
-  returns `{ kind: "none", reason: "No preview configured for area X... add
-  a [[preview.targets]] entry..." }`. This already reaches the user: `onError`
-  in `src/ui-app/src/stores/repo.ts` shows the exact reason as a toast. Fine
-  as-is.
+returns `{ kind: "none", reason: "No preview configured for area X... add
+a [[preview.targets]] entry..." }`. This already reaches the user: `onError`
+in `src/ui-app/src/stores/repo.ts` shows the exact reason as a toast. Fine
+as-is.
 - `[preview]` section **absent entirely** → silently returns `{ kind:
-  "repoos", ... }`, which boots `repoos serve` rooted at the task's worktree
-  and shows RepoOS's own board UI. For a project that isn't RepoOS itself
-  (squishy, or any other adopter), this is never the right thing — there is
-  no reason a Vue/Capacitor consumer app's task preview should show a task
-  board. It "succeeds" with zero signal that anything is wrong, which is
-  worse than an error: a new user has no idea the app they're looking at
-  isn't theirs.
+"repoos", ... }`, which boots `repoos serve` rooted at the task's worktree
+and shows RepoOS's own board UI. For a project that isn't RepoOS itself
+(squishy, or any other adopter), this is never the right thing — there is
+no reason a Vue/Capacitor consumer app's task preview should show a task
+board. It "succeeds" with zero signal that anything is wrong, which is
+worse than an error: a new user has no idea the app they're looking at
+isn't theirs.
 
 This is the same failure shape found repeatedly earlier this session
 (`ui-smoke` hardcoded to RepoOS's own dashboard, #0348; the CLI-selection
@@ -62,12 +62,12 @@ Two options, not yet decided — pick one (or propose a third) with reasoning,
 don't default to whichever is easier to build:
 
 1. **Don't show a preview affordance at all** when the project has no
-   resolvable target for the task — closer to what a user expects ("there's
-   nothing to click because there's nothing configured") than a button that
-   predictably explains itself away.
+resolvable target for the task — closer to what a user expects ("there's
+nothing to click because there's nothing configured") than a button that
+predictably explains itself away.
 2. **Show the button; explain on click** — matches the "present but no
-   match" case's existing behavior (actionable toast), consistent UX whether
-   the gap is "wrong area" or "no config at all."
+match" case's existing behavior (actionable toast), consistent UX whether
+the gap is "wrong area" or "no config at all."
 
 Whichever is chosen, the resulting message (toast, disabled-button tooltip,
 or empty-state text) must be genuinely actionable: name the task's `area`,
@@ -89,11 +89,11 @@ the decision above) rather than inventing special handling.
 `area:` has no schema (`--area | Free text — your own grouping`) and a task
 carries exactly one. Two related gaps, worth naming even if not solved here:
 - **A task spanning multiple areas** (e.g. a bug touching both a frontend and
-  a backend) has no natural single preview target under area-matching alone.
+a backend) has no natural single preview target under area-matching alone.
 - **Nothing enforces consistent area naming** across a project's own tasks —
-  today's audit found this repo's own tasks mostly all use generic `area:
-  web` regardless of whether they touch the main app, the landing page, or
-  the docs site (see commit `a44bce4a`'s note on this).
+today's audit found this repo's own tasks mostly all use generic `area:
+web` regardless of whether they touch the main app, the landing page, or
+the docs site (see commit `a44bce4a`'s note on this).
 
 Do not attempt a full redesign of area-based matching in this task. Record
 whatever's learned investigating this (e.g. would matching by which paths a
@@ -104,28 +104,28 @@ task, so it isn't lost.
 ## Acceptance criteria
 
 - [ ] A project with no `[preview]` config at all no longer silently boots
-      RepoOS's own board as a task's "preview" — either no preview
-      affordance is shown, or clicking it explains how to configure one
-      (per the decision above), consistently with the existing "present but
-      no match" behavior.
+   RepoOS's own board as a task's "preview" — either no preview
+   affordance is shown, or clicking it explains how to configure one
+   (per the decision above), consistently with the existing "present but
+   no match" behavior.
 - [ ] The message/empty-state is genuinely actionable: names the task's
-      `area` and shows a minimal working `repoos.toml` snippet.
+   `area` and shows a minimal working `repoos.toml` snippet.
 - [ ] This repo's own preview behavior (configured in `a44bce4a`) is
-      unaffected — verify with a live spawn the same way that commit did,
-      not just the resolver function.
+   unaffected — verify with a live spawn the same way that commit did,
+   not just the resolver function.
 - [ ] Explicitly out of scope, confirmed not touched: any mobile-preview
-      design or implementation.
+   design or implementation.
 - [ ] The `area` free-text/single-value limitation is documented (in this
-      task, `docs/`, or a linked follow-up task) even if not fixed.
+   task, `docs/`, or a linked follow-up task) even if not fixed.
 - [ ] `repoos check` passes.
 
 ## Related
 
 - #0362 — built the `[preview]` config mechanism this task tightens the
-  default behavior of.
+default behavior of.
 - Commit `a44bce4a` — this repo's own dogfooding of `[preview]` config,
-  which may make the implicit fallback this task investigates fully
-  removable.
+which may make the implicit fallback this task investigates fully
+removable.
 
 ## Activity
 

@@ -21,8 +21,8 @@ The **Cut a release** flow on the Releases page lives in a centered modal (`Rele
 - Replace the cut-a-release **modal** with a **right-hand side panel** matching the task drawer and **New input** panel: same drawer chrome (`drawer-head`, `drawer-body`, resize handle if applicable), shared global styles, and the **opaque scrim** behind the panel.
 - Clicking the scrim **closes** the panel, same as the **X** in the upper right.
 - While a release cut or notes draft is running (or the operator has entered version/notes but not published), closing the panel must **not** discard progress:
-  - Reopening **Cut a release** shows the same in-flight or recently failed state, live log/progress, and form fields as before close.
-  - Progress stays **up to date** (continue or resume polling against existing release/notes run APIs while appropriate) so a user who leaves for several minutes and returns sees current status without restarting the flow.
+- Reopening **Cut a release** shows the same in-flight or recently failed state, live log/progress, and form fields as before close.
+- Progress stays **up to date** (continue or resume polling against existing release/notes run APIs while appropriate) so a user who leaves for several minutes and returns sees current status without restarting the flow.
 - The Releases list/page behind the panel remains usable when the panel is closed (same mental model as closing the task drawer).
 
 ## Acceptance criteria

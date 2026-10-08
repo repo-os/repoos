@@ -65,6 +65,7 @@ import { getCheckStore, type CheckRunOutcome, type CheckRunPhase } from "../core
 import type { CheckSummary } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import { runGit } from "../core/git.js";
+import { formatRemotePoolQueueMessage } from "../core/remote-pool-queue.js";
 
 export type { CheckSummary } from "./done.js";
 import { createHetznerClient, type HetznerClient, type HetznerServer } from "./hetzner.js";
@@ -2985,7 +2986,12 @@ interface PoolWaiter {
   /** Which run is waiting — surfaced as the queue's next-up tasks (#0564). */
   taskId?: string;
   timer?: ReturnType<typeof setTimeout>;
+  /** Re-stream queue position while blocked (#0706 — long waits are not "stuck"). */
+  queueHeartbeat?: ReturnType<typeof setInterval>;
 }
+
+/** How often a queued run re-emits its pool position to stdout / transcripts. */
+const POOL_QUEUE_HEARTBEAT_MS = 30_000;
 
 /** How long an unhealthy host waits before a probe may retry it. */
 const HEALTH_RETRY_MS = 30_000;
@@ -3414,10 +3420,12 @@ export class TailscaleHostPool {
         }, ms);
         waiter.timer.unref?.();
       }
-      waiter.onQueue?.({
-        ahead: this.queueAheadCount(capabilities, this.waiters.length - 1, excluded),
-        host: candidates[0]?.spec.host ?? "",
-      });
+      this.notifyWaiterQueue(waiter);
+      waiter.queueHeartbeat = setInterval(
+        () => this.notifyWaiterQueue(waiter),
+        POOL_QUEUE_HEARTBEAT_MS,
+      );
+      waiter.queueHeartbeat.unref?.();
       // Opportunistic recovery while queued: re-probe dead candidates so the
       // job can move to one the moment it comes back.
       for (const s of candidates) if (!s.healthy) this.armHealthRetry(s);
@@ -3553,17 +3561,7 @@ export class TailscaleHostPool {
     // counting one waiter once per compatible host (#0521 review).
     const queuedOn = new Map<PoolHostState, { count: number; taskIds: string[] }>();
     for (const w of this.waiters) {
-      const next = this.liveHosts()
-        .filter(
-          (s) =>
-            hostSatisfies(s.spec, w.capabilities) && !(w.excludeHosts?.has(s.spec.host) ?? false),
-        )
-        .sort(
-          (a, b) =>
-            Number(b.healthy) - Number(a.healthy) ||
-            this.effectiveActive(a) - this.effectiveActive(b) ||
-            this.hosts.indexOf(a) - this.hosts.indexOf(b),
-        )[0];
+      const next = this.dispatchTargetFor(w.capabilities, w.excludeHosts);
       if (next) {
         const entry = queuedOn.get(next) ?? { count: 0, taskIds: [] };
         // Every waiter counts toward `queued`; next-up task ids surface only
@@ -3749,6 +3747,48 @@ export class TailscaleHostPool {
     );
   }
 
+  /**
+   * Which host dispatch would hand the next compatible job (#0706) — healthy
+   * first, then least {@link effectiveActive} (pool slots + host-side locks).
+   */
+  private dispatchTargetFor(
+    capabilities: string[],
+    excludeHosts?: ReadonlySet<string>,
+  ): PoolHostState | undefined {
+    return this.hostsEligibleFor(capabilities, excludeHosts).sort(
+      (a, b) =>
+        Number(b.healthy) - Number(a.healthy) ||
+        this.effectiveActive(a) - this.effectiveActive(b) ||
+        this.hosts.indexOf(a) - this.hosts.indexOf(b),
+    )[0];
+  }
+
+  /** Host named in queue copy — only healthy targets; omit while every host is down. */
+  private dispatchTargetHostForQueue(
+    capabilities: string[],
+    excludeHosts?: ReadonlySet<string>,
+  ): string {
+    const healthy = this.hostsEligibleFor(capabilities, excludeHosts).filter((s) => s.healthy);
+    if (healthy.length === 0) return "";
+    return (
+      healthy.sort(
+        (a, b) =>
+          this.effectiveActive(a) - this.effectiveActive(b) ||
+          this.hosts.indexOf(a) - this.hosts.indexOf(b),
+      )[0]?.spec.host ?? ""
+    );
+  }
+
+  private notifyWaiterQueue(waiter: PoolWaiter): void {
+    const idx = this.waiters.indexOf(waiter);
+    if (idx === -1) return;
+    const host = this.dispatchTargetHostForQueue(waiter.capabilities, waiter.excludeHosts);
+    waiter.onQueue?.({
+      ahead: this.queueAheadCount(waiter.capabilities, idx, waiter.excludeHosts),
+      host,
+    });
+  }
+
   /** True when two jobs could be assigned to the same host. */
   private waitersCompete(
     a: { capabilities: string[]; excludeHosts?: ReadonlySet<string> },
@@ -3806,6 +3846,7 @@ export class TailscaleHostPool {
     if (i === -1) return false;
     this.waiters.splice(i, 1);
     if (w.timer) clearTimeout(w.timer);
+    if (w.queueHeartbeat) clearInterval(w.queueHeartbeat);
     return true;
   }
 
@@ -4330,17 +4371,6 @@ export class TailscaleRunner implements RemoteValidator {
     this.pool.startBackgroundProbing();
   }
 
-  /** The queue line a waiting job streams: what it needs and why it waits. */
-  private queueNote(ahead: number, capabilities: string[]): string {
-    const need = capabilities.length
-      ? `waiting for a host with ${describeCapabilities(capabilities)} — `
-      : "";
-    return (
-      `[queued behind ${ahead} other remote run(s) — ${need}every eligible host is at ` +
-      "its per-host limit; starts when a slot frees]\n"
-    );
-  }
-
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
     const startedAt = Date.now();
@@ -4392,8 +4422,11 @@ export class TailscaleRunner implements RemoteValidator {
           // Failover guarantee: the pool never hands back a host this run
           // already tried, so a retry cannot re-run the failed host.
           excludeHosts: [...triedHosts],
-          onQueue: ({ ahead }) => {
-            const note = this.queueNote(ahead, capabilities);
+          onQueue: ({ ahead, host }) => {
+            const note = formatRemotePoolQueueMessage(
+              { ahead, host, position: ahead + 1 },
+              capabilities,
+            );
             emit(note);
             appendRemoteValidationEvent(this.config.root, opts.taskId, {
               level: "info",

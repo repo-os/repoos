@@ -17,12 +17,12 @@ The stop work confirmation dialog should be implemented as a proper modal compon
 
 1. Replace the current confirmation dialog with a proper modal component
 2. The modal should:
-   - Have a clear title (e.g. "Confirm Stop Work")
-   - Display a descriptive message explaining the consequences of stopping work
-   - Include "Cancel" and "Stop Work" buttons
-   - Be centered on screen with appropriate overlay
-   - Prevent interaction with background elements
-   - Support closing via ESC key and clicking outside the modal
+- Have a clear title (e.g. "Confirm Stop Work")
+- Display a descriptive message explaining the consequences of stopping work
+- Include "Cancel" and "Stop Work" buttons
+- Be centered on screen with appropriate overlay
+- Prevent interaction with background elements
+- Support closing via ESC key and clicking outside the modal
 3. Maintain the same functionality but improve the UX
 
 ## Technical Notes

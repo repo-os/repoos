@@ -25,35 +25,35 @@ remains.
 ## Desired UX
 
 - Every screenshot fits the viewer's width, always — no horizontal scrollbar and
-  no sideways panning, at any window size.
+no sideways panning, at any window size.
 - Images keep their aspect ratio when scaled down; nothing is squashed, cropped,
-  or clipped at either edge.
+or clipped at either edge.
 - Images smaller than the viewer keep their natural size rather than being blown
-  up to fill it.
+up to fill it.
 - The stack still scrolls **vertically**: image, caption, image, caption — you
-  scroll down through the screenshots in order, and the shot you opened on is in
-  view when the viewer appears.
+scroll down through the screenshots in order, and the shot you opened on is in
+view when the viewer appears.
 - The header description and per-image captions remain accurate about what is on
-  screen.
+screen.
 
 ## Acceptance criteria
 
 - [ ] With a screenshot wider than the viewer, the whole image is visible within
-      the viewer's width and there is no horizontal scroll range / scrollbar.
+the viewer's width and there is no horizontal scroll range / scrollbar.
 - [ ] Scaling a wide screenshot down preserves its aspect ratio.
 - [ ] A screenshot narrower than the viewer is not upscaled beyond its natural
-      size.
+size.
 - [ ] With multiple screenshots the container scrolls vertically through them in
-      order, and the existing `startIndex` behaviour (opening scrolled to the
-      clicked shot) still holds.
+order, and the existing `startIndex` behaviour (opening scrolled to the
+clicked shot) still holds.
 - [ ] The behaviour holds at narrow window widths, with the viewer's own padding
-      accounted for — no image touches or overflows the container edges.
+accounted for — no image touches or overflows the container edges.
 - [ ] The viewer's visible copy no longer claims images are shown "at their
-      original size" if they are now scaled to fit; the description and captions
-      stay truthful.
+original size" if they are now scaled to fit; the description and captions
+stay truthful.
 - [ ] Existing screenshot-viewer tests are updated to the new behaviour, and at
-      least one regression test pins the fit-the-width / no-horizontal-scroll
-      contract.
+least one regression test pins the fit-the-width / no-horizontal-scroll
+contract.
 - [ ] `repoos check` passes.
 
 ## Notes for AI
@@ -61,36 +61,36 @@ remains.
 Files to touch:
 
 - `src/ui-app/src/components/ScreenshotViewer.vue` — scroller structure, the
-  open-scroll-into-view watcher, and the dialog description copy.
+open-scroll-into-view watcher, and the dialog description copy.
 - `src/ui-app/src/style.css` — the `.shot-viewer-scroll` and
-  `.shot-viewer-print img` rules (around the `/* Full-size screenshot viewer */`
-  block).
+`.shot-viewer-print img` rules (around the `/* Full-size screenshot viewer */`
+block).
 - `src/ui-app/tests/screenshot-viewer.test.ts` — the "renders every shot at
-  natural size" case and the CSS wiring-contract block will need to match the new
-  behaviour.
+natural size" case and the CSS wiring-contract block will need to match the new
+behaviour.
 
 Constraints:
 
 - **Assumption:** "fit the width" means scale *down* to the viewer's content
-  width and never scale up. Smaller screenshots keep their natural pixel size.
+width and never scale up. Smaller screenshots keep their natural pixel size.
 - Constrain the axis on the scroll container, not by clipping image content: the
-  container should scroll vertically only, with no horizontal scroll range.
+container should scroll vertically only, with no horizontal scroll range.
 - Keep viewer chrome CSS in `src/ui-app/src/style.css`, not a `<style scoped>`
-  block in the component — dialog content is body-teleported (AGENTS.md) and the
-  wiring-contract test asserts the component contains no `<style`.
+block in the component — dialog content is body-teleported (AGENTS.md) and the
+wiring-contract test asserts the component contains no `<style`.
 - Do **not** add pan/zoom, a fit-width/original-size toggle, a new dialog, or any
-  new UI affordance. This is a one-way change to always fit the width.
+new UI affordance. This is a one-way change to always fit the width.
 - Do not touch the expand buttons, the thumbnail/attachment grids, the
-  open-in-new-tab affordance, or any attachment-serving code. This is
-  presentation-only inside the viewer.
+open-in-new-tab affordance, or any attachment-serving code. This is
+presentation-only inside the viewer.
 - Preserve the existing `startIndex` / `scrollIntoView` behaviour and the
-  Escape / click-outside close.
+Escape / click-outside close.
 - `ScreenshotViewer` is shared, so the fix lands on every screenshot surface at
-  once (TaskDrawer pending and PM shots, NewInputPanel, InputsView, SettingsView
-  bug report). Do not add per-call-site workarounds; verify through the existing
-  test suite.
+once (TaskDrawer pending and PM shots, NewInputPanel, InputsView, SettingsView
+bug report). Do not add per-call-site workarounds; verify through the existing
+test suite.
 - Use the existing `var(--…)` design tokens; do not introduce hard-coded colours
-  (check enforces the CSS layering and theme-contrast guards).
+(check enforces the CSS layering and theme-contrast guards).
 
 ## Scope
 
@@ -104,7 +104,7 @@ affordance.
 ## Related
 
 - `src/ui-app/src/lib/screenshot-viewer.ts` — the `ScreenshotShot` shape and
-  helpers shared by the viewer's callers.
+helpers shared by the viewer's callers.
 - AGENTS.md — dialog/Teleport CSS conventions and the shared-stylesheet rule.
 - Existing tests: `src/ui-app/tests/screenshot-viewer.test.ts`.
 

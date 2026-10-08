@@ -28,56 +28,56 @@ Dock regardless of the macOS light/dark theme setting.
 ## Desired UX
 
 - The Dock icon is the real RepoOS mark: the colored cyan→violet gradient
-  border, at the same proportional thickness as the web app's top-left icon —
-  not white.
+border, at the same proportional thickness as the web app's top-left icon —
+not white.
 - When the Mac's appearance is set to Light, the Dock shows the light variant;
-  when set to Dark, it shows the dark variant. The switch happens
-  automatically when macOS appearance changes, while the app is running — no
-  restart, no manual toggle.
+when set to Dark, it shows the dark variant. The switch happens
+automatically when macOS appearance changes, while the app is running — no
+restart, no manual toggle.
 
 ## Acceptance criteria
 
 - [ ] `AppIcon.appiconset` contains distinct light and dark (luminosity
-      appearance) variants at the required sizes (512@1x and 512@2x/1024).
+  appearance) variants at the required sizes (512@1x and 512@2x/1024).
 - [ ] The Dock icon switches automatically between the light and dark variants
-      when macOS appearance changes while the app is running.
+  when macOS appearance changes while the app is running.
 - [ ] The icon artwork uses the real brand mark with the colored gradient
-      border — the white border is gone.
+  border — the white border is gone.
 - [ ] The colored border's thickness proportionally matches the web app's
-      top-left `.logo-mark` ring, verified visually against the web app icon.
+  top-left `.logo-mark` ring, verified visually against the web app icon.
 - [ ] The icon remains legible at small Dock sizes in both variants.
 - [ ] `xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub
-      -configuration Debug -sdk macosx -derivedDataPath macos/.derived-data
-      CODE_SIGNING_ALLOWED=NO build` passes.
+  -configuration Debug -sdk macosx -derivedDataPath macos/.derived-data
+  CODE_SIGNING_ALLOWED=NO build` passes.
 
 ## Notes for AI
 
 - Primary files: `macos/RepoOSHub/Assets.xcassets/AppIcon.appiconset/Contents.json`
-  plus the icon PNGs. The `Contents.json` needs `appearances`
-  (`luminosity: any/light` and `luminosity: dark`) entries.
+plus the icon PNGs. The `Contents.json` needs `appearances`
+(`luminosity: any/light` and `luminosity: dark`) entries.
 - macOS automatically swaps the Dock icon when a dark variant is declared in
-  the asset catalog (supported since macOS 11; this app targets macOS 14+).
-  Prefer this declarative catalog approach; only fall back to runtime switching
-  (observing `NSApp.effectiveAppearance` and setting
-  `NSApp.applicationIconImage`) if the catalog route demonstrably fails to
-  update the live Dock icon.
+the asset catalog (supported since macOS 11; this app targets macOS 14+).
+Prefer this declarative catalog approach; only fall back to runtime switching
+(observing `NSApp.effectiveAppearance` and setting
+`NSApp.applicationIconImage`) if the catalog route demonstrably fails to
+update the live Dock icon.
 - Reference artwork source: the `.logo-mark` SVG cube in
-  `src/ui-app/src/components/TopBar.vue` and its styles in
-  `src/ui-app/src/style.css` (conic-gradient from 200deg, cyan→violet→cyan;
-  `::after` inset 3px on a 30px mark → ring ≈ 10% of the mark's edge). The
-  login screen's `.login-logo` is the same mark.
+`src/ui-app/src/components/TopBar.vue` and its styles in
+`src/ui-app/src/style.css` (conic-gradient from 200deg, cyan→violet→cyan;
+`::after` inset 3px on a 30px mark → ring ≈ 10% of the mark's edge). The
+login screen's `.login-logo` is the same mark.
 - **Assumptions made (from ambiguous details in the request):**
-  - "As thick as it's supposed to be" is interpreted as proportional to the
-    web `.logo-mark` ring (3px on a 30px mark, i.e. ~10% of the mark's edge
-    length); final call is a visual match against the web app's icon.
-  - Light and dark variants share the brand mark and gradient border colors;
-    what differs is the inner fill/contrast so the mark reads well against
-    light and dark Dock backgrounds.
+- "As thick as it's supposed to be" is interpreted as proportional to the
+web `.logo-mark` ring (3px on a 30px mark, i.e. ~10% of the mark's edge
+length); final call is a visual match against the web app's icon.
+- Light and dark variants share the brand mark and gradient border colors;
+what differs is the inner fill/contrast so the mark reads well against
+light and dark Dock backgrounds.
 - `macos/` is a standalone target — `repoos check` does not cover it. Verify
-  with the `xcodebuild` build/test commands in `macos/README.md`, not
-  `repoos check`.
+with the `xcodebuild` build/test commands in `macos/README.md`, not
+`repoos check`.
 - Do not touch the web UI's logo or its styles; the web icon is only the
-  visual reference.
+visual reference.
 
 ## Scope
 
@@ -91,7 +91,7 @@ any change to the web app's icon rendering.
 
 - `macos/README.md` — build/test commands for the macOS target
 - `src/ui-app/src/style.css` `.logo-mark` — reference border gradient and
-  thickness
+thickness
 
 ## Original prompt
 

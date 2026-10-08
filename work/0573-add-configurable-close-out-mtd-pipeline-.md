@@ -38,10 +38,10 @@ Add a **configurable pipeline timeout** so a hung or pathologically slow close-o
 1. **Clock start:** When the integration job transitions `queued → syncing` and `startedAt` is set (existing field), the pipeline deadline is `startedAt + timeoutMs` (or no deadline when `timeoutMs` is 0).
 
 2. **Enforcement:** While a close-out is in flight, the orchestrator checks remaining time at the same checkpoints already used for **Stop MTD** (`isCancelled` polling in `runProcess`, between major phases in `processJob` / `validateCandidate`). When remaining time ≤ 0:
-   - Kill any in-flight child (build, check, publish subprocess) the same way cancel does (SIGKILL).
-   - Tear down the throwaway integrate candidate worktree.
-   - Record the job as **`failed`** (not silent removal like user cancel) with a **stable, grep-friendly reason**, e.g. `close-out timed out after 6m — increase closeOut.timeoutMs or retry when the runner is less loaded`.
-   - Task **stays `review`**; feature branch/worktree untouched; **Move to done** can be retried after fixing infra or raising the limit.
+- Kill any in-flight child (build, check, publish subprocess) the same way cancel does (SIGKILL).
+- Tear down the throwaway integrate candidate worktree.
+- Record the job as **`failed`** (not silent removal like user cancel) with a **stable, grep-friendly reason**, e.g. `close-out timed out after 6m — increase closeOut.timeoutMs or retry when the runner is less loaded`.
+- Task **stays `review`**; feature branch/worktree untouched; **Move to done** can be retried after fixing infra or raising the limit.
 
 3. **Distinct from user cancel (#0459):** Timeout is a **failure** with the inline error card and integration job `reason`. User cancel keeps **no** failure badge. UI copy in `closeOutFailure.ts` (or equivalent) should classify timeout as **retryable validating/infra**, not merge conflict.
 

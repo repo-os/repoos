@@ -34,9 +34,9 @@ Inside the modal:
 
 - A **horizontal picker** at the top for choosing the coding agent.
 - Below it, a **scrollable list** of the models available to the selected
-  coding agent.
+coding agent.
 - The model list is **searchable**, so the user can filter models by
-  typing.
+typing.
 
 Selecting values in the modal updates the selection that the page-level
 `[Coding Agent + Model]` control reflects.
@@ -44,48 +44,48 @@ Selecting values in the modal updates the selection that the page-level
 ## Acceptance criteria
 
 - [ ] A single `[Coding Agent + Model]` control replaces the current
-      coding agent + model selector widgets wherever they appear.
+coding agent + model selector widgets wherever they appear.
 - [ ] Clicking the control opens a generously sized modal.
 - [ ] The modal shows a horizontal picker for selecting the coding agent.
 - [ ] Below the picker, a scrollable list shows the models available for
-      the selected coding agent.
+the selected coding agent.
 - [ ] The model list supports search/filtering by text.
 - [ ] Selecting a coding agent and a model in the modal updates the
-      state exposed through the `[Coding Agent + Model]` control.
+state exposed through the `[Coding Agent + Model]` control.
 - [ ] The existing scattered selection widgets are removed in favor of
-      the new control.
+the new control.
 
 ## Notes for AI
 
 - This is a refactor of existing selector UI; rework the shared component
-  rather than adding a new standalone feature.
+rather than adding a new standalone feature.
 - The modal must be **generously sized** — plan a large dialog, not a
-  small popover.
+small popover.
 - Reuse the existing data sources (available coding agents and their
-  models) already consumed by the current selectors; no new endpooints or
-  runtime dependencies are introduced.
+models) already consumed by the current selectors; no new endpooints or
+runtime dependencies are introduced.
 - After any UI change, rebuild (`bun run build:ui` or `bun run build`) and
-  verify via a browser probe before reporting done.
+verify via a browser probe before reporting done.
 - Assumptions made (not implied by the input, chosen as reasonable
-  defaults): the modal selection is persisted back to the same shared
-  state the current selectors use, so the rest of the app observes the
-  choice unchanged; and the `[Coding Agent + Model]` label uses the display
-  values of the currently selected agent and model.
+defaults): the modal selection is persisted back to the same shared
+state the current selectors use, so the rest of the app observes the
+choice unchanged; and the `[Coding Agent + Model]` label uses the display
+values of the currently selected agent and model.
 - Do not change the underlying selection state shape or any
-  server/model-providing code unless required.
+server/model-providing code unless required.
 
 ## Scope
 
 - Covers: the unified modal, the horizontal agent picker, the searchable
-  scrollable model list, and replacing the existing selectors with the
-  `[Coding Agent + Model]` control.
+scrollable model list, and replacing the existing selectors with the
+`[Coding Agent + Model]` control.
 - Deferred: any change to how agents/models are fetched or enumerated;
-  any redesign of other unrelated selector patterns.
+any redesign of other unrelated selector patterns.
 
 ## Related
 
 - None provided. Existing coding agent / model selector components under
-  `src/ui-app/` are the primary touch points.
+`src/ui-app/` are the primary touch points.
 
 ## Activity
 

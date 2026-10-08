@@ -31,9 +31,9 @@ text or pill padding.
 ## Acceptance criteria
 
 - [ ] At the existing mobile breakpoint, the connection indicator renders as a
-      compact colored dot without visible `live` / `offline` text.
+compact colored dot without visible `live` / `offline` text.
 - [ ] The mobile indicator exposes the full state through `aria-label` and
-      `title`; color is not the only information available to assistive tools.
+`title`; color is not the only information available to assistive tools.
 - [ ] Desktop/tablet appearance and SSE connection behavior are unchanged.
 - [ ] Both connected and disconnected mobile states are visually verified.
 - [ ] `repoos check` passes.
@@ -41,9 +41,9 @@ text or pill padding.
 ## Notes for AI
 
 - The current indicator is in `src/ui-app/src/components/TopBar.vue`; `.conn`
-  and `.conn .dot` live in `src/ui-app/src/style.css`.
+and `.conn .dot` live in `src/ui-app/src/style.css`.
 - Reuse the existing responsive breakpoint and status colors/animation. Do not
-  add JavaScript viewport detection or a second connection-state component.
+add JavaScript viewport detection or a second connection-state component.
 - Respect reduced-motion preferences when retaining the connected pulse.
 
 ## Activity

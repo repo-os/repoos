@@ -71,6 +71,7 @@ afterEach(() => {
 describe("checks-page tab helpers (#0738)", () => {
   it("maps legacy remote alias to the Now tab", () => {
     expect(parseChecksTab("remote")).toBe("now");
+    expect(parseChecksTab("remote-runners")).toBe("now");
     expect(parseChecksTab("now")).toBe("now");
     expect(parseChecksTab("plan")).toBe("plan");
     expect(parseChecksTab("nope")).toBeNull();

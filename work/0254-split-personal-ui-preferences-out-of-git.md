@@ -12,11 +12,6 @@ model_override: default
 created_at: "2026-08-19T07:38:18Z"
 updated_at: "2026-08-20T02:15:21Z"
 ---
-## Activity
-
-- 2026-08-19T07:38:18Z · created · unknown
-
-
 ## Problem
 
 `repoos.toml` is git-tracked and mixes two different kinds of data: structural
@@ -61,33 +56,33 @@ separate task.
 ## Relevant code (read before designing)
 
 - `src/core/config.ts` — `getConfigSchema()` (~line 409) currently declares
-  `theme`/`uiTheme` with `tier: "live"` alongside fields that
-  should stay server-side/shared (`tunnelEnabled`, `ntfyEnabled`,
-  `defaultTaskMode`, `autoEngineeringMode`, `maxActiveTasks`,
-  `whisper.provider`, `whisper.apiKey`) — remove `theme`/`uiTheme` from
-  this schema (or otherwise stop the server from reading/writing them),
-  scope the removal to exactly those two keys.
+`theme`/`uiTheme` with `tier: "live"` alongside fields that
+should stay server-side/shared (`tunnelEnabled`, `ntfyEnabled`,
+`defaultTaskMode`, `autoEngineeringMode`, `maxActiveTasks`,
+`whisper.provider`, `whisper.apiKey`) — remove `theme`/`uiTheme` from
+this schema (or otherwise stop the server from reading/writing them),
+scope the removal to exactly those two keys.
 - `src/server/routes/config.ts` (~line 267) — `PATCH /api/config` handler;
-  stop accepting `theme`/`uiTheme` in the request body (or silently ignore
-  them) since the client no longer sends them here.
+stop accepting `theme`/`uiTheme` in the request body (or silently ignore
+them) since the client no longer sends them here.
 - `src/ui-app/src/stores/config.ts` — `applyTheme()`/`setTheme()`,
-  `applyUiTheme()`/`setUiTheme()` currently PATCH the server and set
-  `document.documentElement.dataset.theme`/`dataset.uiTheme`. Rework to
-  read/write `localStorage` directly instead of calling `/api/config` for
-  these two; keep applying the `dataset.theme`/`dataset.uiTheme` DOM
-  attributes exactly as today (that part is unrelated to where the value
-  is persisted).
+`applyUiTheme()`/`setUiTheme()` currently PATCH the server and set
+`document.documentElement.dataset.theme`/`dataset.uiTheme`. Rework to
+read/write `localStorage` directly instead of calling `/api/config` for
+these two; keep applying the `dataset.theme`/`dataset.uiTheme` DOM
+attributes exactly as today (that part is unrelated to where the value
+is persisted).
 - `src/ui-app/index.html` — the inline pre-paint script currently does
-  `fetch("/api/config")` before first render specifically to avoid a
-  flash-of-wrong-theme. Once the value lives in `localStorage`, that
-  fetch is not just unnecessary but actively worse (a network round-trip
-  introduces its own flash window) — replace it with a synchronous
-  `localStorage.getItem("repoos.theme")` read, which is available
-  immediately with no network wait. This is a net simplification, not
-  just a relocation.
+`fetch("/api/config")` before first render specifically to avoid a
+flash-of-wrong-theme. Once the value lives in `localStorage`, that
+fetch is not just unnecessary but actively worse (a network round-trip
+introduces its own flash window) — replace it with a synchronous
+`localStorage.getItem("repoos.theme")` read, which is available
+immediately with no network wait. This is a net simplification, not
+just a relocation.
 - `src/commands/init.ts` — unaffected; `repoos.toml` scaffolding never
-  included `theme`/`uiTheme` as anything other than defaults, so nothing
-  to change here.
+included `theme`/`uiTheme` as anything other than defaults, so nothing
+to change here.
 - `.gitignore` — no change needed; nothing new touches the filesystem.
 
 ## Acceptance criteria
@@ -104,21 +99,22 @@ separate task.
 ## Notes for AI
 
 - Out of scope: any config field beyond `theme`/`uiTheme`; per-account
-  (server-side, tied to `auth_users`) theme sync across devices — flagged
-  above as a possible separate follow-up, not part of this task; changing
-  where `[auth]` secrets live (already handled in #0246, which added
-  `REPOOS_AUTH_SESSION_SECRET`/`REPOOS_RESEND_API_KEY`/`REPOOS_GOOGLE_CLIENT_SECRET`
-  env-var fallbacks for those).
+(server-side, tied to `auth_users`) theme sync across devices — flagged
+above as a possible separate follow-up, not part of this task; changing
+where `[auth]` secrets live (already handled in #0246, which added
+`REPOOS_AUTH_SESSION_SECRET`/`REPOOS_RESEND_API_KEY`/`REPOOS_GOOGLE_CLIENT_SECRET`
+env-var fallbacks for those).
 - This came out of a conversation while reviewing #0246 (native auth) — the
-  auth work is what surfaced `repoos.toml` being git-tracked as a live
-  problem (secrets), and this task is the follow-up for the unrelated but
-  adjacent noisy-diff problem (personal UI prefs), not a dependency of it.
-  The plan below was revised once native auth actually went live and
-  turned "personal preference" into a real multi-user concern rather than
-  a single-developer one.
+auth work is what surfaced `repoos.toml` being git-tracked as a live
+problem (secrets), and this task is the follow-up for the unrelated but
+adjacent noisy-diff problem (personal UI prefs), not a dependency of it.
+The plan below was revised once native auth actually went live and
+turned "personal preference" into a real multi-user concern rather than
+a single-developer one.
 
 ## Activity
 
+- 2026-08-19T07:38:18Z · created · unknown
 - 2026-08-19T07:39:32Z · model_override
 - 2026-08-19T07:39:52Z · status inbox→ready
 - 2026-08-19T19:01:53Z · status ready→active, branch

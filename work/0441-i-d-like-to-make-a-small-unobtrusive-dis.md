@@ -19,10 +19,10 @@ Users have no in-app notification when a new stable release of RepoOS is availab
 When a new stable release is detected:
 1. An unobtrusive, dismissable notification banner appears in the UI
 2. Clicking the banner opens a modal displaying:
-   - Current installed version
-   - New available version
-   - "Upgrade" and "Not now" buttons
-   - Release notes (ideally)
+- Current installed version
+- New available version
+- "Upgrade" and "Not now" buttons
+- Release notes (ideally)
 
 ## Acceptance criteria
 - [ ] Detect new stable releases only (exclude pre-release tags: beta, canary, rc)

@@ -46,17 +46,17 @@ running instances legible, not a process-management feature.
 ## Acceptance criteria
 
 - [ ] Starting `repoos serve` for a project sets a process title that
-      identifies the project (e.g. `repoos-squishy`, `repoos-repoos`).
+identifies the project (e.g. `repoos-squishy`, `repoos-repoos`).
 - [ ] Verified with `ps aux | grep repoos` (or equivalent) on macOS that
-      the title actually shows up — not just that `process.title` was set.
+the title actually shows up — not just that `process.title` was set.
 - [ ] No change to port binding, CLI flags, or serve behavior — title only.
 - [ ] `repoos check` passes.
 
 ## Related
 
 - #0345 — diagnosed a squishy MTD failure; discovering the naming gap
-  triggered this task while checking whether a long-running
-  `repoos serve` was stray or legitimate before killing it.
+triggered this task while checking whether a long-running
+`repoos serve` was stray or legitimate before killing it.
 
 ## Activity
 

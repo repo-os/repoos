@@ -25,8 +25,8 @@ The deploy-confirmation modal should stay fully contained within the viewport re
 
 ## Notes for AI
 - Files to touch:
-  - `src/ui-app/src/style.css` — `.dep-card` (line 2519) likely needs a `max-height` (e.g. `max-height: 90vh`) plus `overflow-y: auto`; `.dep-modal-error` (line 2594) may also need a `max-height`/scroll cap so a very long error scrolls within the body.
-  - `src/ui-app/src/views/DeploymentsView.vue` — confirm no inline style blocks height; the error binding is on line 469.
+- `src/ui-app/src/style.css` — `.dep-card` (line 2519) likely needs a `max-height` (e.g. `max-height: 90vh`) plus `overflow-y: auto`; `.dep-modal-error` (line 2594) may also need a `max-height`/scroll cap so a very long error scrolls within the body.
+- `src/ui-app/src/views/DeploymentsView.vue` — confirm no inline style blocks height; the error binding is on line 469.
 - The modal is wrapped in `<Teleport to="body">`, so CSS lives in `style.css`, not a `<style scoped>` block.
 - Assumption: root cause is the missing height cap on `.dep-card`; fix at the container level rather than only clamping the error text, so the warning/command list also stay bounded.
 - Do NOT change the error's `white-space: pre-wrap` (preserves formatting) or remove the `role="alert"`.

@@ -468,6 +468,7 @@ export interface UiHandoffCaptureEvidence {
   assertionsPassed: number;
   assertionsChecked: number;
   shot?: { name: string; path: string; url: string };
+  targetWarnings?: string[];
 }
 
 export interface UiHandoffVerificationEvidence {
@@ -481,6 +482,7 @@ export interface UiHandoffVerificationEvidence {
   sourceWorktree?: string;
   evidenceDir?: string;
   captureDetails?: UiHandoffCaptureEvidence[];
+  warnings?: string[];
 }
 
 /** Client-side view of a task's agent review. */

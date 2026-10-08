@@ -104,14 +104,14 @@ needed: non-interactive sessions auto-approve every permission request
 Consequences for RepoOS:
 
 - `engineerPermissionGaps` (`agents.ts:2439-2474`) needs a `crush` case that
-  returns **no gap** with a comment explaining that approval is a property of
-  the mode, not a flag. Do not invent a flag the CLI rejects.
+returns **no gap** with a comment explaining that approval is a property of
+the mode, not a flag. Do not invent a flag the CLI rejects.
 - There is **no read-only mode**. RepoOS deliberately omits the bypass flag for
-  PM authoring runs (`pmCommand`, `agents.ts:3078-3162`) so that role cannot
-  edit the repo; under Crush that isolation is unavailable and PM/review runs
-  get full tool access. Record the tradeoff in the docs rather than pretending
-  it is equivalent. (Review runs already pass `--auto` for opencode, so the
-  practical delta is the PM role.)
+PM authoring runs (`pmCommand`, `agents.ts:3078-3162`) so that role cannot
+edit the repo; under Crush that isolation is unavailable and PM/review runs
+get full tool access. Record the tradeoff in the docs rather than pretending
+it is equivalent. (Review runs already pass `--auto` for opencode, so the
+practical delta is the PM role.)
 
 ### 3. Cancellation needs SIGINT, not SIGTERM
 
@@ -122,10 +122,10 @@ Consequences for RepoOS:
 Measured:
 
 - SIGTERM to a running `crush run`: the process dies immediately (no handler)
-  and its bash-tool child is **orphaned** — a `sleep 120` subprocess was
-  reparented to PID 1 and kept running.
+and its bash-tool child is **orphaned** — a `sleep 120` subprocess was
+reparented to PID 1 and kept running.
 - SIGINT to a running `crush run`: the process exits promptly and the tool
-  child is reaped (verified: both parent and its `sleep 300` child gone).
+child is reaped (verified: both parent and its `sleep 300` child gone).
 
 So this engine must be cancelled with SIGINT, or the harness must be spawned in
 its own process group and killed as a group. Prefer a small, general
@@ -176,13 +176,13 @@ cannot silently turn RepoOS runs into daemon mode.
 
 ```json
 {"meta":{"id":"…","uuid":"…","title":"…","created":"…","modified":"…",
-         "cost":0.0016488,"prompt_tokens":13642,"completion_tokens":3,"total_tokens":13645},
- "messages":[{"role":"assistant","model":"…","provider":"…","parts":[
-   {"type":"reasoning","thinking":"…"},
-   {"type":"text","text":"…"},
-   {"type":"tool_call","tool_call_id":"…","name":"write","input":"{…}"},
-   {"type":"tool_result","tool_call_id":"…","name":"write","content":"…"},
-   {"type":"finish","reason":"tool_use"}]}]}
+       "cost":0.0016488,"prompt_tokens":13642,"completion_tokens":3,"total_tokens":13645},
+"messages":[{"role":"assistant","model":"…","provider":"…","parts":[
+ {"type":"reasoning","thinking":"…"},
+ {"type":"text","text":"…"},
+ {"type":"tool_call","tool_call_id":"…","name":"write","input":"{…}"},
+ {"type":"tool_result","tool_call_id":"…","name":"write","content":"…"},
+ {"type":"finish","reason":"tool_use"}]}]}
 ```
 
 That covers the Tokens tab (map `cost` → `costUsd`, `extractUsage` source,
@@ -232,16 +232,16 @@ alarming.
 ### 10. Detection details
 
 - Binary name `crush`; install hint `brew install charmbracelet/tap/crush`
-  (verified: `charmbracelet/tap/crush 0.97.1`). Official site
-  <https://charm.sh/crush>. **License is FSL-1.1-MIT** (source-available,
-  converts to MIT after two years) — fine for *driving* the CLI, but record it,
-  since the docs treat licensing/credentials as a deliberate consideration.
+(verified: `charmbracelet/tap/crush 0.97.1`). Official site
+<https://charm.sh/crush>. **License is FSL-1.1-MIT** (source-available,
+converts to MIT after two years) — fine for *driving* the CLI, but record it,
+since the docs treat licensing/credentials as a deliberate consideration.
 - No `--json` auth-status probe exists (`crush login` / `logout` only), so use
-  `authHint` and no `authCheckArgs`. With no provider configured, `crush run`
-  fails with `no providers configured - please run 'crush' to set up a provider
-  interactively`.
+`authHint` and no `authCheckArgs`. With no provider configured, `crush run`
+fails with `no providers configured - please run 'crush' to set up a provider
+interactively`.
 - Update checks: `agent-updates.ts:36-55` already has a HOMEBREW_FORMULAS path
-  (aider, goose) — Crush belongs there.
+(aider, goose) — Crush belongs there.
 
 ## Where the code goes
 
@@ -251,43 +251,43 @@ are the prior integration tasks to copy. Concretely:
 
 1. `src/core/config.ts:55-64` — add `"crush"` to `AGENT_CLIS`.
 2. `src/core/detect.ts:119-225` — `KNOWN_AGENTS` entry (`id: "crush"`,
-   `name: "crush"`, `cli: "crush"`, `binary: "crush"`, `drivable: true`,
-   install/auth hints, `capability` line).
+ `name: "crush"`, `cli: "crush"`, `binary: "crush"`, `drivable: true`,
+ install/auth hints, `capability` line).
 3. `src/core/agent-compatibility.json` — contract entry, all 11 fields, starting
-   `newestCertifiedVersion` / `verifiedAt` / `verificationSource` at `null`
-   (honest "not yet probed"), with `requiredCapabilities` limited to
-   version, help, model-discovery, headless-one-shot, auto-permissions,
-   cancellation (no structured-events / session-continuation, exactly as the
-   kiro contract does).
+ `newestCertifiedVersion` / `verifiedAt` / `verificationSource` at `null`
+ (honest "not yet probed"), with `requiredCapabilities` limited to
+ version, help, model-discovery, headless-one-shot, auto-permissions,
+ cancellation (no structured-events / session-continuation, exactly as the
+ kiro contract does).
 4. `user-docs/coding-harness-compatibility.md` — table row
-   (`harness-compat-docs.test.ts:62-80` fails the gate without it).
+ (`harness-compat-docs.test.ts:62-80` fails the gate without it).
 5. `src/core/agent-contract.ts:567-576` — `CONTRACT_TEMPLATES` entry plus a
-   `CRUSH_CONTRACT` modelled on `KIRO_CONTRACT` (`:441-461`): `version: ["--version"]`,
-   `help: ["--help"]`, `models: ["models"]`,
-   `run: ["run", "--quiet", prompt]`, `resume: ["run", "--quiet", "--session", id, prompt]`,
-   a custom `parseRun` (plain text: `sessionId: null`, `hasAnswer` = `/OK/i`
-   on the last lines), and `skipSeams` for `structured-events` and
-   `session-continuation` with the reasons above.
+ `CRUSH_CONTRACT` modelled on `KIRO_CONTRACT` (`:441-461`): `version: ["--version"]`,
+ `help: ["--help"]`, `models: ["models"]`,
+ `run: ["run", "--quiet", prompt]`, `resume: ["run", "--quiet", "--session", id, prompt]`,
+ a custom `parseRun` (plain text: `sessionId: null`, `hasAnswer` = `/OK/i`
+ on the last lines), and `skipSeams` for `structured-events` and
+ `session-continuation` with the reasons above.
 6. `src/core/models.ts:379-398` — a real `crush` adapter parsing
-   `crush models` (`provider/model` lines), and add `crush` to the stub-loop
-   skip list if it gets real discovery.
+ `crush models` (`provider/model` lines), and add `crush` to the stub-loop
+ skip list if it gets real discovery.
 7. `src/server/agents.ts` — `engineForCli` (`:981-990`), `Session.engine` union
-   (`:302-311`) and the persisted-engine allowlist (`:6199-6209`),
-   `DRIVABLE_CLIS` (`:2323`), `engineerPermissionGaps` (`:2439-2474`, no-flag
-   case), `modelArgs`/flag builders, `cliCommand` (`:2510-2609`),
-   `resumeCommand` (`:2620-2745`), `promptCommand` (`:3021-3062`), `pmCommand`
-   (`:3078-3162`), `reviewCommand` (`:3187-3266`), `parseOneShotLine`
-   (`:3278-3334`), an `appendLine` branch (`:4965-5015`) — the plain-text
-   `{s:"out"}` fallback is sufficient — the post-run session capture (a
-   crush analogue of `:6102-6148`, wired into `cleanup` at `:5934-5936`, also
-   ingesting `session show --json` for usage), the cancel signal (`stop()`,
-   `:5686-5726`), and `CRUSH_CLIENT_SERVER=0` in the child env at the spawn
-   site (`:4826-4840`).
+ (`:302-311`) and the persisted-engine allowlist (`:6199-6209`),
+ `DRIVABLE_CLIS` (`:2323`), `engineerPermissionGaps` (`:2439-2474`, no-flag
+ case), `modelArgs`/flag builders, `cliCommand` (`:2510-2609`),
+ `resumeCommand` (`:2620-2745`), `promptCommand` (`:3021-3062`), `pmCommand`
+ (`:3078-3162`), `reviewCommand` (`:3187-3266`), `parseOneShotLine`
+ (`:3278-3334`), an `appendLine` branch (`:4965-5015`) — the plain-text
+ `{s:"out"}` fallback is sufficient — the post-run session capture (a
+ crush analogue of `:6102-6148`, wired into `cleanup` at `:5934-5936`, also
+ ingesting `session show --json` for usage), the cancel signal (`stop()`,
+ `:5686-5726`), and `CRUSH_CLIENT_SERVER=0` in the child env at the spawn
+ site (`:4826-4840`).
 8. `src/core/agent-updates.ts:36-55` — homebrew formula entry.
 9. UI: `src/ui-app/src/views/AgentsView.vue:150-156` `CLI_LABELS`,
-   `src/ui-app/src/stores/config.ts:7-24` / `:146-167` model lists and labels.
+ `src/ui-app/src/stores/config.ts:7-24` / `:146-167` model lists and labels.
 10. `src/core/providers/spend.ts:23-34, 53-153` — a dispatch-provider row if
-    Crush is meant to appear in the Tokens/dispatch views.
+  Crush is meant to appear in the Tokens/dispatch views.
 
 Registration is string-keyed and there is no cli union in `types.ts`, so
 nothing else needs widening — but several tests enumerate the set and will fail
@@ -299,19 +299,19 @@ or the `Object.keys(...).sort()` equality fails), `driver-permissions.test.ts:18
 ## Tests
 
 - A fake `crush` fixture exercising the argv shapes: `run --quiet <prompt>`,
-  `run --quiet --session <id> <prompt>`, `models`, `--version`, `--help`, and
-  the plain-text session-id-less stream. Keep it credential-free and
-  deterministic (`agent-contract.test.ts` is the pattern).
+`run --quiet --session <id> <prompt>`, `models`, `--version`, `--help`, and
+the plain-text session-id-less stream. Keep it credential-free and
+deterministic (`agent-contract.test.ts` is the pattern).
 - Detection + compatibility status for a 0.x version (in-range, pre-range,
-  1.x).
+1.x).
 - Permission handling: assert Crush's engineering launch reports **no** gaps and
-  carries no fabricated bypass flag.
+carries no fabricated bypass flag.
 - Cancellation: assert SIGINT (not SIGTERM) is sent for this engine, and that
-  the child env contains `CRUSH_CLIENT_SERVER=0`.
+the child env contains `CRUSH_CLIENT_SERVER=0`.
 - Session capture: given a before/after pair of `crush session list --json`
-  payloads, the new id is selected; `--continue` is never used.
+payloads, the new id is selected; `--continue` is never used.
 - Usage ingestion from `crush session show --json` (cost + tokens land in the
-  session row with the right cost source).
+session row with the right cost source).
 
 ## Certification (not part of the implementation, but do not fake it)
 
@@ -329,43 +329,43 @@ credential-free install path exists.
 ## Acceptance criteria
 
 - `crush` is detected on PATH as a drivable harness with accurate install/auth
-  hints and a compatibility pill that reflects the manifest (not "verified"
-  until evidence exists).
+hints and a compatibility pill that reflects the manifest (not "verified"
+until evidence exists).
 - Crush can be selected for engineer, PM, reviewer, and follow-up runs; the
-  mission prompt (including inlined skills and the handoff signal) reaches it
-  via argv; the run happens in the task worktree; output streams live; the
-  90 s stall detector is not tripped by normal runs.
+mission prompt (including inlined skills and the handoff signal) reaches it
+via argv; the run happens in the task worktree; output streams live; the
+90 s stall detector is not tripped by normal runs.
 - The turn can be cancelled without orphaning tool subprocesses.
 - A follow-up turn resumes the same session; `--continue` is never used.
 - Usage/transcript land in RepoOS (Tokens tab, persisted session).
 - Runs execute as a single foreground process — no detached `crush server`
-  regardless of the user's environment.
+regardless of the user's environment.
 - `bun run fmt` clean, `repoos check --changed main` passes, and no other
-  harness regresses. Docs touched by the change (`AGENTS.md`? `docs/agent-compatibility.md`,
-  `user-docs/coding-harness-compatibility.md`) are updated in the same diff.
+harness regresses. Docs touched by the change (`AGENTS.md`? `docs/agent-compatibility.md`,
+`user-docs/coding-harness-compatibility.md`) are updated in the same diff.
 
 ## Out of scope
 
 - Live tool cards by polling `crush session show --json` (file separately if
-  wanted).
+wanted).
 - Client-server mode, MCP configuration, or per-project Crush config injection.
 - A read-only/Crush-sandboxed mode for PM runs (does not exist upstream; the
-  limitation goes in the docs instead).
+limitation goes in the docs instead).
 - Certifying a specific release in CI.
 
 ## Notes for whoever picks this up
 
 - Crush's source is the fastest way to settle a behaviour question:
-  `gh api repos/charmbracelet/crush/contents/<path> --jq .content | base64 -d`.
-  Files consulted for this task: `internal/cmd/run.go` (flags, `runStream`),
-  `internal/cmd/root.go` (`useClientServer`, `ensureServer`, `.crush/.gitignore`),
-  `internal/cmd/models.go`, `internal/app/app.go` (auto-approve),
-  `internal/permission/permission.go`, `internal/cmd/run_stream_test.go`.
+`gh api repos/charmbracelet/crush/contents/<path> --jq .content | base64 -d`.
+Files consulted for this task: `internal/cmd/run.go` (flags, `runStream`),
+`internal/cmd/root.go` (`useClientServer`, `ensureServer`, `.crush/.gitignore`),
+`internal/cmd/models.go`, `internal/app/app.go` (auto-approve),
+`internal/permission/permission.go`, `internal/cmd/run_stream_test.go`.
 - A previous interactive session already ran throwaway probes; leftover
-  `crushprobe`/`crushprobe2` dirs under `$TMPDIR` are unrelated to this task.
+`crushprobe`/`crushprobe2` dirs under `$TMPDIR` are unrelated to this task.
 - Probe hygiene: `crush run` needs a configured provider, so live probing
-  spends a little money (a trivial prompt ≈ 13.6k prompt tokens). Use a temp dir
-  with `git init`, and kill any `crush server` you start.
+spends a little money (a trivial prompt ≈ 13.6k prompt tokens). Use a temp dir
+with `git init`, and kill any `crush server` you start.
 
 ## Activity
 

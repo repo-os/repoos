@@ -45,16 +45,16 @@ The animation should:
 ## Notes for AI
 
 - This is a UI-only change in the login flow; do not alter the server-side
-  passcode-send logic or any API behavior.
+passcode-send logic or any API behavior.
 - Locate the login email-submission handler and the point where the passcode
-  entry view mounts; the animation should live between these two moments.
+entry view mounts; the animation should live between these two moments.
 - Prefer a lightweight indicator consistent with the existing UI/SFC patterns;
-  do not introduce a runtime dependency (zero-runtime-dependencies constraint).
+do not introduce a runtime dependency (zero-runtime-dependencies constraint).
 - Assumption: a lightweight inline spinner/progress state on the submit control
-  is an acceptable default for "some animation"; no specific animation style
-  was specified by the user.
+is an acceptable default for "some animation"; no specific animation style
+was specified by the user.
 - The animation should also cover the full time until the error/success
-  resolution is known, so the user is never left staring at an inert button.
+resolution is known, so the user is never left staring at an inert button.
 
 ## Related
 

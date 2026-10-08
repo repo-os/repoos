@@ -27,9 +27,9 @@ contrast) apply to any project, but the file path and the token lists
 RepoOS. So for other projects:
 
 - A project whose UI lives somewhere else (for example
-  `apps/web/src/app.css`) gets no coverage. The step quietly skips.
+`apps/web/src/app.css`) gets no coverage. The step quietly skips.
 - A project that happens to have a file at that path gets judged against
-  RepoOS's own token names.
+RepoOS's own token names.
 
 This never fails a project today, but it also never protects anyone except
 RepoOS.
@@ -47,7 +47,7 @@ that same config, the way #0348 moved RepoOS's UI smoke test onto the generic
 - [ ] A project can point both guards at its own stylesheet and tokens.
 - [ ] Projects that don't configure them skip cleanly, as they do today.
 - [ ] RepoOS keeps its current coverage by declaring it through config, with
-      no hardcoded RepoOS-only path in `check.ts`.
+no hardcoded RepoOS-only path in `check.ts`.
 - [ ] `repoos check` passes.
 
 ## Related

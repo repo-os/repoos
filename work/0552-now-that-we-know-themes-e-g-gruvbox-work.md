@@ -36,153 +36,153 @@ are shared, and `repoos check` treats the two trees as independent build steps.
 ## Desired UX
 
 - The docs site gets the same two-axis model as the landing page: a design theme
-  (Classic, Gruvbox) and an appearance (dark / light), one switcher, repaints
-  instantly, no flash of the wrong theme on load.
+(Classic, Gruvbox) and an appearance (dark / light), one switcher, repaints
+instantly, no flash of the wrong theme on load.
 - Gruvbox on the docs site is recognisably gruvbox, not Classic recoloured: warm
-  charcoal in dark, cream in light, hairline warm borders, flat opaque panels,
-  no neon glow, tight 4–8px radii — the same palette the landing and the app
-  already ship, re-expressed in VitePress's `--vp-*` vocabulary.
+charcoal in dark, cream in light, hairline warm borders, flat opaque panels,
+no neon glow, tight 4–8px radii — the same palette the landing and the app
+already ship, re-expressed in VitePress's `--vp-*` vocabulary.
 - **The hand-off works**: from `https://repoos.org/?appearance=dark&theme=gruvbox`,
-  clicking any "Docs" link arrives at docs.repoos.org already in gruvbox/dark.
-  The round trip is stable in the other direction too — the docs' link back to
-  `repoos.org` carries the current choice, so bouncing between the two sites
-  never silently resets you.
+clicking any "Docs" link arrives at docs.repoos.org already in gruvbox/dark.
+The round trip is stable in the other direction too — the docs' link back to
+`repoos.org` carries the current choice, so bouncing between the two sites
+never silently resets you.
 - The docs site also works standalone. Deep-linking
-  `docs.repoos.org/getting-started?theme=gruvbox&appearance=light` renders
-  gruvbox light immediately, on any page, and the choice persists across a
-  reload and across pages.
+`docs.repoos.org/getting-started?theme=gruvbox&appearance=light` renders
+gruvbox light immediately, on any page, and the choice persists across a
+reload and across pages.
 - Existing readers are unaffected: a first-time visitor with no params and no
-  stored choice still gets today's default (dark-first, per
-  `appearance: "dark"` in `config.mts`).
+stored choice still gets today's default (dark-first, per
+`appearance: "dark"` in `config.mts`).
 - Keyboard reachable, labelled for screen readers, usable from the collapsed
-  mobile nav.
+mobile nav.
 
 ## Acceptance criteria
 
 - [ ] Classic and Gruvbox × dark and light all render on the docs site, with
-      correct contrast and no VitePress default blue leaking through in any of
-      the four combinations.
+correct contrast and no VitePress default blue leaking through in any of
+the four combinations.
 - [ ] Gruvbox tokens are ported from `landing/src/style.css`
-      (`[data-ui-theme="gruvbox"]` and `[data-ui-theme="gruvbox"][data-theme="light"]`,
-      which came from `src/ui-app/src/style.css`) and re-expressed as `--vp-*`
-      custom properties. Every `--vp-*` token the file declares today gets a
-      gruvbox value in both appearances — an unset one silently falls back to
-      VitePress's default palette, which is the failure mode to watch for.
+(`[data-ui-theme="gruvbox"]` and `[data-ui-theme="gruvbox"][data-theme="light"]`,
+which came from `src/ui-app/src/style.css`) and re-expressed as `--vp-*`
+custom properties. Every `--vp-*` token the file declares today gets a
+gruvbox value in both appearances — an unset one silently falls back to
+VitePress's default palette, which is the failure mode to watch for.
 - [ ] The existing selector strategy is kept, not restructured: `:root` holds the
-      light defaults and `.dark` overrides them (VitePress toggles a `dark` class,
-      not `data-theme`). Gruvbox is added alongside as its own blocks.
+light defaults and `.dark` overrides them (VitePress toggles a `dark` class,
+not `data-theme`). Gruvbox is added alongside as its own blocks.
 - [ ] The deliberate exceptions in `custom.css`'s file header survive the port:
-      code blocks stay dark in BOTH appearances (`markdown.theme` stays pinned to
-      `github-dark` both ways), the brand button keeps its fill, and inline code
-      and custom containers continue to follow the theme.
+code blocks stay dark in BOTH appearances (`markdown.theme` stays pinned to
+`github-dark` both ways), the brand button keeps its fill, and inline code
+and custom containers continue to follow the theme.
 - [ ] The design theme is applied the way the app and the landing page apply it —
-      `data-ui-theme="gruvbox"` on `<html>`, attribute absent for Classic — so
-      all three codebases read alike. Appearance keeps VitePress's `dark`-class
-      meaning.
+`data-ui-theme="gruvbox"` on `<html>`, attribute absent for Classic — so
+all three codebases read alike. Appearance keeps VitePress's `dark`-class
+meaning.
 - [ ] The design theme and appearance both resolve **before first paint**, with no
-      flash of Classic. `config.mts` already documents that VitePress injects its
-      own `check-dark-mode` script when `appearance` is enabled and that a manual
-      class script "would fight the toggle and flash on light mode" — the new
-      script must compose with or deliberately replace that behaviour, and the
-      comment there is updated to say which.
+flash of Classic. `config.mts` already documents that VitePress injects its
+own `check-dark-mode` script when `appearance` is enabled and that a manual
+class script "would fight the toggle and flash on light mode" — the new
+script must compose with or deliberately replace that behaviour, and the
+comment there is updated to say which.
 - [ ] `?theme=` and `?appearance=` (alias `?mode=`) are honoured on the docs site
-      using the same normalization rules as `landing/src/theme-resolve.ts`:
-      Classic is the absence of `theme`, appearance accepts only `dark`/`light`,
-      invalid values are ignored per axis rather than poisoning the other one,
-      and an unknown `?theme=` (a future id) falls back to Classic instead of
-      rendering an unstyled page.
+using the same normalization rules as `landing/src/theme-resolve.ts`:
+Classic is the absence of `theme`, appearance accepts only `dark`/`light`,
+invalid values are ignored per axis rather than poisoning the other one,
+and an unknown `?theme=` (a future id) falls back to Classic instead of
+rendering an unstyled page.
 - [ ] All four outbound links in `landing/src/App.vue` to
-      `https://docs.repoos.org` (nav `Docs`, mobile-menu `Docs`, the macos-hub
-      link, and the footer/hero link) carry the current design theme and
-      appearance, following the same rules `syncThemeToUrl` already applies —
-      including omitting `theme` when Classic — and keep whatever path and
-      existing query string they had.
+`https://docs.repoos.org` (nav `Docs`, mobile-menu `Docs`, the macos-hub
+link, and the footer/hero link) carry the current design theme and
+appearance, following the same rules `syncThemeToUrl` already applies —
+including omitting `theme` when Classic — and keep whatever path and
+existing query string they had.
 - [ ] Choices persist: a theme picked on the docs site survives a reload and
-      applies on every other docs page. Blocked or unavailable `localStorage`
-      degrades to the default instead of throwing.
+applies on every other docs page. Blocked or unavailable `localStorage`
+degrades to the default instead of throwing.
 - [ ] The switcher is a real control, per this repo's dropdown convention: the
-      custom styled component, never a native `<select>`; `aria-label`/`title` on
-      each option; keyboard operable; a visible focus ring; works in the collapsed
-      mobile nav.
+custom styled component, never a native `<select>`; `aria-label`/`title` on
+each option; keyboard operable; a visible focus ring; works in the collapsed
+mobile nav.
 - [ ] There is exactly one appearance control. The built-in VitePress appearance
-      toggle is either replaced by the new switcher or wired to write through the
-      same resolver — whichever is chosen, two controls fighting over
-      `<html class="dark">` is not an acceptable outcome.
+toggle is either replaced by the new switcher or wired to write through the
+same resolver — whichever is chosen, two controls fighting over
+`<html class="dark">` is not an acceptable outcome.
 - [ ] `cd user-docs && bun run build` (vitepress build) passes, and
-      `repoos check` is green including the `user-docs-build` step. No new runtime
-      dependencies anywhere (dev deps are fine).
+`repoos check` is green including the `user-docs-build` step. No new runtime
+dependencies anywhere (dev deps are fine).
 - [ ] `user-docs/README.md` documents the switcher, the two-axis model, and the
-      shared `?theme=` / `?appearance=` contract; `landing/README.md` gains a line
-      about the hand-off, since it already documents the switcher from #0547.
+shared `?theme=` / `?appearance=` contract; `landing/README.md` gains a line
+about the hand-off, since it already documents the switcher from #0547.
 
 ## Notes for AI
 
 Files to touch:
 
 - `user-docs/.vitepress/theme/custom.css` — the Gruvbox blocks in `--vp-*`
-  vocabulary, plus the switcher's own rules.
+vocabulary, plus the switcher's own rules.
 - `user-docs/.vitepress/theme/index.ts` — a `Layout` slot for the switcher;
-  `custom.css` is imported here, so a new component belongs beside it (e.g.
-  `ThemePicker.vue`).
+`custom.css` is imported here, so a new component belongs beside it (e.g.
+`ThemePicker.vue`).
 - `user-docs/.vitepress/config.mts` — the pre-paint script in `head`, and the
-  existing comment about VitePress's `check-dark-mode` script.
+existing comment about VitePress's `check-dark-mode` script.
 - A theme-resolution helper for the docs site (e.g.
-  `user-docs/.vitepress/theme/theme-resolve.ts`), mirroring
-  `landing/src/theme-resolve.ts`.
+`user-docs/.vitepress/theme/theme-resolve.ts`), mirroring
+`landing/src/theme-resolve.ts`.
 - `landing/src/App.vue` — append the current axes to the four docs links.
 - `user-docs/README.md`, `landing/README.md`.
 
 Constraints:
 
 - The docs site is a standalone deployable with its own lockfile and no bun
-  workspaces. Do not add a workspace, a shared package, or a build-time import
-  from `landing/src` or `src/ui-app`. Duplicate the small resolution helper,
-  cite `landing/src/theme-resolve.ts` in a comment, and keep the coupling a
-  comment — the same discipline #0547 set for the landing.
+workspaces. Do not add a workspace, a shared package, or a build-time import
+from `landing/src` or `src/ui-app`. Duplicate the small resolution helper,
+cite `landing/src/theme-resolve.ts` in a comment, and keep the coupling a
+comment — the same discipline #0547 set for the landing.
 - Gruvbox is deliberately flat: opaque panels, hairline warm borders, no glow, no
-  glass, tight radii. Do not carry VitePress's default shadows or gradients into
-  it, and do not port the landing's `--glow-*` / `--shot-shadow` treatment —
-  those tokens have no docs-site equivalent and should simply not appear.
+glass, tight radii. Do not carry VitePress's default shadows or gradients into
+it, and do not port the landing's `--glow-*` / `--shot-shadow` treatment —
+those tokens have no docs-site equivalent and should simply not appear.
 - `repoos check`'s theme-contrast guard only reads `src/ui-app/src/style.css`
-  (`[check] uiStylesheet`), so the docs site is not machine-checked. The app's
-  guard still teaches the relevant lesson: it parses theme blocks line-by-line
-  and a `/* … */` comment *between* declarations corrupts the following key.
-  Keep comments outside declaration runs so the blocks stay diffable and
-  portable to the app.
+(`[check] uiStylesheet`), so the docs site is not machine-checked. The app's
+guard still teaches the relevant lesson: it parses theme blocks line-by-line
+and a `/* … */` comment *between* declarations corrupts the following key.
+Keep comments outside declaration runs so the blocks stay diffable and
+portable to the app.
 - The docs site has no test suite and no contrast guard, and the gruvbox values
-  come from a palette that already passes the app's guard. Check all four
-  combinations by eye regardless — "it looks right" is the point of this task.
+come from a palette that already passes the app's guard. Check all four
+combinations by eye regardless — "it looks right" is the point of this task.
 - `user-docs/.vitepress/dist/` and `user-docs/.vitepress/cache/` are build output
-  that happens to be present in the tree. Don't hand-edit them; `bun run build`
-  regenerates them. Don't commit them.
+that happens to be present in the tree. Don't hand-edit them; `bun run build`
+regenerates them. Don't commit them.
 - Use `bun run …` / `bunx …`, never `npm` / `npx` (this repo's runtime rule).
-  `just user-docs-dev` (port 5175) and `just user-docs-build` are the sanctioned
-  recipes.
+`just user-docs-dev` (port 5175) and `just user-docs-build` are the sanctioned
+recipes.
 - This task's `area` is `docs`, which is what routes the managed preview to the
-  docs-site target in `repoos.toml`. Never run `repoos serve` yourself.
+docs-site target in `repoos.toml`. Never run `repoos serve` yourself.
 
 Assumptions (the prompt did not specify these):
 
 - **The hand-off mechanism is the query string, not shared storage.** `repoos.org`
-  and `docs.repoos.org` are different origins, so `localStorage` is per-origin and
-  no key can cross between them. The appended `?theme=` / `?appearance=` is the
-  mechanism; reusing the landing's key names (`repoos-ui-theme`, `repoos-theme`)
-  is best-effort within an origin (e.g. a visitor who picks a theme on the docs
-  site and later opens `docs.repoos.org` directly) and is worth doing anyway, but
-  it is not what makes the landing→docs click work. Say this plainly in the
-  README so the next reader doesn't think storage is doing the hand-off.
+and `docs.repoos.org` are different origins, so `localStorage` is per-origin and
+no key can cross between them. The appended `?theme=` / `?appearance=` is the
+mechanism; reusing the landing's key names (`repoos-ui-theme`, `repoos-theme`)
+is best-effort within an origin (e.g. a visitor who picks a theme on the docs
+site and later opens `docs.repoos.org` directly) and is worth doing anyway, but
+it is not what makes the landing→docs click work. Say this plainly in the
+README so the next reader doesn't think storage is doing the hand-off.
 - The design-theme axis applies to the whole docs site — chrome, prose, custom
-  containers, inline code — while code blocks stay dark in both appearances,
-  mirroring both the landing page and the current `github-dark` pin.
+containers, inline code — while code blocks stay dark in both appearances,
+mirroring both the landing page and the current `github-dark` pin.
 - Gruvbox for the docs site is the *same palette in `--vp-*` terms*, not a
-  token-for-token port: the docs site has surfaces the landing doesn't (sidebar,
-  local search, outline) and lacks ones it does (hero, glow, screenshot frames).
-  Cite the source block in a comment.
+token-for-token port: the docs site has surfaces the landing doesn't (sidebar,
+local search, outline) and lacks ones it does (hero, glow, screenshot frames).
+Cite the source block in a comment.
 - Scope is Classic + Gruvbox on both sites, matching the landing's picker. The
-  app's other themes (Clear, Gen Z, Jelly, Catppuccin) stay out of scope.
+app's other themes (Clear, Gen Z, Jelly, Catppuccin) stay out of scope.
 - The `?theme=` contract is forward-compatible: a valid-shaped but unknown design
-  id resolves to Classic now and will light up automatically when its CSS
-  exists, the same rule #0547 established on the landing.
+id resolves to Classic now and will light up automatically when its CSS
+exists, the same rule #0547 established on the landing.
 
 ## Scope
 
@@ -194,23 +194,23 @@ hand-off.
 Deferred:
 
 - Any mechanism that crosses origins without a link — a shared cookie on
-  `repoos.org`, `postMessage`, or a per-account preference. Out of scope; say so
-  rather than half-building it.
+`repoos.org`, `postMessage`, or a per-account preference. Out of scope; say so
+rather than half-building it.
 - The app's other themes on the docs site or the landing page.
 - Restructuring VitePress theme internals, or restyling docs chrome beyond what
-  the palette swap requires.
+the palette swap requires.
 - Anything in `src/ui-app`.
 
 ## Related
 
 - #0547 — the landing-page switcher this extends: the two-axis model, the
-  `?theme=` / `?appearance=` contract, the storage keys, and the "copy the
-  values, cite the source" constraint.
+`?theme=` / `?appearance=` contract, the storage keys, and the "copy the
+values, cite the source" constraint.
 - #0503 — added gruvbox to the app; the palette's origin.
 - #0504 — theme-contrast guard hardening, and the comment-inside-theme-block rule.
 - `landing/src/theme-resolve.ts`, `landing/src/style.css` (gruvbox blocks),
-  `landing/README.md`, `user-docs/.vitepress/theme/custom.css`,
-  `user-docs/README.md`.
+`landing/README.md`, `user-docs/.vitepress/theme/custom.css`,
+`user-docs/README.md`.
 
 ## Original prompt
 

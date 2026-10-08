@@ -34,10 +34,10 @@ The Mission Control page's "AI usage — all roles" panel always shows usage agg
 ## Notes for AI
 
 - Relevant code:
-  - UI: `src/ui-app/src/components/UsagePanel.vue` (the panel; the "AI usage — all roles" header is the natural home for the selector), rendered by `src/ui-app/src/views/DashboardView.vue`.
-  - Store: `loadBoardUsage()` in `src/ui-app/src/stores/repo.ts` (~line 1724) calls `GET /api/stats/board`; types in `src/ui-app/src/types.ts` (`BoardUsageStats` ~line 367).
-  - Server: `getBoardStats` handler in `src/server/routes/tasks.ts` (~line 1330), route registered in `src/server/server.ts` (~line 1696).
-  - Data: `RepoOSDb.getBoardStats()` in `src/core/db.ts` (~line 749), which composes `getSessionTypeStats()` (roles) and `getDailyTotals()` (days).
+- UI: `src/ui-app/src/components/UsagePanel.vue` (the panel; the "AI usage — all roles" header is the natural home for the selector), rendered by `src/ui-app/src/views/DashboardView.vue`.
+- Store: `loadBoardUsage()` in `src/ui-app/src/stores/repo.ts` (~line 1724) calls `GET /api/stats/board`; types in `src/ui-app/src/types.ts` (`BoardUsageStats` ~line 367).
+- Server: `getBoardStats` handler in `src/server/routes/tasks.ts` (~line 1330), route registered in `src/server/server.ts` (~line 1696).
+- Data: `RepoOSDb.getBoardStats()` in `src/core/db.ts` (~line 749), which composes `getSessionTypeStats()` (roles) and `getDailyTotals()` (days).
 - Recommended approach: thread a range param end-to-end (e.g. `GET /api/stats/board?range=1d|7d|30d|all`, defaulting to `all`) and filter the SQL on `sessions.startedAt` — that column is NOT NULL ISO text and already indexed (`idx_sessions_startedAt`, `src/core/db.ts` ~line 100). Client-side filtering is NOT viable: the endpoint returns pre-aggregated totals, not raw sessions. `getDailyTotals()` and `getSessionTypeStats()` need the same filter so the tables agree with the headline numbers.
 - Assumptions (user didn't specify; pick these unless told otherwise): "1 day" = trailing 24 hours, "1 week" = trailing 7 days, "1 month" = trailing 30 days; boundaries computed server-side using server local time, consistent with the existing per-day table. Default selection is "all time" so current behavior is preserved.
 - The selected range does not need to persist across reloads.

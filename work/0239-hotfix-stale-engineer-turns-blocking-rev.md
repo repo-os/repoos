@@ -11,11 +11,6 @@ branch: ""
 created_at: "2026-08-17T04:09:17Z"
 updated_at: "2026-09-15T16:35:26Z"
 ---
-## Activity
-
-- 2026-08-17T04:09:17Z · created · unknown
-
-
 ## Problem
 
 _What's broken or missing? Why does it matter?_
@@ -34,6 +29,7 @@ _Constraints, files to touch, things NOT to do._
 
 ## Activity
 
+- 2026-08-17T04:09:17Z · created · unknown
 - 2026-08-17T04:09:37Z · status inbox→ready
 - 2026-08-17T04:09:45Z · status ready→active
 - 2026-08-17T04:16:47Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work

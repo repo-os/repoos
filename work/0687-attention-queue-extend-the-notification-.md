@@ -43,17 +43,17 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 ## Shots
 ```json
 [
-  {
-    "label": "Spend alert threshold in Notifications settings",
-    "target": "default",
-    "route": "/settings?tab=notifications"
-  },
-  {
-    "label": "Notification bell with extended attention feed",
-    "target": "default",
-    "route": "/",
-    "highlight": "[data-test-id=\"notice-bell-trigger\"]"
-  }
+{
+"label": "Spend alert threshold in Notifications settings",
+"target": "default",
+"route": "/settings?tab=notifications"
+},
+{
+"label": "Notification bell with extended attention feed",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"notice-bell-trigger\"]"
+}
 ]
 ```
 
