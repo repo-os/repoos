@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: "01f600df54982646ef07e7b974537a0b637b700e"
 id: "0704"
 title: Small papercuts from the tuk-private planning run
 type: chore
@@ -13,8 +15,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
 updated_at: "2026-10-08T16:57:39Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 653cd53c83dc5b0ab28dd20e7479ff06215aa8ac
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
@@ -72,3 +72,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T16:42:37Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-08T16:42:38Z · status review→active
 - 2026-10-08T16:57:39Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
