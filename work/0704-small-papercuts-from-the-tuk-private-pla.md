@@ -13,8 +13,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
 updated_at: "2026-10-08T17:46:17Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: c82dbb94b1d563768735d7a786ebc0f84b5365da
 last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -82,3 +80,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:40:24Z · body
 - 2026-10-08T17:46:17Z · status active→review
 - 2026-10-08T17:46:17Z · note: shots: skipped — the diff (20 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+
