@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-08T16:26:59Z"
+review_passes: 1
 id: "0746"
 title: Unify chat input styling and structure
 type: refactor
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/unify-chat-input-styling-and-structure
 created_at: "2026-10-08T15:34:30Z"
-updated_at: "2026-10-08T16:26:59Z"
 ---
 ## Problem
 
@@ -117,3 +118,4 @@ Task 669 was supposed to standardise and prettify the chat input field, but I th
 - 2026-10-08T16:25:49Z · status active→review
 - 2026-10-08T16:26:05Z · note: click .ai-chat-compose textarea: click: Timeout 5000ms exceeded. on /
 - 2026-10-08T16:26:59Z · note: review pass 1: good to go
+
