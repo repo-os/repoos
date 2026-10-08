@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/cto-conversation-show-reports-once-rende
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-07T02:45:50Z"
-updated_at: "2026-10-08T15:29:19Z"
+updated_at: "2026-10-08T15:43:53Z"
 ---
 ## Problem
 The CTO Board Monitor renders the latest saved report above its conversation history and also renders the same agent output in the history as plain text. This duplicates the report, exposes Markdown syntax, and collapses its line breaks.
@@ -39,3 +39,4 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 - 2026-10-08T15:29:00Z · status inbox→ready
 - 2026-10-08T15:29:16Z · model_override
 - 2026-10-08T15:29:19Z · status ready→active, branch
+- 2026-10-08T15:43:53Z · body
