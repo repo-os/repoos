@@ -2,14 +2,14 @@
 id: "0744"
 title: "Easter eggs bundle: release freshness visibility"
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/easter-eggs-bundle-release-freshness-vis
 created_at: "2026-10-08T14:13:48Z"
-updated_at: "2026-10-08T16:41:02Z"
+updated_at: "2026-10-08T16:41:04Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ Let's start a new easter egg task, the first item in it will be I want to add in
 - 2026-10-08T14:13:50Z · screenshots
 - 2026-10-08T14:14:10Z · status draft→inbox, title, area, body
 - 2026-10-08T16:41:02Z · status inbox→ready
+- 2026-10-08T16:41:04Z · status ready→active, branch
