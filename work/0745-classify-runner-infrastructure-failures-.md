@@ -12,7 +12,7 @@ branch: feat/classify-runner-infrastructure-failures-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:40:08Z"
-updated_at: "2026-10-08T15:33:17Z"
+updated_at: "2026-10-08T15:33:27Z"
 ---
 ## Problem
 
@@ -90,7 +90,7 @@ error: script "test" exited with code 1
 - 2026-10-08T15:28:15Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     404|     const rows = getCheckStore(root).list();
 405|     expect(rows).toHaveLength(1);
 406|     expect(rows[0]).toMatchObject({
- |                     ^
+|                     ^
 407|       taskId: "0564",
 408|       machine: null,
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
@@ -109,3 +109,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-08T15:30:22Z · body
 - 2026-10-08T15:33:17Z · body: section Shots
+- 2026-10-08T15:33:27Z · body: section Shots
