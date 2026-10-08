@@ -296,7 +296,7 @@ const commitsBehindMain = computed(() => status.value?.commitsBehindMain ?? null
 const commitsBehindLabel = computed(() => {
   const n = commitsBehindMain.value;
   if (n === null) return "";
-  return `${n} ${n === 1 ? "commit" : "commits"} behind main`;
+  return `${n} ${n === 1 ? "commit" : "commits"} behind ${status.value?.branch ?? "main"}`;
 });
 /**
  * Secondary line under the freshness pills: names where the shown tag points
