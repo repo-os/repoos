@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-08T16:00:04Z"
-review_passes: 1
+last_close_out_gate_ms: 183436
+last_close_out_gate_at: "2026-10-08T16:26:22.056Z"
 id: "0745"
 title: "Classify runner infrastructure failures (bun install EACCES, ssh, container, host permissions) as infra, not test failures: retry on another host and mark the host degraded"
 type: bug
@@ -14,6 +14,8 @@ branch: feat/classify-runner-infrastructure-failures-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:40:08Z"
+updated_at: "2026-10-08T16:26:22Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -137,18 +139,18 @@ error: script "test" exited with code 1
 404|     const rows = getCheckStore(root).list();
 405|     expect(rows).toHaveLength(1);
 406|     expect(rows[0]).toMatchObject({
-   |                     ^
+ |                     ^
 407|       taskId: "0564",
 408|       machine: null,
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 Test Files  1 failed | 448 passed | 1 skipped (450)
-  Tests  3 failed | 5485 passed | 15 skipped (5503)
+Tests  3 failed | 5485 passed | 15 skipped (5503)
 Start at  15:45:17
 Duration  269.53s (transform 7.48s, setup 2.28s, import 49.32s, tests 248.62s, environment 214.82s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 849ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  15:49:47
 Duration  3.24s (transform 1.41s, setup 15ms, import 1.77s, tests 849ms, environment 516ms)
 error: script "test" exited with code 1
@@ -156,4 +158,5 @@ error: script "test" exited with code 1
 - 2026-10-08T15:58:53Z · status active→review
 - 2026-10-08T15:59:08Z · note: highlight .rvr-host-state--bad matched nothing on /settings?tab=remote
 - 2026-10-08T16:00:03Z · note: review pass 1: good to go
+- 2026-10-08T16:26:22Z · close-out gate completed in 183s
 
