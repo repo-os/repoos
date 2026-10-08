@@ -11,8 +11,10 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-08T14:06:39Z"
+updated_at: "2026-10-08T14:07:02Z"
 ---
 ## Problem
 
@@ -39,3 +41,4 @@ Verify first against current main: #0705 (merged) already made the dispatcher co
 - 2026-10-06T03:37:48Z · needs_input
 - 2026-10-06T07:32:25Z · body: section Status (driver, 15:35)
 - 2026-10-08T14:06:39Z · body
+- 2026-10-08T14:07:02Z · cli_override, model_override
