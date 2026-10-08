@@ -84,22 +84,22 @@ detected (e.g. "Detected because <root>/repoos.toml exists").
 ## Acceptance criteria
 
 - [ ] `repoos init` in a non-git directory interactively guides: states the
-  current-dir default in plain words, accepts a project name for a
-  subdirectory, double-confirms the subdirectory choice, confirms before
-  running, then `git init` + scaffold in place
+current-dir default in plain words, accepts a project name for a
+subdirectory, double-confirms the subdirectory choice, confirms before
+running, then `git init` + scaffold in place
 - [ ] `repoos init <project-name>` means subdir creation, still double-confirmed
 - [ ] Optionally prompts for a one-line project description (plainly skippable);
-  when provided, seeds it into the sample task 0001 body
+when provided, seeds it into the sample task 0001 body
 - [ ] Existing-repo behavior unchanged (no prompts, idempotent)
 - [ ] Prompts for the initial commit (default yes); warns on git problems (not
-  installed, no identity) and fail-softs to "scaffolded, left uncommitted"
+installed, no identity) and fail-softs to "scaffolded, left uncommitted"
 - [ ] Non-TTY invocation does not block on input; prints guidance and exits
-  non-zero
+non-zero
 - [ ] Ends by offering to launch the web console: preferred-port prompt, free
-  port fallback when busy, browser opens, server serves the new project
+port fallback when busy, browser opens, server serves the new project
 - [ ] Asks where the scaffold should live (root default vs `repoos/` subfolder);
-  config file at root in both cases; `repoos list`/server read the
-  namespace layout correctly
+config file at root in both cases; `repoos list`/server read the
+namespace layout correctly
 - [ ] No new runtime dependencies (prompts via `node:readline/promises`)
 - [ ] `repoos check` passes
 

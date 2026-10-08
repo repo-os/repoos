@@ -59,26 +59,26 @@ live process, and a task not listed has none.
 ## Acceptance criteria
 
 - [ ] Leaving `active` stops the task's agent via the same graceful path
-   `/pause` uses (`runner.stop`: SIGTERM, then SIGKILL after the existing
-   grace period) — not a bare SIGKILL.
+`/pause` uses (`runner.stop`: SIGTERM, then SIGKILL after the existing
+grace period) — not a bare SIGKILL.
 - [ ] The cleanup fires for every route that can change status, not just the
-   HTTP ones: `PATCH /api/tasks/:id`, the `/done` close-out, and a status
-   change made by editing the task file directly on disk (the watcher /
-   `LiveIndex.applyFileChange` path). Hooking it next to the existing
-   `stopPreviewIfLeft` `onStatusChange` callback is the natural shape, but
-   confirm that callback actually fires on the file-watcher path too — if
-   it doesn't, that gap is part of this task.
+HTTP ones: `PATCH /api/tasks/:id`, the `/done` close-out, and a status
+change made by editing the task file directly on disk (the watcher /
+`LiveIndex.applyFileChange` path). Hooking it next to the existing
+`stopPreviewIfLeft` `onStatusChange` callback is the natural shape, but
+confirm that callback actually fires on the file-watcher path too — if
+it doesn't, that gap is part of this task.
 - [ ] `review → done` releases the agent **before** `completeTask` removes the
-   worktree, so the worktree is never torn out from under a live process.
-   Note the ordering: `done.ts` already calls `removeWorktree`/`deleteBranch`
-   at the end of a successful close-out.
+worktree, so the worktree is never torn out from under a live process.
+Note the ordering: `done.ts` already calls `removeWorktree`/`deleteBranch`
+at the end of a successful close-out.
 - [ ] A task whose agent has already exited on its own is a clean no-op — the
-   cleanup must be idempotent and must not error or log noise for the
-   common case.
+cleanup must be idempotent and must not error or log noise for the
+common case.
 - [ ] Regression test: a task in `active` with a live (fixture-binary) agent,
-   transitioned to `review`, ends with no live process and no registry
-   entry. Follow the existing fakebin pattern in
-   `src/ui-app/tests/agent-drivers.test.ts` / `json-events.test.ts`.
+transitioned to `review`, ends with no live process and no registry
+entry. Follow the existing fakebin pattern in
+`src/ui-app/tests/agent-drivers.test.ts` / `json-events.test.ts`.
 - [ ] `repoos check` passes.
 
 ## Notes for AI

@@ -40,24 +40,24 @@ default.
 ## Acceptance criteria
 
 - [ ] With no saved range, `boardUsageRange` is `"7d"` and the panel's initial
-  fetch requests `/api/stats/board?range=7d`.
+fetch requests `/api/stats/board?range=7d`.
 - [ ] Selecting a range persists it to `localStorage` under a `repoos.*` key, and
-  the persisted value is read back on store creation so the selector's
-  initial state is already the user's last choice.
+the persisted value is read back on store creation so the selector's
+initial state is already the user's last choice.
 - [ ] A hard reload restores the last selected range and fetches that range — it
-  does not render the default first and then correct itself.
+does not render the default first and then correct itself.
 - [ ] All four options (`1d`, `7d`, `30d`, `all`) still render, with `1 week`
-  and `all time` still present as labels.
+and `all time` still present as labels.
 - [ ] A missing, non-string, unknown, or corrupt stored value falls back to the
-  `"7d"` default and does not throw (storage read is wrapped in `try/catch`,
-  matching the existing localStorage helpers in the store).
+`"7d"` default and does not throw (storage read is wrapped in `try/catch`,
+matching the existing localStorage helpers in the store).
 - [ ] The Retry button and the no-argument `loadBoardUsage()` path still re-fetch
-  the *current* window, not the default.
+the *current* window, not the default.
 - [ ] The in-flight-discard behavior in `loadBoardUsage` is unchanged: a response
-  for a window the user has since navigated away from is still discarded.
+for a window the user has since navigated away from is still discarded.
 - [ ] Automated test coverage in `src/ui-app/tests/` for: default-is-`7d` with
-  empty storage, persistence-then-restore across a fresh store instance, and
-  the invalid-value fallback.
+empty storage, persistence-then-restore across a fresh store instance, and
+the invalid-value fallback.
 
 ## Notes for AI
 

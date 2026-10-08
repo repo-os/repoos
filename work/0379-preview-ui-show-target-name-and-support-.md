@@ -37,9 +37,9 @@ frontend is being served, not just "a preview is running."
 returns a single match. If a task's changed files span multiple targets'
 `areas`, decide and implement one of:
 - a selector/picker in the UI listing all matched target names, letting
-  the user choose which one to preview, or
+the user choose which one to preview, or
 - some way to switch between matched targets without restarting from
-  scratch.
+scratch.
 Given the existing "one preview running at a time" constraint (see
 AGENTS.md preview section), switching between multiple simultaneously
 live previews is likely out of scope — a switcher that stops one and
@@ -61,10 +61,10 @@ target's name).
 
 - [ ] Preview quickbar shows the active/starting preview's target name.
 - [ ] A task whose diff matches multiple `[[preview.targets]]` areas lets the
-   user see and choose among the matched targets, rather than silently
-   previewing an arbitrary one.
+ user see and choose among the matched targets, rather than silently
+ previewing an arbitrary one.
 - [ ] A task matching exactly one target (today's common case) is unaffected
-   behaviorally, only gains the name label.
+ behaviorally, only gains the name label.
 - [ ] `repoos check` passes.
 
 ## Related

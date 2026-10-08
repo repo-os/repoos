@@ -57,10 +57,10 @@ Task 669 was supposed to standardise and prettify the chat input field, but I th
 "highlight": ".ai-chat-compose",
 "steps": [
 {
-  "click": "[data-test-id=\"floating-head-ross\"]"
+"click": "[data-test-id=\"floating-head-ross\"]"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ]
 },
@@ -71,16 +71,16 @@ Task 669 was supposed to standardise and prettify the chat input field, but I th
 "highlight": ".ai-chat-compose",
 "steps": [
 {
-  "click": "[data-test-id=\"floating-head-ross\"]"
+"click": "[data-test-id=\"floating-head-ross\"]"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 },
 {
-  "click": ".ai-chat-compose textarea"
+"click": ".ai-chat-compose textarea"
 },
 {
-  "waitMs": 200
+"waitMs": 200
 }
 ]
 },
@@ -91,7 +91,7 @@ Task 669 was supposed to standardise and prettify the chat input field, but I th
 "highlight": ".playground-compose",
 "steps": [
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ]
 }

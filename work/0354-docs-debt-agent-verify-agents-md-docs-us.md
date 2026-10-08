@@ -120,23 +120,23 @@ this.
 ## Acceptance criteria
 
 - [ ] `scanForDocsDebt` (or similar) verifies concrete claims in
-  `AGENTS.md`/`docs/`/`user-docs/` against actual code/repo state, not
-  just internal doc consistency, and is bounded (scan cap analogous to
-  existing agents).
+`AGENTS.md`/`docs/`/`user-docs/` against actual code/repo state, not
+just internal doc consistency, and is bounded (scan cap analogous to
+existing agents).
 - [ ] A run applies trivial, mechanical fixes directly to doc files (never
-  `src/`) and commits them, each with evidence in the commit message; a
-  cap limits how many land per run.
+`src/`) and commits them, each with evidence in the commit message; a
+cap limits how many land per run.
 - [ ] A run creates AT MOST ONE task per invocation, bundling every
-  needs-human finding; zero such findings means zero tasks created.
+needs-human finding; zero such findings means zero tasks created.
 - [ ] New built-in agent wired end to end: dispatcher arm in
-  `runBuiltInAgent`, `BuiltInAgentCard` entry (name "Docs Debt Agent",
-  description, icon, result message), `AgentsView.vue` card list,
-  schedule + manual-trigger both work via existing mechanisms.
+`runBuiltInAgent`, `BuiltInAgentCard` entry (name "Docs Debt Agent",
+description, icon, result message), `AgentsView.vue` card list,
+schedule + manual-trigger both work via existing mechanisms.
 - [ ] Tests covering: claim verification catching a deliberately-introduced
-  false claim (regression test for the #0343 failure mode), the
-  trivial/needs-human classification boundary, the single-task-bundling
-  behavior, and the trivial-fix cap — mirror existing test coverage for
-  `scanForTechDebt`/`createTechDebtTasks`.
+false claim (regression test for the #0343 failure mode), the
+trivial/needs-human classification boundary, the single-task-bundling
+behavior, and the trivial-fix cap — mirror existing test coverage for
+`scanForTechDebt`/`createTechDebtTasks`.
 - [ ] `repoos check` passes.
 
 ## Related

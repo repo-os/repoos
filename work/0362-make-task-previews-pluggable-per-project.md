@@ -72,16 +72,16 @@ changes.
 ## Acceptance criteria
 
 - [ ] `repoos.toml` gains a way to declare how to preview a project (command +
-  port placeholder, at minimum), following the `[check]` section's
-  existing config pattern rather than inventing a new one.
+port placeholder, at minimum), following the `[check]` section's
+existing config pattern rather than inventing a new one.
 - [ ] The monorepo multi-target question above is explicitly decided (not left
-  ambiguous) and the decision is written into this task or a doc before/as
-  part of implementation.
+ambiguous) and the decision is written into this task or a doc before/as
+part of implementation.
 - [ ] A repo with no `[preview]` config continues to get today's `repoos
-  serve`-on-worktree behavior unchanged (this repo's own previews must
-  keep working).
+serve`-on-worktree behavior unchanged (this repo's own previews must
+keep working).
 - [ ] A task in an area with no configured preview target gets a clear "no
-  preview configured" response instead of a spawn failure.
+preview configured" response instead of a spawn failure.
 - [ ] `repoos check` passes with no regressions.
 
 ## Notes for AI

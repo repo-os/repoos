@@ -50,12 +50,12 @@ The add screenshots buttons don't seem to work on an installed pwa on this machi
 "route": "/",
 "highlight": ".shot-dropzone",
 "steps": [
-  {
-    "click": ".new-btn"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": ".new-btn"
+},
+{
+  "waitMs": 400
+}
 ]
 },
 {
@@ -64,12 +64,12 @@ The add screenshots buttons don't seem to work on an installed pwa on this machi
 "route": "/inputs",
 "highlight": ".shot-dropzone",
 "steps": [
-  {
-    "click": ".new-btn"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": ".new-btn"
+},
+{
+  "waitMs": 400
+}
 ]
 }
 ]

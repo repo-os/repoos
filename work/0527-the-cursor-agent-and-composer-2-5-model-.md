@@ -176,10 +176,10 @@ then disappears as parts arrive.
 transcript, the `agent.output` SSE payloads and the debugger output are
 unchanged — same text, same order, same count.
 10. No regression in the shared markdown renderer: existing
- `src/ui-app/tests/markdown.test.ts` cases (soft-wrapped prose, explicit hard
- breaks, tables, task checkboxes, Mermaid, intraword underscores, the
- code-span literal cases) still pass untouched, and the AI-chat standard
- conformance test still passes.
+`src/ui-app/tests/markdown.test.ts` cases (soft-wrapped prose, explicit hard
+breaks, tables, task checkboxes, Mermaid, intraword underscores, the
+code-span literal cases) still pass untouched, and the AI-chat standard
+conformance test still passes.
 
 ## Tests
 

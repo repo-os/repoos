@@ -87,13 +87,13 @@ failure ("Stale build:" / "No build found" / "no .build-info.json" in `check.ts`
 a retryable `validateCandidate` failure (which triggers a full re-sync + re-build + re-merge) and
 do not hand it to the debugger. Instead:
 - If the candidate's own `dist/cli/index.js` is the CLI that ran (Flavour A's precondition is
-  absent), re-run the SAME check once in-place against the same candidate tree (after ensuring
-  the marker is refreshed for current source — `bun run build` if it isn't). This mirrors the
-  standalone self-resolving behaviour inside the MTD invocation.
+absent), re-run the SAME check once in-place against the same candidate tree (after ensuring
+the marker is refreshed for current source — `bun run build` if it isn't). This mirrors the
+standalone self-resolving behaviour inside the MTD invocation.
 - If the candidate's own CLI was NOT what ran (fallback path taken — the global `repoos` /
-  `bun run repoos` branch), that is Flavour A: a real CLI-selection regression, not
-  self-resolving. Surface THAT loudly (pin the reason to "candidate's own dist/cli/index.js was
-  not used"), matching the #0213/`3fbbd707` guidance, rather than silently absorbing it.
+`bun run repoos` branch), that is Flavour A: a real CLI-selection regression, not
+self-resolving. Surface THAT loudly (pin the reason to "candidate's own dist/cli/index.js was
+not used"), matching the #0213/`3fbbd707` guidance, rather than silently absorbing it.
 2. **Keep the retry capped.** In-place staleness re-check is a second `check` of the same tree,
 bounded to one extra attempt; it must not loop. It sits *inside* `validateCandidate`'s check
 step, not as an extra orchestrator-level `validateCandidate` call, so the existing two-attempt
@@ -131,19 +131,19 @@ fix; it should surface the CLI-selection regression loudly instead.
 ## Acceptance criteria
 
 - [ ] A Move-to-Done whose only failure is the self-resolving staleness check completes on the
-   in-place re-check — no job failure, no debugger detour, no full re-sync, and no extra
-   orchestrator-level `validateCandidate` retry.
+ in-place re-check — no job failure, no debugger detour, no full re-sync, and no extra
+ orchestrator-level `validateCandidate` retry.
 - [ ] The in-place staleness re-check is bounded to a single extra `check` of the same candidate
-   tree and never loops; the existing two-attempt cap and "reproduced identically → real
-   failure" classification are unchanged for genuine defects.
+ tree and never loops; the existing two-attempt cap and "reproduced identically → real
+ failure" classification are unchanged for genuine defects.
 - [ ] When the candidate's own `dist/cli/index.js` is missing and the fallback CLI is used, the
-   staleness failure is NOT absorbed: it surfaces with a reason pinning the CLI-selection
-   regression (per docs/close-out-pipeline.md #0213/3fbbd707) instead of the debugger seeing a
-   red herring.
+ staleness failure is NOT absorbed: it surfaces with a reason pinning the CLI-selection
+ regression (per docs/close-out-pipeline.md #0213/3fbbd707) instead of the debugger seeing a
+ red herring.
 - [ ] Standalone `repoos check` still fails on a genuinely stale build (agents' definition-of-done
-   gate unchanged).
+ gate unchanged).
 - [ ] No regression in the #0130 already-integrated retry, #0204/#0211 dirty/lock guards, or the
-   MTD merge-conflict handling tracked in #0271.
+ MTD merge-conflict handling tracked in #0271.
 - [ ] `repoos check` passes after the fix.
 
 ## Related

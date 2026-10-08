@@ -34,11 +34,11 @@ watcher path already does.
 ## Acceptance criteria
 
 - [ ] `DELETE /api/tasks/:id` endpoint that removes the task file and emits the
-  existing `task.deleted` SSE event (returns 404 for unknown id, 4xx for a
-  guarded failure)
+existing `task.deleted` SSE event (returns 404 for unknown id, 4xx for a
+guarded failure)
 - [ ] Delete button in the task drawer, danger-styled, with a confirmation step
 - [ ] After delete: drawer closes, task disappears from board/dashboard counts,
-  feed shows a deleted entry, other connected clients update live
+feed shows a deleted entry, other connected clients update live
 - [ ] Deleting does not crash when the file is already gone (idempotent 404)
 - [ ] `ros check` passes
 

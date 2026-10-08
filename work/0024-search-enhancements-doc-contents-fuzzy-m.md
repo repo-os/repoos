@@ -42,16 +42,16 @@ visually intentional in every built-in theme, not only Classic.
 ## Acceptance criteria
 
 - [ ] Searching a phrase that appears only in a doc's content surfaces that doc
- with a snippet around the match (doc list is no longer title/path-only)
+with a snippet around the match (doc list is no longer title/path-only)
 - [ ] Fuzzy/typo-tolerant matching returns near-misses instead of empty results
 - [ ] Recent searches appear in the dropdown and re-run on click
 - [ ] Task results show the existing board status dot (`statusColor`) without
- changing document or setting results; the textual status remains visible
+changing document or setting results; the textual status remains visible
 - [ ] The search field and selected-result treatment are verified in every
- built-in light and dark theme with adequate text/focus contrast
+built-in light and dark theme with adequate text/focus contrast
 - [ ] Existing 0022 behavior preserved: grouping, click-through, ⌘K/↑↓/Enter/Esc
 - [ ] `repoos check` passes; any new runtime dependency must be explicitly listed
- and justified (see Notes — it may be preferable to hand-roll)
+and justified (see Notes — it may be preferable to hand-roll)
 
 ## Notes for AI
 

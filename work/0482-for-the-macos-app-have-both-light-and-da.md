@@ -38,17 +38,17 @@ restart, no manual toggle.
 ## Acceptance criteria
 
 - [ ] `AppIcon.appiconset` contains distinct light and dark (luminosity
-  appearance) variants at the required sizes (512@1x and 512@2x/1024).
+appearance) variants at the required sizes (512@1x and 512@2x/1024).
 - [ ] The Dock icon switches automatically between the light and dark variants
-  when macOS appearance changes while the app is running.
+when macOS appearance changes while the app is running.
 - [ ] The icon artwork uses the real brand mark with the colored gradient
-  border — the white border is gone.
+border — the white border is gone.
 - [ ] The colored border's thickness proportionally matches the web app's
-  top-left `.logo-mark` ring, verified visually against the web app icon.
+top-left `.logo-mark` ring, verified visually against the web app icon.
 - [ ] The icon remains legible at small Dock sizes in both variants.
 - [ ] `xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub
-  -configuration Debug -sdk macosx -derivedDataPath macos/.derived-data
-  CODE_SIGNING_ALLOWED=NO build` passes.
+-configuration Debug -sdk macosx -derivedDataPath macos/.derived-data
+CODE_SIGNING_ALLOWED=NO build` passes.
 
 ## Notes for AI
 

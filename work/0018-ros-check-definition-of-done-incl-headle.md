@@ -39,7 +39,7 @@ check.
 - [ ] The UI smoke check launches a headless browser, loads the served UI, and
 asserts:
 - the app MOUNTED — no unrendered `{{ }}` mustache in the DOM, and a known
-  root element rendered with real content
+root element rendered with real content
 - the browser console has ZERO errors
 - (nice) exactly one overlay can be open at a time; key views render
 - [ ] The smoke check MUST fail against the current broken state (raw mustache /

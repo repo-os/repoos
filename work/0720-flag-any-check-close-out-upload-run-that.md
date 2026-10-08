@@ -54,9 +54,9 @@ Read src/server/attention-feed.ts and attention-notify.ts (silent-run items), sr
 "route": "/settings?tab=general&focus=attention.slowRunMultiplier",
 "highlight": "[data-config-key=\"attention.slowRunMultiplier\"]",
 "steps": [
-  {
-    "waitMs": 1500
-  }
+{
+  "waitMs": 1500
+}
 ]
 },
 {
@@ -64,9 +64,9 @@ Read src/server/attention-feed.ts and attention-notify.ts (silent-run items), sr
 "target": "default",
 "route": "/checks?tab=remote",
 "steps": [
-  {
-    "waitMs": 1000
-  }
+{
+  "waitMs": 1000
+}
 ]
 }
 ]

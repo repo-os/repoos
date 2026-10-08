@@ -104,19 +104,19 @@ task, so it isn't lost.
 ## Acceptance criteria
 
 - [ ] A project with no `[preview]` config at all no longer silently boots
-   RepoOS's own board as a task's "preview" — either no preview
-   affordance is shown, or clicking it explains how to configure one
-   (per the decision above), consistently with the existing "present but
-   no match" behavior.
+RepoOS's own board as a task's "preview" — either no preview
+affordance is shown, or clicking it explains how to configure one
+(per the decision above), consistently with the existing "present but
+no match" behavior.
 - [ ] The message/empty-state is genuinely actionable: names the task's
-   `area` and shows a minimal working `repoos.toml` snippet.
+`area` and shows a minimal working `repoos.toml` snippet.
 - [ ] This repo's own preview behavior (configured in `a44bce4a`) is
-   unaffected — verify with a live spawn the same way that commit did,
-   not just the resolver function.
+unaffected — verify with a live spawn the same way that commit did,
+not just the resolver function.
 - [ ] Explicitly out of scope, confirmed not touched: any mobile-preview
-   design or implementation.
+design or implementation.
 - [ ] The `area` free-text/single-value limitation is documented (in this
-   task, `docs/`, or a linked follow-up task) even if not fixed.
+task, `docs/`, or a linked follow-up task) even if not fixed.
 - [ ] `repoos check` passes.
 
 ## Related

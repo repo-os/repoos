@@ -48,10 +48,10 @@ Task #0706 (filed by the #0695 reviewer: standalone self-check prefers the least
 ```json
 [
 {
-  "label": "Remote runners tab with refresh feedback",
-  "target": "default",
-  "route": "/checks?tab=remote-runners",
-  "highlight": ".rr-panel"
+ "label": "Remote runners tab with refresh feedback",
+ "target": "default",
+ "route": "/checks?tab=remote-runners",
+ "highlight": ".rr-panel"
 }
 ]
 ```
@@ -66,23 +66,23 @@ Task #0706 (filed by the #0695 reviewer: standalone self-check prefers the least
 - 2026-10-06T04:07:54Z · body: section Scope addition: fold in #0706
 - 2026-10-06T04:26:19Z · body: section Shots
 - 2026-10-06T06:19:56Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     651|       // true per-pass counter used by the D# · R# badge.
-  652|       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_pass…
-     |                                                  ^
-  653|     });
-  654|   }, 90_000);
+ 652|       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_pass…
+    |                                                  ^
+ 653|     });
+ 654|   }, 90_000);
 ❯ withServer tests/agent-review.test.ts:279:11
 ❯ tests/agent-review.test.ts:625:11
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 414 passed | 1 skipped (416)
-    Tests  1 failed | 5022 passed | 15 skipped (5038)
- Start at  06:15:46
- Duration  241.30s (transform 6.24s, setup 2.00s, import 41.19s, tests 225.99s, environment 191.72s)
+   Tests  1 failed | 5022 passed | 15 skipped (5038)
+Start at  06:15:46
+Duration  241.30s (transform 6.24s, setup 2.00s, import 41.19s, tests 225.99s, environment 191.72s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 728ms
 Test Files  1 passed (1)
-    Tests  2 passed (2)
- Start at  06:19:48
- Duration  2.62s (transform 1.08s, setup 13ms, import 1.36s, tests 728ms, environment 444ms)
+   Tests  2 passed (2)
+Start at  06:19:48
+Duration  2.62s (transform 1.08s, setup 13ms, import 1.36s, tests 728ms, environment 444ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-06T06:24:40Z · status active→review
@@ -130,8 +130,8 @@ $ bun scripts/build.mjs
 $ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
 src/server/remote-validation.ts(2251,9): error TS2322: Type '((info: { ahead: number; host: string; }) => void) | undefined' is not assignable to type '((ahead: number) => void) | undefined'.
 Type '(info: { ahead: number; host: string; }) => void' is not assignable to type '(ahead: number) => void'.
-  Types of parameters 'info' and 'ahead' are incompatible.
-    Type 'number' is not assignable to type '{ ahead: number; host: string; }'.
+ Types of parameters 'info' and 'ahead' are incompatible.
+   Type 'number' is not assignable to type '{ ahead: number; host: string; }'.
 src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahead: number; host: string; }' is not assignable to parameter of type 'number'.
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-06T07:36:39Z · model_override
@@ -153,8 +153,8 @@ $ bun scripts/build.mjs
 $ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
 src/server/remote-validation.ts(2251,9): error TS2322: Type '((info: { ahead: number; host: string; }) => void) | undefined' is not assignable to type '((ahead: number) => void) | undefined'.
 Type '(info: { ahead: number; host: string; }) => void' is not assignable to type '(ahead: number) => void'.
-  Types of parameters 'info' and 'ahead' are incompatible.
-    Type 'number' is not assignable to type '{ ahead: number; host: string; }'.
+ Types of parameters 'info' and 'ahead' are incompatible.
+   Type 'number' is not assignable to type '{ ahead: number; host: string; }'.
 src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahead: number; host: string; }' is not assignable to parameter of type 'number'.
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-10-06T08:40:34Z · status active→review
@@ -170,23 +170,23 @@ src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahea
 - 2026-10-06T09:13:40Z · status active→review
 - 2026-10-06T09:13:40Z · status review→active
 - 2026-10-06T09:18:48Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —     651|       // true per-pass counter used by the D# · R# badge.
-  652|       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_pass…
-     |                                                  ^
-  653|     });
-  654|   }, 90_000);
+ 652|       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_pass…
+    |                                                  ^
+ 653|     });
+ 654|   }, 90_000);
 ❯ withServer tests/agent-review.test.ts:279:11
 ❯ tests/agent-review.test.ts:625:11
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 419 passed | 1 skipped (421)
-    Tests  1 failed | 5066 passed | 15 skipped (5082)
- Start at  09:14:37
- Duration  244.68s (transform 6.34s, setup 2.04s, import 41.77s, tests 227.61s, environment 196.13s)
+   Tests  1 failed | 5066 passed | 15 skipped (5082)
+Start at  09:14:37
+Duration  244.68s (transform 6.34s, setup 2.04s, import 41.77s, tests 227.61s, environment 196.13s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 792ms
 Test Files  1 passed (1)
-    Tests  2 passed (2)
- Start at  09:18:42
- Duration  2.70s (transform 1.10s, setup 13ms, import 1.37s, tests 792ms, environment 444ms)
+   Tests  2 passed (2)
+Start at  09:18:42
+Duration  2.70s (transform 1.10s, setup 13ms, import 1.37s, tests 792ms, environment 444ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-06T10:26:35Z · status active→review

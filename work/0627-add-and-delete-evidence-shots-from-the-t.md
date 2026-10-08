@@ -53,12 +53,12 @@ In the task drawer's Changes / UI changes section:
 "route": "/work?task=0627",
 "highlight": ".ui-changes",
 "steps": [
-  {
-    "click": "[data-test-id=task-tab-changes]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": "[data-test-id=task-tab-changes]"
+},
+{
+  "waitMs": 400
+}
 ]
 },
 {
@@ -67,18 +67,18 @@ In the task drawer's Changes / UI changes section:
 "route": "/work?task=0627",
 "highlight": ".add-shot-modal",
 "steps": [
-  {
-    "click": "[data-test-id=task-tab-changes]"
-  },
-  {
-    "waitMs": 400
-  },
-  {
-    "click": "[data-test-id=add-shot]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": "[data-test-id=task-tab-changes]"
+},
+{
+  "waitMs": 400
+},
+{
+  "click": "[data-test-id=add-shot]"
+},
+{
+  "waitMs": 400
+}
 ]
 }
 ]
