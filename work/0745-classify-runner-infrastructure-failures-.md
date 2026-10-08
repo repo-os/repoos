@@ -12,7 +12,7 @@ branch: feat/classify-runner-infrastructure-failures-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:40:08Z"
-updated_at: "2026-10-08T14:40:13Z"
+updated_at: "2026-10-08T14:51:52Z"
 ---
 ## Problem
 
@@ -33,9 +33,27 @@ updated_at: "2026-10-08T14:40:13Z"
 
 Read src/server/remote-validation.ts (pool, HangWatchdog, recordRun, infraFail), scripts/remote-runner/validate.sh exit codes, and the Remote runners panel. Do not touch the owner's hosts. Related: #0729, #0739, #0725, #0720.
 
+## Shots
+```json
+[
+  {
+    "label": "Remote runners degraded host state",
+    "target": "default",
+    "route": "/settings?tab=remote",
+    "highlight": ".rvr-host-state--bad",
+    "steps": [
+      {
+        "waitMs": 500
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-08T14:40:08Z · created · unknown
 - 2026-10-08T14:40:10Z · cli_override, model_override
 - 2026-10-08T14:40:12Z · status inbox→ready
 - 2026-10-08T14:40:13Z · status ready→active, branch
+- 2026-10-08T14:51:52Z · body: section Shots
