@@ -113,13 +113,7 @@ export type CheckRunPhase = "pre-review" | "close-out" | "release" | "cli";
  * distinct from `cancelled` (the caller's own deadline) and from `fail` (a
  * genuine red gate): a hung run is an infra fault with no test result at all.
  */
-export type CheckRunOutcome =
-  | "pass"
-  | "fail"
-  | "cancelled"
-  | "hung"
-  | "infra"
-  | "skipped";
+export type CheckRunOutcome = "pass" | "fail" | "cancelled" | "hung" | "infra" | "skipped";
 
 /**
  * `skipped` (#0592): the gate ran nothing because this repo has no check plan

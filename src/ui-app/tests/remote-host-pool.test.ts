@@ -561,10 +561,7 @@ function poolFixture(opts: {
             timedOut: false,
           };
         }
-        if (
-          opts.infraFailOnceOn?.includes(host.ip) &&
-          !infraFailedOnce.has(host.ip)
-        ) {
+        if (opts.infraFailOnceOn?.includes(host.ip) && !infraFailedOnce.has(host.ip)) {
           infraFailedOnce.add(host.ip);
           (cmds[host.ip] ??= []).push(cmd);
           return {
@@ -578,8 +575,7 @@ function poolFixture(opts: {
           (cmds[host.ip] ??= []).push(cmd);
           return {
             code: 1,
-            output:
-              "[validate] gate exit 1\n1 test failed\nFAIL src/x.test.ts > case\n",
+            output: "[validate] gate exit 1\n1 test failed\nFAIL src/x.test.ts > case\n",
             timedOut: false,
           };
         }
