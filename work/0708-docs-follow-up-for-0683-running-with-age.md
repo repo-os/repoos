@@ -35,3 +35,4 @@ Small docs-only task. Read #0683 and docs/remote-validation.md first.
 - 2026-10-08T16:58:58Z · body
 - 2026-10-08T16:59:56Z · body
 - 2026-10-08T17:06:15Z · status active→review
+- 2026-10-08T17:06:15Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
