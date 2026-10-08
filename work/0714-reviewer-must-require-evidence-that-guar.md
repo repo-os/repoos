@@ -2,7 +2,7 @@
 id: "0714"
 title: "Reviewer must require evidence that guard tests fail on bad input, and fail on console errors"
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -49,4 +49,4 @@ Trace the existing reviewer, browser-smoke, and guard-test flows before changing
 - 2026-10-08T14:24:06Z · status review→active
 - 2026-10-08T14:26:27Z · body
 - 2026-10-08T14:27:51Z · body
-- 2026-10-08T14:33:53Z · note: shots: skipped — the diff (8 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-08T14:33:53Z · status active→review
