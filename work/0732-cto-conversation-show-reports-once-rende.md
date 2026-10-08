@@ -2,15 +2,16 @@
 id: "0732"
 title: "CTO conversation: show reports once, render Markdown, and add timestamp popups"
 type: bug
-status: inbox
+status: done
 priority: p2
 area: web
+merged_commit: c76c03d2b5fa93c9738dc39189b09612f4d281a5
 assigned_to: ai
 created_by: ""
 branch: feat/cto-conversation-show-reports-once-rende
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-07T02:45:50Z"
-updated_at: "2026-10-08T16:23:06Z"
+updated_at: "2026-10-08T16:23:16Z"
 last_close_out_gate_ms: 54280
 last_close_out_gate_at: "2026-10-08T16:23:05.347Z"
 review_passes: 2
@@ -102,3 +103,4 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 - 2026-10-08T16:23:05Z · close-out gate completed in 54s
 - 2026-10-08T16:23:05Z · status review→inbox
 - 2026-10-08T16:23:06Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-08T16:23:16Z · status inbox→done, release:success
