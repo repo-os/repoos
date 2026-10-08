@@ -66,3 +66,30 @@ export function parseReviewRelevance(markdown: string | null | undefined): Revie
   }
   return null;
 }
+
+/**
+ * Replace the verdict label in a report's `## Verdict` section (#0714 mechanical
+ * clamp). Leaves the rest of the section intact.
+ */
+export function replaceReviewVerdict(markdown: string, verdict: ReviewVerdict): string {
+  const heading = /^#{1,6}\s+verdict\s*$/im.exec(markdown);
+  if (!heading) return markdown;
+  const start = (heading.index ?? 0) + heading[0].length;
+  const rest = markdown.slice(start);
+  const nextHeading = /^#{1,6}\s+/m.exec(rest);
+  const sectionEnd = nextHeading ? start + (nextHeading.index ?? 0) : markdown.length;
+  const section = markdown.slice(start, sectionEnd);
+  const lines = section.split(/\r?\n/);
+  let replaced = false;
+  const out = lines.map((line) => {
+    if (replaced || !line.trim()) return line;
+    replaced = true;
+    for (const label of VERDICT_ORDER) {
+      if (line.toLowerCase().includes(label)) {
+        return line.replace(new RegExp(label, "i"), verdict);
+      }
+    }
+    return `\`${verdict}\` — mechanical review verification blocked approval.`;
+  });
+  return markdown.slice(0, start) + out.join("\n") + markdown.slice(sectionEnd);
+}
