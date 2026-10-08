@@ -2,7 +2,7 @@
 id: "0732"
 title: "CTO conversation: show reports once, render Markdown, and add timestamp popups"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/cto-conversation-show-reports-once-rende
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-07T02:45:50Z"
-updated_at: "2026-10-08T16:05:15Z"
+updated_at: "2026-10-08T16:13:55Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -41,12 +41,12 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 "route": "/",
 "highlight": ".cto-markdown",
 "steps": [
-  {
-    "click": "[data-test-id=\"floating-head-cto\"]"
-  },
-  {
-    "waitMs": 500
-  }
+{
+  "click": "[data-test-id=\"floating-head-cto\"]"
+},
+{
+  "waitMs": 500
+}
 ]
 },
 {
@@ -55,18 +55,18 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 "route": "/",
 "highlight": "[data-test-id=\"cto-msg-time-0\"]",
 "steps": [
-  {
-    "click": "[data-test-id=\"floating-head-cto\"]"
-  },
-  {
-    "waitMs": 500
-  },
-  {
-    "click": "[data-test-id=\"cto-msg-time-0\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "[data-test-id=\"floating-head-cto\"]"
+},
+{
+  "waitMs": 500
+},
+{
+  "click": "[data-test-id=\"cto-msg-time-0\"]"
+},
+{
+  "waitMs": 300
+}
 ]
 }
 ]
@@ -92,3 +92,4 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 - 2026-10-08T16:03:03Z · status review→active
 - 2026-10-08T16:04:06Z · body: section Shots
 - 2026-10-08T16:05:15Z · body
+- 2026-10-08T16:13:55Z · status active→review
