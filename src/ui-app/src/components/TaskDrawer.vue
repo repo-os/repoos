@@ -5004,33 +5004,28 @@ watch(
               Latest
             </button>
           </div>
-          <div class="agent-input-row">
-            <div class="agent-reply-input-wrapper">
-              <textarea
-                ref="draftMsgTextarea"
-                v-model="draftMsg"
-                class="agent-input"
-                rows="1"
-                placeholder="Send a follow-up to the task's agent session…"
-                :disabled="agentBusy || ui.saving"
-                @keydown.enter.exact.prevent="sendTurn"
-                @input="adjustDraftMsgHeight"
-              ></textarea>
-              <VoiceDictate
-                :disabled="agentBusy || ui.saving"
-                @transcribed="onDraftMsgTranscribed"
-              />
-            </div>
-            <Button
-              variant="accent"
-              size="sm"
+          <form class="ai-chat-compose agent-compose" @submit.prevent="sendTurn">
+            <textarea
+              ref="draftMsgTextarea"
+              v-model="draftMsg"
+              rows="1"
+              placeholder="Send a follow-up to the task's agent session…"
+              aria-label="Follow up with the task's agent"
+              :disabled="agentBusy || ui.saving"
+              @keydown.enter.exact.prevent="sendTurn"
+              @input="adjustDraftMsgHeight"
+            ></textarea>
+            <VoiceDictate :disabled="agentBusy || ui.saving" @transcribed="onDraftMsgTranscribed" />
+            <button
+              type="submit"
+              class="ai-chat-send agent-send"
               :disabled="agentBusy || ui.saving || !draftMsg.trim()"
-              @click="sendTurn"
+              aria-label="Send follow-up"
             >
               <Send class="size-3.5" />
               Send
-            </Button>
-          </div>
+            </button>
+          </form>
           <div v-if="agentBusy" class="agent-hint">
             <ActivityIndicator /> agent is working — wait for this turn to finish
           </div>
@@ -5340,33 +5335,31 @@ watch(
               </button>
             </div>
 
-            <div class="agent-input-row">
-              <div class="agent-reply-input-wrapper">
-                <textarea
-                  ref="reviewDraftMsgTextarea"
-                  v-model="reviewDraftMsg"
-                  class="agent-input"
-                  rows="1"
-                  placeholder="Ask the reviewer a follow-up question…"
-                  :disabled="review?.running || reviewBusy || ui.saving"
-                  @keydown.enter.exact.prevent="sendReviewTurn"
-                  @input="adjustReviewHeight"
-                ></textarea>
-                <VoiceDictate
-                  :disabled="review?.running || reviewBusy || ui.saving"
-                  @transcribed="onReviewDraftMsgTranscribed"
-                />
-              </div>
-              <Button
-                variant="accent"
-                size="sm"
+            <form class="ai-chat-compose agent-compose" @submit.prevent="sendReviewTurn">
+              <textarea
+                ref="reviewDraftMsgTextarea"
+                v-model="reviewDraftMsg"
+                rows="1"
+                placeholder="Ask the reviewer a follow-up question…"
+                aria-label="Ask the reviewer a follow-up question"
+                :disabled="review?.running || reviewBusy || ui.saving"
+                @keydown.enter.exact.prevent="sendReviewTurn"
+                @input="adjustReviewHeight"
+              ></textarea>
+              <VoiceDictate
+                :disabled="review?.running || reviewBusy || ui.saving"
+                @transcribed="onReviewDraftMsgTranscribed"
+              />
+              <button
+                type="submit"
+                class="ai-chat-send agent-send"
                 :disabled="review?.running || reviewBusy || ui.saving || !reviewDraftMsg.trim()"
-                @click="sendReviewTurn"
+                aria-label="Send follow-up to the reviewer"
               >
                 <Send class="size-3.5" />
                 Send
-              </Button>
-            </div>
+              </button>
+            </form>
           </section>
         </div>
         <div v-else-if="ui.activeTab === 'changes'" class="drawer-body">
