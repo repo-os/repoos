@@ -11,7 +11,7 @@ branch: feat/standalone-self-check-prefer-least-loade
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-08T14:35:15Z"
+updated_at: "2026-10-08T14:35:57Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -81,3 +81,4 @@ error: script "test" exited with code 1
 - 2026-10-08T14:31:19Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .rr-panel matched nothing on /checks?tab=remote-runners (captured http://127.0.0.1:54974/checks?tab=runs) (http://127.0.0.1:54974/checks?tab=runs)
 - 2026-10-08T14:31:19Z · handoff failed · ui-review handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .rr-panel matched nothing on /checks?tab=remote-runners (captured http://127.0.0.1:54974/checks?tab=runs) (http://127.0.0.1:54974/checks?tab=runs)
 - 2026-10-08T14:35:15Z · body: section Shots
+- 2026-10-08T14:35:57Z · note: ui verification failed (25 issue(s)): [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/agents/detect); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/tunnel/readiness); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/remote-validation/status); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/release/availabl
