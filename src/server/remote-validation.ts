@@ -886,10 +886,14 @@ export function classifyRemoteExecFailure(run: {
       cause: "resource pressure during the run",
     };
   }
+  // No positive infra signal: an unrecognised failure is NOT assumed to be the
+  // host's fault. Calling it infra would retry real build/test errors on another
+  // host and wrongly degrade a healthy runner (the #0737 masking failure mode in
+  // reverse); treat it as a failed gate and let the output speak.
   return {
-    kind: "infra",
-    transient: true,
-    markHostDegraded: true,
+    kind: "test",
+    transient: false,
+    markHostDegraded: false,
     cause: code != null ? `exit ${code}` : "unknown remote failure",
   };
 }
