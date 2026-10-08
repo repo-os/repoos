@@ -2,14 +2,14 @@
 id: "0746"
 title: Unify chat input styling and structure
 type: refactor
-status: inbox
+status: ready
 priority: p2
 area: [web, ui]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-08T15:34:30Z"
-updated_at: "2026-10-08T15:34:50Z"
+updated_at: "2026-10-08T15:49:15Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ Task 669 was supposed to standardise and prettify the chat input field, but I th
 - 2026-10-08T15:34:32Z · screenshots
 - 2026-10-08T15:34:32Z · screenshots
 - 2026-10-08T15:34:50Z · status draft→inbox, title, area, type, body
+- 2026-10-08T15:49:15Z · status inbox→ready
