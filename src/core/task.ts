@@ -133,16 +133,12 @@ function stripCommonLeadingIndent(body: string): string {
     minSpaces > 0 &&
     nonEmpty.every((l) => l.startsWith(" ".repeat(minSpaces)) || l.trim().length === 0)
   ) {
-    return lines
-      .map((l) => (l.trim().length === 0 ? l : l.slice(minSpaces)))
-      .join("\n");
+    return lines.map((l) => (l.trim().length === 0 ? l : l.slice(minSpaces))).join("\n");
   }
 
   const indentedLines = nonEmpty.filter((l) => /^ /.test(l));
   if (indentedLines.length === 0) return body;
-  const blockMin = Math.min(
-    ...indentedLines.map((l) => /^ */.exec(l)?.[0].length ?? 0),
-  );
+  const blockMin = Math.min(...indentedLines.map((l) => /^ */.exec(l)?.[0].length ?? 0));
   if (blockMin <= 0) return body;
   return lines
     .map((l) => {

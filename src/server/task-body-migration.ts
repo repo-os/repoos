@@ -116,7 +116,9 @@ export function writeTaskBodyMigrationPending(
   }
 }
 
-export function clearTaskBodyMigrationPending(config: Pick<RepoOSConfig, "root" | "cacheDir">): void {
+export function clearTaskBodyMigrationPending(
+  config: Pick<RepoOSConfig, "root" | "cacheDir">,
+): void {
   try {
     rmSync(taskBodyMigrationPendingPath(config), { force: true });
   } catch {
