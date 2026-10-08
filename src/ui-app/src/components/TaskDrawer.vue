@@ -122,6 +122,7 @@ import { useModelMemory } from "../composables/useModelMemory";
 import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { reportPredatesLatestHandoff, reviewSupersededByFixRound } from "../lib/reviewFreshness";
+import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -416,6 +417,8 @@ const checkChip = computed(() => {
     const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
     const machine = checkMachine.value;
     const taskId = ui.active?.id;
+    const poolQueue =
+      taskId ? remotePoolQueueHintForTaskChecks(repo.taskChecks[taskId]) : null;
     // #0720: the server flags an in-flight run past 1.5x its kind median; the
     // badge keeps that visible on the task itself, not only in the bell.
     const slow = taskId ? notices.slowRunByTask[taskId] : undefined;
@@ -423,12 +426,16 @@ const checkChip = computed(() => {
       state: "running" as const,
       slow: !!slow,
       slowDetail: slow?.detail ?? null,
-      label: `Checks running${machine ? ` on ${machine}` : ""} · ${elapsed}`,
-      title: slow
-        ? "Checks are running slower than usual — focus the slow badge for timing details"
-        : run.scope === "full"
-          ? "The check gate is running — open the Debug tab for live output"
-          : `Changed-path check (${run.scope}) — open the Debug tab for live output`,
+      label: poolQueue
+        ? `${poolQueue.label} · ${elapsed}`
+        : `Checks running${machine ? ` on ${machine}` : ""} · ${elapsed}`,
+      title: poolQueue
+        ? poolQueue.title
+        : slow
+          ? "Checks are running slower than usual — focus the slow badge for timing details"
+          : run.scope === "full"
+            ? "The check gate is running — open the Debug tab for live output"
+            : `Changed-path check (${run.scope}) — open the Debug tab for live output`,
     };
   }
   // Done state: the in-memory run when we have one; otherwise the durable

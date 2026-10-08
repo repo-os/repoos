@@ -789,6 +789,7 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
     await tick();
     expect(f.pending()).toHaveLength(2); // both hosts busy → job3 waits
     expect(chunks3.join("")).toContain("queued behind 2 other remote run(s)");
+    expect(chunks3.join("")).toContain("waiting for a runner on");
 
     const freed = f.release();
     await tick();
@@ -1718,6 +1719,22 @@ describe("host lock observability and dispatch (#0705)", () => {
     expect(f.pending()).toEqual(["linux2"]);
     f.release("linux2");
     expect(await job).toMatchObject({ ok: true });
+  });
+
+  it("includes host and queue position in the pool wait line (#0706)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    const first = f.runner.validate(opts("0001"));
+    await tick();
+    const chunks: string[] = [];
+    const second = f.runner.validate(
+      opts("0002", { onChunk: (c: string) => chunks.push(c) }),
+    );
+    await tick();
+    expect(chunks.join("")).toMatch(/waiting for a runner on a \(queue position 2\)/);
+    f.release("a");
+    await tick();
+    f.release("a");
+    await Promise.all([first, second]);
   });
 });
 

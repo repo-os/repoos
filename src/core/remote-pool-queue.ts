@@ -1,3 +1,5 @@
+import { describeCapabilities } from "./remote-hosts.js";
+
 /** Live queue position while a job waits on {@link TailscaleHostPool} (#0706). */
 export interface RemotePoolQueueInfo {
   /** How many other runs are ahead in the pool (in-flight + earlier waiters). */
@@ -16,7 +18,9 @@ export function formatRemotePoolQueueMessage(
   info: RemotePoolQueueInfo,
   capabilities: string[] = [],
 ): string {
-  const need = capabilities.length ? `waiting for a host with ${capabilities.join(", ")} — ` : "";
+  const need = capabilities.length
+    ? `waiting for a host with ${describeCapabilities(capabilities)} — `
+    : "";
   return (
     `[waiting for a runner on ${info.host} (queue position ${info.position}) — ` +
     `queued behind ${info.ahead} other remote run(s) — ${need}` +
