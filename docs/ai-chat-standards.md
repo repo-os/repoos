@@ -40,8 +40,26 @@ set a competing `background`/`color` on its compose buttons, and must not
 re-declare the compose box's focus ring — the fill comes from the shared class
 and the focus outline from `.ai-chat-compose:focus-within`. A per-chat variant
 that only re-sizes a text send button (`.cto-send`, `.debugger-send`,
-`.td-send`) or resets the shared margins is fine; those carry an extra class
-that keeps them out of the base rule's way.
+`.td-send`, `.agent-send`, `.playground-send`) or resets the shared margins is
+fine; those carry an extra class that keeps them out of the base rule's way.
+
+**One rounded highlight for the active input (#0746).** Every chat input — the
+floating-head chats, the PM chat, the Model Playground and the task drawer's
+Dev/Reviewer follow-up boxes — is the same `.ai-chat-compose` box, and the
+active highlight is the box's `.ai-chat-compose:focus-within` ring: a rounded
+glow around the whole box, never an outline on the textarea inside it. The
+inner textarea must not paint its own focus outline: a named theme's
+`[data-ui-theme] :focus-visible { outline: 2px solid var(--ring) }` out-specifies
+the base `outline: 0`, and Tailwind's preflight zeroes the textarea's
+`border-radius`, so without the explicit
+`.ai-chat-compose textarea:focus { outline: none }` guard the input shows a
+*square* ring inside its rounded box. The shared box also owns the one disabled
+treatment (`.ai-chat-compose textarea:disabled`), so a busy chat dims its input
+identically everywhere instead of only on the surface that remembered a bespoke
+rule. `.playground-compose` is the only
+remaining `-compose` block, and it carries nothing but a margin reset — if you
+find yourself adding a border, radius, background, or focus ring there, that is
+the drift this rule exists to stop.
 
 That second rule is a specificity trap, not a style preference. Vue rewrites a
 scoped `.x-compose button` into `.x-compose button[data-v-…]`, which is
