@@ -34,7 +34,7 @@ export const NEW_FLAG_HELP: Record<string, TaskFlagHelp> = {
   ai: { desc: "Assign the task to an AI engineer" },
   type: { value: TYPE_USAGE, desc: "Task type" },
   area: { value: "web,core", desc: "Area(s), comma-separated" },
-  story: { value: '"name"', desc: "Attach the task to (or create) a story" },
+  story: { value: '"name"', desc: "Tag the task as part of a story (delivery slice)" },
   "depends-on": { value: "ids", desc: "Comma-separated task ids that must land first" },
   priority: { value: PRIORITY_USAGE, desc: "Priority" },
   "needs-input": { value: "true|false", desc: "Flag the task as needing human input" },
@@ -49,7 +49,7 @@ export const NEW_FLAG_HELP: Record<string, TaskFlagHelp> = {
 export const UPDATE_FLAG_HELP: Record<string, TaskFlagHelp> = {
   title: { value: '"..."', desc: "Task title" },
   area: { value: "web,core", desc: "Area(s), comma-separated" },
-  story: { value: '"name"', desc: "Attach the task to (or create) a story" },
+  story: { value: '"name"', desc: "Tag the task as part of a story (delivery slice)" },
   "depends-on": { value: "ids", desc: "Comma-separated task ids that must land first" },
   priority: { value: PRIORITY_USAGE, desc: "Priority" },
   type: { value: TYPE_USAGE, desc: "Task type" },
