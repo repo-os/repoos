@@ -2,17 +2,17 @@
 id: "0704"
 title: Small papercuts from the tuk-private planning run
 type: chore
-status: ready
+status: active
 priority: p3
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-08T14:40:53Z"
+updated_at: "2026-10-08T14:40:54Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-06T03:26:49Z · note: Recheck on current code (tuk-private, 2026-10-06): created_by empty and the HTML-200 API response are still present. New (item 21): PATCH /api/config rejects numeric maxActiveTasks 3 ('must be one of: 1, 2, 3, ...'); only the string '3' is accepted.
 - 2026-10-08T14:40:50Z · cli_override, model_override
 - 2026-10-08T14:40:53Z · status inbox→ready
+- 2026-10-08T14:40:54Z · status ready→active, branch
