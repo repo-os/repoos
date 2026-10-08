@@ -2,7 +2,7 @@
 id: "0699"
 title: "CLI help drift: generate `repoos new/update --help` from the flag tables; add `--paths` and `--hold` to `repoos new`"
 type: feature
-status: active
+status: review
 priority: p2
 area: cli
 story: "Field report: first agent-driven project run (opex)"
@@ -54,4 +54,4 @@ Verify first against current main: #0723 (merged) added control-plane CLI comman
 - 2026-10-08T14:21:54Z · body
 - 2026-10-08T14:23:26Z · body
 - 2026-10-08T14:25:13Z · body
-- 2026-10-08T14:31:37Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-08T14:31:37Z · status active→review
