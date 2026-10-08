@@ -61,3 +61,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:50:42Z · note: Item 4 (doctor AGENTS.md paths): fixed — warn-only findMissingAgentsMdPaths in repoos doctor.
 - 2026-10-08T17:50:42Z · note: Item 5 (repoos show header fields): declined — out of scope for this papercuts task; needs a dedicated UI/CLI task.
 - 2026-10-08T17:50:42Z · note: Item 6 (GET on POST-only API routes): declined — routing/auth behavior change; file separately from papercuts.
+- 2026-10-08T17:50:42Z · note: Item 21 (PATCH numeric maxActiveTasks): declined — config schema/validation change; not part of #0704 scope.
