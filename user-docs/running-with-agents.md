@@ -136,9 +136,14 @@ session inherits them.
   records console errors, failed requests, and horizontal overflow at configured
   viewport widths (`uiVerification.enabled` and `uiVerification.viewportWidths` in
   `repoos.toml`, default on with 1024px and 375px).
-  Any issue **blocks handoff** and writes evidence under `.repoos/ui-verification/`.
-  When Playwright is missing, the gate skips with a visible note (same as other
-  browser checks).
+  Console errors, failed same-origin requests, overflow, blank captures, wrong-route
+  redirects, and failed required `assert` entries **block handoff**; a missing
+  `highlight`/`selector`/`waitFor` target is a **warning** with the screenshot
+  still saved (#0743). Use `state` fixtures (`closeOut:active`, `card:doneError`,
+  `board:withReviewTask`) when the UI only exists in a particular board state.
+  Concurrent verifications **queue** for the one preview slot. Evidence is written
+  under `.repoos/ui-verification/`. When Playwright is missing, the gate skips with
+  a visible note (same as other browser checks).
 - Read the reviewer's report and the **handoff screenshots** in the task drawer
   Changes tab. The reviewer is prompted to comment on them and flag blank captures.
   You can still open the task preview yourself for a second look — automated checks

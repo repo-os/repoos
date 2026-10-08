@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-08T14:37:26Z"
-review_passes: 1
 id: "0743"
 title: UI verification at handoff must not fail a task because a declared shot targets UI that only exists in a state the preview board lacks
 type: bug
@@ -14,7 +12,7 @@ branch: feat/ui-verification-at-handoff-must-not-fail
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:06:36Z"
-dev_error_count: 1
+updated_at: "2026-10-08T14:36:03Z"
 ---
 ## Problem
 
@@ -35,47 +33,10 @@ On 2026-10-07 UI verification failed the handoff of #0692, #0741 and #0740 (and 
 
 Read the handoff UI verification gate (src/server/ui-handoff-gate.ts, #0680), the shot capture (src/server/shots.ts, src/commands/shot.ts) and the preview manager (#0271). Related: #0694, #0603, #0613.
 
-## Shots
-```json
-[
-  {
-    "label": "Board",
-    "target": "default",
-    "route": "/"
-  }
-]
-```
-
 ## Activity
 
 - 2026-10-08T14:06:36Z · created · unknown
 - 2026-10-08T14:06:41Z · cli_override, model_override
 - 2026-10-08T14:06:43Z · status inbox→ready
 - 2026-10-08T14:06:44Z · status ready→active, branch
-- 2026-10-08T14:07:13Z · agent exited with an error (cursor) · RetriableError: [resource_exhausted] Error
-- 2026-10-08T14:09:19Z · needs_input
-- 2026-10-08T14:17:48Z · body
-- 2026-10-08T14:19:07Z · body
-- 2026-10-08T14:19:57Z · body: section Shots
-- 2026-10-08T14:24:43Z · handoff failed · remote validation failed: remote validation failed (exit 1) — [lock] slot 0 acquired after 0s
-[validate] cloning bundle /Users/peckjachowski/.repoos-0743-f171cd11.bundle
-Note: switching to '36ab3693165cfd5ed559c021b614f11f2628cfa4'.
-You are in 'detached HEAD' state. You can look around, make experimental
-changes and commit them, and you can discard any commits you make in this
-state without impacting any branches by switching back to a branch.
-If you want to create a new branch to retain commits you create, you may
-do so (now or later) by using -c with the switch command. Example:
-  git switch -c <new-branch-name>
-Or undo this operation with:
-  git switch -
-Turn off this advice by setting config variable advice.detachedHead to false
-[validate] HEAD verified at 36ab3693165cfd5ed559c021b614f11f2628cfa4
-bun install v1.4.2 (744846f84)
-error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INSTALL
-[validate] gate exit 1 — fix it in the feature branch and re-run the gate
-- 2026-10-08T14:32:08Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:55450/) (http://127.0.0.1:55450/)
-- 2026-10-08T14:32:09Z · handoff failed · ui-review handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] highlight .ibar-wrap matched nothing on / (captured http://127.0.0.1:55450/) (http://127.0.0.1:55450/)
-- 2026-10-08T14:35:13Z · body: section Shots
 - 2026-10-08T14:36:03Z · status active→review
-- 2026-10-08T14:37:26Z · note: review pass 1: good to go
-
