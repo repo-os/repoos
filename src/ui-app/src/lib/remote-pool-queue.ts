@@ -9,9 +9,7 @@ export function remotePoolQueueFromOutput(output: string): RemotePoolQueueInfo |
 }
 
 /** Card / chip copy when a run is waiting on the Tailscale pool, not stuck. */
-export function remotePoolQueueHint(
-  output: string,
-): { label: string; title: string } | null {
+export function remotePoolQueueHint(output: string): { label: string; title: string } | null {
   const q = remotePoolQueueFromOutput(output);
   if (!q) return null;
   return {
