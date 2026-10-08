@@ -3606,10 +3606,26 @@ export class TailscaleHostPool {
     )[0];
   }
 
+  /** Host named in queue copy — only healthy targets; omit while every host is down. */
+  private dispatchTargetHostForQueue(
+    capabilities: string[],
+    excludeHosts?: ReadonlySet<string>,
+  ): string {
+    const healthy = this.hostsEligibleFor(capabilities, excludeHosts).filter((s) => s.healthy);
+    if (healthy.length === 0) return "";
+    return (
+      healthy.sort(
+        (a, b) =>
+          this.effectiveActive(a) - this.effectiveActive(b) ||
+          this.hosts.indexOf(a) - this.hosts.indexOf(b),
+      )[0]?.spec.host ?? ""
+    );
+  }
+
   private notifyWaiterQueue(waiter: PoolWaiter): void {
     const idx = this.waiters.indexOf(waiter);
     if (idx === -1) return;
-    const host = this.dispatchTargetFor(waiter.capabilities, waiter.excludeHosts)?.spec.host ?? "";
+    const host = this.dispatchTargetHostForQueue(waiter.capabilities, waiter.excludeHosts);
     waiter.onQueue?.({
       ahead: this.queueAheadCount(waiter.capabilities, idx, waiter.excludeHosts),
       host,

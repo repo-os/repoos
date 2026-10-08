@@ -5,7 +5,8 @@ export type ChecksTab = "now" | "runs" | "test-suite" | "plan";
 
 export const CHECKS_TABS: ChecksTab[] = ["now", "runs", "test-suite", "plan"];
 
-const NOW_ALIASES = new Set(["now", "remote"]);
+/** Legacy tab ids from before #0738 renamed the live view to `now`. */
+const NOW_ALIASES = new Set(["now", "remote", "remote-runners"]);
 
 /** Parse `?tab=`; returns null when absent or unknown (caller picks a default). */
 export function parseChecksTab(raw: unknown): ChecksTab | null {

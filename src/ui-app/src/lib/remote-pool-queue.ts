@@ -12,11 +12,15 @@ export function remotePoolQueueFromOutput(output: string): RemotePoolQueueInfo |
 export function remotePoolQueueHint(output: string): { label: string; title: string } | null {
   const q = remotePoolQueueFromOutput(output);
   if (!q) return null;
+  const label = q.host
+    ? `waiting for runner on ${q.host} (position ${q.position})`
+    : `waiting for runner (position ${q.position})`;
+  const where = q.host ? `queued on ${q.host}` : "queued while eligible hosts recover";
   return {
-    label: `waiting for runner on ${q.host} (position ${q.position})`,
+    label,
     title:
-      `Remote validation is queued on ${q.host} — ${q.ahead} other run(s) ahead in the pool. ` +
-      "Every eligible host is at capacity; this is expected, not a stuck agent.",
+      `Remote validation is ${where} — ${q.ahead} other run(s) ahead in the pool. ` +
+      "Every eligible host is at capacity or recovering; this is expected, not a stuck agent.",
   };
 }
 
