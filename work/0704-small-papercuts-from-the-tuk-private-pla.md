@@ -2,7 +2,7 @@
 id: "0704"
 title: Small papercuts from the tuk-private planning run
 type: chore
-status: active
+status: review
 priority: p3
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -92,4 +92,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:49:40Z · note: Item 6 (GET on POST-only API routes): declined — routing/auth behavior change; file separately from papercuts.
 - 2026-10-08T17:49:42Z · note: Item 21 (PATCH numeric maxActiveTasks): declined — config schema/validation change; not part of #0704 scope.
 - 2026-10-08T17:51:30Z · body
-- 2026-10-08T17:57:28Z · note: shots: skipped — the diff (22 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-08T17:57:28Z · status active→review
