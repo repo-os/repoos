@@ -12,7 +12,7 @@ branch: feat/classify-runner-infrastructure-failures-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:40:08Z"
-updated_at: "2026-10-08T15:05:17Z"
+updated_at: "2026-10-08T15:06:17Z"
 ---
 ## Problem
 
@@ -42,9 +42,9 @@ Read src/server/remote-validation.ts (pool, HangWatchdog, recordRun, infraFail),
 "route": "/settings?tab=remote",
 "highlight": ".rvr-host-state--bad",
 "steps": [
-  {
-    "waitMs": 500
-  }
+ {
+   "waitMs": 500
+ }
 ]
 }
 ]
@@ -61,23 +61,23 @@ Read src/server/remote-validation.ts (pool, HangWatchdog, recordRun, infraFail),
 - 2026-10-08T14:53:10Z · body
 - 2026-10-08T14:54:22Z · body
 - 2026-10-08T15:05:17Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/remote-validation.test.ts:394:24
-  392|     expect(res.ok).toBe(false);
-  393|     expect(res.transient).toBe(true);
-  394|     expect(res.detail).toContain("unavailable");
-     |                        ^
-  395|     await r.dispose();
-  396|   });
+ 392|     expect(res.ok).toBe(false);
+ 393|     expect(res.transient).toBe(true);
+ 394|     expect(res.detail).toContain("unavailable");
+    |                        ^
+ 395|     await r.dispose();
+ 396|   });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
 Test Files  2 failed | 447 passed | 1 skipped (450)
-    Tests  4 failed | 5483 passed | 15 skipped (5502)
- Start at  14:59:09
- Duration  363.83s (transform 10.61s, setup 3.43s, import 77.15s, tests 270.35s, environment 337.41s)
+   Tests  4 failed | 5483 passed | 15 skipped (5502)
+Start at  14:59:09
+Duration  363.83s (transform 10.61s, setup 3.43s, import 77.15s, tests 270.35s, environment 337.41s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 406ms
 Test Files  1 passed (1)
-    Tests  2 passed (2)
- Start at  15:05:13
- Duration  2.40s (transform 1.15s, setup 11ms, import 1.42s, tests 406ms, environment 491ms)
+   Tests  2 passed (2)
+Start at  15:05:13
+Duration  2.40s (transform 1.15s, setup 11ms, import 1.42s, tests 406ms, environment 491ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-10-08T15:05:17Z · handoff failed · handoff recovery attempted · finalization failed
