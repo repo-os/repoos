@@ -2,7 +2,7 @@
 id: "0704"
 title: Small papercuts from the tuk-private planning run
 type: chore
-status: active
+status: review
 priority: p3
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
@@ -80,4 +80,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:23:09Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
 - 2026-10-08T17:28:39Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-08T17:40:24Z · body
-- 2026-10-08T17:46:17Z · note: shots: skipped — the diff (20 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-08T17:46:17Z · status active→review
