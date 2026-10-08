@@ -81,3 +81,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:28:39Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-10-08T17:40:24Z · body
 - 2026-10-08T17:46:17Z · status active→review
+- 2026-10-08T17:46:17Z · note: shots: skipped — the diff (20 changed paths) touches no [[preview.paths]] globs — no UI change to capture
