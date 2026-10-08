@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-08T17:13:56Z"
-review_passes: 1
 id: "0744"
 title: "Easter eggs bundle: release freshness visibility"
 type: feature
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/easter-eggs-bundle-release-freshness-vis
 created_at: "2026-10-08T14:13:48Z"
+updated_at: "2026-10-08T17:13:13Z"
 ---
 ## Problem
 
@@ -39,18 +38,6 @@ This task covers visibility of the latest release’s age and its distance behin
 
 Let's start a new easter egg task, the first item in it will be I want to add info on how far behind main the latest release is (similar to how we show it on the deployments page, that way it's easy for the human to see when it makes sense to cut a release....e.g. last release was cut 2 days ago and it's now 290 commits behind main etc. also please make this info and minute/hour/days ago more visible)
 
-## Shots
-```json
-[
-{
-"label": "Latest release freshness: age pill + commits-behind-main pill",
-"target": "default",
-"route": "/releases",
-"highlight": ".rel-fresh-line"
-}
-]
-```
-
 ## Screenshots
 
 ![Screenshot-2026-10-08-at-22.10.23](/api/tasks/0744/attachments/screenshot-1.png)
@@ -62,13 +49,4 @@ Let's start a new easter egg task, the first item in it will be I want to add in
 - 2026-10-08T14:14:10Z · status draft→inbox, title, area, body
 - 2026-10-08T16:41:02Z · status inbox→ready
 - 2026-10-08T16:41:04Z · status ready→active, branch
-- 2026-10-08T17:02:28Z · body
-- 2026-10-08T17:03:50Z · body
-- 2026-10-08T17:05:03Z · body
-- 2026-10-08T17:05:49Z · body
-- 2026-10-08T17:06:29Z · body: section Shots
-- 2026-10-08T17:06:41Z · body
-- 2026-10-08T17:07:19Z · body: section Shots
 - 2026-10-08T17:13:13Z · status active→review
-- 2026-10-08T17:13:56Z · note: review pass 1: good to go
-

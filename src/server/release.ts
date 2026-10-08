@@ -31,6 +31,13 @@ export interface ReleaseStatus {
   /** Short SHA the latest tag points at. */
   latestTagSha: string | null;
   /**
+   * How many commits have landed on the release branch since the latest tag
+   * was cut — i.e. how far the running code is ahead of the latest release.
+   * Null when there's no tag, or the count can't be read. The Releases page
+   * shows this (with `latestTagAt`) so a human can judge when to cut again.
+   */
+  commitsBehindMain: number | null;
+  /**
    * Newest tag reachable from HEAD whose version has no prerelease suffix
    * (no "-"). Tracked separately from `latestTag` so cutting a beta/canary/rc
    * doesn't bury the last real stable release in the UI.
@@ -180,6 +187,7 @@ export async function getReleaseStatus(
     latestTag: null,
     latestTagAt: null,
     latestTagSha: null,
+    commitsBehindMain: null,
     latestStableTag: null,
     head: null,
     clean: false,
@@ -225,6 +233,23 @@ export async function getReleaseStatus(
       latestTagSha = sha?.trim() || null;
     }
   }
+  // How far the release branch has run ahead of the latest tag: the count of
+  // commits that have landed since it was cut. This is what tells a human
+  // "the last release is now N commits behind", so cutting again is worthwhile.
+  // Compared against the release branch (main in the default config), matching
+  // the Deployments page's "behind main" framing.
+  let commitsBehindMain: number | null = null;
+  if (latestTag) {
+    const behindResult = await exec(
+      "git",
+      ["rev-list", "--count", `${latestTag}..${branch}`],
+      config.root,
+    );
+    if (behindResult.code === 0) {
+      const count = Number(behindResult.stdout.trim());
+      if (Number.isFinite(count)) commitsBehindMain = count;
+    }
+  }
   // `git describe --tags --abbrev=0` above walks commit ancestry, so a beta
   // cut off HEAD reports as "the" latest tag even with stable releases in the
   // same history. Find the newest one that isn't a prerelease (no "-")
@@ -262,6 +287,7 @@ export async function getReleaseStatus(
     latestTag,
     latestTagAt,
     latestTagSha,
+    commitsBehindMain,
     latestStableTag,
     head: headResult.code === 0 ? headResult.stdout.trim() : null,
     clean,

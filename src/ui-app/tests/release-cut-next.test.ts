@@ -35,6 +35,7 @@ function releaseStatus(overrides: Record<string, unknown> = {}) {
     latestTag: "v0.5.58",
     latestTagAt: "2026-09-28T00:00:00Z",
     latestTagSha: "abc1234",
+    commitsBehindMain: 3,
     latestStableTag: "v0.5.58",
     head: "abc1234",
     clean: true,
@@ -843,6 +844,53 @@ describe("AI release notes tracked run (#0605)", () => {
     expect(err?.textContent ?? "").toContain("nothing usable");
     expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
     expect(button(panel, "Generate with AI")).toBeTruthy();
+  });
+});
+
+describe("Release freshness (#0744)", () => {
+  it("shows how far behind main the latest release is and how long ago it was cut", async () => {
+    await mountView();
+    const behind = document.body.querySelector<HTMLElement>(".rel-behind");
+    expect(behind, "behind-main pill").toBeTruthy();
+    expect(behind!.textContent).toContain("3 commits behind main");
+    const fresh = document.body.querySelector<HTMLElement>(".rel-fresh");
+    expect(fresh, "relative-age pill").toBeTruthy();
+    expect(fresh!.textContent).toContain("released");
+  });
+
+  it("singularizes a one-commit distance and reads fresh when in sync", async () => {
+    mockApi(releaseStatus({ commitsBehindMain: 1 }));
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    expect(document.body.querySelector(".rel-behind")!.textContent).toContain(
+      "1 commit behind main",
+    );
+
+    wrapper?.unmount();
+    document.body.innerHTML = "";
+    mockApi(releaseStatus({ commitsBehindMain: 0 }));
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const behind = document.body.querySelector<HTMLElement>(".rel-behind");
+    expect(behind!.textContent).toContain("0 commits behind main");
+    expect(behind!.getAttribute("data-state")).toBe("fresh");
+  });
+
+  it("hides the behind count when the server could not compute it", async () => {
+    mockApi(releaseStatus({ commitsBehindMain: null }));
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    expect(document.body.querySelector(".rel-behind")).toBeNull();
+    expect(document.body.querySelector(".rel-fresh")).toBeTruthy();
   });
 });
 
