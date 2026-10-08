@@ -58,10 +58,18 @@ describe("resolveCliCreator", () => {
 
   it("falls back to cli when git has no email", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-creator-"));
+    const prevGlobal = process.env.GIT_CONFIG_GLOBAL;
+    const prevSystem = process.env.GIT_CONFIG_SYSTEM;
+    process.env.GIT_CONFIG_GLOBAL = "/dev/null";
+    process.env.GIT_CONFIG_SYSTEM = "/dev/null";
     try {
       execFileSync("git", ["init", "-q"], { cwd: root });
       expect(resolveCliCreator(root)).toBe(CLI_CREATOR);
     } finally {
+      if (prevGlobal === undefined) delete process.env.GIT_CONFIG_GLOBAL;
+      else process.env.GIT_CONFIG_GLOBAL = prevGlobal;
+      if (prevSystem === undefined) delete process.env.GIT_CONFIG_SYSTEM;
+      else process.env.GIT_CONFIG_SYSTEM = prevSystem;
       rmSync(root, { recursive: true, force: true });
     }
   });
