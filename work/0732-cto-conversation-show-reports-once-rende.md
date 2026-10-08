@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/cto-conversation-show-reports-once-rende
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-07T02:45:50Z"
-updated_at: "2026-10-08T15:45:30Z"
+updated_at: "2026-10-08T15:49:01Z"
 ---
 ## Problem
 The CTO Board Monitor renders the latest saved report above its conversation history and also renders the same agent output in the history as plain text. This duplicates the report, exposes Markdown syntax, and collapses its line breaks.
@@ -30,6 +30,46 @@ On timestamp hover, show a styled popup containing human relative time (for exam
 ## Notes for AI
 src/ui-app/src/components/CTOPanel.vue separately renders report.markdown through renderMarkdown and conversation rows through plain text interpolation. src/server/cto.ts saves the latest report and retains up to 2,000 session entries. Account for streamed output, reloads, and legacy saved-report-only data when removing duplication. Keep this scoped to the CTO panel.
 
+## Shots
+```json
+[
+{
+  "label": "CTO panel: two monitoring runs, each report shown once as Markdown",
+  "target": "default",
+  "route": "/",
+  "highlight": ".cto-log",
+  "steps": [
+    {
+      "click": "[data-test-id=\"floating-head-cto\"]"
+    },
+    {
+      "waitMs": 500
+    }
+  ]
+},
+{
+  "label": "CTO timestamp popup: relative age + local weekday/date",
+  "target": "default",
+  "route": "/",
+  "highlight": ".msg-time",
+  "steps": [
+    {
+      "click": "[data-test-id=\"floating-head-cto\"]"
+    },
+    {
+      "waitMs": 500
+    },
+    {
+      "click": ".msg-time"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
+}
+]
+```
+
 ## Activity
 
 - 2026-10-07T02:45:50Z · created · unknown
@@ -41,3 +81,4 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 - 2026-10-08T15:29:19Z · status ready→active, branch
 - 2026-10-08T15:43:53Z · body
 - 2026-10-08T15:45:30Z · body
+- 2026-10-08T15:49:01Z · body: section Shots
