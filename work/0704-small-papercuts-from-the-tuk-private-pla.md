@@ -12,7 +12,7 @@ branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-08T17:28:39Z"
+updated_at: "2026-10-08T17:40:24Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: c82dbb94b1d563768735d7a786ebc0f84b5365da
 check_retry_count: 2
@@ -80,3 +80,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:17:39Z · status review→active
 - 2026-10-08T17:23:09Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
 - 2026-10-08T17:28:39Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-10-08T17:40:24Z · body
