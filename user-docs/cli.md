@@ -96,7 +96,7 @@ command's flag table, so a flag cannot be added without appearing in `--help`.
 | `--type` | `feature`, `bug`, `chore`, `spec`, `refactor` |
 | `--priority` | `p0`, `p1`, `p2`, `p3` |
 | `--area` | Free text, comma-separated for several (`--area web, core`). Areas a repo declares (`[[areas]]` in repoos.toml) appear in the task drawer's area picker; anything outside it stays allowed. |
-| `--story` | Name of the story to attach the task to (created if it does not exist yet). |
+| `--story` | Tag the task as part of a story (a delivery slice). |
 | `--depends-on` | Comma-separated task ids that must be completed and merged into `main` first. |
 | `--hold` | `true` or `false` — hold the task out of the auto-engineering picker. |
 | `--paths` | Comma-separated files the task touches, e.g. `src/a.ts,src/b.ts`. |
