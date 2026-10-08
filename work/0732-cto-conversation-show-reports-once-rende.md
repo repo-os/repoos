@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-07T02:45:50Z"
-updated_at: "2026-10-08T15:29:00Z"
+updated_at: "2026-10-08T15:29:16Z"
 ---
 ## Problem
 The CTO Board Monitor renders the latest saved report above its conversation history and also renders the same agent output in the history as plain text. This duplicates the report, exposes Markdown syntax, and collapses its line breaks.
@@ -36,3 +37,4 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 - 2026-10-07T02:46:07Z · body
 - 2026-10-07T03:55:56Z · needs_input
 - 2026-10-08T15:29:00Z · status inbox→ready
+- 2026-10-08T15:29:16Z · model_override
