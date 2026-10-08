@@ -11,7 +11,7 @@ branch: ""
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:56Z"
-updated_at: "2026-10-08T14:06:47Z"
+updated_at: "2026-10-08T14:06:49Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Rows 27 and 30: reviewer approved a change with a vue-i18n console error and a dead guard rule.
 
