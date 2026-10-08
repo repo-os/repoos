@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/cto-conversation-show-reports-once-rende
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-07T02:45:50Z"
-updated_at: "2026-10-08T16:03:03Z"
+updated_at: "2026-10-08T16:04:06Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -36,38 +36,38 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 ```json
 [
 {
-"label": "CTO panel: two monitoring runs, each report shown once as Markdown",
-"target": "default",
-"route": "/",
-"highlight": ".cto-log",
-"steps": [
-{
-"click": "[data-test-id=\"floating-head-cto\"]"
+  "label": "CTO panel: two monitoring runs, each report shown once as Markdown",
+  "target": "default",
+  "route": "/",
+  "highlight": ".cto-markdown",
+  "steps": [
+    {
+      "click": "[data-test-id=\"floating-head-cto\"]"
+    },
+    {
+      "waitMs": 500
+    }
+  ]
 },
 {
-"waitMs": 500
-}
-]
-},
-{
-"label": "CTO timestamp popup: relative age + local weekday/date",
-"target": "default",
-"route": "/",
-"highlight": ".msg-time",
-"steps": [
-{
-"click": "[data-test-id=\"floating-head-cto\"]"
-},
-{
-"waitMs": 500
-},
-{
-"click": ".msg-time"
-},
-{
-"waitMs": 300
-}
-]
+  "label": "CTO timestamp popup: relative age + local weekday/date",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"cto-msg-time-0\"]",
+  "steps": [
+    {
+      "click": "[data-test-id=\"floating-head-cto\"]"
+    },
+    {
+      "waitMs": 500
+    },
+    {
+      "click": "[data-test-id=\"cto-msg-time-0\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
 }
 ]
 ```
@@ -90,3 +90,4 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 - 2026-10-08T16:02:30Z · note: click .msg-time: click: Error: strict mode violation: locator('.msg-time') resolved to 8 elements: on /
 - 2026-10-08T16:03:01Z · note: review pass 1: needs some work
 - 2026-10-08T16:03:03Z · status review→active
+- 2026-10-08T16:04:06Z · body: section Shots
