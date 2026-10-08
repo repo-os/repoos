@@ -12,7 +12,8 @@ branch: feat/ui-verification-at-handoff-must-not-fail
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:06:36Z"
-updated_at: "2026-10-08T14:06:44Z"
+updated_at: "2026-10-08T14:09:19Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -39,3 +40,5 @@ Read the handoff UI verification gate (src/server/ui-handoff-gate.ts, #0680), th
 - 2026-10-08T14:06:41Z · cli_override, model_override
 - 2026-10-08T14:06:43Z · status inbox→ready
 - 2026-10-08T14:06:44Z · status ready→active, branch
+- 2026-10-08T14:07:13Z · agent exited with an error (cursor) · RetriableError: [resource_exhausted] Error
+- 2026-10-08T14:09:19Z · needs_input
