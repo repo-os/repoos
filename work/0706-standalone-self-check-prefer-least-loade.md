@@ -123,3 +123,4 @@ error: script "test" exited with code 1
 - 2026-10-08T15:07:04Z · body
 - 2026-10-08T15:08:22Z · body
 - 2026-10-08T15:15:05Z · status active→review
+- 2026-10-08T15:15:05Z · note: Task body is underspecified: missing sections: Notes for AI
