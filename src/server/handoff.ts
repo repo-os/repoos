@@ -55,7 +55,7 @@ import {
   findReusableRemotePreReviewPass,
   remoteOutcomeFromReuse,
 } from "./engineer-remote-self-check.js";
-import type { RemoteValidator } from "./remote-validation.js";
+import { DEFAULT_HOST_LOCK_WAIT_SECS, type RemoteValidator } from "./remote-validation.js";
 import {
   remotePreReviewEnabled,
   runRemotePreReviewGate,
@@ -232,7 +232,8 @@ async function runCheck(
 }
 
 /** Hard cap on an entire finalization, whatever route asked for it. */
-const HANDOFF_DEADLINE_MS = 600_000; // 10 minutes
+/** Must exceed max host lock wait ({@link DEFAULT_HOST_LOCK_WAIT_SECS}) plus local/remote gate time. */
+export const HANDOFF_DEADLINE_MS = (DEFAULT_HOST_LOCK_WAIT_SECS + 10 * 60) * 1000; // 25 minutes
 
 /** Where a handoff came from. Diagnostics only — never trusted for authority. */
 export type HandoffOrigin =
