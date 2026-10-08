@@ -8,9 +8,9 @@
  * usage line lives in per-command help rather than inline.
  */
 import { readVersion } from "../core/version.js";
-import { PRIORITIES, TASK_TYPES } from "../core/types.js";
 import { c } from "./colors.js";
 import { table, termWidth, visibleWidth, wrap } from "./layout.js";
+import { NEW_FLAG_HELP, UPDATE_FLAG_HELP, flagSummary, flagUsageTokens } from "./task-flags.js";
 
 interface CommandEntry {
   /** Command as typed, e.g. "doctor". */
@@ -68,9 +68,9 @@ const GROUPS: readonly CommandGroup[] = [
       { name: "show", usage: "show <id>", desc: "Show a task's full spec" },
       {
         name: "new",
-        usage: `new "<title>" [--ai --type ${TASK_TYPES.join("|")} --area <a> --priority ${PRIORITIES.join("|")} --body <b>]`,
+        usage: 'new "<title>" ' + flagUsageTokens(NEW_FLAG_HELP).join(" "),
         desc: "Create a task",
-        flags: `--ai · --type · --area · --priority · --body`,
+        flags: flagSummary(NEW_FLAG_HELP),
       },
       {
         name: "new-doc",
@@ -180,9 +180,9 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "update",
-        usage: "update <id> [flags]",
+        usage: "update <id> " + flagUsageTokens(UPDATE_FLAG_HELP).join(" "),
         desc: "Edit a task's metadata or body",
-        flags: `--title · --area · --priority ${PRIORITIES.join("|")} · --type ${TASK_TYPES.join("|")} · --body · --branch · --assigned-to`,
+        flags: flagSummary(UPDATE_FLAG_HELP),
       },
       {
         name: "story",

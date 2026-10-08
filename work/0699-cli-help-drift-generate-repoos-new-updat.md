@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-08T14:32:46Z"
-review_passes: 1
 id: "0699"
 title: "CLI help drift: generate `repoos new/update --help` from the flag tables; add `--paths` and `--hold` to `repoos new`"
 type: feature
@@ -11,10 +9,10 @@ story: "Field report: first agent-driven project run (opex)"
 assigned_to: ai
 created_by: ""
 branch: feat/cli-help-drift-generate-repoos-new-updat
-cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-06T03:15:49Z"
-dev_error_count: 2
+updated_at: "2026-10-08T14:31:36Z"
 ---
 ## Problem
 
@@ -46,16 +44,4 @@ Verify first against current main: #0723 (merged) added control-plane CLI comman
 - 2026-10-08T14:06:57Z · cli_override, model_override
 - 2026-10-08T14:07:00Z · status inbox→ready
 - 2026-10-08T14:07:01Z · status ready→active, branch
-- 2026-10-08T14:07:27Z · agent exited with an error (cursor) · RetriableError: [resource_exhausted] Error
-- 2026-10-08T14:10:00Z · needs_input
-- 2026-10-08T14:10:28Z · agent exited with an error (cursor) · RetriableError: [resource_exhausted] Error
-- 2026-10-08T14:11:55Z · needs_input, cli_override, model_override
-- 2026-10-08T14:18:37Z · body
-- 2026-10-08T14:20:29Z · body
-- 2026-10-08T14:21:54Z · body
-- 2026-10-08T14:23:26Z · body
-- 2026-10-08T14:25:13Z · body
-- 2026-10-08T14:31:37Z · status active→review
-- 2026-10-08T14:31:37Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-08T14:32:46Z · note: review pass 1: good to go
-
+- 2026-10-08T14:31:36Z · status active→review
