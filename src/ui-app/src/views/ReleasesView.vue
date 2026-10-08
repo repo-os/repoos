@@ -298,6 +298,16 @@ const commitsBehindLabel = computed(() => {
   if (n === null) return "";
   return `${n} ${n === 1 ? "commit" : "commits"} behind main`;
 });
+/**
+ * Secondary line under the freshness pills: names where the shown tag points
+ * from, without repeating the branch (that is already in `rel-context`).
+ */
+const shippedMeta = computed(() => {
+  const s = status.value;
+  if (!s) return "";
+  const verb = s.released ? "shipped" : "last tag";
+  return s.latestTagSha ? `${verb} from ${s.latestTagSha}` : verb;
+});
 /** Freshness tone for the age/behind pill: fresh, aging, or stale. */
 const releaseFreshness = computed<"fresh" | "aging" | "stale">(() => {
   const n = commitsBehindMain.value ?? 0;
@@ -1024,25 +1034,11 @@ onBeforeUnmount(() => {
                     {{ isPrerelease ? "cut" : "released" }}
                     {{ relativeTime(status.latestTagAt) || "—" }}
                   </span>
-                  <span
-                    v-if="commitsBehindLabel"
-                    class="rel-behind"
-                    :data-state="releaseFreshness"
-                    >{{ commitsBehindLabel }}</span
-                  >
+                  <span v-if="commitsBehindLabel" class="rel-behind" :data-state="releaseFreshness">
+                    {{ commitsBehindLabel }}
+                  </span>
                 </span>
-                <span class="rel-current-meta">
-                  <template v-if="status.released">
-                    shipped<template v-if="status.latestTagSha">
-                      from <code>{{ status.latestTagSha }}</code></template
-                    >
-                  </template>
-                  <template v-else>
-                    last tag<template v-if="status.latestTagSha">
-                      from <code>{{ status.latestTagSha }}</code></template
-                    >
-                  </template>
-                </span>
+                <span class="rel-current-meta">{{ shippedMeta }}</span>
               </template>
               <span v-if="lastStableTag" class="rel-current-meta">
                 last stable · <code>{{ lastStableTag }}</code>
