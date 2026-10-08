@@ -1,20 +1,21 @@
 ---
-last_close_out_gate_ms: 266234
-last_close_out_gate_at: "2026-10-08T22:27:25.204Z"
 id: "0704"
 title: Small papercuts from the tuk-private planning run
 type: chore
-status: review
+status: done
 priority: p3
 area: [cli, server]
 story: "Field report: first agent-driven project run (opex)"
+merged_commit: b264bafb17b7dc401a78698d262c71bcee30b381
 assigned_to: ai
 created_by: ""
 branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-08T22:27:25Z"
+updated_at: "2026-10-08T22:27:34Z"
+last_close_out_gate_ms: 266234
+last_close_out_gate_at: "2026-10-08T22:27:25.204Z"
 review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -98,4 +99,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:57:29Z · note: shots: skipped — the diff (22 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-08T17:58:29Z · note: review pass 2: good to go
 - 2026-10-08T22:27:25Z · close-out gate completed in 266s
-
+- 2026-10-08T22:27:34Z · status review→done, release:success
