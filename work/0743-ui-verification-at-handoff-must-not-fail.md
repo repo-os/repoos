@@ -12,7 +12,7 @@ branch: feat/ui-verification-at-handoff-must-not-fail
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-08T14:06:36Z"
-updated_at: "2026-10-08T14:19:57Z"
+updated_at: "2026-10-08T14:24:43Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -57,3 +57,19 @@ Read the handoff UI verification gate (src/server/ui-handoff-gate.ts, #0680), th
 - 2026-10-08T14:17:48Z · body
 - 2026-10-08T14:19:07Z · body
 - 2026-10-08T14:19:57Z · body: section Shots
+- 2026-10-08T14:24:43Z · handoff failed · remote validation failed: remote validation failed (exit 1) — [lock] slot 0 acquired after 0s
+[validate] cloning bundle /Users/peckjachowski/.repoos-0743-f171cd11.bundle
+Note: switching to '36ab3693165cfd5ed559c021b614f11f2628cfa4'.
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+  git switch -c <new-branch-name>
+Or undo this operation with:
+  git switch -
+Turn off this advice by setting config variable advice.detachedHead to false
+[validate] HEAD verified at 36ab3693165cfd5ed559c021b614f11f2628cfa4
+bun install v1.4.2 (744846f84)
+error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INSTALL
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
