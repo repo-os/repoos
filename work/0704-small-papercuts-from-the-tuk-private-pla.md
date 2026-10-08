@@ -56,3 +56,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T15:44:13Z · body
 - 2026-10-08T17:46:17Z · status active→review
 - 2026-10-08T17:50:41Z · note: Item 1 (repoos list): fixed — truncatePad() pads titles so the area column stays aligned.
+- 2026-10-08T17:50:41Z · note: Item 2 (created_by): fixed — resolveApiCreator/resolveCliCreator on API, CLI, and story creates; activity uses the resolved label.
