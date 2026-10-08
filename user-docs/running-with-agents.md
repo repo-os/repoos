@@ -66,11 +66,29 @@ first, then come back here.
 - Aim for a full `repoos check` well under two minutes: small fixtures in tests,
   sensible test timeouts, an incremental typecheck. A slow gate turns into
   close-out timeouts that look like real failures.
-- Run at most **two tasks at once** on a laptop. If you have
-  [remote runners](/configuration#remote-validation), watch the notification bell
-  for **Ran locally** when remote validation was on but the gate ran on this
-  machine — and use **`GET /api/attention`** (or the `attention.updated` SSE
-  event) instead of polling job files by hand.
+- Run at most **two tasks at once** on a laptop.
+- If you have [remote runners](/configuration#remote-validation), trust the
+  gate to be honest about where it ran:
+  - Hosts are **probed at server start** and **every 60 s while unhealthy**, so
+    dispatch never waits for the Checks tab to be open and a host that comes
+    back rejoins the pool on its own. A host that fails its probe is reported
+    with its reason (`host unreachable — Tailscale connected and logged in?`,
+    missing toolchain or image, …) instead of silently failing jobs.
+  - When remote validation is on but a gate ran on this machine, the bell
+    raises **Ran locally (remote enabled)** naming the task. That is
+    `fallbackToLocal` doing its job with no healthy runner — not a silent
+    success.
+  - The run's detail says why. Open **Checks → Runs**, expand the local row and
+    read its **detail** (`Ran locally: no healthy runner`, a config error, …);
+    the remote half of the same gate is the row attributed to the host.
+  - **Checks → Remote runners** shows each host's live state: **ready**,
+    **unavailable** (with the probe reason), or **unreachable**, plus in-flight
+    runs (`N/M`, task and elapsed time), the FIFO queue and any lock holders,
+    a per-host **Server stats** row, and **Hung runs**. Use it to answer "is
+    the pool actually being used, and why not?"
+  - Prefer **`GET /api/attention`** (or the `attention.updated` SSE event) to
+    polling job files by hand. Its contract is in
+    [Remote validation](../docs/remote-validation.md).
 - Keep the primary checkout **clean**. Commit configuration and bookkeeping
   writes straight away, or **Move to done** will refuse.
 - Close-out candidates reuse the primary checkout's `node_modules` by default.
