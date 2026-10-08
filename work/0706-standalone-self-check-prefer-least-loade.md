@@ -11,7 +11,7 @@ branch: feat/standalone-self-check-prefer-least-loade
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-08T14:23:58Z"
+updated_at: "2026-10-08T14:31:19Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -79,3 +79,4 @@ Verify first against current main: #0705 (merged) already made the dispatcher co
    Duration  2.96s (transform 1.46s, setup 13ms, import 1.79s, tests 507ms, environment 565ms)
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-10-08T14:31:19Z · note: ui verification failed (1 issue(s)): [missing-target] highlight .rr-panel matched nothing on /checks?tab=remote-runners (captured http://127.0.0.1:54974/checks?tab=runs) (http://127.0.0.1:54974/checks?tab=runs)
