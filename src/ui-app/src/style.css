@@ -6724,48 +6724,23 @@
   line-height: 1.7;
   font-size: 12px;
 }
-.agent-input-row {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-  flex-shrink: 0;
+/* The task drawer's Dev/Reviewer follow-up inputs use the shared
+   `.ai-chat-compose` box (#0746); only this margin reset is their own,
+   because the drawer body already pads the row. The old bespoke
+   `.agent-input-row` / `.agent-reply-input-wrapper` / `.agent-input` rules
+   were removed with the migration — every chat input is now the shared box. */
+.agent-compose {
+  margin: 0;
 }
-.agent-reply-input-wrapper {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-}
-.agent-input {
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  padding: 10px 46px 10px 12px;
-  border-radius: 11px;
-  border: 1px solid var(--border);
-  background: var(--panel-solid);
-  color: var(--txt);
-  font-family: "JetBrains Mono", monospace;
-  font-size: 12.5px;
-  line-height: 1.5;
-  resize: none;
-  max-height: 120px;
-  min-height: 34px;
-  overflow-y: auto;
-}
-.agent-reply-input-wrapper .voice-dictate {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-}
-.agent-input:focus {
-  outline: none;
-  border-color: var(--border-bright);
-  /* Matches the shared .ai-chat-compose focus outline (#0669) so the
-     Dev/Reviewer input and every wrapped composer glow the same way. */
-  box-shadow: 0 0 0 3px var(--cyan-dim);
-}
-.agent-input:disabled {
-  opacity: 0.6;
+/* Text send control in that shared box: the box sizes icon buttons at 31px,
+   "Send" needs its own width. No fill — `.ai-chat-send` owns that. */
+.agent-send {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  font: 500 11px var(--font-sans);
 }
 .agent-hint {
   display: flex;
@@ -12444,12 +12419,27 @@
   resize: none;
   border: 0;
   outline: 0;
+  /* A visible radius so any residual `:focus-visible` ring a theme applies would
+     still be rounded, never a square inside the box (#0746). */
+  border-radius: 8px;
   background: transparent;
   color: var(--txt);
   font: 12.5px / 1.55 var(--font-sans);
 }
 .ai-chat-compose textarea::placeholder {
   color: var(--txt-faint);
+}
+/* The highlight for an active input is the rounded ring on the box
+   (`.ai-chat-compose:focus-within`), never an outline on the textarea itself.
+   A named theme's `[data-ui-theme] :focus-visible { outline: 2px solid
+   var(--ring) }` has (0,2,0) specificity and so out-specifies the base
+   `.ai-chat-compose textarea { outline: 0 }` (0,1,1); combined with Tailwind's
+   preflight zeroing the textarea's border-radius, that painted a *square* ring
+   inside the rounded composer (#0746). Suppress it at (0,2,1) so every chat
+   focuses with one rounded highlight. */
+.ai-chat-compose textarea:focus,
+.ai-chat-compose textarea:focus-visible {
+  outline: none;
 }
 .ai-chat-compose button {
   /* Deliberately no `background`/`color`: the shared `.ai-chat-send` owns the

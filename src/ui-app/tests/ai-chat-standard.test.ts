@@ -506,10 +506,9 @@ describe("every AI chat surface follows the standard", () => {
       it("uses the one shared compose box (#0669)", () => {
         // Every chat input renders identically: the layout, focus outline and
         // textarea live in the global `.ai-chat-compose`, never in a bespoke
-        // per-chat `-compose` block. The Model Playground is exempt by
-        // construction — a raw model call with its own sidebar, not an agent
-        // chat with an input to standardise.
-        if (surface.file === "ModelPlaygroundPanel.vue") return;
+        // per-chat `-compose` block. The Model Playground used to be exempt as a
+        // raw model call; #0746 brought it onto the same box so every chat input
+        // in the web UI shares one styling and structure.
         expect(source, `${surface.file} must use .ai-chat-compose`).toContain("ai-chat-compose");
         const scoped = styleBlock(source);
         // No scoped rule may own the shared box's focus outline — that belongs
@@ -615,6 +614,21 @@ describe("agent chat headers carry an inline agent+model chip (#0669)", () => {
     const css = readFileSync(CSS_PATH, "utf8");
     expect(ruleBody(css, ".ai-chat-compose:focus-within")).toMatch(/box-shadow:/);
     expect(ruleBody(css, ".chat-agent-chip .am-control")).toMatch(/max-width:/);
+  });
+
+  it("keeps the active-input highlight rounded, never a square inside the box (#0746)", () => {
+    // A named theme's `:focus-visible { outline: 2px solid var(--ring) }`
+    // out-specifies the base `outline: 0` and, with Tailwind's preflight
+    // zeroing the textarea radius, drew a square ring inside the rounded
+    // composer. The textarea must never paint its own focus outline — the
+    // rounded highlight is the box's `:focus-within` ring.
+    const css = readFileSync(CSS_PATH, "utf8");
+    const focusRule = rules(css).find((rule) =>
+      rule.selector.includes(".ai-chat-compose textarea:focus"),
+    );
+    expect(focusRule, "no .ai-chat-compose textarea:focus rule").toBeDefined();
+    expect(focusRule?.body).toMatch(/outline:\s*none/);
+    expect(ruleBody(css, ".ai-chat-compose textarea")).toMatch(/border-radius:\s*\d/);
   });
 
   it("floating-head launchers stay visible in preview builds for evidence capture (#0669)", () => {
