@@ -2,7 +2,7 @@
 id: "0702"
 title: "Normalise PM-written task bodies: one `## Activity` section, no common leading indent"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 story: "Field report: first agent-driven project run (opex)"
@@ -42,4 +42,4 @@ Related: #0613 (protect task bodies from clobbering, done).
 - 2026-10-08T14:41:36Z · status ready→active, branch
 - 2026-10-08T14:45:58Z · body
 - 2026-10-08T14:46:47Z · body
-- 2026-10-08T14:53:29Z · note: shots: skipped — the diff (6 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-08T14:53:29Z · status active→review
