@@ -46,7 +46,7 @@ import {
   writeWorktreeDirtyCache,
 } from "../core/indexer.js";
 import { isStoryPmWorking, listStoryDefinitions } from "../core/story-definition-files.js";
-import { patchTaskFile } from "./write.js";
+import { patchTaskFile, type PatchTaskOptions } from "./write.js";
 import { taskDependencyBlockers } from "../core/task-dependencies.js";
 import type { CloseOutOutcomeEvent } from "./close-out-outcome.js";
 
@@ -546,7 +546,11 @@ export class LiveIndex {
     }
     if (!allowed) {
       try {
-        patchTaskFile(this.config, absPath, { status: existing.status });
+        const revertOpts: PatchTaskOptions = { skipStatusActivity: true };
+        if (existing.status !== task.status) {
+          revertOpts.stripStatusActivity = { from: existing.status, to: task.status };
+        }
+        patchTaskFile(this.config, absPath, { status: existing.status }, revertOpts);
       } catch {
         // If the revert fails, reflect what git actually shows rather than the
         // unvalidated review state.
