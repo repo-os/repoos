@@ -84,16 +84,27 @@ Creates a task.
 repoos new "Fix the login redirect loop" --type bug --area web --priority p1
 repoos new "Redesign the onboarding flow" --area "web, onboarding"
 repoos new "Build the settings screen" --depends-on 0542,0538
+repoos new "Wire up the export endpoint" --paths src/server/export.ts,src/ui-app/src/views/ExportView.vue --hold true
 ```
+
+`repoos new --help` lists every accepted flag with a one-line description.
+Both that help and the usage text printed on a bad flag are generated from the
+command's flag table, so a flag cannot be added without appearing in `--help`.
 
 | Flag | Values |
 | --- | --- |
 | `--type` | `feature`, `bug`, `chore`, `spec`, `refactor` |
 | `--priority` | `p0`, `p1`, `p2`, `p3` |
 | `--area` | Free text, comma-separated for several (`--area web, core`). Areas a repo declares (`[[areas]]` in repoos.toml) appear in the task drawer's area picker; anything outside it stays allowed. |
+| `--story` | Name of the story to attach the task to (created if it does not exist yet). |
 | `--depends-on` | Comma-separated task ids that must be completed and merged into `main` first. |
+| `--hold` | `true` or `false` — hold the task out of the auto-engineering picker. |
+| `--paths` | Comma-separated files the task touches, e.g. `src/a.ts,src/b.ts`. |
+| `--needs-input` | `true` or `false` — flag the task as needing human input. |
+| `--questions` | Open questions for the human, newline-separated or a JSON list. |
 | `--ai` | Assign to an AI agent |
 | `--body` | Task body; pass `-` to read from stdin |
+| `--shots` | Raw JSON list declaring the `## Shots` section; pass `-` to read from stdin. |
 
 `--priority` and `--type` are validated on every write: a value outside the
 sets above is rejected with the field, the bad value and the full list of valid
@@ -179,9 +190,12 @@ down, the CLI exits with a clear message instead of a generic fetch error.
 
 Edits a task's metadata or body: `--title`, `--area`, `--story`,
 `--depends-on`, `--priority`, `--type`, `--body`, `--branch`, `--assigned-to`,
-`--needs-input`, `--needs-merge`, and per-role agent pins (`--agent`, `--cli`,
-`--model`, plus `--pm-*` and `--review-*` variants). These write the same
-fields as `PATCH /api/tasks/<id>` and are what engineer/reviewer runs read.
+`--needs-input`, `--needs-merge`, `--hold`, `--paths`, `--questions`,
+`--clear-questions`, `--shots`, `--section` / `--section-body`, `--force`, and
+per-role agent pins (`--agent`, `--cli`, `--model`, plus `--pm-*` and
+`--review-*` variants). Run `repoos update --help` for the full, generated list.
+These write the same fields as `PATCH /api/tasks/<id>` and are what
+engineer/reviewer runs read.
 `POST /api/tasks/<id>/start` and `/message` reject override fields in the
 request body (HTTP 400); PM chat routes still accept `cliOverride` /
 `modelOverride` for a single turn. See [Running with agents](/running-with-agents#2-choose-agents-per-role).
