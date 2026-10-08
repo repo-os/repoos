@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/easter-eggs-bundle-release-freshness-vis
 created_at: "2026-10-08T14:13:48Z"
-updated_at: "2026-10-08T17:05:49Z"
+updated_at: "2026-10-08T17:06:29Z"
 ---
 ## Problem
 
@@ -42,6 +42,18 @@ Let's start a new easter egg task, the first item in it will be I want to add in
 
 ![Screenshot-2026-10-08-at-22.10.23](/api/tasks/0744/attachments/screenshot-1.png)
 
+## Shots
+```json
+[
+{
+  "label": "Latest release freshness: relative age + commits behind main",
+  "target": "default",
+  "route": "/releases",
+  "highlight": ".rel-fresh-line"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-08T14:13:48Z · created · hello@repoos.org
@@ -53,3 +65,4 @@ Let's start a new easter egg task, the first item in it will be I want to add in
 - 2026-10-08T17:03:50Z · body
 - 2026-10-08T17:05:03Z · body
 - 2026-10-08T17:05:49Z · body
+- 2026-10-08T17:06:29Z · body: section Shots
