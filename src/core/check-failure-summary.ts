@@ -166,7 +166,7 @@ export interface RemoteRunHistoryMeta {
  * failures when the output still carries them.
  */
 export function remoteRunHistoryMeta(
-  outcome: "pass" | "fail" | "cancelled" | "hung" | "infra",
+  outcome: "pass" | "fail" | "cancelled" | "hung" | "infra" | "skipped",
   opts: {
     output?: string;
     detail?: string | null;
