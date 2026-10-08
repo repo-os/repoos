@@ -11,7 +11,7 @@ branch: feat/standalone-self-check-prefer-least-loade
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-08T14:50:29Z"
+updated_at: "2026-10-08T14:56:13Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -98,3 +98,23 @@ error: script "test" exited with code 1
 - 2026-10-08T14:47:44Z · body
 - 2026-10-08T14:48:40Z · body
 - 2026-10-08T14:50:29Z · body
+- 2026-10-08T14:56:13Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/remote-pool-queue.test.ts:29:53
+     27|     expect(line).toContain("waiting for a runner (queue position 2");
+     28|     expect(line).not.toContain(" on  (");
+     29|     expect(parseRemotePoolQueueMessage(line)?.host).toBe("");
+       |                                                     ^
+     30|   });
+     31| });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 447 passed | 1 skipped (449)
+      Tests  1 failed | 5474 passed | 15 skipped (5490)
+   Start at  14:51:28
+   Duration  280.74s (transform 6.88s, setup 2.38s, import 54.83s, tests 226.48s, environment 250.25s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 409ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  14:56:09
+   Duration  2.36s (transform 1.10s, setup 12ms, import 1.37s, tests 409ms, environment 489ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
