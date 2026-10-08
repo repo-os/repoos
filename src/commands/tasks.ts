@@ -23,14 +23,6 @@ import {
 } from "../core/shot-plan.js";
 import { deleteTaskFile, PathGuardError, WriteError } from "../server/write.js";
 import { normalizeSectionHeading, replaceSection } from "../core/task.js";
-
-/**
- * The full valid value sets for `--priority` / `--type`, and the generated
- * usage lines for `new` / `update`. All of this is derived from the ordered
- * flag-help maps in `src/cli/task-flags.ts`, so `--help`, the usage strings
- * printed on a bad flag, and the accepted flags can never drift (#0699).
- * Re-exported here because existing callers/tests import them from this module.
- */
 import {
   NEW_FLAG_HELP,
   UPDATE_FLAG_HELP,
@@ -40,6 +32,13 @@ import {
   TYPE_USAGE,
 } from "../cli/task-flags.js";
 
+/**
+ * The full valid value sets for `--priority` / `--type`, the flag-help maps,
+ * and the generated usage lines for `new` / `update`. All of it is derived from
+ * the ordered flag-help maps in `src/cli/task-flags.ts`, so `--help`, the usage
+ * strings printed on a bad flag, and the accepted flags can never drift
+ * (#0699). Re-exported because existing callers/tests import them from here.
+ */
 export {
   PRIORITY_USAGE,
   TYPE_USAGE,
