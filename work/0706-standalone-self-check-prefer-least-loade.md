@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-08T14:43:34Z"
-review_passes: 1
 id: "0706"
 title: "Standalone self-check: prefer least-loaded remote host and stuck-badge copy"
 type: chore
-status: review
+status: active
 priority: p2
 area: server
 assigned_to: ai
@@ -13,6 +11,9 @@ branch: feat/standalone-self-check-prefer-least-loade
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
+updated_at: "2026-10-08T14:43:34Z"
+review_rounds: 1
+review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -89,4 +90,4 @@ error: script "test" exited with code 1
 - 2026-10-08T14:42:07Z · status active→review
 - 2026-10-08T14:42:08Z · note: Task body is underspecified: missing sections: Notes for AI
 - 2026-10-08T14:43:34Z · note: review pass 1: needs some work
-
+- 2026-10-08T14:43:34Z · status review→active
