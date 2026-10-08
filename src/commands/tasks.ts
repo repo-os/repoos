@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { createRepoOS } from "../core/repoos.js";
 import { boardRoot, loadConfig, resolveColumnLabels } from "../core/config.js";
-import { STATUSES, PRIORITIES, TASK_TYPES, type Status, type Task } from "../core/types.js";
+import { STATUSES, type Status, type Task } from "../core/types.js";
 import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
 import { flagTaskSpecFlagsIfNeeded } from "../server/task-underspecified-flag.js";
@@ -23,28 +23,36 @@ import {
 } from "../core/shot-plan.js";
 import { deleteTaskFile, PathGuardError, WriteError } from "../server/write.js";
 import { normalizeSectionHeading, replaceSection } from "../core/task.js";
+import {
+  NEW_FLAG_HELP,
+  UPDATE_FLAG_HELP,
+  flagSummary,
+  flagUsageTokens,
+  PRIORITY_USAGE,
+  TYPE_USAGE,
+} from "../cli/task-flags.js";
 
 /**
- * The full valid value sets for `--priority` / `--type`, rendered into both
- * commands' usage text so the accepted values are obvious at the point of
- * use (#0656) instead of a single example. Exported for tests.
+ * The full valid value sets for `--priority` / `--type`, the flag-help maps,
+ * and the generated usage lines for `new` / `update`. All of it is derived from
+ * the ordered flag-help maps in `src/cli/task-flags.ts`, so `--help`, the usage
+ * strings printed on a bad flag, and the accepted flags can never drift
+ * (#0699). Re-exported because existing callers/tests import them from here.
  */
-export const PRIORITY_USAGE = PRIORITIES.join("|");
-export const TYPE_USAGE = TASK_TYPES.join("|");
+export {
+  PRIORITY_USAGE,
+  TYPE_USAGE,
+  NEW_FLAG_HELP,
+  UPDATE_FLAG_HELP,
+  flagSummary,
+  flagUsageTokens,
+};
 
 export const UPDATE_USAGE =
-  '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] ' +
-  `[--priority ${PRIORITY_USAGE}] [--type ${TYPE_USAGE}] [--body "..."|-] [--branch b] ` +
-  '[--assigned-to ai|human] [--needs-input true|false] [--needs-merge true|false] [--hold true|false] [--paths src/a.ts,src/b.ts] [--questions "Question one\\nQuestion two"] [--clear-questions] ' +
-  "[--agent <name>] [--cli <cli>] [--model <model>] " +
-  "[--pm-agent <name>] [--pm-cli <cli>] [--pm-model <model>] " +
-  "[--review-agent <name>] [--review-cli <cli>] [--review-model <model>] " +
-  '[--shots "<JSON list>"|- | --section "<heading>" --section-body ...] [--force]';
+  "  Usage: repoos update <id> " + flagUsageTokens(UPDATE_FLAG_HELP).join(" ");
 
 export const NEW_USAGE =
-  '  Usage: repoos new "Task title" [--ai] ' +
-  `[--type ${TYPE_USAGE}] [--area web,core] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority ${PRIORITY_USAGE}] ` +
-  '[--body "..."|-] [--shots "<JSON list>"|-] [--needs-input true|false] [--questions "Question one\\nQuestion two"]';
+  '  Usage: repoos new "Task title" ' + flagUsageTokens(NEW_FLAG_HELP).join(" ");
 
 /**
  * RepoOS facade rooted at the LIVE BOARD's checkout (the main checkout), even
@@ -428,7 +436,7 @@ export function cmdNote(args: string[]): void {
   }
 }
 
-const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
+export const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
   title: "title",
   area: "area",
   story: "story",
@@ -607,17 +615,11 @@ export function cmdUpdate(args: string[]): void {
       }
       patch.hold = raw === "true";
     } else if (field === "paths") {
-      patch.paths = raw
-        .split(",")
-        .map((p) => p.trim())
-        .filter(Boolean);
+      patch.paths = parseListFlag(raw);
     } else if (field === "questions") {
       patch.questions = parseQuestions(raw);
     } else if (field === "dependsOn") {
-      patch.dependsOn = raw
-        .split(",")
-        .map((dependency) => dependency.trim())
-        .filter(Boolean);
+      patch.dependsOn = parseListFlag(raw);
     } else {
       const value = field === "body" && raw === "-" ? readFileSync(0, "utf8") : raw;
       (patch[field] as string) = value;
@@ -704,18 +706,19 @@ export function cmdUpdate(args: string[]): void {
   }
 }
 
-const NEW_FLAGS = new Set([
-  "ai",
-  "type",
-  "area",
-  "story",
-  "depends-on",
-  "priority",
-  "body",
-  "shots",
-  "needs-input",
-  "questions",
-]);
+/**
+ * Accepted flags for `repoos new`, derived from the shared help map so the
+ * parse surface and `--help` can never disagree (#0699).
+ */
+export const NEW_FLAGS = new Set(Object.keys(NEW_FLAG_HELP));
+
+/** Comma-split, trimmed, non-empty list — shared by `--paths` and `--depends-on`. */
+function parseListFlag(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
 
 function parseQuestions(raw: string): string[] {
   try {
@@ -732,7 +735,12 @@ function parseQuestions(raw: string): string[] {
     .filter(Boolean);
 }
 
-/** `repoos new <title> [--ai] [--needs-input true] [--questions "..."] [--depends-on ids]` */
+/**
+ * `repoos new <title> [--ai] [--needs-input true] [--questions "..."]
+ *   [--depends-on ids] [--hold true|false] [--paths a,b] [...]`
+ *
+ * Accepted flags and their help are the `NEW_FLAG_HELP` map; see `--help`.
+ */
 export function cmdNew(args: string[]): void {
   const usage = NEW_USAGE;
   const flags: Record<string, string | boolean> = {};
@@ -756,6 +764,11 @@ export function cmdNew(args: string[]): void {
     const raw = args[++i];
     if (raw === undefined) {
       console.error(c.red(`  Missing value for --${key}\n${usage}`));
+      process.exitCode = 1;
+      return;
+    }
+    if (key === "hold" && raw !== "true" && raw !== "false") {
+      console.error(c.red("  --hold must be true or false"));
       process.exitCode = 1;
       return;
     }
@@ -794,16 +807,13 @@ export function cmdNew(args: string[]): void {
       area: (flags.area as string) || undefined,
       story: (flags.story as string) || undefined,
       dependsOn:
-        typeof flags["depends-on"] === "string"
-          ? flags["depends-on"]
-              .split(",")
-              .map((dependency) => dependency.trim())
-              .filter(Boolean)
-          : undefined,
+        typeof flags["depends-on"] === "string" ? parseListFlag(flags["depends-on"]) : undefined,
       priority: (flags.priority as string) || undefined,
       assignedTo: flags.ai ? "ai" : undefined,
       body: body || undefined,
       needsInput: flags["needs-input"] === "true",
+      hold: flags.hold === undefined ? undefined : flags.hold === "true",
+      paths: typeof flags.paths === "string" ? parseListFlag(flags.paths) : undefined,
       questions: flags.questions ? parseQuestions(flags.questions as string) : undefined,
     });
   } catch (error) {
