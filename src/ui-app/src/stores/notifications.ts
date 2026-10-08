@@ -34,6 +34,7 @@ export type NotificationType =
   | "spendThreshold"
   | "awaitingVisualCheck"
   | "remoteFallback"
+  | "remoteHostDegraded"
   | "ctoAction";
 
 /** Every monitorable type, in Settings display order. */
@@ -56,6 +57,7 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   "spendThreshold",
   "awaitingVisualCheck",
   "remoteFallback",
+  "remoteHostDegraded",
   "ctoAction",
 ];
 
@@ -247,6 +249,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   spendThreshold: "Spend alert",
   awaitingVisualCheck: "Awaiting visual check",
   remoteFallback: "Ran locally (remote enabled)",
+  remoteHostDegraded: "Remote runner degraded",
   ctoAction: "CTO safe action",
 };
 
@@ -272,6 +275,8 @@ export const NOTIFICATION_TYPE_DESCRIPTIONS: Record<NotificationType, string> = 
   spendThreshold: "Provider-reported board spend reached your alert threshold.",
   awaitingVisualCheck: "A UI task is in review — open the preview and verify it in a browser.",
   remoteFallback: "Remote validation was on but the gate ran on this machine instead.",
+  remoteHostDegraded:
+    "A tailnet runner host failed an infra check and is skipped until its health probe passes.",
   ctoAction:
     "The CTO or you ran an allowlisted recovery action (restart, refresh install, re-queue).",
 };

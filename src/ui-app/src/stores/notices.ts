@@ -38,6 +38,7 @@ export type NoticeKind =
   | "spendThreshold"
   | "awaitingVisualCheck"
   | "remoteFallback"
+  | "remoteHostDegraded"
   | "ctoAction";
 
 export interface NoticeItem {
@@ -71,6 +72,7 @@ export const NOTICE_KIND_LABELS: Record<NoticeKind, string> = {
   spendThreshold: "Spend alert",
   awaitingVisualCheck: "Awaiting visual check",
   remoteFallback: "Ran locally",
+  remoteHostDegraded: "Remote runner degraded",
   ctoAction: "CTO safe action",
 };
 
@@ -91,6 +93,7 @@ export const NOTICE_KIND_COLOR: Record<NoticeKind, string> = {
   spendThreshold: "var(--amber)",
   awaitingVisualCheck: "var(--violet)",
   remoteFallback: "var(--amber)",
+  remoteHostDegraded: "var(--amber)",
   ctoAction: "var(--violet)",
 };
 
@@ -109,6 +112,7 @@ const ATTENTION_NOTICE_KINDS = new Set<NoticeKind>([
   "spendThreshold",
   "awaitingVisualCheck",
   "remoteFallback",
+  "remoteHostDegraded",
   "ctoAction",
 ]);
 
