@@ -25,7 +25,11 @@ export function resolveApiCreator(userEmail?: string | null): string {
 export function resolveCliCreator(repoRoot?: string): string {
   if (process.env.REPOOS_AGENT === "1") {
     const sessionId = process.env.REPOOS_TASK_ID ?? "";
-    if (/^pm-task-v2:/i.test(sessionId) || /^pm-task:/i.test(sessionId) || /^pm:/i.test(sessionId)) {
+    if (
+      /^pm-task-v2:/i.test(sessionId) ||
+      /^pm-task:/i.test(sessionId) ||
+      /^pm:/i.test(sessionId)
+    ) {
       return PM_CREATOR;
     }
   }

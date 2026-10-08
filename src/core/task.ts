@@ -233,9 +233,7 @@ export function stripLastStatusActivityEntry(body: string, from: Status, to: Sta
   if (!m || m[2] !== from || m[3] !== to) return body;
   const without = entryLines.slice(0, -1);
   const rebuilt =
-    without.length > 0
-      ? `${ACTIVITY_HEADING}\n\n${without.join("\n")}\n`
-      : `${ACTIVITY_HEADING}\n`;
+    without.length > 0 ? `${ACTIVITY_HEADING}\n\n${without.join("\n")}\n` : `${ACTIVITY_HEADING}\n`;
   const before = removeSection(body, ACTIVITY_HEADING).replace(/\s+$/, "");
   return before ? `${before}\n\n${rebuilt}` : rebuilt;
 }
