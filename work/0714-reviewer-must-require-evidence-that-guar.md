@@ -11,7 +11,7 @@ branch: feat/reviewer-must-require-evidence-that-guar
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:56Z"
-updated_at: "2026-10-08T14:27:51Z"
+updated_at: "2026-10-08T14:33:53Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -49,3 +49,4 @@ Trace the existing reviewer, browser-smoke, and guard-test flows before changing
 - 2026-10-08T14:24:06Z · status review→active
 - 2026-10-08T14:26:27Z · body
 - 2026-10-08T14:27:51Z · body
+- 2026-10-08T14:33:53Z · note: shots: skipped — the diff (8 changed paths) touches no [[preview.paths]] globs — no UI change to capture
