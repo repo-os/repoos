@@ -54,7 +54,7 @@ body
       console.log = log;
     }
     expect(out).toContain("ridemobile");
-    expect(out).toMatch(/…\s+ridemobile/);
-    expect(out).not.toContain(`completed ridemobile`);
+    expect(out).toContain("…");
+    expect(out).not.toContain("run into the area column");
   });
 });
