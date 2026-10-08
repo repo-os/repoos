@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { X, ArrowDown } from "lucide-vue-next";
 import { api } from "../api";
-import { renderChatMarkdown, renderMarkdown } from "../lib/markdown";
-import { fmtTime } from "../lib/time";
+import { renderChatMarkdown } from "../lib/markdown";
+import { fmtTime, timestampTip } from "../lib/time";
+import { withSavedReport } from "../lib/cto-conversation";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
@@ -37,11 +38,19 @@ const running = computed(() => repo.cto.running);
 const report = computed(() => repo.cto.report);
 const lines = computed(() => repo.cto.lines);
 
+// The saved report is folded in as a normal assistant entry (#0732) only when
+// it is not already present in the transcript, so each monitoring run shows its
+// report once and earlier runs are preserved. It renders through the same
+// markdown bubble path as every other reply.
+const displayLines = computed(() =>
+  enabled.value ? withSavedReport(lines.value, report.value) : [...lines.value],
+);
+
 // Chat scroll standard (#0444): open on the newest message, remember where the
 // reader was, and offer a jump back down once they scroll away.
 const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   chatId: "cto",
-  contentSize: () => lines.value.length,
+  contentSize: () => displayLines.value.length,
   active: () => props.open,
 });
 
@@ -50,7 +59,39 @@ const { messageBubbleListeners } = useCopyChatMessage();
 // Rows are grouped by the shared transform (#0506): a run of adjacent tool
 // calls is one expandable row with counts and the time it finished, not a
 // one line of prose per call, with no count, outcome, or anything to expand.
-const rows = computed<DisplayRow[]>(() => toDisplayRows(lines.value));
+const rows = computed<DisplayRow[]>(() => toDisplayRows(displayLines.value));
+
+// Relative ages in the timestamp popup must not freeze at mount: tick a `now`
+// while the panel is open so the tooltip text stays accurate (#0732).
+const now = ref(Date.now());
+let nowTimer: ReturnType<typeof setInterval> | undefined;
+
+function stopNowTicker(): void {
+  if (nowTimer !== undefined) {
+    clearInterval(nowTimer);
+    nowTimer = undefined;
+  }
+}
+
+watch(
+  () => props.open,
+  (open) => {
+    stopNowTicker();
+    if (!open) return;
+    now.value = Date.now();
+    nowTimer = setInterval(() => {
+      now.value = Date.now();
+    }, 1000);
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(stopNowTicker);
+
+/** The styled hover/focus popup for a row's timestamp: relative age + local date. */
+function timeTip(iso: string | undefined): string {
+  return timestampTip(iso, new Date(now.value));
+}
 
 function onKeydown(event: KeyboardEvent): void {
   // Enter sends; Shift+Enter inserts a newline (this field became a <textarea>).
@@ -160,13 +201,6 @@ watch(
           <p>CTO agent is disabled. Enable it from the Agents page.</p>
         </div>
 
-        <div v-else-if="report" class="cto-report">
-          <div class="cto-report-meta">
-            Latest report at {{ new Date(report.at).toLocaleTimeString() }}
-          </div>
-          <div class="cto-report-content" v-html="renderMarkdown(report.markdown)"></div>
-        </div>
-
         <template v-for="row in rows" :key="row.key">
           <ChatDiagnosticRow
             v-if="row.kind === 'line' && row.s === 'err'"
@@ -182,8 +216,19 @@ watch(
             ></div>
             <span v-else>{{ row.text }}</span>
             <!-- Every row carries its last-updated time (#0506), system rows
-                 included: a `sys` entry is stamped like any other. -->
-            <span v-if="row.at" class="msg-time">{{ fmtTime(row.at) }}</span>
+                 included: a `sys` entry is stamped like any other. `data-tip`
+                 is picked up by the shared tooltip (`lib/tooltip.ts`), which
+                 shows on hover AND keyboard focus and never the native bubble;
+                 `tabindex` keeps it focusable for keyboard and touch (#0732). -->
+            <span
+              v-if="row.at"
+              class="msg-time"
+              tabindex="0"
+              :data-test-id="`cto-msg-time-${row.key}`"
+              :data-tip="timeTip(row.at)"
+              :aria-label="`Sent ${timeTip(row.at)}`"
+              >{{ fmtTime(row.at) }}</span
+            >
           </div>
         </template>
 
@@ -252,45 +297,6 @@ watch(
   font-size: 13px;
   text-align: center;
   margin: auto 0;
-}
-.cto-report {
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--panel);
-  margin-bottom: 8px;
-}
-.cto-report-meta {
-  font-size: 10.5px;
-  color: var(--txt-faint);
-  margin-bottom: 8px;
-  font-family: "JetBrains Mono", monospace;
-}
-.cto-report-content {
-  font-size: 12.5px;
-  line-height: 1.55;
-}
-.cto-report-content :deep(p) {
-  margin: 0 0 7px;
-}
-.cto-report-content :deep(p:last-child) {
-  margin-bottom: 0;
-}
-.cto-report-content :deep(ul),
-.cto-report-content :deep(ol) {
-  padding-left: 17px;
-  margin: 5px 0;
-}
-.cto-report-content :deep(code) {
-  font:
-    10.5px "JetBrains Mono",
-    monospace;
-  background: var(--md-body-bg);
-  border-radius: 4px;
-  padding: 1px 4px;
-}
-.cto-report-content :deep(a) {
-  color: var(--cyan);
 }
 .cto-line {
   padding: 6px 8px;
@@ -385,6 +391,12 @@ watch(
     500 8.5px "JetBrains Mono",
     monospace;
   opacity: 0.8;
+}
+/* The time is focusable so the popup opens from the keyboard and touch too (#0732). */
+.msg-time:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 /* Text send button — the shared compose sizes icon buttons at 31px; "Send"
    needs its own width. No fill here: `.ai-chat-send` owns that (a fill would

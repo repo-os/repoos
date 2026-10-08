@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDuration, relTime } from "../src/lib/time";
+import { fmtDate, formatDuration, relTime, timestampTip } from "../src/lib/time";
 
 const now = new Date("2026-08-07T12:00:00Z");
 
@@ -32,6 +32,40 @@ describe("relTime", () => {
     expect(relTime(null, now)).toBe("unknown");
     expect(relTime(undefined, now)).toBe("unknown");
     expect(relTime("not-a-date", now)).toBe("unknown");
+  });
+});
+
+describe("fmtDate", () => {
+  it("includes the local weekday, day and month", () => {
+    const iso = "2026-08-07T12:00:00Z";
+    const d = new Date(iso);
+    const date = fmtDate(iso);
+    expect(date).toContain(new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(d));
+    expect(date).toContain(String(d.getDate()));
+    expect(date).toContain(new Intl.DateTimeFormat(undefined, { month: "short" }).format(d));
+  });
+
+  it("returns an empty string for missing or unparseable input", () => {
+    expect(fmtDate(null)).toBe("");
+    expect(fmtDate(undefined)).toBe("");
+    expect(fmtDate("not-a-date")).toBe("");
+  });
+});
+
+describe("timestampTip", () => {
+  it("combines the relative age and the local date", () => {
+    const tip = timestampTip("2026-08-07T11:57:00Z", now);
+    expect(tip).toBe(`3 minutes ago · ${fmtDate("2026-08-07T11:57:00Z")}`);
+  });
+
+  it("formats seconds and hours too", () => {
+    expect(timestampTip("2026-08-07T11:59:50Z", now)).toMatch(/^10 seconds ago · /);
+    expect(timestampTip("2026-08-07T09:00:00Z", now)).toMatch(/^3 hours ago · /);
+  });
+
+  it("falls back to the relative-only text for missing input", () => {
+    expect(timestampTip(null, now)).toBe("unknown");
+    expect(timestampTip("not-a-date", now)).toBe("unknown");
   });
 });
 
