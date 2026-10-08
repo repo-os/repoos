@@ -2,7 +2,7 @@
 id: "0706"
 title: "Standalone self-check: prefer least-loaded remote host and stuck-badge copy"
 type: chore
-status: review
+status: active
 priority: p2
 area: server
 assigned_to: ai
@@ -84,3 +84,4 @@ error: script "test" exited with code 1
 - 2026-10-08T14:35:57Z · note: ui verification failed (25 issue(s)): [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/agents/detect); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/tunnel/readiness); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/remote-validation/status); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/release/availabl
 - 2026-10-08T14:35:57Z · handoff failed · ui-review handoff failed at verify · ui verification failed (25 issue(s)): [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/agents/detect); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/tunnel/readiness); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/remote-validation/status); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/release/available); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/cto); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/chat); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/config); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/debugger); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/auth/me); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/auth/me); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/api/health); [request] Failed to load resource: Could not connect to the server. (http://127.0.0.1:56740/assets/ChecksView-mAQI96z9.js)
 - 2026-10-08T14:41:33Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/serve-reaper.test.ts:460:22 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-08T14:41:33Z · status review→active
