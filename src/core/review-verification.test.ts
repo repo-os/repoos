@@ -7,6 +7,7 @@ import {
   evaluateReviewVerification,
   guardsMateriallyChangedFromDiff,
   isBlockingBrowserIssueForReview,
+  reviewVerificationWithoutWorktree,
   testContentDemonstratesGuardRejection,
 } from "./review-verification.js";
 import { parseReviewVerdict } from "./review-verdict.js";
@@ -58,12 +59,39 @@ describe("evaluateConsoleErrorReviewCheck (#0714)", () => {
 });
 
 describe("guard negative-test evidence (#0714)", () => {
-  it("detects materially changed guards from check.ts diff", () => {
+  it("detects materially changed guards from added check.ts lines only", () => {
     const ids = guardsMateriallyChangedFromDiff({
       changedPaths: ["src/commands/check.ts"],
       checkTsDiff: "+ export function bareRequireOffenders(\n",
     });
     expect(ids).toContain("bare-require");
+    const contextOnly = guardsMateriallyChangedFromDiff({
+      changedPaths: ["src/commands/check.ts"],
+      checkTsDiff: " // bareRequireOffenders mentioned in a comment\n",
+    });
+    expect(contextOnly).toEqual([]);
+  });
+
+  it("accepts negative evidence from an unchanged test at branch HEAD", () => {
+    const negative = `
+      import { bareRequireOffenders } from "../../commands/check.js";
+      it("flags bare require", () => {
+        expect(bareRequireOffenders(["app"], { repoRoot: root })).toEqual(["app/a.ts:1"]);
+      });
+    `;
+    const checks = evaluateGuardNegativeTestChecks({
+      guardIds: ["bare-require"],
+      changedTestFiles: [],
+      branchTestFiles: [{ path: "src/ui-app/tests/check-bare-require.test.ts", content: negative }],
+    });
+    expect(checks[0]?.status).toBe("passed");
+    expect(checks[0]?.detail).toContain("existing test");
+  });
+
+  it("does not treat a bare rejects mention as negative evidence", () => {
+    const prose = `// this module rejects bad input in theory\nit("ok", () => {});`;
+    expect(testContentDemonstratesGuardRejection(prose)).toBe(false);
+    expect(testContentDemonstratesGuardRejection(`expect(fn()).toThrow()`)).toBe(true);
   });
 
   it("requires a rejection test, not happy-path only", () => {
@@ -97,6 +125,20 @@ describe("guard negative-test evidence (#0714)", () => {
       ],
     });
     expect(ok[0]?.status).toBe("passed");
+  });
+});
+
+describe("reviewVerificationWithoutWorktree (#0714)", () => {
+  it("still reports not_run for branch checks and appends a verification section", () => {
+    const result = reviewVerificationWithoutWorktree({
+      uiVerificationRequired: false,
+      evidence: null,
+    });
+    expect(result.guardTests[0]?.status).toBe("not_run");
+    expect(result.consoleErrors.status).toBe("skipped");
+    const applied = applyMechanicalReviewVerification("## Verdict\n`good to go`\n", result);
+    expect(applied.markdown).toContain("## Automated verification");
+    expect(applied.markdown).toContain("**not run**");
   });
 });
 

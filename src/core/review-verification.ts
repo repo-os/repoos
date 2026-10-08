@@ -110,7 +110,8 @@ export const GUARD_REVIEW_MARKERS: Record<string, string[]> = {
  * input passes.
  */
 export function testContentDemonstratesGuardRejection(content: string): boolean {
-  if (/\b(toThrow|rejects)\b/.test(content)) return true;
+  if (/expect\([^)]*\)\.(toThrow|rejects)\b/.test(content)) return true;
+  if (/await expect\([^)]*\)\.(toThrow|rejects)\b/.test(content)) return true;
   if (/\.not\.toEqual\(\s*\[\s*\]\s*\)/.test(content)) return true;
   if (/process\.exit\(1\)|exit code 1|\.status\)\.toBe\(1\)/.test(content)) return true;
   if (
@@ -138,8 +139,12 @@ export function guardsMateriallyChangedFromDiff(input: {
   const { changedPaths, checkTsDiff = "", repoosTomlDiff = "" } = input;
 
   if (changedPaths.includes("src/commands/check.ts") && checkTsDiff) {
-    for (const [guardId, markers] of Object.entries(GUARD_REVIEW_MARKERS)) {
-      if (markers.some((m) => checkTsDiff.includes(m))) touched.add(guardId);
+    for (const line of checkTsDiff.split("\n")) {
+      if (!line.startsWith("+") || line.startsWith("+++")) continue;
+      for (const [guardId, markers] of Object.entries(GUARD_REVIEW_MARKERS)) {
+        const primary = markers[0];
+        if (primary && line.includes(primary)) touched.add(guardId);
+      }
     }
   }
 
@@ -156,39 +161,89 @@ export function guardsMateriallyChangedFromDiff(input: {
   return [...touched];
 }
 
+function guardNegativeEvidence(
+  guardId: string,
+  files: { path: string; content: string }[],
+): { path: string; content: string }[] {
+  return files.filter(
+    (f) =>
+      testContentReferencesGuard(guardId, f.content) &&
+      testContentDemonstratesGuardRejection(f.content),
+  );
+}
+
 export function evaluateGuardNegativeTestChecks(input: {
   guardIds: string[];
   changedTestFiles: { path: string; content: string }[];
+  /** Tests at branch HEAD that were not changed — still count as evidence. */
+  branchTestFiles?: { path: string; content: string }[];
 }): GuardNegativeTestCheck[] {
   if (input.guardIds.length === 0) return [];
+  const changedSet = new Set(input.changedTestFiles.map((f) => f.path));
+  const branchOnly = (input.branchTestFiles ?? []).filter((f) => !changedSet.has(f.path));
+
   return input.guardIds.map((guardId) => {
-    const candidates = input.changedTestFiles.filter((f) =>
-      testContentReferencesGuard(guardId, f.content),
-    );
-    const withNegative = candidates.filter((f) => testContentDemonstratesGuardRejection(f.content));
-    if (withNegative.length > 0) {
+    const fromChanged = guardNegativeEvidence(guardId, input.changedTestFiles);
+    if (fromChanged.length > 0) {
       return {
         guardId,
         status: "passed",
-        detail: `Negative guard test evidence in ${withNegative.map((f) => f.path).join(", ")}.`,
-        evidenceTests: withNegative.map((f) => f.path),
+        detail: `Negative guard test evidence in changed test(s): ${fromChanged.map((f) => f.path).join(", ")}.`,
+        evidenceTests: fromChanged.map((f) => f.path),
       };
     }
-    if (candidates.length > 0) {
+    const fromBranch = guardNegativeEvidence(guardId, branchOnly);
+    if (fromBranch.length > 0) {
+      return {
+        guardId,
+        status: "passed",
+        detail: `Negative guard test evidence in existing test(s) at branch HEAD: ${fromBranch.map((f) => f.path).join(", ")}.`,
+        evidenceTests: fromBranch.map((f) => f.path),
+      };
+    }
+
+    const changedCandidates = input.changedTestFiles.filter((f) =>
+      testContentReferencesGuard(guardId, f.content),
+    );
+    if (changedCandidates.length > 0) {
       return {
         guardId,
         status: "failed",
         detail:
-          `Guard \`${guardId}\` was materially changed but changed tests (${candidates.map((f) => f.path).join(", ")}) ` +
+          `Guard \`${guardId}\` was materially changed but changed tests (${changedCandidates.map((f) => f.path).join(", ")}) ` +
           "only exercise valid input — add a case that asserts representative prohibited input is rejected.",
       };
     }
     return {
       guardId,
       status: "failed",
-      detail: `Guard \`${guardId}\` was materially changed on this branch but no changed test demonstrates rejection of bad input.`,
+      detail: `Guard \`${guardId}\` was materially changed on this branch but no test at branch HEAD demonstrates rejection of bad input.`,
     };
   });
+}
+
+/** When the task branch has no worktree, still report checks — never omit the section. */
+export function reviewVerificationWithoutWorktree(input: {
+  uiVerificationRequired: boolean;
+  evidence: { issues: PageGateIssue[]; at?: string } | null;
+}): ReviewVerificationResult {
+  const consoleErrors = evaluateConsoleErrorReviewCheck({
+    uiVerificationRequired: input.uiVerificationRequired,
+    evidence: input.evidence,
+  });
+  const guardTests: GuardNegativeTestCheck[] = [
+    {
+      guardId: "(branch diff)",
+      status: "not_run",
+      detail:
+        "Task branch has no local worktree — branch diff and guard negative-test evidence were not checked.",
+    },
+  ];
+  const blocksApproval =
+    consoleErrors.status === "failed" ||
+    consoleErrors.status === "not_run" ||
+    guardTests.some((g) => g.status === "not_run" || g.status === "failed");
+  return { consoleErrors, guardTests, blocksApproval };
 }
 
 export function evaluateReviewVerification(input: {
@@ -198,6 +253,7 @@ export function evaluateReviewVerification(input: {
   checkTsDiff?: string;
   repoosTomlDiff?: string;
   changedTestFiles: { path: string; content: string }[];
+  branchTestFiles?: { path: string; content: string }[];
 }): ReviewVerificationResult {
   const consoleErrors = evaluateConsoleErrorReviewCheck({
     uiVerificationRequired: input.uiVerificationRequired,
@@ -223,6 +279,7 @@ export function evaluateReviewVerification(input: {
     guardTests = evaluateGuardNegativeTestChecks({
       guardIds,
       changedTestFiles: input.changedTestFiles,
+      branchTestFiles: input.branchTestFiles,
     });
   }
 

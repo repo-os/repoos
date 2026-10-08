@@ -10,7 +10,10 @@ import { execFileSync } from "node:child_process";
 import { loadConfig } from "../../core/config.js";
 import { parseTask } from "../../core/task.js";
 import { applyMechanicalReviewVerification } from "../../core/review-verification.js";
-import { gatherReviewVerification } from "../../server/review-verification-gather.js";
+import {
+  gatherReviewVerification,
+  gatherReviewVerificationWithoutWorktree,
+} from "../../server/review-verification-gather.js";
 
 function git(cwd: string, args: string[]): void {
   execFileSync("git", args, { cwd, stdio: "ignore" });
@@ -98,5 +101,35 @@ area: web
     const agent = "## Verdict\n`good to go` — all clear.\n";
     const applied = applyMechanicalReviewVerification(agent, verification);
     expect(applied.verdictOverride).toBe("needs some work");
+  });
+
+  it("records not_run when the branch worktree is missing", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-rv-nowt-"));
+    roots.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, "repoos.toml"), 'workDir = "work"\n');
+    const taskPath = join(root, "work", "0714b.md");
+    writeFileSync(
+      taskPath,
+      `---
+id: "0714"
+title: t
+status: review
+branch: feat/missing-wt
+---
+`,
+    );
+    const config = loadConfig(root);
+    const task = parseTask({
+      content: readFileSync(taskPath, "utf8"),
+      absPath: taskPath,
+      root,
+      defaultStatus: config.defaultStatus,
+      defaultAssignee: config.defaultAssignee,
+    });
+    const verification = gatherReviewVerificationWithoutWorktree(config, task);
+    expect(verification.guardTests[0]?.status).toBe("not_run");
+    const applied = applyMechanicalReviewVerification("## Verdict\n`good to go`\n", verification);
+    expect(applied.markdown).toContain("no local worktree");
   });
 });
