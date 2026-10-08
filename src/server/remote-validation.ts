@@ -3270,7 +3270,10 @@ export class TailscaleHostPool {
         waiter.timer.unref?.();
       }
       this.notifyWaiterQueue(waiter);
-      waiter.queueHeartbeat = setInterval(() => this.notifyWaiterQueue(waiter), POOL_QUEUE_HEARTBEAT_MS);
+      waiter.queueHeartbeat = setInterval(
+        () => this.notifyWaiterQueue(waiter),
+        POOL_QUEUE_HEARTBEAT_MS,
+      );
       waiter.queueHeartbeat.unref?.();
       // Opportunistic recovery while queued: re-probe dead candidates so the
       // job can move to one the moment it comes back.

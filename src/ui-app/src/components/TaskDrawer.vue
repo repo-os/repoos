@@ -417,8 +417,7 @@ const checkChip = computed(() => {
     const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
     const machine = checkMachine.value;
     const taskId = ui.active?.id;
-    const poolQueue =
-      taskId ? remotePoolQueueHintForTaskChecks(repo.taskChecks[taskId]) : null;
+    const poolQueue = taskId ? remotePoolQueueHintForTaskChecks(repo.taskChecks[taskId]) : null;
     // #0720: the server flags an in-flight run past 1.5x its kind median; the
     // badge keeps that visible on the task itself, not only in the bell.
     const slow = taskId ? notices.slowRunByTask[taskId] : undefined;

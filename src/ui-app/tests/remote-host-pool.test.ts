@@ -1726,9 +1726,7 @@ describe("host lock observability and dispatch (#0705)", () => {
     const first = f.runner.validate(opts("0001"));
     await tick();
     const chunks: string[] = [];
-    const second = f.runner.validate(
-      opts("0002", { onChunk: (c: string) => chunks.push(c) }),
-    );
+    const second = f.runner.validate(opts("0002", { onChunk: (c: string) => chunks.push(c) }));
     await tick();
     expect(chunks.join("")).toMatch(/waiting for a runner on a \(queue position 2\)/);
     f.release("a");
