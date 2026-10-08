@@ -255,7 +255,9 @@ describe("remote run history rows (#0564)", () => {
       failedStep: "tests",
       failedTests: ["tests/a.test.ts"],
     });
-    expect(rows[0]!.detail ?? "").toContain("remote validation failed");
+    // #0745: a failed gate is reported as a TEST failure naming the failing
+    // tests and the host, not the old generic "remote validation failed".
+    expect(rows[0]!.detail ?? "").toContain("test failure: tests/a.test.ts on mini");
   });
 
   it("records a failed run with no Vitest names as remote-validation", async () => {
@@ -407,7 +409,9 @@ describe("remote run history rows (#0564)", () => {
       taskId: "0564",
       machine: null,
       remote: true,
-      outcome: "fail",
+      // #0745: the gate never ran (remote validation is switched off), which is
+      // an environment/config outcome, not a test failure.
+      outcome: "infra",
       failedStep: "remote-validation",
       detail: "remote validation is disabled",
     });

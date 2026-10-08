@@ -128,6 +128,26 @@ describe("buildAttentionFeed", () => {
       expect(["info", "warning", "error"]).toContain(item.severity);
     }
   });
+
+  it("surfaces degraded remote runner hosts (#0745)", () => {
+    const feed = buildAttentionFeed({
+      config: configWithAttention(0),
+      tasks: [],
+      closeOutOutcomes: [],
+      releaseRun: null,
+      releaseNotesRun: null,
+      recordedEvents: [],
+      totalSpendUsd: null,
+      recentProviderFailures: [],
+      silentRuns: [],
+      previewTargetAreas: [],
+      degradedRemoteHosts: [{ host: "mini", detail: "degraded: bun install EACCES" }],
+    });
+    const item = feed.items.find((i) => i.kind === "remoteHostDegraded");
+    expect(item?.message).toContain("mini");
+    expect(item?.detail).toContain("EACCES");
+    expect(item?.link).toBe("/settings?tab=remote");
+  });
 });
 
 describe("collectRunningRuns (#0720)", () => {
