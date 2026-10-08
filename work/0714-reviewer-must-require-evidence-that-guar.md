@@ -11,7 +11,7 @@ branch: feat/reviewer-must-require-evidence-that-guar
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T09:14:56Z"
-updated_at: "2026-10-08T14:08:44Z"
+updated_at: "2026-10-08T14:15:28Z"
 dev_error_count: 1
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Rows 27 and 30: reviewer approved a change with a vue-i18n console error and a dead guard rule.
@@ -39,3 +39,4 @@ Trace the existing reviewer, browser-smoke, and guard-test flows before changing
 - 2026-10-08T14:06:50Z · status ready→active, branch
 - 2026-10-08T14:07:21Z · agent exited with an error (cursor) · RetriableError: [resource_exhausted] Error
 - 2026-10-08T14:08:43Z · needs_input
+- 2026-10-08T14:15:28Z · body
