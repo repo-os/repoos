@@ -22,8 +22,8 @@ Adopt the same non-blocking feedback and acknowledgment pattern used in the "New
 - Provide clear status feedback (e.g. an activity indicator) and reassure the user that the input is being created in the background and will be ready in a few seconds or so.
 - Explicitly tell the user that nothing is lost and they can either submit another input or navigate away to do something else.
 - Offer clear action buttons:
-  - "Create another input": resets the form and focus so the user can quickly submit another item.
-  - "Done": dismisses the panel while background creation continues.
+- "Create another input": resets the form and focus so the user can quickly submit another item.
+- "Done": dismisses the panel while background creation continues.
 
 ## Acceptance criteria
 

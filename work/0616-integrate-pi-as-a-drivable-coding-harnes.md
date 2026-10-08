@@ -18,7 +18,7 @@ updated_at: "2026-10-01T18:05:39Z"
 RepoOS, but not a **drivable** one:
 
 - `src/core/detect.ts` has a `KNOWN_AGENTS` entry `{ id: "pi", binary: "pi",
-  drivable: false }`.
+drivable: false }`.
 - `src/core/agent-updates.ts` maps it to its npm package for update checks.
 
 RepoOS can therefore show that pi is installed and whether it is current, but it
@@ -46,54 +46,54 @@ uses: `version`, `help`, `model-discovery`, `headless-one-shot`,
 - model-discovery: `pi --list-models [search]`.
 - headless one-shot: `pi --print` / `pi --mode json "<prompt>"` (one-shot, exits).
 - structured-events: `--mode json` JSONL; first record is
-  `{"type":"session",...,"id":"<uuid>"}`; `message_update` carries cumulative
-  `usage` (`input`/`output`/`totalTokens`/`cost`).
+`{"type":"session",...,"id":"<uuid>"}`; `message_update` carries cumulative
+`usage` (`input`/`output`/`totalTokens`/`cost`).
 - auto-permissions: pi does not prompt before every tool call
-  (`docs/security.md`); non-interactive runs are autonomous. Like Crush this is
-  a **mode property**, so encode `autoPermissions: "mode"` rather than inventing
-  a bypass flag. Note `-a`/`--approve` is project-trust, NOT tool approval.
+(`docs/security.md`); non-interactive runs are autonomous. Like Crush this is
+a **mode property**, so encode `autoPermissions: "mode"` rather than inventing
+a bypass flag. Note `-a`/`--approve` is project-trust, NOT tool approval.
 - session-continuation: `pi --session <id>` / `--session-id <id>`.
 - cancellation: **not documented** — determine the correct signal (SIGTERM vs
-  SIGINT) empirically and encode it in `engineCancelSignal`.
+SIGINT) empirically and encode it in `engineCancelSignal`.
 
 ## Work items
 
 1. `src/core/config.ts` — add `"pi"` to `AGENT_CLIS`; decide the model mapping
-   (`AGENT_MODELS` → `--provider`/`--model`).
+ (`AGENT_MODELS` → `--provider`/`--model`).
 2. `src/core/detect.ts` — flip the entry to `drivable: true`, add `cli: "pi"`,
-   capability text, and an auth probe if useful (`pi auth check --json` prints
-   `ready`/`not_ready`/`invalid` with exit 0/1/2).
+ capability text, and an auth probe if useful (`pi auth check --json` prints
+ `ready`/`not_ready`/`invalid` with exit 0/1/2).
 3. `src/server/agents.ts` — `parsePiEvent`, plus branches in `promptCommand`,
-   `pmCommand`, `resumeCommand`, `engineForCli`, `engineCancelSignal`,
-   `engineerPermissionGaps`, `modelArgs`, and usage/session-id extraction.
+ `pmCommand`, `resumeCommand`, `engineForCli`, `engineCancelSignal`,
+ `engineerPermissionGaps`, `modelArgs`, and usage/session-id extraction.
 4. `src/core/agent-contract.ts` — add a `PI_CONTRACT` to `CONTRACT_TEMPLATES`.
 5. `src/core/agent-compatibility.json` — add the manifest entry, starting with
-   `verifiedAt: null` (honest "pending").
+ `verifiedAt: null` (honest "pending").
 6. `src/ui-app/tests/agent-contract.test.ts` — deterministic fixture coverage
-   proving the argument/event shapes (no credentials, no live runs).
+ proving the argument/event shapes (no credentials, no live runs).
 7. `user-docs/coding-harness-compatibility.md` — add the table row (the
-   `harness-compat-docs.test.ts` drift test enforces it matches the manifest).
+ `harness-compat-docs.test.ts` drift test enforces it matches the manifest).
 8. Run `repoos doctor --probe pi --yes` (or `repoos certify pi --yes`) and, only
-   if all seams pass, record the evidence and flip the manifest to verified.
+ if all seams pass, record the evidence and flip the manifest to verified.
 
 ## Acceptance criteria
 
 - `pi` appears as a selectable, enabled harness on the Agents page and can be
-  assigned to engineer/reviewer/PM roles.
+assigned to engineer/reviewer/PM roles.
 - A pi engineer run starts headless, streams parsed output, records a session
-  id, resumes that session, and cancels promptly.
+id, resumes that session, and cancels promptly.
 - Usage/tokens (where pi reports them) land in the Tokens tab via the normal
-  recording path.
+recording path.
 - `repoos check --changed main` passes.
 - The docs table row and manifest agree; certification evidence recorded only
-  after a real passing live probe.
+after a real passing live probe.
 
 ## Out of scope
 
 - RPC mode integration (JSON/print mode is sufficient; note it as a possible
-  follow-up).
+follow-up).
 - Any change to the fixed `AGENT_MODELS` vocabulary beyond what pi's mapping
-  needs.
+needs.
 
 ## Activity
 

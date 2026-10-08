@@ -20,10 +20,10 @@ When reviewing a task and sending it back to development, there's currently no w
 1. The "Send engineer" button is renamed to "Send to dev" throughout the UI.
 
 2. When a user in Review state clicks "Send to dev", a modal dialog opens with:
-   - A text area for entering optional additional instructions
-   - The text area has a placeholder indicating instructions are optional
-   - A "Send" button to confirm and proceed with the handoff
-   - A "Cancel" button to dismiss without sending
+- A text area for entering optional additional instructions
+- The text area has a placeholder indicating instructions are optional
+- A "Send" button to confirm and proceed with the handoff
+- A "Cancel" button to dismiss without sending
 
 3. The additional instructions (if any) are included in the handoff along with the existing review content.
 
@@ -49,8 +49,6 @@ When reviewing a task and sending it back to development, there's currently no w
 - The handoff logic that sends review content to the engineer likely lives in `src/core/` or `src/server/` - trace the send action to understand where to attach additional instructions
 - Assume the additional instructions should be passed as part of the handoff payload/message
 - Keep the modal simple - no need for markdown preview or rich text, just a plain textarea
-
-## Activity
 
 ## Activity
 

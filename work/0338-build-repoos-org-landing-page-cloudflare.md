@@ -56,9 +56,9 @@ already the tunnel hostname for RepoOS's own live dev instance.
 
 - main push -> dev/staging Cloudflare Pages environment
 - prod push -> production environment; prod advances only as an infrequent,
-  deliberate fast-forward of main (not per-task, not automatic)
+deliberate fast-forward of main (not per-task, not automatic)
 - Wire this in Cloudflare Pages' branch-deploy config (or GitLab/GitHub CI,
-  whichever fronts the Pages deploy) to match
+whichever fronts the Pages deploy) to match
 
 ## Content & style direction
 
@@ -66,19 +66,19 @@ Patterns drawn from fizzy.do, herdr.dev, paperclip.ing, posthog.com — apply in
 RepoOS's own voice; do not copy their designs, layouts, or copy.
 
 - Hero shows the real product, not stock imagery. Screenshot the real Work
-  board (kanban) or terminal workflow (`repoos new`, `repoos check`).
+board (kanban) or terminal workflow (`repoos new`, `repoos check`).
 - One literal, specific headline — say the actual idea, not generic
-  "AI-powered dev tool" language.
+"AI-powered dev tool" language.
 - Put the real install command in the hero with a copy button; for a CLI tool
-  that command is the primary CTA, more than a sign-up button. Use this repo's
-  actual curl install command, not a placeholder.
+that command is the primary CTA, more than a sign-up button. Use this repo's
+actual curl install command, not a placeholder.
 - A real stat bar if an honest number is available (this repo's own task count
-  via `repoos status`, or GitHub stars) beats logos/testimonials. RepoOS
-  dogfooding itself is a genuinely distinctive claim.
+via `repoos status`, or GitHub stars) beats logos/testimonials. RepoOS
+dogfooding itself is a genuinely distinctive claim.
 - Dark-first visual style, matching ui-app's existing dark aesthetic in
-  style.css.
+style.css.
 - Tone: AGENTS.md's own voice — direct, technical, dry-humored in places — not
-  smoothed-over SaaS copy.
+smoothed-over SaaS copy.
 
 ## Why
 
@@ -95,23 +95,23 @@ task) for the future "Deployments" page task on RepoOS's own board.
 for patterns, not to copy their designs/copy):
 
 - Show the real product in the hero, not stock imagery or generic illustration.
-  RepoOS already has both a real Work board (kanban) and a real terminal
-  workflow (`repoos new`, `repoos check`) -- screenshot one of those rather
-  than mocking something up.
+RepoOS already has both a real Work board (kanban) and a real terminal
+workflow (`repoos new`, `repoos check`) -- screenshot one of those rather
+than mocking something up.
 - One literal, specific headline sentence -- say the actual idea ("the repo
-  is the operating system," tasks as markdown files an AI agent works in a
-  git worktree), not generic "AI-powered dev tool" language.
+is the operating system," tasks as markdown files an AI agent works in a
+git worktree), not generic "AI-powered dev tool" language.
 - Put the real install command in the hero itself with a copy button --
-  for a CLI tool that command is the primary CTA, more than a sign-up button.
-  Use the actual curl install from this repo, not a placeholder.
+for a CLI tool that command is the primary CTA, more than a sign-up button.
+Use the actual curl install from this repo, not a placeholder.
 - A real stat bar if there's an honest number available (this repo's own
-  task count via `repoos status`, or GitHub stars) beats logos/testimonials
-  for credibility -- and RepoOS dogfooding itself is a genuinely distinctive
-  claim most competitors can't make.
+task count via `repoos status`, or GitHub stars) beats logos/testimonials
+for credibility -- and RepoOS dogfooding itself is a genuinely distinctive
+claim most competitors can't make.
 - Dark-first visual style fits developer tooling (matches ui-app's existing
-  dark aesthetic in style.css).
+dark aesthetic in style.css).
 - Tone: match AGENTS.md's own voice -- direct, technical, dry-humored in
-  places -- not smoothed-over SaaS copy.
+places -- not smoothed-over SaaS copy.
 
 Do not copy any of the four reference sites' actual designs, layouts, or
 copy verbatim -- these are patterns to apply in RepoOS's own voice, not a

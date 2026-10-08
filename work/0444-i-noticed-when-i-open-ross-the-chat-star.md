@@ -77,11 +77,11 @@ Additionally, the chat UI has several polish and consistency issues:
 - Search the codebase for all AI chat implementations (Ross, CTO, any others) to ensure consistency
 - Create a shared AI chat design spec or component documentation (in `docs/` or as a comment in the code)
 - Write tests (likely in component or integration tests) to validate:
-  - Message spacing exists and is consistent
-  - Thinking indicator pulsing behavior when agent is active
-  - No indicator shown when agent is idle
-  - All chat instances apply these rules
-  - This prevents future AI chats from missing these patterns
+- Message spacing exists and is consistent
+- Thinking indicator pulsing behavior when agent is active
+- No indicator shown when agent is idle
+- All chat instances apply these rules
+- This prevents future AI chats from missing these patterns
 - Test across different chat contexts to ensure consistency
 
 ## Scope

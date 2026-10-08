@@ -27,9 +27,9 @@ order dropdown** in the header action row (before the "New task" button's
 group, same flex row). Its behavior is a two-state toggle:
 
 1. **If at least one empty column is currently expanded** → clicking collapses
-   every empty column at once. Columns containing tasks are left untouched.
+ every empty column at once. Columns containing tasks are left untouched.
 2. **If all empty columns are already collapsed** → clicking instead expands
-   **all** columns (empty and non-empty), restoring the full board.
+ **all** columns (empty and non-empty), restoring the full board.
 
 The result is a single button that lets the user snap between "focus on
 columns with tasks" and "show everything". The change takes effect immediately
@@ -65,10 +65,10 @@ user) ever close columns.
 - "Empty" is `repo.byStatus(id).length === 0`; remember the draft column is rendered separately from `COLUMNS` in `WorkView.vue` (see `DRAFT_COL`), so include it explicitly — `applyCollapseDefaults` in `boardCollapse.ts` already shows the correct iteration pattern.
 - Auto-expand on arrival: watch the live per-status counts in `WorkView.vue` (or expose a `revealOnArrival(statusId, count)` helper in `boardCollapse.ts`) and, when a status transitions 0 → ≥1 tasks while its column is collapsed, remove that id from `collapsedIds` and `persist()`. It must react to observed count changes only — a collapsed empty column stays collapsed across unrelated re-renders and initial load (first-load behavior remains `applyCollapseDefaults`'s job, unchanged).
 - Assumed defaults (not stated by the user — adjust only if contradicted):
-  - "All columns open" in state 2 also re-opens individually collapsed **non-empty** columns, per the literal wording.
-  - If there are no empty columns at all, the button acts as "open all" (vacuously all-empty-closed).
-  - When a status filter is active (single-column `force-expand` view), the button is hidden or a no-op — the filtered view has nothing to collapse.
-  - Auto-open is reactive (fires on arrival events), never on initial page load.
+- "All columns open" in state 2 also re-opens individually collapsed **non-empty** columns, per the literal wording.
+- If there are no empty columns at all, the button acts as "open all" (vacuously all-empty-closed).
+- When a status filter is active (single-column `force-expand` view), the button is hidden or a no-op — the filtered view has nothing to collapse.
+- Auto-open is reactive (fires on arrival events), never on initial page load.
 - Use the existing `src/ui-app/src/components/ui/button.vue` component for visual consistency; consider `variant`/icon-only styling that matches the header controls.
 - A unit test for the new bulk functions in `src/ui-app/tests/` would be cheap and valuable, since `boardCollapse` is pure state logic. Cover the 0 → ≥1 auto-expand transition and the no-auto-close-on-empty case there too.
 - Constraints: zero runtime dependencies (dev deps only); imports use `.js` extensions even for `.ts` source; rebuild the UI after any change.

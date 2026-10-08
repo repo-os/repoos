@@ -47,40 +47,40 @@ In the task drawer's Changes / UI changes section:
 ## Shots
 ```json
 [
-  {
-    "label": "UI changes section with Add shot and per-shot delete",
-    "target": "default",
-    "route": "/work?task=0627",
-    "highlight": ".ui-changes",
-    "steps": [
-      {
-        "click": "[data-test-id=task-tab-changes]"
-      },
-      {
-        "waitMs": 400
-      }
-    ]
-  },
-  {
-    "label": "Add-shot modal open over the UI changes section",
-    "target": "default",
-    "route": "/work?task=0627",
-    "highlight": ".add-shot-modal",
-    "steps": [
-      {
-        "click": "[data-test-id=task-tab-changes]"
-      },
-      {
-        "waitMs": 400
-      },
-      {
-        "click": "[data-test-id=add-shot]"
-      },
-      {
-        "waitMs": 400
-      }
-    ]
-  }
+{
+  "label": "UI changes section with Add shot and per-shot delete",
+  "target": "default",
+  "route": "/work?task=0627",
+  "highlight": ".ui-changes",
+  "steps": [
+    {
+      "click": "[data-test-id=task-tab-changes]"
+    },
+    {
+      "waitMs": 400
+    }
+  ]
+},
+{
+  "label": "Add-shot modal open over the UI changes section",
+  "target": "default",
+  "route": "/work?task=0627",
+  "highlight": ".add-shot-modal",
+  "steps": [
+    {
+      "click": "[data-test-id=task-tab-changes]"
+    },
+    {
+      "waitMs": 400
+    },
+    {
+      "click": "[data-test-id=add-shot]"
+    },
+    {
+      "waitMs": 400
+    }
+  ]
+}
 ]
 ```
 

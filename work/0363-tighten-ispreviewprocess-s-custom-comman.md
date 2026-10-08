@@ -42,11 +42,11 @@ with this flagged as "worth tightening later," not a blocking defect.
 Replace the bare-basename fallback with a more distinguishing match — options
 to weigh, not prescribed:
 - Match a longer prefix of the resolved command (not just the binary name)
-  against the `ps` output.
+against the `ps` output.
 - Record a nonce or other unique marker (e.g. an env var set on the spawned
-  child) and match on that instead of parsing `ps` output at all.
+child) and match on that instead of parsing `ps` output at all.
 - Require BOTH the binary and at least one additional argument token to
-  match, rather than the binary alone.
+match, rather than the binary alone.
 
 Verify against the actual `ps`/shell-quoting behavior on macOS and Linux
 (spawn uses `shell: true`, so `ps` may show the shell wrapper or the exec'd

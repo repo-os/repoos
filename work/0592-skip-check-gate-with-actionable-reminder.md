@@ -17,7 +17,7 @@ updated_at: "2026-09-30T04:44:35Z"
 
 In a repo that has no code yet (early planning phase: stories/tasks/docs only), finalization fails at the check step:
 
-    ✗ Server finalization stopped at check: repoos check failed: ... No check plan: this repo declares no [[check.steps]] and nothing could be inferred from it ...
+  ✗ Server finalization stopped at check: repoos check failed: ... No check plan: this repo declares no [[check.steps]] and nothing could be inferred from it ...
 
 Every handoff to review is blocked until the user invents checks for code that doesn't exist. Reported from the `neung` repo on the canary.
 
@@ -36,8 +36,8 @@ The message (CLI output and UI) should tell the user how to set checks up when r
 - State plainly: nothing was verified because no checks are configured; that's fine while there's no code, but set them up once the app is scaffolded enough to build/test.
 - Give the concrete commands: `repoos check --print-plan` (prints a starting `[[check.steps]]` TOML resolved from what's in the repo — works once a `package.json` / `go.mod` / `Cargo.toml` / `gradlew` exists) and point to `user-docs/check.md`.
 - Offer two easy paths in the UI reminder:
-  - **File a task** "Set up check.steps in repoos.toml" — a one-click action that creates a pre-filled task via the normal task-creation path (`POST /api/tasks`) whose body tells the assigned agent to run `repoos check --print-plan`, review/adjust the proposed steps (format/lint, build, tests, smoke as appropriate for the stack), add them to `repoos.toml`, and verify `repoos check` passes. Suggested to be filed after the first scaffolding task lands.
-  - **Copy/paste the CLI hint** for doing it by hand.
+- **File a task** "Set up check.steps in repoos.toml" — a one-click action that creates a pre-filled task via the normal task-creation path (`POST /api/tasks`) whose body tells the assigned agent to run `repoos check --print-plan`, review/adjust the proposed steps (format/lint, build, tests, smoke as appropriate for the stack), add them to `repoos.toml`, and verify `repoos check` passes. Suggested to be filed after the first scaffolding task lands.
+- **Copy/paste the CLI hint** for doing it by hand.
 - Avoid nagging on every task: show the full reminder on the check result and in the UI; keep the CLI line to a few lines.
 
 ## Docs

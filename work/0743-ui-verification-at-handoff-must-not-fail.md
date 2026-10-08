@@ -41,11 +41,11 @@ Read the handoff UI verification gate (src/server/ui-handoff-gate.ts, #0680), th
 ## Shots
 ```json
 [
-  {
-    "label": "Board",
-    "target": "default",
-    "route": "/"
-  }
+{
+  "label": "Board",
+  "target": "default",
+  "route": "/"
+}
 ]
 ```
 
@@ -68,9 +68,9 @@ changes and commit them, and you can discard any commits you make in this
 state without impacting any branches by switching back to a branch.
 If you want to create a new branch to retain commits you create, you may
 do so (now or later) by using -c with the switch command. Example:
-  git switch -c <new-branch-name>
+git switch -c <new-branch-name>
 Or undo this operation with:
-  git switch -
+git switch -
 Turn off this advice by setting config variable advice.detachedHead to false
 [validate] HEAD verified at 36ab3693165cfd5ed559c021b614f11f2628cfa4
 bun install v1.4.2 (744846f84)

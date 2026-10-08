@@ -64,15 +64,15 @@ This path handles the merge itself. Failures here are usually a reload race, ret
 The CLI guard blocks `done` if the branch still exists locally and is not an ancestor of `main` — `repoos mv done` only flips the status flag, it never merges. The Fix button / `POST /api/tasks/:id/done` handles the merge automatically and is the preferred path. Use this manual sequence only when driving the board directly:
 
 1. **"Branch not merged into main" error.** The branch exists locally but hasn't been merged. Do NOT pass `--force-not-merged` unless the code truly landed another way. The correct fix:
-   ```
-   # In the task's worktree:
-   git rebase main
-   # Back in the main checkout:
-   git merge --ff-only <branch>
-   repoos mv <id> done
-   git worktree remove <worktree-path>
-   git branch -d <branch>
-   ```
+```
+# In the task's worktree:
+git rebase main
+# Back in the main checkout:
+git merge --ff-only <branch>
+repoos mv <id> done
+git worktree remove <worktree-path>
+git branch -d <branch>
+```
 2. **"Not possible to fast-forward" error.** Main has moved ahead since the branch was cut. Rebase the branch onto current main first (step above), then `--ff-only` will succeed.
 3. **Check for task file drift before merging.** Run `git diff main...HEAD --name-only | grep '^work/'` in the worktree. Any `work/` file other than the task's own `.md` is drift — run `git checkout main -- <file>` to restore it before merging.
 4. **Verify the code landed.** After `repoos mv done`, confirm with `git show main:<a-file-the-task-added>` — the status flag flipping does not prove the code merged.

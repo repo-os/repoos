@@ -48,27 +48,27 @@ Read src/server/attention-feed.ts and attention-notify.ts (silent-run items), sr
 ## Shots
 ```json
 [
-  {
-    "label": "Slow-check multiplier control in Settings",
-    "target": "default",
-    "route": "/settings?tab=general&focus=attention.slowRunMultiplier",
-    "highlight": "[data-config-key=\"attention.slowRunMultiplier\"]",
-    "steps": [
-      {
-        "waitMs": 1500
-      }
-    ]
-  },
-  {
-    "label": "Checks remote runners tab (slow badge only when a run is live)",
-    "target": "default",
-    "route": "/checks?tab=remote",
-    "steps": [
-      {
-        "waitMs": 1000
-      }
-    ]
-  }
+{
+  "label": "Slow-check multiplier control in Settings",
+  "target": "default",
+  "route": "/settings?tab=general&focus=attention.slowRunMultiplier",
+  "highlight": "[data-config-key=\"attention.slowRunMultiplier\"]",
+  "steps": [
+    {
+      "waitMs": 1500
+    }
+  ]
+},
+{
+  "label": "Checks remote runners tab (slow badge only when a run is live)",
+  "target": "default",
+  "route": "/checks?tab=remote",
+  "steps": [
+    {
+      "waitMs": 1000
+    }
+  ]
+}
 ]
 ```
 

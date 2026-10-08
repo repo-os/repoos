@@ -32,19 +32,19 @@ message (preserving the existing behavior).
 
 - [ ] The headless UI smoke test is re-enabled and runs as part of `repoos check`.
 - [ ] The test mounts the app, verifies no unrendered mustache in the DOM, and
-      verifies zero console errors.
+    verifies zero console errors.
 - [ ] When Playwright or the browser binary isn't installed, the test still
-      skips with a clear message.
+    skips with a clear message.
 - [ ] `repoos check` passes end-to-end with the smoke test running.
 
 ## Notes for AI
 
 - The root cause of the Playwright/WebKit problem should be investigated before
-  simply re-enabling; do not paper over a flaky or broken setup.
+simply re-enabling; do not paper over a flaky or broken setup.
 - If the browser binary is missing locally, install it as needed rather than
-  re-disabling the test.
+re-disabling the test.
 - Zero runtime dependencies is a hard constraint; Playwright is only a dev
-  dependency (test runner), which is acceptable.
+dependency (test runner), which is acceptable.
 
 ## Related
 

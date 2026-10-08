@@ -19,7 +19,7 @@ changes the guard's behaviour repo-wide and for every project that configures
 
 `parseColor` in `src/commands/check.ts` parses `rgb()`/`rgba()` with:
 
-    /^rgba?\(([\d.]+),([\d.]+),([\d.]+)(?:,([\d.]+))?\)$/
+/^rgba?\(([\d.]+),([\d.]+),([\d.]+)(?:,([\d.]+))?\)$/
 
 There is no `\s*` between components, so oxfmt's normal spacing —
 `rgba(110, 157, 106, 0.22)` — does not match and `parseColor` returns `null`.

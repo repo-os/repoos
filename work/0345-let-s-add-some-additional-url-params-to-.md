@@ -24,7 +24,7 @@ setting."
 - `/work?task=0340` opens that task (same as clicking it from the board).
 - `/work?task=new` opens the new-task panel.
 - The same pattern applies to inputs (e.g. `?input=<id>` / `?input=new`) and
-  anywhere else it's appropriate and useful.
+anywhere else it's appropriate and useful.
 - `/settings?setting=abc` scrolls to/opens the relevant setting.
 
 ## Acceptance criteria
@@ -34,25 +34,25 @@ setting."
 - [ ] An equivalent `?input=<id>` / `?input=new` pattern works for inputs.
 - [ ] `/settings?setting=<id>` opens/scrolls to that setting.
 - [ ] Existing `?focus=` deep-linking into settings keeps working (add/alias
-      `?setting=`, don't replace or break `?focus=`).
+    `?setting=`, don't replace or break `?focus=`).
 - [ ] The query param is cleared from the URL after the panel opens (matches
-      existing `router.replace` clear pattern), so a refresh doesn't re-open it.
+    existing `router.replace` clear pattern), so a refresh doesn't re-open it.
 - [ ] Params work correctly even when they arrive during/before the login
-      redirect (survive the auth round-trip).
+    redirect (survive the auth round-trip).
 
 ## Notes for AI
 
 Decisions salvaged from a broken PM run on this task (2026-09-14) — worth
 verifying, not necessarily final:
 - Query param names: `?task=`, `?input=`, `?setting=` (with `new` as the
-  reserved sentinel value for opening the "create new" panel).
+reserved sentinel value for opening the "create new" panel).
 - Settings already deep-links via `?focus=` — add/alias `?setting=` without
-  dropping the existing `?focus=` behavior.
+dropping the existing `?focus=` behavior.
 - No new routes appear to be needed; params should ride on the existing
-  `/work` and `/settings` paths.
+`/work` and `/settings` paths.
 - Mirror whatever existing `status`/`focus` query-param parsing pattern
-  already exists (retry-until-loaded, `router.replace` to clear) rather than
-  inventing a new mechanism.
+already exists (retry-until-loaded, `router.replace` to clear) rather than
+inventing a new mechanism.
 
 ## Original prompt
 

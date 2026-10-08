@@ -27,90 +27,90 @@ Native datalist popups are unstyled and don't match the design system.
 ## Desired UX
 
 - With stories enabled (`stories.enabled = true`), the top row of the details
-  form is **Area + Story**. "Assigned to" is no longer shown anywhere in that
-  section, and there is no longer a separate Story row below it.
+form is **Area + Story**. "Assigned to" is no longer shown anywhere in that
+section, and there is no longer a separate Story row below it.
 - Story renders as a real dropdown built from the shared `Select` components —
-  the same markup shape as the Priority control beside it — so it looks and
-  behaves like every other dropdown in the panel. The trigger shows the task's
-  current story name, or a "no story" state when the task has no `story:` value.
+the same markup shape as the Priority control beside it — so it looks and
+behaves like every other dropdown in the panel. The trigger shows the task's
+current story name, or a "no story" state when the task has no `story:` value.
 - The options are the existing `storyOptions` list: registered story definitions
-  under `stories/` plus story names already used on tasks, deduped and sorted.
-  Picking one saves the task's `story`; picking the "none" option clears it,
-  which removes the task from that story's counts and progress.
+under `stories/` plus story names already used on tasks, deduped and sorted.
+Picking one saves the task's `story`; picking the "none" option clears it,
+which removes the task from that story's counts and progress.
 - Nothing about the stored assignee changes. Task files keep `assigned_to: ai`,
-  and it stays writable from the CLI (`repoos update <id> --assigned-to ai|human`)
-  and via the default-assignee setting — just not surfaced in this panel.
+and it stays writable from the CLI (`repoos update <id> --assigned-to ai|human`)
+and via the default-assignee setting — just not surfaced in this panel.
 - With stories disabled, the panel is unchanged from today: the Area + Assigned
-  to row, and no Story control at all.
+to row, and no Story control at all.
 
 ## Acceptance criteria
 
 - [ ] With `stories.enabled = true`, the details form shows no "Assigned to"
-      field, and the story control sits inside the same `field-row` as Area
-      rather than in a row of its own.
+    field, and the story control sits inside the same `field-row` as Area
+    rather than in a row of its own.
 - [ ] The story control uses the shared dropdown components
-      (`Select` / `SelectTrigger` / `SelectValue` / `SelectContent` /
-      `SelectViewport` / `SelectItem`) with the same classes as the adjacent
-      Priority control. No `<datalist>`, no plain `<Input list=...>`.
+    (`Select` / `SelectTrigger` / `SelectValue` / `SelectContent` /
+    `SelectViewport` / `SelectItem`) with the same classes as the adjacent
+    Priority control. No `<datalist>`, no plain `<Input list=...>`.
 - [ ] The dropdown lists exactly `storyOptions` (registered definitions +
-      names already used on tasks, deduped, sorted), and the trigger displays
-      the task's current story name.
+    names already used on tasks, deduped, sorted), and the trigger displays
+    the task's current story name.
 - [ ] If the task's current story is not in that list (set via CLI, or
-      registered after the list was built), the trigger still shows it instead
-      of rendering blank.
+    registered after the list was built), the trigger still shows it instead
+    of rendering blank.
 - [ ] A "no story" / none option clears the task's story, and the task
-      immediately leaves the story's counts and progress.
+    immediately leaves the story's counts and progress.
 - [ ] Saving after a story change PATCHes only `story`; a task with
-      `assigned_to: ai` on disk still has `assigned_to: ai` on disk afterwards.
+    `assigned_to: ai` on disk still has `assigned_to: ai` on disk afterwards.
 - [ ] The drawer's dirty tracking is unaffected: the hidden `assignedTo` never
-      registers as a change, and the stored value survives unrelated saves.
+    registers as a change, and the stored value survives unrelated saves.
 - [ ] With `stories.enabled = false`, the panel is identical to today (Area +
-      Assigned to row, no Story control).
+    Assigned to row, no Story control).
 - [ ] A UI test mounts `TaskDrawer` with stories enabled and asserts: no
-      "Assigned to" label in the details form, the story dropdown renders in the
-      same `field-row` as Area, and its options are dropdown items rather than
-      datalist entries.
+    "Assigned to" label in the details form, the story dropdown renders in the
+    same `field-row` as Area, and its options are dropdown items rather than
+    datalist entries.
 
 ## Notes for AI
 
 - Main file: `src/ui-app/src/components/TaskDrawer.vue`. The pieces are the
-  `storiesEnabled` computed (~line 240), the `storyOptions` computed (~line 245),
-  the details form's `field-row` holding `et-area` + `et-assignee` (~line 3459),
-  and the separate `v-if="storiesEnabled"` story field below it (~line 3479).
+`storiesEnabled` computed (~line 240), the `storyOptions` computed (~line 245),
+the details form's `field-row` holding `et-area` + `et-assignee` (~line 3459),
+and the separate `v-if="storiesEnabled"` story field below it (~line 3479).
 - Build the dropdown the way the neighbouring Priority block is built: `Select`
-  with `:model-value` + `@update:model-value` (or `v-model`), `SelectTrigger` /
-  `SelectValue`, `SelectContent position="popper"`, and a `SelectViewport`
-  carrying `h-[var(--radix-select-trigger-height)] w-full
-  min-w-[var(--radix-select-trigger-width)]`, then one `SelectItem` per story.
-  Custom styled dropdown component only — never a bare `<select>`
-  (AGENTS.md convention).
+with `:model-value` + `@update:model-value` (or `v-model`), `SelectTrigger` /
+`SelectValue`, `SelectContent position="popper"`, and a `SelectViewport`
+carrying `h-[var(--radix-select-trigger-height)] w-full
+min-w-[var(--radix-select-trigger-width)]`, then one `SelectItem` per story.
+Custom styled dropdown component only — never a bare `<select>`
+(AGENTS.md convention).
 - Radix's `Select` reserves the empty string for its placeholder, so the
-  "clear the story" option needs a non-empty sentinel (e.g. `__none__`) that the
-  update handler maps back to `""`. The server clears `story` on an empty value
-  via `normalizeStoryName` (`src/server/write.ts`).
+"clear the story" option needs a non-empty sentinel (e.g. `__none__`) that the
+update handler maps back to `""`. The server clears `story` on an empty value
+via `normalizeStoryName` (`src/server/write.ts`).
 - Leave `assignedTo` in `TaskDraft`, `DRAFT_FIELDS` and `initDraft`. The field is
-  hidden, not deleted: the PATCH body is built from `changedFields()`, so an
-  untouched `assignedTo` is never sent and the stored value is preserved. Do not
-  strip `assigned_to` from task files and do not migrate existing tasks.
+hidden, not deleted: the PATCH body is built from `changedFields()`, so an
+untouched `assignedTo` is never sent and the stored value is preserved. Do not
+strip `assigned_to` from task files and do not migrate existing tasks.
 - Don't add free-text story entry to this dropdown. Stories are registered from
-  the Stories page (or a file under `stories/`), and `repoos new` /
-  `repoos update <id> --story` cover naming one from the CLI. An editable
-  combobox would be a separate follow-up.
+the Stories page (or a file under `stories/`), and `repoos new` /
+`repoos update <id> --story` cover naming one from the CLI. An editable
+combobox would be a separate follow-up.
 - Assumption: "the task panel top section" is the task drawer's details/edit
-  form — the one that has the Story field. The New task drawer's own form (its
-  `nt-*` fields, including its "Assign to" select) is a different panel; leave
-  it alone.
+form — the one that has the Story field. The New task drawer's own form (its
+`nt-*` fields, including its "Assign to" select) is a different panel; leave
+it alone.
 - Assumption: removing "Assigned to" is scoped to the stories-enabled case,
-  because that is the only case where the story selector replaces it. With
-  stories off, the field stays. If the user wants it gone unconditionally that is
-  a one-condition change — say so rather than doing both.
+because that is the only case where the story selector replaces it. With
+stories off, the field stays. If the user wants it gone unconditionally that is
+a one-condition change — say so rather than doing both.
 - Docs: `user-docs/configuration.md` describes "the task drawer's Story field" and
-  the `--assigned-to` flag in its Stories section. Update that copy if this
-  change makes it wrong. Don't go hunting for unrelated doc drift.
+the `--assigned-to` flag in its Stories section. Update that copy if this
+change makes it wrong. Don't go hunting for unrelated doc drift.
 - No new `repoos.toml` key and no new Settings control — this reuses
-  `stories.enabled`, which already has one.
+`stories.enabled`, which already has one.
 - Run `bun run fmt` before committing on the branch (the commit hook skips task
-  branches), then `repoos check` before handing off.
+branches), then `repoos check` before handing off.
 
 ## Scope
 
@@ -125,7 +125,7 @@ story storage and normalization.
 ## Related
 
 - `user-docs/configuration.md` — Stories section (`stories.enabled`, the
-  drawer's Story field, `--assigned-to`)
+drawer's Story field, `--assigned-to`)
 - #0486 — New story flow with PM-assisted story definitions
 - #0502 — Side panel with tabs for stories
 - #0515 — Stories should have numbers and deeplinks just like tasks

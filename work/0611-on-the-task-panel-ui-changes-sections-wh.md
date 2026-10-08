@@ -27,10 +27,10 @@ New task and new input flows already use a clearer pattern: each attachment is i
 
 - In **UI changes**, list each captured preview shot as **one horizontal row**, visually aligned with the screenshot rows on **New task** and **New input** (shared `ff-pending-*` / `shot-dropzone` family in `style.css`, not a bespoke grid).
 - Each row shows:
-  - The shot image (clickable to open the existing full-size viewer, with expand control as today).
-  - Primary text from the shot spec when available (**label**); sensible fallback when missing (e.g. target, route, or file name — match current fallbacks where possible).
-  - Secondary detail drawn from the matching `## Shots` entry: **selector** when present, and a concise rendering of **steps** (e.g. click/fill/waitFor/waitMs sequence) when non-empty; omit or collapse gracefully when empty.
-  - Target/route context where helpful (e.g. in the row text or `title` tooltip), consistent with today’s `target · route` hinting.
+- The shot image (clickable to open the existing full-size viewer, with expand control as today).
+- Primary text from the shot spec when available (**label**); sensible fallback when missing (e.g. target, route, or file name — match current fallbacks where possible).
+- Secondary detail drawn from the matching `## Shots` entry: **selector** when present, and a concise rendering of **steps** (e.g. click/fill/waitFor/waitMs sequence) when non-empty; omit or collapse gracefully when empty.
+- Target/route context where helpful (e.g. in the row text or `title` tooltip), consistent with today’s `target · route` hinting.
 - Rows stack vertically with comfortable spacing so multiple shots (typical 1–3) read like a short checklist of what was captured, not a photo gallery.
 
 ## Acceptance criteria
@@ -67,17 +67,17 @@ New task and new input flows already use a clearer pattern: each attachment is i
 On the task panel ui changes sections where we show the shots taken by the task let's use the same styling/structure as we do on "new task" and "new input" screenshot upload, each screenshot it's own row. That way we have room on the row to show some of the relevant text content/description of what the shot is, e.g. the label, steps, selector which is in the task spec now:
 
 [
-  {"target": "default", "route": "/", "label": "Top bar bell popover", "steps": [{"click": "button[data-test-id=\"notice-bell-trigger\"]"}, {"waitMs": 400}], "selector": "[data-test-id=\"notice-bell-popover\"]"},
-  {"target": "default", "route": "/", "label": "Needs-you panel with notice rows", "steps": [], "selector": "main"},
-  {"target": "default", "route": "/settings?tab=notifications", "label": "Settings: release notification toggles", "steps": []}
+{"target": "default", "route": "/", "label": "Top bar bell popover", "steps": [{"click": "button[data-test-id=\"notice-bell-trigger\"]"}, {"waitMs": 400}], "selector": "[data-test-id=\"notice-bell-popover\"]"},
+{"target": "default", "route": "/", "label": "Needs-you panel with notice rows", "steps": [], "selector": "main"},
+{"target": "default", "route": "/settings?tab=notifications", "label": "Settings: release notification toggles", "steps": []}
 ]
 
 ## Shots
 
 ```json
 [
-  {"target": "default", "route": "/", "label": "Task drawer Changes tab: one row per captured preview shot", "steps": [{"waitFor": ".board"}, {"waitMs": 400}]},
-  {"target": "default", "route": "/", "label": "New task screenshots: the attachment row the UI-changes rows now match", "steps": [{"click": ".new-btn"}, {"waitFor": ".shot-dropzone"}, {"waitMs": 400}]}
+{"target": "default", "route": "/", "label": "Task drawer Changes tab: one row per captured preview shot", "steps": [{"waitFor": ".board"}, {"waitMs": 400}]},
+{"target": "default", "route": "/", "label": "New task screenshots: the attachment row the UI-changes rows now match", "steps": [{"click": ".new-btn"}, {"waitFor": ".shot-dropzone"}, {"waitMs": 400}]}
 ]
 ```
 

@@ -13,11 +13,6 @@ pm_model_override: default
 created_at: "2026-08-17T04:51:24Z"
 updated_at: "2026-08-19T17:17:47Z"
 ---
-## Activity
-
-- 2026-08-17T04:51:24Z · created · unknown
-- 2026-08-18T15:22:08Z · pm_model_override
-
 ## Problem
 
 Settings persistence has three bugs:
@@ -68,6 +63,8 @@ Because `buildBody()` in `SettingsView.vue:111-125` sends **all** schema fields 
 
 ## Activity
 
+- 2026-08-17T04:51:24Z · created · unknown
+- 2026-08-18T15:22:08Z · pm_model_override
 - 2026-08-18T15:27:47Z · body
 - 2026-08-18T15:39:49Z · status ready→active
 - 2026-08-19T08:37:01Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work

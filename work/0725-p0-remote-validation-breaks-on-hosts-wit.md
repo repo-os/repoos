@@ -22,9 +22,9 @@ last_check_failure: "repoos check at 2026-10-06T17:03:07.270Z: repoos check fail
 
 #0717 (merged 2026-10-07 16:10Z) changed what the server uploads: the bundle now carries per-run refs (refs/repoos/candidate-<id>, refs/repoos/scope) instead of HEAD, and the host's validate.sh was extended with a mirror-path argument. The hosts' /opt/repoos/validate.sh is root-owned and was NOT updated (bee, thinkpad, mini all have the 3774-byte 2026-09-28 copy; no sudo without a password). Result: every remote run since the merge fails in 4-8 seconds with:
 
-  [validate] cloning bundle /home/nick/.repoos-<task>-<id>.bundle
-  warning: You appear to have cloned an empty repository.
-  fatal: unable to read tree (<sha>)
+[validate] cloning bundle /home/nick/.repoos-<task>-<id>.bundle
+warning: You appear to have cloned an empty repository.
+fatal: unable to read tree (<sha>)
 
 (old script does 'git clone <bundle>', which needs a HEAD ref the new bundle lacks). Seen on #0722 and #0723 pre-review at 16:12-16:13Z (checks.db check_runs failed_step=remote-validation, exit 128). Handoffs fall back to the slow local gate (fallbackToLocal), and close-outs would too. The reviewer assumed 'older RepoOS against newer script' compatibility (validate.sh comment) but not the reverse, which is the real rollout order.
 
@@ -46,11 +46,11 @@ URGENT: this blocks all remote validation on this board. Read #0717's diff (src/
 ## Shots
 ```json
 [
-  {
-    "label": "Remote runners tab",
-    "target": "default",
-    "route": "/checks?tab=remote-runners"
-  }
+{
+  "label": "Remote runners tab",
+  "target": "default",
+  "route": "/checks?tab=remote-runners"
+}
 ]
 ```
 

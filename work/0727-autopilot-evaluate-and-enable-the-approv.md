@@ -45,23 +45,23 @@ No new role or persona: the CTO (src/server/cto.ts, cto-monitor.ts, cto-actions.
 ## Shots
 ```json
 [
-  {
-    "label": "Mission control",
-    "target": "default",
-    "route": "/"
-  },
-  {
-    "label": "Auto-approve blocked paths control",
-    "target": "default",
-    "route": "/settings?tab=general&focus=approval.autoApprove.machineryPaths",
-    "highlight": "[data-config-key=\"approval.autoApprove.machineryPaths\"]"
-  },
-  {
-    "label": "Kill switch on General",
-    "target": "default",
-    "route": "/settings?tab=general&focus=automation.paused",
-    "highlight": "[data-config-key=\"automation.paused\"]"
-  }
+{
+  "label": "Mission control",
+  "target": "default",
+  "route": "/"
+},
+{
+  "label": "Auto-approve blocked paths control",
+  "target": "default",
+  "route": "/settings?tab=general&focus=approval.autoApprove.machineryPaths",
+  "highlight": "[data-config-key=\"approval.autoApprove.machineryPaths\"]"
+},
+{
+  "label": "Kill switch on General",
+  "target": "default",
+  "route": "/settings?tab=general&focus=automation.paused",
+  "highlight": "[data-config-key=\"automation.paused\"]"
+}
 ]
 ```
 
@@ -73,14 +73,14 @@ approval.enabled = true
 approval.autoApprove.areas = ["docs", "chore"]
 approval.autoApprove.types = ["chore"]
 approval.autoApprove.machineryPaths = [
-  "src/server/",
-  "src/core/",
-  "src/cli/",
-  "src/commands/",
-  ".githooks/",
-  "repoos.toml",
-  "AGENTS.md",
-  "docs/adr/",
+"src/server/",
+"src/core/",
+"src/cli/",
+"src/commands/",
+".githooks/",
+"repoos.toml",
+"AGENTS.md",
+"docs/adr/",
 ]
 approval.autoApprove.allowP0 = false
 

@@ -21,7 +21,7 @@ flush against the card's rounded border on the top and left. Concretely, in
 - `.hist-toolbar` has `padding: 4px 4px 14px` — a 4px top and left inset.
 - `.hist-rail` has `padding: 0 8px 24px 4px` — a 4px left inset, zero on top.
 - `Card` (`src/ui-app/src/components/ui/card.vue`) contributes only
-  `rounded-[15px] border bg-[var(--panel)]` — no padding at all.
+`rounded-[15px] border bg-[var(--panel)]` — no padding at all.
 
 The result reads as broken/bleeding rather than intentionally flush: the day
 headers, the timeline rail and the first commit row crowd the card edge, and
@@ -42,63 +42,63 @@ the scroll area with no gap or content peeking around them.
 ## Acceptance criteria
 
 - [ ] The History tab's content is inset from the top edge of its card by
-      roughly 12–16px, and from the left edge by roughly 12–16px — pick one
-      value and apply it consistently, rather than leaving the current 4px /
-      0px mix.
+    roughly 12–16px, and from the left edge by roughly 12–16px — pick one
+    value and apply it consistently, rather than leaving the current 4px /
+    0px mix.
 - [ ] Both the toolbar (`.hist-toolbar`) and the scrolling commit list
-      (`.hist-rail`) share that same top/left inset, so switching between
-      them does not visibly jump the content sideways.
+    (`.hist-rail`) share that same top/left inset, so switching between
+    them does not visibly jump the content sideways.
 - [ ] Right and bottom spacing are unchanged in character — the fix is
-      about the top and left edges only.
+    about the top and left edges only.
 - [ ] The timeline geometry still holds: the vertical rail
-      (`.hist-commit::before`, `left: 10px`), the day ticks (`.hist-tick`,
-      `margin-left: 6px`) and the row dots/avatars remain aligned with one
-      another and with the day headers after the inset changes.
+    (`.hist-commit::before`, `left: 10px`), the day ticks (`.hist-tick`,
+    `margin-left: 6px`) and the row dots/avatars remain aligned with one
+    another and with the day headers after the inset changes.
 - [ ] Sticky day headers (`.hist-day-head`, `position: sticky; top: 0`) still
-      stick flush to the top of the scroll container, with no content
-      scrolling visibly behind/above them and no translucent gap.
+    stick flush to the top of the scroll container, with no content
+    scrolling visibly behind/above them and no translucent gap.
 - [ ] The loading, empty, error and "End of history" states
-      (`.hist-state`, `.hist-more`) are inset consistently with the commit
-      rows, and none of them sit flush against the card edge.
+    (`.hist-state`, `.hist-more`) are inset consistently with the commit
+    rows, and none of them sit flush against the card edge.
 - [ ] The other three tabs (Docs, Skills, Discover) are visually unchanged.
 - [ ] Works at narrow widths too — the toolbar's existing `flex-wrap` and
-      `min-width: 160px` on `.hist-field-grow` behaviour are preserved and
-      the new inset does not cause the toolbar to wrap earlier than before.
+    `min-width: 160px` on `.hist-field-grow` behaviour are preserved and
+    the new inset does not cause the toolbar to wrap earlier than before.
 - [ ] `bun run build:ui` (or `bun run build`) is run so the worktree build is
-      fresh, and `repoos check` passes (including `oxfmt --check`/`oxlint`).
+    fresh, and `repoos check` passes (including `oxfmt --check`/`oxlint`).
 
 ## Notes for AI
 
 - **Primary files:** `src/ui-app/src/components/RepoHistoryPanel.vue` (the
-  `<style scoped>` block — `.hist`, `.hist-toolbar`, `.hist-rail`,
-  `.hist-state`, `.hist-more`, `.hist-day-head`) and, if you need to adjust
-  the container, `src/ui-app/src/views/ContextView.vue` (`.hist-wrap`,
-  `.hist-card`).
+`<style scoped>` block — `.hist`, `.hist-toolbar`, `.hist-rail`,
+`.hist-state`, `.hist-more`, `.hist-day-head`) and, if you need to adjust
+the container, `src/ui-app/src/views/ContextView.vue` (`.hist-wrap`,
+`.hist-card`).
 - **Assumption (stated because the report is vague):** the intended fix is
-  padding *inside the card*, matching the inset the other tabs get — not
-  moving the card itself, and not changing the page-level layout. If a
-  different approach is clearly better, do it and say so in the task.
+padding *inside the card*, matching the inset the other tabs get — not
+moving the card itself, and not changing the page-level layout. If a
+different approach is clearly better, do it and say so in the task.
 - **Assumption:** apply the change in `RepoHistoryPanel.vue` so the panel owns
-  its own spacing rather than being coupled to a single call site. The panel
-  is currently rendered only from `ContextView.vue` (one call site today), so
-  either file works; just keep the result correct if that changes.
+its own spacing rather than being coupled to a single call site. The panel
+is currently rendered only from `ContextView.vue` (one call site today), so
+either file works; just keep the result correct if that changes.
 - **Assumption:** "the sides" means the inset between the content and the
-  card's edges, not the gap between the page title/tabs and the card. Do not
-  touch `.ctx-page`, `.ctx-tabs` or the page header spacing.
+card's edges, not the gap between the page title/tabs and the card. Do not
+touch `.ctx-page`, `.ctx-tabs` or the page header spacing.
 - Use the existing CSS custom properties (`--panel`, `--border`, `--txt-*`)
-  if any new colour is needed; do not hardcode hex values.
+if any new colour is needed; do not hardcode hex values.
 - Scoped class rules are fine — `repoos check`'s CSS-layering guard only
-  flags **unlayered bare-element/universal selectors** (`*`, `div`, etc.), so
-  adding padding to a class selector will not trip it. Do not introduce
-  `*{}` or tag-selector rules anywhere.
+flags **unlayered bare-element/universal selectors** (`*`, `div`, etc.), so
+adding padding to a class selector will not trip it. Do not introduce
+`*{}` or tag-selector rules anywhere.
 - Run `bun run fmt` before committing on the task branch; the pre-commit hook
-  skips task branches and `oxfmt --check` is the first thing the close-out
-  gate runs.
+skips task branches and `oxfmt --check` is the first thing the close-out
+gate runs.
 - This is cosmetic and scoped. Do not refactor the timeline component, rename
-  classes, or start tidying unrelated spacing while you are in the file.
+classes, or start tidying unrelated spacing while you are in the file.
 - Do not request a preview automatically (see `AGENTS.md` — previews are
-  human-initiated). If the human asks for browser verification, emit
-  `::repoos-preview-request::`.
+human-initiated). If the human asks for browser verification, emit
+`::repoos-preview-request::`.
 
 ## Scope
 
@@ -114,12 +114,12 @@ alter other views' layouts.
 ## Related
 
 - `AGENTS.md` — UI conventions (dialogs/forms live in `src/ui-app/src/style.css`;
-  overlays must be teleported), the definition of done, and
-  `docs/debugging-check-failures.md` if `repoos check` fails for reasons you
-  cannot explain.
+overlays must be teleported), the definition of done, and
+`docs/debugging-check-failures.md` if `repoos check` fails for reasons you
+cannot explain.
 - The History tab itself was added as part of the git-history panel work in
-  `src/ui-app/src/components/RepoHistoryPanel.vue` (currently the only
-  consumer is `ContextView.vue`).
+`src/ui-app/src/components/RepoHistoryPanel.vue` (currently the only
+consumer is `ContextView.vue`).
 
 ## Original prompt
 

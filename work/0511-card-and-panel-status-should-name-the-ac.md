@@ -29,11 +29,11 @@ text was the panel's "Waiting for you" banner.
 
 Causes:
 - `TaskCard.vue` (~L463): any `review` task without a verdict falls back to
-  "waiting for review" / `tc-reviewing` (animated), whether or not a review is
-  actually running or has crashed.
+"waiting for review" / `tc-reviewing` (animated), whether or not a review is
+actually running or has crashed.
 - `TaskDrawer.vue` `reviewSubstate` (~L1193): same fallback → "awaiting review".
 - The "needs input" chip (`TaskCard.vue` ~L482/757, `TaskDrawer.vue` ~L2930)
-  says only that something needs the human, not what.
+says only that something needs the human, not what.
 
 Separately, there's no way for a human to clear `needs_input` directly; it's not
 obvious which action clears it (e.g. Restart work clears a dev-error, a clean
@@ -44,37 +44,37 @@ agent needs your input" on #0499.
 ## Changes
 
 1. **Drop the "needs input" chip from the card header.** The card's
-   highlighted outline is the "needs you" signal.
+ highlighted outline is the "needs you" signal.
 2. **Card status line names the reason**, from `needs_input_reason`, with a
-   static warning icon (no animation), e.g.:
-   - `review-failed` → "Reviewer failed — no report"
-   - `dev-error` → "Agent exited with an error"
-   - `check-failed-after-retries` → "Checks failed after retries"
-   - `cto-escalation` / questions → "Agent asked a question"
-   - `watchdog-stuck` → "No agent running"
-   Fall back to a generic "Needs your input" only for an unknown reason.
+ static warning icon (no animation), e.g.:
+ - `review-failed` → "Reviewer failed — no report"
+ - `dev-error` → "Agent exited with an error"
+ - `check-failed-after-retries` → "Checks failed after retries"
+ - `cto-escalation` / questions → "Agent asked a question"
+ - `watchdog-stuck` → "No agent running"
+ Fall back to a generic "Needs your input" only for an unknown reason.
 3. **Animations only for real activity.** "reviewing", "coding", "running
-   checks", "waiting for review" (only while a review is actually running or
-   queued) may animate; a review-state task with no running review and no
-   verdict must not show a working indicator.
+ checks", "waiting for review" (only while a review is actually running or
+ queued) may animate; a review-state task with no running review and no
+ verdict must not show a working indicator.
 4. **Task panel header follows the same rules**: replace NEEDS INPUT /
-   AWAITING REVIEW with the same reason chip, and no "awaiting review" when no
-   review is running. Keep the "Waiting for you" banner.
+ AWAITING REVIEW with the same reason chip, and no "awaiting review" when no
+ review is running. Keep the "Waiting for you" banner.
 5. **Each banner's main action says it clears the flag**, e.g. "Restart work
-   (clears this)", "Review again (clears this)", "Answer below (clears this)".
-   Add suggestion text for every reason, including
-   `check-failed-after-retries`.
+ (clears this)", "Review again (clears this)", "Answer below (clears this)".
+ Add suggestion text for every reason, including
+ `check-failed-after-retries`.
 6. **Secondary "Dismiss" on the banner** for when the human handled it another
-   way. It clears `needs_input` / reason / detail and records an activity entry
-   ("needs_input dismissed by <user>"). If no agent is running on an `active`
-   task, the dismiss confirmation says clearing the flag won't restart work.
+ way. It clears `needs_input` / reason / detail and records an activity entry
+ ("needs_input dismissed by <user>"). If no agent is running on an `active`
+ task, the dismiss confirmation says clearing the flag won't restart work.
 
 ## Acceptance
 
 - Tests: for each `needs_input_reason`, the card and panel show the reason
-  label with the warning style and no animation.
+label with the warning style and no animation.
 - Test: a `review` task with no running review and no verdict shows no working
-  indicator.
+indicator.
 - Test: Dismiss clears the flag and writes the activity entry.
 
 ## Activity

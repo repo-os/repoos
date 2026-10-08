@@ -81,22 +81,22 @@ already safe; just don't let it pass through the OTHER regexes a second time.
 ## Acceptance criteria
 
 - [ ] A code span containing image, link, or emphasis-looking syntax renders
-      as literal code text, never as an actual image, link, or styled text.
+    as literal code text, never as an actual image, link, or styled text.
 - [ ] Regression test added to `src/ui-app/tests/markdown.test.ts` covering
-      at minimum: an image-looking string, a link-looking string, and
-      bold/italic-looking syntax, all inside a code span.
+    at minimum: an image-looking string, a link-looking string, and
+    bold/italic-looking syntax, all inside a code span.
 - [ ] Existing markdown.test.ts cases still pass — this must not change how
-      code spans render when their content does NOT collide with another
-      pattern (the common case).
+    code spans render when their content does NOT collide with another
+    pattern (the common case).
 - [ ] Fenced code blocks (the separate code block type) checked for the same
-      class of bug; fixed too if found affected, or confirmed already safe
-      with a one-line note why.
+    class of bug; fixed too if found affected, or confirmed already safe
+    with a one-line note why.
 - [ ] `repoos check` passes.
 
 ## Related
 
 - Found while reviewing #0382's own review report, which is what triggered
-  this — the review text itself was fine; the renderer mangled it.
+this — the review text itself was fine; the renderer mangled it.
 
 ## Activity
 

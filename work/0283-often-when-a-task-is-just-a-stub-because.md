@@ -28,45 +28,45 @@ messages directly above the chat input. This list is only visible before any
 message has been sent to the PM agent for that task.
 
 - The primary canned message is "flesh this out" (or equivalent wording
-  matching the user's intent of asking the PM to expand the stub).
+matching the user's intent of asking the PM to expand the stub).
 - If the user clicks a canned message, that message is sent to the PM agent and
-  the canned message list is hidden.
+the canned message list is hidden.
 - The canned message list is shown only initially — i.e. only while no message
-  has been sent to the PM agent yet — and only in the `draft` and `inbox`
-  task states.
+has been sent to the PM agent yet — and only in the `draft` and `inbox`
+task states.
 
 ## Acceptance criteria
 
 - [ ] A canned message list is rendered above the chat input.
 - [ ] The list appears only when the task state is `draft` or `inbox`.
 - [ ] The list appears only when no message has been sent to the PM agent for
-      that task yet.
+    that task yet.
 - [ ] The canned list includes a "flesh this out" message (and may include any
-      other sensible defaults).
+    other sensible defaults).
 - [ ] Clicking a canned message sends that message to the PM agent.
 - [ ] After a canned message is sent, the canned message list is hidden for the
-      task.
+    task.
 - [ ] Once any message has been sent to the PM agent (canned or typed), the
-      canned message list no longer shows.
+    canned message list no longer shows.
 
 ## Notes for AI
 
 - The canned message behavior is scoped to the `draft` and `inbox` task states
-  only; other states should not show the list.
+only; other states should not show the list.
 - "No messages sent to the PM agent" is the initial condition described; use the
-  first message sent to the PM as the point at which the list is dismissed.
+first message sent to the PM as the point at which the list is dismissed.
 - The exact wording of the canned message is not specified; a reasonable default
-  is a message like "Can you flesh this out?" or similar, which I assume the code
-  will pick and make easy to adjust.
+is a message like "Can you flesh this out?" or similar, which I assume the code
+will pick and make easy to adjust.
 - Only the web UI is in scope; the exact chat/task-drawer component to modify
-  should be located under `src/ui-app/`.
+should be located under `src/ui-app/`.
 
 ## Scope
 
 - In scope: showing the canned message list in `draft`/`inbox` states, sending
-  the clicked message, hiding the list after first send.
+the clicked message, hiding the list after first send.
 - Deferred: editing/creating user-defined canned messages; showing canned
-  messages in other task states.
+messages in other task states.
 ---
 
 ## Original prompt

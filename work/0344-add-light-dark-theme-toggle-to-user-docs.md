@@ -22,31 +22,31 @@ working light/dark toggle (`landing/src/App.vue`'s `.theme-toggle` button +
 ## What to do
 
 1. Re-enable VitePress's built-in appearance toggle: change `appearance` in
-   `config.mts` from `"force-dark"` to `true` (or `"dark"` for a dark default
-   that's still togglable — check which one VitePress expects for "default
-   dark, user can switch"). Remove or adjust the `document.documentElement
-   .classList.add("dark")` head script, which currently forces dark
-   unconditionally before paint — VitePress's own toggle needs to own that
-   decision instead once enabled.
+`config.mts` from `"force-dark"` to `true` (or `"dark"` for a dark default
+that's still togglable — check which one VitePress expects for "default
+dark, user can switch"). Remove or adjust the `document.documentElement
+.classList.add("dark")` head script, which currently forces dark
+unconditionally before paint — VitePress's own toggle needs to own that
+decision instead once enabled.
 2. Add light-mode values for every `--vp-c-*` custom property currently only
-   defined for dark in `custom.css`, matching the light values already defined
-   in `landing/src/style.css`'s `[data-theme="light"] { ... }` block — same
-   background/text/border colors, and the SAME darkened accent overrides
-   (cyan/violet/green/amber/red get contrast-safe counterparts on white,
-   already worked out there; don't redo that work, port the values). Nick
-   explicitly wants the two sites to look like the same product, not two
-   different themes that happen to share a name.
+defined for dark in `custom.css`, matching the light values already defined
+in `landing/src/style.css`'s `[data-theme="light"] { ... }` block — same
+background/text/border colors, and the SAME darkened accent overrides
+(cyan/violet/green/amber/red get contrast-safe counterparts on white,
+already worked out there; don't redo that work, port the values). Nick
+explicitly wants the two sites to look like the same product, not two
+different themes that happen to share a name.
 3. VitePress applies light/dark via a `dark` class on `<html>`, not the
-   `data-theme` attribute landing/ uses — the CSS selector strategy will differ
-   (likely `:root { ... }` for light defaults, `.dark { ... }` overrides for
-   dark, opposite of landing's light-is-the-override structure) but the actual
-   color VALUES should match landing's tokens exactly.
+`data-theme` attribute landing/ uses — the CSS selector strategy will differ
+(likely `:root { ... }` for light defaults, `.dark { ... }` overrides for
+dark, opposite of landing's light-is-the-override structure) but the actual
+color VALUES should match landing's tokens exactly.
 4. Code blocks / custom containers: landing/ keeps its terminal-styled surfaces
-   (`.term`, `.file-card`, `.install-box`) dark in BOTH themes deliberately
-   (see the commit that added the toggle). Decide deliberately whether
-   VitePress's code blocks should do the same (stay dark in light mode, common
-   for docs sites) or follow the page theme — don't leave it as an accident of
-   which tokens got overridden.
+(`.term`, `.file-card`, `.install-box`) dark in BOTH themes deliberately
+(see the commit that added the toggle). Decide deliberately whether
+VitePress's code blocks should do the same (stay dark in light mode, common
+for docs sites) or follow the page theme — don't leave it as an accident of
+which tokens got overridden.
 
 ## Verify
 

@@ -11,11 +11,6 @@ branch: feat/render-agent-output-opencode-style-via-s
 created_at: "2026-08-06T14:42:05Z"
 updated_at: "2026-08-10T23:48:04Z"
 ---
-## Activity
-
-- 2026-08-06T14:42:05Z · created · unknown
-
-
 ## Problem
 
 The agent tab renders the raw `opencode run` TUI transcript as flat text:
@@ -32,10 +27,10 @@ to read the screen-scraped text.
 The agent tab reads like opencode's own UI:
 - Assistant text messages as readable text blocks.
 - Tool calls (bash/read/edit/grep/…) as structured, collapsible cards: tool name,
-  input (e.g. the command or file path), and output (with ANSI rendered or stripped).
+input (e.g. the command or file path), and output (with ANSI rendered or stripped).
 - Step/progress markers and file changes surfaced, not lost in the noise.
 - Falls back gracefully to plain text for the claude fallback engine and for
-  sessions recorded before this change (no re-parse of history needed).
+sessions recorded before this change (no re-parse of history needed).
 
 ## Acceptance criteria
 
@@ -56,6 +51,7 @@ The agent tab reads like opencode's own UI:
 
 ## Activity
 
+- 2026-08-06T14:42:05Z · created · unknown
 - 2026-08-06T18:22:29Z · status inbox→ready
 - 2026-08-06T18:34:20Z · status ready→active, branch
 - 2026-08-10T22:06:02Z · status active→ready

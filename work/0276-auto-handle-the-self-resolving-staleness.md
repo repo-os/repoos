@@ -30,10 +30,10 @@ surfaced as a job failure that strands the task in review and hands it to the de
 The MTD gate is `validateCandidate` in `src/server/integration-orchestrator.ts`. Its current order:
 
 1. **Build first** (`integration-orchestrator.ts:500`): `bun run build` in the candidate worktree,
-   which regenerates `dist/.build-info.json` (the `{ hash, version }` marker).
+ which regenerates `dist/.build-info.json` (the `{ hash, version }` marker).
 2. **Check second** (`integration-orchestrator.ts:518-528`): runs the candidate's OWN freshly-built
-   `dist/cli/index.js check` with `REPOOS_SKIP_BUILD=1`, so `check`'s internal "Full build" step
-   is skipped (#0213).
+ `dist/cli/index.js check` with `REPOOS_SKIP_BUILD=1`, so `check`'s internal "Full build" step
+ is skipped (#0213).
 
 `repoos check` runs its **build-staleness check first** (`src/commands/check.ts:343-359`) — before
 its own "Full build" step — comparing the current `src/` hash against the marker
@@ -60,16 +60,16 @@ only as a full second `validateCandidate` (build+check+resync) and then hands to
 #0271).** Because MTD already builds before check, a "stale" report here can also mean the check
 gate evaluated a DIFFERENT tree than the one that was just built:
 - The candidate's own `dist/cli/index.js` is missing, so `validateCandidate` falls back
-  (`integration-orchestrator.ts:524`) to a globally-linked `repoos` or `bun run repoos check`. A
-  linked dev CLI's `checkBuildForRoot(findRepoRoot())` compares the **candidate's** `src/` hash
-  (`findRepoRoot()` resolves from `process.cwd()`, which is the candidate) against the **linked
-  install's** own `dist/.build-info.json` — a guaranteed hash mismatch that reports "stale" no
-  matter how fresh the candidate's build is. The #0213 doc
-  (`docs/close-out-pipeline.md:167-189`) warns this exact CLI-selection regression was fixed once;
-  it can regress again, and it is NOT self-resolving.
+(`integration-orchestrator.ts:524`) to a globally-linked `repoos` or `bun run repoos check`. A
+linked dev CLI's `checkBuildForRoot(findRepoRoot())` compares the **candidate's** `src/` hash
+(`findRepoRoot()` resolves from `process.cwd()`, which is the candidate) against the **linked
+install's** own `dist/.build-info.json` — a guaranteed hash mismatch that reports "stale" no
+matter how fresh the candidate's build is. The #0213 doc
+(`docs/close-out-pipeline.md:167-189`) warns this exact CLI-selection regression was fixed once;
+it can regress again, and it is NOT self-resolving.
 - A genuine second-order source change landed in the candidate between the build (line 500) and the
-  check (line 520) — e.g. the concurrent auto-reload churn or a stray edit. This is the same
-  "different tree than the user verified" family as the #0271 merge-conflict report.
+check (line 520) — e.g. the concurrent auto-reload churn or a stray edit. This is the same
+"different tree than the user verified" family as the #0271 merge-conflict report.
 
 The fix must make Flavour B cheap and automatic without masking Flavour A: the first check result
 must be classified by *why* it failed, and only the proven-self-resolving staleness case gets an
@@ -83,31 +83,31 @@ In the MTD validating phase, absorb the self-resolving staleness check instead o
 gate failure that routes to the debugger:
 
 1. **Classify, don't blanket-retry.** When `validateCandidate`'s check step fails with a staleness
-   failure ("Stale build:" / "No build found" / "no .build-info.json" in `check.ts`), do not return
-   a retryable `validateCandidate` failure (which triggers a full re-sync + re-build + re-merge) and
-   do not hand it to the debugger. Instead:
-   - If the candidate's own `dist/cli/index.js` is the CLI that ran (Flavour A's precondition is
-     absent), re-run the SAME check once in-place against the same candidate tree (after ensuring
-     the marker is refreshed for current source — `bun run build` if it isn't). This mirrors the
-     standalone self-resolving behaviour inside the MTD invocation.
-   - If the candidate's own CLI was NOT what ran (fallback path taken — the global `repoos` /
-     `bun run repoos` branch), that is Flavour A: a real CLI-selection regression, not
-     self-resolving. Surface THAT loudly (pin the reason to "candidate's own dist/cli/index.js was
-     not used"), matching the #0213/`3fbbd707` guidance, rather than silently absorbing it.
+ failure ("Stale build:" / "No build found" / "no .build-info.json" in `check.ts`), do not return
+ a retryable `validateCandidate` failure (which triggers a full re-sync + re-build + re-merge) and
+ do not hand it to the debugger. Instead:
+ - If the candidate's own `dist/cli/index.js` is the CLI that ran (Flavour A's precondition is
+   absent), re-run the SAME check once in-place against the same candidate tree (after ensuring
+   the marker is refreshed for current source — `bun run build` if it isn't). This mirrors the
+   standalone self-resolving behaviour inside the MTD invocation.
+ - If the candidate's own CLI was NOT what ran (fallback path taken — the global `repoos` /
+   `bun run repoos` branch), that is Flavour A: a real CLI-selection regression, not
+   self-resolving. Surface THAT loudly (pin the reason to "candidate's own dist/cli/index.js was
+   not used"), matching the #0213/`3fbbd707` guidance, rather than silently absorbing it.
 2. **Keep the retry capped.** In-place staleness re-check is a second `check` of the same tree,
-   bounded to one extra attempt; it must not loop. It sits *inside* `validateCandidate`'s check
-   step, not as an extra orchestrator-level `validateCandidate` call, so the existing two-attempt
-   cap and the "reproduced identically → real failure" classification in
-   `integration-orchestrator.ts:247-275` still do their job for genuine defects.
+ bounded to one extra attempt; it must not loop. It sits *inside* `validateCandidate`'s check
+ step, not as an extra orchestrator-level `validateCandidate` call, so the existing two-attempt
+ cap and the "reproduced identically → real failure" classification in
+ `integration-orchestrator.ts:247-275` still do their job for genuine defects.
 3. **Order: confirm the build is fresh before re-check.** If the in-place re-check is approached
-   with `REPOOS_SKIP_BUILD=1`, run `bun run build` first (idempotent on the candidate) so the
-   marker provably matches `src/`, then re-run `check` with the skip flag. This guarantees the
-   re-check sees a fresh marker and only fails again on a real regression.
+ with `REPOOS_SKIP_BUILD=1`, run `bun run build` first (idempotent on the candidate) so the
+ marker provably matches `src/`, then re-run `check` with the skip flag. This guarantees the
+ re-check sees a fresh marker and only fails again on a real regression.
 4. **Never send the self-resolving case to the debugger.** Route only genuine, reproduced-second-time
-   failures to the debugger path.
+ failures to the debugger path.
 5. **Coordinate with #0271.** Confirm whether the "pre-build tree the check saw vs. the freshly
-   built tree" gap is the same root cause as the merge-conflict-in-spite-of-clean-main report; if
-   so, land the shared understanding/fix in the same area and cross-link both tasks.
+ built tree" gap is the same root cause as the merge-conflict-in-spite-of-clean-main report; if
+ so, land the shared understanding/fix in the same area and cross-link both tasks.
 
 Constraint: this is an MTD-flow behaviour change only. Do not weaken standalone `repoos check` (the
 agents' definition-of-done gate) — it must keep failing on a genuinely stale build. The auto-handle
@@ -116,42 +116,42 @@ lives in the orchestrator's invocation, not in `cmdCheck`'s semantics.
 ## Reproduction
 
 1. Standalone: from a checkout with a stale marker (`dist/.build-info.json` hash != `src/` hash),
-   run `repoos check`. Confirm it reports "stale" at the build-staleness step but the "Full build"
-   step then refreshes the marker, so a SECOND `check` is green. This is the self-resolving pattern
-   to absorb.
+ run `repoos check`. Confirm it reports "stale" at the build-staleness step but the "Full build"
+ step then refreshes the marker, so a SECOND `check` is green. This is the self-resolving pattern
+ to absorb.
 2. MTD: force the same pre-build-marker condition into a candidate worktree just before
-   `validateCandidate`'s check step (or stub `checkBuildForRoot` to return stale once), start a
-   Move-to-Done, and observe whether the current code fails the job / routes to the debugger. After
-   the fix, it must pass on the in-place re-check without a debugger detour and without a full
-   re-sync.
+ `validateCandidate`'s check step (or stub `checkBuildForRoot` to return stale once), start a
+ Move-to-Done, and observe whether the current code fails the job / routes to the debugger. After
+ the fix, it must pass on the in-place re-check without a debugger detour and without a full
+ re-sync.
 3. Flavour A check: remove (or rename) the candidate's `dist/cli/index.js` and re-run the gate.
-   Confirm the current fallback path reports "stale" — this must NOT be silently absorbed by the
-   fix; it should surface the CLI-selection regression loudly instead.
+ Confirm the current fallback path reports "stale" — this must NOT be silently absorbed by the
+ fix; it should surface the CLI-selection regression loudly instead.
 
 ## Acceptance criteria
 
 - [ ] A Move-to-Done whose only failure is the self-resolving staleness check completes on the
-      in-place re-check — no job failure, no debugger detour, no full re-sync, and no extra
-      orchestrator-level `validateCandidate` retry.
+    in-place re-check — no job failure, no debugger detour, no full re-sync, and no extra
+    orchestrator-level `validateCandidate` retry.
 - [ ] The in-place staleness re-check is bounded to a single extra `check` of the same candidate
-      tree and never loops; the existing two-attempt cap and "reproduced identically → real
-      failure" classification are unchanged for genuine defects.
+    tree and never loops; the existing two-attempt cap and "reproduced identically → real
+    failure" classification are unchanged for genuine defects.
 - [ ] When the candidate's own `dist/cli/index.js` is missing and the fallback CLI is used, the
-      staleness failure is NOT absorbed: it surfaces with a reason pinning the CLI-selection
-      regression (per docs/close-out-pipeline.md #0213/3fbbd707) instead of the debugger seeing a
-      red herring.
+    staleness failure is NOT absorbed: it surfaces with a reason pinning the CLI-selection
+    regression (per docs/close-out-pipeline.md #0213/3fbbd707) instead of the debugger seeing a
+    red herring.
 - [ ] Standalone `repoos check` still fails on a genuinely stale build (agents' definition-of-done
-      gate unchanged).
+    gate unchanged).
 - [ ] No regression in the #0130 already-integrated retry, #0204/#0211 dirty/lock guards, or the
-      MTD merge-conflict handling tracked in #0271.
+    MTD merge-conflict handling tracked in #0271.
 - [ ] `repoos check` passes after the fix.
 
 ## Related
 
 - #0271 — MTD merge conflict despite a clean main; likely shares the "gate evaluated a tree that
-  differs from the one freshly built" root cause. Same area (server, MTD validating phase).
+differs from the one freshly built" root cause. Same area (server, MTD validating phase).
 - #0213 — skip redundant `check` build step; establishes `REPOOS_SKIP_BUILD` and the local-CLI-first
-  selection this task builds on.
+selection this task builds on.
 - #0216 — oracle gate retry; the two-attempt validation classification this task preserves.
 
 ## Activity

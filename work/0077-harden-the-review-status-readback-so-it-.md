@@ -11,12 +11,6 @@ branch: feat/harden-the-review-status-readback-so-it-
 created_at: "2026-08-11T05:20:16Z"
 updated_at: "2026-08-11T07:56:38Z"
 ---
-## Activity
-
-- 2026-08-11T05:20:16Z · created · unknown
-- 2026-08-11T05:24:19Z · status inbox→ready
-
-
 ## Problem
 
 `missionFor()` in `src/server/agents.ts` gives every implementing agent a
@@ -52,76 +46,78 @@ read always appears to succeed.
 ## Desired UX
 
 - An agent's review-status readback cannot be fooled by running from inside
-  a worktree — it either reads the real main-checkout file directly (no CLI
-  indirection to get it wrong), or `repoos` itself refuses to silently
-  resolve to a worktree root when the caller's intent is main-checkout state.
+a worktree — it either reads the real main-checkout file directly (no CLI
+indirection to get it wrong), or `repoos` itself refuses to silently
+resolve to a worktree root when the caller's intent is main-checkout state.
 - Defense in depth: even if an agent's own checklist step is skipped or
-  fails for some other reason in the future, the board should not be able to
-  silently drift from a worktree branch that has already reached `review` (or
-  `needs_input`) — the class of bug that stranded `#0068` in `active` with no
-  human-visible signal should not be able to recur silently.
+fails for some other reason in the future, the board should not be able to
+silently drift from a worktree branch that has already reached `review` (or
+`needs_input`) — the class of bug that stranded `#0068` in `active` with no
+human-visible signal should not be able to recur silently.
 
 ## Acceptance criteria
 
 - [ ] `missionFor()`'s step 5/6 readback instruction no longer suggests or
-      allows using `repoos show`/`list`/`index` for the main-checkout
-      verification — it should tell the agent to read the literal file path
-      (`task.path`, already given to it) directly, e.g. `cat` or its Read
-      tool, not the CLI.
+    allows using `repoos show`/`list`/`index` for the main-checkout
+    verification — it should tell the agent to read the literal file path
+    (`task.path`, already given to it) directly, e.g. `cat` or its Read
+    tool, not the CLI.
 - [ ] `findRepoRoot` (or a new helper) can distinguish "inside a linked
-      worktree" from "at a real repo root" (a worktree's `.git` is a file
-      containing `gitdir: ...`, not a directory) — a quick, cheap check.
-      Reasonable options, pick one and justify in the PR: (a) have `repoos`
-      commands that read board state resolve through to the MAIN checkout
-      even when invoked from a worktree, or (b) print a loud, unmissable
-      warning (not buried in normal output) when `repoos show`/`list` is run
-      from inside a worktree, making clear the result may not reflect the
-      live board. Do not silently change behavior with no signal either way.
+    worktree" from "at a real repo root" (a worktree's `.git` is a file
+    containing `gitdir: ...`, not a directory) — a quick, cheap check.
+    Reasonable options, pick one and justify in the PR: (a) have `repoos`
+    commands that read board state resolve through to the MAIN checkout
+    even when invoked from a worktree, or (b) print a loud, unmissable
+    warning (not buried in normal output) when `repoos show`/`list` is run
+    from inside a worktree, making clear the result may not reflect the
+    live board. Do not silently change behavior with no signal either way.
 - [ ] Defense-in-depth: when an agent's turn ends (process exit) and the
-      main-checkout task is still `active` but its worktree copy shows
-      `review` or `needs_input` with a real commit backing it, the server
-      (`AgentRunner` in `src/server/agents.ts`, near wherever it detects
-      process exit) detects the divergence and self-heals — patch the
-      main-checkout copy to match. Log or surface that this correction
-      happened (it indicates the checklist itself failed and is worth
-      knowing about, not just silently papering over it).
+    main-checkout task is still `active` but its worktree copy shows
+    `review` or `needs_input` with a real commit backing it, the server
+    (`AgentRunner` in `src/server/agents.ts`, near wherever it detects
+    process exit) detects the divergence and self-heals — patch the
+    main-checkout copy to match. Log or surface that this correction
+    happened (it indicates the checklist itself failed and is worth
+    knowing about, not just silently papering over it).
 - [ ] A regression test reproducing the `#0068` shape: worktree copy at
-      `review` with a real commit, main copy still `active`, assert the
-      self-heal (or whatever mechanism you land on) brings main in sync
-      without a human noticing anything was ever wrong.
+    `review` with a real commit, main copy still `active`, assert the
+    self-heal (or whatever mechanism you land on) brings main in sync
+    without a human noticing anything was ever wrong.
 - [ ] `repoos check` passes; verify with a real agent turn against a running
-      `repoos serve`, not just unit tests.
+    `repoos serve`, not just unit tests.
 
 ## Notes for AI
 
 - Files to touch: `src/server/agents.ts` (`missionFor()`, and wherever the
-  runner handles process exit / turn completion), `src/core/config.ts`
-  (`findRepoRoot`), possibly `src/core/git.ts` if a "is this a linked
-  worktree" helper belongs there instead. Read `missionFor()`'s current
-  7-step checklist in full before changing it — don't regress the other
-  steps (needs_input signaling, "leave the worktree open", etc.), which work
-  correctly today.
+runner handles process exit / turn completion), `src/core/config.ts`
+(`findRepoRoot`), possibly `src/core/git.ts` if a "is this a linked
+worktree" helper belongs there instead. Read `missionFor()`'s current
+7-step checklist in full before changing it — don't regress the other
+steps (needs_input signaling, "leave the worktree open", etc.), which work
+correctly today.
 - Concrete repro to verify your fix against: `cd` into any task worktree
-  under `repoos-worktrees/`, run `repoos show <id>`, and confirm it now
-  either resolves to the main checkout's copy or loudly says it isn't.
+under `repoos-worktrees/`, run `repoos show <id>`, and confirm it now
+either resolves to the main checkout's copy or loudly says it isn't.
 - Don't touch the done-flow (`src/server/done.ts`) or the move-to-done
-  request/response lifecycle — that's #0075's scope, independent of this.
-  Don't touch merge/conflict semantics — that's #0069's scope.
+request/response lifecycle — that's #0075's scope, independent of this.
+Don't touch merge/conflict semantics — that's #0069's scope.
 - Keep the self-heal narrowly scoped to the `active`-but-worktree-shows-
-  `review`/`needs_input` divergence. Don't build a general bidirectional
-  sync between worktree and main task-file copies — that's a much bigger
-  surface (concurrent edits, conflicting fields) and out of scope here.
+`review`/`needs_input` divergence. Don't build a general bidirectional
+sync between worktree and main task-file copies — that's a much bigger
+surface (concurrent edits, conflicting fields) and out of scope here.
 
 ## Related
 
 - 0067 · Signal when a task is waiting on the human and make the agent
-  mission a fail-safe checklist — introduced the readback step this hardens.
+mission a fail-safe checklist — introduced the readback step this hardens.
 - 0068 · Add Cloudflare Tunnel + Zero Trust publishing — the concrete
-  incident this task is written from; its worktree/branch already has the
-  real, correct, committed work — nothing to redo there.
+incident this task is written from; its worktree/branch already has the
+real, correct, committed work — nothing to redo there.
 
 ## Activity
 
+- 2026-08-11T05:20:16Z · created · unknown
+- 2026-08-11T05:24:19Z · status inbox→ready
 - 2026-08-11T05:29:28Z · status ready→active, branch
 - 2026-08-11T06:12:10Z · status active→ready
 - 2026-08-11T06:12:12Z · status ready→active

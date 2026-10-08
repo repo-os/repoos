@@ -46,20 +46,20 @@ the (skipped) local suite.
 
 #### Incident (#0506, 2026-09-26, times UTC)
 - 02:49:40 engineer (opencode) edited
-  `src/ui-app/src/style.css` in the worktree to delete the unused
-  `.agent-tool-cmd` rule. The edit tool reported success
-  (`.repoos/agent-logs/0506.out.log`).
+`src/ui-app/src/style.css` in the worktree to delete the unused
+`.agent-tool-cmd` rule. The edit tool reported success
+(`.repoos/agent-logs/0506.out.log`).
 - 02:50–02:54 engineer ran `bun run fmt`, `bun run build`,
-  `REPOOS_CHECK_CHANGED=main repoos check` (twice) and the full `bun run test`.
-  It never touched `style.css` again; its last action (02:54:11) was a read-only
-  `git status`.
+`REPOOS_CHECK_CHANGED=main repoos check` (twice) and the full `bun run test`.
+It never touched `style.css` again; its last action (02:54:11) was a read-only
+`git status`.
 - 02:54:24–02:54:42 server handoff finalization ran the scoped `repoos check`
-  in the worktree; 02:54:42 the review guard (`guardReviewTransition`,
-  `git add -A` + commit) created `4441f30c feat(0506): implement …`.
-  **That commit's `style.css` still contains `.agent-tool-cmd`** (unchanged
-  from main), i.e. at 02:54:42 the file on disk had the rule back.
+in the worktree; 02:54:42 the review guard (`guardReviewTransition`,
+`git add -A` + commit) created `4441f30c feat(0506): implement …`.
+**That commit's `style.css` still contains `.agent-tool-cmd`** (unchanged
+from main), i.e. at 02:54:42 the file on disk had the rule back.
 - 02:54:51 `style.css` mtime; the working tree now had the rule deleted again,
-  leaving an uncommitted diff (fixed by hand in `7756fb0c`).
+leaving an uncommitted diff (fixed by hand in `7756fb0c`).
 - The reviewer (started 02:54:43) only ran read-only commands.
 
 Something wrote the old content back during the checks and restored the edited
@@ -71,53 +71,53 @@ not depend on knowing who it was.
 ## Fix
 
 1. **Commit before the gate.** In handoff finalization and the pre-review gate
-   (including the remote path of #0520), commit the worktree first through the
-   review guard's commit path, then run the gate against that `HEAD` (local or
-   remote). Tested == committed.
+ (including the remote path of #0520), commit the worktree first through the
+ review guard's commit path, then run the gate against that `HEAD` (local or
+ remote). Tested == committed.
 2. **Verify nothing changed underneath.** After the gate, check that
-   `git status --porcelain` (ignoring gitignored paths) is clean and `HEAD` is
-   unchanged. Otherwise fail loudly instead of moving to `review`.
+ `git status --porcelain` (ignoring gitignored paths) is clean and `HEAD` is
+ unchanged. Otherwise fail loudly instead of moving to `review`.
 3. **`removeWorktree` is non-force by default.** Add an explicit `force` option;
-   only intentional discards pass it (restart/reset, and GC of worktrees that are
-   merged AND clean). If cleanup is refused because the tree is dirty, keep the
-   worktree, log the file list, and set `needs_input` (reason names the dirty
-   files) instead of deleting.
+ only intentional discards pass it (restart/reset, and GC of worktrees that are
+ merged AND clean). If cleanup is refused because the tree is dirty, keep the
+ worktree, log the file list, and set `needs_input` (reason names the dirty
+ files) instead of deleting.
 4. **Guard close-out before enqueueing.** Check the task worktree with
-   `git status --porcelain` (gitignored paths excluded). If dirty, return the file
-   list like the dirty-main response and show the same style of modal:
-   **Commit & continue** (commit on the task branch through the review guard's
-   commit path, then close out; the merge gate still validates what was committed)
-   or **Cancel**. Never remove a worktree with uncommitted changes unless the
-   human chose to discard them explicitly.
+ `git status --porcelain` (gitignored paths excluded). If dirty, return the file
+ list like the dirty-main response and show the same style of modal:
+ **Commit & continue** (commit on the task branch through the review guard's
+ commit path, then close out; the merge gate still validates what was committed)
+ or **Cancel**. Never remove a worktree with uncommitted changes unless the
+ human chose to discard them explicitly.
 5. **Restart / reset (`resetWorktree`)** also force-discards. Decide whether it
-   should warn or stash first; at minimum list what will be lost in the
-   confirmation.
+ should warn or stash first; at minimum list what will be lost in the
+ confirmation.
 
 ## Acceptance
 
 - Test: close-out with an uncommitted change in the task worktree does not merge
-  or remove the worktree without the human's choice; "Commit & continue" lands
-  the change on `main`.
+or remove the worktree without the human's choice; "Commit & continue" lands
+the change on `main`.
 - Test: `removeWorktree` refuses a worktree with modified or untracked files,
-  removes one with only ignored files, and removes a dirty one only with
-  `force: true`.
+removes one with only ignored files, and removes a dirty one only with
+`force: true`.
 - Test: cleanup on a dirty feature worktree keeps it, warns, and flags
-  `needs_input`.
+`needs_input`.
 - Test: a check run in a worktree with an uncommitted source edit leaves that
-  edit byte-for-byte intact, and the handoff commit contains it (committed before
-  the gate).
+edit byte-for-byte intact, and the handoff commit contains it (committed before
+the gate).
 - Test: if the tree or `HEAD` changes during the gate, handoff fails loudly and
-  does not reach `review`.
+does not reach `review`.
 - Docs: `docs/close-out-pipeline.md` (the worktree GC/cleanup section) states the
-  invariant.
+invariant.
 
 ## Out of scope
 
 - **Finding the writer of the #0506 `style.css` flip.** Open-ended
-  investigation: reproduce with the scoped and full check running in a worktree
-  with an edited file while watching it (`fs_usage`/`fswatch`), and rule in or out
-  another agent session in that worktree, a test or Vite plugin that saves and
-  restores the file, and an editor. File separately if it recurs.
+investigation: reproduce with the scoped and full check running in a worktree
+with an edited file while watching it (`fs_usage`/`fswatch`), and rule in or out
+another agent session in that worktree, a test or Vite plugin that saves and
+restores the file, and an editor. File separately if it recurs.
 - #0520 depends on point 1 (commit before the remote gate).
 
 ## Activity

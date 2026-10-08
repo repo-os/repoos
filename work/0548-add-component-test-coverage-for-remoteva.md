@@ -37,10 +37,10 @@ Add `@vue/test-utils` `mount()`-based component tests for
 At minimum:
 
 - The host-pool editor (the "Hosts (comma-separated)" input + "Save hosts"
-  button) renders when `provider === "tailscale"` even when
-  `status.hosts` is empty (the #0521 regression this task exists to prevent).
+button) renders when `provider === "tailscale"` even when
+`status.hosts` is empty (the #0521 regression this task exists to prevent).
 - The "Hosts" status list itself does NOT render when `status.hosts` is
-  empty (the other half of that same `v-if` split — should stay gated).
+empty (the other half of that same `v-if` split — should stay gated).
 - Provider switching (hetzner vs tailscale) shows/hides the right sections.
 
 This will need mocking `api()` (`../api`) for `/api/remote-validation/status`

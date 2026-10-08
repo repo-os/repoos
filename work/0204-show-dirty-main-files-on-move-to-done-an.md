@@ -11,11 +11,6 @@ branch: feat/show-dirty-main-files-on-move-to-done-an
 created_at: "2026-08-15T02:15:27Z"
 updated_at: "2026-08-15T03:22:56Z"
 ---
-## Activity
-
-- 2026-08-15T02:15:27Z · created · unknown
-
-
 ## Problem
 
 When a user clicks "move to done" in the UI, the close-out flow can fail silently or with a confusing server-side error if `main` has dirty or uncommitted files. The most common case is `dist/.build-info.json` being dirty from a local build. The user has no visibility into what's blocking the close-out and no way to fix it from the UI.
@@ -52,6 +47,7 @@ This keeps the close-out flow from hitting merge failures due to dirty main, whi
 
 ## Activity
 
+- 2026-08-15T02:15:27Z · created · unknown
 - 2026-08-15T02:18:26Z · status inbox→ready
 - 2026-08-15T02:18:35Z · status ready→active, branch
 - 2026-08-15T02:51:18Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)

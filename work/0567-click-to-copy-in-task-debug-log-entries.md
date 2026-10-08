@@ -40,8 +40,8 @@ Use the shared `copyToClipboard()` helper (`src/ui-app/src/lib/clipboard.ts`) so
 ### Interaction rules (parity with chat copy)
 
 - Follow `shouldCopyMessageOnClick` semantics from `chat-message-copy.ts`:
-  - Do NOT hijack the click when the user has an active text selection (they are trying to select, not copy-all).
-  - Do NOT hijack clicks on interactive descendants (`a, button, input, textarea, select`) — e.g. the expand chevron area should still toggle, links remain clickable.
+- Do NOT hijack the click when the user has an active text selection (they are trying to select, not copy-all).
+- Do NOT hijack clicks on interactive descendants (`a, button, input, textarea, select`) — e.g. the expand chevron area should still toggle, links remain clickable.
 - Expand/collapse must keep working: a copy-click on an expandable row should both copy and preserve the existing toggle behavior (or copy without breaking toggle — implementation's choice, but both must work).
 - Non-expandable rows (no detail, not a check) become clickable for copy as well; add pointer affordance only where click does something.
 - The live running-check output card (`.debug-live`) is out of scope for click-to-copy unless trivial — it streams and has scroll/selection needs.

@@ -19,7 +19,7 @@ repo right now?". That information is scattered:
 - `repoos list` — board only
 - `repoos tunnel status` — tunnel only
 - the stale-build warning — only fires as a side effect of running some other
-  command
+command
 - `repoos gc --dry-run` — leaked worktrees
 - the web UI — not available from a terminal / over SSH quickly
 
@@ -33,22 +33,22 @@ would collapse that into one screen.
 `repoos status` (no flags) prints a single screen:
 
 - **Server**
-  - running or not; port + PID from `.repoos/serve.lock`
-  - **uptime** — `.repoos/serve.lock` already records `startedAt`
-    (`src/server/serve-reaper.ts`), so render "up 3h 42m (since 14:02)".
-    Fall back to the `/api/health` response if the lockfile is thin.
-  - build **fresh vs stale** — hash of `src/` vs `dist/.build-info.json`
-    (same check `repoos` already does); show this prominently, it is the #1
-    time-waster in this repo per AGENTS.md
-  - RepoOS version (`dist/.build-info.json`) and whether an upgrade is
-    available if that is cheap to check
+- running or not; port + PID from `.repoos/serve.lock`
+- **uptime** — `.repoos/serve.lock` already records `startedAt`
+  (`src/server/serve-reaper.ts`), so render "up 3h 42m (since 14:02)".
+  Fall back to the `/api/health` response if the lockfile is thin.
+- build **fresh vs stale** — hash of `src/` vs `dist/.build-info.json`
+  (same check `repoos` already does); show this prominently, it is the #1
+  time-waster in this repo per AGENTS.md
+- RepoOS version (`dist/.build-info.json`) and whether an upgrade is
+  available if that is cheap to check
 - **Board** — count per column; list `active` tasks with their branch,
-  worktree path, and last-activity timestamp so a stuck-`active` task is
-  obvious at a glance
+worktree path, and last-activity timestamp so a stuck-`active` task is
+obvious at a glance
 - **Worktrees** — count vs `worktreeWarnThreshold`; anything `gc` would
-  consider leaked (done/absent task, integrate candidate)
+consider leaked (done/absent task, integrate candidate)
 - **Tunnel** — one line: configured? running? published hostnames (or
-  "not configured")
+"not configured")
 - **Git** — current branch, clean/dirty, ahead/behind `main`
 
 `repoos status --json` — machine-readable, mirroring `repoos index --json`,
@@ -62,35 +62,35 @@ than requiring `/api/health`. When the server IS up, enrich from
 ## Acceptance criteria
 
 - [ ] `repoos status` with the server stopped prints server=stopped, the
-      board summary, worktree/tunnel/git lines — no crash, no hang.
+    board summary, worktree/tunnel/git lines — no crash, no hang.
 - [ ] `repoos status` with the server running shows port, PID, and a
-      human-readable uptime derived from the lockfile `startedAt`.
+    human-readable uptime derived from the lockfile `startedAt`.
 - [ ] Stale build is called out unmissably (not a quiet footnote).
 - [ ] `active` tasks are listed with branch + worktree path + last activity;
-      a task whose worktree is missing is flagged.
+    a task whose worktree is missing is flagged.
 - [ ] Leaked-worktree count matches `repoos gc --dry-run`.
 - [ ] Tunnel line matches `repoos tunnel status`' top-level state.
 - [ ] `--json` emits a stable documented shape; covered by a test.
 - [ ] Output rendering + the server-down path are unit tested (fixture repo,
-      fake lockfile, stale vs fresh marker).
+    fake lockfile, stale vs fresh marker).
 - [ ] Zero new runtime dependencies.
 - [ ] `repoos --help` COMMANDS list + `docs/` updated.
 
 ## Notes / pointers
 
 - `.repoos/serve.lock` shape and `startedAt`: `src/server/serve-reaper.ts`
-  (~line 25 interface, ~line 342 write).
+(~line 25 interface, ~line 342 write).
 - Build staleness: whatever `repoos` already uses to print the stale warning
-  (hash of `src/` vs `dist/.build-info.json`).
+(hash of `src/` vs `dist/.build-info.json`).
 - Board/active data: the index snapshot (`repoos index`) or `work/*.md`
-  parse; `/api/health` returns `taskCount` + build info.
+parse; `/api/health` returns `taskCount` + build info.
 - Tunnel: `tunnelReadiness` in `src/server/server.ts` /
-  `/api/tunnel/readiness`.
+`/api/tunnel/readiness`.
 - Worktree leak logic: `repoos gc` (`src/commands/`), `worktreeWarnThreshold`
-  in `repoos.toml`.
+in `repoos.toml`.
 - CLI dispatch: `src/cli/index.ts`; command lives under `src/commands/`.
 - Consider sharing a formatter with `repoos tunnel status` for the one-line
-  tunnel summary.
+tunnel summary.
 
 ## Activity
 

@@ -35,11 +35,11 @@ After configuring an ntfy topic, there is no way to verify that notifications ac
 ## Notes for AI
 
 - Add the API endpoint in `src/server/server.ts` as `POST /api/ntfy/test`. It should:
-  - Read the current config.
-  - Gate on `ntfyEnabled` and non-empty `ntfyTopic`; if either is missing, return 400 with a descriptive error.
-  - Resolve the repo name the same way the dashboard does — from the health endpoint's root path, splitting on `/` and taking the last segment.
-  - Call the existing `publish()` from `src/server/ntfy.ts` with the test message.
-  - Return 200 immediately (do not await the ntfy server response).
+- Read the current config.
+- Gate on `ntfyEnabled` and non-empty `ntfyTopic`; if either is missing, return 400 with a descriptive error.
+- Resolve the repo name the same way the dashboard does — from the health endpoint's root path, splitting on `/` and taking the last segment.
+- Call the existing `publish()` from `src/server/ntfy.ts` with the test message.
+- Return 200 immediately (do not await the ntfy server response).
 - The repo name for the message is already computed as `repo.repoName` in the Vue store (`src/ui-app/src/stores/repo.ts:148`). You can either pass it from the client in the POST body, or resolve it server-side from the working directory. Server-side resolution is simpler (no client trust issue) and keeps the API self-contained.
 - The button should live in `src/ui-app/src/views/SettingsView.vue`, next to the topic input (`#setting-ntfyTopic`). The repo store is already used elsewhere in the app; import `useRepoStore` to get `repoName`.
 - Follow existing UI patterns: the `Button` component from `src/ui-app/src/components/ui/` is already used in this view. Use `disabled` prop to gray it out when conditions aren't met.
@@ -47,9 +47,9 @@ After configuring an ntfy topic, there is no way to verify that notifications ac
 - The test message string: `"Hello from RepoOS at <repo_name>!"` — use the actual repo directory name, not the literal `<repo_name>` placeholder.
 - Do NOT add any new config keys. This is a UI + API-only change.
 - Files likely to touch:
-  - `src/server/server.ts` — new route
-  - `src/ui-app/src/views/SettingsView.vue` — button + state
-  - `src/server/ntfy.ts` — may need no changes (reuse `publish` and `shouldSend`)
+- `src/server/server.ts` — new route
+- `src/ui-app/src/views/SettingsView.vue` — button + state
+- `src/server/ntfy.ts` — may need no changes (reuse `publish` and `shouldSend`)
 
 ## Scope
 

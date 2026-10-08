@@ -65,9 +65,9 @@ But a watcher on `freeformOverride.cli` resets the model whenever CLI changes:
 
 ```ts
 watch(() => freeformOverride.cli, (newCli, oldCli) => {
-  if (!newCli || newCli === oldCli) return;
-  const opts = config.modelsFor(newCli);
-  freeformOverride.model = opts.length > 0 ? opts[0].value : "default";
+if (!newCli || newCli === oldCli) return;
+const opts = config.modelsFor(newCli);
+freeformOverride.model = opts.length > 0 ? opts[0].value : "default";
 });
 ```
 
@@ -87,8 +87,8 @@ Task detail:
 
 ```html
 <div class="drawer-head">
-  <div style="flex: 1">…title…</div>
-  <DialogClose class="close-x" />
+<div style="flex: 1">…title…</div>
+<DialogClose class="close-x" />
 </div>
 ```
 

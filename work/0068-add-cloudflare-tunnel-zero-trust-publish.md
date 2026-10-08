@@ -52,9 +52,9 @@ Publishing an app:
 
 ```bash
 repoos tunnel create dashboard \
-  --port 3000 \
-  --domain dashboard.repoos.org \
-  --allow alice@example.com,bob@example.com
+--port 3000 \
+--domain dashboard.repoos.org \
+--allow alice@example.com,bob@example.com
 ```
 
 If RepoOS has a configured base domain, `--domain` can be omitted and inferred
@@ -102,16 +102,16 @@ e.g.:
 
 ```yaml
 tunnel:
-  provider: cloudflare
-  name: repoos-local
-  domain: repoos.org
-  apps:
-    dashboard:
-      hostname: dashboard.repoos.org
-      service: http://localhost:3000
-      access:
-        - alice@example.com
-        - bob@example.com
+provider: cloudflare
+name: repoos-local
+domain: repoos.org
+apps:
+  dashboard:
+    hostname: dashboard.repoos.org
+    service: http://localhost:3000
+    access:
+      - alice@example.com
+      - bob@example.com
 ```
 
 RepoOS generates/reconciles `cloudflared`'s ingress config and Access policies
@@ -121,81 +121,81 @@ authoritative.
 ## Acceptance criteria
 
 - [ ] `repoos tunnel setup` checks for `cloudflared` on PATH, offers to
-      install it if missing, drives `cloudflared tunnel login`, creates or
-      reuses one tunnel per machine, and persists non-secret tunnel config
-      (name, domain, tunnel UUID) to RepoOS's own config — never to
-      `cloudflared`'s config as the source of truth. Re-running it is a no-op
-      when already set up (idempotent).
+    install it if missing, drives `cloudflared tunnel login`, creates or
+    reuses one tunnel per machine, and persists non-secret tunnel config
+    (name, domain, tunnel UUID) to RepoOS's own config — never to
+    `cloudflared`'s config as the source of truth. Re-running it is a no-op
+    when already set up (idempotent).
 - [ ] `repoos tunnel create <name> --port <port> [--domain <hostname>] [--allow <emails>]`
-      adds an app entry to RepoOS config, runs the equivalent of
-      `cloudflared tunnel route dns <tunnel> <hostname>` to create the DNS
-      record, regenerates the tunnel's ingress config from RepoOS state
-      (one rule per configured app plus a trailing `http_status:404`
-      catch-all), and creates a Cloudflare Access application + policy scoped
-      to the allowed emails for that hostname.
+    adds an app entry to RepoOS config, runs the equivalent of
+    `cloudflared tunnel route dns <tunnel> <hostname>` to create the DNS
+    record, regenerates the tunnel's ingress config from RepoOS state
+    (one rule per configured app plus a trailing `http_status:404`
+    catch-all), and creates a Cloudflare Access application + policy scoped
+    to the allowed emails for that hostname.
 - [ ] When `--domain` is omitted and a base domain is configured,
-      `<name>.<base-domain>` is inferred automatically.
+    `<name>.<base-domain>` is inferred automatically.
 - [ ] `repoos tunnel allow <name> <email>` and `repoos tunnel deny <name> <email>`
-      add/remove an email from that app's allowlist in RepoOS config and
-      reconcile the corresponding Cloudflare Access policy.
+    add/remove an email from that app's allowlist in RepoOS config and
+    reconcile the corresponding Cloudflare Access policy.
 - [ ] `repoos tunnel start` runs `cloudflared tunnel run <tunnel>` in the
-      foreground (dev mode) using the reconciled config.
+    foreground (dev mode) using the reconciled config.
 - [ ] `repoos tunnel install` installs/configures `cloudflared` as a
-      persistent OS service (launchd on macOS, systemd on Linux) so the
-      tunnel survives reboot; `repoos tunnel stop` stops the running tunnel
-      (foreground process or installed service, whichever applies).
+    persistent OS service (launchd on macOS, systemd on Linux) so the
+    tunnel survives reboot; `repoos tunnel stop` stops the running tunnel
+    (foreground process or installed service, whichever applies).
 - [ ] `repoos tunnel list` shows configured apps with hostname, local
-      service, and allowlist. `repoos tunnel status` shows whether the
-      tunnel is installed, running, and reachable, plus per-app health.
+    service, and allowlist. `repoos tunnel status` shows whether the
+    tunnel is installed, running, and reachable, plus per-app health.
 - [ ] By default, every app created via `repoos tunnel create` is protected
-      by a Cloudflare Access policy restricted to its explicit email
-      allowlist — there is no way to end up with a publicly reachable app
-      with no allowlist through the normal `create` flow.
+    by a Cloudflare Access policy restricted to its explicit email
+    allowlist — there is no way to end up with a publicly reachable app
+    with no allowlist through the normal `create` flow.
 - [ ] No Cloudflare credentials, tokens, or tunnel secrets are ever written
-      into the RepoOS repo or committed to git; they're stored via the OS
-      keychain / user secret storage or left in `cloudflared`'s own
-      credentials file (`~/.cloudflared/<UUID>.json`) as Cloudflare already
-      does.
+    into the RepoOS repo or committed to git; they're stored via the OS
+    keychain / user secret storage or left in `cloudflared`'s own
+    credentials file (`~/.cloudflared/<UUID>.json`) as Cloudflare already
+    does.
 - [ ] Creating an app with a hostname deeper than one label under the base
-      domain (e.g. `dashboard.app.repoos.org`) succeeds but prints a warning
-      that the user's Cloudflare SSL/certificate configuration must cover
-      that hostname.
+    domain (e.g. `dashboard.app.repoos.org`) succeeds but prints a warning
+    that the user's Cloudflare SSL/certificate configuration must cover
+    that hostname.
 - [ ] Works on both macOS and Linux for `setup`, `start`, `install`, and
-      `stop`.
+    `stop`.
 
 ## Notes for AI
 
 - This is a CLI feature (`repoos tunnel ...` subcommands) that shells out to
-  `cloudflared`; it is not a reimplementation of Cloudflare Tunnel. RepoOS
-  orchestrates `cloudflared` commands and generates its config file — it does
-  not reimplement the tunnel protocol.
+`cloudflared`; it is not a reimplementation of Cloudflare Tunnel. RepoOS
+orchestrates `cloudflared` commands and generates its config file — it does
+not reimplement the tunnel protocol.
 - RepoOS's own persisted config (see YAML shape in Desired UX) is the source
-  of truth. The generated `cloudflared` ingress YAML and Cloudflare Access
-  policies must be derived/reconciled from it on every `create`/`allow`/`deny`,
-  not hand-maintained separately.
+of truth. The generated `cloudflared` ingress YAML and Cloudflare Access
+policies must be derived/reconciled from it on every `create`/`allow`/`deny`,
+not hand-maintained separately.
 - Conceptually automate the equivalent of: `cloudflared tunnel login`,
-  `cloudflared tunnel create <name>`, `cloudflared tunnel route dns <name> <hostname>`,
-  and generating the `tunnel:`/`credentials-file:`/`ingress:` config consumed
-  by `cloudflared tunnel run <name>`.
+`cloudflared tunnel create <name>`, `cloudflared tunnel route dns <name> <hostname>`,
+and generating the `tunnel:`/`credentials-file:`/`ingress:` config consumed
+by `cloudflared tunnel run <name>`.
 - Cloudflare's own identity provider is the default/preferred Access identity
-  provider — don't build support for other IdPs in this MVP.
+provider — don't build support for other IdPs in this MVP.
 - One tunnel per machine, many apps routed through it via ingress rules —
-  do not create a new Cloudflare Tunnel per app.
+do not create a new Cloudflare Tunnel per app.
 - Assumption (undocumented in the source explanation, flagging as a default):
-  exact CLI flags for invoking `cloudflared` (e.g. how account/zone selection
-  is surfaced when a Cloudflare account has multiple domains) should follow
-  whatever `cloudflared`'s current CLI supports; confirm current `cloudflared`
-  CLI syntax/output during implementation since it may have changed since
-  this task was written.
+exact CLI flags for invoking `cloudflared` (e.g. how account/zone selection
+is surfaced when a Cloudflare account has multiple domains) should follow
+whatever `cloudflared`'s current CLI supports; confirm current `cloudflared`
+CLI syntax/output during implementation since it may have changed since
+this task was written.
 - Assumption: persistent service installation should use `cloudflared`'s own
-  `cloudflared service install` mechanism where available, rather than RepoOS
-  hand-rolling launchd/systemd unit files, unless that mechanism proves
-  insufficient.
+`cloudflared service install` mechanism where available, rather than RepoOS
+hand-rolling launchd/systemd unit files, unless that mechanism proves
+insufficient.
 - Out of scope for this task: abstracting Cloudflare into a generic/pluggable
-  networking or tunnel-provider layer. Build directly against Cloudflare
-  Tunnel + Access; a provider abstraction is explicitly not required for MVP.
+networking or tunnel-provider layer. Build directly against Cloudflare
+Tunnel + Access; a provider abstraction is explicitly not required for MVP.
 - Do not implement any application-level authentication — auth is entirely
-  Cloudflare Access's responsibility, in front of the tunnel.
+Cloudflare Access's responsibility, in front of the tunnel.
 
 ## Scope
 
