@@ -25,6 +25,7 @@ import type { RepoOSConfig } from "../../core/types.js";
 import { getCheckStore, resetCheckStore } from "../../core/check-store.js";
 import {
   RemoteValidationRunner,
+  classifyRemoteExecFailure,
   EMPTY_REMOTE_MIRROR,
   prepareCandidateUpload,
   parseMirrorProbeOutput,
@@ -126,6 +127,35 @@ const FAST = {
   sshWaitTimeoutMs: 50,
   remoteRunTimeoutMs: 5_000,
 };
+
+describe("classifyRemoteExecFailure (#0745)", () => {
+  it("treats EACCES during install as infra without a gate exit marker", () => {
+    const cls = classifyRemoteExecFailure({
+      code: 4,
+      timedOut: false,
+      output: "error: EACCES accessing temporary directory\n",
+    });
+    expect(cls).toMatchObject({ kind: "infra", transient: true, markHostDegraded: true });
+  });
+
+  it("treats gate exit plus failures as test (no retry)", () => {
+    const cls = classifyRemoteExecFailure({
+      code: 1,
+      timedOut: false,
+      output: "[validate] gate exit 1\nFAIL src/a.test.ts > x\n",
+    });
+    expect(cls).toMatchObject({ kind: "test", transient: false, markHostDegraded: false });
+  });
+
+  it("treats ssh timeout as unreachable infra", () => {
+    const cls = classifyRemoteExecFailure({
+      code: 255,
+      timedOut: false,
+      output: "ssh: connect to host port 22: Connection timed out\n",
+    });
+    expect(cls).toMatchObject({ kind: "unreachable", transient: true, markHostDegraded: true });
+  });
+});
 
 describe("RemoteValidationRunner", () => {
   let root: string;
@@ -318,7 +348,7 @@ describe("RemoteValidationRunner", () => {
 
     expect(res.ok).toBe(false);
     expect(res.transient).toBeFalsy();
-    expect(res.detail).toContain("remote validation failed");
+    expect(res.detail).toContain("test failure");
     await r.dispose();
   });
 
@@ -361,7 +391,7 @@ describe("RemoteValidationRunner", () => {
     const res = await r.validate(opts());
     expect(res.ok).toBe(false);
     expect(res.transient).toBe(true);
-    expect(res.detail).toContain("unavailable");
+    expect(res.detail).toMatch(/host unreachable.*ssh connection dropped/i);
     await r.dispose();
   });
 

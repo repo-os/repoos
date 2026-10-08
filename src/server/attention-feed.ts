@@ -63,6 +63,8 @@ export interface AttentionFeedDeps {
   taskChecks?: TaskCheckManager;
   /** In-flight remote runs with stage, from the remote validator (#0720). */
   remoteActiveRuns?: () => RemoteActiveRunInfoLike[];
+  /** Per-host pool state for degraded-host attention (#0745). */
+  remoteHostStatus?: () => Array<{ host: string; degraded?: boolean; detail?: string }>;
   /**
    * Awake-clock sample for sleep-aware elapsed (#0720/#0678): the last
    * watchdog tick and its cadence. Absent means "no sleep adjustment".
@@ -215,6 +217,11 @@ export function assembleAttentionFeed(deps: AttentionFeedDeps): AttentionFeed {
   );
   const slowRuns = evaluateSlowness({ running, history, multiplier });
   const slowRunNotices = persistentSlowNotices({ history, multiplier });
+  const degradedRemoteHosts =
+    deps
+      .remoteHostStatus?.()
+      .filter((h) => h.degraded)
+      .map((h) => ({ host: h.host, detail: h.detail ?? "" })) ?? [];
 
   return buildAttentionFeed({
     config: deps.config,
@@ -233,5 +240,6 @@ export function assembleAttentionFeed(deps: AttentionFeedDeps): AttentionFeed {
     ctoSilentThresholdMs: ctoSilentThresholdMs(
       (deps.config as { ctoMonitorIntervalMs?: number }).ctoMonitorIntervalMs,
     ),
+    degradedRemoteHosts,
   });
 }

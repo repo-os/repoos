@@ -15,9 +15,9 @@
 # of the full ~100 MB history every run. The mirror is maintained locally; a run
 # whose bundle does not apply to it fails the SHA check rather than guessing.
 #
-# Exit codes: 0 = green. 3 = SHA mismatch or a bundle/mirror transport problem
-# (never a test failure — a transport bug). Anything else = the gate's own
-# non-zero exit (build or test failed).
+# Exit codes: 0 = green. 3 = SHA/bundle/mirror transport (never a test failure).
+# 4 = clone/install/setup failed before the gate ran. 5 = container could not
+# start. Any other non-zero after "[validate] gate exit N" = build/test failed.
 set -euo pipefail
 
 BUNDLE="${1:?usage: validate.sh <bundle-path> <expected-sha>}"
@@ -148,8 +148,11 @@ echo "[validate] HEAD verified at $SHA"
 # Run Docker as the SSH user's uid:gid so all files it creates are owned by
 # that user.  This means _rvcleanup needs no Docker chown step — a plain
 # rm -rf works.  Chown the bun-cache volume to match before the main run.
-docker run --rm -v "$CACHE_VOLUME":/bun-cache -u 0 "$IMAGE" \
-  "chown -R $(id -u):$(id -g) /bun-cache"
+if ! docker run --rm -v "$CACHE_VOLUME":/bun-cache -u 0 "$IMAGE" \
+  "chown -R $(id -u):$(id -g) /bun-cache"; then
+  echo "[validate] FATAL: could not prepare bun cache volume (docker)" >&2
+  exit 5
+fi
 
 set +e
 docker run --rm \
@@ -163,9 +166,18 @@ docker run --rm \
   -w /repo \
   --user "$(id -u):$(id -g)" \
   "$IMAGE" \
-  "set -o pipefail; bun install --frozen-lockfile && bun run build && printf '#!/bin/sh\nexec bun /repo/dist/cli/index.js \"\$@\"\n' > /tmp/repoos && chmod +x /tmp/repoos && export PATH=\"/tmp:\$PATH\" && if [ -n \"${CHANGED_REF}\" ]; then bun run test -- --changed \"${CHANGED_REF}\"; else bun run test; fi 2>&1 | tee /artifacts/test-output.log"
+  "set -o pipefail; bun install --frozen-lockfile || exit 4; bun run build && printf '#!/bin/sh\nexec bun /repo/dist/cli/index.js \"\$@\"\n' > /tmp/repoos && chmod +x /tmp/repoos && export PATH=\"/tmp:\$PATH\" && if [ -n \"${CHANGED_REF}\" ]; then bun run test -- --changed \"${CHANGED_REF}\"; else bun run test; fi 2>&1 | tee /artifacts/test-output.log"
 CODE=$?
 set -e
+
+if [ "$CODE" -eq 4 ]; then
+  echo "[validate] setup failed (exit 4)" >&2
+  exit 4
+fi
+if [ "$CODE" -eq 5 ]; then
+  echo "[validate] container could not start (exit 5)" >&2
+  exit 5
+fi
 
 echo "[validate] gate exit $CODE"
 exit $CODE
