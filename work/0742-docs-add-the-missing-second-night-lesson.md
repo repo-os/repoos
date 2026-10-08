@@ -12,7 +12,7 @@ branch: feat/docs-add-the-missing-second-night-lesson
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-07T17:40:53Z"
-updated_at: "2026-10-08T14:06:56Z"
+updated_at: "2026-10-08T14:09:07Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Docs only. Related: #0710 (done), #0739, #0729, #0725.
 - 2026-10-08T14:06:52Z · cli_override, model_override
 - 2026-10-08T14:06:55Z · status inbox→ready
 - 2026-10-08T14:06:56Z · status ready→active, branch
+- 2026-10-08T14:09:07Z · body
