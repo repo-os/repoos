@@ -2,7 +2,7 @@
 id: "0706"
 title: "Standalone self-check: prefer least-loaded remote host and stuck-badge copy"
 type: chore
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/standalone-self-check-prefer-least-loade
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-08T15:08:22Z"
+updated_at: "2026-10-08T15:15:05Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -39,10 +39,10 @@ Verify first against current main: #0705 (merged) already made the dispatcher co
 ```json
 [
 {
- "label": "Checks Now tab — remote runners, lock holders, refresh",
- "target": "default",
- "route": "/checks?tab=now",
- "highlight": ".rr-panel"
+"label": "Checks Now tab — remote runners, lock holders, refresh",
+"target": "default",
+"route": "/checks?tab=now",
+"highlight": ".rr-panel"
 }
 ]
 ```
@@ -65,7 +65,7 @@ Verify first against current main: #0705 (merged) already made the dispatcher co
 458|       const reaped = await sweep.cleanupOrphanedRoots();
 459|
 460|       expect(reaped).toBeGreaterThanOrEqual(1);
- |                      ^
+|                      ^
 461|       const outcome = await exited;
 462|       // The sweep's SIGTERM terminated it; the child must not have su…
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -102,7 +102,7 @@ error: script "test" exited with code 1
 27|     expect(line).toContain("waiting for a runner (queue position 2");
 28|     expect(line).not.toContain(" on  (");
 29|     expect(parseRemotePoolQueueMessage(line)?.host).toBe("");
- |                                                     ^
+|                                                     ^
 30|   });
 31| });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -122,3 +122,4 @@ error: script "test" exited with code 1
 - 2026-10-08T15:03:25Z · body: section Shots
 - 2026-10-08T15:07:04Z · body
 - 2026-10-08T15:08:22Z · body
+- 2026-10-08T15:15:05Z · status active→review
