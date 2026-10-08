@@ -658,8 +658,8 @@ enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]
 name = "Ross"
-cli = "opencode"
-model = "opencode-go/hy3"
+cli = "claude code"
+model = "default"
 enabled = true
 instructions = "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state."
 [[agents]]
