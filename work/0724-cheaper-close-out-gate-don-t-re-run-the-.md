@@ -63,7 +63,7 @@ Timing: I could NOT measure real before/after close-out medians from this sandbo
 "highlight": "#setting-closeOut\\.gate",
 "steps": [
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ]
 }

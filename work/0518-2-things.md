@@ -78,56 +78,56 @@ it grows to match the row rather than staying a fixed 30pt island.
 **Layout decision is testable**
 
 - [ ] The compact-vs-standard decision lives in a small pure helper (e.g. an
-  enum plus a static function, next to `ServerSidebarStatus` /
-  `ServerAccentColor` in `ServerSidebarView.swift`) that takes the row's
-  available width plus the widths it needs and returns which layout to use.
+enum plus a static function, next to `ServerSidebarStatus` /
+`ServerAccentColor` in `ServerSidebarView.swift`) that takes the row's
+available width plus the widths it needs and returns which layout to use.
 - [ ] It is unit-tested in `macos/RepoOSHubTests/`, covering: wide enough →
-  badges trailing on the name's line; too narrow → badges on their own line
-  below the name; and a small allowance in the decision so a count crossing
-  a digit (or becoming `9+`) does not flip the layout back and forth at the
-  boundary.
+badges trailing on the name's line; too narrow → badges on their own line
+below the name; and a small allowance in the decision so a count crossing
+a digit (or becoming `9+`) does not flip the layout back and forth at the
+boundary.
 
 **Badges**
 
 - [ ] At a wide sidebar width the row renders as it does today: badges on the
-  trailing edge, subtitle still shown.
+trailing edge, subtitle still shown.
 - [ ] At a narrow sidebar width the badges render on a second line below the
-  server name, left-aligned with the name, and the subtitle line is not
-  rendered.
+server name, left-aligned with the name, and the subtitle line is not
+rendered.
 - [ ] In both layouts the server name is fully visible, or truncated with an
-  ellipsis — never overlapped, clipped, or covered by a badge.
+ellipsis — never overlapped, clipped, or covered by a badge.
 - [ ] Badge appearance is untouched: blue/orange/purple tints, `9+` above 9,
-  monospaced digits, white text on a capsule, `.help(...)` labels.
+monospaced digits, white text on a capsule, `.help(...)` labels.
 - [ ] A server with no counts still shows the `info.circle` affordance in the
-  compact form, in the position the badges would occupy.
+compact form, in the position the badges would occupy.
 - [ ] Hovering the badges (or the `info.circle`) in either layout still opens
-  the existing `ServerDetailsPopover`; the `.help("Server details")` text and
-  the `isShowingDetails` behavior are preserved.
+the existing `ServerDetailsPopover`; the `.help("Server details")` text and
+the `isShowingDetails` behavior are preserved.
 - [ ] Dragging the sidebar continuously from wide to narrow and back produces
-  no flicker and no rapid layout toggling.
+no flicker and no rapid layout toggling.
 
 **Accent bar**
 
 - [ ] The bar no longer participates in the row's `HStack` layout — it is drawn
-  as a decoration (overlay/background) so its siblings' positions are
-  identical with and without a color.
+as a decoration (overlay/background) so its siblings' positions are
+identical with and without a color.
 - [ ] With two rows side by side, one with an accent color and one without, the
-  server icons share the same horizontal position, and the name/badge
-  columns begin at the same x, at the same sidebar width.
+server icons share the same horizontal position, and the name/badge
+columns begin at the same x, at the same sidebar width.
 - [ ] The bar keeps its current look otherwise: 4pt wide, `cornerRadius: 2`,
-  filled with the entry's accent color, `accessibilityHidden(true)`.
+filled with the entry's accent color, `accessibilityHidden(true)`.
 - [ ] The bar's height follows the row (stretching to the row height in the
-  compact two-line form) instead of being fixed at 30pt.
+compact two-line form) instead of being fixed at 30pt.
 - [ ] A server with a custom `iconSymbolName` is positioned identically to one
-  using the default `server.rack`.
+using the default `server.rack`.
 
 **Behavior preserved**
 
 - [ ] Row selection (`List(selection:)`), the `.contextMenu` server actions, the
-  icon button's hover + `Menu` behavior, the row accessibility label/hint,
-  and the sidebar empty-state hint are unchanged.
+icon button's hover + `Menu` behavior, the row accessibility label/hint,
+and the sidebar empty-state hint are unchanged.
 - [ ] Both `xcodebuild` commands in `macos/README.md` pass (build, then test —
-  the new tests plus the existing Swift suite):
+the new tests plus the existing Swift suite):
 
 ```sh
 xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub \

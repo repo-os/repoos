@@ -61,10 +61,10 @@ target's name).
 
 - [ ] Preview quickbar shows the active/starting preview's target name.
 - [ ] A task whose diff matches multiple `[[preview.targets]]` areas lets the
- user see and choose among the matched targets, rather than silently
- previewing an arbitrary one.
+user see and choose among the matched targets, rather than silently
+previewing an arbitrary one.
 - [ ] A task matching exactly one target (today's common case) is unaffected
- behaviorally, only gains the name label.
+behaviorally, only gains the name label.
 - [ ] `repoos check` passes.
 
 ## Related

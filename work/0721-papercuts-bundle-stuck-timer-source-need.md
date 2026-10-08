@@ -50,7 +50,7 @@ Keep each item small and separate in commits. Do not touch the degenerate detect
 "highlight": "[data-test-id=\"model-providers-balance-meta\"]",
 "steps": [
 {
-  "waitMs": 3000
+"waitMs": 3000
 }
 ]
 },
@@ -61,7 +61,7 @@ Keep each item small and separate in commits. Do not touch the degenerate detect
 "highlight": "[data-test-id=\"task-card-agent-hint\"].tc-stuck",
 "steps": [
 {
-  "waitMs": 2000
+"waitMs": 2000
 }
 ]
 }

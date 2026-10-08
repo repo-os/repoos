@@ -110,8 +110,8 @@ dashboard:
 hostname: dashboard.repoos.org
 service: http://localhost:3000
 access:
-  - alice@example.com
-  - bob@example.com
+- alice@example.com
+- bob@example.com
 ```
 
 RepoOS generates/reconciles `cloudflared`'s ingress config and Access policies

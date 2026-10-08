@@ -122,12 +122,12 @@ TOML-only; update it.
 
 - [ ] General tab no longer shows the column-label rows.
 - [ ] Advanced tab shows a "Work board column labels" section with six text
-  inputs, each showing its resolved label.
+inputs, each showing its resolved label.
 - [ ] Editing a label and leaving the field persists it to `[board.columns]`
-  and it appears on the board (UI + CLI `repoos list`).
+and it appears on the board (UI + CLI `repoos list`).
 - [ ] Clearing a label restores and persists its default.
 - [ ] Over-length (>40) and duplicate labels are rejected with an inline error
-  and are not stored.
+and are not stored.
 - [ ] `?focus=board.columns.draft` opens Advanced with the field focused.
 - [ ] `repoos check` passes.
 

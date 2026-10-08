@@ -33,8 +33,8 @@ old compiled code or serves an old UI.
 Example warning (illustrative):
 
 ⚠  Stale build: src/ has changed since the last `bun run build`.
- You are running OLD compiled code, and `ros serve` serves the OLD UI.
- Run `bun run build` to update.
+You are running OLD compiled code, and `ros serve` serves the OLD UI.
+Run `bun run build` to update.
 
 ## Acceptance criteria
 
