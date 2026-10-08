@@ -43,7 +43,6 @@ import type { ServerResponse } from "node:http";
 import type { LiveIndex, RepoEvent } from "../live-index.js";
 import type { Logger } from "../../core/logger.js";
 import { getCurrentUser } from "./auth.js";
-import { resolveApiCreator } from "../../core/record-creator.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
 import { needsInputClearsOnNewEngineerRun } from "../../core/needs-input.js";
 import {
@@ -252,7 +251,7 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
       status: body.status as Status | undefined,
       body: taskBody,
       originalPrompt,
-      createdBy: resolveApiCreator(getCurrentUser(req, config)?.email),
+      createdBy: getCurrentUser(req, config)?.email,
     });
   } catch (error) {
     if (error instanceof DependencyValidationError) return json(res, 400, { error: error.message });
@@ -536,7 +535,7 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
     originalPrompt: explanation,
     status: "draft",
     story,
-    createdBy: resolveApiCreator(getCurrentUser(req, config)?.email),
+    createdBy: getCurrentUser(req, config)?.email,
     pmAgentOverride,
     pmCliOverride,
     pmModelOverride,
