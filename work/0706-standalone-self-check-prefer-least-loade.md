@@ -11,7 +11,7 @@ branch: feat/standalone-self-check-prefer-least-loade
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-08T14:18:10Z"
+updated_at: "2026-10-08T14:23:58Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -59,3 +59,23 @@ Verify first against current main: #0705 (merged) already made the dispatcher co
 - 2026-10-08T14:16:42Z · body
 - 2026-10-08T14:17:26Z · body
 - 2026-10-08T14:18:10Z · body: section Shots
+- 2026-10-08T14:23:58Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/serve-reaper.test.ts:460:22
+    458|       const reaped = await sweep.cleanupOrphanedRoots();
+    459|
+    460|       expect(reaped).toBeGreaterThanOrEqual(1);
+       |                      ^
+    461|       const outcome = await exited;
+    462|       // The sweep's SIGTERM terminated it; the child must not have su…
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 447 passed | 1 skipped (449)
+      Tests  1 failed | 5473 passed | 15 skipped (5489)
+   Start at  14:19:18
+   Duration  274.66s (transform 6.89s, setup 2.38s, import 51.59s, tests 223.82s, environment 244.81s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 507ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  14:23:54
+   Duration  2.96s (transform 1.46s, setup 13ms, import 1.79s, tests 507ms, environment 565ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
