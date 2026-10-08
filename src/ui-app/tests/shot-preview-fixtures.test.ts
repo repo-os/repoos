@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
+import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../core/shot-fixtures.js";
 import {
-  SHOT_PREVIEW_FIXTURE_TASK_ID,
   applyShotPreviewFixture,
   readShotPreviewFixtureFromLocation,
 } from "../src/lib/shot-preview-fixtures";
