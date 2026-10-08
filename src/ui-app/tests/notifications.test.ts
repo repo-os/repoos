@@ -119,6 +119,7 @@ describe("notifications store defaults + persistence", () => {
       spendThreshold: false,
       awaitingVisualCheck: false,
       remoteFallback: false,
+      remoteHostDegraded: false,
       ctoAction: false,
     });
     expect(n.isActive).toBe(false);
@@ -325,6 +326,7 @@ describe("NOTIFICATION_TYPE_LABELS", () => {
       "releaseNotesReady",
       "releaseSucceeded",
       "remoteFallback",
+      "remoteHostDegraded",
       "review",
       "silentRun",
       "slowRun",

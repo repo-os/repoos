@@ -197,6 +197,7 @@ function outcomeLabel(r: CheckRunRow): string {
   if (r.outcome === "pass") return "passed";
   if (r.outcome === "cancelled") return "cancelled";
   if (r.outcome === "hung") return "hung · container killed";
+  if (r.outcome === "infra") return "infra · host or runner environment";
   if (r.outcome === "skipped") return "skipped · no checks configured";
   if (!r.failedStep) return "failed";
   const n = r.failedTests.length;
