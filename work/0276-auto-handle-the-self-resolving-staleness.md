@@ -131,19 +131,19 @@ fix; it should surface the CLI-selection regression loudly instead.
 ## Acceptance criteria
 
 - [ ] A Move-to-Done whose only failure is the self-resolving staleness check completes on the
- in-place re-check — no job failure, no debugger detour, no full re-sync, and no extra
- orchestrator-level `validateCandidate` retry.
+in-place re-check — no job failure, no debugger detour, no full re-sync, and no extra
+orchestrator-level `validateCandidate` retry.
 - [ ] The in-place staleness re-check is bounded to a single extra `check` of the same candidate
- tree and never loops; the existing two-attempt cap and "reproduced identically → real
- failure" classification are unchanged for genuine defects.
+tree and never loops; the existing two-attempt cap and "reproduced identically → real
+failure" classification are unchanged for genuine defects.
 - [ ] When the candidate's own `dist/cli/index.js` is missing and the fallback CLI is used, the
- staleness failure is NOT absorbed: it surfaces with a reason pinning the CLI-selection
- regression (per docs/close-out-pipeline.md #0213/3fbbd707) instead of the debugger seeing a
- red herring.
+staleness failure is NOT absorbed: it surfaces with a reason pinning the CLI-selection
+regression (per docs/close-out-pipeline.md #0213/3fbbd707) instead of the debugger seeing a
+red herring.
 - [ ] Standalone `repoos check` still fails on a genuinely stale build (agents' definition-of-done
- gate unchanged).
+gate unchanged).
 - [ ] No regression in the #0130 already-integrated retry, #0204/#0211 dirty/lock guards, or the
- MTD merge-conflict handling tracked in #0271.
+MTD merge-conflict handling tracked in #0271.
 - [ ] `repoos check` passes after the fix.
 
 ## Related

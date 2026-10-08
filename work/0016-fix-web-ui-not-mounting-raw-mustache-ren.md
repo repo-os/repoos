@@ -43,9 +43,9 @@ route intact? Is the file where the server resolves it?
 
 - [ ] Root cause identified from the console, not assumed
 - [ ] Vue mounts: no raw mustache in the rendered DOM; exactly one overlay shows
- at a time; the dashboard/board render real data
+at a time; the dashboard/board render real data
 - [ ] If vendor-Vue serving was the cause, the build reliably copies it and the
- server reliably serves it — verify from a clean `bun run build`
+server reliably serves it — verify from a clean `bun run build`
 - [ ] Browser console is error-free on load
 - [ ] Verified in an actual browser (headless or manual), not just `curl`/200
 

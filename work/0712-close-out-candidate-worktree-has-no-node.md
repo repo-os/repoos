@@ -46,18 +46,18 @@ VERIFY FIRST: #0674 (merged 2026-10-06) already reuses the primary checkout's no
 145|     const { gateParams, validatorCalls } = await runGateWithBudget(0);
 146|
 147|     expect(gateParams).not.toBeNull();
-   |                            ^
+ |                            ^
 148|     expect(gateParams!["deadlineAt"]).toBeUndefined();
 149|     expect(validatorCalls[0]!["deadlineAt"]).toBeUndefined();
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 Test Files  1 failed | 423 passed | 1 skipped (425)
-  Tests  2 failed | 5119 passed | 15 skipped (5136)
+Tests  2 failed | 5119 passed | 15 skipped (5136)
 Start at  00:03:33
 Duration  266.77s (transform 6.31s, setup 2.27s, import 48.60s, tests 217.88s, environment 238.53s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 408ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  00:08:00
 Duration  2.27s (transform 1.05s, setup 11ms, import 1.31s, tests 408ms, environment 470ms)
 error: script "test" exited with code 1
@@ -68,18 +68,18 @@ error: script "test" exited with code 1
 145|     const { gateParams, validatorCalls } = await runGateWithBudget(0);
 146|
 147|     expect(gateParams).not.toBeNull();
-   |                            ^
+ |                            ^
 148|     expect(gateParams!["deadlineAt"]).toBeUndefined();
 149|     expect(validatorCalls[0]!["deadlineAt"]).toBeUndefined();
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 Test Files  1 failed | 423 passed | 1 skipped (425)
-  Tests  2 failed | 5119 passed | 15 skipped (5136)
+Tests  2 failed | 5119 passed | 15 skipped (5136)
 Start at  00:13:35
 Duration  268.12s (transform 6.30s, setup 2.30s, import 49.88s, tests 218.64s, environment 239.00s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 409ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  00:18:04
 Duration  2.27s (transform 1.05s, setup 11ms, import 1.31s, tests 409ms, environment 469ms)
 error: script "test" exited with code 1
@@ -90,18 +90,18 @@ error: script "test" exited with code 1
 145|     const { gateParams, validatorCalls } = await runGateWithBudget(0);
 146|
 147|     expect(gateParams).not.toBeNull();
-   |                            ^
+ |                            ^
 148|     expect(gateParams!["deadlineAt"]).toBeUndefined();
 149|     expect(validatorCalls[0]!["deadlineAt"]).toBeUndefined();
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 Test Files  1 failed | 423 passed | 1 skipped (425)
-  Tests  2 failed | 5119 passed | 15 skipped (5136)
+Tests  2 failed | 5119 passed | 15 skipped (5136)
 Start at  00:29:14
 Duration  217.91s (transform 5.59s, setup 1.81s, import 29.68s, tests 197.98s, environment 186.95s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 345ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  00:32:52
 Duration  1.93s (transform 959ms, setup 9ms, import 1.11s, tests 345ms, environment 402ms)
 error: script "test" exited with code 1

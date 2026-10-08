@@ -90,43 +90,43 @@ driver produced the entries.
 ## Acceptance criteria
 
 - [ ] A maximal run of adjacent `tool` entries renders as **one** tool-call
-  row; a text or human entry between two tool runs splits them into two
-  rows.
+row; a text or human entry between two tool runs splits them into two
+rows.
 - [ ] The tool-call row shows a **total count** of the tool calls it contains.
 - [ ] The row shows **separate success and error counts**, success styled green
-  and error styled red (existing theme success/danger tokens, not hardcoded
-  hex). A run with no errors shows the success count only; a run with errors
-  shows both.
+and error styled red (existing theme success/danger tokens, not hardcoded
+hex). A run with no errors shows the success count only; a run with errors
+shows both.
 - [ ] Clicking the tool-call row expands/collapses it and shows each individual
-  tool call **with its input and result**, in original order. Expansion is
-  per-row and defaults to collapsed.
+tool call **with its input and result**, in original order. Expansion is
+per-row and defaults to collapsed.
 - [ ] The tool-call row's timestamp is the **maximum** `at` across the tool
-  calls it groups, not the first one.
+calls it groups, not the first one.
 - [ ] Every rendered row (text, human, tool-call group, system) displays a
-  timestamp taken from the newest entry it represents.
+timestamp taken from the newest entry it represents.
 - [ ] No "continue" / step-finish marker row is rendered. Step entries are
-  dropped from the display pipeline (alongside the existing `kind: "start"`
-  drop) rather than being converted into an empty row.
+dropped from the display pipeline (alongside the existing `kind: "start"`
+drop) rather than being converted into an empty row.
 - [ ] The grouping/count/timestamp logic is implemented **once** in a shared
-  place and reused by every chat, not copy-pasted per component.
+place and reused by every chat, not copy-pasted per component.
 - [ ] The tool-call row is a **shared component**, and all chats that render
-  tool calls use it, instead of each chat hand-rolling its own row markup
-  (today several chats degrade tool entries to plain text like
-  `Checked with <tool> · <state>`; those must render the real grouped row).
+tool calls use it, instead of each chat hand-rolling its own row markup
+(today several chats degrade tool entries to plain text like
+`Checked with <tool> · <state>`; those must render the real grouped row).
 - [ ] Behaviour is identical across all supported agents: opencode, claude
-  code, codex, github copilot, cursor, kiro, qwen, antigravity. Verified
-  for every engine listed in the agent-kind union, not just opencode.
+code, codex, github copilot, cursor, kiro, qwen, antigravity. Verified
+for every engine listed in the agent-kind union, not just opencode.
 - [ ] Streaming behaves sanely: a tool-call row grows as calls arrive during a
-  live run, updating its count and timestamp, and does not flicker or reset
-  the scroll position (respect the `useChatScroll` contract).
+live run, updating its count and timestamp, and does not flicker or reset
+the scroll position (respect the `useChatScroll` contract).
 - [ ] Grouping is a **view-layer** transform. The stored transcript, the SSE
-  `agent.output` events, and any export/debugger endpoint still see the
-  original individual entries in order.
+`agent.output` events, and any export/debugger endpoint still see the
+original individual entries in order.
 - [ ] New tests cover: run-splitting, counts, timestamp-max, and the removal of
-  step-marker rows; plus at least one test proving two different agents'
-  entries produce identical rendered grouping.
+step-marker rows; plus at least one test proving two different agents'
+entries produce identical rendered grouping.
 - [ ] `repoos check` passes (format, lint, build, tests, UI smoke). Run
-  `bun run fmt` before committing on the branch.
+`bun run fmt` before committing on the branch.
 
 ## Notes for AI
 

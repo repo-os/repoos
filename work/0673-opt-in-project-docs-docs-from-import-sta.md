@@ -53,18 +53,18 @@ Owner guidance (important): do NOT make starter docs the default and do not impo
 196|     // `zip -y` stores symlinks as links rather than following them.
 197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
 198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
-   |                         ^
+ |                         ^
 199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
 200|   });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 Test Files  1 failed | 391 passed | 1 skipped (393)
-  Tests  6 failed | 4804 passed | 15 skipped (4825)
+Tests  6 failed | 4804 passed | 15 skipped (4825)
 Start at  16:38:22
 Duration  201.84s (transform 5.23s, setup 1.66s, import 27.28s, tests 183.80s, environment 172.77s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 326ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  16:41:44
 Duration  1.75s (transform 821ms, setup 9ms, import 952ms, tests 326ms, environment 402ms)
 error: script "test" exited with code 1
@@ -74,18 +74,18 @@ error: script "test" exited with code 1
 196|     // `zip -y` stores symlinks as links rather than following them.
 197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
 198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
-   |                         ^
+ |                         ^
 199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
 200|   });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 Test Files  1 failed | 391 passed | 1 skipped (393)
-  Tests  6 failed | 4804 passed | 15 skipped (4825)
+Tests  6 failed | 4804 passed | 15 skipped (4825)
 Start at  16:48:25
 Duration  201.73s (transform 5.54s, setup 1.64s, import 27.45s, tests 183.97s, environment 172.14s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 333ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  16:51:47
 Duration  1.77s (transform 833ms, setup 9ms, import 962ms, tests 333ms, environment 402ms)
 error: script "test" exited with code 1
@@ -96,18 +96,18 @@ error: script "test" exited with code 1
 196|     // `zip -y` stores symlinks as links rather than following them.
 197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
 198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
-   |                         ^
+ |                         ^
 199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
 200|   });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 Test Files  1 failed | 391 passed | 1 skipped (393)
-  Tests  6 failed | 4804 passed | 15 skipped (4825)
+Tests  6 failed | 4804 passed | 15 skipped (4825)
 Start at  16:58:11
 Duration  201.71s (transform 5.32s, setup 1.70s, import 27.21s, tests 184.03s, environment 172.30s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 343ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  17:01:33
 Duration  1.82s (transform 860ms, setup 9ms, import 1.00s, tests 343ms, environment 406ms)
 error: script "test" exited with code 1
@@ -118,18 +118,18 @@ error: script "test" exited with code 1
 196|     // `zip -y` stores symlinks as links rather than following them.
 197|     const r = spawnSync("zip", ["-qry", zipPath, "."], { cwd: staging,…
 198|     if (r.status !== 0) throw new Error(`zip failed: ${r.stderr || r.e…
-   |                         ^
+ |                         ^
 199|     expect(() => importProjectDocs(zipPath, join(scratch(), "docs"))).…
 200|   });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 Test Files  1 failed | 391 passed | 1 skipped (393)
-  Tests  6 failed | 4804 passed | 15 skipped (4825)
+Tests  6 failed | 4804 passed | 15 skipped (4825)
 Start at  17:09:03
 Duration  202.03s (transform 5.38s, setup 1.68s, import 27.41s, tests 183.84s, environment 172.80s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 348ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  17:12:25
 Duration  1.84s (transform 863ms, setup 9ms, import 1.00s, tests 348ms, environment 418ms)
 error: script "test" exited with code 1

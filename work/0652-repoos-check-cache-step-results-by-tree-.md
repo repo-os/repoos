@@ -54,18 +54,18 @@ PARKED (2026-10-05, human decision pending on closing this task). Three review r
 458|       const reaped = await sweep.cleanupOrphanedRoots();
 459|
 460|       expect(reaped).toBeGreaterThanOrEqual(1);
-   |                      ^
+ |                      ^
 461|       const outcome = await exited;
 462|       // The sweep's SIGTERM terminated it; the child must not have su…
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 385 passed | 1 skipped (387)
-  Tests  1 failed | 4689 passed | 15 skipped (4705)
+Tests  1 failed | 4689 passed | 15 skipped (4705)
 Start at  02:24:50
 Duration  231.39s (transform 5.72s, setup 1.97s, import 40.46s, tests 200.01s, environment 198.38s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 408ms
 Test Files  1 passed (1)
-  Tests  2 passed (2)
+Tests  2 passed (2)
 Start at  02:28:42
 Duration  2.17s (transform 957ms, setup 11ms, import 1.20s, tests 408ms, environment 472ms)
 error: script "test" exited with code 1

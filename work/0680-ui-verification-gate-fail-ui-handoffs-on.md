@@ -53,10 +53,10 @@ The playbook page `user-docs/running-with-agents.md` (landed on main) describes 
 "highlight": ".review-history",
 "steps": [
 {
-  "click": "[data-task-id=\"0680\"]"
+"click": "[data-task-id=\"0680\"]"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ]
 }

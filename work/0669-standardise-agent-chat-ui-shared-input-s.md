@@ -52,64 +52,64 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 ```json
 [
 {
- "label": "CTO panel — simplified header, agent/model chip, shared compose input",
- "target": "default",
- "route": "/",
- "highlight": ".floating-head-panel .agent-chat-header",
- "steps": [
-   {
-     "waitFor": "[data-test-id=\"floating-head-cto\"]"
-   },
-   {
-     "click": "[data-test-id=\"floating-head-cto\"]"
-   },
-   {
-     "waitFor": ".floating-head-panel .agent-chat-header"
-   },
-   {
-     "waitMs": 400
-   }
- ]
+"label": "CTO panel — simplified header, agent/model chip, shared compose input",
+"target": "default",
+"route": "/",
+"highlight": ".floating-head-panel .agent-chat-header",
+"steps": [
+  {
+    "waitFor": "[data-test-id=\"floating-head-cto\"]"
+  },
+  {
+    "click": "[data-test-id=\"floating-head-cto\"]"
+  },
+  {
+    "waitFor": ".floating-head-panel .agent-chat-header"
+  },
+  {
+    "waitMs": 400
+  }
+]
 },
 {
- "label": "Debugger panel — simplified header and agent/model chip",
- "target": "default",
- "route": "/",
- "highlight": ".floating-head-panel .agent-chat-header",
- "steps": [
-   {
-     "waitFor": "[data-test-id=\"floating-head-debugger\"]"
-   },
-   {
-     "click": "[data-test-id=\"floating-head-debugger\"]"
-   },
-   {
-     "waitFor": ".floating-head-panel .agent-chat-header"
-   },
-   {
-     "waitMs": 400
-   }
- ]
+"label": "Debugger panel — simplified header and agent/model chip",
+"target": "default",
+"route": "/",
+"highlight": ".floating-head-panel .agent-chat-header",
+"steps": [
+  {
+    "waitFor": "[data-test-id=\"floating-head-debugger\"]"
+  },
+  {
+    "click": "[data-test-id=\"floating-head-debugger\"]"
+  },
+  {
+    "waitFor": ".floating-head-panel .agent-chat-header"
+  },
+  {
+    "waitMs": 400
+  }
+]
 },
 {
- "label": "Ross panel — simplified header and agent/model chip",
- "target": "default",
- "route": "/",
- "highlight": ".floating-head-panel .agent-chat-header",
- "steps": [
-   {
-     "waitFor": "[data-test-id=\"floating-head-ross\"]"
-   },
-   {
-     "click": "[data-test-id=\"floating-head-ross\"]"
-   },
-   {
-     "waitFor": ".floating-head-panel .agent-chat-header"
-   },
-   {
-     "waitMs": 400
-   }
- ]
+"label": "Ross panel — simplified header and agent/model chip",
+"target": "default",
+"route": "/",
+"highlight": ".floating-head-panel .agent-chat-header",
+"steps": [
+  {
+    "waitFor": "[data-test-id=\"floating-head-ross\"]"
+  },
+  {
+    "click": "[data-test-id=\"floating-head-ross\"]"
+  },
+  {
+    "waitFor": ".floating-head-panel .agent-chat-header"
+  },
+  {
+    "waitMs": 400
+  }
+]
 }
 ]
 ```
@@ -123,21 +123,21 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 - 2026-10-07T17:24:39Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T17:24:40Z · status review→active
 - 2026-10-07T17:29:47Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/debugger-floating-close.test.ts:56:55
-  54|
-  55|     // A render-time ReferenceError leaves the slot unrendered, so the…
-  56|     expect(wrapper.find(".debugger-header").exists()).toBe(true);
-    |                                                       ^
-  57|     expect(wrapper.find(".debugger-close").exists()).toBe(true);
-  58|     expect(wrapper.text()).toContain("diagnosis ready");
+ 54|
+ 55|     // A render-time ReferenceError leaves the slot unrendered, so the…
+ 56|     expect(wrapper.find(".debugger-header").exists()).toBe(true);
+   |                                                       ^
+ 57|     expect(wrapper.find(".debugger-close").exists()).toBe(true);
+ 58|     expect(wrapper.text()).toContain("diagnosis ready");
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 439 passed | 1 skipped (441)
-   Tests  1 failed | 5353 passed | 15 skipped (5369)
+  Tests  1 failed | 5353 passed | 15 skipped (5369)
 Start at  17:25:23
 Duration  259.23s (transform 6.72s, setup 2.20s, import 45.68s, tests 244.08s, environment 203.82s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 776ms
 Test Files  1 passed (1)
-   Tests  2 passed (2)
+  Tests  2 passed (2)
 Start at  17:29:43
 Duration  2.74s (transform 1.14s, setup 13ms, import 1.43s, tests 776ms, environment 445ms)
 error: script "test" exited with code 1
@@ -145,21 +145,21 @@ error: script "test" exited with code 1
 - 2026-10-07T17:35:17Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/debugger-floating-close.test.ts:56:55 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T17:35:17Z · status review→active
 - 2026-10-07T17:42:04Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/debugger-floating-close.test.ts:56:55
-  54|
-  55|     // A render-time ReferenceError leaves the slot unrendered, so the…
-  56|     expect(wrapper.find(".debugger-header").exists()).toBe(true);
-    |                                                       ^
-  57|     expect(wrapper.find(".debugger-close").exists()).toBe(true);
-  58|     expect(wrapper.text()).toContain("diagnosis ready");
+ 54|
+ 55|     // A render-time ReferenceError leaves the slot unrendered, so the…
+ 56|     expect(wrapper.find(".debugger-header").exists()).toBe(true);
+   |                                                       ^
+ 57|     expect(wrapper.find(".debugger-close").exists()).toBe(true);
+ 58|     expect(wrapper.text()).toContain("diagnosis ready");
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 439 passed | 1 skipped (441)
-   Tests  1 failed | 5353 passed | 15 skipped (5369)
+  Tests  1 failed | 5353 passed | 15 skipped (5369)
 Start at  17:37:29
 Duration  269.62s (transform 7.57s, setup 2.23s, import 49.63s, tests 247.84s, environment 215.32s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 714ms
 Test Files  1 passed (1)
-   Tests  2 passed (2)
+  Tests  2 passed (2)
 Start at  17:41:59
 Duration  2.76s (transform 1.18s, setup 13ms, import 1.48s, tests 714ms, environment 472ms)
 error: script "test" exited with code 1
@@ -167,21 +167,21 @@ error: script "test" exited with code 1
 - 2026-10-07T17:47:17Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/debugger-floating-close.test.ts:56:55 · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-07T17:47:17Z · status review→active
 - 2026-10-07T17:52:36Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —      63|       attachTo: document.body,
-  64|       props: { open: true },
-  65|       global: { plugins: [pinia, router] },
-    |              ^
-  66|     });
-  67|     await flushPromises();
+ 64|       props: { open: true },
+ 65|       global: { plugins: [pinia, router] },
+   |              ^
+ 66|     });
+ 67|     await flushPromises();
 ❯ processTicksAndRejections ../../unknown:7:39
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 439 passed | 1 skipped (441)
-   Tests  1 failed | 5353 passed | 15 skipped (5369)
+  Tests  1 failed | 5353 passed | 15 skipped (5369)
 Start at  17:48:00
 Duration  271.10s (transform 7.00s, setup 2.27s, import 48.46s, tests 251.01s, environment 216.08s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 713ms
 Test Files  1 passed (1)
-   Tests  2 passed (2)
+  Tests  2 passed (2)
 Start at  17:52:31
 Duration  2.69s (transform 1.15s, setup 13ms, import 1.44s, tests 713ms, environment 446ms)
 error: script "test" exited with code 1
@@ -190,21 +190,21 @@ error: script "test" exited with code 1
 - 2026-10-07T17:58:17Z · status review→active
 - 2026-10-07T18:00:38Z · cli_override, model_override
 - 2026-10-07T18:03:36Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/debugger-floating-close.test.ts:56:55
-  54|
-  55|     // A render-time ReferenceError leaves the slot unrendered, so the…
-  56|     expect(wrapper.find(".debugger-header").exists()).toBe(true);
-    |                                                       ^
-  57|     expect(wrapper.find(".debugger-close").exists()).toBe(true);
-  58|     expect(wrapper.text()).toContain("diagnosis ready");
+ 54|
+ 55|     // A render-time ReferenceError leaves the slot unrendered, so the…
+ 56|     expect(wrapper.find(".debugger-header").exists()).toBe(true);
+   |                                                       ^
+ 57|     expect(wrapper.find(".debugger-close").exists()).toBe(true);
+ 58|     expect(wrapper.text()).toContain("diagnosis ready");
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 Test Files  1 failed | 439 passed | 1 skipped (441)
-   Tests  1 failed | 5353 passed | 15 skipped (5369)
+  Tests  1 failed | 5353 passed | 15 skipped (5369)
 Start at  17:59:01
 Duration  270.25s (transform 6.97s, setup 2.32s, import 49.17s, tests 248.11s, environment 216.62s)
 RUN  v4.1.10 /repo/src/ui-app
 ✓ tests/boot-timing.test.ts (2 tests) 706ms
 Test Files  1 passed (1)
-   Tests  2 passed (2)
+  Tests  2 passed (2)
 Start at  18:03:32
 Duration  2.68s (transform 1.16s, setup 12ms, import 1.44s, tests 706ms, environment 442ms)
 error: script "test" exited with code 1

@@ -176,7 +176,7 @@ cannot silently turn RepoOS runs into daemon mode.
 
 ```json
 {"meta":{"id":"…","uuid":"…","title":"…","created":"…","modified":"…",
-      "cost":0.0016488,"prompt_tokens":13642,"completion_tokens":3,"total_tokens":13645},
+     "cost":0.0016488,"prompt_tokens":13642,"completion_tokens":3,"total_tokens":13645},
 "messages":[{"role":"assistant","model":"…","provider":"…","parts":[
 {"type":"reasoning","thinking":"…"},
 {"type":"text","text":"…"},
@@ -287,7 +287,7 @@ site (`:4826-4840`).
 9. UI: `src/ui-app/src/views/AgentsView.vue:150-156` `CLI_LABELS`,
 `src/ui-app/src/stores/config.ts:7-24` / `:146-167` model lists and labels.
 10. `src/core/providers/spend.ts:23-34, 53-153` — a dispatch-provider row if
- Crush is meant to appear in the Tokens/dispatch views.
+Crush is meant to appear in the Tokens/dispatch views.
 
 Registration is string-keyed and there is no cli union in `types.ts`, so
 nothing else needs widening — but several tests enumerate the set and will fail

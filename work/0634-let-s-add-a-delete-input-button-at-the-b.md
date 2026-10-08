@@ -80,10 +80,10 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 "highlight": ".input-detail .delete-zone",
 "steps": [
 {
-  "click": ".input-row:nth-child(1)"
+"click": ".input-row:nth-child(1)"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ]
 },
@@ -94,16 +94,16 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 "highlight": ".story-panel-facts .delete-zone",
 "steps": [
 {
-  "click": ".story-head:nth-child(1)"
+"click": ".story-head:nth-child(1)"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 },
 {
-  "click": ".drawer-tabs .tab-btn:nth-child(4)"
+"click": ".drawer-tabs .tab-btn:nth-child(4)"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ]
 }
