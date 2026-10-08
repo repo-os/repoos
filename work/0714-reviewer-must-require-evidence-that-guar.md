@@ -42,3 +42,4 @@ Trace the existing reviewer, browser-smoke, and guard-test flows before changing
 - 2026-10-08T14:15:28Z · body
 - 2026-10-08T14:16:25Z · body
 - 2026-10-08T14:23:01Z · status active→review
+- 2026-10-08T14:23:01Z · note: shots: skipped — the diff (8 changed paths) touches no [[preview.paths]] globs — no UI change to capture
