@@ -2,7 +2,7 @@
 id: "0742"
 title: "Docs: add the missing second-night lessons to docs/agent-run-operations.md (loop guard, validate.sh rollout and arg order, hung/killed runs, unreachable hosts, previews)"
 type: chore
-status: active
+status: review
 priority: p3
 area: docs
 story: "Autopilot: the CTO handles the routine, humans handle exceptions"
@@ -44,4 +44,4 @@ Docs only. Related: #0710 (done), #0739, #0729, #0725.
 - 2026-10-08T14:06:56Z · status ready→active, branch
 - 2026-10-08T14:09:07Z · body
 - 2026-10-08T14:11:28Z · cli_override, model_override
-- 2026-10-08T14:14:41Z · note: shots: skipped — the diff (3 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-08T14:14:41Z · status active→review
