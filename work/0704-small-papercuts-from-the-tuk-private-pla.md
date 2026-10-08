@@ -12,7 +12,9 @@ branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-08T14:40:54Z"
+updated_at: "2026-10-08T15:44:13Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
 
@@ -42,3 +44,13 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T14:40:50Z · cli_override, model_override
 - 2026-10-08T14:40:53Z · status inbox→ready
 - 2026-10-08T14:40:54Z · status ready→active, branch
+- 2026-10-08T14:48:13Z · body
+- 2026-10-08T14:49:11Z · body
+- 2026-10-08T15:08:20Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-10-08T15:09:27Z · body
+- 2026-10-08T15:21:40Z · body
+- 2026-10-08T15:38:36Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-10-08T15:39:39Z · body
+- 2026-10-08T15:41:14Z · body
+- 2026-10-08T15:43:26Z · body
+- 2026-10-08T15:44:13Z · body

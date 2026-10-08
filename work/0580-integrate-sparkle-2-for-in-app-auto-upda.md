@@ -23,8 +23,8 @@ Add Sparkle 2 to RepoOS Hub so users receive in-app update prompts automatically
 1. Add Sparkle 2 as a Swift Package dependency: `https://github.com/sparkle-project/Sparkle`, version `~> 2.0`.
 2. Add the `Sparkle` framework to the Hub target's "Frameworks, Libraries, and Embedded Content" — embed and sign it.
 3. Add the required Info.plist keys:
-   - `SUFeedURL` — the URL where `appcast.xml` will be served (e.g. `https://github.com/repo-os/repoos/releases/latest/download/appcast.xml` or a dedicated CDN path — decide on hosting before wiring this in)
-   - `SUPublicEDKey` — the EdDSA public key for update signature verification (generated below)
+- `SUFeedURL` — the URL where `appcast.xml` will be served (e.g. `https://github.com/repo-os/repoos/releases/latest/download/appcast.xml` or a dedicated CDN path — decide on hosting before wiring this in)
+- `SUPublicEDKey` — the EdDSA public key for update signature verification (generated below)
 4. Instantiate `SPUStandardUpdaterController` in `AppDelegate` (or `@main` struct) and wire a **Check for Updates** menu item under the app menu.
 
 ### Generate EdDSA signing keys

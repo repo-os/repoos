@@ -44,34 +44,34 @@ The add screenshots buttons don't seem to work on an installed pwa on this machi
 ## Shots
 ```json
 [
+{
+"label": "New task panel: screenshot dropzone (file picker now opens)",
+"target": "default",
+"route": "/",
+"highlight": ".shot-dropzone",
+"steps": [
   {
-    "label": "New task panel: screenshot dropzone (file picker now opens)",
-    "target": "default",
-    "route": "/",
-    "highlight": ".shot-dropzone",
-    "steps": [
-      {
-        "click": ".new-btn"
-      },
-      {
-        "waitMs": 400
-      }
-    ]
+    "click": ".new-btn"
   },
   {
-    "label": "New input panel: screenshot dropzone (file picker now opens)",
-    "target": "default",
-    "route": "/inputs",
-    "highlight": ".shot-dropzone",
-    "steps": [
-      {
-        "click": ".new-btn"
-      },
-      {
-        "waitMs": 400
-      }
-    ]
+    "waitMs": 400
   }
+]
+},
+{
+"label": "New input panel: screenshot dropzone (file picker now opens)",
+"target": "default",
+"route": "/inputs",
+"highlight": ".shot-dropzone",
+"steps": [
+  {
+    "click": ".new-btn"
+  },
+  {
+    "waitMs": 400
+  }
+]
+}
 ]
 ```
 

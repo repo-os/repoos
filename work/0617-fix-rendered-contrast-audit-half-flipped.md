@@ -22,7 +22,7 @@ is a *half-flipped theme state*, not a real contrast defect:
 
 ```
 div#setting-maxConcurrentAgents.setting-row > div.setting-info > div.setting-desc
-  — #79809b on #ffffff = 3.91 (need ≥4.5, 11px) [settings]
+— #79809b on #ffffff = 3.91 (need ≥4.5, 11px) [settings]
 ```
 
 `#79809b` is the **dark** theme's `--txt-faint`; `#ffffff` is a **light** card.
@@ -55,18 +55,18 @@ the intended mode.
 ## Acceptance criteria
 
 - The audit is stable across repeated runs on an idle machine, on a tree with
-  no UI changes (e.g. 10/10 clean runs), including the Settings screen.
+no UI changes (e.g. 10/10 clean runs), including the Settings screen.
 - If the finding is instead a real token leak (a light scope missing a
-  `--txt-faint` override), fix the token — do NOT exempt it: faint/dim tokens
-  were deliberately raised to meet WCAG AA, per `docs/contrast-audit.md`.
+`--txt-faint` override), fix the token — do NOT exempt it: faint/dim tokens
+were deliberately raised to meet WCAG AA, per `docs/contrast-audit.md`.
 - `docs/contrast-audit.md` updated if the barrier/mechanism changes.
 
 ## Notes
 
 - Pre-existing and unrelated to #0616; filed separately so the harness
-  integration's close-out does not carry an out-of-scope fix.
+integration's close-out does not carry an out-of-scope fix.
 - The 2026-10-01 evidence above is the reproduction recipe; a run that fails
-  should print the `#setting-maxConcurrentAgents` finding.
+should print the `#setting-maxConcurrentAgents` finding.
 
 ## Activity
 

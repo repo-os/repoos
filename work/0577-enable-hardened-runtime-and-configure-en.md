@@ -21,9 +21,9 @@ Notarization requires the app to opt into Apple's hardened runtime. Configure th
 
 1. In the RepoOS Hub Xcode target (Release configuration), enable **Hardened Runtime** (`ENABLE_HARDENED_RUNTIME = YES`).
 2. Create `macos/RepoOSHub/RepoOSHub.entitlements` with the entitlements the app actually uses:
-   - `com.apple.security.network.client` — WKWebView makes outbound HTTPS requests to RepoOS servers
-   - `com.apple.security.cs.allow-jit` — only if any WebView content runs JIT-compiled JavaScript (evaluate whether this is needed; WKWebView's in-process JavaScript typically does not require this, but test)
-   - Do NOT add entitlements the app does not use — Apple rejects unnecessarily broad entitlements
+- `com.apple.security.network.client` — WKWebView makes outbound HTTPS requests to RepoOS servers
+- `com.apple.security.cs.allow-jit` — only if any WebView content runs JIT-compiled JavaScript (evaluate whether this is needed; WKWebView's in-process JavaScript typically does not require this, but test)
+- Do NOT add entitlements the app does not use — Apple rejects unnecessarily broad entitlements
 3. Wire the entitlements file into the Xcode build settings (`CODE_SIGN_ENTITLEMENTS`).
 4. Build locally in Release mode and confirm no entitlement errors.
 5. Run `repoos check` to verify the build still passes.

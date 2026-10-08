@@ -33,8 +33,8 @@ A compact moon/sun icon button in the TopBar's upper-right corner. It shows the 
 ## Notes for AI
 
 - Files to touch:
-  - `src/ui-app/src/stores/config.ts` — add a `setTheme(t)` method modeled on `setUiTheme()`: apply with animation, PATCH `/api/config`, rollback on failure
-  - `src/ui-app/src/components/TopBar.vue` — import `{ Moon, Sun }` from `lucide-vue-next`, add the toggle button between the `.spacer` and `SearchBar` (or after `SearchBar` before the connection indicator), use `config.applyTheme` / `config.setTheme` from the `useConfigStore`
+- `src/ui-app/src/stores/config.ts` — add a `setTheme(t)` method modeled on `setUiTheme()`: apply with animation, PATCH `/api/config`, rollback on failure
+- `src/ui-app/src/components/TopBar.vue` — import `{ Moon, Sun }` from `lucide-vue-next`, add the toggle button between the `.spacer` and `SearchBar` (or after `SearchBar` before the connection indicator), use `config.applyTheme` / `config.setTheme` from the `useConfigStore`
 - Store the explicit dark/light value; do not toggle back to `"system"` — once the user clicks the toggle they are making an explicit choice
 - The `theme` config key already exists in the schema (`"dark" | "light" | "system"`); no server-side changes needed
 - The `repoos check` smoke test runs a headless browser; the toggle must render without console errors

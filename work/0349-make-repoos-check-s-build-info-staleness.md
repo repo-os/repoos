@@ -45,7 +45,7 @@ the same `[check]` section #0348 added for `uiSmoke`. Don't key it off
 ## Acceptance criteria
 
 - [ ] A project with `src/` and no RepoOS-style `dist/.build-info.json` skips
-      this step with a clear message instead of failing.
+this step with a clear message instead of failing.
 - [ ] RepoOS's own repo still fails the step when `dist/` is genuinely stale.
 - [ ] Tests cover both paths.
 - [ ] `repoos check` passes.

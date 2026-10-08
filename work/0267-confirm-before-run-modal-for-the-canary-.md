@@ -31,9 +31,9 @@ Follow the modern `ui/dialog` conventions already used by `AgentModelModal.vue` 
 - Props: `open: boolean`; emits `update:open` and `confirm`.
 - Dialog title: e.g. "Run the canary flow test?"
 - Body copy must cover:
-  - Clicking the canary starts a **real, billed agent run** — it is not preview-only.
-  - The canary task is deliberately trivial: it walks draft → inbox → ready → active → review → merge → done.
-  - The only change is a **one-line diff** to `src/core/canary.ts`: increment `CANARY_COUNTER` by 1 (wrapping 9 → 0) — nothing else, no tests/comments, and `CANARY_PROMPT` itself stays untouched.
+- Clicking the canary starts a **real, billed agent run** — it is not preview-only.
+- The canary task is deliberately trivial: it walks draft → inbox → ready → active → review → merge → done.
+- The only change is a **one-line diff** to `src/core/canary.ts`: increment `CANARY_COUNTER` by 1 (wrapping 9 → 0) — nothing else, no tests/comments, and `CANARY_PROMPT` itself stays untouched.
 - Actions: **Cancel** + a confirm button ("Create canary task"). While the create request is in flight, disable both buttons and show "Creating…". The confirm handler should `await` whatever the parent passes (see below) so the busy state reflects reality.
 
 ### Wire it into `Sidebar.vue`

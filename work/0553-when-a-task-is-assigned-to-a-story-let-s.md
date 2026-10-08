@@ -35,86 +35,86 @@ nothing stable to link by.
 ## Desired UX
 
 - In the task drawer's **Details** tab, the Story field gets a small icon-only
-  link/arrow button next to the story name, shown whenever the task has a story
-  assigned.
+link/arrow button next to the story name, shown whenever the task has a story
+assigned.
 - Clicking it closes the drawer and opens that story's side panel on the Stories
-  page — the panel itself, not just the story list — landing on the story's story
-  tab so the user immediately sees the story body and its tasks.
+page — the panel itself, not just the story list — landing on the story's story
+tab so the user immediately sees the story body and its tasks.
 - The button carries a tooltip and accessible name that says where it goes, e.g.
-  `Open story "Story numbers and deep links" (#0002)`.
+`Open story "Story numbers and deep links" (#0002)`.
 - The button is absent when the task has no story, and the whole Story control
-  (field *and* button) stays hidden when `[stories] enabled = false`, matching
-  the existing `storiesEnabled` gate — no dead control.
+(field *and* button) stays hidden when `[stories] enabled = false`, matching
+the existing `storiesEnabled` gate — no dead control.
 - A story tagged onto a task but never written to `stories/*.md` still gets a
-  working button, linking by story key (there is no number to link by).
+working button, linking by story key (there is no number to link by).
 - The number badge on the Stories list/panel is unchanged — this is a second,
-  navigational affordance, not a replacement for copy-to-clipboard.
+navigational affordance, not a replacement for copy-to-clipboard.
 
 ## Acceptance criteria
 
 - [ ] A task with a story assigned shows a link-arrow button beside the Story
-      field in the drawer's Details tab; clicking it navigates to
-      `/stories?story=<number>` and the story panel opens with that story shown
-      (story tab, not a remembered tab from a previously opened story).
+field in the drawer's Details tab; clicking it navigates to
+`/stories?story=<number>` and the story panel opens with that story shown
+(story tab, not a remembered tab from a previously opened story).
 - [ ] The task drawer is not left open on top of / behind the story panel after
-      the click; unsaved edits in the drawer are handled the same way the
-      drawer's existing close-and-navigate affordances handle them.
+the click; unsaved edits in the drawer are handled the same way the
+drawer's existing close-and-navigate affordances handle them.
 - [ ] The button has an accessible name and tooltip naming the target story
-      (including its number when it has one).
+(including its number when it has one).
 - [ ] No button renders when the task has no story, and no button renders at all
-      when `[stories] enabled = false` — matching the existing `storiesEnabled`
-      gate on the Story field.
+when `[stories] enabled = false` — matching the existing `storiesEnabled`
+gate on the Story field.
 - [ ] A task tagged to a tag-only story (no definition file, so no number) still
-      gets a working button via the story key; no error toast, no blank route.
+gets a working button via the story key; no error toast, no blank route.
 - [ ] A story definition file with no `number:` is assigned one on load, and the
-      assigned number is not already used by another story.
+assigned number is not already used by another story.
 - [ ] Numbers are unique across all stories: if two story files somehow carry the
-      same `number:` (hand-edited or copy-pasted frontmatter), the collision is
-      resolved so each story keeps a distinct number, and no two stories render
-      the same `#0001` badge or resolve to the same deep link.
+same `number:` (hand-edited or copy-pasted frontmatter), the collision is
+resolved so each story keeps a distinct number, and no two stories render
+the same `#0001` badge or resolve to the same deep link.
 - [ ] Assignment is idempotent and non-destructive: a story that already has a
-      number keeps it across restarts, renames, and edits; deleting a story and
-      creating another does not hand a live story a duplicate.
+number keeps it across restarts, renames, and edits; deleting a story and
+creating another does not hand a live story a duplicate.
 - [ ] Tests cover: the button's render/hide conditions and the `?story=` value it
-      produces (including the tag-only key case), plus the number backfill
-      assigning a number to a numberless legacy story and keeping every number
-      unique — including the seeded-duplicate and delete-then-create cases.
+produces (including the tag-only key case), plus the number backfill
+assigning a number to a numberless legacy story and keeping every number
+unique — including the seeded-duplicate and delete-then-create cases.
 - [ ] `bun run fmt` run before committing on the task branch, then `repoos check`
-      passes.
+passes.
 
 ## Notes for AI
 
 - Reuse the existing deep-link convention. `StoriesView.vue`'s `findStoryByRef`
-  already resolves `?story=` from `#7`, `7`, `0007`, or the story key — build the
-  link in that shape and let the existing watcher open the panel. Do not add a
-  route, a new query param, or a second resolver.
+already resolves `?story=` from `#7`, `7`, `0007`, or the story key — build the
+link in that shape and let the existing watcher open the panel. Do not add a
+route, a new query param, or a second resolver.
 - Do not build a second numbering path. `ensureStoryNumbers`
-  (`src/core/story-definition-files.ts`, called from `src/server/server.ts` at
-  boot) already assigns numbers to definition files, skips numbers in use, and
-  never renumbers. Extend/verify it and its tests
-  (`src/ui-app/tests/story-numbering.test.ts`) for the collision case; do not
-  hand-edit any file under `stories/`.
+(`src/core/story-definition-files.ts`, called from `src/server/server.ts` at
+boot) already assigns numbers to definition files, skips numbers in use, and
+never renumbers. Extend/verify it and its tests
+(`src/ui-app/tests/story-numbering.test.ts`) for the collision case; do not
+hand-edit any file under `stories/`.
 - Story files are `stories/*.md` and are only ever written through the story
-  definition helpers (or the New story flow) — same rule as `work/*.md`: no
-  direct file writes outside the API/helpers.
+definition helpers (or the New story flow) — same rule as `work/*.md`: no
+direct file writes outside the API/helpers.
 - Assumption: the button lives in the task drawer's Details tab, in the same
-  `field` as the Story select. That is the only place a task's story is shown
-  today (`TaskCard.vue` renders no story), and it matches the screenshot
-  attached to this task — confirm against `work/.attachments/0553/` before
-  building. Do not add a story row to task cards.
+`field` as the Story select. That is the only place a task's story is shown
+today (`TaskCard.vue` renders no story), and it matches the screenshot
+attached to this task — confirm against `work/.attachments/0553/` before
+building. Do not add a story row to task cards.
 - Assumption: the button navigates rather than toggling, i.e. it leaves the
-  drawer and opens the story panel on `/stories`. The user's stated goal is
-  "go to the story panel", not "peek without losing the task".
+drawer and opens the story panel on `/stories`. The user's stated goal is
+"go to the story panel", not "peek without losing the task".
 - Style it like the rest of the app: an icon-only control using the shared
-  button/field classes in `src/ui-app/src/style.css` and the existing icon
-  treatment (the story chevron in `StoriesView.vue` is a reasonable reference) —
-  no bare `<button>` with bespoke colors in a `<style scoped>` block, and no
-  default `<select>` introduced anywhere.
+button/field classes in `src/ui-app/src/style.css` and the existing icon
+treatment (the story chevron in `StoriesView.vue` is a reasonable reference) —
+no bare `<button>` with bespoke colors in a `<style scoped>` block, and no
+default `<select>` introduced anywhere.
 - If the story name no longer resolves (a rename drifted the tag), don't leave
-  the user on a blank route — fall back to the Stories list.
+the user on a blank route — fall back to the Stories list.
 - Out of bounds: task/input numbering, `CopyableNumber` badge behaviour, the
-  story deep-link URL shape, and the roll-up/progress model (an explicit
-  non-goal in story #0002).
+story deep-link URL shape, and the roll-up/progress model (an explicit
+non-goal in story #0002).
 
 ## Scope
 
@@ -129,9 +129,9 @@ task roll-up progress.
 ## Related
 
 - `stories/story-numbers-and-deep-links.md` (story #0002) — the story that made
-  stories numbered and deep-linkable; this task is its follow-through.
+stories numbered and deep-linkable; this task is its follow-through.
 - #0515 — Stories should have numbers and deeplinks just like tasks and inputs
-  (the `ensureStoryNumbers` backfill and the copyable badge this builds on).
+(the `ensureStoryNumbers` backfill and the copyable badge this builds on).
 - #0502 — the story side panel this button opens; #0480 — the Stories page.
 
 ## Original prompt
@@ -156,9 +156,9 @@ changes and commit them, and you can discard any commits you make in this
 state without impacting any branches by switching back to a branch.
 If you want to create a new branch to retain commits you create, you may
 do so (now or later) by using -c with the switch command. Example:
-  git switch -c <new-branch-name>
+git switch -c <new-branch-name>
 Or undo this operation with:
-  git switch -
+git switch -
 Turn off this advice by setting config variable advice.detachedHead to false
 [validate] HEAD verified at 1360693c831d5b04bdb97b02efda97a626ea3959
 failed to connect to the docker API at unix:///var/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /var/run/docker.sock: connect: no such file or directory

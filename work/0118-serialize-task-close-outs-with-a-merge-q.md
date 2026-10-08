@@ -11,11 +11,6 @@ branch: feat/serialize-task-close-outs-with-a-merge-q
 created_at: "2026-08-12T04:47:03Z"
 updated_at: "2026-08-13T17:40:43Z"
 ---
-## Activity
-
-- 2026-08-12T04:47:03Z · created · unknown
-
-
 ## Problem
 
 RepoOS lets multiple review tasks enter `completeTask()` concurrently. Each
@@ -40,72 +35,72 @@ single-writer operation and must be coordinated by RepoOS.
 
 - Engineers continue working concurrently in separate worktrees.
 - **Move to done** enqueues one durable integration job and shows whether it is
-  queued, synchronizing, validating, publishing, or cleaning up.
+queued, synchronizing, validating, publishing, or cleaning up.
 - Close-outs for one repository publish strictly one at a time in FIFO order.
 - RepoOS validates a merge candidate away from the live main checkout. Main
-  remains clean and unchanged until the candidate passes the complete gate.
+remains clean and unchanged until the candidate passes the complete gate.
 - If main advances before publication, RepoOS rebuilds the candidate from the
-  new main SHA and validates it again.
+new main SHA and validates it again.
 - A server reload, browser disconnect, or retry cannot duplicate the merge or
-  lose its phase. Only a fully verified candidate reaches main and `done`.
+lose its phase. Only a fully verified candidate reaches main and `done`.
 
 ## Acceptance criteria
 
 - [ ] Add a repository-scoped, server-owned close-out coordinator. It
-      serializes publication across different tasks and exposes FIFO position.
+serializes publication across different tasks and exposes FIFO position.
 - [ ] Enqueue is idempotent per task; repeated `/done` requests return the
-      existing job instead of starting another `completeTask()`.
+existing job instead of starting another `completeTask()`.
 - [ ] Persist versioned integration-job state atomically under `.repoos/`.
-      After restart, RepoOS safely resumes or reports a recoverable phase and
-      never guesses that an interrupted job completed.
+After restart, RepoOS safely resumes or reports a recoverable phase and
+never guesses that an interrupted job completed.
 - [ ] Record `baseMainSha` when validation begins. Immediately before publish,
-      compare it with current main; if main changed, discard the stale
-      candidate, rebuild from the new SHA, and rerun the full gate.
+compare it with current main; if main changed, discard the stale
+candidate, rebuild from the new SHA, and rerun the full gate.
 - [ ] Build in a RepoOS-owned temporary integration worktree/branch based on
-      main. Merge the feature branch, rebuild generated artifacts, and run
-      `repoos check` there. Never dirty or partially merge live main while
-      validating.
+main. Merge the feature branch, rebuild generated artifacts, and run
+`repoos check` there. Never dirty or partially merge live main while
+validating.
 - [ ] Fail candidates with unmerged index entries, unexpected dirt, or text
-      containing unresolved `<<<<<<<`, `=======`, or `>>>>>>>` markers.
+containing unresolved `<<<<<<<`, `=======`, or `>>>>>>>` markers.
 - [ ] Publish only a green candidate while holding the repository lock, using
-      an ancestry-checked fast-forward/compare-and-swap operation.
+an ancestry-checked fast-forward/compare-and-swap operation.
 - [ ] Defer self-reload while an integration job owns the publication lock.
-      After durable outcome recording, perform one controlled handover; a
-      close-out build must not kill its coordinating server.
+After durable outcome recording, perform one controlled handover; a
+close-out build must not kill its coordinating server.
 - [ ] After publish, set and commit canonical task status `done`, remove the
-      task and integration worktrees, delete merged temporary/feature branches,
-      and leave main clean.
+task and integration worktrees, delete merged temporary/feature branches,
+and leave main clean.
 - [ ] Failures retain phase, main SHA, candidate SHA when present, reason, and
-      recovery action. Retry resumes safely and never repeats an already
-      published merge.
+recovery action. Retry resumes safely and never repeats an already
+published merge.
 - [ ] API/SSE expose queued/current jobs so task and Control views can explain
-      why work is waiting.
+why work is waiting.
 - [ ] Tests cover two different tasks closing concurrently, duplicate
-      requests, main advancing during validation, source conflicts, conflict
-      markers in otherwise mergeable Markdown, build/check failure, restart in
-      every phase, and cleanup after publish.
+requests, main advancing during validation, source conflicts, conflict
+markers in otherwise mergeable Markdown, build/check failure, restart in
+every phase, and cleanup after publish.
 - [ ] An end-to-end test launches at least three close-outs concurrently and
-      proves successful results are serialized, based on latest main, green,
-      and leave a clean repository.
+proves successful results are serialized, based on latest main, green,
+and leave a clean repository.
 - [ ] `repoos check` passes.
 
 ## Notes for AI
 
 - Prefer a candidate worktree over rollback of a failed merge on live main. Do
-  not use `git reset --hard` as transaction recovery.
+not use `git reset --hard` as transaction recovery.
 - The server is the sole privileged publisher. Agents request handoff/review;
-  they never merge, mutate canonical state, or choose arbitrary paths.
+they never merge, mutate canonical state, or choose arbitrary paths.
 - Do not auto-resolve source conflicts. Schema-aware task reconciliation may
-  merge frontmatter/activity entries but must reject conflict markers.
-  Generated artifacts are rebuilt from candidate source.
+merge frontmatter/activity entries but must reject conflict markers.
+Generated artifacts are rebuilt from candidate source.
 - Keep locking repository-scoped so separate repositories do not block each
-  other.
+other.
 - Likely touch points: `src/server/done.ts`, `src/server/server.ts`,
-  `src/server/reload.ts`, `src/core/git.ts`, plus a focused integration-job
-  module and tests.
+`src/server/reload.ts`, `src/core/git.ts`, plus a focused integration-job
+module and tests.
 - #0075 owns non-blocking HTTP/SSE UX and elimination of duplicate build and
-  browser work. This task owns correctness: serialization, durable phases,
-  candidate validation, SHA checks, and atomic publication.
+browser work. This task owns correctness: serialization, durable phases,
+candidate validation, SHA checks, and atomic publication.
 
 ## Related
 
@@ -113,10 +108,11 @@ single-writer operation and must be coordinated by RepoOS.
 - 0095 — automatic branch sync during review completion.
 - 0113 — keeps generated artifacts out of feature commits.
 - 0112 — agent supervision may surface stuck jobs but must not bypass this
-  coordinator.
+coordinator.
 
 ## Activity
 
+- 2026-08-12T04:47:03Z · created · unknown
 - 2026-08-13T12:47:06Z · status ready→active, branch
 - 2026-08-13T12:58:53Z · watchdog: automatic resume attempted
 - 2026-08-13T13:08:03Z · watchdog: escalated to needs_input · handoff signal was not detected after the automatic resume · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)

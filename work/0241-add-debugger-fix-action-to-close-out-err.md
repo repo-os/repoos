@@ -11,11 +11,6 @@ branch: ""
 created_at: "2026-08-17T05:31:47Z"
 updated_at: "2026-09-15T16:35:17Z"
 ---
-## Activity
-
-- 2026-08-17T05:31:47Z · created · unknown
-
-
 ## Problem
 
 _What's broken or missing? Why does it matter?_
@@ -34,5 +29,6 @@ _Constraints, files to touch, things NOT to do._
 
 ## Activity
 
+- 2026-08-17T05:31:47Z · created · unknown
 - 2026-09-15T16:35:17Z · status inbox→done
 - 2026-09-15T16:35:17Z · note: Stale: already implemented. DebuggerChat.vue / TaskDebuggerChat.vue already provide a debugger Fix action with repairing/repaired state and dispatch-to-engineer flow.

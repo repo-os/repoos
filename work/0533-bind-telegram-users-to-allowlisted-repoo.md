@@ -27,13 +27,13 @@ A link table plus a binding flow that only an authenticated admin can start:
 
 ```sql
 CREATE TABLE telegram_user_links (
-  telegram_user_id INTEGER PRIMARY KEY,   -- numeric, never a username
-  email           TEXT NOT NULL,          -- FK → auth_users.email
-  telegram_username TEXT,                 -- display/lookup hint only
-  bound_at        TEXT NOT NULL,
-  bound_by        TEXT,                   -- admin email that authorized it
-  last_seen_at    TEXT,
-  revoked_at      TEXT
+telegram_user_id INTEGER PRIMARY KEY,   -- numeric, never a username
+email           TEXT NOT NULL,          -- FK → auth_users.email
+telegram_username TEXT,                 -- display/lookup hint only
+bound_at        TEXT NOT NULL,
+bound_by        TEXT,                   -- admin email that authorized it
+last_seen_at    TEXT,
+revoked_at      TEXT
 );
 ```
 

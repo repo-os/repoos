@@ -45,44 +45,44 @@ agent session driving the board directly via CLI/API rather than through
 \`repoos start\`'s managed task-runner lifecycle. Cover:
 
 - The #0365 incident as a concrete worked example (mirroring this file's
-  existing incident write-ups elsewhere, e.g. "Stuck-active incident
-  (#0151)" and the Debugging section's worked examples) — what happened,
-  why, and how it was confirmed (ps showing the process alive 6 minutes
-  after the done transition).
+existing incident write-ups elsewhere, e.g. "Stuck-active incident
+(#0151)" and the Debugging section's worked examples) — what happened,
+why, and how it was confirmed (ps showing the process alive 6 minutes
+after the done transition).
 - The core lesson: a CLI status-change call is NOT a synchronous,
-  system-has-settled operation. It's a file write the server discovers
-  asynchronously via its file watcher; whatever background machinery that
-  discovery triggers (spawning a reviewer, notifications, auto-dispatch)
-  runs on its own clock, outside anything the external caller can see or
-  block on.
+system-has-settled operation. It's a file write the server discovers
+asynchronously via its file watcher; whatever background machinery that
+discovery triggers (spawning a reviewer, notifications, auto-dispatch)
+runs on its own clock, outside anything the external caller can see or
+block on.
 - Concrete rules, roughly:
-  1. To land something yourself without a human/reviewer in the loop, skip
-     \`review\` entirely (active -> done directly) — avoids spawning a
-     reviewer to race against.
-  2. If you deliberately want the reviewer's advisory opinion first, enter
-     \`review\` and WAIT for it to actually finish (e.g. confirm
-     \`.repoos/reviews/<id>.md\` exists) before touching status again.
-  3. Never assume a CLI status change synchronously cancels a running
-     background job — treat any spawned process as running to completion
-     regardless of what you do to the task file next.
-  4. Claim a freshly created task by moving straight to \`active\` (skip
-     \`ready\`) so auto-dispatch never sees it queued to grab concurrently.
-  5. Re-check the task file against \`main\` immediately before merging, not
-     just once early — other machinery can commit to \`main\` at any point.
+1. To land something yourself without a human/reviewer in the loop, skip
+\`review\` entirely (active -> done directly) — avoids spawning a
+reviewer to race against.
+2. If you deliberately want the reviewer's advisory opinion first, enter
+\`review\` and WAIT for it to actually finish (e.g. confirm
+\`.repoos/reviews/<id>.md\` exists) before touching status again.
+3. Never assume a CLI status change synchronously cancels a running
+background job — treat any spawned process as running to completion
+regardless of what you do to the task file next.
+4. Claim a freshly created task by moving straight to \`active\` (skip
+\`ready\`) so auto-dispatch never sees it queued to grab concurrently.
+5. Re-check the task file against \`main\` immediately before merging, not
+just once early — other machinery can commit to \`main\` at any point.
 
 ## Notes for AI
 
 - This is a docs-only change (AGENTS.md). No code changes, no new tests.
 - Read the exact incident context in this session's own transcript isn't
-  available to you, but the code paths are: src/server/server.ts's
-  \`onStatusChange\`/\`startReview\`/the \`index.on\` handler around line 1485-
-  1568, and src/server/review.ts's \`cancel()\` (~line 1163) and
-  \`enforceStillInReview\` (~line 1476).
+available to you, but the code paths are: src/server/server.ts's
+\`onStatusChange\`/\`startReview\`/the \`index.on\` handler around line 1485-
+1568, and src/server/review.ts's \`cancel()\` (~line 1163) and
+\`enforceStillInReview\` (~line 1476).
 - Match this file's existing voice/format for incident write-ups (see
-  "Stuck-active incident (#0151)" near the end of the file for the pattern:
-  what happened, root cause, the fix/rule, what NOT to do).
+"Stuck-active incident (#0151)" near the end of the file for the pattern:
+what happened, root cause, the fix/rule, what NOT to do).
 - \`repoos check\` passes (should be a no-op for a docs-only change, but
-  confirm the file is well-formed markdown and nothing else broke).
+confirm the file is well-formed markdown and nothing else broke).
 
 ## Activity
 

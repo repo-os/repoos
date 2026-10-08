@@ -38,5 +38,5 @@ Keep the “Continue” line in task agent chats and display a timestamp with it
 - 2026-08-11T11:59:03Z · status inbox→ready
 - 2026-08-11T12:00:00Z · status ready→active · ai
 - 2026-08-11T20:15:00Z · status active→review · implementation on
-  feat/simplify-agent-chat-continuation-control (18d405c); `repoos check` green · ai
+feat/simplify-agent-chat-continuation-control (18d405c); `repoos check` green · ai
 - 2026-08-11T12:18:18Z · status review→done

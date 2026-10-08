@@ -26,7 +26,7 @@ that always shows:
 
 - The app version number (e.g. `v0.3.0`).
 - How long ago the UI was last updated, as a human-relative age — e.g. "just
-  now", "10 seconds ago", "3 minutes ago", "48 hours ago".
+now", "10 seconds ago", "3 minutes ago", "48 hours ago".
 
 The age ticks over so it always reads correctly without a page reload, and the
 widget fits the existing theme (works in both light and dark).
@@ -45,34 +45,34 @@ widget fits the existing theme (works in both light and dark).
 ## Notes for AI
 
 - Interpretation used here: "version" = the `version` field in `package.json`
-  (currently `0.3.0`); "when it was last updated" = the timestamp of the last
-  build of the UI/`dist/` output — i.e. how old the currently-served UI is.
+(currently `0.3.0`); "when it was last updated" = the timestamp of the last
+build of the UI/`dist/` output — i.e. how old the currently-served UI is.
 - Where the age comes from: the build pipeline (`scripts/copy-assets.mjs`)
-  already writes `dist/.build-info.json` for staleness detection — extend it to
-  also record a build timestamp. The server (e.g. `GET /api/health` or a new
-  small endpoint) should expose version + build time; the Vue app fetches it
-  and renders the widget. Do NOT hardcode the timestamp into the UI.
+already writes `dist/.build-info.json` for staleness detection — extend it to
+also record a build timestamp. The server (e.g. `GET /api/health` or a new
+small endpoint) should expose version + build time; the Vue app fetches it
+and renders the widget. Do NOT hardcode the timestamp into the UI.
 - The relative-age helper and the widget's live tick can be implemented in the
-  UI itself (a small `setInterval`); no runtime dependency is allowed.
+UI itself (a small `setInterval`); no runtime dependency is allowed.
 - Widget placement: bottom of `src/ui-app/src/components/Sidebar.vue` is the
-  natural lower-left slot in the `App.vue` layout (TopBar top, Sidebar left,
-  content right). The widget is additive — don't disturb the sidebar's existing
-  structure.
+natural lower-left slot in the `App.vue` layout (TopBar top, Sidebar left,
+content right). The widget is additive — don't disturb the sidebar's existing
+structure.
 - Mobile: the sidebar is hidden on small screens; a mobile fallback (e.g. in
-  `MobileTabs.vue`) is in scope only if it doesn't complicate the primary
-  desktop requirement — state clearly what you did.
+`MobileTabs.vue`) is in scope only if it doesn't complicate the primary
+desktop requirement — state clearly what you did.
 - After any UI change, rebuild (`bun run build`) and keep a `repoos serve`
-  running so the change can be viewed; verify with a browser probe before
-  reporting done. Remember the UI is served from `dist/` — a stale build will
-  silently show the old UI.
+running so the change can be viewed; verify with a browser probe before
+reporting done. Remember the UI is served from `dist/` — a stale build will
+silently show the old UI.
 - Run `repoos check` and confirm it passes before moving the task to review.
 
 ## Scope
 
 - Covers: surfacing the version + build age in the web UI, capturing the build
-  timestamp at build time, and serving it to the UI.
+timestamp at build time, and serving it to the UI.
 - Defers: changes to the CLI's `version` output, build-freshness warnings, or
-  the build pipeline's semantics beyond adding the timestamp.
+the build pipeline's semantics beyond adding the timestamp.
 
 ## Related
 

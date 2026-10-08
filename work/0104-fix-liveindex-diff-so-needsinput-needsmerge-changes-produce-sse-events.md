@@ -42,20 +42,20 @@ same as it already does for `status` and `title` changes.
 - [ ] `created_at`, `updated_at` are added
 - [ ] Existing diff tests still pass (none should break — these are additive)
 - [ ] Manual verification: set `needsInput: true` in a task file, confirm
-      the UI updates via SSE without a page refresh
+the UI updates via SSE without a page refresh
 - [ ] `repoos check` passes
 
 ## Notes for AI
 
 - The change is in `src/server/live-index.ts` in the `diff()` method (around
-  line 273-292). It compares `prev` (the old task from the Map) against
-  `current` (the freshly re-parsed task).
+line 273-292). It compares `prev` (the old task from the Map) against
+`current` (the freshly re-parsed task).
 - The comparison pattern is `keyof Task` fields pushed into an array. Add the
-  missing fields to that list. No other code changes needed — the SSE funnel,
-  store, and UI already handle any `task.updated` event correctly.
+missing fields to that list. No other code changes needed — the SSE funnel,
+store, and UI already handle any `task.updated` event correctly.
 - This is a 5-line change. Do not overthink it.
 - Verification: edit a task file on disk (e.g. toggle `needs_input: true`),
-  then open the browser and confirm the card updates without a refresh.
+then open the browser and confirm the card updates without a refresh.
 
 ## Activity
 

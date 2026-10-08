@@ -423,8 +423,9 @@ only when *every* eligible host is at its per-host limit, in FIFO order, and a
 macOS-only waiter never blocks a Linux job. Limits are per host
 (`maxConcurrent` per host → `remoteValidation.maxConcurrent` → 1), so two jobs
 run on two hosts while a third waits. A run that has to wait logs
-`[queued behind N other remote run(s) …]` in its remote-validation log and in
-the caller's output, and the log records which host ran each job
+`[waiting for a runner on <host> (queue position N) — queued behind …]` in its
+remote-validation log and in the caller's output (repeated on a heartbeat while
+it waits), and the log records which host ran each job
 (`[runner user@host (os)]`).
 
 When eligible hosts have the same number of active runs, the configured host

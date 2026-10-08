@@ -139,28 +139,53 @@ async function applyHighlight(
   }
 }
 
+export interface ShotCaptureMissHandlers {
+  onHighlightMiss?: (selector: string, route: string) => void;
+  onSelectorMiss?: (selector: string, route: string) => void;
+  /** Step selector timeouts become warnings instead of aborting capture (#0743). */
+  onStepMiss?: (message: string, route: string) => void;
+}
+
 /**
  * Run one declared step against the page. Click/fill/waitFor use plain CSS
- * selectors or test ids; a step failing its timeout aborts the capture so the
- * shot never shows an unreached state.
+ * selectors or test ids. Without `onStepMiss`, a step timeout aborts capture;
+ * with it, the miss is recorded and capture continues (#0743).
  */
 async function runStep(
   page: ShotDriverPage,
   step: { click?: string; fill?: string; text?: string; waitFor?: string; waitMs?: number },
+  route: string,
+  onStepMiss?: (message: string, route: string) => void,
 ): Promise<void> {
+  const soft = async (label: string, run: () => Promise<unknown>): Promise<void> => {
+    try {
+      await run();
+    } catch (err) {
+      if (onStepMiss) {
+        onStepMiss(`${label}: ${(err as Error).message.split("\n")[0]}`, route);
+        return;
+      }
+      throw err;
+    }
+  };
   if (typeof step.click === "string") {
-    await page.locator(step.click).click({ timeout: SHOT_SELECTOR_TIMEOUT_MS });
+    await soft(`click ${step.click}`, () =>
+      page.locator(step.click!).click({ timeout: SHOT_SELECTOR_TIMEOUT_MS }),
+    );
     return;
   }
   if (typeof step.fill === "string" && typeof step.text === "string") {
-    await page.locator(step.fill).fill(step.text, { timeout: SHOT_SELECTOR_TIMEOUT_MS });
+    await soft(`fill ${step.fill}`, () =>
+      page.locator(step.fill!).fill(step.text!, { timeout: SHOT_SELECTOR_TIMEOUT_MS }),
+    );
     return;
   }
   if (typeof step.waitFor === "string") {
     const base = page.locator(step.waitFor);
-    // Wait for EXISTENCE, tolerating duplicates — see ShotLocator.first.
     const target = typeof base.first === "function" ? base.first() : base;
-    await target.waitFor({ timeout: SHOT_SELECTOR_TIMEOUT_MS });
+    await soft(`waitFor ${step.waitFor}`, () =>
+      target.waitFor({ timeout: SHOT_SELECTOR_TIMEOUT_MS }),
+    );
     return;
   }
   if (typeof step.waitMs === "number") await page.waitForTimeout(step.waitMs);
@@ -177,9 +202,9 @@ export async function captureShotPage(
   url: string,
   entry: Pick<CaptureEntry, "selector" | "steps" | "highlight" | "highlights" | "route">,
   options: ShotCaptureOptions,
-  onHighlightMiss?: (selector: string, route: string) => void,
-  onSelectorMiss?: (selector: string, route: string) => void,
+  misses: ShotCaptureMissHandlers = {},
 ): Promise<Buffer> {
+  const { onHighlightMiss, onSelectorMiss, onStepMiss } = misses;
   await page.goto(url, { waitUntil: "load", timeout: SHOT_NAV_TIMEOUT_MS });
   try {
     await page.waitForLoadState("networkidle", { timeout: 10_000 });
@@ -187,7 +212,7 @@ export async function captureShotPage(
     /* a dev server with HMR may never go idle — the settle below still applies */
   }
   if (options.waitMs > 0) await page.waitForTimeout(options.waitMs);
-  for (const step of entry.steps ?? []) await runStep(page, step);
+  for (const step of entry.steps ?? []) await runStep(page, step, entry.route, onStepMiss);
   // Merged duplicate declarations carry each selector separately: apply and
   // miss-check them one by one, since a comma-joined list "matches" as soon as
   // any member does (#0613).

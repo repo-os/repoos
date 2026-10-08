@@ -29,11 +29,11 @@ An AI agent (or any script) cannot start a brand-new RepoOS project with the gui
 A supported, documented, non-interactive way to run the new-project flow, and a non-TTY error that tells the agent exactly how to succeed.
 
 - `repoos init <name> --new` (or `--yes`) runs the guided new-project flow with answers from flags and sensible defaults:
-  - `--description "<text>"` (also `--description-file <path>` or `-` for stdin, multi-line markdown)
-  - `--areas web,api,data` (comma-separated, same rule as the area vocabulary)
-  - `--commit` / `--no-commit` (initial commit of the scaffold; default: commit)
-  - `--launch` / `--no-launch` (web console; default: do NOT launch when non-interactive)
-  - `--dir <path>` or the positional name behaves as today (subdirectory) and refuses to overwrite an existing non-empty directory without `--force`.
+- `--description "<text>"` (also `--description-file <path>` or `-` for stdin, multi-line markdown)
+- `--areas web,api,data` (comma-separated, same rule as the area vocabulary)
+- `--commit` / `--no-commit` (initial commit of the scaffold; default: commit)
+- `--launch` / `--no-launch` (web console; default: do NOT launch when non-interactive)
+- `--dir <path>` or the positional name behaves as today (subdirectory) and refuses to overwrite an existing non-empty directory without `--force`.
 - Without a TTY and without `--new`, the refusal message prints the exact command to run, for example: `Not a TTY. To create a new project non-interactively run: repoos init <name> --new --description "..." --areas web,api --no-launch`. It must also warn that `git init` followed by `repoos init` seeds the existing-codebase starter, so it is the wrong route for a new project.
 - `repoos init --help` documents all of the above and says which flags apply to new vs existing repos.
 - Output on success is machine-friendly enough for agents: ends with the created project path, the server hint, and the id of the seeded starter task. A `--json` flag printing `{ root, tasks: [...], created: [...] }` is welcome but optional.

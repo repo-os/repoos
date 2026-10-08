@@ -40,8 +40,8 @@ The filter applies only to the model dropdown — other selects in the UI (e.g. 
 - Always keep `m.value === "default"` visible regardless of the filter query.
 - All instances use the same `<Select>` → `<SelectContent>` → `<SelectViewport>` → `<SelectItem>` structure. The cleanest approach is to add a new component (e.g. `ModelFilterInput.vue` or `SelectSearchGroup.vue`) that wraps the filtering logic and is slotted into the select popover, so it composes into every usage site without duplicating logic.
 - Files that render the model dropdown and need the search input:
-  - `src/ui-app/src/views/AgentsView.vue` — 2 select blocks (default agents ~line 317 and custom agents ~line 409)
-  - `src/ui-app/src/components/TaskDrawer.vue` — 2 select blocks (freeform ~line 1002 and agent tab ~line 1546)
+- `src/ui-app/src/views/AgentsView.vue` — 2 select blocks (default agents ~line 317 and custom agents ~line 409)
+- `src/ui-app/src/components/TaskDrawer.vue` — 2 select blocks (freeform ~line 1002 and agent tab ~line 1546)
 - The general-purpose `<SelectContent>` wrapper (`src/ui-app/src/components/ui/select/content.vue`) must not be modified — keep the search input out of the base select primitives.
 - Do NOT add a runtime dependency. Radix-Vue is already in the project; do not add `@radix-vue/combobox` or any other package without explicit authorization.
 - Assumption: the search clears on popover close by hooking `@update:open` (or similar) on the `<SelectRoot>`. Radix-Vue `SelectRoot` emits `@update:open` — use that to reset the filter query when the popover closes.

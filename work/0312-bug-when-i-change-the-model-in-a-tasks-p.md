@@ -34,35 +34,35 @@ save.
 ## Acceptance criteria
 
 - [ ] Selecting an agent+model in a task's pm/dev/review tab does not change
-      the currently active tab.
+the currently active tab.
 - [ ] The user remains on the same tab after the model/agent save completes.
 - [ ] Tab switching only happens when the user explicitly clicks a different
-      tab.
+tab.
 - [ ] The agent+model selection still saves correctly (no regression in the
-      save behavior itself).
+save behavior itself).
 
 ## Notes for AI
 
 - Investigate the save flow in the task pm/dev/review tab (likely under
-  `src/ui-app`). Look for any state update, store mutation, or re-render that
-  resets the active tab after the agent+model save.
+`src/ui-app`). Look for any state update, store mutation, or re-render that
+resets the active tab after the agent+model save.
 - The root cause is hypothesized to be the save triggering an unrelated update
-  that re-renders and resets the active tab. Confirm this before fixing.
+that re-renders and resets the active tab. Confirm this before fixing.
 - Preserve the existing save behavior; only eliminate the unintended tab
-  change.
+change.
 - Rebuild the UI after changes (`bun run build:ui` for speed, or
-  `bun run build`) and run `repoos check` to confirm nothing breaks.
+`bun run build`) and run `repoos check` to confirm nothing breaks.
 
 ## Scope
 
 - Covers fixing the unintended tab switch in the task's pm/dev/review tab
-  when changing agent+model.
+when changing agent+model.
 - Deferred: any unrelated tab-switching behavior elsewhere in the app.
 
 ## Related
 
 - docs/native-auth.md (if the underlying issue involves auth/backdoor flows,
-  only as applicable)
+only as applicable)
 
 ## Original prompt
 

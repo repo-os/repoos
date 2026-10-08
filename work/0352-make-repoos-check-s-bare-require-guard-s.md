@@ -34,7 +34,7 @@ that's the only case it's about.
 ## Acceptance criteria
 
 - [ ] A project with a non-RepoOS source layout gets its own source files
-      scanned.
+scanned.
 - [ ] Packages that aren't `"type": "module"` skip with a clear message.
 - [ ] RepoOS's own coverage doesn't change.
 - [ ] `repoos check` passes.

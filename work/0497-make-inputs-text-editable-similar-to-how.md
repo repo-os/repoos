@@ -36,43 +36,43 @@ already uses. No file hand-editing, no stale drawer.
 ## Acceptance criteria
 
 - [ ] The input drawer offers an edit affordance for the input's text (e.g. an
-      "Edit" button or pencil icon) that opens an "Edit Input" modal
+"Edit" button or pencil icon) that opens an "Edit Input" modal
 - [ ] The modal mirrors the spec edit modal: markdown textarea prefilled with
-      the current body, Cancel/Save actions, Escape and overlay-click close,
-      keyboard reachable, voice-dictate support matching the spec modal
+the current body, Cancel/Save actions, Escape and overlay-click close,
+keyboard reachable, voice-dictate support matching the spec modal
 - [ ] Save persists the new text: the core input update path accepts a body
-      change, the HTTP route carries it, and the store in
-      `src/ui-app/src/stores/repo.ts` exposes an action for it
+change, the HTTP route carries it, and the store in
+`src/ui-app/src/stores/repo.ts` exposes an action for it
 - [ ] After saving, the drawer and the inputs list reflect the new text
-      without a manual reload
+without a manual reload
 - [ ] Cancel (or closing without saving) leaves the input unchanged
 - [ ] Nonexistent input → 404; empty/whitespace-only body → 400, in the
-      route's existing validation style
+route's existing validation style
 - [ ] Tests cover the core update, the route, and the UI flow (`bun run test`)
 - [ ] `repoos check` passes
 
 ## Notes for AI
 
 - The pattern to mirror is `src/ui-app/src/components/SpecEditModal.vue`
-  ("Edit spec"), opened from `TaskDrawer.vue`. Reuse it directly if its props
-  fit, or add a sibling `InputEditModal.vue` next to it; keep modal CSS in
-  `src/ui-app/src/style.css` alongside the existing `sm-modal` rules (search
-  "Spec edit modal").
+("Edit spec"), opened from `TaskDrawer.vue`. Reuse it directly if its props
+fit, or add a sibling `InputEditModal.vue` next to it; keep modal CSS in
+`src/ui-app/src/style.css` alongside the existing `sm-modal` rules (search
+"Spec edit modal").
 - Server side: extend rather than duplicate — teach `updateInput` /
-  `patchInput` to accept an optional body alongside `status`, and keep going
-  through `commitInput` so the activity trail stays consistent.
+`patchInput` to accept an optional body alongside `status`, and keep going
+through `commitInput` so the activity trail stays consistent.
 - The drawer lives inline in `src/ui-app/src/views/InputsView.vue`
-  (deep-linked via `?input=`); the edit affordance belongs there.
+(deep-linked via `?input=`); the edit affordance belongs there.
 - Any fixed/fullscreen overlay must be wrapped in `<Teleport to="body">` (or a
-  Radix `DialogPortal`) — repo convention. Use the styled Dialog primitives in
-  `src/ui-app/src/components/ui/dialog/*`, not an unstyled modal.
+Radix `DialogPortal`) — repo convention. Use the styled Dialog primitives in
+`src/ui-app/src/components/ui/dialog/*`, not an unstyled modal.
 - Zero runtime dependencies.
 - **Assumption:** "text" means the input's markdown body, and the edit affordance
-  lives in the input detail drawer (the spec parallel — specs are edited from
-  the task drawer). The title is not a separately editable field; since
-  `createInput` derives the title from the body's first line, decide
-  deliberately whether a body edit re-derives it and state the choice in the
-  change description.
+lives in the input detail drawer (the spec parallel — specs are edited from
+the task drawer). The title is not a separately editable field; since
+`createInput` derives the title from the body's first line, decide
+deliberately whether a body edit re-derives it and state the choice in the
+change description.
 
 ## Scope
 

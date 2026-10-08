@@ -28,11 +28,11 @@ Areas become a defined, per-repo vocabulary that users and agents pick from, wit
 
 - **Source of the vocabulary.** A declared list in `repoos.toml` (e.g. `[areas]` with names and optional descriptions), merged with every `areas` value declared by `[[preview.targets]]`, so a repo that has only set up previews already gets sensible options. Repos with nothing declared show only the free-text entry.
 - **Multi-value: comma-separated, stored as a list if the parser allows.**
-  - First step: check whether the task frontmatter parser (`src/core/task.ts`) supports list values. It is zero-dependency and may be hand-rolled.
-  - If it does, store `area: [web, core]`. If not, store a comma-separated string (`area: web, core`) and parse it with one shared helper. Either way, there is one canonical written form and it uses commas, never `+`.
-  - Display: one chip per area in the UI (matching the multi-select); `web, core` in plain text (`repoos list`, `show`, logs). CLI and API take `--area web,core`.
-  - Legacy: the reader accepts both `+` and `,` so existing `a + b` tasks keep working until the migration rewrites them.
-  - This is a task-format change, so per AGENTS.md ("self-modifying act") it needs a migration in the same change and a check that the parser still reads every existing file in `work/`. Preview routing, the board filter and search must all use the one shared parse helper.
+- First step: check whether the task frontmatter parser (`src/core/task.ts`) supports list values. It is zero-dependency and may be hand-rolled.
+- If it does, store `area: [web, core]`. If not, store a comma-separated string (`area: web, core`) and parse it with one shared helper. Either way, there is one canonical written form and it uses commas, never `+`.
+- Display: one chip per area in the UI (matching the multi-select); `web, core` in plain text (`repoos list`, `show`, logs). CLI and API take `--area web,core`.
+- Legacy: the reader accepts both `+` and `,` so existing `a + b` tasks keep working until the migration rewrites them.
+- This is a task-format change, so per AGENTS.md ("self-modifying act") it needs a migration in the same change and a check that the parser still reads every existing file in `work/`. Preview routing, the board filter and search must all use the one shared parse helper.
 - **UI.** A multi-select dropdown in the same style as the existing custom dropdowns (`ui/select/*`, no native `<select>`), with checkmarks like the Story dropdown, plus a free-text entry that adds a new area. Used in the task drawer and in New task. Newly typed areas that are not in the vocabulary are allowed, and can be offered "add to repoos areas".
 - **Agents.** The PM/task-authoring prompt receives the area list and must choose from it (or propose a new one explicitly), so outside-authored specs stop inventing values. Agents still never edit task frontmatter directly; changes go through `repoos update --area` / the API, which accept multiple values.
 - **Onboarding.** `repoos init` and the first-run flow prompt the user to define areas and preview targets together, since they reinforce each other. Skipping is fine; the free-text fallback remains.

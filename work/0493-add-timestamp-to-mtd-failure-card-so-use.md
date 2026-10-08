@@ -45,8 +45,8 @@ Optional polish (only if trivial): `title` attribute on the headline with the fu
 
 1. Add optional `failedAt?: string` (ISO 8601) to `DoneError` in `repo.ts`.
 2. When setting an error:
-   - SSE `task.progress` with `step === "failed"`: set `failedAt: e.at` (require/propagate `at` in tests that emit these events).
-   - `completeTask` HTTP failure paths: set `failedAt` to `new Date().toISOString()` at the moment `setDoneError` runs.
+- SSE `task.progress` with `step === "failed"`: set `failedAt: e.at` (require/propagate `at` in tests that emit these events).
+- `completeTask` HTTP failure paths: set `failedAt` to `new Date().toISOString()` at the moment `setDoneError` runs.
 3. Pass `failedAt` from `TaskDrawer.vue` and `TaskCard.vue` into `DoneErrorCard` (prop + template), even though only panel mode displays it — keeps props symmetric for future card use.
 4. On retry success or when the error is cleared (`setDoneError(id, null)`), timestamp goes away with the rest of the error — no separate state.
 

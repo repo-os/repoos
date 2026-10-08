@@ -23,8 +23,8 @@ A task can carry a \`needs_input\` flag and a list of questions in its frontmatt
 \`\`\`yaml
 needs_input: true
 questions:
-  - "Should we fix the missing watchdog, or update the doc to reflect launchd KeepAlive instead?"
-  - "Is the 5-minute health interval acceptable or should it be configurable?"
+- "Should we fix the missing watchdog, or update the doc to reflect launchd KeepAlive instead?"
+- "Is the 5-minute health interval acceptable or should it be configurable?"
 \`\`\`
 
 When a human opens such a task in the drawer, the task detail view shows a prominent "Questions for you" section above the body, listing each question. A single button — "Answer these" — opens the PM chat tab pre-loaded with the questions as context, so the PM and human can discuss and arrive at answers. Once the conversation reaches consensus, the PM updates the task body (removing \`needs_input\` and \`questions\` from frontmatter) and sets status to \`ready\`.

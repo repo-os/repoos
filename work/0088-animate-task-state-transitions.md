@@ -36,9 +36,9 @@ Moving a task to its next state produces a clear, creative animation in both the
 - Assume the existing state-transition behavior remains unchanged and only its visual feedback needs enhancement.
 - Keep the animation noticeable enough to resolve uncertainty without introducing new interaction steps.
 - Trigger the effect only after the server confirms the state change. If the card
-  immediately leaves the current column, use a short leaving/ghost transition so
-  the feedback remains attached to the affected task rather than flashing on an
-  unrelated destination.
+immediately leaves the current column, use a short leaving/ghost transition so
+the feedback remains attached to the affected task rather than flashing on an
+unrelated destination.
 
 ## Scope
 

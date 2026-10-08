@@ -12,11 +12,6 @@ branch: feat/strip-ansi-markdown-rendering-from-agent
 created_at: "2026-08-13T06:15:56Z"
 updated_at: "2026-08-13T11:21:22Z"
 ---
-## Activity
-
-- 2026-08-13T06:15:56Z · created · unknown
-
-
 ## Problem
 
 `runPrompt` (`src/server/agents.ts`) captures a coding agent's raw stdout and hands it
@@ -49,37 +44,38 @@ task or doc, ever.
 ## Acceptance criteria
 
 - [ ] `runPrompt`'s captured output has ANSI escape sequences stripped before it is
-      returned/parsed (reuse or generalize the existing `stripAnsi` helper in
-      `src/server/done.ts:243` rather than writing a second implementation).
+returned/parsed (reuse or generalize the existing `stripAnsi` helper in
+`src/server/done.ts:243` rather than writing a second implementation).
 - [ ] Investigate whether `kiro-cli chat` has a flag to disable markdown/box-drawing
-      rendering in `--no-interactive` mode (e.g. a `--plain`/`--raw`/`--no-color`
-      equivalent) and pass it from `promptCommand`/`reviewCommand`
-      (`src/server/agents.ts`). If no such flag exists, make the frontmatter
-      delimiter detection tolerant of a rendered horizontal rule (a line of
-      box-drawing characters, optionally under a `> ` blockquote prefix) as a
-      fallback — whichever is more robust.
+rendering in `--no-interactive` mode (e.g. a `--plain`/`--raw`/`--no-color`
+equivalent) and pass it from `promptCommand`/`reviewCommand`
+(`src/server/agents.ts`). If no such flag exists, make the frontmatter
+delimiter detection tolerant of a rendered horizontal rule (a line of
+box-drawing characters, optionally under a `> ` blockquote prefix) as a
+fallback — whichever is more robust.
 - [ ] A freeform task or doc created via the kiro agent parses correctly: real title,
-      real frontmatter fields (type/priority/area), clean body — verified against a
-      real `kiro-cli` run, not just a synthetic fixture.
+real frontmatter fields (type/priority/area), clean body — verified against a
+real `kiro-cli` run, not just a synthetic fixture.
 - [ ] Existing tests for `parseGeneratedTask`/`parseDocument`/`parseGeneratedDocument`
-      still pass; add a regression test using the captured raw kiro output shape
-      (ANSI codes + box-drawing rule + `> ` prefix) so this can't silently regress.
+still pass; add a regression test using the captured raw kiro output shape
+(ANSI codes + box-drawing rule + `> ` prefix) so this can't silently regress.
 
 ## Notes for AI
 
 - Reference `work/0154-add-file-tree-navigation-and-refresh-bu.md`'s git history
-  (commit `8a0d30c`) for the exact raw corrupted content this task is about — that's
-  the real fixture to test against.
+(commit `8a0d30c`) for the exact raw corrupted content this task is about — that's
+the real fixture to test against.
 - `src/core/models.ts:235` already has a similar-but-not-identical ANSI-stripping
-  regex (`\x1b\[[^m]*m` + `\x1b\[[?][0-9]*[a-zA-Z]`) for a different purpose (model
-  probe output) — worth checking whether to consolidate into one shared utility
-  instead of a third copy.
+regex (`\x1b\[[^m]*m` + `\x1b\[[?][0-9]*[a-zA-Z]`) for a different purpose (model
+probe output) — worth checking whether to consolidate into one shared utility
+instead of a third copy.
 - Don't scope this to kiro only if the fix is generic (ANSI stripping) — apply it to
-  all `runPrompt` output regardless of `cli`, since any driver could emit escape
-  codes.
+all `runPrompt` output regardless of `cli`, since any driver could emit escape
+codes.
 
 ## Activity
 
+- 2026-08-13T06:15:56Z · created · unknown
 - 2026-08-13T06:24:13Z · status inbox→ready
 - 2026-08-13T06:24:16Z · status ready→active, branch
 - 2026-08-13T09:46:05Z · watchdog: automatic resume attempted

@@ -24,67 +24,67 @@ tweaked appearance setting the hardest one to find.
 - The bottom-left theme switcher shows at most 3 themes, and always fits.
 - The 3 shown are the user's favorited themes, in favorited order.
 - On a brand-new setup where the user has favorited nothing yet, the switcher
-  falls back to the first 3 themes from the normal theme list.
+falls back to the first 3 themes from the normal theme list.
 - General settings opens with themes as the first (top) section, ahead of the
-  other general preferences.
+other general preferences.
 
 ## Acceptance criteria
 
 - [ ] The bottom-left theme switcher renders no more than 3 themes.
 - [ ] Favorited themes take priority; when the user has 1–3 favorites, exactly
-      those are shown in favorite order.
+those are shown in favorite order.
 - [ ] When the user has more than 3 favorites, only the first 3 (in favorite
-      order) are shown.
+order) are shown.
 - [ ] When the user has no favorites, the first 3 themes in the existing theme
-      list order are shown.
+list order are shown.
 - [ ] The cap applies on every render path (initial load, theme data refresh,
-      and after favoriting/unfavoriting a theme) — not only on first paint.
+and after favoriting/unfavoriting a theme) — not only on first paint.
 - [ ] The switcher itself still fits within the bottom-left corner at the cap of
-      3, with no overflow or clipping.
+3, with no overflow or clipping.
 - [ ] Clicking a theme in the switcher still applies it.
 - [ ] In General settings, the themes section is rendered first, above the other
-      general preferences.
+general preferences.
 - [ ] Favoriting/unfavoriting a theme from the settings section is still
-      possible, and the change is reflected in the switcher without a reload.
+possible, and the change is reflected in the switcher without a reload.
 - [ ] Existing favorites are not dropped, reordered, or truncated in storage —
-      the cap is presentational only.
+the cap is presentational only.
 - [ ] The 3-theme cap works in both light and dark appearance, and on narrow
-      viewports.
+viewports.
 
 ## Notes for AI
 
 - Assumption: the cap is presentational. Do not truncate or rewrite the user's
-  saved favorites; only limit how many are surfaced in the switcher.
+saved favorites; only limit how many are surfaced in the switcher.
 - Assumption: "first 3 themes" means the first 3 in whatever order the existing
-  theme list already produces (the same order the full list/settings section
-  uses). Do not introduce a new sort or a separate "default themes" concept.
+theme list already produces (the same order the full list/settings section
+uses). Do not introduce a new sort or a separate "default themes" concept.
 - Assumption: "top of the general settings" means the themes block is the first
-  rendered section of the General settings view, before every other preference
-  group. Keep the themes section's own contents and behavior as they are.
+rendered section of the General settings view, before every other preference
+group. Keep the themes section's own contents and behavior as they are.
 - Favorites are the source of truth for the switcher's contents. If the favorites
-  mechanism does not yet exist in the bottom-left switcher, check the settings
-  section and existing favorites data first and wire to that rather than adding a
-  second, parallel notion of "favorited".
+mechanism does not yet exist in the bottom-left switcher, check the settings
+section and existing favorites data first and wire to that rather than adding a
+second, parallel notion of "favorited".
 - Keep the cap in one place (a single helper/constant such as `MAX_VISIBLE_THEMES`)
-  rather than sprinkling the literal `3` across components, so the limit is
-  changeable in future.
+rather than sprinkling the literal `3` across components, so the limit is
+changeable in future.
 - The switcher is an existing component; do not redesign its styling beyond what
-  is needed to make 3 entries fit. If the component already handles variable
-  counts gracefully, leave the visual design alone.
+is needed to make 3 entries fit. If the component already handles variable
+counts gracefully, leave the visual design alone.
 - Do not remove or collapse the full theme list in General settings — users must
-  still be able to see and favorite any registered theme there; only the
-  bottom-left switcher is capped.
+still be able to see and favorite any registered theme there; only the
+bottom-left switcher is capped.
 - Follow the repo conventions in `AGENTS.md`: no runtime dependencies, TypeScript
-  with `.js` import extensions, and the shared dialog/form classes for any new UI
-  (none should be needed here).
+with `.js` import extensions, and the shared dialog/form classes for any new UI
+(none should be needed here).
 
 ## Scope
 
 - Covers: the bottom-left theme switcher's visible theme count, and the position
-  of the themes section within General settings.
+of the themes section within General settings.
 - Deferred: any change to what favoriting means or where favorites are stored,
-  theming of the settings page as a whole, and any search/filter UI for long
-  theme lists.
+theming of the settings page as a whole, and any search/filter UI for long
+theme lists.
 
 ## Original prompt
 
