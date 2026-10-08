@@ -12,7 +12,7 @@ branch: feat/docs-add-the-missing-second-night-lesson
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-07T17:40:53Z"
-updated_at: "2026-10-08T14:11:29Z"
+updated_at: "2026-10-08T14:13:31Z"
 ---
 ## Problem
 
