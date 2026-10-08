@@ -25,6 +25,7 @@ function releaseStatus() {
     latestTag: "v1.2.3",
     latestTagAt: "2026-09-01T00:00:00Z",
     latestTagSha: "abc1234",
+    commitsBehindMain: 0,
     latestStableTag: "v1.2.3",
     head: "abc1234",
     clean: true,
