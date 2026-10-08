@@ -12,7 +12,7 @@ branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-08T17:49:33Z"
+updated_at: "2026-10-08T17:49:35Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -87,3 +87,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T17:49:28Z · note: Item 1 (repoos list): fixed — truncatePad() pads titles so the area column stays aligned.
 - 2026-10-08T17:49:30Z · note: Item 2 (created_by): fixed — resolveApiCreator/resolveCliCreator on API, CLI, and story creates; activity uses the resolved label.
 - 2026-10-08T17:49:33Z · note: Item 3 (intercepted handoff activity): fixed — handoff requested note without index churn; guard revert strips provisional active→review and skips review→active.
+- 2026-10-08T17:49:35Z · note: Item 4 (doctor AGENTS.md paths): fixed — warn-only findMissingAgentsMdPaths in repoos doctor.
