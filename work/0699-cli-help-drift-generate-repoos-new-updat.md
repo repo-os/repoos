@@ -12,7 +12,7 @@ branch: feat/cli-help-drift-generate-repoos-new-updat
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-06T03:15:49Z"
-updated_at: "2026-10-08T14:20:29Z"
+updated_at: "2026-10-08T14:21:54Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -51,3 +51,4 @@ Verify first against current main: #0723 (merged) added control-plane CLI comman
 - 2026-10-08T14:11:55Z · needs_input, cli_override, model_override
 - 2026-10-08T14:18:37Z · body
 - 2026-10-08T14:20:29Z · body
+- 2026-10-08T14:21:54Z · body
