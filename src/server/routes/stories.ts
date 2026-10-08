@@ -15,6 +15,7 @@ import {
 } from "../agents.js";
 import { agentsForConfig } from "../../core/config.js";
 import { getCurrentUser } from "./auth.js";
+import { resolveApiCreator } from "../../core/record-creator.js";
 import { commitTaskFile, commitFiles } from "../../core/git.js";
 import { normalizeStoryName, storyKey, storyPmSessionId } from "../../core/stories.js";
 import {
@@ -76,7 +77,7 @@ export const createFreeformStory: RouteHandler = async (ctx, req, res) => {
   }
   const humanName = normalizeStoryName(typeof body?.name === "string" ? body.name : "");
   const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
-  const createdBy = getCurrentUser(req, config)?.email;
+  const createdBy = resolveApiCreator(getCurrentUser(req, config)?.email);
 
   const wantPm = body?.pm !== false;
   const pmBase = wantPm
@@ -139,7 +140,7 @@ export const createStoryDefinition: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { ok: false, reason: "story body is required" });
   }
   const name = normalizeStoryName(typeof body?.name === "string" ? body.name : "");
-  const createdBy = getCurrentUser(req, config)?.email;
+  const createdBy = resolveApiCreator(getCurrentUser(req, config)?.email);
 
   let definition: StoryDefinition;
   try {

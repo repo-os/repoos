@@ -52,7 +52,7 @@ import {
 import { parseDocument } from "./frontmatter.js";
 import { storiesDirOf } from "./story-definition-files.js";
 import { isGitRepo } from "./git.js";
-import { checkDocsWiringAt } from "./project-docs.js";
+import { checkDocsWiringAt, findMissingAgentsMdPaths } from "./project-docs.js";
 import { portListening } from "./net-probe.js";
 import { validateToml } from "./toml-validate.js";
 
@@ -1007,6 +1007,7 @@ function checkLayout(root: string, config: RepoOSConfig): DoctorFinding[] {
   }
 
   out.push(...checkDocsWiring(root, config));
+  out.push(checkAgentsMdPaths(root));
   out.push(checkTaskFrontmatter(root, config));
   out.push(checkStarterHygiene(root, config));
   return out;
@@ -1017,6 +1018,52 @@ function checkLayout(root: string, config: RepoOSConfig): DoctorFinding[] {
  * every finding is a `warn`, never a `fail`, so the exit code is unchanged.
  * Each check keeps its own stable id; a clean result yields one pass finding.
  */
+function checkAgentsMdPaths(root: string): DoctorFinding {
+  const agentsPath = join(root, "AGENTS.md");
+  if (!existsSync(agentsPath)) {
+    return finding(
+      "layout.agents-md-paths",
+      "layout",
+      "pass",
+      "AGENTS.md path references look fine",
+      "AGENTS.md is not present.",
+    );
+  }
+  let content: string;
+  try {
+    content = readFileSync(agentsPath, "utf8");
+  } catch {
+    return finding(
+      "layout.agents-md-paths",
+      "layout",
+      "warn",
+      "Could not read AGENTS.md",
+      agentsPath,
+      "fix permissions or restore AGENTS.md",
+    );
+  }
+  const missing = findMissingAgentsMdPaths(root, content);
+  if (missing.length === 0) {
+    return finding(
+      "layout.agents-md-paths",
+      "layout",
+      "pass",
+      "AGENTS.md path references exist",
+      "Every backticked repo path in AGENTS.md resolves on disk.",
+    );
+  }
+  const shown = missing.slice(0, 5).join(", ");
+  const more = missing.length > 5 ? ` (+${missing.length - 5} more)` : "";
+  return finding(
+    "layout.agents-md-paths",
+    "layout",
+    "warn",
+    `${missing.length} backticked path(s) in AGENTS.md do not exist`,
+    `${shown}${more}`,
+    "update AGENTS.md or add the missing files — this check never fails the exit code",
+  );
+}
+
 function checkDocsWiring(root: string, config: RepoOSConfig): DoctorFinding[] {
   const taskCount = walkTaskFiles(join(root, config.workDir), config.taskExtensions).length;
   const findings = checkDocsWiringAt(root, config.docsDir, taskCount);

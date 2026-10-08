@@ -22,6 +22,7 @@ import {
   validateDeclaredShotTargets,
 } from "../core/shot-plan.js";
 import { deleteTaskFile, PathGuardError, WriteError } from "../server/write.js";
+import { resolveCliCreator } from "../core/record-creator.js";
 import { normalizeSectionHeading, replaceSection } from "../core/task.js";
 import {
   NEW_FLAG_HELP,
@@ -87,6 +88,14 @@ function pad(s: string, n: number): string {
   return s + " ".repeat(Math.max(0, n - visible.length));
 }
 
+/** Truncate with ellipsis, then pad to column width (#0704). */
+function truncatePad(s: string, n: number): string {
+  const visible = s.replace(/\x1b\[[0-9;]*m/g, "");
+  if (visible.length <= n) return pad(s, n);
+  const cut = visible.slice(0, Math.max(1, n - 1)) + "…";
+  return cut + " ".repeat(Math.max(0, n - cut.length));
+}
+
 /** `repoos list [status]` — board overview or a single column. */
 export function cmdList(statusArg?: string): void {
   const repoos = boardRepoOS();
@@ -119,7 +128,7 @@ export function cmdList(statusArg?: string): void {
         "    " +
           c.dim("#" + pad(t.id, 5)) +
           priorityColor(t.priority)(pad(t.priority, 4)) +
-          pad(t.title, 44) +
+          truncatePad(t.title, 44) +
           c.dim(`${t.status} · `) +
           (t.archiveDetail ? c.dim(t.archiveDetail) : ""),
       );
@@ -148,7 +157,7 @@ export function cmdList(statusArg?: string): void {
         "    " +
         c.dim("#" + pad(t.id, 5)) +
         priorityColor(t.priority)(pad(t.priority, 4)) +
-        pad(t.title, 44) +
+        truncatePad(t.title, 44) +
         pad(c.dim(t.area), 12) +
         assigneeLabel(t);
       console.log(line);
@@ -803,6 +812,7 @@ export function cmdNew(args: string[]): void {
   try {
     t = repoos.createTask({
       title,
+      createdBy: resolveCliCreator(repoos.config.root),
       type: (flags.type as string) || undefined,
       area: (flags.area as string) || undefined,
       story: (flags.story as string) || undefined,

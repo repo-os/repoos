@@ -545,7 +545,15 @@ export class LiveIndex {
     }
     if (!allowed) {
       try {
-        patchTaskFile(this.config, absPath, { status: existing.status });
+        patchTaskFile(
+          this.config,
+          absPath,
+          { status: existing.status },
+          {
+            skipStatusActivity: true,
+            stripStatusActivity: { from: existing.status, to: "review" },
+          },
+        );
       } catch {
         // If the revert fails, reflect what git actually shows rather than the
         // unvalidated review state.
