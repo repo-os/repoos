@@ -1,6 +1,4 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0704"
 title: Small papercuts from the tuk-private planning run
 type: chore
@@ -14,7 +12,9 @@ branch: feat/small-papercuts-from-the-tuk-private-pla
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:16:00Z"
-updated_at: "2026-10-08T15:38:36Z"
+updated_at: "2026-10-08T15:39:39Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-08T15:38:39.558Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
 
@@ -50,4 +50,4 @@ Evidence: `~/code/tuk/tuk-private/repoos/docs/repoos-feedback.md` (tuk-private r
 - 2026-10-08T15:09:27Z · body
 - 2026-10-08T15:21:40Z · body
 - 2026-10-08T15:38:36Z · handoff failed · handoff recovery attempted · finalization failed
-
+- 2026-10-08T15:39:39Z · body
