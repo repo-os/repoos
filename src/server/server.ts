@@ -2433,6 +2433,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
     };
     progress("started", opts.skipChecks ? "commit gate only (checks skipped)" : "repoos check");
+    try {
+      const sourceLabel =
+        opts.origin === "task-file"
+          ? "cli"
+          : opts.origin === "board-drag"
+            ? "board"
+            : opts.origin;
+      const noted = patchTaskFile(config, task.absPath, {
+        note: `handoff requested (${sourceLabel})`,
+      });
+      index.applyFileChange(noted.absPath, { guarded: true });
+    } catch {
+      /* best-effort — finalization still runs */
+    }
     void finalizeReviewHandoff(config, task, {
       origin: opts.origin,
       skipChecks: opts.skipChecks,
