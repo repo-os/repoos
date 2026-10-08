@@ -42,10 +42,10 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 "highlight": ".cto-markdown",
 "steps": [
 {
-  "click": "[data-test-id=\"floating-head-cto\"]"
+"click": "[data-test-id=\"floating-head-cto\"]"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ]
 },
@@ -56,16 +56,16 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 "highlight": "[data-test-id=\"cto-msg-time-0\"]",
 "steps": [
 {
-  "click": "[data-test-id=\"floating-head-cto\"]"
+"click": "[data-test-id=\"floating-head-cto\"]"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 },
 {
-  "click": "[data-test-id=\"cto-msg-time-0\"]"
+"click": "[data-test-id=\"cto-msg-time-0\"]"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ]
 }
@@ -93,3 +93,4 @@ src/ui-app/src/components/CTOPanel.vue separately renders report.markdown throug
 - 2026-10-08T16:04:06Z · body: section Shots
 - 2026-10-08T16:05:15Z · body
 - 2026-10-08T16:13:55Z · status active→review
+- 2026-10-08T16:13:55Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (c76c03d2b) during finalization (#0734)
