@@ -53,7 +53,10 @@ inner textarea must not paint its own focus outline: a named theme's
 the base `outline: 0`, and Tailwind's preflight zeroes the textarea's
 `border-radius`, so without the explicit
 `.ai-chat-compose textarea:focus { outline: none }` guard the input shows a
-*square* ring inside its rounded box. `.playground-compose` is the only
+*square* ring inside its rounded box. The shared box also owns the one disabled
+treatment (`.ai-chat-compose textarea:disabled`), so a busy chat dims its input
+identically everywhere instead of only on the surface that remembered a bespoke
+rule. `.playground-compose` is the only
 remaining `-compose` block, and it carries nothing but a margin reset — if you
 find yourself adding a border, radius, background, or focus ring there, that is
 the drift this rule exists to stop.
