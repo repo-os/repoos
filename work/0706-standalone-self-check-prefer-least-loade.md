@@ -2,7 +2,7 @@
 id: "0706"
 title: "Standalone self-check: prefer least-loaded remote host and stuck-badge copy"
 type: chore
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/standalone-self-check-prefer-least-loade
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:37:47Z"
-updated_at: "2026-10-08T14:07:06Z"
+updated_at: "2026-10-08T14:42:07Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Verify first against current main: #0705 (merged) already made the dispatcher co
 - 2026-10-08T14:07:02Z · cli_override, model_override
 - 2026-10-08T14:07:05Z · status inbox→ready
 - 2026-10-08T14:07:06Z · status ready→active, needs_input, branch
+- 2026-10-08T14:42:07Z · status active→review
