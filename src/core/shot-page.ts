@@ -157,14 +157,17 @@ async function runStep(
   route: string,
   onStepMiss?: (message: string, route: string) => void,
 ): Promise<void> {
-  const soft = (label: string, run: () => Promise<unknown>): Promise<void> =>
-    run().catch((err: Error) => {
+  const soft = async (label: string, run: () => Promise<unknown>): Promise<void> => {
+    try {
+      await run();
+    } catch (err) {
       if (onStepMiss) {
-        onStepMiss(`${label}: ${err.message.split("\n")[0]}`, route);
+        onStepMiss(`${label}: ${(err as Error).message.split("\n")[0]}`, route);
         return;
       }
       throw err;
-    });
+    }
+  };
   if (typeof step.click === "string") {
     await soft(`click ${step.click}`, () =>
       page.locator(step.click!).click({ timeout: SHOT_SELECTOR_TIMEOUT_MS }),
