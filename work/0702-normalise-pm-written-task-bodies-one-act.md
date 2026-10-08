@@ -12,7 +12,7 @@ branch: feat/normalise-pm-written-task-bodies-one-act
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:55Z"
-updated_at: "2026-10-08T14:45:58Z"
+updated_at: "2026-10-08T14:46:47Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Related: #0613 (protect task bodies from clobbering, done).
 - 2026-10-08T14:41:34Z · status inbox→ready
 - 2026-10-08T14:41:36Z · status ready→active, branch
 - 2026-10-08T14:45:58Z · body
+- 2026-10-08T14:46:47Z · body
