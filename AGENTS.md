@@ -537,14 +537,17 @@ cannot tell from the code alone:
   is to DECLARE what a review should see — use
   `repoos update <id> --shots '<JSON list>'` to write a validated, fenced
   `## Shots` section (entries take `target`, `route`, optional
-  `selector`, optional ordered `steps`
+  `selector`, optional `state` fixture (`closeOut:active`, `card:doneError`,
+  `board:withReviewTask`) for conditional UI, optional ordered `steps`
   (`click`/`fill`+`text`/`waitFor`/`waitMs`, plain CSS selectors), an
   optional `highlight` CSS selector outlining what changed, and a human
   `label` naming the change), usually 1–3 entries showing the changed
-  screens. Every shot is captioned with why it exists (`declared: <label>` /
-  `auto: matched <glob>`); a docs-wording-only diff captures nothing without
-  a declared route (#0603). **Shot hygiene (#0613):** a declared `highlight` or
-  `selector` that matches nothing records a visible warning; duplicates with
+  screens. Prefer routes and `state` fixtures over brittle `waitFor` steps on
+  an empty preview board. Every shot is captioned with why it exists
+  (`declared: <label>` / `auto: matched <glob>`); a docs-wording-only diff
+  captures nothing without a declared route (#0603). **Shot hygiene (#0613,
+  #0743):** a missing `highlight`/`selector`/`waitFor` target records a
+  visible warning and still captures — it does not fail handoff; duplicates with
   the same target/route/steps/selector collapse to one capture. **Whole-window
   default (#0613):** declared shots capture the whole visible viewport
   (`fullPage: false`) with changed elements outlined via `highlight`;
