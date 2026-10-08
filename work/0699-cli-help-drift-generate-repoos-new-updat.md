@@ -2,7 +2,7 @@
 id: "0699"
 title: "CLI help drift: generate `repoos new/update --help` from the flag tables; add `--paths` and `--hold` to `repoos new`"
 type: feature
-status: active
+status: review
 priority: p2
 area: cli
 story: "Field report: first agent-driven project run (opex)"
@@ -12,7 +12,7 @@ branch: feat/cli-help-drift-generate-repoos-new-updat
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-06T03:15:49Z"
-updated_at: "2026-10-08T14:07:01Z"
+updated_at: "2026-10-08T14:31:36Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Verify first against current main: #0723 (merged) added control-plane CLI comman
 - 2026-10-08T14:06:57Z · cli_override, model_override
 - 2026-10-08T14:07:00Z · status inbox→ready
 - 2026-10-08T14:07:01Z · status ready→active, branch
+- 2026-10-08T14:31:36Z · status active→review
