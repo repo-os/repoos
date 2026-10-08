@@ -216,12 +216,18 @@ watch(
             ></div>
             <span v-else>{{ row.text }}</span>
             <!-- Every row carries its last-updated time (#0506), system rows
-                 included: a `sys` entry is stamped like any other. Hovering or
-                 focusing the time shows a styled popup with the relative age
-                 and the local date (#0732). -->
-            <span v-if="row.at" class="msg-time" tabindex="0" :title="timeTip(row.at)">{{
-              fmtTime(row.at)
-            }}</span>
+                 included: a `sys` entry is stamped like any other. The time is
+                 a button so a tap (touch), focus (keyboard) or hover opens a
+                 styled popup with the relative age and local date (#0732). -->
+            <button
+              v-if="row.at"
+              type="button"
+              class="msg-time"
+              :title="timeTip(row.at)"
+              :aria-label="`Sent ${timeTip(row.at)}`"
+            >
+              {{ fmtTime(row.at) }}
+            </button>
           </div>
         </template>
 
@@ -377,13 +383,18 @@ watch(
 }
 .msg-time {
   display: block;
+  width: 100%;
   margin-top: 3px;
+  padding: 0;
+  border: 0;
+  background: none;
   text-align: right;
   color: var(--txt-faint);
   font:
     500 8.5px "JetBrains Mono",
     monospace;
   opacity: 0.8;
+  cursor: default;
 }
 /* The time is focusable so the popup opens from the keyboard too (#0732). */
 .msg-time:focus-visible {
