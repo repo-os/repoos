@@ -735,7 +735,12 @@ function parseQuestions(raw: string): string[] {
     .filter(Boolean);
 }
 
-/** `repoos new <title> [--ai] [--needs-input true] [--questions "..."] [--depends-on ids]` */
+/**
+ * `repoos new <title> [--ai] [--needs-input true] [--questions "..."]
+ *   [--depends-on ids] [--hold true|false] [--paths a,b] [...]`
+ *
+ * Accepted flags and their help are the `NEW_FLAG_HELP` map; see `--help`.
+ */
 export function cmdNew(args: string[]): void {
   const usage = NEW_USAGE;
   const flags: Record<string, string | boolean> = {};
