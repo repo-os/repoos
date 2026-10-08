@@ -46,6 +46,16 @@ describe("reportAlreadyInConversation", () => {
     expect(reportAlreadyInConversation(lines, REPORT)).toBe(false);
   });
 
+  it("matches a report streamed as plain stdout by a non-JSON CLI", () => {
+    const raw = "## Board health\n- 2 stuck tasks\n- 1 stale review";
+    const lines: AgentOutputEntry[] = [
+      { s: "out", d: "## Board health" },
+      { s: "out", d: "- 2 stuck tasks" },
+      { s: "out", d: "- 1 stale review" },
+    ];
+    expect(reportAlreadyInConversation(lines, raw)).toBe(true);
+  });
+
   it("does not treat a short narration line as the report", () => {
     const lines: AgentOutputEntry[] = [{ type: "text", text: "OK", at: "2026-08-07T12:00:00Z" }];
     expect(reportAlreadyInConversation(lines, "OK, let me check the board in more detail")).toBe(
