@@ -21,11 +21,7 @@ async function acquire(taskId: string, log: TaskLog): Promise<void> {
     holder = taskId;
     return;
   }
-  log(
-    taskId,
-    "info",
-    `ui verification: waiting for the preview slot (held by task #${holder})`,
-  );
+  log(taskId, "info", `ui verification: waiting for the preview slot (held by task #${holder})`);
   await new Promise<void>((resolve) => {
     waiters.push({ taskId, resolve });
   });

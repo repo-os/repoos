@@ -23,7 +23,10 @@ export function isShotPreviewFixtureId(value: string): value is ShotPreviewFixtu
 }
 
 /** Build the full page URL for one capture entry (origin + route + optional fixture query). */
-export function shotCapturePageUrl(previewOrigin: string, entry: Pick<CaptureEntry, "route" | "state">): string {
+export function shotCapturePageUrl(
+  previewOrigin: string,
+  entry: Pick<CaptureEntry, "route" | "state">,
+): string {
   const origin = previewOrigin.replace(/\/$/, "");
   const path = entry.route.startsWith("/") ? entry.route : `/${entry.route}`;
   const url = new URL(`${origin}${path}`);

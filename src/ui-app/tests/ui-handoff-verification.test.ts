@@ -431,15 +431,23 @@ describe("UI handoff verification gate (#0680)", () => {
 
   it("serializes concurrent verification runs on the preview slot (#0743)", async () => {
     const order: string[] = [];
-    const p1 = withPreviewVerificationSlot("a", () => {}, async () => {
-      order.push("a-start");
-      await new Promise((r) => setTimeout(r, 40));
-      order.push("a-end");
-    });
-    const p2 = withPreviewVerificationSlot("b", () => {}, async () => {
-      order.push("b-start");
-      order.push("b-end");
-    });
+    const p1 = withPreviewVerificationSlot(
+      "a",
+      () => {},
+      async () => {
+        order.push("a-start");
+        await new Promise((r) => setTimeout(r, 40));
+        order.push("a-end");
+      },
+    );
+    const p2 = withPreviewVerificationSlot(
+      "b",
+      () => {},
+      async () => {
+        order.push("b-start");
+        order.push("b-end");
+      },
+    );
     await Promise.all([p1, p2]);
     expect(order).toEqual(["a-start", "a-end", "b-start", "b-end"]);
   });

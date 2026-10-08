@@ -78,17 +78,23 @@ export async function captureEntryPage(
   const page = (await context.newPage()) as unknown as ShotDriverPage;
   try {
     await page.setViewportSize(AUTO_VIEWPORT);
-    const png = await captureShotPage(page, pageUrl, entry, { waitMs: settleMs, fullPage: false }, {
-      onHighlightMiss: (selector, route) => {
-        warnings.push(`highlight ${selector} matched nothing on ${route}`);
+    const png = await captureShotPage(
+      page,
+      pageUrl,
+      entry,
+      { waitMs: settleMs, fullPage: false },
+      {
+        onHighlightMiss: (selector, route) => {
+          warnings.push(`highlight ${selector} matched nothing on ${route}`);
+        },
+        onSelectorMiss: (selector, route) => {
+          warnings.push(`selector ${selector} matched nothing on ${route}`);
+        },
+        onStepMiss: (message, route) => {
+          warnings.push(`${message} on ${route}`);
+        },
       },
-      onSelectorMiss: (selector, route) => {
-        warnings.push(`selector ${selector} matched nothing on ${route}`);
-      },
-      onStepMiss: (message, route) => {
-        warnings.push(`${message} on ${route}`);
-      },
-    });
+    );
     return { png, warnings };
   } finally {
     await page.close().catch(() => {});

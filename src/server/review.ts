@@ -1795,10 +1795,9 @@ export class ReviewManager {
           return `${c.label ?? `${c.target}${c.route}`} → ${c.url}${asserts}${warns}`;
         })
         .join("; ");
-      const warnLine =
-        evidence.warnings?.length
-          ? `\nShot warnings (non-blocking): ${evidence.warnings.slice(0, 4).join("; ")}`
-          : "";
+      const warnLine = evidence.warnings?.length
+        ? `\nShot warnings (non-blocking): ${evidence.warnings.slice(0, 4).join("; ")}`
+        : "";
       return (
         `Handoff UI verification (${evidence.at})${identityLine}: ${evidence.captures} capture(s), ` +
         `zero console errors recorded at capture time.` +
