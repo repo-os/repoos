@@ -1,6 +1,6 @@
 ---
 id: "0751"
-title: "Easter eggs bundle: handoff shot summary"
+title: "Easter eggs bundle: handoff shot summary and dev target ports"
 type: chore
 status: inbox
 priority: p3
@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-09T20:07:36Z"
-updated_at: "2026-10-09T20:12:34Z"
+updated_at: "2026-10-09T20:12:38Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ The UI verification block on the Changes tab is a raw log. Users can't tell at a
 
 - 2026-10-09T20:07:36Z · created · njachowski@gmail.com
 - 2026-10-09T20:12:34Z · body: section Items
+- 2026-10-09T20:12:38Z · title
