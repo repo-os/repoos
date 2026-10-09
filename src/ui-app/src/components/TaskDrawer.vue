@@ -1691,7 +1691,7 @@ const fullscreen = ref(false);
 
 /** Human label for the active tab, used in the toggle's accessible name. */
 const activeTabLabel = computed(() => {
-  const labels: Record<typeof ui.activeTab, string> = {
+  const labels: Record<typeof ui.activeTab.value, string> = {
     details: "Task",
     pm: "PM",
     agent: "Dev",
@@ -1700,7 +1700,7 @@ const activeTabLabel = computed(() => {
     tokens: "Tokens",
     debug: "Debug",
   };
-  return labels[ui.activeTab] ?? "tab";
+  return labels[ui.activeTab.value] ?? "tab";
 });
 
 function toggleFullscreen(): void {
