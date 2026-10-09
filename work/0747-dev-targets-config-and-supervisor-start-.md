@@ -2,15 +2,15 @@
 id: "0747"
 title: "Dev targets: config and supervisor (start, stop, restart, status, logs)"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: [core, server]
 story: "Dev page: start and manage dev targets"
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-09T17:10:37Z"
-updated_at: "2026-10-09T17:10:37Z"
+updated_at: "2026-10-09T17:10:48Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Each project can declare dev targets in repoos.toml. The server can start, stop 
 ## Activity
 
 - 2026-10-09T17:10:37Z · created · njachowski@gmail.com
+- 2026-10-09T17:10:48Z · status inbox→ready
