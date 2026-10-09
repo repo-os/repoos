@@ -67,7 +67,7 @@ Task #0706 (filed by the #0695 reviewer: standalone self-check prefers the least
 - 2026-10-06T04:26:19Z · body: section Shots
 - 2026-10-06T06:19:56Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     651|       // true per-pass counter used by the D# · R# badge.
 652|       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_pass…
- |                                                  ^
+|                                                  ^
 653|     });
 654|   }, 90_000);
 ❯ withServer tests/agent-review.test.ts:279:11
@@ -171,7 +171,7 @@ src/server/remote-validation.ts(3020,41): error TS2345: Argument of type '{ ahea
 - 2026-10-06T09:13:40Z · status review→active
 - 2026-10-06T09:18:48Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —     651|       // true per-pass counter used by the D# · R# badge.
 652|       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_pass…
- |                                                  ^
+|                                                  ^
 653|     });
 654|   }, 90_000);
 ❯ withServer tests/agent-review.test.ts:279:11

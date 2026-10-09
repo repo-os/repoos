@@ -67,7 +67,7 @@ Read TaskCard.vue (pipelineStage, inPipeline computed), the pipeline bar, and sr
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
- |                                   ^
+|                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -89,7 +89,7 @@ error: script "test" exited with code 1
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
- |                                   ^
+|                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -111,7 +111,7 @@ error: script "test" exited with code 1
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
- |                                   ^
+|                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -133,7 +133,7 @@ error: script "test" exited with code 1
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
- |                                   ^
+|                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -155,7 +155,7 @@ error: script "test" exited with code 1
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
- |                                   ^
+|                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -179,7 +179,7 @@ error: script "test" exited with code 1
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
- |                                   ^
+|                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -201,7 +201,7 @@ error: script "test" exited with code 1
 379|
 380|     const expandedChip = expanded.find(".ibar .ibar-chip");
 381|     expect(expandedChip.exists()).toBe(true);
- |                                   ^
+|                                   ^
 382|     expect(expandedChip.text()).toBe("3m 07s");
 383|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
