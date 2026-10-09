@@ -6226,6 +6226,23 @@
   outline: 2px solid var(--cyan);
   outline-offset: -2px;
 }
+/* #0750: the selected tab's fullscreen toggle sits at the far end of the
+   strip, away from the tab buttons it acts on, so it reads as a control on
+   the strip rather than another tab. */
+.tab-fullscreen {
+  margin-left: auto;
+  padding: 8px 10px;
+}
+/* #0750: expanded view — the drawer fills the viewport so the active tab's
+   contents are easier to read. Same shell as the normal drawer, so the tab
+   strip (and this toggle) stays reachable to exit. */
+.drawer-wrap.drawer-fullscreen {
+  left: 0;
+  width: 100vw !important;
+}
+.drawer-fullscreen .drawer-resize {
+  display: none;
+}
 /* Optional count on a tab label — the story panel's Tasks tab (#0502). Inherits
    the tab's colour and stays quiet until the tab is active. */
 .tab-count {
