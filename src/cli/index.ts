@@ -38,6 +38,7 @@ import {
   cmdOverride,
   cmdPause,
   cmdPreview,
+  cmdDev,
   cmdReview,
   cmdRunners,
   cmdStart,
@@ -261,6 +262,11 @@ function main(): void {
       break;
     case "preview":
       void cmdPreview(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "dev":
+      void cmdDev(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
       });
       break;

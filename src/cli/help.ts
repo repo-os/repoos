@@ -137,6 +137,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--stop · --json · --port",
       },
       {
+        name: "dev",
+        usage: "dev [list] · dev <name> start|stop|restart|status|logs [--json] [--port N]",
+        desc: "Start, stop and inspect a declared dev target (GET/POST /api/dev/targets)",
+        flags: "--json · --port",
+      },
+      {
         name: "config",
         usage: "config get|set <key> [value] [--json] [--port N]",
         desc: "Read or write server config (GET/PATCH /api/config)",
