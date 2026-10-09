@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-fullscreen-toggle-to-task-tabs
 created_at: "2026-10-09T18:47:28Z"
-updated_at: "2026-10-09T18:55:42Z"
+updated_at: "2026-10-09T18:56:31Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 - 2026-10-09T18:47:54Z · status inbox→ready
 - 2026-10-09T18:47:55Z · status ready→active, branch
 - 2026-10-09T18:55:42Z · body
+- 2026-10-09T18:56:31Z · body
