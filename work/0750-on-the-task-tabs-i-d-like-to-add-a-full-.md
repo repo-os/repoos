@@ -2,7 +2,7 @@
 id: "0750"
 title: Add fullscreen toggle to task tabs
 type: feature
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
