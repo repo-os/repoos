@@ -45,9 +45,7 @@ const projectName = computed(() => repo.repoName || "This project");
  * config, so this is one group today; the shape keeps the per-project
  * grouping the page promises without inventing data it does not have.
  */
-const groups = computed(() => [
-  { project: projectName.value, targets: targets.value },
-]);
+const groups = computed(() => [{ project: projectName.value, targets: targets.value }]);
 
 /** Target whose Restart is awaiting confirmation, or null. */
 const confirmRestart = ref<DevTargetView | null>(null);
@@ -194,9 +192,9 @@ watch(
 
       <p v-if="!targets.length" class="dev-empty">
         No dev targets are declared for this project. Add a
-        <code>[[dev.targets]]</code> row in
-        <a href="/settings?tab=toml">repoos.toml</a> — a <code>server</code> (with a URL) or an
-        <code>artifact</code> build (with an output path) — then reload.
+        <code>[[dev.targets]]</code> row in <a href="/settings?tab=toml">repoos.toml</a> — a
+        <code>server</code> (with a URL) or an <code>artifact</code> build (with an output path) —
+        then reload.
       </p>
 
       <template v-else>
@@ -228,7 +226,9 @@ watch(
             <dl class="kv-rows dev-meta">
               <div>
                 <dt>Command</dt>
-                <dd class="kv-wrap"><code class="dev-command">{{ t.command }}</code></dd>
+                <dd class="kv-wrap">
+                  <code class="dev-command">{{ t.command }}</code>
+                </dd>
               </div>
               <div v-if="t.kind === 'server' && t.url">
                 <dt>URL</dt>
@@ -240,11 +240,15 @@ watch(
               </div>
               <div v-else-if="t.kind === 'artifact' && t.artifactPath">
                 <dt>Output</dt>
-                <dd><code>{{ t.artifactPath }}</code></dd>
+                <dd>
+                  <code>{{ t.artifactPath }}</code>
+                </dd>
               </div>
               <div v-if="t.pid !== undefined">
                 <dt>PID</dt>
-                <dd><code>{{ t.pid }}</code></dd>
+                <dd>
+                  <code>{{ t.pid }}</code>
+                </dd>
               </div>
             </dl>
 
@@ -295,11 +299,15 @@ watch(
       :open="confirmRestart !== null"
       title="Restart target?"
       confirm-label="Restart"
-      @update:open="(v) => { if (!v) confirmRestart = null; }"
+      @update:open="
+        (v) => {
+          if (!v) confirmRestart = null;
+        }
+      "
       @confirm="confirmRestartNow"
     >
-      Restarting <strong>{{ confirmRestart?.label }}</strong> stops the running process and starts it
-      again — anything connected to it (a browser, a device) is dropped and reconnects.
+      Restarting <strong>{{ confirmRestart?.label }}</strong> stops the running process and starts
+      it again — anything connected to it (a browser, a device) is dropped and reconnects.
     </ConfirmDialog>
   </div>
 </template>
