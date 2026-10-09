@@ -1501,3 +1501,42 @@ export interface SystemStats {
   serverPid: number;
   at: string;
 }
+
+// ---- Dev targets (#0747 backend, #0748 Dev page) ----
+
+/** Lifecycle state of one dev target, mirroring `src/server/dev.ts`. */
+export type DevTargetStatus = "running" | "stopped" | "starting" | "failed";
+
+/**
+ * One declared dev target with its live state, from `GET /api/dev/targets`.
+ * `kind` decides what the page shows: a `server` gets an open-URL link, an
+ * `artifact` gets its output path. `label` is always present (the server
+ * defaults it to `name`).
+ */
+export interface DevTargetView {
+  name: string;
+  kind: "server" | "artifact";
+  /** The declared shell command, shown read-only (it is never editable here). */
+  command: string;
+  label: string;
+  status: DevTargetStatus;
+  /** Failure reason, present only while `status` is `failed`. */
+  error?: string;
+  pid?: number;
+  startedAt?: string;
+  stoppedAt?: string;
+  /** Last output lines (stdout+stderr), newest last. */
+  log: string[];
+  /** `server` targets only — the URL the open link points at. */
+  url?: string;
+  /** `artifact` targets only — the repo-relative output path. */
+  artifactPath?: string;
+}
+
+/** Response of `GET /api/dev/targets`. */
+export interface DevTargetsResponse {
+  ok: boolean;
+  targets: DevTargetView[];
+  /** `[[dev.targets]]` validation errors, so a config typo stays visible. */
+  errors: string[];
+}
