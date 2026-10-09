@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-fullscreen-toggle-to-task-tabs
 created_at: "2026-10-09T18:47:28Z"
-updated_at: "2026-10-09T19:00:31Z"
+updated_at: "2026-10-09T19:01:42Z"
 ---
 ## Problem
 
@@ -43,15 +43,15 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 "route": "/",
 "highlight": "[data-test-id=\"task-tab-fullscreen\"]",
 "steps": [
-  {
-    "click": "[data-task-id=\"9999\"]"
-  },
-  {
-    "waitFor": "[data-test-id=\"task-tab-fullscreen\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "[data-task-id=\"9999\"]"
+},
+{
+  "waitFor": "[data-test-id=\"task-tab-fullscreen\"]"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "board:withReviewTask"
 },
@@ -61,18 +61,18 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 "route": "/",
 "highlight": "[data-test-id=\"task-tab-fullscreen\"]",
 "steps": [
-  {
-    "click": "[data-task-id=\"9999\"]"
-  },
-  {
-    "waitFor": "[data-test-id=\"task-tab-fullscreen\"]"
-  },
-  {
-    "click": "[data-test-id=\"task-tab-fullscreen\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": "[data-task-id=\"9999\"]"
+},
+{
+  "waitFor": "[data-test-id=\"task-tab-fullscreen\"]"
+},
+{
+  "click": "[data-test-id=\"task-tab-fullscreen\"]"
+},
+{
+  "waitMs": 400
+}
 ],
 "state": "board:withReviewTask"
 }
@@ -94,3 +94,4 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 - 2026-10-09T18:56:31Z · body
 - 2026-10-09T18:59:08Z · body: section Shots
 - 2026-10-09T19:00:31Z · body
+- 2026-10-09T19:01:42Z · body
