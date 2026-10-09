@@ -58,16 +58,16 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 "highlight": ".floating-head-panel .agent-chat-header",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"floating-head-cto\"]"
+ "waitFor": "[data-test-id=\"floating-head-cto\"]"
 },
 {
-  "click": "[data-test-id=\"floating-head-cto\"]"
+ "click": "[data-test-id=\"floating-head-cto\"]"
 },
 {
-  "waitFor": ".floating-head-panel .agent-chat-header"
+ "waitFor": ".floating-head-panel .agent-chat-header"
 },
 {
-  "waitMs": 400
+ "waitMs": 400
 }
 ]
 },
@@ -78,16 +78,16 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 "highlight": ".floating-head-panel .agent-chat-header",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"floating-head-debugger\"]"
+ "waitFor": "[data-test-id=\"floating-head-debugger\"]"
 },
 {
-  "click": "[data-test-id=\"floating-head-debugger\"]"
+ "click": "[data-test-id=\"floating-head-debugger\"]"
 },
 {
-  "waitFor": ".floating-head-panel .agent-chat-header"
+ "waitFor": ".floating-head-panel .agent-chat-header"
 },
 {
-  "waitMs": 400
+ "waitMs": 400
 }
 ]
 },
@@ -98,16 +98,16 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 "highlight": ".floating-head-panel .agent-chat-header",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"floating-head-ross\"]"
+ "waitFor": "[data-test-id=\"floating-head-ross\"]"
 },
 {
-  "click": "[data-test-id=\"floating-head-ross\"]"
+ "click": "[data-test-id=\"floating-head-ross\"]"
 },
 {
-  "waitFor": ".floating-head-panel .agent-chat-header"
+ "waitFor": ".floating-head-panel .agent-chat-header"
 },
 {
-  "waitMs": 400
+ "waitMs": 400
 }
 ]
 }
@@ -126,7 +126,7 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 54|
 55|     // A render-time ReferenceError leaves the slot unrendered, so the…
 56|     expect(wrapper.find(".debugger-header").exists()).toBe(true);
- |                                                       ^
+|                                                       ^
 57|     expect(wrapper.find(".debugger-close").exists()).toBe(true);
 58|     expect(wrapper.text()).toContain("diagnosis ready");
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -148,7 +148,7 @@ error: script "test" exited with code 1
 54|
 55|     // A render-time ReferenceError leaves the slot unrendered, so the…
 56|     expect(wrapper.find(".debugger-header").exists()).toBe(true);
- |                                                       ^
+|                                                       ^
 57|     expect(wrapper.find(".debugger-close").exists()).toBe(true);
 58|     expect(wrapper.text()).toContain("diagnosis ready");
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -169,7 +169,7 @@ error: script "test" exited with code 1
 - 2026-10-07T17:52:36Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —      63|       attachTo: document.body,
 64|       props: { open: true },
 65|       global: { plugins: [pinia, router] },
- |              ^
+|              ^
 66|     });
 67|     await flushPromises();
 ❯ processTicksAndRejections ../../unknown:7:39
@@ -193,7 +193,7 @@ error: script "test" exited with code 1
 54|
 55|     // A render-time ReferenceError leaves the slot unrendered, so the…
 56|     expect(wrapper.find(".debugger-header").exists()).toBe(true);
- |                                                       ^
+|                                                       ^
 57|     expect(wrapper.find(".debugger-close").exists()).toBe(true);
 58|     expect(wrapper.text()).toContain("diagnosis ready");
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯

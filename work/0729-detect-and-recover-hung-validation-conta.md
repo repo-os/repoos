@@ -79,7 +79,7 @@ The hang recovery (kill that run's container, retry once on another host) is a C
 108|       // Guidance points the agent at the managed preview — the one sa…
 109|       // way to verify a UI.
 110|       expect(stderr).toMatch(/may not launch `repoos serve`/i);
- |                      ^
+|                      ^
 111|       expect(stderr).toMatch(/preview/i);
 112|     } finally {
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -106,7 +106,7 @@ error: script "test" exited with code 1 — fix it in the feature branch and re-
 108|       // Guidance points the agent at the managed preview — the one sa…
 109|       // way to verify a UI.
 110|       expect(stderr).toMatch(/may not launch `repoos serve`/i);
- |                      ^
+|                      ^
 111|       expect(stderr).toMatch(/preview/i);
 112|     } finally {
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
@@ -132,7 +132,7 @@ error: script "test" exited with code 1 — fix it in the feature branch and re-
 33|     const normalized = configurationDoc.replace(/\[\]/g, "");
 34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
 35|     expect(missing).toEqual([]);
- |                     ^
+|                     ^
 36|   });
 37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
