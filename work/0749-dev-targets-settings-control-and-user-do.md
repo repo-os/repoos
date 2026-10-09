@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 83962
-last_close_out_gate_at: "2026-10-09T18:46:26.386Z"
 id: "0749"
 title: "Dev targets: Settings control and user docs"
 type: feature
-status: review
+status: done
 priority: p1
 area: [web, docs]
 story: "Dev page: start and manage dev targets"
 depends_on: ["0747"]
+merged_commit: f2018909b597715bee94958b31ec01b01f299c78
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-settings-control-and-user-do
 created_at: "2026-10-09T17:10:45Z"
-updated_at: "2026-10-09T18:46:26Z"
+updated_at: "2026-10-09T18:46:40Z"
+last_close_out_gate_ms: 83962
+last_close_out_gate_at: "2026-10-09T18:46:26.386Z"
 review_passes: 1
 ---
 ## Problem
@@ -72,4 +73,4 @@ The Settings page lets the user add, edit, reorder and remove a project's dev ta
 - 2026-10-09T18:43:49Z · status active→review
 - 2026-10-09T18:44:38Z · note: review pass 1: good to go
 - 2026-10-09T18:46:26Z · close-out gate completed in 84s
-
+- 2026-10-09T18:46:40Z · status review→done, release:success
