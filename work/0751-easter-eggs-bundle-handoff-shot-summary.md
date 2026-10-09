@@ -5,11 +5,11 @@ type: chore
 status: inbox
 priority: p3
 area: [web, ui]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-09T20:07:36Z"
-updated_at: "2026-10-09T20:07:36Z"
+updated_at: "2026-10-09T20:12:34Z"
 ---
 ## Problem
 
@@ -32,8 +32,9 @@ The UI verification block on the Changes tab is a raw log. Users can't tell at a
 - [ ] Tests cover a shot with all steps passing, one with a failed step, and one with no steps.
 
 ## Items
+1. Handoff shot verdicts on the Changes tab (source: the request after #0750). One-line fix: derive a per-shot verdict from step results and render it in place of the raw log. Test: the three cases in the acceptance criteria.
+2. Dev targets: fill a free port with a `{port}` placeholder, the way `[[preview.targets]]` does (source: the Dev page follow-up after #0747/#0748). One-line fix: substitute `{port}` in a dev target's command, url and healthCheck with a free port chosen at start, and show the real URL on the Dev page. Test: a target with `{port}` starts on a port that is free at start, and its url and healthCheck match.
 
-1. Handoff shot verdicts on the Changes tab (source: this request, after #0750). One-line fix: derive a per-shot verdict from step results and render it in place of the raw log. Test: the three cases in the acceptance criteria.
 
 ## Notes for AI
 
@@ -45,3 +46,4 @@ The UI verification block on the Changes tab is a raw log. Users can't tell at a
 ## Activity
 
 - 2026-10-09T20:07:36Z · created · njachowski@gmail.com
+- 2026-10-09T20:12:34Z · body: section Items
