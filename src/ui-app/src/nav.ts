@@ -28,6 +28,18 @@ export const STORIES_NAV: NavItem = {
   icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 4h11a3 3 0 013 3v10a3 3 0 01-3 3H5z" stroke="currentColor" stroke-width="1.8"/><path d="M8 8h7M8 12h7M8 16h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
 };
 
+/**
+ * The Dev page (#0748) — the user-run things declared in `[[dev.targets]]`.
+ * Opt-in: it appears only when the project declares at least one target, so a
+ * repo that runs nothing keeps its everyday nav unchanged.
+ */
+export const DEV_NAV: NavItem = {
+  id: "dev",
+  path: "/dev",
+  label: "Dev",
+  icon: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 9l2.5 2L8 13M12.5 14H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 21h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+};
+
 export const NAV: NavItem[] = [
   {
     id: "dashboard",
@@ -78,12 +90,15 @@ export const NAV: NavItem[] = [
  * opt-in (a `[release]` block / a non-empty `[[deployments]]` array in
  * repoos.toml) and slot in after Work, ahead of the everyday pages. Stories is
  * opt-in too (`[stories] enabled = true`) but sits exactly between Work and
- * Checks, so it is spliced at a fixed index independent of the other two.
+ * Checks, so it is spliced at a fixed index independent of the other two. Dev
+ * is opt-in on a non-empty `[[dev.targets]]` list and sits just before Agents,
+ * beside the other developer-facing pages.
  */
 export function navFor(
   releasesEnabled: boolean,
   deploymentsEnabled = false,
   storiesEnabled = false,
+  devEnabled = false,
 ): NavItem[] {
   const items = [...NAV];
   let at = 4; // after Work + Checks
@@ -98,22 +113,30 @@ export function navFor(
   if (storiesEnabled) {
     items.splice(3, 0, STORIES_NAV);
   }
+  if (devEnabled) {
+    // Anchor on `agents` (always present in the base NAV) rather than a magic
+    // index, so Dev lands in the same place no matter which opt-ins are on.
+    const agentsAt = items.findIndex((n) => n.id === "agents");
+    items.splice(agentsAt < 0 ? items.length : agentsAt, 0, DEV_NAV);
+  }
   return items;
 }
 
 /**
  * Derive the nav from the raw `/api/config` payload. Each opt-in surface is
  * read from the same shape the server ships it in: `release.enabled`,
- * a non-empty `deployments` array, and `stories.enabled`. A missing or
- * malformed section reads as disabled, so a repo that never configures these
- * gets exactly the default NAV.
+ * a non-empty `deployments` array, `stories.enabled`, and a non-empty
+ * `dev.targets` array. A missing or malformed section reads as disabled, so a
+ * repo that never configures these gets exactly the default NAV.
  */
 export function navFromConfig(config: Record<string, unknown> | null | undefined): NavItem[] {
   const release = config?.release as { enabled?: unknown } | undefined;
   const stories = config?.stories as { enabled?: unknown } | undefined;
+  const dev = config?.dev as { targets?: unknown } | undefined;
   return navFor(
     release?.enabled === true,
     Array.isArray(config?.deployments) && (config?.deployments as unknown[]).length > 0,
     stories?.enabled === true,
+    Array.isArray(dev?.targets) && dev.targets.length > 0,
   );
 }
