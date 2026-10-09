@@ -103,7 +103,7 @@ describe("parseDevTargets", () => {
   it("requires url for server and artifactPath for artifact", () => {
     expect(
       parseDevTargets({ "dev.targets": [{ name: "web", kind: "server", command: "x" }] }).errors[0],
-    ).toContain('needs a url');
+    ).toContain("needs a url");
     expect(
       parseDevTargets({ "dev.targets": [{ name: "apk", kind: "artifact", command: "x" }] })
         .errors[0],
@@ -197,9 +197,7 @@ describe("DevTargetManager lifecycle", () => {
     const mgr = new DevTargetManager(
       baseConfig(
         {
-          targets: [
-            target({ name: "web", command: "bun -e \"setTimeout(()=>{},60000)\"" }),
-          ],
+          targets: [target({ name: "web", command: 'bun -e "setTimeout(()=>{},60000)"' })],
         },
         dir,
       ),
@@ -222,7 +220,7 @@ describe("DevTargetManager lifecycle", () => {
   it("is idempotent when starting an already-running target", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-idem-"));
     const mgr = new DevTargetManager(
-      baseConfig({ targets: [target({ command: "bun -e \"setTimeout(()=>{},60000)\"" })] }, dir),
+      baseConfig({ targets: [target({ command: 'bun -e "setTimeout(()=>{},60000)"' })] }, dir),
     );
     try {
       const first = await mgr.start("web");
@@ -332,7 +330,7 @@ describe("DevTargetManager lifecycle", () => {
   it("restart stops then starts a fresh process", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-restart-"));
     const mgr = new DevTargetManager(
-      baseConfig({ targets: [target({ command: "bun -e \"setTimeout(()=>{},60000)\"" })] }, dir),
+      baseConfig({ targets: [target({ command: 'bun -e "setTimeout(()=>{},60000)"' })] }, dir),
     );
     try {
       await mgr.start("web");
@@ -444,7 +442,7 @@ describe("dev target routes", () => {
   it("starts, then stops, a target through the routes", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-route-"));
     const mgr = new DevTargetManager(
-      baseConfig({ targets: [target({ command: "bun -e \"setTimeout(()=>{},60000)\"" })] }, dir),
+      baseConfig({ targets: [target({ command: 'bun -e "setTimeout(()=>{},60000)"' })] }, dir),
     );
     try {
       const start = makeRes();
@@ -533,7 +531,7 @@ describe("dev target routes", () => {
   it("restarts a target through the route", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-route-restart-"));
     const mgr = new DevTargetManager(
-      baseConfig({ targets: [target({ command: "bun -e \"setTimeout(()=>{},60000)\"" })] }, dir),
+      baseConfig({ targets: [target({ command: 'bun -e "setTimeout(()=>{},60000)"' })] }, dir),
     );
     try {
       const { res, fake } = makeRes();
