@@ -2,7 +2,7 @@
 id: "0748"
 title: "Dev page: list and control dev targets"
 type: feature
-status: active
+status: review
 priority: p1
 area: [web, ui]
 story: "Dev page: start and manage dev targets"
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-page-list-and-control-dev-targets
 created_at: "2026-10-09T17:10:39Z"
-updated_at: "2026-10-09T18:14:20Z"
+updated_at: "2026-10-09T18:21:52Z"
 ---
 ## Problem
 
@@ -45,16 +45,16 @@ A Dev page lists each project's dev targets with state, a Start, Stop and Restar
 ```json
 [
 {
-  "label": "Dev page — empty state (this repo declares no [[dev.targets]])",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-empty"
+"label": "Dev page — empty state (this repo declares no [[dev.targets]])",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-empty"
 },
 {
-  "label": "Dev page header and edit link",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".page-header"
+"label": "Dev page header and edit link",
+"target": "default",
+"route": "/dev",
+"highlight": ".page-header"
 }
 ]
 ```
@@ -67,3 +67,4 @@ A Dev page lists each project's dev targets with state, a Start, Stop and Restar
 - 2026-10-09T18:10:43Z · body
 - 2026-10-09T18:12:03Z · body
 - 2026-10-09T18:14:20Z · body: section Shots
+- 2026-10-09T18:21:52Z · status active→review
