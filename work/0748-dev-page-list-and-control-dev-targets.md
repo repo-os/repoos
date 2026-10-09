@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 60147
-last_close_out_gate_at: "2026-10-09T18:29:07.760Z"
 id: "0748"
 title: "Dev page: list and control dev targets"
 type: feature
-status: review
+status: done
 priority: p1
 area: [web, ui]
 story: "Dev page: start and manage dev targets"
 depends_on: ["0747"]
+merged_commit: 0d22bcd5929ca98cf4c7ad784dc7b5f17ee5983b
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-page-list-and-control-dev-targets
 created_at: "2026-10-09T17:10:39Z"
-updated_at: "2026-10-09T18:29:07Z"
+updated_at: "2026-10-09T18:29:17Z"
+last_close_out_gate_ms: 60147
+last_close_out_gate_at: "2026-10-09T18:29:07.760Z"
 review_passes: 1
 ---
 ## Problem
@@ -73,4 +74,4 @@ A Dev page lists each project's dev targets with state, a Start, Stop and Restar
 - 2026-10-09T18:21:52Z · status active→review
 - 2026-10-09T18:22:42Z · note: review pass 1: good to go
 - 2026-10-09T18:29:07Z · close-out gate completed in 60s
-
+- 2026-10-09T18:29:17Z · status review→done, release:success
