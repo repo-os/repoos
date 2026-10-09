@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-09T19:43:27Z"
-review_passes: 1
+last_close_out_gate_ms: 68114
+last_close_out_gate_at: "2026-10-09T20:05:11.295Z"
 id: "0750"
 title: Add fullscreen toggle to task tabs
 type: feature
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-fullscreen-toggle-to-task-tabs
 created_at: "2026-10-09T18:47:28Z"
+updated_at: "2026-10-09T20:05:11Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -110,4 +112,5 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 - 2026-10-09T19:43:02Z · note: click [data-test-id="task-tab-fullscreen"]: click: Timeout 5000ms exceeded. on /
 - 2026-10-09T19:43:02Z · note: highlight [data-test-id="task-tab-fullscreen"] matched nothing on /
 - 2026-10-09T19:43:27Z · note: review pass 1: good to go
+- 2026-10-09T20:05:11Z · close-out gate completed in 68s
 
