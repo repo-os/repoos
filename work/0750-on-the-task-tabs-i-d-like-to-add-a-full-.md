@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-fullscreen-toggle-to-task-tabs
 created_at: "2026-10-09T18:47:28Z"
-updated_at: "2026-10-09T18:56:31Z"
+updated_at: "2026-10-09T18:59:08Z"
 ---
 ## Problem
 
@@ -38,6 +38,51 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 
 ![Screenshot-2026-10-10-at-02.43.59](/api/tasks/0750/attachments/screenshot-1.png)
 
+## Shots
+```json
+[
+{
+  "label": "Task drawer with the new fullscreen toggle in the tab strip",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"task-tab-fullscreen\"]",
+  "steps": [
+    {
+      "click": "[data-task-id=\"9999\"]"
+    },
+    {
+      "waitFor": "[data-test-id=\"task-tab-fullscreen\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ],
+  "state": "board:withReviewTask"
+},
+{
+  "label": "Tab contents expanded to fullscreen",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"task-tab-fullscreen\"]",
+  "steps": [
+    {
+      "click": "[data-task-id=\"9999\"]"
+    },
+    {
+      "waitFor": "[data-test-id=\"task-tab-fullscreen\"]"
+    },
+    {
+      "click": "[data-test-id=\"task-tab-fullscreen\"]"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "state": "board:withReviewTask"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-09T18:47:28Z · created · hello@repoos.org
@@ -47,3 +92,4 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 - 2026-10-09T18:47:55Z · status ready→active, branch
 - 2026-10-09T18:55:42Z · body
 - 2026-10-09T18:56:31Z · body
+- 2026-10-09T18:59:08Z · body: section Shots
