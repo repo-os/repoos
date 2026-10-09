@@ -158,6 +158,40 @@ describe("parseDevTargets", () => {
     });
     expect(errors[0]).toContain("healthCheck needs a url or a file");
   });
+
+  it("parses healthCheck written as the inline table string the flat parser yields", () => {
+    // `parseFlatToml` has no inline-table support, so `healthCheck = { url = … }`
+    // reaches parseDevTargets as a raw string. The documented syntax must work.
+    const { targets, errors } = parseDevTargets({
+      "dev.targets": [
+        {
+          name: "web",
+          kind: "server",
+          command: "x",
+          url: "http://x",
+          healthCheck: '{ url = "http://x/health" }',
+        },
+      ],
+    });
+    expect(errors).toEqual([]);
+    expect(targets[0].healthCheck).toEqual({ url: "http://x/health" });
+  });
+
+  it("parses healthCheck written as dotted keys (healthCheck.url / healthCheck.file)", () => {
+    const { targets, errors } = parseDevTargets({
+      "dev.targets": [
+        {
+          name: "apk",
+          kind: "artifact",
+          command: "x",
+          artifactPath: "dist/app.apk",
+          "healthCheck.file": "dist/app.apk",
+        },
+      ],
+    });
+    expect(errors).toEqual([]);
+    expect(targets[0].healthCheck).toEqual({ file: "dist/app.apk" });
+  });
 });
 
 describe("loadConfig dev target wiring", () => {
@@ -172,6 +206,7 @@ describe("loadConfig dev target wiring", () => {
           'kind = "server"',
           'command = "bun run dev"',
           'url = "http://localhost:5173"',
+          'healthCheck = { url = "http://localhost:5173/health" }',
           "",
           "[[dev.targets]]",
           'name = "broken"',
@@ -183,6 +218,10 @@ describe("loadConfig dev target wiring", () => {
       const cfg = loadConfig(dir);
       expect(cfg.dev?.targets).toHaveLength(1);
       expect(cfg.dev?.targets?.[0].name).toBe("web");
+      // The documented inline-table healthCheck survives the real flat parser.
+      expect(cfg.dev?.targets?.[0].healthCheck).toEqual({
+        url: "http://localhost:5173/health",
+      });
       expect(cfg.devTargetErrors?.length).toBe(1);
       expect(cfg.devTargetErrors?.[0]).toContain('kind must be "server" or "artifact"');
     } finally {

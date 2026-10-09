@@ -733,6 +733,26 @@ export function parseAreasConfig(parsed: Record<string, unknown>): AreaConfig[] 
 }
 
 /**
+ * Parse the flat TOML parser's leftover inline-table string for `healthCheck`
+ * (`'{ url = "..." }'` — `parseFlatToml` has no inline-table support, so the
+ * whole table stays a string). Returns the url/file fields, or null when the
+ * string is not a `{ … }` table at all, so the caller can report the right
+ * error. Quoted string values only, which is all a URL or a file path needs.
+ */
+function parseInlineHealthCheck(raw: string): { url?: string; file?: string } | null {
+  const s = raw.trim();
+  if (!s.startsWith("{") || !s.endsWith("}")) return null;
+  const out: { url?: string; file?: string } = {};
+  for (const m of s.slice(1, -1).matchAll(/([A-Za-z0-9_]+)\s*=\s*"([^"]*)"/g)) {
+    const value = m[2].trim();
+    if (!value) continue;
+    if (m[1] === "url") out.url = value;
+    else if (m[1] === "file") out.file = value;
+  }
+  return out;
+}
+
+/**
  * Parse the `[[dev.targets]]` array of tables (#0747) — the user-declared
  * runnable dev targets. Unlike `[preview]`, which resolves cleanly to "nothing"
  * and drops bad rows, a dev target is something the user asked the server to
@@ -807,23 +827,45 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
     const label = typeof r.label === "string" ? r.label.trim() : "";
     if (label) target.label = label;
 
+    // healthCheck arrives in one of three shapes, all accepted here so the
+    // documented `healthCheck = { url = "..." }` actually works:
+    //   - an object, from a real TOML parser (or a test passing rows directly);
+    //   - the raw inline-table string the flat line parser leaves behind
+    //     (`'{ url = "..." }'`, since it has no inline-table support);
+    //   - dotted keys `healthCheck.url` / `healthCheck.file`, which the flat
+    //     parser keeps as literal keys on the row.
     const hcRaw = r.healthCheck;
+    let hcUrl =
+      typeof r["healthCheck.url"] === "string" ? (r["healthCheck.url"] as string).trim() : "";
+    let hcFile =
+      typeof r["healthCheck.file"] === "string" ? (r["healthCheck.file"] as string).trim() : "";
+    const hasInlineKeys = r["healthCheck.url"] !== undefined || r["healthCheck.file"] !== undefined;
     if (hcRaw !== undefined) {
-      if (typeof hcRaw !== "object" || hcRaw === null || Array.isArray(hcRaw)) {
+      if (typeof hcRaw === "string") {
+        const parsedHc = parseInlineHealthCheck(hcRaw);
+        if (!parsedHc) {
+          errors.push(`[dev.targets] ${name}: healthCheck must be a table with url or file`);
+          continue;
+        }
+        hcUrl = hcUrl || parsedHc.url || "";
+        hcFile = hcFile || parsedHc.file || "";
+      } else if (typeof hcRaw === "object" && hcRaw !== null && !Array.isArray(hcRaw)) {
+        const hc = hcRaw as Record<string, unknown>;
+        hcUrl = hcUrl || (typeof hc.url === "string" ? hc.url.trim() : "");
+        hcFile = hcFile || (typeof hc.file === "string" ? hc.file.trim() : "");
+      } else {
         errors.push(`[dev.targets] ${name}: healthCheck must be a table with url or file`);
         continue;
       }
-      const hc = hcRaw as Record<string, unknown>;
-      const hcUrl = typeof hc.url === "string" ? hc.url.trim() : "";
-      const hcFile = typeof hc.file === "string" ? hc.file.trim() : "";
-      if (!hcUrl && !hcFile) {
-        errors.push(`[dev.targets] ${name}: healthCheck needs a url or a file`);
-        continue;
-      }
+    }
+    if (hcUrl || hcFile) {
       target.healthCheck = {
         ...(hcUrl ? { url: hcUrl } : {}),
         ...(hcFile ? { file: hcFile } : {}),
       };
+    } else if (hcRaw !== undefined || hasInlineKeys) {
+      errors.push(`[dev.targets] ${name}: healthCheck needs a url or a file`);
+      continue;
     }
     seen.add(name);
     targets.push(target);
