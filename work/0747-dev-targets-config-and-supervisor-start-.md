@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-config-and-supervisor-start-
 created_at: "2026-10-09T17:10:37Z"
-updated_at: "2026-10-09T17:10:50Z"
+updated_at: "2026-10-09T17:29:21Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ Each project can declare dev targets in repoos.toml. The server can start, stop 
 - 2026-10-09T17:10:37Z · created · njachowski@gmail.com
 - 2026-10-09T17:10:48Z · status inbox→ready
 - 2026-10-09T17:10:50Z · status ready→active, branch
+- 2026-10-09T17:29:21Z · body
