@@ -2,14 +2,14 @@
 id: "0750"
 title: Add fullscreen toggle to task tabs
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-09T18:47:28Z"
-updated_at: "2026-10-09T18:47:43Z"
+updated_at: "2026-10-09T18:47:54Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 - 2026-10-09T18:47:28Z · created · hello@repoos.org
 - 2026-10-09T18:47:29Z · screenshots
 - 2026-10-09T18:47:43Z · status draft→inbox, title, area, body
+- 2026-10-09T18:47:54Z · status inbox→ready
