@@ -2,16 +2,16 @@
 id: "0749"
 title: "Dev targets: Settings control and user docs"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: [web, docs]
 story: "Dev page: start and manage dev targets"
 depends_on: ["0747"]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-09T17:10:45Z"
-updated_at: "2026-10-09T17:10:45Z"
+updated_at: "2026-10-09T18:02:23Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ The Settings page lets the user add, edit, reorder and remove a project's dev ta
 ## Activity
 
 - 2026-10-09T17:10:45Z · created · njachowski@gmail.com
+- 2026-10-09T18:02:23Z · status inbox→ready
