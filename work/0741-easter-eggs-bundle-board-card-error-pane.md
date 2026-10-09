@@ -53,13 +53,13 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 "highlight": ".task-card .tc-card-footer",
 "steps": [
 {
-  "waitFor": ".task-card"
+ "waitFor": ".task-card"
 },
 {
-  "waitFor": ".task-card .tc-card-footer"
+ "waitFor": ".task-card .tc-card-footer"
 },
 {
-  "waitMs": 500
+ "waitMs": 500
 }
 ]
 },
@@ -70,13 +70,13 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 "highlight": ".task-card .tc-card-footer",
 "steps": [
 {
-  "waitFor": ".task-card .tc-card-footer"
+ "waitFor": ".task-card .tc-card-footer"
 },
 {
-  "click": "button.theme-toggle"
+ "click": "button.theme-toggle"
 },
 {
-  "waitMs": 500
+ "waitMs": 500
 }
 ]
 }
@@ -119,7 +119,7 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 652|     const next = f.runner.validate(opts("0002"));
 653|     await tick();
 654|     expect(f.pending()).toEqual(["b"]);
- |                         ^
+|                         ^
 655|     f.release("b");
 656|     expect(await next).toEqual({ ok: true, stage: "check" });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯

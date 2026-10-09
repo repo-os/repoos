@@ -73,7 +73,7 @@ Do this: merge main into the branch first (resolve keeping both sides; take main
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
- |                                ^
+|                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
@@ -95,7 +95,7 @@ error: script "test" exited with code 1
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
- |                                ^
+|                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
@@ -117,7 +117,7 @@ error: script "test" exited with code 1
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
- |                                ^
+|                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
@@ -141,7 +141,7 @@ error: script "test" exited with code 1
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
- |                                ^
+|                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
@@ -163,7 +163,7 @@ error: script "test" exited with code 1
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
- |                                ^
+|                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
@@ -187,7 +187,7 @@ error: script "test" exited with code 1
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
- |                                ^
+|                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
@@ -216,7 +216,7 @@ error: script "test" exited with code 1
 291|     expect(ui.activeTab).toBe("debug");
 292|     expect(ui.debugView).toBe("logs");
 293|     expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "…
- |                                ^
+|                                ^
 294|   });
 295|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯

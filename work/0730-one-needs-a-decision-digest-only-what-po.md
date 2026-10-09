@@ -72,7 +72,7 @@ Owner wants release soon. Verify diagnosis independently against CURRENT main an
 172|       approvalByTaskId: {},
 173|     });
 174|     expect(digest.items).toEqual([]);
- |                          ^
+|                          ^
 175|   });
 176| });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
@@ -96,7 +96,7 @@ error: script "test" exited with code 1
 172|       approvalByTaskId: {},
 173|     });
 174|     expect(digest.items).toEqual([]);
- |                          ^
+|                          ^
 175|   });
 176| });
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
@@ -123,7 +123,7 @@ error: script "test" exited with code 1
 - 2026-10-07T10:47:36Z · body
 - 2026-10-07T10:49:56Z · body
 - 2026-10-07T10:55:55Z · handoff failed · remote validation failed: remote validation failed (exit 1) —     215|   expect(res.status).toBe(202);
- |                      ^
+|                      ^
 216|   expect(res.body.status).toBe("active");
 217|   const deadline = Date.now() + 30_000;
 ❯ tests/agent-review.test.ts:361:13
