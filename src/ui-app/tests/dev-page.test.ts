@@ -54,10 +54,9 @@ function target(over: Partial<DevTargetView> = {}): DevTargetView {
 }
 
 /** Install a fetch mock serving `/api/dev/targets` + the action routes. */
-function installFetch(options: {
-  targets?: DevTargetView[];
-  errors?: string[];
-}): { calls: Array<{ url: string; method: string }> } {
+function installFetch(options: { targets?: DevTargetView[]; errors?: string[] }): {
+  calls: Array<{ url: string; method: string }>;
+} {
   const calls: Array<{ url: string; method: string }> = [];
   let current: DevTargetView[] = options.targets ?? [];
   vi.stubGlobal(
@@ -75,9 +74,7 @@ function installFetch(options: {
         // Reflect the action's outcome in the authoritative list, the way the
         // server would, so the follow-up refresh shows the new state.
         current = current.map((t) =>
-          t.name === name
-            ? { ...t, status: kind === "stop" ? "stopped" : "running" }
-            : t,
+          t.name === name ? { ...t, status: kind === "stop" ? "stopped" : "running" } : t,
         );
         const found = current.find((t) => t.name === name) ?? target({ name });
         return json({ ok: true, target: found });
@@ -122,9 +119,9 @@ describe("Dev nav gating (#0748)", () => {
 
   it("shows Dev when a project declares at least one target", () => {
     expect(navFor(false, false, false, true).map((n) => n.id)).toContain("dev");
-    expect(
-      navFromConfig({ dev: { targets: [{ name: "web" }] } }).map((n) => n.id),
-    ).toContain("dev");
+    expect(navFromConfig({ dev: { targets: [{ name: "web" }] } }).map((n) => n.id)).toContain(
+      "dev",
+    );
   });
 
   it("places Dev just before Agents, regardless of the other opt-ins", () => {
@@ -309,10 +306,7 @@ describe("DevView actions (#0748)", () => {
 
 describe("DevView phone-width layout (#0748)", () => {
   it("stacks the card head and wraps long output at the page breakpoint, with no horizontal scroll", () => {
-    const source = readFileSync(
-      join(resolve(__dirname, ".."), "src/views/DevView.vue"),
-      "utf8",
-    );
+    const source = readFileSync(join(resolve(__dirname, ".."), "src/views/DevView.vue"), "utf8");
     expect(source).toMatch(/@media \(max-width: 640px\)/);
     expect(source).toMatch(/\.dev-card-head\s*\{[^}]*flex-direction:\s*column/);
     // Long commands and log lines wrap rather than widening the page.
@@ -321,10 +315,7 @@ describe("DevView phone-width layout (#0748)", () => {
   });
 
   it("never reaches for a native confirm/alert/prompt", () => {
-    const source = readFileSync(
-      join(resolve(__dirname, ".."), "src/views/DevView.vue"),
-      "utf8",
-    );
+    const source = readFileSync(join(resolve(__dirname, ".."), "src/views/DevView.vue"), "utf8");
     expect(source).not.toMatch(/\b(window|globalThis)\.(confirm|alert|prompt)\s*\(/);
     expect(source).not.toMatch(/[^.\w](confirm|alert|prompt)\s*\(/);
   });
