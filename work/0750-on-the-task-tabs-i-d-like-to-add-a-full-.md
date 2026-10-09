@@ -5,11 +5,11 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-09T18:47:28Z"
-updated_at: "2026-10-09T18:47:28Z"
+updated_at: "2026-10-09T18:47:29Z"
 ---
 On the task tabs I'd like to add a full screen toggle option on the selected tab, this full screen toggle should open the current tab in a fullscreen modal to make it easier to see the tab contents.
 
@@ -17,6 +17,11 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 
 On the task tabs I'd like to add a full screen toggle option on the selected tab, this full screen toggle should open the current tab in a fullscreen modal to make it easier to see the tab contents.
 
+## Screenshots
+
+![Screenshot-2026-10-10-at-02.43.59](/api/tasks/0750/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-10-09T18:47:28Z · created · hello@repoos.org
+- 2026-10-09T18:47:29Z · screenshots
