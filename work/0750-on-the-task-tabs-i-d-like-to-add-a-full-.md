@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-fullscreen-toggle-to-task-tabs
 created_at: "2026-10-09T18:47:28Z"
-updated_at: "2026-10-09T19:05:07Z"
+updated_at: "2026-10-09T19:11:42Z"
 ---
 ## Problem
 
@@ -97,3 +97,4 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 - 2026-10-09T19:01:42Z · body
 - 2026-10-09T19:03:53Z · body
 - 2026-10-09T19:05:07Z · body
+- 2026-10-09T19:11:42Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
