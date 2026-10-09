@@ -2,16 +2,16 @@
 id: "0748"
 title: "Dev page: list and control dev targets"
 type: feature
-status: ready
+status: active
 priority: p1
 area: [web, ui]
 story: "Dev page: start and manage dev targets"
 depends_on: ["0747"]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/dev-page-list-and-control-dev-targets
 created_at: "2026-10-09T17:10:39Z"
-updated_at: "2026-10-09T18:01:37Z"
+updated_at: "2026-10-09T18:01:39Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ A Dev page lists each project's dev targets with state, a Start, Stop and Restar
 
 - 2026-10-09T17:10:39Z · created · njachowski@gmail.com
 - 2026-10-09T18:01:37Z · status inbox→ready
+- 2026-10-09T18:01:39Z · status ready→active, branch
