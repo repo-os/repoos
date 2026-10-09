@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-settings-control-and-user-do
 created_at: "2026-10-09T17:10:45Z"
-updated_at: "2026-10-09T18:02:24Z"
+updated_at: "2026-10-09T18:27:19Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ The Settings page lets the user add, edit, reorder and remove a project's dev ta
 - 2026-10-09T17:10:45Z · created · njachowski@gmail.com
 - 2026-10-09T18:02:23Z · status inbox→ready
 - 2026-10-09T18:02:24Z · status ready→active, branch
+- 2026-10-09T18:27:19Z · body
