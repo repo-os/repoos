@@ -26,6 +26,8 @@ import {
   Bug,
   Lightbulb,
   Trash2,
+  Maximize2,
+  Minimize2,
 } from "lucide-vue-next";
 import type {
   ReviewState,
@@ -1675,6 +1677,53 @@ async function openTaskInEditor(): Promise<void> {
 }
 
 const transitioned = computed(() => !!(ui.active && repo.transitionState?.id === ui.active.id));
+
+// ---- Fullscreen tab (#0750) ----
+//
+// The tab strip's toggle expands the drawer to fill the viewport so the active
+// tab's contents are easier to read. It is the same dialog (not a second copy):
+// expanding the shell keeps chat drafts, form edits and scroll position intact,
+// and "exit" simply restores the drawer's normal width. State is per-task and
+// resets when the drawer closes or the open task changes.
+
+/** True while the drawer is expanded to fill the viewport. */
+const fullscreen = ref(false);
+
+/** Human label for the active tab, used in the toggle's accessible name. */
+const activeTabLabel = computed(() => {
+  const labels: Record<typeof ui.activeTab, string> = {
+    details: "Task",
+    pm: "PM",
+    agent: "Dev",
+    review: "Review",
+    changes: "Changes",
+    tokens: "Tokens",
+    debug: "Debug",
+  };
+  return labels[ui.activeTab] ?? "tab";
+});
+
+function toggleFullscreen(): void {
+  fullscreen.value = !fullscreen.value;
+}
+
+/**
+ * While expanded, Escape leaves fullscreen and returns to the task instead of
+ * closing the whole drawer. Radix would otherwise dismiss the dialog on Escape.
+ */
+function onEscapeKeyDown(event: KeyboardEvent): void {
+  if (!fullscreen.value) return;
+  event.preventDefault();
+  fullscreen.value = false;
+}
+
+/** Reset the expanded view whenever the drawer closes or the task changes. */
+watch(
+  () => [ui.active?.id, open.value] as const,
+  () => {
+    fullscreen.value = false;
+  },
+);
 
 // ---- Area multi-select (#0583) ----
 //
@@ -3575,7 +3624,9 @@ watch(
     <DialogOverlay />
     <DialogContent
       :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
+      :class="{ 'drawer-fullscreen': fullscreen }"
       @open-auto-focus="onOpenAutoFocus"
+      @escape-key-down="onEscapeKeyDown"
       @dragenter.prevent="onDragEnter"
       @dragover.prevent
       @dragleave.prevent="onDragLeave"
@@ -4659,6 +4710,24 @@ watch(
           >
             <Bug class="tab-icon" />
             Debug
+          </button>
+          <!-- #0750: expand the selected tab's contents to fill the viewport.
+               While expanded the same control collapses back to the task. -->
+          <button
+            type="button"
+            class="tab-btn tab-fullscreen"
+            data-test-id="task-tab-fullscreen"
+            :aria-pressed="fullscreen"
+            :aria-label="
+              fullscreen
+                ? 'Exit fullscreen and return to the task'
+                : `Open the ${activeTabLabel} tab in fullscreen`
+            "
+            :data-tip="fullscreen ? 'Exit fullscreen' : 'Open this tab in fullscreen'"
+            @click="toggleFullscreen"
+          >
+            <Minimize2 v-if="fullscreen" class="tab-icon" />
+            <Maximize2 v-else class="tab-icon" />
           </button>
         </div>
         <div
