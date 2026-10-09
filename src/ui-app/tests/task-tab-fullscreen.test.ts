@@ -69,9 +69,7 @@ function drawerShell(): HTMLElement {
 
 /** The fullscreen toggle in the task tab strip. */
 function toggleButton(): HTMLButtonElement {
-  const el = document.body.querySelector<HTMLButtonElement>(
-    '[data-test-id="task-tab-fullscreen"]',
-  );
+  const el = document.body.querySelector<HTMLButtonElement>('[data-test-id="task-tab-fullscreen"]');
   expect(el, "fullscreen toggle not found").toBeTruthy();
   return el!;
 }
@@ -168,10 +166,7 @@ describe("task tab fullscreen toggle (#0750)", () => {
 });
 
 describe("fullscreen drawer styles (#0750)", () => {
-  const css = readFileSync(
-    resolve(join(__dirname, "..", "src", "style.css")),
-    "utf8",
-  );
+  const css = readFileSync(resolve(join(__dirname, "..", "src", "style.css")), "utf8");
 
   it("fills the viewport when expanded and hides the resize handle", () => {
     expect(css).toMatch(/\.drawer-wrap\.drawer-fullscreen\s*\{[^}]*width:\s*100vw\s*!important/);
