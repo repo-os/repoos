@@ -2,7 +2,7 @@
 id: "0748"
 title: "Dev page: list and control dev targets"
 type: feature
-status: active
+status: review
 priority: p1
 area: [web, ui]
 story: "Dev page: start and manage dev targets"
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-page-list-and-control-dev-targets
 created_at: "2026-10-09T17:10:39Z"
-updated_at: "2026-10-09T18:01:39Z"
+updated_at: "2026-10-09T18:21:52Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ A Dev page lists each project's dev targets with state, a Start, Stop and Restar
 - 2026-10-09T17:10:39Z · created · njachowski@gmail.com
 - 2026-10-09T18:01:37Z · status inbox→ready
 - 2026-10-09T18:01:39Z · status ready→active, branch
+- 2026-10-09T18:21:52Z · status active→review
