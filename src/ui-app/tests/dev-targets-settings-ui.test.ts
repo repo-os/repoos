@@ -16,7 +16,10 @@ import type { DevTargetPayload } from "../src/lib/dev-targets";
 
 let pinia: Pinia;
 
-function seed(targets: DevTargetPayload[], errors: string[] = []): ReturnType<typeof useConfigStore> {
+function seed(
+  targets: DevTargetPayload[],
+  errors: string[] = [],
+): ReturnType<typeof useConfigStore> {
   const config = useConfigStore();
   config.data = { devTargets: targets, devTargetErrors: errors };
   return config;
@@ -76,7 +79,9 @@ describe("DevTargetsSettings card (#0749)", () => {
     const wrapper = mountCard();
 
     // Move the second row up.
-    const upButtons = wrapper.findAll('[aria-label="Move Debug APK up"], [aria-label="Move apk up"]');
+    const upButtons = wrapper.findAll(
+      '[aria-label="Move Debug APK up"], [aria-label="Move apk up"]',
+    );
     await upButtons[upButtons.length - 1]!.trigger("click");
     await nextTick();
 

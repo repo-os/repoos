@@ -45,9 +45,7 @@ const editing = ref<DevTargetDraft | null>(null);
 const saveError = ref("");
 
 /** Names other than the one being edited, for the duplicate check. */
-const takenNames = computed(() =>
-  drafts.value.map((d) => d.name).filter((n) => n.trim()),
-);
+const takenNames = computed(() => drafts.value.map((d) => d.name).filter((n) => n.trim()));
 
 function openAdd(): void {
   editing.value = null;
@@ -124,8 +122,8 @@ function rowDetail(t: DevTargetPayload): string {
       </div>
       <div class="setting-desc" style="padding: 4px 0 12px">
         The things you run yourself while developing — a local HMR server, a debug build — as
-        opposed to task previews, which RepoOS manages for a task's worktree. Only commands
-        declared here can be started.
+        opposed to task previews, which RepoOS manages for a task's worktree. Only commands declared
+        here can be started.
       </div>
 
       <div v-if="serverErrors.length" class="ff-error" role="alert">

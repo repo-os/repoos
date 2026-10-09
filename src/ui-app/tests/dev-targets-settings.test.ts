@@ -74,7 +74,8 @@ const APK = {
   label: "Debug APK",
 };
 
-describe("Settings control contract for [[dev.targets]] (#0749)", () => {  it("exposes the dev.targets key in the schema so search can find its UI row", () => {
+describe("Settings control contract for [[dev.targets]] (#0749)", () => {
+  it("exposes the dev.targets key in the schema so search can find its UI row", () => {
     expect(getConfigSchema().some((f) => f.key === "dev.targets")).toBe(true);
     // Parser-only keys stay documented alongside it (docs-drift guard).
     expect(SUPPORTED_TOML_KEYS).toContain("dev.targets.name");
@@ -281,7 +282,13 @@ describe("Settings control client-side validation (#0749)", () => {
   });
 
   it("flags a duplicate name against a sibling, but not against itself", () => {
-    const draft = { ...emptyDevTargetDraft(), name: "web", kind: "server" as const, command: "x", url: "http://x" };
+    const draft = {
+      ...emptyDevTargetDraft(),
+      name: "web",
+      kind: "server" as const,
+      command: "x",
+      url: "http://x",
+    };
     expect(devTargetError(draft, { takenNames: ["web"], selfName: "web" })).toBeNull();
     expect(devTargetError(draft, { takenNames: ["web", "apk"] })).toContain(
       'duplicate target name "web"',
@@ -289,8 +296,20 @@ describe("Settings control client-side validation (#0749)", () => {
   });
 
   it("validates a whole list, naming each offending row", () => {
-    const good = { ...emptyDevTargetDraft(), name: "web", kind: "server" as const, command: "x", url: "http://x" };
-    const bad = { ...emptyDevTargetDraft(), name: "", kind: "server" as const, command: "x", url: "http://x" };
+    const good = {
+      ...emptyDevTargetDraft(),
+      name: "web",
+      kind: "server" as const,
+      command: "x",
+      url: "http://x",
+    };
+    const bad = {
+      ...emptyDevTargetDraft(),
+      name: "",
+      kind: "server" as const,
+      command: "x",
+      url: "http://x",
+    };
     const errors = devTargetsErrors([good, bad]);
     expect(errors).toHaveLength(1);
     expect(errors[0]).toContain("Target 2");
@@ -298,7 +317,13 @@ describe("Settings control client-side validation (#0749)", () => {
   });
 
   it("reports a duplicate across rows", () => {
-    const a = { ...emptyDevTargetDraft(), name: "web", kind: "server" as const, command: "x", url: "http://x" };
+    const a = {
+      ...emptyDevTargetDraft(),
+      name: "web",
+      kind: "server" as const,
+      command: "x",
+      url: "http://x",
+    };
     const errors = devTargetsErrors([a, { ...a }]);
     expect(errors.some((e) => e.includes("Target 2") && e.includes("duplicate name"))).toBe(true);
   });

@@ -21,11 +21,7 @@ import SelectItem from "./ui/select/item.vue";
 import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
-import {
-  devTargetError,
-  emptyDevTargetDraft,
-  type DevTargetDraft,
-} from "../lib/dev-targets";
+import { devTargetError, emptyDevTargetDraft, type DevTargetDraft } from "../lib/dev-targets";
 
 const props = defineProps<{
   open: boolean;
@@ -90,8 +86,8 @@ function close(): void {
         <div>
           <DialogTitle>{{ isEditing ? "Edit dev target" : "Add dev target" }}</DialogTitle>
           <DialogDescription class="dev-target-desc">
-            A thing you run yourself while developing — a local HMR server, a debug build. Only
-            the command declared here can be started; RepoOS never runs one typed elsewhere.
+            A thing you run yourself while developing — a local HMR server, a debug build. Only the
+            command declared here can be started; RepoOS never runs one typed elsewhere.
           </DialogDescription>
         </div>
         <DialogClose class="close-x" aria-label="Close" :disabled="busy">
