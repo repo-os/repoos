@@ -743,8 +743,8 @@ function parseInlineHealthCheck(raw: string): { url?: string; file?: string } | 
   const s = raw.trim();
   if (!s.startsWith("{") || !s.endsWith("}")) return null;
   const out: { url?: string; file?: string } = {};
-  for (const m of s.slice(1, -1).matchAll(/([A-Za-z0-9_]+)\s*=\s*"([^"]*)"/g)) {
-    const value = m[2].trim();
+  for (const m of s.slice(1, -1).matchAll(/([A-Za-z0-9_]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
+    const value = (m[2] ?? m[3] ?? "").trim();
     if (!value) continue;
     if (m[1] === "url") out.url = value;
     else if (m[1] === "file") out.file = value;
