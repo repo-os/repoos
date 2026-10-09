@@ -630,6 +630,12 @@ export interface RepoOSConfig {
    */
   dev?: DevConfig;
   /**
+   * Validation errors found while parsing `[[dev.targets]]` (#0747). A bad dev
+   * target row is surfaced here (and by the Dev API/CLI) rather than silently
+   * dropped, so a typo is visible instead of a target quietly missing.
+   */
+  devTargetErrors?: string[];
+  /**
    * Display-only column label overrides for the six board columns (task
    * #0396). Keys are canonical status IDs (`draft`, `inbox`, `ready`, `active`,
    * `review`, `done`); values are display labels shown in the UI and CLI.
@@ -734,8 +740,46 @@ export interface DevInspectorConfig {
   editorCommand?: string;
 }
 
+/**
+ * A dev target's kind (#0747). `server` is a long-lived process with a URL;
+ * `artifact` is a build/compile that produces a file and exits.
+ */
+export type DevTargetKind = "server" | "artifact";
+
+/** When a dev target counts as healthy, checked after start. */
+export interface DevHealthCheck {
+  /** URL polled until it answers (used for a `server` target). */
+  url?: string;
+  /** Repo-relative file path that must exist (used for an `artifact` target). */
+  file?: string;
+}
+
+/**
+ * One thing a user runs while developing (#0747), declared in `repoos.toml`'s
+ * `[[dev.targets]]`. Only commands declared here can be started — no request
+ * body ever supplies a command.
+ */
+export interface DevTargetConfig {
+  /** Stable identity/display name, unique within the project. Required. */
+  name: string;
+  /** `server` (long-lived, has a URL) or `artifact` (build output). Required. */
+  kind: DevTargetKind;
+  /** Shell command run in the project's root checkout. Required. */
+  command: string;
+  /** `server` target's URL, e.g. `http://localhost:5173`. Optional. */
+  url?: string;
+  /** `artifact` target's repo-relative output path. Optional. */
+  artifactPath?: string;
+  /** Human label shown in the UI; defaults to `name`. Optional. */
+  label?: string;
+  /** Optional readiness check applied after start. */
+  healthCheck?: DevHealthCheck;
+}
+
 export interface DevConfig {
   inspector?: DevInspectorConfig;
+  /** User-declared runnable dev targets (#0747). */
+  targets?: DevTargetConfig[];
 }
 
 /**
