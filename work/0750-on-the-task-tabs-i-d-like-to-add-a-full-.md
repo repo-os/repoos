@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 68114
-last_close_out_gate_at: "2026-10-09T20:05:11.295Z"
 id: "0750"
 title: Add fullscreen toggle to task tabs
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
+merged_commit: 736f03ef2fb071fd3e7ca8bb5565be40dca3bd33
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-fullscreen-toggle-to-task-tabs
 created_at: "2026-10-09T18:47:28Z"
-updated_at: "2026-10-09T20:05:11Z"
+updated_at: "2026-10-09T20:05:21Z"
+last_close_out_gate_ms: 68114
+last_close_out_gate_at: "2026-10-09T20:05:11.295Z"
 review_passes: 1
 ---
 ## Problem
@@ -113,4 +114,4 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 - 2026-10-09T19:43:02Z · note: highlight [data-test-id="task-tab-fullscreen"] matched nothing on /
 - 2026-10-09T19:43:27Z · note: review pass 1: good to go
 - 2026-10-09T20:05:11Z · close-out gate completed in 68s
-
+- 2026-10-09T20:05:21Z · status review→done, release:success
