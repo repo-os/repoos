@@ -102,3 +102,4 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 - 2026-10-09T19:36:05Z · note: handoff requested (cli)
 - 2026-10-09T19:42:24Z · status active→review
 - 2026-10-09T19:42:43Z · note: click [data-task-id="9999"]: click: Timeout 5000ms exceeded. on /
+- 2026-10-09T19:42:43Z · note: waitFor [data-test-id="task-tab-fullscreen"]: waitFor: Timeout 5000ms exceeded. on /
