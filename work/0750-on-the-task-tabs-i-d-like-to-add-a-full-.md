@@ -2,14 +2,14 @@
 id: "0750"
 title: Add fullscreen toggle to task tabs
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-fullscreen-toggle-to-task-tabs
 created_at: "2026-10-09T18:47:28Z"
-updated_at: "2026-10-09T19:36:05Z"
+updated_at: "2026-10-09T19:42:24Z"
 ---
 ## Problem
 
@@ -100,3 +100,4 @@ On the task tabs I'd like to add a full screen toggle option on the selected tab
 - 2026-10-09T19:11:42Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
 - 2026-10-09T19:36:05Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-09T19:36:05Z · note: handoff requested (cli)
+- 2026-10-09T19:42:24Z · status active→review
