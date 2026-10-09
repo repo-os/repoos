@@ -278,7 +278,8 @@ export class DevTargetManager {
       const deadline = Date.now() + HEALTH_TIMEOUT_MS;
       while (Date.now() < deadline) {
         if (existsSync(path)) return { ok: true, error: "" };
-        if (!this.isAlive(child)) return { ok: false, error: "process exited before the health file appeared" };
+        if (!this.isAlive(child))
+          return { ok: false, error: "process exited before the health file appeared" };
         await sleep(HEALTH_POLL_MS);
       }
       return { ok: false, error: `health file "${hc.file}" did not appear in time` };
@@ -514,7 +515,8 @@ export class DevTargetManager {
         this.states.set(name, {
           ...state,
           name,
-          status: state.status === "running" || state.status === "starting" ? "stopped" : state.status,
+          status:
+            state.status === "running" || state.status === "starting" ? "stopped" : state.status,
           log: Array.isArray(state.log) ? state.log.slice(-DEV_LOG_TAIL_LINES) : [],
         });
       }

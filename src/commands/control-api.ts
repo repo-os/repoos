@@ -473,7 +473,9 @@ export async function cmdDev(args: string[]): Promise<number> {
       }
       console.log(
         c.green("  ✓ ") +
-          c.dim(`dev target "${name}" ${data.target?.status ?? action}${data.target?.url ? ` ${data.target.url}` : ""}`),
+          c.dim(
+            `dev target "${name}" ${data.target?.status ?? action}${data.target?.url ? ` ${data.target.url}` : ""}`,
+          ),
       );
       return 0;
     }
