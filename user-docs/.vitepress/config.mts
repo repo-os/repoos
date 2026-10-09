@@ -92,6 +92,7 @@ export default defineConfig({
           { text: "Notices and notifications", link: "/notifications" },
           { text: "Checks before merge", link: "/check" },
           { text: "Tunnels", link: "/tunnels" },
+          { text: "Dev targets", link: "/dev-targets" },
         ],
       },
       {
