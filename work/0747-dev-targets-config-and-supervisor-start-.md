@@ -11,7 +11,7 @@ created_by: njachowski@gmail.com
 branch: feat/dev-targets-config-and-supervisor-start-
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-09T17:10:37Z"
-updated_at: "2026-10-09T17:33:14Z"
+updated_at: "2026-10-09T17:33:20Z"
 ---
 ## Problem
 
