@@ -387,6 +387,122 @@ export async function cmdPreview(args: string[]): Promise<number> {
   }
 }
 
+export async function cmdDev(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  // `repoos dev list` · `repoos dev <name> start|stop|restart` · `repoos dev <name>`
+  // The command run is ALWAYS the one declared in repoos.toml, resolved by name.
+  const sub = rest[0];
+  if (!sub || sub === "list" || sub === "status") {
+    const api = new RepoOsApi({ port: opts.port });
+    try {
+      await ensureServer(api);
+      const data = (await api.requestOk("GET", "/api/dev/targets", undefined)) as {
+        targets?: Array<{
+          name: string;
+          label: string;
+          status: string;
+          kind: string;
+          url?: string;
+          artifactPath?: string;
+          error?: string;
+        }>;
+        errors?: string[];
+      };
+      if (opts.json) {
+        printJson(data);
+        return 0;
+      }
+      if (data.errors?.length) {
+        for (const e of data.errors) console.log(c.yellow("  ! ") + c.dim(e));
+      }
+      const targets = data.targets ?? [];
+      if (!targets.length) {
+        console.log(c.dim("  no dev targets declared in repoos.toml ([[dev.targets]])"));
+        return 0;
+      }
+      for (const t of targets) {
+        const dot =
+          t.status === "running"
+            ? c.green("●")
+            : t.status === "failed"
+              ? c.red("●")
+              : t.status === "starting"
+                ? c.yellow("●")
+                : c.dim("○");
+        const target = t.url ?? t.artifactPath ?? "";
+        console.log(
+          `  ${dot} ${t.name} ${c.dim(`[${t.kind}] ${t.status}`)}${target ? c.dim(` ${target}`) : ""}`,
+        );
+        if (t.error) console.log(c.red(`      ${t.error}`));
+      }
+      return 0;
+    } catch (e) {
+      printErr((e as RepoOsApiError).message);
+      return 1;
+    }
+  }
+
+  const name = sub;
+  const action = rest[1] ?? "status";
+  const valid = ["start", "stop", "restart", "status", "logs"];
+  if (!valid.includes(action)) {
+    printErr(
+      "Usage: repoos dev [list] · repoos dev <name> start|stop|restart|status|logs [--json] [--port N]",
+    );
+    return 1;
+  }
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const base = `/api/dev/targets/${encodeURIComponent(name)}`;
+    if (action === "start" || action === "stop" || action === "restart") {
+      const data = (await api.requestOk("POST", `${base}/${action}`, {})) as {
+        target?: { status?: string; error?: string; url?: string };
+      };
+      if (opts.json) {
+        printJson(data);
+        return 0;
+      }
+      if (data.target?.error) {
+        printErr(`dev target "${name}" ${data.target.status}: ${data.target.error}`);
+        return 1;
+      }
+      console.log(
+        c.green("  ✓ ") +
+          c.dim(`dev target "${name}" ${data.target?.status ?? action}${data.target?.url ? ` ${data.target.url}` : ""}`),
+      );
+      return 0;
+    }
+    if (action === "status" || action === "logs") {
+      const data = (await api.requestOk("GET", base, undefined)) as {
+        target?: {
+          status?: string;
+          error?: string;
+          log?: string[];
+        };
+      };
+      if (opts.json) {
+        printJson(data);
+        return 0;
+      }
+      console.log(c.dim(`  ${name}: ${data.target?.status ?? "unknown"}`));
+      if (data.target?.error) console.log(c.red(`  ${data.target.error}`));
+      if (action === "logs") {
+        for (const line of data.target?.log ?? []) console.log(`  ${line}`);
+      }
+      return 0;
+    }
+    return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
 export async function cmdConfig(args: string[]): Promise<number> {
   const { rest, opts, error } = parseCommonFlags(args);
   if (error) {

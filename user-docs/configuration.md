@@ -1257,6 +1257,52 @@ is folded into the pool as a plain entry. See
 [docs/remote-validation.md](../docs/remote-validation.md) for full
 dispatch, routing and cross-process-limit details.
 
+## Dev targets
+
+Dev targets are the things you run yourself while developing — a local HMR web
+server, a debug build — as opposed to task previews, which RepoOS manages for a
+task's worktree. Declare them in `repoos.toml` with a repeatable
+`[[dev.targets]]` table, one row per target:
+
+```toml
+[[dev.targets]]
+name = "web"
+kind = "server"
+command = "bun run dev"
+url = "http://localhost:5173"
+label = "Web app"
+healthCheck = { url = "http://localhost:5173/health" }
+
+[[dev.targets]]
+name = "apk"
+kind = "artifact"
+command = "bun run build:android"
+artifactPath = "dist/app-debug.apk"
+```
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `dev.targets[].name` | string | yes | Stable identity, unique within the project. The API and CLI address a target by this name. |
+| `dev.targets[].kind` | `server` \| `artifact` | yes | `server` is a long-lived process with a URL; `artifact` is a build that produces a file and exits. |
+| `dev.targets[].command` | string | yes | Shell command run in the project's **root checkout** (never a task worktree). |
+| `dev.targets[].url` | string | for `server` | The server's URL, e.g. `http://localhost:5173`. |
+| `dev.targets[].artifactPath` | string | for `artifact` | Repo-relative path of the build output. |
+| `dev.targets[].label` | string | no | Human label shown in the UI; defaults to `name`. |
+| `dev.targets[].healthCheck.url` | string | no | URL polled until it answers before a `server` target is reported running. Defaults to `url`. |
+| `dev.targets[].healthCheck.file` | string | no | Repo-relative file that must exist before the target is reported running. |
+
+Only commands declared here can be run: the API and `repoos dev` name a target,
+and the command is always resolved from the committed `repoos.toml` — no request
+body ever supplies a command. Starting a target leaves it running independent of
+the browser; it stops only when you ask, when the server stops, or when it
+crashes. Status is one of `running`, `stopped`, `starting` or `failed`, and the
+last ~200 lines of a target's combined output are available.
+
+An invalid row — a missing name or command, an unknown `kind`, a duplicate name,
+or a conflicting field such as a `url` on an `artifact` — is reported as a clear
+validation error rather than being silently dropped. No Settings control is
+provided for this list in the current release; edit `repoos.toml` directly.
+
 ## Dev copy inspector (RepoOS self-host only)
 
 These settings appear under **Settings → Advanced** when this checkout has `src/ui-app/` **and** the running build was compiled with the dev UI bundle (`devUi: true` in `dist/.build-info.json` — a normal local `bun run build`, not `REPOOS_SHIP=1` / release tarballs). They are inert on release installs and when previewing another project's app.
