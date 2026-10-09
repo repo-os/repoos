@@ -11,7 +11,7 @@ created_by: njachowski@gmail.com
 branch: feat/dev-targets-config-and-supervisor-start-
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-09T17:10:37Z"
-updated_at: "2026-10-09T17:33:20Z"
+updated_at: "2026-10-09T17:38:33Z"
 ---
 ## Problem
 
@@ -51,3 +51,4 @@ Each project can declare dev targets in repoos.toml. The server can start, stop 
 - 2026-10-09T17:30:10Z · body
 - 2026-10-09T17:31:22Z · body
 - 2026-10-09T17:33:14Z · model_override
+- 2026-10-09T17:38:33Z · body
