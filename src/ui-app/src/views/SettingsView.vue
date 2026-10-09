@@ -27,6 +27,7 @@ import ScreenshotViewer from "../components/ScreenshotViewer.vue";
 import ScreenshotExpandButton from "../components/ScreenshotExpandButton.vue";
 import { pendingToShots } from "../lib/screenshot-viewer";
 import AuthSettingsPanel from "../components/AuthSettingsPanel.vue";
+import DevTargetsSettings from "../components/DevTargetsSettings.vue";
 import TelegramChatNotificationsSettings from "../components/TelegramChatNotificationsSettings.vue";
 import ServiceSettings from "../components/ServiceSettings.vue";
 import TelegramSettingsPanel from "../components/TelegramSettingsPanel.vue";
@@ -781,6 +782,11 @@ function buildBody(): Record<string, unknown> {
     // Hidden controls must not be persisted: an unrelated save would otherwise
     // write their defaults into this repo's repoos.toml.
     if (!isFieldVisible(f.key)) continue;
+    // Dev targets are a hand-rendered Advanced card (#0749) saved on their own
+    // through `devTargets` — the schema entry exists only for search + focus.
+    // Submitting the empty form value here would reject every Settings save
+    // with "must be a non-empty array".
+    if (f.key === "dev.targets") continue;
     let val = form[f.key];
     if (f.key.startsWith("board.columns.")) {
       const trimmed = typeof val === "string" ? val.trim() : String(val ?? "").trim();
@@ -1624,6 +1630,10 @@ onUnmounted(() => {
             </div>
           </div>
         </Card>
+
+        <!-- Dev targets (#0749): a dedicated hand-rendered card — the four
+             fields per target cannot be a plain comma-separated row. -->
+        <DevTargetsSettings />
       </div>
 
       <!-- ─── Support tab ─────────────────────────────────── -->

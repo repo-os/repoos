@@ -108,4 +108,18 @@ describe("resolveSettingLocation", () => {
     expect(isGeneralSchemaFieldKey("remoteValidation.tailscaleHost")).toBe(false);
     expect(isGeneralSchemaFieldKey("auth.enabled")).toBe(false);
   });
+
+  // #0749 — the dev-targets list is a hand-rendered Advanced card, not a plain
+  // General text row, so it must resolve to Advanced and be excluded from the
+  // auto-rendered General group.
+  it("routes dev.targets to the Advanced card, not a General row", () => {
+    expect(
+      resolveSettingLocation(
+        "dev.targets",
+        field({ key: "dev.targets", type: "array", tier: "live" }),
+        ctx,
+      ),
+    ).toEqual({ tab: "advanced", hasUiRow: true });
+    expect(isGeneralSchemaFieldKey("dev.targets")).toBe(false);
+  });
 });

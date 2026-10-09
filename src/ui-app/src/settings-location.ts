@@ -47,6 +47,9 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   // General (#0659) that carries the availability explanation beside the
   // select, so it must not also auto-render as a plain General row.
   "storage.provider",
+  // Dev targets have a dedicated hand-rendered card on Advanced (#0749); a
+  // plain comma-separated General row cannot express the four fields.
+  "dev.targets",
   "attention.spendAlertUsd",
 ]);
 
@@ -103,6 +106,10 @@ export function resolveSettingLocation(
     return { tab: "security", hasUiRow: true };
   }
   if (key.startsWith("board.columns.")) {
+    return { tab: "advanced", hasUiRow: true };
+  }
+  if (key === "dev.targets") {
+    // A hand-rendered card on Advanced (#0749); not an auto-rendered row.
     return { tab: "advanced", hasUiRow: true };
   }
   if (key === "dev.inspector.enabled" || key === "dev.inspector.editorCommand") {

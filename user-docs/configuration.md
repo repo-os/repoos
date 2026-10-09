@@ -1300,8 +1300,10 @@ last ~200 lines of a target's combined output are available.
 
 An invalid row — a missing name or command, an unknown `kind`, a duplicate name,
 or a conflicting field such as a `url` on an `artifact` — is reported as a clear
-validation error rather than being silently dropped. No Settings control is
-provided for this list in the current release; edit `repoos.toml` directly.
+validation error rather than being silently dropped. Edit the list under
+**Settings → Advanced → Dev targets** (validation errors appear inline, and the
+change is written through the config API), or hand-write the `[[dev.targets]]`
+tables. See [Dev targets](/dev-targets) for a full walkthrough.
 
 ## Dev copy inspector (RepoOS self-host only)
 
