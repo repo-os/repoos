@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-09T17:52:35Z"
-review_passes: 1
+last_close_out_gate_ms: 62876
+last_close_out_gate_at: "2026-10-09T18:00:28.660Z"
 id: "0747"
 title: "Dev targets: config and supervisor (start, stop, restart, status, logs)"
 type: feature
@@ -13,6 +13,8 @@ created_by: njachowski@gmail.com
 branch: feat/dev-targets-config-and-supervisor-start-
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-09T17:10:37Z"
+updated_at: "2026-10-09T18:00:28Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -60,4 +62,5 @@ Each project can declare dev targets in repoos.toml. The server can start, stop 
 - 2026-10-09T17:51:44Z · status active→review
 - 2026-10-09T17:51:44Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-09T17:52:35Z · note: review pass 1: good to go
+- 2026-10-09T18:00:28Z · close-out gate completed in 63s
 
