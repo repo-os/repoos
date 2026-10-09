@@ -45,9 +45,15 @@ import type {
 } from "./types.js";
 import { STATUSES } from "./types.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
+import { parseDevTargets } from "./dev-targets.js";
 import { parseTailscaleHosts } from "./remote-hosts.js";
 import { DEFAULT_STORAGE_PROVIDER_ID } from "./storage/registry.js";
 import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
+
+// `parseDevTargets` (#0747) lives in the node-free `core/dev-targets.ts` so the
+// browser bundle can validate a target through the SAME function the server
+// uses (#0749). Re-exported for the existing core/CLI importers.
+export { parseDevTargets } from "./dev-targets.js";
 
 /** Default display labels for board columns, keyed by canonical status ID. */
 export const DEFAULT_COLUMN_LABELS: Record<string, string> = {
@@ -732,11 +738,6 @@ export function parseAreasConfig(parsed: Record<string, unknown>): AreaConfig[] 
   return rows.length ? rows : undefined;
 }
 
-import { parseDevTargets } from "./dev-targets.js";
-// `parseDevTargets` (#0747) lives in the node-free `core/dev-targets.ts`
-// so the browser bundle can validate a target through the SAME function the
-// server uses (#0749). Re-exported here for the existing core/CLI importers.
-export { parseDevTargets } from "./dev-targets.js";
 /**
  * Parse the `[preview]` section (plus `[[preview.targets]]` tables) from flat
  * TOML. Exported for tests; `loadConfig` merges the result into the config.
