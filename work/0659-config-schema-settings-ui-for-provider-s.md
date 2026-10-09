@@ -105,7 +105,7 @@ The deeper problem is honesty. `createStorageProvider` deliberately falls back t
 33|     const normalized = configurationDoc.replace(/\[\]/g, "");
 34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
 35|     expect(missing).toEqual([]);
- |                     ^
+|                     ^
 36|   });
 37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
@@ -131,7 +131,7 @@ error: script "test" exited with code 1
 33|     const normalized = configurationDoc.replace(/\[\]/g, "");
 34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
 35|     expect(missing).toEqual([]);
- |                     ^
+|                     ^
 36|   });
 37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
@@ -153,7 +153,7 @@ error: script "test" exited with code 1
 33|     const normalized = configurationDoc.replace(/\[\]/g, "");
 34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
 35|     expect(missing).toEqual([]);
- |                     ^
+|                     ^
 36|   });
 37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
@@ -175,7 +175,7 @@ error: script "test" exited with code 1
 33|     const normalized = configurationDoc.replace(/\[\]/g, "");
 34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
 35|     expect(missing).toEqual([]);
- |                     ^
+|                     ^
 36|   });
 37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
@@ -197,7 +197,7 @@ error: script "test" exited with code 1
 33|     const normalized = configurationDoc.replace(/\[\]/g, "");
 34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
 35|     expect(missing).toEqual([]);
- |                     ^
+|                     ^
 36|   });
 37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
@@ -219,7 +219,7 @@ error: script "test" exited with code 1
 33|     const normalized = configurationDoc.replace(/\[\]/g, "");
 34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
 35|     expect(missing).toEqual([]);
- |                     ^
+|                     ^
 36|   });
 37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
@@ -241,7 +241,7 @@ error: script "test" exited with code 1
 33|     const normalized = configurationDoc.replace(/\[\]/g, "");
 34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
 35|     expect(missing).toEqual([]);
- |                     ^
+|                     ^
 36|   });
 37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
@@ -263,7 +263,7 @@ error: script "test" exited with code 1
 33|     const normalized = configurationDoc.replace(/\[\]/g, "");
 34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
 35|     expect(missing).toEqual([]);
- |                     ^
+|                     ^
 36|   });
 37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
@@ -285,7 +285,7 @@ error: script "test" exited with code 1
 33|     const normalized = configurationDoc.replace(/\[\]/g, "");
 34|     const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.in…
 35|     expect(missing).toEqual([]);
- |                     ^
+|                     ^
 36|   });
 37|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯

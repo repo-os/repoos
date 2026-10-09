@@ -53,13 +53,13 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 "highlight": ".task-card .tc-card-footer",
 "steps": [
 {
- "waitFor": ".task-card"
+"waitFor": ".task-card"
 },
 {
- "waitFor": ".task-card .tc-card-footer"
+"waitFor": ".task-card .tc-card-footer"
 },
 {
- "waitMs": 500
+"waitMs": 500
 }
 ]
 },
@@ -70,13 +70,13 @@ Read src/ui-app/src/components/TaskCard.vue (footer, the error block with the Fi
 "highlight": ".task-card .tc-card-footer",
 "steps": [
 {
- "waitFor": ".task-card .tc-card-footer"
+"waitFor": ".task-card .tc-card-footer"
 },
 {
- "click": "button.theme-toggle"
+"click": "button.theme-toggle"
 },
 {
- "waitMs": 500
+"waitMs": 500
 }
 ]
 }
