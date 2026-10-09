@@ -58,16 +58,16 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 "highlight": ".floating-head-panel .agent-chat-header",
 "steps": [
 {
- "waitFor": "[data-test-id=\"floating-head-cto\"]"
+"waitFor": "[data-test-id=\"floating-head-cto\"]"
 },
 {
- "click": "[data-test-id=\"floating-head-cto\"]"
+"click": "[data-test-id=\"floating-head-cto\"]"
 },
 {
- "waitFor": ".floating-head-panel .agent-chat-header"
+"waitFor": ".floating-head-panel .agent-chat-header"
 },
 {
- "waitMs": 400
+"waitMs": 400
 }
 ]
 },
@@ -78,16 +78,16 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 "highlight": ".floating-head-panel .agent-chat-header",
 "steps": [
 {
- "waitFor": "[data-test-id=\"floating-head-debugger\"]"
+"waitFor": "[data-test-id=\"floating-head-debugger\"]"
 },
 {
- "click": "[data-test-id=\"floating-head-debugger\"]"
+"click": "[data-test-id=\"floating-head-debugger\"]"
 },
 {
- "waitFor": ".floating-head-panel .agent-chat-header"
+"waitFor": ".floating-head-panel .agent-chat-header"
 },
 {
- "waitMs": 400
+"waitMs": 400
 }
 ]
 },
@@ -98,16 +98,16 @@ Grep targets: `components/CTOPanel.vue`, `DebuggerChat.vue`, `TaskDebuggerChat.v
 "highlight": ".floating-head-panel .agent-chat-header",
 "steps": [
 {
- "waitFor": "[data-test-id=\"floating-head-ross\"]"
+"waitFor": "[data-test-id=\"floating-head-ross\"]"
 },
 {
- "click": "[data-test-id=\"floating-head-ross\"]"
+"click": "[data-test-id=\"floating-head-ross\"]"
 },
 {
- "waitFor": ".floating-head-panel .agent-chat-header"
+"waitFor": ".floating-head-panel .agent-chat-header"
 },
 {
- "waitMs": 400
+"waitMs": 400
 }
 ]
 }
