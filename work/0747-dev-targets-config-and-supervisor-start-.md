@@ -57,3 +57,4 @@ Each project can declare dev targets in repoos.toml. The server can start, stop 
 - 2026-10-09T17:43:40Z · body
 - 2026-10-09T17:45:08Z · body
 - 2026-10-09T17:51:44Z · status active→review
+- 2026-10-09T17:51:44Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
