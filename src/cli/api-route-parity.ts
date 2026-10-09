@@ -28,6 +28,10 @@ const CONTROL_API_MATCHERS: Matcher[] = [
   re("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done)$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/.source),
+  // `repoos dev …` (#0747): list/status/get and start/stop/restart.
+  exact("GET", "/api/dev/targets"),
+  re("GET", /^\/api\/dev\/targets\/([^/]+)$/.source),
+  re("POST", /^\/api\/dev\/targets\/([^/]+)\/(start|stop|restart)$/.source),
   exact("GET", "/api/config"),
   exact("PATCH", "/api/config"),
   exact("GET", "/api/remote-validation/status"),

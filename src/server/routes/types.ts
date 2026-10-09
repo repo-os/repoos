@@ -4,6 +4,7 @@ import type { RepoOS } from "../../core/repoos.js";
 import type { LiveIndex, RepoEvent } from "../live-index.js";
 import type { AgentRunner } from "../agents.js";
 import type { PreviewManager } from "../preview.js";
+import type { DevTargetManager } from "../dev.js";
 import type { ReviewManager } from "../review.js";
 import type { CTOManager } from "../cto.js";
 import type { CloseOutLock } from "../done.js";
@@ -41,6 +42,11 @@ export interface RouteContext {
   indexReady: Promise<void>;
   runner: AgentRunner;
   previews: PreviewManager;
+  /**
+   * User-declared dev targets supervisor (#0747). Optional so route tests can
+   * build a partial context; the dev routes 503 cleanly when it is absent.
+   */
+  devTargets?: DevTargetManager;
   reviews: ReviewManager;
   cto: CTOManager;
   /** CTO liveness for the attention feed (#0728). */

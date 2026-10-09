@@ -188,6 +188,7 @@ import {
   shouldSkipHandoffValidationForUnchangedTree,
 } from "./handoff-failure-loop.js";
 import { PreviewManager, probePreview } from "./preview.js";
+import { DevTargetManager } from "./dev.js";
 import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
 import { ReviewManager } from "./review.js";
@@ -215,6 +216,13 @@ import {
   runRelease,
 } from "./routes/release.js";
 import { getDeployments, postDeploy } from "./routes/deployments.js";
+import {
+  getDevTarget,
+  getDevTargets,
+  restartDevTarget,
+  startDevTarget,
+  stopDevTarget,
+} from "./routes/dev.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
 import {
@@ -1645,6 +1653,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const previews = new PreviewManager(config, emitEvent);
   previews.cleanupOrphans();
 
+  // User-declared dev targets (#0747). Runs in the project's root checkout,
+  // survives the browser closing, and is stopped only when asked or on
+  // shutdown. Orphans from a crashed previous server are reaped at boot.
+  const devTargets = new DevTargetManager(config);
+  devTargets.cleanupOrphans(process.env.REPOOS_RELOAD === "1");
+
   // Serve process reaper (0168): detect and reap stale serve processes,
   // and prevent port binding conflicts.
   // Port-0 harnesses and preview children must neither overwrite nor remove
@@ -2795,6 +2809,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/release/notes/unpushed", getUnpushedReleaseNotes);
   router.register("GET", "/api/deployments", getDeployments);
   router.register("POST", "/api/deployments/deploy", postDeploy);
+  // Dev targets (#0747): list/start/stop/restart a user-declared target. The
+  // command is resolved from committed repoos.toml by name only — no request
+  // body carries a command.
+  router.register("GET", "/api/dev/targets", getDevTargets);
+  router.register("GET", /^\/api\/dev\/targets\/([^/]+)$/, getDevTarget);
+  router.register("POST", /^\/api\/dev\/targets\/([^/]+)\/start$/, startDevTarget);
+  router.register("POST", /^\/api\/dev\/targets\/([^/]+)\/stop$/, stopDevTarget);
+  router.register("POST", /^\/api\/dev\/targets\/([^/]+)\/restart$/, restartDevTarget);
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
   router.register("POST", "/api/chat/interrupt", interruptChatMessage);
@@ -3530,6 +3552,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         indexReady,
         runner,
         previews,
+        devTargets,
         reviews,
         cto,
         ctoHeartbeat,
@@ -3826,6 +3849,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             freeformRuns.cancelAll();
           }
           await previews.stopAll();
+          // Dev targets are long-lived user processes (#0747): they survive an
+          // internal build-handover reload (the replacement re-adopts them by
+          // PID) and are torn down only on a real shutdown.
+          if (!(reload?.isReloading ?? false)) await devTargets.stopAll();
           runner.flushAll();
           for (const c of clients) {
             try {
