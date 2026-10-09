@@ -22,6 +22,7 @@ import type {
   CheckContrastPair,
   CheckThemeScope,
   DevInspectorConfig,
+  DevTargetConfig,
   DeploymentConfig,
   DistributionConfig,
   DistributionKind,
@@ -732,6 +733,105 @@ export function parseAreasConfig(parsed: Record<string, unknown>): AreaConfig[] 
 }
 
 /**
+ * Parse the `[[dev.targets]]` array of tables (#0747) — the user-declared
+ * runnable dev targets. Unlike `[preview]`, which resolves cleanly to "nothing"
+ * and drops bad rows, a dev target is something the user asked the server to
+ * run, so an unusable row is a loud validation error rather than a silent drop:
+ * a target with a missing name/command/kind or a conflicting field is reported
+ * with a clear message. Returns `{ targets, errors }`; `loadConfig` records the
+ * errors on the config so the API/UI can surface them.
+ */
+export function parseDevTargets(parsed: Record<string, unknown>): {
+  targets: DevTargetConfig[];
+  errors: string[];
+} {
+  const raw = parsed["dev.targets"];
+  const targets: DevTargetConfig[] = [];
+  const errors: string[] = [];
+  if (raw === undefined) return { targets, errors };
+  if (!Array.isArray(raw)) {
+    errors.push("[dev.targets] must be an array of tables");
+    return { targets, errors };
+  }
+  const seen = new Set<string>();
+  for (const entry of raw) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+      errors.push("[dev.targets] ignoring a non-table row");
+      continue;
+    }
+    const r = entry as Record<string, unknown>;
+    const name = typeof r.name === "string" ? r.name.trim() : "";
+    if (!name) {
+      errors.push("[dev.targets] a target is missing a name");
+      continue;
+    }
+    if (seen.has(name)) {
+      errors.push(`[dev.targets] duplicate target name "${name}"`);
+      continue;
+    }
+    const kindRaw = typeof r.kind === "string" ? r.kind.trim() : "";
+    if (kindRaw !== "server" && kindRaw !== "artifact") {
+      errors.push(
+        `[dev.targets] ${name}: kind must be "server" or "artifact"${kindRaw ? ` (got "${kindRaw}")` : ""}`,
+      );
+      continue;
+    }
+    const command = typeof r.command === "string" ? r.command.trim() : "";
+    if (!command) {
+      errors.push(`[dev.targets] ${name}: a command is required`);
+      continue;
+    }
+    const target: DevTargetConfig = { name, kind: kindRaw, command };
+
+    const url = typeof r.url === "string" ? r.url.trim() : "";
+    const artifactPath = typeof r.artifactPath === "string" ? r.artifactPath.trim() : "";
+    if (kindRaw === "server" && !url) {
+      errors.push(`[dev.targets] ${name}: a "server" target needs a url`);
+      continue;
+    }
+    if (kindRaw === "artifact" && !artifactPath) {
+      errors.push(`[dev.targets] ${name}: an "artifact" target needs an artifactPath`);
+      continue;
+    }
+    if (kindRaw === "server" && artifactPath) {
+      errors.push(`[dev.targets] ${name}: a "server" target cannot have an artifactPath`);
+      continue;
+    }
+    if (kindRaw === "artifact" && url) {
+      errors.push(`[dev.targets] ${name}: an "artifact" target cannot have a url`);
+      continue;
+    }
+    if (url) target.url = url;
+    if (artifactPath) target.artifactPath = artifactPath;
+
+    const label = typeof r.label === "string" ? r.label.trim() : "";
+    if (label) target.label = label;
+
+    const hcRaw = r.healthCheck;
+    if (hcRaw !== undefined) {
+      if (typeof hcRaw !== "object" || hcRaw === null || Array.isArray(hcRaw)) {
+        errors.push(`[dev.targets] ${name}: healthCheck must be a table with url or file`);
+        continue;
+      }
+      const hc = hcRaw as Record<string, unknown>;
+      const hcUrl = typeof hc.url === "string" ? hc.url.trim() : "";
+      const hcFile = typeof hc.file === "string" ? hc.file.trim() : "";
+      if (!hcUrl && !hcFile) {
+        errors.push(`[dev.targets] ${name}: healthCheck needs a url or a file`);
+        continue;
+      }
+      target.healthCheck = {
+        ...(hcUrl ? { url: hcUrl } : {}),
+        ...(hcFile ? { file: hcFile } : {}),
+      };
+    }
+    seen.add(name);
+    targets.push(target);
+  }
+  return { targets, errors };
+}
+
+/**
  * Parse the `[preview]` section (plus `[[preview.targets]]` tables) from flat
  * TOML. Exported for tests; `loadConfig` merges the result into the config.
  * Rows without a usable `command` are dropped rather than poisoning resolution.
@@ -1167,8 +1267,14 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         enabled: typeof devInspectorEnabled === "boolean" ? devInspectorEnabled : true,
         editorCommand: typeof devInspectorEditor === "string" ? devInspectorEditor.trim() : "",
       };
-      cfg.dev = { inspector };
+      cfg.dev = { ...cfg.dev, inspector };
     }
+    // [[dev.targets]] (#0747) — the user-declared runnable dev targets. Bad
+    // rows are recorded as validation errors on the config, not silently
+    // dropped: the Dev page and CLI surface them so a typo is visible.
+    const devTargets = parseDevTargets(parsed);
+    if (devTargets.targets.length) cfg.dev = { ...cfg.dev, targets: devTargets.targets };
+    if (devTargets.errors.length) cfg.devTargetErrors = devTargets.errors;
     if (typeof get("ntfyEnabled") === "boolean") cfg.ntfyEnabled = get("ntfyEnabled") as boolean;
     if (typeof get("ntfyTopic") === "string") cfg.ntfyTopic = get("ntfyTopic") as string;
     if (typeof get("ntfyBaseUrl") === "string") cfg.ntfyBaseUrl = get("ntfyBaseUrl") as string;
@@ -2661,6 +2767,16 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "preview.services.cwd",
   "preview.services.readyPath",
   "preview.services.readyTimeoutMs",
+  // Dev targets (#0747) — the user-runnable things the Dev page controls.
+  // Declared as a repeatable `[[dev.targets]]` table; each row is one target.
+  "dev.targets.name",
+  "dev.targets.kind",
+  "dev.targets.command",
+  "dev.targets.url",
+  "dev.targets.artifactPath",
+  "dev.targets.label",
+  "dev.targets.healthCheck.url",
+  "dev.targets.healthCheck.file",
   // Preview-only overrides (#0464): a `[preview.<base path>]` table applied
   // only by the preview/UI-test preview runtime. auth.enabled is the headline
   // case; any supported base key can be overridden the same way.
