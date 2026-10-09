@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-page-list-and-control-dev-targets
 created_at: "2026-10-09T17:10:39Z"
-updated_at: "2026-10-09T18:21:52Z"
+updated_at: "2026-10-09T18:22:42Z"
 ---
 ## Problem
 
@@ -68,3 +68,4 @@ A Dev page lists each project's dev targets with state, a Start, Stop and Restar
 - 2026-10-09T18:12:03Z · body
 - 2026-10-09T18:14:20Z · body: section Shots
 - 2026-10-09T18:21:52Z · status active→review
+- 2026-10-09T18:22:42Z · note: review pass 1: good to go
