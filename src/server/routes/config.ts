@@ -12,6 +12,7 @@ import {
   getConfigSchema,
   patchTomlConfig,
   loadConfig,
+  parseDevTargets,
   parseFlatToml,
   sanitizeBuiltInAgents,
   saveBuiltInAgentsConfig,
@@ -95,6 +96,15 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
     "whisper.provider": whisper.provider ?? "none",
     whisperEnabled,
     areas: declaredNames,
+    /**
+     * Declared dev targets (#0749): the Settings control edits this
+     * `[[dev.targets]]` list. Exposed as the parsed objects (never the raw
+     * TOML) so the form round-trips exactly what the parser accepted, plus the
+     * loud validation errors `loadConfig` recorded for rows it had to drop —
+     * the form shows them inline rather than silently losing a target.
+     */
+    devTargets: (config.dev as { targets?: unknown } | undefined)?.targets ?? [],
+    devTargetErrors: config.devTargetErrors ?? [],
     board: {
       ...((rest as Record<string, unknown>).board as Record<string, unknown> | undefined),
       columns: resolveColumnLabels(rest.boardColumns as Record<string, string> | undefined),
@@ -280,6 +290,14 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   let areasUnchanged = false;
   // Set when an `areas` PATCH clears a vocabulary declared as `[[areas]]` rows.
   let dropAreaRows = false;
+  /** Set when a dev-targets PATCH clears the last target row. */
+  let dropDevTargetRows = false;
+  /**
+   * Set when a `devTargets` PATCH already matches what's on disk: nothing to
+   * write, but a solo no-op save still answers 200 ("handled, nothing to
+   * change"), mirroring the `areas` no-op guard.
+   */
+  let devTargetsUnchanged = false;
   if (body.builtInAgents !== undefined) {
     if (
       typeof body.builtInAgents !== "object" ||
@@ -294,6 +312,90 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     saveBuiltInAgentsConfig(config.root, merged, config.cacheDir);
     repoos.config.builtInAgents = merged;
     builtInAgentsChanged = true;
+  }
+
+  // Dev targets (#0749) — the Settings control edits the `[[dev.targets]]`
+  // list. The submitted rows are re-parsed through the SAME `parseDevTargets`
+  // the loader uses, so validation is never duplicated here: a bad row gets the
+  // exact message the config parser would give, and an unchanged list is a
+  // no-op that never churns repoos.toml on an unrelated save.
+  if (body.devTargets !== undefined) {
+    if (!Array.isArray(body.devTargets)) {
+      return json(res, 400, {
+        error: "devTargets must be an array of targets",
+        errors: ["devTargets must be an array of targets"],
+      });
+    }
+    // Rebuild each submitted row into the shape `parseDevTargets` understands:
+    // the health check is flattened to its dotted keys (the flat TOML parser's
+    // own form) so validation and serialization share one representation.
+    const rawRows = (body.devTargets as unknown[]).map((entry) => {
+      const r = (entry ?? {}) as Record<string, unknown>;
+      const row: Record<string, unknown> = {
+        name: r.name,
+        kind: r.kind,
+        command: r.command,
+        url: r.url,
+        artifactPath: r.artifactPath,
+        label: r.label,
+      };
+      if (typeof r.healthCheckUrl === "string" && r.healthCheckUrl.trim()) {
+        row["healthCheck.url"] = r.healthCheckUrl.trim();
+      }
+      if (typeof r.healthCheckFile === "string" && r.healthCheckFile.trim()) {
+        row["healthCheck.file"] = r.healthCheckFile.trim();
+      }
+      return row;
+    });
+    const parsed = parseDevTargets({ "dev.targets": rawRows });
+    if (parsed.errors.length) {
+      // Inline validation lives in the client too; the server stays the
+      // authority and echoes the parser's messages so the two can't drift.
+      return json(res, 400, { error: parsed.errors[0], errors: parsed.errors });
+    }
+    // Serialize the validated targets back to `[[dev.targets]]` rows. The
+    // health check is re-flattened so `serializeTomlVal` (which has no
+    // inline-table support) emits plain `healthCheck.url = "…"` lines the
+    // parser reads back correctly.
+    const rows = parsed.targets.map((t) => {
+      const row: Record<string, unknown> = { name: t.name, kind: t.kind, command: t.command };
+      if (t.url) row.url = t.url;
+      if (t.artifactPath) row.artifactPath = t.artifactPath;
+      if (t.label) row.label = t.label;
+      if (t.healthCheck?.url) row["healthCheck.url"] = t.healthCheck.url;
+      if (t.healthCheck?.file) row["healthCheck.file"] = t.healthCheck.file;
+      return row;
+    });
+    // No-op guard (mirrors `areas`): the Settings form repeats its current list
+    // on every save, so a list that already matches disk must not rewrite the
+    // file. Compare the normalized name/kind/command/url/artifactPath/label/
+    // health fields, order included (order is meaningful — the form can reorder).
+    const onDisk = loadConfig(config.root).dev?.targets ?? [];
+    const norm = (t: (typeof onDisk)[number]) => ({
+      name: t.name,
+      kind: t.kind,
+      command: t.command,
+      url: t.url ?? "",
+      artifactPath: t.artifactPath ?? "",
+      label: t.label ?? "",
+      hcUrl: t.healthCheck?.url ?? "",
+      hcFile: t.healthCheck?.file ?? "",
+    });
+    const unchanged =
+      onDisk.length === parsed.targets.length &&
+      onDisk.every((t, i) => JSON.stringify(norm(t)) === JSON.stringify(norm(parsed.targets[i]!)));
+    if (!unchanged) {
+      if (rows.length === 0) {
+        // Clearing every target: `patchTomlConfig` only strips `[[dev.targets]]`
+        // blocks for a NON-empty row list, so drop them explicitly — an empty
+        // array would serialize as a bogus key line.
+        dropDevTargetRows = true;
+      } else {
+        patch["dev.targets"] = rows;
+      }
+    } else {
+      devTargetsUnchanged = true;
+    }
   }
 
   // Auth config patching — handle auth-specific fields that live in [auth]
@@ -384,6 +486,10 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   const schema = getConfigSchema();
   for (const field of schema) {
     if (body[field.key] === undefined) continue;
+    // `dev.targets` is a structured list handled by the dedicated `devTargets`
+    // branch above (#0749); its schema entry is search/focus metadata only, so
+    // the generic array branch must not treat it as a comma-joined string list.
+    if (field.key === "dev.targets") continue;
     const val = body[field.key];
 
     if (field.type === "string") {
@@ -614,6 +720,8 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     !authEnabledChanged &&
     !areasUnchanged &&
     !dropAreaRows &&
+    !devTargetsUnchanged &&
+    !dropDevTargetRows &&
     !onlyEmptyWhisperKey
   ) {
     return json(res, 400, { error: "No valid fields to update" });
@@ -623,6 +731,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     patchTomlConfig(join(config.root, "repoos.toml"), patch);
   }
   if (dropAreaRows) dropTomlTableArray(join(config.root, "repoos.toml"), "areas");
+  if (dropDevTargetRows) dropTomlTableArray(join(config.root, "repoos.toml"), "dev.targets");
   if (dropRows) {
     dropTomlTableArray(join(config.root, "repoos.toml"), "remoteValidation.tailscaleHosts");
   }
@@ -647,6 +756,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   if (
     Object.keys(patch).length > 0 ||
     dropAreaRows ||
+    dropDevTargetRows ||
     dropRows ||
     patchRows?.length ||
     tunnelEnabled !== undefined
