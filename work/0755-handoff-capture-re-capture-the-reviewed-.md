@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-capture-re-capture-the-reviewed-
 created_at: "2026-10-10T14:10:28Z"
-updated_at: "2026-10-10T17:16:35Z"
+updated_at: "2026-10-10T17:16:56Z"
 ---
 ## Problem
 
@@ -48,10 +48,21 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 ```json
 [
 {
-  "label": "Board — task drawer Changes tab carries the handoff verdict and Stale-capture alert (#0755)",
+  "label": "Task drawer Changes tab — UI changes section (stale-capture verdict surface)",
   "target": "default",
   "route": "/",
-  "highlight": ".board-col"
+  "steps": [
+    {
+      "click": "[data-task-id=\"9999\"]"
+    },
+    {
+      "click": "[data-test-id=\"task-tab-changes\"]"
+    },
+    {
+      "waitMs": 500
+    }
+  ],
+  "state": "board:withReviewTask"
 }
 ]
 ```
@@ -70,3 +81,4 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 - 2026-10-10T17:14:57Z · body
 - 2026-10-10T17:15:29Z · body
 - 2026-10-10T17:16:35Z · body: section Shots
+- 2026-10-10T17:16:56Z · body: section Shots
