@@ -2,14 +2,14 @@
 id: "0755"
 title: "Handoff capture: re-capture the reviewed tree and stop placeholder selectors"
 type: bug
-status: active
+status: review
 priority: p2
 area: [server, ui]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-capture-re-capture-the-reviewed-
 created_at: "2026-10-10T14:10:28Z"
-updated_at: "2026-10-10T17:35:17Z"
+updated_at: "2026-10-10T17:41:24Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -84,3 +84,5 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 - 2026-10-10T17:27:43Z · body: section Shots
 - 2026-10-10T17:29:46Z · body
 - 2026-10-10T17:35:17Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on mini — fix it in the feature branch and re-run the gate
+- 2026-10-10T17:41:24Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on mini — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-10T17:41:24Z · note: handoff requested (cli)
