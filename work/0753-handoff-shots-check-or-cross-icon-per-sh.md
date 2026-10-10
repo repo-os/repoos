@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-shots-check-or-cross-icon-per-sh
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T10:28:01Z"
+updated_at: "2026-10-10T10:29:06Z"
 ---
 ## Problem
 
@@ -54,15 +54,15 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 "route": "/",
 "highlight": ".ui-changes",
 "steps": [
-  {
-    "click": "[data-task-id=\"9999\"]"
-  },
-  {
-    "click": "[data-test-id=\"task-tab-changes\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": "[data-task-id=\"9999\"]"
+},
+{
+  "click": "[data-test-id=\"task-tab-changes\"]"
+},
+{
+  "waitMs": 400
+}
 ],
 "state": "board:withReviewTask"
 }
@@ -81,3 +81,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T10:25:14Z · body
 - 2026-10-10T10:27:09Z · body: section Shots
 - 2026-10-10T10:28:01Z · body
+- 2026-10-10T10:29:06Z · body
