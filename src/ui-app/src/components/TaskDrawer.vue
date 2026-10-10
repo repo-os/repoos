@@ -5520,6 +5520,7 @@ watch(
               (uiChangeRows.length ||
                 uiShotProblems.length ||
                 uiHandoffOrphans.length ||
+                uiHandoffHasRunLevelIssues ||
                 canManageShots)
             "
             class="changes-summary ui-changes"
