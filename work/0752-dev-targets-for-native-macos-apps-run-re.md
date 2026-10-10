@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 54300
-last_close_out_gate_at: "2026-10-10T02:06:08.797Z"
 id: "0752"
 title: "Dev targets for native macOS apps: run, restart and show logs for a non-URL process"
 type: feature
-status: review
+status: done
 priority: p2
 area: macos
+merged_commit: 1b71b514974fb641c05ccd9d784043e308e2348f
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-for-native-macos-apps-run-re
 model_override: opencode/big-pickle
 created_at: "2026-10-09T20:30:41Z"
-updated_at: "2026-10-10T02:06:08Z"
+updated_at: "2026-10-10T02:06:18Z"
+last_close_out_gate_ms: 54300
+last_close_out_gate_at: "2026-10-10T02:06:08.797Z"
 review_passes: 1
 ---
 ## Problem
@@ -73,4 +74,4 @@ Motivating project: divot (`~/code/nick/divot`). Keep Divot's own repoos.toml en
 - 2026-10-10T01:54:02Z · status active→review
 - 2026-10-10T01:54:53Z · note: review pass 1: good to go
 - 2026-10-10T02:06:08Z · close-out gate completed in 54s
-
+- 2026-10-10T02:06:18Z · status review→done, release:success
