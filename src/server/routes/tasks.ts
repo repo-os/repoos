@@ -2046,12 +2046,15 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       }
     }
     const sendRes = runner.send(id, text, agent, { resumePreamble: preamble });
-    if (!sendRes.ok && sendRes.busy) {
-      return json(res, 409, { error: sendRes.reason ?? "agent is busy" });
-    }
     if (!sendRes.ok) {
       return json(res, 400, {
         error: sendRes.reason ?? "could not send message",
+      });
+    }
+    if (sendRes.queued) {
+      return json(res, 200, {
+        ok: true,
+        queued: true,
       });
     }
     return json(res, 200, {

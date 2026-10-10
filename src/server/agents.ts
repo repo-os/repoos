@@ -4901,6 +4901,20 @@ export class AgentRunner {
   private readonly queuedIds = new Map<string, string>();
   /** FIFO of deferred spawns, drained as running agents exit (see cleanup()). */
   private readonly startQueue: (() => void)[] = [];
+  /** Queued messages for tasks whose agent is currently busy. Mapped by taskId to list of messages. */
+  private readonly queuedMessages = new Map<
+    string,
+    Array<{
+      text: string;
+      agent: Agent;
+      opts: { resumePreamble?: string; skipBoardDivergence?: boolean; cwd?: string; emitHumanTurn?: boolean };
+      queuedAt: string;
+    }>
+  >();
+  /** Tracks when messages were queued for timeout purposes (ISO timestamps). */
+  private readonly messageQueuedAt = new Map<string, string>();
+  /** Message timeout: 1 hour. */
+  private readonly messageTimeoutMs = 60 * 60 * 1000;
   private readonly emit: (e: AgentEvent) => void;
   private readonly logger?: Logger;
   private readonly sessionsDir: string;
@@ -5554,6 +5568,7 @@ export class AgentRunner {
     if (!DRIVABLE_CLIS.has(agent.cli)) {
       return { ok: false, reason: unsupportedCliMessage(agent.cli) };
     }
+    this.checkExpiredMessages();
     if (
       this.entries.has(task.id) ||
       this.handoffsInFlight.has(task.id) ||
@@ -5619,6 +5634,32 @@ export class AgentRunner {
     if (storySummary) {
       this.recordEntry(task.id, session, "sys", { s: "sys", d: storySummary });
     }
+    // Deliver any queued messages before spawning
+    const queuedMsgs = this.queuedMessages.get(task.id);
+    let queuedMessagesPreamble = "";
+    if (queuedMsgs && queuedMsgs.length > 0) {
+      // Add queued messages to the session
+      for (const msg of queuedMsgs) {
+        const entry: AgentOutputEntry = { type: "human", text: msg.text, at: msg.queuedAt };
+        session.lines.push(entry);
+        session.bytes += entryBytes(entry);
+      }
+      // Keep session size bounded
+      while (session.bytes > OUTPUT_CAP_BYTES) {
+        const dropped = session.lines.shift();
+        if (!dropped) break;
+        session.bytes -= entryBytes(dropped);
+      }
+      this.schedulePersist(task.id);
+
+      // Build a preamble to notify about delivered messages
+      queuedMessagesPreamble = `## Queued messages delivered:\n\n${queuedMsgs.map((_, i) => `- Message ${i + 1} queued at ${queuedMsgs[i].queuedAt}`).join("\n")}\n\n`;
+
+      // Clear the queue
+      this.queuedMessages.delete(task.id);
+      this.messageQueuedAt.delete(task.id);
+    }
+
     const mission = missionFor(
       task,
       branch,
@@ -5626,7 +5667,7 @@ export class AgentRunner {
       agent,
       this.config,
       opts.contextPack,
-      opts.resumePreamble,
+      opts.resumePreamble ? `${queuedMessagesPreamble}${opts.resumePreamble}` : queuedMessagesPreamble || undefined,
       selectedSkills,
     );
     const { cmd, args } = cliCommand(agent, mission, cwd, { sessionId: launchSessionId });
@@ -5811,6 +5852,7 @@ export class AgentRunner {
     if (!DRIVABLE_CLIS.has(agent.cli)) {
       return { ok: false, reason: unsupportedCliMessage(agent.cli) };
     }
+    this.checkExpiredMessages();
     // Completed/non-task conversations are deliberately not preloaded at boot.
     // Hydrate one on demand so a persisted RepoOS Guide transcript can resume
     // after a server reload instead of being visible-but-unsendable.
@@ -5823,10 +5865,20 @@ export class AgentRunner {
       this.handoffsInFlight.has(taskId) ||
       this.queuedIds.has(taskId)
     ) {
+      // Queue the message for delivery when the agent becomes available
+      const messages = this.queuedMessages.get(taskId) ?? [];
+      messages.push({
+        text,
+        agent,
+        opts,
+        queuedAt: new Date().toISOString(),
+      });
+      this.queuedMessages.set(taskId, messages);
+      this.messageQueuedAt.set(taskId, new Date().toISOString());
+
       return {
-        ok: false,
-        busy: true,
-        reason: "agent is busy — wait for the current turn or handoff to finish",
+        ok: true,
+        queued: true,
       };
     }
     this.sessions.set(taskId, session);
@@ -6007,6 +6059,19 @@ export class AgentRunner {
    */
   isQueued(taskId: string): boolean {
     return this.queuedIds.has(taskId);
+  }
+
+  /** Check for expired queued messages and clean them up. */
+  private checkExpiredMessages(): void {
+    const now = Date.now();
+    for (const [taskId, queuedAt] of this.messageQueuedAt.entries()) {
+      const queuedTime = new Date(queuedAt).getTime();
+      if (now - queuedTime > this.messageTimeoutMs) {
+        // Message has expired without being delivered
+        this.queuedMessages.delete(taskId);
+        this.messageQueuedAt.delete(taskId);
+      }
+    }
   }
 
   /** Start the next queued spawn once a slot is free (called from cleanup() on every exit). */
