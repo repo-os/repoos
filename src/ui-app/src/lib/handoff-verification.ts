@@ -238,9 +238,19 @@ export function runLevelIssueLines(
   }
   const orphans = evidence.issues.filter((issue) => !owned.has(issueKey(issue)));
   const lines: string[] = [];
-  for (const group of handoffIssueGroups(orphans, [])) {
-    lines.push(`${group.kind}:`);
-    for (const item of group.items) lines.push(`  ${item}`);
+  // Render each run-level issue as a single line, not grouped by kind.
+  const kindLabels: Record<string, string> = {
+    console: "console error",
+    request: "failed request",
+    overflow: "overflow",
+    blank: "blank capture",
+  };
+  for (const issue of orphans) {
+    const kindLabel = kindLabels[issue.kind] ?? issue.kind;
+    const parts = [kindLabel + ":", issue.message];
+    if (issue.viewportWidth !== undefined) parts.push(`@${issue.viewportWidth}px`);
+    if (issue.url) parts.push(issue.url);
+    lines.push(parts.join(" "));
   }
   for (const warn of evidence.warnings ?? []) {
     // `warnings` carry a " (captured <url>)" suffix the capture's own
