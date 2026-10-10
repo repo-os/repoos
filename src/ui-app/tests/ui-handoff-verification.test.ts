@@ -145,6 +145,11 @@ describe("UI handoff verification gate (#0680)", () => {
     });
     expect(result.ok).toBe(false);
     expect(result.detail).toContain("overflow");
+    // #0753: the capture keeps its OWN issues, so the Changes tab can show them
+    // in that shot's popover instead of repeating the handoff list on every row.
+    const evidence = readUiHandoffGateEvidence(config, task.id);
+    expect(evidence?.captureDetails?.[0]?.issues?.map((i) => i.kind)).toEqual(["overflow"]);
+    expect(evidence?.captureDetails?.[0]?.issues?.[0]?.viewportWidth).toBe(1024);
     vi.restoreAllMocks();
   });
 
@@ -521,6 +526,81 @@ describe("UI handoff verification gate (#0680)", () => {
     expect(captureCalls).toBe(2);
     expect(previewStarts).toBe(2);
     expect(previews.stop).toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  it("persists each capture's issues on that capture in the evidence (#0753)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      workDir: "work",
+      uiVerification: { enabled: true },
+      preview: { targets: [{ name: "web", paths: ["src/ui-app/**"], command: "echo" }] },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "0753issues",
+      title: "t",
+      path: "work/0753issues.md",
+      absPath: join(root, "work/0753issues.md"),
+      status: "active",
+      branch: "feat/x",
+      area: "web",
+      body: "",
+    } as Task;
+    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+      entries: [
+        {
+          target: "web",
+          route: "/",
+          label: "home",
+          provenance: { kind: "declared", label: "home" },
+        },
+      ],
+      errors: [],
+      skips: [],
+      collapsed: [],
+    });
+    const mockBrowser: NonNullable<UiHandoffGateDeps["launchBrowser"]> = async () =>
+      ({
+        browser: { close: async () => {}, newPage: async () => ({}), newContext: async () => ({}) },
+        context: { newPage: async () => ({}), close: async () => {} },
+      }) as unknown as Awaited<ReturnType<NonNullable<UiHandoffGateDeps["launchBrowser"]>>>;
+    const previews = {
+      stop: vi.fn(async () => {}),
+    } as unknown as import("../../server/preview.js").PreviewManager;
+    const result = await runUiHandoffGate(config, task, previews, () => {}, {
+      launchBrowser: mockBrowser,
+      startPreview: async () => ({ url: "http://127.0.0.1:9" }),
+      captureEntry: async () =>
+        ({
+          png: Buffer.alloc(5000),
+          issues: [
+            {
+              kind: "console",
+              message: "TypeError: x is undefined",
+              url: "/",
+            },
+          ],
+          blank: false,
+          warnings: [],
+          finalUrl: "http://127.0.0.1:9/",
+          assertions: [],
+        }) as unknown as Awaited<ReturnType<NonNullable<UiHandoffGateDeps["captureEntry"]>>>,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.detail).toContain("TypeError");
+    // Verify that the capture's issues are stored on that capture in the evidence.
+    const evidence = readUiHandoffGateEvidence(config, task.id);
+    expect(evidence?.captureDetails?.[0]?.issues).toContainEqual(
+      expect.objectContaining({
+        kind: "console",
+        message: "TypeError: x is undefined",
+        url: "/",
+      }),
+    );
     vi.restoreAllMocks();
   });
 });
