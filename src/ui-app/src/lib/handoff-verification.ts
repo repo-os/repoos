@@ -154,7 +154,11 @@ export function handoffIssueGroups(
     list.push(parts.join(" · "));
     byKind.set(kind, list);
   }
-  if (blankShots.length > 0) byKind.set("blank", blankShots.map((s) => `[blank] ${s}`));
+  if (blankShots.length > 0)
+    byKind.set(
+      "blank",
+      blankShots.map((s) => `[blank] ${s}`),
+    );
 
   const groups: HandoffIssueGroup[] = [];
   for (const kind of order) {
@@ -209,4 +213,3 @@ export function orphanHandoffSentence(view: ShotVerdictView): string {
     ? "matches, but no longer in the shot list"
     : `check: ${view.reason} (no longer in the shot list)`;
 }
-
