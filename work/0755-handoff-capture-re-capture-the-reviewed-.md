@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-10T17:54:57Z"
-review_passes: 3
 id: "0755"
 title: "Handoff capture: re-capture the reviewed tree and stop placeholder selectors"
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-capture-re-capture-the-reviewed-
 created_at: "2026-10-10T14:10:28Z"
+updated_at: "2026-10-10T18:00:03Z"
+review_passes: 3
 review_rounds: 1
 ---
 ## Problem
