@@ -6,10 +6,12 @@
  * into a glanceable verdict — `matches` when every declared step succeeded and
  * the capture landed on the declared route, `check` with a plain-words reason
  * when something did not. #0753 then moved that verdict ONTO the shot row in
- * the Changes tab (a green check / red cross icon) and folded the handoff-wide
+ * the Changes tab (a green check / red cross icon) and folded the shot's OWN
  * issues — console errors, failed same-origin requests, overflow, blank
- * captures, shot warnings — into the same popover, so the old standalone
- * summary block is gone rather than duplicated.
+ * captures — into that row's popover, so the old standalone summary block is
+ * gone rather than duplicated. Issues the gate records for a single capture now
+ * ride on the capture (`UiHandoffCaptureEvidence.issues`); only issues tied to
+ * no shot, plus run-level shot warnings, are shown once under the list.
  *
  * Deliberately display-only (#0751 Notes): nothing here changes how a shot is
  * captured or whether a handoff is gated. It reads the evidence the gate
@@ -205,17 +207,10 @@ export function handoffIssueLines(
  * as readable sections rather than a wall of raw kinds.
  */
 export function captureIssueLines(cap: UiHandoffCaptureEvidence): string[] {
-  const issues = cap.issues ?? [];
   const lines: string[] = [];
-  for (const group of handoffIssueGroups(issues, [])) {
+  for (const group of handoffIssueGroups(cap.issues ?? [], [])) {
     lines.push(`${group.kind}:`);
     for (const item of group.items) lines.push(`  ${item}`);
-  }
-  // A blank-looking capture is recorded as an `issues` entry too (#0753), so the
-  // old `blankShots` name list is not needed here; but a capture whose only signal
-  // is a blank PNG with no issue still deserves the line.
-  if ((cap.issues ?? []).length === 0 && cap.targetWarnings?.length) {
-    for (const warn of cap.targetWarnings) lines.push(`[warning] ${warn}`);
   }
   return lines;
 }

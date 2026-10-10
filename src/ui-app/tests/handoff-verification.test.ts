@@ -243,11 +243,12 @@ describe("captureIssueLines (#0753)", () => {
     expect(lines.some((l) => l.includes("overflow"))).toBe(true);
   });
 
-  it("falls back to a capture's raw warnings when it carries no issues", () => {
-    const lines = captureIssueLines(
-      capture({ targetWarnings: ["highlight .x matched nothing on /"] }),
-    );
-    expect(lines).toEqual(["[warning] highlight .x matched nothing on /"]);
+  it("is empty for a shot with no issues of its own, even with raw step warnings", () => {
+    // A step miss rides in the verdict's `details`, not as a capture issue — the
+    // popover shows it from there, so it is not duplicated here.
+    expect(
+      captureIssueLines(capture({ targetWarnings: ["highlight .x matched nothing on /"] })),
+    ).toEqual([]);
   });
 });
 
@@ -286,5 +287,19 @@ describe("runLevelIssueLines (#0753)", () => {
     // The owned issue is not repeated run-level.
     expect(lines.some((l) => l.includes("boom"))).toBe(false);
     expect(lines.some((l) => l.includes("[shot-warning] highlight .x"))).toBe(true);
+  });
+
+  it("lists every issue once for legacy evidence with no per-capture issues", () => {
+    const lines = runLevelIssueLines(
+      evidence({
+        issues: [
+          { kind: "console", message: "old console error" },
+          { kind: "overflow", message: "old overflow", viewportWidth: 375 },
+        ],
+        captureDetails: [capture()],
+      }),
+    );
+    expect(lines.some((l) => l.includes("old console error"))).toBe(true);
+    expect(lines.some((l) => l.includes("old overflow"))).toBe(true);
   });
 });
