@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-should-auto-resolve-task-file-
 created_at: "2026-10-10T12:57:27Z"
-updated_at: "2026-10-10T17:24:21Z"
+updated_at: "2026-10-10T17:25:39Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ AGENTS.md already says the narrow resolution path may take "the task's own bookk
 - 2026-10-10T17:16:10Z · body
 - 2026-10-10T17:17:32Z · body
 - 2026-10-10T17:24:21Z · body
+- 2026-10-10T17:25:39Z · body
