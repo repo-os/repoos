@@ -1,22 +1,28 @@
 /**
- * Per-shot verdicts for the handoff UI-verification block (#0751).
+ * Per-shot verdicts for handoff UI verification (#0751, reshaped in #0753).
  *
- * The Changes tab's "Handoff UI verification" block used to print the raw
- * capture log — a wall of `[shot-warning] highlight … matched nothing on …`
- * lines that a reviewer had to decode. This module turns ONE captured shot's
- * recorded outcome into a glanceable verdict: `matches` when every declared
- * step succeeded and the capture landed on the declared route, or `check` with
- * a plain-words reason when something did not.
+ * A reviewer wants one thing from the handoff evidence: is this shot right, or
+ * does it need a look? This module turns ONE captured shot's recorded outcome
+ * into a glanceable verdict — `matches` when every declared step succeeded and
+ * the capture landed on the declared route, `check` with a plain-words reason
+ * when something did not. #0753 then moved that verdict ONTO the shot row in
+ * the Changes tab (a green check / red cross icon) and folded the handoff-wide
+ * issues — console errors, failed same-origin requests, overflow, blank
+ * captures, shot warnings — into the same popover, so the old standalone
+ * summary block is gone rather than duplicated.
  *
  * Deliberately display-only (#0751 Notes): nothing here changes how a shot is
  * captured or whether a handoff is gated. It reads the evidence the gate
  * already records — the per-capture `targetWarnings` (#0743 step/selector/
  * highlight misses), the route match, and the assertion outcomes (#0734) — and
- * derives a verdict. The raw messages stay available, collapsed under a
- * "details" toggle, so the plain-words reason never hides the exact selector
- * or timeout a debugging reviewer needs.
+ * derives a verdict. The raw messages ride along as details, so the plain-words
+ * reason never hides the exact selector or timeout a debugging reviewer needs.
  */
-import type { UiHandoffCaptureEvidence } from "../types";
+import type {
+  UiHandoffCaptureEvidence,
+  UiHandoffVerificationEvidence,
+  UiHandoffVerificationIssue,
+} from "../types";
 
 /** What a shot's evidence amounts to, in one word for the badge. */
 export type ShotVerdict = "matches" | "check";
@@ -26,7 +32,7 @@ export interface ShotVerdictView {
   verdict: ShotVerdict;
   /** Plain-words reason for a `check`, e.g. "couldn't find the fullscreen toggle". Empty for `matches`. */
   reason: string;
-  /** Raw recorded messages (selector matches, step timeouts, assertion details), for the details toggle. */
+  /** Raw recorded messages (selector matches, step timeouts, assertion details). */
   details: string[];
 }
 
@@ -98,49 +104,109 @@ export function shotVerdict(cap: UiHandoffCaptureEvidence): ShotVerdictView {
   return { verdict: "check", reason, details };
 }
 
-/** Counts and a one-sentence summary for the block header. */
-export interface HandoffSummary {
-  total: number;
-  matching: number;
-  checking: number;
-  /** One sentence, e.g. "2 shots, both captured, 2 need checking". */
-  sentence: string;
+// ── #0753: the per-shot popover text and the handoff-wide issue summary ─────
+
+/**
+ * The plain-words verdict for a shot's popover, e.g. "matches: every declared
+ * step ran and the capture was taken" or "check: couldn't find the fullscreen
+ * toggle". The wording is deliberately human — it names the shot's outcome, not
+ * the internal verdict token.
+ */
+export function verdictSentence(view: ShotVerdictView): string {
+  if (view.verdict === "matches") {
+    return "matches: every declared step ran and the capture was taken";
+  }
+  return `check: ${view.reason}`;
+}
+
+/** Grouped, human-labelled handoff-wide issues for the popover (#0753). */
+export interface HandoffIssueGroup {
+  /** Short human label for the group, e.g. "console errors". */
+  kind: string;
+  /** One line per issue, prefixed with the raw kind for a debugging reviewer. */
+  items: string[];
 }
 
 /**
- * Summarise a set of capture verdicts as one header sentence (#0751). Example:
- * "3 shots, all captured, none need checking" / "2 shots, both captured, 1
- * needs checking".
- *
- * Every row here IS a captured shot — a `check` verdict means the capture
- * landed but a declared step did not, so the shots stay "captured" and the
- * last clause carries the count that needs a look. "captured" and "matches"
- * are deliberately NOT conflated: saying a shot was not captured when it was
- * would be a lie the reviewer cannot see past.
+ * Group the handoff-wide issues by kind, in a stable order, so the popover
+ * lists "console errors", "failed requests", "overflow" and "blank captures"
+ * as readable sections instead of a flat wall of kinds. Empty groups are
+ * dropped — the popover only shows what actually happened.
  */
-export function handoffSummary(verdicts: ShotVerdictView[]): HandoffSummary {
-  const total = verdicts.length;
-  const checking = verdicts.filter((v) => v.verdict === "check").length;
-  const matching = total - checking;
-  const shotWord = `shot${total === 1 ? "" : "s"}`;
-  const capturedWord =
-    total === 0
-      ? "none captured"
-      : total === 1
-        ? "captured"
-        : total === 2
-          ? "both captured"
-          : `all ${total} captured`;
-  const checkingWord =
-    checking === 0
-      ? "none need checking"
-      : checking === 1
-        ? "1 needs checking"
-        : `${checking} need checking`;
-  return {
-    total,
-    matching,
-    checking,
-    sentence: `${total} ${shotWord}, ${capturedWord}, ${checkingWord}`,
+export function handoffIssueGroups(
+  issues: UiHandoffVerificationIssue[],
+  blankShots: string[],
+): HandoffIssueGroup[] {
+  const order = ["console", "request", "overflow", "blank"];
+  const labels: Record<string, string> = {
+    console: "console errors",
+    request: "failed same-origin requests",
+    overflow: "overflow",
+    blank: "blank captures",
   };
+  const byKind = new Map<string, string[]>();
+  for (const issue of issues) {
+    const kind = issue.kind || "issue";
+    const parts = [`[${issue.kind}] ${issue.message}`];
+    if (issue.viewportWidth !== undefined) parts.push(`@${issue.viewportWidth}px`);
+    if (issue.url) parts.push(issue.url);
+    const list = byKind.get(kind) ?? [];
+    list.push(parts.join(" · "));
+    byKind.set(kind, list);
+  }
+  if (blankShots.length > 0) byKind.set("blank", blankShots.map((s) => `[blank] ${s}`));
+
+  const groups: HandoffIssueGroup[] = [];
+  for (const kind of order) {
+    const items = byKind.get(kind);
+    if (items?.length) groups.push({ kind: labels[kind] ?? kind, items });
+    byKind.delete(kind);
+  }
+  // Any kind we did not name still shows — honest beats tidy.
+  for (const [kind, items] of byKind) {
+    if (items.length) groups.push({ kind, items });
+  }
+  return groups;
 }
+
+/**
+ * The handoff-wide issues as flat detail lines, for the popover and for the
+ * footnotes under a section. Shot warnings (#0743) are handoff-level too — they
+ * describe the plan the whole run used — so they ride along here.
+ */
+export function handoffIssueLines(
+  evidence: UiHandoffVerificationEvidence | null | undefined,
+): string[] {
+  if (!evidence) return [];
+  const lines: string[] = [];
+  for (const group of handoffIssueGroups(evidence.issues, evidence.blankShots)) {
+    lines.push(`${group.kind}:`);
+    for (const item of group.items) lines.push(`  ${item}`);
+  }
+  for (const warn of evidence.warnings ?? []) lines.push(`[shot-warning] ${warn}`);
+  return lines;
+}
+
+/** One line describing where and when the handoff ran, for the popover/status line. */
+export function handoffContextLine(
+  evidence: UiHandoffVerificationEvidence | null | undefined,
+): string {
+  if (!evidence) return "";
+  const parts: string[] = [];
+  if (evidence.sourceIdentity) parts.push(`tested tree ${evidence.sourceIdentity}`);
+  if (evidence.evidenceDir) parts.push(`PNGs at ${evidence.evidenceDir}`);
+  return parts.join(" · ");
+}
+
+/**
+ * The plain sentence for an orphaned handoff capture — one the handoff recorded
+ * but whose shot file is no longer in the task's `shots/` list (usually because
+ * a later capture replaced it). #0753 keeps the verdict rather than silently
+ * dropping it: the row is marked "no longer listed" but still says why.
+ */
+export function orphanHandoffSentence(view: ShotVerdictView): string {
+  return view.verdict === "matches"
+    ? "matches, but no longer in the shot list"
+    : `check: ${view.reason} (no longer in the shot list)`;
+}
+

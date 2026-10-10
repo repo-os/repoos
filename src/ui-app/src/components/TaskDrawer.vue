@@ -90,14 +90,16 @@ import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
-import {
-  isImageMime,
-  pendingToShots,
-  shotIndex,
-  type ScreenshotShot,
-} from "../lib/screenshot-viewer";
+import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
 import { shotProblems, shotRows, uncapturedDeclared } from "../lib/shot-rows";
-import { handoffSummary, shotVerdict } from "../lib/handoff-verification";
+import {
+  handoffContextLine,
+  handoffIssueLines,
+  orphanHandoffSentence,
+  shotVerdict,
+  verdictSentence,
+  type ShotVerdictView,
+} from "../lib/handoff-verification";
 import type { DeclaredShot } from "../../../core/shot-plan.js";
 import type { ShotMeta } from "../types";
 import AddShotModal from "./AddShotModal.vue";
@@ -891,23 +893,55 @@ const uiHandoffVerification = computed(() =>
   ui.active ? repo.uiVerificationFor(ui.active.id) : undefined,
 );
 /**
- * Per-shot verdicts for the handoff verification block (#0751). Display-only:
- * each captured shot gets a `matches`/`check` badge derived from the step
- * results the gate already records, plus a plain-words reason and the raw
- * messages for the details toggle. The header sentence summarises the counts.
+ * #0753: per-shot handoff verdicts, keyed by the captured shot's URL, so the
+ * Changes tab can put a check/cross icon on the matching **UI changes** row
+ * instead of rendering a separate block. Derived from the same step results the
+ * gate already records (see `shotVerdict`); display-only.
  */
-const uiHandoffShots = computed(() => {
-  const caps = uiHandoffVerification.value?.captureDetails ?? [];
-  return caps.map((cap) => ({ cap, verdict: shotVerdict(cap) }));
+const uiHandoffVerdictByUrl = computed(() => {
+  const map = new Map<string, ShotVerdictView>();
+  for (const cap of uiHandoffVerification.value?.captureDetails ?? []) {
+    if (cap.shot?.url) map.set(cap.shot.url, shotVerdict(cap));
+  }
+  return map;
 });
-const uiHandoffSummary = computed(() => handoffSummary(uiHandoffShots.value.map((s) => s.verdict)));
-/** Which shots have their raw details expanded (hidden by default, #0751). */
-const uiHandoffDetailsOpen = ref<Set<number>>(new Set());
-function toggleHandoffDetails(idx: number): void {
-  const next = new Set(uiHandoffDetailsOpen.value);
-  if (next.has(idx)) next.delete(idx);
-  else next.add(idx);
-  uiHandoffDetailsOpen.value = next;
+/** Ordered verdicts for the handoff's captures (popover/status-line counts). */
+const uiHandoffVerdicts = computed(() =>
+  (uiHandoffVerification.value?.captureDetails ?? []).map((cap) => shotVerdict(cap)),
+);
+/**
+ * #0753: handoff captures whose shot file is no longer in the task's `shots/`
+ * list — usually because a later capture replaced it. Their verdict would
+ * otherwise vanish with the removed summary block, so they are kept as
+ * footnotes under "UI changes".
+ */
+const uiHandoffOrphans = computed(() => {
+  const listed = new Set(taskShots.value.map((s) => s.url));
+  return (uiHandoffVerification.value?.captureDetails ?? [])
+    .filter((cap) => cap.shot?.url && !listed.has(cap.shot.url))
+    .map((cap) => ({ label: cap.label || `${cap.target}${cap.route}`, view: shotVerdict(cap) }));
+});
+/** Handoff-wide issues (console/requests/overflow/blank + shot warnings), as lines. */
+const uiHandoffIssueLines = computed(() => handoffIssueLines(uiHandoffVerification.value));
+/** "tested tree <sha> · PNGs at <dir>" for the status line, or empty. */
+const uiHandoffContext = computed(() => handoffContextLine(uiHandoffVerification.value));
+/** True when the handoff recorded any issue or shot warning worth surfacing. */
+const uiHandoffHasIssues = computed(() => uiHandoffIssueLines.value.length > 0);
+
+/** The verdict for a captured shot row (by URL), or undefined when not handoff-verified. */
+function handoffVerdictFor(url: string): ShotVerdictView | undefined {
+  return uiHandoffVerdictByUrl.value.get(url);
+}
+
+/** The popover text for a shot row: the verdict sentence plus handoff-wide issues. */
+function shotPopoverLines(url: string): string[] {
+  const view = handoffVerdictFor(url);
+  if (!view) return [];
+  const lines = [verdictSentence(view)];
+  if (view.details.length) lines.push(...view.details);
+  const issues = uiHandoffIssueLines.value;
+  if (issues.length) lines.push(...issues);
+  return lines;
 }
 const shotsViewerOpen = ref(false);
 const shotsViewerStart = ref(0);
@@ -919,14 +953,6 @@ const shotsViewerShots = computed<ScreenshotShot[]>(() =>
 function openShotsViewer(index: number): void {
   shotsViewerStart.value = index;
   shotsViewerOpen.value = true;
-}
-/**
- * Open the viewer on a handoff capture's thumbnail (#0751). The viewer renders
- * `taskShots`, whose order need not match the evidence's capture order, so the
- * index is resolved from the shot's url rather than trusting the capture index.
- */
-function openHandoffShot(url: string): void {
-  openShotsViewer(shotIndex(shotsViewerShots.value, url));
 }
 
 // ---- add / delete shots from the drawer (#0627) ----
@@ -5471,109 +5497,23 @@ watch(
               Pick the right target from the preview control above.
             </span>
           </div>
-          <section
-            v-if="ui.active && uiHandoffVerification"
-            class="changes-summary ui-verification-evidence"
-            aria-label="Handoff UI verification"
-          >
-            <div class="changes-summary-title">Handoff UI verification</div>
-            <p class="ui-verification-meta">
-              {{ repo.fmtDate(uiHandoffVerification.at) }}
-              <template v-if="uiHandoffShots.length"> · {{ uiHandoffSummary.sentence }}</template>
-              <template v-else> · {{ uiHandoffVerification.captures }} capture(s)</template>
-            </p>
-            <p v-if="uiHandoffVerification.sourceIdentity" class="ui-verification-detail">
-              Tested tree {{ uiHandoffVerification.sourceIdentity }}
-              <span v-if="uiHandoffVerification.evidenceDir">
-                · PNGs at {{ uiHandoffVerification.evidenceDir }}
-              </span>
-            </p>
-            <p v-if="uiHandoffVerification.issues.length === 0" class="ui-verification-ok">
-              No console errors, failed same-origin requests, overflow, or blank captures at
-              handoff.
-            </p>
-            <ul
-              v-if="uiHandoffVerification.warnings?.length"
-              class="ui-verification-issues ui-verification-warnings"
-            >
-              <li v-for="(warn, idx) in uiHandoffVerification.warnings" :key="'w' + idx">
-                <span class="mono">[shot-warning]</span> {{ warn }}
-              </li>
-            </ul>
-            <ul v-else class="ui-verification-issues">
-              <li v-for="(issue, idx) in uiHandoffVerification.issues" :key="idx">
-                <span class="mono">[{{ issue.kind }}]</span> {{ issue.message }}
-                <span v-if="issue.viewportWidth !== undefined" class="ui-verification-detail">
-                  @{{ issue.viewportWidth }}px
-                </span>
-                <span v-if="issue.url" class="ui-verification-detail" :title="issue.url">{{
-                  issue.url
-                }}</span>
-              </li>
-            </ul>
-            <!-- #0751: one line per shot — a `matches`/`check` badge, the caption,
-                 the thumbnail — with the raw selector/timeout messages collapsed
-                 under a "details" toggle so the verdict reads at a glance while
-                 the exact message stays one click away. Display-only: the badge
-                 is derived from the step results the gate already records. -->
-            <div
-              v-if="uiHandoffShots.length"
-              class="ui-verification-shots"
-              aria-label="Captured shots and verdicts"
-            >
-              <div
-                v-for="(row, idx) in uiHandoffShots"
-                :key="idx"
-                class="ui-verification-shot"
-                :data-verdict="row.verdict.verdict"
-              >
-                <img
-                  v-if="row.cap.shot"
-                  class="ui-verification-shot-thumb"
-                  :src="row.cap.shot.url"
-                  :alt="row.cap.label || row.cap.target + row.cap.route"
-                  @click="openHandoffShot(row.cap.shot.url)"
-                />
-                <span v-else class="ui-verification-shot-thumb ui-verification-shot-thumb-empty" />
-                <div class="ui-verification-shot-body">
-                  <div class="ui-verification-shot-line">
-                    <span class="ui-verification-badge" :data-verdict="row.verdict.verdict">
-                      {{ row.verdict.verdict }}
-                    </span>
-                    <span class="ui-verification-shot-caption mono">{{
-                      row.cap.label || row.cap.target + row.cap.route
-                    }}</span>
-                  </div>
-                  <p v-if="row.verdict.verdict === 'check'" class="ui-verification-shot-reason">
-                    {{ row.verdict.reason }}
-                  </p>
-                  <button
-                    v-if="row.verdict.details.length"
-                    type="button"
-                    class="ui-verification-details-toggle"
-                    :aria-expanded="uiHandoffDetailsOpen.has(idx)"
-                    @click="toggleHandoffDetails(idx)"
-                  >
-                    {{ uiHandoffDetailsOpen.has(idx) ? "Hide details" : "Details" }}
-                  </button>
-                  <ul
-                    v-if="row.verdict.details.length && uiHandoffDetailsOpen.has(idx)"
-                    class="ui-verification-shot-details"
-                  >
-                    <li v-for="(detail, di) in row.verdict.details" :key="di" class="mono">
-                      {{ detail }}
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
           <!-- Captured preview shots (#0611). Same one-per-row shape as the New
                task / New input pending attachments (ff-pending-*), because a
                thumbnail grid had no room for the `## Shots` spec the reviewer
-               actually reads: label, target · route, selector, steps. -->
+               actually reads: label, target · route, selector, steps.
+
+               #0753: each row carries the handoff verdict as a green check /
+               red cross icon, and this section's small status line + footnotes
+               carry the handoff-wide context (when, tested tree, issues) the old
+               standalone "Handoff UI verification" block held. -->
           <section
-            v-if="ui.active && (uiChangeRows.length || uiShotProblems.length || canManageShots)"
+            v-if="
+              ui.active &&
+              (uiChangeRows.length ||
+                uiShotProblems.length ||
+                uiHandoffOrphans.length ||
+                canManageShots)
+            "
             class="changes-summary ui-changes"
             aria-label="UI changes"
           >
@@ -5594,6 +5534,14 @@ watch(
                 {{ addShotBusy ? "Capturing…" : "Add shot" }}
               </Button>
             </div>
+            <!-- #0753: the handoff's when/tested-tree context, as a small line
+                 under the title instead of its own block. The per-shot icon and
+                 the footnotes below carry the rest. -->
+            <p v-if="uiHandoffVerification" class="ui-changes-meta">
+              Handoff checked {{ repo.fmtDate(uiHandoffVerification.at) }}
+              <template v-if="uiHandoffContext"> · {{ uiHandoffContext }}</template>
+              <template v-if="uiHandoffHasIssues"> · issues below</template>
+            </p>
             <div
               v-for="problem in uiShotProblems"
               :key="problem.at + problem.detail"
@@ -5633,7 +5581,25 @@ watch(
               >
                 <img :src="row.meta.url" :alt="row.title" @click="openShotsViewer(i)" />
                 <div class="shot-row-text">
-                  <span class="ff-pending-file-name" :title="row.title">{{ row.title }}</span>
+                  <span class="ff-pending-file-name" :title="row.title">
+                    <!-- #0753: the handoff verdict as a single icon — a green
+                         check when the shot matches, a red cross when it needs
+                         checking. Hover/focus/tap opens the styled popover
+                         (below) with the plain-words reason and the handoff's
+                         issues. Absent when the handoff recorded no verdict for
+                         this shot. -->
+                    <span
+                      v-if="handoffVerdictFor(row.meta.url)"
+                      class="shot-row-verdict mono"
+                      :data-verdict="handoffVerdictFor(row.meta.url)?.verdict"
+                      :data-tip="shotPopoverLines(row.meta.url).join('\n')"
+                      tabindex="0"
+                      :aria-label="verdictSentence(handoffVerdictFor(row.meta.url)!)"
+                    >
+                      {{ handoffVerdictFor(row.meta.url)?.verdict === "matches" ? "✓" : "✕" }}
+                    </span>
+                    <span>{{ row.title }}</span>
+                  </span>
                   <span v-if="row.context" class="shot-row-detail" :title="row.context">
                     {{ row.context }}
                   </span>
@@ -5668,6 +5634,49 @@ watch(
                 </div>
               </div>
             </div>
+            <!-- #0753: handoff captures whose PNG is no longer in the shot list
+                 (a later capture replaced it). Their verdict is kept rather than
+                 silently dropped with the removed summary block. -->
+            <div
+              v-if="uiHandoffOrphans.length"
+              class="ff-pending-files shot-rows"
+              aria-label="Shots from a previous handoff no longer in the list"
+            >
+              <div
+                v-for="orphan in uiHandoffOrphans"
+                :key="orphan.label + orphan.view.reason"
+                class="ff-pending-file shot-row shot-row-missing"
+              >
+                <div class="shot-row-text">
+                  <span class="ff-pending-file-name">
+                    <span
+                      class="shot-row-verdict mono"
+                      :data-verdict="orphan.view.verdict"
+                      :data-tip="orphanHandoffSentence(orphan.view)"
+                      tabindex="0"
+                      :aria-label="orphanHandoffSentence(orphan.view)"
+                    >
+                      {{ orphan.view.verdict === "matches" ? "✓" : "✕" }}
+                    </span>
+                    <span>{{ orphan.label }}</span>
+                  </span>
+                  <span class="shot-row-detail">{{ orphanHandoffSentence(orphan.view) }}</span>
+                </div>
+              </div>
+            </div>
+            <!-- #0753: the handoff-wide issues the removed summary block used to
+                 list — console errors, failed same-origin requests, overflow,
+                 blank captures, shot warnings. Shown here when no shot row can
+                 carry them (e.g. an empty capture or orphan-only handoff). -->
+            <ul
+              v-if="uiHandoffHasIssues && !uiChangeRows.length"
+              class="ui-changes-footnotes"
+              aria-label="Handoff issues"
+            >
+              <li v-for="(line, idx) in uiHandoffIssueLines" :key="'hf' + idx" class="mono">
+                {{ line }}
+              </li>
+            </ul>
           </section>
           <template v-if="!ui.active">
             <p class="changes-empty">Select a task to view changes.</p>
