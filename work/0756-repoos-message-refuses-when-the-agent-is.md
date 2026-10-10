@@ -2,7 +2,7 @@
 id: "0756"
 title: repoos message refuses when the agent is busy instead of queuing it
 type: bug
-status: active
+status: review
 priority: p1
 area: infra
 assigned_to: ai
@@ -74,4 +74,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T17:35:50Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-10T17:41:24Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-10T17:41:24Z · note: handoff requested (cli)
-- 2026-10-10T17:47:05Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-10T17:47:05Z · status active→review
