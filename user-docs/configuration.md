@@ -1278,18 +1278,29 @@ name = "apk"
 kind = "artifact"
 command = "bun run build:android"
 artifactPath = "dist/app-debug.apk"
+
+[[dev.targets]]
+name = "divot"
+kind = "process"
+command = "swift run --package-path macos divot"
+label = "Divot bar"
 ```
 
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
 | `dev.targets[].name` | string | yes | Stable identity, unique within the project. The API and CLI address a target by this name. |
-| `dev.targets[].kind` | `server` \| `artifact` | yes | `server` is a long-lived process with a URL; `artifact` is a build that produces a file and exits. |
+| `dev.targets[].kind` | `server` \| `artifact` \| `process` | yes | `server` is a long-lived process with a URL; `artifact` is a build that produces a file and exits; `process` is a long-lived foreground process with no URL and no build artifact (a native app, a daemon). |
 | `dev.targets[].command` | string | yes | Shell command run in the project's **root checkout** (never a task worktree). |
-| `dev.targets[].url` | string | for `server` | The server's URL, e.g. `http://localhost:5173`. |
+| `dev.targets[].url` | string | for `server` | The server's URL, e.g. `http://localhost:5173`. A `process` never has one. |
 | `dev.targets[].artifactPath` | string | for `artifact` | Repo-relative path of the build output. |
 | `dev.targets[].label` | string | no | Human label shown in the UI; defaults to `name`. |
 | `dev.targets[].healthCheck.url` | string | no | URL polled until it answers before a `server` target is reported running. Defaults to `url`. |
 | `dev.targets[].healthCheck.file` | string | no | Repo-relative file that must exist before the target is reported running. |
+
+A row must have a way to be judged healthy: a `server` has a `url`, an `artifact`
+has an `artifactPath`, and a `process` is healthy while its process is alive (so
+it carries no `url`, `artifactPath` or `healthCheck`). A `server` with no `url`
+is rejected with a pointer to `kind = "process"`.
 
 Only commands declared here can be run: the API and `repoos dev` name a target,
 and the command is always resolved from the committed `repoos.toml` — no request

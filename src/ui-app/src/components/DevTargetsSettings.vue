@@ -108,9 +108,11 @@ function rowTitle(t: DevTargetPayload): string {
   return t.label?.trim() || t.name;
 }
 
-/** The second line: what the target actually runs. */
+/** The second line: what the target actually runs (URL / output / nothing). */
 function rowDetail(t: DevTargetPayload): string {
-  return t.kind === "server" ? (t.url ?? "") : (t.artifactPath ?? "");
+  if (t.kind === "server") return t.url ?? "";
+  if (t.kind === "artifact") return t.artifactPath ?? "";
+  return ""; // a process has neither — the command line below carries it
 }
 </script>
 
@@ -121,9 +123,9 @@ function rowDetail(t: DevTargetPayload): string {
         <span class="live-dot"></span>Dev targets
       </div>
       <div class="setting-desc" style="padding: 4px 0 12px">
-        The things you run yourself while developing — a local HMR server, a debug build — as
-        opposed to task previews, which RepoOS manages for a task's worktree. Only commands declared
-        here can be started.
+        The things you run yourself while developing — a local HMR server, a debug build, a native
+        app process — as opposed to task previews, which RepoOS manages for a task's worktree. Only
+        commands declared here can be started.
       </div>
 
       <div v-if="serverErrors.length" class="ff-error" role="alert">
@@ -148,7 +150,7 @@ function rowDetail(t: DevTargetPayload): string {
                 t.kind
               }}</span>
             </div>
-            <div class="dev-targets-row-detail mono">{{ rowDetail(t) }}</div>
+            <div v-if="rowDetail(t)" class="dev-targets-row-detail mono">{{ rowDetail(t) }}</div>
             <div class="dev-targets-cmd mono">{{ t.command }}</div>
           </div>
           <div class="dev-targets-row-actions">
