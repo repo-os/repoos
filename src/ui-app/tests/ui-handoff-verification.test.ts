@@ -588,9 +588,7 @@ describe("UI handoff verification gate (#0680)", () => {
           warnings: [],
           finalUrl: "http://127.0.0.1:9/",
           assertions: [],
-        } as unknown as Awaited<
-          ReturnType<NonNullable<UiHandoffGateDeps["captureEntry"]>>
-        >),
+        }) as unknown as Awaited<ReturnType<NonNullable<UiHandoffGateDeps["captureEntry"]>>>,
     });
     expect(result.ok).toBe(false);
     expect(result.detail).toContain("TypeError");
