@@ -2,12 +2,12 @@
 id: "0755"
 title: "Handoff capture: re-capture the reviewed tree and stop placeholder selectors"
 type: bug
-status: ready
+status: active
 priority: p2
 area: [server, ui]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/handoff-capture-re-capture-the-reviewed-
 created_at: "2026-10-10T14:10:28Z"
 updated_at: "2026-10-10T14:13:09Z"
 ---
@@ -48,3 +48,4 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 
 - 2026-10-10T14:10:28Z · created · njachowski@gmail.com
 - 2026-10-10T14:13:09Z · status inbox→ready
+- 2026-10-10T14:13:09Z · status ready→active, branch
