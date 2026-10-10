@@ -2,16 +2,16 @@
 id: "0756"
 title: repoos message refuses when the agent is busy instead of queuing it
 type: bug
-status: ready
+status: active
 priority: p1
 area: infra
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/repoos-message-refuses-when-the-agent-is
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-10T14:10:58Z"
-updated_at: "2026-10-10T14:12:40Z"
+updated_at: "2026-10-10T14:12:46Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T14:12:21Z · status inbox→ready
 - 2026-10-10T14:12:39Z · cli_override, model_override
 - 2026-10-10T14:12:40Z · model_override
+- 2026-10-10T14:12:46Z · status ready→active, branch
