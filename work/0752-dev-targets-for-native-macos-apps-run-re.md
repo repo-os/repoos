@@ -2,14 +2,14 @@
 id: "0752"
 title: "Dev targets for native macOS apps: run, restart and show logs for a non-URL process"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: macos
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-09T20:30:41Z"
-updated_at: "2026-10-09T20:30:41Z"
+updated_at: "2026-10-10T00:50:52Z"
 ---
 ## Problem
 
@@ -35,3 +35,4 @@ Motivating project: divot (`~/code/nick/divot`). Keep Divot's own repoos.toml en
 ## Activity
 
 - 2026-10-09T20:30:41Z · created · njachowski@gmail.com
+- 2026-10-10T00:50:52Z · status inbox→ready
