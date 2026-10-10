@@ -102,6 +102,42 @@ final class ServerNavigationPolicyTests: XCTestCase {
         XCTAssertEqual(decision, .cancel(reason: .popup))
     }
 
+    func testUserClickedLoopbackPopupOpensInBrowser() {
+        let devServer = URL(string: "http://127.0.0.1:5173/")!
+        let decision = ServerNavigationPolicy.decide(
+            requestURL: devServer,
+            allowedOrigin: origin,
+            isMainFrame: true,
+            activation: .linkActivated,
+            opensNewWindow: true
+        )
+        XCTAssertEqual(decision, .openInDefaultBrowser(devServer))
+    }
+
+    func testAutomaticLoopbackPopupStaysBlocked() {
+        let devServer = URL(string: "http://127.0.0.1:5173/")!
+        let decision = ServerNavigationPolicy.decide(
+            requestURL: devServer,
+            allowedOrigin: origin,
+            isMainFrame: true,
+            activation: .other,
+            opensNewWindow: true
+        )
+        XCTAssertEqual(decision, .cancel(reason: .popup))
+    }
+
+    func testUserClickedForeignPopupStaysBlocked() {
+        let foreign = URL(string: "http://example.com/")!
+        let decision = ServerNavigationPolicy.decide(
+            requestURL: foreign,
+            allowedOrigin: origin,
+            isMainFrame: true,
+            activation: .linkActivated,
+            opensNewWindow: true
+        )
+        XCTAssertEqual(decision, .cancel(reason: .popup))
+    }
+
     func testURLErrorMapping() {
         XCTAssertEqual(
             ServerWebLoadFailure.fromURLError(URLError(.timedOut)),
