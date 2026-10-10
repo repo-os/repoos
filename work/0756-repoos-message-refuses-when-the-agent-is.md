@@ -11,7 +11,7 @@ branch: feat/repoos-message-refuses-when-the-agent-is
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-10T14:10:58Z"
-updated_at: "2026-10-10T17:10:14Z"
+updated_at: "2026-10-10T17:16:29Z"
 last_check_failure: "repoos check at 2026-10-10T15:58:58.515Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -57,4 +57,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T15:08:38Z · body
 - 2026-10-10T17:09:35Z · body
 - 2026-10-10T17:10:14Z · body
-
+- 2026-10-10T17:16:29Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
