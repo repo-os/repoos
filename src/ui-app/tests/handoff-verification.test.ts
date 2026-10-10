@@ -122,7 +122,7 @@ describe("handoffSummary (#0751)", () => {
       shotVerdict(capture({ route: "/", finalRoute: "/" })),
     ]);
     expect(s).toMatchObject({ total: 2, matching: 2, checking: 0 });
-    expect(s.sentence).toBe("2 shots, all 2 captured, none need checking");
+    expect(s.sentence).toBe("2 shots, both captured, none need checking");
   });
 
   it("counts shots that need checking", () => {
@@ -131,12 +131,12 @@ describe("handoffSummary (#0751)", () => {
       shotVerdict(capture({ targetWarnings: ["waitFor .drawer matched nothing on /"] })),
     ]);
     expect(s).toMatchObject({ total: 2, matching: 1, checking: 1 });
-    expect(s.sentence).toBe("2 shots, 1 of 2 captured, 1 needs checking");
+    expect(s.sentence).toBe("2 shots, both captured, 1 needs checking");
   });
 
   it("reads sensibly for a single shot and for none", () => {
     expect(handoffSummary([shotVerdict(capture())]).sentence).toBe(
-      "1 shot, all 1 captured, none need checking",
+      "1 shot, captured, none need checking",
     );
     expect(handoffSummary([]).sentence).toBe("0 shots, none captured, none need checking");
   });

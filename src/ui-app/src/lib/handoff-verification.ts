@@ -109,8 +109,14 @@ export interface HandoffSummary {
 
 /**
  * Summarise a set of capture verdicts as one header sentence (#0751). Example:
- * "3 shots, all 3 captured, none need checking" / "2 shots, both captured, 1
+ * "3 shots, all captured, none need checking" / "2 shots, both captured, 1
  * needs checking".
+ *
+ * Every row here IS a captured shot — a `check` verdict means the capture
+ * landed but a declared step did not, so the shots stay "captured" and the
+ * last clause carries the count that needs a look. "captured" and "matches"
+ * are deliberately NOT conflated: saying a shot was not captured when it was
+ * would be a lie the reviewer cannot see past.
  */
 export function handoffSummary(verdicts: ShotVerdictView[]): HandoffSummary {
   const total = verdicts.length;
@@ -120,11 +126,11 @@ export function handoffSummary(verdicts: ShotVerdictView[]): HandoffSummary {
   const capturedWord =
     total === 0
       ? "none captured"
-      : matching === total
-        ? `all ${total} captured`
-        : matching === 0
-          ? `none matched`
-          : `${matching} of ${total} captured`;
+      : total === 1
+        ? "captured"
+        : total === 2
+          ? "both captured"
+          : `all ${total} captured`;
   const checkingWord =
     checking === 0
       ? "none need checking"
