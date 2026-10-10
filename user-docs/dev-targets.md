@@ -75,6 +75,21 @@ label = "Web app"
 healthCheck.url = "http://localhost:5173/health"
 ```
 
+A local HMR web server on a free port, so it never clashes with another app on
+the machine. `{port}` in the command, `url` and `healthCheck` is replaced with
+the same OS-assigned port when the target starts — exactly like
+`[[preview.targets]]` — and the Dev page shows the real URL it bound:
+
+```toml
+[[dev.targets]]
+name = "web"
+kind = "server"
+command = "bun run dev --port {port}"
+url = "http://localhost:{port}"
+label = "Web app"
+healthCheck = { url = "http://localhost:{port}/health" }
+```
+
 An Android debug build that produces an APK:
 
 ```toml

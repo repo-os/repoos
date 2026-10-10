@@ -222,6 +222,7 @@ const json = async (data: unknown) => ({ ok: true, status: 200, json: async () =
 
 let shotsPayload: ShotMeta[] = [];
 let shotsWarning: string | undefined;
+let uiVerificationPayload: unknown = null;
 
 function installFetch(): void {
   vi.stubGlobal(
@@ -229,6 +230,8 @@ function installFetch(): void {
     vi.fn(async (url: string) => {
       if (url.endsWith("/shots"))
         return json({ ok: true, shots: shotsPayload, warning: shotsWarning });
+      if (url.includes("/ui-verification"))
+        return json({ ok: true, evidence: uiVerificationPayload });
       if (url.includes("/api/health"))
         return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
       if (url.includes("/api/index"))
@@ -307,6 +310,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   shotsPayload = [];
   shotsWarning = undefined;
+  uiVerificationPayload = null;
 });
 
 describe("Changes → UI changes rows (#0611)", () => {
