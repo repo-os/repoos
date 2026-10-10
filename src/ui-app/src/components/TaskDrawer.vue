@@ -92,6 +92,7 @@ import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
 import { shotProblems, shotRows, uncapturedDeclared } from "../lib/shot-rows";
+import { handoffSummary, shotVerdict } from "../lib/handoff-verification";
 import type { DeclaredShot } from "../../../core/shot-plan.js";
 import type { ShotMeta } from "../types";
 import AddShotModal from "./AddShotModal.vue";
@@ -884,6 +885,25 @@ const shotWarning = computed(() => (ui.active ? repo.shotWarningFor(ui.active.id
 const uiHandoffVerification = computed(() =>
   ui.active ? repo.uiVerificationFor(ui.active.id) : undefined,
 );
+/**
+ * Per-shot verdicts for the handoff verification block (#0751). Display-only:
+ * each captured shot gets a `matches`/`check` badge derived from the step
+ * results the gate already records, plus a plain-words reason and the raw
+ * messages for the details toggle. The header sentence summarises the counts.
+ */
+const uiHandoffShots = computed(() => {
+  const caps = uiHandoffVerification.value?.captureDetails ?? [];
+  return caps.map((cap) => ({ cap, verdict: shotVerdict(cap) }));
+});
+const uiHandoffSummary = computed(() => handoffSummary(uiHandoffShots.value.map((s) => s.verdict)));
+/** Which shots have their raw details expanded (hidden by default, #0751). */
+const uiHandoffDetailsOpen = ref<Set<number>>(new Set());
+function toggleHandoffDetails(idx: number): void {
+  const next = new Set(uiHandoffDetailsOpen.value);
+  if (next.has(idx)) next.delete(idx);
+  else next.add(idx);
+  uiHandoffDetailsOpen.value = next;
+}
 const shotsViewerOpen = ref(false);
 const shotsViewerStart = ref(0);
 const shotsViewerShots = computed<ScreenshotShot[]>(() =>
@@ -5446,7 +5466,8 @@ watch(
             <div class="changes-summary-title">Handoff UI verification</div>
             <p class="ui-verification-meta">
               {{ repo.fmtDate(uiHandoffVerification.at) }}
-              · {{ uiHandoffVerification.captures }} capture(s)
+              <template v-if="uiHandoffShots.length"> · {{ uiHandoffSummary.sentence }}</template>
+              <template v-else> · {{ uiHandoffVerification.captures }} capture(s)</template>
             </p>
             <p v-if="uiHandoffVerification.sourceIdentity" class="ui-verification-detail">
               Tested tree {{ uiHandoffVerification.sourceIdentity }}
@@ -5477,24 +5498,62 @@ watch(
                 }}</span>
               </li>
             </ul>
-            <!-- #0734: exact URL + assertion outcomes per capture, so a reviewer
-                 sees what was actually verified, not just "clean console". -->
-            <ul
-              v-if="uiHandoffVerification.captureDetails?.length"
-              class="ui-verification-captures"
+            <!-- #0751: one line per shot — a `matches`/`check` badge, the caption,
+                 the thumbnail — with the raw selector/timeout messages collapsed
+                 under a "details" toggle so the verdict reads at a glance while
+                 the exact message stays one click away. Display-only: the badge
+                 is derived from the step results the gate already records. -->
+            <div
+              v-if="uiHandoffShots.length"
+              class="ui-verification-shots"
+              aria-label="Captured shots and verdicts"
             >
-              <li v-for="(cap, idx) in uiHandoffVerification.captureDetails" :key="idx">
-                <span class="mono">{{ cap.label || cap.target + cap.route }}</span>
-                <span class="ui-verification-detail">
-                  · {{ cap.routeMatched ? "route matched" : "WRONG ROUTE" }}
-                  <template v-if="cap.redirectNote"> — {{ cap.redirectNote }}</template>
-                  <template v-if="cap.assertionsChecked">
-                    · {{ cap.assertionsPassed }}/{{ cap.assertionsChecked }} assertion(s)
-                  </template>
-                </span>
-                <span class="ui-verification-detail" :title="cap.url">{{ cap.url }}</span>
-              </li>
-            </ul>
+              <div
+                v-for="(row, idx) in uiHandoffShots"
+                :key="idx"
+                class="ui-verification-shot"
+                :data-verdict="row.verdict.verdict"
+              >
+                <img
+                  v-if="row.cap.shot"
+                  class="ui-verification-shot-thumb"
+                  :src="row.cap.shot.url"
+                  :alt="row.cap.label || row.cap.target + row.cap.route"
+                  @click="openShotsViewer(idx)"
+                />
+                <span v-else class="ui-verification-shot-thumb ui-verification-shot-thumb-empty" />
+                <div class="ui-verification-shot-body">
+                  <div class="ui-verification-shot-line">
+                    <span class="ui-verification-badge" :data-verdict="row.verdict.verdict">
+                      {{ row.verdict.verdict }}
+                    </span>
+                    <span class="ui-verification-shot-caption mono">{{
+                      row.cap.label || row.cap.target + row.cap.route
+                    }}</span>
+                  </div>
+                  <p v-if="row.verdict.verdict === 'check'" class="ui-verification-shot-reason">
+                    {{ row.verdict.reason }}
+                  </p>
+                  <button
+                    v-if="row.verdict.details.length"
+                    type="button"
+                    class="ui-verification-details-toggle"
+                    :aria-expanded="uiHandoffDetailsOpen.has(idx)"
+                    @click="toggleHandoffDetails(idx)"
+                  >
+                    {{ uiHandoffDetailsOpen.has(idx) ? "Hide details" : "Details" }}
+                  </button>
+                  <ul
+                    v-if="row.verdict.details.length && uiHandoffDetailsOpen.has(idx)"
+                    class="ui-verification-shot-details"
+                  >
+                    <li v-for="(detail, di) in row.verdict.details" :key="di" class="mono">
+                      {{ detail }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </section>
           <!-- Captured preview shots (#0611). Same one-per-row shape as the New
                task / New input pending attachments (ff-pending-*), because a
