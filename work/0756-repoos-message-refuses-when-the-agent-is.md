@@ -2,14 +2,14 @@
 id: "0756"
 title: repoos message refuses when the agent is busy instead of queuing it
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: infra
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-10T14:10:58Z"
-updated_at: "2026-10-10T14:10:58Z"
+updated_at: "2026-10-10T14:12:21Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 ## Activity
 
 - 2026-10-10T14:10:58Z · created · njachowski@gmail.com
+- 2026-10-10T14:12:21Z · status inbox→ready
