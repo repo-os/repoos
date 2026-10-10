@@ -2,7 +2,7 @@
 id: "0756"
 title: repoos message refuses when the agent is busy instead of queuing it
 type: bug
-status: active
+status: review
 priority: p1
 area: infra
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-message-refuses-when-the-agent-is
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-10T14:10:58Z"
-updated_at: "2026-10-10T17:54:33Z"
+updated_at: "2026-10-10T17:54:37Z"
 review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-10T15:58:58.515Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -83,3 +83,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T17:50:07Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-10T17:53:25Z · body
 - 2026-10-10T17:54:33Z · body
+- 2026-10-10T17:54:37Z · status active→review
