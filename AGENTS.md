@@ -548,7 +548,15 @@ cannot tell from the code alone:
   captures nothing without a declared route (#0603). **Shot hygiene (#0613,
   #0743):** a missing `highlight`/`selector`/`waitFor` target records a
   visible warning and still captures — it does not fail handoff; duplicates with
-  the same target/route/steps/selector collapse to one capture. **Whole-window
+  the same target/route/steps/selector collapse to one capture. **Loading and
+  stale captures (#0755):** reach a populated view with a `route` or `state`
+  fixture, not a `steps` click on a placeholder selector (`data-task-id "9999"`
+  and the like) — such a step times out, the capture lands on a loading state
+  ("Loading changes…"), and it is reported as a failed step (`check`), never
+  `matches`. Each handoff capture also stores the tree it ran on; when that tree
+  differs from the branch HEAD the review will use, the Changes tab flags the
+  capture **Stale capture** and no shot is shown as `matches` — re-run the
+  handoff capture on the final tree before requesting review. **Whole-window
   default (#0613):** declared shots capture the whole visible viewport
   (`fullPage: false`) with changed elements outlined via `highlight`;
   `selector` (element crop) is the exception, `fullPage` stays off. For tabbed
