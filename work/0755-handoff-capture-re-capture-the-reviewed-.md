@@ -86,3 +86,4 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 - 2026-10-10T17:17:59Z · body
 - 2026-10-10T17:24:26Z · status active→review
 - 2026-10-10T17:24:44Z · note: click [data-task-id="9999"]: click: Timeout 5000ms exceeded. on /
+- 2026-10-10T17:24:44Z · note: click [data-test-id="task-tab-changes"]: click: Timeout 5000ms exceeded. on /
