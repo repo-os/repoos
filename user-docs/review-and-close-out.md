@@ -330,7 +330,8 @@ out and left the view loading cannot be mistaken for real evidence (#0755).
 the Changes tab compares that to the branch HEAD the review will use. When they
 differ — a fix landed after the capture — the UI changes section is flagged
 **Stale capture** and the shot reads `check`, never `matches`; re-run the
-handoff capture on the final tree. **Whole-window default (#0613):** declared shots capture the whole
+handoff capture on the final tree.
+**Whole-window default (#0613):** declared shots capture the whole
 visible viewport (`fullPage: false`) with changed elements outlined via
 `highlight`; `selector` (element crop) is the exception, and `fullPage` stays
 off. For tabbed views, prefer `?tab=<id>` routes (e.g. `/agents?tab=detected`)
