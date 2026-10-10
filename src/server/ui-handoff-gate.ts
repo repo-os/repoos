@@ -75,6 +75,15 @@ export interface UiHandoffGateCapture {
   shot?: { name: string; path: string; url: string };
   /** Non-blocking highlight/selector/step misses (#0743). */
   targetWarnings?: string[];
+  /**
+   * #0753: the issues this capture produced — its console errors, failed
+   * same-origin requests, horizontal overflow, and a blank-looking PNG, plus the
+   * route/assertion issues the gate derives from THIS capture. Issues belong to
+   * a shot, so they ride on the capture rather than only in the handoff-wide
+   * `issues` list, which lets the Changes tab show them in that shot's popover
+   * instead of repeating every issue on every row.
+   */
+  issues?: PageGateIssue[];
 }
 
 export interface UiHandoffGateEvidence {
@@ -520,6 +529,13 @@ export async function runUiHandoffGate(
           }
         }
         allIssues.push(...issues);
+        // #0753: issues belong to the shot that produced them. Start the
+        // capture's own list with what the page gate collected (console errors,
+        // failed same-origin requests, overflow), then add the route/blank/
+        // assertion issues the gate derives from this same capture below — so
+        // the Changes tab can show them in THAT shot's popover rather than
+        // repeating the whole handoff's list on every row.
+        const captureIssues: PageGateIssue[] = [...issues];
 
         // #0743: missing highlight/selector/step targets are visible warnings only.
         for (const msg of warnings) {
@@ -536,24 +552,30 @@ export async function runUiHandoffGate(
         let redirectNote: string | undefined;
         if (!matched) {
           redirectNote = `declared route ${entry.route} but the browser landed on ${finalRoute} (login or redirect?)`;
-          allIssues.push({
+          const routeIssue: PageGateIssue = {
             kind: "route",
             message: `${entry.label ?? `${entry.target}${entry.route}`}: ${redirectNote} (captured ${finalUrl})`,
             url: finalUrl,
-          });
+          };
+          allIssues.push(routeIssue);
+          captureIssues.push(routeIssue);
         }
 
         // #0734: required assertions must hold.
         const blockingAssertions = assertionOutcomes.filter((o) => o.blocking);
         for (const outcome of blockingAssertions) {
-          allIssues.push(assertionIssue(entry, finalUrl, outcome.detail));
+          const issue = assertionIssue(entry, finalUrl, outcome.detail);
+          allIssues.push(issue);
+          captureIssues.push(issue);
         }
 
         if (blank) {
-          allIssues.push({
+          const blankIssue: PageGateIssue = {
             kind: "blank",
             message: `blank-looking screenshot for ${entry.target}${entry.route}`,
-          });
+          };
+          allIssues.push(blankIssue);
+          captureIssues.push(blankIssue);
           blankShots.push(`${entry.target}${entry.route}`);
         }
 
@@ -590,6 +612,7 @@ export async function runUiHandoffGate(
           assertionsPassed: assertionOutcomes.filter((o) => o.passed).length,
           assertionsChecked: assertionOutcomes.length,
           ...(warnings.length ? { targetWarnings: warnings } : {}),
+          ...(captureIssues.length ? { issues: captureIssues } : {}),
           shot: {
             name: storedMeta.name,
             path: storedMeta.path,
