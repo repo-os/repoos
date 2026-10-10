@@ -222,8 +222,11 @@ The first time two tasks are in flight at once, one of them may conflict with
 the primary branch on a real source file. This is **expected behaviour, not a failure
 state**:
 
-- A conflict on the closing task's own bookkeeping file is resolved from that
-  task branch.
+- A conflict whose **only** path is the closing task's own bookkeeping file
+  (`work/<id>-*.md`) is pure bookkeeping — RepoOS takes the primary branch's
+  copy and continues, with no engineer round-trip and no feature review needed
+  (#0754). This is why a stray status/activity-line conflict can never block a
+  Move to done.
 - A **narrow, provably-safe conflict** on a task that already passed review —
   both sides purely *adding* distinct lines at distinct places (the classic
   "two tasks each registered a new CLI command" shape), a lockfile, or
@@ -239,6 +242,8 @@ state**:
   automatically hands off to an engineer session **in the feature branch's own
   worktree** to merge the primary branch into the branch and resolve it there.
   When that session finishes, close-out is re-enqueued and retries on its own.
+  A conflict limited to the closing task's own bookkeeping file is the one
+  exception: it needs no prior review, as described above.
 
 The narrow path is deliberately conservative: staying inside a conflict hunk is
 **not** treated as proof of semantic safety. If a resolution would change
