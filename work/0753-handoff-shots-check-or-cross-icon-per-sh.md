@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-shots-check-or-cross-icon-per-sh
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T10:25:14Z"
+updated_at: "2026-10-10T10:27:09Z"
 ---
 ## Problem
 
@@ -45,6 +45,30 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - #0751 (the earlier verdict and details change this replaces in part)
 - #0750 (the task whose Changes tab showed the duplicate block)
 
+## Shots
+```json
+[
+{
+  "label": "Task drawer Changes tab — no duplicate Handoff UI verification block",
+  "target": "default",
+  "route": "/",
+  "highlight": ".ui-changes",
+  "steps": [
+    {
+      "click": "[data-task-id=\"9999\"]"
+    },
+    {
+      "click": "[data-test-id=\"task-tab-changes\"]"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "state": "board:withReviewTask"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-10T10:13:24Z · created · njachowski@gmail.com
@@ -55,3 +79,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T10:22:59Z · body
 - 2026-10-10T10:24:04Z · body
 - 2026-10-10T10:25:14Z · body
+- 2026-10-10T10:27:09Z · body: section Shots
