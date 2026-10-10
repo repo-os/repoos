@@ -78,6 +78,8 @@ import {
   removeWorktree,
   deleteBranch,
   pruneWorktrees,
+  shortHeadOf,
+  currentBranch,
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { checkGenericStatusPatch } from "../task-transitions.js";
@@ -87,7 +89,7 @@ import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-re
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
-import { readUiHandoffGateEvidence } from "../ui-handoff-gate.js";
+import { readUiHandoffGateEvidence, handoffTreeStatus } from "../ui-handoff-gate.js";
 import { localShotStore } from "../shots.js";
 import { computeTaskShotContext } from "../shot-context.js";
 import {
@@ -1049,8 +1051,36 @@ export const getTaskUiVerification: RouteHandler = (ctx, _req, res, params) => {
     return json(res, 404, { error: `Task #${taskId} not found` });
   }
   const evidence = readUiHandoffGateEvidence(config, taskId);
-  return json(res, 200, { ok: true, evidence });
+  // #0755: tie the evidence to the tree the review/close-out will use. The
+  // stored `sourceIdentity` is the tree the capture ran on; `reviewedHead` is
+  // the branch HEAD now, and `stale` says whether they differ. A stale capture
+  // is shown as such and never as verification.
+  const reviewedHead = branchHeadForTask(config, task);
+  const status = handoffTreeStatus(evidence, reviewedHead);
+  if (!evidence) return json(res, 200, { ok: true, evidence: null });
+  return json(res, 200, {
+    ok: true,
+    evidence: {
+      ...evidence,
+      reviewedHead,
+      stale: status === "stale",
+    },
+  });
 };
+
+/**
+ * The branch HEAD sha the review/close-out will use (#0755): the task's worktree
+ * when it exists, else the root checkout when it is already on the branch.
+ * Null when neither resolves (no branch, no worktree, git unavailable) — the
+ * caller then treats the tree as unknown rather than claiming a match.
+ */
+function branchHeadForTask(config: RepoOSConfig, task: Task): string | null {
+  const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+  if (worktree) return shortHeadOf(worktree);
+  if (!task.branch) return null;
+  const current = currentBranch(config.root);
+  return current === task.branch ? shortHeadOf(config.root) : null;
+}
 
 export const getTaskShot: RouteHandler = (ctx, _req, res, params) => {
   const { config } = ctx;

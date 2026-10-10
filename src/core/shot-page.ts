@@ -139,11 +139,84 @@ async function applyHighlight(
   }
 }
 
+/**
+ * #0755: attribute-level and text signals that a page is still loading. Kept
+ * deliberately narrow so a mounted app is never mistaken for a loading one:
+ * only VISIBLE `aria-busy`/`data-loading` regions, common spinner/loader hooks,
+ * and text that starts with "Loading …" count.
+ */
+const LOADING_STATE_QUERY = `(() => {
+  const visible = (el) => {
+    if (!(el instanceof Element)) return false;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return false;
+    const style = window.getComputedStyle(el);
+    if (style.visibility === "hidden" || style.display === "none" || style.opacity === "0") return false;
+    return true;
+  };
+  const attrs = [
+    '[aria-busy="true"]',
+    '[data-loading="true"]',
+    '[data-loading-state="true"]',
+    ".loading",
+    ".spinner",
+    ".loader",
+    '[class*="loading"]',
+    '[class*="spinner"]',
+  ];
+  for (const sel of attrs) {
+    for (const el of document.querySelectorAll(sel)) {
+      if (visible(el)) return "loading indicator " + sel;
+    }
+  }
+  // Visible text that says "Loading …" — the "Loading changes…" state the
+  // task calls out. Matched on element text, so a mounted app with no loader
+  // text never trips it.
+  const body = document.body;
+  if (body) {
+    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode()) !== null) {
+      const text = (node.textContent || "").trim();
+      if (/^loading(\\b|\\s|…|\\.)/i.test(text) && visible(node.parentElement)) {
+        return "loading text \\"" + text.slice(0, 40) + "\\"";
+      }
+    }
+  }
+  return "";
+})()`;
+
+/**
+ * Probe the captured page for a still-visible loading state (#0755). Returns a
+ * short description (e.g. `loading text "Loading changes…"`) or empty when the
+ * page looks mounted. Best-effort: a driver without `evaluate` yields empty.
+ */
+async function detectLoadingState(page: ShotDriverPage): Promise<string> {
+  const evaluatable = page as unknown as { evaluate?: PageEvaluate };
+  const evaluate = evaluatable.evaluate;
+  if (typeof evaluate !== "function") return "";
+  try {
+    const found = (await evaluate.call(page, LOADING_STATE_QUERY, "")) as string | undefined;
+    return typeof found === "string" ? found : "";
+  } catch {
+    return "";
+  }
+}
+
 export interface ShotCaptureMissHandlers {
   onHighlightMiss?: (selector: string, route: string) => void;
   onSelectorMiss?: (selector: string, route: string) => void;
   /** Step selector timeouts become warnings instead of aborting capture (#0743). */
   onStepMiss?: (message: string, route: string) => void;
+  /**
+   * #0755: after the steps and settle, the page still shows a loading state
+   * (a spinner, `aria-busy`, "Loading changes…"). A capture of a loading page
+   * is not the declared evidence — the route matched but the content never
+   * rendered — so the caller records this as a FAILED step, not a passing
+   * capture. Best-effort: a driver without `evaluate` cannot probe, and the
+   * capture proceeds.
+   */
+  onLoadingState?: (message: string, route: string) => void;
 }
 
 /**
@@ -204,7 +277,7 @@ export async function captureShotPage(
   options: ShotCaptureOptions,
   misses: ShotCaptureMissHandlers = {},
 ): Promise<Buffer> {
-  const { onHighlightMiss, onSelectorMiss, onStepMiss } = misses;
+  const { onHighlightMiss, onSelectorMiss, onStepMiss, onLoadingState } = misses;
   await page.goto(url, { waitUntil: "load", timeout: SHOT_NAV_TIMEOUT_MS });
   try {
     await page.waitForLoadState("networkidle", { timeout: 10_000 });
@@ -213,6 +286,14 @@ export async function captureShotPage(
   }
   if (options.waitMs > 0) await page.waitForTimeout(options.waitMs);
   for (const step of entry.steps ?? []) await runStep(page, step, entry.route, onStepMiss);
+  // #0755: after the steps and settle the route may still be showing its loading
+  // state (a placeholder-selector step timed out and the content never
+  // rendered). Probe BEFORE the highlight/selector miss checks so a loading page
+  // is recorded even when a declared selector happens to match the spinner.
+  if (onLoadingState) {
+    const loading = await detectLoadingState(page);
+    if (loading) onLoadingState(`loading state detected: ${loading}`, entry.route);
+  }
   // Merged duplicate declarations carry each selector separately: apply and
   // miss-check them one by one, since a comma-joined list "matches" as soon as
   // any member does (#0613).
