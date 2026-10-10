@@ -62,9 +62,13 @@ const error = computed<string | null>(() =>
 
 const isEditing = computed(() => props.target !== null);
 
-/** The command hint changes with the kind — a server runs; an artifact builds. */
+/** The command hint changes with the kind — a server runs; an artifact builds; a process launches an app. */
 const commandPlaceholder = computed(() =>
-  draft.value.kind === "server" ? "bun run dev" : "bun run build:android",
+  draft.value.kind === "server"
+    ? "bun run dev"
+    : draft.value.kind === "artifact"
+      ? "bun run build:android"
+      : "swift run --package-path macos divot",
 );
 
 function submit(): void {
@@ -86,8 +90,9 @@ function close(): void {
         <div>
           <DialogTitle>{{ isEditing ? "Edit dev target" : "Add dev target" }}</DialogTitle>
           <DialogDescription class="dev-target-desc">
-            A thing you run yourself while developing — a local HMR server, a debug build. Only the
-            command declared here can be started; RepoOS never runs one typed elsewhere.
+            A thing you run yourself while developing — a local HMR server, a debug build, a native
+            app process. Only the command declared here can be started; RepoOS never runs one typed
+            elsewhere.
           </DialogDescription>
         </div>
         <DialogClose class="close-x" aria-label="Close" :disabled="busy">
@@ -132,6 +137,9 @@ function close(): void {
               <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
                 <SelectItem value="server">Server — long-lived, has a URL</SelectItem>
                 <SelectItem value="artifact">Artifact — a build that produces a file</SelectItem>
+                <SelectItem value="process"
+                  >Process — a native app or other long-lived process with no URL</SelectItem
+                >
               </SelectViewport>
             </SelectContent>
           </Select>
@@ -167,7 +175,7 @@ function close(): void {
             @blur="touched = true"
           />
         </div>
-        <div v-else class="field">
+        <div v-else-if="draft.kind === 'artifact'" class="field">
           <label for="dev-target-artifact">Output path</label>
           <input
             id="dev-target-artifact"
@@ -181,64 +189,77 @@ function close(): void {
             @blur="touched = true"
           />
         </div>
+        <div v-else class="field">
+          <p class="dev-target-hint">
+            A long-lived foreground process (a native macOS app, a daemon) with no URL and no build
+            artifact. It is reported running while its process is alive.
+          </p>
+        </div>
 
         <div class="field">
-          <div class="field-header">
-            <label for="dev-target-health-url">Health check (optional)</label>
-          </div>
-          <div v-if="draft.kind === 'server'" class="field-row">
-            <input
-              id="dev-target-health-url"
-              v-model="draft.healthCheckUrl"
-              type="text"
-              class="mono"
-              placeholder="http://localhost:5173/health"
-              spellcheck="false"
-              autocomplete="off"
-              :disabled="busy"
-              :aria-label="'Health check URL'"
-            />
-            <input
-              v-model="draft.healthCheckFile"
-              type="text"
-              class="mono"
-              placeholder="or a file that must exist"
-              spellcheck="false"
-              autocomplete="off"
-              :disabled="busy"
-              :aria-label="'Health check file'"
-            />
-          </div>
-          <div v-else class="field-row">
-            <input
-              v-model="draft.healthCheckFile"
-              id="dev-target-health-file"
-              type="text"
-              class="mono"
-              placeholder="dist/app-debug.apk (defaults to the output path)"
-              spellcheck="false"
-              autocomplete="off"
-              :disabled="busy"
-              :aria-label="'Health check file'"
-            />
-            <input
-              v-model="draft.healthCheckUrl"
-              type="text"
-              class="mono"
-              placeholder="or a URL that must answer"
-              spellcheck="false"
-              autocomplete="off"
-              :disabled="busy"
-              :aria-label="'Health check URL'"
-            />
-          </div>
-          <p class="dev-target-hint">
-            {{
-              draft.kind === "server"
-                ? "Polled until it answers before the target is reported running — leave blank to use the URL above."
-                : "The path that must exist before the target is reported built."
-            }}
-          </p>
+          <template v-if="draft.kind === 'process'">
+            <p class="dev-target-hint">
+              A process has no health check — it is reported running while its process is alive.
+            </p>
+          </template>
+          <template v-else>
+            <div class="field-header">
+              <label for="dev-target-health-url">Health check (optional)</label>
+            </div>
+            <div v-if="draft.kind === 'server'" class="field-row">
+              <input
+                id="dev-target-health-url"
+                v-model="draft.healthCheckUrl"
+                type="text"
+                class="mono"
+                placeholder="http://localhost:5173/health"
+                spellcheck="false"
+                autocomplete="off"
+                :disabled="busy"
+                :aria-label="'Health check URL'"
+              />
+              <input
+                v-model="draft.healthCheckFile"
+                type="text"
+                class="mono"
+                placeholder="or a file that must exist"
+                spellcheck="false"
+                autocomplete="off"
+                :disabled="busy"
+                :aria-label="'Health check file'"
+              />
+            </div>
+            <div v-else class="field-row">
+              <input
+                v-model="draft.healthCheckFile"
+                id="dev-target-health-file"
+                type="text"
+                class="mono"
+                placeholder="dist/app-debug.apk (defaults to the output path)"
+                spellcheck="false"
+                autocomplete="off"
+                :disabled="busy"
+                :aria-label="'Health check file'"
+              />
+              <input
+                v-model="draft.healthCheckUrl"
+                type="text"
+                class="mono"
+                placeholder="or a URL that must answer"
+                spellcheck="false"
+                autocomplete="off"
+                :disabled="busy"
+                :aria-label="'Health check URL'"
+              />
+            </div>
+            <p class="dev-target-hint">
+              {{
+                draft.kind === "server"
+                  ? "Polled until it answers before the target is reported running — leave blank to use the URL above."
+                  : "The path that must exist before the target is reported built."
+              }}
+            </p>
+          </template>
         </div>
 
         <div v-if="touched && error" class="ff-error" role="alert">{{ error }}</div>
