@@ -1783,7 +1783,7 @@ function blockingFiles(stderr: string): string[] {
  * conflict. This is the single definition of "a real conflict" shared by the
  * real merge and `mergeBranch`'s dry-run pre-flight, so the two can never drift.
  */
-function isResolvableConflict(
+export function isResolvableConflict(
   path: string,
   opts: { autoResolve?: string[]; autoResolveOurs?: string[] },
 ): boolean {

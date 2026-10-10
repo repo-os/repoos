@@ -12,7 +12,7 @@
  * is empty the moment the conflict is resolved.
  */
 
-import { runGit } from "../core/git.js";
+import { isResolvableConflict, runGit } from "../core/git.js";
 
 export interface MergeConflictReport {
   /** Whether the git probe ran cleanly (false = see `error`). */
@@ -109,13 +109,18 @@ export function conflictPatchForContent(filename: string, content: string): stri
 
 /**
  * Probe merging `branch` into the checkout's current HEAD (main) and describe
- * every conflicted file. Paths under `ignorePrefixes` (task bookkeeping the
- * close-out auto-resolves) are left out, matching what the pipeline reports.
+ * every conflicted file.
+ *
+ * Paths under `ignorePrefixes` are left out. `autoResolve` / `autoResolveOurs`
+ * (the close-out merge's own options, via `isResolvableConflict`) exclude
+ * exactly the paths the close-out would auto-resolve — so the tab's file list
+ * matches the paths a refusal names, including when the conflict is the closing
+ * task's own bookkeeping file (#0754).
  */
 export async function computeMergeConflict(
   root: string,
   branch: string,
-  opts: { ignorePrefixes?: string[] } = {},
+  opts: { ignorePrefixes?: string[]; autoResolve?: string[]; autoResolveOurs?: string[] } = {},
 ): Promise<MergeConflictReport> {
   const empty = { conflicted: false, patch: "", files: [], truncated: false };
   const run = await runGit(
@@ -135,7 +140,9 @@ export async function computeMergeConflict(
   // Output: the merged tree's oid, then one conflicted path per line.
   const [tree, ...paths] = run.stdout.split("\n").filter((l) => l.trim() !== "");
   const ignore = opts.ignorePrefixes ?? [];
-  const wanted = [...new Set(paths)].filter((p) => !ignore.some((pre) => p.startsWith(pre)));
+  const resolvedLikeMerge = (p: string): boolean =>
+    ignore.some((pre) => p.startsWith(pre)) || isResolvableConflict(p, opts);
+  const wanted = [...new Set(paths)].filter((p) => !resolvedLikeMerge(p));
   if (!tree || !/^[0-9a-f]{40,64}$/.test(tree)) {
     return {
       ok: false,
