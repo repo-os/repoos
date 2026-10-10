@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-capture-re-capture-the-reviewed-
 created_at: "2026-10-10T14:10:28Z"
-updated_at: "2026-10-10T18:18:11Z"
+updated_at: "2026-10-10T18:18:55Z"
 review_passes: 3
 review_rounds: 1
 ---
