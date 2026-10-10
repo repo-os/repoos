@@ -135,7 +135,7 @@ describe("message queueing", () => {
       const startRes1 = runner.start(t, "feat/order-test", agent, { cwd });
       expect(startRes1.ok).toBe(true);
 
-      // Queue two messages
+      // Queue two messages while running
       const sendRes1 = runner.send(t.id, "Message 1", agent);
       expect(sendRes1.queued).toBe(true);
 
@@ -148,6 +148,11 @@ describe("message queueing", () => {
       expect(queuedMsgs?.length).toBe(2);
       expect(queuedMsgs?.[0].text).toBe("Message 1");
       expect(queuedMsgs?.[1].text).toBe("Message 2");
+      expect(queuedMsgs?.[0].text).toBe("Message 1");
+      expect(queuedMsgs?.[1].text).toBe("Message 2");
+      // Verify they maintain order
+      const queuedTexts = queuedMsgs?.map((m) => m.text) ?? [];
+      expect(queuedTexts).toEqual(["Message 1", "Message 2"]);
     } finally {
       runner.dispose();
       process.env.PATH = oldPath;
