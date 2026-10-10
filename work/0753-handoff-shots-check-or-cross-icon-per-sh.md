@@ -138,3 +138,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T13:00:51Z · body
 - 2026-10-10T13:02:01Z · body
 - 2026-10-10T13:08:22Z · status active→review
+- 2026-10-10T13:08:22Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
