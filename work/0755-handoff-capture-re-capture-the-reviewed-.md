@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-capture-re-capture-the-reviewed-
 created_at: "2026-10-10T14:10:28Z"
-updated_at: "2026-10-10T17:24:26Z"
+updated_at: "2026-10-10T17:24:44Z"
 ---
 ## Problem
 
@@ -85,3 +85,4 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 - 2026-10-10T17:17:45Z · body
 - 2026-10-10T17:17:59Z · body
 - 2026-10-10T17:24:26Z · status active→review
+- 2026-10-10T17:24:44Z · note: click [data-task-id="9999"]: click: Timeout 5000ms exceeded. on /
