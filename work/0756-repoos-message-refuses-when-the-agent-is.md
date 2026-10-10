@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 cli_override: claude code
-model_override: default
+model_override: haiku
 created_at: "2026-10-10T14:10:58Z"
-updated_at: "2026-10-10T14:12:39Z"
+updated_at: "2026-10-10T14:12:40Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T14:10:58Z · created · njachowski@gmail.com
 - 2026-10-10T14:12:21Z · status inbox→ready
 - 2026-10-10T14:12:39Z · cli_override, model_override
+- 2026-10-10T14:12:40Z · model_override
