@@ -935,4 +935,48 @@ describe("captureShotPage loading-state detection (#0755)", () => {
     );
     expect(misses[0]).toContain('loading text "Loading changes…"');
   });
+
+  // A populated page that merely carries a loading-ish class or a hidden
+  // spinner must NOT be flagged — the handler is narrow on purpose (review
+  // round 1: broad class globs would flip a good capture to `check`).
+  it("does not flag a populated page whose only loading-ish signal is a class", async () => {
+    class FakeElement {
+      parentElement: FakeElement | null = null;
+      constructor(readonly textContent: string) {}
+      getBoundingClientRect() {
+        return { width: 10, height: 10 };
+      }
+    }
+    const body = new FakeElement("");
+    const rendered = new FakeElement("Saved changes");
+    rendered.parentElement = body;
+    const doc = {
+      body,
+      // A `.loading-skeleton` element is present but this selector is NOT part
+      // of the (narrow) query — only aria-busy / data-loading are.
+      createTreeWalker: () => {
+        const nodes = [rendered];
+        let i = 0;
+        return { nextNode: () => (i < nodes.length ? nodes[i++]! : null) };
+      },
+      querySelectorAll: () => [],
+    };
+    const page = fakePage("", { evaluate: false });
+    (page as unknown as { evaluate: unknown }).evaluate = async (script: string) =>
+      new Function("document", "NodeFilter", "window", "Element", `return ${script}`)(
+        doc,
+        { SHOW_TEXT: 4 },
+        { getComputedStyle: () => ({}) },
+        FakeElement,
+      );
+    const misses: string[] = [];
+    await captureShotPage(
+      page,
+      "http://x/",
+      { route: "/" },
+      { waitMs: 0, fullPage: false },
+      { onLoadingState: (message) => misses.push(message) },
+    );
+    expect(misses).toEqual([]);
+  });
 });
