@@ -2,14 +2,14 @@
 id: "0755"
 title: "Handoff capture: re-capture the reviewed tree and stop placeholder selectors"
 type: bug
-status: active
+status: review
 priority: p2
 area: [server, ui]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-capture-re-capture-the-reviewed-
 created_at: "2026-10-10T14:10:28Z"
-updated_at: "2026-10-10T17:17:59Z"
+updated_at: "2026-10-10T17:24:26Z"
 ---
 ## Problem
 
@@ -53,13 +53,13 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 "route": "/",
 "steps": [
 {
-  "click": "[data-task-id=\"9999\"]"
+"click": "[data-task-id=\"9999\"]"
 },
 {
-  "click": "[data-test-id=\"task-tab-changes\"]"
+"click": "[data-test-id=\"task-tab-changes\"]"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ],
 "state": "board:withReviewTask"
@@ -84,3 +84,4 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 - 2026-10-10T17:16:56Z · body: section Shots
 - 2026-10-10T17:17:45Z · body
 - 2026-10-10T17:17:59Z · body
+- 2026-10-10T17:24:26Z · status active→review
