@@ -2,7 +2,7 @@
 id: "0752"
 title: "Dev targets for native macOS apps: run, restart and show logs for a non-URL process"
 type: feature
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/dev-targets-for-native-macos-apps-run-re
 model_override: opencode/big-pickle
 created_at: "2026-10-09T20:30:41Z"
-updated_at: "2026-10-10T00:52:55Z"
+updated_at: "2026-10-10T01:54:02Z"
 ---
 ## Problem
 
@@ -39,3 +39,4 @@ Motivating project: divot (`~/code/nick/divot`). Keep Divot's own repoos.toml en
 - 2026-10-10T00:50:52Z · status inbox→ready
 - 2026-10-10T00:52:32Z · model_override
 - 2026-10-10T00:52:55Z · status ready→active, branch
+- 2026-10-10T01:54:02Z · status active→review
