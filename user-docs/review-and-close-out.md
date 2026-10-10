@@ -328,8 +328,8 @@ a failed step, not a pass — so a placeholder `click`/`waitFor` step that timed
 out and left the view loading cannot be mistaken for real evidence (#0755).
 **Stale captures (#0755):** each handoff capture stores the tree it ran on, and
 the Changes tab compares that to the branch HEAD the review will use. When they
-differ — a fix landed after the capture — the UI changes section flags it
-**STALE** and the shot reads `check`, never `matches`; re-run the
+differ — a fix landed after the capture — the UI changes section shows a
+**Stale capture** alert and the shot reads `check`, never `matches`; re-run the
 handoff capture on the final tree.
 **Whole-window default (#0613):** declared shots capture the whole
 visible viewport (`fullPage: false`) with changed elements outlined via
