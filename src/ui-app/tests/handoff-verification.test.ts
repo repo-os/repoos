@@ -18,10 +18,7 @@ import {
   shotVerdict,
   verdictSentence,
 } from "../src/lib/handoff-verification";
-import type {
-  UiHandoffCaptureEvidence,
-  UiHandoffVerificationEvidence,
-} from "../src/types";
+import type { UiHandoffCaptureEvidence, UiHandoffVerificationEvidence } from "../src/types";
 
 function capture(over: Partial<UiHandoffCaptureEvidence> = {}): UiHandoffCaptureEvidence {
   return {
