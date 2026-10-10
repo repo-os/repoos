@@ -2,7 +2,7 @@
 id: "0752"
 title: "Dev targets for native macOS apps: run, restart and show logs for a non-URL process"
 type: feature
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/dev-targets-for-native-macos-apps-run-re
 model_override: opencode/big-pickle
 created_at: "2026-10-09T20:30:41Z"
-updated_at: "2026-10-10T01:45:51Z"
+updated_at: "2026-10-10T01:54:02Z"
 ---
 ## Problem
 
@@ -37,24 +37,24 @@ Motivating project: divot (`~/code/nick/divot`). Keep Divot's own repoos.toml en
 ```json
 [
 {
-  "label": "Add-dev-target dialog: native app process kind and copy",
-  "target": "default",
-  "route": "/settings?tab=advanced",
-  "highlight": ".dev-target-modal",
-  "steps": [
-    {
-      "click": "[data-test-id=\"dev-targets-add\"]"
-    },
-    {
-      "waitMs": 400
-    }
-  ]
+"label": "Add-dev-target dialog: native app process kind and copy",
+"target": "default",
+"route": "/settings?tab=advanced",
+"highlight": ".dev-target-modal",
+"steps": [
+  {
+    "click": "[data-test-id=\"dev-targets-add\"]"
+  },
+  {
+    "waitMs": 400
+  }
+]
 },
 {
-  "label": "Dev page empty state naming the process kind",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-empty"
+"label": "Dev page empty state naming the process kind",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-empty"
 }
 ]
 ```
@@ -67,3 +67,4 @@ Motivating project: divot (`~/code/nick/divot`). Keep Divot's own repoos.toml en
 - 2026-10-10T00:52:55Z · status ready→active, branch
 - 2026-10-10T01:41:23Z · body
 - 2026-10-10T01:45:51Z · body: section Shots
+- 2026-10-10T01:54:02Z · status active→review
