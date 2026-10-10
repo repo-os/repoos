@@ -90,7 +90,12 @@ describe("shotVerdict (#0751)", () => {
     const blocking = shotVerdict(
       capture({
         assertions: [
-          { description: "review rows present", passed: false, detail: "matched 0", blocking: true },
+          {
+            description: "review rows present",
+            passed: false,
+            detail: "matched 0",
+            blocking: true,
+          },
         ],
         assertionsChecked: 1,
       }),
