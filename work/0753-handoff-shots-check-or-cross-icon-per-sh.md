@@ -2,14 +2,14 @@
 id: "0753"
 title: "Handoff shots: check or cross icon per shot, drop the duplicate verification block"
 type: feature
-status: active
+status: ready
 priority: p2
 area: [web, ui]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-shots-check-or-cross-icon-per-sh
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T12:11:07Z"
+updated_at: "2026-10-10T12:21:12Z"
 review_passes: 1
 ---
 ## Problem
@@ -54,3 +54,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T11:12:10Z · status active→review
 - 2026-10-10T11:26:50Z · note: review pass 1: good to go
 - 2026-10-10T12:11:07Z · status review→active
+- 2026-10-10T12:21:12Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
