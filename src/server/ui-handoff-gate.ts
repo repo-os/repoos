@@ -103,6 +103,48 @@ export interface UiHandoffGateEvidence {
   captureDetails?: UiHandoffGateCapture[];
   /** Non-blocking shot target warnings across all captures (#0743). */
   warnings?: string[];
+  /**
+   * #0755: set by the READER (route/review) to the branch HEAD at the moment
+   * the evidence was served, and whether it differs from the captured
+   * `sourceIdentity`. Stored on disk only as `sourceIdentity`; these are
+   * derived, so a capture can never claim to describe a tree it did not.
+   */
+  reviewedHead?: string;
+  stale?: boolean;
+}
+
+/** Whether a stored capture describes the currently reviewed HEAD (#0755). */
+export type HandoffTreeStatus = "current" | "stale" | "unknown";
+
+/**
+ * Compare the tree a handoff capture recorded (`sourceIdentity`) against the
+ * branch HEAD the review/close-out will use. `unknown` when either side is
+ * missing — an absence of evidence is never treated as a match (#0755).
+ */
+export function handoffTreeStatus(
+  evidence: Pick<UiHandoffGateEvidence, "sourceIdentity"> | null | undefined,
+  currentHead: string | null | undefined,
+): HandoffTreeStatus {
+  const captured = evidence?.sourceIdentity?.trim();
+  const head = currentHead?.trim();
+  if (!captured || !head) return "unknown";
+  return captured === head ? "current" : "stale";
+}
+
+/** Human sentence for a stale/unknown tree, or empty when it is current. */
+export function handoffTreeNote(
+  status: HandoffTreeStatus,
+  evidence: Pick<UiHandoffGateEvidence, "sourceIdentity"> | null | undefined,
+  currentHead: string | null | undefined,
+): string {
+  if (status === "current") return "";
+  if (status === "stale") {
+    return (
+      `STALE — handoff capture is for tree ${evidence?.sourceIdentity ?? "(unknown)"} ` +
+      `but the reviewed HEAD is ${currentHead ?? "(unknown)"}; re-capture on the final tree`
+    );
+  }
+  return "handoff capture has no recorded tree — cannot be tied to the reviewed HEAD";
 }
 
 export interface UiHandoffGateResult {
@@ -325,6 +367,11 @@ async function captureEntryWithGate(
           warnings.push(`selector ${selector} matched nothing on ${route}`);
         },
         onStepMiss: (message, route) => {
+          warnings.push(`${message} on ${route}`);
+        },
+        // #0755: a capture that lands on a loading state (after steps + settle)
+        // is a FAILED step, not a passing capture — the content never rendered.
+        onLoadingState: (message, route) => {
           warnings.push(`${message} on ${route}`);
         },
       },

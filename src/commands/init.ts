@@ -322,8 +322,13 @@ Problem / Desired UX / Acceptance criteria / Notes for AI is refused unless
 \`--force\` is passed.
 
 For tabbed views (e.g. Agents), prefer \`?tab=<id>\` routes
-(\`/agents?tab=detected\`) over click steps to reach the right tab, and always
-set \`highlight\` to the changed elements. A declared \`highlight\` or \`selector\`
+(\`/agents?tab=detected\`) over click steps to reach the right tab; a task drawer
+is reached the same way (\`/work?task=<id>&tab=changes\`), and always
+set \`highlight\` to the changed elements. Reach a populated state with a
+\`route\` or a named \`state\` fixture, never with \`steps\` that click a
+placeholder selector (\`data-task-id "9999"\` and the like) — such a step times
+out and the capture lands on a loading state instead of the content, which is
+reported as a failed step, not a match. A declared \`highlight\` or \`selector\`
 that matches nothing at capture time records a visible warning — capture still
 succeeds. Declared shots default to the whole visible window (\`fullPage:
 false\`) with changed elements outlined via \`highlight\`; \`selector\` (element

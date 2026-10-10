@@ -5,6 +5,8 @@ import {
   type PageGateListenerPage,
 } from "../../core/page-browser-gate.js";
 import {
+  handoffTreeNote,
+  handoffTreeStatus,
   readUiHandoffGateEvidence,
   runUiHandoffGate,
   type UiHandoffGateDeps,
@@ -601,6 +603,106 @@ describe("UI handoff verification gate (#0680)", () => {
         url: "/",
       }),
     );
+    vi.restoreAllMocks();
+  });
+});
+
+describe("handoff tree identity (#0755)", () => {
+  const temps: string[] = [];
+  afterEach(() => {
+    resetPreviewVerificationSlot();
+    for (const t of temps.splice(0)) rmSync(t, { recursive: true, force: true });
+  });
+
+  it("calls a capture current when it describes the reviewed HEAD", () => {
+    expect(handoffTreeStatus({ sourceIdentity: "16620c0f4" }, "16620c0f4")).toBe("current");
+  });
+
+  it("calls a capture stale when the reviewed HEAD has moved on", () => {
+    // The #0753 case: evidence for 4266b301b, reviewed HEAD 16620c0f4.
+    expect(handoffTreeStatus({ sourceIdentity: "4266b301b" }, "16620c0f4")).toBe("stale");
+  });
+
+  it("never treats a missing side as a match", () => {
+    expect(handoffTreeStatus(null, "16620c0f4")).toBe("unknown");
+    expect(handoffTreeStatus({ sourceIdentity: "16620c0f4" }, null)).toBe("unknown");
+    expect(handoffTreeStatus({ sourceIdentity: "  " }, "16620c0f4")).toBe("unknown");
+  });
+
+  it("names the two trees in a stale note and stays quiet when current", () => {
+    expect(handoffTreeNote("current", { sourceIdentity: "abc" }, "abc")).toBe("");
+    const stale = handoffTreeNote("stale", { sourceIdentity: "4266b301b" }, "16620c0f4");
+    expect(stale).toContain("4266b301b");
+    expect(stale).toContain("16620c0f4");
+    expect(stale).toContain("re-capture");
+    expect(handoffTreeNote("unknown", {}, null)).toContain("no recorded tree");
+  });
+
+  it("records a loading-state capture as a failed step, reported as check (#0755)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      workDir: "work",
+      uiVerification: { enabled: true },
+      preview: { targets: [{ name: "web", paths: ["src/ui-app/**"], command: "echo" }] },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "0755loading",
+      title: "t",
+      path: "work/0755loading.md",
+      absPath: join(root, "work/0755loading.md"),
+      status: "active",
+      branch: "feat/x",
+      area: "web",
+      body: "",
+    } as Task;
+    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+      entries: [
+        {
+          target: "web",
+          route: "/repo/commits/abc",
+          label: "Commit diff",
+          provenance: { kind: "declared", label: "Commit diff" },
+        },
+      ],
+      errors: [],
+      skips: [],
+      collapsed: [],
+    });
+    const mockBrowser: NonNullable<UiHandoffGateDeps["launchBrowser"]> = async () =>
+      ({
+        browser: { close: async () => {}, newPage: async () => ({}), newContext: async () => ({}) },
+        context: { newPage: async () => ({}), close: async () => {} },
+      }) as unknown as Awaited<ReturnType<NonNullable<UiHandoffGateDeps["launchBrowser"]>>>;
+    const result = await runUiHandoffGate(config, task, undefined, () => {}, {
+      startPreview: async () => ({ url: "http://127.0.0.1:9" }),
+      launchBrowser: mockBrowser,
+      // The declared step timed out and the route never rendered its rows, so
+      // the capture lands on "Loading changes…" — captured as a shot warning.
+      captureEntry: async () => ({
+        png: Buffer.alloc(5000),
+        issues: [],
+        blank: false,
+        warnings: [
+          'loading state detected: loading text "Loading changes…" on /repo/commits/abc',
+          'click [data-task-id="9999"]: Timeout 5000ms exceeded on /repo/commits/abc',
+        ],
+        finalUrl: "http://127.0.0.1:9/repo/commits/abc",
+        assertions: [],
+      }),
+    });
+    // A loading-state capture is a warning (a failed step), not a hard block, so
+    // the handoff still completes — but the shot is never presented as a match.
+    expect(result.ok).toBe(true);
+    expect(result.detail).toContain("shot warning");
+    const evidence = readUiHandoffGateEvidence(config, task.id);
+    const cap = evidence?.captureDetails?.[0];
+    expect(cap?.routeMatched).toBe(true);
+    expect(cap?.targetWarnings?.some((w) => w.includes("loading state detected"))).toBe(true);
+    expect(cap?.targetWarnings?.some((w) => w.includes('[data-task-id="9999"]'))).toBe(true);
     vi.restoreAllMocks();
   });
 });
