@@ -54,7 +54,7 @@ export interface DevTargetState {
 
 /** A target plus its config and live state, as returned to the API/CLI. */
 export interface DevTargetView extends DevTargetState {
-  kind: "server" | "artifact";
+  kind: "server" | "artifact" | "process";
   command: string;
   label: string;
   url?: string;
@@ -78,8 +78,11 @@ interface RegistryFile {
 interface RunningTarget {
   child: ChildProcess;
   processGroup: boolean;
-  /** True for a `server` kind target (long-lived); false for an `artifact`. */
-  server: boolean;
+  /**
+   * True for a long-lived target — a `server` or a `process` (both keep
+   * running until stopped); false for a one-shot `artifact` build that exits.
+   */
+  longLived: boolean;
 }
 
 const now = (): string => new Date().toISOString();
@@ -189,16 +192,16 @@ export class DevTargetManager {
       return { ok: false, error: message, target: this.view(t) };
     }
 
-    this.running.set(t.name, { child, processGroup, server: t.kind === "server" });
+    this.running.set(t.name, { child, processGroup, longLived: t.kind !== "artifact" });
     this.adopted.delete(t.name);
     this.setState(t.name, { status: "starting", pid, startedAt: now(), error: undefined });
 
     this.pipe(child, t.name);
 
     // A target that exits on its own is observed here: an `artifact` that
-    // exits 0 has succeeded; a `server` (or a non-zero exit) has failed —
-    // unless we are the ones stopping it, in which case `stopping` is set and
-    // the exit is expected.
+    // exits 0 has succeeded; a long-lived `server`/`process` (or a non-zero
+    // exit) has failed — unless we are the ones stopping it, in which case
+    // `stopping` is set and the exit is expected.
     child.on("error", (err) => {
       this.appendLog(t.name, `[repoos] process error: ${err.message}`);
       if (this.running.get(t.name)?.child === child) {
@@ -213,7 +216,7 @@ export class DevTargetManager {
       const current = this.states.get(t.name);
       if (current?.status === "stopped") return; // deliberate stop
       const ok = code === 0;
-      if (entry.server) {
+      if (entry.longLived) {
         const reason = `process exited${code !== null ? ` with code ${code}` : ""}${
           signal ? ` (${signal})` : ""
         }`;
@@ -243,9 +246,10 @@ export class DevTargetManager {
       return { ok: true, target: this.view(t) };
     }
 
-    // A `server` target is ready when its health check passes (its configured
-    // URL answers, or a healthCheck file exists). Without a health check, a
-    // still-live process a moment later is treated as running.
+    // A long-lived target (a `server` or a `process`) is ready when its health
+    // check passes (its configured URL answers, or a healthCheck file exists).
+    // Without a health check, a still-live process a moment later is running —
+    // which is exactly how a `process` target is healthy.
     const ready = await this.waitForReady(t, child);
     if (!ready.ok) {
       await this.killProcess(t.name);
@@ -262,10 +266,11 @@ export class DevTargetManager {
   }
 
   /**
-   * Wait until a started `server` target is ready: its `healthCheck.url`
-   * answers (or a `healthCheck.file` exists), or — with no health check — the
-   * process is still alive after a short settle. Returns `{ ok:false }` with a
-   * reason on failure, never throwing.
+   * Wait until a started long-lived target — a `server` or a `process` — is
+   * ready: its `healthCheck.url` answers (or a `healthCheck.file` exists), or —
+   * with no health check (always the case for a `process`) — the process is
+   * still alive after a short settle. Returns `{ ok:false }` with a reason on
+   * failure, never throwing.
    */
   private async waitForReady(
     t: DevTargetConfig,

@@ -1510,12 +1510,12 @@ export type DevTargetStatus = "running" | "stopped" | "starting" | "failed";
 /**
  * One declared dev target with its live state, from `GET /api/dev/targets`.
  * `kind` decides what the page shows: a `server` gets an open-URL link, an
- * `artifact` gets its output path. `label` is always present (the server
- * defaults it to `name`).
+ * `artifact` gets its output path, a `process` (a native app / non-URL process)
+ * gets neither. `label` is always present (the server defaults it to `name`).
  */
 export interface DevTargetView {
   name: string;
-  kind: "server" | "artifact";
+  kind: "server" | "artifact" | "process";
   /** The declared shell command, shown read-only (it is never editable here). */
   command: string;
   label: string;

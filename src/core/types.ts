@@ -741,10 +741,15 @@ export interface DevInspectorConfig {
 }
 
 /**
- * A dev target's kind (#0747). `server` is a long-lived process with a URL;
- * `artifact` is a build/compile that produces a file and exits.
+ * A dev target's kind (#0747, `process` added in #0752).
+ *
+ * - `server` — a long-lived process with a URL (an HMR web server).
+ * - `artifact` — a build/compile that produces a file and exits.
+ * - `process` — a long-lived foreground process with NO URL and no build
+ *   artifact (a native macOS app such as `swift run … divot`). It is healthy
+ *   while its process is alive, so it needs neither a `url` nor a `healthCheck`.
  */
-export type DevTargetKind = "server" | "artifact";
+export type DevTargetKind = "server" | "artifact" | "process";
 
 /** When a dev target counts as healthy, checked after start. */
 export interface DevHealthCheck {
@@ -762,17 +767,20 @@ export interface DevHealthCheck {
 export interface DevTargetConfig {
   /** Stable identity/display name, unique within the project. Required. */
   name: string;
-  /** `server` (long-lived, has a URL) or `artifact` (build output). Required. */
+  /** `server` (has a URL), `artifact` (build output) or `process` (no URL). */
   kind: DevTargetKind;
   /** Shell command run in the project's root checkout. Required. */
   command: string;
-  /** `server` target's URL, e.g. `http://localhost:5173`. Optional. */
+  /** `server` target's URL, e.g. `http://localhost:5173`. `process` never has one. */
   url?: string;
   /** `artifact` target's repo-relative output path. Optional. */
   artifactPath?: string;
   /** Human label shown in the UI; defaults to `name`. Optional. */
   label?: string;
-  /** Optional readiness check applied after start. */
+  /**
+   * Optional readiness check applied after start. Not used for a `process` —
+   * a process is healthy while its process is alive.
+   */
   healthCheck?: DevHealthCheck;
 }
 
