@@ -2209,6 +2209,10 @@
   color: var(--txt);
   font-size: 11px;
   line-height: 1.4;
+  /* #0753: a `data-tip` may carry several lines (the handoff shot verdict plus
+     its issues); `pre-line` keeps those breaks while still wrapping long lines.
+     Single-line tips are unchanged. */
+  white-space: pre-line;
   box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
   pointer-events: none;
 }
