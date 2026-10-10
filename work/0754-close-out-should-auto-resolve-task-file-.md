@@ -2,14 +2,14 @@
 id: "0754"
 title: Close-out should auto-resolve task-file-only merge conflicts instead of refusing
 type: bug
-status: ready
+status: active
 priority: p1
 area: infra
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/close-out-should-auto-resolve-task-file-
 created_at: "2026-10-10T12:57:27Z"
-updated_at: "2026-10-10T14:12:58Z"
+updated_at: "2026-10-10T14:13:00Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ AGENTS.md already says the narrow resolution path may take "the task's own bookk
 
 - 2026-10-10T12:57:27Z · created · njachowski@gmail.com
 - 2026-10-10T14:12:58Z · status inbox→ready
+- 2026-10-10T14:13:00Z · status ready→active, branch
