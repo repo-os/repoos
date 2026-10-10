@@ -258,7 +258,11 @@ describe("runLevelIssueLines (#0753)", () => {
   });
 
   it("does NOT re-list an issue a capture already owns", () => {
-    const issue = { kind: "console" as const, message: "TypeError: x is undefined", url: "/agents" };
+    const issue = {
+      kind: "console" as const,
+      message: "TypeError: x is undefined",
+      url: "/agents",
+    };
     const lines = runLevelIssueLines(
       evidence({
         issues: [issue],
