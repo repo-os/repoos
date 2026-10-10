@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T12:53:11Z"
+updated_at: "2026-10-10T12:54:52Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-10-10T12:21:48.960Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 2534079e to 6537a4c7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -133,3 +133,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T12:53:11Z · needs_input
 - 2026-10-10T12:53:11Z · status review→active
 - 2026-10-10T12:53:11Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-10-10T12:54:52Z · body
