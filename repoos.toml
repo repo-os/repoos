@@ -673,3 +673,28 @@ name = "data analyst"
 cli = "opencode"
 model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = false
+
+# Dev targets (#0747): the three RepoOS websites, started from the Dev page.
+[[dev.targets]]
+name = "landing"
+kind = "server"
+command = "cd landing && bun run dev -- --port 5173 --host 127.0.0.1 --strictPort"
+url = "http://127.0.0.1:5173"
+label = "Landing page (HMR)"
+healthCheck = { url = "http://127.0.0.1:5173/" }
+
+[[dev.targets]]
+name = "docs"
+kind = "server"
+command = "cd user-docs && bun run dev -- --port 5174 --host 127.0.0.1 --strictPort"
+url = "http://127.0.0.1:5174"
+label = "Docs site (HMR)"
+healthCheck = { url = "http://127.0.0.1:5174/" }
+
+[[dev.targets]]
+name = "ui"
+kind = "server"
+command = "bunx vite --config src/ui-app/vite.config.ts --port 5175 --host 127.0.0.1 --strictPort"
+url = "http://127.0.0.1:5175"
+label = "Main UI (HMR, needs repoos serve on 7171)"
+healthCheck = { url = "http://127.0.0.1:5175/" }
