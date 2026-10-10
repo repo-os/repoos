@@ -1,15 +1,11 @@
 ---
-last_close_out_gate_ms: 56534
-last_close_out_gate_at: "2026-10-10T14:10:42.764Z"
 id: "0753"
 title: "Handoff shots: check or cross icon per shot, drop the duplicate verification block"
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
+status: done
 priority: p2
 area: [web, ui]
+merged_commit: 16620c0f489c83204e76459d0b1faa736bd7f01b
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-shots-check-or-cross-icon-per-sh
@@ -18,7 +14,9 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T14:10:42Z"
+updated_at: "2026-10-10T14:10:52Z"
+last_close_out_gate_ms: 56534
+last_close_out_gate_at: "2026-10-10T14:10:42.764Z"
 review_passes: 8
 last_check_failure: "repoos check at 2026-10-10T12:21:48.960Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 2534079e to 6537a4c7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -174,4 +172,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T14:02:18Z · note: review pass 8: needs some work
 - 2026-10-10T14:02:18Z · needs_input
 - 2026-10-10T14:10:42Z · close-out gate completed in 57s
-
+- 2026-10-10T14:10:52Z · status review→done, release:success
