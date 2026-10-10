@@ -15,7 +15,7 @@ import { parseDevTargets } from "../../../core/dev-targets.js";
 /** One target as the Settings form holds it (health check flattened). */
 export interface DevTargetDraft {
   name: string;
-  kind: "server" | "artifact";
+  kind: "server" | "artifact" | "process";
   command: string;
   url: string;
   artifactPath: string;
@@ -27,7 +27,7 @@ export interface DevTargetDraft {
 /** A target as `safeConfigForBrowser` serializes it (`dev.targets`). */
 export interface DevTargetPayload {
   name: string;
-  kind: "server" | "artifact";
+  kind: "server" | "artifact" | "process";
   command: string;
   url?: string;
   artifactPath?: string;
@@ -78,6 +78,27 @@ export function targetFromDraft(d: DevTargetDraft): Record<string, unknown> {
 }
 
 /**
+ * The same draft as the shape `parseDevTargets` reads — the health check as the
+ * dotted `healthCheck.url` / `healthCheck.file` keys the flat parser yields.
+ * `targetFromDraft` flattens those for the config PATCH; the parser has to see
+ * them dotted, so validation uses this instead and can never accept a row the
+ * server would reject.
+ */
+function parseRowFromDraft(d: DevTargetDraft): Record<string, unknown> {
+  const row: Record<string, unknown> = {
+    name: d.name,
+    kind: d.kind,
+    command: d.command,
+    url: d.url,
+    artifactPath: d.artifactPath,
+    label: d.label,
+  };
+  if (d.healthCheckUrl.trim()) row["healthCheck.url"] = d.healthCheckUrl.trim();
+  if (d.healthCheckFile.trim()) row["healthCheck.file"] = d.healthCheckFile.trim();
+  return row;
+}
+
+/**
  * Validate one composed row, returning the parser's first error message or
  * null. `duplicateName` is the name already used by another row, so editing
  * cannot collide with a sibling.
@@ -86,7 +107,7 @@ export function devTargetError(
   draft: DevTargetDraft,
   options: { takenNames?: readonly string[]; selfName?: string } = {},
 ): string | null {
-  const parsed = parseDevTargets({ "dev.targets": [targetFromDraft(draft)] });
+  const parsed = parseDevTargets({ "dev.targets": [parseRowFromDraft(draft)] });
   if (parsed.errors.length) return parsed.errors[0]!;
   const name = draft.name.trim();
   const taken = (options.takenNames ?? []).filter(

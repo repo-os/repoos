@@ -2600,7 +2600,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: [],
       description:
-        "The things you run yourself while developing — a local HMR web server, a debug build — " +
+        "The things you run yourself while developing — a local HMR web server, a debug build, a native app process — " +
         "as opposed to task previews, which RepoOS manages for a task's worktree. Only commands " +
         "declared here can be started; edit them under Advanced → Dev targets.",
     },

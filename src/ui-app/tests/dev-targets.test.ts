@@ -44,6 +44,26 @@ function target(over: Partial<DevTargetConfig>): DevTargetConfig {
   return { name: "web", kind: "server", command: "true", ...over };
 }
 
+/** Whether a PID is alive (best-effort; signal 0 sends nothing). */
+function isAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Poll until a PID is gone (or the deadline passes), so a kill is given time to reap. */
+async function waitForDead(pid: number, ms = 2000): Promise<boolean> {
+  const deadline = Date.now() + ms;
+  while (Date.now() < deadline) {
+    if (!isAlive(pid)) return true;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return !isAlive(pid);
+}
+
 describe("parseDevTargets", () => {
   it("parses a valid server and artifact target", () => {
     const { targets, errors } = parseDevTargets({
@@ -90,7 +110,7 @@ describe("parseDevTargets", () => {
     const { errors } = parseDevTargets({
       "dev.targets": [{ name: "web", kind: "daemon", command: "x" }],
     });
-    expect(errors[0]).toContain('kind must be "server" or "artifact"');
+    expect(errors[0]).toContain('kind must be "server", "artifact" or "process"');
   });
 
   it("requires a command", () => {
@@ -108,6 +128,60 @@ describe("parseDevTargets", () => {
       parseDevTargets({ "dev.targets": [{ name: "apk", kind: "artifact", command: "x" }] })
         .errors[0],
     ).toContain("needs an artifactPath");
+  });
+
+  it("parses a process target with no url, artifactPath or healthCheck", () => {
+    const { targets, errors } = parseDevTargets({
+      "dev.targets": [
+        {
+          name: "divot",
+          kind: "process",
+          command: "swift run --package-path macos divot",
+          label: "Divot bar",
+        },
+      ],
+    });
+    expect(errors).toEqual([]);
+    expect(targets).toHaveLength(1);
+    expect(targets[0]).toMatchObject({
+      name: "divot",
+      kind: "process",
+      command: "swift run --package-path macos divot",
+      label: "Divot bar",
+    });
+    expect(targets[0].url).toBeUndefined();
+    expect(targets[0].artifactPath).toBeUndefined();
+    expect(targets[0].healthCheck).toBeUndefined();
+  });
+
+  it("points a URL-less server at kind = process instead of accepting it", () => {
+    const { errors } = parseDevTargets({
+      "dev.targets": [{ name: "divot", kind: "server", command: "swift run" }],
+    });
+    expect(errors[0]).toContain("needs a url");
+    expect(errors[0]).toContain('use kind = "process"');
+  });
+
+  it("rejects a url or an artifactPath on a process target", () => {
+    expect(
+      parseDevTargets({
+        "dev.targets": [{ name: "web", kind: "process", command: "x", url: "http://x" }],
+      }).errors[0],
+    ).toContain('a "process" target cannot have a url');
+    expect(
+      parseDevTargets({
+        "dev.targets": [{ name: "apk", kind: "process", command: "x", artifactPath: "dist/a" }],
+      }).errors[0],
+    ).toContain('a "process" target cannot have an artifactPath');
+  });
+
+  it("rejects a healthCheck on a process target", () => {
+    const { errors } = parseDevTargets({
+      "dev.targets": [
+        { name: "p", kind: "process", command: "x", healthCheck: { file: "ready.txt" } },
+      ],
+    });
+    expect(errors[0]).toContain('a "process" target cannot have a healthCheck');
   });
 
   it("rejects a url on an artifact and an artifactPath on a server", () => {
@@ -223,7 +297,7 @@ describe("loadConfig dev target wiring", () => {
         url: "http://localhost:5173/health",
       });
       expect(cfg.devTargetErrors?.length).toBe(1);
-      expect(cfg.devTargetErrors?.[0]).toContain('kind must be "server" or "artifact"');
+      expect(cfg.devTargetErrors?.[0]).toContain('kind must be "server", "artifact" or "process"');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -319,6 +393,52 @@ describe("DevTargetManager lifecycle", () => {
     }
   });
 
+  it("runs a process target (no URL) while its process lives, then stops it", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-process-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          targets: [
+            { name: "divot", kind: "process", command: 'bun -e "setTimeout(()=>{},60000)"' },
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      // No url and no healthCheck — a process is running as soon as it is
+      // still alive after the settle, which is its whole health check.
+      const start = await mgr.start("divot");
+      expect(start.ok).toBe(true);
+      expect(mgr.get("divot")?.kind).toBe("process");
+      expect(mgr.get("divot")?.status).toBe("running");
+      expect(mgr.get("divot")?.pid).toBeGreaterThan(0);
+
+      const stop = await mgr.stop("divot");
+      expect(stop.ok).toBe(true);
+      expect(mgr.get("divot")?.status).toBe("stopped");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("reports a process target that exits on its own as failed", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-process-exit-"));
+    const mgr = new DevTargetManager(
+      baseConfig({ targets: [{ name: "divot", kind: "process", command: "exit 5" }] }, dir),
+    );
+    try {
+      const result = await mgr.start("divot");
+      expect(result.ok).toBe(false);
+      expect(mgr.get("divot")?.status).toBe("failed");
+      expect(mgr.get("divot")?.error).toBeTruthy();
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("waits for a server target's health check URL before reporting running", async () => {
     // A tiny real HTTP server the dev target command boots, so the configured
     // healthCheck.url genuinely answers.
@@ -378,6 +498,38 @@ describe("DevTargetManager lifecycle", () => {
       expect(restarted.ok).toBe(true);
       expect(mgr.get("web")?.status).toBe("running");
       expect(mgr.get("web")?.pid).not.toBe(pid1);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("restart of a process target leaves no orphan behind", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-process-restart-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          targets: [
+            { name: "divot", kind: "process", command: 'bun -e "setTimeout(()=>{},60000)"' },
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      await mgr.start("divot");
+      const pid1 = mgr.get("divot")?.pid;
+      expect(pid1).toBeGreaterThan(0);
+
+      const restarted = await mgr.restart("divot");
+      expect(restarted.ok).toBe(true);
+      expect(mgr.get("divot")?.status).toBe("running");
+      const pid2 = mgr.get("divot")?.pid;
+      expect(pid2).not.toBe(pid1);
+
+      // The old process was killed as part of restart — nothing orphaned.
+      expect(await waitForDead(pid1!)).toBe(true);
+      expect(mgr.get("divot")?.pid).toBe(pid2);
     } finally {
       await mgr.stopAll();
       rmSync(dir, { recursive: true, force: true });
@@ -491,6 +643,35 @@ describe("dev target routes", () => {
 
       const stop = makeRes();
       await stopDevTarget(makeCtx(mgr), req, stop.res, { param1: "web" });
+      expect(stop.fake.status).toBe(200);
+      expect(stop.fake.payload.target.status).toBe("stopped");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("starts, then stops, a process target through the routes", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-route-process-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          targets: [
+            { name: "divot", kind: "process", command: 'bun -e "setTimeout(()=>{},60000)"' },
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const start = makeRes();
+      await startDevTarget(makeCtx(mgr), req, start.res, { param1: "divot" });
+      expect(start.fake.status).toBe(200);
+      expect(start.fake.payload.target.status).toBe("running");
+      expect(start.fake.payload.target.kind).toBe("process");
+
+      const stop = makeRes();
+      await stopDevTarget(makeCtx(mgr), req, stop.res, { param1: "divot" });
       expect(stop.fake.status).toBe(200);
       expect(stop.fake.payload.target.status).toBe("stopped");
     } finally {

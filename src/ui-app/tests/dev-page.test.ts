@@ -171,6 +171,32 @@ describe("DevView layout and state (#0748)", () => {
     expect(apk.text()).toContain("dist/app.apk");
   });
 
+  it("renders a process target with no URL link, its state and its log", async () => {
+    installFetch({
+      targets: [
+        target({
+          name: "divot",
+          label: "Divot bar",
+          kind: "process",
+          status: "running",
+          url: undefined,
+          log: ["building…", "launched"],
+        }),
+      ],
+    });
+    const wrapper = mountView();
+    await flush();
+
+    const card = wrapper.find(".dev-card");
+    expect(card.find(".dev-card-label").text()).toBe("Divot bar");
+    expect(card.find(".dev-chip--kind").text()).toBe("Process");
+    expect(card.find(".dev-state-pill").text()).toContain("Running");
+    // A process has no URL — no open link, but the note explains its state.
+    expect(card.find("a.dev-open").exists()).toBe(false);
+    expect(card.text()).toContain("running while the process is alive");
+    expect(card.find(".dev-log-body").text()).toContain("launched");
+  });
+
   it("shows a failed target's reason and its last output lines", async () => {
     installFetch({
       targets: [

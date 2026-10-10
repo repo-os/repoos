@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-10T01:54:53Z"
-review_passes: 1
 id: "0752"
 title: "Dev targets for native macOS apps: run, restart and show logs for a non-URL process"
 type: feature
@@ -12,6 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/dev-targets-for-native-macos-apps-run-re
 model_override: opencode/big-pickle
 created_at: "2026-10-09T20:30:41Z"
+updated_at: "2026-10-10T01:54:02Z"
 ---
 ## Problem
 
@@ -34,40 +33,10 @@ A declared dev target can run a native app process: the Dev page shows running /
 
 Motivating project: divot (`~/code/nick/divot`). Keep Divot's own repoos.toml entries as the reference fixture. Do not run long-lived processes while testing; use fake commands in tests.
 
-## Shots
-```json
-[
-{
-"label": "Add-dev-target dialog: native app process kind and copy",
-"target": "default",
-"route": "/settings?tab=advanced",
-"highlight": ".dev-target-modal",
-"steps": [
-{
-  "click": "[data-test-id=\"dev-targets-add\"]"
-},
-{
-  "waitMs": 400
-}
-]
-},
-{
-"label": "Dev page empty state naming the process kind",
-"target": "default",
-"route": "/dev",
-"highlight": ".dev-empty"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-09T20:30:41Z · created · njachowski@gmail.com
 - 2026-10-10T00:50:52Z · status inbox→ready
 - 2026-10-10T00:52:32Z · model_override
 - 2026-10-10T00:52:55Z · status ready→active, branch
-- 2026-10-10T01:41:23Z · body
-- 2026-10-10T01:45:51Z · body: section Shots
 - 2026-10-10T01:54:02Z · status active→review
-- 2026-10-10T01:54:53Z · note: review pass 1: good to go
-
