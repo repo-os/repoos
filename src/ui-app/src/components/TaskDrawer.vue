@@ -90,7 +90,12 @@ import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
-import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
+import {
+  isImageMime,
+  pendingToShots,
+  shotIndex,
+  type ScreenshotShot,
+} from "../lib/screenshot-viewer";
 import { shotProblems, shotRows, uncapturedDeclared } from "../lib/shot-rows";
 import { handoffSummary, shotVerdict } from "../lib/handoff-verification";
 import type { DeclaredShot } from "../../../core/shot-plan.js";
@@ -914,6 +919,14 @@ const shotsViewerShots = computed<ScreenshotShot[]>(() =>
 function openShotsViewer(index: number): void {
   shotsViewerStart.value = index;
   shotsViewerOpen.value = true;
+}
+/**
+ * Open the viewer on a handoff capture's thumbnail (#0751). The viewer renders
+ * `taskShots`, whose order need not match the evidence's capture order, so the
+ * index is resolved from the shot's url rather than trusting the capture index.
+ */
+function openHandoffShot(url: string): void {
+  openShotsViewer(shotIndex(shotsViewerShots.value, url));
 }
 
 // ---- add / delete shots from the drawer (#0627) ----
@@ -5519,7 +5532,7 @@ watch(
                   class="ui-verification-shot-thumb"
                   :src="row.cap.shot.url"
                   :alt="row.cap.label || row.cap.target + row.cap.route"
-                  @click="openShotsViewer(idx)"
+                  @click="openHandoffShot(row.cap.shot.url)"
                 />
                 <span v-else class="ui-verification-shot-thumb ui-verification-shot-thumb-empty" />
                 <div class="ui-verification-shot-body">
