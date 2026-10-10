@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-capture-re-capture-the-reviewed-
 created_at: "2026-10-10T14:10:28Z"
-updated_at: "2026-10-10T17:27:43Z"
+updated_at: "2026-10-10T17:29:46Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -50,11 +50,11 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 ```json
 [
 {
-  "label": "Board with a review task — the entry point to the task drawer Changes tab whose handoff verdict this task hardens",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-task-id=\"9999\"]",
-  "state": "board:withReviewTask"
+"label": "Board with a review task — the entry point to the task drawer Changes tab whose handoff verdict this task hardens",
+"target": "default",
+"route": "/",
+"highlight": "[data-task-id=\"9999\"]",
+"state": "board:withReviewTask"
 }
 ]
 ```
@@ -82,3 +82,4 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 - 2026-10-10T17:25:20Z · note: review pass 1: needs some work
 - 2026-10-10T17:25:20Z · status review→active
 - 2026-10-10T17:27:43Z · body: section Shots
+- 2026-10-10T17:29:46Z · body
