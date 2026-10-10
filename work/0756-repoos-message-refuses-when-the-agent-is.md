@@ -2,7 +2,7 @@
 id: "0756"
 title: repoos message refuses when the agent is busy instead of queuing it
 type: bug
-status: active
+status: review
 priority: p1
 area: infra
 assigned_to: ai
@@ -57,4 +57,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T15:08:38Z · body
 - 2026-10-10T17:09:35Z · body
 - 2026-10-10T17:10:14Z · body
-- 2026-10-10T17:16:29Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-10T17:16:29Z · status active→review
