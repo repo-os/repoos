@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-capture-re-capture-the-reviewed-
 created_at: "2026-10-10T14:10:28Z"
-updated_at: "2026-10-10T17:14:57Z"
+updated_at: "2026-10-10T17:15:29Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 - 2026-10-10T17:12:59Z · body
 - 2026-10-10T17:14:15Z · body
 - 2026-10-10T17:14:57Z · body
+- 2026-10-10T17:15:29Z · body
