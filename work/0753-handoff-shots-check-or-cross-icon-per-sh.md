@@ -2,7 +2,7 @@
 id: "0753"
 title: "Handoff shots: check or cross icon per shot, drop the duplicate verification block"
 type: feature
-status: review
+status: active
 priority: p2
 area: [web, ui]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/handoff-shots-check-or-cross-icon-per-sh
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T12:11:01Z"
+updated_at: "2026-10-10T12:11:07Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -122,3 +122,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T12:10:49Z · cli_override, model_override
 - 2026-10-10T12:10:51Z · model_override
 - 2026-10-10T12:11:01Z · needs_input (dev-error) dismissed by hello@repoos.org
+- 2026-10-10T12:11:07Z · status review→active
