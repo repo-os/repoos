@@ -215,7 +215,7 @@ describe("orphanHandoffSentence (#0753)", () => {
 });
 
 describe("captureIssueLines (#0753)", () => {
-  it("is empty for a shooting shot with no issues of its own", () => {
+  it("is empty for a matching shot with no issues of its own", () => {
     expect(captureIssueLines(capture())).toEqual([]);
   });
 
@@ -301,5 +301,28 @@ describe("runLevelIssueLines (#0753)", () => {
     );
     expect(lines.some((l) => l.includes("old console error"))).toBe(true);
     expect(lines.some((l) => l.includes("old overflow"))).toBe(true);
+  });
+
+  it("does NOT repeat a shot warning the capture already carries in its popover", () => {
+    // The gate appends " (captured <url>)" to the evidence-wide `warnings`; the
+    // capture's own `targetWarnings` hold the bare message. A single-shot
+    // handoff must not show the same warning in the popover AND under the list.
+    const lines = runLevelIssueLines(
+      evidence({
+        captureDetails: [capture({ targetWarnings: ["highlight .x matched nothing on /"] })],
+        warnings: ["highlight .x matched nothing on / (captured http://127.0.0.1:9000/agents)"],
+      }),
+    );
+    expect(lines).toEqual([]);
+  });
+
+  it("still lists a run-level warning no shot carries", () => {
+    const lines = runLevelIssueLines(
+      evidence({
+        captureDetails: [capture({ targetWarnings: ["highlight .x matched nothing on /"] })],
+        warnings: ["selector .plan matched nothing on / (captured http://127.0.0.1:9000/agents)"],
+      }),
+    );
+    expect(lines.some((l) => l.includes("[shot-warning] selector .plan"))).toBe(true);
   });
 });
