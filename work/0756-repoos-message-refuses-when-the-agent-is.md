@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-10T17:55:43Z"
-review_passes: 4
 id: "0756"
 title: repoos message refuses when the agent is busy instead of queuing it
 type: bug
@@ -13,6 +11,8 @@ branch: feat/repoos-message-refuses-when-the-agent-is
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-10T14:10:58Z"
+updated_at: "2026-10-10T18:00:35Z"
+review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-10T15:58:58.515Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
