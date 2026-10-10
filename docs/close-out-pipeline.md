@@ -821,6 +821,16 @@ cycle. `src/server/conflict-resolution.ts` owns the deterministic core:
   decisions/attention CLI registration shape). Anything else fails closed to the
   full cycle: an edit rather than an append, overlapping hunks, an unclassifiable
   path, or no prior review.
+- **A task-file-only conflict is the one exception to the prior-review rule
+  (#0754).** A set made up only of the closing task's own `work/<id>-*.md` is
+  pure bookkeeping — status/activity/branch, written by RepoOS on both sides —
+  and resolves by taking **main's copy** via `resolveTaskFileByTakingMain`, not
+  the union (the task file is an edit, and splicing two activity logs is never
+  right). Because that resolution is not a code change, it needs no feature
+  review to be safe; refusing here is what once bounced a task back to its
+  engineer over a file the maintainer had to resolve by hand. Any second path in
+  the set (code, generated output, another task's file) keeps the ordinary rules
+  and the prior-review requirement.
 - `resolveConflictByUnion` applies the union resolution (both sides preserved)
   only for a proven-insertions region; a diff3 base section (a genuine edit)
   refuses.
@@ -830,9 +840,10 @@ cycle. `src/server/conflict-resolution.ts` owns the deterministic core:
   `applyUnionResolution` can run in the candidate instead of failing the job
   after only logging/SSE.
 - `applyUnionResolution` (orchestrator) re-runs the merge in the candidate,
-  resolves only the classifier-approved paths, commits, records a
-  **resolution-delta** review (marker-free union verification), then continues
-  to the **combined gate** on the exact resolved tree — one gate run, not two.
+  resolves only the classifier-approved paths (the task file to main's copy,
+  declaration conflicts by union), commits, records a **resolution-delta**
+  review (marker-free verification), then continues to the **combined gate** on
+  the exact resolved tree — one gate run, not two.
 - The candidate records provenance (`createResolutionProvenanceStore`):
   approved feature SHA, main base SHA, conflict paths, resolution
   commit/tree, the **resolution-only** review verdict, and the gate result. The

@@ -1,7 +1,7 @@
 import type { Status, Agent, Task, RepoOSConfig } from "../../core/types.js";
 import type { RouteHandler, RouteContext } from "./types.js";
 import { json, readBody } from "./utils.js";
-import { agentsForConfig } from "../../core/config.js";
+import { agentsForConfig, bookkeepingDirs } from "../../core/config.js";
 import {
   patchTaskFile,
   deleteTaskFile,
@@ -82,7 +82,7 @@ import {
 import { guardReviewTransition } from "../review-guard.js";
 import { checkGenericStatusPatch } from "../task-transitions.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-release.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
@@ -3267,9 +3267,15 @@ export const getMergeConflictForTask: RouteHandler = async (ctx, _req, res, para
       conflict: { ok: true, conflicted: false, patch: "", files: [], truncated: false },
     });
   }
-  // Task bookkeeping under `work/` is auto-resolved by close-out, never a real conflict.
+  // Exclude exactly the paths the close-out merge auto-resolves — the closing
+  // task's own `work/<id>-*.md` (main's copy wins) and the other bookkeeping
+  // dirs — using the SAME predicate the merge does, via `isResolvableConflict`.
+  // So the tab lists the paths the close-out would actually refuse on, and the
+  // file list always matches the refusal (#0754).
+  const dirs = bookkeepingDirs(config);
   const conflict = await computeMergeConflict(config.root, task.branch, {
-    ignorePrefixes: [`${config.workDir}/`],
+    autoResolve: [relative(config.root, task.absPath)],
+    autoResolveOurs: [`${dirs.workDir}/`, `${dirs.inputsDir}/`, `${dirs.storiesDir}/`],
   });
   return json(res, 200, { ok: true, conflict });
 };

@@ -26,6 +26,7 @@ import {
   analyzeConflictForResolution,
   classifyConflictForTask,
   resolveConflictByUnion,
+  resolveTaskFileByTakingMain,
   type ConflictedFileSummary,
   type IntegrationResolutionProvenance,
 } from "../../server/conflict-resolution.js";
@@ -88,6 +89,43 @@ describe("classifyConflictResolution", () => {
   it("refuses a shortcut when there is no prior feature review/approval", () => {
     const verdict = classifyConflictResolution({
       files: [cliRegistrationConflict()],
+      hasPriorFeatureApproval: false,
+    });
+    expect(verdict).toEqual({ eligible: false, reason: "no-prior-feature-approval" });
+  });
+
+  it("auto-resolves a task-file-ONLY conflict with NO prior review (#0754)", () => {
+    // The closing task's own `work/<id>-*.md` is pure bookkeeping: taking
+    // main's copy is not a code change, so it needs no feature review to be
+    // safe, and refusing here is what bounced a task back to its engineer.
+    const ownFile: ConflictedFileSummary = {
+      path: "work/0023-slide-divot.md",
+      hunks: [[1, 5]],
+      insertionsOnly: [false],
+      isOwnTaskFile: true,
+    };
+    const verdict = classifyConflictResolution({
+      files: [ownFile],
+      hasPriorFeatureApproval: false,
+    });
+    expect(verdict).toEqual({
+      eligible: true,
+      classes: ["task-bookkeeping"],
+      reason: "only-bookkeeping",
+    });
+  });
+
+  it("still requires a prior review when the task file is joined by another path", () => {
+    // Publishing the set publishes the code too — the task-file exemption must
+    // not leak to a mixed conflict.
+    const ownFile: ConflictedFileSummary = {
+      path: "work/0023-slide-divot.md",
+      hunks: [[1, 5]],
+      insertionsOnly: [false],
+      isOwnTaskFile: true,
+    };
+    const verdict = classifyConflictResolution({
+      files: [ownFile, cliRegistrationConflict()],
       hasPriorFeatureApproval: false,
     });
     expect(verdict).toEqual({ eligible: false, reason: "no-prior-feature-approval" });
@@ -522,6 +560,65 @@ describe("resolveConflictByUnion", () => {
   });
 });
 
+describe("resolveTaskFileByTakingMain (#0754)", () => {
+  it("takes main's side of a task-file edit, discarding the branch's copy", () => {
+    const merged = [
+      "<<<<<<< HEAD",
+      "status: review",
+      "",
+      "main activity log",
+      "=======",
+      "status: active",
+      "",
+      "branch activity log",
+      ">>>>>>> feat/t",
+      "",
+    ].join("\n");
+    const r = resolveTaskFileByTakingMain(merged);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.resolved).toBe(1);
+      expect(r.content).toBe("status: review\n\nmain activity log\n");
+      expect(r.content).not.toContain("<<<<<<<");
+      expect(r.content).not.toContain("branch activity log");
+    }
+  });
+
+  it("resolves every region to main's side and leaves other lines intact", () => {
+    const merged = [
+      "---",
+      "<<<<<<< HEAD",
+      "a: main",
+      "=======",
+      "a: branch",
+      ">>>>>>> feat/t",
+      "middle",
+      "<<<<<<< HEAD",
+      "b: main",
+      "=======",
+      "b: branch",
+      ">>>>>>> feat/t",
+      "tail",
+    ].join("\n");
+    const r = resolveTaskFileByTakingMain(merged);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.content).toBe("---\na: main\nmiddle\nb: main\ntail");
+  });
+
+  it("refuses when main's side is empty (a modify/delete) rather than writing a truncated file", () => {
+    const merged = ["<<<<<<< HEAD", "=======", "branch only", ">>>>>>> feat/t"].join("\n");
+    expect(resolveTaskFileByTakingMain(merged)).toEqual({ ok: false });
+  });
+
+  it("passes conflict-free content through unchanged", () => {
+    expect(resolveTaskFileByTakingMain("status: done\n")).toEqual({
+      ok: true,
+      content: "status: done\n",
+      resolved: 0,
+    });
+  });
+});
+
 describe("analyzeConflictForResolution (real git)", () => {
   let repo: string;
   const sh = (cmd: string): void => {
@@ -623,5 +720,82 @@ describe("analyzeConflictForResolution (real git)", () => {
     // Both test files survive the union merge because neither side touched the
     // other's — the merge only conflicted on cli.ts.
     expect(analysis.files.map((f) => f.path)).toEqual(["cli.ts"]);
+  });
+
+  it("classifies a task-file-only conflict as eligible with NO prior review (#0754)", async () => {
+    // A branch whose ONLY conflict is its own `work/<id>-*.md` — no code file
+    // touched — must resolve without a prior feature review, because taking
+    // main's bookkeeping copy is not a code change.
+    mkdirSync(join(repo, "work"), { recursive: true });
+    sh("git checkout -q main && git checkout -q -b task-file-only");
+    writeFileSync(join(repo, "work", "0023-task.md"), "base\n");
+    sh("git add -A && git commit -qam add-task");
+    writeFileSync(join(repo, "work", "0023-task.md"), "status: active\nbranch log\n");
+    sh("git commit -qam branch-task");
+    sh("git checkout -q main");
+    // main never had the task file: recreate it untracked, then add -A.
+    mkdirSync(join(repo, "work"), { recursive: true });
+    writeFileSync(join(repo, "work", "0023-task.md"), "status: review\nmain log\n");
+    sh("git add -A && git commit -qam main-task");
+
+    const analysis = await analyzeConflictForResolution(repo, "task-file-only", {
+      ownTaskFile: "work/0023-task.md",
+    });
+    expect(analysis.files.map((f) => f.path)).toEqual(["work/0023-task.md"]);
+    expect(analysis.files[0].isOwnTaskFile).toBe(true);
+
+    const verdict = await classifyConflictForTask(repo, "task-file-only", {
+      hasPriorFeatureApproval: false,
+      ownTaskFile: "work/0023-task.md",
+    });
+    expect(verdict).toEqual({
+      eligible: true,
+      classes: ["task-bookkeeping"],
+      reason: "only-bookkeeping",
+    });
+  });
+
+  it("never reports a mixed task-file + code conflict as only-bookkeeping (#0754)", async () => {
+    // The task-file exemption must not extend to a set that also publishes
+    // code: a set with any non-task-file path must reach the classifier as
+    // something other than `only-bookkeeping`, so its prior-review requirement
+    // and resolution path are the ordinary ones.
+    mkdirSync(join(repo, "work"), { recursive: true });
+    writeFileSync(join(repo, "code.ts"), "one\ntwo\nthree\nfour\nfive\n");
+    sh("git add -A && git commit -qam base-code");
+    sh("git checkout -q -b task-plus-code");
+    writeFileSync(join(repo, "work", "0024-task.md"), "status: active\nbranch\n");
+    writeFileSync(join(repo, "code.ts"), "one\nBRANCH\nthree\nFOUR\nfive\n");
+    sh("git add -A && git commit -qam branch");
+    sh("git checkout -q main");
+    mkdirSync(join(repo, "work"), { recursive: true });
+    writeFileSync(join(repo, "work", "0024-task.md"), "status: review\nmain\n");
+    writeFileSync(join(repo, "code.ts"), "one\nMAIN\nTHREE\nfour\nfive\n");
+    sh("git add -A && git commit -qam main");
+
+    const analysis = await analyzeConflictForResolution(repo, "task-plus-code", {
+      ownTaskFile: "work/0024-task.md",
+    });
+    expect(analysis.files.map((f) => f.path).sort()).toEqual(["code.ts", "work/0024-task.md"]);
+
+    // No prior review: the mixed set must NOT be eligible — the task-file
+    // exemption is the only class that skips the approval requirement.
+    const noApproval = await classifyConflictForTask(repo, "task-plus-code", {
+      hasPriorFeatureApproval: false,
+      ownTaskFile: "work/0024-task.md",
+    });
+    expect(noApproval).toEqual({ eligible: false, reason: "no-prior-feature-approval" });
+
+    // With approval, the code path is still classified by its own (non
+    // task-bookkeeping) class — proving the exemption did not swallow it.
+    const withApproval = await classifyConflictForTask(repo, "task-plus-code", {
+      hasPriorFeatureApproval: true,
+      ownTaskFile: "work/0024-task.md",
+    });
+    expect(withApproval.eligible).toBe(true);
+    if (withApproval.eligible) {
+      expect(withApproval.classes).not.toEqual(["task-bookkeeping"]);
+      expect(withApproval.classes).toContain("disjoint-declarations");
+    }
   });
 });
