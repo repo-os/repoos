@@ -561,7 +561,8 @@ cannot tell from the code alone:
   (`fullPage: false`) with changed elements outlined via `highlight`;
   `selector` (element crop) is the exception, `fullPage` stays off. For tabbed
   views prefer `?tab=<id>` routes (e.g. `/agents?tab=detected`) over click
-  steps. `--shots` accepts JSON without Markdown fences, validates every entry,
+  steps; a task drawer is reached the same way — `/work?task=<id>&tab=changes`
+  opens that task's drawer on the Changes tab (#0755). `--shots` accepts JSON without Markdown fences, validates every entry,
   and edits only that section. The older `--section Shots --section-body` form
   requires a fenced JSON list and rejects malformed content. A full `--body` replace that drops
   Problem / Desired UX / Acceptance criteria / Notes for AI is refused unless

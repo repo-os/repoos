@@ -64,6 +64,17 @@ const filterCol = computed<Column | null>(() => {
 // ?status=) are preserved. A link that arrives through the login round-trip
 // survives end-to-end: the router guard redirects with redirect=to.fullPath
 // and LoginView restores the full path after sign-in.
+//
+// #0755: an optional `?tab=<id>` selects the drawer tab when the deep-link
+// opens a task — e.g. `/work?task=0755&tab=changes` opens the Changes tab.
+// This gives handoff shots a ROUTE that reaches the populated drawer view
+// without click steps on placeholder selectors. Unknown tab ids are ignored
+// (the drawer keeps its status default), so a stale link degrades gracefully.
+const DRAWER_TABS = new Set(["details", "agent", "review", "pm", "changes", "tokens", "debug"]);
+function tabFromQuery(raw: unknown): typeof ui.activeTab | null {
+  return typeof raw === "string" && DRAWER_TABS.has(raw) ? (raw as typeof ui.activeTab) : null;
+}
+
 const router = useRouter();
 watch(
   () => route.query.task,
@@ -77,6 +88,7 @@ watch(
 async function clearTaskParam(): Promise<void> {
   const query = { ...route.query };
   delete query.task;
+  delete query.tab;
   await router.replace({ query });
 }
 
@@ -106,6 +118,10 @@ async function openFromTaskParam(raw: string): Promise<void> {
       return;
     }
   }
+  // #0755: a deep-linked tab wins over the status default set by `open`, so
+  // `/work?task=0755&tab=changes` lands on the Changes tab.
+  const tab = tabFromQuery(route.query.tab);
+  if (tab) ui.activeTab = tab;
   await clearTaskParam();
 }
 
