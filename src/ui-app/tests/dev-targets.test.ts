@@ -578,6 +578,117 @@ describe("DevTargetManager lifecycle", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  // #0751: a `{port}` placeholder in the command/url/healthCheck is filled with
+  // a free, OS-assigned port chosen at start — the same handling
+  // `[[preview.targets]]` uses — so a dev server never clashes with another app.
+  it("starts a `{port}` target on a free port and substitutes it everywhere", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-port-"));
+    // The command listens on the port the shell substitutes; the health check
+    // url carries the SAME placeholder, so a pass proves both got one port.
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          targets: [
+            {
+              name: "web",
+              kind: "server",
+              command:
+                `bun -e "const h=require('node:http');` +
+                `const p=Number(process.argv[1]);` +
+                `h.createServer((q,s)=>s.end('ok')).listen(p);setTimeout(()=>{},60000)" {port}`,
+              url: "http://127.0.0.1:{port}",
+              healthCheck: { url: "http://127.0.0.1:{port}/health" },
+            },
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("web");
+      expect(result.ok).toBe(true);
+      expect(mgr.get("web")?.status).toBe("running");
+      // The real url is what the target actually bound, not the template.
+      const url = mgr.get("web")?.url ?? "";
+      expect(url).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+      expect(url).not.toContain("{port}");
+      const port = Number(url.split(":").pop());
+      expect(port).toBeGreaterThan(0);
+      // The configured command shown back is the resolved one.
+      expect(mgr.get("web")?.command).toContain(String(port));
+      expect(mgr.get("web")?.command).not.toContain("{port}");
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("leaves a target with no `{port}` placeholder exactly as declared", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-noport-"));
+    // A fixed port the command binds directly — no placeholder, so nothing is
+    // reassigned and the declared url/command come back verbatim.
+    const port = 18900 + Math.floor(Math.random() * 200);
+    const command =
+      `bun -e "const h=require('node:http');h.createServer((q,s)=>s.end('ok')).listen(${port});` +
+      `setTimeout(()=>{},60000)"`;
+    const fixedUrl = `http://127.0.0.1:${port}`;
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          targets: [{ name: "web", kind: "server", command, url: fixedUrl }],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("web");
+      expect(result.ok).toBe(true);
+      // No `{port}` → the fixed url is untouched and the command is verbatim.
+      expect(mgr.get("web")?.url).toBe(fixedUrl);
+      expect(mgr.get("web")?.command).toBe(command);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves the url placeholder to the same port the command bound", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-urlport-"));
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          targets: [
+            {
+              name: "web",
+              kind: "server",
+              command:
+                `bun -e "const h=require('node:http');` +
+                `const p=Number(process.argv[1]);` +
+                `h.createServer((q,s)=>s.end('ok')).listen(p);setTimeout(()=>{},60000)" {port}`,
+              url: "http://127.0.0.1:{port}",
+            },
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      await mgr.start("web");
+      const view = mgr.get("web");
+      const urlPort = Number((view?.url ?? "").split(":").pop());
+      expect(view?.command).toContain(String(urlPort));
+      // A restart picks a fresh free port and both fields follow it.
+      const restarted = await mgr.restart("web");
+      expect(restarted.ok).toBe(true);
+      const url2 = restarted.target?.url ?? "";
+      expect(url2).not.toContain("{port}");
+      expect(restarted.target?.command).toContain(String(Number(url2.split(":").pop())));
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("dev target routes", () => {
