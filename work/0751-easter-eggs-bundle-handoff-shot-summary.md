@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0751"
 title: "Easter eggs bundle: handoff shot summary and dev target ports"
 type: chore
@@ -69,3 +70,4 @@ Item 2:
 - 2026-10-10T02:20:42Z · body
 - 2026-10-10T05:59:05Z · status inbox→ready
 - 2026-10-10T05:59:07Z · status ready→active, branch
+
