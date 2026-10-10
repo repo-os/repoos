@@ -165,3 +165,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T13:54:07Z · status review→active
 - 2026-10-10T13:54:07Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-10T14:00:29Z · status active→review
+- 2026-10-10T14:00:29Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
