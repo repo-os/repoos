@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0751"
 title: "Easter eggs bundle: handoff shot summary and dev target ports"
 type: chore
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-handoff-shot-summary-
 created_at: "2026-10-09T20:07:36Z"
-updated_at: "2026-10-10T05:59:07Z"
+updated_at: "2026-10-10T06:14:15Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
