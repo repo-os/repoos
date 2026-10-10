@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-capture-re-capture-the-reviewed-
 created_at: "2026-10-10T14:10:28Z"
-updated_at: "2026-10-10T17:15:29Z"
+updated_at: "2026-10-10T17:16:35Z"
 ---
 ## Problem
 
@@ -44,6 +44,18 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 - #0750 (the earlier task with the same placeholder-selector problem)
 - #0743 (missing targets are warnings, not failures)
 
+## Shots
+```json
+[
+{
+  "label": "Board — task drawer Changes tab carries the handoff verdict and Stale-capture alert (#0755)",
+  "target": "default",
+  "route": "/",
+  "highlight": ".board-col"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-10T14:10:28Z · created · njachowski@gmail.com
@@ -57,3 +69,4 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 - 2026-10-10T17:14:15Z · body
 - 2026-10-10T17:14:57Z · body
 - 2026-10-10T17:15:29Z · body
+- 2026-10-10T17:16:35Z · body: section Shots
