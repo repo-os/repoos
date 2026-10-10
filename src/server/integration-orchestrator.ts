@@ -114,6 +114,7 @@ import {
   classifyConflictForTask,
   createResolutionProvenanceStore,
   resolveConflictByUnion,
+  resolveTaskFileByTakingMain,
   type ConflictResolutionVerdict,
 } from "./conflict-resolution.js";
 import { listReviewPasses } from "../core/review-passes.js";
@@ -1754,10 +1755,26 @@ export class CloseOutOrchestrator {
       // #0754 fix — a task-file-only conflict previously fell through to the
       // union path, which could not resolve an edit, and the `remaining.length
       // === 0` guard aborted the whole resolution even though the file was
-      // already staged.
+      // already staged. Prefer the pure resolver (main's side of every region),
+      // and fall back to git's `--ours` for the shapes it refuses — a
+      // modify/delete or a binary task file.
       if (ownTaskFile !== null && p === ownTaskFile) {
-        const resolved = await runGit(wtPath, ["checkout", "--ours", "--", p], 10_000);
-        if (resolved.status !== 0) {
+        let resolvedOk = false;
+        try {
+          const content = readFileSync(join(wtPath, p), "utf8");
+          const taskRes = resolveTaskFileByTakingMain(content);
+          if (taskRes.ok) {
+            writeFileSync(join(wtPath, p), taskRes.content);
+            resolvedOk = true;
+          }
+        } catch {
+          resolvedOk = false;
+        }
+        if (!resolvedOk) {
+          const checkout = await runGit(wtPath, ["checkout", "--ours", "--", p], 10_000);
+          resolvedOk = checkout.status === 0;
+        }
+        if (!resolvedOk) {
           await runGit(wtPath, ["merge", "--abort"], 10_000);
           return { ok: false };
         }
