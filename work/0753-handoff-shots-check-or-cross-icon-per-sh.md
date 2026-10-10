@@ -2,7 +2,7 @@
 id: "0753"
 title: "Handoff shots: check or cross icon per shot, drop the duplicate verification block"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, ui]
 assigned_to: ai
@@ -137,4 +137,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T12:56:07Z · body
 - 2026-10-10T13:00:51Z · body
 - 2026-10-10T13:02:01Z · body
-- 2026-10-10T13:08:22Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-10T13:08:22Z · status active→review
