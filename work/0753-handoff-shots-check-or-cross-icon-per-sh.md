@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-10-10T13:51:38Z"
-review_passes: 7
 id: "0753"
 title: "Handoff shots: check or cross icon per shot, drop the duplicate verification block"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: [web, ui]
 assigned_to: ai
@@ -18,6 +13,8 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-10T10:13:24Z"
+updated_at: "2026-10-10T13:54:07Z"
+review_passes: 7
 last_check_failure: "repoos check at 2026-10-10T12:21:48.960Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 2534079e to 6537a4c7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 dev_error_count: 1
@@ -164,4 +161,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T13:50:28Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-10T13:51:38Z · note: review pass 7: needs some work
 - 2026-10-10T13:51:38Z · needs_input
-
+- 2026-10-10T13:54:07Z · needs_input
