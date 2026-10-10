@@ -2,7 +2,7 @@
 id: "0756"
 title: repoos message refuses when the agent is busy instead of queuing it
 type: bug
-status: active
+status: review
 priority: p1
 area: infra
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-message-refuses-when-the-agent-is
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-10T14:10:58Z"
-updated_at: "2026-10-10T17:35:50Z"
+updated_at: "2026-10-10T17:41:24Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-10T15:58:58.515Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -72,3 +72,5 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T17:29:16Z · body
 - 2026-10-10T17:30:15Z · body
 - 2026-10-10T17:35:50Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-10T17:41:24Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-10T17:41:24Z · note: handoff requested (cli)
