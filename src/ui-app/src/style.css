@@ -5743,15 +5743,6 @@
   font-size: 11px;
   word-break: break-all;
 }
-.ui-verification-captures {
-  margin: 8px 0 0;
-  padding-left: 1.1rem;
-  font-size: 12px;
-  color: var(--txt);
-}
-.ui-verification-captures li {
-  margin-bottom: 6px;
-}
 /* #0751: one line per shot — badge, caption, thumbnail — with raw details
    collapsed. `data-verdict` drives the badge colour without a bespoke class. */
 .ui-verification-shots {
