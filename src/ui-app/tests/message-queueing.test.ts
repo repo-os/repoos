@@ -193,6 +193,64 @@ describe("message queueing", () => {
     }
   });
 
+  it("should deliver queued messages on resume after turn completes", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const cwd = fx.bin;
+    const runner = new AgentRunner(config(cwd), () => {});
+
+    try {
+      const t = task("resume-delivery-test");
+
+      // Start first run
+      const startRes = runner.start(t, "feat/resume-delivery-test", agent, { cwd });
+      expect(startRes.ok).toBe(true);
+      expect(startRes.pid).toBeDefined();
+
+      // Queue two messages while running
+      const sendRes1 = runner.send(t.id, "Resume with this message", agent);
+      expect(sendRes1.queued).toBe(true);
+
+      const sendRes2 = runner.send(t.id, "And this one too", agent);
+      expect(sendRes2.queued).toBe(true);
+
+      // Verify messages are queued
+      const queuedMsgs = runner["queuedMessages"].get(t.id);
+      expect(queuedMsgs?.length).toBe(2);
+
+      // Wait for the first turn to complete (fakebin takes 100ms + cleanup)
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Verify the first turn has finished
+      expect(runner.isRunning(t.id)).toBe(false);
+
+      // Now the turn has completed. Call send() to resume with the queued messages.
+      // This should drain the queue and include messages in the resumed command.
+      const resumeRes = runner.send(t.id, "Continue", agent);
+      expect(resumeRes.ok).toBe(true);
+
+      // The queued messages should have been drained from the map
+      // (they were added to the session, not queued again)
+      expect(runner["queuedMessages"].has(t.id)).toBe(false);
+
+      // Verify the session now contains all the messages (queued + current)
+      const session = runner["sessions"].get(t.id);
+      if (session) {
+        const humanEntries = session.lines.filter((l) => l.type === "human");
+        const texts = humanEntries.map((e) => e.text);
+        expect(texts).toContain("Resume with this message");
+        expect(texts).toContain("And this one too");
+        expect(texts).toContain("Continue");
+      }
+    } finally {
+      runner.dispose();
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
   it("should track queue expiry from earliest message, not latest", () => {
     const fx = makeFixture();
     const runner = new AgentRunner(config(fx.root), () => {});
