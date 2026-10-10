@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-10T17:35:16Z"
-review_passes: 1
+last_close_out_gate_ms: 57827
+last_close_out_gate_at: "2026-10-10T17:40:11.446Z"
 id: "0754"
 title: Close-out should auto-resolve task-file-only merge conflicts instead of refusing
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-should-auto-resolve-task-file-
 created_at: "2026-10-10T12:57:27Z"
+updated_at: "2026-10-10T17:40:11Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -55,4 +57,5 @@ AGENTS.md already says the narrow resolution path may take "the task's own bookk
 - 2026-10-10T17:34:19Z · status active→review
 - 2026-10-10T17:34:20Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-10T17:35:16Z · note: review pass 1: good to go
+- 2026-10-10T17:40:11Z · close-out gate completed in 58s
 
