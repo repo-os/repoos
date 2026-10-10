@@ -794,9 +794,63 @@ function makeAuditFixture(): string {
         mime: "image/png",
       });
     }
+    // #0753: handoff verification evidence so the Changes tab renders the
+    // per-shot check/cross verdict icon and the "Handoff checked …" status line
+    // — both are real text/colour the audit must gate. One matching shot and
+    // one checking shot with a failed step, plus a console/overflow issue so
+    // the popover's content is present too.
+    const shots = localShotStore(config, "0001");
+    const first = shots.list()[0];
+    const second = shots.list()[1];
+    const savedUrls: string[] = [];
+    if (first) savedUrls.push(first.url);
+    if (second) savedUrls.push(second.url);
+    const cacheDir = join(root, config.cacheDir || ".repoos", "ui-verification");
+    mkdirSync(cacheDir, { recursive: true });
+    writeFileSync(
+      join(cacheDir, "0001.json"),
+      JSON.stringify({
+        at: new Date().toISOString(),
+        issues: [
+          { kind: "console", message: "TypeError: fixture is undefined" },
+          { kind: "overflow", message: "content wider than viewport", viewportWidth: 1280 },
+        ],
+        blankShots: [],
+        captures: savedUrls.length,
+        sourceIdentity: "fixture0001",
+        evidenceDir: "work/.attachments/0001/shots",
+        captureDetails: [
+          {
+            target: "default",
+            route: "/",
+            label: "Dashboard",
+            url: "http://127.0.0.1:0/",
+            finalRoute: "/",
+            routeMatched: true,
+            assertions: [],
+            assertionsPassed: 0,
+            assertionsChecked: 0,
+            ...(savedUrls[0] ? { shot: { name: "a", path: "", url: savedUrls[0] } } : {}),
+          },
+          {
+            target: "default",
+            route: "/",
+            label: "Auto shot",
+            url: "http://127.0.0.1:0/",
+            finalRoute: "/",
+            routeMatched: true,
+            targetWarnings: ['click [data-test-id="fullscreen"]: Timeout 5000ms exceeded'],
+            assertions: [],
+            assertionsPassed: 0,
+            assertionsChecked: 0,
+            ...(savedUrls[1] ? { shot: { name: "b", path: "", url: savedUrls[1] } } : {}),
+          },
+        ],
+      }),
+    );
   } catch {
-    // The shot store is disk-only and cannot realistically fail here; if it
-    // does, the Changes tab simply has no shots to audit.
+    // The shot/verification store is disk-only and cannot realistically fail
+    // here; if it does, the Changes tab simply has less to audit.
   }
   return root;
 }
