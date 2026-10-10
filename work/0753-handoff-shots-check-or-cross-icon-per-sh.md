@@ -2,7 +2,7 @@
 id: "0753"
 title: "Handoff shots: check or cross icon per shot, drop the duplicate verification block"
 type: feature
-status: review
+status: ready
 priority: p2
 area: [web, ui]
 assigned_to: ai
