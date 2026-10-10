@@ -69,3 +69,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T13:50:28Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
 - 2026-10-10T14:00:29Z · status ready→review
 - 2026-10-10T14:00:29Z · note: handoff requested (cli)
+- 2026-10-10T14:00:29Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
