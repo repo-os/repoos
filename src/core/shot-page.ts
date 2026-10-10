@@ -140,10 +140,17 @@ async function applyHighlight(
 }
 
 /**
- * #0755: attribute-level and text signals that a page is still loading. Kept
- * deliberately narrow so a mounted app is never mistaken for a loading one:
- * only VISIBLE `aria-busy`/`data-loading` regions, common spinner/loader hooks,
- * and text that starts with "Loading …" count.
+ * #0755: signals that a page is still loading. Kept deliberately NARROW so a
+ * mounted app is never mistaken for a loading one — a false "loading" verdict
+ * would flip a good capture to `check`. Only unambiguous, author-intended
+ * markers count:
+ *   - a VISIBLE `aria-busy="true"` region (the ARIA loading contract), or a
+ *     `data-loading`/`data-loading-state="true"` opt-in marker;
+ *   - visible text that opens with "Loading …" (the "Loading changes…" state
+ *     this task calls out).
+ * Deliberately NOT class globs like `.loading`/`[class*="spinner"]`: those
+ * match unrelated decorators on a fully rendered page (review round 1), and the
+ * text/ARIA signals already cover the real loading state.
  */
 const LOADING_STATE_QUERY = `(() => {
   const visible = (el) => {
@@ -158,18 +165,13 @@ const LOADING_STATE_QUERY = `(() => {
     '[aria-busy="true"]',
     '[data-loading="true"]',
     '[data-loading-state="true"]',
-    ".loading",
-    ".spinner",
-    ".loader",
-    '[class*="loading"]',
-    '[class*="spinner"]',
   ];
   for (const sel of attrs) {
     for (const el of document.querySelectorAll(sel)) {
       if (visible(el)) return "loading indicator " + sel;
     }
   }
-  // Visible text that says "Loading …" — the "Loading changes…" state the
+  // Visible text that opens with "Loading …" — the "Loading changes…" state the
   // task calls out. Matched on element text, so a mounted app with no loader
   // text never trips it.
   const body = document.body;
@@ -210,11 +212,11 @@ export interface ShotCaptureMissHandlers {
   onStepMiss?: (message: string, route: string) => void;
   /**
    * #0755: after the steps and settle, the page still shows a loading state
-   * (a spinner, `aria-busy`, "Loading changes…"). A capture of a loading page
-   * is not the declared evidence — the route matched but the content never
-   * rendered — so the caller records this as a FAILED step, not a passing
-   * capture. Best-effort: a driver without `evaluate` cannot probe, and the
-   * capture proceeds.
+   * (a visible `aria-busy` region, or "Loading changes…" text). A capture of a
+   * loading page is not the declared evidence — the route matched but the
+   * content never rendered — so the caller records this as a FAILED step, not a
+   * passing capture. Best-effort: a driver without `evaluate` cannot probe, and
+   * the capture proceeds.
    */
   onLoadingState?: (message: string, route: string) => void;
 }

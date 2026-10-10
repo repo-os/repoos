@@ -322,10 +322,11 @@ section (#0627) — no CLI needed — while the task is `active` or in `review`:
 nothing at capture time records a visible warning (for example: highlight `.x` matched
 nothing on /route) — capture still succeeds. Duplicate declarations with the
 same target, route, steps, and selector collapse to one capture with merged
-highlights. A capture that lands on a still-loading page (a spinner, or text
-like "Loading changes…") after its steps and settle is recorded the same way —
-a failed step, not a pass — so a placeholder `click`/`waitFor` step that timed
-out and left the view loading cannot be mistaken for real evidence (#0755).
+highlights. A capture that lands on a still-loading page (an `aria-busy`
+region, or text like "Loading changes…") after its steps and settle is recorded
+the same way — a failed step, not a pass — so a placeholder `click`/`waitFor`
+step that timed out and left the view loading cannot be mistaken for real
+evidence (#0755).
 **Stale captures (#0755):** each handoff capture stores the tree it ran on, and
 the Changes tab compares that to the branch HEAD the review will use. When they
 differ — a fix landed after the capture — the UI changes section shows a
