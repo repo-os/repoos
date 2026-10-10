@@ -5660,6 +5660,9 @@ export class AgentRunner {
       // Build a preamble to notify about delivered messages
       queuedMessagesPreamble = `## Queued messages delivered:\n\n${queuedMsgs.map((_, i) => `- Message ${i + 1} queued at ${queuedMsgs[i].queuedAt}`).join("\n")}\n\n`;
 
+      // Record delivery in activity log
+      this.recordTaskActivity(task.id, `message_delivered: ${queuedMsgs.length} message(s)`);
+
       // Clear the queue
       this.queuedMessages.delete(task.id);
       this.messageQueuedAt.delete(task.id);
@@ -5881,7 +5884,11 @@ export class AgentRunner {
         queuedAt: new Date().toISOString(),
       });
       this.queuedMessages.set(taskId, messages);
-      this.messageQueuedAt.set(taskId, new Date().toISOString());
+      const queuedAt = new Date().toISOString();
+      this.messageQueuedAt.set(taskId, queuedAt);
+
+      // Record in activity log
+      this.recordTaskActivity(taskId, `message_queued at ${queuedAt}`);
 
       return {
         ok: true,
@@ -6075,9 +6082,33 @@ export class AgentRunner {
       const queuedTime = new Date(queuedAt).getTime();
       if (now - queuedTime > this.messageTimeoutMs) {
         // Message has expired without being delivered
+        this.recordTaskActivity(taskId, `message_expired: not delivered within timeout`);
         this.queuedMessages.delete(taskId);
         this.messageQueuedAt.delete(taskId);
       }
+    }
+  }
+
+  /** Record an activity entry in the task's activity log. Fail-soft. */
+  private recordTaskActivity(taskId: string, entry: string): void {
+    if (!this.getTask) return;
+    try {
+      const task = this.getTask(taskId);
+      if (!task) return;
+      // Read the current state from disk to avoid losing concurrent updates
+      const current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+      recordChange(current, entry);
+      writeFileSync(task.absPath, serializeTask(current));
+      commitTaskFile(this.config.root, task.absPath, `docs(${current.id}): record activity`);
+    } catch (err) {
+      // Fail-soft: activity logging is best-effort and should not crash the runner
+      this.logger?.agent(taskId, "warn", `Failed to record activity: ${(err as Error).message}`);
     }
   }
 
