@@ -145,6 +145,11 @@ describe("UI handoff verification gate (#0680)", () => {
     });
     expect(result.ok).toBe(false);
     expect(result.detail).toContain("overflow");
+    // #0753: the capture keeps its OWN issues, so the Changes tab can show them
+    // in that shot's popover instead of repeating the handoff list on every row.
+    const evidence = readUiHandoffGateEvidence(config, task.id);
+    expect(evidence?.captureDetails?.[0]?.issues?.map((i) => i.kind)).toEqual(["overflow"]);
+    expect(evidence?.captureDetails?.[0]?.issues?.[0]?.viewportWidth).toBe(1024);
     vi.restoreAllMocks();
   });
 

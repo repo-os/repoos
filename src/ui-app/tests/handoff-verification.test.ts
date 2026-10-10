@@ -11,10 +11,12 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  captureIssueLines,
   handoffContextLine,
   handoffIssueGroups,
   handoffIssueLines,
   orphanHandoffSentence,
+  runLevelIssueLines,
   shotVerdict,
   verdictSentence,
 } from "../src/lib/handoff-verification";
@@ -209,5 +211,76 @@ describe("orphanHandoffSentence (#0753)", () => {
     expect(orphanHandoffSentence(view)).toBe(
       "check: couldn't find .x (no longer in the shot list)",
     );
+  });
+});
+
+describe("captureIssueLines (#0753)", () => {
+  it("is empty for a shooting shot with no issues of its own", () => {
+    expect(captureIssueLines(capture())).toEqual([]);
+  });
+
+  it("shows a shot's OWN console error in its popover, grouped and labelled", () => {
+    const lines = captureIssueLines(
+      capture({
+        issues: [{ kind: "console", message: "TypeError: x is undefined", url: "/agents" }],
+      }),
+    );
+    expect(lines[0]).toBe("console errors:");
+    expect(lines.some((l) => l.includes("TypeError: x is undefined"))).toBe(true);
+  });
+
+  it("shows a shot's own failed request and overflow, not another shot's", () => {
+    const lines = captureIssueLines(
+      capture({
+        issues: [
+          { kind: "request", message: "GET /api/x failed", url: "/api/x", viewportWidth: 390 },
+          { kind: "overflow", message: "content wider than viewport", viewportWidth: 1280 },
+        ],
+      }),
+    );
+    expect(lines.some((l) => l.includes("failed same-origin requests"))).toBe(true);
+    expect(lines.some((l) => l.includes("/api/x"))).toBe(true);
+    expect(lines.some((l) => l.includes("overflow"))).toBe(true);
+  });
+
+  it("falls back to a capture's raw warnings when it carries no issues", () => {
+    const lines = captureIssueLines(
+      capture({ targetWarnings: ["highlight .x matched nothing on /"] }),
+    );
+    expect(lines).toEqual(["[warning] highlight .x matched nothing on /"]);
+  });
+});
+
+describe("runLevelIssueLines (#0753)", () => {
+  it("is empty for a clean handoff", () => {
+    expect(runLevelIssueLines(evidence())).toEqual([]);
+    expect(runLevelIssueLines(undefined)).toEqual([]);
+  });
+
+  it("does NOT re-list an issue a capture already owns", () => {
+    const issue = { kind: "console" as const, message: "TypeError: x is undefined", url: "/agents" };
+    const lines = runLevelIssueLines(
+      evidence({
+        issues: [issue],
+        captureDetails: [capture({ issues: [issue] })],
+      }),
+    );
+    expect(lines).toEqual([]);
+  });
+
+  it("shows an issue not tied to any shot exactly once, plus run-level warnings", () => {
+    const own = { kind: "console" as const, message: "boom", url: "/a" };
+    const lines = runLevelIssueLines(
+      evidence({
+        // One issue owned by a capture, one orphaned (e.g. no capture produced it).
+        issues: [own, { kind: "console" as const, message: "orphan error", url: "/b" }],
+        captureDetails: [capture({ issues: [own] })],
+        warnings: ["highlight .x matched nothing on /"],
+      }),
+    );
+    expect(lines.some((l) => l.includes("orphan error"))).toBe(true);
+    // The owned issue is not repeated run-level.
+    expect(lines.some((l) => l.includes("boom"))).toBe(false);
+    expect(lines.some((l) => l.includes("[shot-warning] highlight .x"))).toBe(true);
   });
 });
