@@ -571,17 +571,18 @@ describe("UI handoff verification gate (#0680)", () => {
     const previews = {
       stop: vi.fn(async () => {}),
     } as unknown as import("../../server/preview.js").PreviewManager;
-    const captureIssue: import("../src/types.js").UiHandoffVerificationIssue = {
-      kind: "console",
-      message: "TypeError: x is undefined",
-      url: "/",
-    };
     const result = await runUiHandoffGate(config, task, previews, () => {}, {
       launchBrowser: mockBrowser,
       startPreview: async () => ({ url: "http://127.0.0.1:9" }),
       captureEntry: async () => ({
         png: Buffer.alloc(5000),
-        issues: [captureIssue],
+        issues: [
+          {
+            kind: "console",
+            message: "TypeError: x is undefined",
+            url: "/",
+          } as import("../../core/page-browser-gate.js").PageGateIssue,
+        ],
         blank: false,
         warnings: [],
         finalUrl: "http://127.0.0.1:9/",
