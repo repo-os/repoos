@@ -902,8 +902,9 @@ const uiHandoffVerification = computed(() =>
  */
 const uiHandoffCaptureByUrl = computed(() => {
   const map = new Map<string, { cap: UiHandoffCaptureEvidence; verdict: ShotVerdictView }>();
+  const stale = uiHandoffVerification.value?.stale === true;
   for (const cap of uiHandoffVerification.value?.captureDetails ?? []) {
-    if (cap.shot?.url) map.set(cap.shot.url, { cap, verdict: shotVerdict(cap) });
+    if (cap.shot?.url) map.set(cap.shot.url, { cap, verdict: shotVerdict(cap, { stale }) });
   }
   return map;
 });
@@ -915,11 +916,12 @@ const uiHandoffCaptureByUrl = computed(() => {
  */
 const uiHandoffOrphans = computed(() => {
   const listed = new Set(taskShots.value.map((s) => s.url));
+  const stale = uiHandoffVerification.value?.stale === true;
   return (uiHandoffVerification.value?.captureDetails ?? [])
     .filter((cap) => cap.shot?.url && !listed.has(cap.shot.url))
     .map((cap) => ({
       label: cap.label || `${cap.target}${cap.route}`,
-      view: shotVerdict(cap),
+      view: shotVerdict(cap, { stale }),
       issues: captureIssueLines(cap),
     }));
 });
@@ -930,6 +932,8 @@ const uiHandoffOrphans = computed(() => {
 const uiHandoffRunLevelLines = computed(() => runLevelIssueLines(uiHandoffVerification.value));
 /** "tested tree <sha> · PNGs at <dir>" for the status line, or empty. */
 const uiHandoffContext = computed(() => handoffContextLine(uiHandoffVerification.value));
+/** #0755: the handoff capture is for a tree other than the reviewed HEAD. */
+const uiHandoffStale = computed(() => uiHandoffVerification.value?.stale === true);
 /** True when the handoff recorded a run-level issue or shot warning. */
 const uiHandoffHasRunLevelIssues = computed(() => uiHandoffRunLevelLines.value.length > 0);
 
@@ -5521,6 +5525,7 @@ watch(
                 uiShotProblems.length ||
                 uiHandoffOrphans.length ||
                 uiHandoffHasRunLevelIssues ||
+                uiHandoffStale ||
                 canManageShots)
             "
             class="changes-summary ui-changes"
@@ -5550,6 +5555,14 @@ watch(
               Handoff checked {{ repo.fmtDate(uiHandoffVerification.at) }}
               <template v-if="uiHandoffContext"> · {{ uiHandoffContext }}</template>
             </p>
+            <!-- #0755: a capture for a tree other than the reviewed HEAD is not
+                 verification — shout it, so the screenshots below are read as
+                 stale evidence rather than proof of the current change. -->
+            <div v-if="uiHandoffStale" class="shot-warning shot-problem" role="alert">
+              <strong>Stale capture:</strong> these screenshots were taken on a
+              different tree than the reviewed HEAD ({{ uiHandoffVerification?.reviewedHead }}).
+              Re-run the handoff capture on the final tree.
+            </div>
             <div
               v-for="problem in uiShotProblems"
               :key="problem.at + problem.detail"

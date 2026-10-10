@@ -781,3 +781,115 @@ describe("captureShotPage highlight (#0603)", () => {
     expect(png).toBeInstanceOf(Buffer);
   });
 });
+
+describe("captureShotPage loading-state detection (#0755)", () => {
+  /**
+   * A ShotDriverPage whose `evaluate` answers the loading-state probe with
+   * `loadingResult` and the highlight probe with 0. Distinguishes the two by the
+   * probe's own marker text, so the test exercises the real integration point.
+   */
+  function fakePage(loadingResult: string, opts: { evaluate?: boolean } = {}) {
+    const loadingCalls: string[] = [];
+    const page = {
+      async goto(): Promise<void> {},
+      async waitForLoadState(): Promise<void> {},
+      async waitForTimeout(): Promise<void> {},
+      async setViewportSize(): Promise<void> {},
+      locator(): unknown {
+        // A declared `waitFor` step resolves against this; give it a no-op so
+        // the choreography reaches the loading probe.
+        return { first: undefined, waitFor: async () => {} };
+      },
+      async screenshot(): Promise<Buffer> {
+        return Buffer.from("png");
+      },
+      async close(): Promise<void> {},
+      ...(opts.evaluate === false
+        ? {}
+        : {
+            async evaluate(body: string): Promise<unknown> {
+              // The loading probe is the only one that references aria-busy.
+              if (body.includes('aria-busy="true"') || body.includes("loading text")) {
+                loadingCalls.push(body);
+                return loadingResult;
+              }
+              return 0;
+            },
+          }),
+    } as unknown as ShotDriverPage & { __loadingCalls: string[] };
+    (page as unknown as Record<string, unknown>).__loadingCalls = loadingCalls;
+    return page;
+  }
+
+  it("reports a loading state after the steps and settle as a failed step", async () => {
+    const page = fakePage('loading text "Loading changes…"');
+    const misses: string[] = [];
+    await captureShotPage(
+      page,
+      "http://x/",
+      { steps: [{ waitFor: '[data-task-id="9999"]' }], route: "/drawer" },
+      { waitMs: 0, fullPage: false },
+      { onLoadingState: (message, route) => misses.push(`${message} on ${route}`) },
+    );
+    expect(misses).toEqual(['loading state detected: loading text "Loading changes…" on /drawer']);
+    // The probe ran after the choreography, not before navigate.
+    expect(page.__loadingCalls).toHaveLength(1);
+  });
+
+  it("does not report a loading state on a mounted page", async () => {
+    const page = fakePage("");
+    const misses: string[] = [];
+    await captureShotPage(
+      page,
+      "http://x/",
+      { route: "/" },
+      { waitMs: 0, fullPage: false },
+      { onLoadingState: (message) => misses.push(message) },
+    );
+    expect(misses).toEqual([]);
+  });
+
+  it("captures without probing when no loading handler is supplied", async () => {
+    const page = fakePage('loading text "Loading changes…"');
+    const png = await captureShotPage(
+      page,
+      "http://x/",
+      { route: "/" },
+      { waitMs: 0, fullPage: false },
+    );
+    expect(png).toBeInstanceOf(Buffer);
+    expect(page.__loadingCalls).toEqual([]);
+  });
+
+  it("captures without probing when the driver cannot evaluate", async () => {
+    const page = fakePage("", { evaluate: false });
+    const misses: string[] = [];
+    const png = await captureShotPage(
+      page,
+      "http://x/",
+      { route: "/" },
+      { waitMs: 0, fullPage: false },
+      { onLoadingState: (message) => misses.push(message) },
+    );
+    expect(png).toBeInstanceOf(Buffer);
+    expect(misses).toEqual([]);
+  });
+
+  it("reports a declared selector that is not on the page with its name", async () => {
+    const page = fakePage("");
+    page.locator = () =>
+      ({
+        count: async () => 0,
+        screenshot: async () => Buffer.from("crop"),
+      }) as unknown as ReturnType<ShotDriverPage["locator"]>;
+    const misses: string[] = [];
+    await captureShotPage(
+      page,
+      "http://x/",
+      { selector: '[data-task-id="9999"]', route: "/drawer" },
+      { waitMs: 0, fullPage: false },
+      { onSelectorMiss: (selector) => misses.push(selector) },
+    );
+    expect(misses).toEqual(['[data-task-id="9999"]']);
+  });
+});

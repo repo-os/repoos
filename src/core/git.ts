@@ -1263,6 +1263,16 @@ export function gitCommitAll(root: string, message: string): string | null {
   return git(root, ["rev-parse", "--short", "HEAD"]);
 }
 
+/**
+ * The short HEAD sha of `root`, or null when git is unavailable or the path is
+ * not a repository (#0755). Used to tie handoff UI evidence to the exact tree
+ * it captured, so a later commit can be flagged as a stale capture.
+ */
+export function shortHeadOf(root: string): string | null {
+  const sha = git(root, ["rev-parse", "--short", "HEAD"]);
+  return sha ? sha.trim() || null : null;
+}
+
 export interface CommitNewFileResult {
   ok: boolean;
   /** Short commit hash (when committed). */
