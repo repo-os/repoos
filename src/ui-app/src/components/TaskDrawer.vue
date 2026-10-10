@@ -927,9 +927,7 @@ const uiHandoffOrphans = computed(() => {
  * #0753: the issues that belong to no single shot (plus run-level shot
  * warnings), shown ONCE under the shot list — never repeated per row.
  */
-const uiHandoffRunLevelLines = computed(() =>
-  runLevelIssueLines(uiHandoffVerification.value),
-);
+const uiHandoffRunLevelLines = computed(() => runLevelIssueLines(uiHandoffVerification.value));
 /** "tested tree <sha> · PNGs at <dir>" for the status line, or empty. */
 const uiHandoffContext = computed(() => handoffContextLine(uiHandoffVerification.value));
 /** True when the handoff recorded a run-level issue or shot warning. */
