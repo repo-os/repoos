@@ -215,6 +215,38 @@ describe("work ?task= deep-link (#0345)", () => {
     expect(replaceSpy).toHaveBeenCalledWith({ query: { status: "active" } });
     wrapper.unmount();
   });
+
+  // #0755: a `?tab=` alongside `?task=` selects the drawer tab, so a handoff
+  // shot can reach the Changes tab by route instead of click steps.
+  it("?task=<id>&tab=changes opens the drawer on the Changes tab", async () => {
+    useRepoStore().tasks = [makeTask("0755", "review")];
+    setRouteQuery({ task: "0755", tab: "changes" });
+    api.mockResolvedValue(makeTask("0755", "review"));
+    const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
+    await flushPromises();
+
+    const ui = useUiStore();
+    expect(ui.active?.id).toBe("0755");
+    expect(ui.activeTab).toBe("changes");
+    // Both the task and tab params are cleared; nothing lingers to re-open.
+    expect(replaceSpy).toHaveBeenCalledWith({ query: {} });
+    wrapper.unmount();
+  });
+
+  it("an unknown ?tab= id is ignored (drawer keeps its status default)", async () => {
+    useRepoStore().tasks = [makeTask("0755", "review")];
+    setRouteQuery({ task: "0755", tab: "bogus" });
+    api.mockResolvedValue(makeTask("0755", "review"));
+    const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
+    await flushPromises();
+
+    const ui = useUiStore();
+    expect(ui.active?.id).toBe("0755");
+    // A review task defaults to the Review tab — a stale/garbage tab must not
+    // leave the drawer on a non-existent pane.
+    expect(ui.activeTab).toBe("review");
+    wrapper.unmount();
+  });
 });
 
 describe("inputs ?input= deep-link (#0345)", () => {

@@ -336,7 +336,9 @@ handoff capture on the final tree.
 visible viewport (`fullPage: false`) with changed elements outlined via
 `highlight`; `selector` (element crop) is the exception, and `fullPage` stays
 off. For tabbed views, prefer `?tab=<id>` routes (e.g. `/agents?tab=detected`)
-over click steps to reach the right tab, and always `highlight` the changed
+over click steps to reach the right tab; a task drawer is reached the same way —
+`/work?task=<id>&tab=changes` opens that task's drawer on the Changes tab (#0755)
+— and always `highlight` the changed
 elements. The PNGs are stored gitignored under `work/.attachments/<taskId>/shots/`
 (the default local attachment storage; cloud storage is opt-in, see
 [Attachment storage](/configuration#attachment-storage)) and appear as the
