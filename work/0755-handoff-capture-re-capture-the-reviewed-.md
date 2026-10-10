@@ -2,7 +2,7 @@
 id: "0755"
 title: "Handoff capture: re-capture the reviewed tree and stop placeholder selectors"
 type: bug
-status: review
+status: active
 priority: p2
 area: [server, ui]
 assigned_to: ai
