@@ -5559,9 +5559,9 @@ watch(
                  verification — shout it, so the screenshots below are read as
                  stale evidence rather than proof of the current change. -->
             <div v-if="uiHandoffStale" class="shot-warning shot-problem" role="alert">
-              <strong>Stale capture:</strong> these screenshots were taken on a
-              different tree than the reviewed HEAD ({{ uiHandoffVerification?.reviewedHead }}).
-              Re-run the handoff capture on the final tree.
+              <strong>Stale capture:</strong> these screenshots were taken on a different tree than
+              the reviewed HEAD ({{ uiHandoffVerification?.reviewedHead }}). Re-run the handoff
+              capture on the final tree.
             </div>
             <div
               v-for="problem in uiShotProblems"
