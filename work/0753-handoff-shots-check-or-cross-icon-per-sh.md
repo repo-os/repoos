@@ -11,7 +11,7 @@ branch: feat/handoff-shots-check-or-cross-icon-per-sh
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T12:12:19Z"
+updated_at: "2026-10-10T12:14:27Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -59,15 +59,15 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 "route": "/work",
 "highlight": ".ui-changes",
 "steps": [
-  {
-    "waitFor": "[data-test-id=\"task-tab-changes\"]"
-  },
-  {
-    "click": "[data-test-id=\"task-tab-changes\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "waitFor": "[data-test-id=\"task-tab-changes\"]"
+},
+{
+  "click": "[data-test-id=\"task-tab-changes\"]"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "board:withReviewTask"
 }
@@ -119,3 +119,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T12:11:07Z · status review→active
 - 2026-10-10T12:11:39Z · body: section Shots
 - 2026-10-10T12:12:19Z · body
+- 2026-10-10T12:14:27Z · body
