@@ -11,7 +11,7 @@ branch: feat/repoos-message-refuses-when-the-agent-is
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-10T14:10:58Z"
-updated_at: "2026-10-10T17:41:24Z"
+updated_at: "2026-10-10T17:47:05Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-10T15:58:58.515Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -74,3 +74,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T17:35:50Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-10T17:41:24Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-10T17:41:24Z · note: handoff requested (cli)
+- 2026-10-10T17:47:05Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
