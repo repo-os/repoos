@@ -469,6 +469,12 @@ export interface UiHandoffCaptureEvidence {
   assertionsChecked: number;
   shot?: { name: string; path: string; url: string };
   targetWarnings?: string[];
+  /**
+   * #0753: the issues this capture produced (console errors, failed same-origin
+   * requests, overflow, blank capture, route/assertion). Shown in the shot's own
+   * popover so an issue is not repeated on every row.
+   */
+  issues?: UiHandoffVerificationIssue[];
 }
 
 export interface UiHandoffVerificationEvidence {

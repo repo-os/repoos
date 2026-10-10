@@ -177,6 +177,11 @@ export function handoffIssueGroups(
  * The handoff-wide issues as flat detail lines, for the popover and for the
  * footnotes under a section. Shot warnings (#0743) are handoff-level too — they
  * describe the plan the whole run used — so they ride along here.
+ *
+ * NOTE (#0753): the Changes tab no longer calls this — issues that belong to a
+ * shot ride in that shot's popover (`captureIssueLines`) and the rest show once
+ * under the list (`runLevelIssueLines`). It stays as the flat, un-split view for
+ * callers that want the whole handoff's issues in one list.
  */
 export function handoffIssueLines(
   evidence: UiHandoffVerificationEvidence | null | undefined,
@@ -189,6 +194,59 @@ export function handoffIssueLines(
   }
   for (const warn of evidence.warnings ?? []) lines.push(`[shot-warning] ${warn}`);
   return lines;
+}
+
+// ── #0753: issues belong to a shot, so the popover shows only that shot's ────
+
+/**
+ * The flat detail lines for ONE capture's own issues (#0753) — its console
+ * errors, failed same-origin requests, overflow, blank capture, route and
+ * assertion issues. Grouped by kind like the handoff list, so the popover reads
+ * as readable sections rather than a wall of raw kinds.
+ */
+export function captureIssueLines(cap: UiHandoffCaptureEvidence): string[] {
+  const issues = cap.issues ?? [];
+  const lines: string[] = [];
+  for (const group of handoffIssueGroups(issues, [])) {
+    lines.push(`${group.kind}:`);
+    for (const item of group.items) lines.push(`  ${item}`);
+  }
+  // A blank-looking capture is recorded as an `issues` entry too (#0753), so the
+  // old `blankShots` name list is not needed here; but a capture whose only signal
+  // is a blank PNG with no issue still deserves the line.
+  if ((cap.issues ?? []).length === 0 && cap.targetWarnings?.length) {
+    for (const warn of cap.targetWarnings) lines.push(`[warning] ${warn}`);
+  }
+  return lines;
+}
+
+/**
+ * The issues that belong to no single shot — the ones not carried by any
+ * capture's own `issues`, plus the run-level shot warnings (#0743). These are
+ * shown ONCE under the shot list, never repeated per row (#0753).
+ */
+export function runLevelIssueLines(
+  evidence: UiHandoffVerificationEvidence | null | undefined,
+): string[] {
+  if (!evidence) return [];
+  // Every issue a capture already owns (by kind+message+url) is excluded here.
+  const owned = new Set<string>();
+  for (const cap of evidence.captureDetails ?? []) {
+    for (const issue of cap.issues ?? []) owned.add(issueKey(issue));
+  }
+  const orphans = evidence.issues.filter((issue) => !owned.has(issueKey(issue)));
+  const lines: string[] = [];
+  for (const group of handoffIssueGroups(orphans, [])) {
+    lines.push(`${group.kind}:`);
+    for (const item of group.items) lines.push(`  ${item}`);
+  }
+  for (const warn of evidence.warnings ?? []) lines.push(`[shot-warning] ${warn}`);
+  return lines;
+}
+
+/** Stable identity for an issue, so a capture's copy is not re-shown run-level. */
+function issueKey(issue: UiHandoffVerificationIssue): string {
+  return `${issue.kind}\u0000${issue.message}\u0000${issue.url ?? ""}\u0000${issue.viewportWidth ?? ""}`;
 }
 
 /** One line describing where and when the handoff ran, for the popover/status line. */

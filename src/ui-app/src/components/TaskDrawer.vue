@@ -37,6 +37,7 @@ import type {
   DetectedAgent,
   CheckRunRow,
   ConflictResolutionSnapshot,
+  UiHandoffCaptureEvidence,
 } from "../types";
 import {
   COLUMNS,
@@ -93,9 +94,10 @@ import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
 import { shotProblems, shotRows, uncapturedDeclared } from "../lib/shot-rows";
 import {
+  captureIssueLines,
   handoffContextLine,
-  handoffIssueLines,
   orphanHandoffSentence,
+  runLevelIssueLines,
   shotVerdict,
   verdictSentence,
   type ShotVerdictView,
@@ -898,17 +900,13 @@ const uiHandoffVerification = computed(() =>
  * instead of rendering a separate block. Derived from the same step results the
  * gate already records (see `shotVerdict`); display-only.
  */
-const uiHandoffVerdictByUrl = computed(() => {
-  const map = new Map<string, ShotVerdictView>();
+const uiHandoffCaptureByUrl = computed(() => {
+  const map = new Map<string, { cap: UiHandoffCaptureEvidence; verdict: ShotVerdictView }>();
   for (const cap of uiHandoffVerification.value?.captureDetails ?? []) {
-    if (cap.shot?.url) map.set(cap.shot.url, shotVerdict(cap));
+    if (cap.shot?.url) map.set(cap.shot.url, { cap, verdict: shotVerdict(cap) });
   }
   return map;
 });
-/** Ordered verdicts for the handoff's captures (popover/status-line counts). */
-const uiHandoffVerdicts = computed(() =>
-  (uiHandoffVerification.value?.captureDetails ?? []).map((cap) => shotVerdict(cap)),
-);
 /**
  * #0753: handoff captures whose shot file is no longer in the task's `shots/`
  * list — usually because a later capture replaced it. Their verdict would
@@ -919,28 +917,40 @@ const uiHandoffOrphans = computed(() => {
   const listed = new Set(taskShots.value.map((s) => s.url));
   return (uiHandoffVerification.value?.captureDetails ?? [])
     .filter((cap) => cap.shot?.url && !listed.has(cap.shot.url))
-    .map((cap) => ({ label: cap.label || `${cap.target}${cap.route}`, view: shotVerdict(cap) }));
+    .map((cap) => ({
+      label: cap.label || `${cap.target}${cap.route}`,
+      view: shotVerdict(cap),
+      issues: captureIssueLines(cap),
+    }));
 });
-/** Handoff-wide issues (console/requests/overflow/blank + shot warnings), as lines. */
-const uiHandoffIssueLines = computed(() => handoffIssueLines(uiHandoffVerification.value));
+/**
+ * #0753: the issues that belong to no single shot (plus run-level shot
+ * warnings), shown ONCE under the shot list — never repeated per row.
+ */
+const uiHandoffRunLevelLines = computed(() =>
+  runLevelIssueLines(uiHandoffVerification.value),
+);
 /** "tested tree <sha> · PNGs at <dir>" for the status line, or empty. */
 const uiHandoffContext = computed(() => handoffContextLine(uiHandoffVerification.value));
-/** True when the handoff recorded any issue or shot warning worth surfacing. */
-const uiHandoffHasIssues = computed(() => uiHandoffIssueLines.value.length > 0);
+/** True when the handoff recorded a run-level issue or shot warning. */
+const uiHandoffHasRunLevelIssues = computed(() => uiHandoffRunLevelLines.value.length > 0);
 
 /** The verdict for a captured shot row (by URL), or undefined when not handoff-verified. */
 function handoffVerdictFor(url: string): ShotVerdictView | undefined {
-  return uiHandoffVerdictByUrl.value.get(url);
+  return uiHandoffCaptureByUrl.value.get(url)?.verdict;
 }
 
-/** The popover text for a shot row: the verdict sentence plus handoff-wide issues. */
+/**
+ * The popover text for a shot row: the verdict sentence, the shot's own raw
+ * details, then THAT shot's issues (#0753). Handoff-wide issues are not repeated
+ * here — they are shown once under the list.
+ */
 function shotPopoverLines(url: string): string[] {
-  const view = handoffVerdictFor(url);
-  if (!view) return [];
-  const lines = [verdictSentence(view)];
-  if (view.details.length) lines.push(...view.details);
-  const issues = uiHandoffIssueLines.value;
-  if (issues.length) lines.push(...issues);
+  const entry = uiHandoffCaptureByUrl.value.get(url);
+  if (!entry) return [];
+  const lines = [verdictSentence(entry.verdict)];
+  if (entry.verdict.details.length) lines.push(...entry.verdict.details);
+  lines.push(...captureIssueLines(entry.cap));
   return lines;
 }
 const shotsViewerOpen = ref(false);
@@ -5536,11 +5546,10 @@ watch(
             </div>
             <!-- #0753: the handoff's when/tested-tree context, as a small line
                  under the title instead of its own block. The per-shot icon and
-                 the footnotes below carry the rest. -->
+                 the run-level footnotes below carry the rest. -->
             <p v-if="uiHandoffVerification" class="ui-changes-meta">
               Handoff checked {{ repo.fmtDate(uiHandoffVerification.at) }}
               <template v-if="uiHandoffContext"> · {{ uiHandoffContext }}</template>
-              <template v-if="uiHandoffHasIssues"> · issues below</template>
             </p>
             <div
               v-for="problem in uiShotProblems"
@@ -5652,7 +5661,7 @@ watch(
                     <span
                       class="shot-row-verdict mono"
                       :data-verdict="orphan.view.verdict"
-                      :data-tip="orphanHandoffSentence(orphan.view)"
+                      :data-tip="[orphanHandoffSentence(orphan.view), ...orphan.issues].join('\n')"
                       tabindex="0"
                       :aria-label="orphanHandoffSentence(orphan.view)"
                     >
@@ -5664,16 +5673,16 @@ watch(
                 </div>
               </div>
             </div>
-            <!-- #0753: the handoff-wide issues the removed summary block used to
-                 list — console errors, failed same-origin requests, overflow,
-                 blank captures, shot warnings. Shown here when no shot row can
-                 carry them (e.g. an empty capture or orphan-only handoff). -->
+            <!-- #0753: issues that belong to no single shot — plus run-level shot
+                 warnings — shown ONCE here under the list. Issues a shot owns ride
+                 in that shot's icon popover instead, so nothing is repeated per
+                 row. -->
             <ul
-              v-if="uiHandoffHasIssues && !uiChangeRows.length"
+              v-if="uiHandoffHasRunLevelIssues"
               class="ui-changes-footnotes"
-              aria-label="Handoff issues"
+              aria-label="Handoff issues not tied to a shot"
             >
-              <li v-for="(line, idx) in uiHandoffIssueLines" :key="'hf' + idx" class="mono">
+              <li v-for="(line, idx) in uiHandoffRunLevelLines" :key="'hf' + idx" class="mono">
                 {{ line }}
               </li>
             </ul>
