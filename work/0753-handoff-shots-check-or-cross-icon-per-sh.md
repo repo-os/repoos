@@ -2,14 +2,14 @@
 id: "0753"
 title: "Handoff shots: check or cross icon per shot, drop the duplicate verification block"
 type: feature
-status: ready
+status: review
 priority: p2
 area: [web, ui]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-shots-check-or-cross-icon-per-sh
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T13:34:39Z"
+updated_at: "2026-10-10T13:50:27Z"
 review_passes: 1
 ---
 ## Problem
@@ -64,3 +64,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T13:34:39Z · status ready→review
 - 2026-10-10T13:34:39Z · note: handoff requested (cli)
 - 2026-10-10T13:34:39Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
+- 2026-10-10T13:50:27Z · status ready→review
