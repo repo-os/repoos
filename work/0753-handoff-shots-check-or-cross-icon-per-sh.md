@@ -56,3 +56,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T12:11:07Z · status review→active
 - 2026-10-10T12:21:12Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-10T12:28:43Z · status ready→review
+- 2026-10-10T12:28:43Z · note: handoff requested (cli)
