@@ -3,6 +3,9 @@ id: "0756"
 title: repoos message refuses when the agent is busy instead of queuing it
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p1
 area: infra
 assigned_to: ai
@@ -77,3 +80,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T17:47:05Z · status active→review
 - 2026-10-10T17:47:05Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-10T17:47:53Z · note: review pass 3: needs some work
+- 2026-10-10T17:47:53Z · needs_input
