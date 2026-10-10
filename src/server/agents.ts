@@ -4907,7 +4907,12 @@ export class AgentRunner {
     Array<{
       text: string;
       agent: Agent;
-      opts: { resumePreamble?: string; skipBoardDivergence?: boolean; cwd?: string; emitHumanTurn?: boolean };
+      opts: {
+        resumePreamble?: string;
+        skipBoardDivergence?: boolean;
+        cwd?: string;
+        emitHumanTurn?: boolean;
+      };
       queuedAt: string;
     }>
   >();
@@ -5667,7 +5672,9 @@ export class AgentRunner {
       agent,
       this.config,
       opts.contextPack,
-      opts.resumePreamble ? `${queuedMessagesPreamble}${opts.resumePreamble}` : queuedMessagesPreamble || undefined,
+      opts.resumePreamble
+        ? `${queuedMessagesPreamble}${opts.resumePreamble}`
+        : queuedMessagesPreamble || undefined,
       selectedSkills,
     );
     const { cmd, args } = cliCommand(agent, mission, cwd, { sessionId: launchSessionId });
