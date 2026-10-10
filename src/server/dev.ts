@@ -11,6 +11,15 @@
  * run. No request body ever supplies a command — the API names a target by
  * `name` and the manager looks the command up in config.
  *
+ * A target's `command`, `url` and `healthCheck.url` may contain a `{port}`
+ * placeholder (#0751). Exactly like a `[[preview.targets]]` command, the
+ * manager substitutes a free, OS-assigned port chosen at start time (never a
+ * hardcoded range), so a dev server that would otherwise clash with another app
+ * on the machine binds cleanly. The substituted port is remembered in the
+ * target's state, so the Dev page shows the REAL url of a running target and a
+ * reload handover re-adopts it with the same port. A target with no `{port}`
+ * behaves exactly as before — its fixed port or url is untouched.
+ *
  * This deliberately mirrors the preview supervisor (src/server/preview.ts):
  * same registry + persisted-file + orphan-cleanup shape, same
  * detached-process-group kill, same stderr capture. It is a second instance of
@@ -20,6 +29,7 @@
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { createServer as createTcpServer } from "node:net";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { RepoOSConfig, DevTargetConfig } from "../core/types.js";
 
@@ -48,6 +58,12 @@ export interface DevTargetState {
   startedAt?: string;
   /** ISO timestamp of the last stop/exit. */
   stoppedAt?: string;
+  /**
+   * The free port substituted for a `{port}` placeholder at the last start
+   * (#0751). Persisted so a reload handover re-adopts the target with the same
+   * port, and so `view()` can show the real url of a running target.
+   */
+  resolvedPort?: number;
   /** Last DEV_LOG_TAIL_LINES of combined stdout/stderr. */
   log: string[];
 }
@@ -169,9 +185,25 @@ export class DevTargetManager {
     const cwd = this.config.root;
     const processGroup = process.platform !== "win32";
 
+    // #0751: a target whose command/url/healthCheck uses `{port}` gets a free,
+    // OS-assigned port chosen now, exactly like `[[preview.targets]]`. A target
+    // with no placeholder keeps its declared command and url untouched.
+    let resolvedPort: number | undefined;
+    if (usesPortPlaceholder(t)) {
+      try {
+        resolvedPort = await reservePort();
+      } catch (err) {
+        const message = `could not reserve a port for "${t.name}": ${(err as Error).message}`;
+        this.setState(t.name, { status: "failed", error: message });
+        this.appendLog(t.name, `[repoos] ${message}`);
+        return { ok: false, error: message, target: this.view(t) };
+      }
+    }
+    const command = expandPort(t.command, resolvedPort) ?? t.command;
+
     let child: ChildProcess;
     try {
-      child = spawn(t.command, {
+      child = spawn(command, {
         cwd,
         shell: true,
         detached: processGroup,
@@ -194,7 +226,13 @@ export class DevTargetManager {
 
     this.running.set(t.name, { child, processGroup, longLived: t.kind !== "artifact" });
     this.adopted.delete(t.name);
-    this.setState(t.name, { status: "starting", pid, startedAt: now(), error: undefined });
+    this.setState(t.name, {
+      status: "starting",
+      pid,
+      startedAt: now(),
+      error: undefined,
+      resolvedPort,
+    });
 
     this.pipe(child, t.name);
 
@@ -250,7 +288,7 @@ export class DevTargetManager {
     // check passes (its configured URL answers, or a healthCheck file exists).
     // Without a health check, a still-live process a moment later is running —
     // which is exactly how a `process` target is healthy.
-    const ready = await this.waitForReady(t, child);
+    const ready = await this.waitForReady(t, child, resolvedPort);
     if (!ready.ok) {
       await this.killProcess(t.name);
       if (this.states.get(t.name)?.status !== "failed") {
@@ -275,6 +313,7 @@ export class DevTargetManager {
   private async waitForReady(
     t: DevTargetConfig,
     child: ChildProcess,
+    resolvedPort?: number,
   ): Promise<{ ok: boolean; error: string }> {
     const hc = t.healthCheck;
     if (hc?.file) {
@@ -289,7 +328,9 @@ export class DevTargetManager {
       }
       return { ok: false, error: `health file "${hc.file}" did not appear in time` };
     }
-    const url = hc?.url ?? t.url;
+    // #0751: a `{port}` in the health check url (or the target's own url) is the
+    // SAME port the command was given, so readiness is probed on the real port.
+    const url = expandPort(hc?.url ?? t.url, resolvedPort);
     if (url) {
       const deadline = Date.now() + HEALTH_TIMEOUT_MS;
       while (Date.now() < deadline) {
@@ -428,12 +469,17 @@ export class DevTargetManager {
       state = { ...state, status: "stopped", stoppedAt: now() };
       this.states.set(t.name, state);
     }
+    // #0751: show the real command and url of a running target — the `{port}`
+    // substituted at the last start — rather than the templated declaration. A
+    // target with no placeholder (no `resolvedPort`) keeps its declared values.
+    const command = expandPort(t.command, state.resolvedPort) ?? t.command;
+    const url = expandPort(t.url, state.resolvedPort);
     return {
       name: t.name,
       kind: t.kind,
-      command: t.command,
+      command,
       label: t.label ?? t.name,
-      ...(t.url ? { url: t.url } : {}),
+      ...(url ? { url } : {}),
       ...(t.artifactPath ? { artifactPath: t.artifactPath } : {}),
       status: state.status,
       ...(state.error ? { error: state.error } : {}),
@@ -557,6 +603,49 @@ function isAlivePid(pid: number): boolean {
   } catch {
     return false;
   }
+}
+
+/** The `{port}` token a dev target's fields may carry (#0751). */
+export const DEV_PORT_PLACEHOLDER = "{port}";
+
+/** Whether any of a target's templated fields use the `{port}` placeholder. */
+export function usesPortPlaceholder(t: DevTargetConfig): boolean {
+  return (
+    t.command.includes(DEV_PORT_PLACEHOLDER) ||
+    (t.url?.includes(DEV_PORT_PLACEHOLDER) ?? false) ||
+    (t.healthCheck?.url?.includes(DEV_PORT_PLACEHOLDER) ?? false)
+  );
+}
+
+/**
+ * Replace `{port}` in one templated field. With no resolved port the string is
+ * returned untouched, so a target that never starts (or has no placeholder)
+ * keeps exactly the value it declared.
+ */
+export function expandPort(
+  template: string | undefined,
+  port: number | undefined,
+): string | undefined {
+  if (template === undefined) return undefined;
+  if (port === undefined) return template;
+  return template.replaceAll(DEV_PORT_PLACEHOLDER, String(port));
+}
+
+/**
+ * A fresh, OS-assigned port, released just before the target's process binds —
+ * the same approach `[[preview.targets]]` uses (#0751). Choosing the port here
+ * (rather than a fixed one in config) is what keeps a dev server from clashing
+ * with another app on the machine.
+ */
+function reservePort(): Promise<number> {
+  return new Promise((resolvePort, reject) => {
+    const srv = createTcpServer();
+    srv.once("error", reject);
+    srv.listen(0, "127.0.0.1", () => {
+      const port = (srv.address() as { port: number }).port;
+      srv.close(() => resolvePort(port));
+    });
+  });
 }
 
 /** Probe a URL for readiness. Never throws; a non-2xx is a failure. */
