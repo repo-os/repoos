@@ -133,7 +133,10 @@ places, generated output, a lockfile, or the task's own bookkeeping file — and
 the task has a prior successful review, RepoOS resolves it in an isolated
 candidate against current main, reviews only the resolution delta, runs the
 combined gate once on the resolved tree, and resumes the authorized Move to
-done. The original review stays tied to the commit it approved.
+done. The original review stays tied to the commit it approved. A conflict whose
+**only** path is the task's own `work/<id>-*.md` is the one exception to the
+prior-review rule (#0754): it is pure bookkeeping, resolved by taking main's
+copy, and needs no feature review.
 
 Eligibility is **semantic, never path-based, and fails closed**: an edit rather
 than an append, overlapping hunks, an unclassifiable path, or no prior review
@@ -141,8 +144,8 @@ takes the full engineering/review handback — staying inside a conflict hunk is
 not proof of semantic safety. Never widen the allowlist in
 `conflict-resolution.ts` without a test proving the new class is
 behavior-preserving, and never auto-resolve a conflict on a task with no prior
-review. A resolution candidate whose tree is not the one its combined gate
-validated must not publish.
+review (the task-file-only case aside). A resolution candidate whose tree is not
+the one its combined gate validated must not publish.
 
 ## Interactive / external sessions working on RepoOS tasks
 

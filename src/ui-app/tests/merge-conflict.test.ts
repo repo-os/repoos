@@ -106,6 +106,56 @@ describe("computeMergeConflict", () => {
     expect(r.patch).not.toContain("work/0001.md");
   });
 
+  it("lists the closing task's own file when it is NOT auto-resolved (#0754)", async () => {
+    // A task-file-only conflict: with the close-out's auto-resolve opts the tab
+    // excludes it (it will not be refused on); with no opts, the tab lists it so
+    // its file list matches a refusal that names it.
+    writeFileSync(join(repo, "work", "0001.md"), "branch\n");
+    sh("git commit -qam branch-task");
+    sh("git checkout -q main");
+    writeFileSync(join(repo, "work", "0001.md"), "main\n");
+    sh("git commit -qam main-task");
+
+    // Auto-resolved (the close-out's own opts): not a real conflict.
+    const autoResolved = await computeMergeConflict(repo, "feature", {
+      autoResolve: ["work/0001.md"],
+      autoResolveOurs: ["work/", "inputs/", "stories/"],
+    });
+    expect(autoResolved.conflicted).toBe(false);
+    expect(autoResolved.files).toEqual([]);
+
+    // Not auto-resolved: the tab lists the task file, matching the refusal.
+    const shown = await computeMergeConflict(repo, "feature", {
+      autoResolve: [],
+      autoResolveOurs: [],
+    });
+    expect(shown.conflicted).toBe(true);
+    expect(shown.files).toContain("work/0001.md");
+    expect(shown.patch).toContain("-main\n+branch\n");
+  });
+
+  it("still hides OTHER tasks' bookkeeping files under the keep-ours prefixes", async () => {
+    // On main: an unrelated task file and a.txt both change. On feature: the
+    // same unrelated task file changes (routine bookkeeping) and a.txt is left.
+    writeFileSync(join(repo, "work", "0002-other.md"), "base\n");
+    sh("git add -A && git commit -qam add-other-base");
+    sh("git checkout -q feature");
+    writeFileSync(join(repo, "work", "0002-other.md"), "branch other\n");
+    sh("git add -A && git commit -qam branch-other");
+    sh("git checkout -q main");
+    writeFileSync(join(repo, "work", "0002-other.md"), "main other\n");
+    writeFileSync(join(repo, "a.txt"), "one\nmain two\nthree\n");
+    sh("git add -A && git commit -qam main-change");
+
+    const r = await computeMergeConflict(repo, "feature", {
+      autoResolve: ["work/0001.md"],
+      autoResolveOurs: ["work/", "inputs/", "stories/"],
+    });
+    // The unrelated work file is bookkeeping the close-out keeps main's copy of,
+    // so it is not the tab's concern; a.txt is a real conflict.
+    expect(r.files).toEqual(["a.txt"]);
+  });
+
   it("leaves the checkout untouched", async () => {
     writeFileSync(join(repo, "a.txt"), "one\nmain two\nthree\n");
     sh("git commit -qam main-change");
