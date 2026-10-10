@@ -2,14 +2,14 @@
 id: "0753"
 title: "Handoff shots: check or cross icon per shot, drop the duplicate verification block"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, ui]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T10:13:24Z"
+updated_at: "2026-10-10T10:13:30Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 ## Activity
 
 - 2026-10-10T10:13:24Z · created · njachowski@gmail.com
+- 2026-10-10T10:13:30Z · status inbox→ready
