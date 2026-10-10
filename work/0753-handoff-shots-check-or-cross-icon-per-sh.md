@@ -2,14 +2,14 @@
 id: "0753"
 title: "Handoff shots: check or cross icon per shot, drop the duplicate verification block"
 type: feature
-status: review
+status: ready
 priority: p2
 area: [web, ui]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-shots-check-or-cross-icon-per-sh
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T13:50:27Z"
+updated_at: "2026-10-10T13:50:28Z"
 review_passes: 1
 ---
 ## Problem
