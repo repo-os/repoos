@@ -74,6 +74,13 @@ const APK = {
   label: "Debug APK",
 };
 
+const PROCESS = {
+  name: "divot",
+  kind: "process",
+  command: "swift run --package-path macos divot",
+  label: "Divot bar",
+};
+
 describe("Settings control contract for [[dev.targets]] (#0749)", () => {
   it("exposes the dev.targets key in the schema so search can find its UI row", () => {
     expect(getConfigSchema().some((f) => f.key === "dev.targets")).toBe(true);
@@ -133,6 +140,40 @@ describe("Settings control contract for [[dev.targets]] (#0749)", () => {
       expect(String(res.payload.error)).toContain('an "artifact" target cannot have a url');
       expect(res.payload.errors).toEqual([String(res.payload.error)]);
       expect(loadConfig(root).dev?.targets).toBeUndefined();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("writes a process target (no URL) as a row the loader reads back", async () => {
+    const root = repo('workDir = "work"\n');
+    try {
+      const res = await patch(root, { devTargets: [PROCESS] });
+      expect(res.status).toBe(200);
+      const cfg = loadConfig(root);
+      expect(cfg.dev?.targets).toEqual([
+        {
+          name: "divot",
+          kind: "process",
+          command: "swift run --package-path macos divot",
+          label: "Divot bar",
+        },
+      ]);
+      expect(cfg.dev?.targets?.[0].url).toBeUndefined();
+      expect(cfg.dev?.targets?.[0].artifactPath).toBeUndefined();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a conflicting url on a process row with the parser's own message", async () => {
+    const root = repo('workDir = "work"\n');
+    try {
+      const res = await patch(root, {
+        devTargets: [{ ...PROCESS, url: "http://localhost:9999" }],
+      });
+      expect(res.status).toBe(400);
+      expect(String(res.payload.error)).toContain('a "process" target cannot have a url');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -279,6 +320,19 @@ describe("Settings control client-side validation (#0749)", () => {
       url: "http://localhost:9999",
     };
     expect(devTargetError(draft)).toContain('an "artifact" target cannot have a url');
+  });
+
+  it("accepts a process draft and rejects a health check on one", () => {
+    const good = {
+      ...emptyDevTargetDraft(),
+      name: "divot",
+      kind: "process" as const,
+      command: "swift run --package-path macos divot",
+    };
+    expect(devTargetError(good)).toBeNull();
+    expect(devTargetError({ ...good, healthCheckFile: "ready.txt" })).toContain(
+      'a "process" target cannot have a healthCheck',
+    );
   });
 
   it("flags a duplicate name against a sibling, but not against itself", () => {

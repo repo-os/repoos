@@ -69,9 +69,9 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
       continue;
     }
     const kindRaw = typeof r.kind === "string" ? r.kind.trim() : "";
-    if (kindRaw !== "server" && kindRaw !== "artifact") {
+    if (kindRaw !== "server" && kindRaw !== "artifact" && kindRaw !== "process") {
       errors.push(
-        `[dev.targets] ${name}: kind must be "server" or "artifact"${kindRaw ? ` (got "${kindRaw}")` : ""}`,
+        `[dev.targets] ${name}: kind must be "server", "artifact" or "process"${kindRaw ? ` (got "${kindRaw}")` : ""}`,
       );
       continue;
     }
@@ -85,7 +85,11 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
     const url = typeof r.url === "string" ? r.url.trim() : "";
     const artifactPath = typeof r.artifactPath === "string" ? r.artifactPath.trim() : "";
     if (kindRaw === "server" && !url) {
-      errors.push(`[dev.targets] ${name}: a "server" target needs a url`);
+      // A long-lived target with no URL is a `process`, not a `server` — point
+      // the user at the right kind rather than leaving them stuck.
+      errors.push(
+        `[dev.targets] ${name}: a "server" target needs a url (use kind = "process" for a long-lived target with no URL)`,
+      );
       continue;
     }
     if (kindRaw === "artifact" && !artifactPath) {
@@ -98,6 +102,17 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
     }
     if (kindRaw === "artifact" && url) {
       errors.push(`[dev.targets] ${name}: an "artifact" target cannot have a url`);
+      continue;
+    }
+    // A process has neither a URL nor a build artifact — it is healthy while it
+    // is alive, which is its health check. Reject the conflicting fields so a
+    // typo can never silently change what the target means.
+    if (kindRaw === "process" && url) {
+      errors.push(`[dev.targets] ${name}: a "process" target cannot have a url`);
+      continue;
+    }
+    if (kindRaw === "process" && artifactPath) {
+      errors.push(`[dev.targets] ${name}: a "process" target cannot have an artifactPath`);
       continue;
     }
     if (url) target.url = url;
@@ -144,6 +159,14 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
       };
     } else if (hcRaw !== undefined || hasInlineKeys) {
       errors.push(`[dev.targets] ${name}: healthCheck needs a url or a file`);
+      continue;
+    }
+    // A process is healthy while its process is alive; a readiness check would
+    // only muddy that. Reject one rather than silently ignore it.
+    if (kindRaw === "process" && target.healthCheck) {
+      errors.push(
+        `[dev.targets] ${name}: a "process" target cannot have a healthCheck (it is running while its process is alive)`,
+      );
       continue;
     }
     seen.add(name);
