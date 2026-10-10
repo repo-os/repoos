@@ -613,7 +613,7 @@ describe("Changes → handoff shot verdicts (#0753)", () => {
     vi.stubGlobal("EventSource", FakeEventSource);
     shotsPayload = [];
     uiVerificationPayload = handoffEvidence([], {
-      issues: [{ issue: "Missing route /missing-path", shot: null }],
+      issues: [{ kind: "blank", message: "No screenshots captured", url: "" }],
     });
 
     const wrapper = await mountChanges(pinia);
@@ -624,6 +624,6 @@ describe("Changes → handoff shot verdicts (#0753)", () => {
     // The footnotes should display the run-level issue.
     const footnotes = wrapper.find(".ui-changes-footnotes");
     expect(footnotes.exists()).toBe(true);
-    expect(footnotes.text()).toContain("Missing route /missing-path");
+    expect(footnotes.text()).toContain("No screenshots captured");
   });
 });
