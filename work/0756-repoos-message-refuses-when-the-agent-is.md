@@ -11,10 +11,7 @@ branch: feat/repoos-message-refuses-when-the-agent-is
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-10T14:10:58Z"
-updated_at: "2026-10-10T18:00:35Z"
-review_passes: 4
-review_rounds: 2
-last_check_failure: "repoos check at 2026-10-10T15:58:58.515Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
+updated_at: "2026-10-10T17:16:29Z"
 ---
 ## Problem
 
@@ -52,38 +49,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T14:12:39Z · cli_override, model_override
 - 2026-10-10T14:12:40Z · model_override
 - 2026-10-10T14:12:46Z · status ready→active, branch
-- 2026-10-10T15:03:21Z · body
-- 2026-10-10T15:04:34Z · body
-- 2026-10-10T15:06:38Z · body
-- 2026-10-10T15:07:17Z · body
-- 2026-10-10T15:08:38Z · body
-- 2026-10-10T17:09:35Z · body
-- 2026-10-10T17:10:14Z · body
 - 2026-10-10T17:16:29Z · status active→review
-- 2026-10-10T17:16:29Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-10T17:17:21Z · note: review pass 1: needs some work
-- 2026-10-10T17:17:21Z · status review→active
-- 2026-10-10T17:19:23Z · body
-- 2026-10-10T17:20:30Z · body
-- 2026-10-10T17:26:33Z · status active→review
-- 2026-10-10T17:26:33Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-10T17:27:22Z · note: review pass 2: needs some work
-- 2026-10-10T17:27:22Z · status review→active
-- 2026-10-10T17:29:16Z · body
-- 2026-10-10T17:30:15Z · body
-- 2026-10-10T17:35:50Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on thinkpad — fix it in the feature branch and re-run the gate
-- 2026-10-10T17:41:24Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-10T17:41:24Z · note: handoff requested (cli)
-- 2026-10-10T17:47:05Z · status active→review
-- 2026-10-10T17:47:05Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-10T17:47:53Z · note: review pass 3: needs some work
-- 2026-10-10T17:47:53Z · needs_input
-- 2026-10-10T17:50:07Z · needs_input
-- 2026-10-10T17:50:07Z · status review→active
-- 2026-10-10T17:50:07Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
-- 2026-10-10T17:53:25Z · body
-- 2026-10-10T17:54:33Z · body
-- 2026-10-10T17:54:37Z · status active→review
-- 2026-10-10T17:54:38Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-10T17:55:43Z · note: review pass 4: good to go
-
