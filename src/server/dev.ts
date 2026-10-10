@@ -622,7 +622,10 @@ export function usesPortPlaceholder(t: DevTargetConfig): boolean {
  * returned untouched, so a target that never starts (or has no placeholder)
  * keeps exactly the value it declared.
  */
-export function expandPort(template: string | undefined, port: number | undefined): string | undefined {
+export function expandPort(
+  template: string | undefined,
+  port: number | undefined,
+): string | undefined {
   if (template === undefined) return undefined;
   if (port === undefined) return template;
   return template.replaceAll(DEV_PORT_PLACEHOLDER, String(port));

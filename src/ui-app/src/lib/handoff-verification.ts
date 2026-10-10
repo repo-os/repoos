@@ -131,5 +131,10 @@ export function handoffSummary(verdicts: ShotVerdictView[]): HandoffSummary {
       : checking === 1
         ? "1 needs checking"
         : `${checking} need checking`;
-  return { total, matching, checking, sentence: `${total} ${shotWord}, ${capturedWord}, ${checkingWord}` };
+  return {
+    total,
+    matching,
+    checking,
+    sentence: `${total} ${shotWord}, ${capturedWord}, ${checkingWord}`,
+  };
 }
