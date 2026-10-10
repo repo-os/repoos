@@ -605,4 +605,25 @@ describe("Changes → handoff shot verdicts (#0753)", () => {
     expect(footnotes.exists()).toBe(true);
     expect(footnotes.text()).toContain("content wider than viewport");
   });
+
+  it("renders the UI changes section when there are run-level issues but no shot rows", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [];
+    uiVerificationPayload = handoffEvidence([], {
+      issues: [{ issue: "Missing route /missing-path", shot: null }],
+    });
+
+    const wrapper = await mountChanges(pinia);
+    // The section should still render even with no shot rows, because there are
+    // run-level issues to show.
+    const uiChanges = wrapper.find(".ui-changes");
+    expect(uiChanges.exists()).toBe(true);
+    // The footnotes should display the run-level issue.
+    const footnotes = wrapper.find(".ui-changes-footnotes");
+    expect(footnotes.exists()).toBe(true);
+    expect(footnotes.text()).toContain("Missing route /missing-path");
+  });
 });
