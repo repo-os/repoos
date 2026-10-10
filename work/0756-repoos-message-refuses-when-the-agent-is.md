@@ -2,7 +2,7 @@
 id: "0756"
 title: repoos message refuses when the agent is busy instead of queuing it
 type: bug
-status: review
+status: active
 priority: p1
 area: infra
 assigned_to: ai
