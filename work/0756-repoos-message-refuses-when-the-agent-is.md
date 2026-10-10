@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 277375
-last_close_out_gate_at: "2026-10-10T18:08:52.866Z"
 id: "0756"
 title: repoos message refuses when the agent is busy instead of queuing it
 type: bug
-status: review
+status: done
 priority: p1
 area: infra
+merged_commit: 63bc5c9c875f3a9619c695621220fca2dfb832b0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-message-refuses-when-the-agent-is
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-10T14:10:58Z"
-updated_at: "2026-10-10T18:08:52Z"
+updated_at: "2026-10-10T18:09:02Z"
+last_close_out_gate_ms: 277375
+last_close_out_gate_at: "2026-10-10T18:08:52.866Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-10-10T15:58:58.515Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -89,4 +90,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T17:54:38Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-10T17:55:43Z · note: review pass 4: good to go
 - 2026-10-10T18:08:52Z · close-out gate completed in 277s
-
+- 2026-10-10T18:09:02Z · status review→done, release:success
