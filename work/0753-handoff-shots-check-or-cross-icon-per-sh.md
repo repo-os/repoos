@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-shots-check-or-cross-icon-per-sh
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T12:28:43Z"
+updated_at: "2026-10-10T12:28:44Z"
 review_passes: 1
 ---
 ## Problem
@@ -57,3 +57,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T12:21:12Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-10T12:28:43Z · status ready→review
 - 2026-10-10T12:28:43Z · note: handoff requested (cli)
+- 2026-10-10T12:28:44Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is ready
