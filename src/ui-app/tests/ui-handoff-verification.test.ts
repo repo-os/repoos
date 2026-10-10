@@ -574,20 +574,23 @@ describe("UI handoff verification gate (#0680)", () => {
     const result = await runUiHandoffGate(config, task, previews, () => {}, {
       launchBrowser: mockBrowser,
       startPreview: async () => ({ url: "http://127.0.0.1:9" }),
-      captureEntry: async () => ({
-        png: Buffer.alloc(5000),
-        issues: [
-          {
-            kind: "console",
-            message: "TypeError: x is undefined",
-            url: "/",
-          } as import("../../core/page-browser-gate.js").PageGateIssue,
-        ],
-        blank: false,
-        warnings: [],
-        finalUrl: "http://127.0.0.1:9/",
-        assertions: [],
-      }),
+      captureEntry: async () =>
+        ({
+          png: Buffer.alloc(5000),
+          issues: [
+            {
+              kind: "console",
+              message: "TypeError: x is undefined",
+              url: "/",
+            },
+          ],
+          blank: false,
+          warnings: [],
+          finalUrl: "http://127.0.0.1:9/",
+          assertions: [],
+        } as unknown as Awaited<
+          ReturnType<NonNullable<UiHandoffGateDeps["captureEntry"]>>
+        >),
     });
     expect(result.ok).toBe(false);
     expect(result.detail).toContain("TypeError");
