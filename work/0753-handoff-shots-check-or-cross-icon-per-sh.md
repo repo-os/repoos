@@ -9,19 +9,19 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-shots-check-or-cross-icon-per-sh
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T10:13:32Z"
+updated_at: "2026-10-10T10:16:00Z"
 ---
 ## Problem
 
 The Changes tab shows the handoff UI verification twice: a summary block (date, tested tree, sentence, console issues and warnings) and then the same shots again under UI changes. The summary block is extra text that repeats the shots. Users only need to know whether each shot is correct.
 
 ## Desired UX
-
 - Remove the "Handoff UI verification" summary block from the Changes tab.
-- Each shot row under UI changes gets a single icon: a green check when the shot matches, a red cross when it needs checking.
-- Hovering or focusing the icon opens a popover that explains the verdict in plain words, for example "matches: every declared step ran and the capture was taken", or "check: couldn't find the fullscreen toggle".
-- The popover also shows the console errors, failed same-origin requests, overflow or blank-capture issues for that handoff, so the information the block carried is not lost.
-- The tested tree and capture time move into the popover or a small line under the section title, not a separate block.
+- Show one list: each shot is a row under UI changes. The row shows its caption and thumbnail, plus a green check (matches) or red cross (check).
+- Hovering or focusing the icon opens a popover with the plain-words reason, for example "couldn't find the fullscreen toggle", and that shot's own console errors, failed same-origin requests, overflow and blank-capture issues.
+- Issues belong to a shot. The gate already collects them per capture, but the stored record keeps one list for the whole handoff. Store each capture's issues on that capture, and show a run-level issue (one not tied to any shot) under the list as a single line.
+- The tested tree and capture time go in one line above the list, not a separate block.
+
 
 ## Acceptance criteria
 
@@ -50,3 +50,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T10:13:24Z · created · njachowski@gmail.com
 - 2026-10-10T10:13:30Z · status inbox→ready
 - 2026-10-10T10:13:32Z · status ready→active, branch
+- 2026-10-10T10:16:00Z · body: section Desired UX
