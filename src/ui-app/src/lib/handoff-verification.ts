@@ -63,6 +63,12 @@ function plainReasonForWarning(warning: string): string | undefined {
   if (selectorMiss) return `couldn't find ${selectorMiss[1]}`;
   const highlightMiss = /^highlight\s+(.+?)\s+matched nothing/.exec(warning);
   if (highlightMiss) return `couldn't find ${highlightMiss[1]} to highlight`;
+  // #0755: a capture that landed on a loading state is a failed step — the
+  // declared content never rendered. Name it in plain words rather than
+  // echoing the raw probe description.
+  if (/^loading state detected/.test(warning)) {
+    return "the page was still loading — the shot shows a loading state, not the content";
+  }
   // Any other warning keeps its own wording — better an honest raw line than a
   // mislabelled one.
   return warning;
@@ -73,12 +79,20 @@ function plainReasonForWarning(warning: string): string | undefined {
  * its declared route and recorded no step/selector/highlight miss and no failed
  * blocking assertion; otherwise it needs a `check`, named in plain words.
  *
+ * #0755: `matches` also requires that the capture describes the tree the review
+ * will use. When `opts.stale` is set (the evidence's `sourceIdentity` differs
+ * from the reviewed HEAD) the shot is `check` no matter how clean its steps
+ * looked — a screenshot of an older tree is not verification of this one.
+ *
  * `matches` deliberately tolerates an OPTIONAL assertion failure (#0734): an
  * optional assertion is recorded as best-effort and never blocks a handoff, so
  * it must not flip a shot to `check`. A non-optional (blocking) assertion
  * failure is a real miss and does.
  */
-export function shotVerdict(cap: UiHandoffCaptureEvidence): ShotVerdictView {
+export function shotVerdict(
+  cap: UiHandoffCaptureEvidence,
+  opts: { stale?: boolean } = {},
+): ShotVerdictView {
   const warnings = cap.targetWarnings ?? [];
   const details: string[] = [...warnings];
 
@@ -89,6 +103,15 @@ export function shotVerdict(cap: UiHandoffCaptureEvidence): ShotVerdictView {
   // Blocking assertion failures: a required check that did not hold.
   const blockingFailures = cap.assertions.filter((a) => a.blocking && !a.passed);
   for (const failure of blockingFailures) details.push(`${failure.description}: ${failure.detail}`);
+
+  // #0755: evidence for another tree is never verification.
+  if (opts.stale) {
+    return {
+      verdict: "check",
+      reason: "captured on an older tree than the reviewed HEAD",
+      details,
+    };
+  }
 
   if (!routeFailed && warnings.length === 0 && blockingFailures.length === 0) {
     return { verdict: "matches", reason: "", details };
@@ -279,6 +302,15 @@ export function handoffContextLine(
   if (!evidence) return "";
   const parts: string[] = [];
   if (evidence.sourceIdentity) parts.push(`tested tree ${evidence.sourceIdentity}`);
+  // #0755: a capture for a tree other than the reviewed HEAD is stale — say so
+  // here, on the same line, so the Changes tab never presents it as current.
+  if (evidence.stale) {
+    parts.push(
+      evidence.reviewedHead
+        ? `STALE — reviewed HEAD ${evidence.reviewedHead}; re-capture on the final tree`
+        : "STALE — capture is not for the reviewed HEAD; re-capture on the final tree",
+    );
+  }
   if (evidence.evidenceDir) parts.push(`PNGs at ${evidence.evidenceDir}`);
   return parts.join(" · ");
 }

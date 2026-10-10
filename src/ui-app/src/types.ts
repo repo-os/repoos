@@ -489,6 +489,14 @@ export interface UiHandoffVerificationEvidence {
   evidenceDir?: string;
   captureDetails?: UiHandoffCaptureEvidence[];
   warnings?: string[];
+  /**
+   * #0755: the branch HEAD the review/close-out will use, and whether it
+   * differs from the captured `sourceIdentity`. Set server-side from git;
+   * `stale: true` means this evidence is for a different tree than the reviewed
+   * one — it is shown as stale and never as verification.
+   */
+  reviewedHead?: string;
+  stale?: boolean;
 }
 
 /** Client-side view of a task's agent review. */

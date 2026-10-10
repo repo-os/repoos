@@ -93,6 +93,10 @@ export async function captureEntryPage(
         onStepMiss: (message, route) => {
           warnings.push(`${message} on ${route}`);
         },
+        // #0755: a loading-state capture is reported like a failed step.
+        onLoadingState: (message, route) => {
+          warnings.push(`${message} on ${route}`);
+        },
       },
     );
     return { png, warnings };

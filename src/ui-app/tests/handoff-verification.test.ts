@@ -129,6 +129,58 @@ describe("shotVerdict (#0751)", () => {
     );
     expect(optional.verdict).toBe("matches");
   });
+
+  // #0755 — a capture of a still-loading page is a failed step, not a pass.
+  it("checks a capture that landed on a loading state", () => {
+    const view = shotVerdict(
+      capture({
+        targetWarnings: ['loading state detected: loading text "Loading changes…" on /drawer'],
+      }),
+    );
+    expect(view.verdict).toBe("check");
+    expect(view.reason).toBe(
+      "the page was still loading — the shot shows a loading state, not the content",
+    );
+    // The raw probe description stays available for a debugging reviewer.
+    expect(view.details[0]).toContain("Loading changes…");
+  });
+
+  // #0755 — a declared selector that never appeared is named, so a placeholder
+  // step cannot slip through as a pass.
+  it("checks a capture whose declared selector is missing, naming it", () => {
+    const view = shotVerdict(
+      capture({ targetWarnings: ['selector [data-task-id="9999"] matched nothing on /drawer'] }),
+    );
+    expect(view.verdict).toBe("check");
+    expect(view.reason).toBe('couldn\'t find [data-task-id="9999"]');
+  });
+
+  // #0755 — evidence for another tree is never verification.
+  it("checks a shot whose tree is stale, regardless of clean steps", () => {
+    const view = shotVerdict(capture(), { stale: true });
+    expect(view.verdict).toBe("check");
+    expect(view.reason).toBe("captured on an older tree than the reviewed HEAD");
+  });
+
+  // The clean populated capture stays a pass — route match with real content.
+  it("matches a populated capture with a required assertion met", () => {
+    const view = shotVerdict(
+      capture({
+        assertions: [
+          {
+            description: "rows present · selector .row · at least 1",
+            passed: true,
+            detail: "",
+            blocking: true,
+          },
+        ],
+        assertionsPassed: 1,
+        assertionsChecked: 1,
+      }),
+    );
+    expect(view.verdict).toBe("matches");
+    expect(view.reason).toBe("");
+  });
 });
 
 describe("verdictSentence (#0753)", () => {
@@ -196,6 +248,32 @@ describe("handoffContextLine (#0753)", () => {
   it("is empty when the handoff recorded neither", () => {
     expect(handoffContextLine(evidence())).toBe("");
     expect(handoffContextLine(null)).toBe("");
+  });
+
+  it("flags a stale capture on the same line, with the reviewed HEAD (#0755)", () => {
+    const line = handoffContextLine(
+      evidence({
+        sourceIdentity: "4266b301b",
+        reviewedHead: "16620c0f4",
+        stale: true,
+        evidenceDir: "work/.attachments/0753/shots",
+      }),
+    );
+    expect(line).toContain("tested tree 4266b301b");
+    expect(line).toContain("STALE — reviewed HEAD 16620c0f4");
+    expect(line).toContain("work/.attachments/0753/shots");
+  });
+
+  it("says STALE without a reviewed HEAD when the tree is only one-sided (#0755)", () => {
+    const line = handoffContextLine(evidence({ sourceIdentity: "4266b301b", stale: true }));
+    expect(line).toContain("STALE — capture is not for the reviewed HEAD");
+  });
+
+  it("does not flag a current capture as stale (#0755)", () => {
+    const line = handoffContextLine(
+      evidence({ sourceIdentity: "16620c0f4", reviewedHead: "16620c0f4", stale: false }),
+    );
+    expect(line).not.toContain("STALE");
   });
 });
 
