@@ -68,7 +68,11 @@ import {
   reviewPassActivitySummary,
   reviewPassPath,
 } from "../core/review-passes.js";
-import { readUiHandoffGateEvidence, handoffTreeStatus, handoffTreeNote } from "./ui-handoff-gate.js";
+import {
+  readUiHandoffGateEvidence,
+  handoffTreeStatus,
+  handoffTreeNote,
+} from "./ui-handoff-gate.js";
 import { getCheckStore } from "../core/check-store.js";
 import { extractTaskProofCommands } from "../core/task-proof-commands.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";

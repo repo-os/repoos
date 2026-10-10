@@ -892,4 +892,47 @@ describe("captureShotPage loading-state detection (#0755)", () => {
     );
     expect(misses).toEqual(['[data-task-id="9999"]']);
   });
+
+  // The probe runs the REAL query script against a tiny DOM, so the detection
+  // rule itself is exercised — not just the handler wiring.
+  it("detects 'Loading changes…' text in a real DOM via the query script", async () => {
+    class FakeElement {
+      parentElement: FakeElement | null = null;
+      constructor(readonly textContent: string) {}
+      getBoundingClientRect() {
+        return { width: 10, height: 10 };
+      }
+    }
+    const body = new FakeElement("");
+    const loadingText = new FakeElement("Loading changes…");
+    loadingText.parentElement = body;
+    const wired = new FakeElement("Saved changes");
+    wired.parentElement = body;
+    const doc = {
+      body,
+      createTreeWalker: () => {
+        const nodes = [loadingText, wired];
+        let i = 0;
+        return { nextNode: () => (i < nodes.length ? nodes[i++]! : null) };
+      },
+      querySelectorAll: () => [],
+    };
+    const page = fakePage("", { evaluate: false });
+    (page as unknown as { evaluate: unknown }).evaluate = async (script: string) =>
+      new Function("document", "NodeFilter", "window", "Element", `return ${script}`)(
+        doc,
+        { SHOW_TEXT: 4 },
+        { getComputedStyle: () => ({}) },
+        FakeElement,
+      );
+    const misses: string[] = [];
+    await captureShotPage(
+      page,
+      "http://x/",
+      { route: "/repo/commits/abc" },
+      { waitMs: 0, fullPage: false },
+      { onLoadingState: (message) => misses.push(message) },
+    );
+    expect(misses[0]).toContain('loading text "Loading changes…"');
+  });
 });
