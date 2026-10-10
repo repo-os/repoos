@@ -218,6 +218,11 @@ function rowDetail(t: DevTargetPayload): string {
 </template>
 
 <style scoped>
+/* Match the sibling Advanced-tab cards (SettingsView): inset content, same gap below. */
+.dev-targets-card {
+  padding: 0 18px 6px;
+  margin-bottom: 16px;
+}
 .dev-targets-list {
   list-style: none;
   margin: 0;

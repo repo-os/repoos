@@ -278,6 +278,7 @@ function close(): void {
 <style scoped>
 .dev-target-modal {
   width: min(560px, 92vw);
+  padding: 20px 22px;
 }
 .dev-target-head {
   display: flex;
