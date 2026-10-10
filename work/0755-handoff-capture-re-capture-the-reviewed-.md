@@ -88,3 +88,4 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 - 2026-10-10T17:41:24Z · note: handoff requested (cli)
 - 2026-10-10T17:47:33Z · status active→review
 - 2026-10-10T17:47:33Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (e555d70cc) during finalization (#0734)
+- 2026-10-10T17:47:33Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (e555d70cc) during finalization (#0734)
