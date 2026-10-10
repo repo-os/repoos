@@ -33,6 +33,12 @@ enum ServerNavigationPolicy {
         opensNewWindow: Bool
     ) -> ServerNavigationAction {
         if opensNewWindow {
+            // A link the user clicked with target="_blank" (for example a dev target's
+            // URL on the Dev page) has no window inside this web view. Send a loopback
+            // URL to the default browser, where it works. Every other popup stays blocked.
+            if activation == .linkActivated, isLoopbackURL(requestURL) {
+                return .openInDefaultBrowser(requestURL)
+            }
             return .cancel(reason: .popup)
         }
 
@@ -68,6 +74,14 @@ enum ServerNavigationPolicy {
 
     static func isSameOrigin(_ url: URL, _ allowedOrigin: URL) -> Bool {
         ServerOriginNormalizer.hasSameOrigin(url, allowedOrigin)
+    }
+
+    /// True for http(s) URLs whose host is this Mac's loopback interface, any port.
+    static func isLoopbackURL(_ url: URL) -> Bool {
+        let scheme = (url.scheme ?? "").lowercased()
+        guard scheme == "http" || scheme == "https" else { return false }
+        let host = (url.host ?? "").lowercased()
+        return host == "localhost" || host == "127.0.0.1" || host == "::1" || host == "[::1]"
     }
 }
 
