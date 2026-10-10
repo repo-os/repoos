@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-10T12:21:48.960Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 2534079e to 6537a4c7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "0753"
 title: "Handoff shots: check or cross icon per shot, drop the duplicate verification block"
 type: feature
@@ -121,3 +123,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T12:12:19Z · body
 - 2026-10-10T12:14:27Z · body
 - 2026-10-10T12:15:31Z · body
+
