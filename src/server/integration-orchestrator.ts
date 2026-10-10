@@ -1718,7 +1718,7 @@ export class CloseOutOrchestrator {
     wtPath: string,
     featureBranch: string,
     conflictPaths: string[],
-  ): Promise<{ ok: boolean }> {
+  ): Promise<{ ok: boolean; strategy?: "task-file-main" | "union" | "mixed" }> {
     // Re-run the merge without auto-resolve side effects so the conflicted
     // state is on disk for us to resolve; `mergeBranch` aborted the first one.
     const merge = await runGit(wtPath, ["merge", "--no-commit", "--no-ff", featureBranch], 60_000);
@@ -1733,18 +1733,38 @@ export class CloseOutOrchestrator {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    // First apply the SAME auto-resolve semantics the normal merge uses for the
-    // closing task's own file and unrelated task files — those are routine
-    // bookkeeping conflicts, not the source conflict being resolved here, and
-    // `mergeBranch` would have resolved them had it not hit the real conflict.
     const task = this.getTask?.(taskId);
-    const autoResolve = task ? [relative(this.config.root, task.absPath)] : [];
+    const ownTaskFile = task ? relative(this.config.root, task.absPath) : null;
+    // The closing task's own `work/<id>-*.md` is bookkeeping, not code: its
+    // resolution is main's copy (the server-written record), never a union of
+    // two activity logs. Everything else the classifier approved is resolved by
+    // union. `autoResolve`/`autoResolveOurs` mirror the normal merge so routine
+    // bookkeeping conflicts `mergeBranch` would have handled are handled here
+    // too, in the same direction.
+    const autoResolve = ownTaskFile ? [ownTaskFile] : [];
     const autoResolveOurs = [`${this.config.workDir}/`];
     const matchesRule = (p: string, rules: string[]): boolean =>
       rules.some((r) => p === r || p.startsWith(r.endsWith("/") ? r : r + "/"));
     const approved = new Set(conflictPaths);
+    let resolvedTaskFile = false;
+    let resolvedByUnion = false;
     const remaining: string[] = [];
     for (const p of conflicted) {
+      // The closing task's own file: take main's side, always. This is the
+      // #0754 fix — a task-file-only conflict previously fell through to the
+      // union path, which could not resolve an edit, and the `remaining.length
+      // === 0` guard aborted the whole resolution even though the file was
+      // already staged.
+      if (ownTaskFile !== null && p === ownTaskFile) {
+        const resolved = await runGit(wtPath, ["checkout", "--ours", "--", p], 10_000);
+        if (resolved.status !== 0) {
+          await runGit(wtPath, ["merge", "--abort"], 10_000);
+          return { ok: false };
+        }
+        await runGit(wtPath, ["add", "--", p], 10_000);
+        resolvedTaskFile = true;
+        continue;
+      }
       const ours = matchesRule(p, autoResolveOurs);
       const theirs = matchesRule(p, autoResolve);
       if (!ours && !theirs) {
@@ -1767,8 +1787,17 @@ export class CloseOutOrchestrator {
     }
 
     // What remains must be exactly what the classifier approved — no extra file
-    // may be resolved by this narrow path.
-    if (remaining.length === 0 || remaining.some((p) => !approved.has(p))) {
+    // may be resolved by this narrow path. A set that resolved ONLY the task
+    // file is complete (there is nothing left to union), so it must not be
+    // rejected for an empty `remaining`.
+    if (remaining.some((p) => !approved.has(p))) {
+      await runGit(wtPath, ["merge", "--abort"], 10_000);
+      return { ok: false };
+    }
+    if (remaining.length === 0 && !resolvedTaskFile) {
+      // Nothing was approved and nothing was resolved: this is not a conflict
+      // set the narrow path understands. Refuse rather than commit an
+      // unresolved merge.
       await runGit(wtPath, ["merge", "--abort"], 10_000);
       return { ok: false };
     }
@@ -1787,6 +1816,7 @@ export class CloseOutOrchestrator {
         return { ok: false };
       }
       writeFileSync(join(wtPath, file), union.content);
+      resolvedByUnion = true;
     }
     const add = await runGit(wtPath, ["add", "-A", "--", ...remaining], 10_000);
     if (add.status !== 0) {
@@ -1827,7 +1857,15 @@ export class CloseOutOrchestrator {
     } catch {
       /* provenance is best-effort */
     }
-    return { ok: true };
+    return {
+      ok: true,
+      strategy:
+        resolvedTaskFile && resolvedByUnion
+          ? "mixed"
+          : resolvedTaskFile
+            ? "task-file-main"
+            : "union",
+    };
   }
 
   /**
@@ -2325,9 +2363,11 @@ export class CloseOutOrchestrator {
 
       // #0692: before handing the whole feature back to the engineer, try the
       // narrow resolution path. If the conflict is eligible (proven-safe
-      // semantic class AND a prior feature review) resolve it in the candidate
-      // by taking the union of both sides, record provenance, and continue on
-      // to the combined gate rather than restarting engineering/review.
+      // semantic class — including a task-file-only conflict, which is pure
+      // bookkeeping and needs no prior review, #0754) resolve it in the
+      // candidate — taking main's copy for the task file, the union for
+      // declaration conflicts — record provenance, and continue on to the
+      // combined gate rather than restarting engineering/review.
       if (merge.conflicts.length > 0 && this.onResolutionEligible) {
         const verdict = await this.classifyResolutionEligibility(
           job,
@@ -2358,8 +2398,14 @@ export class CloseOutOrchestrator {
             this.logger?.integration(
               job.taskId,
               "info",
-              "integration conflict eligible for narrow resolution — resolved in the candidate (#0692)",
-              { classes: verdict.classes, files: merge.conflicts },
+              resolved.strategy === "task-file-main"
+                ? "integration conflict was the task's own bookkeeping file — took main's copy and continued (#0754)"
+                : "integration conflict eligible for narrow resolution — resolved in the candidate (#0692)",
+              {
+                classes: verdict.classes,
+                files: merge.conflicts,
+                strategy: resolved.strategy ?? "union",
+              },
             );
             try {
               this.onResolutionEligible(job.taskId, conflictReason, verdict);

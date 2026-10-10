@@ -48,9 +48,11 @@ const DEFAULT_CACHE_DIR = ".repoos";
  * cannot change any behavior a test could observe:
  *
  *   - `task-bookkeeping` — the closing task's own `work/<id>-*.md` file. Its
- *     branch copy is already authoritative (the merge's `autoResolve`), so this
- *     is a rename of an existing behavior, kept here only so the classifier can
- *     name it and refuse to invent new semantics on top of it.
+ *     conflict is pure bookkeeping (status/activity/branch, written by RepoOS
+ *     on both sides) and resolves by taking main's copy via
+ *     {@link resolveTaskFileByTakingMain}; it is the only class eligible
+ *     without a prior feature review (#0754), because the resolution is not a
+ *     code change at all.
  *   - `generated-output` — build products under the configured generated dirs
  *     (`dist/`, lockfile-only conflicts). Deterministically regenerable; the
  *     resolution is a rebuild, not a hand edit.
@@ -160,6 +162,21 @@ export function classifyConflictResolution(
   input: ClassifyConflictResolutionInput,
 ): ConflictResolutionVerdict {
   const { files } = input;
+
+  // A conflict set made up ONLY of the closing task's own `work/<id>-*.md` file
+  // is pure bookkeeping — status/activity/branch, written by RepoOS on both
+  // sides — and resolves by taking main's copy. That resolution is not a code
+  // change, so it needs no prior feature review to be safe (#0754): there is no
+  // behavior a test could observe, and refusing here is exactly what bounced a
+  // task back to its engineer over a file the maintainer had to hand-resolve.
+  // This is the ONE exception to the prior-approval rule; anything with a
+  // second path (code, generated output, another task's file) still requires
+  // the approval, because publishing that set publishes the code too.
+  const onlyTaskBookkeeping =
+    files.length > 0 && files.every((file) => file.isOwnTaskFile === true);
+  if (onlyTaskBookkeeping) {
+    return { eligible: true, classes: ["task-bookkeeping"], reason: "only-bookkeeping" };
+  }
 
   if (!input.hasPriorFeatureApproval) {
     // The headline rule of the task: no prior approval, no shortcut.
@@ -793,10 +810,62 @@ export function resolveConflictByUnion(
 }
 
 /**
- * Classify against the real repository state: analyze the branch-vs-main
- * conflict, then run the pure classifier. Returns `eligible: false` (never
- * throws) on any git/analysis failure — the safe default is the full cycle.
+ * Resolve the closing task's OWN `work/<id>-*.md` conflict by taking main's
+ * side of every conflict region — the RepoOS bookkeeping copy, which is
+ * authoritative at publish time (#0754).
+ *
+ * This is deliberately NOT {@link resolveConflictByUnion}: the task file always
+ * changes on BOTH sides (status/activity/branch), so its regions are edits, and
+ * a union would splice two activity logs together. Taking main's side keeps the
+ * server-written record and discards the branch's stale copy — the same choice
+ * the normal close-out merge already makes for bookkeeping (`--ours`).
+ *
+ * Pure over the merged content (markers included): no git, no I/O. A region
+ * always has an ours side (git never emits an empty ours for a bookkeeping
+ * edit), so this cannot produce '' for a real conflict; an empty `ours` is
+ * treated as unresolvable rather than guessed at.
  */
+export function resolveTaskFileByTakingMain(
+  content: string,
+): { ok: true; content: string; resolved: number } | { ok: false } {
+  const lines = content.split("\n");
+  const out: string[] = [];
+  let i = 0;
+  let resolved = 0;
+  while (i < lines.length) {
+    if (!CONFLICT_START.test(lines[i])) {
+      out.push(lines[i]);
+      i++;
+      continue;
+    }
+    const region: ConflictRegion = { startLine: i + 1, ours: [], theirs: [], hasBase: false };
+    let side: "ours" | "base" | "theirs" = "ours";
+    let closed = false;
+    let j = i + 1;
+    for (; j < lines.length; j++) {
+      const line = lines[j];
+      if (CONFLICT_END.test(line)) {
+        closed = true;
+        j++;
+        break;
+      }
+      if (side === "ours" && CONFLICT_BASE.test(line)) {
+        side = "base";
+        region.hasBase = true;
+      } else if (side !== "theirs" && CONFLICT_MID.test(line)) side = "theirs";
+      else if (side === "ours") region.ours.push(line);
+      else if (side === "theirs") region.theirs.push(line);
+    }
+    // An empty ours side means main deleted the file (a modify/delete
+    // conflict); keeping "nothing" is not the bookkeeping answer, so refuse and
+    // let the caller fall back rather than write a truncated file.
+    if (!closed || region.ours.length === 0) return { ok: false };
+    out.push(...region.ours);
+    resolved++;
+    i = j;
+  }
+  return { ok: true, content: out.join("\n"), resolved };
+}
 export async function classifyConflictForTask(
   root: string,
   branch: string,
