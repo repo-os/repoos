@@ -9,6 +9,10 @@
  * shared `ff-pending-*` classes rather than the old thumbnail grid, spec detail
  * on the row, and a thumbnail click that still opens the viewer at the right
  * index.
+ *
+ * #0753 adds a second component block here: the handoff verdict icon on each
+ * row (green check / red cross) with its plain-words popover, and proof the old
+ * standalone "Handoff UI verification" block is gone.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
@@ -468,5 +472,158 @@ describe("Changes → UI changes rows (#0611)", () => {
     expect(empty.find(".diff-file-list").exists()).toBe(true);
     const unmanaged = await mountChanges(pinia, makeTask({ status: "ready" }));
     expect(unmanaged.find(".ui-changes").exists()).toBe(false);
+  });
+});
+
+// ---- #0753: per-shot verdict icon + popover, no duplicate summary block ----
+
+/** Handoff evidence as the gate writes it (#0753): one entry per capture. */
+function handoffEvidence(
+  captures: Array<Record<string, unknown>>,
+  over: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    at: "2026-10-10T10:00:00Z",
+    issues: [],
+    blankShots: [],
+    captures: captures.length,
+    sourceIdentity: "abc1234",
+    evidenceDir: "work/.attachments/0001/shots",
+    captureDetails: captures.map((over) => ({
+      target: "default",
+      route: "/",
+      url: "http://127.0.0.1:0/",
+      finalRoute: "/",
+      routeMatched: true,
+      assertions: [],
+      assertionsPassed: 0,
+      assertionsChecked: 0,
+      ...over,
+    })),
+    ...over,
+  };
+}
+
+describe("Changes → handoff shot verdicts (#0753)", () => {
+  it("drops the standalone 'Handoff UI verification' block entirely", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [makeShot({ name: "shot-1.png", url: "/u/1.png", label: "Bell popover" })];
+    uiVerificationPayload = handoffEvidence([
+      { shot: { name: "shot-1.png", path: "", url: "/u/1.png" } },
+    ]);
+
+    const wrapper = await mountChanges(pinia);
+    expect(wrapper.text()).not.toContain("Handoff UI verification");
+    // The context the old block carried now lives on the small status line.
+    expect(wrapper.find(".ui-changes-meta").exists()).toBe(true);
+    expect(wrapper.find(".ui-changes-meta").text()).toContain("tested tree abc1234");
+  });
+
+  it("shows a green check on a matching shot, with a matches popover", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [makeShot({ name: "shot-1.png", url: "/u/1.png", label: "Bell popover" })];
+    uiVerificationPayload = handoffEvidence([
+      { shot: { name: "shot-1.png", path: "", url: "/u/1.png" } },
+    ]);
+
+    const wrapper = await mountChanges(pinia);
+    const icon = wrapper.find(".ui-changes .shot-row-verdict");
+    expect(icon.exists()).toBe(true);
+    expect(icon.attributes("data-verdict")).toBe("matches");
+    expect(icon.text()).toBe("✓");
+    expect(icon.attributes("aria-label")).toBe(
+      "matches: every declared step ran and the capture was taken",
+    );
+    // Focusable so the shared tooltip opens on keyboard focus too.
+    expect(icon.attributes("tabindex")).toBe("0");
+  });
+
+  it("shows a red cross on a checking shot, naming the failed step in the popover", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [makeShot({ name: "shot-1.png", url: "/u/1.png", label: "Bell popover" })];
+    uiVerificationPayload = handoffEvidence([
+      {
+        shot: { name: "shot-1.png", path: "", url: "/u/1.png" },
+        targetWarnings: ['click [data-test-id="fullscreen"]: Timeout 5000ms exceeded'],
+      },
+    ]);
+
+    const wrapper = await mountChanges(pinia);
+    const icon = wrapper.find(".ui-changes .shot-row-verdict");
+    expect(icon.attributes("data-verdict")).toBe("check");
+    expect(icon.text()).toBe("✕");
+    expect(icon.attributes("aria-label")).toBe(
+      'check: couldn\'t find [data-test-id="fullscreen"] to click',
+    );
+    // The raw message rides along in the popover tip.
+    expect(icon.attributes("data-tip")).toContain("Timeout 5000ms exceeded");
+  });
+
+  it("carries a shot's own console error in its popover, once", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [makeShot({ name: "shot-1.png", url: "/u/1.png", label: "Bell popover" })];
+    const issue = { kind: "console", message: "TypeError: boom", url: "/" };
+    uiVerificationPayload = handoffEvidence(
+      [{ shot: { name: "shot-1.png", path: "", url: "/u/1.png" }, issues: [issue] }],
+      { issues: [issue] },
+    );
+
+    const wrapper = await mountChanges(pinia);
+    const tip = wrapper.find(".ui-changes .shot-row-verdict").attributes("data-tip");
+    expect(tip).toContain("TypeError: boom");
+    // The shot owns the issue, so it is not repeated run-level under the list.
+    expect(wrapper.find(".ui-changes-footnotes").exists()).toBe(false);
+  });
+
+  it("shows a run-level issue once under the list when no shot owns it", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [makeShot({ name: "shot-1.png", url: "/u/1.png", label: "Bell popover" })];
+    uiVerificationPayload = handoffEvidence(
+      [{ shot: { name: "shot-1.png", path: "", url: "/u/1.png" } }],
+      {
+        issues: [{ kind: "overflow", message: "content wider than viewport", viewportWidth: 375 }],
+      },
+    );
+
+    const wrapper = await mountChanges(pinia);
+    const footnotes = wrapper.find(".ui-changes-footnotes");
+    expect(footnotes.exists()).toBe(true);
+    expect(footnotes.text()).toContain("content wider than viewport");
+  });
+
+  it("renders the UI changes section when there are run-level issues but no shot rows", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [];
+    uiVerificationPayload = handoffEvidence([], {
+      issues: [{ kind: "blank", message: "No screenshots captured", url: "" }],
+    });
+
+    const wrapper = await mountChanges(pinia);
+    // The section should still render even with no shot rows, because there are
+    // run-level issues to show.
+    const uiChanges = wrapper.find(".ui-changes");
+    expect(uiChanges.exists()).toBe(true);
+    // The footnotes should display the run-level issue.
+    const footnotes = wrapper.find(".ui-changes-footnotes");
+    expect(footnotes.exists()).toBe(true);
+    expect(footnotes.text()).toContain("No screenshots captured");
   });
 });
