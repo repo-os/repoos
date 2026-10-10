@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-10T15:58:58.515Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0756"
 title: repoos message refuses when the agent is busy instead of queuing it
 type: bug
@@ -54,3 +56,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T15:06:38Z · body
 - 2026-10-10T15:07:17Z · body
 - 2026-10-10T15:08:38Z · body
+
