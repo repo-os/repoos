@@ -156,7 +156,6 @@ describe("message queueing", () => {
     }
   });
 
-
   it("should expire messages that are not delivered within timeout", () => {
     const fx = makeFixture();
     const cwd = fx.bin;
