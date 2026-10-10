@@ -2,7 +2,7 @@
 id: "0754"
 title: Close-out should auto-resolve task-file-only merge conflicts instead of refusing
 type: bug
-status: active
+status: review
 priority: p1
 area: infra
 assigned_to: ai
@@ -51,4 +51,4 @@ AGENTS.md already says the narrow resolution path may take "the task's own bookk
 - 2026-10-10T17:25:39Z · body
 - 2026-10-10T17:26:21Z · body
 - 2026-10-10T17:27:31Z · body
-- 2026-10-10T17:34:19Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-10T17:34:19Z · status active→review
