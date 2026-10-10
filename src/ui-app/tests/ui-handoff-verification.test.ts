@@ -571,7 +571,7 @@ describe("UI handoff verification gate (#0680)", () => {
     const previews = {
       stop: vi.fn(async () => {}),
     } as unknown as import("../../server/preview.js").PreviewManager;
-    const captureIssue: import("../../types.js").UiHandoffVerificationIssue = {
+    const captureIssue: import("../src/types.js").UiHandoffVerificationIssue = {
       kind: "console",
       message: "TypeError: x is undefined",
       url: "/",
