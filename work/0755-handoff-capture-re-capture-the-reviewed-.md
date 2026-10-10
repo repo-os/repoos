@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-10T18:19:08Z"
-review_passes: 4
 id: "0755"
 title: "Handoff capture: re-capture the reviewed tree and stop placeholder selectors"
 type: bug
@@ -11,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-capture-re-capture-the-reviewed-
 created_at: "2026-10-10T14:10:28Z"
-review_rounds: 1
+updated_at: "2026-10-10T17:24:26Z"
 ---
 ## Problem
 
@@ -46,58 +44,9 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 - #0750 (the earlier task with the same placeholder-selector problem)
 - #0743 (missing targets are warnings, not failures)
 
-## Shots
-```json
-[
-{
-"label": "Task 0755 drawer open on the Changes tab — the surface whose stale-capture verdict this task hardens",
-"target": "default",
-"route": "/work?task=0755&tab=changes",
-"highlight": "[aria-label=\"UI changes\"]"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-10T14:10:28Z · created · njachowski@gmail.com
 - 2026-10-10T14:13:09Z · status inbox→ready
 - 2026-10-10T14:13:09Z · status ready→active, branch
-- 2026-10-10T15:05:09Z · status active→ready
-- 2026-10-10T15:05:10Z · status ready→active
-- 2026-10-10T17:11:25Z · body
-- 2026-10-10T17:12:26Z · body
-- 2026-10-10T17:12:59Z · body
-- 2026-10-10T17:14:15Z · body
-- 2026-10-10T17:14:57Z · body
-- 2026-10-10T17:15:29Z · body
-- 2026-10-10T17:16:35Z · body: section Shots
-- 2026-10-10T17:16:56Z · body: section Shots
-- 2026-10-10T17:17:45Z · body
-- 2026-10-10T17:17:59Z · body
 - 2026-10-10T17:24:26Z · status active→review
-- 2026-10-10T17:24:44Z · note: click [data-task-id="9999"]: click: Timeout 5000ms exceeded. on /
-- 2026-10-10T17:24:44Z · note: click [data-test-id="task-tab-changes"]: click: Timeout 5000ms exceeded. on /
-- 2026-10-10T17:25:20Z · note: review pass 1: needs some work
-- 2026-10-10T17:25:20Z · status review→active
-- 2026-10-10T17:27:43Z · body: section Shots
-- 2026-10-10T17:29:46Z · body
-- 2026-10-10T17:35:17Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on mini — fix it in the feature branch and re-run the gate
-- 2026-10-10T17:41:24Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on mini — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
-- 2026-10-10T17:41:24Z · note: handoff requested (cli)
-- 2026-10-10T17:47:33Z · status active→review
-- 2026-10-10T17:47:33Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (e555d70cc) during finalization (#0734)
-- 2026-10-10T17:47:33Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (e555d70cc) during finalization (#0734)
-- 2026-10-10T17:48:27Z · note: review pass 2: good to go
-- 2026-10-10T17:50:06Z · status review→active
-- 2026-10-10T17:50:06Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
-- 2026-10-10T17:51:36Z · body: section Shots
-- 2026-10-10T17:53:15Z · body
-- 2026-10-10T17:53:54Z · status active→review
-- 2026-10-10T17:54:57Z · note: review pass 3: needs some work
-- 2026-10-10T18:17:20Z · status review→active
-- 2026-10-10T18:17:20Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
-- 2026-10-10T18:18:10Z · status active→review
-- 2026-10-10T18:18:11Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (b40e463ec) during finalization (#0734)
-- 2026-10-10T18:19:08Z · note: review pass 4: good to go
-

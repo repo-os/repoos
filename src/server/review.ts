@@ -35,6 +35,7 @@ import {
   commitTaskFile,
   currentBranch,
   headCommitISO,
+  shortHeadOf,
   worktreePathForBranch,
 } from "../core/git.js";
 import { MAX_AUTO_REVIEW_ROUNDS, needsInputClearsOnSuccessfulReview } from "../core/needs-input.js";
@@ -67,7 +68,11 @@ import {
   reviewPassActivitySummary,
   reviewPassPath,
 } from "../core/review-passes.js";
-import { readUiHandoffGateEvidence } from "./ui-handoff-gate.js";
+import {
+  readUiHandoffGateEvidence,
+  handoffTreeStatus,
+  handoffTreeNote,
+} from "./ui-handoff-gate.js";
 import { getCheckStore } from "../core/check-store.js";
 import { extractTaskProofCommands } from "../core/task-proof-commands.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
@@ -296,7 +301,10 @@ export function reviewMission(
     " blank or error states. The evidence JSON records the exact captured URL, the",
     " declared route and whether the browser matched it (a login/redirect is a",
     " mismatch, not a pass), each declared assertion's outcome, and the tested",
-    " tree/plan identity. Comment on whether the shots match the diff and whether the",
+    " tree/plan identity. A capture recorded as STALE (its tree differs from the",
+    " reviewed HEAD) or as landing on a loading state is NOT verification — request",
+    " a re-capture on the final tree rather than signing off on it. Comment on",
+    " whether the shots match the diff and whether the",
     " recorded console log looks acceptable. If a required visual acceptance",
     " criterion is unverified, that is blocking: `needs some work`, naming the gap.",
     "- After your report, RepoOS appends `## Automated verification` with the",
@@ -720,7 +728,7 @@ export class ReviewManager {
     const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config, {
       handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
     });
-    const uiNote = this.uiVerificationSummary(task.id);
+    const uiNote = this.uiVerificationSummary(task);
     const mission = uiNote
       ? `${missionBase}\n\n## Handoff UI verification (recorded at handoff)\n\n${uiNote}\n`
       : missionBase;
@@ -1794,17 +1802,26 @@ export class ReviewManager {
   }
 
   /** UI handoff gate evidence path content for missions. */
-  uiVerificationSummary(taskId: string): string | null {
-    const evidence = readUiHandoffGateEvidence(this.config, taskId);
+  uiVerificationSummary(task: Task): string | null {
+    const evidence = readUiHandoffGateEvidence(this.config, task.id);
     if (!evidence) return null;
+    // #0755: tie the evidence to the tree this review will use. The capture
+    // recorded the tree it ran on (`sourceIdentity`); the worktree's HEAD now
+    // is the reviewed tree. A mismatch is stale evidence — say so plainly, and
+    // never present it as verification of the reviewed HEAD.
+    const worktree = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+    const reviewedHead = shortHeadOf(worktree ?? this.config.root);
+    const treeStatus = handoffTreeStatus(evidence, reviewedHead);
+    const staleNote = handoffTreeNote(treeStatus, evidence, reviewedHead);
     // #0734: surface the exact capture URL, assertion outcomes, and the tested
     // tree/plan identity so the reviewer can tie evidence to the diff, and can
     // see plainly when required visual evidence is missing or wrong.
     const identity: string[] = [];
     if (evidence.sourceIdentity) identity.push(`tested tree ${evidence.sourceIdentity}`);
-    if (evidence.sourceWorktree) identity.push(evidence.sourceWorktree);
+    if (worktree) identity.push(worktree);
     if (evidence.evidenceDir) identity.push(`PNGs at ${evidence.evidenceDir}`);
     const identityLine = identity.length ? ` (${identity.join(" · ")})` : "";
+    const staleLine = staleNote ? `\n${staleNote}` : "";
     if (evidence.issues.length === 0) {
       const captured = (evidence.captureDetails ?? [])
         .map((c) => {
@@ -1825,7 +1842,8 @@ export class ReviewManager {
         `Handoff UI verification (${evidence.at})${identityLine}: ${evidence.captures} capture(s), ` +
         `zero console errors recorded at capture time.` +
         (captured ? `\nCaptures: ${captured}` : "") +
-        warnLine
+        warnLine +
+        staleLine
       );
     }
     const lines = evidence.issues
@@ -1834,7 +1852,7 @@ export class ReviewManager {
       .join("\n");
     return (
       `Handoff UI verification (${evidence.at})${identityLine} recorded ${evidence.issues.length} issue(s) ` +
-      `(this task should not have reached review — investigate):\n${lines}`
+      `(this task should not have reached review — investigate):\n${lines}${staleLine}`
     );
   }
 
