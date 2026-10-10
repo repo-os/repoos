@@ -63,16 +63,16 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 "highlight": ".ui-changes",
 "steps": [
 {
-  "waitFor": ".task-drawer"
+"waitFor": ".task-drawer"
 },
 {
-  "waitFor": "[data-test-id=\"task-tab-changes\"]"
+"waitFor": "[data-test-id=\"task-tab-changes\"]"
 },
 {
-  "click": "[data-test-id=\"task-tab-changes\"]"
+"click": "[data-test-id=\"task-tab-changes\"]"
 },
 {
-  "waitMs": 200
+"waitMs": 200
 }
 ]
 }
@@ -149,3 +149,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T13:23:13Z · body: section Shots
 - 2026-10-10T13:26:05Z · body
 - 2026-10-10T13:34:39Z · status active→review
+- 2026-10-10T13:34:39Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
