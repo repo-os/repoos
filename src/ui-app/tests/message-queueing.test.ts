@@ -237,10 +237,8 @@ describe("message queueing", () => {
       // Verify the session now contains all the messages (queued + current)
       const session = runner["sessions"].get(t.id);
       if (session) {
-        const humanEntries = session.lines.filter(
-          (l): l is Extract<typeof l, { type: "human" }> => l.type === "human",
-        );
-        const texts = humanEntries.map((e) => e.text);
+        const humanEntries = session.lines.filter((l) => "text" in l && l.type === "human");
+        const texts = humanEntries.filter((e) => "text" in e).map((e) => (e as any).text);
         expect(texts).toContain("Resume with this message");
         expect(texts).toContain("And this one too");
         expect(texts).toContain("Continue");
