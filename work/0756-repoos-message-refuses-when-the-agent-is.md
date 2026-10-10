@@ -58,3 +58,4 @@ This is delivery behaviour in the message path, not a new API. Do not change how
 - 2026-10-10T17:09:35Z · body
 - 2026-10-10T17:10:14Z · body
 - 2026-10-10T17:16:29Z · status active→review
+- 2026-10-10T17:16:29Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
