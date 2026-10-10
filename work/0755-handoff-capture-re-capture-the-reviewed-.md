@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-10T18:19:08Z"
-review_passes: 4
+last_close_out_gate_ms: 315566
+last_close_out_gate_at: "2026-10-10T18:27:26.468Z"
 id: "0755"
 title: "Handoff capture: re-capture the reviewed tree and stop placeholder selectors"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-capture-re-capture-the-reviewed-
 created_at: "2026-10-10T14:10:28Z"
+updated_at: "2026-10-10T18:27:26Z"
+review_passes: 4
 review_rounds: 1
 ---
 ## Problem
@@ -100,4 +102,5 @@ The handoff UI capture has failed review on two tasks (#0750 and #0753) for the 
 - 2026-10-10T18:18:10Z · status active→review
 - 2026-10-10T18:18:11Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (b40e463ec) during finalization (#0734)
 - 2026-10-10T18:19:08Z · note: review pass 4: good to go
+- 2026-10-10T18:27:26Z · close-out gate completed in 316s
 
