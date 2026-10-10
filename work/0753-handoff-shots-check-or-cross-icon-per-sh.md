@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-shots-check-or-cross-icon-per-sh
 created_at: "2026-10-10T10:13:24Z"
-updated_at: "2026-10-10T10:22:59Z"
+updated_at: "2026-10-10T10:24:04Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ The Changes tab shows the handoff UI verification twice: a summary block (date, 
 - 2026-10-10T10:16:00Z · body: section Desired UX
 - 2026-10-10T10:16:01Z · body: section Acceptance criteria
 - 2026-10-10T10:22:59Z · body
+- 2026-10-10T10:24:04Z · body
