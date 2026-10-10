@@ -58,7 +58,7 @@ kind = "server"
 command = "bun run dev"
 url = "http://localhost:5173"
 label = "Web app"
-healthCheck = { url = "http://localhost:5173/health" }
+healthCheck.url = "http://localhost:5173/health"
 ```
 
 ## Examples
@@ -72,7 +72,7 @@ kind = "server"
 command = "bun run dev"
 url = "http://localhost:5173"
 label = "Web app"
-healthCheck = { url = "http://localhost:5173/health" }
+healthCheck.url = "http://localhost:5173/health"
 ```
 
 An Android debug build that produces an APK:
@@ -84,7 +84,7 @@ kind = "artifact"
 command = "./gradlew assembleDebug"
 artifactPath = "app/build/outputs/apk/debug/app-debug.apk"
 label = "Debug APK"
-healthCheck = { file = "app/build/outputs/apk/debug/app-debug.apk" }
+healthCheck.file = "app/build/outputs/apk/debug/app-debug.apk"
 ```
 
 A native macOS app that runs in the foreground with no URL and no build output —
