@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-should-auto-resolve-task-file-
 created_at: "2026-10-10T12:57:27Z"
-updated_at: "2026-10-10T17:34:20Z"
+updated_at: "2026-10-10T17:35:16Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ AGENTS.md already says the narrow resolution path may take "the task's own bookk
 - 2026-10-10T17:27:31Z · body
 - 2026-10-10T17:34:19Z · status active→review
 - 2026-10-10T17:34:20Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-10T17:35:16Z · note: review pass 1: good to go
