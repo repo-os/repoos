@@ -219,6 +219,11 @@ export function captureIssueLines(cap: UiHandoffCaptureEvidence): string[] {
  * The issues that belong to no single shot — the ones not carried by any
  * capture's own `issues`, plus the run-level shot warnings (#0743). These are
  * shown ONCE under the shot list, never repeated per row (#0753).
+ *
+ * A capture's `targetWarnings` are the same messages that were folded into the
+ * evidence-wide `warnings` (with ` (captured <url>)` appended by the gate), and
+ * they already ride in that shot's popover as `verdict.details` — so a warning a
+ * shot carries is NOT repeated here.
  */
 export function runLevelIssueLines(
   evidence: UiHandoffVerificationEvidence | null | undefined,
@@ -226,8 +231,10 @@ export function runLevelIssueLines(
   if (!evidence) return [];
   // Every issue a capture already owns (by kind+message+url) is excluded here.
   const owned = new Set<string>();
+  const ownedWarnings = new Set<string>();
   for (const cap of evidence.captureDetails ?? []) {
     for (const issue of cap.issues ?? []) owned.add(issueKey(issue));
+    for (const warn of cap.targetWarnings ?? []) ownedWarnings.add(warn);
   }
   const orphans = evidence.issues.filter((issue) => !owned.has(issueKey(issue)));
   const lines: string[] = [];
@@ -235,8 +242,19 @@ export function runLevelIssueLines(
     lines.push(`${group.kind}:`);
     for (const item of group.items) lines.push(`  ${item}`);
   }
-  for (const warn of evidence.warnings ?? []) lines.push(`[shot-warning] ${warn}`);
+  for (const warn of evidence.warnings ?? []) {
+    // `warnings` carry a " (captured <url>)" suffix the capture's own
+    // `targetWarnings` do not; match on the message prefix so a shot-owned
+    // warning is not shown twice.
+    if (ownedWarnings.has(warn) || ownedWarnings.has(baseWarning(warn))) continue;
+    lines.push(`[shot-warning] ${warn}`);
+  }
   return lines;
+}
+
+/** A gate-level warning without its trailing " (captured …)" provenance. */
+function baseWarning(warning: string): string {
+  return warning.replace(/\s+\(captured .*\)$/, "");
 }
 
 /** Stable identity for an issue, so a capture's copy is not re-shown run-level. */
