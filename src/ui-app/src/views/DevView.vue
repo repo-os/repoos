@@ -60,6 +60,7 @@ const STATE_LABEL: Record<DevTargetStatus, string> = {
 const KIND_LABEL: Record<DevTargetView["kind"], string> = {
   server: "Server",
   artifact: "Build",
+  process: "Process",
 };
 
 /** The last few output lines an at-a-glance view shows inline. */
@@ -193,8 +194,8 @@ watch(
       <p v-if="!targets.length" class="dev-empty">
         No dev targets are declared for this project. Add a
         <code>[[dev.targets]]</code> row in <a href="/settings?tab=toml">repoos.toml</a> — a
-        <code>server</code> (with a URL) or an <code>artifact</code> build (with an output path) —
-        then reload.
+        <code>server</code> (with a URL), an <code>artifact</code> build (with an output path), or a
+        <code>process</code> (a native app with no URL) — then reload.
       </p>
 
       <template v-else>
@@ -243,6 +244,10 @@ watch(
                 <dd>
                   <code>{{ t.artifactPath }}</code>
                 </dd>
+              </div>
+              <div v-else-if="t.kind === 'process'">
+                <dt>Process</dt>
+                <dd>Long-lived, no URL — running while the process is alive</dd>
               </div>
               <div v-if="t.pid !== undefined">
                 <dt>PID</dt>
