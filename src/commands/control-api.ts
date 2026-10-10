@@ -147,7 +147,10 @@ export async function cmdMessage(args: string[]): Promise<number> {
     await ensureServer(api);
     const data = await api.requestOk("POST", `/api/tasks/${id}/message`, { text });
     if (opts.json) printJson(data);
-    else console.log(c.green("  ✓ ") + c.dim(`message sent to #${id}`));
+    else {
+      const status = data?.queued ? "queued" : "sent";
+      console.log(c.green("  ✓ ") + c.dim(`message ${status} to #${id}`));
+    }
     return 0;
   } catch (e) {
     printErr((e as RepoOsApiError).message);

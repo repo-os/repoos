@@ -5657,8 +5657,8 @@ export class AgentRunner {
       }
       this.schedulePersist(task.id);
 
-      // Build a preamble to notify about delivered messages
-      queuedMessagesPreamble = `## Queued messages delivered:\n\n${queuedMsgs.map((_, i) => `- Message ${i + 1} queued at ${queuedMsgs[i].queuedAt}`).join("\n")}\n\n`;
+      // Build a preamble with the actual queued message texts
+      queuedMessagesPreamble = `## Queued messages:\n\n${queuedMsgs.map((msg) => `- ${msg.text}`).join("\n")}\n\n`;
 
       // Record delivery in activity log
       this.recordTaskActivity(task.id, `message_delivered: ${queuedMsgs.length} message(s)`);
@@ -5899,6 +5899,25 @@ export class AgentRunner {
     const cwd = opts.cwd ?? session.workdir ?? this.config.root;
     session.workdir = cwd;
     this.captureUsageBaseline(session);
+
+    // Drain any queued messages before sending the current one
+    const queuedMsgs = this.queuedMessages.get(taskId);
+    let queuedPreamble = "";
+    if (queuedMsgs && queuedMsgs.length > 0) {
+      // Add queued messages to the session first
+      for (const msg of queuedMsgs) {
+        const queuedEntry: AgentOutputEntry = { type: "human", text: msg.text, at: msg.queuedAt };
+        session.lines.push(queuedEntry);
+        session.bytes += entryBytes(queuedEntry);
+      }
+      // Build preamble with the actual message texts
+      queuedPreamble = `## Queued messages:\n\n${queuedMsgs.map((msg) => `- ${msg.text}`).join("\n")}\n\n`;
+      this.recordTaskActivity(taskId, `message_delivered: ${queuedMsgs.length} message(s)`);
+      this.queuedMessages.delete(taskId);
+      this.messageQueuedAt.delete(taskId);
+    }
+
+    // Add the current message
     const entry: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
     session.lines.push(entry);
     session.bytes += entryBytes(entry);
@@ -5909,6 +5928,13 @@ export class AgentRunner {
     }
     this.schedulePersist(taskId);
     if (opts.emitHumanTurn) this.broadcastHumanTurn(taskId, entry);
+
+    // Prepend queued messages to resumePreamble
+    const fullPreamble = queuedPreamble
+      ? opts.resumePreamble
+        ? `${queuedPreamble}${opts.resumePreamble}`
+        : queuedPreamble
+      : opts.resumePreamble;
     // On resume turns, resolve the task from the index if not already set in the session.
     // This ensures task/branch are always available for handoff finalization.
     if (!session.task && this.getTask) {
@@ -5918,7 +5944,7 @@ export class AgentRunner {
         session.branch = resolvedTask.branch;
       }
     }
-    const fullText = opts.resumePreamble ? `${opts.resumePreamble}\n\n${text}` : text;
+    const fullText = fullPreamble ? `${fullPreamble}\n\n${text}` : text;
     // session.sessionId is only meaningful to the CLI that produced it — if
     // agent.cli has since changed (override edited/cleared between turns),
     // reusing it would hand one CLI's session id to a different CLI's
