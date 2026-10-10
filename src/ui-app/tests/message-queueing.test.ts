@@ -8,7 +8,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AgentRunner } from "../../server/agents";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
-import { waitFor } from "./helpers";
 
 const FAKEBIN = `#!/usr/bin/env node
 const fs = require("fs");
@@ -188,6 +187,39 @@ describe("message queueing", () => {
       // The old message should be removed
       expect(runner["queuedMessages"].has(taskId)).toBe(false);
       expect(runner["messageQueuedAt"].has(taskId)).toBe(false);
+    } finally {
+      runner.dispose();
+      fx.clean();
+    }
+  });
+
+  it("should track queue expiry from earliest message, not latest", () => {
+    const fx = makeFixture();
+    const runner = new AgentRunner(config(fx.root), () => {});
+
+    try {
+      const t = task("expiry-timing-test");
+      const taskId = t.id;
+
+      // Queue first message more than 1 hour ago
+      const baseTime = Date.now() - 70 * 60 * 1000; // 70 minutes ago
+      const firstTime = new Date(baseTime).toISOString();
+      runner["queuedMessages"].set(taskId, [
+        { text: "Message 1", agent, opts: {}, queuedAt: firstTime },
+      ]);
+      runner["messageQueuedAt"].set(taskId, firstTime);
+
+      // Queue second message later (at time T + 50 minutes, so 20 minutes ago)
+      const secondTime = new Date(baseTime + 50 * 60 * 1000).toISOString();
+      const messages = runner["queuedMessages"].get(taskId) ?? [];
+      messages.push({ text: "Message 2", agent, opts: {}, queuedAt: secondTime });
+      runner["queuedMessages"].set(taskId, messages);
+      // messageQueuedAt should still be the first message's time
+      expect(runner["messageQueuedAt"].get(taskId)).toBe(firstTime);
+
+      // After 1 hour from the FIRST message, both should expire
+      runner["checkExpiredMessages"]();
+      expect(runner["queuedMessages"].has(taskId)).toBe(false);
     } finally {
       runner.dispose();
       fx.clean();

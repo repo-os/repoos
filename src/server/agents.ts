@@ -5877,18 +5877,21 @@ export class AgentRunner {
     ) {
       // Queue the message for delivery when the agent becomes available
       const messages = this.queuedMessages.get(taskId) ?? [];
+      const currentTime = new Date().toISOString();
       messages.push({
         text,
         agent,
         opts,
-        queuedAt: new Date().toISOString(),
+        queuedAt: currentTime,
       });
       this.queuedMessages.set(taskId, messages);
-      const queuedAt = new Date().toISOString();
-      this.messageQueuedAt.set(taskId, queuedAt);
+      // Track the time of the first message in the queue for expiry
+      if (!this.messageQueuedAt.has(taskId)) {
+        this.messageQueuedAt.set(taskId, currentTime);
+      }
 
       // Record in activity log
-      this.recordTaskActivity(taskId, `message_queued at ${queuedAt}`);
+      this.recordTaskActivity(taskId, `message_queued at ${currentTime}`);
 
       return {
         ok: true,
