@@ -8,8 +8,9 @@ area: macos
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+model_override: opencode/big-pickle
 created_at: "2026-10-09T20:30:41Z"
-updated_at: "2026-10-10T00:50:52Z"
+updated_at: "2026-10-10T00:52:32Z"
 ---
 ## Problem
 
@@ -36,3 +37,4 @@ Motivating project: divot (`~/code/nick/divot`). Keep Divot's own repoos.toml en
 
 - 2026-10-09T20:30:41Z · created · njachowski@gmail.com
 - 2026-10-10T00:50:52Z · status inbox→ready
+- 2026-10-10T00:52:32Z · model_override
