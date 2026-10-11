@@ -180,23 +180,29 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 
+/* The dictation control matches the shared chat entry controls (#0757): a
+   compact square-ish icon button with the same border/radius language as the
+   screenshot-upload and submit controls, so it reads as part of the composer
+   rather than a separate widget. */
 button {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 6px 10px;
-  background: var(--bg-secondary);
+  width: 31px;
+  height: 31px;
+  padding: 0;
+  background: transparent;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 9px;
   cursor: pointer;
-  color: var(--txt);
+  color: var(--txt-dim);
   font-size: 12px;
-  transition: all 0.2s;
 }
 
 button:hover:not(:disabled) {
-  background: var(--bg-tertiary);
+  border-color: var(--cyan);
+  color: var(--cyan);
 }
 
 button:disabled {
@@ -218,7 +224,7 @@ button.recording:hover {
 }
 
 button.transcribing {
-  background: var(--bg-secondary);
+  background: transparent;
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -228,17 +234,24 @@ button.transcribing {
   height: 16px;
 }
 
+/* While recording the button carries an elapsed-time readout, so it widens
+   rather than staying square. */
+button:has(.time) {
+  width: auto;
+  padding: 0 9px;
+}
+
 .time {
   font-size: 11px;
   font-weight: 600;
 }
 
 .cancel-btn {
+  width: auto;
   padding: 4px 8px;
   background: transparent;
   border: 1px solid var(--border);
   font-size: 14px;
-  min-width: auto;
 }
 
 .cancel-btn:hover {

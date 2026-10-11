@@ -14,6 +14,7 @@ import AiChatThinking from "./AiChatThinking.vue";
 import ChatAgentModelChip from "./ChatAgentModelChip.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
+import ChatSendButton from "./ChatSendButton.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
@@ -262,14 +263,7 @@ watch(
           <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
         </svg>
       </button>
-      <button
-        v-else
-        type="submit"
-        class="ai-chat-send cto-send"
-        :disabled="busy || !enabled || !draft.trim()"
-      >
-        Send
-      </button>
+      <ChatSendButton v-else :disabled="busy || !enabled || !draft.trim()" />
     </form>
   </FloatingHeadPanel>
 </template>
@@ -398,12 +392,5 @@ watch(
   outline-offset: 2px;
   border-radius: 4px;
 }
-/* Text send button — the shared compose sizes icon buttons at 31px; "Send"
-   needs its own width. No fill here: `.ai-chat-send` owns that (a fill would
-   out-specify the shared class and leave it transparent). */
-.cto-send {
-  width: auto;
-  padding: 0 12px;
-  font: 500 11px var(--font-sans);
-}
+
 </style>

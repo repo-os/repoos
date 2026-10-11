@@ -483,8 +483,12 @@ describe("every AI chat surface follows the standard", () => {
       });
 
       it("gives the send button the shared accent fill", () => {
-        // On the class attribute, not merely in a comment.
-        expect(source).toMatch(new RegExp(`class="[^"]*\\b${AI_CHAT_REQUIREMENTS.sendClass}\\b`));
+        // Every surface renders the one shared submit control (#0757), which
+        // carries `.ai-chat-send` — no surface hand-rolls its own send button.
+        expect(
+          source,
+          `${surface.file} must render <${AI_CHAT_REQUIREMENTS.sendButton}>`,
+        ).toContain(AI_CHAT_REQUIREMENTS.sendButton);
       });
 
       it("does not out-specify that fill from its own scoped styles", () => {
@@ -629,6 +633,43 @@ describe("agent chat headers carry an inline agent+model chip (#0669)", () => {
     expect(focusRule, "no .ai-chat-compose textarea:focus rule").toBeDefined();
     expect(focusRule?.body).toMatch(/outline:\s*none/);
     expect(ruleBody(css, ".ai-chat-compose textarea")).toMatch(/border-radius:\s*\d/);
+  });
+
+  it("makes the active-input state visibly bright, not a subtle border tint (#0757)", () => {
+    // The whole point of #0757: the focused/selected composer must read as
+    // obviously active. The ring is a bright accent (the `--cyan` token), not
+    // the dim `--border-bright` hover tint it used to be.
+    const css = readFileSync(CSS_PATH, "utf8");
+    const focus = ruleBody(css, ".ai-chat-compose:focus-within");
+    expect(focus).toMatch(/border-color:\s*var\(--cyan\)/);
+    expect(focus).toMatch(/box-shadow:/);
+    expect(focus).not.toMatch(/border-color:\s*var\(--border-bright\)/);
+  });
+
+  it("uses one shared paperplane send control across every chat input (#0757)", () => {
+    // One component owns the submit icon, so no surface can drift back to a
+    // text label ("Send", "Diagnose") or a different glyph.
+    const send = readSurface("ChatSendButton.vue");
+    expect(send, "the shared send control must carry .ai-chat-send").toContain(
+      AI_CHAT_REQUIREMENTS.sendClass,
+    );
+    expect(send, "the shared send control must draw the paperplane path").toContain("m3 9 13-6");
+    for (const surface of AI_CHAT_SURFACES) {
+      const source = readSurface(surface.file);
+      // No chat hand-rolls a send button: it renders the shared control only.
+      expect(
+        stripComments(source),
+        `${surface.file} still prints a text send label`,
+      ).not.toMatch(/>\s*(Send|Diagnose)\s*</);
+    }
+  });
+
+  it("matches the upload control to the shared entry-control language (#0757)", () => {
+    // The screenshot-upload button is the same square-ish outline control as
+    // the text input and submit, not its own widget.
+    const css = readFileSync(CSS_PATH, "utf8");
+    expect(ruleBody(css, ".ai-chat-compose button.ai-chat-attach")).toMatch(/border:\s*1px/);
+    expect(css).not.toContain(".ai-chat-compose button.pm-attach");
   });
 
   it("dims every chat input the same way while it is busy (#0746)", () => {

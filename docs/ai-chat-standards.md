@@ -39,16 +39,27 @@ and button sizing) live in `src/ui-app/src/style.css`. A chat's own
 set a competing `background`/`color` on its compose buttons, and must not
 re-declare the compose box's focus ring — the fill comes from the shared class
 and the focus outline from `.ai-chat-compose:focus-within`. A per-chat variant
-that only re-sizes a text send button (`.cto-send`, `.debugger-send`,
-`.td-send`, `.agent-send`, `.playground-send`) or resets the shared margins is
-fine; those carry an extra class that keeps them out of the base rule's way.
+that only resets the shared margins is fine; those carry an extra class that
+keeps them out of the base rule's way.
 
-**One rounded highlight for the active input (#0746).** Every chat input — the
-floating-head chats, the PM chat, the Model Playground and the task drawer's
-Dev/Reviewer follow-up boxes — is the same `.ai-chat-compose` box, and the
-active highlight is the box's `.ai-chat-compose:focus-within` ring: a rounded
-glow around the whole box, never an outline on the textarea inside it. The
-inner textarea must not paint its own focus outline: a named theme's
+**One composer, one set of controls (#0757).** The submit action is
+`<ChatSendButton>` — a compact, square-ish paperplane icon button carrying the
+shared `.ai-chat-send` fill — and every chat renders it rather than its own send
+button. There is no text send label anywhere ("Send"/"Diagnose" were removed):
+one glyph, one size, one wording keeps the action identical across surfaces. The
+screenshot-upload control (`.ai-chat-attach`) and the dictation control use the
+same square-ish outline-button language, so the input, upload and submit
+controls read as one widget instead of three. No helper line is printed under a
+composer: the busy/disabled state is conveyed by the shared controls and the
+working indicator, never by a line of prose under the input.
+
+**One rounded highlight for the active input (#0746, brighter in #0757).** Every
+chat input — the floating-head chats, the PM chat, the Model Playground and the
+task drawer's Dev/Reviewer follow-up boxes — is the same `.ai-chat-compose` box,
+and the active/selected highlight is the box's `.ai-chat-compose:focus-within`
+ring: a bright `--cyan` border with a rounded accent glow around the whole box,
+never an outline on the textarea inside it. The inner textarea must not paint
+its own focus outline: a named theme's
 `[data-ui-theme] :focus-visible { outline: 2px solid var(--ring) }` out-specifies
 the base `outline: 0`, and Tailwind's preflight zeroes the textarea's
 `border-radius`, so without the explicit
@@ -65,9 +76,9 @@ That second rule is a specificity trap, not a style preference. Vue rewrites a
 scoped `.x-compose button` into `.x-compose button[data-v-…]`, which is
 (0,2,1) and therefore beats the global `.ai-chat-send` at (0,1,0). Setting a
 fill in the scoped rule silently wins and leaves the send button transparent —
-which is how #0444 first shipped. Per-button variants (`.x-stop`, `.pm-attach`)
-are fine: their extra class keeps them out of the base rule's way. The
-conformance test asserts this directly.
+which is how #0444 first shipped. Per-button variants (`.ai-chat-stop`,
+`.ai-chat-attach`) are fine: their extra class keeps them out of the base rule's
+way. The conformance test asserts this directly.
 
 ### 1. Open on the newest message
 
@@ -198,10 +209,11 @@ model call with its own `{ role, text }` messages and no tool events at all.
    panels inside a Radix Dialog).
 4. Render `<AiChatThinking :active="busy" :label="..." />` at the end of the
    message list.
-5. Put `ai-chat-send` on the submit button, and use the shared
-   `.ai-chat-compose` class on the composer (never a bespoke `-compose` block):
-   it owns the box, focus outline, textarea and icon-button sizing. A text send
-   button adds its own variant class (e.g. `.x-send`) to set a width.
+5. Render `<ChatSendButton :disabled="…" />` for the submit action and use the
+   shared `.ai-chat-compose` class on the composer (never a bespoke `-compose`
+   block): it owns the box, focus outline, textarea and icon-button sizing. The
+   send control is the shared paperplane button — never a text label of your own
+   — and an attach control uses the shared `.ai-chat-attach` class.
 6. Run the transcript through `toDisplayRows(lines)` and render each row:
    `row.kind === "tools"` goes to `<ChatToolCallRow :calls="row.calls" :at="row.at" />`,
    everything else to your own bubbles (use `bubbleRole(row)` for the speaker and
