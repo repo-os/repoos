@@ -13,6 +13,7 @@ import AiChatThinking from "./AiChatThinking.vue";
 import ChatAgentModelChip from "./ChatAgentModelChip.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
+import ChatSendButton from "./ChatSendButton.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { useRossChatAgent, CHAT_AGENT_MEMORY_KEYS } from "../composables/useChatAgentModel";
@@ -288,23 +289,7 @@ watch(
           <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
         </svg>
       </button>
-      <button
-        v-else
-        type="submit"
-        class="ai-chat-send"
-        :disabled="!draft.trim() || busy || !enabled"
-        aria-label="Send message"
-      >
-        <svg viewBox="0 0 20 20" fill="none">
-          <path
-            d="m3 9 13-6-5.5 14-2-5.5L3 9Z"
-            stroke="currentColor"
-            stroke-width="1.7"
-            stroke-linejoin="round"
-          />
-          <path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-        </svg>
-      </button>
+      <ChatSendButton v-else :disabled="!draft.trim() || busy || !enabled" />
     </form>
   </FloatingHeadPanel>
 </template>

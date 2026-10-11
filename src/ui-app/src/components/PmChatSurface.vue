@@ -33,6 +33,7 @@ import AiChatThinking from "./AiChatThinking.vue";
 import ChatJumpToLatest from "./ChatJumpToLatest.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
+import ChatSendButton from "./ChatSendButton.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 
 export interface PendingShot {
@@ -221,7 +222,6 @@ defineExpose({ focusDraft });
     >
       <div class="pm-open-questions-head">
         <span class="pm-open-questions-badge">Questions for you</span>
-        <span class="pm-open-questions-hint">Your reply below answers these</span>
       </div>
       <ol class="pm-open-questions-list">
         <li v-for="(question, index) in openQuestions" :key="index">{{ question }}</li>
@@ -284,7 +284,7 @@ defineExpose({ focusDraft });
       <button
         v-if="canAttach && !busy"
         type="button"
-        class="pm-attach"
+        class="ai-chat-attach"
         aria-label="Attach screenshots"
         title="Attach screenshots — they're added to any task the PM creates from this message"
         :disabled="disabled"
@@ -314,23 +314,7 @@ defineExpose({ focusDraft });
           <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
         </svg>
       </button>
-      <button
-        v-else
-        type="submit"
-        class="ai-chat-send"
-        :disabled="!draft.trim() || busy || disabled"
-        aria-label="Send message"
-      >
-        <svg viewBox="0 0 20 20" fill="none">
-          <path
-            d="m3 9 13-6-5.5 14-2-5.5L3 9Z"
-            stroke="currentColor"
-            stroke-width="1.7"
-            stroke-linejoin="round"
-          />
-          <path d="m8.5 11.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-        </svg>
-      </button>
+      <ChatSendButton v-else :disabled="!draft.trim() || busy || disabled" />
     </form>
   </div>
 </template>

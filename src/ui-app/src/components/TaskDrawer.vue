@@ -75,6 +75,7 @@ import AiChatThinking from "./AiChatThinking.vue";
 import ChatJumpToLatest from "./ChatJumpToLatest.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
+import ChatSendButton from "./ChatSendButton.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
@@ -5153,25 +5154,8 @@ watch(
               @input="adjustDraftMsgHeight"
             ></textarea>
             <VoiceDictate :disabled="agentBusy || ui.saving" @transcribed="onDraftMsgTranscribed" />
-            <button
-              type="submit"
-              class="ai-chat-send agent-send"
-              :disabled="agentBusy || ui.saving || !draftMsg.trim()"
-              aria-label="Send follow-up"
-            >
-              <Send class="size-3.5" />
-              Send
-            </button>
+            <ChatSendButton :disabled="agentBusy || ui.saving || !draftMsg.trim()" />
           </form>
-          <div v-if="agentBusy" class="agent-hint">
-            <ActivityIndicator /> agent is working — wait for this turn to finish
-          </div>
-          <div
-            v-else-if="ui.active && ui.active.status !== 'active' && ui.active.status !== 'review'"
-            class="agent-hint"
-          >
-            Task is {{ ui.active.status }} — start work to run an agent turn.
-          </div>
         </div>
         <div v-else-if="ui.activeTab === 'review'" class="drawer-body drawer-session-body">
           <p v-if="ui.active.hotfix" class="hotfix-note" role="status">
@@ -5487,15 +5471,9 @@ watch(
                 :disabled="review?.running || reviewBusy || ui.saving"
                 @transcribed="onReviewDraftMsgTranscribed"
               />
-              <button
-                type="submit"
-                class="ai-chat-send agent-send"
+              <ChatSendButton
                 :disabled="review?.running || reviewBusy || ui.saving || !reviewDraftMsg.trim()"
-                aria-label="Send follow-up to the reviewer"
-              >
-                <Send class="size-3.5" />
-                Send
-              </button>
+              />
             </form>
           </section>
         </div>
