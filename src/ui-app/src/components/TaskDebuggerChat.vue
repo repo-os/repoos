@@ -309,7 +309,7 @@ watch(
             <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
           </svg>
         </button>
-        <ChatSendButton v-else :disabled="!draft.trim() || busy || !enabled" label="Diagnose" />
+        <ChatSendButton v-else :disabled="!draft.trim() || busy || !enabled" />
       </form>
     </template>
 

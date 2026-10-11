@@ -7,33 +7,28 @@
  * between a paperplane glyph (PM, Ross) and text labels ("Send" in the CTO and
  * Playground, "Diagnose" in both Debuggers), so the same action looked like a
  * different widget depending on where you were. Rendering this component keeps
- * the icon, size and wording identical everywhere by construction rather than
- * by six copies agreeing.
+ * the icon, size, wording and accessible name identical everywhere by
+ * construction rather than by seven copies agreeing.
  *
- * The classes are deliberately the shared ones from style.css (`.ai-chat-send`
- * for the fill, the base `.ai-chat-compose button` for the 31px square), so no
- * surface adds its own variant. Callers pass `disabled` and an optional
- * `aria-label`; the label defaults to the one wording every chat shares.
+ * There is deliberately no `label` prop: the accessible name is the same
+ * "Send message" on every surface, so the control cannot drift back to
+ * per-chat wording. The classes are the shared ones from style.css
+ * (`.ai-chat-send` for the fill, the base `.ai-chat-compose button` for the
+ * 31px square), so no surface adds its own variant. No native `title` tooltip
+ * either — the accessible name carries the wording, per the repo's UI
+ * conventions (styled tooltips for visible explanations, never a native one).
  */
-const props = withDefaults(
+withDefaults(
   defineProps<{
     /** True while the message cannot be sent (empty draft, busy, or disabled). */
     disabled?: boolean;
-    /** Accessible name; the plain "Send message" unless a chat needs more. */
-    label?: string;
   }>(),
-  { disabled: false, label: "Send message" },
+  { disabled: false },
 );
 </script>
 
 <template>
-  <button
-    type="submit"
-    class="ai-chat-send"
-    :disabled="props.disabled"
-    :aria-label="props.label"
-    :title="props.label"
-  >
+  <button type="submit" class="ai-chat-send" :disabled="disabled" aria-label="Send message">
     <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
       <path
         d="m3 9 13-6-5.5 14-2-5.5L3 9Z"

@@ -749,6 +749,26 @@ describe("no AI chat reinvents the wheel", () => {
     }
   });
 
+  it("holds every composer to the one shared send control, registered or not (#0757)", () => {
+    // The `AI_CHAT_SURFACES` loop only covers registered surfaces; the task
+    // drawer's Dev/Reviewer composers render the shared box without being a
+    // full chat surface. Scan by `<form class="ai-chat-compose">` instead, so a
+    // composer anywhere in the app still fails the build if it hand-rolls its
+    // own send button or prints a text label ("Send" / "Diagnose").
+    const composers = sources.filter(([, text]) => text.includes("ai-chat-compose"));
+    expect(composers.length, "expected the shared compose box to be in use").toBeGreaterThan(0);
+    for (const [file, text] of composers) {
+      if (file === "ChatSendButton.vue") continue;
+      const body = stripComments(text);
+      expect(body, `${file} composer must render <${AI_CHAT_REQUIREMENTS.sendButton}>`).toContain(
+        AI_CHAT_REQUIREMENTS.sendButton,
+      );
+      expect(body, `${file} composer still prints a text send label`).not.toMatch(
+        /type="submit"[\s\S]{0,200}?>\s*(Send|Diagnose)\s*</,
+      );
+    }
+  });
+
   it("never prints an 'agent stopped' status line anywhere in the UI", () => {
     for (const [file, text] of sources) {
       // Comments are stripped: this test's own rule is documented in the shared
