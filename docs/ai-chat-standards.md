@@ -45,13 +45,16 @@ keeps them out of the base rule's way.
 **One composer, one set of controls (#0757).** The submit action is
 `<ChatSendButton>` — a compact, square-ish paperplane icon button carrying the
 shared `.ai-chat-send` fill — and every chat renders it rather than its own send
-button. There is no text send label anywhere ("Send"/"Diagnose" were removed):
-one glyph, one size, one wording keeps the action identical across surfaces. The
-screenshot-upload control (`.ai-chat-attach`) and the dictation control use the
-same square-ish outline-button language, so the input, upload and submit
-controls read as one widget instead of three. No helper line is printed under a
-composer: the busy/disabled state is conveyed by the shared controls and the
-working indicator, never by a line of prose under the input.
+button. There is no text send label anywhere ("Send"/"Diagnose" were removed)
+and no per-surface `label` prop: one glyph, one size, one wording, and the same
+"Send message" accessible name on every surface keeps the action identical
+rather than merely similar. It carries no native `title` tooltip either — the
+accessible name holds the wording (styled tooltips are for visible
+explanations). The screenshot-upload control (`.ai-chat-attach`) and the
+dictation control use the same square-ish outline-button language, so the input,
+upload and submit controls read as one widget instead of three. No helper line
+is printed under a composer: the busy/disabled state is conveyed by the shared
+controls and the working indicator, never by a line of prose under the input.
 
 **One rounded highlight for the active input (#0746, brighter in #0757).** Every
 chat input — the floating-head chats, the PM chat, the Model Playground and the

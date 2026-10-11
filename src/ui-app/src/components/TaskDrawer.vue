@@ -5154,10 +5154,7 @@ watch(
               @input="adjustDraftMsgHeight"
             ></textarea>
             <VoiceDictate :disabled="agentBusy || ui.saving" @transcribed="onDraftMsgTranscribed" />
-            <ChatSendButton
-              :disabled="agentBusy || ui.saving || !draftMsg.trim()"
-              label="Send follow-up"
-            />
+            <ChatSendButton :disabled="agentBusy || ui.saving || !draftMsg.trim()" />
           </form>
         </div>
         <div v-else-if="ui.activeTab === 'review'" class="drawer-body drawer-session-body">
@@ -5476,7 +5473,6 @@ watch(
               />
               <ChatSendButton
                 :disabled="review?.running || reviewBusy || ui.saving || !reviewDraftMsg.trim()"
-                label="Send follow-up to the reviewer"
               />
             </form>
           </section>
