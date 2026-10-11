@@ -6050,6 +6050,11 @@
 }
 .shot-row img {
   cursor: pointer;
+  /* Lift the thumbnail off the row so it reads as a picture, not a text block. */
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.22);
+  border-radius: 4px;
 }
 /* Expand over delete, same 28px square (#0627 follow-up). */
 .shot-row-actions {
