@@ -1,5 +1,5 @@
 ---
-updated_at: "2026-10-11T14:46:46Z"
+updated_at: "2026-10-11T14:45:34Z"
 review_passes: 2
 id: "0757"
 title: Unify chat input styling
@@ -11,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/unify-chat-input-styling
 created_at: "2026-10-11T14:03:29Z"
-review_rounds: 1
 ---
 ## Problem
 The chat input controls are visually inconsistent across places in the app. Different fields use different wording, styling, and layout treatment, which makes the interface feel mismatched and harder to read. The selected state for text inputs and textareas is not obvious enough, so it is unclear when a field is active. Some inputs also show random helper text beneath them, which adds noise and breaks consistency. The upload control and submit control should match the same visual language instead of feeling like separate widgets.
@@ -46,46 +45,6 @@ All text entry fields should use the same styling and phrasing everywhere, with 
 
 the style of the chat inputs are not correct, they should all be the same, not using different wording, also the active /selected state of the text input/text area should be brighter so it's more obvious that it's selected. also don't put anything under the text input, some have a random text that shows sometimes, just re-use the same styling for all, and make it obvious and clean, and if there's a screenshot upload use the same style for that too. i think for the submit just go with the simple aeroplane/paperplane icon which is a square-ish icon. it keeps it easy and consistent across all
 
-## Shots
-```json
-[
-{
-"label": "PM chat composer — square paperplane submit and matching upload control",
-"target": "default",
-"route": "/work?task=0757&tab=pm",
-"highlight": ".ai-chat-compose",
-"steps": [
-{
-"click": ".ai-chat-compose textarea"
-},
-{
-"waitMs": 300
-}
-]
-},
-{
-"label": "Dev composer — paperplane submit replaces the old Send text label",
-"target": "default",
-"route": "/work?task=0757&tab=agent",
-"highlight": ".ai-chat-compose"
-},
-{
-"label": "Focused composer — brighter accent ring on the active input",
-"target": "default",
-"route": "/work?task=0757&tab=pm",
-"highlight": ".ai-chat-compose",
-"steps": [
-{
-"click": ".ai-chat-compose textarea"
-},
-{
-"waitMs": 400
-}
-]
-}
-]
-```
-
 ## Screenshots
 
 ![Screenshot-2026-10-10-at-09.28.22](/api/tasks/0757/attachments/screenshot-1.png)
@@ -113,14 +72,7 @@ the style of the chat inputs are not correct, they should all be the same, not u
 - 2026-10-11T14:04:00Z · status draft→inbox, title, area, type, body
 - 2026-10-11T14:07:20Z · status inbox→ready
 - 2026-10-11T14:07:22Z · status ready→active, branch
-- 2026-10-11T14:23:12Z · body
-- 2026-10-11T14:24:20Z · body
-- 2026-10-11T14:25:51Z · body: section Shots
 - 2026-10-11T14:33:10Z · status active→review
-- 2026-10-11T14:34:01Z · note: review pass 1: needs some work
-- 2026-10-11T14:34:01Z · status review→active
-- 2026-10-11T14:36:08Z · body
-- 2026-10-11T14:38:07Z · body
-- 2026-10-11T14:45:37Z · status active→review
-- 2026-10-11T14:46:46Z · note: review pass 2: good to go
+- 2026-10-11T14:33:48Z · note: review pass 1: good to go
+- 2026-10-11T14:45:34Z · note: review pass 2: good to go
 

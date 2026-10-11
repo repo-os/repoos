@@ -72,6 +72,17 @@ export const AI_CHAT_REQUIREMENTS = {
   logClass: "ai-chat-log",
   /** Class giving the send button its distinct accent fill. */
   sendClass: "ai-chat-send",
+  /**
+   * The shared submit control (#0757): a compact square paperplane icon button.
+   * Every chat renders this instead of its own send button, so the action is
+   * identical everywhere — one icon, one size, one wording, no text label.
+   */
+  sendButton: "ChatSendButton",
+  /**
+   * The shared screenshot-upload control class (#0757): the same square-ish
+   * outline button language as the text input and submit button.
+   */
+  attachClass: "ai-chat-attach",
   /** Chat bubbles omit markdown thematic breaks (#0563). */
   chatMarkdown: "renderChatMarkdown",
 } as const;
