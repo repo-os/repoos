@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/unify-chat-input-styling
 created_at: "2026-10-11T14:03:29Z"
-updated_at: "2026-10-11T14:33:10Z"
+updated_at: "2026-10-11T14:34:01Z"
 ---
 ## Problem
 The chat input controls are visually inconsistent across places in the app. Different fields use different wording, styling, and layout treatment, which makes the interface feel mismatched and harder to read. The selected state for text inputs and textareas is not obvious enough, so it is unclear when a field is active. Some inputs also show random helper text beneath them, which adds noise and breaks consistency. The upload control and submit control should match the same visual language instead of feeling like separate widgets.
@@ -65,12 +65,12 @@ the style of the chat inputs are not correct, they should all be the same, not u
 "route": "/work?task=0757&tab=pm",
 "highlight": ".ai-chat-compose",
 "steps": [
-  {
-    "click": ".ai-chat-compose textarea"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": ".ai-chat-compose textarea"
+},
+{
+  "waitMs": 300
+}
 ]
 },
 {
@@ -85,12 +85,12 @@ the style of the chat inputs are not correct, they should all be the same, not u
 "route": "/work?task=0757&tab=pm",
 "highlight": ".ai-chat-compose",
 "steps": [
-  {
-    "click": ".ai-chat-compose textarea"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": ".ai-chat-compose textarea"
+},
+{
+  "waitMs": 400
+}
 ]
 }
 ]
@@ -115,3 +115,4 @@ the style of the chat inputs are not correct, they should all be the same, not u
 - 2026-10-11T14:24:20Z · body
 - 2026-10-11T14:25:51Z · body: section Shots
 - 2026-10-11T14:33:10Z · status active→review
+- 2026-10-11T14:34:01Z · note: review pass 1: needs some work
