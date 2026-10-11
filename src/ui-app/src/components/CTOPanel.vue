@@ -392,5 +392,4 @@ watch(
   outline-offset: 2px;
   border-radius: 4px;
 }
-
 </style>
