@@ -14,6 +14,7 @@ import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import AiChatThinking from "./AiChatThinking.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
+import ChatSendButton from "./ChatSendButton.vue";
 import { ArrowDown } from "lucide-vue-next";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
@@ -308,15 +309,11 @@ watch(
             <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
           </svg>
         </button>
-        <button
+        <ChatSendButton
           v-else
-          type="submit"
-          class="ai-chat-send td-send"
           :disabled="!draft.trim() || busy || !enabled"
-          aria-label="Diagnose"
-        >
-          Diagnose
-        </button>
+          label="Diagnose"
+        />
       </form>
     </template>
 
@@ -556,12 +553,5 @@ watch(
      button sizing (#0669). The task drawer body already pads this row, so only
      the shared margins are reset here. */
   margin: 0;
-}
-/* Text send button — the shared compose sizes icon buttons at 31px; "Diagnose"
-   needs its own width. No fill here: `.ai-chat-send` owns that. */
-.td-send {
-  width: auto;
-  padding: 0 11px;
-  font: 500 11px var(--font-sans);
 }
 </style>

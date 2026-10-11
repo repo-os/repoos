@@ -15,6 +15,7 @@ import AiChatThinking from "./AiChatThinking.vue";
 import ChatAgentModelChip from "./ChatAgentModelChip.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
+import ChatSendButton from "./ChatSendButton.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { useDebuggerChatAgent, CHAT_AGENT_MEMORY_KEYS } from "../composables/useChatAgentModel";
@@ -370,15 +371,11 @@ watch(
           <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
         </svg>
       </button>
-      <button
+      <ChatSendButton
         v-else
-        type="submit"
-        class="ai-chat-send debugger-send"
         :disabled="!draft.trim() || busy || !enabled"
-        aria-label="Diagnose"
-      >
-        Diagnose
-      </button>
+        label="Diagnose"
+      />
     </form>
   </FloatingHeadPanel>
 </template>
@@ -593,12 +590,5 @@ watch(
 .debugger-provider-error button:hover {
   border-color: var(--cyan);
   color: var(--cyan);
-}
-/* Text send button — the shared compose sizes icon buttons at 31px; "Diagnose"
-   needs its own width. No fill here: `.ai-chat-send` owns that. */
-.debugger-send {
-  width: auto;
-  padding: 0 11px;
-  font: 500 11px var(--font-sans);
 }
 </style>
