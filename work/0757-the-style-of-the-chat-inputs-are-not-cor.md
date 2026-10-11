@@ -1,17 +1,44 @@
 ---
 id: "0757"
-title: "the style of the chat inputs are not correct, they should…"
-type: feature
-status: draft
+title: Unify chat input styling
+type: bug
+status: inbox
 priority: p2
-area: general
+area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-11T14:03:29Z"
-updated_at: "2026-10-11T14:03:37Z"
+updated_at: "2026-10-11T14:04:00Z"
 ---
-the style of the chat inputs are not correct, they should all be the same, not using different wording, also the active /selected state of the text input/text area should be brighter so it's more obvious that it's selected. also don't put anything under the text input, some have a random text that shows sometimes, just re-use the same styling for all, and make it obvious and clean, and if there's a screenshot upload use the same style for that too. i think for the submit just go with the simple aeroplane/paperplane icon which is a square-ish icon. it keeps it easy and consistent across all
+## Problem
+The chat input controls are visually inconsistent across places in the app. Different fields use different wording, styling, and layout treatment, which makes the interface feel mismatched and harder to read. The selected state for text inputs and textareas is not obvious enough, so it is unclear when a field is active. Some inputs also show random helper text beneath them, which adds noise and breaks consistency. The upload control and submit control should match the same visual language instead of feeling like separate widgets.
+
+## Desired UX
+All text entry fields should use the same styling and phrasing everywhere, with no mixed wording or special-case treatment. The active/selected state should be visibly brighter and more obvious so users can immediately tell a field is focused or selected. Helper text under the input should be removed; these controls should remain clean and minimal. Screenshot upload controls should match the same visual treatment as the text inputs. The submit button should use a simple square-ish paperplane/airplane icon, kept consistent across all chat surfaces.
+
+## Acceptance criteria
+- [ ] All chat-related text inputs and textareas share one consistent visual style and wording pattern.
+- [ ] The focused/selected state for text entry controls is clearly brighter and easier to identify.
+- [ ] No random or inconsistent helper text appears beneath chat inputs.
+- [ ] Screenshot upload controls use the same styling as the rest of the chat entry controls.
+- [ ] The submit action uses a simple square-ish paperplane icon consistently across all chat inputs.
+- [ ] The interface remains clean, minimal, and visually consistent without introducing new special-case styling.
+
+## Notes for AI
+- Keep the fix scoped to chat input and composer UI patterns; do not broaden into unrelated form styling.
+- Prefer one shared styling treatment for all text-entry controls rather than adding per-field exceptions.
+- Remove any conditional helper copy under inputs instead of trying to standardize it.
+- Match the upload control to the same visual language as the text fields and submit area.
+- Default assumption: the update applies to the web UI chat/composer surfaces, and the "paperplane" button should be a compact square-ish icon rather than a text label-only action.
+- Do not introduce new wording or help text that was not already part of the intended design.
+
+## Scope
+- Covers: chat input, textarea, screenshot upload, and submit button styling in the relevant UI surfaces.
+- Deferred: broader redesign of unrelated forms or non-chat input controls outside this interaction pattern.
+
+## Related
+- This task is specific to the chat/composer UX and should be checked against any existing UI style conventions in the product.
 
 ## Original prompt
 
@@ -41,3 +68,4 @@ the style of the chat inputs are not correct, they should all be the same, not u
 - 2026-10-11T14:03:36Z · screenshots
 - 2026-10-11T14:03:36Z · screenshots
 - 2026-10-11T14:03:37Z · screenshots
+- 2026-10-11T14:04:00Z · status draft→inbox, title, area, type, body
