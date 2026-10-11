@@ -95,7 +95,6 @@ import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screens
 import { shotProblems, shotRows, uncapturedDeclared } from "../lib/shot-rows";
 import {
   captureIssueLines,
-  handoffContextLine,
   orphanHandoffSentence,
   runLevelIssueLines,
   shotVerdict,
@@ -930,8 +929,6 @@ const uiHandoffOrphans = computed(() => {
  * warnings), shown ONCE under the shot list — never repeated per row.
  */
 const uiHandoffRunLevelLines = computed(() => runLevelIssueLines(uiHandoffVerification.value));
-/** "tested tree <sha> · PNGs at <dir>" for the status line, or empty. */
-const uiHandoffContext = computed(() => handoffContextLine(uiHandoffVerification.value));
 /** #0755: the handoff capture is for a tree other than the reviewed HEAD. */
 const uiHandoffStale = computed(() => uiHandoffVerification.value?.stale === true);
 /** True when the handoff recorded a run-level issue or shot warning. */
@@ -5548,13 +5545,6 @@ watch(
                 {{ addShotBusy ? "Capturing…" : "Add shot" }}
               </Button>
             </div>
-            <!-- #0753: the handoff's when/tested-tree context, as a small line
-                 under the title instead of its own block. The per-shot icon and
-                 the run-level footnotes below carry the rest. -->
-            <p v-if="uiHandoffVerification" class="ui-changes-meta">
-              Handoff checked {{ repo.fmtDate(uiHandoffVerification.at) }}
-              <template v-if="uiHandoffContext"> · {{ uiHandoffContext }}</template>
-            </p>
             <!-- #0755: a capture for a tree other than the reviewed HEAD is not
                  verification — shout it, so the screenshots below are read as
                  stale evidence rather than proof of the current change. -->
