@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 69914
-last_close_out_gate_at: "2026-10-11T15:49:14.325Z"
 id: "0757"
 title: Unify chat input styling
 type: bug
-status: review
+status: done
 priority: p2
 area: ui
+merged_commit: 372e5a5f9b6f4adb2ad3ecdadfc80b7438851d24
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/unify-chat-input-styling
 created_at: "2026-10-11T14:03:29Z"
-updated_at: "2026-10-11T15:49:14Z"
+updated_at: "2026-10-11T15:49:27Z"
+last_close_out_gate_ms: 69914
+last_close_out_gate_at: "2026-10-11T15:49:14.325Z"
 review_passes: 2
 review_rounds: 1
 ---
@@ -126,4 +127,4 @@ the style of the chat inputs are not correct, they should all be the same, not u
 - 2026-10-11T14:45:37Z · status active→review
 - 2026-10-11T14:46:46Z · note: review pass 2: good to go
 - 2026-10-11T15:49:14Z · close-out gate completed in 70s
-
+- 2026-10-11T15:49:27Z · status review→done, release:success
