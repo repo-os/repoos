@@ -12,6 +12,7 @@ import type {
 } from "../types";
 import Button from "./ui/button.vue";
 import AiChatThinking from "./AiChatThinking.vue";
+import ChatSendButton from "./ChatSendButton.vue";
 import { ArrowDown } from "lucide-vue-next";
 import { useChatScroll } from "../composables/useChatScroll";
 
@@ -343,14 +344,7 @@ onMounted(() => {
             :aria-label="`Message ${selected.name}`"
             @keydown="onKeydown"
           ></textarea>
-          <button
-            type="submit"
-            class="ai-chat-send playground-send"
-            :disabled="!draft.trim() || sending"
-            aria-label="Send message"
-          >
-            Send
-          </button>
+          <ChatSendButton :disabled="!draft.trim() || sending" />
         </form>
       </template>
       <div v-else class="playground-empty">
@@ -729,13 +723,6 @@ onMounted(() => {
    its own panel padding. */
 .playground-compose {
   margin: 12px;
-}
-/* Text send control: the shared box sizes icon buttons at 31px, "Send" needs a
-   width of its own. No fill — `.ai-chat-send` owns that. */
-.playground-send {
-  width: auto;
-  padding: 0 14px;
-  font: 600 11.5px var(--font-sans);
 }
 @keyframes playground-shimmer {
   0% {
