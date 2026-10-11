@@ -657,10 +657,9 @@ describe("agent chat headers carry an inline agent+model chip (#0669)", () => {
     for (const surface of AI_CHAT_SURFACES) {
       const source = readSurface(surface.file);
       // No chat hand-rolls a send button: it renders the shared control only.
-      expect(
-        stripComments(source),
-        `${surface.file} still prints a text send label`,
-      ).not.toMatch(/>\s*(Send|Diagnose)\s*</);
+      expect(stripComments(source), `${surface.file} still prints a text send label`).not.toMatch(
+        />\s*(Send|Diagnose)\s*</,
+      );
     }
   });
 
