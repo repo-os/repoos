@@ -12464,6 +12464,10 @@
 .ai-chat-compose textarea:focus,
 .ai-chat-compose textarea:focus-visible {
   outline: none;
+  /* Named themes add a halo box-shadow on :focus-visible (catppuccin: a 4px ring).
+     That painted a second rounded ring inside the composer. Only the composer
+     box highlights, so drop the textarea's own shadow too. */
+  box-shadow: none;
 }
 .ai-chat-compose button {
   /* Deliberately no `background`/`color`: the shared `.ai-chat-send` owns the
