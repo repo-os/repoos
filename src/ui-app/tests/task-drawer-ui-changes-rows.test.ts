@@ -517,9 +517,10 @@ describe("Changes → handoff shot verdicts (#0753)", () => {
 
     const wrapper = await mountChanges(pinia);
     expect(wrapper.text()).not.toContain("Handoff UI verification");
-    // The context the old block carried now lives on the small status line.
-    expect(wrapper.find(".ui-changes-meta").exists()).toBe(true);
-    expect(wrapper.find(".ui-changes-meta").text()).toContain("tested tree abc1234");
+    // The provenance line (when, tested tree, PNG path) is no longer shown on a
+    // normal handoff; only a stale capture gets a warning.
+    expect(wrapper.find(".ui-changes-meta").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("tested tree abc1234");
   });
 
   it("shows a green check on a matching shot, with a matches popover", async () => {
