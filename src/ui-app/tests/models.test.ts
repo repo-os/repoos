@@ -24,6 +24,10 @@ import { startServer } from "../../server/server";
 const FAKEBIN = `#!/usr/bin/env node
 const fs = require("fs");
 fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify(process.argv.slice(2)) + "\\n");
+if (process.env.REPOOS_FAKE_REJECT_REFRESH && process.argv.includes("--refresh")) {
+  process.stderr.write("ERROR\\n  Unrecognized flag: --refresh in command opencode models\\n");
+  process.exit(1);
+}
 process.stdout.write(process.env.REPOOS_FAKE_MODELS || "opencode/big-pickle\\nopencode/deepseek-v4-flash-free\\n");
 `;
 
@@ -297,6 +301,25 @@ describe("opencode adapter", () => {
       expect(spawnArgs(fx)).toEqual([["models", "--refresh"]]);
     } finally {
       process.env.PATH = old;
+    }
+  });
+
+  it("retries a plain `opencode models` when this build rejects --refresh", async () => {
+    const fx = makeFixture();
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKE_REJECT_REFRESH = "1";
+    const old = prependPath(fx.bin);
+    try {
+      const res = await listModelSources({ refresh: true, cwd: tmpDir() });
+      expect(spawnArgs(fx)).toEqual([["models", "--refresh"], ["models"]]);
+      expect(res.opencode).toEqual({
+        supported: true,
+        models: ["default", "opencode/big-pickle", "opencode/deepseek-v4-flash-free"],
+        refreshable: true,
+      });
+    } finally {
+      process.env.PATH = old;
+      delete process.env.REPOOS_FAKE_REJECT_REFRESH;
     }
   });
 

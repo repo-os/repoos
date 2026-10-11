@@ -353,10 +353,16 @@ const opencodeAdapter: ModelSourceAdapter = {
       };
     const args = opts.refresh ? ["models", "--refresh"] : ["models"];
     const timeoutMs = opts.timeoutMs ?? MODELS_TIMEOUT_MS;
-    const out = await spawnModels(bin, args, {
+    let out = await spawnModels(bin, args, {
       timeoutMs,
       cwd: opts.cwd,
     });
+    // Some opencode builds (v2.0.11 among them) reject `--refresh` with exit 1.
+    // Retry the plain probe: the caller has already bypassed RepoOS's own cache,
+    // so this is still a fresh list rather than the cached one.
+    if (opts.refresh && out.code !== 0 && /Unrecognized flag: --refresh/.test(out.stderr)) {
+      out = await spawnModels(bin, ["models"], { timeoutMs, cwd: opts.cwd });
+    }
     const error = probeError(bin, out, timeoutMs);
     return {
       supported: true,
