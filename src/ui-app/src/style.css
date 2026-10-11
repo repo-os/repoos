@@ -2906,12 +2906,6 @@
   background: var(--cyan);
   box-shadow: 0 0 7px var(--cyan);
 }
-/* The dev-tab wait hint pairs its dots with faint text — inherit the label's
-   colour so the animation can never disagree with it (#0456). */
-.agent-hint .ai-dot {
-  background: currentColor;
-  box-shadow: 0 0 7px currentColor;
-}
 .ai-md .ai-dot {
   width: 7px;
   height: 7px;
@@ -6769,28 +6763,6 @@
    were removed with the migration — every chat input is now the shared box. */
 .agent-compose {
   margin: 0;
-}
-/* Text send control in that shared box: the box sizes icon buttons at 31px,
-   "Send" needs its own width. No fill — `.ai-chat-send` owns that. */
-.agent-send {
-  width: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 11px;
-  font: 500 11px var(--font-sans);
-}
-.agent-hint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  font-size: 11px;
-  color: var(--txt-faint);
-  font-family: "JetBrains Mono", monospace;
-}
-.agent-hint .tc-coding {
-  font-size: 9px;
 }
 .agent-waiting {
   display: flex;
@@ -12275,9 +12247,9 @@
  * One composer, used by every chat surface — CTO, Debugger, Task Debugger,
  * Ross, PM, and the task drawer's Dev/Reviewer input. It owns the box: border,
  * radius, surface, spacing, and the focus outline. A chat adds only its own
- * button-variant classes (.cto-stop, .pm-attach) on top; it never redefines the
- * box or its focus treatment, which is what kept the surfaces looking slightly
- * different from one another. */
+ * button-variant classes (.ai-chat-stop, .ai-chat-attach) on top; it never
+ * redefines the box or its focus treatment, which is what kept the surfaces
+ * looking slightly different from one another. */
 
 /* ── Shared agent-chat header (#0669) ──────────────────────────────────────
  * CTO, Debugger and Ross used to hand-roll the same header, each with its own
@@ -12411,8 +12383,10 @@
   }
 }
 
-/* Send button: a solid accent fill, so it reads as the primary action instead
- * of the near-invisible washed-out blue it used to be. */
+/* Send button: a solid accent fill, a compact square-ish icon button, so it
+ * reads as the primary action and matches every other chat surface (#0757).
+ * The paperplane glyph is the one submit icon across all chat inputs — no
+ * surface uses a text label, which kept them looking like separate widgets. */
 .ai-chat-send {
   color: var(--ai-chat-send-color);
   background: var(--ai-chat-send-bg);
@@ -12431,8 +12405,8 @@
  * Task Debugger, Ross, PM — uses this class instead of its own `-compose`
  * copy, so the input renders identically everywhere and shows the same
  * active/focus outline. Per-chat stop/attach controls keep their own variant
- * class (`.cto-stop`, `.pm-attach`, …) for their fill; the send button takes
- * `.ai-chat-send` and a variant must never set a base `background`/`color`
+ * class (`.cto-stop`, `.ai-chat-attach`, …) for their fill; the send button
+ * takes `.ai-chat-send` and a variant must never set a base `background`/`color`
  * that would out-specify it (docs/ai-chat-standards.md).
  */
 .ai-chat-compose {
@@ -12445,9 +12419,14 @@
   border-radius: 13px;
   background: var(--panel-solid);
 }
+/* The active/selected state (#0757): a bright accent border and a stronger
+ * accent glow, so it is immediately obvious which chat input is focused. The
+ * old `--border-bright` border was too subtle to read as "selected". */
 .ai-chat-compose:focus-within {
-  border-color: var(--border-bright);
-  box-shadow: 0 0 0 3px var(--cyan-dim);
+  border-color: var(--cyan);
+  box-shadow:
+    0 0 0 3px var(--cyan-dim),
+    0 0 10px -2px var(--cyan);
 }
 .ai-chat-compose textarea {
   flex: 1;
@@ -12488,7 +12467,9 @@
 }
 .ai-chat-compose button {
   /* Deliberately no `background`/`color`: the shared `.ai-chat-send` owns the
-     send button's fill. A variant (`.ai-chat-stop`) sets its own. */
+     send button's fill. A variant (`.ai-chat-stop`, `.ai-chat-attach`) sets
+     its own. Every control is the same compact square-ish icon button (#0757),
+     so the input, upload and submit controls read as one widget. */
   width: 31px;
   height: 31px;
   display: grid;
@@ -12702,21 +12683,21 @@
   color: var(--cyan);
 }
 
-/* PM-only compose variants. The base box (layout, focus outline, textarea) is
-   the shared `.ai-chat-compose` (#0669); only the attach control is PM-specific
-   here. The stop button reuses the shared `.ai-chat-stop`. */
-.ai-chat-compose button.pm-attach {
+/* Shared screenshot-upload control (#0757): the same square-ish outline button
+ * language as the text input and submit button, so the attach control matches
+ * instead of reading as a separate widget. */
+.ai-chat-compose button.ai-chat-attach {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--txt-dim);
 }
 
-.ai-chat-compose button.pm-attach:hover:not(:disabled) {
-  border-color: var(--violet);
-  color: var(--violet);
+.ai-chat-compose button.ai-chat-attach:hover:not(:disabled) {
+  border-color: var(--cyan);
+  color: var(--cyan);
 }
 
-.ai-chat-compose button.pm-attach svg {
+.ai-chat-compose button.ai-chat-attach svg {
   width: 16px;
   height: 16px;
 }
@@ -12793,10 +12774,6 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--cyan);
-}
-.pm-open-questions-hint {
-  font-size: 11px;
-  color: var(--txt-dim);
 }
 .pm-open-questions-list {
   margin: 0;
