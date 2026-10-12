@@ -3,9 +3,6 @@ id: "0759"
 title: Add Solarized theme variants
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "✗ Server finalization stopped at check: repoos check failed: rendered-contrast — · div.diff-file-item > span.diff-file-delta > span.diff-file-add — #859900 on #073642 = 4.06 (need ≥4.5, 10px) [drawer-changes] \"+1\". The same worktree can be resumed and retried."
 priority: p2
 area: ui
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/add-solarized-theme-variants
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-12T11:10:52Z"
-updated_at: "2026-10-12T13:23:44Z"
+updated_at: "2026-10-12T13:24:30Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-12T12:17:00.557Z: repoos check failed: rendered-contrast — · div.diff-file-item > span.diff-file-delta > span.diff-file-add — #859900 on #073642 = 4.06 (need ≥4.5, 10px) [drawer-changes] \"+1\""
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
@@ -121,3 +118,4 @@ My friend asked me to add a solarised theme to repoos, can you do it? see how th
 - 2026-10-12T12:34:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-12T12:55:21Z · agent exited with an error (claude) · ✗ Server finalization stopped at check: repoos check failed: rendered-contrast — · div.diff-file-item > span.diff-file-delta > span.diff-file-add — #859900 on #073642 = 4.06 (need ≥4.5, 10px) [drawer-changes] "+1". The same worktree can be resumed and retried.
 - 2026-10-12T13:23:44Z · message_expired: not delivered within timeout
+- 2026-10-12T13:24:30Z · needs_input
