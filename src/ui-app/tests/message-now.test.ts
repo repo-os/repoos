@@ -30,6 +30,8 @@ function git(root: string, args: string[]): void {
 }
 
 const FIXTURE_PREFIX = "repoos-msg-now-";
+/** Each case boots a real server and spawns agents; well over the 5s default. */
+const E2E_TIMEOUT_MS = 60_000;
 
 /**
  * A fake `opencode` that keeps running until signalled, appending one JSON line
@@ -151,146 +153,162 @@ beforeAll(() => {
 });
 
 describe("repoos message --now (#0760)", () => {
-  it("delivers immediately to an idle agent (nothing to interrupt)", async () => {
-    const fx = makeFixture();
-    const oldPath = process.env.PATH ?? "";
-    process.env.PATH = `${fx.bin}:${oldPath}`;
-    process.env.REPOOS_FAKEBIN_LOG = fx.log;
-    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
-    try {
-      const id = await startActiveTask(server);
-      await waitForAsync(
-        async () => (await running(server)).some((r) => r.id === id),
-        "agent running",
-      );
-      // Idle it: pause stops the run, then we send with `now`.
-      await api(server, "POST", `/api/tasks/${id}/pause`);
-      await waitForAsync(
-        async () => !(await running(server)).some((r) => r.id === id),
-        "agent stopped",
-      );
-      const before = spawnCount(fx);
+  it(
+    "delivers immediately to an idle agent (nothing to interrupt)",
+    async () => {
+      const fx = makeFixture();
+      const oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      process.env.REPOOS_FAKEBIN_LOG = fx.log;
+      const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+      try {
+        const id = await startActiveTask(server);
+        await waitForAsync(
+          async () => (await running(server)).some((r) => r.id === id),
+          "agent running",
+        );
+        // Idle it: pause stops the run, then we send with `now`.
+        await api(server, "POST", `/api/tasks/${id}/pause`);
+        await waitForAsync(
+          async () => !(await running(server)).some((r) => r.id === id),
+          "agent stopped",
+        );
+        const before = spawnCount(fx);
 
-      const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
-        text: "steer me",
-        now: true,
-      });
-      expect(sent.status).toBe(200);
-      expect(sent.body.ok).toBe(true);
-      expect(sent.body.deliveredNow).toBe(true);
-      expect(sent.body.interrupted).toBe(false);
-      expect(sent.body.queued).toBeUndefined();
-      // A fresh process was spawned for the delivered message.
-      await waitForAsync(async () => spawnCount(fx) > before, "delivered turn spawned");
-    } finally {
-      killSpawns(fx);
-      process.env.PATH = oldPath;
-      await server.close();
-      fx.clean();
-    }
-  });
+        const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
+          text: "steer me",
+          now: true,
+        });
+        expect(sent.status).toBe(200);
+        expect(sent.body.ok).toBe(true);
+        expect(sent.body.deliveredNow).toBe(true);
+        expect(sent.body.interrupted).toBe(false);
+        expect(sent.body.queued).toBeUndefined();
+        // A fresh process was spawned for the delivered message.
+        await waitForAsync(async () => spawnCount(fx) > before, "delivered turn spawned");
+      } finally {
+        killSpawns(fx);
+        process.env.PATH = oldPath;
+        await server.close();
+        fx.clean();
+      }
+    },
+    E2E_TIMEOUT_MS,
+  );
 
-  it("interrupts a busy agent then delivers as a fresh turn", async () => {
-    const fx = makeFixture();
-    const oldPath = process.env.PATH ?? "";
-    process.env.PATH = `${fx.bin}:${oldPath}`;
-    process.env.REPOOS_FAKEBIN_LOG = fx.log;
-    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
-    try {
-      const id = await startActiveTask(server);
-      await waitForAsync(
-        async () => (await running(server)).some((r) => r.id === id),
-        "agent running",
-      );
-      const before = spawnCount(fx);
+  it(
+    "interrupts a busy agent then delivers as a fresh turn",
+    async () => {
+      const fx = makeFixture();
+      const oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      process.env.REPOOS_FAKEBIN_LOG = fx.log;
+      const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+      try {
+        const id = await startActiveTask(server);
+        await waitForAsync(
+          async () => (await running(server)).some((r) => r.id === id),
+          "agent running",
+        );
+        const before = spawnCount(fx);
 
-      const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
-        text: "change of plan",
-        now: true,
-      });
-      expect(sent.status).toBe(200);
-      expect(sent.body.ok).toBe(true);
-      expect(sent.body.deliveredNow).toBe(true);
-      expect(sent.body.interrupted).toBe(true);
-      expect(sent.body.queued).toBeUndefined();
-      // The interrupted turn was replaced by a delivered one.
-      await waitForAsync(
-        async () => spawnCount(fx) > before,
-        "delivered turn spawned after interrupt",
-      );
-      await waitForAsync(
-        async () => (await running(server)).some((r) => r.id === id),
-        "new turn running",
-      );
-    } finally {
-      killSpawns(fx);
-      process.env.PATH = oldPath;
-      await server.close();
-      fx.clean();
-    }
-  });
+        const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
+          text: "change of plan",
+          now: true,
+        });
+        expect(sent.status).toBe(200);
+        expect(sent.body.ok).toBe(true);
+        expect(sent.body.deliveredNow).toBe(true);
+        expect(sent.body.interrupted).toBe(true);
+        expect(sent.body.queued).toBeUndefined();
+        // The interrupted turn was replaced by a delivered one.
+        await waitForAsync(
+          async () => spawnCount(fx) > before,
+          "delivered turn spawned after interrupt",
+        );
+        await waitForAsync(
+          async () => (await running(server)).some((r) => r.id === id),
+          "new turn running",
+        );
+      } finally {
+        killSpawns(fx);
+        process.env.PATH = oldPath;
+        await server.close();
+        fx.clean();
+      }
+    },
+    E2E_TIMEOUT_MS,
+  );
 
-  it("fails clearly and delivers nothing when the pause does not stop the run", async () => {
-    const fx = makeFixture();
-    const oldPath = process.env.PATH ?? "";
-    process.env.PATH = `${fx.bin}:${oldPath}`;
-    process.env.REPOOS_FAKEBIN_LOG = fx.log;
-    // The agent ignores SIGTERM, so the graceful pause window cannot stop it.
-    process.env.REPOOS_FAKEBIN_IGNORE_SIGTERM = "1";
-    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
-    try {
-      const id = await startActiveTask(server);
-      await waitForAsync(
-        async () => (await running(server)).some((r) => r.id === id),
-        "agent running",
-      );
-      const before = spawnCount(fx);
+  it(
+    "fails clearly and delivers nothing when the pause does not stop the run",
+    async () => {
+      const fx = makeFixture();
+      const oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      process.env.REPOOS_FAKEBIN_LOG = fx.log;
+      // The agent ignores SIGTERM, so the graceful pause window cannot stop it.
+      process.env.REPOOS_FAKEBIN_IGNORE_SIGTERM = "1";
+      const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+      try {
+        const id = await startActiveTask(server);
+        await waitForAsync(
+          async () => (await running(server)).some((r) => r.id === id),
+          "agent running",
+        );
+        const before = spawnCount(fx);
 
-      const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
-        text: "should not deliver",
-        now: true,
-      });
-      expect(sent.status).toBe(409);
-      expect(sent.body.ok).toBe(false);
-      expect(sent.body.deliveredNow).toBeUndefined();
-      expect(String(sent.body.error)).toContain("Could not interrupt");
-      // No second turn was spawned on top of the running one.
-      expect(spawnCount(fx)).toBe(before);
-    } finally {
-      killSpawns(fx);
-      process.env.PATH = oldPath;
-      await server.close();
-      fx.clean();
-    }
-  });
+        const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
+          text: "should not deliver",
+          now: true,
+        });
+        expect(sent.status).toBe(409);
+        expect(sent.body.ok).toBe(false);
+        expect(sent.body.deliveredNow).toBeUndefined();
+        expect(String(sent.body.error)).toContain("Could not interrupt");
+        // No second turn was spawned on top of the running one.
+        expect(spawnCount(fx)).toBe(before);
+      } finally {
+        killSpawns(fx);
+        process.env.PATH = oldPath;
+        await server.close();
+        fx.clean();
+      }
+    },
+    E2E_TIMEOUT_MS,
+  );
 
-  it("still queues while busy without now (default unchanged)", async () => {
-    const fx = makeFixture();
-    const oldPath = process.env.PATH ?? "";
-    process.env.PATH = `${fx.bin}:${oldPath}`;
-    process.env.REPOOS_FAKEBIN_LOG = fx.log;
-    const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
-    try {
-      const id = await startActiveTask(server);
-      await waitForAsync(
-        async () => (await running(server)).some((r) => r.id === id),
-        "agent running",
-      );
-      const before = spawnCount(fx);
+  it(
+    "still queues while busy without now (default unchanged)",
+    async () => {
+      const fx = makeFixture();
+      const oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      process.env.REPOOS_FAKEBIN_LOG = fx.log;
+      const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
+      try {
+        const id = await startActiveTask(server);
+        await waitForAsync(
+          async () => (await running(server)).some((r) => r.id === id),
+          "agent running",
+        );
+        const before = spawnCount(fx);
 
-      const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
-        text: "queued by default",
-      });
-      expect(sent.status).toBe(200);
-      expect(sent.body.queued).toBe(true);
-      expect(sent.body.deliveredNow).toBeUndefined();
-      // Queueing spawns nothing — the running turn is untouched.
-      expect(spawnCount(fx)).toBe(before);
-    } finally {
-      killSpawns(fx);
-      process.env.PATH = oldPath;
-      await server.close();
-      fx.clean();
-    }
-  });
+        const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
+          text: "queued by default",
+        });
+        expect(sent.status).toBe(200);
+        expect(sent.body.queued).toBe(true);
+        expect(sent.body.deliveredNow).toBeUndefined();
+        // Queueing spawns nothing — the running turn is untouched.
+        expect(spawnCount(fx)).toBe(before);
+      } finally {
+        killSpawns(fx);
+        process.env.PATH = oldPath;
+        await server.close();
+        fx.clean();
+      }
+    },
+    E2E_TIMEOUT_MS,
+  );
 });
