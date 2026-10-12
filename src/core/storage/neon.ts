@@ -256,8 +256,10 @@ export function neonStorageProvider(
       if (!key) return false;
       try {
         const res = send(credential, "DELETE", `/${key}`);
-        // S3 DELETE is idempotent (204 even for a missing object), so a
-        // 204/200 is "removed"; a 404 also means nothing is there.
+        // The S3 wire has no "did it exist?" signal: DeleteObject answers 204
+        // whether or not the object was there. A 2xx therefore means the object
+        // is gone (which is what callers act on); a network/transport failure is
+        // the only case that reports false.
         return res.status >= 200 && res.status < 300;
       } catch {
         return false;
