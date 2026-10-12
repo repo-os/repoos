@@ -57,8 +57,8 @@ export type SyncHttpTransport = (request: SyncHttpRequest) => SyncHttpResponse;
  * inherits, so it speaks TLS to a Neon endpoint without any extra config.
  */
 const CHILD_SCRIPT = `
-const http = require("node:http");
-const https = require("node:https");
+const http = process.getBuiltinModule("node:http");
+const https = process.getBuiltinModule("node:https");
 const req = JSON.parse(process.env.REPOOS_SYNC_HTTP_REQUEST || "{}");
 const mod = req.url.startsWith("https:") ? https : http;
 const request = mod.request(req.url, { method: req.method, headers: req.headers }, (res) => {
