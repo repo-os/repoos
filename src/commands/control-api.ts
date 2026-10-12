@@ -153,10 +153,10 @@ export async function cmdMessage(args: string[]): Promise<number> {
     });
     if (opts.json) printJson(data);
     else if (data?.queued) {
-      console.log(
-        c.green("  ✓ ") +
-          c.dim(`message queued to #${id} (agent busy — delivers when the turn ends)`),
-      );
+      const why = data.now
+        ? (data.reason ?? "agent still busy after the interrupt")
+        : "agent busy — delivers when the turn ends";
+      console.log(c.green("  ✓ ") + c.dim(`message queued to #${id} (${why})`));
     } else if (data?.deliveredNow) {
       const how = data.interrupted ? " (interrupted the running turn)" : " (agent was idle)";
       console.log(c.green("  ✓ ") + c.dim(`message delivered now to #${id}${how}`));
