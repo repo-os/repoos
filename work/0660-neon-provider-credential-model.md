@@ -2,7 +2,7 @@
 id: "0660"
 title: Neon provider + credential model
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: needs-human-step
 needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
@@ -14,7 +14,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/neon-provider-credential-model
 created_at: "2026-10-05T08:28:57Z"
-updated_at: "2026-10-12T03:59:31Z"
+updated_at: "2026-10-12T04:32:50Z"
 ---
 Slice 3 of storage provider work (after 0658 interface + 0659 settings UI). Scope:
 - Neon Object Storage provider implementing the 0658 provider interface.
@@ -68,3 +68,4 @@ None — server/config slice, no UI change.
 - 2026-10-06T23:48:10Z · needs_input
 - 2026-10-12T03:58:58Z · status inbox→ready
 - 2026-10-12T03:59:31Z · status ready→active, branch
+- 2026-10-12T04:32:50Z · status active→review
