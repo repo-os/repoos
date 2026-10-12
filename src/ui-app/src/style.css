@@ -10457,11 +10457,11 @@
   --overlay-bg: #00212bb8;
   --panel-gradient: linear-gradient(180deg, #073642, #002b36);
   --drawer-shadow: -18px 0 48px -26px #00212bd9;
-  --btn-primary-bg: linear-gradient(135deg, #268bd2, #3fd0c4);
+  --btn-primary-bg: linear-gradient(135deg, #268bd2, #2aa198);
   --btn-primary-color: #fff;
-  --ai-chat-send-bg: linear-gradient(135deg, #3fd0c4, #268bd2);
+  --ai-chat-send-bg: linear-gradient(135deg, #2aa198, #268bd2);
   --ai-chat-send-color: #fff;
-  --btn-new-bg: linear-gradient(135deg, #268bd2, #3fd0c4);
+  --btn-new-bg: linear-gradient(135deg, #268bd2, #2aa198);
   --btn-new-color: #fff;
   --status-on-bg: linear-gradient(135deg, #a4bf00, #cb9935);
   --status-on-color: #002b36;
