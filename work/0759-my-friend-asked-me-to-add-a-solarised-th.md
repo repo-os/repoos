@@ -2,14 +2,14 @@
 id: "0759"
 title: Add Solarized theme variants
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-12T11:10:52Z"
-updated_at: "2026-10-12T11:11:11Z"
+updated_at: "2026-10-12T11:12:19Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ My friend asked me to add a solarised theme to repoos, can you do it? see how th
 
 - 2026-10-12T11:10:52Z · created · hello@repoos.org
 - 2026-10-12T11:11:11Z · status draft→inbox, title, area, body
+- 2026-10-12T11:12:19Z · status inbox→ready
