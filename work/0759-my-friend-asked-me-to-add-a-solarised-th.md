@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-solarized-theme-variants
 cli_override: claude code
-model_override: opus
+model_override: sonnet
 created_at: "2026-10-12T11:10:52Z"
-updated_at: "2026-10-12T16:37:12Z"
+updated_at: "2026-10-12T17:17:32Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-12T14:19:52.155Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
@@ -147,3 +147,4 @@ My friend asked me to add a solarised theme to repoos, can you do it? see how th
 - 2026-10-12T16:29:04Z · message_queued at 2026-10-12T16:29:04.595Z
 - 2026-10-12T16:29:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-12T16:37:12Z · message_delivered: 2 message(s)
+- 2026-10-12T17:17:32Z · model_override
