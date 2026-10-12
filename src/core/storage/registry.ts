@@ -3,12 +3,14 @@
  *
  * Providers are registered as factories keyed by a stable id, because the two
  * attachment bases (`work/.attachments/` and `inputs/.attachments/`) each need
- * their own provider instance rooted at a different directory. A later slice
- * (#0660, Neon) registers a `"neon"` factory here and #0659 picks it by config;
- * the local provider is the only entry today and always the fallback, so
- * behavior is unchanged for anyone who never configures a provider.
+ * their own provider instance rooted at a different directory. The local
+ * provider is the reference implementation and always the fallback, so behavior
+ * is unchanged for anyone who never configures a provider; the Neon Object
+ * Storage provider (#0660) is registered beside it and is available only once
+ * its environment credentials are complete.
  */
 import { localStorageProvider } from "./local.js";
+import { neonStorageProvider } from "./neon.js";
 import type { StorageProvider, StorageProviderStatus } from "./types.js";
 
 /** Builds a provider instance rooted at one base directory (absolute path). */
@@ -178,3 +180,9 @@ export function describeStorage(
 
 // The local provider is the reference implementation and is always registered.
 registerStorageProvider(DEFAULT_STORAGE_PROVIDER_ID, localStorageProvider);
+// The Neon Object Storage provider (#0660). It registers unconditionally so the
+// `neon` id is always *known*; whether it is *available* depends on its
+// credentials (read from the environment), which `status()` reports — an
+// unconfigured Neon therefore shows up in Settings but falls back to local,
+// exactly as #0659 designed. See `neon-credentials.ts` for the credential model.
+registerStorageProvider("neon", neonStorageProvider);
