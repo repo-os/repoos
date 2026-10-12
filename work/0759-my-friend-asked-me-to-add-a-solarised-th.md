@@ -2,16 +2,16 @@
 id: "0759"
 title: Add Solarized theme variants
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-solarized-theme-variants
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-12T11:10:52Z"
-updated_at: "2026-10-12T11:12:35Z"
+updated_at: "2026-10-12T11:12:37Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ My friend asked me to add a solarised theme to repoos, can you do it? see how th
 - 2026-10-12T11:12:19Z · status inbox→ready
 - 2026-10-12T11:12:24Z · cli_override, model_override
 - 2026-10-12T11:12:35Z · model_override
+- 2026-10-12T11:12:37Z · status ready→active, branch
