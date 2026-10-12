@@ -11,7 +11,7 @@ branch: feat/repoos-message-now-interrupt-a-busy-agen
 cli_override: claude code
 model_override: opus
 created_at: "2026-10-12T14:35:44Z"
-updated_at: "2026-10-12T16:13:42Z"
+updated_at: "2026-10-12T16:29:05Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -50,3 +50,4 @@ handoff_signal_retry_count: 1
 - 2026-10-12T16:09:48Z · body
 - 2026-10-12T16:11:05Z · cli_override, model_override
 - 2026-10-12T16:13:42Z · body
+- 2026-10-12T16:29:05Z · message_queued at 2026-10-12T16:29:05.205Z
