@@ -70,12 +70,14 @@ async function loadConfig() {
 }
 
 describe("solarized is selectable in Settings alongside the existing themes", () => {
-  it("is in the design-theme catalog, labelled and last in fallback order", () => {
+  it("is in the design-theme catalog, labelled immediately before hypercolor in fallback order", () => {
     expect(DESIGN_THEMES.find((t) => t.id === "solarized")).toEqual({
       id: "solarized",
       label: "Solarized",
     });
-    expect(DESIGN_THEMES[DESIGN_THEMES.length - 1]?.id).toBe("solarized");
+    // Hypercolor is last; solarized is immediately before it
+    expect(DESIGN_THEMES[DESIGN_THEMES.length - 2]?.id).toBe("solarized");
+    expect(DESIGN_THEMES[DESIGN_THEMES.length - 1]?.id).toBe("hypercolor");
   });
 
   it("has a Settings swatch, so the list previews it rather than falling back", () => {
@@ -149,15 +151,16 @@ describe("solarized declares both appearances in the stylesheet", () => {
     expect(dark["--txt"]).not.toBe(light["--txt"]);
   });
 
-  it("carries the Solarized blue and cyan accents in both appearances", () => {
+  it("carries the Solarized accents in both appearances with proper contrast for light variant", () => {
     const dark = readBlock(stylesheet, DARK);
     const light = readBlock(stylesheet, LIGHT);
     expect(dark["--cyan"]).toBe("#2aa198");
     expect(dark["--violet"]).toBe("#6c71c4");
     expect(dark["--red"]).toBe("#dc322f");
-    expect(light["--cyan"]).toBe("#2aa198");
-    expect(light["--violet"]).toBe("#6c71c4");
-    expect(light["--red"]).toBe("#dc322f");
+    // Light variant uses darker accent colors for WCAG contrast
+    expect(light["--cyan"]).toBe("#004f4d");
+    expect(light["--violet"]).toBe("#5a4a7a");
+    expect(light["--red"]).toBe("#9d3d2b");
   });
 });
 
