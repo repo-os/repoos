@@ -51,3 +51,4 @@ handoff_signal_retry_count: 1
 - 2026-10-12T16:11:05Z · cli_override, model_override
 - 2026-10-12T16:13:42Z · body
 - 2026-10-12T16:29:05Z · message_queued at 2026-10-12T16:29:05.205Z
+- 2026-10-12T16:29:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
