@@ -15,16 +15,18 @@ import { HANDOFF_DEADLINE_MS } from "../server/handoff.js";
 interface CommonOpts {
   json: boolean;
   wait: boolean;
+  now: boolean;
   port?: number;
 }
 
 function parseCommonFlags(args: string[]): { rest: string[]; opts: CommonOpts; error?: string } {
-  const opts: CommonOpts = { json: false, wait: false };
+  const opts: CommonOpts = { json: false, wait: false, now: false };
   const rest: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === "--json") opts.json = true;
     else if (a === "--wait") opts.wait = true;
+    else if (a === "--now") opts.now = true;
     else if (a === "--port") {
       const p = args[++i];
       const n = Number(p);
@@ -139,17 +141,27 @@ export async function cmdMessage(args: string[]): Promise<number> {
   const id = rest[0];
   const text = rest.slice(1).join(" ").trim();
   if (!id || !text) {
-    printErr('Usage: repoos message <id> "<text>" [--json] [--port N]');
+    printErr('Usage: repoos message <id> "<text>" [--now] [--json] [--port N]');
     return 1;
   }
   const api = new RepoOsApi({ port: opts.port });
   try {
     await ensureServer(api);
-    const data = await api.requestOk("POST", `/api/tasks/${id}/message`, { text });
+    const data = await api.requestOk("POST", `/api/tasks/${id}/message`, {
+      text,
+      ...(opts.now ? { now: true } : {}),
+    });
     if (opts.json) printJson(data);
-    else {
-      const status = data?.queued ? "queued" : "sent";
-      console.log(c.green("  ✓ ") + c.dim(`message ${status} to #${id}`));
+    else if (data?.queued) {
+      console.log(
+        c.green("  ✓ ") +
+          c.dim(`message queued to #${id} (agent busy — delivers when the turn ends)`),
+      );
+    } else if (data?.deliveredNow) {
+      const how = data.interrupted ? " (interrupted the running turn)" : " (agent was idle)";
+      console.log(c.green("  ✓ ") + c.dim(`message delivered now to #${id}${how}`));
+    } else {
+      console.log(c.green("  ✓ ") + c.dim(`message sent to #${id}`));
     }
     return 0;
   } catch (e) {
