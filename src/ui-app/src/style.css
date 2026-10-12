@@ -10441,27 +10441,27 @@
   --cyan-dim: #2aa19829;
   --violet: #6c71c4;
   --violet-dim: #6c71c429;
-  --green: #859900;
+  --green: #a4bf00;
   --red: #dc322f;
   --amber: #b58900;
   --body-gradient:
     radial-gradient(1000px 620px at 6% -10%, #6c71c412, transparent 60%),
-    radial-gradient(1060px 700px at 102% -6%, #268bd20f, transparent 58%),
+    radial-gradient(1060px 700px at 102% -6%, #3a94d50f, transparent 58%),
     radial-gradient(900px 620px at 50% 116%, #2aa1980d, transparent 62%);
   --topbar-bg: linear-gradient(180deg, #073642eb, #002b36b8);
   --logo-shadow: 0 2px 18px -6px #6c71c457;
   --card-glow: 0 0 0 1px #58696f33, 0 6px 18px -12px #002b36b3;
   --nav-hover-bg: #4a555e57;
-  --nav-active-bg: linear-gradient(90deg, #268bd238, #2aa19814);
+  --nav-active-bg: linear-gradient(90deg, #3a94d538, #2aa19814);
   --nav-active-color: #93a1a1;
   --overlay-bg: #00212bb8;
   --panel-gradient: linear-gradient(180deg, #073642, #002b36);
   --drawer-shadow: -18px 0 48px -26px #00212bd9;
-  --btn-primary-bg: linear-gradient(135deg, #1f6b9d, #1d8a7a);
+  --btn-primary-bg: linear-gradient(135deg, #3a94d5, #1d8a7a);
   --btn-primary-color: #fdf6e3;
-  --ai-chat-send-bg: linear-gradient(135deg, #1d8a7a, #1f6b9d);
+  --ai-chat-send-bg: linear-gradient(135deg, #1d8a7a, #3a94d5);
   --ai-chat-send-color: #fdf6e3;
-  --btn-new-bg: linear-gradient(135deg, #1f6b9d, #1d8a7a);
+  --btn-new-bg: linear-gradient(135deg, #3a94d5, #1d8a7a);
   --btn-new-color: #fdf6e3;
   --status-on-bg: linear-gradient(135deg, #5d7a00, #7a6201);
   --status-on-color: #fdf6e3;
@@ -10478,8 +10478,8 @@
   --amber-border-tint: #b5890059;
   --violet-tint: var(--violet-dim);
   --violet-border-tint: #6c71c45c;
-  --tag-stream-bg: #268bd22e;
-  --tag-stream-color: #268bd2;
+  --tag-stream-bg: #3a94d52e;
+  --tag-stream-color: #3a94d5;
   --tag-reconnect-bg: #dc322f2e;
   --tag-reconnect-color: #dc322f;
   --chip-bg: #4a555e66;
@@ -10490,7 +10490,7 @@
   --card-foreground: #93a1a1;
   --popover: #073642;
   --popover-foreground: #93a1a1;
-  --primary: #268bd2;
+  --primary: #3a94d5;
   --primary-foreground: #002b36;
   --secondary: #4a555e66;
   --secondary-foreground: #93a1a1;
@@ -10501,7 +10501,7 @@
   --destructive: #dc322f;
   --destructive-foreground: #002b36;
   --input: #58696f66;
-  --ring: #268bd2;
+  --ring: #3a94d5;
   --radius: 0.75rem;
 }
 :root[data-ui-theme="solarized"][data-theme="light"] {
