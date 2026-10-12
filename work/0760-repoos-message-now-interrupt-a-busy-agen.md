@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0760"
 title: "repoos message --now: interrupt a busy agent and deliver immediately"
 type: feature
@@ -40,3 +41,4 @@ updated_at: "2026-10-12T14:35:53Z"
 - 2026-10-12T14:35:44Z · created · njachowski@gmail.com
 - 2026-10-12T14:35:52Z · status inbox→ready
 - 2026-10-12T14:35:53Z · status ready→active, branch
+
