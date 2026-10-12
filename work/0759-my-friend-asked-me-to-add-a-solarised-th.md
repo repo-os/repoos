@@ -2,7 +2,7 @@
 id: "0759"
 title: Add Solarized theme variants
 type: feature
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
