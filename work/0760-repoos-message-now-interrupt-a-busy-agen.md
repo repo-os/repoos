@@ -2,7 +2,7 @@
 id: "0760"
 title: "repoos message --now: interrupt a busy agent and deliver immediately"
 type: feature
-status: review
+status: active
 priority: p2
 area: [cli, server]
 assigned_to: ai
