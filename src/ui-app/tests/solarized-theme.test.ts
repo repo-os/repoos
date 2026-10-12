@@ -156,9 +156,9 @@ describe("solarized declares both appearances in the stylesheet", () => {
     const light = readBlock(stylesheet, LIGHT);
     // Dark variant uses lightened green and blue for sufficient contrast
     expect(dark["--green"]).toBe("#a4bf00");
-    expect(dark["--cyan"]).toBe("#2db8a8");
+    expect(dark["--cyan"]).toBe("#34c7b7");
     expect(dark["--violet"]).toBe("#8580d6");
-    expect(dark["--red"]).toBe("#f05940");
+    expect(dark["--red"]).toBe("#f56d4b");
     // Light variant uses much darker accent colors for WCAG contrast
     expect(light["--cyan"]).toBe("#004f4d");
     expect(light["--violet"]).toBe("#5a4a7a");
