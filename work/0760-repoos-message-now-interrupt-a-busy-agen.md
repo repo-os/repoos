@@ -2,7 +2,7 @@
 id: "0760"
 title: "repoos message --now: interrupt a busy agent and deliver immediately"
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-message-now-interrupt-a-busy-agen
 cli_override: claude code
 model_override: sonnet
 created_at: "2026-10-12T14:35:44Z"
-updated_at: "2026-10-12T18:55:31Z"
+updated_at: "2026-10-12T19:00:42Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -59,3 +59,5 @@ handoff_signal_retry_count: 1
 - 2026-10-12T17:43:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-12T18:49:07Z · body
 - 2026-10-12T18:55:31Z · handoff failed · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-12T19:00:41Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-12T19:00:42Z · note: handoff requested (cli)
