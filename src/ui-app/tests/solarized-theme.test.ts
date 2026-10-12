@@ -158,7 +158,7 @@ describe("solarized declares both appearances in the stylesheet", () => {
     expect(dark["--green"]).toBe("#a4bf00");
     expect(dark["--cyan"]).toBe("#2db8a8");
     expect(dark["--violet"]).toBe("#6c71c4");
-    expect(dark["--red"]).toBe("#dc322f");
+    expect(dark["--red"]).toBe("#e84236");
     // Light variant uses much darker accent colors for WCAG contrast
     expect(light["--cyan"]).toBe("#004f4d");
     expect(light["--violet"]).toBe("#5a4a7a");

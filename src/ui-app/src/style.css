@@ -10436,14 +10436,14 @@
   --border-bright: #58696fb8;
   --txt: #93a1a1;
   --txt-dim: #8fa4a9;
-  --txt-faint: #657b83;
+  --txt-faint: #6f8a93;
   --cyan: #2db8a8;
   --cyan-dim: #2db8a829;
   --violet: #6c71c4;
   --violet-dim: #6c71c429;
   --green: #a4bf00;
-  --red: #dc322f;
-  --amber: #cb9935;
+  --red: #e84236;
+  --amber: #d39d3a;
   --body-gradient:
     radial-gradient(1000px 620px at 6% -10%, #6c71c412, transparent 60%),
     radial-gradient(1060px 700px at 102% -6%, #268bd20f, transparent 58%),
@@ -10458,11 +10458,11 @@
   --panel-gradient: linear-gradient(180deg, #073642, #002b36);
   --drawer-shadow: -18px 0 48px -26px #00212bd9;
   --btn-primary-bg: linear-gradient(135deg, #268bd2, #2aa198);
-  --btn-primary-color: #002b36;
+  --btn-primary-color: #fff;
   --ai-chat-send-bg: linear-gradient(135deg, #2aa198, #268bd2);
-  --ai-chat-send-color: #002b36;
+  --ai-chat-send-color: #fff;
   --btn-new-bg: linear-gradient(135deg, #268bd2, #2aa198);
-  --btn-new-color: #002b36;
+  --btn-new-color: #fff;
   --status-on-bg: linear-gradient(135deg, #a4bf00, #cb9935);
   --status-on-color: #002b36;
   --md-body-bg: #00212b57;
