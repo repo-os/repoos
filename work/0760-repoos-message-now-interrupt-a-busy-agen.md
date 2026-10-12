@@ -8,10 +8,10 @@ area: [cli, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-message-now-interrupt-a-busy-agen
-cli_override: cursor
-model_override: composer-2.5
+cli_override: claude code
+model_override: opus
 created_at: "2026-10-12T14:35:44Z"
-updated_at: "2026-10-12T16:09:48Z"
+updated_at: "2026-10-12T16:11:05Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -48,3 +48,4 @@ handoff_signal_retry_count: 1
 - 2026-10-12T16:07:43Z · cli_override, model_override
 - 2026-10-12T16:08:27Z · message_expired: not delivered within timeout
 - 2026-10-12T16:09:48Z · body
+- 2026-10-12T16:11:05Z · cli_override, model_override
