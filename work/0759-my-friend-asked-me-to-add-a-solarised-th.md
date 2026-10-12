@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: claude code
-model_override: default
+model_override: haiku
 created_at: "2026-10-12T11:10:52Z"
-updated_at: "2026-10-12T11:12:24Z"
+updated_at: "2026-10-12T11:12:35Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ My friend asked me to add a solarised theme to repoos, can you do it? see how th
 - 2026-10-12T11:11:11Z · status draft→inbox, title, area, body
 - 2026-10-12T11:12:19Z · status inbox→ready
 - 2026-10-12T11:12:24Z · cli_override, model_override
+- 2026-10-12T11:12:35Z · model_override
