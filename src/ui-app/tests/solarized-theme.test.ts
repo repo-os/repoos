@@ -151,13 +151,15 @@ describe("solarized declares both appearances in the stylesheet", () => {
     expect(dark["--txt"]).not.toBe(light["--txt"]);
   });
 
-  it("carries the Solarized accents in both appearances with proper contrast for light variant", () => {
+  it("carries the Solarized accents in both appearances with proper contrast", () => {
     const dark = readBlock(stylesheet, DARK);
     const light = readBlock(stylesheet, LIGHT);
+    // Dark variant uses lightened green and blue for sufficient contrast
+    expect(dark["--green"]).toBe("#a4bf00");
     expect(dark["--cyan"]).toBe("#2aa198");
     expect(dark["--violet"]).toBe("#6c71c4");
     expect(dark["--red"]).toBe("#dc322f");
-    // Light variant uses darker accent colors for WCAG contrast
+    // Light variant uses much darker accent colors for WCAG contrast
     expect(light["--cyan"]).toBe("#004f4d");
     expect(light["--violet"]).toBe("#5a4a7a");
     expect(light["--red"]).toBe("#9d3d2b");
