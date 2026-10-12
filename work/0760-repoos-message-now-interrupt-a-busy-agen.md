@@ -11,7 +11,7 @@ branch: feat/repoos-message-now-interrupt-a-busy-agen
 cli_override: claude code
 model_override: sonnet
 created_at: "2026-10-12T14:35:44Z"
-updated_at: "2026-10-12T17:19:27Z"
+updated_at: "2026-10-12T17:43:38Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -55,3 +55,4 @@ handoff_signal_retry_count: 1
 - 2026-10-12T16:37:49Z · message_delivered: 1 message(s)
 - 2026-10-12T17:17:34Z · model_override
 - 2026-10-12T17:19:27Z · body
+- 2026-10-12T17:43:38Z · message_queued at 2026-10-12T17:43:38.967Z
