@@ -75,3 +75,4 @@ None — server/config slice, no UI change.
 - 2026-10-12T04:25:02Z · body
 - 2026-10-12T04:26:22Z · body
 - 2026-10-12T04:32:51Z · status active→review
+- 2026-10-12T04:32:51Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
