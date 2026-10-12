@@ -2099,11 +2099,15 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       const stopRes = runner.stop(id);
       const stopped = stopRes.stopped && (await runner.waitForStop(id, INTERRUPT_WAIT_MS));
       if (!stopped) {
+        // The stop was still requested (SIGKILL follows on the pause path's
+        // grace timer), so record it as a human pause exactly like `pause`
+        // does — the watchdog must not flag a task left with no process.
+        runner.markPaused(id);
         return json(res, 409, {
           ok: false,
           now: true,
           interrupted: true,
-          error: `Could not interrupt the running agent for #${id} — it is still running; the message was not delivered`,
+          error: `Could not interrupt the running agent for #${id} — it did not stop within ${INTERRUPT_WAIT_MS / 1000}s; the message was not delivered. The task is paused: resend the message once the agent has stopped.`,
           reason: "pause did not stop the run",
         });
       }
@@ -2119,6 +2123,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       return json(res, 200, {
         ok: true,
         queued: true,
+        // #0760: with `now`, the run stopped but the runner is still busy
+        // (e.g. the interrupted turn had requested a handoff, now in flight).
+        ...(now ? { now: true, interrupted, reason: "agent still busy after the interrupt" } : {}),
       });
     }
     return json(res, 200, {
