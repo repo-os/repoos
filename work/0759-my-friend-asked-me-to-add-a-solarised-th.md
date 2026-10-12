@@ -11,7 +11,7 @@ branch: feat/add-solarized-theme-variants
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-12T11:10:52Z"
-updated_at: "2026-10-12T11:21:40Z"
+updated_at: "2026-10-12T11:22:25Z"
 ---
 ## Problem
 
@@ -41,6 +41,31 @@ Covers adding Solarized light and dark theme variants.
 
 My friend asked me to add a solarised theme to repoos, can you do it? see how the other themes were setup and follow the same pattern, it needs to have both light and dark versions of the theme (it's popular with coders, my main audience for repoos).
 
+## Shots
+```json
+[
+{
+  "label": "Solarized dark theme selector",
+  "target": "default",
+  "route": "/repo/settings?tab=theme",
+  "highlight": "[data-ui-theme=\"solarized\"]",
+  "state": "closeOut:active"
+},
+{
+  "label": "Solarized light theme selector",
+  "target": "default",
+  "route": "/repo/settings?tab=theme",
+  "highlight": "[data-ui-theme=\"solarized\"]",
+  "steps": [
+    {
+      "click": "button[data-theme=\"light\"]"
+    }
+  ],
+  "state": "closeOut:active"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-12T11:10:52Z · created · hello@repoos.org
@@ -54,3 +79,4 @@ My friend asked me to add a solarised theme to repoos, can you do it? see how th
 - 2026-10-12T11:18:33Z · body
 - 2026-10-12T11:20:08Z · body
 - 2026-10-12T11:21:40Z · body
+- 2026-10-12T11:22:25Z · body: section Shots
