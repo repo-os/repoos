@@ -489,7 +489,7 @@ describe("config key and value helpers", () => {
       expect(findConfigValueProblems({ uiTheme })).toEqual([]);
     }
     expect(findConfigValueProblems({ uiTheme: "gruvbox" })).toEqual([]);
-    expect(findConfigValueProblems({ uiTheme: "solarized" })[0]).toContain("uiTheme");
+    expect(findConfigValueProblems({ uiTheme: "not-a-theme" })[0]).toContain("uiTheme");
   });
 
   it("collects only non-pass remediations, deduplicated", async () => {
