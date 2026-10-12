@@ -14,7 +14,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/neon-provider-credential-model
 created_at: "2026-10-05T08:28:57Z"
-updated_at: "2026-10-12T04:26:22Z"
+updated_at: "2026-10-12T04:27:00Z"
 ---
 Slice 3 of storage provider work (after 0658 interface + 0659 settings UI). Scope:
 - Neon Object Storage provider implementing the 0658 provider interface.
