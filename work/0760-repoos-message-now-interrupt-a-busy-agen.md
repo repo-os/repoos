@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0760"
 title: "repoos message --now: interrupt a busy agent and deliver immediately"
 type: feature
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-message-now-interrupt-a-busy-agen
 created_at: "2026-10-12T14:35:44Z"
-updated_at: "2026-10-12T14:35:53Z"
+updated_at: "2026-10-12T15:05:39Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -41,4 +41,4 @@ updated_at: "2026-10-12T14:35:53Z"
 - 2026-10-12T14:35:44Z · created · njachowski@gmail.com
 - 2026-10-12T14:35:52Z · status inbox→ready
 - 2026-10-12T14:35:53Z · status ready→active, branch
-
+- 2026-10-12T15:05:39Z · message_queued at 2026-10-12T15:05:39.129Z
