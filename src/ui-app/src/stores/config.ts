@@ -122,6 +122,10 @@ export const DESIGN_THEMES: DesignTheme[] = [
   // gradient wordmark, and a faint scanline. Dark is the intended appearance;
   // light is the daylight variant the theme-contrast guard also checks.
   { id: "hypercolor", label: "Hypercolor" },
+  // Solarized: precision colors for machines and people, with dark and light
+  // variants. Both variants use the same base palette but swap foreground
+  // and background colors appropriately.
+  { id: "solarized", label: "Solarized" },
 ];
 
 /** How many themes a user may star as favorites (#0255). */
