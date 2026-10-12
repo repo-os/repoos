@@ -10434,15 +10434,15 @@
   --panel-solid: #073642;
   --border: #58696f6b;
   --border-bright: #58696fb8;
-  --txt: #a1b5bc;
-  --txt-dim: #98aeb5;
-  --txt-faint: #86aeb8;
+  --txt: #b3c7ce;
+  --txt-dim: #a3b9c0;
+  --txt-faint: #8eb4be;
   --cyan: #3fd0c4;
   --cyan-dim: #3fd0c429;
   --violet: #9191e1;
   --violet-dim: #9191e129;
   --green: #a4bf00;
-  --red: #f97553;
+  --red: #f2725d;
   --amber: #d39d3a;
   --body-gradient:
     radial-gradient(1000px 620px at 6% -10%, #6c71c412, transparent 60%),
@@ -10457,12 +10457,12 @@
   --overlay-bg: #00212bb8;
   --panel-gradient: linear-gradient(180deg, #073642, #002b36);
   --drawer-shadow: -18px 0 48px -26px #00212bd9;
-  --btn-primary-bg: linear-gradient(135deg, #268bd2, #2aa198);
-  --btn-primary-color: #fff;
+  --btn-primary-bg: linear-gradient(135deg, #4b9fda, #2aa198);
+  --btn-primary-color: #002b36;
   --ai-chat-send-bg: linear-gradient(135deg, #2aa198, #268bd2);
-  --ai-chat-send-color: #fff;
-  --btn-new-bg: linear-gradient(135deg, #268bd2, #2aa198);
-  --btn-new-color: #fff;
+  --ai-chat-send-color: #002b36;
+  --btn-new-bg: linear-gradient(135deg, #4b9fda, #2aa198);
+  --btn-new-color: #002b36;
   --status-on-bg: linear-gradient(135deg, #a4bf00, #cb9935);
   --status-on-color: #002b36;
   --md-body-bg: #00212b57;
@@ -10479,7 +10479,7 @@
   --violet-tint: var(--violet-dim);
   --violet-border-tint: #6c71c45c;
   --tag-stream-bg: #268bd22e;
-  --tag-stream-color: #268bd2;
+  --tag-stream-color: #4b9fda;
   --tag-reconnect-bg: #dc322f2e;
   --tag-reconnect-color: #dc322f;
   --chip-bg: #4a555e66;
@@ -10497,11 +10497,11 @@
   --muted: #073642;
   --muted-foreground: #839496;
   --accent: #2aa19829;
-  --accent-foreground: #2aa198;
+  --accent-foreground: #3fd0c4;
   --destructive: #dc322f;
   --destructive-foreground: #002b36;
   --input: #58696f66;
-  --ring: #268bd2;
+  --ring: #4b9fda;
   --radius: 0.75rem;
 }
 :root[data-ui-theme="solarized"][data-theme="light"] {
@@ -10572,7 +10572,7 @@
   --secondary: #d6d0c866;
   --secondary-foreground: #073642;
   --muted: #eee8d5;
-  --muted-foreground: #586e75;
+  --muted-foreground: #566c73;
   --accent: #004f4d29;
   --accent-foreground: #004f4d;
   --destructive: #9d3d2b;
