@@ -716,3 +716,6 @@ models = ["haiku"]
 [[budget.allowlist]]
 cli = "github copilot"
 models = ["default"]
+[[budget.allowlist]]
+cli = "cursor"
+models = ["composer-2.5"]
