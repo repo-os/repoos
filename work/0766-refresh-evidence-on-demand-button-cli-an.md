@@ -2,7 +2,7 @@
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server, cli, ui]
 assigned_to: ai
