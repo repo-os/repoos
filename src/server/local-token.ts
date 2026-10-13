@@ -12,6 +12,7 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { IncomingMessage } from "node:http";
 
 /** Absolute path of the token file a running server wrote. */
 export function localCliTokenPath(root: string, cacheDir: string): string {
@@ -59,4 +60,28 @@ export function localTokenMatches(provided: string | undefined, expected: string
 /** Whether a socket peer address is loopback (v4, v6, or v6-mapped v4). */
 export function isLoopbackAddress(addr: string | undefined): boolean {
   return addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1";
+}
+
+/**
+ * Whether a request was made by the local CLI/API caller (an *agent driver*)
+ * rather than a browser UI session (#0764). True only when the request carries
+ * the loopback token the server wrote AND arrived from a loopback peer with no
+ * forwarding headers — the same `localCli` test the auth gate applies.
+ *
+ * When auth is disabled no token file exists, so this is always false: budget
+ * enforcement fails toward allowing the human path rather than guessing.
+ */
+export function requestUsedLocalCliToken(
+  req: IncomingMessage,
+  root: string,
+  cacheDir: string,
+): boolean {
+  const provided = req.headers["x-repoos-local-token"];
+  if (typeof provided !== "string") return false;
+  if (!isLoopbackAddress(req.socket.remoteAddress)) return false;
+  const forwarded = Boolean(
+    req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || req.headers["cf-connecting-ip"],
+  );
+  if (forwarded) return false;
+  return localTokenMatches(provided, readLocalCliToken(root, cacheDir));
 }
