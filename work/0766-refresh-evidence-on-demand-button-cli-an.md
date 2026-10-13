@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-13T22:47:44Z"
-review_passes: 12
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -18,6 +16,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
+updated_at: "2026-10-13T23:23:20Z"
+review_passes: 12
 close_out_repair_count: 1
 review_rounds: 2
 dev_error_count: 1
@@ -171,4 +171,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T22:46:04Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7e06cd672) during finalization (#0734)
 - 2026-10-13T22:47:44Z · note: review pass 13: needs some work
 - 2026-10-13T22:47:44Z · needs_input
-
+- 2026-10-13T23:23:20Z · status review→active
