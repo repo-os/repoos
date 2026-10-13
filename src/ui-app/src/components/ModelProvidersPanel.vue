@@ -473,8 +473,8 @@ onMounted(() => {
               :title="rowState(row.id).fetchedAt ?? undefined"
             >
               <template v-if="rowState(row.id).stale"
-                ><span class="mp-stale">Stale</span> ·
-              </template>As of
+                ><span class="mp-stale">Stale</span> · </template
+              >As of
               {{ fmtAsOf(rowState(row.id).fetchedAt) }}
             </span>
             <span
