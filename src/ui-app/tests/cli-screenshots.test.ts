@@ -63,9 +63,16 @@ async function withCwd<T>(dir: string, fn: () => T): Promise<T> {
  * Run a CLI command with `process.exitCode` reset first (vitest shares one
  * process across tests, so a failure in an earlier case leaks the code), and
  * return the code the command set — `0` when it left it unset.
+ *
+ * The reset is `0`, never `undefined`: Bun's `process.exitCode` setter ignores
+ * an `undefined` assignment and keeps the previous value, while Node clears it.
+ * Since the whole suite runs under whichever runtime `process.execPath` is
+ * (Bun here), `= undefined` would let an earlier failure's `1` leak into a later
+ * success — the same test passing under an ad-hoc Node `vitest` run and failing
+ * under `bun run test`. `0` is an explicit clean baseline in both.
  */
 async function runCli(fn: () => void): Promise<number> {
-  process.exitCode = undefined;
+  process.exitCode = 0;
   await fn();
   return process.exitCode ?? 0;
 }
@@ -106,6 +113,8 @@ const tmpRoots: string[] = [];
 afterEach(() => {
   for (const r of tmpRoots) rmFixture(r);
   tmpRoots.length = 0;
+  // `0`, not `undefined` — see runCli: Bun keeps a stale code on `= undefined`.
+  process.exitCode = 0;
   vi.restoreAllMocks();
 });
 
