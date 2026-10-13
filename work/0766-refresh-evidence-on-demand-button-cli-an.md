@@ -15,9 +15,10 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T18:15:51Z"
+updated_at: "2026-10-13T18:20:37Z"
 review_passes: 4
 review_rounds: 2
+dev_error_count: 1
 ---
 ## Problem
 When a reviewed task's handoff evidence goes stale (shots and the ui-verification record were captured at an older commit than the reviewed HEAD, e.g. after merging main or a fix commit), the only way to refresh it is to send the task back to the engineer agent so it re-hands off. That costs a full agent turn (often a paid model), races with other edits, and reviewers then fail the task on a 'stale capture' note. Observed in the Divot repo on #0082: review passes 3 and 4 had no bugs; the only blocker was 'UI verification still points at 90835d6 / website-1..3 while reviewed HEAD is 349a024', and the reviewer's own advice was 're-handoff once'.
@@ -94,3 +95,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T18:15:39Z · status review→active
 - 2026-10-13T18:15:39Z · note: Review pass 5 on #0766 says “needs some work” (.repoos/reviews/0766.md). Two things before handoff:  Re-capture the UI verification on your current HEAD. The shots must be taken on the commit you hand off. Make sure command targets ([[shot.targets]]) can’t leave tracked changes in the worktree. If they can, fix that and add a test.  Then run repoos check once, commit, and finish with ::repoos-handoff-ready::. Don’t change anything else.
 - 2026-10-13T18:15:51Z · message_delivered: 1 message(s)
+- 2026-10-13T18:20:37Z · body
