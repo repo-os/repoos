@@ -96,6 +96,7 @@ export function reviewPassActivitySummary(
   pass: number,
   state: string,
   verdict: string | null,
+  clampReason?: string,
 ): string {
   if (state === "incomplete") {
     return `review pass ${pass}: incomplete — no verdict in report`;
@@ -104,6 +105,12 @@ export function reviewPassActivitySummary(
     return `review pass ${pass}: failed — no usable report`;
   }
   const v = verdict ?? "unknown verdict";
+  // #0762: when mechanical verification clamped a clean verdict, say WHY on the
+  // task itself — the engineer agent can read its activity note but not the
+  // review drawer.
+  if (clampReason) {
+    return `review pass ${pass}: ${v} — clamped by automated verification: ${clampReason}`;
+  }
   return `review pass ${pass}: ${v}`;
 }
 

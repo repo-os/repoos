@@ -173,6 +173,10 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
   "uiVerification.enabled":
     "handoff browser gate playwright console overflow screenshot verification review block",
   "uiVerification.viewportWidths": "handoff ui verification mobile desktop overflow viewport width",
+  "reviewVerification.guardTestCheck":
+    "guard negative test review clamp needs some work check step rejection block disable turn off",
+  "reviewVerification.testGlobs":
+    "guard test file globs swift python go non-javascript negative test evidence path match",
   "shot.targets":
     "capture targets native macos ios android desktop screenshot command offscreen render simctl adb screencapture evidence image non-web",
   "budget.allowlist":
