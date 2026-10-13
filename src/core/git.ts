@@ -3,6 +3,7 @@
  * installed, or the repo isn't a git repo, callers get safe empty values.
  * We shell out rather than depend on a git library (zero deps).
  */
+import { randomUUID } from "node:crypto";
 import { execFile, execFileSync, spawn, spawnSync } from "node:child_process";
 import {
   copyFileSync,
@@ -724,6 +725,78 @@ export function ensureWorktree(
   if (taskRelPath) healMissingTaskFile(root, path, taskRelPath);
   linkInheritedEnv(root, path);
   return { ok: true, path, created: true };
+}
+
+/**
+ * Short-lived detached worktree at an exact commit (#0766). Used so command
+ * targets can run arbitrary shell during an evidence refresh without writing
+ * the reviewed task worktree. Caller must call `removeDetachedWorktree` when
+ * done (typically in a `finally`).
+ */
+export async function addDetachedWorktree(
+  root: string,
+  parentDir: string,
+  commit: string,
+  timeout = 60_000,
+): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+  mkdirSync(parentDir, { recursive: true });
+  const target = join(parentDir, randomUUID());
+  if (existsSync(target)) {
+    try {
+      rmSync(target, { recursive: true, force: true });
+    } catch {
+      /* best-effort */
+    }
+  }
+  const first = await runGit(root, ["worktree", "add", "--detach", target, commit], timeout);
+  if (first.status !== 0) {
+    let failure = worktreeAddFailure(first);
+    if (existsSync(target)) {
+      try {
+        rmSync(target, { recursive: true, force: true });
+      } catch {
+        /* best-effort */
+      }
+      const retry = await runGit(root, ["worktree", "add", "--detach", target, commit], timeout);
+      if (retry.status === 0) {
+        let path = target;
+        try {
+          path = realpathSync(target);
+        } catch {
+          /* keep */
+        }
+        return { ok: true, path };
+      }
+      failure = worktreeAddFailure(retry);
+    }
+    return { ok: false, error: failure };
+  }
+  let path = target;
+  try {
+    path = realpathSync(target);
+  } catch {
+    /* keep */
+  }
+  return { ok: true, path };
+}
+
+/** Tear down a detached worktree created by `addDetachedWorktree`. */
+export async function removeDetachedWorktree(
+  root: string,
+  path: string,
+  timeout = 60_000,
+): Promise<void> {
+  const run = await runGit(root, ["worktree", "remove", "--force", path], timeout);
+  if (run.status !== 0) {
+    if (existsSync(path)) {
+      try {
+        rmSync(path, { recursive: true, force: true });
+      } catch {
+        /* best-effort */
+      }
+    }
+    pruneWorktrees(root);
+  }
 }
 
 export interface WorktreeStatus {

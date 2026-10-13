@@ -1116,10 +1116,10 @@ export const getTaskUiVerification: RouteHandler = async (ctx, _req, res, params
 const evidenceRefreshes = new Set<string>();
 
 /**
- * Post-capture worktree guard for the evidence refresh (#0766). The gate's
- * `[[shot.targets]]` command targets run arbitrary shell commands INSIDE the
- * task worktree (cwd = worktree root), so a misbehaving command can write
- * tracked files there — or a concurrent edit can land while capture runs.
+ * Post-capture worktree guard for the evidence refresh (#0766). Command
+ * targets run in a detached worktree during refresh, but web captures still
+ * use the task worktree's preview — and a concurrent human edit can land while
+ * capture runs.
  *
  * The pre-capture check guarantees the worktree was porcelain-clean; any
  * porcelain after capture means the refresh must fail and report what changed.
