@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 67785
-last_close_out_gate_at: "2026-10-13T02:10:09.873Z"
 id: "0759"
 title: Add Solarized theme variants
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
+merged_commit: abf7aa04a33f80a18de44b97620600c7a84e42ac
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-solarized-theme-variants
 cli_override: claude code
 model_override: sonnet
 created_at: "2026-10-12T11:10:52Z"
-updated_at: "2026-10-13T02:10:09Z"
+updated_at: "2026-10-13T02:10:27Z"
+last_close_out_gate_ms: 67785
+last_close_out_gate_at: "2026-10-13T02:10:09.873Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-12T14:19:52.155Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
@@ -174,4 +175,4 @@ My friend asked me to add a solarised theme to repoos, can you do it? see how th
 - 2026-10-13T02:04:16Z · status active→review
 - 2026-10-13T02:05:07Z · note: review pass 1: good to go
 - 2026-10-13T02:10:09Z · close-out gate completed in 68s
-
+- 2026-10-13T02:10:27Z · status review→done, release:success
