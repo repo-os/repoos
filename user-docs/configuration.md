@@ -89,6 +89,14 @@ strictBuild = false
 # ── Close-out (Move to done) ─────────────────────────────────────────────
 closeOut.timeoutMs = 360000  # 6-minute budget per close-out attempt; 0 = no limit
 
+# ── Budget controls (agent drivers) ──────────────────────────────────────
+# Steer agent drivers (CLI/API sessions) to a human-approved subset of
+# coding agents + models. Empty = unrestricted. Edit on the Agents page's
+# Budget Controls tab, or as [[budget.allowlist]] rows here.
+# [[budget.allowlist]]
+# cli = "opencode"
+# models = ["big pickle", "deepseek v4"]
+
 # ── Approval policy (opt-in; default off) ────────────────────────────────
 # approval.enabled = true
 # approval.autoApprove.areas = ["api", "data", "docs", "chore"]
@@ -442,6 +450,45 @@ for how the three outcomes differ.
 Edit **Close-out candidate dependencies**, **Close-out install command**, and
 **Post-merge install command** in **Settings → General**.
 
+## Budget controls (agent drivers)
+
+An *agent driver* is an AI session that operates RepoOS through the CLI/API —
+overriding engineers, starting tasks, restarting stuck runs. It has repeatedly
+picked agent + model pairs that are too expensive. This optional allowlist
+steers an agent driver to a human-approved subset; a human using the web UI is
+**never** restricted and keeps the full list. Leave it empty and nothing is
+restricted — agent drivers behave exactly as they do today.
+
+```toml
+[[budget.allowlist]]
+cli = "opencode"
+models = ["big pickle", "deepseek v4"]
+
+[[budget.allowlist]]
+cli = "claude code"
+models = ["sonnet"]
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `budget.allowlist[].cli` | string | *(required)* | yes | A coding-agent CLI id (the `AGENT_CLIS` string, e.g. `opencode`, `claude code`). An agent driver may only use a listed CLI. |
+| `budget.allowlist[].models` | array of strings | *(required)* | yes | The model ids allowed for that CLI. A model not listed is refused. Rows for the same `cli` are merged; a row with no models is dropped. |
+
+Edit it on the **Agents page → Budget Controls tab**
+(`/agents?tab=budget-controls`), which lists each allowed agent with its models
+collapsed by default and adds entries through the shared coding agent + model
+selector. The `budget.allowlist` key is also in the Settings schema so search
+can find it.
+
+Enforcement: when an agent driver sets an engineer/reviewer override
+(`repoos override <id> --cli … --model …`, or a direct
+`PATCH /api/tasks/:id` with `cliOverride`/`modelOverride`) to a pair outside the
+allowlist, the server refuses with a clear error listing every allowed pair.
+The server tells an agent driver from a human by the loopback CLI token: a
+browser UI session never carries it, so the human path always falls through.
+`repoos override --help` prints the allowlist so a driver can choose an allowed
+pair.
+
 ## UI handoff verification
 
 ```toml
@@ -469,6 +516,8 @@ reviewVerification.testGlobs = ["**/*.test.ts", "**/*.test.tsx", "**/*.test.js",
 | `reviewVerification.testGlobs` | string[] | `["**/*.test.ts", "**/*.test.tsx", "**/*.test.js", "**/*.test.mjs"]` | yes | Globs identifying the test files counted as negative-test evidence. Set these for a Swift, Python, Go or other non-JS project (e.g. `["**/*Tests.swift"]`, `["**/test_*.py"]`, `["**/*_test.go"]`). |
 
 Edit both keys in **Settings → General**. The check appends a `## Automated verification` section to the review report and clamps a reviewer's `` `good to go` `` to `needs some work` on failure; the reason is recorded in the task activity note and the follow-up message to the engineer. See [Review and close-out → Automated verification](/review-and-close-out#automated-verification-when-repoos-clamps-a-clean-verdict) and [docs/review-verification.md](../docs/review-verification.md).
+
+A **command capture target** (`[[shot.targets]]`, below) has no browser page or console, so its evidence in the same file is a `commandCaptures` record instead: the target, command, cwd, exit status, stdout/stderr tail and the images it produced (with sizes), plus the same tested-tree identity and plan fingerprint. The handoff gate writes it for command-only tasks exactly as it writes the browser record for web ones, stale-capture detection applies the same way, and the reviewer prompt says browser verification does not apply (the console-error check is `skipped`, never blocking). See [Command capture targets](#command-capture-targets-non-web-apps).
 
 ## Approval policy (opt-in auto Move to done)
 
@@ -747,6 +796,13 @@ command problem never fails a handoff: stdout/stderr is recorded as a
 handoff proceeds. A command that exits non-zero but still wrote images has them
 collected anyway, with a visible warning naming the exit code — so a partial
 failure still produces shots and is always recorded, never silently.
+
+At handoff RepoOS also writes the capture's provenance to
+`.repoos/ui-verification/<task-id>.json` (the same evidence file web captures
+use): the target, command, cwd, exit status, stdout/stderr tail, each image's
+size, and the tested tree identity. A reviewer reads that record and the PNGs
+instead of a browser console — a command-target task is never blocked on a
+console log it cannot produce.
 
 Web preview targets keep working unchanged, and a repo may declare both: a diff
 that touches a web target's paths is shot from the browser, and a diff that

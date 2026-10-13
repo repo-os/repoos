@@ -2,15 +2,19 @@
 id: "0762"
 title: "Mechanical review verification misfires on non-RepoOS repos: guard-test check is JS/TS-only and triggers on any repoos.toml addition"
 type: bug
-status: review
+status: active
 needs_merge: true
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/mechanical-review-verification-misfires-
+cli_override: claude code
+model_override: haiku
 created_at: "2026-10-13T08:51:23Z"
-updated_at: "2026-10-13T13:24:50Z"
+updated_at: "2026-10-13T14:41:27Z"
+review_passes: 2
+dev_error_count: 1
 ---
 ## Problem
 RepoOS #0714 (src/core/review-verification.ts, src/server/review-verification-gather.ts) appends '## Automated verification' to every review and CLAMPS a 'good to go' verdict to 'needs some work' on failures. It has two checks. The console-errors check applies only to web UI handoff evidence and is skipped for native repos (fine). The guard negative-test check is tied to this repo's own layout and misfires on other projects:
@@ -33,10 +37,54 @@ Observed in the Divot repo (native macOS app, Swift tests): #0067 (release confi
 ## Notes for AI
 Start from review-verification.ts guardsMateriallyChangedFromDiff and evaluateGuardNegativeTestChecks, GUARD_REVIEW_MARKERS and review-verification-gather.ts. Keep the console-error check unchanged. Zero runtime dependencies.
 
+## Shots
+```json
+[
+{
+"label": "Review verification settings on General tab",
+"target": "default",
+"route": "/settings",
+"highlight": "[data-config-key=\"reviewVerification.guardTestCheck\"]",
+"steps": [
+{
+"click": "button[data-tab-id=\"general\"]"
+},
+{
+"waitMs": 300
+}
+]
+}
+]
+```
+
 ## Activity
 
 - 2026-10-13T08:51:23Z · created · njachowski@gmail.com
 - 2026-10-13T09:00:44Z · status inbox→ready
 - 2026-10-13T09:00:49Z · status ready→active, branch
+- 2026-10-13T09:20:49Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-13T10:43:20Z · cli_override, model_override
+- 2026-10-13T10:43:39Z · cli_override
+- 2026-10-13T10:44:30Z · cli_override
+- 2026-10-13T10:44:31Z · cli_override
+- 2026-10-13T10:44:33Z · model_override
+- 2026-10-13T10:45:59Z · body
+- 2026-10-13T10:47:20Z · body
+- 2026-10-13T10:56:32Z · body
+- 2026-10-13T10:57:52Z · body: section Shots
+- 2026-10-13T10:58:30Z · body
 - 2026-10-13T11:05:59Z · status active→review
+- 2026-10-13T11:06:16Z · note: click button[data-tab-id="general"]: click: Timeout 5000ms exceeded. on /settings
+- 2026-10-13T11:08:32Z · note: review pass 1: good to go
+- 2026-10-13T13:24:27Z · needs_input (dev-error) dismissed by hello@repoos.org
 - 2026-10-13T13:24:32Z · needs_merge
+- 2026-10-13T14:29:20Z · status review→active
+- 2026-10-13T14:29:24Z · cli_override, model_override
+- 2026-10-13T14:30:12Z · message_queued at 2026-10-13T14:30:12.172Z
+- 2026-10-13T14:32:06Z · body
+- 2026-10-13T14:32:45Z · status active→review
+- 2026-10-13T14:33:04Z · note: click button[data-tab-id="general"]: click: Timeout 5000ms exceeded. on /settings
+- 2026-10-13T14:34:56Z · note: review pass 2: good to go
+- 2026-10-13T14:41:24Z · status review→active
+- 2026-10-13T14:41:25Z · model_override
+- 2026-10-13T14:41:27Z · message_delivered: 1 message(s)

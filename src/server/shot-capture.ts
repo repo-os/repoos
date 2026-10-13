@@ -46,7 +46,7 @@ import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
 import type { PreviewManager } from "./preview.js";
 import { computeTaskShotContext } from "./shot-context.js";
-import { localShotStore, shotsDir } from "./shots.js";
+import { localShotStore, shotsDir, type ShotStore } from "./shots.js";
 import { patchTaskFile } from "./write.js";
 
 export interface ShotCaptureResult {
@@ -287,6 +287,158 @@ export function reusableAutoCaptures(
   );
 }
 
+/** One image a command target produced, as recorded in handoff evidence (#0765). */
+export interface CommandCaptureShot {
+  name: string;
+  size: number;
+  mime: string;
+  /** Repo-relative path in the main checkout, where the reviewer looks. */
+  path: string;
+  url: string;
+}
+
+/**
+ * Provenance for one command-target capture (#0765). A command target has no
+ * page and no browser console, so its evidence records what actually happened
+ * instead: the target, the command and cwd it ran in, its exit status, the tail
+ * of its stdout/stderr, and the image files it produced (with sizes). This is
+ * the command-target counterpart of a web capture's `UiHandoffGateCapture`.
+ */
+export interface CommandCaptureEvidence {
+  target: string;
+  label?: string;
+  /** The configured command that rendered the images. */
+  command: string;
+  /** Absolute directory the command ran in (the worktree, or the target's `cwd`). */
+  cwd: string;
+  status: "captured" | "skipped" | "failed";
+  /** Process exit status; null when the command never ran / was killed. */
+  exitStatus: number | null;
+  /** Why the command was skipped or failed (absent when captured). */
+  reason?: string;
+  /** Non-blocking warnings (e.g. a non-zero exit that still produced images). */
+  warnings?: string[];
+  /** Tail of stdout+stderr, for provenance. */
+  outputTail?: string;
+  /** Images collected and stored, with sizes. */
+  shots: CommandCaptureShot[];
+}
+
+export interface CommandCaptureBatch {
+  captured: number;
+  evidence: CommandCaptureEvidence[];
+  /** A configured-target lookup that failed — the caller decides whether to abort. */
+  fatal?: string;
+  /** The shot store rejected an image. */
+  storeError?: string;
+}
+
+/**
+ * Run every command-target capture entry, store the images it produced, and
+ * return the provenance records (#0765). Shared by the handoff gate (which
+ * writes the evidence file synchronously before review) and the automatic
+ * capture (#0594), so the two paths stay in lockstep. Pure of logging and
+ * abort policy: it never throws, and the caller decides what a skip/failure
+ * means. `ensureCleared` lets the caller drop prior automatic captures exactly
+ * once, just before the first new image is stored.
+ */
+export function captureCommandEntries(input: {
+  config: RepoOSConfig;
+  task: Task;
+  entries: CaptureEntry[];
+  commandRoot: string;
+  planFingerprint: string;
+  sourceIdentity?: string;
+  store: ShotStore;
+  ensureCleared: () => void;
+}): CommandCaptureBatch {
+  const {
+    config,
+    task,
+    entries,
+    commandRoot,
+    planFingerprint,
+    sourceIdentity,
+    store,
+    ensureCleared,
+  } = input;
+  const evidence: CommandCaptureEvidence[] = [];
+  let captured = 0;
+  for (const entry of entries) {
+    const target = shotTargetByName(config.shot, entry.target);
+    if (!target) {
+      return {
+        captured,
+        evidence,
+        fatal: `command capture target "${entry.target}" is not configured`,
+      };
+    }
+    const outputDir = join(
+      shotsDir(config.root, config.workDir, task.id),
+      "cmd",
+      slugName(entry.target),
+    );
+    const outcome = runShotCommand(target, commandRoot, outputDir);
+    const base = {
+      target: entry.target,
+      ...(entry.label ? { label: entry.label } : {}),
+      command: target.command,
+      cwd: target.cwd ? join(commandRoot, target.cwd) : commandRoot,
+      exitStatus: outcome.exitStatus,
+      ...(outcome.outputTail ? { outputTail: outcome.outputTail } : {}),
+    };
+    if (outcome.status !== "captured") {
+      // A command problem is a VISIBLE skip/failure note — never a failed
+      // handoff. The reason already carries the stdout/stderr tail.
+      evidence.push({ ...base, status: outcome.status, reason: outcome.reason, shots: [] });
+      continue;
+    }
+    ensureCleared();
+    const shots: CommandCaptureShot[] = [];
+    let storeError: string | undefined;
+    for (const file of outcome.files) {
+      const stored = store.save({
+        origin: "auto",
+        target: entry.target,
+        command: "command",
+        ...(entry.label ? { label: entry.label } : {}),
+        provenance: provenanceCaption(entry.provenance),
+        planFingerprint,
+        ...(sourceIdentity ? { sourceIdentity } : {}),
+        name: `${entry.target}-${basename(file.name, extname(file.name))}`,
+        mime: file.mime,
+        data: file.data.toString("base64"),
+      });
+      if ("error" in stored) {
+        storeError = stored.error;
+        break;
+      }
+      captured++;
+      shots.push({
+        name: stored.name,
+        size: stored.size,
+        mime: stored.mime,
+        path: stored.path,
+        url: stored.url,
+      });
+    }
+    // The raw command output is transient — the store now owns the bytes.
+    try {
+      rmSync(outputDir, { recursive: true, force: true });
+    } catch {
+      /* best-effort */
+    }
+    evidence.push({
+      ...base,
+      status: "captured",
+      ...(outcome.warnings.length ? { warnings: outcome.warnings } : {}),
+      shots,
+    });
+    if (storeError) return { captured, evidence, storeError };
+  }
+  return { captured, evidence };
+}
+
 /**
  * Run the automatic capture for `task` and record the outcome. Never throws
  * and never fails a caller: returns a structured result, writes a task-log
@@ -464,65 +616,48 @@ export async function runAutoShotCapture(
       }
       captured++;
     }
-    for (const entry of commandEntries) {
-      const target = shotTargetByName(config.shot, entry.target);
-      if (!target) {
-        return finish("failed", `command capture target "${entry.target}" is not configured`);
-      }
-      const outputDir = join(
-        shotsDir(config.root, config.workDir, task.id),
-        "cmd",
-        slugName(entry.target),
-      );
-      const outcome = runShotCommand(target, commandRoot, outputDir);
-      if (outcome.status !== "captured") {
-        // A command problem is a VISIBLE skip/failure note — never a failed
-        // handoff. Record the stdout/stderr tail when the command reported one.
-        const status = outcome.status;
-        log(task.id, "warn", `shots: ${status} — ${outcome.reason}`);
-        try {
-          patchTaskFile(config, task.absPath, { note: `shots: ${status} — ${outcome.reason}` });
-        } catch {
-          /* the log line already recorded it */
+    if (commandEntries.length > 0) {
+      const batch = captureCommandEntries({
+        config,
+        task,
+        entries: commandEntries,
+        commandRoot,
+        planFingerprint,
+        sourceIdentity,
+        store: localShotStore(config, task.id),
+        ensureCleared: () => {
+          if (!cleared) {
+            localShotStore(config, task.id).removeAuto();
+            cleared = true;
+          }
+        },
+      });
+      if (batch.fatal) return finish("failed", batch.fatal);
+      captured += batch.captured;
+      for (const ev of batch.evidence) {
+        if (ev.status !== "captured") {
+          // A command problem is a VISIBLE skip/failure note — never a failed
+          // handoff. The reason already carries the stdout/stderr tail.
+          const message = `shots: ${ev.status} — ${ev.reason ?? "capture failed"}`;
+          log(task.id, "warn", message);
+          try {
+            patchTaskFile(config, task.absPath, { note: message });
+          } catch {
+            /* the log line already recorded it */
+          }
+          continue;
         }
-        continue;
-      }
-      for (const msg of outcome.warnings) {
-        log(task.id, "warn", `shots: ${msg}`);
-        try {
-          patchTaskFile(config, task.absPath, { note: msg });
-        } catch {
-          /* the log line already recorded it */
+        for (const msg of ev.warnings ?? []) {
+          log(task.id, "warn", `shots: ${msg}`);
+          try {
+            patchTaskFile(config, task.absPath, { note: msg });
+          } catch {
+            /* the log line already recorded it */
+          }
         }
       }
-      const store = localShotStore(config, task.id);
-      if (!cleared) {
-        store.removeAuto();
-        cleared = true;
-      }
-      for (const file of outcome.files) {
-        const stored = store.save({
-          origin: "auto",
-          target: entry.target,
-          command: "command",
-          ...(entry.label ? { label: entry.label } : {}),
-          provenance: provenanceCaption(entry.provenance),
-          planFingerprint,
-          ...(sourceIdentity ? { sourceIdentity } : {}),
-          name: `${entry.target}-${basename(file.name, extname(file.name))}`,
-          mime: file.mime,
-          data: file.data.toString("base64"),
-        });
-        if ("error" in stored) {
-          return finish("failed", `the shot store rejected the image: ${stored.error}`);
-        }
-        captured++;
-      }
-      // The raw command output is transient — the store now owns the bytes.
-      try {
-        rmSync(outputDir, { recursive: true, force: true });
-      } catch {
-        /* best-effort */
+      if (batch.storeError) {
+        return finish("failed", `the shot store rejected the image: ${batch.storeError}`);
       }
     }
     return finish(
