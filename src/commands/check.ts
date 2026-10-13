@@ -1092,6 +1092,8 @@ interface StepContext {
   previousFailedTests?: string[];
   /** Re-runs per failing file for the isolation label (#0655). 0 disables. */
   isolationRuns?: number;
+  /** Echo step child output (default true, see RunPlanOptions.echo). */
+  echo: boolean;
 }
 
 /** What a built-in `kind` handler returns. */
@@ -1580,7 +1582,13 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   if (filterArgs) {
     const preflight = `${base} -- ${filterArgs.map(shellQuoteArg).join(" ")}`;
     console.log(c.dim(`  · previously-failed test file(s) first · ${priorFiles.join(", ")}`));
-    const pre = await runCommand({ command: preflight, cwd: ctx.cwd, timeoutMs: 300_000, env });
+    const pre = await runCommand({
+      command: preflight,
+      cwd: ctx.cwd,
+      timeoutMs: 300_000,
+      env,
+      echo: ctx.echo,
+    });
     if (pre.status !== "passed") {
       const why =
         pre.status === "timeout"
@@ -1608,7 +1616,7 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   // on a laptop that legitimately finishes in ~5–6 minutes, a 300s cap SIGTERMs
   // a green run (exit 143) — see AGENTS.md debugging-check-failures.
   const timeoutMs = changedRef ? 420_000 : 1_500_000;
-  const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs, env });
+  const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs, env, echo: ctx.echo });
   if (res.status === "passed") {
     return {
       status: "passed",
@@ -1833,6 +1841,15 @@ export interface RunPlanOptions {
   previousFailedTests?: string[];
   /** Isolation re-runs per failing file for the flake-triage label (#0655). */
   isolationRuns?: number;
+  /**
+   * Echo each step's child output to the gate's own stdout (default true —
+   * `repoos check` streams progress). Set false in fixtures whose fake
+   * commands print FAIL-shaped output: anything echoed at column 0 lands in
+   * the outer run's report verbatim, and every consumer that scans the gate
+   * output for failures (remote validation classification, failed-test
+   * extraction) then sees phantom test failures (#0777 handoff mask).
+   */
+  echo?: boolean;
   onStart?: (step: CheckStep) => void;
   onResult?: (result: StepRunResult) => void;
 }
@@ -1913,6 +1930,7 @@ export async function runCheckPlan(
         fixCommand: opts.fix ? (formatFixCommand(step, repoRoot) ?? undefined) : undefined,
         previousFailedTests: opts.previousFailedTests,
         isolationRuns: opts.isolationRuns,
+        echo: opts.echo !== false,
       });
     } else if (missingBinaries(step.requires).length > 0) {
       outcome = {

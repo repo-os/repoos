@@ -8,7 +8,7 @@
  * commands at fake binaries that log every invocation, then asserting on the
  * log. Nothing here runs a real build.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   chmodSync,
   existsSync,
@@ -703,9 +703,34 @@ kind = "tests"
 describe("failed-first ordering (#0655)", () => {
   it("does nothing new when there is no prior failure", async () => {
     const f = scriptedTestsFixture({ preflightExit: 0, fullExit: 0 });
-    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root });
+    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root, echo: false });
     expect(results[0].status).toBe("passed");
     expect(commandsRun(f)).toEqual(["bun run --bun test"]);
+  });
+
+  it("keeps fixture output out of the gate's own stdout (echo: false)", async () => {
+    const f = scriptedTestsFixture({
+      preflightExit: 0,
+      fullExit: 1,
+      failLines: ["FAIL  src/a.test.ts > suite > fails"],
+      files: ["src/a.test.ts"],
+    });
+    const writes: string[] = [];
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation((chunk: unknown) => {
+        writes.push(String(chunk));
+        return true;
+      });
+    try {
+      const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root, echo: false });
+      // The step still fails on the fake suite's exit code — only the echo of
+      // the child's stdout is suppressed.
+      expect(results[0].status).toBe("failed");
+      expect(writes.join("")).not.toContain("FAIL  src/a.test.ts");
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("re-runs previously-failed files first and short-circuits when they still fail", async () => {
@@ -716,6 +741,7 @@ describe("failed-first ordering (#0655)", () => {
     });
     const results = await runCheckPlan(planFor(f.root), {
       repoRoot: f.root,
+      echo: false,
       previousFailedTests: ["src/a.test.ts > suite > fails"],
     });
     expect(results[0].status).toBe("failed");
@@ -732,6 +758,7 @@ describe("failed-first ordering (#0655)", () => {
     });
     const results = await runCheckPlan(planFor(f.root), {
       repoRoot: f.root,
+      echo: false,
       previousFailedTests: ["src/a.test.ts > suite > fails"],
     });
     expect(results[0].status).toBe("passed");
@@ -745,6 +772,7 @@ describe("failed-first ordering (#0655)", () => {
     const f = scriptedTestsFixture({ preflightExit: 0, fullExit: 0 });
     const results = await runCheckPlan(planFor(f.root), {
       repoRoot: f.root,
+      echo: false,
       previousFailedTests: ["src/deleted.test.ts > suite > gone"],
     });
     expect(results[0].status).toBe("passed");
@@ -760,7 +788,7 @@ describe("isolation triage (#0655)", () => {
       failLines: ["FAIL  src/a.test.ts > suite > fails"],
       files: ["src/a.test.ts"],
     });
-    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root });
+    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root, echo: false });
     expect(results[0].status).toBe("failed");
     expect(results[0].isolationNote).toBe("src/a.test.ts: passed 3/3 alone");
     expect(commandsRun(f)).toEqual([
@@ -780,6 +808,7 @@ describe("isolation triage (#0655)", () => {
     });
     const results = await runCheckPlan(planFor(on.root), {
       repoRoot: on.root,
+      echo: false,
       isolationRuns: 1,
     });
     expect(results[0].isolationNote).toBe("src/a.test.ts: passed 1/1 alone");
@@ -793,6 +822,7 @@ describe("isolation triage (#0655)", () => {
     });
     const disabled = await runCheckPlan(planFor(off.root), {
       repoRoot: off.root,
+      echo: false,
       isolationRuns: 0,
     });
     expect(disabled[0].isolationNote).toBeUndefined();
@@ -807,7 +837,7 @@ describe("isolation triage (#0655)", () => {
       failLines: files.map((file) => `FAIL  ${file} > suite > fails`),
       files,
     });
-    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root });
+    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root, echo: false });
     expect(results[0].status).toBe("failed");
     expect(results[0].isolationNote).toBeUndefined();
     expect(commandsRun(f)).toEqual(["bun run --bun test"]);
