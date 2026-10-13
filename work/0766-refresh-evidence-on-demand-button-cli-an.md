@@ -3,6 +3,9 @@ id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the cursor agent timed out after 900s
 priority: p2
 area: [core, server, cli, ui]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/refresh-evidence-on-demand-button-cli-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T16:51:46Z"
+updated_at: "2026-10-13T16:51:47Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -64,3 +67,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T16:35:58Z · body
 - 2026-10-13T16:36:44Z · status active→review
 - 2026-10-13T16:51:46Z · note: review pass 2: failed — no usable report
+- 2026-10-13T16:51:47Z · needs_input
