@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-13T05:11:58Z"
+review_passes: 1
 id: "0760"
 title: "repoos message --now: interrupt a busy agent and deliver immediately"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/repoos-message-now-interrupt-a-busy-agen
 cli_override: claude code
 model_override: sonnet
 created_at: "2026-10-12T14:35:44Z"
-updated_at: "2026-10-13T05:11:58Z"
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -74,3 +75,4 @@ dev_error_count: 1
 - 2026-10-13T05:11:23Z · status active→review
 - 2026-10-13T05:11:24Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-13T05:11:58Z · note: review pass 1: good to go
+
