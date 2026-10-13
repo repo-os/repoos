@@ -222,6 +222,61 @@ is the same (`declared: <label>` / `auto: matched <glob>`), duplicate collapsing
 and the plan-fingerprint/tree stale-capture checks work identically, and
 `repoos shot --target "macOS app"` runs the command from the CLI too.
 
+**Choosing which images a command capture produces (#0769).** A command's
+`outputGlob` may match a whole fixed snapshot set — the bar and every popover —
+so an automatic capture attaches dozens of images and the one that shows the
+change can be missing entirely (observed in the Divot repo: 27 shots, none of
+the feature under review). A declared entry hands the selection to the command
+instead, with three command-only fields:
+
+- `env` — extra environment variables for the command, keys plain identifiers
+  (`{"DIVOT_SNAPSHOT_ONLY": "worldclock"}`). A value is passed through the
+  **environment only** — never interpolated into the command string — so a
+  declared value can never be shell-evaluated.
+- `args` — extra tokens appended to the command line, each shell-quoted as data.
+- `glob` — a glob narrowing which produced files become **this** shot (relative
+  to `REPOOS_SHOT_DIR`), e.g. `"*worldclock*.png"`.
+
+Several entries may name the same target with different `env`/`glob` and their
+own labels; each runs the command and its images are listed under its label.
+Identical entries still collapse. The fields are rejected for a **web** target
+(they only make sense for a command) with a clear error, and `repoos shot
+--target <name> --env KEY=VAL --glob <glob>` does the same selection ad hoc.
+
+The project's command has to honor a filter variable for `env` to narrow
+anything — a native-app recipe:
+
+```swift
+// In the offscreen-render XCTest, read the filter and render only that view.
+let only = ProcessInfo.processInfo.environment["DIVOT_SNAPSHOT_ONLY"]  // e.g. "worldclock"
+let views = only.map { [filteredView($0)] } ?? allPopovers()
+for v in views { /* render each into \(REPOOS_SHOT_DIR)/\(name).png */ }
+```
+
+```toml
+[[shot.targets]]
+name = "macOS app"
+areas = ["mac"]
+paths = ["Sources/Divot/**"]
+command = "swift test --filter RenderShots"
+outputGlob = ["*.png"]      # the whole snapshot set
+```
+
+```json
+[
+  { "target": "macOS app", "label": "World clock popover",
+    "env": { "DIVOT_SNAPSHOT_ONLY": "worldclock" }, "glob": "*worldclock*.png" }
+]
+```
+
+**The automatic-capture cap.** An *undeclared* command capture keeps today's
+whole-`outputGlob` behavior but is capped at `shot.maxAutoShots` images per task
+(default `12`, a Settings key), so a task that merely touches the paths does not
+flood the Changes tab. Beyond the cap the extra images are dropped and the task
+records a visible `N more not shown (cap N per task)` note pointing at the
+`glob` declaration. A declared entry is **never** capped — the engineer asked
+for exactly those images.
+
 A command problem is NEVER a failed handoff: a missing `requires` binary, a
 timeout (stdout/stderr tail recorded), a non-zero exit, or a run that produced no
 images is a visible `shots: skipped — <reason>` / `shots: failed — <reason>`

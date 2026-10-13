@@ -40,6 +40,7 @@ import {
 import type { LogLevel } from "../core/logger.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import type { RepoOSConfig, ShotTargetConfig, Task } from "../core/types.js";
+import { DEFAULT_MAX_AUTO_SHOTS } from "../core/types.js";
 import { runGit, worktreePathForBranch } from "../core/git.js";
 import { runShotCommand, slugName } from "../core/shot-command.js";
 import { isShotCaptureUnavailable } from "../commands/shot.js";
@@ -378,7 +379,14 @@ export function captureCommandEntries(input: {
       "cmd",
       slugName(entry.target),
     );
-    const outcome = runShotCommand(target, commandRoot, outputDir);
+    // #0769: a declared entry can pass env/args to the command and narrow the
+    // collected files with its own glob; both are pure selection, never
+    // interpolated into the command string.
+    const outcome = runShotCommand(target, commandRoot, outputDir, {
+      ...(entry.env ? { env: entry.env } : {}),
+      ...(entry.args ? { args: entry.args } : {}),
+      ...(entry.glob ? { outputGlob: [entry.glob] } : {}),
+    });
     const base = {
       target: entry.target,
       ...(entry.label ? { label: entry.label } : {}),
@@ -394,9 +402,28 @@ export function captureCommandEntries(input: {
       continue;
     }
     ensureCleared();
+    // #0769: an UNDECLARED automatic capture is capped. A command's whole
+    // output set can be dozens of unrelated snapshots; keeping only the first
+    // `maxAutoShots` avoids flooding the Changes tab, and the drop is recorded
+    // as a visible "N more not shown" note rather than silently. Declared
+    // entries are never capped — the engineer asked for exactly those images.
+    const cap =
+      entry.provenance.kind === "auto"
+        ? (config.shot?.maxAutoShots ?? DEFAULT_MAX_AUTO_SHOTS)
+        : undefined;
+    const selected =
+      cap !== undefined && outcome.files.length > cap ? outcome.files.slice(0, cap) : outcome.files;
+    const notShown = outcome.files.length - selected.length;
+    const warnings = [...outcome.warnings];
+    if (notShown > 0) {
+      warnings.push(
+        `${notShown} more image${notShown === 1 ? "" : "s"} not shown (cap ${cap} per task) — ` +
+          "declare a `## Shots` entry with a `glob` to capture a specific one",
+      );
+    }
     const shots: CommandCaptureShot[] = [];
     let storeError: string | undefined;
-    for (const file of outcome.files) {
+    for (const file of selected) {
       const stored = store.save({
         origin: "auto",
         target: entry.target,
@@ -431,7 +458,7 @@ export function captureCommandEntries(input: {
     evidence.push({
       ...base,
       status: "captured",
-      ...(outcome.warnings.length ? { warnings: outcome.warnings } : {}),
+      ...(warnings.length ? { warnings } : {}),
       shots,
     });
     if (storeError) return { captured, evidence, storeError };
