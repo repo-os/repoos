@@ -2,7 +2,7 @@
 id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
-status: review
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T17:58:06Z"
+updated_at: "2026-10-13T17:58:07Z"
 ---
 ## Problem
 The DeepInfra provider card shows two money figures that look like they conflict:
