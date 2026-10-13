@@ -15,7 +15,7 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T19:15:09Z"
+updated_at: "2026-10-13T19:17:21Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 1
@@ -109,3 +109,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T19:05:40Z · body
 - 2026-10-13T19:06:29Z · body
 - 2026-10-13T19:15:09Z · status active→review
+- 2026-10-13T19:17:21Z · note: review pass 6: needs some work
