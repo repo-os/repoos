@@ -11,7 +11,7 @@ branch: feat/refresh-evidence-on-demand-button-cli-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T16:35:16Z"
+updated_at: "2026-10-13T16:35:58Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -61,3 +61,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T16:20:20Z · status review→active
 - 2026-10-13T16:34:40Z · body
 - 2026-10-13T16:35:16Z · body
+- 2026-10-13T16:35:58Z · body
