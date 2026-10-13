@@ -98,6 +98,7 @@ import {
   type TaskLog,
 } from "../ui-handoff-gate.js";
 import { localShotStore } from "../shots.js";
+import { endEvidenceRefresh, tryBeginEvidenceRefresh } from "../evidence-refresh-lock.js";
 import { computeTaskShotContext } from "../shot-context.js";
 import {
   appendDeclaredShot,
@@ -1113,8 +1114,6 @@ export const getTaskUiVerification: RouteHandler = async (ctx, _req, res, params
   });
 };
 
-const evidenceRefreshes = new Set<string>();
-
 /**
  * Post-capture worktree guard for the evidence refresh (#0766). Command
  * targets run in a detached worktree during refresh, but web captures still
@@ -1247,40 +1246,37 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
   if (!task.branch) return json(res, 409, { error: `Task #${id} has no branch to refresh` });
   if (closeOutLock.closingOut())
     return json(res, 409, { error: "A close-out is active; wait for it to finish" });
-  if (evidenceRefreshes.has(id))
+  if (!tryBeginEvidenceRefresh(id)) {
     return json(res, 409, { error: `Evidence refresh for #${id} is already running` });
-  // Use the same durable root lock the close-out orchestrator acquires. The
-  // in-memory set below prevents duplicate requests in this process; this lock
-  // also serializes refresh against close-out across server timing/reload gaps.
-  if (!ctx.rootLock.acquire(id, "close-out")) {
-    return json(res, 409, {
-      error: "A close-out or root operation is active; wait for it to finish",
-    });
   }
-  if (runner.isRunning(id) || reviews.isRunning(id)) {
-    ctx.rootLock.release(id);
-    return json(res, 409, { error: `Task #${id} has an agent run in progress` });
-  }
-  const worktree = worktreePathForBranch(config.root, task.branch);
-  if (!worktree) {
-    ctx.rootLock.release(id);
-    return json(res, 409, { error: `Task #${id}'s worktree is unavailable` });
-  }
-  const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
-  if (dirty.status !== 0) {
-    ctx.rootLock.release(id);
-    return json(res, 409, { error: "Could not verify the task worktree is clean" });
-  }
-  if (dirty.stdout.trim()) {
-    ctx.rootLock.release(id);
-    return json(res, 409, {
-      error: `Task #${id}'s worktree is dirty; commit or discard changes before refreshing evidence`,
-    });
-  }
-  // Snapshot the HEAD before capture to ensure evidence matches the tree
-  // it was captured from, and no concurrent commits slip in.
-  evidenceRefreshes.add(id);
+  let rootHeld = false;
   try {
+    // Use the same durable root lock the close-out orchestrator acquires. The
+    // in-memory refresh lock is taken first so review cannot start during the
+    // awaited worktree checks below; this lock also serializes refresh against
+    // close-out across server timing/reload gaps.
+    if (!ctx.rootLock.acquire(id, "close-out")) {
+      return json(res, 409, {
+        error: "A close-out or root operation is active; wait for it to finish",
+      });
+    }
+    rootHeld = true;
+    if (runner.isRunning(id) || reviews.isRunning(id)) {
+      return json(res, 409, { error: `Task #${id} has an agent run in progress` });
+    }
+    const worktree = worktreePathForBranch(config.root, task.branch);
+    if (!worktree) {
+      return json(res, 409, { error: `Task #${id}'s worktree is unavailable` });
+    }
+    const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
+    if (dirty.status !== 0) {
+      return json(res, 409, { error: "Could not verify the task worktree is clean" });
+    }
+    if (dirty.stdout.trim()) {
+      return json(res, 409, {
+        error: `Task #${id}'s worktree is dirty; commit or discard changes before refreshing evidence`,
+      });
+    }
     const captured = await guardedForceRefreshCapture(
       config,
       task,
@@ -1311,8 +1307,8 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
       shots: localShotStore(config, id).list(),
     });
   } finally {
-    evidenceRefreshes.delete(id);
-    ctx.rootLock.release(id);
+    if (rootHeld) ctx.rootLock.release(id);
+    endEvidenceRefresh(id);
   }
 };
 

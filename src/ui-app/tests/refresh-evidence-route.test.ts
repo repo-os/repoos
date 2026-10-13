@@ -8,6 +8,7 @@ import {
   guardedForceRefreshCapture,
   postCaptureWorktreeGuard,
 } from "../../server/routes/tasks.js";
+import * as git from "../../core/git.js";
 import { localShotStore } from "../../server/shots.js";
 import * as uiHandoffGate from "../../server/ui-handoff-gate.js";
 import {
@@ -17,9 +18,17 @@ import {
 } from "../../server/ui-handoff-gate.js";
 import type { RouteContext } from "../../server/routes/types.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
+import { ReviewManager } from "../../server/review.js";
+import {
+  endEvidenceRefresh,
+  isEvidenceRefreshActive,
+  tryBeginEvidenceRefresh,
+} from "../../server/evidence-refresh-lock.js";
 
 const roots: string[] = [];
 afterEach(() => {
+  endEvidenceRefresh("0766");
+  vi.restoreAllMocks();
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
@@ -151,6 +160,57 @@ describe("POST /api/tasks/:id/verify guards", () => {
     expect(rootLock.release).toHaveBeenCalledWith(task.id);
   });
 
+  it("refuses review while evidence refresh holds the in-process lock", () => {
+    const root = gitRoot();
+    const task = makeTask(root);
+    const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+    const reviews = new ReviewManager(config, () => {});
+    expect(tryBeginEvidenceRefresh(task.id)).toBe(true);
+    const gate = reviews.canRun(task);
+    expect(gate.ok).toBe(false);
+    expect(gate.reason).toContain("evidence refresh");
+    endEvidenceRefresh(task.id);
+  });
+
+  it("blocks review from starting while verify awaits the worktree check", async () => {
+    const root = gitRoot();
+    const task = makeTask(root);
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      agents: [{ name: "reviewer", cli: "opencode", model: "default", enabled: true }],
+    } as RepoOSConfig;
+    const reviews = new ReviewManager(config, () => {});
+    const origRunGit = git.runGit;
+    let releaseStatus!: () => void;
+    let holdStatus = true;
+    const statusSpy = vi.spyOn(git, "runGit").mockImplementation((cwd, args, timeout) => {
+      if (holdStatus && args[0] === "status" && args[1] === "--porcelain") {
+        return new Promise((resolve) => {
+          releaseStatus = () => {
+            holdStatus = false;
+            void origRunGit(cwd, args, timeout).then(resolve);
+          };
+        });
+      }
+      return origRunGit(cwd, args, timeout);
+    });
+    const refreshPromise = refreshTaskEvidence(
+      context(task, root, { config, reviews }),
+      {} as never,
+      response() as never,
+      { param1: task.id },
+    );
+    await new Promise((r) => setTimeout(r, 10));
+    expect(isEvidenceRefreshActive(task.id)).toBe(true);
+    expect(reviews.canRun(task).ok).toBe(false);
+    expect(reviews.canRun(task).reason).toContain("evidence refresh");
+    releaseStatus();
+    await refreshPromise;
+    statusSpy.mockRestore();
+  });
+
   it("reports skipped verification as not refreshed", async () => {
     const root = gitRoot();
     const task = makeTask(root);
@@ -213,6 +273,36 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
   function porcelainOf(root: string): string {
     return execSync(`git -C ${root} status --porcelain`, { encoding: "utf8" }).trim();
   }
+
+  it("links inherited .env into the detached command worktree when inheritEnv is enabled", async () => {
+    const root = gitRoot();
+    writeFileSync(join(root, ".gitignore"), ".env\n.repoos/\nwork/.attachments/\n");
+    writeFileSync(join(root, "repoos.toml"), "[worktrees]\ninheritEnv = true\n");
+    writeFileSync(join(root, "tracked.txt"), "clean\n");
+    execSync(`git -C ${root} add .gitignore repoos.toml tracked.txt`, { stdio: "ignore" });
+    execSync(`git -C ${root} commit -q -m setup`, { stdio: "ignore" });
+    writeFileSync(join(root, ".env"), "MARKER=from-main\n");
+    const command =
+      'test -f .env && grep -q from-main .env && printf x > "$REPOOS_SHOT_DIR/one.png"';
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      uiVerification: { enabled: true },
+      worktrees: { inheritEnv: true },
+      shot: { targets: [{ name: "cmd", areas: ["web"], command }] },
+    } as RepoOSConfig;
+    const task = makeTask(
+      root,
+      "review",
+      '## Shots\n\n```json\n[{"target": "cmd", "label": "Render one"}]\n```\n',
+    );
+    const res = response();
+    await refreshTaskEvidence(context(task, root, { config }), {} as never, res as never, {
+      param1: task.id,
+    });
+    expect(res.result().status).toBe(200);
+  });
 
   it("refreshes command-target evidence bound to the current HEAD (success path)", async () => {
     const { root, shortHead, config, task } = commandRepo(RUN_COMMAND);
