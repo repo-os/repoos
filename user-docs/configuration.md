@@ -730,7 +730,9 @@ there and matching `outputGlob` is collected. RepoOS **never** passes a tracked
 path, so a command that ignores the variable writes nothing RepoOS collects. A
 command problem never fails a handoff: stdout/stderr is recorded as a
 `shots: failed — <tail>` / `shots: skipped — <reason>` activity note and the
-handoff proceeds.
+handoff proceeds. A command that exits non-zero but still wrote images has them
+collected anyway, with a visible warning naming the exit code — so a partial
+failure still produces shots and is always recorded, never silently.
 
 Web preview targets keep working unchanged, and a repo may declare both: a diff
 that touches a web target's paths is shot from the browser, and a diff that
