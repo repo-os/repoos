@@ -177,13 +177,15 @@ describe("repoos message --now (#0760)", () => {
           async () => (await running(server)).some((r) => r.id === id),
           "agent running",
         );
+        // Let the fake agent log its spawn before pausing; pausing first can
+        // kill it before it logs, and the wait below then times out.
+        const before = await waitForFirstSpawn(fx);
         // Idle it: pause stops the run, then we send with `now`.
         await api(server, "POST", `/api/tasks/${id}/pause`);
         await waitForAsync(
           async () => !(await running(server)).some((r) => r.id === id),
           "agent stopped",
         );
-        const before = await waitForFirstSpawn(fx);
 
         const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
           text: "steer me",
