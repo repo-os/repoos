@@ -60,6 +60,62 @@ describe("BudgetControlsPanel (#0764)", () => {
     wrapper.unmount();
   });
 
+  it("puts Remove agent in the row's corner, outside the expandable body (#0768)", async () => {
+    seedConfig({ "budget.allowlist": [{ cli: "claude code", models: ["sonnet", "opus"] }] });
+    const wrapper = mount(BudgetControlsPanel, {
+      global: { stubs: { AgentModelControl: true, teleport: true } },
+    });
+    const row = wrapper.find(".budget-row");
+    const remove = row.find("[data-testid='budget-remove-agent']");
+    // Present even while the row is collapsed — it lives in the row's corner,
+    // not inside the expandable model list.
+    expect(remove.exists()).toBe(true);
+    expect(remove.element.tagName).toBe("BUTTON");
+    expect(remove.attributes("aria-label")).toBe("Remove claude code from the allowlist");
+    // A direct child of the row (a sibling of the head), not nested in the body.
+    expect(remove.element.parentElement?.classList.contains("budget-row")).toBe(true);
+    expect(row.find(".budget-models").exists()).toBe(false);
+
+    await row.find(".budget-row-head").trigger("click");
+    // Still outside the expanded model list once the row opens.
+    const stillInCorner = wrapper.find("[data-testid='budget-remove-agent']");
+    expect(wrapper.find(".budget-models").element.contains(stillInCorner.element)).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("Remove agent still drops the row, preserving behaviour (#0768)", async () => {
+    const config = seedConfig({
+      "budget.allowlist": [
+        { cli: "claude code", models: ["sonnet"] },
+        { cli: "opencode", models: ["big pickle"] },
+      ],
+    });
+    const patched: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: { body?: string }) => {
+        patched.push(JSON.parse(init?.body ?? "{}"));
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      }),
+    );
+    const wrapper = mount(BudgetControlsPanel, {
+      global: { stubs: { AgentModelControl: true, teleport: true } },
+    });
+    expect(config.data?.["budget.allowlist"]).toHaveLength(2);
+
+    await wrapper.findAll("[data-testid='budget-remove-agent']")[0]!.trigger("click");
+    await flushPromises();
+
+    expect(patched).toEqual([
+      { "budget.allowlist": [{ cli: "opencode", models: ["big pickle"] }] },
+    ]);
+    expect(config.data?.["budget.allowlist"]).toEqual([
+      { cli: "opencode", models: ["big pickle"] },
+    ]);
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
+
   it("shows the unrestricted empty state when there is no allowlist", () => {
     seedConfig({ "budget.allowlist": [] });
     const wrapper = mount(BudgetControlsPanel, {
