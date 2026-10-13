@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 1385
-last_close_out_gate_at: "2026-10-13T16:45:18.313Z"
 id: "0770"
 title: Make the task-file merge rule and staleness fix obvious in AGENTS.md
 type: chore
-status: review
+status: done
 priority: p2
 area: docs
+merged_commit: 75dcf43100caf1761805d6e4848693dfbe9c5440
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/make-the-task-file-merge-rule-and-stalen
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-13T16:18:45Z"
-updated_at: "2026-10-13T16:45:18Z"
+updated_at: "2026-10-13T16:45:23Z"
+last_close_out_gate_ms: 1385
+last_close_out_gate_at: "2026-10-13T16:45:18.313Z"
 review_passes: 1
 ---
 ## Problem
@@ -45,4 +46,4 @@ Keep it to a few lines. Edit AGENTS.md through a task branch, not on main. Sourc
 - 2026-10-13T16:33:58Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-13T16:34:35Z · note: review pass 1: good to go
 - 2026-10-13T16:45:18Z · close-out gate completed in 1s
-
+- 2026-10-13T16:45:23Z · status review→done, release:success
