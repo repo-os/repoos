@@ -10,8 +10,10 @@ created_by: njachowski@gmail.com
 branch: ""
 cli_override: codex
 model_override: gpt-6-luna
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T17:22:24Z"
+updated_at: "2026-10-13T17:22:29Z"
 ---
 ## Problem
 The DeepInfra provider card shows two money figures that look like they conflict:
@@ -43,3 +45,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T17:22:16Z · status inbox→ready
 - 2026-10-13T17:22:22Z · cli_override, model_override
 - 2026-10-13T17:22:24Z · model_override
+- 2026-10-13T17:22:29Z · review_cli_override, review_model_override
