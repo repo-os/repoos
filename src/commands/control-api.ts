@@ -251,7 +251,7 @@ export async function cmdVerify(args: string[]): Promise<number> {
   const { rest, opts, error } = parseCommonFlags(args);
   if (error) return (printErr(error), 1);
   const id = rest[0];
-  if (!id) return (printErr("Usage: repoos verify <id> [--wait] [--json] [--port N]"), 1);
+  if (!id) return (printErr("Usage: repoos verify <id> [--json] [--port N]"), 1);
   const api = new RepoOsApi({ port: opts.port });
   try {
     await ensureServer(api);
@@ -260,7 +260,7 @@ export async function cmdVerify(args: string[]): Promise<number> {
     else {
       console.log(
         c.green("  ✓ ") +
-          c.dim(`evidence refreshed for #${id} at ${result.treeIdentity ?? "unknown tree"}`),
+          c.dim(`evidence refreshed for #${id} at ${result.headIdentity ?? "unknown HEAD"}`),
       );
       if (result.detail) console.log(`  ${result.detail}`);
       if (Array.isArray(result.issues) && result.issues.length) {

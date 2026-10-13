@@ -79,7 +79,16 @@
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { existsSync, readdirSync, readFileSync, statSync, accessSync, constants } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  accessSync,
+  constants,
+  writeFileSync,
+} from "node:fs";
 import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { extname, join, dirname, resolve, basename, relative } from "node:path";
@@ -192,6 +201,11 @@ import { PreviewManager, probePreview } from "./preview.js";
 import { DevTargetManager } from "./dev.js";
 import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
+import {
+  runUiHandoffGate,
+  readUiHandoffGateEvidence,
+  handoffTreeStatus,
+} from "./ui-handoff-gate.js";
 import { ReviewManager } from "./review.js";
 import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
 import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
@@ -2037,8 +2051,52 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // implementation and writes a short report for whoever signs the task off.
   // Advisory only — it never moves a task to `done`.
   // Created after the runner so it can send auto-bounce messages to the engineer.
-  reviews = new ReviewManager(config, emitEvent, runner, index, (taskId, reason) =>
-    debugTldr?.onFailureEscalated(taskId, reason),
+  reviews = new ReviewManager(
+    config,
+    emitEvent,
+    runner,
+    index,
+    (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
+    async (task) => {
+      if (!task.branch || closeOutLock.closingOut()) return false;
+      const worktree = worktreePathForBranch(config.root, task.branch);
+      if (!worktree) return false;
+      const headResult = await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000);
+      const head = headResult.status === 0 ? headResult.stdout.trim() : "";
+      if (!head) return false;
+      const attemptPath = join(
+        config.root,
+        config.cacheDir,
+        "ui-verification",
+        "auto-refresh-attempts",
+        `${task.id}-${head}.json`,
+      );
+      if (existsSync(attemptPath) || !rootLock.acquire(task.id, "close-out")) return false;
+      try {
+        const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
+        if (dirty.status !== 0 || dirty.stdout.trim()) return false;
+        const currentEvidence = readUiHandoffGateEvidence(config, task.id);
+        if (handoffTreeStatus(currentEvidence, head) !== "stale") return false;
+        mkdirSync(join(attemptPath, ".."), { recursive: true });
+        writeFileSync(
+          attemptPath,
+          JSON.stringify({ taskId: task.id, head, at: new Date().toISOString() }),
+        );
+        const result = await runUiHandoffGate(
+          config,
+          task,
+          previews,
+          (id, level, message) => {
+            logger.task(id, level, message);
+          },
+          { forceRefresh: true, recordTaskNotes: false },
+        );
+        const refreshed = readUiHandoffGateEvidence(config, task.id);
+        return result.ok && refreshed?.sourceIdentity === head;
+      } finally {
+        rootLock.release(task.id);
+      }
+    },
   );
 
   // Checks → Test Suite tab (0296-adjacent): an

@@ -503,8 +503,7 @@ repoos shot --target "macOS app"     # run a command capture target (non-web app
 
 Refresh the current review evidence without starting an engineer turn. This
 re-runs the declared browser and command captures and UI verification against
-the task worktree's current HEAD. It is synchronous; `--wait` is accepted for
-consistency with other control-plane commands.
+the task worktree's current HEAD. The command waits for the capture to finish.
 
 ```bash
 repoos verify 0766

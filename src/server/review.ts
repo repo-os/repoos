@@ -111,6 +111,19 @@ export interface ReviewRunResult {
   report?: ReviewReport;
 }
 
+/** Automatic evidence recovery is opt-in and requires an explicit stale-only reviewer marker. */
+export function shouldAutoRefreshStaleEvidence(
+  config: RepoOSConfig,
+  report: string,
+  verdict: string | null,
+): boolean {
+  return (
+    config.uiVerification?.autoRefreshStaleOnce === true &&
+    verdict !== "good to go" &&
+    report.includes("STALE-EVIDENCE-ONLY")
+  );
+}
+
 /**
  * Ceiling on one review run. Generous compared to the 3-minute one-shot
  * default: a reviewer reads a whole diff and may run the test suite, and a
@@ -408,6 +421,9 @@ export function reviewMission(
     "`good to go` — the change is correct and complete.",
     "`needs some work` — the change is close, but has issues worth fixing first.",
     "`back to the drawing board` — the change is off the mark.",
+    "If and only if the sole blocker is that otherwise usable UI evidence is stale",
+    "for the reviewed HEAD, include the exact marker `STALE-EVIDENCE-ONLY` in the",
+    "Verdict section. Never use it when code defects or any other blocker exists.",
     "",
     "## Relevance",
     "Open with EXACTLY one of these three labels, then one sentence explaining why.",
@@ -633,6 +649,8 @@ export class ReviewManager {
   private readonly db: RepoOSDb | null;
   /** Failure tl;dr trigger (#0570) — fire-and-forget diagnosis of `review-failed`. */
   private readonly onDiagnosableFailure?: (taskId: string, reason: string) => void;
+  /** Server-owned, guarded UI evidence refresh used only for stale-only reports. */
+  private readonly onStaleEvidenceRefresh?: (task: Task) => Promise<boolean>;
   /** Opt-in approval policy (#0686): fired when a run review finishes `good to go`. */
   private onCleanReviewVerdict?: (task: Task, report: ReviewReport) => void;
 
@@ -642,12 +660,14 @@ export class ReviewManager {
     runner?: AgentRunner,
     index?: LiveIndex,
     onDiagnosableFailure?: (taskId: string, reason: string) => void,
+    onStaleEvidenceRefresh?: (task: Task) => Promise<boolean>,
   ) {
     this.config = config;
     this.emit = emit;
     this.runner = runner;
     this.index = index;
     this.onDiagnosableFailure = onDiagnosableFailure;
+    this.onStaleEvidenceRefresh = onStaleEvidenceRefresh;
     this.logger = createLogger(config.root);
     this.db = getRepoOSDb(config.root);
   }
@@ -1077,6 +1097,9 @@ export class ReviewManager {
       reportText = applied.markdown;
     }
     const verdict = hasReport ? parseVerdict(reportText) : null;
+    const autoRefreshStaleEvidence =
+      shouldAutoRefreshStaleEvidence(this.config, reportText, verdict) &&
+      !!this.onStaleEvidenceRefresh;
     const state: ReviewReport["state"] = !hasReport ? "failed" : verdict ? "ok" : "incomplete";
     const body = !hasReport
       ? `The review agent produced no report: ${error ?? "no report"}`
@@ -1166,11 +1189,13 @@ export class ReviewManager {
     // Fire-and-forget (don't await) so the review completion isn't delayed
     if (state === "ok" && verdict) {
       if (verdict !== "good to go") {
-        this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
-          console.error(
-            `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
-          );
-        });
+        if (!autoRefreshStaleEvidence) {
+          this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
+            console.error(
+              `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
+            );
+          });
+        }
       } else {
         void this.onCleanReviewVerdict?.(task, report);
       }
@@ -1184,6 +1209,29 @@ export class ReviewManager {
     // (auto-bounce bookkeeping, capped at MAX_AUTO_REVIEW_ROUNDS) vs
     // review_passes (all successful passes).
     if (state === "ok") this.bumpReviewPasses(task);
+    if (autoRefreshStaleEvidence) {
+      setTimeout(() => {
+        void this.refreshStaleEvidenceAndRereview(task);
+      }, 0).unref?.();
+    }
+  }
+
+  private async refreshStaleEvidenceAndRereview(task: Task): Promise<void> {
+    try {
+      const refreshed = await this.onStaleEvidenceRefresh?.(task);
+      if (!refreshed) return;
+      const current = this.index?.getTask(task.id) ?? task;
+      if (current.status === "review" && !current.isArchived) {
+        this.logger.task(task.id, "info", "stale-only evidence refreshed; starting one new review");
+        void this.run(current);
+      }
+    } catch (err) {
+      this.logger.task(
+        task.id,
+        "warn",
+        `automatic stale-evidence refresh failed: ${(err as Error).message}`,
+      );
+    }
   }
 
   /**

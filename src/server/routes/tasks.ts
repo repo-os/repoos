@@ -1127,15 +1127,30 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
     return json(res, 409, { error: "A close-out is active; wait for it to finish" });
   if (evidenceRefreshes.has(id))
     return json(res, 409, { error: `Evidence refresh for #${id} is already running` });
+  // Use the same durable root lock the close-out orchestrator acquires. The
+  // in-memory set below prevents duplicate requests in this process; this lock
+  // also serializes refresh against close-out across server timing/reload gaps.
+  if (!ctx.rootLock.acquire(id, "close-out")) {
+    return json(res, 409, {
+      error: "A close-out or root operation is active; wait for it to finish",
+    });
+  }
   const worktree = worktreePathForBranch(config.root, task.branch);
-  if (!worktree) return json(res, 409, { error: `Task #${id}'s worktree is unavailable` });
+  if (!worktree) {
+    ctx.rootLock.release(id);
+    return json(res, 409, { error: `Task #${id}'s worktree is unavailable` });
+  }
   const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
-  if (dirty.status !== 0)
+  if (dirty.status !== 0) {
+    ctx.rootLock.release(id);
     return json(res, 409, { error: "Could not verify the task worktree is clean" });
-  if (dirty.stdout.trim())
+  }
+  if (dirty.stdout.trim()) {
+    ctx.rootLock.release(id);
     return json(res, 409, {
       error: `Task #${id}'s worktree is dirty; commit or discard changes before refreshing evidence`,
     });
+  }
   evidenceRefreshes.add(id);
   try {
     const result = await runUiHandoffGate(
@@ -1151,13 +1166,14 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
     const evidence = readUiHandoffGateEvidence(config, id);
     return json(res, result.ok ? 200 : 422, {
       ok: result.ok,
-      treeIdentity: head,
+      headIdentity: head,
       detail: result.detail,
       issues: evidence?.issues ?? [],
       shots: localShotStore(config, id).list(),
     });
   } finally {
     evidenceRefreshes.delete(id);
+    ctx.rootLock.release(id);
   }
 };
 
