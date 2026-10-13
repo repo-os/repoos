@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-13T15:35:50Z"
-review_passes: 4
 id: "0762"
 title: "Mechanical review verification misfires on non-RepoOS repos: guard-test check is JS/TS-only and triggers on any repoos.toml addition"
 type: bug
@@ -14,6 +12,8 @@ branch: feat/mechanical-review-verification-misfires-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-13T08:51:23Z"
+updated_at: "2026-10-13T16:16:34Z"
+review_passes: 4
 dev_error_count: 1
 ---
 ## Problem
