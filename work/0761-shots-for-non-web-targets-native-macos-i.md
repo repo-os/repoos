@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-13T07:53:15Z"
+review_passes: 2
 id: "0761"
 title: "Shots for non-web targets: native macOS, iOS/Android and desktop apps (command-based capture)"
 type: feature
@@ -9,9 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/shots-for-non-web-targets-native-macos-i
 created_at: "2026-10-13T06:23:05Z"
-updated_at: "2026-10-13T07:53:15Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 RepoOS's evidence shots (repoos shot, the handoff capture, ## Shots) only work for web targets: a [[preview.targets]] dev server plus a headless browser. A repo whose product is a native macOS app, a mobile app or a desktop app gets 'shots: skipped — website matched only documentation content, and no declared shot names a route' on every UI task, so reviewers and the maintainer never see an image of the change. Observed in the Divot repo (a native macOS menu bar app, tasks #0070-#0077).
@@ -78,3 +78,4 @@ Start from src/core/shot-plan.ts and the shot capture path used at handoff (see 
 - 2026-10-13T07:51:50Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (252dcd01c) during finalization (#0734)
 - 2026-10-13T07:51:51Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (252dcd01c) during finalization (#0734)
 - 2026-10-13T07:53:15Z · note: review pass 2: good to go
+
