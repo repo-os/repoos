@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 331560
-last_close_out_gate_at: "2026-10-13T13:16:22.085Z"
 id: "0765"
 title: "Review requires .repoos/ui-verification/<id>.json for command-target shots, which nothing produces: reviews of native tasks loop on missing evidence"
 type: bug
-status: review
+status: done
 priority: p2
 area: [core, server]
+merged_commit: f4bae6bfbf7ed72640d5536eb08a1c27d656182d
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-requires-repoos-ui-verification-i
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-13T10:43:52Z"
-updated_at: "2026-10-13T13:16:22Z"
+updated_at: "2026-10-13T13:16:33Z"
+last_close_out_gate_ms: 331560
+last_close_out_gate_at: "2026-10-13T13:16:22.085Z"
 review_passes: 1
 ---
 ## Problem
@@ -44,4 +45,4 @@ Related: #0761 (command shot targets), #0714/#0762 (mechanical review verificati
 - 2026-10-13T11:18:02Z · status active→review
 - 2026-10-13T11:19:35Z · note: review pass 1: good to go
 - 2026-10-13T13:16:22Z · close-out gate completed in 332s
-
+- 2026-10-13T13:16:33Z · status review→done, release:success
