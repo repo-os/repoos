@@ -577,11 +577,8 @@ export function parseDeepInfraChecklist(body: unknown): DeepInfraChecklist | nul
       })
     : [];
   return {
-    availableUsd:
-      stripeBalance <= 0
-        ? Math.max(0, Math.round((-stripeBalance - (num(c.recent) as number)) * 100) / 100)
-        : null,
-    owedUsd: stripeBalance != null && stripeBalance > 0 ? stripeBalance : null,
+    availableUsd: Math.max(0, Math.round((-stripeBalance - (num(c.recent) as number)) * 100) / 100),
+    owedUsd: stripeBalance > 0 ? stripeBalance : null,
     recentUsd: num(c.recent),
     limitUsd: num(c.limit),
     suspended: c.suspended === true,

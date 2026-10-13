@@ -111,7 +111,7 @@ describe("parseDeepInfraChecklist", () => {
       limit: null,
       suspended: false,
     })!;
-    expect(parsed.availableUsd).toBeNull();
+    expect(parsed.availableUsd).toBe(0);
     expect(parsed.owedUsd).toBe(7.5);
   });
 
