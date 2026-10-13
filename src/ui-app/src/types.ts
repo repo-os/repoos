@@ -1440,9 +1440,8 @@ export interface DeepInfraUsage {
   checklist: {
     /**
      * Remaining prepaid credits: max(0, -stripe_balance - recent) from
-     * DeepInfra's /payment/checklist response. Null when no credits remain or
-     * Zero when no prepaid credits remain; null when the account is owed
-     * money.
+     * DeepInfra's /payment/checklist response. Zero when no prepaid credits
+     * remain; null when the account is owed money.
      */
     availableUsd: number | null;
     /** Positive `stripe_balance`: money the account owes. */
