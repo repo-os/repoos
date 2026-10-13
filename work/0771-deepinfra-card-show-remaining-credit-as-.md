@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T17:27:39Z"
+updated_at: "2026-10-13T17:45:24Z"
 ---
 ## Problem
 The DeepInfra provider card shows two money figures that look like they conflict:
@@ -39,6 +39,18 @@ Also: the card showed 'Usage unavailable: The operation timed out.' while the ba
 ## Notes for AI
 Start from the provider card for DeepInfra and its billing fetch on the server (grep DeepInfra billing). Do not hard-code the figures from this screenshot in tests beyond the formula example. Source: user report, 2026-10-14.
 
+## Shots
+```json
+[
+{
+  "label": "DeepInfra prepaid credits and stale timeout state",
+  "target": "default",
+  "route": "/agents?tab=providers",
+  "highlight": ".mp-row"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-13T17:02:59Z · created · njachowski@gmail.com
@@ -49,3 +61,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T17:22:31Z · status ready→active, branch
 - 2026-10-13T17:27:39Z · message_queued at 2026-10-13T17:27:38.944Z
 - 2026-10-13T17:27:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-13T17:45:24Z · body: section Shots
