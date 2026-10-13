@@ -109,4 +109,22 @@ describe("POST /api/tasks/:id/verify guards", () => {
     expect(rootLock.acquire).toHaveBeenCalledWith(task.id, "close-out");
     expect(rootLock.release).toHaveBeenCalledWith(task.id);
   });
+
+  it("reports skipped verification as not refreshed", async () => {
+    const root = gitRoot();
+    const task = makeTask(root);
+    const res = response();
+    await refreshTaskEvidence(
+      context(task, root, {
+        config: { root, workDir: "work", cacheDir: ".repoos", uiVerification: { enabled: false } },
+      }),
+      {} as never,
+      res as never,
+      { param1: task.id },
+    );
+    expect(res.result()).toMatchObject({
+      status: 409,
+      body: { error: expect.stringContaining("Evidence was not refreshed") },
+    });
+  });
 });

@@ -501,7 +501,12 @@ export async function runUiHandoffGate(
     return { ok: false, detail, evidencePath: path };
   }
 
-  if (!taskNeedsUiHandoffVerification(config, task)) {
+  // An explicit refresh is an operator request, so engineer-made captures do
+  // not pre-empt it. Still honor the repository-wide disabled policy.
+  if (
+    !resolvedUiVerification(config).enabled ||
+    (!deps.forceRefresh && !taskNeedsUiHandoffVerification(config, task))
+  ) {
     return { ok: true, skipped: true, detail: "ui verification not required for this task" };
   }
 

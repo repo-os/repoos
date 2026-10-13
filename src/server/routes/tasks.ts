@@ -1162,6 +1162,11 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
       },
       { forceRefresh: true, recordTaskNotes: false },
     );
+    if (result.skipped) {
+      return json(res, 409, {
+        error: `Evidence was not refreshed for #${id}: ${result.detail ?? "verification was skipped"}`,
+      });
+    }
     const head = shortHeadOf(worktree);
     const evidence = readUiHandoffGateEvidence(config, id);
     return json(res, result.ok ? 200 : 422, {
