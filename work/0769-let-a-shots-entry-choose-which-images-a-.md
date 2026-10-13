@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-13T16:17:17.815Z: repoos check failed: ui verification failed (1 issue(s)): [console] TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:58520/settings/index.md?import&t=1791908231987'. (http://127.0.0.1:58520/node_modules/vitepress/dist/client/app/router.js?v=4657816f)"
 id: "0769"
 title: "Let a ## Shots entry choose which images a command target captures (env, args or per-entry output glob)"
 type: feature
@@ -55,3 +57,4 @@ Related: #0761, #0765, #0766. Keep zero runtime dependencies; never write images
 - 2026-10-13T16:09:05Z · body
 - 2026-10-13T16:09:59Z · body
 - 2026-10-13T16:17:14Z · note: ui verification failed (1 issue(s)): [console] TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:58520/settings/index.md?import&t=1791908231987'. (http://127.0.0.1:58520/node_modules/vitepress/dist/client/app/router.js?v=4657816f)
+
