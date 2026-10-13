@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-13T16:22:03Z"
-review_passes: 1
 id: "0769"
 title: "Let a ## Shots entry choose which images a command target captures (env, args or per-entry output glob)"
 type: feature
@@ -11,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/let-a-shots-entry-choose-which-images-a-
 created_at: "2026-10-13T14:44:34Z"
-last_check_failure: "repoos check at 2026-10-13T16:17:17.815Z: repoos check failed: ui verification failed (1 issue(s)): [console] TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:58520/settings/index.md?import&t=1791908231987'. (http://127.0.0.1:58520/node_modules/vitepress/dist/client/app/router.js?v=4657816f)"
+updated_at: "2026-10-13T16:21:09Z"
 ---
 ## Problem
 For command-based shot targets (#0761) a ## Shots declaration can only name the target ({"target": "Divot bar", "label": ...}); route, selector, highlight and steps are ignored for command targets, and RepoOS collects EVERY file matching the target's outputGlob. So a task cannot ask for 'just the world clock popover': the whole fixed snapshot set (27 PNGs of the bar and every other popover) is attached to every task that touches the paths, and the images that actually changed (a brand-new popover) may not be among them at all. Observed in the Divot repo on #0085: 27 shots, none of the feature under review. Reviewers and the maintainer wade through unrelated images and cannot tell what the task actually changed.
@@ -32,24 +30,9 @@ For command-based shot targets (#0761) a ## Shots declaration can only name the 
 ## Notes for AI
 Related: #0761, #0765, #0766. Keep zero runtime dependencies; never write images into tracked paths.
 
-## Shots
-
 ## Activity
 
 - 2026-10-13T14:44:34Z · created · njachowski@gmail.com
 - 2026-10-13T15:26:02Z · status inbox→ready
 - 2026-10-13T15:26:05Z · status ready→active, branch
-- 2026-10-13T15:33:58Z · message_queued at 2026-10-13T15:33:58.966Z
-- 2026-10-13T15:33:59Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-13T16:03:41Z · body
-- 2026-10-13T16:05:47Z · body: section Shots
-- 2026-10-13T16:07:21Z · body
-- 2026-10-13T16:09:05Z · body
-- 2026-10-13T16:09:59Z · body
-- 2026-10-13T16:17:14Z · note: ui verification failed (1 issue(s)): [console] TypeError: 'text/html' is not a valid JavaScript MIME type for module script 'http://127.0.0.1:58520/settings/index.md?import&t=1791908231987'. (http://127.0.0.1:58520/node_modules/vitepress/dist/client/app/router.js?v=4657816f)
-- 2026-10-13T16:17:53Z · body: section Shots
-- 2026-10-13T16:19:26Z · body
 - 2026-10-13T16:21:09Z · status active→review
-- 2026-10-13T16:21:10Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-13T16:22:02Z · note: review pass 1: good to go
-
