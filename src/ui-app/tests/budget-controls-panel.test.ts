@@ -106,8 +106,12 @@ describe("BudgetControlsPanel (#0764)", () => {
     await wrapper.findAll("[data-testid='budget-remove-agent']")[0]!.trigger("click");
     await flushPromises();
 
-    expect(patched).toEqual([{ "budget.allowlist": [{ cli: "opencode", models: ["big pickle"] }] }]);
-    expect(config.data?.["budget.allowlist"]).toEqual([{ cli: "opencode", models: ["big pickle"] }]);
+    expect(patched).toEqual([
+      { "budget.allowlist": [{ cli: "opencode", models: ["big pickle"] }] },
+    ]);
+    expect(config.data?.["budget.allowlist"]).toEqual([
+      { cli: "opencode", models: ["big pickle"] },
+    ]);
     wrapper.unmount();
     vi.unstubAllGlobals();
   });
