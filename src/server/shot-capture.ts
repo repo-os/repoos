@@ -191,6 +191,34 @@ export function planAutoCapture(
   const existing = localShotStore(config, task.id)
     .list()
     .filter((shot) => shot.origin !== "auto");
+  const refreshExistingPlan = ():
+    | {
+        entries: CaptureEntry[];
+        errors: string[];
+        skips: string[];
+        collapsed: string[];
+      }
+    | undefined => {
+    if (!opts.forceRefresh || existing.length === 0) return undefined;
+    const available = new Set([
+      ...(config.preview?.targets ?? []).map((target) => target.name),
+      ...(config.shot?.targets ?? []).map((target) => target.name),
+      ...(config.preview?.command?.trim() ? ["default"] : []),
+    ]);
+    const entries = existing
+      .filter((shot) => shot.target !== "unknown" && available.has(shot.target))
+      .map((shot): CaptureEntry => ({
+        target: shot.target,
+        ...(shot.command === "command" ? {} : { route: shot.route ?? "/" }),
+        ...(shot.declared?.selector ? { selector: shot.declared.selector } : {}),
+        ...(shot.declared?.highlight ? { highlight: shot.declared.highlight } : {}),
+        ...(shot.declared?.steps ? { steps: shot.declared.steps } : {}),
+        ...(shot.declared?.assert ? { assert: shot.declared.assert } : {}),
+        ...(shot.label ? { label: shot.label } : {}),
+        provenance: { kind: "declared", ...(shot.label ? { label: shot.label } : {}) },
+      }));
+    return entries.length > 0 ? { entries, errors: [], skips: [], collapsed: [] } : undefined;
+  };
   if (existing.length > 0 && !opts.forceRefresh) {
     return {
       reason:
@@ -215,6 +243,8 @@ export function planAutoCapture(
       config.shot,
     );
     if (resolution.names.length === 0) {
+      const previousPlan = refreshExistingPlan();
+      if (previousPlan) return previousPlan;
       return {
         reason:
           `the declared shots could not resolve a capture target — ` +
@@ -225,6 +255,8 @@ export function planAutoCapture(
   } else {
     targets = context.detected;
     if (targets.length === 0) {
+      const previousPlan = refreshExistingPlan();
+      if (previousPlan) return previousPlan;
       return {
         reason: `the diff (${context.changedPaths.length} changed paths) touches no capture target's globs — no UI change to capture`,
       };

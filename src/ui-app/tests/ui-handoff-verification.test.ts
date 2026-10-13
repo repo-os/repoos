@@ -13,6 +13,7 @@ import {
   type UiHandoffGateDeps,
 } from "../../server/ui-handoff-gate.js";
 import * as shotCapture from "../../server/shot-capture.js";
+import * as shotStore from "../../server/shots.js";
 import {
   resetPreviewVerificationSlot,
   withPreviewVerificationSlot,
@@ -26,8 +27,50 @@ import { tmpdir } from "node:os";
 describe("UI handoff verification gate (#0680)", () => {
   const temps: string[] = [];
   afterEach(() => {
+    vi.restoreAllMocks();
     resetPreviewVerificationSlot();
     for (const t of temps.splice(0)) rmSync(t, { recursive: true, force: true });
+  });
+
+  it("uses an existing manual shot as the refresh plan when no declaration or path plan exists", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-manual-refresh-"));
+    temps.push(root);
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      preview: { targets: [{ name: "web", paths: ["src/**"], command: "echo" }] },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "manual-refresh",
+      title: "t",
+      path: "work/manual-refresh.md",
+      absPath: join(root, "work/manual-refresh.md"),
+      status: "review",
+      branch: "feat/manual-refresh",
+      area: "web",
+      body: "",
+    } as Task;
+    vi.spyOn(shotStore, "localShotStore").mockReturnValue({
+      list: () => [
+        {
+          name: "manual.png",
+          target: "web",
+          route: "/settings?tab=general",
+          label: "Settings view",
+          path: "work/.attachments/manual-refresh/shots/manual.png",
+          url: "/api/tasks/manual-refresh/shots/manual.png",
+          size: 10,
+          mime: "image/png",
+          capturedAt: new Date().toISOString(),
+        },
+      ],
+    } as ReturnType<typeof shotStore.localShotStore>);
+
+    const plan = shotCapture.planAutoCapture(config, task, { forceRefresh: true });
+    expect(plan).toMatchObject({
+      entries: [{ target: "web", route: "/settings?tab=general", label: "Settings view" }],
+    });
   });
 
   it("collects console errors from a page", () => {
