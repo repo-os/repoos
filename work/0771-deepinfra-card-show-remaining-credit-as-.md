@@ -3,6 +3,9 @@ id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the github copilot agent timed out after 900s
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -153,3 +156,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T23:05:08Z · body
 - 2026-10-13T23:05:48Z · status active→review
 - 2026-10-13T23:22:50Z · note: review pass 4: failed — no usable report
+- 2026-10-13T23:22:50Z · needs_input
