@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/mechanical-review-verification-misfires-
 created_at: "2026-10-13T08:51:23Z"
-updated_at: "2026-10-13T13:24:32Z"
+updated_at: "2026-10-13T13:24:45Z"
 ---
 ## Problem
 RepoOS #0714 (src/core/review-verification.ts, src/server/review-verification-gather.ts) appends '## Automated verification' to every review and CLAMPS a 'good to go' verdict to 'needs some work' on failures. It has two checks. The console-errors check applies only to web UI handoff evidence and is skipped for native repos (fine). The guard negative-test check is tied to this repo's own layout and misfires on other projects:
