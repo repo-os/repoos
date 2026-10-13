@@ -2,14 +2,14 @@
 id: "0760"
 title: "repoos message --now: interrupt a busy agent and deliver immediately"
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-message-now-interrupt-a-busy-agen
 created_at: "2026-10-12T14:35:44Z"
-updated_at: "2026-10-12T14:35:53Z"
+updated_at: "2026-10-13T05:11:23Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ updated_at: "2026-10-12T14:35:53Z"
 - 2026-10-12T14:35:44Z · created · njachowski@gmail.com
 - 2026-10-12T14:35:52Z · status inbox→ready
 - 2026-10-12T14:35:53Z · status ready→active, branch
+- 2026-10-13T05:11:23Z · status active→review
