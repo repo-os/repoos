@@ -8,8 +8,9 @@ area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-13T10:43:52Z"
-updated_at: "2026-10-13T10:51:33Z"
+updated_at: "2026-10-13T10:51:49Z"
 ---
 ## Problem
 The reviewer prompt (src/server/review.ts, 'UI verification evidence' section) tells the reviewer to treat a missing <cacheDir>/ui-verification/<taskId>.json as a blocking evidence gap. That file is produced by the web handoff gate (ui-handoff-gate.ts) for browser captures. Command-based shot targets (#0761, native macOS/iOS/Android) produce images but no such file, so the reviewer reports 'required evidence file is absent' as a BLOCKING issue on every native UI task even when the shots exist and look right. Observed in the Divot repo on #0083 and #0084: repeated 'needs some work' passes whose only blocker was the absent ui-verification JSON, and engineers (which cannot create it) loop or guess.
@@ -31,3 +32,4 @@ Related: #0761 (command shot targets), #0714/#0762 (mechanical review verificati
 
 - 2026-10-13T10:43:52Z · created · njachowski@gmail.com
 - 2026-10-13T10:51:33Z · status inbox→ready
+- 2026-10-13T10:51:49Z · model_override
