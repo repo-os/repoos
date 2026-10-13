@@ -8,10 +8,9 @@ area: [cli, server, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/let-the-cli-and-api-attach-screenshots-w
-cli_override: claude code
-model_override: sonnet
+model_override: default
 created_at: "2026-10-13T09:13:55Z"
-updated_at: "2026-10-13T10:55:59Z"
+updated_at: "2026-10-13T14:50:12Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 1debde988b114085264908e0f7d84bdc2c964e66
 handoff_signal_retry_count: 2
@@ -51,3 +50,4 @@ Reuse src/server/attachments.ts (saveScreenshot, sanitizeName, SCREENSHOTS_HEADI
 - 2026-10-13T10:53:47Z · message_queued at 2026-10-13T10:53:47.000Z
 - 2026-10-13T10:53:54Z · body
 - 2026-10-13T10:55:59Z · body
+- 2026-10-13T14:50:12Z · cli_override, model_override
