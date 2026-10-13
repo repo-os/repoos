@@ -257,3 +257,30 @@ through:
 
 Each of them — what it scans for, how to schedule it, and what good output looks
 like — has its own section in [Built-in agents](/built-in-agents).
+
+## Budget Controls: steering agent drivers
+
+An **agent driver** is an AI session that operates RepoOS through the CLI/API —
+overriding engineers, starting tasks, restarting stuck runs. Such a session has
+repeatedly picked agent + model pairs that are too expensive, so the **Budget
+Controls** tab (`/agents?tab=budget-controls`) lets you declare a
+human-approved subset.
+
+- **Agent+Models Allowlists for Agent Drivers** lists the allowed coding agents;
+  each one has its own list of allowed models, collapsed by default with a
+  model count (for example `claude code · 2 models`). Expand a row to see its
+  models; add or remove entries with the same coding agent + model selector the
+  rest of the page uses.
+- The allowlist is **optional**. Leave it empty and nothing is restricted —
+  agent drivers behave exactly as they do today.
+- A **human using the web UI is never restricted** and always sees the full
+  list. Only an agent driver — a caller carrying the local CLI token — is
+  checked.
+- When an agent driver sets an engineer/reviewer override
+  (`repoos override <id> --cli … --model …`, or a `PATCH` on
+  `cliOverride`/`modelOverride`) to a pair outside the allowlist, the server
+  refuses with an error listing every allowed pair. `repoos override --help`
+  also prints the allowlist.
+
+The allowlist is stored in `repoos.toml` as `[[budget.allowlist]]` rows; see
+[Configuration](/configuration#budget-controls-agent-drivers).
