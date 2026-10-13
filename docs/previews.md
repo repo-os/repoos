@@ -140,6 +140,101 @@ a fenced JSON list (`src/core/shot-plan.ts`), one entry per capture —
 optional ordered `steps` (`click` / `fill`+`text` / `waitFor` / `waitMs`,
 plain CSS selectors). Routes and selectors only — no framework knowledge.
 
+### Evidence shots for non-web targets (#0761)
+
+The web path above always boots a URL and drives a browser. A repo whose product
+is a **native macOS app, a mobile app or a desktop app** has no dev server and no
+route to load, so its capture target is a COMMAND instead
+(`[[shot.targets]]`, `src/core/shot-command.ts`). The command runs in the task
+worktree and renders image files offscreen; RepoOS creates a fresh, gitignored
+directory, hands its path to the command as `REPOOS_SHOT_DIR` (and the worktree
+as `REPOOS_WORKTREE`), and collects every image matching the target's
+`outputGlob`. Nothing is ever written to a tracked path by default, so evidence
+images are never committed to git — the same rule the web shots follow.
+
+A capture target looks like:
+
+```toml
+[[shot.targets]]
+name = "macOS app"
+areas = ["mac"]
+paths = ["Sources/Divot/**"]
+command = "swift test --filter RenderShots"
+outputGlob = ["*.png"]
+requires = "xcrun"
+timeoutMs = 120000
+```
+
+Resolution mirrors the web path exactly: a changed file matching `paths` selects
+the target, then the task's `area`, then an explicit `--target`. Web targets are
+tried first at each step, so a repo that declares both keeps its existing web
+behavior. It is a general model — the command is user-configured and nothing is
+hard-coded to Apple/Android tooling.
+
+**Platform recipes.**
+
+- **Native macOS — offscreen render in a test.** Add a test that renders the view
+  hierarchy to a PNG without a window, then point the target at that test:
+  ```swift
+  // In an XCTest: render the view into a bitmap and write it to REPOOS_SHOT_DIR.
+  let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+  view.cacheDisplay(in: view.bounds, to: rep)
+  let png = rep.representation(using: .png, properties: [:])!
+  try png.write(to: URL(fileURLWithPath: "\(ProcessInfo.processInfo.environment["REPOOS_SHOT_DIR"]!)/main.png"))
+  ```
+  ```toml
+  [[shot.targets]]
+  name = "macOS app"
+  areas = ["mac"]
+  paths = ["Sources/Divot/**"]
+  command = "swift test --filter RenderShots"
+  outputGlob = ["*.png"]
+  requires = "xcrun"   # `swift` is enough on its own; requires is optional
+  ```
+  A `.app` window can also be captured with `screencapture -l <windowid> "$REPOOS_SHOT_DIR/x.png"`
+  (`requires = "screencapture"`), though the offscreen render is the deterministic
+  choice in CI.
+- **iOS simulator.** Boot a simulator, then:
+  ```toml
+  [[shot.targets]]
+  name = "iOS app"
+  areas = ["ios"]
+  paths = ["ios/**"]
+  command = "xcrun simctl io booted screenshot \"$REPOOS_SHOT_DIR/home.png\""
+  requires = "xcrun"
+  ```
+- **Android emulator.** Boot an AVD, then:
+  ```toml
+  [[shot.targets]]
+  name = "Android app"
+  areas = ["android"]
+  paths = ["android/**"]
+  command = "adb exec-out screencap -p > \"$REPOOS_SHOT_DIR/home.png\""
+  requires = "adb"
+  ```
+
+**Declaring and skipping.** Declare a command shot in `## Shots` exactly like a
+web one — `target` (or `label`) with no `route`:
+`[{"target": "macOS app", "label": "Menu bar open"}]`. Page-only fields (`route`,
+`selector`, `highlight`, `steps`, `state`, `assert`) are dropped gracefully for a
+command target: they would be meaningless without a page. The provenance caption
+is the same (`declared: <label>` / `auto: matched <glob>`), duplicate collapsing
+and the plan-fingerprint/tree stale-capture checks work identically, and
+`repoos shot --target "macOS app"` runs the command from the CLI too.
+
+A command problem is NEVER a failed handoff: a missing `requires` binary, a
+timeout (stdout/stderr tail recorded), a non-zero exit, or a run that produced no
+images is a visible `shots: skipped — <reason>` / `shots: failed — <reason>`
+activity note. A command that exits non-zero but still wrote image files has
+those files collected anyway (a render that warns on stderr but succeeds is
+common), with a visible warning naming the exit code — so a partial failure can
+still produce shots and is always recorded, never silently. When a repo has
+command targets but no target covers the changed
+paths, the skip message says so and points at the `[[shot.targets]]`
+declaration — no more "matched only documentation content" for a native app. The
+handoff browser gate (`ui-handoff-gate.ts`) only verifies WEB entries; a command
+target's evidence is its collected image, not a page check.
+
 **Shot hygiene (#0613, #0734, #0743).** When a declared `highlight`,
 `selector`, or `waitFor` step target is missing at capture time, the handoff
 gate records a **visible warning**, still saves the screenshot, and does **not**

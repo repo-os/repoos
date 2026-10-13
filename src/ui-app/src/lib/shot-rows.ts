@@ -129,8 +129,9 @@ export function shotRows(shots: ShotMeta[], body: string | undefined): ShotRow[]
     const title = labelled || meta.route || meta.target || meta.name;
     // Today's thumb hint (`target · route`), minus the part the title already
     // shows, so an unlabeled shot reads the route over `default` instead of
-    // repeating the route on both lines.
-    const context = [meta.target, meta.route]
+    // repeating the route on both lines. A command capture (#0761) has no route:
+    // caption it "command capture" so a reviewer knows no page was loaded.
+    const context = [meta.target, meta.command === "command" ? "command capture" : meta.route]
       .filter((part): part is string => !!part && part !== title)
       .join(" · ");
     const steps = entry?.steps;

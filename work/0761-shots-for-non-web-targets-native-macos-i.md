@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-13T07:53:15Z"
-review_passes: 2
 id: "0761"
 title: "Shots for non-web targets: native macOS, iOS/Android and desktop apps (command-based capture)"
 type: feature
@@ -11,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/shots-for-non-web-targets-native-macos-i
 created_at: "2026-10-13T06:23:05Z"
-review_rounds: 1
+updated_at: "2026-10-13T07:35:46Z"
 ---
 ## Problem
 RepoOS's evidence shots (repoos shot, the handoff capture, ## Shots) only work for web targets: a [[preview.targets]] dev server plus a headless browser. A repo whose product is a native macOS app, a mobile app or a desktop app gets 'shots: skipped — website matched only documentation content, and no declared shot names a route' on every UI task, so reviewers and the maintainer never see an image of the change. Observed in the Divot repo (a native macOS menu bar app, tasks #0070-#0077).
@@ -36,46 +34,9 @@ RepoOS's evidence shots (repoos shot, the handoff capture, ## Shots) only work f
 ## Notes for AI
 Start from src/core/shot-plan.ts and the shot capture path used at handoff (see docs and the #0594/#0603/#0613 notes in AGENTS.md). Keep the model general: a capture target is something that yields image files; web is one implementation. Do not hard-code Apple/Android tools; commands are user-configured. Never git add attachments. This is a RepoOS product feature for everyone using RepoOS; Divot will be the first consumer afterwards.
 
-## Shots
-```json
-[
-{
-"label": "Settings search finds the capture-targets setting",
-"target": "default",
-"route": "/settings",
-"highlight": ".search-overlay",
-"steps": [
-{
-"click": ".settings-search-trigger"
-},
-{
-"fill": ".search-overlay-input",
-"text": "capture targets"
-},
-{
-"waitMs": 400
-}
-]
-}
-]
-```
-
 ## Activity
 
 - 2026-10-13T06:23:05Z · created · njachowski@gmail.com
 - 2026-10-13T06:49:00Z · status inbox→ready
 - 2026-10-13T06:49:03Z · status ready→active, branch
-- 2026-10-13T07:14:07Z · body
-- 2026-10-13T07:16:03Z · body
-- 2026-10-13T07:27:40Z · body: section Shots
 - 2026-10-13T07:35:46Z · status active→review
-- 2026-10-13T07:37:01Z · note: review pass 1: needs some work
-- 2026-10-13T07:37:01Z · status review→active
-- 2026-10-13T07:42:03Z · message_queued at 2026-10-13T07:42:03.602Z
-- 2026-10-13T07:42:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-13T07:45:04Z · body
-- 2026-10-13T07:51:50Z · status active→review
-- 2026-10-13T07:51:50Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (252dcd01c) during finalization (#0734)
-- 2026-10-13T07:51:51Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (252dcd01c) during finalization (#0734)
-- 2026-10-13T07:53:15Z · note: review pass 2: good to go
-
