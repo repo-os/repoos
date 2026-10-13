@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-13T23:22:53.274Z: repoos check failed: ◆ Check plan"
 id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
@@ -157,3 +159,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T23:05:48Z · status active→review
 - 2026-10-13T23:22:50Z · note: review pass 4: failed — no usable report
 - 2026-10-13T23:22:50Z · needs_input
+
