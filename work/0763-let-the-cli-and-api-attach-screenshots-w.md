@@ -1,5 +1,5 @@
 ---
-handoff_signal_retry_count: 1
+handoff_signal_retry_count: 2
 id: "0763"
 title: "Let the CLI and API attach screenshots when an agent creates or updates a task, and tell agents to do it"
 type: feature
@@ -40,4 +40,5 @@ Reuse src/server/attachments.ts (saveScreenshot, sanitizeName, SCREENSHOTS_HEADI
 - 2026-10-13T09:41:04Z · message_queued at 2026-10-13T09:41:04.195Z
 - 2026-10-13T09:41:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-13T10:31:13Z · message_delivered: 1 message(s)
+
 
