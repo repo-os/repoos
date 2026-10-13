@@ -627,6 +627,9 @@ const THEME_SWATCHES: Record<string, { bg: string; a: string; b: string }> = {
   // Hypercolor's tape-black ground with its two signature neons: the magenta
   // primary and the cyan ghost.
   hypercolor: { bg: "#0a0713", a: "#ff4d8d", b: "#5ff2ff" },
+  // Solarized's dark variant: base03 background with blue and cyan accents
+  // from the Solarized palette. Light is the inverted daylight variant.
+  solarized: { bg: "#002b36", a: "#268bd2", b: "#2db8a8" },
 };
 function swatchFor(id: string): { bg: string; a: string; b: string } {
   return THEME_SWATCHES[id] ?? { bg: "var(--panel-solid)", a: "var(--cyan)", b: "var(--violet)" };
