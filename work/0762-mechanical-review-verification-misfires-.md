@@ -3,13 +3,14 @@ id: "0762"
 title: "Mechanical review verification misfires on non-RepoOS repos: guard-test check is JS/TS-only and triggers on any repoos.toml addition"
 type: bug
 status: review
+needs_merge: true
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/mechanical-review-verification-misfires-
 created_at: "2026-10-13T08:51:23Z"
-updated_at: "2026-10-13T11:05:59Z"
+updated_at: "2026-10-13T13:24:32Z"
 ---
 ## Problem
 RepoOS #0714 (src/core/review-verification.ts, src/server/review-verification-gather.ts) appends '## Automated verification' to every review and CLAMPS a 'good to go' verdict to 'needs some work' on failures. It has two checks. The console-errors check applies only to web UI handoff evidence and is skipped for native repos (fine). The guard negative-test check is tied to this repo's own layout and misfires on other projects:
@@ -38,3 +39,4 @@ Start from review-verification.ts guardsMateriallyChangedFromDiff and evaluateGu
 - 2026-10-13T09:00:44Z · status inbox→ready
 - 2026-10-13T09:00:49Z · status ready→active, branch
 - 2026-10-13T11:05:59Z · status active→review
+- 2026-10-13T13:24:32Z · needs_merge
