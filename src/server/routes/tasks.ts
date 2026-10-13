@@ -1489,6 +1489,15 @@ function rejectIgnoredOverrides(res: ServerResponse, id: string, body: unknown):
 }
 
 // Task actions: start, pause, message, done, sync
+
+/**
+ * How long a `--now` message waits for a paused turn to actually exit (#0760).
+ * Must stay below the pause path's 3s SIGKILL grace (`AgentRunner.stop`): a
+ * process still alive at this point is reported as "pause did not stop the
+ * run" rather than resumed over.
+ */
+const INTERRUPT_WAIT_MS = 2500;
+
 export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   const { config, index, runner, previews, reviews, syncTaskBranch, onServerStatusChange, logger } =
     ctx;
@@ -2022,7 +2031,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: "No enabled engineer agent is configured on the Agents page",
       });
     }
-    const body = (await readBody(req)) as { text?: unknown; [key: string]: unknown };
+    const body = (await readBody(req)) as { text?: unknown; now?: unknown; [key: string]: unknown };
     // #0684: the engineer message route resolves the agent from the task's
     // persisted overrides only — reject a body override instead of dropping it.
     if (rejectIgnoredOverrides(res, id, body)) return;
@@ -2030,6 +2039,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (!text) {
       return json(res, 400, { error: "message text is required" });
     }
+    // #0760: `now: true` interrupts a busy agent and delivers immediately.
+    // Without it, a busy agent queues the message (#0756) — unchanged.
+    const now = body?.now === true;
     if (existing.needsInput) {
       const cleared = patchTaskFile(config, existing.absPath, {
         needsInput: false,
@@ -2075,6 +2087,32 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         preamble = resumePreamble(config, existing, existing.branch, wtPath) || undefined;
       }
     }
+    // #0760: --now steers a busy agent. Interrupt the running turn through the
+    // same stop path `pause` uses, wait for the process to actually exit, and
+    // only then deliver — so a message never lands on top of a live turn. The
+    // wait window is deliberately shorter than the pause path's 3s SIGKILL
+    // grace: a process that only dies to SIGKILL was not stopped *cleanly*
+    // (a half-written edit is exactly what we must not resume over), so treat
+    // that as "pause did not stop the run" and fail without delivering.
+    let interrupted = false;
+    if (now && runner.isRunning(id)) {
+      const stopRes = runner.stop(id);
+      const stopped = stopRes.stopped && (await runner.waitForStop(id, INTERRUPT_WAIT_MS));
+      if (!stopped) {
+        // The stop was still requested (SIGKILL follows on the pause path's
+        // grace timer), so record it as a human pause exactly like `pause`
+        // does — the watchdog must not flag a task left with no process.
+        runner.markPaused(id);
+        return json(res, 409, {
+          ok: false,
+          now: true,
+          interrupted: true,
+          error: `Could not interrupt the running agent for #${id} — it did not stop within ${INTERRUPT_WAIT_MS / 1000}s; the message was not delivered. The task is paused: resend the message once the agent has stopped.`,
+          reason: "pause did not stop the run",
+        });
+      }
+      interrupted = true;
+    }
     const sendRes = runner.send(id, text, agent, { resumePreamble: preamble });
     if (!sendRes.ok) {
       return json(res, 400, {
@@ -2085,11 +2123,15 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       return json(res, 200, {
         ok: true,
         queued: true,
+        // #0760: with `now`, the run stopped but the runner is still busy
+        // (e.g. the interrupted turn had requested a handoff, now in flight).
+        ...(now ? { now: true, interrupted, reason: "agent still busy after the interrupt" } : {}),
       });
     }
     return json(res, 200, {
       ok: true,
       spawn: { ok: true, pid: sendRes.pid },
+      ...(now ? { now: true, interrupted, deliveredNow: true } : {}),
     });
   }
 
