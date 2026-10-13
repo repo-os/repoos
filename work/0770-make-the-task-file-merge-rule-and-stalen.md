@@ -11,7 +11,7 @@ branch: feat/make-the-task-file-merge-rule-and-stalen
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-13T16:18:45Z"
-updated_at: "2026-10-13T16:33:58Z"
+updated_at: "2026-10-13T16:34:35Z"
 ---
 ## Problem
 Agents hit two avoidable blocks while merging main into a task branch by hand (#0762):
@@ -40,3 +40,4 @@ Keep it to a few lines. Edit AGENTS.md through a task branch, not on main. Sourc
 - 2026-10-13T16:22:37Z · body
 - 2026-10-13T16:33:57Z · status active→review
 - 2026-10-13T16:33:58Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-13T16:34:35Z · note: review pass 1: good to go
