@@ -2,7 +2,7 @@
 id: "0760"
 title: "repoos message --now: interrupt a busy agent and deliver immediately"
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server]
 assigned_to: ai
@@ -73,4 +73,4 @@ dev_error_count: 1
 - 2026-10-13T05:01:21Z · message_expired: not delivered within timeout
 - 2026-10-13T05:02:10Z · body
 - 2026-10-13T05:04:37Z · body
-- 2026-10-13T05:11:23Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-13T05:11:23Z · status active→review
