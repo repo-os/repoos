@@ -2,14 +2,14 @@
 id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T17:02:59Z"
+updated_at: "2026-10-13T17:22:16Z"
 ---
 ## Problem
 The DeepInfra provider card shows two money figures that look like they conflict:
@@ -38,3 +38,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 ## Activity
 
 - 2026-10-13T17:02:59Z · created · njachowski@gmail.com
+- 2026-10-13T17:22:16Z · status inbox→ready
