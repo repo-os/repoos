@@ -11,6 +11,7 @@ import {
 } from "../cli/repoos-api.js";
 import { effectiveEngineerFromApi } from "../cli/effective-from-api.js";
 import { HANDOFF_DEADLINE_MS } from "../server/handoff.js";
+import type { RepoOSConfig } from "../core/types.js";
 
 interface CommonOpts {
   json: boolean;
@@ -40,6 +41,25 @@ function parseCommonFlags(args: string[]): { rest: string[]; opts: CommonOpts; e
 
 function printJson(data: unknown): void {
   console.log(JSON.stringify(data, null, 2));
+}
+
+/**
+ * Print the agent-driver budget allowlist so a driver can choose an allowed
+ * pair before running `repoos override` (#0764). Reads the local config file —
+ * no server round-trip.
+ */
+function printBudgetAllowlist(config: RepoOSConfig): void {
+  const rows = config.budget?.allowlist ?? [];
+  if (!rows.length) {
+    console.log(
+      c.dim(
+        "  Budget allowlist: (empty — agent drivers are not restricted to any agent+model pair)",
+      ),
+    );
+    return;
+  }
+  console.log(c.dim("  Budget allowlist for agent drivers — allowed agent + model pairs:"));
+  for (const row of rows) console.log(`  · ${row.cli} + ${row.models.join(", ")}`);
 }
 
 function printErr(message: string): void {
@@ -312,10 +332,16 @@ export async function cmdOverride(args: string[]): Promise<number> {
     printErr(error);
     return 1;
   }
-  const id = rest[0];
-  if (!id) {
-    printErr("Usage: repoos override <id> [--cli <name>] [--model <model>] [--json] [--port N]");
-    return 1;
+  const wantsHelp = rest.includes("--help") || rest.includes("-h");
+  const id = rest.find((a) => !a.startsWith("-"));
+  if (!id || wantsHelp) {
+    const { config } = resolveControlPlaneBase({ port: opts.port });
+    console.log(
+      c.cyan("Usage:") +
+        " repoos override <id> [--cli <name>] [--model <model>] [--json] [--port N]",
+    );
+    printBudgetAllowlist(config);
+    return wantsHelp ? 0 : 1;
   }
   let cli: string | undefined;
   let model: string | undefined;

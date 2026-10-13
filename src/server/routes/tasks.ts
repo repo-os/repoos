@@ -43,6 +43,8 @@ import type { ServerResponse } from "node:http";
 import type { LiveIndex, RepoEvent } from "../live-index.js";
 import type { Logger } from "../../core/logger.js";
 import { getCurrentUser } from "./auth.js";
+import { requestUsedLocalCliToken } from "../local-token.js";
+import { overrideRefusal } from "../agent-model-allowlist.js";
 import { resolveApiCreator } from "../../core/record-creator.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
 import { needsInputClearsOnNewEngineerRun } from "../../core/needs-input.js";
@@ -770,6 +772,24 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     /** #0507: which UI affordance asked, for the activity/progress record. */
     origin?: unknown;
   };
+  // Budget controls (#0764): an agent driver (a CLI/API caller carrying the
+  // local token) may not set an engineer/reviewer override outside the
+  // human-approved allowlist. A browser UI session never carries that token, so
+  // humans keep the full list; an empty allowlist restricts nothing.
+  if (requestUsedLocalCliToken(req, config.root, config.cacheDir)) {
+    const refusal = overrideRefusal(config, existing, {
+      cliOverride: typeof body.cliOverride === "string" ? body.cliOverride : undefined,
+      modelOverride: typeof body.modelOverride === "string" ? body.modelOverride : undefined,
+    });
+    if (refusal) {
+      return json(res, 403, {
+        error: refusal,
+        allowedPairs: (config.budget?.allowlist ?? []).flatMap((row) =>
+          row.models.map((model) => ({ cli: row.cli, model })),
+        ),
+      });
+    }
+  }
   // #0657: archiving has side-effect guards (live run/review/preview/close-out)
   // that a bare PATCH would skip. Force callers through the action routes.
   if (body.archived !== undefined || body.archiveDetail !== undefined) {
