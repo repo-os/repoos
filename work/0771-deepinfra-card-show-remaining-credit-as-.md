@@ -2,7 +2,7 @@
 id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T22:43:03Z"
+updated_at: "2026-10-13T22:50:19Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: c48c127993396e8ae7b11782477f97689d202097
 dev_error_count: 2
@@ -104,3 +104,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T22:39:55Z · message_delivered: 1 message(s)
 - 2026-10-13T22:41:12Z · body
 - 2026-10-13T22:43:03Z · body
+- 2026-10-13T22:50:19Z · status active→review
