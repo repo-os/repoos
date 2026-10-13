@@ -411,7 +411,7 @@ describe("DeepInfra usage routes (#0625) and the reverted Copilot row (#0629)", 
     await getModelProviderUsage(ctx as never, makeReq(), res as never, { param1: "deepinfra" });
     expect(capture.statusCode).toBe(200);
     expect(capture.body.kind).toBe("deepinfra");
-    expect(capture.body.checklist.availableUsd).toBe(20);
+    expect(capture.body.checklist.availableUsd).toBe(15);
     expect(capture.body.usage[0].totalUsd).toBe(5);
   });
 
