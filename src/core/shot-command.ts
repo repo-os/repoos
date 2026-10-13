@@ -167,11 +167,25 @@ export function collectShotFiles(dir: string, globs: string[]): string[] {
  * `worktreeRoot` is the task worktree; `outputDir` is a fresh, gitignored
  * directory the caller owns (created here). Returns a structured outcome —
  * never throws — so a capture problem is a visible note, not a failed handoff.
+ *
+ * `options` carries the per-entry selection a declared `## Shots` entry can
+ * add (#0769): `env` (passed through the environment only), `args` (appended to
+ * the command line as individually shell-quoted tokens, so a declared value is
+ * never interpolated) and `outputGlob` (a per-entry narrowing of which produced
+ * files are collected — falls back to the target's own `outputGlob`).
  */
 export function runShotCommand(
   target: ShotTargetConfig,
   worktreeRoot: string,
   outputDir: string,
+  options: {
+    /** Extra environment variables for the command; passed through only (no interpolation). */
+    env?: Record<string, string>;
+    /** Extra tokens appended to the command line, each shell-quoted as data. */
+    args?: string[];
+    /** Per-entry glob(s) narrowing the collected files; overrides the target's `outputGlob`. */
+    outputGlob?: string[];
+  } = {},
 ): ShotCommandOutcome {
   if (target.requires && !binaryAvailable(target.requires)) {
     return {
@@ -195,7 +209,11 @@ export function runShotCommand(
   const cwd = target.cwd ? join(worktreeRoot, target.cwd) : worktreeRoot;
   const timeout =
     target.timeoutMs && target.timeoutMs > 0 ? target.timeoutMs : DEFAULT_SHOT_TIMEOUT_MS;
-  const run = spawnSync("sh", ["-c", target.command], {
+  // A declared `args` list is appended as separate, shell-quoted tokens: the
+  // declared value is DATA on the command line, never re-parsed as shell.
+  const appended = (options.args ?? []).map((a) => shellQuote(a)).join(" ");
+  const command = appended ? `${target.command} ${appended}` : target.command;
+  const run = spawnSync("sh", ["-c", command], {
     cwd,
     encoding: "utf8",
     timeout,
@@ -205,6 +223,9 @@ export function runShotCommand(
       // The documented contract: a capture command writes into this directory.
       REPOOS_SHOT_DIR: outputDir,
       REPOOS_WORKTREE: worktreeRoot,
+      // Declared env, values passed through unchanged — a select variable lets
+      // the project's own command render only the one view under review (#0769).
+      ...(options.env ?? {}),
     },
   });
   const stdout = run.stdout ?? "";
@@ -228,12 +249,12 @@ export function runShotCommand(
       timedOut: true,
     };
   }
-  const files = collectShotFiles(outputDir, target.outputGlob ?? []);
+  const files = collectShotFiles(outputDir, options.outputGlob ?? target.outputGlob ?? []);
   if (run.status !== 0 && files.length === 0) {
     return {
       status: "failed",
       reason:
-        `capture command for "${target.name}" exited ${run.status ?? "without a status"}` +
+        `command for "${target.name}" exited ${run.status ?? "without a status"}` +
         (outputTail ? `\n${outputTail}` : ""),
       exitStatus: run.status,
       outputTail,
@@ -241,13 +262,12 @@ export function runShotCommand(
     };
   }
   if (files.length === 0) {
+    const globs = options.outputGlob ?? target.outputGlob;
     return {
       status: "skipped",
       reason:
         `capture command for "${target.name}" produced no image files` +
-        (target.outputGlob?.length
-          ? ` matching ${target.outputGlob.join(", ")}`
-          : " in REPOOS_SHOT_DIR") +
+        (globs?.length ? ` matching ${globs.join(", ")}` : " in REPOOS_SHOT_DIR") +
         (run.status !== 0 ? ` (exit ${run.status})` : "") +
         (outputTail ? `\n${outputTail}` : ""),
       exitStatus: run.status,
