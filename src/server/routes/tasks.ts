@@ -104,6 +104,7 @@ import {
 } from "../../core/shot-plan.js";
 import { resolveShotTargets } from "../../core/shot-targets.js";
 import { captureDeclaredShot } from "../shot-capture.js";
+import { runUiHandoffGate } from "../ui-handoff-gate.js";
 import { STATUSES } from "../../core/types.js";
 import {
   ACTIVITY_HEADING,
@@ -1103,6 +1104,61 @@ export const getTaskUiVerification: RouteHandler = (ctx, _req, res, params) => {
       stale: status === "stale",
     },
   });
+};
+
+const evidenceRefreshes = new Set<string>();
+
+/** Refresh handoff shots and verification against the reviewed worktree HEAD. */
+export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) => {
+  const { config, index, runner, reviews, closeOutLock, previews } = ctx;
+  const id = params.param1;
+  const task = index.getTask(id);
+  if (!task) return json(res, 404, { error: `Task #${id} not found` });
+  if (task.status !== "review") {
+    return json(res, 409, {
+      error: `Evidence can only be refreshed in review (#${id} is ${task.status})`,
+    });
+  }
+  if (!task.branch) return json(res, 409, { error: `Task #${id} has no branch to refresh` });
+  if (runner.isRunning(id) || reviews.isRunning(id)) {
+    return json(res, 409, { error: `Task #${id} has an agent run in progress` });
+  }
+  if (closeOutLock.closingOut())
+    return json(res, 409, { error: "A close-out is active; wait for it to finish" });
+  if (evidenceRefreshes.has(id))
+    return json(res, 409, { error: `Evidence refresh for #${id} is already running` });
+  const worktree = worktreePathForBranch(config.root, task.branch);
+  if (!worktree) return json(res, 409, { error: `Task #${id}'s worktree is unavailable` });
+  const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
+  if (dirty.status !== 0)
+    return json(res, 409, { error: "Could not verify the task worktree is clean" });
+  if (dirty.stdout.trim())
+    return json(res, 409, {
+      error: `Task #${id}'s worktree is dirty; commit or discard changes before refreshing evidence`,
+    });
+  evidenceRefreshes.add(id);
+  try {
+    const result = await runUiHandoffGate(
+      config,
+      task,
+      previews,
+      (_taskId, level, message) => {
+        ctx.logger.task(id, level, message);
+      },
+      { forceRefresh: true, recordTaskNotes: false },
+    );
+    const head = shortHeadOf(worktree);
+    const evidence = readUiHandoffGateEvidence(config, id);
+    return json(res, result.ok ? 200 : 422, {
+      ok: result.ok,
+      treeIdentity: head,
+      detail: result.detail,
+      issues: evidence?.issues ?? [],
+      shots: localShotStore(config, id).list(),
+    });
+  } finally {
+    evidenceRefreshes.delete(id);
+  }
 };
 
 /**

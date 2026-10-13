@@ -180,6 +180,7 @@ async function startTargetPreview(
 export function planAutoCapture(
   config: RepoOSConfig,
   task: Task,
+  opts: { forceRefresh?: boolean } = {},
 ):
   | { entries: CaptureEntry[]; errors: string[]; skips: string[]; collapsed: string[] }
   | { reason: string } {
@@ -190,7 +191,7 @@ export function planAutoCapture(
   const existing = localShotStore(config, task.id)
     .list()
     .filter((shot) => shot.origin !== "auto");
-  if (existing.length > 0) {
+  if (existing.length > 0 && !opts.forceRefresh) {
     return {
       reason:
         `${existing.length} shot${existing.length === 1 ? "" : "s"} already captured — ` +

@@ -359,6 +359,7 @@ import {
   uploadScreenshot,
   listTaskShots,
   getTaskUiVerification,
+  refreshTaskEvidence,
   getTaskShot,
   uploadTaskShot,
   deleteTaskShot,
@@ -3202,6 +3203,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/shots$/, listTaskShots);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/ui-verification$/, getTaskUiVerification);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/verify$/, refreshTaskEvidence);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/shots$/, uploadTaskShot);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/shots\/([^/]+)$/, getTaskShot);
   // Task drawer shot management (#0627): declare-and-capture via POST (the

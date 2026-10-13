@@ -40,6 +40,7 @@ import {
   cmdPreview,
   cmdDev,
   cmdReview,
+  cmdVerify,
   cmdRunners,
   cmdStart,
   cmdStats,
@@ -247,6 +248,11 @@ function main(): void {
       break;
     case "review":
       void cmdReview(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "verify":
+      void cmdVerify(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
       });
       break;

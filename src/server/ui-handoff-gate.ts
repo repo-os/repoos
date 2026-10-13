@@ -463,6 +463,9 @@ export interface UiHandoffGateDeps {
   syntheticIssues?: PageGateIssue[];
   /** Test hook: the tested tree identity, when git is unavailable. */
   sourceIdentity?: string;
+  /** Explicit evidence refresh: replace engineer captures and keep task Markdown untouched. */
+  forceRefresh?: boolean;
+  recordTaskNotes?: boolean;
 }
 
 /** A blocking issue from a required assertion that failed (#0734). */
@@ -502,7 +505,7 @@ export async function runUiHandoffGate(
     return { ok: true, skipped: true, detail: "ui verification not required for this task" };
   }
 
-  const plan = planAutoCapture(config, task);
+  const plan = planAutoCapture(config, task, { forceRefresh: deps.forceRefresh });
   if ("reason" in plan) {
     return { ok: true, skipped: true, detail: plan.reason };
   }
@@ -825,10 +828,12 @@ export async function runUiHandoffGate(
   if (allIssues.length > 0) {
     const detail = `ui verification failed (${allIssues.length} issue(s)): ${formatPageGateIssues(allIssues)}`;
     log(task.id, "error", detail);
-    try {
-      patchTaskFile(config, task.absPath, { note: detail.slice(0, 500) });
-    } catch {
-      /* best-effort */
+    if (deps.recordTaskNotes !== false) {
+      try {
+        patchTaskFile(config, task.absPath, { note: detail.slice(0, 500) });
+      } catch {
+        /* best-effort */
+      }
     }
     return { ok: false, detail, evidencePath: path };
   }
