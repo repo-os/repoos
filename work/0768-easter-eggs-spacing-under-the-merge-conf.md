@@ -1,17 +1,17 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-13T17:21:50.543Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:54743/api/tasks/9999/diff-stats (http://127.0.0.1:54743/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54743/api/tasks/9999/diff-stats)"
 id: "0768"
 title: "Easter eggs: spacing under the merge-conflict message on review cards"
 type: bug
-status: active
+status: ready
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-spacing-under-the-merge-conf
 created_at: "2026-10-13T14:30:17Z"
-updated_at: "2026-10-13T17:21:47Z"
+updated_at: "2026-10-13T22:52:50Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-13T17:21:50.543Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:54743/api/tasks/9999/diff-stats (http://127.0.0.1:54743/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54743/api/tasks/9999/diff-stats)"
 review_rounds: 1
 review_passes: 1
 ---
@@ -39,9 +39,9 @@ Start from the task card component that renders 'Merge conflict' and the allowli
 "route": "/work?status=review",
 "highlight": ".tc-done-error",
 "steps": [
-  {
-    "waitFor": ".tc-done-error"
-  }
+{
+  "waitFor": ".tc-done-error"
+}
 ],
 "state": "card:doneError"
 },
@@ -51,9 +51,9 @@ Start from the task card component that renders 'Merge conflict' and the allowli
 "route": "/agents?tab=budget-controls",
 "highlight": ".budget-row",
 "steps": [
-  {
-    "waitFor": ".budget-row"
-  }
+{
+  "waitFor": ".budget-row"
+}
 ]
 }
 ]
@@ -74,4 +74,4 @@ Start from the task card component that renders 'Merge conflict' and the allowli
 - 2026-10-13T17:13:44Z · status review→active
 - 2026-10-13T17:14:39Z · body: section Shots
 - 2026-10-13T17:21:47Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:54743/api/tasks/9999/diff-stats (http://127.0.0.1:54743/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54743/api/tasks/9999/diff-stats)
-
+- 2026-10-13T22:52:50Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
