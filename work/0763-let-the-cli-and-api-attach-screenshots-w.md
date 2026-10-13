@@ -55,4 +55,4 @@ Reuse src/server/attachments.ts (saveScreenshot, sanitizeName, SCREENSHOTS_HEADI
 - 2026-10-13T15:07:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-13T15:33:57Z · body
 - 2026-10-13T15:41:11Z · status active→review
-
+- 2026-10-13T15:41:11Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
