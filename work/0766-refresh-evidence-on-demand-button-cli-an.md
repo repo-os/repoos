@@ -2,7 +2,7 @@
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, cli, ui]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/refresh-evidence-on-demand-button-cli-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T16:35:58Z"
+updated_at: "2026-10-13T16:36:44Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -62,3 +62,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T16:34:40Z · body
 - 2026-10-13T16:35:16Z · body
 - 2026-10-13T16:35:58Z · body
+- 2026-10-13T16:36:44Z · status active→review
