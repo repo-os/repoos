@@ -11,7 +11,7 @@ branch: feat/add-solarized-theme-variants
 cli_override: claude code
 model_override: sonnet
 created_at: "2026-10-12T11:10:52Z"
-updated_at: "2026-10-13T02:03:03Z"
+updated_at: "2026-10-13T02:03:24Z"
 last_check_failure: "repoos check at 2026-10-12T14:19:52.155Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 458a36d9a44312848167b6a10754b0c8495ec640
@@ -49,23 +49,35 @@ My friend asked me to add a solarised theme to repoos, can you do it? see how th
 ```json
 [
 {
-"label": "Solarized dark theme selector",
-"target": "default",
-"route": "/repo/settings?tab=theme",
-"highlight": "[data-ui-theme=\"solarized\"]",
-"state": "closeOut:active"
+  "label": "Solarized selected in Themes list (dark)",
+  "target": "default",
+  "route": "/settings",
+  "highlight": ".theme-row.current",
+  "steps": [
+    {
+      "click": ".theme-row[aria-label=\"Use the Solarized theme\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
 },
 {
-"label": "Solarized light theme selector",
-"target": "default",
-"route": "/repo/settings?tab=theme",
-"highlight": "[data-ui-theme=\"solarized\"]",
-"steps": [
-{
-"click": "button[data-theme=\"light\"]"
-}
-],
-"state": "closeOut:active"
+  "label": "Solarized light appearance",
+  "target": "default",
+  "route": "/settings",
+  "highlight": ".theme-row.current",
+  "steps": [
+    {
+      "click": ".theme-row[aria-label=\"Use the Solarized theme\"]"
+    },
+    {
+      "click": "button.theme-toggle"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
 }
 ]
 ```
@@ -157,3 +169,4 @@ My friend asked me to add a solarised theme to repoos, can you do it? see how th
 - 2026-10-13T02:02:57Z · note: ui verification failed (2 issue(s)): [route] Solarized dark theme selector: declared route /repo/settings?tab=theme but the browser landed on /?tab=theme&shotState=closeOut:active (login or redirect?) (captured http://127.0.0.1:49612/?tab=theme&shotState=closeOut:active) (http://127.0.0.1:49612/?tab=theme&shotState=closeOut:active); [route] Solarized light theme selector: declared route /repo/settings?tab=theme but the browser landed on /?tab=theme&shotState=closeOut:active (login or redirect?)
 - 2026-10-13T02:02:58Z · handoff failed · ui-review handoff failed at verify · ui verification failed (2 issue(s)): [route] Solarized dark theme selector: declared route /repo/settings?tab=theme but the browser landed on /?tab=theme&shotState=closeOut:active (login or redirect?) (captured http://127.0.0.1:49612/?tab=theme&shotState=closeOut:active) (http://127.0.0.1:49612/?tab=theme&shotState=closeOut:active); [route] Solarized light theme selector: declared route /repo/settings?tab=theme but the browser landed on /?tab=theme&shotState=closeOut:active (login or redirect?) (captured http://127.0.0.1:49612/?tab=theme&shotState=closeOut:active) (http://127.0.0.1:49612/?tab=theme&shotState=closeOut:active)
 - 2026-10-13T02:03:03Z · message_expired: not delivered within timeout
+- 2026-10-13T02:03:24Z · body: section Shots
