@@ -72,3 +72,4 @@ Start from src/core/shot-plan.ts and the shot capture path used at handoff (see 
 - 2026-10-13T07:37:01Z · note: review pass 1: needs some work
 - 2026-10-13T07:37:01Z · status review→active
 - 2026-10-13T07:42:03Z · message_queued at 2026-10-13T07:42:03.602Z
+- 2026-10-13T07:42:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
