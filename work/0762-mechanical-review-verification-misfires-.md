@@ -2,7 +2,7 @@
 id: "0762"
 title: "Mechanical review verification misfires on non-RepoOS repos: guard-test check is JS/TS-only and triggers on any repoos.toml addition"
 type: bug
-status: active
+status: review
 needs_merge: true
 priority: p2
 area: [core, server]
@@ -12,7 +12,7 @@ branch: feat/mechanical-review-verification-misfires-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-13T08:51:23Z"
-updated_at: "2026-10-13T15:27:12Z"
+updated_at: "2026-10-13T15:34:02Z"
 review_passes: 3
 dev_error_count: 1
 ---
@@ -100,3 +100,4 @@ Start from review-verification.ts guardsMateriallyChangedFromDiff and evaluateGu
 - 2026-10-13T15:23:59Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-13T15:26:21Z · body
 - 2026-10-13T15:27:12Z · body
+- 2026-10-13T15:34:02Z · status active→review
