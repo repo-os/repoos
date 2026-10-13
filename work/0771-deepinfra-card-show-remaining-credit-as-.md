@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-13T23:22:53.274Z: repoos check failed: ◆ Check plan"
 id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
@@ -18,7 +16,9 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T23:22:50Z"
+updated_at: "2026-10-13T23:22:56Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-13T23:22:53.274Z: repoos check failed: ◆ Check plan"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 2
@@ -159,4 +159,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T23:05:48Z · status active→review
 - 2026-10-13T23:22:50Z · note: review pass 4: failed — no usable report
 - 2026-10-13T23:22:50Z · needs_input
-
+- 2026-10-13T23:22:56Z · note: waitFor .mp-row:nth-of-type(5) .mp-stat-value: waitFor: Timeout 5000ms exceeded. on /agents?tab=providers
