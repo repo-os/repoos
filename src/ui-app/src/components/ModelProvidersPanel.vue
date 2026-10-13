@@ -218,7 +218,7 @@ onMounted(() => {
     <div v-if="loadError" class="mp-error">{{ loadError }}</div>
     <div v-else-if="loading && !rows.length" class="agent-empty">Loading providers…</div>
 
-    <div v-for="row in rows" :key="row.id" class="mp-row">
+    <div v-for="row in rows" :key="row.id" class="mp-row" :data-provider-id="row.id">
       <div class="mp-row-head">
         <div class="mp-row-title">
           <span class="agent-name">{{ row.label }}</span>
