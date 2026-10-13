@@ -2098,10 +2098,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           );
         }
         return (
-          !captured.skipped &&
-          !captured.error &&
-          captured.gateOk &&
-          captured.headIdentity === head
+          !captured.skipped && !captured.error && captured.gateOk && captured.headIdentity === head
         );
       } finally {
         rootLock.release(task.id);

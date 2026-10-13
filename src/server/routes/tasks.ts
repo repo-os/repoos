@@ -1302,8 +1302,7 @@ export async function guardedForceRefreshCapture(
       gateOk: false,
       headIdentity,
       restored: guarded.restored,
-      error:
-        `evidence sourceIdentity (${headIdentity ?? "unknown"}) does not match post-capture HEAD (${guarded.headAfter})`,
+      error: `evidence sourceIdentity (${headIdentity ?? "unknown"}) does not match post-capture HEAD (${guarded.headAfter})`,
     };
   }
   return {
@@ -1363,9 +1362,15 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
   // it was captured from, and no concurrent commits slip in.
   evidenceRefreshes.add(id);
   try {
-    const captured = await guardedForceRefreshCapture(config, task, worktree, previews, (taskId, level, message) => {
-      ctx.logger.task(taskId, level, message);
-    });
+    const captured = await guardedForceRefreshCapture(
+      config,
+      task,
+      worktree,
+      previews,
+      (taskId, level, message) => {
+        ctx.logger.task(taskId, level, message);
+      },
+    );
     if (captured.skipped) {
       return json(res, 409, {
         error: `Evidence was not refreshed for #${id}: ${captured.detail ?? "verification was skipped"}`,
