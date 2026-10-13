@@ -66,10 +66,22 @@ export interface CapturedShotFile {
   data: Buffer;
 }
 
+/** What running the capture command did, recorded for provenance (#0765). */
+export interface ShotCommandRunInfo {
+  /** Process exit status; null when the command never ran or was killed by a timeout. */
+  exitStatus: number | null;
+  /** Tail of the command's stdout+stderr, for provenance. Empty when nothing ran. */
+  outputTail: string;
+  /** True when the command was killed for exceeding its timeout. */
+  timedOut: boolean;
+}
+
 export type ShotCommandOutcome =
-  | { status: "captured"; files: CapturedShotFile[]; warnings: string[] }
-  | { status: "skipped"; reason: string }
-  | { status: "failed"; reason: string };
+  | ({ status: "captured"; files: CapturedShotFile[]; warnings: string[] } & ShotCommandRunInfo)
+  | ({ status: "skipped"; reason: string } & ShotCommandRunInfo)
+  | ({ status: "failed"; reason: string } & ShotCommandRunInfo);
+
+const NO_RUN: ShotCommandRunInfo = { exitStatus: null, outputTail: "", timedOut: false };
 
 /**
  * True when `binary` resolves to something executable on `PATH` (or is an
@@ -165,6 +177,7 @@ export function runShotCommand(
     return {
       status: "skipped",
       reason: `"${target.requires}" is not installed — its capture target "${target.name}" was skipped`,
+      ...NO_RUN,
     };
   }
   // Fresh output dir every run: a stale file from a previous capture must never
@@ -176,6 +189,7 @@ export function runShotCommand(
     return {
       status: "failed",
       reason: `could not prepare the shot output directory: ${(err as Error).message}`,
+      ...NO_RUN,
     };
   }
   const cwd = target.cwd ? join(worktreeRoot, target.cwd) : worktreeRoot;
@@ -195,6 +209,7 @@ export function runShotCommand(
   });
   const stdout = run.stdout ?? "";
   const stderr = run.stderr ?? (run.error ? `${run.error.message}\n` : "");
+  const outputTail = tailLines(`${stdout}\n${stderr}`);
   // A timeout makes `spawnSync` set `error.code === "ETIMEDOUT"` (or signal it
   // killed the child with) and no status. Say so plainly rather than reporting a
   // generic non-zero exit.
@@ -207,21 +222,25 @@ export function runShotCommand(
       status: "failed",
       reason:
         `capture command for "${target.name}" timed out after ${timeout}ms` +
-        (tailLines(`${stdout}\n${stderr}`) ? `\n${tailLines(`${stdout}\n${stderr}`)}` : ""),
+        (outputTail ? `\n${outputTail}` : ""),
+      exitStatus: run.status,
+      outputTail,
+      timedOut: true,
     };
   }
   const files = collectShotFiles(outputDir, target.outputGlob ?? []);
   if (run.status !== 0 && files.length === 0) {
-    const tail = tailLines(`${stdout}\n${stderr}`);
     return {
       status: "failed",
       reason:
         `capture command for "${target.name}" exited ${run.status ?? "without a status"}` +
-        (tail ? `\n${tail}` : ""),
+        (outputTail ? `\n${outputTail}` : ""),
+      exitStatus: run.status,
+      outputTail,
+      timedOut: false,
     };
   }
   if (files.length === 0) {
-    const tail = tailLines(`${stdout}\n${stderr}`);
     return {
       status: "skipped",
       reason:
@@ -230,7 +249,10 @@ export function runShotCommand(
           ? ` matching ${target.outputGlob.join(", ")}`
           : " in REPOOS_SHOT_DIR") +
         (run.status !== 0 ? ` (exit ${run.status})` : "") +
-        (tail ? `\n${tail}` : ""),
+        (outputTail ? `\n${outputTail}` : ""),
+      exitStatus: run.status,
+      outputTail,
+      timedOut: false,
     };
   }
   const warnings: string[] = [];
@@ -252,7 +274,20 @@ export function runShotCommand(
     }
   }
   if (captured.length === 0) {
-    return { status: "failed", reason: `no captured file under ${outputDir} could be read` };
+    return {
+      status: "failed",
+      reason: `no captured file under ${outputDir} could be read`,
+      exitStatus: run.status,
+      outputTail,
+      timedOut: false,
+    };
   }
-  return { status: "captured", files: captured, warnings };
+  return {
+    status: "captured",
+    files: captured,
+    warnings,
+    exitStatus: run.status,
+    outputTail,
+    timedOut: false,
+  };
 }

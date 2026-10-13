@@ -9,6 +9,7 @@ import {
   handoffTreeStatus,
   readUiHandoffGateEvidence,
   runUiHandoffGate,
+  taskUiVerificationMode,
   type UiHandoffGateDeps,
 } from "../../server/ui-handoff-gate.js";
 import * as shotCapture from "../../server/shot-capture.js";
@@ -704,5 +705,106 @@ describe("handoff tree identity (#0755)", () => {
     expect(cap?.targetWarnings?.some((w) => w.includes("loading state detected"))).toBe(true);
     expect(cap?.targetWarnings?.some((w) => w.includes('[data-task-id="9999"]'))).toBe(true);
     vi.restoreAllMocks();
+  });
+});
+
+describe("command-target capture evidence (#0765)", () => {
+  const temps: string[] = [];
+  afterEach(() => {
+    resetPreviewVerificationSlot();
+    for (const t of temps.splice(0)) rmSync(t, { recursive: true, force: true });
+  });
+
+  function commandRepo() {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-cmd-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      workDir: "work",
+      uiVerification: { enabled: true },
+      shot: {
+        targets: [
+          {
+            name: "mac",
+            areas: ["mac"],
+            paths: [],
+            command: 'printf PNG > "$REPOOS_SHOT_DIR/main.png"',
+          },
+        ],
+      },
+    } as unknown as RepoOSConfig;
+    const body = [
+      "## Shots",
+      "",
+      "```json",
+      '[{"target":"mac","label":"Menu bar"}]',
+      "```",
+      "",
+    ].join("\n");
+    const task = {
+      id: "0765cmd",
+      title: "t",
+      path: "work/0765cmd.md",
+      absPath: join(root, "work/0765cmd.md"),
+      status: "active",
+      branch: "feat/x",
+      area: "mac",
+      body,
+    } as Task;
+    return { root, config, task };
+  }
+
+  it("records command provenance and no browser console for a command-only task", async () => {
+    const { config, task } = commandRepo();
+    const result = await runUiHandoffGate(config, task, undefined, () => {}, {
+      sourceIdentity: "abc1234",
+    });
+    expect(result.ok).toBe(true);
+    expect(result.skipped).toBeUndefined();
+    expect(result.detail).toContain("command target");
+    const evidence = readUiHandoffGateEvidence(config, task.id);
+    // #0765: the tree identity is recorded so stale-capture detection applies.
+    expect(evidence?.sourceIdentity).toBe("abc1234");
+    // No browser console section: no issues, no web capture details.
+    expect(evidence?.issues).toEqual([]);
+    expect(evidence?.captureDetails ?? []).toEqual([]);
+    const cmd = evidence?.commandCaptures?.[0];
+    expect(cmd).toMatchObject({
+      target: "mac",
+      label: "Menu bar",
+      status: "captured",
+      exitStatus: 0,
+    });
+    expect(cmd?.command).toContain("REPOOS_SHOT_DIR");
+    expect(cmd?.shots).toHaveLength(1);
+    expect(cmd?.shots[0]?.size).toBeGreaterThan(0);
+  });
+
+  it("classifies browser, command, and none", () => {
+    const { config, task } = commandRepo();
+    expect(taskUiVerificationMode(config, task)).toBe("command");
+
+    // A web declaration resolves the web target.
+    const webConfig = {
+      root: config.root,
+      cacheDir: ".repoos",
+      workDir: "work",
+      uiVerification: { enabled: true },
+      preview: {
+        targets: [{ name: "web", areas: ["web"], paths: [], command: "echo" }],
+      },
+    } as unknown as RepoOSConfig;
+    const webTask = {
+      ...task,
+      id: "0765web",
+      area: "web",
+      body: '## Shots\n\n```json\n[{"target":"web","route":"/","label":"Home"}]\n```\n',
+    } as Task;
+    expect(taskUiVerificationMode(webConfig, webTask)).toBe("browser");
+
+    const noneTask = { ...task, id: "0765none", body: "## Problem\n\nprose only" } as Task;
+    expect(taskUiVerificationMode(config, noneTask)).toBe("none");
   });
 });
