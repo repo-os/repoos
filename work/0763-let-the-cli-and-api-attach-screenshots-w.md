@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-13T15:42:33Z"
+review_passes: 1
 id: "0763"
 title: "Let the CLI and API attach screenshots when an agent creates or updates a task, and tell agents to do it"
 type: feature
@@ -10,7 +12,6 @@ created_by: njachowski@gmail.com
 branch: feat/let-the-cli-and-api-attach-screenshots-w
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-13T09:13:55Z"
-updated_at: "2026-10-13T15:42:33Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -57,3 +58,4 @@ Reuse src/server/attachments.ts (saveScreenshot, sanitizeName, SCREENSHOTS_HEADI
 - 2026-10-13T15:41:11Z · status active→review
 - 2026-10-13T15:41:11Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-13T15:42:33Z · note: review pass 1: good to go
+
