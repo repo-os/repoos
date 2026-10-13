@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T22:41:12Z"
+updated_at: "2026-10-13T22:43:03Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: c48c127993396e8ae7b11782477f97689d202097
 dev_error_count: 2
@@ -103,3 +103,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T22:39:15Z · handoff failed · remote validation failed: test failure: tests/model-providers-routes.test.ts > DeepInfra usage routes (#0625) and the reverted Copilot row (#0629) > returns parsed DeepInfra spend with cents converted to dollars on bee — fix it in the feature branch and re-run the gate
 - 2026-10-13T22:39:55Z · message_delivered: 1 message(s)
 - 2026-10-13T22:41:12Z · body
+- 2026-10-13T22:43:03Z · body
