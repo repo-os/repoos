@@ -127,7 +127,7 @@ export function parseShotArgs(args: string[]): CmdShotOptions {
         opts.error = `--env expects KEY=VALUE with a valid variable name, got "${v}"`;
         return opts;
       }
-      opts.env = { ...(opts.env ?? {}), [key]: v.slice(eq + 1) };
+      opts.env = { ...opts.env, [key]: v.slice(eq + 1) };
     } else if (a === "--glob") {
       const v = value(a);
       if (v === undefined) return opts;

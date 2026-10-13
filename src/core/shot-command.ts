@@ -254,7 +254,7 @@ export function runShotCommand(
     return {
       status: "failed",
       reason:
-        `command for "${target.name}" exited ${run.status ?? "without a status"}` +
+        `capture command for "${target.name}" exited ${run.status ?? "without a status"}` +
         (outputTail ? `\n${outputTail}` : ""),
       exitStatus: run.status,
       outputTail,
