@@ -133,3 +133,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T22:06:56Z · message_queued at 2026-10-13T22:06:56.510Z
 - 2026-10-13T22:10:25Z · status active→review
 - 2026-10-13T22:10:25Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (e779508d7) during finalization (#0734)
+- 2026-10-13T22:10:25Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (e779508d7) during finalization (#0734)
