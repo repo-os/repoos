@@ -709,4 +709,4 @@ label = "Main UI (HMR, needs repoos serve on 7171)"
 healthCheck.url = "http://127.0.0.1:5175/"
 [[budget.allowlist]]
 cli = "opencode"
-models = ["opencode-go/deepseek-v4.1-flash"]
+models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash"]
