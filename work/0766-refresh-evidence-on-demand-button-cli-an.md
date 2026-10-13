@@ -3,6 +3,9 @@ id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: [core, server, cli, ui]
 assigned_to: ai
@@ -167,3 +170,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T22:46:03Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7e06cd672) during finalization (#0734)
 - 2026-10-13T22:46:04Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7e06cd672) during finalization (#0734)
 - 2026-10-13T22:47:44Z · note: review pass 13: needs some work
+- 2026-10-13T22:47:44Z · needs_input
