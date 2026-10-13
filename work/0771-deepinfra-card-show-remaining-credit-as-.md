@@ -3,6 +3,9 @@ id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -13,7 +16,7 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T23:52:40Z"
+updated_at: "2026-10-13T23:52:41Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-10-13T23:22:53.274Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -180,3 +183,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T23:50:25Z · body
 - 2026-10-13T23:51:03Z · status active→review
 - 2026-10-13T23:52:40Z · note: review pass 7: needs some work
+- 2026-10-13T23:52:41Z · needs_input
