@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-13T17:21:50.543Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:54743/api/tasks/9999/diff-stats (http://127.0.0.1:54743/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54743/api/tasks/9999/diff-stats)"
 id: "0768"
 title: "Easter eggs: spacing under the merge-conflict message on review cards"
 type: bug
@@ -72,3 +74,4 @@ Start from the task card component that renders 'Merge conflict' and the allowli
 - 2026-10-13T17:13:44Z · status review→active
 - 2026-10-13T17:14:39Z · body: section Shots
 - 2026-10-13T17:21:47Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:54743/api/tasks/9999/diff-stats (http://127.0.0.1:54743/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54743/api/tasks/9999/diff-stats)
+
