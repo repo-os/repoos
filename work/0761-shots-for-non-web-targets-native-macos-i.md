@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 61093
-last_close_out_gate_at: "2026-10-13T07:54:29.128Z"
 id: "0761"
 title: "Shots for non-web targets: native macOS, iOS/Android and desktop apps (command-based capture)"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, server, cli]
+merged_commit: 252dcd01c34786777d5bda57e93ea6f84eec2aa4
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/shots-for-non-web-targets-native-macos-i
 created_at: "2026-10-13T06:23:05Z"
-updated_at: "2026-10-13T07:54:29Z"
+updated_at: "2026-10-13T07:54:48Z"
+last_close_out_gate_ms: 61093
+last_close_out_gate_at: "2026-10-13T07:54:29.128Z"
 review_passes: 2
 review_rounds: 1
 ---
@@ -81,4 +82,4 @@ Start from src/core/shot-plan.ts and the shot capture path used at handoff (see 
 - 2026-10-13T07:51:51Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (252dcd01c) during finalization (#0734)
 - 2026-10-13T07:53:15Z · note: review pass 2: good to go
 - 2026-10-13T07:54:29Z · close-out gate completed in 61s
-
+- 2026-10-13T07:54:48Z · status review→done, release:success
