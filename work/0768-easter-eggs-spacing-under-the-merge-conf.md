@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-spacing-under-the-merge-conf
 created_at: "2026-10-13T14:30:17Z"
-updated_at: "2026-10-13T17:13:44Z"
+updated_at: "2026-10-13T17:14:39Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -32,17 +32,27 @@ Start from the task card component that renders 'Merge conflict' and the allowli
 ```json
 [
 {
-"label": "Work card: merge-conflict message spacing above the action row",
-"target": "default",
-"route": "/",
-"highlight": ".tc-done-error",
-"state": "card:doneError"
+  "label": "Work board: merge-conflict message spacing above the action row",
+  "target": "default",
+  "route": "/work?status=review",
+  "highlight": ".tc-done-error",
+  "steps": [
+    {
+      "waitFor": ".tc-done-error"
+    }
+  ],
+  "state": "card:doneError"
 },
 {
-"label": "Agents Budget Controls: Remove agent sits in each row upper-right",
-"target": "default",
-"route": "/agents?tab=budget-controls",
-"highlight": ".budget-row"
+  "label": "Agents Budget Controls: Remove agent sits in each row upper-right",
+  "target": "default",
+  "route": "/agents?tab=budget-controls",
+  "highlight": ".budget-row",
+  "steps": [
+    {
+      "waitFor": ".budget-row"
+    }
+  ]
 }
 ]
 ```
@@ -60,3 +70,4 @@ Start from the task card component that renders 'Merge conflict' and the allowli
 - 2026-10-13T17:12:48Z · note: highlight .tc-done-error matched nothing on /
 - 2026-10-13T17:13:44Z · note: review pass 1: needs some work
 - 2026-10-13T17:13:44Z · status review→active
+- 2026-10-13T17:14:39Z · body: section Shots
