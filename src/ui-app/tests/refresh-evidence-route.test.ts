@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { execSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { refreshTaskEvidence } from "../../server/routes/tasks.js";
+import { readUiHandoffGateEvidence, handoffTreeStatus } from "../../server/ui-handoff-gate.js";
 import type { RouteContext } from "../../server/routes/types.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 
@@ -37,7 +38,7 @@ function context(task: Task, root: string, overrides: Record<string, unknown> = 
   } as unknown as RouteContext;
 }
 
-function makeTask(root: string, status: Task["status"] = "review"): Task {
+function makeTask(root: string, status: Task["status"] = "review", body = ""): Task {
   const branch = execSync(`git -C ${root} branch --show-current`, { encoding: "utf8" }).trim();
   return {
     id: "0766",
@@ -47,7 +48,7 @@ function makeTask(root: string, status: Task["status"] = "review"): Task {
     absPath: join(root, "work/0766.md"),
     path: "work/0766.md",
     area: "web",
-    body: "",
+    body,
   } as Task;
 }
 
@@ -126,5 +127,126 @@ describe("POST /api/tasks/:id/verify guards", () => {
       status: 409,
       body: { error: expect.stringContaining("Evidence was not refreshed") },
     });
+  });
+});
+
+/**
+ * Route-level capture flows (#0766 review pass 5): these run the REAL gate with
+ * a `[[shot.targets]]` command target — no browser involved — so a completed
+ * refresh (not just the guards) is verified identity-by-identity.
+ */
+describe("POST /api/tasks/:id/verify capture flows", () => {
+  // Everything the capture itself writes lives in gitignored paths
+  // (`work/.attachments/` shots, `.repoos/` evidence), so the route's
+  // worktree-clean guarantee holds for this temp repo the way it does in the
+  // real one.
+  const RUN_COMMAND = 'printf x > "$REPOOS_SHOT_DIR/one.png"';
+  // The declared `## Shots` the plan resolves from: the temp repo has an empty
+  // diff against its base, so the command target must be declared explicitly.
+  const DECLARED_BODY = '## Shots\n\n```json\n[{"target": "cmd", "label": "Render one"}]\n```\n';
+
+  /** A repo with one tracked file and the shot/evidence paths ignored. */
+  function commandRepo(command: string): {
+    root: string;
+    shortHead: string;
+    config: RepoOSConfig;
+    task: Task;
+  } {
+    const root = gitRoot();
+    writeFileSync(join(root, "tracked.txt"), "clean\n");
+    execSync(`git -C ${root} add tracked.txt`, { stdio: "ignore" });
+    writeFileSync(join(root, ".gitignore"), ".repoos/\nwork/.attachments/\n");
+    execSync(`git -C ${root} add tracked.txt .gitignore`, { stdio: "ignore" });
+    execSync(`git -C ${root} commit -q -m tracked`, { stdio: "ignore" });
+    const shortHead = execSync(`git -C ${root} rev-parse --short HEAD`, {
+      encoding: "utf8",
+    }).trim();
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      shot: { targets: [{ name: "cmd", areas: ["web"], command }] },
+    } as RepoOSConfig;
+    return { root, shortHead, config, task: makeTask(root, "review", DECLARED_BODY) };
+  }
+
+  function porcelainOf(root: string): string {
+    return execSync(`git -C ${root} status --porcelain`, { encoding: "utf8" }).trim();
+  }
+
+  it("refreshes command-target evidence bound to the current HEAD (success path)", async () => {
+    const { root, shortHead, config, task } = commandRepo(RUN_COMMAND);
+    const res = response();
+    await refreshTaskEvidence(context(task, root, { config }), {} as never, res as never, {
+      param1: task.id,
+    });
+    const { status, body } = res.result() as {
+      status: number;
+      body: {
+        ok?: boolean;
+        headIdentity?: string;
+        detail?: string;
+        shots?: Array<{ target?: string; sourceIdentity?: string }>;
+      };
+    };
+    // The refresh succeeded and the evidence carries the CURRENT tree identity.
+    expect(status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.headIdentity).toBe(shortHead);
+    expect(body.detail).toContain("command target");
+    expect(body.shots).toHaveLength(1);
+    expect(body.shots?.[0]).toMatchObject({
+      target: "cmd",
+      sourceIdentity: shortHead,
+    });
+    // The verification record itself reports the capture as CURRENT for the
+    // reviewed HEAD — the exact check the reviewer's gate makes.
+    const evidence = readUiHandoffGateEvidence(config, "0766");
+    expect(evidence?.sourceIdentity).toBe(shortHead);
+    expect(handoffTreeStatus(evidence, shortHead)).toBe("current");
+    // The capture wrote nowhere tracked.
+    expect(porcelainOf(root)).toBe("");
+  });
+
+  it("restores the worktree when a command target modifies tracked files", async () => {
+    const { root, config, task } = commandRepo(
+      RUN_COMMAND + "; echo dirt >> tracked.txt; printf stray > stray.txt",
+    );
+    const res = response();
+    await refreshTaskEvidence(context(task, root, { config }), {} as never, res as never, {
+      param1: task.id,
+    });
+    const { status, body } = res.result() as { status: number; body: { error?: string } };
+    // Fail and name every file the command touched.
+    expect(status).toBe(409);
+    expect(body.error).toContain("tracked.txt");
+    expect(body.error).toContain("stray.txt");
+    // Never leave changes behind: tracked file restored, untracked capture
+    // artifact gone, worktree porcelain-clean again.
+    expect(readFileSync(join(root, "tracked.txt"), "utf8")).toBe("clean\n");
+    expect(porcelainOf(root)).toBe("");
+  });
+
+  it("fails without restoring when HEAD moves during the capture", async () => {
+    // The command commits mid-capture, so the evidence was produced for a tree
+    // that is no longer HEAD when the route re-checks.
+    const { root, shortHead, config, task } = commandRepo(
+      RUN_COMMAND + "; git commit --allow-empty -q -m moved",
+    );
+    const res = response();
+    await refreshTaskEvidence(context(task, root, { config }), {} as never, res as never, {
+      param1: task.id,
+    });
+    const { status, body } = res.result() as { status: number; body: { error?: string } };
+    expect(status).toBe(409);
+    expect(body.error).toContain("HEAD changed during the capture");
+    expect(body.error).toContain(shortHead);
+    // The concurrent commit is left exactly as its writer left it: the failed
+    // refresh must never reset a HEAD someone else moved.
+    const headAfter = execSync(`git -C ${root} rev-parse --short HEAD`, {
+      encoding: "utf8",
+    }).trim();
+    expect(headAfter).not.toBe(shortHead);
+    expect(porcelainOf(root)).toBe("");
   });
 });
