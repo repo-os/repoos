@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/let-the-cli-and-api-attach-screenshots-w
 created_at: "2026-10-13T09:13:55Z"
-updated_at: "2026-10-13T10:39:10Z"
+updated_at: "2026-10-13T10:44:37Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -42,3 +42,4 @@ Reuse src/server/attachments.ts (saveScreenshot, sanitizeName, SCREENSHOTS_HEADI
 - 2026-10-13T10:31:13Z · message_delivered: 1 message(s)
 - 2026-10-13T10:39:10Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-13T10:39:10Z · note: handoff requested (cli)
+- 2026-10-13T10:44:37Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
