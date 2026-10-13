@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 1debde988b114085264908e0f7d84bdc2c964e66
 id: "0763"
 title: "Let the CLI and API attach screenshots when an agent creates or updates a task, and tell agents to do it"
 type: feature
@@ -10,8 +8,12 @@ area: [cli, server, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/let-the-cli-and-api-attach-screenshots-w
+cli_override: claude code
+model_override: sonnet
 created_at: "2026-10-13T09:13:55Z"
-updated_at: "2026-10-13T10:44:37Z"
+updated_at: "2026-10-13T10:52:50Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 1debde988b114085264908e0f7d84bdc2c964e66
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -45,4 +47,4 @@ Reuse src/server/attachments.ts (saveScreenshot, sanitizeName, SCREENSHOTS_HEADI
 - 2026-10-13T10:39:10Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-13T10:39:10Z · note: handoff requested (cli)
 - 2026-10-13T10:44:37Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
-
+- 2026-10-13T10:52:50Z · cli_override, model_override
