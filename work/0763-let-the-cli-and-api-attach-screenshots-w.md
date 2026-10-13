@@ -2,7 +2,7 @@
 id: "0763"
 title: "Let the CLI and API attach screenshots when an agent creates or updates a task, and tell agents to do it"
 type: feature
-status: review
+status: active
 priority: p2
 area: [cli, server, docs]
 assigned_to: ai
