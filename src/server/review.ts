@@ -79,6 +79,7 @@ import {
 import { getCheckStore } from "../core/check-store.js";
 import type { CommandCaptureEvidence } from "./shot-capture.js";
 import { extractTaskProofCommands } from "../core/task-proof-commands.js";
+import { isEvidenceRefreshActive } from "./evidence-refresh-lock.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
 import {
   gatherReviewVerification,
@@ -764,6 +765,9 @@ export class ReviewManager {
    * start.
    */
   canRun(task: Task): { ok: boolean; reason?: string } {
+    if (isEvidenceRefreshActive(task.id)) {
+      return { ok: false, reason: "evidence refresh is in progress for this task" };
+    }
     if (this.runs.has(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }
@@ -806,6 +810,9 @@ export class ReviewManager {
    * again"), never a continuation of the prior one (0110).
    */
   async run(task: Task): Promise<ReviewRunResult> {
+    if (isEvidenceRefreshActive(task.id)) {
+      return { ok: false, reason: "evidence refresh is in progress for this task" };
+    }
     if (this.isRunning(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }

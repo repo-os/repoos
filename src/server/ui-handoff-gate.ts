@@ -37,6 +37,7 @@ import { provenanceCaption, parseShotPlan, shotPlanFingerprint } from "../core/s
 import type { RepoOSConfig, Task } from "../core/types.js";
 import {
   addDetachedWorktree,
+  linkInheritedEnv,
   mainCheckoutRoot,
   removeDetachedWorktree,
   runGit,
@@ -855,6 +856,7 @@ export async function runUiHandoffGate(
     }
     detachedCommandPath = detached.path;
     commandRoot = detached.path;
+    linkInheritedEnv(mainRoot, detached.path);
   }
   if (commandEntries.length > 0) {
     try {
