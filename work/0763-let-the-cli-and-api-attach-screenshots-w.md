@@ -2,17 +2,19 @@
 id: "0763"
 title: "Let the CLI and API attach screenshots when an agent creates or updates a task, and tell agents to do it"
 type: feature
-status: active
+status: done
 priority: p2
 area: [cli, server, docs]
+merged_commit: fca7b485451e84ba5345d3cef4d58ef31252a9a6
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/let-the-cli-and-api-attach-screenshots-w
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-13T09:13:55Z"
-updated_at: "2026-10-13T15:07:40Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 1debde988b114085264908e0f7d84bdc2c964e66
+updated_at: "2026-10-13T15:49:32Z"
+last_close_out_gate_ms: 340501
+last_close_out_gate_at: "2026-10-13T15:49:18.115Z"
+review_passes: 1
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -55,3 +57,9 @@ Reuse src/server/attachments.ts (saveScreenshot, sanitizeName, SCREENSHOTS_HEADI
 - 2026-10-13T14:54:31Z · body
 - 2026-10-13T15:07:40Z · message_queued at 2026-10-13T15:07:40.294Z
 - 2026-10-13T15:07:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-13T15:33:57Z · body
+- 2026-10-13T15:41:11Z · status active→review
+- 2026-10-13T15:41:11Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-13T15:42:33Z · note: review pass 1: good to go
+- 2026-10-13T15:49:18Z · close-out gate completed in 341s
+- 2026-10-13T15:49:32Z · status review→done, release:success
