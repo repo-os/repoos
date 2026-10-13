@@ -46,6 +46,7 @@ import type {
   AreaConfig,
 } from "./types.js";
 import { STATUSES } from "./types.js";
+import { agentModelAllowRows } from "./budget-allowlist.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
 import { parseDevTargets } from "./dev-targets.js";
 import { parseTailscaleHosts } from "./remote-hosts.js";
@@ -1742,6 +1743,11 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         `[closeOut] gate must be "full", "scoped" or "reuse", got ${JSON.stringify(closeOutGate)} — using scoped`,
       );
     }
+    // [[budget.allowlist]] (#0764) — the agent-driver allowlist. Malformed rows
+    // are dropped with a warning rather than failing config load (the safe
+    // behaviour is the unrestricted default, so a typo never blocks the server).
+    const budgetAllowlist = agentModelAllowRows(parsed["budget.allowlist"]);
+    if (budgetAllowlist.length) cfg.budget = { allowlist: budgetAllowlist };
     const closeOutInstallCommand = parsed["closeOut.installCommand"];
     if (typeof closeOutInstallCommand === "string" && closeOutInstallCommand.trim()) {
       cfg.closeOut = {
@@ -2670,6 +2676,25 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "a repo with no dev server. Declared in repoos.toml as [[shot.targets]] tables (name, areas, " +
         "paths, command, outputGlob, requires, timeoutMs); edit them there. Web preview targets keep working unchanged.",
     },
+    {
+      // The Settings control is the Agents page's Budget Controls tab
+      // (AgentsView, ?tab=budget-controls), never an auto-rendered Settings row
+      // — like `dev.targets`, this schema entry exists so the search overlay
+      // and the "does this key have a UI row?" resolver can find it. It is
+      // skipped in the Settings form body so an unrelated save never rewrites
+      // it.
+      key: "budget.allowlist",
+      label: "Agent+model allowlist for agent drivers",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Human-approved coding-agent + model pairs an agent driver (a CLI/API caller, not a human " +
+        "in the UI) may set as an engineer/reviewer override. Empty or unset means nothing is " +
+        "restricted. Declared in repoos.toml as [[budget.allowlist]] rows (cli + models); edit it " +
+        "on the Agents page's Budget Controls tab.",
+    },
     // [board.columns] — display-only label overrides (#0396).
     ...STATUSES.map((status) => ({
       key: `board.columns.${status}`,
@@ -2766,6 +2791,9 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "shot.targets.outputGlob",
   "shot.targets.requires",
   "shot.targets.timeoutMs",
+  // Agent-driver budget controls (#0764) — the `[[budget.allowlist]]` rows.
+  "budget.allowlist.cli",
+  "budget.allowlist.models",
   // Dev targets (#0747) — the user-runnable things the Dev page controls.
   // Declared as a repeatable `[[dev.targets]]` table; each row is one target.
   "dev.targets.name",

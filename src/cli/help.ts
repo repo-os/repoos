@@ -127,7 +127,7 @@ const GROUPS: readonly CommandGroup[] = [
       {
         name: "override",
         usage: "override <id> [--cli <name>] [--model <model>] [--json] [--port N]",
-        desc: "Set per-task engineer overrides (PATCH /api/tasks/:id)",
+        desc: "Set per-task engineer overrides (PATCH /api/tasks/:id). --help prints the agent-driver budget allowlist",
         flags: "--cli · --model · --json · --port",
       },
       {
