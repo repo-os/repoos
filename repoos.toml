@@ -713,3 +713,6 @@ models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash"]
 [[budget.allowlist]]
 cli = "claude code"
 models = ["haiku"]
+[[budget.allowlist]]
+cli = "github copilot"
+models = ["default"]
