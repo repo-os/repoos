@@ -472,7 +472,9 @@ export async function runUiHandoffGate(
   // only handles WEB entries. A command capture target (#0761) has no route —
   // its command renders the image, and the shot capture records its evidence
   // separately (runAutoShotCapture), not through this page gate.
-  const entries = plan.entries.filter((e): e is CaptureEntry & { route: string } => e.route !== undefined);
+  const entries = plan.entries.filter(
+    (e): e is CaptureEntry & { route: string } => e.route !== undefined,
+  );
   if (entries.length === 0) {
     return { ok: true, skipped: true, detail: "no web capture entries to verify" };
   }

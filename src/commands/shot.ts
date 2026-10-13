@@ -681,7 +681,11 @@ export async function cmdShot(args: string[]): Promise<number> {
         console.error(c.red("  ✗ ") + `command capture target "${entry.target}" is not configured`);
         return 1;
       }
-      const outputDir = join(shotsDir(worktreeRoot, worktreeConfig.workDir, task.id), "cmd", slugName(entry.target));
+      const outputDir = join(
+        shotsDir(worktreeRoot, worktreeConfig.workDir, task.id),
+        "cmd",
+        slugName(entry.target),
+      );
       const outcome = runShotCommand(target, worktreeRoot, outputDir);
       if (outcome.status !== "captured") {
         console.error(c.yellow("  · ") + `shots: ${outcome.status} — ${outcome.reason}`);

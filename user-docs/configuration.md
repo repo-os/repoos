@@ -741,7 +741,7 @@ fields (`route`, `selector`, `highlight`, `steps`) are ignored for a command
 target. `repoos shot --target "macOS app"` works from the CLI too.
 
 A short recipe for the common platforms, and how declarations and skip messages
-behave, are in [Previews and shots](previews.md#evidence-shots-for-non-web-targets).
+behave, are in [Previews and shots](../docs/previews.md#evidence-shots-for-non-web-targets).
 
 > **`[[shot.targets]]` is deliberately TOML-only**, for the same reason as
 > `[[preview.targets]]`: an array of tables cannot be expressed by the flat

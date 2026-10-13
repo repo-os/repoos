@@ -266,7 +266,10 @@ export function resolveShotTargets(
   overrideTarget?: string,
   shot?: ShotConfig,
 ): ShotTargetResolution {
-  const detected = [...targetsForPaths(preview, changedPaths), ...shotTargetsForPaths(shot, changedPaths)];
+  const detected = [
+    ...targetsForPaths(preview, changedPaths),
+    ...shotTargetsForPaths(shot, changedPaths),
+  ];
   const all = preview?.targets ?? [];
 
   if (overrideTarget) {
@@ -387,7 +390,10 @@ export function shotTargetByName(
  * A target with no `paths` never matches here (it is reachable through area
  * resolution or an explicit `--target`).
  */
-export function shotTargetsForPaths(shot: ShotConfig | undefined, changedPaths: string[]): string[] {
+export function shotTargetsForPaths(
+  shot: ShotConfig | undefined,
+  changedPaths: string[],
+): string[] {
   const paths = nonTestPaths(changedPaths);
   const out: string[] = [];
   for (const t of shot?.targets ?? []) {
@@ -444,10 +450,7 @@ export function describeShotTargetPathMatches(
  * Used to validate a declared `## Shots` entry's `target` against the whole
  * vocabulary, so a command target name is as valid as a web one.
  */
-export function allShotTargetNames(
-  preview?: PreviewConfig,
-  shot?: ShotConfig,
-): string[] {
+export function allShotTargetNames(preview?: PreviewConfig, shot?: ShotConfig): string[] {
   const web = previewTargetNamesLocal(preview);
   const command = (shot?.targets ?? []).map((t) => t.name).filter(Boolean);
   const seen = new Set<string>();

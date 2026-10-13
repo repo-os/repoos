@@ -131,10 +131,7 @@ export function shotRows(shots: ShotMeta[], body: string | undefined): ShotRow[]
     // shows, so an unlabeled shot reads the route over `default` instead of
     // repeating the route on both lines. A command capture (#0761) has no route:
     // caption it "command capture" so a reviewer knows no page was loaded.
-    const context = [
-      meta.target,
-      meta.command === "command" ? "command capture" : meta.route,
-    ]
+    const context = [meta.target, meta.command === "command" ? "command capture" : meta.route]
       .filter((part): part is string => !!part && part !== title)
       .join(" · ");
     const steps = entry?.steps;

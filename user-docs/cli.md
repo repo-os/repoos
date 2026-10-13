@@ -481,8 +481,8 @@ declares a **command capture target** instead of (or as well as) a dev-server
 files offscreen. `repoos shot --target "<name>"` runs that command and stores
 the images it writes into `REPOOS_SHOT_DIR`, and the automatic handoff capture
 runs it too. See
-[Previews and shots](/previews#evidence-shots-for-non-web-targets) for the
-config shape and platform recipes.
+[Previews and shots](../docs/previews.md#evidence-shots-for-non-web-targets) for
+the config shape and platform recipes.
 
 After the page loads, `repoos shot` waits for network quiet (best-effort) and a
 short settle before capturing, so a dev server's client-mount spinner is not
