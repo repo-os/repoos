@@ -215,7 +215,7 @@ export interface UiHandoffGateResult {
   shotResult?: ShotCaptureResult;
 }
 
-type TaskLog = (taskId: string, level: LogLevel, message: string) => void;
+export type TaskLog = (taskId: string, level: LogLevel, message: string) => void;
 
 function cacheRoot(root: string, cacheDir: string): string {
   return join(root, cacheDir || ".repoos");
@@ -835,6 +835,7 @@ export async function runUiHandoffGate(
       sourceIdentity,
       store,
       ensureCleared,
+      clearPriorOnCommandSkip: deps.forceRefresh,
     });
     captured += batch.captured;
     commandCaptures.push(...batch.evidence);
@@ -888,6 +889,12 @@ export async function runUiHandoffGate(
       }
     }
     return { ok: false, detail, evidencePath: path };
+  }
+
+  if (deps.forceRefresh && captured === 0) {
+    const detail = "evidence was not refreshed: no shots were captured";
+    log(task.id, "warn", `ui verification: ${detail}`);
+    return { ok: false, skipped: true, detail };
   }
 
   const warnNote =

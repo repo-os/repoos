@@ -3,10 +3,18 @@ import { execSync } from "node:child_process";
 import { mkdirSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { refreshTaskEvidence, guardedForceRefreshCapture } from "../../server/routes/tasks.js";
+import {
+  refreshTaskEvidence,
+  guardedForceRefreshCapture,
+  postCaptureWorktreeGuard,
+} from "../../server/routes/tasks.js";
 import { localShotStore } from "../../server/shots.js";
 import * as uiHandoffGate from "../../server/ui-handoff-gate.js";
-import { readUiHandoffGateEvidence, handoffTreeStatus } from "../../server/ui-handoff-gate.js";
+import {
+  readUiHandoffGateEvidence,
+  handoffTreeStatus,
+  runUiHandoffGate,
+} from "../../server/ui-handoff-gate.js";
 import type { RouteContext } from "../../server/routes/types.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 
@@ -240,7 +248,7 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
     expect(porcelainOf(root)).toBe("");
   });
 
-  it("restores the worktree when a command target modifies tracked files", async () => {
+  it("fails without mutating the worktree when a command target modifies tracked files", async () => {
     const { root, shortHead, config, task } = commandRepo(
       RUN_COMMAND + "; echo dirt >> tracked.txt; printf stray > stray.txt",
     );
@@ -248,37 +256,30 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
     await refreshTaskEvidence(context(task, root, { config }), {} as never, res as never, {
       param1: task.id,
     });
-    const { status, body } = res.result() as {
-      status: number;
-      body: {
-        error?: string;
-        headIdentity?: string;
-        restored?: string[];
-        shots?: unknown[];
-      };
-    };
-    // The refresh itself succeeded — the capture already replaced the stored
-    // evidence — and the damage the command did is reported back...
-    expect(status).toBe(200);
-    expect(body.headIdentity).toBe(shortHead);
-    expect(body.restored).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining("tracked.txt"),
-        expect.stringContaining("stray.txt"),
-      ]),
-    );
-    expect(body.shots).toHaveLength(1);
-    // ...and undone: tracked file restored, untracked capture artifact gone,
-    // worktree porcelain-clean again.
-    expect(readFileSync(join(root, "tracked.txt"), "utf8")).toBe("clean\n");
-    expect(existsSync(join(root, "stray.txt"))).toBe(false);
-    expect(porcelainOf(root)).toBe("");
+    const { status, body } = res.result() as { status: number; body: { error?: string } };
+    expect(status).toBe(409);
+    expect(body.error).toContain("modified during the capture");
+    expect(body.error).toContain("tracked.txt");
+    expect(readFileSync(join(root, "tracked.txt"), "utf8")).toBe("clean\ndirt\n");
+    expect(existsSync(join(root, "stray.txt"))).toBe(true);
+    const headAfter = execSync(`git -C ${root} rev-parse --short HEAD`, {
+      encoding: "utf8",
+    }).trim();
+    expect(headAfter).toBe(shortHead);
   });
 
-  it("restores tracked damage even when HEAD moves during the capture", async () => {
-    // The command commits mid-capture AND leaves a tracked modification behind:
-    // the commit is a concurrent writer's and must survive the restore, but
-    // leaving tracked edits in a review worktree is never acceptable either.
+  it("postCaptureWorktreeGuard leaves concurrent user edits untouched", async () => {
+    const { root } = commandRepo(RUN_COMMAND);
+    writeFileSync(join(root, "tracked.txt"), "user edit\n");
+    const guarded = await postCaptureWorktreeGuard(
+      root,
+      execSync(`git -C ${root} rev-parse --short HEAD`, { encoding: "utf8" }).trim(),
+    );
+    expect(guarded.ok).toBe(false);
+    expect(readFileSync(join(root, "tracked.txt"), "utf8")).toBe("user edit\n");
+  });
+
+  it("fails when HEAD moves during the capture without resetting tracked edits", async () => {
     const { root, shortHead, config, task } = commandRepo(
       RUN_COMMAND + "; git commit --allow-empty -q -m moved; echo extra >> tracked.txt",
     );
@@ -286,23 +287,15 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
     await refreshTaskEvidence(context(task, root, { config }), {} as never, res as never, {
       param1: task.id,
     });
-    const { status, body } = res.result() as {
-      status: number;
-      body: { error?: string; restored?: string[] };
-    };
-    // The refresh cannot claim success: the evidence's tree is no longer HEAD.
+    const { status, body } = res.result() as { status: number; body: { error?: string } };
     expect(status).toBe(409);
     expect(body.error).toContain("HEAD changed during the capture");
     expect(body.error).toContain(shortHead);
-    // Yet the tracked damage is still undone without touching the concurrent
-    // commit, and the worktree is porcelain-clean again.
-    expect(body.restored).toEqual(expect.arrayContaining([expect.stringContaining("tracked.txt")]));
-    expect(readFileSync(join(root, "tracked.txt"), "utf8")).toBe("clean\n");
+    expect(readFileSync(join(root, "tracked.txt"), "utf8")).toBe("clean\nextra\n");
     const headAfter = execSync(`git -C ${root} rev-parse --short HEAD`, {
       encoding: "utf8",
     }).trim();
     expect(headAfter).not.toBe(shortHead);
-    expect(porcelainOf(root)).toBe("");
   });
 
   it("returns 200 with refreshed evidence when verification reports issues", async () => {
@@ -342,22 +335,18 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
     expect(readUiHandoffGateEvidence(config, "0766")?.sourceIdentity).toBe(shortHead);
   });
 
-  it("guarded force refresh restores tracked damage after command capture (automatic path)", async () => {
+  it("guarded force refresh fails when command capture dirties the worktree (automatic path)", async () => {
     const { root, shortHead, config, task } = commandRepo(
       RUN_COMMAND + "; echo dirt >> tracked.txt; printf stray > stray.txt",
     );
     const captured = await guardedForceRefreshCapture(config, task, root, undefined, vi.fn());
-    expect(captured.error).toBeUndefined();
-    expect(captured.gateOk).toBe(true);
-    expect(captured.headIdentity).toBe(shortHead);
-    expect(captured.restored).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining("tracked.txt"),
-        expect.stringContaining("stray.txt"),
-      ]),
-    );
-    expect(readFileSync(join(root, "tracked.txt"), "utf8")).toBe("clean\n");
-    expect(existsSync(join(root, "stray.txt"))).toBe(false);
+    expect(captured.error).toContain("modified during the capture");
+    expect(captured.gateOk).toBe(false);
+    expect(readFileSync(join(root, "tracked.txt"), "utf8")).toBe("clean\ndirt\n");
+    const headAfter = execSync(`git -C ${root} rev-parse --short HEAD`, {
+      encoding: "utf8",
+    }).trim();
+    expect(headAfter).toBe(shortHead);
   });
 
   it("guarded force refresh fails when HEAD moves during command capture (automatic path)", async () => {
@@ -368,6 +357,41 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
     expect(captured.error).toContain("HEAD changed during the capture");
     expect(captured.error).toContain(shortHead);
     expect(captured.gateOk).toBe(false);
+  });
+
+  it("force refresh clears prior shots and skips when command capture produces nothing", async () => {
+    const root = gitRoot();
+    writeFileSync(join(root, "tracked.txt"), "clean\n");
+    execSync(`git -C ${root} add tracked.txt`, { stdio: "ignore" });
+    writeFileSync(join(root, ".gitignore"), ".repoos/\nwork/.attachments/\n");
+    execSync(`git -C ${root} add tracked.txt .gitignore`, { stdio: "ignore" });
+    execSync(`git -C ${root} commit -q -m tracked`, { stdio: "ignore" });
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      uiVerification: { enabled: true },
+      shot: { targets: [{ name: "cmd", areas: ["web"], command: "exit 1" }] },
+    } as RepoOSConfig;
+    const task = makeTask(
+      root,
+      "review",
+      '## Shots\n\n```json\n[{"target": "cmd", "label": "Render one"}]\n```\n',
+    );
+    const store = localShotStore(config, task.id);
+    store.save({
+      target: "cmd",
+      data: Buffer.from("stale").toString("base64"),
+      mime: "image/png",
+      label: "Stale engineer shot",
+    });
+    const result = await runUiHandoffGate(config, task, undefined, () => {}, {
+      forceRefresh: true,
+      recordTaskNotes: false,
+    });
+    expect(result.skipped).toBe(true);
+    expect(result.detail).toContain("evidence was not refreshed");
+    expect(store.list()).toHaveLength(0);
   });
 
   it("force refresh supersedes engineer-made shots before new captures", async () => {
