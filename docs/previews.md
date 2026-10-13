@@ -231,9 +231,28 @@ common), with a visible warning naming the exit code — so a partial failure ca
 still produce shots and is always recorded, never silently. When a repo has
 command targets but no target covers the changed
 paths, the skip message says so and points at the `[[shot.targets]]`
-declaration — no more "matched only documentation content" for a native app. The
-handoff browser gate (`ui-handoff-gate.ts`) only verifies WEB entries; a command
-target's evidence is its collected image, not a page check.
+declaration — no more "matched only documentation content" for a native app.
+
+**Evidence record for command captures (#0765).** The handoff gate
+(`ui-handoff-gate.ts`) handles BOTH kinds of entry. A web entry is driven in a
+browser and checked for console errors, the landed route and declared
+assertions; a command entry has no page and no console, so the gate runs the
+command and records an equivalent evidence record in the same
+`.repoos/ui-verification/<task-id>.json`: the target, the command and its cwd,
+the process exit status, the tail of the command's stdout/stderr, and every
+image it produced (with size and path). It records the same tested-tree identity
+(`sourceIdentity`) and plan fingerprint, so stale-capture detection works for
+command captures exactly as for web ones — a capture whose tree differs from the
+reviewed HEAD is reported STALE, never as verification. A command problem stays
+a visible warning and never blocks handoff, but it is always in the record so a
+reviewer can see it.
+
+Because a command-target task has no browser page, the reviewer prompt tells the
+reviewer that browser UI verification does **not** apply, names the evidence
+record (not a "console log"), and the mechanical console-error check is
+`skipped` rather than `not run` — so a native task can never be blocked on a
+browser console record it cannot produce. A task with no capture plan at all is
+told the same; `shots: skipped` is correct behavior, not a capture failure.
 
 **Shot hygiene (#0613, #0734, #0743).** When a declared `highlight`,
 `selector`, or `waitFor` step target is missing at capture time, the handoff

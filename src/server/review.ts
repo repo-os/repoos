@@ -72,8 +72,11 @@ import {
   readUiHandoffGateEvidence,
   handoffTreeStatus,
   handoffTreeNote,
+  taskUiVerificationMode,
+  type UiVerificationMode,
 } from "./ui-handoff-gate.js";
 import { getCheckStore } from "../core/check-store.js";
+import type { CommandCaptureEvidence } from "./shot-capture.js";
 import { extractTaskProofCommands } from "../core/task-proof-commands.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
 import {
@@ -173,6 +176,111 @@ export function handoffCheckOutcomeForTask(
 
 export interface ReviewMissionOptions {
   handoffCheck?: ReviewHandoffCheckOutcome;
+  /**
+   * Which UI verification applies (#0765). Computed from the task's capture
+   * plan when omitted; overridable so the mission text can be asserted directly
+   * in tests (and so a caller that already resolved it does not recompute).
+   */
+  uiVerification?: UiVerificationMode;
+}
+
+/** One-line provenance for a command-target capture (#0765), for the mission summary. */
+export function formatCommandCaptureEvidence(c: CommandCaptureEvidence): string {
+  const name = c.label ?? c.target;
+  if (c.status !== "captured") {
+    return `${name}: \`${c.command}\` ${c.status} — ${c.reason ?? "no images"}`;
+  }
+  const exit = c.exitStatus === null ? "no exit status" : `exit ${c.exitStatus}`;
+  const images = c.shots.length
+    ? c.shots.map((s) => `${s.name} (${Math.max(1, Math.round(s.size / 1024))} KB)`).join(", ")
+    : "no images";
+  const warns = c.warnings?.length ? `, ${c.warnings.length} warning(s)` : "";
+  return `${name}: \`${c.command}\` ${exit}, ${c.shots.length} image(s) [${images}]${warns}`;
+}
+
+/**
+ * The browser-vs-command applicability line and the evidence guidance for the
+ * `## UI verification evidence` section (#0765). Browser work keeps the #0734
+ * console/route/assertion guidance exactly; a command-target task is told there
+ * is no browser page or console and must not be blocked on one; a task with no
+ * capture plan is told not to expect evidence at all.
+ */
+function uiVerificationEvidenceSection(
+  mode: UiVerificationMode,
+  config: RepoOSConfig,
+  task: Task,
+): string[] {
+  const evidencePath = join(
+    config.root,
+    config.cacheDir || ".repoos",
+    "ui-verification",
+    `${task.id}.json`,
+  );
+  if (mode === "command") {
+    return [
+      "## UI verification evidence",
+      "",
+      "Browser UI verification does **not** apply to this task: its captures come",
+      "from COMMAND targets (#0761) — a non-web app with no dev server, where a",
+      "command renders the images offscreen. There is NO browser page and NO",
+      "console log, so a missing browser console record or `ui-verification` JSON",
+      "section is NOT an evidence gap and must not be reported as a BLOCKING issue.",
+      `The handoff evidence JSON at \`${evidencePath}\` records, per command capture,`,
+      "the target, the command and cwd it ran in, its exit status, the tail of its",
+      "stdout/stderr, and the images it produced (with sizes and paths). Read those",
+      "PNGs in the task drawer Changes tab — they are the visual proof for this",
+      "task. A capture recorded as STALE (its tree differs from the reviewed HEAD)",
+      "is NOT verification — request a re-capture on the final tree rather than",
+      "signing off on it. If the spec names a required visual acceptance criterion",
+      "that the command captures do not show, that is blocking: `needs some work`,",
+      "naming the gap. Do NOT write `good to go` while saying visual proof is absent:",
+      "that is the one contradiction this prompt forbids — an explicit, truthful",
+      "exception (a documented reason a capture is not applicable) is fine, name it.",
+      "- After your report, RepoOS appends `## Automated verification` with guard",
+      "  negative-test evidence for any check guard this branch materially changed.",
+      "  The browser console-error check is **skipped** for a command target (there",
+      "  is no page). A failed or not-run required check clamps `good to go` to",
+      "  `needs some work` — do not rely on the agent verdict alone when that",
+      "  section shows a failure.",
+    ];
+  }
+  if (mode === "none") {
+    return [
+      "## UI verification evidence",
+      "",
+      "No UI capture applies to this task: a `shots: skipped` note (a tests-only or",
+      "docs-only diff, or no capture target) is correct behavior, not a capture",
+      "failure. Do not block on a missing browser console record, or on an evidence",
+      "file this task type never produces.",
+      "- After your report, RepoOS appends `## Automated verification` with guard",
+      "  negative-test evidence for any check guard this branch materially changed.",
+      "  A failed or not-run required check clamps `good to go` to `needs some work`.",
+    ];
+  }
+  return [
+    "## UI verification evidence",
+    "",
+    "Browser UI verification applies to this task. Handoff captured screenshots",
+    "(task drawer Changes tab, and the evidence JSON named above) plus a browser",
+    `console log. The evidence JSON at \`${evidencePath}\` records the exact captured`,
+    "URL, the declared route and whether the browser matched it (a login/redirect",
+    "is a mismatch, not a pass), each declared assertion's outcome, and the tested",
+    "tree/plan identity. Read the PNGs — flag blank or error states. A capture",
+    "recorded as STALE (its tree differs from the reviewed HEAD) or as landing on a",
+    "loading state is NOT verification — request a re-capture on the final tree",
+    "rather than signing off on it. Comment on whether the shots match the diff and",
+    "whether the recorded console log looks acceptable. If a required visual",
+    "acceptance criterion is unverified, that is blocking: `needs some work`,",
+    "naming the gap. Do NOT write `good to go` while saying visual proof is absent:",
+    "that is the one contradiction this prompt forbids. An explicit, truthful",
+    "exception (an optional assertion, a documented reason a shot is not applicable)",
+    "is fine — name it.",
+    "- After your report, RepoOS appends `## Automated verification` with the",
+    "  console-error check (from handoff browser evidence) and guard negative-test",
+    "  evidence for any check guard this branch materially changed. A failed or",
+    "  not-run required check clamps `good to go` to `needs some work` — do not",
+    "  rely on the agent verdict alone when that section shows a failure.",
+  ];
 }
 
 /**
@@ -188,6 +296,9 @@ export function reviewMission(
   options: ReviewMissionOptions = {},
 ): string {
   const handoffCheck = options.handoffCheck ?? "passed";
+  // #0765: tell the reviewer whether browser UI verification applies, so it is
+  // never sent looking for a console log a command-target task cannot produce.
+  const uiMode = options.uiVerification ?? taskUiVerificationMode(config, task);
   const spec = task.body.trim().slice(0, SPEC_CHARS);
   const role = agent.instructions?.trim();
   const storyContext = buildStoryContext(task, config);
@@ -253,19 +364,6 @@ export function reviewMission(
     "  A `shots: skipped` note (tests-only or docs-only diff, no declared route) is",
     "  correct behavior, not a capture failure. Read them alongside the diff — they",
     "  are read-only evidence, never something you edit.",
-    "- #0734: a UI task that declares required visual acceptance (a `## Shots` entry",
-    "  with `assert` conditions, a named feature state, populated rows, an editable",
-    "  input) MUST have that evidence verified before you can sign off. The handoff",
-    "  evidence JSON at",
-    `  \`${join(config.root, config.cacheDir || ".repoos", "ui-verification", `${task.id}.json`)}\``,
-    "  (and the Changes tab) records, per capture: the exact URL the browser landed",
-    "  on, whether the declared route matched (login/redirect), every assertion's",
-    "  outcome, and the stored PNG path. If a REQUIRED visual criterion is missing,",
-    "  stale, or unverifiable, your verdict is `needs some work` — say exactly which",
-    "  evidence is absent. Do NOT write `good to go` while saying visual proof is",
-    "  absent: that is the one contradiction this prompt forbids. An explicit",
-    "  truthful exception (an optional assertion, a documented reason a shot is not",
-    "  applicable) is fine — name it.",
     "- Check the implementation actually does what the spec asks, including every",
     "  acceptance criterion, and that its behaviour holds up beyond the happy path.",
     "- Look for real bugs: wrong logic, unhandled errors, races, resource leaks,",
@@ -300,24 +398,7 @@ export function reviewMission(
     "- Your report MUST end with a parseable ## Verdict section — an incomplete report",
     "  with no verdict will be automatically retried once, then escalated.",
     "",
-    "## UI verification evidence",
-    "",
-    "For UI work, handoff captured screenshots (task drawer Changes tab, and the",
-    " evidence JSON named above) plus a browser console log. Read the PNGs — flag",
-    " blank or error states. The evidence JSON records the exact captured URL, the",
-    " declared route and whether the browser matched it (a login/redirect is a",
-    " mismatch, not a pass), each declared assertion's outcome, and the tested",
-    " tree/plan identity. A capture recorded as STALE (its tree differs from the",
-    " reviewed HEAD) or as landing on a loading state is NOT verification — request",
-    " a re-capture on the final tree rather than signing off on it. Comment on",
-    " whether the shots match the diff and whether the",
-    " recorded console log looks acceptable. If a required visual acceptance",
-    " criterion is unverified, that is blocking: `needs some work`, naming the gap.",
-    "- After your report, RepoOS appends `## Automated verification` with the",
-    "  console-error check (from handoff browser evidence) and guard negative-test",
-    "  evidence for any check guard this branch materially changed. A failed or",
-    "  not-run required check clamps `good to go` to `needs some work` — do not",
-    "  rely on the agent verdict alone when that section shows a failure.",
+    ...uiVerificationEvidenceSection(uiMode, config, task),
     "",
     "## What to output",
     "",
@@ -733,6 +814,7 @@ export class ReviewManager {
 
     const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config, {
       handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
+      uiVerification: taskUiVerificationMode(this.config, task),
     });
     const uiNote = this.uiVerificationSummary(task);
     const mission = uiNote
@@ -1841,37 +1923,45 @@ export class ReviewManager {
     if (evidence.evidenceDir) identity.push(`PNGs at ${evidence.evidenceDir}`);
     const identityLine = identity.length ? ` (${identity.join(" · ")})` : "";
     const staleLine = staleNote ? `\n${staleNote}` : "";
-    if (evidence.issues.length === 0) {
-      const captured = (evidence.captureDetails ?? [])
-        .map((c) => {
-          const asserts =
-            c.assertionsChecked > 0
-              ? `, ${c.assertionsPassed}/${c.assertionsChecked} assertion(s) passed`
-              : "";
-          const warns = c.targetWarnings?.length
-            ? `, ${c.targetWarnings.length} target warning(s)`
-            : "";
-          return `${c.label ?? `${c.target}${c.route}`} → ${c.url}${asserts}${warns}`;
-        })
-        .join("; ");
-      const warnLine = evidence.warnings?.length
-        ? `\nShot warnings (non-blocking): ${evidence.warnings.slice(0, 4).join("; ")}`
-        : "";
+    if (evidence.issues.length > 0) {
+      const lines = evidence.issues
+        .slice(0, 8)
+        .map((i) => `- [${i.kind}] ${i.message}`)
+        .join("\n");
       return (
-        `Handoff UI verification (${evidence.at})${identityLine}: ${evidence.captures} capture(s), ` +
-        `zero console errors recorded at capture time.` +
-        (captured ? `\nCaptures: ${captured}` : "") +
-        warnLine +
-        staleLine
+        `Handoff UI verification (${evidence.at})${identityLine} recorded ${evidence.issues.length} issue(s) ` +
+        `(this task should not have reached review — investigate):\n${lines}${staleLine}`
       );
     }
-    const lines = evidence.issues
-      .slice(0, 8)
-      .map((i) => `- [${i.kind}] ${i.message}`)
-      .join("\n");
+    const captureDetails = evidence.captureDetails ?? [];
+    const commandCaptures = evidence.commandCaptures ?? [];
+    const webLine = captureDetails
+      .map((c) => {
+        const asserts =
+          c.assertionsChecked > 0
+            ? `, ${c.assertionsPassed}/${c.assertionsChecked} assertion(s) passed`
+            : "";
+        const warns = c.targetWarnings?.length
+          ? `, ${c.targetWarnings.length} target warning(s)`
+          : "";
+        return `${c.label ?? `${c.target}${c.route}`} → ${c.url}${asserts}${warns}`;
+      })
+      .join("; ");
+    const commandLine = commandCaptures.map(formatCommandCaptureEvidence).join("; ");
+    const warnLine = evidence.warnings?.length
+      ? `\nShot warnings (non-blocking): ${evidence.warnings.slice(0, 4).join("; ")}`
+      : "";
+    // #0765: a command-only task has no browser console, so say exactly that
+    // rather than the web "zero console errors" phrasing.
+    const header = captureDetails.length
+      ? `${evidence.captures} capture(s), zero console errors recorded at capture time.`
+      : `${evidence.captures} command capture(s) — no browser console (command targets).`;
     return (
-      `Handoff UI verification (${evidence.at})${identityLine} recorded ${evidence.issues.length} issue(s) ` +
-      `(this task should not have reached review — investigate):\n${lines}${staleLine}`
+      `Handoff UI verification (${evidence.at})${identityLine}: ${header}` +
+      (webLine ? `\nCaptures: ${webLine}` : "") +
+      (commandLine ? `\nCommand captures: ${commandLine}` : "") +
+      warnLine +
+      staleLine
     );
   }
 

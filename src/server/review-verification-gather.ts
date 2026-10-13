@@ -15,7 +15,7 @@ import {
 import { isTestFilePath, resolvedReviewVerification } from "../core/review-verification-config.js";
 import { changedPathsVsBase } from "../core/git.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
-import { readUiHandoffGateEvidence, taskNeedsUiHandoffVerification } from "./ui-handoff-gate.js";
+import { readUiHandoffGateEvidence, taskNeedsBrowserUiVerification } from "./ui-handoff-gate.js";
 
 function gitDiff(worktree: string, baseBranch: string, path: string): string {
   try {
@@ -77,7 +77,11 @@ export function gatherReviewVerificationWithoutWorktree(
   config: RepoOSConfig,
   task: Task,
 ): ReviewVerificationResult {
-  const uiVerificationRequired = taskNeedsUiHandoffVerification(config, task);
+  // #0765: only BROWSER verification has a console-error record to check. A
+  // command-only task has no browser page, so the mechanical check is skipped
+  // rather than `not_run` (which would falsely block approval for a file this
+  // task type cannot produce).
+  const uiVerificationRequired = taskNeedsBrowserUiVerification(config, task);
   const evidence = readUiHandoffGateEvidence(config, task.id);
   return reviewVerificationWithoutWorktree({ uiVerificationRequired, evidence });
 }
@@ -89,7 +93,8 @@ export function gatherReviewVerification(
   worktree: string,
   baseBranch: string,
 ): ReviewVerificationResult {
-  const uiVerificationRequired = taskNeedsUiHandoffVerification(config, task);
+  // #0765: only BROWSER verification has a console-error record to check.
+  const uiVerificationRequired = taskNeedsBrowserUiVerification(config, task);
   const evidence = readUiHandoffGateEvidence(config, task.id);
   const changedPaths = changedPathsVsBase(worktree, baseBranch);
   const paths = changedPaths ?? [];

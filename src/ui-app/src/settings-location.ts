@@ -50,6 +50,9 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   // Dev targets have a dedicated hand-rendered card on Advanced (#0749); a
   // plain comma-separated General row cannot express the four fields.
   "dev.targets",
+  // The agent-driver budget allowlist is edited on the Agents page's Budget
+  // Controls tab (#0764), not by a plain General row.
+  "budget.allowlist",
   "attention.spendAlertUsd",
 ]);
 
@@ -89,6 +92,13 @@ export function resolveSettingLocation(
   // is raw-TOML-only, like `[[preview.targets]]` — the schema entry exists only
   // so the search overlay can point at the toml tab.
   if (key.startsWith("shot.targets")) {
+    if (!field) return null;
+    return { tab: "toml", hasUiRow: false };
+  }
+  // The budget allowlist's control lives on the Agents page's Budget Controls
+  // tab (#0764), which is outside the Settings page — the schema entry exists
+  // for search, which points at the toml tab for a raw edit.
+  if (key === "budget.allowlist") {
     if (!field) return null;
     return { tab: "toml", hasUiRow: false };
   }
@@ -169,6 +179,8 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
     "guard test file globs swift python go non-javascript negative test evidence path match",
   "shot.targets":
     "capture targets native macos ios android desktop screenshot command offscreen render simctl adb screencapture evidence image non-web",
+  "budget.allowlist":
+    "budget controls agent driver allowlist allowed models expensive steering restrict override",
 };
 
 export function settingSearchAliases(key: string): string {

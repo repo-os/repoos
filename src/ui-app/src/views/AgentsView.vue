@@ -26,6 +26,7 @@ import BuiltInAgentCard from "../components/BuiltInAgentCard.vue";
 import { sortHeadlessAgents } from "../lib/headless-agent-order";
 import ModelPlaygroundPanel from "../components/ModelPlaygroundPanel.vue";
 import ModelProvidersPanel from "../components/ModelProvidersPanel.vue";
+import BudgetControlsPanel from "../components/BudgetControlsPanel.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import Dialog from "../components/ui/dialog/root.vue";
 import DialogClose from "../components/ui/dialog/close.vue";
@@ -40,7 +41,14 @@ const router = useRouter();
 const route = useRoute();
 const docs = useDocsStore();
 
-type AgentTab = "default" | "custom" | "team" | "detected" | "playground" | "providers";
+type AgentTab =
+  | "default"
+  | "custom"
+  | "team"
+  | "detected"
+  | "playground"
+  | "providers"
+  | "budget-controls";
 
 const AGENT_TAB_LABELS: Record<AgentTab, string> = {
   default: "Default Agents",
@@ -49,9 +57,18 @@ const AGENT_TAB_LABELS: Record<AgentTab, string> = {
   detected: "Detected Coding Agents",
   playground: "Model Playground",
   providers: "Model providers",
+  "budget-controls": "Budget Controls",
 };
 
-const AGENT_TABS: AgentTab[] = ["default", "custom", "team", "detected", "playground", "providers"];
+const AGENT_TABS: AgentTab[] = [
+  "default",
+  "custom",
+  "team",
+  "detected",
+  "playground",
+  "providers",
+  "budget-controls",
+];
 
 const activeTab = ref<AgentTab>("default");
 // The playground fetches from external APIs on first view — lazy-mount it
@@ -1078,6 +1095,7 @@ onUnmounted(() => {
           :active="activeTab === 'playground'"
         />
         <ModelProvidersPanel v-if="providersActivated" v-show="activeTab === 'providers'" />
+        <BudgetControlsPanel v-show="activeTab === 'budget-controls'" />
       </div>
     </template>
     <Dialog

@@ -790,6 +790,10 @@ function buildBody(): Record<string, unknown> {
     // Submitting the empty form value here would reject every Settings save
     // with "must be a non-empty array".
     if (f.key === "dev.targets") continue;
+    // The budget allowlist is edited on the Agents page's Budget Controls tab
+    // (#0764); skipping it here keeps an unrelated Settings save from rewriting
+    // its [[budget.allowlist]] rows.
+    if (f.key === "budget.allowlist") continue;
     let val = form[f.key];
     if (f.key.startsWith("board.columns.")) {
       const trimmed = typeof val === "string" ? val.trim() : String(val ?? "").trim();
