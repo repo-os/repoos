@@ -537,14 +537,20 @@ interface DeepInfraChecklistBody {
 
 /**
  * Parse the authenticated `GET /payment/checklist` response
- * (https://docs.deepinfra.com/api-reference/billing/get-checklist). That
- * endpoint documents negative `stripe_balance` as ready-to-spend funds and
- * `recent` as usage since the most recent invoice. The billing page's prepaid
- * credits are therefore max(0, -stripe_balance - recent). A positive balance
- * means money owed — never render it as credit.
+ * (https://docs.deepinfra.com/api-reference/billing/get-checklist). There is
+ * no dedicated "prepaid credits" field in that response — the billing page's
+ * PREPAID CREDITS number adds up from two of its fields:
+ * `stripe_balance` ("negative value indicates funds ready-to-spend", a
+ * negative amount that includes pending usage) and `recent` ("usage since
+ * most recent invoice"). So remaining credit = max(0, -stripe_balance -
+ * recent); the user-visible check is the billing page showing, e.g.,
+ * -9.94 -(-7.13) → $2.81 prepaid alongside $7.13 monthly usage. A positive
+ * balance means money owed — never render it as credit.
  * Checklist dollar fields are USD; scoped credits are reported in CENTS and
  * converted here. Returns null when the 200 body doesn't carry the required
  * fields, so a shape change reads as an error instead of an all-dash row.
+ * Fetched without the optional `compute_owed` query flag (the default), which
+ * is the response shape the card's figures are verified against.
  */
 export function parseDeepInfraChecklist(body: unknown): DeepInfraChecklist | null {
   if (typeof body !== "object" || body === null) return null;

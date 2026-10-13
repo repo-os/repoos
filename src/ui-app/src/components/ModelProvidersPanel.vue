@@ -97,7 +97,11 @@ async function loadUsage(id: string, opts?: { manual?: boolean }): Promise<void>
         : new Date().toISOString();
     state.fetchedAt = at;
     state.refreshOk = true;
-    state.stale = incompleteDeepInfra;
+    // A partial first load (e.g. usage timed out but the balance came back)
+    // shows the fresh half plus its part-error — nothing was kept from an
+    // older snapshot, so there is no stale timeline to attach. Only the
+    // kept-snapshot branch above sets `stale`.
+    state.stale = false;
     if (manual) repo.pushToast(`${rowLabel(id)} balance updated`, "success");
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not load usage.";
@@ -260,7 +264,7 @@ onMounted(() => {
 
         <template v-else>
           <div v-if="rowState(row.id).loading" class="mp-loading">Checking…</div>
-          <div v-else-if="rowState(row.id).error" class="mp-error">
+          <div v-else-if="rowState(row.id).error && !rowState(row.id).usage" class="mp-error">
             {{ rowState(row.id).error }}
             <button class="mp-retry" @click="loadUsage(row.id)">Retry</button>
           </div>
@@ -450,6 +454,14 @@ onMounted(() => {
             </div>
           </div>
 
+          <!-- A refresh that failed outright keeps the last snapshot above;
+               surface the failure here so the figures stay the main content,
+               marked Stale in the actions row below. -->
+          <div v-if="rowState(row.id).error && rowState(row.id).usage" class="mp-error">
+            {{ rowState(row.id).error }}
+            <button class="mp-retry" @click="loadUsage(row.id)">Retry</button>
+          </div>
+
           <div
             v-if="row.hasKey && !formOpen[row.id]"
             class="mp-actions"
@@ -460,7 +472,9 @@ onMounted(() => {
               class="mp-as-of"
               :title="rowState(row.id).fetchedAt ?? undefined"
             >
-              <template v-if="rowState(row.id).stale">Stale · </template>As of
+              <template v-if="rowState(row.id).stale"
+                ><span class="mp-stale">Stale</span> ·
+              </template>As of
               {{ fmtAsOf(rowState(row.id).fetchedAt) }}
             </span>
             <span
@@ -688,6 +702,10 @@ onMounted(() => {
   font-size: 11.5px;
   color: var(--txt-dim);
   margin-right: 2px;
+}
+.mp-stale {
+  color: var(--amber);
+  font-weight: 600;
 }
 .mp-refresh-ok {
   display: inline-flex;
