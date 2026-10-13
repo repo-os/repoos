@@ -2,7 +2,7 @@
 id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T22:58:48Z"
+updated_at: "2026-10-13T23:01:53Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 2
@@ -115,3 +115,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T22:57:19Z · message_queued at 2026-10-13T22:57:19.937Z
 - 2026-10-13T22:57:20Z · status review→active
 - 2026-10-13T22:58:48Z · message_queued at 2026-10-13T22:58:48.770Z
+- 2026-10-13T23:01:53Z · status active→review
