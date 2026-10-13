@@ -1360,8 +1360,8 @@ function branchHeadForTask(config: RepoOSConfig, task: Task): string | null {
  * The tree the bookkeeping-drift classification (#0766) diffs against: the
  * task's worktree when it exists, else the root checkout — mirroring
  * {@link branchHeadForTask}, so both sides of the comparison read the same git
- * context. Null only from callers that pass it to nothing; the effective
- * staleness helper fails closed on null.
+ * context. That fallback always yields a tree, so the staleness helper's
+ * fail-closed null path never applies here.
  */
 function worktreeEvidenceSource(config: RepoOSConfig, task: Task): string | null {
   const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
