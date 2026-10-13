@@ -1,5 +1,7 @@
 /**
- * Load branch diff + file contents for mechanical review verification (#0714).
+ * Load branch diff + file contents for mechanical review verification (#0714),
+ * narrowed by #0762 so non-JS/TS repos can configure which files count as
+ * tests and can turn the guard negative-test check off.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -7,8 +9,13 @@ import { execFileSync } from "node:child_process";
 import type { ReviewVerificationResult } from "../core/review-verification.js";
 import {
   evaluateReviewVerification,
+  guardsMateriallyChangedFromDiff,
   reviewVerificationWithoutWorktree,
 } from "../core/review-verification.js";
+import {
+  isTestFilePath,
+  resolvedReviewVerification,
+} from "../core/review-verification-config.js";
 import { changedPathsVsBase } from "../core/git.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { readUiHandoffGateEvidence, taskNeedsUiHandoffVerification } from "./ui-handoff-gate.js";
@@ -29,15 +36,14 @@ function gitDiff(worktree: string, baseBranch: string, path: string): string {
   }
 }
 
-const TEST_FILE_GLOBS = ["*.test.ts", "*.test.tsx", "*.test.js", "*.test.mjs"];
-
 function readTestFileContents(
   worktree: string,
   relPaths: string[],
+  globs: string[],
 ): { path: string; content: string }[] {
   const out: { path: string; content: string }[] = [];
   for (const rel of relPaths) {
-    if (!/\.test\.(ts|tsx|js|mjs)$/.test(rel)) continue;
+    if (!isTestFilePath(rel, globs)) continue;
     const abs = join(worktree, rel);
     if (!existsSync(abs)) continue;
     try {
@@ -49,16 +55,21 @@ function readTestFileContents(
   return out;
 }
 
-function listTrackedTestFiles(worktree: string): string[] {
+function listTrackedTestFiles(worktree: string, globs: string[]): string[] {
   try {
-    const out = execFileSync("git", ["ls-files", "--", ...TEST_FILE_GLOBS], {
+    // List every tracked file, then filter with the same glob compiler used
+    // elsewhere, so a Swift/Python/Go test glob means exactly what its author
+    // expects (a raw git pathspec would not).
+    const out = execFileSync("git", ["ls-files"], {
       cwd: worktree,
       encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
     });
     return out
       .split("\n")
       .map((s) => s.trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter((p) => isTestFilePath(p, globs));
   } catch {
     return [];
   }
@@ -92,8 +103,28 @@ export function gatherReviewVerification(
     ? gitDiff(worktree, baseBranch, "repoos.toml")
     : "";
 
-  const allTestPaths = listTrackedTestFiles(worktree);
-  const changedTestPaths = paths.filter((p) => /\.test\.(ts|tsx|js|mjs)$/.test(p));
+  const { guardTestCheck, testGlobs } = resolvedReviewVerification(config);
+
+  // Only read test files when the check will actually run AND a guard changed —
+  // otherwise reading every tracked test file in a large repo is wasted work.
+  let changedTestFiles: { path: string; content: string }[] = [];
+  let branchTestFiles: { path: string; content: string }[] = [];
+  if (guardTestCheck && changedPaths !== null) {
+    const guardIds = guardsMateriallyChangedFromDiff({
+      changedPaths: paths,
+      checkTsDiff,
+      repoosTomlDiff,
+    });
+    if (guardIds.length > 0) {
+      const changedTestPaths = paths.filter((p) => isTestFilePath(p, testGlobs));
+      changedTestFiles = readTestFileContents(worktree, changedTestPaths, testGlobs);
+      branchTestFiles = readTestFileContents(
+        worktree,
+        listTrackedTestFiles(worktree, testGlobs),
+        testGlobs,
+      );
+    }
+  }
 
   return evaluateReviewVerification({
     uiVerificationRequired,
@@ -101,7 +132,9 @@ export function gatherReviewVerification(
     changedPaths,
     checkTsDiff,
     repoosTomlDiff,
-    changedTestFiles: readTestFileContents(worktree, changedTestPaths),
-    branchTestFiles: readTestFileContents(worktree, allTestPaths),
+    changedTestFiles,
+    branchTestFiles,
+    guardTestCheck,
+    testGlobs,
   });
 }

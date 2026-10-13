@@ -579,6 +579,8 @@ export interface RepoOSConfig {
   automation?: AutomationConfig;
   /** UI handoff browser verification (#0680). */
   uiVerification?: UiVerificationConfig;
+  /** Mechanical review verification (#0714, narrowed by #0762). */
+  reviewVerification?: ReviewVerificationConfig;
   /**
    * Distribution destinations shown as the Releases page's "Published to"
    * summary (a `[[distribution]]` array of tables). Omitted/empty keeps the
@@ -1594,6 +1596,33 @@ export interface UiVerificationConfig {
   enabled?: boolean;
   /** Viewport widths (px) to check `scrollWidth > innerWidth` on each captured route. */
   viewportWidths?: number[];
+}
+
+/**
+ * Mechanical review verification (#0714), narrowed by #0762 so it stops
+ * misfiring on repos whose tests are not JavaScript/TypeScript.
+ *
+ * The guard negative-test check only ever applies to guards a project actually
+ * declares (`[[check.steps]]` `kind`s that map to a built-in RepoOS guard). It
+ * never fires because of an unrelated `repoos.toml` edit such as `[release]`,
+ * `[[distribution]]`, `[[shot.targets]]` or `[[preview.targets]]`.
+ */
+export interface ReviewVerificationConfig {
+  /**
+   * Kill switch for the guard negative-test check. Absent means "on" — but the
+   * check only ever finds guards a project declares, so a repo with no built-in
+   * RepoOS guard in its plan is never blocked by it. Set `false` to silence it
+   * outright (e.g. a repo whose guard tests live in another language and are
+   * declared some other way).
+   */
+  guardTestCheck?: boolean;
+  /**
+   * Globs identifying the test files that count as negative-test evidence, so a
+   * Swift/Python/Go project's tests are recognised. Defaults to the JS/TS test
+   * globs the check has always read. A path is a test file when any glob
+   * matches it (see `review-verification-config.ts`).
+   */
+  testGlobs?: string[];
 }
 
 /** Opt-in policy for Move to done without a human click (#0686). */

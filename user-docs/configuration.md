@@ -456,6 +456,20 @@ uiVerification.viewportWidths = [1024, 375]
 
 Edit both keys in **Settings → General**. Evidence is written under `.repoos/ui-verification/<task-id>.json` and surfaced on the task drawer **Changes** tab; it records the exact captured URL, whether the declared route matched, every assertion's outcome, and the tested tree/plan identity. Each capture also carries **its own** console errors, failed same-origin requests, overflow and blank-capture issues, so the Changes tab can show a green check or red cross per shot: hover, focus or tap the icon for that shot's plain-words verdict and its own issues, while an issue tied to no single shot appears once under the list. The record shape therefore includes a per-capture `issues` array (added in #0753) alongside the handoff-wide `issues` — capture behaviour and gating are unchanged. Captured PNGs live under `work/.attachments/<task-id>/shots/` in the **main checkout** (not the task worktree), which is where a reviewer looks.
 
+## Mechanical review verification
+
+```toml
+reviewVerification.guardTestCheck = true
+reviewVerification.testGlobs = ["**/*.test.ts", "**/*.test.tsx", "**/*.test.js", "**/*.test.mjs"]
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `reviewVerification.guardTestCheck` | boolean | `true` | yes | Kill switch for the guard negative-test check. When a check *guard* a project declares in `[[check.steps]]` changed, a test must prove bad input is rejected. The check only ever fires for guards a project actually declares, so it never blocks a repo whose plan has no built-in RepoOS guard; set `false` to silence it entirely. |
+| `reviewVerification.testGlobs` | string[] | `["**/*.test.ts", "**/*.test.tsx", "**/*.test.js", "**/*.test.mjs"]` | yes | Globs identifying the test files counted as negative-test evidence. Set these for a Swift, Python, Go or other non-JS project (e.g. `["**/*Tests.swift"]`, `["**/test_*.py"]`, `["**/*_test.go"]`). |
+
+Edit both keys in **Settings → General**. The check appends a `## Automated verification` section to the review report and clamps a reviewer's `` `good to go` `` to `needs some work` on failure; the reason is recorded in the task activity note and the follow-up message to the engineer. See [Review and close-out → Automated verification](/review-and-close-out#automated-verification-when-repoos-clamps-a-clean-verdict) and [docs/review-verification.md](../docs/review-verification.md).
+
 ## Approval policy (opt-in auto Move to done)
 
 ```toml
