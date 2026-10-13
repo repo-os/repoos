@@ -144,9 +144,7 @@ describe("command-target resolution (#0761)", () => {
 
   it("filters test artifacts before matching, like web targets", () => {
     expect(shotTargetsForPaths(SHOT, ["Sources/Divot/Tests/AppTests.swift"])).toEqual(["mac"]);
-    expect(
-      shotTargetsForPaths(SHOT, ["Sources/Divot/tests/setup/helper.swift"]),
-    ).toEqual([]);
+    expect(shotTargetsForPaths(SHOT, ["Sources/Divot/tests/setup/helper.swift"])).toEqual([]);
   });
 
   it("marks a docs-only match as contentOnly", () => {
@@ -157,7 +155,13 @@ describe("command-target resolution (#0761)", () => {
   });
 
   it("resolves a command target through resolveShotTargets (paths, area, --target)", () => {
-    const byPaths = resolveShotTargets(undefined, "core", ["Sources/Divot/App.swift"], undefined, SHOT);
+    const byPaths = resolveShotTargets(
+      undefined,
+      "core",
+      ["Sources/Divot/App.swift"],
+      undefined,
+      SHOT,
+    );
     expect(byPaths.names).toEqual(["mac"]);
     expect(byPaths.source).toBe("paths");
 
@@ -177,7 +181,9 @@ describe("command-target resolution (#0761)", () => {
   });
 
   it("keeps web behavior unchanged when both are configured", () => {
-    const preview = { targets: [{ name: "web", areas: ["web"], paths: ["src/ui/**"], command: "bun dev" }] };
+    const preview = {
+      targets: [{ name: "web", areas: ["web"], paths: ["src/ui/**"], command: "bun dev" }],
+    };
     // A web path resolves the web target.
     const web = resolveShotTargets(preview, "web", ["src/ui/App.vue"], undefined, SHOT);
     expect(web.names).toEqual(["web"]);
@@ -196,7 +202,10 @@ describe("command-target resolution (#0761)", () => {
   });
 
   it("lists command target names alongside web names for --shots validation", () => {
-    const preview = { command: "bun dev", targets: [{ name: "web", areas: ["web"], command: "bun dev" }] };
+    const preview = {
+      command: "bun dev",
+      targets: [{ name: "web", areas: ["web"], command: "bun dev" }],
+    };
     expect(allShotTargetNames(preview, SHOT)).toEqual(["default", "web", "mac", "ios"]);
   });
 });
@@ -263,8 +272,7 @@ describe("runShotCommand (#0761)", () => {
   }
 
   // A command that writes a real PNG into REPOOS_SHOT_DIR.
-  const writePng =
-    `printf '%s' '${Buffer.from(PNG_1PX, "base64").toString("base64")}' | base64 -d > "$REPOOS_SHOT_DIR/shot.png"`;
+  const writePng = `printf '%s' '${Buffer.from(PNG_1PX, "base64").toString("base64")}' | base64 -d > "$REPOOS_SHOT_DIR/shot.png"`;
 
   it("runs the command in the worktree and collects the images it wrote", () => {
     const worktree = tmp("repoos-shot-cmd-wt-");
@@ -338,11 +346,7 @@ describe("runShotCommand (#0761)", () => {
   it("fails with the stdout/stderr tail when the command exits non-zero with no files", () => {
     const worktree = tmp("repoos-shot-cmd-fail-");
     const out = tmp("repoos-shot-cmd-out-");
-    const outcome = runShotCommand(
-      target({ command: "echo boom >&2; exit 3" }),
-      worktree,
-      out,
-    );
+    const outcome = runShotCommand(target({ command: "echo boom >&2; exit 3" }), worktree, out);
     expect(outcome.status).toBe("failed");
     if (outcome.status !== "failed") return;
     expect(outcome.reason).toMatch(/exited 3/);

@@ -179,7 +179,8 @@ export function runShotCommand(
     };
   }
   const cwd = target.cwd ? join(worktreeRoot, target.cwd) : worktreeRoot;
-  const timeout = target.timeoutMs && target.timeoutMs > 0 ? target.timeoutMs : DEFAULT_SHOT_TIMEOUT_MS;
+  const timeout =
+    target.timeoutMs && target.timeoutMs > 0 ? target.timeoutMs : DEFAULT_SHOT_TIMEOUT_MS;
   const run = spawnSync("sh", ["-c", target.command], {
     cwd,
     encoding: "utf8",
@@ -241,7 +242,11 @@ export function runShotCommand(
   const captured: CapturedShotFile[] = [];
   for (const name of files) {
     try {
-      captured.push({ name, mime: mimeForShotFile(name), data: readFileSync(join(outputDir, name)) });
+      captured.push({
+        name,
+        mime: mimeForShotFile(name),
+        data: readFileSync(join(outputDir, name)),
+      });
     } catch (err) {
       warnings.push(`could not read captured file ${name}: ${(err as Error).message}`);
     }

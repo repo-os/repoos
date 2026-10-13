@@ -449,7 +449,10 @@ export function validateDeclaredShotTargets(
 ): string[] {
   const errors: string[] = [];
   const named = (preview?.targets ?? []).map((t) => t.name).filter(Boolean);
-  const valid = new Set([...previewTargetNames(preview), ...(shot?.targets ?? []).map((t) => t.name)]);
+  const valid = new Set([
+    ...previewTargetNames(preview),
+    ...(shot?.targets ?? []).map((t) => t.name),
+  ]);
 
   for (let i = 0; i < shots.length; i++) {
     const label = `shot #${i + 1}`;
@@ -621,7 +624,11 @@ export function buildCapturePlan(
     }
     if (!resolved.target) continue;
     declaredTargeted.add(resolved.target);
-    if (shot.route === undefined && !isCommand(resolved.target) && contentOnly.has(resolved.target)) {
+    if (
+      shot.route === undefined &&
+      !isCommand(resolved.target) &&
+      contentOnly.has(resolved.target)
+    ) {
       // Docs-content-only target (#0603): its globs matched *.md files, so no
       // route can name the page that changed. Skip visibly instead of
       // captioning the docs home page — this error is the one visible note for

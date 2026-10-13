@@ -469,7 +469,11 @@ export async function runAutoShotCapture(
       if (!target) {
         return finish("failed", `command capture target "${entry.target}" is not configured`);
       }
-      const outputDir = join(shotsDir(config.root, config.workDir, task.id), "cmd", slugName(entry.target));
+      const outputDir = join(
+        shotsDir(config.root, config.workDir, task.id),
+        "cmd",
+        slugName(entry.target),
+      );
       const outcome = runShotCommand(target, commandRoot, outputDir);
       if (outcome.status !== "captured") {
         // A command problem is a VISIBLE skip/failure note — never a failed
