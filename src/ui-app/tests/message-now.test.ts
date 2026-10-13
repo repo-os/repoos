@@ -112,6 +112,16 @@ function spawnCount(fx: Fixture): number {
   }
 }
 
+/**
+ * "Running" flips true when the server registers the child, before the fake
+ * agent (a Node script) has logged its spawn. Wait for that line so a baseline
+ * count never misses the agent's own first spawn.
+ */
+async function waitForFirstSpawn(fx: Fixture): Promise<number> {
+  await waitForAsync(async () => spawnCount(fx) >= 1, "first agent spawn logged");
+  return spawnCount(fx);
+}
+
 /** Best-effort kill of any spawned fake agents, so a failed test leaks nothing. */
 function killSpawns(fx: Fixture): void {
   let text: string;
@@ -173,7 +183,7 @@ describe("repoos message --now (#0760)", () => {
           async () => !(await running(server)).some((r) => r.id === id),
           "agent stopped",
         );
-        const before = spawnCount(fx);
+        const before = await waitForFirstSpawn(fx);
 
         const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
           text: "steer me",
@@ -210,7 +220,7 @@ describe("repoos message --now (#0760)", () => {
           async () => (await running(server)).some((r) => r.id === id),
           "agent running",
         );
-        const before = spawnCount(fx);
+        const before = await waitForFirstSpawn(fx);
 
         const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
           text: "change of plan",
@@ -256,7 +266,7 @@ describe("repoos message --now (#0760)", () => {
           async () => (await running(server)).some((r) => r.id === id),
           "agent running",
         );
-        const before = spawnCount(fx);
+        const before = await waitForFirstSpawn(fx);
 
         const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
           text: "should not deliver",
@@ -292,7 +302,7 @@ describe("repoos message --now (#0760)", () => {
           async () => (await running(server)).some((r) => r.id === id),
           "agent running",
         );
-        const before = spawnCount(fx);
+        const before = await waitForFirstSpawn(fx);
 
         const sent = await api(server, "POST", `/api/tasks/${id}/message`, {
           text: "queued by default",
