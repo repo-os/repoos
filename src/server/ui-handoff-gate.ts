@@ -611,7 +611,8 @@ export async function runUiHandoffGate(
   let cleared = false;
   const ensureCleared = (): void => {
     if (!cleared) {
-      store.removeAuto();
+      if (deps.forceRefresh) store.clearForRefresh();
+      else store.removeAuto();
       cleared = true;
     }
   };

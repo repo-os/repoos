@@ -91,7 +91,11 @@ import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-re
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
-import { readUiHandoffGateEvidence, effectiveHandoffTreeStatus } from "../ui-handoff-gate.js";
+import {
+  readUiHandoffGateEvidence,
+  effectiveHandoffTreeStatus,
+  runUiHandoffGate,
+} from "../ui-handoff-gate.js";
 import { localShotStore } from "../shots.js";
 import { computeTaskShotContext } from "../shot-context.js";
 import {
@@ -104,7 +108,7 @@ import {
 } from "../../core/shot-plan.js";
 import { resolveShotTargets } from "../../core/shot-targets.js";
 import { captureDeclaredShot } from "../shot-capture.js";
-import { runUiHandoffGate } from "../ui-handoff-gate.js";
+import type { PreviewManager } from "../preview.js";
 import { STATUSES } from "../../core/types.js";
 import {
   ACTIVITY_HEADING,
@@ -1242,6 +1246,75 @@ export async function postCaptureWorktreeGuard(
   return { ok: true, headAfter, restored };
 }
 
+export type GuardedForceRefreshCaptureResult = {
+  skipped: boolean;
+  gateOk: boolean;
+  headIdentity: string | null;
+  detail?: string;
+  restored: string[];
+  error?: string;
+};
+
+/**
+ * Shared force-refresh capture for manual verify and automatic stale-only
+ * recovery (#0766): run the gate, then post-capture worktree guard so command
+ * targets cannot leave tracked edits or a moved HEAD behind.
+ */
+export async function guardedForceRefreshCapture(
+  config: RepoOSConfig,
+  task: Task,
+  worktree: string,
+  previews: PreviewManager | undefined,
+  log: (taskId: string, level: "info" | "warn" | "error", message: string) => void,
+): Promise<GuardedForceRefreshCaptureResult> {
+  const headBefore = shortHeadOf(worktree);
+  const result = await runUiHandoffGate(config, task, previews, log, {
+    forceRefresh: true,
+    recordTaskNotes: false,
+  });
+  if (result.skipped) {
+    return {
+      skipped: true,
+      gateOk: false,
+      headIdentity: null,
+      detail: result.detail,
+      restored: [],
+    };
+  }
+  const guarded = await postCaptureWorktreeGuard(worktree, headBefore);
+  for (const line of guarded.restored) {
+    log(task.id, "warn", `evidence refresh for #${task.id}: ${line}`);
+  }
+  if (!guarded.ok) {
+    return {
+      skipped: false,
+      gateOk: false,
+      headIdentity: null,
+      restored: guarded.restored,
+      error: guarded.error,
+    };
+  }
+  const evidence = readUiHandoffGateEvidence(config, task.id);
+  const headIdentity = evidence?.sourceIdentity ?? guarded.headAfter;
+  if (headIdentity !== guarded.headAfter) {
+    return {
+      skipped: false,
+      gateOk: false,
+      headIdentity,
+      restored: guarded.restored,
+      error:
+        `evidence sourceIdentity (${headIdentity ?? "unknown"}) does not match post-capture HEAD (${guarded.headAfter})`,
+    };
+  }
+  return {
+    skipped: false,
+    gateOk: result.ok,
+    headIdentity,
+    detail: result.detail,
+    restored: guarded.restored,
+  };
+}
+
 /** Refresh handoff shots and verification against the reviewed worktree HEAD. */
 export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) => {
   const { config, index, runner, reviews, closeOutLock, previews } = ctx;
@@ -1288,52 +1361,28 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
   }
   // Snapshot the HEAD before capture to ensure evidence matches the tree
   // it was captured from, and no concurrent commits slip in.
-  const headBefore = shortHeadOf(worktree);
   evidenceRefreshes.add(id);
   try {
-    const result = await runUiHandoffGate(
-      config,
-      task,
-      previews,
-      (_taskId, level, message) => {
-        ctx.logger.task(id, level, message);
-      },
-      { forceRefresh: true, recordTaskNotes: false },
-    );
-    if (result.skipped) {
+    const captured = await guardedForceRefreshCapture(config, task, worktree, previews, (taskId, level, message) => {
+      ctx.logger.task(taskId, level, message);
+    });
+    if (captured.skipped) {
       return json(res, 409, {
-        error: `Evidence was not refreshed for #${id}: ${result.detail ?? "verification was skipped"}`,
+        error: `Evidence was not refreshed for #${id}: ${captured.detail ?? "verification was skipped"}`,
       });
     }
-    // Post-capture guard (#0766): a command target runs its command in the
-    // worktree and may have written tracked files there; the refresh must
-    // never leave those behind. The guard restores the capture's damage
-    // (reporting what it did) and refuses when HEAD moved under the capture,
-    // since the evidence can no longer be tied to the negotiated tree.
-    const guarded = await postCaptureWorktreeGuard(worktree, headBefore);
-    for (const line of guarded.restored) {
-      ctx.logger.task(id, "warn", `evidence refresh for #${id}: ${line}`);
-    }
-    if (!guarded.ok) {
+    if (captured.error) {
       return json(res, 409, {
-        error: guarded.error,
-        ...(guarded.restored.length ? { restored: guarded.restored } : {}),
+        error: captured.error,
+        ...(captured.restored.length ? { restored: captured.restored } : {}),
       });
     }
-    // Read the evidence to verify sourceIdentity matches our snapshot
-    // and use it as the authoritative return value.
     const evidence = readUiHandoffGateEvidence(config, id);
-    if (evidence?.sourceIdentity !== guarded.headAfter) {
-      return json(res, 409, {
-        error: `Task #${id}'s evidence sourceIdentity (${evidence?.sourceIdentity ?? "unknown"}) does not match pre-capture HEAD (${guarded.headAfter ?? "unknown"}); capture was stale`,
-      });
-    }
     return json(res, 200, {
-      ok: result.ok,
-      headIdentity: evidence?.sourceIdentity ?? guarded.headAfter,
-      detail: result.detail,
-      // Writes the capture made outside REPOOS_SHOT_DIR were undone (#0766).
-      ...(guarded.restored.length ? { restored: guarded.restored } : {}),
+      ok: captured.gateOk,
+      headIdentity: captured.headIdentity,
+      detail: captured.detail,
+      ...(captured.restored.length ? { restored: captured.restored } : {}),
       issues: evidence?.issues ?? [],
       shots: localShotStore(config, id).list(),
     });
