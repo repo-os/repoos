@@ -20,6 +20,8 @@
  * paths share.
  */
 import { shotCapturePageUrl } from "../core/shot-fixtures.js";
+import { basename, extname, join } from "node:path";
+import { rmSync } from "node:fs";
 import {
   buildCapturePlan,
   parseShotPlan,
@@ -29,16 +31,22 @@ import {
   type DeclaredShot,
 } from "../core/shot-plan.js";
 import type { ShotMeta } from "./shots.js";
-import { describeTargetPathMatches, resolveShotTargets } from "../core/shot-targets.js";
+import {
+  describeShotTargetPathMatches,
+  describeTargetPathMatches,
+  resolveShotTargets,
+  shotTargetByName,
+} from "../core/shot-targets.js";
 import type { LogLevel } from "../core/logger.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
-import type { RepoOSConfig, Task } from "../core/types.js";
+import type { RepoOSConfig, ShotTargetConfig, Task } from "../core/types.js";
 import { runGit, worktreePathForBranch } from "../core/git.js";
+import { runShotCommand, slugName } from "../core/shot-command.js";
 import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
 import type { PreviewManager } from "./preview.js";
 import { computeTaskShotContext } from "./shot-context.js";
-import { localShotStore } from "./shots.js";
+import { localShotStore, shotsDir } from "./shots.js";
 import { patchTaskFile } from "./write.js";
 
 export interface ShotCaptureResult {
@@ -71,7 +79,7 @@ export interface CapturedPage {
 export async function captureEntryPage(
   context: SmokeContext,
   pageUrl: string,
-  entry: CaptureEntry,
+  entry: CaptureEntry & { route: string },
   settleMs: number = AUTO_SETTLE_MS,
 ): Promise<CapturedPage> {
   const warnings: string[] = [];
@@ -198,11 +206,17 @@ export function planAutoCapture(
   // diff's paths actually matched count as UI evidence.
   let targets: string[];
   if (declared.shots.length > 0) {
-    const resolution = resolveShotTargets(config.preview, task.area, context.changedPaths);
+    const resolution = resolveShotTargets(
+      config.preview,
+      task.area,
+      context.changedPaths,
+      undefined,
+      config.shot,
+    );
     if (resolution.names.length === 0) {
       return {
         reason:
-          `the declared shots could not resolve a preview target — ` +
+          `the declared shots could not resolve a capture target — ` +
           `${resolution.reason ?? "no target matched the diff or the task's area"}`,
       };
     }
@@ -211,7 +225,7 @@ export function planAutoCapture(
     targets = context.detected;
     if (targets.length === 0) {
       return {
-        reason: `the diff (${context.changedPaths.length} changed paths) touches no [[preview.paths]] globs — no UI change to capture`,
+        reason: `the diff (${context.changedPaths.length} changed paths) touches no capture target's globs — no UI change to capture`,
       };
     }
   }
@@ -224,9 +238,15 @@ export function planAutoCapture(
     matchedGlobs.set(match.target, match.globs);
     if (match.contentOnly) docsContentOnly.add(match.target);
   }
+  for (const match of describeShotTargetPathMatches(config.shot, context.changedPaths)) {
+    matchedGlobs.set(match.target, match.globs);
+    if (match.contentOnly) docsContentOnly.add(match.target);
+  }
+  const commandTargets = new Set((config.shot?.targets ?? []).map((t) => t.name));
   const built = buildCapturePlan(targets, declared.shots, {
     matchedGlobs,
     docsContentOnly,
+    commandTargets,
   });
   const errors = [...declared.errors, ...built.errors];
   const skips = [...built.autoSkips];
@@ -308,6 +328,7 @@ export async function runAutoShotCapture(
   if ("reason" in plan) {
     return finish("skipped", plan.reason);
   }
+  const commandTargets = new Set((config.shot?.targets ?? []).map((t) => t.name));
   // #0734: reuse an existing automatic capture ONLY when it is bound to the
   // SAME plan and the SAME tested tree. A metadata note alone must not stand
   // down a capture whose declaration changed (a corrected route, a new
@@ -353,6 +374,16 @@ export async function runAutoShotCapture(
     );
   }
 
+  // Split the plan: web entries go through the browser/preview path; command
+  // entries (#0761) run their target command in the worktree. Playwright is only
+  // required when there IS a web entry, so a native-app repo needs no browser.
+  const webEntries = entries.filter(
+    (e): e is CaptureEntry & { route: string } => !commandTargets.has(e.target),
+  );
+  const commandEntries = entries.filter((e) => commandTargets.has(e.target));
+  const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+  const commandRoot = worktree ?? config.root;
+
   let browser: SmokeBrowser | undefined;
   let context: SmokeContext | undefined;
   let currentTarget: string | undefined;
@@ -360,22 +391,24 @@ export async function runAutoShotCapture(
   let captured = 0;
   let cleared = false;
   try {
-    try {
-      browser = await launchWebkit();
-      context = await browser.newContext({ serviceWorkers: "block" });
-    } catch (err) {
-      if (isShotCaptureUnavailable(err)) {
+    if (webEntries.length > 0) {
+      try {
+        browser = await launchWebkit();
+        context = await browser.newContext({ serviceWorkers: "block" });
+      } catch (err) {
+        if (isShotCaptureUnavailable(err)) {
+          return finish(
+            "skipped",
+            `Playwright/WebKit unavailable (${(err as Error).message.split("\n")[0]}). ${INSTALL_ADVICE}`,
+          );
+        }
         return finish(
-          "skipped",
-          `Playwright/WebKit unavailable (${(err as Error).message.split("\n")[0]}). ${INSTALL_ADVICE}`,
+          "failed",
+          `could not launch the browser: ${(err as Error).message.split("\n")[0]}`,
         );
       }
-      return finish(
-        "failed",
-        `could not launch the browser: ${(err as Error).message.split("\n")[0]}`,
-      );
     }
-    for (const entry of entries) {
+    for (const entry of webEntries) {
       if (entry.target !== currentTarget) {
         const started = await startTargetPreview(previews, task, entry.target);
         if ("error" in started) {
@@ -391,7 +424,7 @@ export async function runAutoShotCapture(
       let png: Buffer;
       let warnings: string[] = [];
       try {
-        ({ png, warnings } = await captureEntryPage(context, pageUrl, entry));
+        ({ png, warnings } = await captureEntryPage(context as SmokeContext, pageUrl, entry));
       } catch (err) {
         return finish(
           "failed",
@@ -417,7 +450,7 @@ export async function runAutoShotCapture(
       const stored = store.save({
         origin: "auto",
         target: entry.target,
-        route: entry.route,
+        ...(entry.route ? { route: entry.route } : {}),
         ...(entry.label ? { label: entry.label } : {}),
         provenance: provenanceCaption(entry.provenance),
         // #0734: bind the capture to the plan and the tested tree so a later
@@ -430,6 +463,67 @@ export async function runAutoShotCapture(
         return finish("failed", `the shot store rejected the image: ${stored.error}`);
       }
       captured++;
+    }
+    for (const entry of commandEntries) {
+      const target = shotTargetByName(config.shot, entry.target);
+      if (!target) {
+        return finish("failed", `command capture target "${entry.target}" is not configured`);
+      }
+      const outputDir = join(
+        shotsDir(config.root, config.workDir, task.id),
+        "cmd",
+        slugName(entry.target),
+      );
+      const outcome = runShotCommand(target, commandRoot, outputDir);
+      if (outcome.status !== "captured") {
+        // A command problem is a VISIBLE skip/failure note — never a failed
+        // handoff. Record the stdout/stderr tail when the command reported one.
+        const status = outcome.status;
+        log(task.id, "warn", `shots: ${status} — ${outcome.reason}`);
+        try {
+          patchTaskFile(config, task.absPath, { note: `shots: ${status} — ${outcome.reason}` });
+        } catch {
+          /* the log line already recorded it */
+        }
+        continue;
+      }
+      for (const msg of outcome.warnings) {
+        log(task.id, "warn", `shots: ${msg}`);
+        try {
+          patchTaskFile(config, task.absPath, { note: msg });
+        } catch {
+          /* the log line already recorded it */
+        }
+      }
+      const store = localShotStore(config, task.id);
+      if (!cleared) {
+        store.removeAuto();
+        cleared = true;
+      }
+      for (const file of outcome.files) {
+        const stored = store.save({
+          origin: "auto",
+          target: entry.target,
+          command: "command",
+          ...(entry.label ? { label: entry.label } : {}),
+          provenance: provenanceCaption(entry.provenance),
+          planFingerprint,
+          ...(sourceIdentity ? { sourceIdentity } : {}),
+          name: `${entry.target}-${basename(file.name, extname(file.name))}`,
+          mime: file.mime,
+          data: file.data.toString("base64"),
+        });
+        if ("error" in stored) {
+          return finish("failed", `the shot store rejected the image: ${stored.error}`);
+        }
+        captured++;
+      }
+      // The raw command output is transient — the store now owns the bytes.
+      try {
+        rmSync(outputDir, { recursive: true, force: true });
+      } catch {
+        /* best-effort */
+      }
     }
     return finish(
       "captured",
@@ -493,6 +587,7 @@ export async function captureDeclaredShot(
   task: Task,
   previews: PreviewManager,
   entry: CaptureEntry & {
+    route: string;
     /** The parsed declaration to store on the shot, for exact delete sync (#0627). */
     declared?: DeclaredShot;
   },

@@ -777,8 +777,10 @@ describe("areaVocabularyTomlAddition — existing-repo areas prompt (#0587)", ()
     expect(addition).toContain("[[areas]]");
     expect(addition).toContain("# [[preview.targets]]");
     expect(addition).toContain('# areas = ["landing"]');
+    expect(addition).toContain("# [[shot.targets]]");
     // Real (uncommented) preview rows would route previews the repo has not set up.
     expect(addition).not.toMatch(/^\[\[preview\.targets\]\]/m);
+    expect(addition).not.toMatch(/^\[\[shot\.targets\]\]/m);
   });
 
   it("is empty when there are no areas to add, so nothing is appended", () => {
