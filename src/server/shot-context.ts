@@ -6,12 +6,16 @@
  */
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { changedPathsVsBase, currentBranch, worktreePathForBranch } from "../core/git.js";
-import { shotTargetMismatchWarning, targetsForPaths } from "../core/shot-targets.js";
+import {
+  shotTargetMismatchWarning,
+  shotTargetsForPaths,
+  targetsForPaths,
+} from "../core/shot-targets.js";
 
 export interface TaskShotContext {
   /** Files this task's branch changed vs its base (best-effort; empty when unknown). */
   changedPaths: string[];
-  /** Preview target names the changed paths resolve to, in config order. */
+  /** Capture target names the changed paths resolve to, in config order. */
   detected: string[];
   /** Area/target mismatch warning, when the diff touches a target the area misses. */
   warning?: string;
@@ -34,7 +38,12 @@ export function computeTaskShotContext(config: RepoOSConfig, task: Task): TaskSh
   } catch {
     return empty;
   }
-  const detected = targetsForPaths(config.preview, changedPaths);
+  // Web preview targets and command capture targets (#0761) both count as
+  // detected evidence; web targets are listed first, matching resolution order.
+  const detected = [
+    ...targetsForPaths(config.preview, changedPaths),
+    ...shotTargetsForPaths(config.shot, changedPaths),
+  ];
   const warning = shotTargetMismatchWarning(config.preview, task.area, changedPaths);
   return {
     changedPaths,

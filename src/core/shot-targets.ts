@@ -19,7 +19,7 @@
  * target matched (for its `auto: matched <glob>` caption) and whether the
  * matched files are docs content only (no route can be inferred → skip).
  */
-import type { PreviewConfig } from "./types.js";
+import type { PreviewConfig, ShotConfig, ShotTargetConfig } from "./types.js";
 import { parseTaskAreas } from "./areas.js";
 
 /** Sentinel target name for the bare `[preview] command` (no `[[preview.targets]]`). */
@@ -252,19 +252,29 @@ export interface ShotTargetResolution {
  *  2. targets whose `paths` globs match a changed file;
  *  3. area-based resolution (area-matching targets, else the default command);
  *  4. nothing — with an actionable reason.
+ *
+ * Command capture targets (#0761) participate in steps 1–3 alongside web
+ * targets: a repo can declare one or the other (or both), and a `--target`
+ * names whichever it is. Web targets are tried first at each step so a repo
+ * that declares both keeps its existing web behavior; a changed path that only
+ * a command target claims still resolves it.
  */
 export function resolveShotTargets(
   preview: PreviewConfig | undefined,
   area: string | null | undefined,
   changedPaths: string[],
   overrideTarget?: string,
+  shot?: ShotConfig,
 ): ShotTargetResolution {
-  const detected = targetsForPaths(preview, changedPaths);
+  const detected = [
+    ...targetsForPaths(preview, changedPaths),
+    ...shotTargetsForPaths(shot, changedPaths),
+  ];
   const all = preview?.targets ?? [];
 
   if (overrideTarget) {
     const name = overrideTarget.trim();
-    if (all.some((t) => t.name === name)) {
+    if (all.some((t) => t.name === name) || shotTargetByName(shot, name)) {
       return { names: [name], source: "target", detected };
     }
     // The bare `[preview] command` is a real target under its sentinel name:
@@ -280,7 +290,7 @@ export function resolveShotTargets(
       source: "none",
       detected,
       unknownTarget: name,
-      reason: `No preview target named "${name}" is configured.`,
+      reason: `No capture target named "${name}" is configured.`,
     };
   }
 
@@ -288,7 +298,7 @@ export function resolveShotTargets(
     return { names: detected, source: "paths", detected };
   }
 
-  const areaNames = targetsForArea(preview, area);
+  const areaNames = [...targetsForArea(preview, area), ...shotTargetsForArea(shot, area)];
   if (areaNames.length > 0) {
     return { names: areaNames, source: "area", detected };
   }
@@ -297,11 +307,15 @@ export function resolveShotTargets(
     return { names: [DEFAULT_PREVIEW_TARGET], source: "default", detected };
   }
 
+  const hasCommandTargets = (shot?.targets ?? []).length > 0;
   return {
     names: [],
     source: "none",
     detected,
-    reason: "No preview target matched the changed paths or the task's area.",
+    reason: hasCommandTargets
+      ? "No capture target covers the changed paths or the task's area — declare a " +
+        "[[shot.targets]] command target whose `paths`/`areas` match this diff (see user-docs/configuration.md)."
+      : "No preview target matched the changed paths or the task's area.",
   };
 }
 
@@ -350,4 +364,111 @@ export function shotTargetMismatchWarning(
   if (unexplained.length === 0) return undefined;
   const areaLabel = (area ?? "").trim() || "(none)";
   return `This task's changes touch ${formatTargetList(unexplained)} but its area is "${areaLabel}".`;
+}
+
+// ── Command-based capture targets (#0761) ──────────────────────────────────
+//
+// A repo whose product is a native macOS app, a mobile app or a desktop app has
+// no dev server to preview: its "screenshot" is a command that renders image
+// files offscreen (a `swift test` that writes a PNG, `xcrun simctl io …
+// screenshot`, `adb exec-out screencap`, `screencapture`). These helpers resolve
+// which `[[shot.targets]]` a task's changed paths / area select, using exactly
+// the same glob and area rules as the web path so the two agree on what
+// "touched" means. Kept pure and dependency-free.
+
+/** A `[[shot.targets]]` row looked up by name; undefined when not declared. */
+export function shotTargetByName(
+  shot: ShotConfig | undefined,
+  name: string,
+): ShotTargetConfig | undefined {
+  return (shot?.targets ?? []).find((t) => t.name === name);
+}
+
+/**
+ * The command-target names whose `paths` globs match at least one non-test
+ * changed file, in config order — the non-web counterpart of `targetsForPaths`.
+ * A target with no `paths` never matches here (it is reachable through area
+ * resolution or an explicit `--target`).
+ */
+export function shotTargetsForPaths(
+  shot: ShotConfig | undefined,
+  changedPaths: string[],
+): string[] {
+  const paths = nonTestPaths(changedPaths);
+  const out: string[] = [];
+  for (const t of shot?.targets ?? []) {
+    const globs = t.paths ?? [];
+    if (globs.length === 0) continue;
+    if (paths.some((p) => globs.some((g) => matchGlob(g, p)))) out.push(t.name);
+  }
+  return out;
+}
+
+/** The command-target names whose `areas` include any of the task's areas. */
+export function shotTargetsForArea(shot: ShotConfig | undefined, area: string | null | undefined) {
+  const tasks = splitAreas(area);
+  if (tasks.length === 0) return [] as string[];
+  const out: string[] = [];
+  for (const t of shot?.targets ?? []) {
+    if (t.areas.some((a) => tasks.includes(a.trim().toLowerCase()))) out.push(t.name);
+  }
+  return out;
+}
+
+/**
+ * Per-target match detail for command targets, mirroring
+ * `describeTargetPathMatches` — which globs matched each target, and whether
+ * every matched path is docs content (`*.md`). The docs-content rule applies
+ * to a command target too: a docs-only diff gives the command no state worth
+ * rendering, so the automatic capture skips it visibly unless the task declared
+ * a shot for it.
+ */
+export function describeShotTargetPathMatches(
+  shot: ShotConfig | undefined,
+  changedPaths: string[],
+): TargetPathMatch[] {
+  const paths = nonTestPaths(changedPaths);
+  const out: TargetPathMatch[] = [];
+  for (const t of shot?.targets ?? []) {
+    const globs = t.paths ?? [];
+    if (globs.length === 0) continue;
+    const hits = paths.filter((p) => globs.some((g) => matchGlob(g, p)));
+    const matchedGlobs = [...new Set(globs.filter((g) => hits.some((p) => matchGlob(g, p))))];
+    if (matchedGlobs.length === 0) continue;
+    out.push({
+      target: t.name,
+      globs: matchedGlobs,
+      contentOnly: hits.every((p) => isDocsContentPath(p)),
+    });
+  }
+  return out;
+}
+
+/**
+ * Names of every configured capture target — web preview targets (including the
+ * bare `[preview] command` under its `default` sentinel) plus command targets.
+ * Used to validate a declared `## Shots` entry's `target` against the whole
+ * vocabulary, so a command target name is as valid as a web one.
+ */
+export function allShotTargetNames(preview?: PreviewConfig, shot?: ShotConfig): string[] {
+  const web = previewTargetNamesLocal(preview);
+  const command = (shot?.targets ?? []).map((t) => t.name).filter(Boolean);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const name of [...web, ...command]) {
+    if (seen.has(name)) continue;
+    seen.add(name);
+    out.push(name);
+  }
+  return out;
+}
+
+/** Local copy of `previewTargetNames` to avoid a cyclic import from shot-plan. */
+function previewTargetNamesLocal(preview?: PreviewConfig): string[] {
+  const named = (preview?.targets ?? []).map((t) => t.name).filter(Boolean);
+  if (preview?.command) {
+    if (named.length === 0) return [DEFAULT_PREVIEW_TARGET];
+    return [DEFAULT_PREVIEW_TARGET, ...named];
+  }
+  return named.length > 0 ? named : [DEFAULT_PREVIEW_TARGET];
 }

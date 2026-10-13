@@ -15,13 +15,16 @@
  * overrides; area resolution is the fallback. Missing Playwright is a clean
  * skip with install advice, not a crash.
  */
-import { basename } from "node:path";
+import { basename, extname, join } from "node:path";
+import { rmSync } from "node:fs";
 import { c } from "../cli/colors.js";
 import { findRepoRoot, loadConfig, mainCheckoutRoot, resolveServePort } from "../core/config.js";
 import { changedPathsVsBase, currentBranch } from "../core/git.js";
 import { createRepoOS } from "../core/repoos.js";
 import { shotCapturePageUrl } from "../core/shot-fixtures.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
+import { runShotCommand, slugName } from "../core/shot-command.js";
+import { shotsDir } from "../server/shots.js";
 import {
   buildCapturePlan,
   parseShotPlan,
@@ -29,9 +32,11 @@ import {
   type CaptureEntry,
 } from "../core/shot-plan.js";
 import {
+  describeShotTargetPathMatches,
   describeTargetPathMatches,
   formatTargetList,
   resolveShotTargets,
+  shotTargetByName,
   type ShotTargetSource,
 } from "../core/shot-targets.js";
 import type { Task } from "../core/types.js";
@@ -177,6 +182,8 @@ export interface CliShotPlanInput {
   matchedGlobs: ReadonlyMap<string, string[]>;
   /** Targets whose matched files are docs content only (#0603). */
   docsContentOnly: ReadonlySet<string>;
+  /** Command capture target names (#0761) — no route, run a command instead. */
+  commandTargets?: ReadonlySet<string>;
 }
 
 /** The plan plus the visible notes `cmdShot` prints alongside it. */
@@ -212,6 +219,7 @@ export function buildCliShotPlan(input: CliShotPlanInput): CliShotPlan {
   const built = buildCapturePlan(input.targets, declared.shots, {
     matchedGlobs: input.matchedGlobs,
     docsContentOnly: input.docsContentOnly,
+    ...(input.commandTargets ? { commandTargets: input.commandTargets } : {}),
     route: input.route,
     selector: input.selector,
   });
@@ -298,10 +306,13 @@ async function uploadShot(
   token: string | null,
   input: {
     target: string;
-    route: string;
+    route?: string;
+    command?: "command";
     label?: string;
     provenance?: string;
     selector?: string;
+    name?: string;
+    mime?: string;
     data: string;
     warnings?: string[];
   },
@@ -315,11 +326,12 @@ async function uploadShot(
       headers: cliHeaders(token, true),
       body: JSON.stringify({
         target: input.target,
-        route: input.route,
+        ...(input.route ? { route: input.route } : {}),
+        ...(input.command ? { command: input.command } : {}),
         ...(input.label ? { label: input.label } : {}),
         ...(input.provenance ? { provenance: input.provenance } : {}),
-        name: input.target,
-        mime: "image/png",
+        name: input.name ?? input.target,
+        mime: input.mime ?? "image/png",
         data: input.data,
         ...(input.warnings?.length ? { warnings: input.warnings } : {}),
       }),
@@ -360,6 +372,12 @@ export async function cmdShot(args: string[]): Promise<number> {
   run it, and by the automatic capture only when the diff touches a UI
   target's paths; diffs touching just tests or task notes stand down with a
   visible "shots: skipped — no UI change to capture" note instead.
+
+  A repo with no dev server (a native macOS, iOS/Android or desktop app) can
+  declare a command capture target in repoos.toml as a [[shot.targets]] row —
+  a command that renders image files into REPOOS_SHOT_DIR. --target <name>
+  selects one, and its images are stored like any other shot; no browser is
+  needed. See user-docs/configuration.md.
 
   An explicit <route> or --selector replaces the declared list outright, and
   applies to every resolved target: declared entries carry steps, a highlight
@@ -439,7 +457,13 @@ export async function cmdShot(args: string[]): Promise<number> {
       );
       return 1;
     }
-    const resolution = resolveShotTargets(worktreeConfig.preview, task.area, changed, opts.target);
+    const resolution = resolveShotTargets(
+      worktreeConfig.preview,
+      task.area,
+      changed,
+      opts.target,
+      worktreeConfig.shot,
+    );
     if (resolution.names.length === 0) {
       console.error(c.red("  ✗ ") + (resolution.reason ?? "No preview target resolved."));
       if (resolution.detected.length > 0) {
@@ -475,6 +499,11 @@ export async function cmdShot(args: string[]): Promise<number> {
       matchedGlobs.set(match.target, match.globs);
       if (match.contentOnly) docsContentOnly.add(match.target);
     }
+    for (const match of describeShotTargetPathMatches(worktreeConfig.shot, changed)) {
+      matchedGlobs.set(match.target, match.globs);
+      if (match.contentOnly) docsContentOnly.add(match.target);
+    }
+    const commandTargets = new Set((worktreeConfig.shot?.targets ?? []).map((t) => t.name));
     // #0610: the requested route/selector is part of the plan, not a separate
     // candidate that lost to the fallback's `/`.
     const built = buildCliShotPlan({
@@ -484,6 +513,7 @@ export async function cmdShot(args: string[]): Promise<number> {
       targets,
       matchedGlobs,
       docsContentOnly,
+      commandTargets,
     });
     for (const error of built.declaredErrors) {
       console.error(c.yellow("  · ") + `declared shot list: ${error}`);
@@ -532,30 +562,38 @@ export async function cmdShot(args: string[]): Promise<number> {
     return 1;
   }
 
+  const commandTargets = new Set((worktreeConfig.shot?.targets ?? []).map((t) => t.name));
+  const webPlan = plan.filter(
+    (e): e is CaptureEntry & { route: string } => !commandTargets.has(e.target),
+  );
+  const commandPlan = plan.filter((e) => commandTargets.has(e.target));
+
   let browser: SmokeBrowser | undefined;
   let context: SmokeContext | undefined;
   const saved: ShotResult[] = [];
   try {
-    try {
-      browser = await launchWebkit();
-      context = await browser.newContext({ serviceWorkers: "block" });
-    } catch (err) {
-      const msg = (err as Error).message;
-      if (isShotCaptureUnavailable(err)) {
-        console.error(
-          c.yellow("  · ") + "Screenshot capture skipped — Playwright/WebKit unavailable",
-        );
-        console.error(c.dim(`    ${msg.split("\n")[0]}`));
-        console.error(c.dim(`    ${INSTALL_ADVICE}`));
-      } else {
-        console.error(c.red("  ✗ ") + `could not launch the browser: ${msg.split("\n")[0]}`);
+    if (webPlan.length > 0) {
+      try {
+        browser = await launchWebkit();
+        context = await browser.newContext({ serviceWorkers: "block" });
+      } catch (err) {
+        const msg = (err as Error).message;
+        if (isShotCaptureUnavailable(err)) {
+          console.error(
+            c.yellow("  · ") + "Screenshot capture skipped — Playwright/WebKit unavailable",
+          );
+          console.error(c.dim(`    ${msg.split("\n")[0]}`));
+          console.error(c.dim(`    ${INSTALL_ADVICE}`));
+        } else {
+          console.error(c.red("  ✗ ") + `could not launch the browser: ${msg.split("\n")[0]}`);
+        }
+        return 1;
       }
-      return 1;
     }
 
     let currentTarget: string | undefined;
     let currentPreviewUrl = "";
-    for (const entry of plan) {
+    for (const entry of webPlan) {
       // Only one preview runs per task, so a different target must replace
       // the running one before it can start (#0379/#0271). Same-target
       // entries reuse the running preview — no restart, no churn.
@@ -571,8 +609,9 @@ export async function cmdShot(args: string[]): Promise<number> {
         currentPreviewUrl = started.url.replace(/\/$/, "");
         currentTarget = entry.target;
       }
-      const pageUrl = absolute ? entry.route : shotCapturePageUrl(currentPreviewUrl, entry);
-      const page = (await context.newPage()) as unknown as ShotDriverPage;
+      const route = entry.route ?? "/";
+      const pageUrl = absolute ? route : shotCapturePageUrl(currentPreviewUrl, { ...entry, route });
+      const page = (await context!.newPage()) as unknown as ShotDriverPage;
       let png: Buffer;
       const warnings: string[] = [];
       try {
@@ -583,23 +622,23 @@ export async function cmdShot(args: string[]): Promise<number> {
           entry,
           { waitMs: opts.waitMs, fullPage: opts.fullPage },
           {
-            onHighlightMiss: (selector, route) => {
-              warnings.push(`highlight ${selector} matched nothing on ${route}`);
+            onHighlightMiss: (selector, r) => {
+              warnings.push(`highlight ${selector} matched nothing on ${r}`);
               console.error(
                 c.yellow("  · ") +
-                  `highlight "${selector}" matched nothing on ${route} — capture went ahead unhighlighted`,
+                  `highlight "${selector}" matched nothing on ${r} — capture went ahead unhighlighted`,
               );
             },
-            onSelectorMiss: (selector, route) => {
-              warnings.push(`selector ${selector} matched nothing on ${route}`);
+            onSelectorMiss: (selector, r) => {
+              warnings.push(`selector ${selector} matched nothing on ${r}`);
               console.error(
                 c.yellow("  · ") +
-                  `selector "${selector}" matched nothing on ${route} — capture used the whole window`,
+                  `selector "${selector}" matched nothing on ${r} — capture used the whole window`,
               );
             },
-            onStepMiss: (message, route) => {
-              warnings.push(`${message} on ${route}`);
-              console.error(c.yellow("  · ") + `${message} on ${route} — capture went ahead`);
+            onStepMiss: (message, r) => {
+              warnings.push(`${message} on ${r}`);
+              console.error(c.yellow("  · ") + `${message} on ${r} — capture went ahead`);
             },
           },
         );
@@ -613,7 +652,7 @@ export async function cmdShot(args: string[]): Promise<number> {
 
       const uploaded = await uploadShot(port, task.id, token, {
         target: entry.target,
-        route: entry.route.startsWith("/") ? normalizedRoute(entry.route) : entry.route,
+        route: route.startsWith("/") ? normalizedRoute(route) : route,
         ...(entry.label ? { label: entry.label } : {}),
         provenance: provenanceCaption(entry.provenance),
         data: png.toString("base64"),
@@ -634,6 +673,55 @@ export async function cmdShot(args: string[]): Promise<number> {
         c.green("  ✔ ") +
           `${entry.target}${entry.highlight ? " · highlighted" : ""}${entry.label ? ` – ${entry.label}` : ""} → ${c.cyan(uploaded.shot.path)} ${c.dim(`(${Math.round(png.length / 1024)} KB)`)}`,
       );
+    }
+
+    for (const entry of commandPlan) {
+      const target = shotTargetByName(worktreeConfig.shot, entry.target);
+      if (!target) {
+        console.error(c.red("  ✗ ") + `command capture target "${entry.target}" is not configured`);
+        return 1;
+      }
+      const outputDir = join(
+        shotsDir(worktreeRoot, worktreeConfig.workDir, task.id),
+        "cmd",
+        slugName(entry.target),
+      );
+      const outcome = runShotCommand(target, worktreeRoot, outputDir);
+      if (outcome.status !== "captured") {
+        console.error(c.yellow("  · ") + `shots: ${outcome.status} — ${outcome.reason}`);
+        continue;
+      }
+      for (const msg of outcome.warnings) {
+        console.error(c.yellow("  · ") + msg);
+      }
+      for (const file of outcome.files) {
+        const uploaded = await uploadShot(port, task.id, token, {
+          target: entry.target,
+          command: "command",
+          ...(entry.label ? { label: entry.label } : {}),
+          provenance: provenanceCaption(entry.provenance),
+          name: `${entry.target}-${basename(file.name, extname(file.name))}`,
+          mime: file.mime,
+          data: file.data.toString("base64"),
+        });
+        if (!uploaded.ok) {
+          console.error(c.red("  ✗ ") + `storing the shot failed: ${uploaded.error}`);
+          return 1;
+        }
+        saved.push({
+          target: entry.target,
+          ...(entry.label ? { label: entry.label } : {}),
+          file: uploaded.shot.name,
+          path: uploaded.shot.path,
+          url: uploaded.shot.url,
+        });
+        console.log(
+          c.green("  ✔ ") +
+            `${entry.target}${entry.label ? ` – ${entry.label}` : ""} → ${c.cyan(uploaded.shot.path)} ${c.dim(`(${Math.round(file.data.length / 1024)} KB)`)}`,
+        );
+      }
+      // The raw command output is transient — the server now owns the bytes.
+      rmSync(outputDir, { recursive: true, force: true });
     }
     if (saved.length === 0) {
       console.error(c.yellow("  · ") + "No shots captured.");

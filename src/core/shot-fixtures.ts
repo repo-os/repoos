@@ -3,8 +3,6 @@
  * path appends `?shotState=<id>` to the route; the UI applies the fixture only
  * on preview builds (`isPreviewBuild`).
  */
-import type { CaptureEntry } from "./shot-plan.js";
-
 export const SHOT_PREVIEW_FIXTURE_IDS = [
   "closeOut:active",
   "card:doneError",
@@ -25,7 +23,7 @@ export function isShotPreviewFixtureId(value: string): value is ShotPreviewFixtu
 /** Build the full page URL for one capture entry (origin + route + optional fixture query). */
 export function shotCapturePageUrl(
   previewOrigin: string,
-  entry: Pick<CaptureEntry, "route" | "state">,
+  entry: { route: string; state?: string },
 ): string {
   const origin = previewOrigin.replace(/\/$/, "");
   const path = entry.route.startsWith("/") ? entry.route : `/${entry.route}`;
