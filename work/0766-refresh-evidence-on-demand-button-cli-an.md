@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T22:46:03Z"
+updated_at: "2026-10-13T22:46:04Z"
 review_passes: 11
 close_out_repair_count: 1
 review_rounds: 2
@@ -165,3 +165,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T22:44:52Z · message_queued at 2026-10-13T22:44:52.639Z
 - 2026-10-13T22:46:03Z · status active→review
 - 2026-10-13T22:46:03Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7e06cd672) during finalization (#0734)
+- 2026-10-13T22:46:04Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7e06cd672) during finalization (#0734)
