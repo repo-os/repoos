@@ -1,6 +1,6 @@
 ---
-last_close_out_gate_ms: 383380
-last_close_out_gate_at: "2026-10-13T16:38:27.656Z"
+last_close_out_gate_ms: 378382
+last_close_out_gate_at: "2026-10-13T16:44:48.789Z"
 id: "0762"
 title: "Mechanical review verification misfires on non-RepoOS repos: guard-test check is JS/TS-only and triggers on any repoos.toml addition"
 type: bug
@@ -14,7 +14,7 @@ branch: feat/mechanical-review-verification-misfires-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-13T08:51:23Z"
-updated_at: "2026-10-13T16:38:27Z"
+updated_at: "2026-10-13T16:44:48Z"
 review_passes: 5
 dev_error_count: 1
 ---
@@ -112,4 +112,5 @@ Start from review-verification.ts guardsMateriallyChangedFromDiff and evaluateGu
 - 2026-10-13T16:24:24Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (3169e683a) during finalization (#0734)
 - 2026-10-13T16:25:42Z · note: review pass 5: good to go
 - 2026-10-13T16:38:27Z · close-out gate completed in 383s
+- 2026-10-13T16:44:48Z · close-out gate completed in 378s
 
