@@ -66,11 +66,76 @@ describe("UI handoff verification gate (#0680)", () => {
         },
       ],
     } as ReturnType<typeof shotStore.localShotStore>);
-
     const plan = shotCapture.planAutoCapture(config, task, { forceRefresh: true });
     expect(plan).toMatchObject({
       entries: [{ target: "web", route: "/settings?tab=general", label: "Settings view" }],
     });
+  });
+
+  it("explicit refresh bypasses the normal engineer-capture pre-emption check", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-force-manual-"));
+    temps.push(root);
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      uiVerification: { enabled: true },
+      preview: { targets: [{ name: "web", paths: ["src/**"], command: "echo" }] },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "manual-force",
+      title: "t",
+      path: "work/manual-force.md",
+      absPath: join(root, "work/manual-force.md"),
+      status: "review",
+      branch: "feat/manual-force",
+      area: "web",
+      body: "",
+    } as Task;
+    vi.spyOn(shotStore, "localShotStore").mockReturnValue({
+      list: () => [
+        {
+          name: "manual.png",
+          target: "web",
+          route: "/settings",
+          label: "Settings",
+          path: "manual.png",
+          url: "/manual.png",
+          size: 10,
+          mime: "image/png",
+          capturedAt: new Date().toISOString(),
+        },
+      ],
+    } as ReturnType<typeof shotStore.localShotStore>);
+    const planSpy = vi
+      .spyOn(shotCapture, "planAutoCapture")
+      .mockImplementation((_config, _task, opts) =>
+        opts?.forceRefresh
+          ? {
+              entries: [
+                {
+                  target: "web",
+                  route: "/settings",
+                  provenance: { kind: "declared" },
+                },
+              ],
+              errors: [],
+              skips: [],
+              collapsed: [],
+            }
+          : { reason: "an engineer-made capture pre-empts the automatic one" },
+      );
+
+    const result = await runUiHandoffGate(config, task, undefined, () => {}, {
+      forceRefresh: true,
+      recordTaskNotes: false,
+    });
+
+    expect(result).toMatchObject({
+      skipped: true,
+      detail: "ui verification skipped — no preview manager",
+    });
+    expect(planSpy).toHaveBeenCalledWith(config, task, { forceRefresh: true });
   });
 
   it("collects console errors from a page", () => {
