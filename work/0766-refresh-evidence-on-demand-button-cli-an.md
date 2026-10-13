@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
@@ -111,3 +112,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T19:17:22Z · needs_input
 - 2026-10-13T19:22:43Z · status review→active, needs_input
 - 2026-10-13T19:22:43Z · note: close-out repair: merge-conflict
+
