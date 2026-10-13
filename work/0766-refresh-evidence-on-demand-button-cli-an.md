@@ -1,5 +1,4 @@
 ---
-close_out_repair_count: 1
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
@@ -9,11 +8,13 @@ area: [core, server, cli, ui]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/refresh-evidence-on-demand-button-cli-an
-model_override: opencode-go/glm-5.3-flash
+cli_override: pi
+model_override: default
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T19:22:43Z"
+updated_at: "2026-10-13T19:23:06Z"
+close_out_repair_count: 1
 review_passes: 5
 review_rounds: 2
 dev_error_count: 1
@@ -112,4 +113,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T19:17:22Z · needs_input
 - 2026-10-13T19:22:43Z · status review→active, needs_input
 - 2026-10-13T19:22:43Z · note: close-out repair: merge-conflict
-
+- 2026-10-13T19:23:06Z · cli_override, model_override
