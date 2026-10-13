@@ -171,7 +171,7 @@ done wait by default in human mode).
 | --- | --- |
 | `repoos start <id> [--fresh]` | `POST /api/tasks/:id/start` |
 | `repoos pause <id>` | `POST /api/tasks/:id/pause` |
-| `repoos message <id> "…"` | `POST /api/tasks/:id/message` |
+| `repoos message <id> "…" [--now]` | `POST /api/tasks/:id/message` (`now: true` interrupts a busy agent) |
 | `repoos review <id> [--wait]` | `PATCH /api/tasks/:id` (`status: review`) |
 | `repoos done <id> [--commit-dirty] [--wait]` | `POST /api/tasks/:id/done` |
 | `repoos override <id> --cli X --model Y` | `PATCH /api/tasks/:id` |
