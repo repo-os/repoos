@@ -341,6 +341,11 @@ evidence** in the Changes tab or run `repoos verify <id>`. RepoOS refreshes the
 shots and verification record against the current branch HEAD without an
 engineer turn. The worktree must be clean, and the action is refused while an
 agent or close-out is running.
+**Bookkeeping-only commits do not stale a capture (#0766):** HEAD movement
+provably caused by `work/*.md` task files — status flips, review counters,
+activity notes — never changes what the captures describe, so the record still
+reads as current for the reviewer; any other path (source, docs, config) makes
+the capture stale as before.
 **Whole-window default (#0613):** declared shots capture the whole
 visible viewport (`fullPage: false`) with changed elements outlined via
 `highlight`; `selector` (element crop) is the exception, and `fullPage` stays

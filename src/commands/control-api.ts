@@ -263,6 +263,9 @@ export async function cmdVerify(args: string[]): Promise<number> {
           c.dim(`evidence refreshed for #${id} at ${result.headIdentity ?? "unknown HEAD"}`),
       );
       if (result.detail) console.log(`  ${result.detail}`);
+      for (const line of Array.isArray(result.restored) ? result.restored : []) {
+        console.log(c.yellow(`  · ${line}`));
+      }
       if (Array.isArray(result.issues) && result.issues.length) {
         for (const issue of result.issues) console.log(c.yellow(`  · ${issue.message ?? issue}`));
       }
