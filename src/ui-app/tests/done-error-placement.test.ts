@@ -245,7 +245,11 @@ describe("move-to-done inline error placement", () => {
       const body = rule?.[0] ?? "";
       // Padding shorthand with a bottom value (3rd or 4th component) so the
       // message never sits flush against the full-width action button below.
-      const pad = body.match(/padding:\s*([^;]+);/)?.[1]?.trim().split(/\s+/) ?? [];
+      const pad =
+        body
+          .match(/padding:\s*([^;]+);/)?.[1]
+          ?.trim()
+          .split(/\s+/) ?? [];
       expect(pad.length).toBeGreaterThanOrEqual(2);
       // 2 components = top/bottom + left/right; 3 or 4 components put the
       // bottom value third.
