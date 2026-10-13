@@ -225,7 +225,11 @@ and the plan-fingerprint/tree stale-capture checks work identically, and
 A command problem is NEVER a failed handoff: a missing `requires` binary, a
 timeout (stdout/stderr tail recorded), a non-zero exit, or a run that produced no
 images is a visible `shots: skipped — <reason>` / `shots: failed — <reason>`
-activity note. When a repo has command targets but no target covers the changed
+activity note. A command that exits non-zero but still wrote image files has
+those files collected anyway (a render that warns on stderr but succeeds is
+common), with a visible warning naming the exit code — so a partial failure can
+still produce shots and is always recorded, never silently. When a repo has
+command targets but no target covers the changed
 paths, the skip message says so and points at the `[[shot.targets]]`
 declaration — no more "matched only documentation content" for a native app. The
 handoff browser gate (`ui-handoff-gate.ts`) only verifies WEB entries; a command
