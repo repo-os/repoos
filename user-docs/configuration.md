@@ -505,6 +505,20 @@ uiVerification.autoRefreshStaleOnce = false
 
 Edit all three keys in **Settings → General**. Evidence is written under `.repoos/ui-verification/<task-id>.json` and surfaced on the task drawer **Changes** tab; it records the exact captured URL, whether the declared route matched, every assertion's outcome, and the tested tree/plan identity. Each capture also carries **its own** console errors, failed same-origin requests, overflow and blank-capture issues, so the Changes tab can show a green check or red cross per shot: hover, focus or tap the icon for that shot's plain-words verdict and its own issues, while an issue tied to no single shot appears once under the list. The record shape therefore includes a per-capture `issues` array (added in #0753) alongside the handoff-wide `issues` — capture behaviour and gating are unchanged. Captured PNGs live under `work/.attachments/<task-id>/shots/` in the **main checkout** (not the task worktree), which is where a reviewer looks.
 
+## Mechanical review verification
+
+```toml
+reviewVerification.guardTestCheck = true
+reviewVerification.testGlobs = ["**/*.test.ts", "**/*.test.tsx", "**/*.test.js", "**/*.test.mjs"]
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `reviewVerification.guardTestCheck` | boolean | `true` | yes | Kill switch for the guard negative-test check. When a check *guard* a project declares in `[[check.steps]]` changed, a test must prove bad input is rejected. The check only ever fires for guards a project actually declares, so it never blocks a repo whose plan has no built-in RepoOS guard; set `false` to silence it entirely. |
+| `reviewVerification.testGlobs` | string[] | `["**/*.test.ts", "**/*.test.tsx", "**/*.test.js", "**/*.test.mjs"]` | yes | Globs identifying the test files counted as negative-test evidence. Set these for a Swift, Python, Go or other non-JS project (e.g. `["**/*Tests.swift"]`, `["**/test_*.py"]`, `["**/*_test.go"]`). |
+
+Edit both keys in **Settings → General**. The check appends a `## Automated verification` section to the review report and clamps a reviewer's `` `good to go` `` to `needs some work` on failure; the reason is recorded in the task activity note and the follow-up message to the engineer. See [Review and close-out → Automated verification](/review-and-close-out#automated-verification-when-repoos-clamps-a-clean-verdict) and [docs/review-verification.md](../docs/review-verification.md).
+
 A **command capture target** (`[[shot.targets]]`, below) has no browser page or console, so its evidence in the same file is a `commandCaptures` record instead: the target, command, cwd, exit status, stdout/stderr tail and the images it produced (with sizes), plus the same tested-tree identity and plan fingerprint. The handoff gate writes it for command-only tasks exactly as it writes the browser record for web ones, stale-capture detection applies the same way, and the reviewer prompt says browser verification does not apply (the console-error check is `skipped`, never blocking). See [Command capture targets](#command-capture-targets-non-web-apps).
 
 ## Approval policy (opt-in auto Move to done)
@@ -773,6 +787,7 @@ requires = "xcrun"
 | `shot.targets[].outputGlob` | array of strings | `["*"]` | yes | Globs selecting the produced images, relative to `REPOOS_SHOT_DIR` (`output_glob` is also accepted). `**` spans directories. |
 | `shot.targets[].requires` | string | unset | yes | A binary that must exist on `PATH`. A missing binary records a visible `shots: skipped` note — never a failed handoff. |
 | `shot.targets[].timeoutMs` | number | `120000` | yes | Capture timeout. On expiry the command is killed and the tail of its stdout/stderr is recorded as a visible note (`timeout_ms` is also accepted). |
+| `shot.maxAutoShots` | number | `12` | yes | Cap on how many images an **automatic (undeclared)** command capture attaches per task. A command's `outputGlob` can match dozens of files; past this many the extra ones are dropped and the task notes `N more not shown`. Declared `## Shots` entries are never capped. |
 
 The command runs in the task's worktree. RepoOS creates a fresh, **gitignored**
 directory and passes its absolute path to the command as `REPOOS_SHOT_DIR`
@@ -791,6 +806,40 @@ use): the target, command, cwd, exit status, stdout/stderr tail, each image's
 size, and the tested tree identity. A reviewer reads that record and the PNGs
 instead of a browser console — a command-target task is never blocked on a
 console log it cannot produce.
+
+**Capturing only what changed (#0769).** A command target's `outputGlob` often
+matches a whole fixed snapshot set (the bar plus every popover), so an automatic
+capture attaches dozens of images and the one that shows the change may not be
+among them. A `## Shots` entry can hand the selection to the command instead:
+
+- `env` — an object of extra environment variables for the command, e.g.
+  `{"DIVOT_SNAPSHOT_ONLY": "worldclock"}`. Keys must be plain identifiers; a
+  value is passed through the environment **only** and is never interpolated
+  into the command string, so a declared value cannot be shell-evaluated.
+- `args` — extra tokens appended to the command line, each shell-quoted as data.
+- `glob` — a glob narrowing which produced files become **this** shot, relative
+  to `REPOOS_SHOT_DIR`, e.g. `"*worldclock*.png"`.
+
+Several entries may name the same target, each with its own `env`/`glob` and its
+own `label`; each runs the command and its results are listed under that label.
+Identical entries collapse as before. `env`/`args`/`glob` are rejected for a web
+preview target (they only make sense for a command) — the CLI and the write
+paths report that as an error rather than silently dropping them.
+
+```json
+[
+  { "target": "macOS app", "label": "World clock popover",
+    "env": { "DIVOT_SNAPSHOT_ONLY": "worldclock" }, "glob": "*worldclock*.png" },
+  { "target": "macOS app", "label": "Battery popover",
+    "env": { "DIVOT_SNAPSHOT_ONLY": "battery" }, "glob": "*battery*.png" }
+]
+```
+
+With the project's command honoring the filter variable — e.g.
+`command = "swift test --filter RenderShots"` where the test reads
+`DIVOT_SNAPSHOT_ONLY` and renders only that view — each entry captures just its
+one image. The same selection is available ad hoc from the CLI:
+`repoos shot --target "macOS app" --env DIVOT_SNAPSHOT_ONLY=worldclock --glob '*worldclock*.png'`.
 
 Web preview targets keep working unchanged, and a repo may declare both: a diff
 that touches a web target's paths is shot from the browser, and a diff that

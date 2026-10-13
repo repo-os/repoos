@@ -2,29 +2,92 @@
 id: "0768"
 title: "Easter eggs: spacing under the merge-conflict message on review cards"
 type: bug
-status: ready
+status: done
 priority: p3
 area: web
+merged_commit: 0f4b6aa0d804a8b0821b82c5f601932653b763d1
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-spacing-under-the-merge-conf
+model_override: opencode-go/glm-5.3-flash
 created_at: "2026-10-13T14:30:17Z"
-updated_at: "2026-10-13T15:26:15Z"
+updated_at: "2026-10-13T18:48:19Z"
+last_close_out_gate_ms: 64914
+last_close_out_gate_at: "2026-10-13T18:48:07.744Z"
+review_passes: 2
+last_check_failure: "repoos check at 2026-10-13T17:21:50.543Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:54743/api/tasks/9999/diff-stats (http://127.0.0.1:54743/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54743/api/tasks/9999/diff-stats)"
+review_rounds: 1
+dev_error_count: 2
 ---
 ## Problem
 On a review card with a merge conflict (Move to done failed at merge), the 'Merge conflict in N file.' line sits too close to the action row below it, so the card looks unbalanced. Seen on #0762 with 'Sent to Debugger'.
 
 ## Desired UX
-Consistent spacing between the conflict message and the action row, matching the other status rows on the card.
+- Consistent spacing between the conflict message and the action row, matching the other status rows on the card.
+- Remove agent button in the Budget Controls allowlist (Agents page, Budget Controls tab from #0764): move it from the inline row to the upper-right corner of each coding agent's row, so the row reads cleanly.
 
 ## Acceptance criteria
-- Spacing fixed in the card's shared styles (use the global form/card classes, not a bespoke colour).
-- Check the card in light and dark themes.
+- Conflict message spacing fixed in the card's shared styles (use the global form/card classes, not a bespoke colour).
+- Remove agent sits in the upper-right of each agent row, keyboard reachable, same behaviour.
+- Checked in light and dark themes.
 
 ## Notes for AI
-Start from the task card component that renders 'Merge conflict'. Small, cosmetic fix only.
+Start from the task card component that renders 'Merge conflict' and the allowlist section once #0764 lands. Small, cosmetic fixes only; no behaviour changes.
+
+## Shots
+```json
+[
+{
+"label": "Work board: merge-conflict message spacing above the action row",
+"target": "default",
+"route": "/work?status=review",
+"highlight": ".tc-done-error",
+"steps": [
+{
+"waitFor": ".tc-done-error"
+}
+],
+"state": "card:doneError"
+},
+{
+"label": "Agents Budget Controls: Remove agent sits in each row upper-right",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": ".budget-row",
+"steps": [
+{
+"waitFor": ".budget-row"
+}
+]
+}
+]
+```
 
 ## Activity
 
 - 2026-10-13T14:30:17Z · created · njachowski@gmail.com
 - 2026-10-13T15:26:15Z · status inbox→ready
+- 2026-10-13T16:37:10Z · body
+- 2026-10-13T16:59:16Z · status ready→active, branch
+- 2026-10-13T17:03:24Z · body
+- 2026-10-13T17:04:22Z · body
+- 2026-10-13T17:06:01Z · body: section Shots
+- 2026-10-13T17:12:35Z · status active→review
+- 2026-10-13T17:12:48Z · note: highlight .tc-done-error matched nothing on /
+- 2026-10-13T17:13:44Z · note: review pass 1: needs some work
+- 2026-10-13T17:13:44Z · status review→active
+- 2026-10-13T17:14:39Z · body: section Shots
+- 2026-10-13T17:21:47Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:54743/api/tasks/9999/diff-stats (http://127.0.0.1:54743/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54743/api/tasks/9999/diff-stats)
+- 2026-10-13T17:27:40Z · message_queued at 2026-10-13T17:27:40.418Z
+- 2026-10-13T17:27:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-13T17:43:24Z · agent exited with an error (opencode) · ✗ Server finalization stopped at verify: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:54743/api/tasks/9999/diff-stats (http://127.0.0.1:54743/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54743/api/tasks/9999/diff-stats). The same worktree can be resumed and retried.
+- 2026-10-13T18:10:27Z · model_override
+- 2026-10-13T18:10:34Z · message_delivered: 1 message(s)
+- 2026-10-13T18:16:06Z · status active→review
+- 2026-10-13T18:16:20Z · note: handoff requested (cli)
+- 2026-10-13T18:39:23Z · status active→review
+- 2026-10-13T18:39:23Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (0f4b6aa0d) during finalization (#0734)
+- 2026-10-13T18:39:23Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (0f4b6aa0d) during finalization (#0734)
+- 2026-10-13T18:40:17Z · note: review pass 2: good to go
+- 2026-10-13T18:48:07Z · close-out gate completed in 65s
+- 2026-10-13T18:48:19Z · status review→done, release:success

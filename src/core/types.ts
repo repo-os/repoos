@@ -584,6 +584,8 @@ export interface RepoOSConfig {
   automation?: AutomationConfig;
   /** UI handoff browser verification (#0680). */
   uiVerification?: UiVerificationConfig;
+  /** Mechanical review verification (#0714, narrowed by #0762). */
+  reviewVerification?: ReviewVerificationConfig;
   /**
    * Distribution destinations shown as the Releases page's "Published to"
    * summary (a `[[distribution]]` array of tables). Omitted/empty keeps the
@@ -1461,7 +1463,21 @@ export interface ShotTargetConfig {
 /** Captured non-web shots, from `repoos.toml`'s `[[shot.targets]]` tables. */
 export interface ShotConfig {
   targets: ShotTargetConfig[];
+  /**
+   * Maximum number of image files an UNDECLARED automatic command capture may
+   * attach per task (#0769). A command target's `outputGlob` may match dozens of
+   * files (a fixed snapshot set), which floods the Changes tab with images that
+   * do not show the change. When a single automatic command capture produces
+   * more than this many files, only the first are kept and the capture records a
+   * visible "N more not shown" note. Declared `## Shots` entries are never
+   * capped — the engineer asked for exactly those images. Defaults to
+   * {@link DEFAULT_MAX_AUTO_SHOTS}.
+   */
+  maxAutoShots?: number;
 }
+
+/** Default per-task cap on an undeclared automatic command capture (#0769). */
+export const DEFAULT_MAX_AUTO_SHOTS = 12;
 
 /**
  * Per-project task-preview configuration (#0362), from `repoos.toml`'s
@@ -1601,6 +1617,33 @@ export interface UiVerificationConfig {
   viewportWidths?: number[];
   /** Once per reviewed HEAD, refresh stale-only evidence failures and re-run review. */
   autoRefreshStaleOnce?: boolean;
+}
+
+/**
+ * Mechanical review verification (#0714), narrowed by #0762 so it stops
+ * misfiring on repos whose tests are not JavaScript/TypeScript.
+ *
+ * The guard negative-test check only ever applies to guards a project actually
+ * declares (`[[check.steps]]` `kind`s that map to a built-in RepoOS guard). It
+ * never fires because of an unrelated `repoos.toml` edit such as `[release]`,
+ * `[[distribution]]`, `[[shot.targets]]` or `[[preview.targets]]`.
+ */
+export interface ReviewVerificationConfig {
+  /**
+   * Kill switch for the guard negative-test check. Absent means "on" — but the
+   * check only ever finds guards a project declares, so a repo with no built-in
+   * RepoOS guard in its plan is never blocked by it. Set `false` to silence it
+   * outright (e.g. a repo whose guard tests live in another language and are
+   * declared some other way).
+   */
+  guardTestCheck?: boolean;
+  /**
+   * Globs identifying the test files that count as negative-test evidence, so a
+   * Swift/Python/Go project's tests are recognised. Defaults to the JS/TS test
+   * globs the check has always read. A path is a test file when any glob
+   * matches it (see `review-verification-config.ts`).
+   */
+  testGlobs?: string[];
 }
 
 /** Opt-in policy for Move to done without a human click (#0686). */

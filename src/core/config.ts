@@ -35,6 +35,7 @@ import type {
   ApprovalConfig,
   AutomationConfig,
   UiVerificationConfig,
+  ReviewVerificationConfig,
   RepoOSConfig,
   Status,
   Assignee,
@@ -45,7 +46,7 @@ import type {
   WhisperConfig,
   AreaConfig,
 } from "./types.js";
-import { STATUSES } from "./types.js";
+import { DEFAULT_MAX_AUTO_SHOTS, STATUSES } from "./types.js";
 import { agentModelAllowRows } from "./budget-allowlist.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
 import { parseDevTargets } from "./dev-targets.js";
@@ -840,10 +841,10 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
  * target.
  */
 export function parseShotConfig(parsed: Record<string, unknown>): ShotConfig | undefined {
-  if (!Array.isArray(parsed["shot.targets"])) return undefined;
   const targets: ShotTargetConfig[] = [];
   const usedNames = new Set<string>();
-  for (const raw of parsed["shot.targets"]) {
+  const rawTargets = Array.isArray(parsed["shot.targets"]) ? parsed["shot.targets"] : [];
+  for (const raw of rawTargets) {
     if (typeof raw !== "object" || raw === null) continue;
     const r = raw as Record<string, unknown>;
     const command = typeof r.command === "string" ? r.command.trim() : "";
@@ -870,7 +871,19 @@ export function parseShotConfig(parsed: Record<string, unknown>): ShotConfig | u
     if (timeoutMs) target.timeoutMs = timeoutMs;
     targets.push(target);
   }
-  return targets.length ? { targets } : undefined;
+  // `shot.maxAutoShots` (#0769) is a sibling scalar of the `[[shot.targets]]`
+  // array: a repo may set the cap without declaring a target, so it must be
+  // read even when there are no rows.
+  const maxRaw = parsed["shot.maxAutoShots"] ?? parsed["shot.max_auto_shots"];
+  const maxAutoShots =
+    typeof maxRaw === "number" && Number.isFinite(maxRaw) && maxRaw >= 0
+      ? Math.floor(maxRaw)
+      : undefined;
+  if (targets.length === 0 && maxAutoShots === undefined) return undefined;
+  return {
+    targets,
+    ...(maxAutoShots !== undefined ? { maxAutoShots } : {}),
+  };
 }
 
 /** Normalize a configured readiness path to a leading-slash path, or undefined. */
@@ -1839,6 +1852,24 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       if (widths.length) uiVerification.viewportWidths = widths.map((n) => Math.floor(n));
       cfg.uiVerification = uiVerification;
     }
+
+    // Mechanical review verification (#0714, narrowed by #0762): guard-test
+    // check kill switch + configurable test-file globs.
+    const rvGuardTestCheck = parsed["reviewVerification.guardTestCheck"];
+    const rvTestGlobsRaw = parsed["reviewVerification.testGlobs"];
+    const rvTestGlobs = Array.isArray(rvTestGlobsRaw)
+      ? rvTestGlobsRaw
+          .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+          .map((v) => v.trim())
+      : [];
+    if (rvGuardTestCheck !== undefined || rvTestGlobs.length) {
+      const reviewVerification: ReviewVerificationConfig = {};
+      if (typeof rvGuardTestCheck === "boolean") {
+        reviewVerification.guardTestCheck = rvGuardTestCheck;
+      }
+      if (rvTestGlobs.length) reviewVerification.testGlobs = rvTestGlobs;
+      cfg.reviewVerification = reviewVerification;
+    }
   }
 
   // Model-provider API keys (0327): env-only, same rule as the [auth] secrets
@@ -2415,6 +2446,29 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Pixel widths used for overflow checks during handoff UI verification (desktop and mobile by default).",
     },
     {
+      key: "reviewVerification.guardTestCheck",
+      label: "Guard negative-test review check",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: true,
+      description:
+        "Block a clean good-to-go review when a check guard a project declares was changed without a test proving " +
+        "bad input is rejected. Only ever fires for guards a project actually declares in [[check.steps]]; turn it " +
+        "off to silence it entirely (e.g. when guard tests live outside the matched test files).",
+    },
+    {
+      key: "reviewVerification.testGlobs",
+      label: "Guard test-file globs",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: ["**/*.test.ts", "**/*.test.tsx", "**/*.test.js", "**/*.test.mjs"],
+      description:
+        "Globs identifying the test files counted as negative-test evidence for the guard review check. Set these " +
+        "for a Swift, Python, Go or other non-JS project (e.g. **/*Tests.swift, **/test_*.py, **/*_test.go).",
+    },
+    {
       key: "maxConcurrentAgents",
       label: "Maximum concurrent agent processes",
       type: "select",
@@ -2691,6 +2745,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "paths, command, outputGlob, requires, timeoutMs); edit them there. Web preview targets keep working unchanged.",
     },
     {
+      key: "shot.maxAutoShots",
+      label: "Maximum automatic capture shots per task",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_MAX_AUTO_SHOTS,
+      description:
+        "Cap on how many images an automatic (undeclared) command capture attaches to a task. " +
+        "A command target's outputGlob can match dozens of files, flooding the Changes tab with " +
+        "images that do not show the change; past this many, the extra files are dropped and the " +
+        "task notes how many were not shown. Shots a task declares in its ## Shots section are " +
+        "never capped.",
+    },
+    {
       // The Settings control is the Agents page's Budget Controls tab
       // (AgentsView, ?tab=budget-controls), never an auto-rendered Settings row
       // — like `dev.targets`, this schema entry exists so the search overlay
@@ -2805,6 +2873,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "shot.targets.outputGlob",
   "shot.targets.requires",
   "shot.targets.timeoutMs",
+  // Cap on an undeclared automatic command capture (#0769).
+  "shot.maxAutoShots",
   // Agent-driver budget controls (#0764) — the `[[budget.allowlist]]` rows.
   "budget.allowlist.cli",
   "budget.allowlist.models",
@@ -2924,6 +2994,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "uiVerification.enabled",
   "uiVerification.viewportWidths",
   "uiVerification.autoRefreshStaleOnce",
+  "reviewVerification.guardTestCheck",
+  "reviewVerification.testGlobs",
   // Remote validation
   "remoteValidation.enabled",
   "remoteValidation.provider",

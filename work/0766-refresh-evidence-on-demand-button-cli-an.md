@@ -2,16 +2,22 @@
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server, cli, ui]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/refresh-evidence-on-demand-button-cli-an
-cli_override: codex
-model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T19:15:09Z"
+updated_at: "2026-10-13T19:23:12Z"
+close_out_repair_count: 1
+review_passes: 5
+review_rounds: 2
+dev_error_count: 1
 ---
 ## Problem
 When a reviewed task's handoff evidence goes stale (shots and the ui-verification record were captured at an older commit than the reviewed HEAD, e.g. after merging main or a fix commit), the only way to refresh it is to send the task back to the engineer agent so it re-hands off. That costs a full agent turn (often a paid model), races with other edits, and reviewers then fail the task on a 'stale capture' note. Observed in the Divot repo on #0082: review passes 3 and 4 had no bugs; the only blocker was 'UI verification still points at 90835d6 / website-1..3 while reviewed HEAD is 349a024', and the reviewer's own advice was 're-handoff once'.
@@ -31,6 +37,18 @@ When a reviewed task's handoff evidence goes stale (shots and the ui-verificatio
 ## Notes for AI
 Reuse the handoff capture and ui-handoff-gate code paths rather than copying them; the engineer-pre-empts-automatic-capture rule must not block an explicit refresh. Related: #0761, #0765, #0714/#0762. Zero runtime dependencies; Bun-first.
 
+## Shots
+```json
+[
+{
+"label": "Changes tab with refresh evidence action",
+"target": "default",
+"route": "/work?task=0766&tab=changes",
+"highlight": "[data-test-id=\"refresh-evidence\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-13T10:49:44Z · created · njachowski@gmail.com
@@ -38,6 +56,63 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T15:56:44Z · cli_override, model_override
 - 2026-10-13T15:56:54Z · model_override
 - 2026-10-13T15:56:55Z · status ready→active, branch
+- 2026-10-13T16:03:30Z · body
+- 2026-10-13T16:06:42Z · body: section Shots
+- 2026-10-13T16:09:22Z · body
+- 2026-10-13T16:11:14Z · body
 - 2026-10-13T16:18:52Z · status active→review
+- 2026-10-13T16:20:18Z · note: review pass 1: needs some work
+- 2026-10-13T16:20:20Z · status review→active
+- 2026-10-13T16:34:40Z · body
+- 2026-10-13T16:35:16Z · body
+- 2026-10-13T16:35:58Z · body
+- 2026-10-13T16:36:44Z · status active→review
+- 2026-10-13T16:51:46Z · note: review pass 2: failed — no usable report
+- 2026-10-13T16:51:47Z · needs_input
+- 2026-10-13T17:15:00Z · review_cli_override, review_model_override
+- 2026-10-13T17:15:04Z · review_cli_override
+- 2026-10-13T17:15:07Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-10-13T17:17:06Z · note: review pass 3: needs some work
+- 2026-10-13T17:17:06Z · status review→active
+- 2026-10-13T17:19:25Z · body
+- 2026-10-13T17:48:40Z · status active→review
+- 2026-10-13T17:48:40Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d3e683060) during finalization (#0734)
+- 2026-10-13T17:48:40Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d3e683060) during finalization (#0734)
+- 2026-10-13T17:50:36Z · note: review pass 4: needs some work
+- 2026-10-13T17:50:37Z · needs_input
+- 2026-10-13T17:58:49Z · status review→active
+- 2026-10-13T17:58:50Z · cli_override, model_override
+- 2026-10-13T17:58:51Z · needs_input
+- 2026-10-13T17:59:35Z · message_queued at 2026-10-13T17:59:35.820Z
+- 2026-10-13T18:01:04Z · body
+- 2026-10-13T18:02:15Z · body
+- 2026-10-13T18:03:12Z · status active→review
+- 2026-10-13T18:06:09Z · note: review pass 5: needs some work
+- 2026-10-13T18:06:09Z · needs_input
+- 2026-10-13T18:10:58Z · cli_override, model_override
+- 2026-10-13T18:11:00Z · model_override
 - 2026-10-13T18:15:39Z · status review→active
+- 2026-10-13T18:15:39Z · note: Review pass 5 on #0766 says “needs some work” (.repoos/reviews/0766.md). Two things before handoff:  Re-capture the UI verification on your current HEAD. The shots must be taken on the commit you hand off. Make sure command targets ([[shot.targets]]) can’t leave tracked changes in the worktree. If they can, fix that and add a test.  Then run repoos check once, commit, and finish with ::repoos-handoff-ready::. Don’t change anything else.
+- 2026-10-13T18:15:51Z · message_delivered: 1 message(s)
+- 2026-10-13T18:20:37Z · body
+- 2026-10-13T18:20:45Z · body
+- 2026-10-13T18:35:51Z · body
+- 2026-10-13T18:35:52Z · body
+- 2026-10-13T18:42:56Z · message_queued at 2026-10-13T18:42:56.530Z
+- 2026-10-13T18:42:57Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-13T18:49:37Z · body
+- 2026-10-13T18:51:12Z · body
+- 2026-10-13T18:59:26Z · body
+- 2026-10-13T19:00:55Z · body
+- 2026-10-13T19:03:42Z · body
+- 2026-10-13T19:05:40Z · body
+- 2026-10-13T19:06:29Z · body
 - 2026-10-13T19:15:09Z · status active→review
+- 2026-10-13T19:17:21Z · note: review pass 6: needs some work
+- 2026-10-13T19:17:22Z · needs_input
+- 2026-10-13T19:17:22Z · needs_input
+- 2026-10-13T19:22:43Z · status review→active, needs_input
+- 2026-10-13T19:22:43Z · note: close-out repair: merge-conflict
+- 2026-10-13T19:23:06Z · cli_override, model_override
+- 2026-10-13T19:23:10Z · cli_override
+- 2026-10-13T19:23:12Z · model_override
