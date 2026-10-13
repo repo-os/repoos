@@ -147,3 +147,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T22:24:40Z · needs_input
 - 2026-10-13T22:25:32Z · status review→active
 - 2026-10-13T22:25:49Z · needs_input
+- 2026-10-13T22:25:49Z · message_queued at 2026-10-13T22:25:49.942Z
