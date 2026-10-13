@@ -41,7 +41,7 @@ import {
 import { randomUUID } from "node:crypto";
 import type { ServerResponse } from "node:http";
 import type { LiveIndex, RepoEvent } from "../live-index.js";
-import type { Logger, LogLevel } from "../../core/logger.js";
+import type { Logger } from "../../core/logger.js";
 import { getCurrentUser } from "./auth.js";
 import { requestUsedLocalCliToken } from "../local-token.js";
 import { overrideRefusal } from "../agent-model-allowlist.js";
@@ -95,6 +95,7 @@ import {
   readUiHandoffGateEvidence,
   effectiveHandoffTreeStatus,
   runUiHandoffGate,
+  type TaskLog,
 } from "../ui-handoff-gate.js";
 import { localShotStore } from "../shots.js";
 import { computeTaskShotContext } from "../shot-context.js";
@@ -1118,30 +1119,12 @@ const evidenceRefreshes = new Set<string>();
  * Post-capture worktree guard for the evidence refresh (#0766). The gate's
  * `[[shot.targets]]` command targets run arbitrary shell commands INSIDE the
  * task worktree (cwd = worktree root), so a misbehaving command can write
- * tracked files there — changes a refresh must never leave behind, because the
- * action promises to be "safe while the task is in review: it only writes the
- * gitignored attachments/cache".
+ * tracked files there — or a concurrent edit can land while capture runs.
  *
- * Caller context: the pre-capture check above guarantees the worktree was
- * porcelain-clean, so every tracked modification and every non-ignored
- * untracked file found now was created during the capture.
- *
- * The capture has ALREADY replaced the stored evidence at this point, so the
- * guard restores what it can in every case (the no-tracked-changes guarantee
- * is the refresh's promise, and a failed refresh must still not leave edits):
- *
- *   - Tracked modifications: `git reset --hard HEAD` always restores them —
- *     even when HEAD moved (reset aims at the current HEAD, so a concurrent
- *     commit survives while the capture's damage is undone).
- *   - Untracked files: only when HEAD did not move, `git clean -fd` drops them;
- *     a HEAD move implies a concurrent writer whose untracked in-flight work
- *     must not be destroyed. Note `git clean` without `-x` never touches
- *     ignored paths, so the capture's own output (`workDir/.attachments/`,
- *     `.repoos/`) survives.
- *
- * When HEAD moved the refresh still fails afterwards — the evidence's
- * `sourceIdentity` can no longer be tied to the negotiated tree — with both
- * facts reported; the restored files travel back either way (`restored`).
+ * The pre-capture check guarantees the worktree was porcelain-clean; any
+ * porcelain after capture means the refresh must fail and report what changed.
+ * The guard never mutates the worktree (`git reset` / `git clean` are forbidden
+ * here — a failed refresh must not destroy a user's in-flight edit).
  */
 export async function postCaptureWorktreeGuard(
   worktree: string,
@@ -1161,78 +1144,6 @@ export async function postCaptureWorktreeGuard(
       restored: [],
     };
   }
-  if (!dirt) {
-    return headMoved
-      ? {
-          ok: false,
-          error:
-            `the worktree's HEAD changed during the capture ` +
-            `(${headBefore ?? "unknown"} → ${headAfter ?? "unknown"}); ` +
-            "retry the refresh once the tree is settled",
-          restored: [],
-        }
-      : { ok: true, headAfter, restored: [] };
-  }
-  const files: string[] = dirt.split("\n").filter((l) => l.trim());
-  const pathOf = (row: string): string =>
-    (row.match(/^(..)\s+(.+)$/)?.[2] ?? row).replace(/^"(.*)"$/, "$1");
-  const restored: string[] = [];
-  // Restore tracked damage unconditionally: reset against the CURRENT HEAD, so
-  // a concurrent commit (HEAD moved) survives and only the capture's writes are
-  // undone. Fail the refresh if even this does not converge — leaving dirty
-  // tracked files in a review worktree is never an acceptable outcome.
-  if (files.some((l) => !l.startsWith("??"))) {
-    const reset = await runGit(worktree, ["reset", "--hard", "HEAD"], 30_000);
-    if (reset.status !== 0) {
-      return {
-        ok: false,
-        error:
-          `the worktree was modified during the capture: ${files.join(", ")} ` +
-          `— could not restore the tracked changes with git reset (${reset.stderr.trim() || "git failed"}); discard them manually`,
-        restored,
-      };
-    }
-    const recheck = await runGit(worktree, ["status", "--porcelain"], 10_000);
-    const stillTracked = (recheck.status === 0 ? recheck.stdout : dirt)
-      .split("\n")
-      .filter((l) => l.trim() && !l.startsWith("??"));
-    if (stillTracked.length > 0) {
-      return {
-        ok: false,
-        error:
-          `the worktree was modified during the capture: ${files.join(", ")} ` +
-          `— the capture behavior survived the restore (still dirty: ${stillTracked.join(", ")}); discard the remaining changes manually`,
-        restored,
-      };
-    }
-    restored.push(
-      ...files.filter((l) => !l.startsWith("??")).map((l) => `restored tracked path ${pathOf(l)}`),
-    );
-  }
-  // Untracked: files that appeared during the capture are removed by path, but
-  // only when the HEAD is the one the capture negotiated — a HEAD move implies
-  // a concurrent writer whose untracked in-flight work must not be destroyed.
-  const untrackedPaths = dirt
-    .split("\n")
-    .filter((l) => l.startsWith("??"))
-    .map(pathOf);
-  if (untrackedPaths.length > 0 && !headMoved) {
-    const clean = await runGit(worktree, ["clean", "-f", "-d", "--", ...untrackedPaths], 30_000);
-    const recheck = await runGit(worktree, ["status", "--porcelain"], 10_000);
-    const stillUntracked = (recheck.status === 0 ? recheck.stdout : dirt)
-      .split("\n")
-      .filter((l) => l.startsWith("??"));
-    if (clean.status !== 0 || stillUntracked.length > 0) {
-      return {
-        ok: false,
-        error:
-          `the worktree was modified during the capture: ${files.join(", ")} ` +
-          "— could not remove the untracked files; discard them manually",
-        restored,
-      };
-    }
-    restored.push(...untrackedPaths.map((p) => `removed untracked path ${p}`));
-  }
   if (headMoved) {
     return {
       ok: false,
@@ -1240,10 +1151,18 @@ export async function postCaptureWorktreeGuard(
         `the worktree's HEAD changed during the capture ` +
         `(${headBefore ?? "unknown"} → ${headAfter ?? "unknown"}); ` +
         "retry the refresh once the tree is settled",
-      restored,
+      restored: [],
     };
   }
-  return { ok: true, headAfter, restored };
+  if (dirt) {
+    const files = dirt.split("\n").filter((l) => l.trim());
+    return {
+      ok: false,
+      error: `the worktree was modified during the capture: ${files.join(", ")}`,
+      restored: [],
+    };
+  }
+  return { ok: true, headAfter, restored: [] };
 }
 
 export type GuardedForceRefreshCaptureResult = {
@@ -1265,7 +1184,7 @@ export async function guardedForceRefreshCapture(
   task: Task,
   worktree: string,
   previews: PreviewManager | undefined,
-  log: (taskId: string, level: LogLevel, message: string) => void,
+  log: TaskLog,
 ): Promise<GuardedForceRefreshCaptureResult> {
   const headBefore = shortHeadOf(worktree);
   const result = await runUiHandoffGate(config, task, previews, log, {

@@ -65,17 +65,36 @@ describe("uiVerification config (#0680)", () => {
   it("auto-refreshes only an explicitly stale-evidence-only review when enabled", () => {
     const enabled = { uiVerification: { autoRefreshStaleOnce: true } } as RepoOSConfig;
     const disabled = { uiVerification: { autoRefreshStaleOnce: false } } as RepoOSConfig;
-    expect(shouldAutoRefreshStaleEvidence(enabled, "STALE-EVIDENCE-ONLY", "needs some work")).toBe(
-      true,
-    );
+    expect(
+      shouldAutoRefreshStaleEvidence(
+        enabled,
+        "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY",
+        "needs some work",
+      ),
+    ).toBe(true);
+    expect(
+      shouldAutoRefreshStaleEvidence(
+        enabled,
+        "## Problem\nSTALE-EVIDENCE-ONLY\n\n## Verdict\nneeds some work",
+        "needs some work",
+      ),
+    ).toBe(false);
     expect(
       shouldAutoRefreshStaleEvidence(enabled, "bug plus stale capture", "needs some work"),
     ).toBe(false);
-    expect(shouldAutoRefreshStaleEvidence(disabled, "STALE-EVIDENCE-ONLY", "needs some work")).toBe(
-      false,
-    );
-    expect(shouldAutoRefreshStaleEvidence(enabled, "STALE-EVIDENCE-ONLY", "good to go")).toBe(
-      false,
-    );
+    expect(
+      shouldAutoRefreshStaleEvidence(
+        disabled,
+        "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY",
+        "needs some work",
+      ),
+    ).toBe(false);
+    expect(
+      shouldAutoRefreshStaleEvidence(
+        enabled,
+        "## Verdict\ngood to go. STALE-EVIDENCE-ONLY",
+        "good to go",
+      ),
+    ).toBe(false);
   });
 });

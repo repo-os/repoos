@@ -385,6 +385,8 @@ export function captureCommandEntries(input: {
   sourceIdentity?: string;
   store: ShotStore;
   ensureCleared: () => void;
+  /** On an explicit refresh, drop prior shots when a command entry is skipped. */
+  clearPriorOnCommandSkip?: boolean;
 }): CommandCaptureBatch {
   const {
     config,
@@ -395,6 +397,7 @@ export function captureCommandEntries(input: {
     sourceIdentity,
     store,
     ensureCleared,
+    clearPriorOnCommandSkip = false,
   } = input;
   const evidence: CommandCaptureEvidence[] = [];
   let captured = 0;
@@ -431,6 +434,7 @@ export function captureCommandEntries(input: {
     if (outcome.status !== "captured") {
       // A command problem is a VISIBLE skip/failure note — never a failed
       // handoff. The reason already carries the stdout/stderr tail.
+      if (clearPriorOnCommandSkip) ensureCleared();
       evidence.push({ ...base, status: outcome.status, reason: outcome.reason, shots: [] });
       continue;
     }

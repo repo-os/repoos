@@ -44,6 +44,7 @@ import { buildStoryContext } from "../core/story-context.js";
 import {
   parseReviewVerdict as parseVerdictLabel,
   parseReviewRelevance,
+  reviewVerdictSection,
 } from "../core/review-verdict.js";
 import { extractReviewReportSections } from "../core/review-report-sections.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
@@ -123,10 +124,12 @@ export function shouldAutoRefreshStaleEvidence(
   report: string,
   verdict: string | null,
 ): boolean {
+  const section = reviewVerdictSection(report);
   return (
     config.uiVerification?.autoRefreshStaleOnce === true &&
     verdict !== "good to go" &&
-    report.includes("STALE-EVIDENCE-ONLY")
+    section !== null &&
+    section.includes("STALE-EVIDENCE-ONLY")
   );
 }
 
