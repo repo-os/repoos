@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/let-the-cli-and-api-attach-screenshots-w
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-13T09:13:55Z"
-updated_at: "2026-10-13T15:33:57Z"
+updated_at: "2026-10-13T15:41:11Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 1debde988b114085264908e0f7d84bdc2c964e66
 handoff_signal_retry_count: 2
@@ -56,3 +56,4 @@ Reuse src/server/attachments.ts (saveScreenshot, sanitizeName, SCREENSHOTS_HEADI
 - 2026-10-13T15:07:40Z · message_queued at 2026-10-13T15:07:40.294Z
 - 2026-10-13T15:07:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-13T15:33:57Z · body
+- 2026-10-13T15:41:11Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
