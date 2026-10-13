@@ -75,3 +75,4 @@ Start from src/core/shot-plan.ts and the shot capture path used at handoff (see 
 - 2026-10-13T07:42:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-13T07:45:04Z · body
 - 2026-10-13T07:51:50Z · status active→review
+- 2026-10-13T07:51:50Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (252dcd01c) during finalization (#0734)
