@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: c48c127993396e8ae7b11782477f97689d202097
 id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
@@ -10,12 +8,12 @@ area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/deepinfra-card-show-remaining-credit-as-
-cli_override: codex
-model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T18:03:46Z"
+updated_at: "2026-10-13T18:09:40Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: c48c127993396e8ae7b11782477f97689d202097
 ---
 ## Problem
 The DeepInfra provider card shows two money figures that look like they conflict:
@@ -69,4 +67,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T17:58:06Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-13T17:58:06Z · note: handoff requested (cli)
 - 2026-10-13T18:03:46Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
-
+- 2026-10-13T18:09:40Z · cli_override, model_override
