@@ -3,6 +3,9 @@ id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: [core, server, cli, ui]
 assigned_to: ai
@@ -13,7 +16,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T17:50:36Z"
+updated_at: "2026-10-13T17:50:37Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -77,3 +80,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T17:48:40Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d3e683060) during finalization (#0734)
 - 2026-10-13T17:48:40Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d3e683060) during finalization (#0734)
 - 2026-10-13T17:50:36Z · note: review pass 4: needs some work
+- 2026-10-13T17:50:37Z · needs_input
