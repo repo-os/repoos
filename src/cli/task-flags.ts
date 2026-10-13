@@ -43,6 +43,14 @@ export const NEW_FLAG_HELP: Record<string, TaskFlagHelp> = {
   paths: { value: "a,b", desc: "Files the task touches, e.g. src/a.ts,src/b.ts" },
   body: { value: '"..."|-', desc: "Task body; `-` reads it from stdin" },
   shots: { value: '"<JSON list>"|-', desc: "Declare the ## Shots section (validated JSON)" },
+  screenshot: {
+    value: "path.png",
+    desc: "Attach a local image to ## Screenshots (repeatable)",
+  },
+  caption: {
+    value: '"..."',
+    desc: "Alt text for a single --screenshot image",
+  },
 };
 
 /** Every flag `repoos update` accepts, in help order. */
@@ -63,6 +71,14 @@ export const UPDATE_FLAG_HELP: Record<string, TaskFlagHelp> = {
   questions: { value: '"Q1\\nQ2"', desc: "Open questions for the human (newline or JSON list)" },
   "clear-questions": { desc: "Clear the recorded questions" },
   shots: { value: '"<JSON list>"|-', desc: "Declare the ## Shots section (validated JSON)" },
+  screenshot: {
+    value: "path.png",
+    desc: "Attach a local image to ## Screenshots (repeatable)",
+  },
+  caption: {
+    value: '"..."',
+    desc: "Alt text for a single --screenshot image",
+  },
   section: { value: '"heading"', desc: "Replace/create one ## section (pair with --section-body)" },
   "section-body": { value: '"..."|-', desc: "Body for --section; `-` reads it from stdin" },
   force: { desc: "Allow a --body replace that drops spec headings" },

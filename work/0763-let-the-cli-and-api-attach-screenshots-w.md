@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-13T15:42:33Z"
-review_passes: 1
 id: "0763"
 title: "Let the CLI and API attach screenshots when an agent creates or updates a task, and tell agents to do it"
 type: feature
@@ -10,9 +8,8 @@ area: [cli, server, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/let-the-cli-and-api-attach-screenshots-w
-model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-13T09:13:55Z"
-handoff_signal_retry_count: 2
+updated_at: "2026-10-13T15:41:10Z"
 ---
 ## Problem
 A human often gives an agent screenshots in chat and says 'create a task for this'. An agent driving RepoOS through the CLI cannot attach those images: repoos new/update have no attachment option, so the agent either drops the screenshots (the engineer and reviewer then guess at the visual problem and loop for hours) or hand-copies files into work/.attachments/<id>/ and edits the task's ## Screenshots section by guesswork. The server already stores task screenshots (POST /api/tasks/:id/attachments { name, mime, data base64 }, gitignored work/.attachments/<id>/, ## Screenshots section with ![name](/api/tasks/<id>/attachments/<file>)), but only the UI New-task panel uses it. Observed in the Divot repo (#0083, #0084): the maintainer had to ask twice for the screenshots to be included.
@@ -39,23 +36,4 @@ Reuse src/server/attachments.ts (saveScreenshot, sanitizeName, SCREENSHOTS_HEADI
 - 2026-10-13T09:13:55Z · created · njachowski@gmail.com
 - 2026-10-13T09:22:19Z · status inbox→ready
 - 2026-10-13T09:22:28Z · status ready→active, branch
-- 2026-10-13T09:41:04Z · message_queued at 2026-10-13T09:41:04.195Z
-- 2026-10-13T09:41:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-13T10:31:13Z · message_delivered: 1 message(s)
-- 2026-10-13T10:39:10Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-10-13T10:39:10Z · note: handoff requested (cli)
-- 2026-10-13T10:44:37Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate
-- 2026-10-13T10:52:50Z · cli_override, model_override
-- 2026-10-13T10:53:47Z · message_queued at 2026-10-13T10:53:47.000Z
-- 2026-10-13T10:53:54Z · body
-- 2026-10-13T10:55:59Z · body
-- 2026-10-13T14:50:12Z · cli_override, model_override
-- 2026-10-13T14:50:14Z · model_override
-- 2026-10-13T14:54:31Z · body
-- 2026-10-13T15:07:40Z · message_queued at 2026-10-13T15:07:40.294Z
-- 2026-10-13T15:07:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-13T15:33:57Z · body
-- 2026-10-13T15:41:11Z · status active→review
-- 2026-10-13T15:41:11Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-13T15:42:33Z · note: review pass 1: good to go
-
+- 2026-10-13T15:41:10Z · status active→review
