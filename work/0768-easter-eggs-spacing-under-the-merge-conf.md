@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-spacing-under-the-merge-conf
 created_at: "2026-10-13T14:30:17Z"
-updated_at: "2026-10-13T17:14:39Z"
+updated_at: "2026-10-13T17:21:47Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -32,27 +32,27 @@ Start from the task card component that renders 'Merge conflict' and the allowli
 ```json
 [
 {
-  "label": "Work board: merge-conflict message spacing above the action row",
-  "target": "default",
-  "route": "/work?status=review",
-  "highlight": ".tc-done-error",
-  "steps": [
-    {
-      "waitFor": ".tc-done-error"
-    }
-  ],
-  "state": "card:doneError"
+"label": "Work board: merge-conflict message spacing above the action row",
+"target": "default",
+"route": "/work?status=review",
+"highlight": ".tc-done-error",
+"steps": [
+  {
+    "waitFor": ".tc-done-error"
+  }
+],
+"state": "card:doneError"
 },
 {
-  "label": "Agents Budget Controls: Remove agent sits in each row upper-right",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": ".budget-row",
-  "steps": [
-    {
-      "waitFor": ".budget-row"
-    }
-  ]
+"label": "Agents Budget Controls: Remove agent sits in each row upper-right",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": ".budget-row",
+"steps": [
+  {
+    "waitFor": ".budget-row"
+  }
+]
 }
 ]
 ```
@@ -71,3 +71,4 @@ Start from the task card component that renders 'Merge conflict' and the allowli
 - 2026-10-13T17:13:44Z · note: review pass 1: needs some work
 - 2026-10-13T17:13:44Z · status review→active
 - 2026-10-13T17:14:39Z · body: section Shots
+- 2026-10-13T17:21:47Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:54743/api/tasks/9999/diff-stats (http://127.0.0.1:54743/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54743/api/tasks/9999/diff-stats)
