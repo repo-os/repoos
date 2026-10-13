@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T22:50:19Z"
+updated_at: "2026-10-13T22:54:47Z"
 ---
 ## Problem
 The DeepInfra provider card shows two money figures that look like they conflict:
@@ -48,3 +48,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T17:22:29Z · review_cli_override, review_model_override
 - 2026-10-13T17:22:31Z · status ready→active, branch
 - 2026-10-13T22:50:19Z · status active→review
+- 2026-10-13T22:54:47Z · note: review pass 1: needs some work
