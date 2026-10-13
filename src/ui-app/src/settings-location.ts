@@ -85,6 +85,13 @@ export function resolveSettingLocation(
     if (!field) return null;
     return { tab: "toml", hasUiRow: false };
   }
+  // Command-based capture targets (#0761): a `[[shot.targets]]` array-of-tables
+  // is raw-TOML-only, like `[[preview.targets]]` — the schema entry exists only
+  // so the search overlay can point at the toml tab.
+  if (key.startsWith("shot.targets")) {
+    if (!field) return null;
+    return { tab: "toml", hasUiRow: false };
+  }
   if (key === "attention.slowRunMultiplier") {
     return { tab: "general", hasUiRow: true };
   }
@@ -156,6 +163,8 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
   "uiVerification.enabled":
     "handoff browser gate playwright console overflow screenshot verification review block",
   "uiVerification.viewportWidths": "handoff ui verification mobile desktop overflow viewport width",
+  "shot.targets":
+    "capture targets native macos ios android desktop screenshot command offscreen render simctl adb screencapture evidence image non-web",
 };
 
 export function settingSearchAliases(key: string): string {

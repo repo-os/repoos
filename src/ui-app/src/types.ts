@@ -207,6 +207,12 @@ export interface ShotMeta {
   target: string;
   /** Requested route/URL, when the caller supplied one. */
   route?: string;
+  /**
+   * Set (#0761) when the shot came from a `[[shot.targets]]` command capture
+   * rather than a web preview; the drawer captions it "command capture"
+   * because there is no route or page to show.
+   */
+  command?: "command";
   /** Declared shot label (#0594), when the capture was captioned with one. */
   label?: string;
   /**

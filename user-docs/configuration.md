@@ -685,6 +685,69 @@ area match (then the default command); `--target` overrides either way.
 > visible. This is the documented exception to the "every feature setting needs
 > a Settings control" rule, not an oversight.
 
+### Command capture targets (non-web apps)
+
+A repo whose product is a native macOS app, a mobile app or a desktop app has no
+dev server to point at — so a `[[preview.targets]]` dev server plus a headless
+browser cannot produce evidence shots. Declare `[[shot.targets]]` instead: each
+row is a **command that renders image files offscreen**, which RepoOS collects as
+the task's shots with the same captions, stale-tree detection, Changes-tab
+display and gitignore rules as web shots (#0761).
+
+```toml
+[[shot.targets]]
+name = "macOS app"
+areas = ["mac"]
+paths = ["Sources/Divot/**", "Tests/DivotTests/**"]
+command = "swift test --filter RenderShots"
+outputGlob = ["*.png"]
+requires = "xcrun"
+timeoutMs = 120000
+
+[[shot.targets]]
+name = "iOS app"
+areas = ["ios"]
+paths = ["ios/**"]
+command = "xcrun simctl io booted screenshot \"$REPOOS_SHOT_DIR/home.png\""
+requires = "xcrun"
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `shot.targets[].name` | string | derived from `areas` | yes | Target name, matched by declared `## Shots` entries and `--target`. |
+| `shot.targets[].areas` | array of strings | `[]` | yes | Task `area:` values this target serves, matched case-insensitively. |
+| `shot.targets[].paths` | array of strings | `[]` | yes | Repo-relative globs. A changed file matching any glob selects this target for the automatic handoff capture and `repoos shot`. Test artifacts are never counted (#0603). |
+| `shot.targets[].command` | string | required | yes | Shell command that renders the images. Rows without one are dropped. |
+| `shot.targets[].cwd` | string | worktree root | yes | Subdirectory of the worktree to run the command in. |
+| `shot.targets[].outputGlob` | array of strings | `["*"]` | yes | Globs selecting the produced images, relative to `REPOOS_SHOT_DIR` (`output_glob` is also accepted). `**` spans directories. |
+| `shot.targets[].requires` | string | unset | yes | A binary that must exist on `PATH`. A missing binary records a visible `shots: skipped` note — never a failed handoff. |
+| `shot.targets[].timeoutMs` | number | `120000` | yes | Capture timeout. On expiry the command is killed and the tail of its stdout/stderr is recorded as a visible note (`timeout_ms` is also accepted). |
+
+The command runs in the task's worktree. RepoOS creates a fresh, **gitignored**
+directory and passes its absolute path to the command as `REPOOS_SHOT_DIR`
+(and the worktree root as `REPOOS_WORKTREE`); every image the command writes
+there and matching `outputGlob` is collected. RepoOS **never** passes a tracked
+path, so a command that ignores the variable writes nothing RepoOS collects. A
+command problem never fails a handoff: stdout/stderr is recorded as a
+`shots: failed — <tail>` / `shots: skipped — <reason>` activity note and the
+handoff proceeds.
+
+Web preview targets keep working unchanged, and a repo may declare both: a diff
+that touches a web target's paths is shot from the browser, and a diff that
+touches a command target's paths runs that command. Declare a shot for a
+non-web target in the task's `## Shots` section exactly like a web one
+(`{"target": "macOS app", "label": "Menu bar open"}` — no `route`); page-only
+fields (`route`, `selector`, `highlight`, `steps`) are ignored for a command
+target. `repoos shot --target "macOS app"` works from the CLI too.
+
+A short recipe for the common platforms, and how declarations and skip messages
+behave, are in [Previews and shots](previews.md#evidence-shots-for-non-web-targets).
+
+> **`[[shot.targets]]` is deliberately TOML-only**, for the same reason as
+> `[[preview.targets]]`: an array of tables cannot be expressed by the flat
+> Settings schema. The Settings UI lists the `shot.targets` key so search points
+> you at this section, but editing `repoos.toml` is the supported path.
+
 ### Preview-only overrides
 
 A `[preview.<base key>]` table deep-merges over the base configuration **only
