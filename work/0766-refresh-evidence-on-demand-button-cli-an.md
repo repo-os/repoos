@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-13T18:06:09Z"
-review_passes: 4
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
@@ -18,6 +16,8 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
+updated_at: "2026-10-13T18:09:44Z"
+review_passes: 4
 review_rounds: 2
 ---
 ## Problem
