@@ -201,6 +201,17 @@ area: mac
     expect(applied.verdictOverride).toBeUndefined();
     expect(applied.markdown).toContain("good to go");
     expect(applied.markdown).toContain("did not apply to this task");
+
+    // #0765: even with NO evidence file at all, a command-only task is not
+    // blocked on the "ui-verification JSON absent" gap — that file is a browser
+    // artifact this task type cannot produce.
+    rmSync(join(cache, "0765.json"), { force: true });
+    const noEvidence = gatherReviewVerification(config, task, worktree, "main");
+    expect(noEvidence.consoleErrors.status).toBe("skipped");
+    expect(noEvidence.blocksApproval).toBe(false);
+    expect(
+      applyMechanicalReviewVerification("## Verdict\n`good to go`\n", noEvidence).verdictOverride,
+    ).toBeUndefined();
   });
 
   it("records not_run when the branch worktree is missing", () => {
