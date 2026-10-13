@@ -76,9 +76,11 @@ export function requestUsedLocalCliToken(
   root: string,
   cacheDir: string,
 ): boolean {
-  const provided = req.headers["x-repoos-local-token"];
+  // Defensive: a minimal test/route fake may omit `headers` or `socket`. Any
+  // missing signal means "not the local CLI" — the human path stays open.
+  const provided = req?.headers?.["x-repoos-local-token"];
   if (typeof provided !== "string") return false;
-  if (!isLoopbackAddress(req.socket.remoteAddress)) return false;
+  if (!isLoopbackAddress(req?.socket?.remoteAddress)) return false;
   const forwarded = Boolean(
     req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || req.headers["cf-connecting-ip"],
   );
