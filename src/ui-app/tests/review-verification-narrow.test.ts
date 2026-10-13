@@ -75,20 +75,22 @@ describe("guardsFromRepoosTomlDiff (#0762)", () => {
 
 describe("guard rejection detection is language-agnostic (#0762)", () => {
   it("recognises Swift, Python and Go rejection assertions", () => {
+    expect(testContentDemonstratesGuardRejection("XCTAssertThrowsError(try guard(badInput))")).toBe(
+      true,
+    );
     expect(
-      testContentDemonstratesGuardRejection("XCTAssertThrowsError(try guard(badInput))"),
+      testContentDemonstratesGuardRejection("with pytest.raises(ValueError):\n  guard(bad)"),
     ).toBe(true);
-    expect(testContentDemonstratesGuardRejection("with pytest.raises(ValueError):\n  guard(bad)")).toBe(
-      true,
-    );
-    expect(testContentDemonstratesGuardRejection("if !rejected {\n  t.Fatalf(\"expected reject\")\n}")).toBe(
-      true,
-    );
+    expect(
+      testContentDemonstratesGuardRejection('if !rejected {\n  t.Fatalf("expected reject")\n}'),
+    ).toBe(true);
   });
 
   it("still rejects a bare prose mention of rejection", () => {
     expect(
-      testContentDemonstratesGuardRejection("// this module rejects bad input in theory\nit('ok', () => {});"),
+      testContentDemonstratesGuardRejection(
+        "// this module rejects bad input in theory\nit('ok', () => {});",
+      ),
     ).toBe(false);
   });
 });
@@ -110,7 +112,7 @@ describe("guard clamp reason (#0762)", () => {
       uiVerificationRequired: false,
       evidence: null,
       changedPaths: ["repoos.toml"],
-      repoosTomlDiff: "+[[check.steps]]\n+name = \"c\"\n+kind = \"theme-contrast\"\n",
+      repoosTomlDiff: '+[[check.steps]]\n+name = "c"\n+kind = "theme-contrast"\n',
       changedTestFiles: [],
       guardTestCheck: false,
     });
@@ -123,7 +125,7 @@ describe("guard clamp reason (#0762)", () => {
       uiVerificationRequired: false,
       evidence: null,
       changedPaths: ["repoos.toml"],
-      repoosTomlDiff: "+[[check.steps]]\n+name = \"contrast\"\n+kind = \"theme-contrast\"\n",
+      repoosTomlDiff: '+[[check.steps]]\n+name = "contrast"\n+kind = "theme-contrast"\n',
       changedTestFiles: [],
       testGlobs: ["**/*.test.ts"],
     });

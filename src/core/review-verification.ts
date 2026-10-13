@@ -131,7 +131,9 @@ export function testContentDemonstratesGuardRejection(content: string): boolean 
   // Go
   if (/\bt\.(?:Error|Errorf|Fatal|Fatalf)\(/.test(content)) return true;
   // Generic "expected to fail / raise / throw" phrasing.
-  if (/\b(?:should|must|expects?|expected)\s+(?:to\s+)?(?:throw|fail|raise|reject)\b/i.test(content)) {
+  if (
+    /\b(?:should|must|expects?|expected)\s+(?:to\s+)?(?:throw|fail|raise|reject)\b/i.test(content)
+  ) {
     return true;
   }
   if (
@@ -186,7 +188,8 @@ export function guardsFromRepoosTomlDiff(repoosTomlDiff: string): string[] {
   const touched = new Set<string>();
   let inCheckSteps = false;
   for (const line of repoosTomlDiff.split("\n")) {
-    const body = line.startsWith("+") || line.startsWith("-") || line.startsWith(" ") ? line.slice(1) : line;
+    const body =
+      line.startsWith("+") || line.startsWith("-") || line.startsWith(" ") ? line.slice(1) : line;
     const header = body.trim().match(/^\[\[?([^\]]+)\]\]?$/);
     if (header) {
       inCheckSteps = header[1].trim() === "check.steps" || header[1].trim() === "checks.steps";
@@ -229,7 +232,6 @@ export function guardsMateriallyChangedFromDiff(input: {
 
   return [...touched];
 }
-
 
 function guardNegativeEvidence(
   guardId: string,
@@ -345,10 +347,7 @@ export function clampReasonFor(result: {
 }): string | undefined {
   if (!result.blocksApproval) return undefined;
   const reasons: string[] = [];
-  if (
-    result.consoleErrors.status === "failed" ||
-    result.consoleErrors.status === "not_run"
-  ) {
+  if (result.consoleErrors.status === "failed" || result.consoleErrors.status === "not_run") {
     reasons.push(`browser verification: ${result.consoleErrors.detail}`);
   }
   for (const g of result.guardTests) {

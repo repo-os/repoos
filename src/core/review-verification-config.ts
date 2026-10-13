@@ -35,9 +35,7 @@ export function resolvedReviewVerification(
   config: Pick<RepoOSConfig, "reviewVerification">,
 ): ResolvedReviewVerification {
   const raw: ReviewVerificationConfig = config.reviewVerification ?? {};
-  const globs = (raw.testGlobs ?? [])
-    .map((g) => g.trim())
-    .filter((g) => g.length > 0);
+  const globs = (raw.testGlobs ?? []).map((g) => g.trim()).filter((g) => g.length > 0);
   return {
     guardTestCheck: raw.guardTestCheck !== false,
     testGlobs: globs.length ? globs : [...DEFAULT_GUARD_TEST_GLOBS],
