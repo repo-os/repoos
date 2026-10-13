@@ -3,6 +3,7 @@ id: "0762"
 title: "Mechanical review verification misfires on non-RepoOS repos: guard-test check is JS/TS-only and triggers on any repoos.toml addition"
 type: bug
 status: review
+needs_merge: true
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +12,7 @@ branch: feat/mechanical-review-verification-misfires-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-13T08:51:23Z"
-updated_at: "2026-10-13T13:24:27Z"
+updated_at: "2026-10-13T13:24:32Z"
 review_passes: 1
 dev_error_count: 1
 ---
@@ -76,3 +77,4 @@ Start from review-verification.ts guardsMateriallyChangedFromDiff and evaluateGu
 - 2026-10-13T11:06:16Z · note: click button[data-tab-id="general"]: click: Timeout 5000ms exceeded. on /settings
 - 2026-10-13T11:08:32Z · note: review pass 1: good to go
 - 2026-10-13T13:24:27Z · needs_input (dev-error) dismissed by hello@repoos.org
+- 2026-10-13T13:24:32Z · needs_merge
