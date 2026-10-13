@@ -73,6 +73,41 @@ RepoOS stops and leaves the task for a human rather than looping forever. It
 also stops early and escalates if the reviewer flags the task's own relevance —
 an obsolete task needs a scoping decision, not more engineering.
 
+### Automated verification: when RepoOS clamps a clean verdict
+
+After the reviewer writes its report, RepoOS runs two **mechanical checks** and
+appends a `## Automated verification` section to the report. If one fails, a
+reviewer's `` `good to go` `` is **clamped to `needs some work`** and the task
+auto-bounces with the reason. The activity log records why, and the message sent
+to the engineer opens with a **Why this was sent back** line, so an agent that
+cannot see the drawer still knows what to fix.
+
+The two checks are:
+
+- **Browser console errors** — only when the task's handoff browser evidence was
+  required. Native/non-web work is skipped, not failed.
+- **Guard negative-test evidence** — when a check *guard* was materially
+  changed, a test must prove bad input is rejected, not only that valid input
+  passes.
+
+The guard check is **narrow on purpose** (#0762). It only looks at guards a
+project actually declares — `[[check.steps]]` rows whose `kind` is a built-in
+RepoOS guard (`theme-contrast`, `hardcoded-colors`, `bare-require`,
+`task-assets`, `css-layers`, …) — plus RepoOS's own `src/commands/check.ts` in
+this repo. Adding an *unrelated* `repoos.toml` block (`[release]`,
+`[[distribution]]`, `[[shot.targets]]`, `[[preview.targets]]`, `[[agents]]`, …)
+never counts, so it can no longer clamp a clean review by accident.
+
+Two Settings (General tab, `[reviewVerification]` in `repoos.toml`) tune it for
+projects whose tests are not JavaScript/TypeScript:
+
+- **Guard negative-test review check** (`reviewVerification.guardTestCheck`,
+  default on) — the kill switch. Turning it off skips the check entirely.
+- **Guard test-file globs** (`reviewVerification.testGlobs`, default the JS/TS
+  `*.test.ts`/`.tsx`/`.js`/`.mjs` globs) — set these so a Swift, Python or Go
+  test can satisfy the check (e.g. `**/*Tests.swift`, `**/test_*.py`,
+  `**/*_test.go`).
+
 ## Skill suggestions
 
 This pass is deliberately conservative, and **off by default**. When enabled,
