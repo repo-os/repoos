@@ -98,6 +98,12 @@ export interface ReviewReport {
   state: "ok" | "incomplete" | "failed";
   /** The report markdown (or the failure detail when state is "failed"). */
   markdown: string;
+  /**
+   * One-line reason mechanical verification clamped a clean verdict (#0762),
+   * recorded in the activity note and the engineer follow-up. Absent when no
+   * clamp happened.
+   */
+  clampReason?: string;
 }
 
 export interface ReviewRunResult {
@@ -980,6 +986,7 @@ export class ReviewManager {
       costUsd: session?.costUsd,
     };
     let reportText = result.output?.trim() ?? "";
+    let clampReason: string | undefined;
     const hasReport = ok && reportText;
     if (hasReport) {
       const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
@@ -993,6 +1000,7 @@ export class ReviewManager {
         : gatherReviewVerificationWithoutWorktree(this.config, task);
       const applied = applyMechanicalReviewVerification(reportText, verification);
       reportText = applied.markdown;
+      clampReason = applied.clampReason;
     }
     const verdict = hasReport ? parseVerdict(reportText) : null;
     const state: ReviewReport["state"] = !hasReport ? "failed" : verdict ? "ok" : "incomplete";
@@ -1008,6 +1016,7 @@ export class ReviewManager {
       branch: task.branch,
       state,
       markdown: body.slice(0, REPORT_CHARS),
+      ...(clampReason ? { clampReason } : {}),
     };
     this.write(report, task);
     const marker =
@@ -1575,6 +1584,16 @@ export class ReviewManager {
       `The automated review found the following (review round ${reviewRounds + 1}):`,
     );
     messageParts.push("");
+    // #0762: name the mechanical clamp explicitly and up front, so an engineer
+    // without drawer access can see WHY a clean agent verdict came back as
+    // `needs some work` and act on it directly.
+    if (report.clampReason) {
+      messageParts.push("## Why this was sent back");
+      messageParts.push(
+        `Automated verification clamped the reviewer's verdict: ${report.clampReason}`,
+      );
+      messageParts.push("");
+    }
 
     if (sections.bugs) {
       messageParts.push("## Bugs");
@@ -1752,7 +1771,7 @@ export class ReviewManager {
       const verdict = parseVerdict(report.markdown);
       try {
         patchTaskFile(this.config, task.absPath, {
-          note: reviewPassActivitySummary(pass, report.state, verdict),
+          note: reviewPassActivitySummary(pass, report.state, verdict, report.clampReason),
         });
       } catch {
         /* best-effort */
