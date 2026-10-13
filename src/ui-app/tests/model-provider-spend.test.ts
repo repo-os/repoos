@@ -98,6 +98,12 @@ describe("parseDeepInfraChecklist", () => {
     expect(parsed.availableUsd).toBe(2.81);
   });
 
+  it("reports zero prepaid credits when the checklist balance is zero", () => {
+    const parsed = parseDeepInfraChecklist({ stripe_balance: 0, recent: 0 })!;
+    expect(parsed.availableUsd).toBe(0);
+    expect(parsed.owedUsd).toBeNull();
+  });
+
   it("treats a positive stripe_balance as money owed, never as balance", () => {
     const parsed = parseDeepInfraChecklist({
       stripe_balance: 7.5,

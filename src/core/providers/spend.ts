@@ -496,8 +496,8 @@ export interface DeepInfraChecklist {
    * Remaining prepaid credits in USD. DeepInfra's `/payment/checklist`
    * reports `stripe_balance` as negative funds including recent usage and
    * `recent` as usage since the last invoice; subtracting `recent` gives prepaid
-   * credits shown in the billing page. Null when none remain / the account is
-   * owed money.
+   * credits shown in the billing page. Zero when none remain; null when the
+   * account is owed money.
    */
   availableUsd: number | null;
   /** Amount owed in USD — positive `stripe_balance` means money owed. */
@@ -578,7 +578,7 @@ export function parseDeepInfraChecklist(body: unknown): DeepInfraChecklist | nul
     : [];
   return {
     availableUsd:
-      stripeBalance < 0
+      stripeBalance <= 0
         ? Math.max(0, Math.round((-stripeBalance - (num(c.recent) as number)) * 100) / 100)
         : null,
     owedUsd: stripeBalance != null && stripeBalance > 0 ? stripeBalance : null,
