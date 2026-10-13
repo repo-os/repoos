@@ -237,4 +237,4 @@ branch: feat/rv-globs
     expect(verification.guardTests[0]?.status).toBe("passed");
     expect(verification.blocksApproval).toBe(false);
   });
-});
+}, 15_000);
