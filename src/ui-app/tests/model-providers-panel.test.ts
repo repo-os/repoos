@@ -466,15 +466,70 @@ describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
     await nextTick();
 
     const row = wrapper.findAll(".mp-row")[4];
-    expect(row.text()).toContain("Available credit");
+    expect(row.text()).toContain("Prepaid credits");
     expect(row.text()).toContain("$12.50");
-    expect(row.text()).toContain("Since last invoice");
+    expect(row.text()).toContain("Monthly usage");
     expect(row.text()).toContain("$3.25");
     expect(row.text()).toContain("Spending limit");
     expect(row.text()).toContain("Oct 2026");
     expect(row.text()).toContain("$4.50");
     expect(row.text()).toContain("$12.00");
     expect(row.text()).toContain("Llama launch");
+  });
+
+  it("keeps the last complete figures and marks them stale when usage refresh times out", async () => {
+    const fetchedAt = "2026-10-13T23:59:00.000Z";
+    const deepinfra = deepinfraUsageRoute({
+      kind: "deepinfra",
+      at: fetchedAt,
+      checklist: {
+        availableUsd: 2.81,
+        owedUsd: null,
+        recentUsd: 7.13,
+        limitUsd: null,
+        suspended: false,
+        suspendReason: null,
+        scopedCredits: [],
+      },
+      checklistError: null,
+      usage: [{ period: "2026.10", totalUsd: 7.13 }],
+      usageError: null,
+    });
+    stubFetch([
+      providersRoute(providersFixture([{ hasKey: true }, , , , { hasKey: true }])),
+      openrouterUsageRoute({
+        kind: "openrouter",
+        credits: null,
+        creditsError: null,
+        key: null,
+        keyError: null,
+      }),
+      goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
+      deepinfra,
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[4];
+    const refreshBtn = row.findAll("button").find((b) => b.text() === "Refresh");
+    deepinfra.body = {
+      kind: "deepinfra",
+      checklist: null,
+      checklistError: "The operation timed out.",
+      usage: null,
+      usageError: "The operation timed out.",
+    };
+    await refreshBtn!.trigger("click");
+    await flushPromises();
+    await nextTick();
+
+    expect(row.text()).toContain("Stale");
+    expect(row.text()).toContain("As of");
+    expect(row.text()).toContain("$2.81");
+    expect(row.text()).toContain("$7.13");
+    expect(row.text()).not.toContain("Usage unavailable");
+    expect(row.text()).not.toContain("Balance unavailable");
   });
 
   it("shows an owed amount instead of balance when stripe_balance is positive", async () => {

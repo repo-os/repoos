@@ -80,17 +80,22 @@ describe("MODEL_PROVIDERS registry", () => {
 });
 
 describe("parseDeepInfraChecklist", () => {
-  it("flips the sign: a negative stripe_balance is credit ready to spend", () => {
+  it("derives remaining prepaid credits from stripe_balance and recent usage", () => {
     const parsed = parseDeepInfraChecklist({
       stripe_balance: -12.34,
       recent: 3.2,
       limit: 50,
       suspended: false,
     })!;
-    expect(parsed.availableUsd).toBe(12.34);
+    expect(parsed.availableUsd).toBe(9.14);
     expect(parsed.owedUsd).toBeNull();
     expect(parsed.recentUsd).toBe(3.2);
     expect(parsed.limitUsd).toBe(50);
+  });
+
+  it("matches DeepInfra's prepaid credits example using the checklist fields", () => {
+    const parsed = parseDeepInfraChecklist({ stripe_balance: -9.94, recent: 7.13 })!;
+    expect(parsed.availableUsd).toBe(2.81);
   });
 
   it("treats a positive stripe_balance as money owed, never as balance", () => {
@@ -185,7 +190,7 @@ describe("fetchDeepInfraSpend", () => {
       },
     });
     const spend = await fetchDeepInfraSpend("di-key");
-    expect(spend.checklist?.availableUsd).toBe(20);
+    expect(spend.checklist?.availableUsd).toBe(15);
     expect(spend.usage?.[0].totalUsd).toBe(5);
     const calls = fn.mock.calls as unknown as [string, RequestInit][];
     expect(calls).toHaveLength(2);

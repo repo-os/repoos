@@ -25,6 +25,8 @@ interface RowState {
   /** ISO timestamp of the last successful usage fetch. */
   fetchedAt: string | null;
   refreshOk: boolean;
+  /** The last complete provider snapshot is being shown after a failed refresh. */
+  stale: boolean;
 }
 
 const repo = useRepoStore();
@@ -39,7 +41,14 @@ const keyErrors = reactive<Record<string, string>>({});
 
 function rowState(id: string): RowState {
   if (!states[id]) {
-    states[id] = { usage: null, loading: false, error: "", fetchedAt: null, refreshOk: false };
+    states[id] = {
+      usage: null,
+      loading: false,
+      error: "",
+      fetchedAt: null,
+      refreshOk: false,
+      stale: false,
+    };
   }
   return states[id];
 }
@@ -70,6 +79,17 @@ async function loadUsage(id: string, opts?: { manual?: boolean }): Promise<void>
   state.error = "";
   try {
     const usage = await api<ModelProviderUsage>(`/api/model-providers/${id}/usage`);
+    const incompleteDeepInfra =
+      usage.kind === "deepinfra" && (usage.checklistError != null || usage.usageError != null);
+    if (incompleteDeepInfra && state.usage?.kind === "deepinfra") {
+      // Keep related DeepInfra billing figures from the same successful
+      // snapshot. Mixing a fresh balance with stale usage recreates the
+      // misleading balance the card is meant to prevent.
+      state.stale = true;
+      state.refreshOk = false;
+      if (manual) repo.pushToast(`${rowLabel(id)} data is stale; refresh failed`, "error");
+      return;
+    }
     state.usage = usage;
     const at =
       usage && typeof usage === "object" && "at" in usage && typeof usage.at === "string"
@@ -77,11 +97,13 @@ async function loadUsage(id: string, opts?: { manual?: boolean }): Promise<void>
         : new Date().toISOString();
     state.fetchedAt = at;
     state.refreshOk = true;
+    state.stale = incompleteDeepInfra;
     if (manual) repo.pushToast(`${rowLabel(id)} balance updated`, "success");
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not load usage.";
     state.error = message;
     state.refreshOk = false;
+    state.stale = state.usage != null;
     if (manual) repo.pushToast(message, "error");
   } finally {
     state.loading = false;
@@ -358,7 +380,7 @@ onMounted(() => {
                 }}
               </div>
               <div class="mp-stat mp-stat-hero">
-                <span class="mp-stat-label">Available credit</span>
+                <span class="mp-stat-label">Prepaid credits</span>
                 <span class="mp-stat-value">{{
                   fmtUsd(deepinfraUsage(rowState(row.id).usage)!.checklist!.availableUsd)
                 }}</span>
@@ -371,7 +393,7 @@ onMounted(() => {
               </div>
               <div class="mp-stat-row">
                 <div class="mp-stat">
-                  <span class="mp-stat-label">Since last invoice</span>
+                  <span class="mp-stat-label">Monthly usage</span>
                   <span class="mp-stat-value sm">{{
                     fmtUsd(deepinfraUsage(rowState(row.id).usage)!.checklist!.recentUsd)
                   }}</span>
@@ -438,7 +460,8 @@ onMounted(() => {
               class="mp-as-of"
               :title="rowState(row.id).fetchedAt ?? undefined"
             >
-              As of {{ fmtAsOf(rowState(row.id).fetchedAt) }}
+              <template v-if="rowState(row.id).stale">Stale · </template>As of
+              {{ fmtAsOf(rowState(row.id).fetchedAt) }}
             </span>
             <span
               v-if="rowState(row.id).refreshOk && rowState(row.id).fetchedAt"
