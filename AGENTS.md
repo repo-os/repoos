@@ -338,6 +338,14 @@ cannot tell from the code alone:
   server-owned Move-to-done pipeline even from an interactive session. A bare
   `mv done` is at most a metadata repair after separately verified landing and
   explicit human authorization; it is never a merge or approval mechanism.
+- **Agent drivers pick from the budget allowlist.** When you (an AI session, not
+  a human in the UI) set an engineer/reviewer override — `repoos override`, or a
+  `PATCH` on `cliOverride`/`modelOverride` — the server refuses a pair outside
+  the human-approved allowlist in `repoos.toml` (`[[budget.allowlist]]`). Run
+  `repoos override --help` to print the allowed agent + model pairs, or read
+  them on the Agents page's **Budget Controls** tab. A human in the UI keeps the
+  full list, and an empty allowlist restricts nothing. Don't work around a
+  refusal; ask a human to change the allowlist if you need another pair.
 - Keep frontmatter tidy; `repoos` normalizes key order on write.
 - One task = one focused worktree.
 - **Never `git add` binaries under `work/` or `inputs/`.** Task and input

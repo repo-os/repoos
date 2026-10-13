@@ -89,6 +89,14 @@ strictBuild = false
 # ── Close-out (Move to done) ─────────────────────────────────────────────
 closeOut.timeoutMs = 360000  # 6-minute budget per close-out attempt; 0 = no limit
 
+# ── Budget controls (agent drivers) ──────────────────────────────────────
+# Steer agent drivers (CLI/API sessions) to a human-approved subset of
+# coding agents + models. Empty = unrestricted. Edit on the Agents page's
+# Budget Controls tab, or as [[budget.allowlist]] rows here.
+# [[budget.allowlist]]
+# cli = "opencode"
+# models = ["big pickle", "deepseek v4"]
+
 # ── Approval policy (opt-in; default off) ────────────────────────────────
 # approval.enabled = true
 # approval.autoApprove.areas = ["api", "data", "docs", "chore"]
@@ -441,6 +449,45 @@ for how the three outcomes differ.
 
 Edit **Close-out candidate dependencies**, **Close-out install command**, and
 **Post-merge install command** in **Settings → General**.
+
+## Budget controls (agent drivers)
+
+An *agent driver* is an AI session that operates RepoOS through the CLI/API —
+overriding engineers, starting tasks, restarting stuck runs. It has repeatedly
+picked agent + model pairs that are too expensive. This optional allowlist
+steers an agent driver to a human-approved subset; a human using the web UI is
+**never** restricted and keeps the full list. Leave it empty and nothing is
+restricted — agent drivers behave exactly as they do today.
+
+```toml
+[[budget.allowlist]]
+cli = "opencode"
+models = ["big pickle", "deepseek v4"]
+
+[[budget.allowlist]]
+cli = "claude code"
+models = ["sonnet"]
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `budget.allowlist[].cli` | string | *(required)* | yes | A coding-agent CLI id (the `AGENT_CLIS` string, e.g. `opencode`, `claude code`). An agent driver may only use a listed CLI. |
+| `budget.allowlist[].models` | array of strings | *(required)* | yes | The model ids allowed for that CLI. A model not listed is refused. Rows for the same `cli` are merged; a row with no models is dropped. |
+
+Edit it on the **Agents page → Budget Controls tab**
+(`/agents?tab=budget-controls`), which lists each allowed agent with its models
+collapsed by default and adds entries through the shared coding agent + model
+selector. The `budget.allowlist` key is also in the Settings schema so search
+can find it.
+
+Enforcement: when an agent driver sets an engineer/reviewer override
+(`repoos override <id> --cli … --model …`, or a direct
+`PATCH /api/tasks/:id` with `cliOverride`/`modelOverride`) to a pair outside the
+allowlist, the server refuses with a clear error listing every allowed pair.
+The server tells an agent driver from a human by the loopback CLI token: a
+browser UI session never carries it, so the human path always falls through.
+`repoos override --help` prints the allowlist so a driver can choose an allowed
+pair.
 
 ## UI handoff verification
 
