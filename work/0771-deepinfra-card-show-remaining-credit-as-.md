@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T17:45:24Z"
+updated_at: "2026-10-13T17:46:13Z"
 ---
 ## Problem
 The DeepInfra provider card shows two money figures that look like they conflict:
@@ -43,10 +43,10 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 ```json
 [
 {
-  "label": "DeepInfra prepaid credits and stale timeout state",
-  "target": "default",
-  "route": "/agents?tab=providers",
-  "highlight": ".mp-row"
+"label": "DeepInfra prepaid credits and stale timeout state",
+"target": "default",
+"route": "/agents?tab=providers",
+"highlight": ".mp-row"
 }
 ]
 ```
@@ -62,3 +62,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T17:27:39Z · message_queued at 2026-10-13T17:27:38.944Z
 - 2026-10-13T17:27:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-13T17:45:24Z · body: section Shots
+- 2026-10-13T17:46:13Z · body
