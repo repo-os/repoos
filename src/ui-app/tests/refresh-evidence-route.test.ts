@@ -3,7 +3,8 @@ import { execSync } from "node:child_process";
 import { mkdirSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { refreshTaskEvidence } from "../../server/routes/tasks.js";
+import { refreshTaskEvidence, guardedForceRefreshCapture } from "../../server/routes/tasks.js";
+import { localShotStore } from "../../server/shots.js";
 import * as uiHandoffGate from "../../server/ui-handoff-gate.js";
 import { readUiHandoffGateEvidence, handoffTreeStatus } from "../../server/ui-handoff-gate.js";
 import type { RouteContext } from "../../server/routes/types.js";
@@ -339,6 +340,54 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
     expect(body.headIdentity).toBe(shortHead);
     expect(body.issues).toHaveLength(1);
     expect(readUiHandoffGateEvidence(config, "0766")?.sourceIdentity).toBe(shortHead);
+  });
+
+  it("guarded force refresh restores tracked damage after command capture (automatic path)", async () => {
+    const { root, shortHead, config, task } = commandRepo(
+      RUN_COMMAND + "; echo dirt >> tracked.txt; printf stray > stray.txt",
+    );
+    const captured = await guardedForceRefreshCapture(config, task, root, {}, vi.fn());
+    expect(captured.error).toBeUndefined();
+    expect(captured.gateOk).toBe(true);
+    expect(captured.headIdentity).toBe(shortHead);
+    expect(captured.restored).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("tracked.txt"),
+        expect.stringContaining("stray.txt"),
+      ]),
+    );
+    expect(readFileSync(join(root, "tracked.txt"), "utf8")).toBe("clean\n");
+    expect(existsSync(join(root, "stray.txt"))).toBe(false);
+  });
+
+  it("guarded force refresh fails when HEAD moves during command capture (automatic path)", async () => {
+    const { root, shortHead, config, task } = commandRepo(
+      RUN_COMMAND + "; git commit --allow-empty -q -m moved",
+    );
+    const captured = await guardedForceRefreshCapture(config, task, root, {}, vi.fn());
+    expect(captured.error).toContain("HEAD changed during the capture");
+    expect(captured.error).toContain(shortHead);
+    expect(captured.gateOk).toBe(false);
+  });
+
+  it("force refresh supersedes engineer-made shots before new captures", async () => {
+    const { root, config, task } = commandRepo(RUN_COMMAND);
+    const store = localShotStore(config, task.id);
+    store.save({
+      target: "cmd",
+      data: Buffer.from("old-engineer-shot").toString("base64"),
+      mime: "image/png",
+      label: "Engineer capture",
+    });
+    expect(store.list()).toHaveLength(1);
+    expect(store.list()[0]!.origin).toBeUndefined();
+    const captured = await guardedForceRefreshCapture(config, task, root, {}, vi.fn());
+    expect(captured.error).toBeUndefined();
+    expect(captured.gateOk).toBe(true);
+    const shots = store.list();
+    expect(shots).toHaveLength(1);
+    expect(shots[0]!.origin).toBe("auto");
+    expect(shots[0]!.label).not.toBe("Engineer capture");
   });
 
   it("fails without restoring when HEAD moves during the capture", async () => {

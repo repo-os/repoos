@@ -201,11 +201,7 @@ import { PreviewManager, probePreview } from "./preview.js";
 import { DevTargetManager } from "./dev.js";
 import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
-import {
-  runUiHandoffGate,
-  readUiHandoffGateEvidence,
-  effectiveHandoffTreeStatus,
-} from "./ui-handoff-gate.js";
+import { readUiHandoffGateEvidence, effectiveHandoffTreeStatus } from "./ui-handoff-gate.js";
 import { ReviewManager } from "./review.js";
 import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
 import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
@@ -374,6 +370,7 @@ import {
   listTaskShots,
   getTaskUiVerification,
   refreshTaskEvidence,
+  guardedForceRefreshCapture,
   getTaskShot,
   uploadTaskShot,
   deleteTaskShot,
@@ -2084,17 +2081,28 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           attemptPath,
           JSON.stringify({ taskId: task.id, head, at: new Date().toISOString() }),
         );
-        const result = await runUiHandoffGate(
+        const captured = await guardedForceRefreshCapture(
           config,
           task,
+          worktree,
           previews,
           (id, level, message) => {
             logger.task(id, level, message);
           },
-          { forceRefresh: true, recordTaskNotes: false },
         );
-        const refreshed = readUiHandoffGateEvidence(config, task.id);
-        return result.ok && refreshed?.sourceIdentity === head;
+        if (captured.error) {
+          logger.task(
+            task.id,
+            "warn",
+            `automatic stale-evidence refresh failed: ${captured.error}`,
+          );
+        }
+        return (
+          !captured.skipped &&
+          !captured.error &&
+          captured.gateOk &&
+          captured.headIdentity === head
+        );
       } finally {
         rootLock.release(task.id);
       }
