@@ -5,7 +5,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { execFileSync } from "node:child_process";
 import { loadConfig } from "../../core/config.js";
 import { parseTask } from "../../core/task.js";
@@ -243,4 +243,109 @@ branch: feat/missing-wt
     const applied = applyMechanicalReviewVerification("## Verdict\n`good to go`\n", verification);
     expect(applied.markdown).toContain("no local worktree");
   });
-});
+
+  function setupBranchRepo(opts: {
+    rootToml: string;
+    branchToml: string;
+    branchFiles?: Record<string, string>;
+  }): { worktree: string; taskPath: string; root: string } {
+    const root = mkdtempSync(join(tmpdir(), "repoos-rv-globs-"));
+    roots.push(root);
+    const worktree = `${root}-wt`;
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, "repoos.toml"), opts.rootToml);
+    const taskPath = join(root, "work", "0762.md");
+    writeFileSync(
+      taskPath,
+      `---
+id: "0762"
+title: t
+status: review
+branch: feat/rv-globs
+---
+`,
+    );
+    git(root, ["init", "-q"]);
+    git(root, ["config", "user.email", "t@example.com"]);
+    git(root, ["config", "user.name", "Test"]);
+    git(root, ["add", "-A"]);
+    git(root, ["commit", "-qm", "init"]);
+    git(root, ["branch", "-M", "main"]);
+    git(root, ["branch", "feat/rv-globs"]);
+    git(root, ["worktree", "add", "-q", worktree, "feat/rv-globs"]);
+    writeFileSync(join(worktree, "repoos.toml"), opts.branchToml);
+    for (const [rel, content] of Object.entries(opts.branchFiles ?? {})) {
+      const abs = join(worktree, rel);
+      mkdirSync(dirname(abs), { recursive: true });
+      writeFileSync(abs, content);
+    }
+    git(worktree, ["add", "-A"]);
+    git(worktree, ["commit", "-qm", "branch changes"]);
+    return { worktree, taskPath, root };
+  }
+
+  function loadTask(root: string, taskPath: string) {
+    const config = loadConfig(root);
+    const task = parseTask({
+      content: readFileSync(taskPath, "utf8"),
+      absPath: taskPath,
+      root,
+      defaultStatus: config.defaultStatus,
+      defaultAssignee: config.defaultAssignee,
+    });
+    return { config, task };
+  }
+
+  it("ignores an unrelated repoos.toml addition (#0762)", () => {
+    const base =
+      'workDir = "work"\n\n[check]\nversion = 1\n\n[[check.steps]]\nname = "build"\nkind = "build"\n';
+    const { worktree, taskPath, root } = setupBranchRepo({
+      rootToml: base,
+      branchToml: `${base}\n[release]\nversion = "1.0.0"\n\n[[distribution]]\nname = "dist"\nkind = "npm"\ncommand = "npm publish"\n`,
+    });
+    const { config, task } = loadTask(root, taskPath);
+    const verification = gatherReviewVerification(config, task, worktree, "main");
+    expect(verification.guardTests).toEqual([]);
+    expect(verification.blocksApproval).toBe(false);
+  });
+
+  it("accepts a Swift test path as negative evidence when configured (#0762)", () => {
+    const base = [
+      'workDir = "work"',
+      "",
+      "[reviewVerification]",
+      'testGlobs = ["**/*Tests.swift"]',
+      "",
+      "[check]",
+      "version = 1",
+      "",
+      "[[check.steps]]",
+      'name = "build"',
+      'kind = "build"',
+      "",
+    ].join("\n");
+    const branchToml = `${base}[[check.steps]]\nname = "contrast"\nkind = "theme-contrast"\n`;
+    const { worktree, taskPath, root } = setupBranchRepo({
+      rootToml: base,
+      branchToml,
+      branchFiles: {
+        "Tests/ThemeContrastTests.swift": [
+          "import XCTest",
+          "@testable import RepoOS",
+          "final class ThemeContrastTests: XCTestCase {",
+          "  func testFlagsProhibitedContrastPair() {",
+          "    // theme-contrast guard must reject this bad input",
+          '    XCTAssertThrowsError(try themeContrastOffenders([ContrastPair(fg: "#fff", bg: "#fff")]))',
+          "  }",
+          "}",
+        ].join("\n"),
+      },
+    });
+    const { config, task } = loadTask(root, taskPath);
+    const verification = gatherReviewVerification(config, task, worktree, "main");
+    expect(verification.guardTests).toHaveLength(1);
+    expect(verification.guardTests[0]?.guardId).toBe("theme-contrast");
+    expect(verification.guardTests[0]?.status).toBe("passed");
+    expect(verification.blocksApproval).toBe(false);
+  });
+}, 15_000);

@@ -3,6 +3,8 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
 import { createRouter, createMemoryHistory } from "vue-router";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import TaskCard from "../src/components/TaskCard.vue";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
 import { useRepoStore } from "../src/stores/repo";
@@ -232,4 +234,27 @@ describe("move-to-done inline error placement", () => {
     expect(number.text()).toBe("#0042");
     expect(number.attributes("aria-label")).toBe("Copy link to task 0042");
   });
+
+  it(
+    "keeps a gap between the card's conflict message and the action row (#0768) — " +
+      "jsdom does not apply the stylesheet, so the source rule is asserted directly",
+    () => {
+      const css = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
+      const rule = css.match(/\.tc-card-footer \.done-error--card \.done-error-row\s*\{[^}]*\}/);
+      expect(rule, "style.css must keep the card-mode error row rule").not.toBeNull();
+      const body = rule?.[0] ?? "";
+      // Padding shorthand with a bottom value (3rd or 4th component) so the
+      // message never sits flush against the full-width action button below.
+      const pad =
+        body
+          .match(/padding:\s*([^;]+);/)?.[1]
+          ?.trim()
+          .split(/\s+/) ?? [];
+      expect(pad.length).toBeGreaterThanOrEqual(2);
+      // 2 components = top/bottom + left/right; 3 or 4 components put the
+      // bottom value third.
+      const bottom = pad.length === 2 ? pad[0] : pad[2];
+      expect(bottom, "the error row needs a bottom gap").not.toBe("0");
+    },
+  );
 });

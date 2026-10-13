@@ -25,7 +25,11 @@ function fixtureTask(over: Partial<Task> = {}): Task {
     assignee: "ai",
     assignedTo: "ai",
     createdBy: "",
-    branch: "feat/shot-fixture",
+    // No branch: a mounted task card fetches diff stats for its id, and the
+    // server has no such task — the 404 fails the handoff UI gate (#0768). An
+    // empty branch makes the card skip that request (it would only answer
+    // "noBranch"), so the fixture stays a pure client-side state seed.
+    branch: "",
     tags: [],
     needsInput: false,
     needsMerge: false,

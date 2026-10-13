@@ -72,6 +72,65 @@ describe("guard negative-test evidence (#0714)", () => {
     expect(contextOnly).toEqual([]);
   });
 
+  it("ignores unrelated repoos.toml additions outside [[check.steps]] (#0762)", () => {
+    const tomlDiff = [
+      "+[release]",
+      '+version = "1.0.0"',
+      "+[[distribution]]",
+      '+kind = "github-release"',
+      '+name = "dist"',
+      '+command = "./release.sh"',
+      "+[[shot.targets]]",
+      '+name = "app"',
+      '+kind = "command"',
+      '+command = "make shot"',
+      "+[[preview.targets]]",
+      '+name = "default"',
+      '+kind = "server"',
+      '+command = "bun run dev"',
+      "+[[agents]]",
+      '+name = "reviewer"',
+    ].join("\n");
+    const ids = guardsMateriallyChangedFromDiff({
+      changedPaths: ["repoos.toml"],
+      repoosTomlDiff: tomlDiff,
+    });
+    expect(ids).toEqual([]);
+  });
+
+  it("detects a guard kind only inside a [[check.steps]] block (#0762)", () => {
+    const tomlDiff = [
+      "+[[check.steps]]",
+      '+name = "contrast"',
+      '+kind = "theme-contrast"',
+      "+[[check.steps]]",
+      '+name = "rendered-contrast"',
+      '+command = "bun run contrast:audit"',
+    ].join("\n");
+    const ids = guardsMateriallyChangedFromDiff({
+      changedPaths: ["repoos.toml"],
+      repoosTomlDiff: tomlDiff,
+    });
+    expect(ids).toEqual(["theme-contrast"]);
+  });
+
+  it("does not treat a [[distribution]] kind as a guard even after a check.steps block", () => {
+    const tomlDiff = [
+      "+[[check.steps]]",
+      '+name = "contrast"',
+      '+kind = "theme-contrast"',
+      "+[[distribution]]",
+      '+name = "release"',
+      '+kind = "npm"',
+      '+command = "npm publish"',
+    ].join("\n");
+    const ids = guardsMateriallyChangedFromDiff({
+      changedPaths: ["repoos.toml"],
+      repoosTomlDiff: tomlDiff,
+    });
+    expect(ids).toEqual(["theme-contrast"]);
+  });
+
   it("accepts negative evidence from an unchanged test at branch HEAD", () => {
     const negative = `
       import { bareRequireOffenders } from "../../commands/check.js";
@@ -86,6 +145,17 @@ describe("guard negative-test evidence (#0714)", () => {
     });
     expect(checks[0]?.status).toBe("passed");
     expect(checks[0]?.detail).toContain("existing test");
+  });
+
+  it("records an actionable block reason on a failed guard check (#0762)", () => {
+    const checks = evaluateGuardNegativeTestChecks({
+      guardIds: ["bare-require"],
+      changedTestFiles: [],
+      testGlobs: ["**/*.test.ts", "**/*Tests.swift"],
+    });
+    expect(checks[0]?.status).toBe("failed");
+    expect(checks[0]?.blockReason).toContain("bare-require");
+    expect(checks[0]?.blockReason).toContain("**/*Tests.swift");
   });
 
   it("does not treat a bare rejects mention as negative evidence", () => {
@@ -172,5 +242,39 @@ describe("applyMechanicalReviewVerification (#0714)", () => {
     const applied = applyMechanicalReviewVerification(agent, verification);
     expect(applied.verdictOverride).toBeUndefined();
     expect(applied.markdown).toContain("Browser console-error check");
+  });
+
+  it("skips the guard check with a stated reason when disabled (#0762)", () => {
+    const verification = evaluateReviewVerification({
+      uiVerificationRequired: false,
+      evidence: null,
+      changedPaths: ["repoos.toml"],
+      changedTestFiles: [],
+      guardTestCheck: false,
+    });
+    expect(verification.guardTests[0]?.status).toBe("skipped");
+    expect(verification.guardTests[0]?.detail).toContain("guardTestCheck = false");
+    expect(verification.blocksApproval).toBe(false);
+  });
+
+  it("records the clamp reason and includes it in the follow-up text (#0762)", () => {
+    const agent = "## Verdict\n`good to go` — looks fine.\n\n## Bugs\nNone found.\n";
+    const verification = evaluateReviewVerification({
+      uiVerificationRequired: false,
+      evidence: null,
+      changedPaths: ["repoos.toml"],
+      repoosTomlDiff: ["+[[check.steps]]", '+name = "contrast"', '+kind = "theme-contrast"'].join(
+        "\n",
+      ),
+      changedTestFiles: [],
+      testGlobs: ["**/*.test.ts"],
+    });
+    expect(verification.blocksApproval).toBe(true);
+    expect(verification.clampReason).toContain("theme-contrast");
+
+    const applied = applyMechanicalReviewVerification(agent, verification);
+    expect(applied.verdictOverride).toBe("needs some work");
+    expect(applied.clampReason).toContain("theme-contrast");
+    expect(applied.markdown).toContain("theme-contrast");
   });
 });
