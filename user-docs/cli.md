@@ -105,6 +105,8 @@ command's flag table, so a flag cannot be added without appearing in `--help`.
 | `--ai` | Assign to an AI agent |
 | `--body` | Task body; pass `-` to read from stdin |
 | `--shots` | Raw JSON list declaring the `## Shots` section; pass `-` to read from stdin. |
+| `--screenshot` | Attach a local image file to the task's `## Screenshots` section. Repeatable (`--screenshot a.png --screenshot b.png`). |
+| `--caption` | Alt text for a single `--screenshot` image. |
 
 `--priority` and `--type` are validated on every write: a value outside the
 sets above is rejected with the field, the bad value and the full list of valid
@@ -223,6 +225,28 @@ the body (including the Activity log) untouched. `repoos new` accepts it too;
 `-` reads the JSON from stdin:
 
     repoos update 0612 --shots '[{"target":"default","route":"/agents?tab=detected","label":"Detected tab","highlight":".detect-row"}]'
+
+### Attaching screenshots (`--screenshot`)
+
+When you have the actual image files — an agent handed a human's screenshots in
+chat, for example — pass each one to `--screenshot` (repeatable) on `repoos new`
+or `repoos update`. The command validates the file against the same allowlist
+and size limit the UI upload uses (`.png`, `.jpg`/`.jpeg`, `.gif`, `.webp`,
+`.avif`, `.bmp`; max 10 MB), stores it under the gitignored
+`work/.attachments/<id>/`, assigns the next `screenshot-N` name, and writes or
+extends the task's `## Screenshots` section (kept before `## Activity`). It
+prints the resulting attachment URLs:
+
+```bash
+repoos new "Fix the login redirect loop" --screenshot before.png --screenshot after.png
+repoos update 0763 --screenshot repro.png --caption "crash on save"
+```
+
+`--caption` sets the alt text for a single `--screenshot` image (it cannot label
+several). A missing, unsupported, empty, or oversize file is rejected with a
+clear error before any change is written. Nothing under `work/` is staged — the
+images are gitignored and served by the running server from disk; only the
+`## Screenshots` markdown lands in the task file.
 
 To replace any other single `## Section` (create it if absent), use
 `--section "<heading>" --section-body "..."`. A `Shots` section written this way

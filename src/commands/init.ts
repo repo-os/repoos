@@ -279,6 +279,15 @@ a candidate merge. Do not erase a task's branch metadata to force this path.
   must use those same RepoOS CLI commands or HTTP API endpoints for task body,
   metadata, and status changes; it must never edit task Markdown directly.
 - **Never** deploy to production without human sign-off.
+- **Attach the human's screenshots to the task.** When a task comes from a
+  request that included images, pass every one with
+  \`repoos new "<title>" --screenshot path.png\` (repeat \`--screenshot\` per
+  image) or \`repoos update <id> --screenshot path.png\` (\`--caption "..."\`
+  labels a single image). The command stores the files under the gitignored
+  \`${workDir}/.attachments/<id>/\` and writes the task's \`## Screenshots\`
+  section itself — never \`git add\` the pixels, never hand-copy them, never
+  edit that section by hand. Say in your reply which images you attached.
+  An image the human gave you is an image that lands on the task.
 - Keep frontmatter tidy; \`repoos\` will normalize key order on write.
 - One task = one focused worktree.
 - **Never invent evidence.** Do not fabricate device sessions, live API results,

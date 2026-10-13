@@ -24,6 +24,7 @@ import {
 import { deleteTaskFile, PathGuardError, WriteError } from "../server/write.js";
 import { resolveCliCreator } from "../core/record-creator.js";
 import { normalizeSectionHeading, replaceSection } from "../core/task.js";
+import { attachScreenshots, readScreenshotFiles } from "./screenshot-flag.js";
 import {
   NEW_FLAG_HELP,
   UPDATE_FLAG_HELP,
@@ -493,6 +494,18 @@ function shotsError(body: string): string | null {
     : null;
 }
 
+/**
+ * Reject a `--caption` that is not attached to exactly one `--screenshot` (#0763):
+ * a single alt text cannot label several images, and a caption with nothing to
+ * label is a flag mistake worth naming rather than ignoring.
+ */
+function screenshotFlagError(screenshots: string[], caption: string | undefined): string | null {
+  if (caption === undefined) return null;
+  if (screenshots.length === 0) return "--caption requires --screenshot";
+  if (screenshots.length > 1) return "--caption applies to a single --screenshot image";
+  return null;
+}
+
 /** Accept raw JSON and write the exact fenced format the capture parser reads. */
 function shotsSectionContent(
   raw: string,
@@ -541,6 +554,8 @@ export function cmdUpdate(args: string[]): void {
   let pendingSectionHeading: string | null = null;
   let pendingSectionContent: string | undefined;
   let pendingShots: string | undefined;
+  const screenshots: string[] = [];
+  let caption: string | undefined;
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (!a.startsWith("--")) {
@@ -555,6 +570,27 @@ export function cmdUpdate(args: string[]): void {
     }
     if (key === "force") {
       patch.force = true;
+      continue;
+    }
+    // #0763: repeatable — every image attaches; --caption labels a single one.
+    if (key === "screenshot") {
+      const raw = rest[++i];
+      if (raw === undefined) {
+        console.error(c.red("  Missing value for --screenshot"));
+        process.exitCode = 1;
+        return;
+      }
+      screenshots.push(raw);
+      continue;
+    }
+    if (key === "caption") {
+      const raw = rest[++i];
+      if (raw === undefined || caption !== undefined) {
+        console.error(c.red(`  Missing or repeated --caption value\n${usage}`));
+        process.exitCode = 1;
+        return;
+      }
+      caption = raw;
       continue;
     }
     if (key === "section") {
@@ -680,10 +716,33 @@ export function cmdUpdate(args: string[]): void {
     }
   }
 
-  if (Object.keys(patch).length === 0 && pendingShots === undefined) {
+  if (
+    Object.keys(patch).length === 0 &&
+    pendingShots === undefined &&
+    screenshots.length === 0 &&
+    caption === undefined
+  ) {
     console.error(c.red("  No fields given.\n" + usage));
     process.exitCode = 1;
     return;
+  }
+
+  const captionError = screenshotFlagError(screenshots, caption);
+  if (captionError) {
+    console.error(c.red(`  ${captionError}`));
+    process.exitCode = 1;
+    return;
+  }
+  // #0763: validate every --screenshot up front. A missing, oversize, or
+  // unsupported image is reported before the metadata patch is written, so a
+  // bad flag never leaves a half-applied update.
+  if (screenshots.length > 0) {
+    const read = readScreenshotFiles(screenshots);
+    if ("error" in read) {
+      console.error(c.red(`  ${read.error}`));
+      process.exitCode = 1;
+      return;
+    }
   }
 
   // Board-rooted, not cwd-rooted (#0202) — see cmdMv for why.
@@ -712,6 +771,18 @@ export function cmdUpdate(args: string[]): void {
   } catch (e) {
     console.error(c.red("  " + (e as Error).message));
     process.exitCode = 1;
+  }
+  // Attach after the metadata patch: numbering continues from whatever images
+  // the task already has, and the URLs are printed so the caller can paste them.
+  if (screenshots.length > 0) {
+    const attached = attachScreenshots(repoos.config, task, screenshots, caption);
+    if ("error" in attached) {
+      console.error(c.red(`  failed to attach screenshot: ${attached.error}`));
+      process.exitCode = 1;
+    } else {
+      console.log("  " + c.green("attached ") + c.dim(attached.metas.length + " screenshot(s)"));
+      for (const meta of attached.metas) console.log("    " + c.cyan(meta.url));
+    }
   }
 }
 
@@ -753,6 +824,7 @@ function parseQuestions(raw: string): string[] {
 export function cmdNew(args: string[]): void {
   const usage = NEW_USAGE;
   const flags: Record<string, string | boolean> = {};
+  const screenshots: string[] = [];
   const positional: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -781,6 +853,11 @@ export function cmdNew(args: string[]): void {
       process.exitCode = 1;
       return;
     }
+    // #0763: repeatable — collect every image, don't overwrite on the 2nd.
+    if (key === "screenshot") {
+      screenshots.push(raw);
+      continue;
+    }
     flags[key] = (key === "body" || key === "shots") && raw === "-" ? readFileSync(0, "utf8") : raw;
   }
   const title = positional.join(" ").trim();
@@ -790,6 +867,23 @@ export function cmdNew(args: string[]): void {
     return;
   }
   let body = (flags.body as string) || "";
+  // #0763: validate --caption/--screenshot BEFORE creating anything, so a bad
+  // flag or a missing/oversize/unsupported image never leaves a half-made task.
+  const caption = typeof flags.caption === "string" ? flags.caption : undefined;
+  const captionError = screenshotFlagError(screenshots, caption);
+  if (captionError) {
+    console.error(c.red(`  ${captionError}`));
+    process.exitCode = 1;
+    return;
+  }
+  if (screenshots.length > 0) {
+    const read = readScreenshotFiles(screenshots);
+    if ("error" in read) {
+      console.error(c.red(`  ${read.error}`));
+      process.exitCode = 1;
+      return;
+    }
+  }
   const repoos = boardRepoOS();
   try {
     const error = shotsError(body);
@@ -834,6 +928,21 @@ export function cmdNew(args: string[]): void {
   console.log(
     "  " + c.green("created ") + c.dim("#" + t.id) + "  " + t.title + c.dim("  → " + t.path),
   );
+  // #0763: store the supplied images under work/.attachments/<id>/ (gitignored)
+  // and extend ## Screenshots before the task file is committed. A storage
+  // failure is reported loudly — never silent — and the task minus images stays.
+  if (screenshots.length > 0) {
+    const attached = attachScreenshots(repoos.config, t, screenshots, caption);
+    if ("error" in attached) {
+      console.error(c.red(`  failed to attach screenshot: ${attached.error}`));
+      process.exitCode = 1;
+    } else {
+      const refreshed = repoos.getTask(t.id);
+      if (refreshed) t = refreshed;
+      console.log("  " + c.green("attached ") + c.dim(attached.metas.length + " screenshot(s)"));
+      for (const meta of attached.metas) console.log("    " + c.cyan(meta.url));
+    }
+  }
   // #0668: `repoos new` writes the task directly (no server in the loop), so it
   // assesses the stub itself. The boot sweep is the backstop for tasks created
   // while the server was down or by another client.
