@@ -12,8 +12,6 @@ cli_override: claude code
 model_override: sonnet
 created_at: "2026-10-12T14:35:44Z"
 updated_at: "2026-10-13T05:11:23Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: c5c7052b617617735b2fe7111f97583ea83becc3
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -74,3 +72,4 @@ dev_error_count: 1
 - 2026-10-13T05:02:10Z · body
 - 2026-10-13T05:04:37Z · body
 - 2026-10-13T05:11:23Z · status active→review
+
