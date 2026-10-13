@@ -29,7 +29,7 @@ interface CommandGroup {
 }
 
 /** Commands whose own argument parser already handles `--help`. */
-export const SELF_HELP_COMMANDS = new Set(["support", "tunnel", "shot", "uninstall"]);
+export const SELF_HELP_COMMANDS = new Set(["support", "tunnel", "shot", "uninstall", "override"]);
 
 const GROUPS: readonly CommandGroup[] = [
   {
