@@ -35,7 +35,13 @@ import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import type { CaptureEntry } from "../core/shot-plan.js";
 import { provenanceCaption, parseShotPlan, shotPlanFingerprint } from "../core/shot-plan.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
-import { runGit, worktreePathForBranch } from "../core/git.js";
+import {
+  addDetachedWorktree,
+  mainCheckoutRoot,
+  removeDetachedWorktree,
+  runGit,
+  worktreePathForBranch,
+} from "../core/git.js";
 import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
 import {
@@ -825,34 +831,65 @@ export async function runUiHandoffGate(
   // store the images, and record provenance (command, cwd, exit status,
   // stdout/stderr tail, image sizes). A command problem is a visible warning,
   // never a failed handoff, exactly as in the automatic capture path.
-  if (commandEntries.length > 0) {
-    const batch = captureCommandEntries({
-      config,
-      task,
-      entries: commandEntries,
-      commandRoot: sourceWorktree,
-      planFingerprint,
-      sourceIdentity,
-      store,
-      ensureCleared,
-      clearPriorOnCommandSkip: deps.forceRefresh,
-    });
-    captured += batch.captured;
-    commandCaptures.push(...batch.evidence);
-    if (batch.fatal) {
-      log(task.id, "warn", `ui verification: shots: failed — ${batch.fatal}`);
+  //
+  // #0766: an explicit refresh runs commands in a detached worktree at the
+  // reviewed HEAD so a misbehaving command cannot dirty the task worktree.
+  let commandRoot = sourceWorktree;
+  let detachedCommandPath: string | undefined;
+  if (deps.forceRefresh && commandEntries.length > 0) {
+    const fullHead = await runGit(sourceWorktree, ["rev-parse", "HEAD"], 10_000);
+    if (fullHead.status !== 0 || !fullHead.stdout.trim()) {
+      return {
+        ok: false,
+        detail: "could not resolve the task worktree HEAD for command capture",
+      };
     }
-    for (const ev of batch.evidence) {
-      if (ev.status !== "captured") {
-        log(
-          task.id,
-          "warn",
-          `ui verification: shots: ${ev.status} — ${ev.reason ?? "capture failed"}`,
-        );
-        continue;
+    const mainRoot = mainCheckoutRoot(config.root);
+    const parentDir = join(mainRoot, config.cacheDir, "command-capture");
+    const detached = await addDetachedWorktree(mainRoot, parentDir, fullHead.stdout.trim());
+    if (!detached.ok) {
+      return {
+        ok: false,
+        detail: `could not create isolated worktree for command capture: ${detached.error}`,
+      };
+    }
+    detachedCommandPath = detached.path;
+    commandRoot = detached.path;
+  }
+  if (commandEntries.length > 0) {
+    try {
+      const batch = captureCommandEntries({
+        config,
+        task,
+        entries: commandEntries,
+        commandRoot,
+        planFingerprint,
+        sourceIdentity,
+        store,
+        ensureCleared,
+        clearPriorOnCommandSkip: deps.forceRefresh,
+      });
+      captured += batch.captured;
+      commandCaptures.push(...batch.evidence);
+      if (batch.fatal) {
+        log(task.id, "warn", `ui verification: shots: failed — ${batch.fatal}`);
       }
-      for (const msg of ev.warnings ?? []) {
-        log(task.id, "warn", `ui verification: shots: ${msg}`);
+      for (const ev of batch.evidence) {
+        if (ev.status !== "captured") {
+          log(
+            task.id,
+            "warn",
+            `ui verification: shots: ${ev.status} — ${ev.reason ?? "capture failed"}`,
+          );
+          continue;
+        }
+        for (const msg of ev.warnings ?? []) {
+          log(task.id, "warn", `ui verification: shots: ${msg}`);
+        }
+      }
+    } finally {
+      if (detachedCommandPath) {
+        await removeDetachedWorktree(mainCheckoutRoot(config.root), detachedCommandPath);
       }
     }
   }
