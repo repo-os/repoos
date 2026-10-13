@@ -2,14 +2,14 @@
 id: "0768"
 title: "Easter eggs: spacing under the merge-conflict message on review cards"
 type: bug
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-13T14:30:17Z"
-updated_at: "2026-10-13T14:30:17Z"
+updated_at: "2026-10-13T15:26:15Z"
 ---
 ## Problem
 On a review card with a merge conflict (Move to done failed at merge), the 'Merge conflict in N file.' line sits too close to the action row below it, so the card looks unbalanced. Seen on #0762 with 'Sent to Debugger'.
@@ -27,3 +27,4 @@ Start from the task card component that renders 'Merge conflict'. Small, cosmeti
 ## Activity
 
 - 2026-10-13T14:30:17Z · created · njachowski@gmail.com
+- 2026-10-13T15:26:15Z · status inbox→ready
