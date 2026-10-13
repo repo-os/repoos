@@ -13,7 +13,7 @@ model_override: default
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T21:57:10Z"
+updated_at: "2026-10-13T21:59:54Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: src/a.test.ts > suite > fails, src/b.test.ts > suite > fails, src/c.test.ts > suite > fails on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: c48c127993396e8ae7b11782477f97689d202097
 dev_error_count: 2
@@ -88,3 +88,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T20:08:20Z · note: Resumed session: implemented and verified the remaining-credit card (formula documented from DeepInfra's own OpenAPI spec: no dedicated prepaid-credits field; derived as max(0, -stripe_balance - recent), stripe_balance<0, converted from cents for scoped credits). Also fixed the gate phantom that failed every prior handoff: check-runner.test.ts's scripted fixture echoes fake 'FAIL src/a.test.ts' lines into the gate stdout (runCommand echo defaults true), and the remote validator's extractFailedTests picked them up as the failed-test headline, masking real failures. runCheckPlan now takes echo:false (tests-step child output stays parsed, just not echoed) and fixture tests pass it, with a regression test. Scoped check green incl. remote changed-path run on bee. --json
 - 2026-10-13T20:08:40Z · body: section Shots
 - 2026-10-13T21:57:10Z · needs_input
+- 2026-10-13T21:59:54Z · body
