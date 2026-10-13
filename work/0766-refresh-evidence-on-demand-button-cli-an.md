@@ -11,7 +11,7 @@ branch: feat/refresh-evidence-on-demand-button-cli-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T16:36:44Z"
+updated_at: "2026-10-13T16:43:19Z"
 review_rounds: 1
 review_passes: 1
 ---
