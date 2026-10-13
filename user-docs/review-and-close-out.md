@@ -255,6 +255,14 @@ engineer, is usually a conflict repairing itself. You don't have to click
 anything; watch the activity log for the reason — a conflict resolved in the
 candidate says so plainly, and never looks like failed development.
 
+### Manual merges: same rule applies
+
+When an agent manually merges `main` into a task branch (outside the close-out
+pipeline), the same conflict-resolution rule applies: if git stops on a conflict
+in `work/<id>-*.md`, take the primary branch's copy — it is pure bookkeeping.
+See AGENTS.md, Rules section, for the exact `git checkout --theirs` steps, and
+also the note about rebuilding after merge before running `repoos check`.
+
 ### Seeing the conflict, and keeping the error
 
 To see exactly what conflicts, open the task's **Debug** tab and choose
