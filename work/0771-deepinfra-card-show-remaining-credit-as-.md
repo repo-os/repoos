@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 cli_override: codex
-model_override: default
+model_override: gpt-6-luna
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T17:22:22Z"
+updated_at: "2026-10-13T17:22:24Z"
 ---
 ## Problem
 The DeepInfra provider card shows two money figures that look like they conflict:
@@ -42,3 +42,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T17:02:59Z · created · njachowski@gmail.com
 - 2026-10-13T17:22:16Z · status inbox→ready
 - 2026-10-13T17:22:22Z · cli_override, model_override
+- 2026-10-13T17:22:24Z · model_override
