@@ -30,6 +30,8 @@ import type {
   PreviewConfig,
   PreviewServiceConfig,
   PreviewTargetConfig,
+  ShotConfig,
+  ShotTargetConfig,
   ApprovalConfig,
   AutomationConfig,
   UiVerificationConfig,
@@ -830,6 +832,46 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
   return hasCustom ? preview : undefined;
 }
 
+/**
+ * Parse `[[shot.targets]]` tables from flat TOML (#0761) — command-based capture
+ * targets for non-web apps. Exported for tests; `loadConfig` merges the result
+ * into the config. A row without a usable `command` is dropped, like a preview
+ * target.
+ */
+export function parseShotConfig(parsed: Record<string, unknown>): ShotConfig | undefined {
+  if (!Array.isArray(parsed["shot.targets"])) return undefined;
+  const targets: ShotTargetConfig[] = [];
+  const usedNames = new Set<string>();
+  for (const raw of parsed["shot.targets"]) {
+    if (typeof raw !== "object" || raw === null) continue;
+    const r = raw as Record<string, unknown>;
+    const command = typeof r.command === "string" ? r.command.trim() : "";
+    if (!command) continue;
+    const areasRaw = r.areas;
+    const areas = (Array.isArray(areasRaw) ? areasRaw : [areasRaw])
+      .map((a) => (typeof a === "string" ? a.trim() : ""))
+      .filter(Boolean);
+    const base =
+      typeof r.name === "string" && r.name.trim() ? r.name.trim() : areas.join("/") || "shot";
+    let name = base;
+    for (let n = 2; usedNames.has(name); n++) name = `${base} (${n})`;
+    usedNames.add(name);
+    const target: ShotTargetConfig = { name, areas, command };
+    const paths = normalizeStringList(r.paths);
+    if (paths.length) target.paths = paths;
+    const targetCwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
+    if (targetCwd) target.cwd = targetCwd;
+    const outputGlob = normalizeStringList(r.output_glob ?? r.outputGlob);
+    if (outputGlob.length) target.outputGlob = outputGlob;
+    const requires = typeof r.requires === "string" ? r.requires.trim() : "";
+    if (requires) target.requires = requires;
+    const timeoutMs = normalizeReadyTimeoutMs(r.timeout_ms ?? r.timeoutMs);
+    if (timeoutMs) target.timeoutMs = timeoutMs;
+    targets.push(target);
+  }
+  return targets.length ? { targets } : undefined;
+}
+
 /** Normalize a configured readiness path to a leading-slash path, or undefined. */
 function normalizeReadyPath(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -1401,6 +1443,12 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // section is declared there is no implicit default (#0370).
     const preview = parsePreviewConfig(parsed);
     if (preview) cfg.preview = preview;
+
+    // [[shot.targets]] (#0761) — command-based capture targets for non-web
+    // apps (native macOS, iOS/Android, desktop). Same parser style as
+    // [[preview.targets]]; absent means only the web preview path shoots.
+    const shot = parseShotConfig(parsed);
+    if (shot) cfg.shot = shot;
 
     // [whisper] section — voice transcription for vibe-coding.
     const whisperProvider = parsed["whisper.provider"];
@@ -2604,6 +2652,24 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "as opposed to task previews, which RepoOS manages for a task's worktree. Only commands " +
         "declared here can be started; edit them under Advanced → Dev targets.",
     },
+    {
+      // Command-based capture targets (#0761). Deliberately raw-TOML-only, like
+      // `[[preview.targets]]`: a capture target is a command + globs + optional
+      // binary, and a plain Settings row cannot express the table. The schema
+      // entry exists so the search overlay and the "does this key have a UI
+      // row?" resolver can find it and point the user at the toml tab.
+      key: "shot.targets",
+      label: "Capture targets",
+      type: "array",
+      tier: "restart",
+      restartRequired: true,
+      default: [],
+      description:
+        "How RepoOS captures evidence images for a non-web app (native macOS, iOS/Android, desktop) " +
+        "by running a command that renders image files — the counterpart of [[preview.targets]] for " +
+        "a repo with no dev server. Declared in repoos.toml as [[shot.targets]] tables (name, areas, " +
+        "paths, command, outputGlob, requires, timeoutMs); edit them there. Web preview targets keep working unchanged.",
+    },
     // [board.columns] — display-only label overrides (#0396).
     ...STATUSES.map((status) => ({
       key: `board.columns.${status}`,
@@ -2690,6 +2756,16 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "preview.services.cwd",
   "preview.services.readyPath",
   "preview.services.readyTimeoutMs",
+  // Command-based capture targets for non-web apps (#0761) — a sibling
+  // array-of-tables to `[[preview.targets]]`.
+  "shot.targets.name",
+  "shot.targets.areas",
+  "shot.targets.paths",
+  "shot.targets.command",
+  "shot.targets.cwd",
+  "shot.targets.outputGlob",
+  "shot.targets.requires",
+  "shot.targets.timeoutMs",
   // Dev targets (#0747) — the user-runnable things the Dev page controls.
   // Declared as a repeatable `[[dev.targets]]` table; each row is one target.
   "dev.targets.name",

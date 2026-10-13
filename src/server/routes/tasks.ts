@@ -1107,6 +1107,7 @@ export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
   const body = (await readBody(req)) as {
     target?: unknown;
     route?: unknown;
+    command?: unknown;
     label?: unknown;
     highlight?: unknown;
     selector?: unknown;
@@ -1128,6 +1129,7 @@ export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
   const result = localShotStore(config, taskId).save({
     target,
     ...(typeof body?.route === "string" && body.route ? { route: body.route } : {}),
+    ...(body?.command === "command" ? { command: "command" as const } : {}),
     ...(typeof body?.label === "string" && body.label ? { label: body.label } : {}),
     ...(typeof body?.provenance === "string" && body.provenance
       ? { provenance: body.provenance }
@@ -1233,6 +1235,7 @@ async function declareTaskShot(
     task.area,
     shotContext.changedPaths,
     entry.target,
+    config.shot,
   );
   if (resolution.names.length === 0) {
     return json(res, 400, {
@@ -1244,6 +1247,17 @@ async function declareTaskShot(
   const resolved = resolveDeclaredTarget(entry.target, resolution.names);
   if (resolved.error || !resolved.target) {
     return json(res, 400, { error: resolved.error ?? "the target could not be resolved" });
+  }
+  // A command capture target (#0761) has no page to drive: the Add-shot modal
+  // is web-only. Capturing one here would start a preview with nothing to load,
+  // so point the user at the declaration path instead.
+  if ((config.shot?.targets ?? []).some((t) => t.name === resolved.target)) {
+    return json(res, 400, {
+      error:
+        `"${resolved.target}" is a command capture target — it renders its image by running a ` +
+        "command, not by loading a page. Declare it in the task's `## Shots` section (or run " +
+        "`repoos shot --target`), and the handoff capture will run the command.",
+    });
   }
   // The existing `## Shots` list must parse BEFORE anything is captured: a
   // malformed list cannot take the new declaration, and capturing first would

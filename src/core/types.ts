@@ -601,6 +601,13 @@ export interface RepoOSConfig {
    */
   preview?: PreviewConfig;
   /**
+   * Per-project command-based capture targets (#0761): non-web shots for a
+   * native macOS, iOS/Android or desktop app, captured by running a command
+   * that renders image files. Declared as `[[shot.targets]]` tables. Absent
+   * means only the web preview path can produce shots.
+   */
+  shot?: ShotConfig;
+  /**
    * Preview-only config overrides that were applied (task #0464), as sorted
    * dotted base key paths (e.g. `["auth.enabled"]`). Set only when config was
    * resolved with the preview overlay turned on — the preview/UI-test preview
@@ -1391,6 +1398,64 @@ export interface PreviewTargetConfig {
    * An unknown name is an error at start time, never a silent skip.
    */
   services?: string[];
+}
+
+/**
+ * A command-based capture target (#0761): the non-web counterpart of a
+ * `[[preview.targets]]` dev server. Instead of booting a URL and driving a
+ * headless browser, RepoOS runs a shell command that renders one or more image
+ * files offscreen — a native macOS view (`AppKit bitmapImageRepForCachingDisplay`
+ * inside `swift test`), an iOS simulator screenshot (`xcrun simctl io <device>
+ * screenshot`), an Android emulator screencap (`adb exec-out screencap`), a
+ * desktop window (`screencapture`). The command is run in the task worktree and
+ * writes into an output directory RepoOS hands it in `REPOOS_SHOT_DIR`; every
+ * image matching `outputGlob` is collected as a task shot.
+ *
+ * Declared as a top-level repeatable `[[shot.targets]]` table in `repoos.toml`
+ * (the flat TOML parser handles one array-of-tables level, so it is a sibling of
+ * `[preview]`, not nested inside it). Web preview targets are unchanged; a repo
+ * may declare both, and resolution prefers a web target when one matches.
+ */
+export interface ShotTargetConfig {
+  /** Target name, matched by declared `## Shots` entries and `--target`. */
+  name: string;
+  /** Task `area:` values this target serves, matched case-insensitively. */
+  areas: string[];
+  /**
+   * Optional repo-relative glob list, matched against the task's changed paths
+   * exactly like `PreviewTargetConfig.paths`. A changed file matching any glob
+   * makes this target a candidate for the automatic handoff capture and
+   * `repoos shot`. Empty/absent means the target is only reachable through area
+   * resolution or an explicit `--target`.
+   */
+  paths?: string[];
+  /** Shell command that renders the images. Run in the worktree (or `cwd`). */
+  command: string;
+  /** Optional subdirectory of the worktree to run the command in. */
+  cwd?: string;
+  /**
+   * Glob(s) selecting the produced image files, relative to the output
+   * directory (`REPOOS_SHOT_DIR`). Defaults to every image directly in that
+   * directory (`*`). `**` spans directories.
+   */
+  outputGlob?: string[];
+  /**
+   * Optional binary that must exist on `PATH` for the command to work (e.g.
+   * `xcrun`, `adb`, `screencapture`). A missing binary records a visible
+   * `shots: skipped` note — never a failed handoff.
+   */
+  requires?: string;
+  /**
+   * Optional capture timeout in milliseconds. The command is killed once it
+   * elapses and the tail of its stdout/stderr is recorded as a visible note.
+   * Defaults to a value sized for an offscreen render / simulator screencap.
+   */
+  timeoutMs?: number;
+}
+
+/** Captured non-web shots, from `repoos.toml`'s `[[shot.targets]]` tables. */
+export interface ShotConfig {
+  targets: ShotTargetConfig[];
 }
 
 /**
