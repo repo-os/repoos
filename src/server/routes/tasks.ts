@@ -1151,6 +1151,9 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
       error: `Task #${id}'s worktree is dirty; commit or discard changes before refreshing evidence`,
     });
   }
+  // Snapshot the HEAD before capture to ensure evidence matches the tree
+  // it was captured from, and no concurrent commits slip in.
+  const headBefore = shortHeadOf(worktree);
   evidenceRefreshes.add(id);
   try {
     const result = await runUiHandoffGate(
@@ -1167,11 +1170,31 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
         error: `Evidence was not refreshed for #${id}: ${result.detail ?? "verification was skipped"}`,
       });
     }
-    const head = shortHeadOf(worktree);
+    // After capture, verify the worktree is still clean (a command target
+    // may have modified files) and the HEAD hasn't changed (no concurrent commits).
+    const dirtyAfter = await runGit(worktree, ["status", "--porcelain"], 10_000);
+    if (dirtyAfter.status !== 0 || dirtyAfter.stdout.trim()) {
+      return json(res, 409, {
+        error: `Task #${id}'s worktree became dirty during capture; discard changes and retry`,
+      });
+    }
+    const headAfter = shortHeadOf(worktree);
+    if (headBefore !== headAfter) {
+      return json(res, 409, {
+        error: `Task #${id}'s HEAD changed during capture (${headBefore} → ${headAfter}); retry to capture current state`,
+      });
+    }
+    // Read the evidence to verify sourceIdentity matches our snapshot
+    // and use it as the authoritative return value.
     const evidence = readUiHandoffGateEvidence(config, id);
+    if (evidence?.sourceIdentity !== headBefore) {
+      return json(res, 409, {
+        error: `Task #${id}'s evidence sourceIdentity (${evidence?.sourceIdentity ?? "unknown"}) does not match pre-capture HEAD (${headBefore}); capture was stale`,
+      });
+    }
     return json(res, result.ok ? 200 : 422, {
       ok: result.ok,
-      headIdentity: head,
+      headIdentity: evidence?.sourceIdentity ?? headBefore,
       detail: result.detail,
       issues: evidence?.issues ?? [],
       shots: localShotStore(config, id).list(),
