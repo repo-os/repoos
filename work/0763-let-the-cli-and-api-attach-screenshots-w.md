@@ -2,14 +2,14 @@
 id: "0763"
 title: "Let the CLI and API attach screenshots when an agent creates or updates a task, and tell agents to do it"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [cli, server, docs]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-13T09:13:55Z"
-updated_at: "2026-10-13T09:13:55Z"
+updated_at: "2026-10-13T09:22:19Z"
 ---
 ## Problem
 A human often gives an agent screenshots in chat and says 'create a task for this'. An agent driving RepoOS through the CLI cannot attach those images: repoos new/update have no attachment option, so the agent either drops the screenshots (the engineer and reviewer then guess at the visual problem and loop for hours) or hand-copies files into work/.attachments/<id>/ and edits the task's ## Screenshots section by guesswork. The server already stores task screenshots (POST /api/tasks/:id/attachments { name, mime, data base64 }, gitignored work/.attachments/<id>/, ## Screenshots section with ![name](/api/tasks/<id>/attachments/<file>)), but only the UI New-task panel uses it. Observed in the Divot repo (#0083, #0084): the maintainer had to ask twice for the screenshots to be included.
@@ -34,3 +34,4 @@ Reuse src/server/attachments.ts (saveScreenshot, sanitizeName, SCREENSHOTS_HEADI
 ## Activity
 
 - 2026-10-13T09:13:55Z · created · njachowski@gmail.com
+- 2026-10-13T09:22:19Z · status inbox→ready
