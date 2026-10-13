@@ -2,14 +2,14 @@
 id: "0768"
 title: "Easter eggs: spacing under the merge-conflict message on review cards"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-spacing-under-the-merge-conf
 created_at: "2026-10-13T14:30:17Z"
-updated_at: "2026-10-13T17:06:01Z"
+updated_at: "2026-10-13T17:12:35Z"
 ---
 ## Problem
 On a review card with a merge conflict (Move to done failed at merge), the 'Merge conflict in N file.' line sits too close to the action row below it, so the card looks unbalanced. Seen on #0762 with 'Sent to Debugger'.
@@ -30,17 +30,17 @@ Start from the task card component that renders 'Merge conflict' and the allowli
 ```json
 [
 {
-  "label": "Work card: merge-conflict message spacing above the action row",
-  "target": "default",
-  "route": "/",
-  "highlight": ".tc-done-error",
-  "state": "card:doneError"
+"label": "Work card: merge-conflict message spacing above the action row",
+"target": "default",
+"route": "/",
+"highlight": ".tc-done-error",
+"state": "card:doneError"
 },
 {
-  "label": "Agents Budget Controls: Remove agent sits in each row upper-right",
-  "target": "default",
-  "route": "/agents?tab=budget-controls",
-  "highlight": ".budget-row"
+"label": "Agents Budget Controls: Remove agent sits in each row upper-right",
+"target": "default",
+"route": "/agents?tab=budget-controls",
+"highlight": ".budget-row"
 }
 ]
 ```
@@ -54,3 +54,4 @@ Start from the task card component that renders 'Merge conflict' and the allowli
 - 2026-10-13T17:03:24Z · body
 - 2026-10-13T17:04:22Z · body
 - 2026-10-13T17:06:01Z · body: section Shots
+- 2026-10-13T17:12:35Z · status active→review
