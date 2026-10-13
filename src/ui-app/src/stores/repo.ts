@@ -2899,6 +2899,20 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  async function refreshEvidence(id: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const r = await api<{ ok: boolean; error?: string }>(
+        `/api/tasks/${id}/verify`,
+        JSON_OPTS("POST", {}),
+      );
+      if (!r.ok) return { ok: false, error: r.error ?? "evidence refresh failed" };
+      await Promise.all([loadShots(id), loadUiVerification(id)]);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
   const uiVerificationFor = (id: string): UiHandoffVerificationEvidence | null | undefined =>
     uiVerificationEvidence.value[id];
 
@@ -3690,6 +3704,7 @@ export const useRepoStore = defineStore("repo", () => {
     mergeConflicts,
     loadShots,
     loadUiVerification,
+    refreshEvidence,
     shotsFor,
     shotWarningFor,
     uiVerificationFor,

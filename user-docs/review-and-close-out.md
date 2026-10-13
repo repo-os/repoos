@@ -336,7 +336,11 @@ evidence (#0755).
 the Changes tab compares that to the branch HEAD the review will use. When they
 differ — a fix landed after the capture — the UI changes section shows a
 **Stale capture** alert and the shot reads `check`, never `matches`; re-run the
-handoff capture on the final tree.
+handoff capture on the final tree. For a task already in review, use **Refresh
+evidence** in the Changes tab or run `repoos verify <id>`. RepoOS refreshes the
+shots and verification record against the current branch HEAD without an
+engineer turn. The worktree must be clean, and the action is refused while an
+agent or close-out is running.
 **Whole-window default (#0613):** declared shots capture the whole
 visible viewport (`fullPage: false`) with changed elements outlined via
 `highlight`; `selector` (element crop) is the exception, and `fullPage` stays

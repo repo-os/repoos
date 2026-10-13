@@ -979,6 +979,8 @@ const canManageShots = computed(
 );
 const addShotOpen = ref(false);
 const addShotBusy = ref(false);
+const refreshEvidenceBusy = ref(false);
+const refreshEvidenceError = ref<string | undefined>(undefined);
 const addShotError = ref<string | undefined>(undefined);
 const addShotWarning = ref<string | undefined>(undefined);
 const deleteShotTarget = ref<ShotMeta | null>(null);
@@ -1013,6 +1015,16 @@ async function submitAddShot(entry: DeclaredShot): Promise<void> {
   }
   addShotOpen.value = false;
   repo.pushToast(`Shot captured (${entry.label || entry.target})`, "success");
+}
+
+async function refreshEvidence(): Promise<void> {
+  if (!ui.active) return;
+  refreshEvidenceBusy.value = true;
+  refreshEvidenceError.value = undefined;
+  const result = await repo.refreshEvidence(ui.active.id);
+  refreshEvidenceBusy.value = false;
+  if (!result.ok) refreshEvidenceError.value = result.error;
+  else repo.pushToast("Evidence refreshed", "success");
 }
 
 async function confirmDeleteShot(): Promise<void> {
@@ -5522,6 +5534,19 @@ watch(
               >
                 {{ addShotBusy ? "Capturing…" : "Add shot" }}
               </Button>
+              <Button
+                v-if="ui.active?.status === 'review'"
+                variant="outline"
+                size="sm"
+                data-test-id="refresh-evidence"
+                :disabled="refreshEvidenceBusy"
+                @click="refreshEvidence"
+              >
+                {{ refreshEvidenceBusy ? "Refreshing…" : "Refresh evidence" }}
+              </Button>
+            </div>
+            <div v-if="refreshEvidenceError" class="ff-error" role="alert">
+              {{ refreshEvidenceError }}
             </div>
             <!-- #0755: a capture for a tree other than the reviewed HEAD is not
                  verification — shout it, so the screenshots below are read as

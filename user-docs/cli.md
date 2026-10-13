@@ -499,6 +499,23 @@ repoos shot https://example.test/x   # capture an arbitrary URL
 repoos shot --target "macOS app"     # run a command capture target (non-web app)
 ```
 
+### `repoos verify`
+
+Refresh the current review evidence without starting an engineer turn. This
+re-runs the declared browser and command captures and UI verification against
+the task worktree's current HEAD. It is synchronous; `--wait` is accepted for
+consistency with other control-plane commands.
+
+```bash
+repoos verify 0766
+repoos verify 0766 --json
+```
+
+The refresh is available only for a clean task in review with no agent run or
+close-out in progress. Captures and the verification record are stored in the
+gitignored evidence directories. A failed or unavailable capture is reported
+in the response and verification record.
+
 A repo whose product is a native macOS app, a mobile app or a desktop app
 declares a **command capture target** instead of (or as well as) a dev-server
 `[[preview.targets]]` row — a `[[shot.targets]]` command that renders image
