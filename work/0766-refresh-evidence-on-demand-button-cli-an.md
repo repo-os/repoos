@@ -2,7 +2,7 @@
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, cli, ui]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T23:27:13Z"
+updated_at: "2026-10-13T23:27:51Z"
 review_passes: 12
 close_out_repair_count: 1
 review_rounds: 2
@@ -174,3 +174,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T23:23:48Z · message_queued at 2026-10-13T23:23:48.425Z
 - 2026-10-13T23:25:40Z · body
 - 2026-10-13T23:27:13Z · body
+- 2026-10-13T23:27:51Z · status active→review
