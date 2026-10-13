@@ -150,6 +150,15 @@ async function removeAgent(cli: string): Promise<void> {
           <span class="budget-agent">{{ row.cli }}</span>
           <span class="budget-count">· {{ countLabel(row.models.length) }}</span>
         </button>
+        <button
+          type="button"
+          class="budget-agent-remove"
+          :aria-label="`Remove ${row.cli} from the allowlist`"
+          data-testid="budget-remove-agent"
+          @click="removeAgent(row.cli)"
+        >
+          Remove agent
+        </button>
         <div v-if="isExpanded(row.cli)" class="budget-models">
           <span v-for="m in row.models" :key="m" class="budget-model">
             {{ modelLabel(m, row.cli) }}
@@ -162,14 +171,6 @@ async function removeAgent(cli: string): Promise<void> {
               ×
             </button>
           </span>
-          <button
-            type="button"
-            class="budget-agent-remove"
-            :aria-label="`Remove ${row.cli} from the allowlist`"
-            @click="removeAgent(row.cli)"
-          >
-            Remove agent
-          </button>
         </div>
       </li>
     </ul>
@@ -197,6 +198,7 @@ async function removeAgent(cli: string): Promise<void> {
   gap: 6px;
 }
 .budget-row {
+  position: relative;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel-solid);
@@ -207,6 +209,8 @@ async function removeAgent(cli: string): Promise<void> {
   gap: 8px;
   width: 100%;
   padding: 9px 12px;
+  /* Leave room for the Remove agent button pinned in the upper-right. */
+  padding-right: 96px;
   background: none;
   border: none;
   color: var(--txt);
@@ -268,7 +272,14 @@ async function removeAgent(cli: string): Promise<void> {
 .budget-agent-remove:hover {
   color: var(--red);
 }
+/* Remove agent sits in the row's upper-right corner so the header row reads as
+   one clean line (#0768); it stays a real button, keyboard reachable. */
 .budget-agent-remove {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  padding: 2px 6px;
+  border-radius: 5px;
   font-size: 11.5px;
   text-decoration: underline;
 }
