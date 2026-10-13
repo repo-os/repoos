@@ -2,7 +2,7 @@
 id: "0763"
 title: "Let the CLI and API attach screenshots when an agent creates or updates a task, and tell agents to do it"
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server, docs]
 assigned_to: ai
@@ -56,4 +56,4 @@ Reuse src/server/attachments.ts (saveScreenshot, sanitizeName, SCREENSHOTS_HEADI
 - 2026-10-13T15:07:40Z · message_queued at 2026-10-13T15:07:40.294Z
 - 2026-10-13T15:07:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-13T15:33:57Z · body
-- 2026-10-13T15:41:11Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-13T15:41:11Z · status active→review
