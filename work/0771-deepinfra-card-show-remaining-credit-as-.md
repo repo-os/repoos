@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-13T23:41:56Z"
-review_passes: 5
 id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
@@ -18,6 +16,8 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
+updated_at: "2026-10-13T23:46:40Z"
+review_passes: 5
 last_check_failure: "repoos check at 2026-10-13T23:22:53.274Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 dev_error_count: 2
