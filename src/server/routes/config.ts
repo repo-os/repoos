@@ -20,6 +20,7 @@ import {
 } from "../../core/config.js";
 import { effectiveAreaVocabulary } from "../../core/areas.js";
 import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
+import { normalizeAllowlistRows } from "../../core/budget-allowlist.js";
 import { describeStorage } from "../../core/storage/index.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import type { Logger } from "../../core/logger.js";
@@ -61,6 +62,7 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
     theme: _ignoredTheme,
     uiTheme: _ignoredUiTheme,
     areas: _rawAreas,
+    budget: _rawBudget,
     ...rest
   } = config;
   // The declared area vocabulary (#0583) is exposed to the browser as plain
@@ -96,6 +98,11 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
     "whisper.provider": whisper.provider ?? "none",
     whisperEnabled,
     areas: declaredNames,
+    /**
+     * Agent-driver budget allowlist (#0764). Exposed flat under its schema key
+     * so the Budget Controls tab round-trips exactly what the parser accepted.
+     */
+    "budget.allowlist": (_rawBudget as { allowlist?: unknown } | undefined)?.allowlist ?? [],
     /**
      * Declared dev targets (#0749): the Settings control edits this
      * `[[dev.targets]]` list. Exposed as the parsed objects (never the raw
@@ -298,6 +305,10 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
    * change"), mirroring the `areas` no-op guard.
    */
   let devTargetsUnchanged = false;
+  /** Set when a budget-allowlist PATCH already matches what's on disk. */
+  let budgetAllowlistUnchanged = false;
+  /** Set when a budget-allowlist PATCH clears the last `[[budget.allowlist]]` row. */
+  let dropBudgetAllowlistRows = false;
   if (body.builtInAgents !== undefined) {
     if (
       typeof body.builtInAgents !== "object" ||
@@ -398,6 +409,28 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     }
   }
 
+  // Agent-driver budget allowlist (#0764) — the Agents page's Budget Controls
+  // tab edits the `[[budget.allowlist]]` list. Rows are normalized through the
+  // same helper `loadConfig` uses, so validation and serialization can't drift;
+  // an unchanged list is a no-op that never churns repoos.toml.
+  if (body["budget.allowlist"] !== undefined) {
+    const parsed = normalizeAllowlistRows(body["budget.allowlist"]);
+    if ("error" in parsed) {
+      return json(res, 400, { error: parsed.error });
+    }
+    const onDisk = loadConfig(config.root).budget?.allowlist ?? [];
+    const unchanged = JSON.stringify(onDisk) === JSON.stringify(parsed.rows);
+    if (unchanged) {
+      budgetAllowlistUnchanged = true;
+    } else if (parsed.rows.length === 0) {
+      // Clearing every row: `patchTomlConfig` only strips `[[…]]` blocks for a
+      // non-empty row list, so drop them explicitly.
+      dropBudgetAllowlistRows = true;
+    } else {
+      patch["budget.allowlist"] = parsed.rows;
+    }
+  }
+
   // Auth config patching — handle auth-specific fields that live in [auth]
   // section of repoos.toml. Secrets (sessionSecret, emailProvider.apiKey,
   // google.clientSecret) are never written to repoos.toml — that file is
@@ -490,6 +523,9 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     // branch above (#0749); its schema entry is search/focus metadata only, so
     // the generic array branch must not treat it as a comma-joined string list.
     if (field.key === "dev.targets") continue;
+    // The budget allowlist has its own dedicated branch above (#0764); its
+    // schema entry is search/focus metadata only.
+    if (field.key === "budget.allowlist") continue;
     const val = body[field.key];
 
     if (field.type === "string") {
@@ -722,6 +758,8 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     !dropAreaRows &&
     !devTargetsUnchanged &&
     !dropDevTargetRows &&
+    !budgetAllowlistUnchanged &&
+    !dropBudgetAllowlistRows &&
     !onlyEmptyWhisperKey
   ) {
     return json(res, 400, { error: "No valid fields to update" });
@@ -732,6 +770,8 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   }
   if (dropAreaRows) dropTomlTableArray(join(config.root, "repoos.toml"), "areas");
   if (dropDevTargetRows) dropTomlTableArray(join(config.root, "repoos.toml"), "dev.targets");
+  if (dropBudgetAllowlistRows)
+    dropTomlTableArray(join(config.root, "repoos.toml"), "budget.allowlist");
   if (dropRows) {
     dropTomlTableArray(join(config.root, "repoos.toml"), "remoteValidation.tailscaleHosts");
   }
@@ -757,6 +797,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     Object.keys(patch).length > 0 ||
     dropAreaRows ||
     dropDevTargetRows ||
+    dropBudgetAllowlistRows ||
     dropRows ||
     patchRows?.length ||
     tunnelEnabled !== undefined

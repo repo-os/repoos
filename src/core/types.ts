@@ -566,6 +566,11 @@ export interface RepoOSConfig {
    */
   closeOut?: CloseOutConfig;
   /**
+   * Agent-driver budget controls (#0764): the coding-agent + model allowlist an
+   * agent driver is steered to. Empty/unset means no restriction.
+   */
+  budget?: BudgetConfig;
+  /**
    * Attention bell and `GET /api/attention` (#0687).
    */
   attention?: AttentionConfig;
@@ -1676,6 +1681,26 @@ export interface AttentionConfig {
 
 /** Default `attention.slowRunMultiplier` (#0720). */
 export const DEFAULT_SLOW_RUN_MULTIPLIER = 1.5;
+
+/** One allowlist row: a coding agent and its human-approved models (#0764). */
+export interface AgentModelAllowRow {
+  /** Coding-agent CLI id — the `AGENT_CLIS` string, e.g. "claude code". */
+  cli: string;
+  /** Allowed model ids for that CLI. */
+  models: string[];
+}
+
+/**
+ * Agent-driver budget controls (#0764). Declared in repoos.toml as
+ * `[[budget.allowlist]]` rows; empty/unset means nothing is restricted.
+ */
+export interface BudgetConfig {
+  /**
+   * Human-approved coding-agent + model pairs an agent driver (a CLI/API
+   * caller — not a human in the UI) may set as an engineer/reviewer override.
+   */
+  allowlist?: AgentModelAllowRow[];
+}
 
 /** Close-out (Move to done) pipeline budget (#0573). */
 export interface CloseOutConfig {
