@@ -204,7 +204,7 @@ import { runAutoShotCapture } from "./shot-capture.js";
 import {
   runUiHandoffGate,
   readUiHandoffGateEvidence,
-  handoffTreeStatus,
+  effectiveHandoffTreeStatus,
 } from "./ui-handoff-gate.js";
 import { ReviewManager } from "./review.js";
 import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
@@ -2076,7 +2076,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
         if (dirty.status !== 0 || dirty.stdout.trim()) return false;
         const currentEvidence = readUiHandoffGateEvidence(config, task.id);
-        if (handoffTreeStatus(currentEvidence, head) !== "stale") return false;
+        if ((await effectiveHandoffTreeStatus(worktree, currentEvidence, head)) !== "stale") {
+          return false;
+        }
         mkdirSync(join(attemptPath, ".."), { recursive: true });
         writeFileSync(
           attemptPath,

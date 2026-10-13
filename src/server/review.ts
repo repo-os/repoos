@@ -70,7 +70,7 @@ import {
 } from "../core/review-passes.js";
 import {
   readUiHandoffGateEvidence,
-  handoffTreeStatus,
+  effectiveHandoffTreeStatus,
   handoffTreeNote,
   taskUiVerificationMode,
   type UiVerificationMode,
@@ -830,7 +830,7 @@ export class ReviewManager {
       handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
       uiVerification: taskUiVerificationMode(this.config, task),
     });
-    const uiNote = this.uiVerificationSummary(task);
+    const uiNote = await this.uiVerificationSummary(task);
     const mission = uiNote
       ? `${missionBase}\n\n## Handoff UI verification (recorded at handoff)\n\n${uiNote}\n`
       : missionBase;
@@ -1932,16 +1932,23 @@ export class ReviewManager {
   }
 
   /** UI handoff gate evidence path content for missions. */
-  uiVerificationSummary(task: Task): string | null {
+  async uiVerificationSummary(task: Task): Promise<string | null> {
     const evidence = readUiHandoffGateEvidence(this.config, task.id);
     if (!evidence) return null;
     // #0755: tie the evidence to the tree this review will use. The capture
     // recorded the tree it ran on (`sourceIdentity`); the worktree's HEAD now
     // is the reviewed tree. A mismatch is stale evidence — say so plainly, and
-    // never present it as verification of the reviewed HEAD.
+    // never present it as verification of the reviewed HEAD. HEAD movement that
+    // is provably pure task bookkeeping (#0766) does not count as a mismatch:
+    // work-file commits land after the capture and change nothing the captures
+    // describe.
     const worktree = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
     const reviewedHead = shortHeadOf(worktree ?? this.config.root);
-    const treeStatus = handoffTreeStatus(evidence, reviewedHead);
+    const treeStatus = await effectiveHandoffTreeStatus(
+      worktree ?? this.config.root,
+      evidence,
+      reviewedHead,
+    );
     const staleNote = handoffTreeNote(treeStatus, evidence, reviewedHead);
     // #0734: surface the exact capture URL, assertion outcomes, and the tested
     // tree/plan identity so the reviewer can tie evidence to the diff, and can

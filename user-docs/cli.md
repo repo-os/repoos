@@ -515,6 +515,14 @@ close-out in progress. Captures and the verification record are stored in the
 gitignored evidence directories. A failed or unavailable capture is reported
 in the response and verification record.
 
+A capture command that writes a tracked file (ignoring `REPOOS_SHOT_DIR`) does
+not leave edits behind: the refresh restores tracked files and removes
+untracked files the capture created, reports what was restored (`restored` in
+the JSON response, and per-path lines in the human output), and the worktree is
+porcelain-clean again afterwards. A HEAD that moved under the capture still
+fails the refresh — the record can only be tied to the tree it was captured
+on — but the tracked damage is restored even then.
+
 A repo whose product is a native macOS app, a mobile app or a desktop app
 declares a **command capture target** instead of (or as well as) a dev-server
 `[[preview.targets]]` row — a `[[shot.targets]]` command that renders image

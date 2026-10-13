@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { execSync } from "node:child_process";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { refreshTaskEvidence } from "../../server/routes/tasks.js";
@@ -209,21 +209,67 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
   });
 
   it("restores the worktree when a command target modifies tracked files", async () => {
-    const { root, config, task } = commandRepo(
+    const { root, shortHead, config, task } = commandRepo(
       RUN_COMMAND + "; echo dirt >> tracked.txt; printf stray > stray.txt",
     );
     const res = response();
     await refreshTaskEvidence(context(task, root, { config }), {} as never, res as never, {
       param1: task.id,
     });
-    const { status, body } = res.result() as { status: number; body: { error?: string } };
-    // Fail and name every file the command touched.
-    expect(status).toBe(409);
-    expect(body.error).toContain("tracked.txt");
-    expect(body.error).toContain("stray.txt");
-    // Never leave changes behind: tracked file restored, untracked capture
-    // artifact gone, worktree porcelain-clean again.
+    const { status, body } = res.result() as {
+      status: number;
+      body: {
+        error?: string;
+        headIdentity?: string;
+        restored?: string[];
+        shots?: unknown[];
+      };
+    };
+    // The refresh itself succeeded — the capture already replaced the stored
+    // evidence — and the damage the command did is reported back...
+    expect(status).toBe(200);
+    expect(body.headIdentity).toBe(shortHead);
+    expect(body.restored).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("tracked.txt"),
+        expect.stringContaining("stray.txt"),
+      ]),
+    );
+    expect(body.shots).toHaveLength(1);
+    // ...and undone: tracked file restored, untracked capture artifact gone,
+    // worktree porcelain-clean again.
     expect(readFileSync(join(root, "tracked.txt"), "utf8")).toBe("clean\n");
+    expect(existsSync(join(root, "stray.txt"))).toBe(false);
+    expect(porcelainOf(root)).toBe("");
+  });
+
+  it("restores tracked damage even when HEAD moves during the capture", async () => {
+    // The command commits mid-capture AND leaves a tracked modification behind:
+    // the commit is a concurrent writer's and must survive the restore, but
+    // leaving tracked edits in a review worktree is never acceptable either.
+    const { root, shortHead, config, task } = commandRepo(
+      RUN_COMMAND + "; git commit --allow-empty -q -m moved; echo extra >> tracked.txt",
+    );
+    const res = response();
+    await refreshTaskEvidence(context(task, root, { config }), {} as never, res as never, {
+      param1: task.id,
+    });
+    const { status, body } = res.result() as {
+      status: number;
+      body: { error?: string; restored?: string[] };
+    };
+    // The refresh cannot claim success: the evidence's tree is no longer HEAD.
+    expect(status).toBe(409);
+    expect(body.error).toContain("HEAD changed during the capture");
+    expect(body.error).toContain(shortHead);
+    // Yet the tracked damage is still undone without touching the concurrent
+    // commit, and the worktree is porcelain-clean again.
+    expect(body.restored).toEqual(expect.arrayContaining([expect.stringContaining("tracked.txt")]));
+    expect(readFileSync(join(root, "tracked.txt"), "utf8")).toBe("clean\n");
+    const headAfter = execSync(`git -C ${root} rev-parse --short HEAD`, {
+      encoding: "utf8",
+    }).trim();
+    expect(headAfter).not.toBe(shortHead);
     expect(porcelainOf(root)).toBe("");
   });
 
