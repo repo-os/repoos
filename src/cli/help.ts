@@ -108,9 +108,9 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "message",
-        usage: 'message <id> "<text>" [--json] [--port N]',
-        desc: "Send a follow-up to the task agent (POST /api/tasks/:id/message)",
-        flags: "--json · --port",
+        usage: 'message <id> "<text>" [--now] [--json] [--port N]',
+        desc: "Send a follow-up to the task agent; queues while busy, --now interrupts the turn and delivers immediately (POST /api/tasks/:id/message)",
+        flags: "--now · --json · --port",
       },
       {
         name: "review",

@@ -38,7 +38,8 @@
  *   POST /api/tasks/:id/start  -> launch the engineer agent on the task (ready -> active);
  *                                also relaunches a paused active task (stays active)
  *   POST /api/tasks/:id/pause  -> stop the running agent; task stays active
- *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active, review)
+ *   POST /api/tasks/:id/message -> send a follow-up to the task's agent session (active, review);
+ *                                  `{ now: true }` interrupts a busy turn first (#0760)
  *   POST /api/tasks/:id/pm/message -> send a message to the PM agent about this task
  *   GET  /api/tasks/:id/output -> { lines, stats } the retained transcript + live run stats (0080)
  *   GET  /api/tasks/:id/review -> { ok, running, enabled, review, lines } the agent's

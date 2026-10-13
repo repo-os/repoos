@@ -7501,6 +7501,32 @@ export class AgentRunner {
   }
 
   /**
+   * Wait for a task's stopped agent process to actually leave the running
+   * registry (#0760). {@link stop} only *signals* — the process may take up to
+   * the 3s SIGKILL grace before `cleanup()` deletes its entry, and until then
+   * `isRunning` is still true. A caller that must not start a new turn on top of
+   * a live process (the `--now` message path) polls here until the entry is
+   * gone or the timeout expires. Returns true when the process has exited.
+   */
+  waitForStop(taskId: string, timeoutMs = 5000): Promise<boolean> {
+    if (!this.entries.has(taskId)) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const started = Date.now();
+      const poll = setInterval(() => {
+        if (!this.entries.has(taskId)) {
+          clearInterval(poll);
+          resolve(true);
+          return;
+        }
+        if (Date.now() - started >= timeoutMs) {
+          clearInterval(poll);
+          resolve(false);
+        }
+      }, 25);
+    });
+  }
+
+  /**
    * Interrupt a running AI chat response (PM, guide, debugger, …). Stops the
    * in-flight agent process via {@link stop} and appends a persistent marker to
    * the chat's transcript so the user sees the response was user-stopped rather
