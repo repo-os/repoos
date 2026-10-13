@@ -346,7 +346,7 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
     const { root, shortHead, config, task } = commandRepo(
       RUN_COMMAND + "; echo dirt >> tracked.txt; printf stray > stray.txt",
     );
-    const captured = await guardedForceRefreshCapture(config, task, root, {}, vi.fn());
+    const captured = await guardedForceRefreshCapture(config, task, root, undefined, vi.fn());
     expect(captured.error).toBeUndefined();
     expect(captured.gateOk).toBe(true);
     expect(captured.headIdentity).toBe(shortHead);
@@ -364,7 +364,7 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
     const { root, shortHead, config, task } = commandRepo(
       RUN_COMMAND + "; git commit --allow-empty -q -m moved",
     );
-    const captured = await guardedForceRefreshCapture(config, task, root, {}, vi.fn());
+    const captured = await guardedForceRefreshCapture(config, task, root, undefined, vi.fn());
     expect(captured.error).toContain("HEAD changed during the capture");
     expect(captured.error).toContain(shortHead);
     expect(captured.gateOk).toBe(false);
@@ -381,7 +381,7 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
     });
     expect(store.list()).toHaveLength(1);
     expect(store.list()[0]!.origin).toBeUndefined();
-    const captured = await guardedForceRefreshCapture(config, task, root, {}, vi.fn());
+    const captured = await guardedForceRefreshCapture(config, task, root, undefined, vi.fn());
     expect(captured.error).toBeUndefined();
     expect(captured.gateOk).toBe(true);
     const shots = store.list();

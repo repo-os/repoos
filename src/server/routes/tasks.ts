@@ -41,7 +41,7 @@ import {
 import { randomUUID } from "node:crypto";
 import type { ServerResponse } from "node:http";
 import type { LiveIndex, RepoEvent } from "../live-index.js";
-import type { Logger } from "../../core/logger.js";
+import type { Logger, LogLevel } from "../../core/logger.js";
 import { getCurrentUser } from "./auth.js";
 import { requestUsedLocalCliToken } from "../local-token.js";
 import { overrideRefusal } from "../agent-model-allowlist.js";
@@ -1265,7 +1265,7 @@ export async function guardedForceRefreshCapture(
   task: Task,
   worktree: string,
   previews: PreviewManager | undefined,
-  log: (taskId: string, level: "info" | "warn" | "error", message: string) => void,
+  log: (taskId: string, level: LogLevel, message: string) => void,
 ): Promise<GuardedForceRefreshCaptureResult> {
   const headBefore = shortHeadOf(worktree);
   const result = await runUiHandoffGate(config, task, previews, log, {
