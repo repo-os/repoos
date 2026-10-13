@@ -75,21 +75,21 @@ describe("guard negative-test evidence (#0714)", () => {
   it("ignores unrelated repoos.toml additions outside [[check.steps]] (#0762)", () => {
     const tomlDiff = [
       "+[release]",
-      "+version = \"1.0.0\"",
+      '+version = "1.0.0"',
       "+[[distribution]]",
-      "+kind = \"github-release\"",
-      "+name = \"dist\"",
-      "+command = \"./release.sh\"",
+      '+kind = "github-release"',
+      '+name = "dist"',
+      '+command = "./release.sh"',
       "+[[shot.targets]]",
-      "+name = \"app\"",
-      "+kind = \"command\"",
-      "+command = \"make shot\"",
+      '+name = "app"',
+      '+kind = "command"',
+      '+command = "make shot"',
       "+[[preview.targets]]",
-      "+name = \"default\"",
-      "+kind = \"server\"",
-      "+command = \"bun run dev\"",
+      '+name = "default"',
+      '+kind = "server"',
+      '+command = "bun run dev"',
       "+[[agents]]",
-      "+name = \"reviewer\"",
+      '+name = "reviewer"',
     ].join("\n");
     const ids = guardsMateriallyChangedFromDiff({
       changedPaths: ["repoos.toml"],
@@ -101,11 +101,11 @@ describe("guard negative-test evidence (#0714)", () => {
   it("detects a guard kind only inside a [[check.steps]] block (#0762)", () => {
     const tomlDiff = [
       "+[[check.steps]]",
-      "+name = \"contrast\"",
-      "+kind = \"theme-contrast\"",
+      '+name = "contrast"',
+      '+kind = "theme-contrast"',
       "+[[check.steps]]",
-      "+name = \"rendered-contrast\"",
-      "+command = \"bun run contrast:audit\"",
+      '+name = "rendered-contrast"',
+      '+command = "bun run contrast:audit"',
     ].join("\n");
     const ids = guardsMateriallyChangedFromDiff({
       changedPaths: ["repoos.toml"],
@@ -117,12 +117,12 @@ describe("guard negative-test evidence (#0714)", () => {
   it("does not treat a [[distribution]] kind as a guard even after a check.steps block", () => {
     const tomlDiff = [
       "+[[check.steps]]",
-      "+name = \"contrast\"",
-      "+kind = \"theme-contrast\"",
+      '+name = "contrast"',
+      '+kind = "theme-contrast"',
       "+[[distribution]]",
-      "+name = \"release\"",
-      "+kind = \"npm\"",
-      "+command = \"npm publish\"",
+      '+name = "release"',
+      '+kind = "npm"',
+      '+command = "npm publish"',
     ].join("\n");
     const ids = guardsMateriallyChangedFromDiff({
       changedPaths: ["repoos.toml"],
@@ -263,11 +263,9 @@ describe("applyMechanicalReviewVerification (#0714)", () => {
       uiVerificationRequired: false,
       evidence: null,
       changedPaths: ["repoos.toml"],
-      repoosTomlDiff: [
-        "+[[check.steps]]",
-        "+name = \"contrast\"",
-        "+kind = \"theme-contrast\"",
-      ].join("\n"),
+      repoosTomlDiff: ["+[[check.steps]]", '+name = "contrast"', '+kind = "theme-contrast"'].join(
+        "\n",
+      ),
       changedTestFiles: [],
       testGlobs: ["**/*.test.ts"],
     });

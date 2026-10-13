@@ -10,7 +10,11 @@ import { describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { listReviewPasses, reviewPassActivitySummary, reviewPassPath } from "../../core/review-passes";
+import {
+  listReviewPasses,
+  reviewPassActivitySummary,
+  reviewPassPath,
+} from "../../core/review-passes";
 import type { RepoOSConfig } from "../../core/types";
 
 function config(root: string): RepoOSConfig {
@@ -120,7 +124,9 @@ describe("listReviewPasses (#0733)", () => {
 
 describe("reviewPassActivitySummary clamp reason (#0762)", () => {
   it("records why a clean verdict was clamped", () => {
-    expect(reviewPassActivitySummary(2, "ok", "needs some work", "guard `theme-contrast` changed")).toBe(
+    expect(
+      reviewPassActivitySummary(2, "ok", "needs some work", "guard `theme-contrast` changed"),
+    ).toBe(
       "review pass 2: needs some work — clamped by automated verification: guard `theme-contrast` changed",
     );
   });

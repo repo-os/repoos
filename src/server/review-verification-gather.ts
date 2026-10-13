@@ -12,10 +12,7 @@ import {
   guardsMateriallyChangedFromDiff,
   reviewVerificationWithoutWorktree,
 } from "../core/review-verification.js";
-import {
-  isTestFilePath,
-  resolvedReviewVerification,
-} from "../core/review-verification-config.js";
+import { isTestFilePath, resolvedReviewVerification } from "../core/review-verification-config.js";
 import { changedPathsVsBase } from "../core/git.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { readUiHandoffGateEvidence, taskNeedsUiHandoffVerification } from "./ui-handoff-gate.js";

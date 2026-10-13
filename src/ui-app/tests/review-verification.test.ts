@@ -224,7 +224,7 @@ branch: feat/rv-globs
           "final class ThemeContrastTests: XCTestCase {",
           "  func testFlagsProhibitedContrastPair() {",
           "    // theme-contrast guard must reject this bad input",
-          "    XCTAssertThrowsError(try themeContrastOffenders([ContrastPair(fg: \"#fff\", bg: \"#fff\")]))",
+          '    XCTAssertThrowsError(try themeContrastOffenders([ContrastPair(fg: "#fff", bg: "#fff")]))',
           "  }",
           "}",
         ].join("\n"),
@@ -237,5 +237,4 @@ branch: feat/rv-globs
     expect(verification.guardTests[0]?.status).toBe("passed");
     expect(verification.blocksApproval).toBe(false);
   });
-
 });
