@@ -2,7 +2,7 @@
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -15,7 +15,7 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T18:11:00Z"
+updated_at: "2026-10-13T18:15:39Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -91,3 +91,5 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T18:06:09Z · needs_input
 - 2026-10-13T18:10:58Z · cli_override, model_override
 - 2026-10-13T18:11:00Z · model_override
+- 2026-10-13T18:15:39Z · status review→active
+- 2026-10-13T18:15:39Z · note: Review pass 5 on #0766 says “needs some work” (.repoos/reviews/0766.md). Two things before handoff:  Re-capture the UI verification on your current HEAD. The shots must be taken on the commit you hand off. Make sure command targets ([[shot.targets]]) can’t leave tracked changes in the worktree. If they can, fix that and add a test.  Then run repoos check once, commit, and finish with ::repoos-handoff-ready::. Don’t change anything else.
