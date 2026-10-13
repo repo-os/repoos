@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-13T23:40:00Z"
+updated_at: "2026-10-13T23:41:56Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-10-13T23:22:53.274Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -69,10 +69,10 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 "highlight": ".mp-stat-hero",
 "steps": [
 {
-  "click": "button.theme-toggle"
+"click": "button.theme-toggle"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ]
 }
@@ -172,3 +172,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T23:38:24Z · body: section Shots
 - 2026-10-13T23:39:11Z · body
 - 2026-10-13T23:40:00Z · status active→review
+- 2026-10-13T23:41:56Z · note: review pass 6: needs some work
