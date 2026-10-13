@@ -2,7 +2,7 @@
 id: "0770"
 title: Make the task-file merge rule and staleness fix obvious in AGENTS.md
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: docs
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-13T16:18:45Z"
-updated_at: "2026-10-13T16:20:37Z"
+updated_at: "2026-10-13T16:20:39Z"
 ---
 ## Problem
 Agents hit two avoidable blocks while merging main into a task branch by hand (#0762):
@@ -35,3 +35,4 @@ Keep it to a few lines. Edit AGENTS.md through a task branch, not on main. Sourc
 - 2026-10-13T16:18:45Z · created · njachowski@gmail.com
 - 2026-10-13T16:20:15Z · cli_override, model_override
 - 2026-10-13T16:20:37Z · model_override
+- 2026-10-13T16:20:39Z · status inbox→ready
