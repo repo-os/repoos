@@ -1,17 +1,38 @@
 ---
 id: "0767"
-title: Sometimes a coding agent becomes unavailable (e.g. you ra…
-type: feature
-status: draft
+title: Define centralized coding agent recovery
+type: spec
+status: inbox
 priority: p2
-area: general
-assigned_to: ""
+area: [agent, web]
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-13T12:38:26Z"
-updated_at: "2026-10-13T12:38:26Z"
+updated_at: "2026-10-13T12:38:48Z"
 ---
-Sometimes a coding agent becomes unavailable (e.g. you ran out of usage credits for the month) or it's having a problem and you need to turn it off everywhere and replace it with another coding agent + model combo that works. We might need to have a tab in the agents that shows all currently set coding agent + model combos (and where they're being used, e.g. which agent or which task override etc) and change them all at once if say for example a coding agent or model stops working and you don't want to get hit by random agent/model failures that you need to hunt down and change one-by-one. Or another option would be to set a global default fallback agent+model which gets used whenever there's this kind of error. Let's think about it...because it's fairly common.
+## Problem
+
+When a coding agent or model becomes unavailable or starts failing, its configuration may need to be changed wherever it is used. Finding and updating each use individually is inconvenient and can lead to further failures.
+
+## Desired UX
+
+Provide a clear way to recover from agent or model failures across the product. Consider both a view of configured coding agent and model combinations—including where each is used, such as an agent or task override—with a way to change them together, and a global fallback combination used when the configured choice fails. Recommend the approach that best addresses the problem.
+
+## Acceptance criteria
+
+- [ ] Identify the coding agent and model combinations that can be configured and where they are used.
+- [ ] Evaluate centralized visibility and bulk replacement against a global default fallback.
+- [ ] Specify a recommended approach and its user experience for recovering when an agent or model stops working.
+- [ ] Document the decision and enough behavior detail to guide implementation.
+
+## Notes for AI
+
+The explanation leaves open whether recovery should use centralized bulk changes, a global fallback, or another approach. Treat this as a design task: examine the existing product configuration and recommend a solution without assuming either proposed option is required.
+
+## Scope
+
+This task covers deciding and documenting the recovery experience. Implementation is deferred until the approach is agreed.
 
 ## Original prompt
 
@@ -20,3 +41,4 @@ Sometimes a coding agent becomes unavailable (e.g. you ran out of usage credits 
 ## Activity
 
 - 2026-10-13T12:38:26Z · created · hello@repoos.org
+- 2026-10-13T12:38:48Z · status draft→inbox, title, area, type, body
