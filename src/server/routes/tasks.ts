@@ -280,8 +280,25 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
     }
   }
   index.applyFileChange(created.absPath);
+  // #0763: attach screenshots supplied in the SAME create request (the CLI's
+  // `repoos new --screenshot`, and any client that wants one round-trip). Each
+  // image is stored through the same helper the upload route uses and the
+  // `## Screenshots` section is written before the task file is committed. A
+  // rejected image (bad type, empty, too large) fails the whole request with a
+  // clear 400 — never a silent drop — so the caller can fix and retry.
+  if (Array.isArray(body.attachments) && body.attachments.length > 0) {
+    for (const raw of body.attachments) {
+      const result = saveScreenshot(config, created, (raw ?? {}) as Record<string, unknown>);
+      if ("error" in result) {
+        return json(res, 400, { error: `Attachment rejected: ${result.error}` });
+      }
+      patchTaskFile(config, created.absPath, { addScreenshot: result });
+    }
+    index.applyFileChange(created.absPath);
+    created = index.getTask(created.id) ?? created;
+  }
   commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
-  return json(res, 201, index.getTask(created.id));
+  return json(res, 201, created);
 };
 
 export interface FreeformFinalizeDeps {
