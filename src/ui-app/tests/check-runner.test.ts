@@ -716,12 +716,10 @@ describe("failed-first ordering (#0655)", () => {
       files: ["src/a.test.ts"],
     });
     const writes: string[] = [];
-    const spy = vi
-      .spyOn(process.stdout, "write")
-      .mockImplementation((chunk: unknown) => {
-        writes.push(String(chunk));
-        return true;
-      });
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation((chunk: unknown) => {
+      writes.push(String(chunk));
+      return true;
+    });
     try {
       const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root, echo: false });
       // The step still fails on the fake suite's exit code — only the echo of
