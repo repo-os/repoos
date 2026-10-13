@@ -1439,8 +1439,9 @@ export interface DeepInfraUsage {
   at?: string;
   checklist: {
     /**
-     * Ready-to-spend credit — DeepInfra's `stripe_balance` with its sign
-     * flipped (negative balance = funds available). Null when a debt/zero.
+     * Remaining prepaid credits: max(0, -stripe_balance - recent) from
+     * DeepInfra's /payment/checklist response. Null when no credits remain or
+     * the account is owed money.
      */
     availableUsd: number | null;
     /** Positive `stripe_balance`: money the account owes. */

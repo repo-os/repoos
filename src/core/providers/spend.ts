@@ -493,9 +493,11 @@ export interface DeepInfraScopedCredit {
 
 export interface DeepInfraChecklist {
   /**
-   * Ready-to-spend credit in USD. DeepInfra's `stripe_balance` is NEGATIVE
-   * when the account holds funds ready to spend, so a usable balance is the
-   * sign flipped positive; null when the balance is zero/absent.
+   * Remaining prepaid credits in USD. DeepInfra's `/payment/checklist`
+   * reports `stripe_balance` as negative funds including recent usage and
+   * `recent` as usage since the last invoice; subtracting `recent` gives prepaid
+   * credits shown in the billing page. Null when none remain / the account is
+   * owed money.
    */
   availableUsd: number | null;
   /** Amount owed in USD — positive `stripe_balance` means money owed. */
@@ -535,9 +537,11 @@ interface DeepInfraChecklistBody {
 
 /**
  * Parse the authenticated `GET /payment/checklist` response
- * (https://docs.deepinfra.com/api-reference/billing/get-checklist). The sign
- * convention is the trap here: a NEGATIVE `stripe_balance` is credit ready to
- * spend, a POSITIVE one is debt — never render the raw value as a balance.
+ * (https://docs.deepinfra.com/api-reference/billing/get-checklist). That
+ * endpoint documents negative `stripe_balance` as ready-to-spend funds and
+ * `recent` as usage since the most recent invoice. The billing page's prepaid
+ * credits are therefore max(0, -stripe_balance - recent). A positive balance
+ * means money owed — never render it as credit.
  * Checklist dollar fields are USD; scoped credits are reported in CENTS and
  * converted here. Returns null when the 200 body doesn't carry the required
  * fields, so a shape change reads as an error instead of an all-dash row.
@@ -567,7 +571,10 @@ export function parseDeepInfraChecklist(body: unknown): DeepInfraChecklist | nul
       })
     : [];
   return {
-    availableUsd: stripeBalance != null && stripeBalance < 0 ? -stripeBalance : null,
+    availableUsd:
+      stripeBalance < 0
+        ? Math.max(0, Math.round((-stripeBalance - (num(c.recent) as number)) * 100) / 100)
+        : null,
     owedUsd: stripeBalance != null && stripeBalance > 0 ? stripeBalance : null,
     recentUsd: num(c.recent),
     limitUsd: num(c.limit),
