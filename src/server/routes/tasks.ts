@@ -1108,6 +1108,75 @@ export const getTaskUiVerification: RouteHandler = (ctx, _req, res, params) => {
 
 const evidenceRefreshes = new Set<string>();
 
+/**
+ * Post-capture worktree guard for the evidence refresh (#0766). The gate's
+ * `[[shot.targets]]` command targets run arbitrary shell commands INSIDE the
+ * task worktree (cwd = worktree root), so a misbehaving command can write
+ * tracked files there — changes a refresh must never leave behind, because the
+ * action promises to be "safe while the task is in review: it only writes the
+ * gitignored attachments/cache".
+ *
+ * Called after the capture with the pre-capture head identity. The caller's
+ * pre-capture check guarantees the worktree was porcelain-clean, so every
+ * tracked modification and every non-ignored untracked file found now was
+ * created during the capture.
+ *
+ *   - Dirt with HEAD unchanged: restore the tree — `git reset --hard` drops
+ *     tracked modifications, `git clean -fd` drops capture-created untracked
+ *     files — and fail either way with the exact file list. Note `git clean`
+ *     without `-x` never touches ignored paths, so the capture's own output
+ *     (`workDir/.attachments/`, `.repoos/`) survives.
+ *   - HEAD moved since the capture started: fail without restoring. A commit we
+ *     did not make implies a concurrent writer we cannot identify; its
+ *     untracked in-flight work must not be destroyed. The guard only ever
+ *     fails, and reports both facts.
+ *
+ * Returning the head identity as well (`headAfter`) lets the caller verify the
+ * evidence's `sourceIdentity` against the exact tree the capture ran on.
+ */
+export async function postCaptureWorktreeGuard(
+  worktree: string,
+  headBefore: string | null,
+): Promise<{ ok: true; headAfter: string | null } | { ok: false; error: string }> {
+  const status = await runGit(worktree, ["status", "--porcelain"], 10_000);
+  const dirt = status.status === 0 ? status.stdout.trim() : null;
+  const headAfter = shortHeadOf(worktree);
+  if (headBefore === null || headAfter === null || headAfter !== headBefore) {
+    return {
+      ok: false,
+      error:
+        `the worktree's HEAD changed during the capture ` +
+        `(${headBefore ?? "unknown"} → ${headAfter ?? "unknown"})` +
+        (dirt ? ` and it is dirty (${dirt.split("\n").join(", ")}) — nothing was restored` : "") +
+        "; retry the refresh once the tree is settled",
+    };
+  }
+  if (dirt === null) {
+    return { ok: false, error: "could not verify the worktree is clean after the capture" };
+  }
+  if (dirt) {
+    const files = dirt.split("\n").join(", ");
+    const reset = await runGit(worktree, ["reset", "--hard", "HEAD"], 10_000);
+    const clean = reset.status === 0 ? await runGit(worktree, ["clean", "-fd"], 10_000) : null;
+    const recheck =
+      reset.status === 0 && clean && clean.status === 0
+        ? await runGit(worktree, ["status", "--porcelain"], 10_000)
+        : null;
+    const restored = Boolean(recheck && recheck.status === 0 && !recheck.stdout.trim());
+    return {
+      ok: false,
+      error:
+        `the worktree was modified during the capture: ${files}` +
+        (reset.status !== 0
+          ? " — could not restore the worktree with git reset; discard the changes manually"
+          : !restored
+            ? " — the capture command survived the restore; discard the remaining changes manually"
+            : " — the worktree was restored to its pre-capture clean state; the refresh did not succeed"),
+    };
+  }
+  return { ok: true, headAfter };
+}
+
 /** Refresh handoff shots and verification against the reviewed worktree HEAD. */
 export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) => {
   const { config, index, runner, reviews, closeOutLock, previews } = ctx;
@@ -1170,31 +1239,24 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
         error: `Evidence was not refreshed for #${id}: ${result.detail ?? "verification was skipped"}`,
       });
     }
-    // After capture, verify the worktree is still clean (a command target
-    // may have modified files) and the HEAD hasn't changed (no concurrent commits).
-    const dirtyAfter = await runGit(worktree, ["status", "--porcelain"], 10_000);
-    if (dirtyAfter.status !== 0 || dirtyAfter.stdout.trim()) {
-      return json(res, 409, {
-        error: `Task #${id}'s worktree became dirty during capture; discard changes and retry`,
-      });
-    }
-    const headAfter = shortHeadOf(worktree);
-    if (headBefore !== headAfter) {
-      return json(res, 409, {
-        error: `Task #${id}'s HEAD changed during capture (${headBefore} → ${headAfter}); retry to capture current state`,
-      });
-    }
+    // Post-capture guard (#0766): a command target runs its command in the
+    // worktree and may have written tracked files there; the refresh must
+    // never leave those behind. The guard reports and restores (or refuses,
+    // when HEAD moved under the capture), and hands back the identity of the
+    // tree the evidence was captured on.
+    const guarded = await postCaptureWorktreeGuard(worktree, headBefore);
+    if (!guarded.ok) return json(res, 409, { error: guarded.error });
     // Read the evidence to verify sourceIdentity matches our snapshot
     // and use it as the authoritative return value.
     const evidence = readUiHandoffGateEvidence(config, id);
-    if (evidence?.sourceIdentity !== headBefore) {
+    if (evidence?.sourceIdentity !== guarded.headAfter) {
       return json(res, 409, {
-        error: `Task #${id}'s evidence sourceIdentity (${evidence?.sourceIdentity ?? "unknown"}) does not match pre-capture HEAD (${headBefore}); capture was stale`,
+        error: `Task #${id}'s evidence sourceIdentity (${evidence?.sourceIdentity ?? "unknown"}) does not match pre-capture HEAD (${guarded.headAfter ?? "unknown"}); capture was stale`,
       });
     }
     return json(res, result.ok ? 200 : 422, {
       ok: result.ok,
-      headIdentity: evidence?.sourceIdentity ?? headBefore,
+      headIdentity: evidence?.sourceIdentity ?? guarded.headAfter,
       detail: result.detail,
       issues: evidence?.issues ?? [],
       shots: localShotStore(config, id).list(),
