@@ -472,7 +472,17 @@ repoos shot --target "Docs site"     # force a target (skip path/area resolution
 repoos shot --selector ".sidebar"    # capture one element instead of the page
 repoos shot --wait 2000              # wait longer before capturing (default 900ms)
 repoos shot https://example.test/x   # capture an arbitrary URL
+repoos shot --target "macOS app"     # run a command capture target (non-web app)
 ```
+
+A repo whose product is a native macOS app, a mobile app or a desktop app
+declares a **command capture target** instead of (or as well as) a dev-server
+`[[preview.targets]]` row — a `[[shot.targets]]` command that renders image
+files offscreen. `repoos shot --target "<name>"` runs that command and stores
+the images it writes into `REPOOS_SHOT_DIR`, and the automatic handoff capture
+runs it too. See
+[Previews and shots](/previews#evidence-shots-for-non-web-targets) for the
+config shape and platform recipes.
 
 After the page loads, `repoos shot` waits for network quiet (best-effort) and a
 short settle before capturing, so a dev server's client-mount spinner is not

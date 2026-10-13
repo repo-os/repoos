@@ -24,7 +24,7 @@
  * Parsing is pure (a string in, entries out) so the CLI, the server and the
  * tests can share it without touching git, a server or Playwright.
  */
-import type { PreviewConfig } from "./types.js";
+import type { PreviewConfig, ShotConfig } from "./types.js";
 import { isShotPreviewFixtureId } from "./shot-fixtures.js";
 import { DEFAULT_PREVIEW_TARGET as DEFAULT_FALLBACK_TARGET } from "./shot-targets.js";
 
@@ -110,7 +110,11 @@ export interface ParsedShotPlan {
  */
 export interface CaptureEntry {
   target: string;
-  route: string;
+  /**
+   * Route or absolute URL. Absent (#0761) only for a command capture target,
+   * whose command renders the image rather than loading a page.
+   */
+  route?: string;
   selector?: string;
   label?: string;
   /** Element(s) to outline before capture (#0603). Declared shots only. */
@@ -435,14 +439,17 @@ export function previewTargetNames(preview?: PreviewConfig): string[] {
  * Validate declared `target` values against configured preview targets (#0685).
  * Accepts `default` when it is configured, or when it is the only named target
  * besides the root `[preview] command` (the common "sole target is web" case).
+ * Command capture targets (#0761) are valid names too — `shot` carries their
+ * config so a declared `target: "mac"` is accepted.
  */
 export function validateDeclaredShotTargets(
   shots: DeclaredShot[],
   preview?: PreviewConfig,
+  shot?: ShotConfig,
 ): string[] {
   const errors: string[] = [];
   const named = (preview?.targets ?? []).map((t) => t.name).filter(Boolean);
-  const valid = new Set(previewTargetNames(preview));
+  const valid = new Set([...previewTargetNames(preview), ...(shot?.targets ?? []).map((t) => t.name)]);
 
   for (let i = 0; i < shots.length; i++) {
     const label = `shot #${i + 1}`;
@@ -509,6 +516,13 @@ export interface CapturePlanOptions {
   /** Target names whose matched files are docs content only (#0603). */
   docsContentOnly?: ReadonlySet<string>;
   /**
+   * Command capture target names (#0761). A command target has no route, no
+   * selector and no highlights — its command renders the image — so the docs
+   * skip, the `/` fallback and the highlight machinery do not apply to it. The
+   * `auto: matched <glob>` caption is kept.
+   */
+  commandTargets?: ReadonlySet<string>;
+  /**
    * Route an explicit caller request supplies (`repoos shot /some-route`) — the
    * fallback inherits it instead of the preview root (#0610). A non-empty value
    * is also the justification the docs-content skip below asks for, so a
@@ -536,6 +550,8 @@ export function buildCapturePlan(
   const errors: string[] = [];
   const autoSkips: string[] = [];
   const contentOnly = options.docsContentOnly ?? new Set<string>();
+  const commandTargets = options.commandTargets ?? new Set<string>();
+  const isCommand = (t: string): boolean => commandTargets.has(t);
   // What the caller explicitly asked for, if anything (#0610). The CLI used to
   // compute its own entries from these and then discard them, so a typed route
   // lost to the `/` fallback below; the fallback honors it instead.
@@ -552,9 +568,14 @@ export function buildCapturePlan(
     // Docs-content targets get no blind `/` capture #0603: their root route is
     // the docs home page, not the page that changed. An explicit requested route
     // IS the justification that skip asks for — a human naming the page by hand
-    // must not be answered with a skip (#0610).
-    const capturable = requestedRoute ? targets : targets.filter((t) => !contentOnly.has(t));
-    for (const skipped of targets.filter((t) => contentOnly.has(t) && !requestedRoute)) {
+    // must not be answered with a skip (#0610). A command target (#0761) is
+    // never docs-skipped: its command renders whatever it renders.
+    const capturable = requestedRoute
+      ? targets
+      : targets.filter((t) => isCommand(t) || !contentOnly.has(t));
+    for (const skipped of targets.filter(
+      (t) => !isCommand(t) && contentOnly.has(t) && !requestedRoute,
+    )) {
       autoSkips.push(
         `${skipped} matched only documentation content, and no declared shot names a route — ` +
           "docs captures need a declared route, so this target was skipped",
@@ -572,10 +593,12 @@ export function buildCapturePlan(
         };
         return {
           target,
-          route: requestedRoute ?? "/",
+          // A command target has no route: the command itself produces the
+          // image. `/` would be meaningless and the UI/CLI branches on it.
+          ...(isCommand(target) ? {} : { route: requestedRoute ?? "/" }),
           // #0610: a caller-requested selector narrows the capture just as it
-          // does for a declared entry.
-          ...(options.selector ? { selector: options.selector } : {}),
+          // does for a declared entry. Never for a command target.
+          ...(options.selector && !isCommand(target) ? { selector: options.selector } : {}),
           // #0603: the fallback must always set a label — the provenance
           // caption ("auto: matched src/ui-app/**"), not a bare target name.
           label: provenanceCaption(provenance),
@@ -598,7 +621,7 @@ export function buildCapturePlan(
     }
     if (!resolved.target) continue;
     declaredTargeted.add(resolved.target);
-    if (shot.route === undefined && contentOnly.has(resolved.target)) {
+    if (shot.route === undefined && !isCommand(resolved.target) && contentOnly.has(resolved.target)) {
       // Docs-content-only target (#0603): its globs matched *.md files, so no
       // route can name the page that changed. Skip visibly instead of
       // captioning the docs home page — this error is the one visible note for
@@ -611,13 +634,15 @@ export function buildCapturePlan(
     }
     entries.push({
       target: resolved.target,
-      route: shot.route ?? "/",
+      ...(isCommand(resolved.target) ? {} : { route: shot.route ?? "/" }),
       ...(shot.label ? { label: shot.label } : {}),
-      ...(shot.highlight ? { highlight: shot.highlight } : {}),
-      ...(shot.selector ? { selector: shot.selector } : {}),
-      ...(shot.steps?.length ? { steps: shot.steps } : {}),
-      ...(shot.assert?.length ? { assert: shot.assert } : {}),
-      ...(shot.state ? { state: shot.state } : {}),
+      // A command target has no page to drive or highlight: those fields would
+      // be silently meaningless, so they are dropped rather than carried.
+      ...(!isCommand(resolved.target) && shot.highlight ? { highlight: shot.highlight } : {}),
+      ...(!isCommand(resolved.target) && shot.selector ? { selector: shot.selector } : {}),
+      ...(!isCommand(resolved.target) && shot.steps?.length ? { steps: shot.steps } : {}),
+      ...(!isCommand(resolved.target) && shot.assert?.length ? { assert: shot.assert } : {}),
+      ...(!isCommand(resolved.target) && shot.state ? { state: shot.state } : {}),
       provenance: { kind: "declared", ...(shot.label ? { label: shot.label } : {}) },
     });
   }

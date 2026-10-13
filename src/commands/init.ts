@@ -485,6 +485,16 @@ function previewTargetRows(areas: string[]): string {
     `# areas = ${areaList}`,
     `# command = "bun run dev --port {port} --host {host}"`,
     `# readyTimeoutMs = 240000                 # raise for a command that also builds`,
+    "",
+    "# No dev server (native macOS, iOS/Android, desktop)? Declare a command",
+    "# capture target instead — the command renders image files into",
+    "# REPOOS_SHOT_DIR and RepoOS collects them as the task's evidence shots.",
+    "# [[shot.targets]]",
+    `# name = "macOS app"`,
+    `# areas = ${areaList}`,
+    `# paths = ["Sources/**"]                  # changed files that make this the target`,
+    `# command = "swift test --filter RenderShots"`,
+    `# outputGlob = ["*.png"]`,
   ].join("\n");
 }
 

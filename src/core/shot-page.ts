@@ -275,7 +275,10 @@ async function runStep(
 export async function captureShotPage(
   page: ShotDriverPage,
   url: string,
-  entry: Pick<CaptureEntry, "selector" | "steps" | "highlight" | "highlights" | "route">,
+  entry: { route: string } & Pick<
+    CaptureEntry,
+    "selector" | "steps" | "highlight" | "highlights"
+  >,
   options: ShotCaptureOptions,
   misses: ShotCaptureMissHandlers = {},
 ): Promise<Buffer> {

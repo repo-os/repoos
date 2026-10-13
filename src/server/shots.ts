@@ -38,6 +38,12 @@ export interface ShotMeta {
   /** Requested route or URL, when the caller supplied one. */
   route?: string;
   /**
+   * Set to `"command"` when a `[[shot.targets]]` command capture (#0761)
+   * produced this shot rather than a web preview. There is no route to show;
+   * the drawer captions it accordingly.
+   */
+  command?: "command";
+  /**
    * Human label the capture was captioned with (#0594), from the task's
    * declared shot list — e.g. "Task drawer open". Shown ahead of the target
    * name in the drawer.
@@ -86,6 +92,8 @@ interface ShotManifestEntry {
   name: string;
   target: string;
   route?: string;
+  /** `"command"` for a `[[shot.targets]]` command capture (#0761). */
+  command?: "command";
   label?: string;
   /** One-line capture reason (#0603): "declared: <label>" / "auto: matched <glob>". */
   provenance?: string;
@@ -111,6 +119,8 @@ export interface ShotStore {
   save(input: {
     target: string;
     route?: string;
+    /** `"command"` for a `[[shot.targets]]` command capture (#0761). */
+    command?: "command";
     label?: string;
     /** Why the shot exists (#0603), stored verbatim in the manifest. */
     provenance?: string;
@@ -211,6 +221,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         name: file,
         target: meta?.target ?? "unknown",
         ...(meta?.route ? { route: meta.route } : {}),
+        ...(meta?.command ? { command: meta.command } : {}),
         ...(meta?.label ? { label: meta.label } : {}),
         ...(meta?.provenance ? { provenance: meta.provenance } : {}),
         ...(meta?.origin ? { origin: meta.origin } : {}),
@@ -268,6 +279,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         name: file,
         target,
         ...(input.route ? { route: input.route } : {}),
+        ...(input.command ? { command: input.command } : {}),
         ...(input.label ? { label: input.label } : {}),
         ...(input.provenance ? { provenance: input.provenance } : {}),
         ...(input.origin ? { origin: input.origin } : {}),
@@ -286,6 +298,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         name: file,
         target,
         ...(input.route ? { route: input.route } : {}),
+        ...(input.command ? { command: input.command } : {}),
         ...(input.label ? { label: input.label } : {}),
         ...(input.provenance ? { provenance: input.provenance } : {}),
         ...(input.planFingerprint ? { planFingerprint: input.planFingerprint } : {}),
