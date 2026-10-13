@@ -74,3 +74,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T17:17:06Z · status review→active
 - 2026-10-13T17:19:25Z · body
 - 2026-10-13T17:48:40Z · status active→review
+- 2026-10-13T17:48:40Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d3e683060) during finalization (#0734)
