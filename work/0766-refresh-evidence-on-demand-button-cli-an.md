@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-13T16:20:19Z"
-review_passes: 1
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server, cli, ui]
 assigned_to: ai
@@ -13,6 +11,9 @@ branch: feat/refresh-evidence-on-demand-button-cli-an
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-13T10:49:44Z"
+updated_at: "2026-10-13T16:20:20Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 When a reviewed task's handoff evidence goes stale (shots and the ui-verification record were captured at an older commit than the reviewed HEAD, e.g. after merging main or a fix commit), the only way to refresh it is to send the task back to the engineer agent so it re-hands off. That costs a full agent turn (often a paid model), races with other edits, and reviewers then fail the task on a 'stale capture' note. Observed in the Divot repo on #0082: review passes 3 and 4 had no bugs; the only blocker was 'UI verification still points at 90835d6 / website-1..3 while reviewed HEAD is 349a024', and the reviewer's own advice was 're-handoff once'.
@@ -57,4 +58,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T16:11:14Z · body
 - 2026-10-13T16:18:52Z · status active→review
 - 2026-10-13T16:20:18Z · note: review pass 1: needs some work
-
+- 2026-10-13T16:20:20Z · status review→active
