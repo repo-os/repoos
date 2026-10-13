@@ -54,3 +54,4 @@ Reuse src/server/attachments.ts (saveScreenshot, sanitizeName, SCREENSHOTS_HEADI
 - 2026-10-13T14:50:14Z · model_override
 - 2026-10-13T14:54:31Z · body
 - 2026-10-13T15:07:40Z · message_queued at 2026-10-13T15:07:40.294Z
+- 2026-10-13T15:07:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
