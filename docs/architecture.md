@@ -193,7 +193,10 @@ Adds liveness over the one-shot core. No new business logic.
   it instructs the enabled `reviewer` agent to work read-only in the task's
   worktree and writes a short report to `<cacheDir>/reviews/<id>.md` for the
   human signing off. Advisory: it never edits the repo and never moves a task to `done` —
-  a task that comes back `done` is put straight back into `review`.
+  a task that comes back `done` is put straight back into `review`. After the
+  report lands it runs the mechanical verification in `review-verification.ts`
+  and clamps a clean verdict to `needs some work` when a check fails — see
+  `docs/review-verification.md`.
 - `preview.ts` — starts/stops read-only worktree preview servers on dedicated
   ports. On-demand only (`POST /api/tasks/:id/preview`), capped at ONE running
   at a time — starting a new one evicts the last (FIFO). Used to auto-launch

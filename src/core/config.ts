@@ -35,6 +35,7 @@ import type {
   ApprovalConfig,
   AutomationConfig,
   UiVerificationConfig,
+  ReviewVerificationConfig,
   RepoOSConfig,
   Status,
   Assignee,
@@ -1847,6 +1848,24 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       if (widths.length) uiVerification.viewportWidths = widths.map((n) => Math.floor(n));
       cfg.uiVerification = uiVerification;
     }
+
+    // Mechanical review verification (#0714, narrowed by #0762): guard-test
+    // check kill switch + configurable test-file globs.
+    const rvGuardTestCheck = parsed["reviewVerification.guardTestCheck"];
+    const rvTestGlobsRaw = parsed["reviewVerification.testGlobs"];
+    const rvTestGlobs = Array.isArray(rvTestGlobsRaw)
+      ? rvTestGlobsRaw
+          .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+          .map((v) => v.trim())
+      : [];
+    if (rvGuardTestCheck !== undefined || rvTestGlobs.length) {
+      const reviewVerification: ReviewVerificationConfig = {};
+      if (typeof rvGuardTestCheck === "boolean") {
+        reviewVerification.guardTestCheck = rvGuardTestCheck;
+      }
+      if (rvTestGlobs.length) reviewVerification.testGlobs = rvTestGlobs;
+      cfg.reviewVerification = reviewVerification;
+    }
   }
 
   // Model-provider API keys (0327): env-only, same rule as the [auth] secrets
@@ -2413,6 +2432,29 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Pixel widths used for overflow checks during handoff UI verification (desktop and mobile by default).",
     },
     {
+      key: "reviewVerification.guardTestCheck",
+      label: "Guard negative-test review check",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: true,
+      description:
+        "Block a clean good-to-go review when a check guard a project declares was changed without a test proving " +
+        "bad input is rejected. Only ever fires for guards a project actually declares in [[check.steps]]; turn it " +
+        "off to silence it entirely (e.g. when guard tests live outside the matched test files).",
+    },
+    {
+      key: "reviewVerification.testGlobs",
+      label: "Guard test-file globs",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: ["**/*.test.ts", "**/*.test.tsx", "**/*.test.js", "**/*.test.mjs"],
+      description:
+        "Globs identifying the test files counted as negative-test evidence for the guard review check. Set these " +
+        "for a Swift, Python, Go or other non-JS project (e.g. **/*Tests.swift, **/test_*.py, **/*_test.go).",
+    },
+    {
       key: "maxConcurrentAgents",
       label: "Maximum concurrent agent processes",
       type: "select",
@@ -2937,6 +2979,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "automation.paused",
   "uiVerification.enabled",
   "uiVerification.viewportWidths",
+  "reviewVerification.guardTestCheck",
+  "reviewVerification.testGlobs",
   // Remote validation
   "remoteValidation.enabled",
   "remoteValidation.provider",

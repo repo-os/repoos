@@ -25,6 +25,8 @@ export interface GuardNegativeTestCheck {
   detail: string;
   /** Changed test files that satisfied the negative-test requirement. */
   evidenceTests?: string[];
+  /** Why this check blocks approval, phrased for the engineer (#0762). */
+  blockReason?: string;
 }
 
 export interface ReviewVerificationResult {
@@ -32,6 +34,12 @@ export interface ReviewVerificationResult {
   guardTests: GuardNegativeTestCheck[];
   /** True when a clean human sign-off must wait on fixes. */
   blocksApproval: boolean;
+  /**
+   * One-line, engineer-facing reason the verdict was clamped (#0762). Set only
+   * when `blocksApproval` is true, so it can be recorded in the task activity
+   * note and the follow-up message to the engineer.
+   */
+  clampReason?: string;
 }
 
 /**
@@ -107,13 +115,27 @@ export const GUARD_REVIEW_MARKERS: Record<string, string[]> = {
 
 /**
  * True when test source shows prohibited input is rejected, not only that valid
- * input passes.
+ * input passes. The patterns cover the common assertion shapes across languages
+ * (#0762) so a Swift/Python/Go test can satisfy the check when its paths are
+ * matched by `reviewVerification.testGlobs`.
  */
 export function testContentDemonstratesGuardRejection(content: string): boolean {
-  if (/\bexpect\(.+\)\.(toThrow|rejects)\b/.test(content)) return true;
-  if (/\bawait expect\(.+\)\.(toThrow|rejects)\b/.test(content)) return true;
+  // JS/TS
+  if (/\b(?:await\s+)?expect\(.+\)\.(?:toThrow|rejects)\b/.test(content)) return true;
   if (/\.not\.toEqual\(\s*\[\s*\]\s*\)/.test(content)) return true;
   if (/process\.exit\(1\)|exit code 1|\.status\)\.toBe\(1\)/.test(content)) return true;
+  // Swift (XCTest)
+  if (/\bXCTAssertThrowsError\b/.test(content)) return true;
+  // Python (unittest / pytest)
+  if (/\b(?:assertRaises|assertRaisesRegex|pytest\.raises)\b/.test(content)) return true;
+  // Go
+  if (/\bt\.(?:Error|Errorf|Fatal|Fatalf)\(/.test(content)) return true;
+  // Generic "expected to fail / raise / throw" phrasing.
+  if (
+    /\b(?:should|must|expects?|expected)\s+(?:to\s+)?(?:throw|fail|raise|reject)\b/i.test(content)
+  ) {
+    return true;
+  }
   if (
     /\.toEqual\(\s*\[[^\]]+\]/.test(content) &&
     /\b(flags?|offenders?|violat|prohibit|invalid|bad input|rejects?)\b/i.test(content)
@@ -129,6 +151,60 @@ export function testContentReferencesGuard(guardId: string, content: string): bo
   return markers.some((m) => lower.includes(m.toLowerCase()));
 }
 
+/** Every guard id the markers table knows about. */
+const KNOWN_GUARD_IDS = new Set(Object.keys(GUARD_REVIEW_MARKERS));
+
+/**
+ * Guard ids declared as built-in check kinds in a resolved check plan (#0762).
+ * A guard only "matters" in a repo that actually declares it — the entities
+ * that used to be mistaken for guards (`[release]`, `[[distribution]]`,
+ * `[[shot.targets]]`, `[[preview.targets]]`) are not check-step kinds.
+ */
+export function declaredGuardKinds(kinds: (string | undefined)[]): string[] {
+  const out = new Set<string>();
+  for (const kind of kinds) {
+    if (kind && KNOWN_GUARD_IDS.has(kind)) out.add(kind);
+  }
+  return [...out];
+}
+
+/**
+ * Added guard ids from a `repoos.toml` diff, NARROWLY scoped to
+ * `[[check.steps]]` rows (#0762).
+ *
+ * The previous heuristic treated ANY added `kind =` or `name =` line as a
+ * "materially changed guard" whenever the diff also contained a `command =`
+ * line anywhere — so adding a `[release]` block, a `[[distribution]]` row
+ * (whose rows carry `kind = "npm"`), a `[[shot.targets]]` row or a
+ * `[[preview.targets]]` row (whose rows carry `kind = "server"`) all counted.
+ *
+ * Now an added line only counts when it sits inside a `[[check.steps]]` block
+ * and names a guard this build knows (`GUARD_REVIEW_MARKERS`), so unrelated
+ * config additions never trigger the check. Table context is tracked from the
+ * diff's own `[[…]]` / `[…]` headers, including unchanged context lines, so a
+ * row's edits are attributed to the block they live in.
+ */
+export function guardsFromRepoosTomlDiff(repoosTomlDiff: string): string[] {
+  const touched = new Set<string>();
+  let inCheckSteps = false;
+  for (const line of repoosTomlDiff.split("\n")) {
+    const body =
+      line.startsWith("+") || line.startsWith("-") || line.startsWith(" ") ? line.slice(1) : line;
+    const header = body.trim().match(/^\[\[?([^\]]+)\]\]?$/);
+    if (header) {
+      inCheckSteps = header[1].trim() === "check.steps" || header[1].trim() === "checks.steps";
+      continue;
+    }
+    // Only an ADDED line changes the guard set; a removed kind is a change too
+    // but carries no name to check against, so skip it here.
+    if (!line.startsWith("+") || line.startsWith("+++")) continue;
+    if (!inCheckSteps) continue;
+    const kind = /^\+\s*kind\s*=\s*["']([^"']+)["']/.exec(line)?.[1];
+    if (kind && KNOWN_GUARD_IDS.has(kind)) touched.add(kind);
+  }
+  return [...touched];
+}
+
 /** Guards whose implementation or declaration changed on this branch (from diff text). */
 export function guardsMateriallyChangedFromDiff(input: {
   changedPaths: string[];
@@ -138,6 +214,8 @@ export function guardsMateriallyChangedFromDiff(input: {
   const touched = new Set<string>();
   const { changedPaths, checkTsDiff = "", repoosTomlDiff = "" } = input;
 
+  // `src/commands/check.ts` is RepoOS's own guard source — the path only
+  // exists in this repo, so this branch is inherently RepoOS-only.
   if (changedPaths.includes("src/commands/check.ts") && checkTsDiff) {
     for (const line of checkTsDiff.split("\n")) {
       if (!line.startsWith("+") || line.startsWith("+++")) continue;
@@ -149,13 +227,7 @@ export function guardsMateriallyChangedFromDiff(input: {
   }
 
   if (changedPaths.includes("repoos.toml") && repoosTomlDiff) {
-    for (const line of repoosTomlDiff.split("\n")) {
-      if (!line.startsWith("+")) continue;
-      const kind = /kind\s*=\s*["']([^"']+)["']/.exec(line)?.[1];
-      if (kind) touched.add(kind);
-      const name = /^\+\s*name\s*=\s*["']([^"']+)["']/.exec(line)?.[1];
-      if (name && /command\s*=/.test(repoosTomlDiff)) touched.add(name);
-    }
+    for (const guardId of guardsFromRepoosTomlDiff(repoosTomlDiff)) touched.add(guardId);
   }
 
   return [...touched];
@@ -177,10 +249,13 @@ export function evaluateGuardNegativeTestChecks(input: {
   changedTestFiles: { path: string; content: string }[];
   /** Tests at branch HEAD that were not changed — still count as evidence. */
   branchTestFiles?: { path: string; content: string }[];
+  /** Test-file globs the evidence was read from, for the actionable message. */
+  testGlobs?: string[];
 }): GuardNegativeTestCheck[] {
   if (input.guardIds.length === 0) return [];
   const changedSet = new Set(input.changedTestFiles.map((f) => f.path));
   const branchOnly = (input.branchTestFiles ?? []).filter((f) => !changedSet.has(f.path));
+  const globHint = input.testGlobs?.length ? input.testGlobs.join(", ") : "*.test.ts";
 
   return input.guardIds.map((guardId) => {
     const fromChanged = guardNegativeEvidence(guardId, input.changedTestFiles);
@@ -212,12 +287,20 @@ export function evaluateGuardNegativeTestChecks(input: {
         detail:
           `Guard \`${guardId}\` was materially changed but changed tests (${changedCandidates.map((f) => f.path).join(", ")}) ` +
           "only exercise valid input — add a case that asserts representative prohibited input is rejected.",
+        blockReason:
+          `Guard \`${guardId}\` was materially changed but its tests (${changedCandidates.map((f) => f.path).join(", ")}) ` +
+          "only exercise valid input — add a case asserting representative prohibited input is rejected.",
       };
     }
     return {
       guardId,
       status: "failed",
-      detail: `Guard \`${guardId}\` was materially changed on this branch but no test at branch HEAD demonstrates rejection of bad input.`,
+      detail:
+        `Guard \`${guardId}\` was materially changed on this branch but no test at branch HEAD demonstrates rejection of bad input` +
+        ` (test files are matched by: ${globHint}).`,
+      blockReason:
+        `Guard \`${guardId}\` was materially changed on this branch but no test matching ${globHint} demonstrates rejection of bad input. ` +
+        "Add a rejection test (or set `reviewVerification.testGlobs` / `reviewVerification.guardTestCheck = false` in repoos.toml).",
     };
   });
 }
@@ -237,13 +320,42 @@ export function reviewVerificationWithoutWorktree(input: {
       status: "not_run",
       detail:
         "Task branch has no local worktree — branch diff and guard negative-test evidence were not checked.",
+      blockReason:
+        "Task branch has no local worktree — guard negative-test evidence could not be checked.",
     },
   ];
   const blocksApproval =
     consoleErrors.status === "failed" ||
     consoleErrors.status === "not_run" ||
     guardTests.some((g) => g.status === "not_run" || g.status === "failed");
-  return { consoleErrors, guardTests, blocksApproval };
+  return {
+    consoleErrors,
+    guardTests,
+    blocksApproval,
+    clampReason: clampReasonFor({ consoleErrors, guardTests, blocksApproval }),
+  };
+}
+
+/**
+ * One-line, engineer-facing reason a clean `good to go` was clamped (#0762).
+ * Undefined when nothing blocks approval.
+ */
+export function clampReasonFor(result: {
+  consoleErrors: ConsoleErrorReviewCheck;
+  guardTests: GuardNegativeTestCheck[];
+  blocksApproval: boolean;
+}): string | undefined {
+  if (!result.blocksApproval) return undefined;
+  const reasons: string[] = [];
+  if (result.consoleErrors.status === "failed" || result.consoleErrors.status === "not_run") {
+    reasons.push(`browser verification: ${result.consoleErrors.detail}`);
+  }
+  for (const g of result.guardTests) {
+    if (g.status === "failed" || g.status === "not_run") {
+      reasons.push(g.blockReason ?? g.detail);
+    }
+  }
+  return reasons.length ? reasons.join("; ") : undefined;
 }
 
 export function evaluateReviewVerification(input: {
@@ -254,14 +366,31 @@ export function evaluateReviewVerification(input: {
   repoosTomlDiff?: string;
   changedTestFiles: { path: string; content: string }[];
   branchTestFiles?: { path: string; content: string }[];
+  /**
+   * Kill switch + glob scope for the guard negative-test check (#0762). When
+   * `guardTestCheck` is false the check is skipped with a stated reason rather
+   * than silently omitted.
+   */
+  guardTestCheck?: boolean;
+  testGlobs?: string[];
 }): ReviewVerificationResult {
   const consoleErrors = evaluateConsoleErrorReviewCheck({
     uiVerificationRequired: input.uiVerificationRequired,
     evidence: input.evidence,
   });
 
+  const guardTestCheck = input.guardTestCheck !== false;
   let guardTests: GuardNegativeTestCheck[] = [];
-  if (input.changedPaths === null) {
+  if (!guardTestCheck) {
+    guardTests = [
+      {
+        guardId: "(guard-test check)",
+        status: "skipped",
+        detail:
+          "Disabled by `reviewVerification.guardTestCheck = false` in repoos.toml — guard negative-test evidence was not checked.",
+      },
+    ];
+  } else if (input.changedPaths === null) {
     guardTests = [
       {
         guardId: "(branch diff)",
@@ -280,6 +409,7 @@ export function evaluateReviewVerification(input: {
       guardIds,
       changedTestFiles: input.changedTestFiles,
       branchTestFiles: input.branchTestFiles,
+      testGlobs: input.testGlobs,
     });
   }
 
@@ -288,7 +418,12 @@ export function evaluateReviewVerification(input: {
     consoleErrors.status === "not_run" ||
     guardTests.some((g) => g.status === "failed" || g.status === "not_run");
 
-  return { consoleErrors, guardTests, blocksApproval };
+  return {
+    consoleErrors,
+    guardTests,
+    blocksApproval,
+    clampReason: clampReasonFor({ consoleErrors, guardTests, blocksApproval }),
+  };
 }
 
 function statusLabel(status: ReviewMechanicalCheckStatus): string {
@@ -328,6 +463,12 @@ export interface AppliedReviewVerification {
   verification: ReviewVerificationResult;
   /** When mechanical checks block approval despite the agent's verdict. */
   verdictOverride?: ReviewVerdict;
+  /**
+   * One-line reason the verdict was clamped (#0762). Recorded in the task
+   * activity note and included in the follow-up message to the engineer so an
+   * agent without drawer access can act on it.
+   */
+  clampReason?: string;
 }
 
 /**
@@ -375,5 +516,10 @@ export function applyMechanicalReviewVerification(
     }
   }
 
-  return { markdown, verification, verdictOverride: "needs some work" };
+  return {
+    markdown,
+    verification,
+    verdictOverride: "needs some work",
+    clampReason: verification.clampReason ?? clampReasonFor(verification),
+  };
 }
