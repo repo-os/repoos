@@ -106,3 +106,4 @@ Start from review-verification.ts guardsMateriallyChangedFromDiff and evaluateGu
 - 2026-10-13T16:16:42Z · status review→active
 - 2026-10-13T16:16:49Z · note: handoff requested (ui-review)
 - 2026-10-13T16:24:22Z · status active→review
+- 2026-10-13T16:24:22Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (3169e683a) during finalization (#0734)
