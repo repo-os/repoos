@@ -483,6 +483,24 @@ export interface UiHandoffCaptureEvidence {
   issues?: UiHandoffVerificationIssue[];
 }
 
+/**
+ * Provenance for one command-target capture (#0765): a `[[shot.targets]]`
+ * command has no page or console, so it records the command, its exit status,
+ * the stdout/stderr tail and the images it produced instead of a URL.
+ */
+export interface UiHandoffCommandCaptureEvidence {
+  target: string;
+  label?: string;
+  command: string;
+  cwd: string;
+  status: "captured" | "skipped" | "failed";
+  exitStatus: number | null;
+  reason?: string;
+  warnings?: string[];
+  outputTail?: string;
+  shots: Array<{ name: string; size: number; mime: string; path: string; url: string }>;
+}
+
 export interface UiHandoffVerificationEvidence {
   at: string;
   issues: UiHandoffVerificationIssue[];
@@ -494,6 +512,8 @@ export interface UiHandoffVerificationEvidence {
   sourceWorktree?: string;
   evidenceDir?: string;
   captureDetails?: UiHandoffCaptureEvidence[];
+  /** #0765: command-target provenance when the task has no browser capture. */
+  commandCaptures?: UiHandoffCommandCaptureEvidence[];
   warnings?: string[];
   /**
    * #0755: the branch HEAD the review/close-out will use, and whether it
