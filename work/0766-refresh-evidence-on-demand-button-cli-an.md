@@ -11,10 +11,11 @@ area: [core, server, cli, ui]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/refresh-evidence-on-demand-button-cli-an
+model_override: opencode-go/glm-5.3-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-13T18:10:58Z"
+updated_at: "2026-10-13T18:11:00Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -89,3 +90,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T18:06:09Z · note: review pass 5: needs some work
 - 2026-10-13T18:06:09Z · needs_input
 - 2026-10-13T18:10:58Z · cli_override, model_override
+- 2026-10-13T18:11:00Z · model_override
