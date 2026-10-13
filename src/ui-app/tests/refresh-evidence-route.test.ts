@@ -4,6 +4,7 @@ import { mkdirSync, existsSync, readFileSync, rmSync, writeFileSync } from "node
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { refreshTaskEvidence } from "../../server/routes/tasks.js";
+import * as uiHandoffGate from "../../server/ui-handoff-gate.js";
 import { readUiHandoffGateEvidence, handoffTreeStatus } from "../../server/ui-handoff-gate.js";
 import type { RouteContext } from "../../server/routes/types.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
@@ -81,9 +82,10 @@ describe("POST /api/tasks/:id/verify guards", () => {
   it("refuses while an agent is running", async () => {
     const root = gitRoot();
     const task = makeTask(root);
+    const rootLock = { acquire: vi.fn(() => true), release: vi.fn() };
     const res = response();
     await refreshTaskEvidence(
-      context(task, root, { runner: { isRunning: () => true } }),
+      context(task, root, { runner: { isRunning: () => true }, rootLock }),
       {} as never,
       res as never,
       { param1: task.id },
@@ -92,6 +94,35 @@ describe("POST /api/tasks/:id/verify guards", () => {
       status: 409,
       body: { error: expect.stringContaining("agent run in progress") },
     });
+    expect(rootLock.acquire).toHaveBeenCalledWith(task.id, "close-out");
+    expect(rootLock.release).toHaveBeenCalledWith(task.id);
+  });
+
+  it("takes the durable root lock before checking for a live agent", async () => {
+    const root = gitRoot();
+    const task = makeTask(root);
+    const order: string[] = [];
+    const rootLock = {
+      acquire: vi.fn(() => {
+        order.push("acquire");
+        return true;
+      }),
+      release: vi.fn(),
+    };
+    const runner = {
+      isRunning: vi.fn(() => {
+        order.push("isRunning");
+        return false;
+      }),
+    };
+    const res = response();
+    await refreshTaskEvidence(
+      context(task, root, { rootLock, runner }),
+      {} as never,
+      res as never,
+      { param1: task.id },
+    );
+    expect(order).toEqual(["acquire", "isRunning"]);
   });
 
   it("refuses dirty worktrees and releases the durable root lock", async () => {
@@ -271,6 +302,43 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
     }).trim();
     expect(headAfter).not.toBe(shortHead);
     expect(porcelainOf(root)).toBe("");
+  });
+
+  it("returns 200 with refreshed evidence when verification reports issues", async () => {
+    const { root, shortHead, config, task } = commandRepo(RUN_COMMAND);
+    const gateSpy = vi.spyOn(uiHandoffGate, "runUiHandoffGate").mockImplementation(async () => {
+      const path = join(root, ".repoos/ui-verification/0766.json");
+      mkdirSync(join(path, ".."), { recursive: true });
+      writeFileSync(
+        path,
+        JSON.stringify({
+          at: new Date().toISOString(),
+          issues: [{ kind: "assertion", message: "boom", url: "http://test/" }],
+          blankShots: [],
+          captures: 1,
+          sourceIdentity: shortHead,
+        }),
+      );
+      return {
+        ok: false,
+        detail: "ui verification failed (1 issue(s)): boom",
+        evidencePath: path,
+      };
+    });
+    const res = response();
+    await refreshTaskEvidence(context(task, root, { config }), {} as never, res as never, {
+      param1: task.id,
+    });
+    gateSpy.mockRestore();
+    const { status, body } = res.result() as {
+      status: number;
+      body: { ok?: boolean; headIdentity?: string; issues?: Array<{ message?: string }> };
+    };
+    expect(status).toBe(200);
+    expect(body.ok).toBe(false);
+    expect(body.headIdentity).toBe(shortHead);
+    expect(body.issues).toHaveLength(1);
+    expect(readUiHandoffGateEvidence(config, "0766")?.sourceIdentity).toBe(shortHead);
   });
 
   it("fails without restoring when HEAD moves during the capture", async () => {

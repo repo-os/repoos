@@ -1254,9 +1254,6 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
     });
   }
   if (!task.branch) return json(res, 409, { error: `Task #${id} has no branch to refresh` });
-  if (runner.isRunning(id) || reviews.isRunning(id)) {
-    return json(res, 409, { error: `Task #${id} has an agent run in progress` });
-  }
   if (closeOutLock.closingOut())
     return json(res, 409, { error: "A close-out is active; wait for it to finish" });
   if (evidenceRefreshes.has(id))
@@ -1268,6 +1265,10 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
     return json(res, 409, {
       error: "A close-out or root operation is active; wait for it to finish",
     });
+  }
+  if (runner.isRunning(id) || reviews.isRunning(id)) {
+    ctx.rootLock.release(id);
+    return json(res, 409, { error: `Task #${id} has an agent run in progress` });
   }
   const worktree = worktreePathForBranch(config.root, task.branch);
   if (!worktree) {
@@ -1327,7 +1328,7 @@ export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) 
         error: `Task #${id}'s evidence sourceIdentity (${evidence?.sourceIdentity ?? "unknown"}) does not match pre-capture HEAD (${guarded.headAfter ?? "unknown"}); capture was stale`,
       });
     }
-    return json(res, result.ok ? 200 : 422, {
+    return json(res, 200, {
       ok: result.ok,
       headIdentity: evidence?.sourceIdentity ?? guarded.headAfter,
       detail: result.detail,
