@@ -91,7 +91,10 @@ import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-re
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
-import { readUiHandoffGateEvidence, handoffTreeStatus } from "../ui-handoff-gate.js";
+import {
+  readUiHandoffGateEvidence,
+  effectiveHandoffTreeStatus,
+} from "../ui-handoff-gate.js";
 import { localShotStore } from "../shots.js";
 import { computeTaskShotContext } from "../shot-context.js";
 import {
@@ -1081,7 +1084,7 @@ export const listTaskShots: RouteHandler = (ctx, _req, res, params) => {
 };
 
 /** Handoff UI verification evidence (#0680) for the Changes tab. */
-export const getTaskUiVerification: RouteHandler = (ctx, _req, res, params) => {
+export const getTaskUiVerification: RouteHandler = async (ctx, _req, res, params) => {
   const { config, index } = ctx;
   const taskId = params.param1;
   const task = index.getTask(taskId);
@@ -1092,9 +1095,11 @@ export const getTaskUiVerification: RouteHandler = (ctx, _req, res, params) => {
   // #0755: tie the evidence to the tree the review/close-out will use. The
   // stored `sourceIdentity` is the tree the capture ran on; `reviewedHead` is
   // the branch HEAD now, and `stale` says whether they differ. A stale capture
-  // is shown as such and never as verification.
+  // is shown as such and never as verification — except for HEAD movement that
+  // is pure task bookkeeping (#0766), which does not change what captures show.
   const reviewedHead = branchHeadForTask(config, task);
-  const status = handoffTreeStatus(evidence, reviewedHead);
+  const worktree = worktreeEvidenceSource(config, task);
+  const status = await effectiveHandoffTreeStatus(worktree, evidence, reviewedHead);
   if (!evidence) return json(res, 200, { ok: true, evidence: null });
   return json(res, 200, {
     ok: true,
@@ -1279,6 +1284,18 @@ function branchHeadForTask(config: RepoOSConfig, task: Task): string | null {
   if (!task.branch) return null;
   const current = currentBranch(config.root);
   return current === task.branch ? shortHeadOf(config.root) : null;
+}
+
+/**
+ * The tree the bookkeeping-drift classification (#0766) diffs against: the
+ * task's worktree when it exists, else the root checkout — mirroring
+ * {@link branchHeadForTask}, so both sides of the comparison read the same git
+ * context. Null only from callers that pass it to nothing; the effective
+ * staleness helper fails closed on null.
+ */
+function worktreeEvidenceSource(config: RepoOSConfig, task: Task): string | null {
+  const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+  return worktree ?? config.root;
 }
 
 export const getTaskShot: RouteHandler = (ctx, _req, res, params) => {

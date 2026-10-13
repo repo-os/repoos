@@ -161,6 +161,52 @@ export function handoffTreeNote(
   return "handoff capture has no recorded tree — cannot be tied to the reviewed HEAD";
 }
 
+/**
+ * Paths whose movement never invalidates a capture (#0766). Task bookkeeping
+ * files (`work/*.md` — status flips, activity notes, review counters) land on
+ * the branch after the capture ran and do not change any app the captures
+ * describe; #0600 already treats work-file commits as the task's own
+ * bookkeeping everywhere else. Everything else — source, docs, config, another
+ * task's file — keeps the capture stale (fail-closed: docs are content a
+ * docs-site capture can legitimately show, so only task bookkeeping is exempt).
+ */
+const TASK_BOOKKEEPING_PATH_RE = /^work\/.*\.md$/;
+
+async function diffIsTaskBookkeepingOnly(
+  diffRoot: string,
+  fromSha: string,
+  toHead: string,
+): Promise<boolean> {
+  const diff = await runGit(diffRoot, ["diff", "--name-only", fromSha, toHead], 10_000);
+  if (diff.status !== 0) return false;
+  const paths = diff.stdout
+    .split("\n")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return paths.length > 0 && paths.every((p) => TASK_BOOKKEEPING_PATH_RE.test(p));
+}
+
+/**
+ * The staleness verdict as the review should act on it (#0766): the mechanical
+ * {@link handoffTreeStatus} comparison, softened only for HEAD movement that is
+ * provably pure task bookkeeping — a diff of nothing but `work/*.md` files
+ * between the captured tree and the reviewed one. Returns "stale" for every
+ * git problem (an unreachable sha, a missing worktree), so an unclassifiable
+ * drift is never presented as current evidence.
+ */
+export async function effectiveHandoffTreeStatus(
+  diffRoot: string | null | undefined,
+  evidence: Pick<UiHandoffGateEvidence, "sourceIdentity"> | null | undefined,
+  currentHead: string | null | undefined,
+): Promise<HandoffTreeStatus> {
+  const status = handoffTreeStatus(evidence, currentHead);
+  if (status !== "stale") return status;
+  const captured = evidence?.sourceIdentity?.trim();
+  const head = currentHead?.trim();
+  if (!diffRoot || !captured || !head || captured === head) return status;
+  return (await diffIsTaskBookkeepingOnly(diffRoot, captured, head)) ? "current" : "stale";
+}
+
 export interface UiHandoffGateResult {
   ok: boolean;
   skipped?: boolean;
