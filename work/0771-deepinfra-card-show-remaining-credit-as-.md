@@ -3,6 +3,9 @@ id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -188,3 +191,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T23:57:41Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (2c16453c5) during finalization (#0734)
 - 2026-10-13T23:57:41Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (2c16453c5) during finalization (#0734)
 - 2026-10-13T23:58:56Z · note: review pass 8: needs some work
+- 2026-10-13T23:58:56Z · needs_input
