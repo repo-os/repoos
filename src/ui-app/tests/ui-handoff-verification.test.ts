@@ -19,7 +19,7 @@ import {
 } from "../../server/preview-verification-slot.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import type { Task } from "../../core/types.js";
-import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -77,6 +77,7 @@ describe("UI handoff verification gate (#0680)", () => {
       area: "web",
       body: "",
     } as Task;
+    writeFileSync(task.absPath, "tracked task contents\n");
     const result = await runUiHandoffGate(config, task, undefined, () => {}, {
       syntheticIssues: [{ kind: "console", message: "stub page error" }],
     });
@@ -106,6 +107,7 @@ describe("UI handoff verification gate (#0680)", () => {
       area: "web",
       body: "",
     } as Task;
+    writeFileSync(task.absPath, "tracked task contents\n");
     vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
       entries: [
         {
@@ -145,9 +147,13 @@ describe("UI handoff verification gate (#0680)", () => {
         finalUrl: "http://127.0.0.1:9/",
         assertions: [],
       }),
+      forceRefresh: true,
+      recordTaskNotes: false,
     });
     expect(result.ok).toBe(false);
     expect(result.detail).toContain("overflow");
+    expect(shotCapture.planAutoCapture).toHaveBeenCalledWith(config, task, { forceRefresh: true });
+    expect(readFileSync(task.absPath, "utf8")).toBe("tracked task contents\n");
     // #0753: the capture keeps its OWN issues, so the Changes tab can show them
     // in that shot's popover instead of repeating the handoff list on every row.
     const evidence = readUiHandoffGateEvidence(config, task.id);
