@@ -4780,8 +4780,11 @@
   background: var(--panel);
   padding: 0;
 }
+/* The message row keeps a bottom gap so the conflict headline never sits flush
+   against the action button below it — the button carries its own top spacing
+   only in panel mode, so card mode needs the breathing room here (#0768). */
 .tc-card-footer .done-error--card .done-error-row {
-  padding: 10px 12px 0;
+  padding: 10px 12px;
 }
 .tc-card-footer .done-error--card .done-error-fix {
   margin-top: 0;
@@ -4791,7 +4794,7 @@
   border-radius: 0;
 }
 .tc-card-footer .done-error--card .done-error-stale .done-error-row {
-  padding: 10px 12px 0;
+  padding: 10px 12px;
 }
 .drawer-done-error {
   margin-top: 12px;
