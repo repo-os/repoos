@@ -2,14 +2,14 @@
 id: "0761"
 title: "Shots for non-web targets: native macOS, iOS/Android and desktop apps (command-based capture)"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, cli]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/shots-for-non-web-targets-native-macos-i
 created_at: "2026-10-13T06:23:05Z"
-updated_at: "2026-10-13T07:45:04Z"
+updated_at: "2026-10-13T07:51:50Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -74,3 +74,4 @@ Start from src/core/shot-plan.ts and the shot capture path used at handoff (see 
 - 2026-10-13T07:42:03Z · message_queued at 2026-10-13T07:42:03.602Z
 - 2026-10-13T07:42:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-13T07:45:04Z · body
+- 2026-10-13T07:51:50Z · status active→review
