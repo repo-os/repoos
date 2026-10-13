@@ -181,3 +181,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T23:32:43Z · needs_input
 - 2026-10-13T23:32:43Z · message_queued at 2026-10-13T23:32:43.536Z
 - 2026-10-13T23:34:20Z · status active→review
+- 2026-10-13T23:34:20Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a0934f8e4) during finalization (#0734)
