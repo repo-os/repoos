@@ -8,8 +8,10 @@ area: docs
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: claude code
+model_override: default
 created_at: "2026-10-13T16:18:45Z"
-updated_at: "2026-10-13T16:18:45Z"
+updated_at: "2026-10-13T16:20:15Z"
 ---
 ## Problem
 Agents hit two avoidable blocks while merging main into a task branch by hand (#0762):
@@ -31,3 +33,4 @@ Keep it to a few lines. Edit AGENTS.md through a task branch, not on main. Sourc
 ## Activity
 
 - 2026-10-13T16:18:45Z · created · njachowski@gmail.com
+- 2026-10-13T16:20:15Z · cli_override, model_override
