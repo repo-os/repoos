@@ -483,9 +483,9 @@ describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
       kind: "deepinfra",
       at: fetchedAt,
       checklist: {
-        availableUsd: 2.81,
+        availableUsd: 4.56,
         owedUsd: null,
-        recentUsd: 7.13,
+        recentUsd: 8.97,
         limitUsd: null,
         suspended: false,
         suspendReason: null,
@@ -527,8 +527,9 @@ describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
     expect(row.text()).toContain("Stale");
     expect(row.find(".mp-stale").exists()).toBe(true);
     expect(row.text()).toContain("As of");
-    expect(row.text()).toContain("$2.81");
-    expect(row.text()).toContain("$7.13");
+    expect(row.find(".mp-as-of").attributes("title")).toBe(fetchedAt);
+    expect(row.text()).toContain("$4.56");
+    expect(row.text()).toContain("$8.97");
     expect(row.text()).not.toContain("Usage unavailable");
     expect(row.text()).not.toContain("Balance unavailable");
   });
@@ -538,9 +539,9 @@ describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
       kind: "deepinfra",
       at: "2026-10-13T23:59:00.000Z",
       checklist: {
-        availableUsd: 2.81,
+        availableUsd: 6.42,
         owedUsd: null,
-        recentUsd: 7.13,
+        recentUsd: 3.18,
         limitUsd: null,
         suspended: false,
         suspendReason: null,
@@ -577,8 +578,8 @@ describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
     // Last good figures stay the main content, marked stale; the failure is a
     // secondary banner with a Retry affordance.
     expect(row.find(".mp-data").exists()).toBe(true);
-    expect(row.text()).toContain("$2.81");
-    expect(row.text()).toContain("$7.13");
+    expect(row.text()).toContain("$6.42");
+    expect(row.text()).toContain("$3.18");
     expect(row.find(".mp-stale").exists()).toBe(true);
     expect(row.text()).toContain("The operation timed out.");
     expect(row.find(".mp-retry").exists()).toBe(true);
@@ -598,7 +599,7 @@ describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
       deepinfraUsageRoute({
         kind: "deepinfra",
         checklist: {
-          availableUsd: 2.81,
+          availableUsd: 5.67,
           owedUsd: null,
           recentUsd: null,
           limitUsd: null,
@@ -617,7 +618,7 @@ describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
 
     const row = wrapper.findAll(".mp-row")[4];
     expect(row.text()).toContain("Prepaid credits");
-    expect(row.text()).toContain("$2.81");
+    expect(row.text()).toContain("$5.67");
     expect(row.text()).toContain("Usage unavailable: The operation timed out.");
     expect(row.find(".mp-stale").exists()).toBe(false);
     expect(row.text()).toContain("As of");
