@@ -21,7 +21,15 @@ import { parseTask } from "../../core/task";
  * Flags `cmdUpdate` handles specially, before the generic `UPDATE_FLAGS` lookup:
  * they are accepted but not part of the parse map.
  */
-const SPECIAL_UPDATE_FLAGS = ["shots", "section", "section-body", "clear-questions", "force"];
+const SPECIAL_UPDATE_FLAGS = [
+  "shots",
+  "screenshot",
+  "caption",
+  "section",
+  "section-body",
+  "clear-questions",
+  "force",
+];
 
 const UPDATE_FLAG_NAMES = [...Object.keys(UPDATE_FLAGS), ...SPECIAL_UPDATE_FLAGS];
 

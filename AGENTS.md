@@ -354,6 +354,16 @@ cannot tell from the code alone:
   committed record is the `.md`, never the pixels. `repoos check`'s task-asset
   guard fails the gate on any tracked image/PDF under those two trees. Product
   image assets (UI, icons, logos, `docs/`) live elsewhere and stay tracked.
+- **When you create or update a task from a request that came with images,
+  attach every one of them** with `repoos new "<title>" --screenshot path.png`
+  (repeat `--screenshot` per image) or `repoos update <id> --screenshot path.png`
+  (`--caption "..."` labels a single image's alt text). The command stores each
+  file under the gitignored `work/.attachments/<id>/` and writes the task's
+  `## Screenshots` section itself — never `git add` the pixels, never hand-copy
+  into `.attachments/`, never edit the section by hand. Say in your reply which
+  images you attached (the command prints their URLs). Dropping the human's
+  screenshots makes the engineer and reviewer guess at the visual problem, so
+  an image attached to the request is an image that lands on the task (#0763).
 - Zero runtime dependencies is a hard design constraint. Do not add a runtime
   dependency without an explicit task authorizing it. Dev dependencies (test
   runners, types) are fine.
