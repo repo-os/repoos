@@ -9,10 +9,10 @@ area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/mechanical-review-verification-misfires-
-cli_override: cursor
-model_override: composer-2.5
+cli_override: claude code
+model_override: sonnet
 created_at: "2026-10-13T08:51:23Z"
-updated_at: "2026-10-13T14:29:20Z"
+updated_at: "2026-10-13T14:29:24Z"
 review_passes: 1
 dev_error_count: 1
 ---
@@ -79,3 +79,4 @@ Start from review-verification.ts guardsMateriallyChangedFromDiff and evaluateGu
 - 2026-10-13T13:24:27Z · needs_input (dev-error) dismissed by hello@repoos.org
 - 2026-10-13T13:24:32Z · needs_merge
 - 2026-10-13T14:29:20Z · status review→active
+- 2026-10-13T14:29:24Z · cli_override, model_override
