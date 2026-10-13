@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-13T23:03:13Z"
-review_passes: 3
 id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -18,6 +16,8 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
+updated_at: "2026-10-13T23:03:38Z"
+review_passes: 3
 review_rounds: 2
 dev_error_count: 2
 ---
@@ -123,4 +123,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-13T23:01:54Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (8f9bf5c71) during finalization (#0734)
 - 2026-10-13T23:03:13Z · note: review pass 3: needs some work
 - 2026-10-13T23:03:13Z · needs_input
-
+- 2026-10-13T23:03:38Z · status review→active
