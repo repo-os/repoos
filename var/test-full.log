@@ -1,0 +1,40 @@
+$ node scripts/run-tests.mjs
+
+ RUN  v4.1.10 /Users/nick/code/nick/repoos-worktrees/feat/deepinfra-card-show-remaining-credit-as-/src/ui-app
+
+ ❯ tests/model-providers-routes.test.ts (16 tests | 1 failed) 17ms
+     × returns parsed DeepInfra spend with cents converted to dollars 4ms
+stderr | tests/message-queueing.test.ts > message queueing > should deliver queued messages on resume after turn completes
+[repoos] failed to escalate failed exit for #busy-test: ENOENT: no such file or directory, open '/tmp/work/busy-test-test.md'
+
+stderr | tests/message-queueing.test.ts > message queueing > should deliver queued messages on resume after turn completes
+[repoos] failed to escalate failed exit for #order-test: ENOENT: no such file or directory, open '/tmp/work/order-test-test.md'
+
+ ❯ tests/message-queueing.test.ts (5 tests | 1 failed) 620ms
+     × should deliver queued messages on resume after turn completes 527ms
+ ❯ tests/agent-contract.test.ts (10 tests | 1 failed) 35680ms
+     × reports honest per-seam failures when the harness starts but streams garbage 2834ms
+Switched to a new branch 'feat/current'
+Switched to a new branch 'feat/current'
+Switched to a new branch 'feat/preflight'
+Switched to branch 'main'
+Switched to a new branch 'feat/conflict'
+Switched to branch 'main'
+FAIL  src/a.test.ts > suite > fails
+FAIL  src/a.test.ts > suite > fails
+FAIL  src/a.test.ts > suite > fails
+FAIL  src/a.test.ts > suite > fails
+FAIL  src/b.test.ts > suite > fails
+FAIL  src/c.test.ts > suite > fails
+FAIL  src/d.test.ts > suite > fails
+/var/folders/0r/4_d4rftj7t57174mrzqkhhsw0000gn/T/repoos-0717-GFBox4/candidate.bundle is okay
+Switched to a new branch 'side/wip'
+Switched to branch 'main'
+Automatic merge went well; stopped before committing as requested
+ ❯ tests/adoption-matrix-toolchain.test.ts (14 tests | 1 failed | 3 skipped) 31479ms
+     × test · go test ./... 2205ms
+ ❯ tests/json-events.test.ts (32 tests | 1 failed) 39155ms
+     × flushes a trailing JSON event with no final newline as a structured entry 2536ms
+Preparing worktree (new branch 'other/thing')
+Switched to branch 'feat/other'
+Switched to branch 'main'
