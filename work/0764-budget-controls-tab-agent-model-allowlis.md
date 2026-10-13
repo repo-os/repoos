@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/budget-controls-tab-agent-model-allowlis
 model_override: opencode/big-pickle
 created_at: "2026-10-13T09:20:52Z"
-updated_at: "2026-10-13T09:22:12Z"
+updated_at: "2026-10-13T09:41:04Z"
 ---
 ## Problem
 Agent drivers (AI sessions that operate RepoOS: overriding engineers, starting tasks, restarting stuck runs) have repeatedly picked coding agents and models that are too expensive. Nothing tells a driver which agent+model pairs are acceptable, and nothing stops it. A human driver should keep the full list; an agent driver should be steered to a human-approved subset.
@@ -42,3 +42,4 @@ Agent drivers (AI sessions that operate RepoOS: overriding engineers, starting t
 - 2026-10-13T09:22:09Z · model_override
 - 2026-10-13T09:22:10Z · status inbox→ready
 - 2026-10-13T09:22:12Z · status ready→active, branch
+- 2026-10-13T09:41:04Z · message_queued at 2026-10-13T09:41:04.635Z
