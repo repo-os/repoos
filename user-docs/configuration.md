@@ -456,6 +456,8 @@ uiVerification.viewportWidths = [1024, 375]
 
 Edit both keys in **Settings → General**. Evidence is written under `.repoos/ui-verification/<task-id>.json` and surfaced on the task drawer **Changes** tab; it records the exact captured URL, whether the declared route matched, every assertion's outcome, and the tested tree/plan identity. Each capture also carries **its own** console errors, failed same-origin requests, overflow and blank-capture issues, so the Changes tab can show a green check or red cross per shot: hover, focus or tap the icon for that shot's plain-words verdict and its own issues, while an issue tied to no single shot appears once under the list. The record shape therefore includes a per-capture `issues` array (added in #0753) alongside the handoff-wide `issues` — capture behaviour and gating are unchanged. Captured PNGs live under `work/.attachments/<task-id>/shots/` in the **main checkout** (not the task worktree), which is where a reviewer looks.
 
+A **command capture target** (`[[shot.targets]]`, below) has no browser page or console, so its evidence in the same file is a `commandCaptures` record instead: the target, command, cwd, exit status, stdout/stderr tail and the images it produced (with sizes), plus the same tested-tree identity and plan fingerprint. The handoff gate writes it for command-only tasks exactly as it writes the browser record for web ones, stale-capture detection applies the same way, and the reviewer prompt says browser verification does not apply (the console-error check is `skipped`, never blocking). See [Command capture targets](#command-capture-targets-non-web-apps).
+
 ## Approval policy (opt-in auto Move to done)
 
 ```toml
@@ -733,6 +735,13 @@ command problem never fails a handoff: stdout/stderr is recorded as a
 handoff proceeds. A command that exits non-zero but still wrote images has them
 collected anyway, with a visible warning naming the exit code — so a partial
 failure still produces shots and is always recorded, never silently.
+
+At handoff RepoOS also writes the capture's provenance to
+`.repoos/ui-verification/<task-id>.json` (the same evidence file web captures
+use): the target, command, cwd, exit status, stdout/stderr tail, each image's
+size, and the tested tree identity. A reviewer reads that record and the PNGs
+instead of a browser console — a command-target task is never blocked on a
+console log it cannot produce.
 
 Web preview targets keep working unchanged, and a repo may declare both: a diff
 that touches a web target's paths is shot from the browser, and a diff that

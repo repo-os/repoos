@@ -38,7 +38,13 @@ import type { RepoOSConfig, Task } from "../core/types.js";
 import { runGit, worktreePathForBranch } from "../core/git.js";
 import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
-import { captureEntryPage, planAutoCapture, type ShotCaptureResult } from "./shot-capture.js";
+import {
+  captureCommandEntries,
+  captureEntryPage,
+  planAutoCapture,
+  type CommandCaptureEvidence,
+  type ShotCaptureResult,
+} from "./shot-capture.js";
 import type { PreviewManager } from "./preview.js";
 import { localShotStore, shotsDir, shotUrl, type ShotMeta } from "./shots.js";
 import { withPreviewVerificationSlot } from "./preview-verification-slot.js";
@@ -101,6 +107,14 @@ export interface UiHandoffGateEvidence {
   evidenceDir?: string;
   /** #0734: per-capture detail — URL, assertions, stored PNG path. */
   captureDetails?: UiHandoffGateCapture[];
+  /**
+   * #0765: per-capture provenance for command targets (`[[shot.targets]]`).
+   * A command target has no page and no browser console, so its record carries
+   * the command, cwd, exit status, stdout/stderr tail and the images it
+   * produced instead of a URL/console section. Its presence is how the reviewer
+   * and the mechanical checks know browser verification does not apply.
+   */
+  commandCaptures?: CommandCaptureEvidence[];
   /** Non-blocking shot target warnings across all captures (#0743). */
   warnings?: string[];
   /**
@@ -194,6 +208,40 @@ export function taskNeedsUiHandoffVerification(config: RepoOSConfig, task: Task)
   if (!policy.enabled) return false;
   const plan = planAutoCapture(config, task);
   return !("reason" in plan);
+}
+
+/**
+ * Which kind of UI verification applies to this task (#0765):
+ *   - `browser` — the plan has WEB capture entries: the page gate runs, records
+ *     console errors, and a missing/blocking record is a real gap;
+ *   - `command` — ONLY `[[shot.targets]]` command entries: images are rendered
+ *     by a command, there is no page and no browser console, so the mechanical
+ *     console-error check must be `skipped`, never `not_run`, and the reviewer
+ *     is told not to expect a console log;
+ *   - `none` — no capture plan applies.
+ * A mixed plan is `browser` (web wins, matching capture order).
+ */
+export type UiVerificationMode = "browser" | "command" | "none";
+
+export function taskUiVerificationMode(config: RepoOSConfig, task: Task): UiVerificationMode {
+  const policy = resolvedUiVerification(config);
+  if (!policy.enabled) return "none";
+  const plan = planAutoCapture(config, task);
+  if ("reason" in plan) return "none";
+  const commandTargets = new Set((config.shot?.targets ?? []).map((t) => t.name));
+  let hasWeb = false;
+  let hasCommand = false;
+  for (const entry of plan.entries) {
+    if (commandTargets.has(entry.target)) hasCommand = true;
+    else hasWeb = true;
+  }
+  if (hasWeb) return "browser";
+  return hasCommand ? "command" : "none";
+}
+
+/** True when browser page verification applies — the mechanical console check's trigger. */
+export function taskNeedsBrowserUiVerification(config: RepoOSConfig, task: Task): boolean {
+  return taskUiVerificationMode(config, task) === "browser";
 }
 
 /** A preflight outcome: ok (go ahead), block (fail with detail), or skip. */
@@ -454,39 +502,48 @@ export async function runUiHandoffGate(
     return { ok: true, skipped: true, detail: "ui verification not required for this task" };
   }
 
-  if (!previews && !deps.startPreview) {
-    return {
-      ok: true,
-      skipped: true,
-      detail: "ui verification skipped — no preview manager",
-    };
-  }
-
   const plan = planAutoCapture(config, task);
   if ("reason" in plan) {
     return { ok: true, skipped: true, detail: plan.reason };
   }
 
   const viewports = resolvedUiVerification(config).viewportWidths ?? [1024, 375];
-  // The handoff UI gate drives a browser and checks routes/assertions, so it
-  // only handles WEB entries. A command capture target (#0761) has no route —
-  // its command renders the image, and the shot capture records its evidence
-  // separately (runAutoShotCapture), not through this page gate.
-  const entries = plan.entries.filter(
-    (e): e is CaptureEntry & { route: string } => e.route !== undefined,
+  // #0765: the gate handles BOTH kinds of capture. A web entry (#0734) is driven
+  // in a browser and checked for console errors / routes / assertions; a command
+  // entry (#0761) has no page — its command renders the images, and the gate
+  // records the command's provenance (exit status, stdout/stderr tail, image
+  // sizes) with NO browser console section.
+  const commandTargets = new Set((config.shot?.targets ?? []).map((t) => t.name));
+  const webEntries = plan.entries.filter(
+    (e): e is CaptureEntry & { route: string } =>
+      e.route !== undefined && !commandTargets.has(e.target),
   );
-  if (entries.length === 0) {
-    return { ok: true, skipped: true, detail: "no web capture entries to verify" };
+  const commandEntries = plan.entries.filter((e) => commandTargets.has(e.target));
+  if (webEntries.length === 0 && commandEntries.length === 0) {
+    return { ok: true, skipped: true, detail: "no capture entries to verify" };
+  }
+  // A command capture needs no preview: only require the preview manager when a
+  // web entry will actually be driven.
+  if (webEntries.length > 0 && !previews && !deps.startPreview) {
+    return {
+      ok: true,
+      skipped: true,
+      detail: "ui verification skipped — no preview manager",
+    };
   }
   const allIssues: PageGateIssue[] = [];
   const blankShots: string[] = [];
   const captureDetails: UiHandoffGateCapture[] = [];
+  const commandCaptures: CommandCaptureEvidence[] = [];
   const allWarnings: string[] = [];
   let captured = 0;
 
   // #0734: identity of what is being captured, so a reviewer can tie the
-  // evidence to the tested source/plan rather than trusting a timestamp.
-  const planFingerprint = shotPlanFingerprint(entries);
+  // evidence to the tested source/plan rather than trusting a timestamp. The
+  // fingerprint covers the WHOLE plan (web + command) so a command capture's
+  // evidence is bound to the same plan/tree identity a web capture uses (#0765),
+  // and the automatic capture's reuse rule agrees with it.
+  const planFingerprint = shotPlanFingerprint(plan.entries);
   const sourceWorktree =
     (task.branch ? worktreePathForBranch(config.root, task.branch) : null) ?? config.root;
   let sourceIdentity = deps.sourceIdentity ?? "";
@@ -496,11 +553,19 @@ export async function runUiHandoffGate(
   }
   const evidenceDir = taskEvidenceDir(config, task.id);
 
+  const store = localShotStore(config, task.id);
+  let cleared = false;
+  const ensureCleared = (): void => {
+    if (!cleared) {
+      store.removeAuto();
+      cleared = true;
+    }
+  };
+
   let browser: SmokeBrowser | undefined;
   let context: SmokeContext | undefined;
   let currentTarget: string | undefined;
   let currentUrl = "";
-  let cleared = false;
 
   const captureEntry = deps.captureEntry ?? captureEntryWithGate;
   const startPreview =
@@ -512,6 +577,10 @@ export async function runUiHandoffGate(
 
   try {
     await withPreviewVerificationSlot(task.id, log, async () => {
+      // Command-only tasks reach here too (#0765) but need no browser; the
+      // command capture runs AFTER this slot is released so a slow command
+      // never holds the single preview slot.
+      if (webEntries.length === 0) return;
       if (deps.launchBrowser) {
         const launched = await deps.launchBrowser();
         browser = launched.browser;
@@ -530,7 +599,7 @@ export async function runUiHandoffGate(
         }
       }
 
-      for (const entry of entries) {
+      for (const entry of webEntries) {
         if (entry.target !== currentTarget) {
           const started = await startPreview(entry.target);
           if ("error" in started) {
@@ -635,11 +704,7 @@ export async function runUiHandoffGate(
           blankShots.push(`${entry.target}${entry.route}`);
         }
 
-        const store = localShotStore(config, task.id);
-        if (!cleared) {
-          store.removeAuto();
-          cleared = true;
-        }
+        ensureCleared();
         const stored = store.save({
           origin: "auto",
           target: entry.target,
@@ -701,6 +766,41 @@ export async function runUiHandoffGate(
     if (previews && currentTarget !== undefined) await previews.stop(task.id).catch(() => {});
   }
 
+  // #0765: command targets have no page and no console — run the commands,
+  // store the images, and record provenance (command, cwd, exit status,
+  // stdout/stderr tail, image sizes). A command problem is a visible warning,
+  // never a failed handoff, exactly as in the automatic capture path.
+  if (commandEntries.length > 0) {
+    const batch = captureCommandEntries({
+      config,
+      task,
+      entries: commandEntries,
+      commandRoot: sourceWorktree,
+      planFingerprint,
+      sourceIdentity,
+      store,
+      ensureCleared,
+    });
+    captured += batch.captured;
+    commandCaptures.push(...batch.evidence);
+    if (batch.fatal) {
+      log(task.id, "warn", `ui verification: shots: failed — ${batch.fatal}`);
+    }
+    for (const ev of batch.evidence) {
+      if (ev.status !== "captured") {
+        log(
+          task.id,
+          "warn",
+          `ui verification: shots: ${ev.status} — ${ev.reason ?? "capture failed"}`,
+        );
+        continue;
+      }
+      for (const msg of ev.warnings ?? []) {
+        log(task.id, "warn", `ui verification: shots: ${msg}`);
+      }
+    }
+  }
+
   const path = evidenceFile(config, task.id);
   const evidence: UiHandoffGateEvidence = {
     at: new Date().toISOString(),
@@ -712,6 +812,7 @@ export async function runUiHandoffGate(
     sourceWorktree,
     evidenceDir,
     captureDetails,
+    ...(commandCaptures.length ? { commandCaptures } : {}),
     ...(allWarnings.length ? { warnings: allWarnings } : {}),
   };
   try {
@@ -736,7 +837,13 @@ export async function runUiHandoffGate(
     allWarnings.length > 0
       ? ` (${allWarnings.length} shot warning${allWarnings.length === 1 ? "" : "s"})`
       : "";
-  const shotDetail = `${captured} shot${captured === 1 ? "" : "s"} captured with clean console${warnNote}`;
+  const count = `${captured} shot${captured === 1 ? "" : "s"}`;
+  // A command-only task has no console to be clean (#0765) — say what the
+  // evidence actually is rather than the web phrase.
+  const shotDetail =
+    webEntries.length > 0
+      ? `${count} captured with clean console${warnNote}`
+      : `${count} captured from command target(s) — no browser console${warnNote}`;
   log(task.id, "info", `ui verification: ${shotDetail}`);
 
   return {

@@ -103,6 +103,106 @@ area: web
     expect(applied.verdictOverride).toBe("needs some work");
   });
 
+  it("skips the browser console check for a command-only task (#0765)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-rv-cmd-"));
+    roots.push(root);
+    const worktree = `${root}-wt`;
+    const cache = join(root, ".repoos", "ui-verification");
+    mkdirSync(cache, { recursive: true });
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(
+      join(root, "repoos.toml"),
+      [
+        'workDir = "work"',
+        "[uiVerification]",
+        "enabled = true",
+        "",
+        "[[shot.targets]]",
+        'name = "mac"',
+        'areas = ["mac"]',
+        'command = "true"',
+        "",
+      ].join("\n"),
+    );
+    const taskPath = join(root, "work", "0765.md");
+    writeFileSync(
+      taskPath,
+      `---
+id: "0765"
+title: t
+status: review
+branch: feat/rv-cmd
+area: mac
+---
+## Shots
+\`\`\`json
+[{"target":"mac","label":"Menu bar"}]
+\`\`\`
+`,
+    );
+    // Command-target evidence: no browser console, no web capture details.
+    writeFileSync(
+      join(cache, "0765.json"),
+      JSON.stringify({
+        at: "2026-01-01T00:00:00Z",
+        issues: [],
+        blankShots: [],
+        captures: 1,
+        sourceIdentity: "abc1234",
+        commandCaptures: [
+          {
+            target: "mac",
+            label: "Menu bar",
+            command: "true",
+            cwd: root,
+            status: "captured",
+            exitStatus: 0,
+            shots: [
+              {
+                name: "mac-1.png",
+                size: 10,
+                mime: "image/png",
+                path: "work/.attachments/0765/shots/mac-1.png",
+                url: "/api/tasks/0765/shots/mac-1.png",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    git(root, ["init", "-q"]);
+    git(root, ["config", "user.email", "t@example.com"]);
+    git(root, ["config", "user.name", "Test"]);
+    git(root, ["add", "-A"]);
+    git(root, ["commit", "-qm", "init"]);
+    git(root, ["branch", "-M", "main"]);
+    git(root, ["branch", "feat/rv-cmd"]);
+    git(root, ["worktree", "add", "-q", worktree, "feat/rv-cmd"]);
+
+    const config = loadConfig(root);
+    const task = parseTask({
+      content: readFileSync(taskPath, "utf8"),
+      absPath: taskPath,
+      root,
+      defaultStatus: config.defaultStatus,
+      defaultAssignee: config.defaultAssignee,
+    });
+
+    const verification = gatherReviewVerification(config, task, worktree, "main");
+    // #0765: browser verification does not apply, so the console check is
+    // `skipped` — never `not_run`, which would falsely block approval.
+    expect(verification.consoleErrors.status).toBe("skipped");
+    expect(verification.blocksApproval).toBe(false);
+
+    const applied = applyMechanicalReviewVerification(
+      "## Verdict\n`good to go` — all clear.\n",
+      verification,
+    );
+    expect(applied.verdictOverride).toBeUndefined();
+    expect(applied.markdown).toContain("good to go");
+    expect(applied.markdown).toContain("did not apply to this task");
+  });
+
   it("records not_run when the branch worktree is missing", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-rv-nowt-"));
     roots.push(root);

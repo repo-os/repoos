@@ -255,13 +255,13 @@ describe("ui evidence preflight (#0734)", () => {
   });
 });
 
-describe("reviewMission missing-evidence rule (#0734)", () => {
+describe("reviewMission missing-evidence rule (#0734, #0765)", () => {
   const temps: string[] = [];
   afterEach(() => {
     for (const t of temps.splice(0)) rmSync(t, { recursive: true, force: true });
   });
 
-  it("forbids good-to-go while visual proof is absent and names the evidence path", () => {
+  function mission(options: { uiVerification?: "browser" | "command" | "none" }) {
     const root = mkdtempSync(join(tmpdir(), "repoos-mission-"));
     temps.push(root);
     mkdirSync(join(root, "work"), { recursive: true });
@@ -281,10 +281,40 @@ describe("reviewMission missing-evidence rule (#0734)", () => {
       body: "## Problem\nsomething",
     } as Task;
     const agent = { name: "reviewer", cli: "claude", instructions: "" } as unknown as Agent;
-    const mission = reviewMission(task, agent, join(root, "wt"), "main", config);
-    expect(mission).toMatch(/Do NOT write `good to go` while saying visual proof is/);
-    expect(mission).toContain(join(root, "work/.attachments/0734/shots"));
-    expect(mission).toContain(join(root, ".repoos/ui-verification/0734.json"));
-    expect(mission).toContain("MAIN");
+    return {
+      root,
+      task,
+      text: reviewMission(task, agent, join(root, "wt"), "main", config, options),
+    };
+  }
+
+  it("forbids good-to-go while browser visual proof is absent and names the evidence path", () => {
+    const { root, text } = mission({ uiVerification: "browser" });
+    expect(text).toMatch(/Do NOT write `good to go` while saying visual proof is/);
+    expect(text).toContain(join(root, "work/.attachments/0734/shots"));
+    expect(text).toContain(join(root, ".repoos/ui-verification/0734.json"));
+    expect(text).toContain("MAIN");
+    expect(text).toContain("Browser UI verification applies to this task");
+    expect(text).toContain("console log");
+  });
+
+  it("tells a command-target task browser verification does not apply (#0765)", () => {
+    const { root, text } = mission({ uiVerification: "command" });
+    expect(text).toContain("Browser UI verification does **not** apply to this task");
+    expect(text).toContain("COMMAND targets");
+    expect(text).toContain("There is NO browser page and NO");
+    expect(text).toContain("NOT an evidence gap");
+    // The evidence path is still named so the reviewer can read the record...
+    expect(text).toContain(join(root, ".repoos/ui-verification/0734.json"));
+    // ...but the reviewer is told there is NO browser page or console to block on.
+    expect(text).not.toContain("Browser UI verification applies to this task");
+    expect(text).not.toMatch(/recorded console log looks acceptable/);
+  });
+
+  it("tells a no-capture task not to expect evidence (#0765)", () => {
+    const { text } = mission({ uiVerification: "none" });
+    expect(text).toContain("No UI capture applies to this task");
+    expect(text).toContain("Do not block on a missing browser console record");
+    expect(text).not.toContain("Browser UI verification applies to this task");
   });
 });
