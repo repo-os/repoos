@@ -61,6 +61,10 @@ interface CmdShotOptions {
   waitMs: number;
   viewport: { width: number; height: number };
   fullPage: boolean;
+  /** Extra env for a command capture target (#0769), from repeated `--env KEY=VAL`. */
+  env?: Record<string, string>;
+  /** Per-entry output glob for a command capture target (#0769), from `--glob`. */
+  glob?: string;
   /** Set when an argument is unknown or malformed; cmdShot prints and exits. */
   error?: string;
   /** Set for `-h`/`--help`; cmdShot prints usage and exits 0. */
@@ -114,6 +118,20 @@ export function parseShotArgs(args: string[]): CmdShotOptions {
       const v = value(a);
       if (v === undefined) return opts;
       opts.selector = v;
+    } else if (a === "--env") {
+      const v = value(a);
+      if (v === undefined) return opts;
+      const eq = v.indexOf("=");
+      const key = eq > 0 ? v.slice(0, eq) : "";
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+        opts.error = `--env expects KEY=VALUE with a valid variable name, got "${v}"`;
+        return opts;
+      }
+      opts.env = { ...(opts.env ?? {}), [key]: v.slice(eq + 1) };
+    } else if (a === "--glob") {
+      const v = value(a);
+      if (v === undefined) return opts;
+      opts.glob = v;
     } else if (a === "--task") {
       const v = value(a);
       if (v === undefined) return opts;
@@ -184,6 +202,10 @@ export interface CliShotPlanInput {
   docsContentOnly: ReadonlySet<string>;
   /** Command capture target names (#0761) — no route, run a command instead. */
   commandTargets?: ReadonlySet<string>;
+  /** Extra env for a command capture target (#0769), from `--env KEY=VAL`. */
+  env?: Record<string, string>;
+  /** Per-entry output glob for a command capture target (#0769), from `--glob`. */
+  glob?: string;
 }
 
 /** The plan plus the visible notes `cmdShot` prints alongside it. */
@@ -222,6 +244,8 @@ export function buildCliShotPlan(input: CliShotPlanInput): CliShotPlan {
     ...(input.commandTargets ? { commandTargets: input.commandTargets } : {}),
     route: input.route,
     selector: input.selector,
+    ...(input.env ? { env: input.env } : {}),
+    ...(input.glob ? { glob: input.glob } : {}),
   });
   return {
     entries: built.entries,
@@ -377,7 +401,9 @@ export async function cmdShot(args: string[]): Promise<number> {
   declare a command capture target in repoos.toml as a [[shot.targets]] row —
   a command that renders image files into REPOOS_SHOT_DIR. --target <name>
   selects one, and its images are stored like any other shot; no browser is
-  needed. See user-docs/configuration.md.
+  needed. --env KEY=VALUE and --glob narrow what such a target renders and which
+  produced files are kept (a declared ## Shots entry can carry the same as
+  "env"/"args"/"glob"). See user-docs/configuration.md.
 
   An explicit <route> or --selector replaces the declared list outright, and
   applies to every resolved target: declared entries carry steps, a highlight
@@ -392,6 +418,9 @@ export async function cmdShot(args: string[]): Promise<number> {
   Flags:
     --target <name>    Preview target to capture (overrides path/area resolution)
     --selector <css>   Capture one element instead of the whole page
+    --env KEY=VAL      (command target) pass an env var to the capture command;
+                       repeat per variable, e.g. --env DIVOT_SNAPSHOT_ONLY=worldclock
+    --glob <glob>      (command target) collect only produced files matching this glob
     --task <id>        Task to shoot (defaults to the current worktree's branch)
     --base <ref>       Base branch for changed-path resolution (default "main")
     --wait <ms>        Settle time after load before capturing (default 900)
@@ -402,7 +431,9 @@ export async function cmdShot(args: string[]): Promise<number> {
   if (opts.error) {
     console.error(c.red("  ✗ ") + opts.error);
     console.error(
-      c.dim("    usage: repoos shot [<route|url>] [--target <name>] [--selector <css>]"),
+      c.dim(
+        "    usage: repoos shot [<route|url>] [--target <name>] [--selector <css>] [--env K=V] [--glob <glob>]",
+      ),
     );
     return 1;
   }
@@ -514,6 +545,8 @@ export async function cmdShot(args: string[]): Promise<number> {
       matchedGlobs,
       docsContentOnly,
       commandTargets,
+      ...(opts.env ? { env: opts.env } : {}),
+      ...(opts.glob ? { glob: opts.glob } : {}),
     });
     for (const error of built.declaredErrors) {
       console.error(c.yellow("  · ") + `declared shot list: ${error}`);
@@ -686,7 +719,11 @@ export async function cmdShot(args: string[]): Promise<number> {
         "cmd",
         slugName(entry.target),
       );
-      const outcome = runShotCommand(target, worktreeRoot, outputDir);
+      const outcome = runShotCommand(target, worktreeRoot, outputDir, {
+        ...(entry.env ? { env: entry.env } : {}),
+        ...(entry.args ? { args: entry.args } : {}),
+        ...(entry.glob ? { outputGlob: [entry.glob] } : {}),
+      });
       if (outcome.status !== "captured") {
         console.error(c.yellow("  · ") + `shots: ${outcome.status} — ${outcome.reason}`);
         continue;

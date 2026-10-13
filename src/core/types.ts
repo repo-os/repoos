@@ -1461,7 +1461,21 @@ export interface ShotTargetConfig {
 /** Captured non-web shots, from `repoos.toml`'s `[[shot.targets]]` tables. */
 export interface ShotConfig {
   targets: ShotTargetConfig[];
+  /**
+   * Maximum number of image files an UNDECLARED automatic command capture may
+   * attach per task (#0769). A command target's `outputGlob` may match dozens of
+   * files (a fixed snapshot set), which floods the Changes tab with images that
+   * do not show the change. When a single automatic command capture produces
+   * more than this many files, only the first are kept and the capture records a
+   * visible "N more not shown" note. Declared `## Shots` entries are never
+   * capped — the engineer asked for exactly those images. Defaults to
+   * {@link DEFAULT_MAX_AUTO_SHOTS}.
+   */
+  maxAutoShots?: number;
 }
+
+/** Default per-task cap on an undeclared automatic command capture (#0769). */
+export const DEFAULT_MAX_AUTO_SHOTS = 12;
 
 /**
  * Per-project task-preview configuration (#0362), from `repoos.toml`'s

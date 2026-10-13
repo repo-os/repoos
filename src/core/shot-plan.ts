@@ -96,6 +96,25 @@ export interface DeclaredShot {
    * several; every non-optional one must pass or the handoff is blocked.
    */
   assert?: ShotAssertion[];
+  /**
+   * Command capture targets only (#0769): extra environment variables passed to
+   * the target's command. Keys must be simple identifiers; values are passed
+   * through the environment ONLY — never interpolated into the command string,
+   * so a declared value can never be shell-evaluated. Rejected for web targets.
+   */
+  env?: Record<string, string>;
+  /**
+   * Command capture targets only (#0769): extra argv-ish tokens appended to the
+   * command line as data — each token is shell-quoted, so a declared value is
+   * never interpolated. Rejected for web targets.
+   */
+  args?: string[];
+  /**
+   * Command capture targets only (#0769): a glob narrowing which of the files
+   * the command produced become THIS shot, relative to the output directory
+   * (`REPOOS_SHOT_DIR`). Rejected for web targets.
+   */
+  glob?: string;
 }
 
 export interface ParsedShotPlan {
@@ -135,6 +154,15 @@ export interface CaptureEntry {
    * absent for the server's blind `/` fallback, which asserts nothing.
    */
   assert?: ShotAssertion[];
+  /**
+   * Command capture targets only (#0769): environment passed to the command,
+   * keys simple identifiers, values never shell-interpolated.
+   */
+  env?: Record<string, string>;
+  /** Command capture targets only (#0769): extra shell-quoted tokens for the command line. */
+  args?: string[];
+  /** Command capture targets only (#0769): glob narrowing this shot's produced files. */
+  glob?: string;
   /**
    * Why this shot exists (#0603), recorded in `shots.json` and rendered in the
    * Changes tab: a declared shot captions itself with its label ("declared:
@@ -353,6 +381,47 @@ function parseShot(raw: unknown, where: string): { shot?: DeclaredShot; error?: 
     }
     shot.state = r.state;
   }
+  if (r.env !== undefined) {
+    if (typeof r.env !== "object" || r.env === null || Array.isArray(r.env)) {
+      return { error: `${where}: "env" expects an object of KEY: value pairs` };
+    }
+    const env: Record<string, string> = {};
+    for (const [key, value] of Object.entries(r.env as Record<string, unknown>)) {
+      // The key goes into a process environment map, so restrict it to what a
+      // shell/`execve` accepts as a variable name. Rejecting a key that is not a
+      // simple identifier turns a typo into a visible parse error instead of a
+      // silently dropped variable.
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+        return {
+          error: `${where}: "env" key "${key}" is not a valid environment variable name`,
+        };
+      }
+      if (typeof value !== "string") {
+        return { error: `${where}: "env" value for "${key}" expects a string` };
+      }
+      env[key] = value;
+    }
+    if (Object.keys(env).length) shot.env = env;
+  }
+  if (r.args !== undefined) {
+    if (!Array.isArray(r.args)) {
+      return { error: `${where}: "args" expects an array of strings` };
+    }
+    const args: string[] = [];
+    for (const arg of r.args) {
+      if (typeof arg !== "string") {
+        return { error: `${where}: "args" entries must be strings` };
+      }
+      args.push(arg);
+    }
+    if (args.length) shot.args = args;
+  }
+  if (r.glob !== undefined) {
+    if (typeof r.glob !== "string" || !r.glob) {
+      return { error: `${where}: "glob" expects a non-empty glob string` };
+    }
+    shot.glob = r.glob;
+  }
   return { shot };
 }
 
@@ -449,16 +518,39 @@ export function validateDeclaredShotTargets(
 ): string[] {
   const errors: string[] = [];
   const named = (preview?.targets ?? []).map((t) => t.name).filter(Boolean);
-  const valid = new Set([
-    ...previewTargetNames(preview),
-    ...(shot?.targets ?? []).map((t) => t.name),
-  ]);
+  const commandNames = new Set((shot?.targets ?? []).map((t) => t.name));
+  const valid = new Set([...previewTargetNames(preview), ...commandNames]);
 
   for (let i = 0; i < shots.length; i++) {
     const label = `shot #${i + 1}`;
     const raw = shots[i].target?.trim();
-    if (!raw) continue;
-    if (valid.has(raw)) continue;
+    if (!raw) {
+      // No target names the default web target, so a command-only field has
+      // nothing to run it against. Reject it here rather than silently
+      // dropping it — a declaration the capture ignores is worse than an error.
+      const commandFields = declaredCommandFields(shots[i]);
+      if (commandFields.length) {
+        errors.push(
+          `${label}: ${commandFields.map((f) => `"${f}"`).join("/")} only apply to a command capture target ` +
+            '([[shot.targets]]) — name one with "target", or remove them',
+        );
+      }
+      continue;
+    }
+    if (valid.has(raw)) {
+      // A web target cannot run a command: env/args/glob would be silently
+      // meaningless, so reject them with a message naming the resolve.
+      if (!commandNames.has(raw)) {
+        const commandFields = declaredCommandFields(shots[i]);
+        if (commandFields.length) {
+          errors.push(
+            `${label}: ${commandFields.map((f) => `"${f}"`).join("/")} are for a command capture target ` +
+              `([[shot.targets]]), but "${raw}" is a web preview target`,
+          );
+        }
+      }
+      continue;
+    }
     if (
       raw === DEFAULT_FALLBACK_TARGET &&
       named.length === 1 &&
@@ -471,6 +563,15 @@ export function validateDeclaredShotTargets(
     );
   }
   return errors;
+}
+
+/** Which command-only fields a declared shot carries (#0769), for the web-target rejection. */
+function declaredCommandFields(shot: DeclaredShot): string[] {
+  const fields: string[] = [];
+  if (shot.env && Object.keys(shot.env).length) fields.push("env");
+  if (shot.args?.length) fields.push("args");
+  if (shot.glob) fields.push("glob");
+  return fields;
 }
 
 /**
@@ -538,6 +639,14 @@ export interface CapturePlanOptions {
    * the fallback entries the same way `route` is. Declared entries ignore it.
    */
   selector?: string;
+  /**
+   * Command capture selection an explicit caller request supplies (#0769):
+   * `--env`/`--glob` on `repoos shot`. Applied to the FALLBACK only (an
+   * undeclared capture); a declared entry always keeps its own env/args/glob.
+   * Only ever applied to a command target — a web target has no command.
+   */
+  env?: Record<string, string>;
+  glob?: string;
 }
 
 /** A caller-supplied route normalized for capture (always root-relative). */
@@ -602,6 +711,13 @@ export function buildCapturePlan(
           // #0610: a caller-requested selector narrows the capture just as it
           // does for a declared entry. Never for a command target.
           ...(options.selector && !isCommand(target) ? { selector: options.selector } : {}),
+          // #0769: `--env`/`--glob` on `repoos shot` select what a command
+          // target renders. Only ever a command target — a web target has no
+          // command to pass them to.
+          ...(isCommand(target) && options.env && Object.keys(options.env).length
+            ? { env: options.env }
+            : {}),
+          ...(isCommand(target) && options.glob ? { glob: options.glob } : {}),
           // #0603: the fallback must always set a label — the provenance
           // caption ("auto: matched src/ui-app/**"), not a bare target name.
           label: provenanceCaption(provenance),
@@ -650,6 +766,14 @@ export function buildCapturePlan(
       ...(!isCommand(resolved.target) && shot.steps?.length ? { steps: shot.steps } : {}),
       ...(!isCommand(resolved.target) && shot.assert?.length ? { assert: shot.assert } : {}),
       ...(!isCommand(resolved.target) && shot.state ? { state: shot.state } : {}),
+      // #0769: command-only selection — env/args passed to the command and a
+      // per-entry output glob that narrows which produced files become THIS
+      // shot. Only ever carried for a command target.
+      ...(isCommand(resolved.target) && shot.env && Object.keys(shot.env).length
+        ? { env: shot.env }
+        : {}),
+      ...(isCommand(resolved.target) && shot.args?.length ? { args: shot.args } : {}),
+      ...(isCommand(resolved.target) && shot.glob ? { glob: shot.glob } : {}),
       provenance: { kind: "declared", ...(shot.label ? { label: shot.label } : {}) },
     });
   }
@@ -679,7 +803,7 @@ export function buildCapturePlan(
   // things are NOT near-duplicates, and collapsing them would silently drop one
   // set of assertions.
   const collapseKey = (e: CaptureEntry): string =>
-    `${e.target}\0${e.route}\0${e.selector ?? ""}\0${e.state ?? ""}\0${JSON.stringify(e.steps ?? [])}\0${JSON.stringify(e.assert ?? [])}`;
+    `${e.target}\0${e.route}\0${e.selector ?? ""}\0${e.state ?? ""}\0${JSON.stringify(e.steps ?? [])}\0${JSON.stringify(e.assert ?? [])}\0${JSON.stringify(e.env ?? {})}\0${JSON.stringify(e.args ?? [])}\0${e.glob ?? ""}`;
   const collapsed: string[] = [];
   const deduped: CaptureEntry[] = [];
   for (const entry of entries) {
@@ -767,6 +891,11 @@ export function sameDeclaredShot(a: DeclaredShot, b: DeclaredShot): boolean {
     if ((a[field] ?? undefined) !== (b[field] ?? undefined)) return false;
   }
   if (JSON.stringify(a.steps ?? []) !== JSON.stringify(b.steps ?? [])) return false;
+  // #0769: the command-selection fields are part of a declaration's identity —
+  // two entries that differ only in env/args/glob are DIFFERENT shots.
+  if (JSON.stringify(a.env ?? {}) !== JSON.stringify(b.env ?? {})) return false;
+  if (JSON.stringify(a.args ?? []) !== JSON.stringify(b.args ?? [])) return false;
+  if ((a.glob ?? undefined) !== (b.glob ?? undefined)) return false;
   return JSON.stringify(a.assert ?? []) === JSON.stringify(b.assert ?? []);
 }
 
@@ -790,6 +919,11 @@ export function shotPlanFingerprint(entries: CaptureEntry[]): string {
       highlights: e.highlights ?? (e.highlight ? [e.highlight] : []),
       assert: e.assert ?? [],
       state: e.state ?? null,
+      // #0769: a declared entry's env/args/glob change what the command renders
+      // and which files become the shot, so they bind the plan identity too.
+      env: e.env ?? null,
+      args: e.args ?? [],
+      glob: e.glob ?? null,
     }),
   );
   return parts.join("\n");

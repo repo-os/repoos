@@ -497,6 +497,7 @@ function shotsError(body: string): string | null {
 function shotsSectionContent(
   raw: string,
   preview: ReturnType<typeof loadConfig>["preview"],
+  shot?: ReturnType<typeof loadConfig>["shot"],
 ): string {
   const body = `## Shots\n\n\`\`\`json\n${raw}\n\`\`\``;
   const parsed = parseShotPlan(body);
@@ -505,7 +506,7 @@ function shotsSectionContent(
       `Invalid --shots JSON: ${parsed.errors.join("; ") || "expected at least one shot"}`,
     );
   }
-  const targetErrors = validateDeclaredShotTargets(parsed.shots, preview);
+  const targetErrors = validateDeclaredShotTargets(parsed.shots, preview, shot);
   if (targetErrors.length) {
     throw new Error(`Invalid --shots target: ${targetErrors.join("; ")}`);
   }
@@ -698,7 +699,7 @@ export function cmdUpdate(args: string[]): void {
     try {
       patch.section = {
         heading: "Shots",
-        content: shotsSectionContent(pendingShots, repoos.config.preview),
+        content: shotsSectionContent(pendingShots, repoos.config.preview, repoos.config.shot),
       };
     } catch (error) {
       console.error(c.red(`  ${(error as Error).message}`));
@@ -798,7 +799,11 @@ export function cmdNew(args: string[]): void {
       if (/(?:^|\n)##\s*Shots\b/i.test(body)) {
         throw new Error("--shots cannot be combined with an existing ## Shots section in --body");
       }
-      body = replaceSection(body, "Shots", shotsSectionContent(flags.shots, repoos.config.preview));
+      body = replaceSection(
+        body,
+        "Shots",
+        shotsSectionContent(flags.shots, repoos.config.preview, repoos.config.shot),
+      );
     }
   } catch (error) {
     console.error(c.red(`  ${(error as Error).message}`));
