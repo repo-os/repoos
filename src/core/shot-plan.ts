@@ -1022,20 +1022,28 @@ export function removeDeclaredShots(
 
 /**
  * Whether a parsed declaration should be removed when deleting `shot` (#0778).
- * Hand-added captures store `capturedDeclared`; if the task file was edited
- * after capture (e.g. invalid `state`), equality against that snapshot can fail
- * while label/route/target still identify the same evidence row.
+ * A hand-added capture syncs THE exact entry via `capturedDeclared`
+ * (`sameDeclaredShot`) — a shallow label/route/target fallback here would also
+ * claim twin declarations that merely share those fields but differ in
+ * selector or steps (#0627). The fallback lives only on the raw path below,
+ * where the entry no longer parses (e.g. an invalid `state` edited in after
+ * capture) and label/route/target identity is the best remaining signal.
  */
 export function declarationMatchesDeletedShot(
   entry: DeclaredShot,
   shot: { label?: string; route?: string; target?: string },
   capturedDeclared?: DeclaredShot,
 ): boolean {
-  if (capturedDeclared && sameDeclaredShot(entry, capturedDeclared)) return true;
+  if (capturedDeclared) return sameDeclaredShot(entry, capturedDeclared);
   return declaredShotMatchesShot(entry, shot);
 }
 
-/** Like {@link declarationMatchesDeletedShot} for a raw JSON list item. */
+/**
+ * Like {@link declarationMatchesDeletedShot} for a raw JSON list item — reached
+ * only when `parseShot` rejects the entry, so the shallow fallback cannot claim
+ * a valid twin: it matches an entry validation already refused, by the
+ * label/route/target the capture recorded.
+ */
 export function declarationRawMatchesDeletedShot(
   raw: unknown,
   shot: { label?: string; route?: string; target?: string },
