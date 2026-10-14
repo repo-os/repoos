@@ -176,7 +176,7 @@ import { wireAttentionNotifications } from "./attention-notify.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
 import { computeSlowRunFlags } from "./attention-feed.js";
-import { buildIntegrationSnapshot } from "./integration-status.js";
+import { applyPipelineDetail, buildIntegrationSnapshot } from "./integration-status.js";
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
 import { clearWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
@@ -1556,10 +1556,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           },
           (taskId, detail) => {
             // #0782: the bundle upload is still moving — record the detail so
-            // the card shows it, and emit so the stall timer (which reads
-            // reportedStageAt, refreshed by the re-reported check stage above)
-            // sees a live job instead of a hang.
-            reportedDetail[taskId] = detail;
+            // the card shows it and refresh the stall timer from the same
+            // heartbeat (one SSE emission, no stage churn). A `null` detail
+            // fires when the transfer lands and clears the line, so
+            // "uploading…" never lingers into the remote test run.
+            applyPipelineDetail(reportedDetail, reportedStageAt, taskId, detail);
             emitIntegration();
           },
         );

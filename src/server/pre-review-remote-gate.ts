@@ -203,6 +203,11 @@ export async function runRemotePreReviewGate(params: {
   onUploadProgress?: (info: UploadProgressInfo) => void;
   /** Heartbeat cadence override (tests). */
   uploadProgressIntervalMs?: number;
+  /**
+   * Fired once when the bundle lands (#0782 review) — the caller clears its
+   * in-stage upload detail here. Not fired when the upload fails.
+   */
+  onUploadComplete?: () => void;
 }): Promise<RemotePreReviewOutcome> {
   const rv = params.config.remoteValidation;
   if (!rv?.enabled) return { kind: "skip" };
@@ -234,6 +239,7 @@ export async function runRemotePreReviewGate(params: {
     ...(params.uploadProgressIntervalMs !== undefined
       ? { uploadProgressIntervalMs: params.uploadProgressIntervalMs }
       : {}),
+    ...(params.onUploadComplete ? { onUploadComplete: params.onUploadComplete } : {}),
   });
   if (remote.ok) {
     return { kind: "local-only", skipTests: true };

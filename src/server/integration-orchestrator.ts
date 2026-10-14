@@ -879,10 +879,13 @@ export class CloseOutOrchestrator {
     /**
      * Fired every few seconds while the remote-validation bundle upload is in
      * flight (#0782), with a human-readable detail line ("uploading bundle
-     * 27 MB · 45s"). Appended last so existing positional constructor callers
-     * are unaffected. Observation only — must never disturb the close-out.
+     * 27 MB · 45s"); fired once more with `null` when the transfer finishes
+     * so the card stops saying "uploading" before the test run starts
+     * (#0782 review). Appended last so existing positional constructor
+     * callers are unaffected. Observation only — must never disturb the
+     * close-out.
      */
-    private onUploadProgress?: (taskId: string, detail: string) => void,
+    private onUploadProgress?: (taskId: string, detail: string | null) => void,
   ) {}
 
   /** Discard any in-flight resolution provenance for a task (#0692). */
@@ -2716,16 +2719,25 @@ export class CloseOutOrchestrator {
             ...(deadlineAt !== undefined ? { deadlineAt } : {}),
             // #0782: a slow bundle upload (27 MB over a slow link took 228s)
             // otherwise reports no stage progress for minutes and the card
-            // reads "stalled". Each heartbeat re-reports the check stage so
-            // the stall timer resets, and forwards a detail line so the card
-            // shows the upload moving instead of a hang.
+            // reads "stalled". Each heartbeat forwards a detail line so the
+            // card shows the upload moving instead of a hang; the server
+            // refreshes the stall timer from the same heartbeat (one SSE
+            // emission, no stage churn). A final `null` clears the line the
+            // moment the transfer lands, so it never lingers into the
+            // remote test run (#0782 review).
             onUploadProgress: (info: UploadProgressInfo) => {
-              this.onProgress?.("check");
               try {
                 this.onUploadProgress?.(
                   job.taskId,
                   `uploading bundle ${formatUploadBytes(info.bundleBytes)} · ${info.elapsedSecs}s`,
                 );
+              } catch {
+                /* observation must never break close-out */
+              }
+            },
+            onUploadComplete: () => {
+              try {
+                this.onUploadProgress?.(job.taskId, null);
               } catch {
                 /* observation must never break close-out */
               }

@@ -360,6 +360,11 @@ export interface ValidateOptions {
   onUploadProgress?: (info: UploadProgressInfo) => void;
   /** Heartbeat cadence override (tests); defaults to {@link UPLOAD_PROGRESS_INTERVAL_MS}. */
   uploadProgressIntervalMs?: number;
+  /**
+   * Fired once when the bundle lands (#0782 review) — the caller clears its
+   * in-stage upload detail here. Not fired when the upload fails.
+   */
+  onUploadComplete?: () => void;
 }
 
 /** One host's live state, surfaced by `/api/remote-validation/status` (#0521). */
@@ -2114,6 +2119,13 @@ export async function prepareCandidateUpload(
     onUploadProgress?: (info: UploadProgressInfo) => void;
     /** Heartbeat cadence; defaults to {@link UPLOAD_PROGRESS_INTERVAL_MS}. */
     uploadProgressIntervalMs?: number;
+    /**
+     * Fired once when the bundle lands (#0782 review) — the caller clears its
+     * in-stage upload detail here, so the card stops saying "uploading" the
+     * moment the transfer finishes instead of lingering into the test run.
+     * Not fired when the upload fails.
+     */
+    onUploadComplete?: () => void;
   },
 ): Promise<PreparedUpload> {
   const { host, bundlePath, remoteBundle, worktreePath, candidateSha, mirrorPath, emit } = opts;
@@ -2152,6 +2164,7 @@ export async function prepareCandidateUpload(
       );
       if (up.ok) {
         const uploadSecs = Math.round((Date.now() - uploadStartedAt) / 100) / 10;
+        opts.onUploadComplete?.();
         return {
           ok: true,
           bundlePath,
@@ -2251,6 +2264,7 @@ export async function prepareCandidateUpload(
     );
     if (up.ok) {
       const uploadSecs = Math.round((Date.now() - uploadStartedAt) / 100) / 10;
+      opts.onUploadComplete?.();
       return {
         ok: true,
         bundlePath,
@@ -2661,6 +2675,7 @@ export class RemoteValidationRunner implements RemoteValidator {
           ...(opts.uploadProgressIntervalMs !== undefined
             ? { uploadProgressIntervalMs: opts.uploadProgressIntervalMs }
             : {}),
+          ...(opts.onUploadComplete ? { onUploadComplete: opts.onUploadComplete } : {}),
         });
         if (!preparedUpload.ok) {
           const what =
@@ -4715,6 +4730,7 @@ export class TailscaleRunner implements RemoteValidator {
           ...(opts.uploadProgressIntervalMs !== undefined
             ? { uploadProgressIntervalMs: opts.uploadProgressIntervalMs }
             : {}),
+          ...(opts.onUploadComplete ? { onUploadComplete: opts.onUploadComplete } : {}),
         });
         if (!preparedUpload.ok) {
           const detail =
