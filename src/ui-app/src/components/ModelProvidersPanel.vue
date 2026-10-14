@@ -25,6 +25,8 @@ interface RowState {
   /** ISO timestamp of the last successful usage fetch. */
   fetchedAt: string | null;
   refreshOk: boolean;
+  /** The last complete provider snapshot is being shown after a failed refresh. */
+  stale: boolean;
 }
 
 const repo = useRepoStore();
@@ -39,7 +41,14 @@ const keyErrors = reactive<Record<string, string>>({});
 
 function rowState(id: string): RowState {
   if (!states[id]) {
-    states[id] = { usage: null, loading: false, error: "", fetchedAt: null, refreshOk: false };
+    states[id] = {
+      usage: null,
+      loading: false,
+      error: "",
+      fetchedAt: null,
+      refreshOk: false,
+      stale: false,
+    };
   }
   return states[id];
 }
@@ -70,6 +79,17 @@ async function loadUsage(id: string, opts?: { manual?: boolean }): Promise<void>
   state.error = "";
   try {
     const usage = await api<ModelProviderUsage>(`/api/model-providers/${id}/usage`);
+    const incompleteDeepInfra =
+      usage.kind === "deepinfra" && (usage.checklistError != null || usage.usageError != null);
+    if (incompleteDeepInfra && state.usage?.kind === "deepinfra") {
+      // Keep related DeepInfra billing figures from the same successful
+      // snapshot. Mixing a fresh balance with stale usage recreates the
+      // misleading balance the card is meant to prevent.
+      state.stale = true;
+      state.refreshOk = false;
+      if (manual) repo.pushToast(`${rowLabel(id)} data is stale; refresh failed`, "error");
+      return;
+    }
     state.usage = usage;
     const at =
       usage && typeof usage === "object" && "at" in usage && typeof usage.at === "string"
@@ -77,11 +97,17 @@ async function loadUsage(id: string, opts?: { manual?: boolean }): Promise<void>
         : new Date().toISOString();
     state.fetchedAt = at;
     state.refreshOk = true;
+    // A partial first load (e.g. usage timed out but the balance came back)
+    // shows the fresh half plus its part-error — nothing was kept from an
+    // older snapshot, so there is no stale timeline to attach. Only the
+    // kept-snapshot branch above sets `stale`.
+    state.stale = false;
     if (manual) repo.pushToast(`${rowLabel(id)} balance updated`, "success");
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not load usage.";
     state.error = message;
     state.refreshOk = false;
+    state.stale = state.usage != null;
     if (manual) repo.pushToast(message, "error");
   } finally {
     state.loading = false;
@@ -192,7 +218,7 @@ onMounted(() => {
     <div v-if="loadError" class="mp-error">{{ loadError }}</div>
     <div v-else-if="loading && !rows.length" class="agent-empty">Loading providers…</div>
 
-    <div v-for="row in rows" :key="row.id" class="mp-row">
+    <div v-for="row in rows" :key="row.id" class="mp-row" :data-provider-id="row.id">
       <div class="mp-row-head">
         <div class="mp-row-title">
           <span class="agent-name">{{ row.label }}</span>
@@ -238,7 +264,7 @@ onMounted(() => {
 
         <template v-else>
           <div v-if="rowState(row.id).loading" class="mp-loading">Checking…</div>
-          <div v-else-if="rowState(row.id).error" class="mp-error">
+          <div v-else-if="rowState(row.id).error && !rowState(row.id).usage" class="mp-error">
             {{ rowState(row.id).error }}
             <button class="mp-retry" @click="loadUsage(row.id)">Retry</button>
           </div>
@@ -358,7 +384,7 @@ onMounted(() => {
                 }}
               </div>
               <div class="mp-stat mp-stat-hero">
-                <span class="mp-stat-label">Available credit</span>
+                <span class="mp-stat-label">Prepaid credits</span>
                 <span class="mp-stat-value">{{
                   fmtUsd(deepinfraUsage(rowState(row.id).usage)!.checklist!.availableUsd)
                 }}</span>
@@ -371,7 +397,7 @@ onMounted(() => {
               </div>
               <div class="mp-stat-row">
                 <div class="mp-stat">
-                  <span class="mp-stat-label">Since last invoice</span>
+                  <span class="mp-stat-label">Monthly usage</span>
                   <span class="mp-stat-value sm">{{
                     fmtUsd(deepinfraUsage(rowState(row.id).usage)!.checklist!.recentUsd)
                   }}</span>
@@ -428,6 +454,14 @@ onMounted(() => {
             </div>
           </div>
 
+          <!-- A refresh that failed outright keeps the last snapshot above;
+               surface the failure here so the figures stay the main content,
+               marked Stale in the actions row below. -->
+          <div v-if="rowState(row.id).error && rowState(row.id).usage" class="mp-error">
+            {{ rowState(row.id).error }}
+            <button class="mp-retry" @click="loadUsage(row.id)">Retry</button>
+          </div>
+
           <div
             v-if="row.hasKey && !formOpen[row.id]"
             class="mp-actions"
@@ -438,7 +472,10 @@ onMounted(() => {
               class="mp-as-of"
               :title="rowState(row.id).fetchedAt ?? undefined"
             >
-              As of {{ fmtAsOf(rowState(row.id).fetchedAt) }}
+              <template v-if="rowState(row.id).stale"
+                ><span class="mp-stale">Stale</span> · </template
+              >As of
+              {{ fmtAsOf(rowState(row.id).fetchedAt) }}
             </span>
             <span
               v-if="rowState(row.id).refreshOk && rowState(row.id).fetchedAt"
@@ -665,6 +702,10 @@ onMounted(() => {
   font-size: 11.5px;
   color: var(--txt-dim);
   margin-right: 2px;
+}
+.mp-stale {
+  color: var(--amber);
+  font-weight: 600;
 }
 .mp-refresh-ok {
   display: inline-flex;
