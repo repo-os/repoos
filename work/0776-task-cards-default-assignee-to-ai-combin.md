@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-cards-default-assignee-to-ai-combin
 created_at: "2026-10-14T06:06:09Z"
-updated_at: "2026-10-14T08:00:28Z"
+updated_at: "2026-10-14T08:02:23Z"
 close_out_repair_count: 1
 review_passes: 3
 review_rounds: 2
@@ -95,3 +95,4 @@ This repo has no `site/` tree. The marketing site lives in `landing/` and descri
 - 2026-10-14T07:53:04Z · body
 - 2026-10-14T08:00:28Z · status active→review
 - 2026-10-14T08:00:28Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-14T08:02:23Z · note: review pass 4: good to go
