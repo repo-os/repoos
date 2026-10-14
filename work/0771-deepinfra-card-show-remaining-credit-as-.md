@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 378317
-last_close_out_gate_at: "2026-10-14T02:35:58.200Z"
 id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: 866f0dc4e946f221bdd14816dfd2d3459ff78fab
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/deepinfra-card-show-remaining-credit-as-
@@ -15,7 +14,9 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
-updated_at: "2026-10-14T02:35:58Z"
+updated_at: "2026-10-14T02:36:10Z"
+last_close_out_gate_ms: 378317
+last_close_out_gate_at: "2026-10-14T02:35:58.200Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-14T00:26:38.722Z: repoos check failed: ◆ Check plan"
 review_passes: 10
@@ -222,4 +223,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-14T00:18:49Z · note: review pass 11: good to go
 - 2026-10-14T00:43:44Z · body
 - 2026-10-14T02:35:58Z · close-out gate completed in 378s
-
+- 2026-10-14T02:36:10Z · status review→done, release:success
