@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-14T06:46:48Z"
+review_passes: 1
 id: "0776"
 title: "Task cards: default assignee to AI, combined area chip, compact file-change chip"
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-cards-default-assignee-to-ai-combin
 created_at: "2026-10-14T06:06:09Z"
-updated_at: "2026-10-14T06:46:48Z"
 ---
 ## Problem
 Three things on the task card and defaults are noisy or wrong:
@@ -66,3 +67,4 @@ Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core
 - 2026-10-14T06:45:49Z · status active→review
 - 2026-10-14T06:45:56Z · note: highlight .tc-area-chip, .tc-file-chip matched nothing on /
 - 2026-10-14T06:46:48Z · note: review pass 1: needs some work
+
