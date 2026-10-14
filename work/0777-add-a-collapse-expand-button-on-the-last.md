@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/add-a-collapse-expand-control-to-last-ou
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-14T07:13:06Z"
-updated_at: "2026-10-14T08:26:33Z"
+updated_at: "2026-10-14T08:31:57Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ Add a collapse/expand button on the "Last output" section (on the right side, to
 - 2026-10-14T08:26:29Z · model_override
 - 2026-10-14T08:26:30Z · status inbox→ready
 - 2026-10-14T08:26:33Z · status ready→active, branch
+- 2026-10-14T08:31:57Z · message_queued at 2026-10-14T08:31:57.881Z
