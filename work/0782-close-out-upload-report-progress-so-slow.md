@@ -89,3 +89,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T13:01:12Z · body: section Shots
 - 2026-10-14T13:01:12Z · note: shot removed: auto: matched src/ui-app/**
 - 2026-10-14T13:01:13Z · note: shot removed: Board card showing bundle upload progress (light theme)
+- 2026-10-14T13:01:13Z · note: shot removed: Board card showing bundle upload progress (dark theme)
