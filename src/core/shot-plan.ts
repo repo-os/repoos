@@ -25,11 +25,7 @@
  * tests can share it without touching git, a server or Playwright.
  */
 import type { PreviewConfig, ShotConfig } from "./types.js";
-import {
-  SHOT_PREVIEW_FIXTURE_IDS,
-  isShotPreviewFixtureId,
-  createFixtureValidator,
-} from "./shot-fixtures.js";
+import { SHOT_PREVIEW_FIXTURE_IDS, isShotPreviewFixtureId } from "./shot-fixtures.js";
 import { DEFAULT_PREVIEW_TARGET as DEFAULT_FALLBACK_TARGET } from "./shot-targets.js";
 
 /** One ordered step within a declared shot. Exactly one key per object. */

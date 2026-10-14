@@ -63,6 +63,18 @@ export function createFixtureValidator(fixtureIds: readonly string[]): (value: s
   return (value: string): boolean => set.has(value);
 }
 
+/** Read branch fixtures and return a validator, or undefined if unavailable (#0786). */
+export function readBranchFixtureValidator(
+  readFile: (path: string) => string | null,
+  worktreePath: string | null,
+): ((id: string) => boolean) | undefined {
+  if (!worktreePath) return undefined;
+  const content = readFile(`${worktreePath}/src/core/shot-fixtures.ts`);
+  if (!content) return undefined;
+  const fixtures = extractFixturesFromSource(content);
+  return fixtures.length > 0 ? createFixtureValidator(fixtures) : undefined;
+}
+
 /** Build the full page URL for one capture entry (origin + route + optional fixture query). */
 export function shotCapturePageUrl(
   previewOrigin: string,

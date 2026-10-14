@@ -6,8 +6,7 @@
  * of truth: the main checkout's. Never call createRepoOS() directly from a
  * board command (see boardRepoOS()'s own comment for why).
  */
-import { readFileSync } from "node:fs";
-import { existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { createRepoOS } from "../core/repoos.js";
 import { boardRoot, loadConfig, resolveColumnLabels } from "../core/config.js";
@@ -22,7 +21,7 @@ import {
   parseShotPlan,
   validateDeclaredShotTargets,
 } from "../core/shot-plan.js";
-import { extractFixturesFromSource, createFixtureValidator } from "../core/shot-fixtures.js";
+import { readBranchFixtureValidator } from "../core/shot-fixtures.js";
 import { deleteTaskFile, PathGuardError, WriteError } from "../server/write.js";
 import { resolveCliCreator } from "../core/record-creator.js";
 import { normalizeSectionHeading, replaceSection } from "../core/task.js";
@@ -508,22 +507,6 @@ function screenshotFlagError(screenshots: string[], caption: string | undefined)
   return null;
 }
 
-/** Read fixture ids from the task's branch, if available (#0786). */
-function readBranchFixtures(root: string, task: Task): string[] | undefined {
-  if (!task.branch) return undefined;
-  const worktreeDir = worktreePathForBranch(root, task.branch);
-  if (!worktreeDir) return undefined;
-  const fixturesPath = `${worktreeDir}/src/core/shot-fixtures.ts`;
-  if (!existsSync(fixturesPath)) return undefined;
-  try {
-    const content = readFileSync(fixturesPath, "utf8");
-    const fixtures = extractFixturesFromSource(content);
-    return fixtures.length > 0 ? fixtures : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 /** Accept raw JSON and write the exact fenced format the capture parser reads. */
 function shotsSectionContent(
   raw: string,
@@ -535,10 +518,17 @@ function shotsSectionContent(
   const body = `## Shots\n\n\`\`\`json\n${raw}\n\`\`\``;
   let fixtureValidator: ((id: string) => boolean) | undefined;
   if (task && root) {
-    const branchFixtures = readBranchFixtures(root, task);
-    if (branchFixtures) {
-      fixtureValidator = createFixtureValidator(branchFixtures);
-    }
+    const worktreeDir = task.branch ? worktreePathForBranch(root, task.branch) : null;
+    fixtureValidator = readBranchFixtureValidator(
+      (path: string) => {
+        try {
+          return existsSync(path) ? readFileSync(path, "utf8") : null;
+        } catch {
+          return null;
+        }
+      },
+      worktreeDir,
+    );
   }
   const parsed = parseShotPlan(body, fixtureValidator ? { fixtureValidator } : undefined);
   if (parsed.errors.length) {
