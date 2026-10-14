@@ -309,4 +309,28 @@ describe("removeDeclarationsForDeletedShot (#0778 review round 3)", () => {
     expect(removed).toBe(1);
     expect(keptEntries(content)).toEqual([other]);
   });
+
+  it("leaves a VALID re-stated entry behind when only its state was edited (#0778 review)", () => {
+    // Post-capture, the user corrected a declaration's state fixture to
+    // another VALID one and then deleted that capture. The stored declaration
+    // is the state the capture ran WITH, so the edited entry is structurally
+    // not the shot that was removed — and it cannot be attributed safely: a
+    // twin that differs only in state is a declaration for a DIFFERENT
+    // capture, and dropping it would delete the wrong entry. The conservative
+    // call is to keep the stale declaration: its image delete still succeeds,
+    // the kept entry is valid so it just re-captures (its NEW state) on the
+    // next handoff, and the user trims it by hand. Locked here so the intent
+    // is explicit, not accidental — unlike the invalid-state case above, raw
+    // closeness never runs for an entry that still parses.
+    const captured = { ...ref, selector: ".a", state: "closeOut:active" };
+    const restated = { ...captured, state: "card:doneError" };
+    const { content, removed, errors } = removeDeclarationsForDeletedShot(
+      listBody([restated]),
+      ref,
+      captured,
+    );
+    expect(errors).toEqual([]);
+    expect(removed).toBe(0);
+    expect(keptEntries(content)).toEqual([restated]);
+  });
 });
