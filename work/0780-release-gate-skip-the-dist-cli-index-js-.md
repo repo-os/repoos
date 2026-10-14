@@ -2,7 +2,7 @@
 id: "0780"
 title: "Release gate: skip the dist/cli/index.js check for projects without a bin target"
 type: bug
-status: active
+status: review
 priority: p0
 area: core
 assigned_to: ai
@@ -45,4 +45,4 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 - 2026-10-14T08:26:37Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-14T08:31:17Z · body
 - 2026-10-14T08:32:10Z · body
-- 2026-10-14T08:42:40Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-14T08:42:40Z · status active→review
