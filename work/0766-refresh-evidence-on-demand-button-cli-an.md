@@ -3,6 +3,9 @@ id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the opencode agent timed out after 900s
 priority: p2
 area: [core, server, cli, ui]
 assigned_to: ai
@@ -273,3 +276,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-14T04:51:05Z · body
 - 2026-10-14T04:52:39Z · status active→review
 - 2026-10-14T05:07:41Z · note: review pass 26: failed — no usable report
+- 2026-10-14T05:07:41Z · needs_input
