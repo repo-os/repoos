@@ -46,7 +46,7 @@ Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core
 "highlight": ".tc-area-chip, .tc-file-chip",
 "steps": [
 {
-  "waitFor": ".tc-file-chip"
+"waitFor": ".tc-file-chip"
 }
 ],
 "state": "board:cardChips"
