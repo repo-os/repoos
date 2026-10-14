@@ -2,7 +2,7 @@
 id: "0778"
 title: "Easter eggs bundle: Shots validator and review card wording"
 type: bug
-status: review
+status: active
 priority: p3
 area: [web, server]
 assigned_to: ai
