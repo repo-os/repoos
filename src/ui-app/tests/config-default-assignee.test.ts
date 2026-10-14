@@ -2,12 +2,15 @@
  * 0776: new tasks default to the AI assignee, so a fresh board card does not
  * carry the noisy `· open` chip. Existing tasks are untouched — the default
  * only applies when a task is created without an explicit assignee.
+ *
+ * Lives under `src/ui-app/tests/` (the configured suite root, like
+ * `config-docs.test.ts`) even though it exercises a core module.
  */
 import { describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_CONFIG, getConfigSchema, loadConfig } from "./config.js";
+import { DEFAULT_CONFIG, getConfigSchema, loadConfig } from "../../core/config.js";
 
 describe("default assignee (#0776)", () => {
   it("defaults new tasks to AI", () => {
