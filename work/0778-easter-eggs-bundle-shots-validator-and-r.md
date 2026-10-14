@@ -3,16 +3,13 @@ id: "0778"
 title: "Easter eggs bundle: Shots validator and review card wording"
 type: bug
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX"
 priority: p3
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T07:43:20Z"
+updated_at: "2026-10-14T08:04:32Z"
 ---
 ## Problem
 Two small bugs found on 2026-10-14. Both are cosmetic or validation-only, so they are bundled.
@@ -38,3 +35,4 @@ Source: user report 2026-10-14 on #0776 (shot delete error) and the Waiting-for-
 - 2026-10-14T07:43:09Z · created · njachowski@gmail.com
 - 2026-10-14T07:43:10Z · needs_input
 - 2026-10-14T07:43:20Z · body
+- 2026-10-14T08:04:32Z · needs_input
