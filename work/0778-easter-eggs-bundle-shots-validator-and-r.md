@@ -2,7 +2,7 @@
 id: "0778"
 title: "Easter eggs bundle: Shots validator and review card wording"
 type: bug
-status: active
+status: review
 priority: p3
 area: [web, server]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T08:39:12Z"
+updated_at: "2026-10-14T08:45:08Z"
 ---
 ## Problem
 Small cosmetic and validation bugs found on 2026-10-14. They are bundled because each is small and independent.
@@ -43,17 +43,17 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 ```json
 [
 {
-  "label": "Context doc Open in editor link",
-  "target": "default",
-  "route": "/repo?doc=docs/README.md",
-  "highlight": ".doc-view-head .page-help-link"
+"label": "Context doc Open in editor link",
+"target": "default",
+"route": "/repo?doc=docs/README.md",
+"highlight": ".doc-view-head .page-help-link"
 },
 {
-  "label": "Changes tab shot toolbar alignment",
-  "target": "default",
-  "route": "/work?task=0778&tab=changes",
-  "highlight": ".changes-summary-actions",
-  "state": "board:withReviewTask"
+"label": "Changes tab shot toolbar alignment",
+"target": "default",
+"route": "/work?task=0778&tab=changes",
+"highlight": ".changes-summary-actions",
+"state": "board:withReviewTask"
 }
 ]
 ```
@@ -75,3 +75,4 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 - 2026-10-14T08:37:39Z · body
 - 2026-10-14T08:38:30Z · body
 - 2026-10-14T08:39:12Z · body: section Shots
+- 2026-10-14T08:45:08Z · status active→review
