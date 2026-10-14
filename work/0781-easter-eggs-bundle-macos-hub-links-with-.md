@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-14T09:33:45.789Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 id: "0781"
 title: "Easter eggs bundle: macOS Hub links with target=_blank to https sites do nothing"
 type: bug
@@ -39,3 +41,4 @@ Start from ServerNavigationPolicy.decide() and the 0d18a91c2 fix ('open loopback
 - 2026-10-14T09:14:05Z · status inbox→ready
 - 2026-10-14T09:14:06Z · status ready→active, branch
 - 2026-10-14T09:16:41Z · body
+
