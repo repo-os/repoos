@@ -1040,7 +1040,15 @@ export function sameDeclaredShotRaw(raw: unknown, declared: DeclaredShot): boole
   if (parsed.shot) return sameDeclaredShot(parsed.shot, declared);
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return false;
   const entry = raw as Record<string, unknown>;
-  for (const field of ["label", "target", "route", "selector", "highlight", "state", "glob"] as const) {
+  for (const field of [
+    "label",
+    "target",
+    "route",
+    "selector",
+    "highlight",
+    "state",
+    "glob",
+  ] as const) {
     if ((entry[field] ?? undefined) !== (declared[field] ?? undefined)) return false;
   }
   if (JSON.stringify(entry.steps ?? []) !== JSON.stringify(declared.steps ?? [])) return false;
