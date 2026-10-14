@@ -514,10 +514,11 @@ function shotsSectionContent(
 ): string {
   const body = `## Shots\n\n\`\`\`json\n${raw}\n\`\`\``;
   const parsed = parseShotPlan(body);
-  if (parsed.errors.length || parsed.shots.length === 0) {
-    throw new Error(
-      `Invalid --shots JSON: ${parsed.errors.join("; ") || "expected at least one shot"}`,
-    );
+  if (parsed.errors.length) {
+    throw new Error(`Invalid --shots JSON: ${parsed.errors.join("; ")}`);
+  }
+  if (parsed.shots.length === 0) {
+    return declaredShotsSectionContent([]);
   }
   const targetErrors = validateDeclaredShotTargets(parsed.shots, preview, shot);
   if (targetErrors.length) {

@@ -146,4 +146,25 @@ describe("critical task status placement in the drawer (#0456)", () => {
       expect(wrapper.find(".drawer-critical .agent-waiting").exists()).toBe(true);
     }
   });
+
+  it("shows review-rounds-exhausted reason once when detail repeats the banner (#0778)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    const bannerLine =
+      "The reviewer has sent this back to the engineer 2 times and still found issues. No review is running now.";
+    const task = makeTask({
+      status: "review",
+      needsInput: true,
+      needsInputReason: "review-rounds-exhausted",
+      needsInputDetail: bannerLine,
+    });
+    stubApi(task);
+
+    const wrapper = await mountDrawer(pinia, task);
+    const banner = wrapper.find(".drawer-critical .agent-waiting");
+    expect(banner.find(".agent-waiting-sub").text()).toContain("sent this back");
+    expect(banner.find(".agent-waiting-detail").exists()).toBe(false);
+    expect((banner.text().match(/sent this back/g) ?? []).length).toBe(1);
+  });
 });

@@ -5430,6 +5430,12 @@
   justify-content: space-between;
   gap: 10px;
 }
+.changes-summary-title.changes-summary-head .changes-summary-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
 .diff-stats {
   display: flex;
   align-items: center;

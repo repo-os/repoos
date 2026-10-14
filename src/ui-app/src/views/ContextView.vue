@@ -3,6 +3,8 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { useDocsStore } from "../stores/docs";
+import { useConfigStore } from "../stores/config";
+import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { renderMarkdown } from "../lib/markdown";
 import { renderMermaidDiagrams } from "../lib/mermaid";
@@ -18,6 +20,8 @@ import { countDocRefresh, formatDocRefreshMessage } from "../docs-refresh";
 import { RotateCcw, ChevronDown, ChevronRight, File } from "lucide-vue-next";
 
 const docs = useDocsStore();
+const config = useConfigStore();
+const repo = useRepoStore();
 const ui = useUiStore();
 const route = useRoute();
 const router = useRouter();
@@ -162,6 +166,27 @@ const isMarkdown = (path: string | null): boolean => !!path && /\.md$/i.test(pat
 
 const docHtml = computed(() => renderMarkdown(docContent.value));
 const skillHtml = computed(() => renderMarkdown(skillContent.value));
+
+const editorConfigured = computed(() => {
+  const inspector = (
+    config.data?.dev as { inspector?: { enabled?: boolean; editorCommand?: string } } | undefined
+  )?.inspector;
+  if (inspector?.enabled === false) return false;
+  const cmd = inspector?.editorCommand;
+  return repo.health?.copyInspectorAvailable === true && typeof cmd === "string" && !!cmd.trim();
+});
+
+const openInEditorLabel = "Open this document in your configured editor";
+
+async function openDocInEditor(): Promise<void> {
+  const path = selDoc.value;
+  if (!path || !editorConfigured.value) return;
+  try {
+    await api("/api/dev/open-in-editor", JSON_OPTS("POST", { file: path }));
+  } catch (error) {
+    repo.pushToast(error instanceof Error ? error.message : "Could not open editor", "error");
+  }
+}
 
 async function renderCurrentDiagrams(): Promise<void> {
   await nextTick();
@@ -425,8 +450,22 @@ watch(
       <Card class="doc-view">
         <template v-if="tab === 'docs'">
           <div v-if="docContent">
-            <div class="doc-title">{{ docTitle }}</div>
-            <div class="doc-path">{{ selDoc }}</div>
+            <div class="spec-head doc-view-head">
+              <div>
+                <div class="doc-title">{{ docTitle }}</div>
+                <div class="doc-path">{{ selDoc }}</div>
+              </div>
+              <button
+                v-if="editorConfigured"
+                type="button"
+                class="page-help-link"
+                data-test-id="context-open-in-editor"
+                :aria-label="openInEditorLabel"
+                @click="openDocInEditor"
+              >
+                Open in editor ↗
+              </button>
+            </div>
             <div
               ref="markdownRoot"
               v-if="isMarkdown(selDoc)"

@@ -832,7 +832,38 @@ export function buildCapturePlan(
  * same bytes.
  */
 export function declaredShotsSectionContent(shots: DeclaredShot[]): string {
-  return `\`\`\`json\n${JSON.stringify(shots, null, 2)}\n\`\`\``;
+  return declaredShotsSectionContentFromItems(shots);
+}
+
+/** Fenced JSON for a `## Shots` list that may include invalid entries kept as raw objects. */
+export function declaredShotsSectionContentFromItems(items: unknown[]): string {
+  return `\`\`\`json\n${JSON.stringify(items, null, 2)}\n\`\`\``;
+}
+
+/**
+ * The raw JSON array inside a task's `## Shots` section. Structural problems
+ * (missing fence, invalid JSON) are reported in `errors`; per-entry validation
+ * errors are ignored so callers can edit the list without fixing unrelated entries.
+ */
+export function listShotsSectionItems(body: string): { items: unknown[] | null; errors: string[] } {
+  const section = shotsSection(body ?? "");
+  if (section === null) return { items: null, errors: [] };
+  const hasContent = /\S/.test(section);
+  if (!hasContent) return { items: [], errors: [] };
+  const block = firstFencedBlock(section);
+  if (block === null) {
+    return { items: null, errors: ["## Shots section has no fenced JSON list"] };
+  }
+  try {
+    const raw = JSON.parse(block) as unknown;
+    const items = Array.isArray(raw) ? raw : [raw];
+    return { items, errors: [] };
+  } catch (error) {
+    return {
+      items: null,
+      errors: [`## Shots JSON does not parse: ${(error as Error).message}`],
+    };
+  }
 }
 
 /**
@@ -951,18 +982,70 @@ export function describeShotAssertion(assertion: ShotAssertion): string {
 export function removeDeclaredShots(
   body: string,
   match: (shot: DeclaredShot) => boolean,
+  matchRaw?: (raw: unknown) => boolean,
 ): { content: string; removed: number; errors: string[] } {
-  const parsed = parseShotPlan(body ?? "");
-  if (parsed.errors.length > 0) {
-    return { content: "", removed: 0, errors: parsed.errors };
+  const listed = listShotsSectionItems(body ?? "");
+  if (listed.errors.length > 0) {
+    return { content: "", removed: 0, errors: listed.errors };
   }
-  const kept = parsed.shots.filter((s) => !match(s));
-  if (kept.length === parsed.shots.length) {
+  if (listed.items === null) {
+    return { content: "", removed: 0, errors: [] };
+  }
+  const kept: unknown[] = [];
+  let removed = 0;
+  for (let i = 0; i < listed.items.length; i++) {
+    const raw = listed.items[i];
+    const parsed = parseShot(raw, `shot #${i + 1}`);
+    if (parsed.shot) {
+      if (match(parsed.shot)) {
+        removed++;
+        continue;
+      }
+      kept.push(parsed.shot);
+      continue;
+    }
+    if (matchRaw?.(raw)) {
+      removed++;
+      continue;
+    }
+    kept.push(raw);
+  }
+  if (removed === 0) {
     return { content: "", removed: 0, errors: [] };
   }
   return {
-    content: declaredShotsSectionContent(kept),
-    removed: parsed.shots.length - kept.length,
+    content: declaredShotsSectionContentFromItems(kept),
+    removed,
     errors: [],
   };
+}
+
+/** Match a raw JSON entry to a captured shot when `parseShot` rejects the entry. */
+export function declaredShotMatchesShotRaw(
+  raw: unknown,
+  shot: { label?: string; route?: string; target?: string },
+): boolean {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return false;
+  const entry = raw as Record<string, unknown>;
+  const declared: DeclaredShot = {};
+  for (const key of ["label", "target", "route"] as const) {
+    if (typeof entry[key] === "string" && entry[key]) declared[key] = entry[key];
+  }
+  return declaredShotMatchesShot(declared, shot);
+}
+
+/** Structural equality on a raw entry for delete sync when validation failed (#0778). */
+export function sameDeclaredShotRaw(raw: unknown, declared: DeclaredShot): boolean {
+  const parsed = parseShot(raw, "entry");
+  if (parsed.shot) return sameDeclaredShot(parsed.shot, declared);
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return false;
+  const entry = raw as Record<string, unknown>;
+  for (const field of ["label", "target", "route", "selector", "highlight", "state", "glob"] as const) {
+    if ((entry[field] ?? undefined) !== (declared[field] ?? undefined)) return false;
+  }
+  if (JSON.stringify(entry.steps ?? []) !== JSON.stringify(declared.steps ?? [])) return false;
+  if (JSON.stringify(entry.env ?? {}) !== JSON.stringify(declared.env ?? {})) return false;
+  if (JSON.stringify(entry.args ?? []) !== JSON.stringify(declared.args ?? [])) return false;
+  if (JSON.stringify(entry.assert ?? []) !== JSON.stringify(declared.assert ?? [])) return false;
+  return true;
 }
