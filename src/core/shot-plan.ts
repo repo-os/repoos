@@ -1025,9 +1025,8 @@ export function removeDeclaredShots(
  * A hand-added capture syncs THE exact entry via `capturedDeclared`
  * (`sameDeclaredShot`) — a shallow label/route/target fallback here would also
  * claim twin declarations that merely share those fields but differ in
- * selector or steps (#0627). The fallback lives only on the raw path below,
- * where the entry no longer parses (e.g. an invalid `state` edited in after
- * capture) and label/route/target identity is the best remaining signal.
+ * selector or steps (#0627). The shallow matcher applies only to legacy/auto
+ * shots with no recorded declaration.
  */
 export function declarationMatchesDeletedShot(
   entry: DeclaredShot,
@@ -1040,16 +1039,19 @@ export function declarationMatchesDeletedShot(
 
 /**
  * Like {@link declarationMatchesDeletedShot} for a raw JSON list item — reached
- * only when `parseShot` rejects the entry, so the shallow fallback cannot claim
- * a valid twin: it matches an entry validation already refused, by the
- * label/route/target the capture recorded.
+ * only when `parseShot` rejects the entry. When the capture recorded its own
+ * declaration (`capturedDeclared`), only structural equality removes the entry:
+ * falling back to the shallow label/route/target matcher would also claim twin
+ * declarations that merely share those fields but differ in selector or steps.
+ * Without a recorded declaration (legacy/auto shots) the shallow matcher is
+ * the only signal available.
  */
 export function declarationRawMatchesDeletedShot(
   raw: unknown,
   shot: { label?: string; route?: string; target?: string },
   capturedDeclared?: DeclaredShot,
 ): boolean {
-  if (capturedDeclared && sameDeclaredShotRaw(raw, capturedDeclared)) return true;
+  if (capturedDeclared) return sameDeclaredShotRaw(raw, capturedDeclared);
   return declaredShotMatchesShotRaw(raw, shot);
 }
 
@@ -1067,7 +1069,12 @@ export function declaredShotMatchesShotRaw(
   return declaredShotMatchesShot(declared, shot);
 }
 
-/** Structural equality on a raw entry for delete sync when validation failed (#0778). */
+/** Structural equality on a raw entry for delete sync when validation failed (#0778).
+ * Mirrors {@link sameDeclaredShot}'s identity (which ignores `state`): the
+ * common invalid-entry case is a `state` fixture edited in after capture, so
+ * requiring `state` equality would never match the entry being deleted. Twins
+ * differing in selector, steps, or any other identity field still do not match,
+ * so only the selected entry is removed. */
 export function sameDeclaredShotRaw(raw: unknown, declared: DeclaredShot): boolean {
   const parsed = parseShot(raw, "entry");
   if (parsed.shot) return sameDeclaredShot(parsed.shot, declared);
@@ -1079,7 +1086,6 @@ export function sameDeclaredShotRaw(raw: unknown, declared: DeclaredShot): boole
     "route",
     "selector",
     "highlight",
-    "state",
     "glob",
   ] as const) {
     if ((entry[field] ?? undefined) !== (declared[field] ?? undefined)) return false;

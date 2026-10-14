@@ -8,6 +8,8 @@
 import { describe, expect, it } from "vitest";
 import {
   appendDeclaredShot,
+  declarationMatchesDeletedShot,
+  declarationRawMatchesDeletedShot,
   declaredShotMatchesShot,
   declaredShotsSectionContent,
   parseShotEntry,
@@ -135,6 +137,30 @@ describe("removeDeclaredShots", () => {
     const parsed = JSON.parse(content!.match(/```json\n([\s\S]*?)\n```/)![1]!) as unknown[];
     expect(parsed).toHaveLength(1);
     expect(parsed[0]).toMatchObject({ state: "board:notARealFixture" });
+  });
+
+  it("removes only the selected entry when twin invalid entries share label/route/target (#0778 review)", () => {
+    // Two entries that no longer parse (unknown state) and share every shallow
+    // field but differ in selector: deleting the captured shot must remove
+    // exactly its own declaration, not both twins.
+    const capturedDeclared = { target: "default", route: "/", label: "Board", selector: ".a" };
+    const twin = `## Shots\n\n${FENCED(
+      JSON.stringify([
+        { target: "default", route: "/", label: "Board", selector: ".a", state: "board:nope" },
+        { target: "default", route: "/", label: "Board", selector: ".b", state: "board:nope" },
+      ]),
+    )}`;
+    const shotRef = { label: "Board", route: "/", target: "default" };
+    const { content, removed, errors } = removeDeclaredShots(
+      twin,
+      (s) => declarationMatchesDeletedShot(s, shotRef, capturedDeclared),
+      (raw) => declarationRawMatchesDeletedShot(raw, shotRef, capturedDeclared),
+    );
+    expect(errors).toEqual([]);
+    expect(removed).toBe(1);
+    const parsed = JSON.parse(content!.match(/```json\n([\s\S]*?)\n```/)![1]!) as unknown[];
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0]).toMatchObject({ selector: ".b" });
   });
 });
 
