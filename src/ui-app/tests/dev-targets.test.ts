@@ -16,6 +16,7 @@ import { loadConfig, parseDevTargets } from "../../core/config";
 import { DevTargetManager, DEV_LOG_MAX_LINES } from "../../server/dev";
 import type { RouteContext } from "../../server/routes/types";
 import {
+  explainDevFailure,
   getDevTarget,
   getDevTargets,
   restartDevTarget,
@@ -741,6 +742,25 @@ describe("dev target routes", () => {
     const { res, fake } = makeRes();
     await getDevTargets(makeCtx(undefined), req, res, {});
     expect(fake.status).toBe(503);
+  });
+
+  it("403s the AI explanation when the setting is off (#0775)", async () => {
+    const mgr = new DevTargetManager(baseConfig({ targets: [target({})] }));
+    const ctx = { devTargets: mgr, config: baseConfig({ targets: [] }) } as unknown as RouteContext;
+    const { res, fake } = makeRes();
+    await explainDevFailure(ctx, req, res, { param1: "web" });
+    expect(fake.status).toBe(403);
+  });
+
+  it("400s the AI explanation for a target that is not failed (#0775)", async () => {
+    const mgr = new DevTargetManager(baseConfig({ targets: [target({})] }));
+    const ctx = {
+      devTargets: mgr,
+      config: baseConfig({ targets: [target({})], failureSummary: { ai: true } }),
+    } as unknown as RouteContext;
+    const { res, fake } = makeRes();
+    await explainDevFailure(ctx, req, res, { param1: "web" });
+    expect(fake.status).toBe(400);
   });
 
   it("starts, then stops, a target through the routes", async () => {
