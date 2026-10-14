@@ -142,10 +142,11 @@ describe("storage provider registry", () => {
     const store = createStorageProvider("/tmp/base", "fake-cloud");
     expect(store.id).toBe("fake-cloud");
     expect(calls).toEqual(["/tmp/base"]);
-    expect(listStorageProviderIds()).toEqual(["local", "fake-cloud"]);
+    // `neon` is registered by #0660, so it appears alongside the built-ins.
+    expect(listStorageProviderIds()).toEqual(["local", "fake-cloud", "neon"]);
     // Clean up so the shared module registry is not polluted for other tests.
     unregisterStorageProvider("fake-cloud");
-    expect(listStorageProviderIds()).toEqual(["local"]);
+    expect(listStorageProviderIds()).toEqual(["local", "neon"]);
   });
 });
 
