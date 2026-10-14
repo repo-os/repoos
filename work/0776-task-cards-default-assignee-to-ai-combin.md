@@ -1,5 +1,4 @@
 ---
-close_out_repair_count: 1
 id: "0776"
 title: "Task cards: default assignee to AI, combined area chip, compact file-change chip"
 type: feature
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-cards-default-assignee-to-ai-combin
 created_at: "2026-10-14T06:06:09Z"
-updated_at: "2026-10-14T07:50:25Z"
+updated_at: "2026-10-14T07:53:04Z"
+close_out_repair_count: 1
 review_passes: 3
 review_rounds: 2
 ---
@@ -92,4 +92,4 @@ This repo has no `site/` tree. The marketing site lives in `landing/` and descri
 - 2026-10-14T07:49:25Z · note: shot added: default/work
 - 2026-10-14T07:50:25Z · status review→active, needs_input
 - 2026-10-14T07:50:25Z · note: close-out repair: merge-conflict
-
+- 2026-10-14T07:53:04Z · body
