@@ -6,6 +6,7 @@ export type SettingsTabId =
   | "notifications"
   | "security"
   | "advanced"
+  | "import-export"
   | "support"
   | "toml";
 
@@ -14,6 +15,7 @@ export const SETTINGS_TABS: { id: SettingsTabId; label: string }[] = [
   { id: "notifications", label: "Notifications" },
   { id: "security", label: "Security" },
   { id: "advanced", label: "Advanced" },
+  { id: "import-export", label: "Import/Export" },
   { id: "support", label: "Support" },
   { id: "toml", label: "repoos.toml" },
 ];
