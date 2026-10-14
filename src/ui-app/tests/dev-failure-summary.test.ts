@@ -15,6 +15,7 @@ import {
   PORT_IN_USE,
 } from "../../core/dev-failure";
 import { DevTargetManager, devPidOwner } from "../../server/dev";
+import { getConfigSchema } from "../../core/config";
 
 function baseConfig(
   dev?: RepoOSConfig["dev"],
@@ -136,6 +137,13 @@ describe("log cap (#0775)", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("AI summary setting (#0775)", () => {
+  it("is a schema-backed boolean, default off", () => {
+    const field = getConfigSchema().find((f) => f.key === "dev.failureSummary.ai");
+    expect(field).toMatchObject({ type: "boolean", default: false, tier: "live" });
   });
 });
 

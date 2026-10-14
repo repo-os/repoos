@@ -382,7 +382,10 @@ watch(
                     Stop the process holding it
                   </Button>
                 </div>
-                <p v-else-if="t.failure.kind === 'port-in-use'" class="dev-summary-hint">
+                <p
+                  v-else-if="t.failure.kind === 'port-in-use' && t.failure.port !== undefined"
+                  class="dev-summary-hint"
+                >
                   Run
                   <code>lsof -iTCP:{{ t.failure.port }} -sTCP:LISTEN -t</code>
                   to find the process holding the port.
