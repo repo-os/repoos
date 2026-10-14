@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-14T13:25:27Z"
+review_passes: 5
 id: "0782"
 title: "Close-out upload: report progress so slow uploads are not flagged as stalled"
 type: bug
@@ -10,9 +12,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-upload-report-progress-so-slow
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-14T10:35:08Z"
-updated_at: "2026-10-14T13:25:26Z"
 last_check_failure: "repoos check at 2026-10-14T13:15:57.514Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 62103fbb to 8a3e538e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -122,3 +122,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T13:24:13Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-14T13:25:26Z · note: review pass 5: good to go
 - 2026-10-14T13:25:26Z · needs_input
+
