@@ -2,7 +2,7 @@
 id: "0778"
 title: "Easter eggs bundle: Shots validator and review card wording"
 type: bug
-status: review
+status: active
 priority: p3
 area: [web, server]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T12:49:33Z"
+updated_at: "2026-10-14T13:09:52Z"
 ---
 ## Problem
 Small cosmetic and validation bugs found on 2026-10-14. They are bundled because each is small and independent.
@@ -56,3 +56,4 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 - 2026-10-14T08:45:08Z · status active→review
 - 2026-10-14T12:04:07Z · status review→active
 - 2026-10-14T12:49:33Z · status active→review
+- 2026-10-14T13:09:52Z · status review→active
