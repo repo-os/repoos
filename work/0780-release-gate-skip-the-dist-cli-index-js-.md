@@ -2,14 +2,14 @@
 id: "0780"
 title: "Release gate: skip the dist/cli/index.js check for projects without a bin target"
 type: bug
-status: inbox
+status: ready
 priority: p0
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-14T08:20:29Z"
-updated_at: "2026-10-14T08:20:29Z"
+updated_at: "2026-10-14T08:21:08Z"
 ---
 ## Problem
 Publishing a release from the Releases page fails for a project that has no CLI. Divot (a Swift app, no package bin) hit this when cutting v0.1.0:
@@ -37,3 +37,4 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 ## Activity
 
 - 2026-10-14T08:20:29Z · created · njachowski@gmail.com
+- 2026-10-14T08:21:08Z · status inbox→ready
