@@ -108,7 +108,6 @@ import {
   appendDeclaredShot,
   declarationMatchesDeletedShot,
   declarationRawMatchesDeletedShot,
-  declaredShotMatchesShot,
   parseShotEntry,
   removeDeclaredShots,
   resolveDeclaredTarget,
