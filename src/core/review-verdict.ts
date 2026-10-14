@@ -44,13 +44,17 @@ function verdictFromText(text: string): ReviewVerdict | null {
   return null;
 }
 
+/** Body of the report's `## Verdict` section, or null when that heading is absent. */
+export function reviewVerdictSection(markdown: string): string | null {
+  const heading = /^#{1,6}\s+verdict\s*$/im.exec(markdown);
+  if (!heading) return null;
+  return markdown.slice((heading.index ?? 0) + heading[0].length).split(/^#{1,6}\s+/m, 1)[0];
+}
+
 export function parseReviewVerdict(markdown: string | null | undefined): ReviewVerdict | null {
   if (!markdown) return null;
-  const heading = /^#{1,6}\s+verdict\s*$/im.exec(markdown);
-  if (heading) {
-    const section = markdown
-      .slice((heading.index ?? 0) + heading[0].length)
-      .split(/^#{1,6}\s+/m, 1)[0];
+  const section = reviewVerdictSection(markdown);
+  if (section !== null) {
     const line = section.split(/\r?\n/).find((value) => value.trim());
     return line ? verdictFromText(line) : null;
   }
