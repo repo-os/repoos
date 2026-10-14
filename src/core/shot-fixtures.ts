@@ -7,6 +7,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "closeOut:active",
   "card:doneError",
   "board:withReviewTask",
+  // #0776 — a multi-area card with seeded diff stats, so a capture can show
+  // the combined area chip and the file-count chip.
+  "board:cardChips",
   // #0775 — a failed dev target on the Dev page, so a capture can show the
   // plain-language failure summary, its port holder and the Stop action.
   "dev:failed",

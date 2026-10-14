@@ -406,6 +406,14 @@ describe("scaffoldInto starter tasks", () => {
     expect(toml).toContain('cacheDir = "repoos/.repoos"');
   });
 
+  it("scaffolds new tasks as AI-assigned (#0776)", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "", "new");
+    const toml = readFileSync(join(root, "repoos.toml"), "utf8");
+    expect(toml).toContain('defaultStatus = "inbox"');
+    expect(toml).toContain('defaultAssignee = "ai"');
+  });
+
   it("keeps stories, inputs and skills under the namespace too (#0703)", () => {
     // A `repoos/` layout that leaves skillsDir/inputsDir/storiesDir at their
     // top-level defaults scatters RepoOS files back to the repo root — the

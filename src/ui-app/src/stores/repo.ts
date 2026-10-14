@@ -2779,6 +2779,18 @@ export const useRepoStore = defineStore("repo", () => {
   const diffStatsFor = (id: string) => diffStats.value[id] ?? undefined;
 
   /**
+   * Seed diff stats for one task without a request. Used by the shot-preview
+   * fixtures (#0776): the capture board renders a card for a task the server
+   * doesn't know, so there is nothing to fetch.
+   */
+  function seedDiffStats(
+    id: string,
+    stats: { filesChanged: number; additions: number; deletions: number },
+  ): void {
+    diffStats.value = { ...diffStats.value, [id]: stats };
+  }
+
+  /**
    * Load a task's durable usage totals (time/tokens/cost + role breakdown,
    * 0230). Best-effort — a task with no recorded sessions just yields no data.
    */
@@ -3695,6 +3707,7 @@ export const useRepoStore = defineStore("repo", () => {
     loadCTO,
     loadDiffStats,
     diffStatsFor,
+    seedDiffStats,
     taskUsage,
     loadTaskUsage,
     taskUsageFor,

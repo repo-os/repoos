@@ -13180,6 +13180,30 @@
   cursor: pointer;
 }
 
+/* file-change chip: a document icon + the changed-file count (#0776). Line
+ * counts stay in the tooltip, not the label. Green keeps it distinct from the
+ * neutral area/assignee chips and the amber dependency chip; the document icon
+ * matches the dependency chip's inline lucide glyph. */
+.tc-file-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border: 1px solid var(--green-border-tint);
+  border-radius: 6px;
+  background: var(--green-tint);
+  color: var(--green);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  line-height: 1.3;
+}
+.tc-file-chip-icon {
+  width: 10px;
+  height: 10px;
+  flex: none;
+}
+
 /* "Depends on" list at the top of the drawer's Task tab */
 .dep-list {
   display: flex;
