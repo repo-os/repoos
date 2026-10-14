@@ -243,6 +243,29 @@ describe("removeDeclarationsForDeletedShot (#0778 review round 3)", () => {
     expect(keptEntries(content)).toEqual([twinInvalid]);
   });
 
+  it("uses steps to distinguish invalid twins when their other fields match", () => {
+    const captured = {
+      ...ref,
+      selector: ".same",
+      steps: [{ click: ".captured" }],
+      state: "board:withReviewTask",
+    };
+    const edited = { ...captured, state: "board:notARealFixture" };
+    const twin = {
+      ...captured,
+      steps: [{ click: ".twin" }],
+      state: "board:notARealFixture",
+    };
+    const { content, removed, errors } = removeDeclarationsForDeletedShot(
+      listBody([edited, twin]),
+      ref,
+      captured,
+    );
+    expect(errors).toEqual([]);
+    expect(removed).toBe(1);
+    expect(keptEntries(content)).toEqual([twin]);
+  });
+
   it("removes the lone invalid entry after a post-capture edit (no twin)", () => {
     const { content, removed } = removeDeclarationsForDeletedShot(
       listBody([{ ...ref, state: "board:notARealFixture" }]),
