@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-cards-default-assignee-to-ai-combin
 created_at: "2026-10-14T06:06:09Z"
-updated_at: "2026-10-14T06:25:13Z"
+updated_at: "2026-10-14T06:34:18Z"
 ---
 ## Problem
 Three things on the task card and defaults are noisy or wrong:
@@ -41,6 +41,18 @@ Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core
 ![8](/api/tasks/0776/attachments/screenshot-3.png)
 ![9](/api/tasks/0776/attachments/screenshot-4.png)
 
+## Shots
+```json
+[
+{
+  "label": "Board cards: one combined area chip and a file-count-only chip",
+  "target": "default",
+  "route": "/",
+  "highlight": ".tc-area-chip, .tc-file-chip"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-14T06:06:09Z · created · njachowski@gmail.com
@@ -48,3 +60,4 @@ Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core
 - 2026-10-14T06:15:44Z · status inbox→ready
 - 2026-10-14T06:15:46Z · status ready→active, branch
 - 2026-10-14T06:25:13Z · body
+- 2026-10-14T06:34:18Z · body: section Shots
