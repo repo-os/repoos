@@ -2,7 +2,7 @@
 id: "0786"
 title: "Shots: a fixture added on the task branch can't be declared or captured until merge"
 type: bug
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -49,4 +49,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-14T17:28:28Z · body
 - 2026-10-14T17:29:19Z · body
 - 2026-10-14T17:30:49Z · body
-- 2026-10-14T17:37:34Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-14T17:37:34Z · status active→review
