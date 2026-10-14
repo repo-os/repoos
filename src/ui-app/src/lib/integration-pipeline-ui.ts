@@ -92,6 +92,15 @@ export function integrationActiveCopy(
   const stage = integrationStageLabel(active.stage);
   const elapsed = integrationElapsedMs(active.startedAt, nowMs);
   const elapsedBit = elapsed !== null ? ` · ${formatDuration(elapsed)}` : "";
+  const detail = active.detail?.trim();
+  if (detail) {
+    return {
+      label: `integrating · ${detail}${elapsedBit}`,
+      title:
+        "Close-out is uploading the candidate bundle to the remote runner — a slow network can take several minutes. Progress refreshes every few seconds; the job is only flagged stalled when nothing moves for a while.",
+      stalled: false,
+    };
+  }
   return {
     label: `integrating · ${stage}${elapsedBit}`,
     title:
@@ -131,7 +140,7 @@ export function integrationBarActiveTitle(
 ): string {
   const active = snap.active!;
   const copy = integrationActiveCopy(snap, nowMs, stallMs);
-  if (copy.stalled) return copy.label;
+  if (copy.stalled || active.detail?.trim()) return copy.label;
   const elapsed = integrationElapsedMs(active.startedAt, nowMs);
   const elapsedBit = elapsed !== null ? ` ${formatDuration(elapsed)}` : "";
   const stage = integrationStageLabel(active.stage);

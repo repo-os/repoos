@@ -39,6 +39,11 @@ export interface IntegrationSnapshot {
     /** When stage progress was last reported for this job (ISO). Used for
      *  stall detection (#0740); falls back to {@link startedAt}. */
     lastProgressAt: string | null;
+    /**
+     * In-stage progress detail, e.g. a slow bundle upload's size + elapsed
+     * time (#0782). Null when the job has no finer-grained progress to show.
+     */
+    detail: string | null;
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];
@@ -86,6 +91,29 @@ export function isStageComplete(stageIndex: number, currentIndex: number): boole
 }
 
 /**
+ * Apply one upload-heartbeat update to the live pipeline maps (#0782). A
+ * detail line both shows on the card and refreshes the stall timer, so a
+ * slow-but-moving transfer reads as live in a single SSE emission (no stage
+ * churn). `null` clears the line — fired when the transfer lands, so
+ * "uploading…" never lingers into the remote test run (#0782 review) — and
+ * leaves the stall timer alone. Exported for tests.
+ */
+export function applyPipelineDetail(
+  reportedDetail: Record<string, string>,
+  reportedStageAt: Record<string, string>,
+  taskId: string,
+  detail: string | null,
+  at = new Date().toISOString(),
+): void {
+  if (detail) {
+    reportedDetail[taskId] = detail;
+    reportedStageAt[taskId] = at;
+  } else {
+    delete reportedDetail[taskId];
+  }
+}
+
+/**
  * Build the pipeline snapshot from the coordinator plus the last-reported
  * progress step per task id. `queue` is every non-terminal job ahead of or
  * behind the currently-in-flight one; jobs already done/failed are hidden.
@@ -98,6 +126,7 @@ export function buildIntegrationSnapshot(
   reported: Record<string, DoneStep>,
   checkPlan?: PipelineCheckPlan,
   reportedAt: Record<string, string> = {},
+  reportedDetail: Record<string, string> = {},
   at = new Date().toISOString(),
 ): IntegrationSnapshot {
   const live = coordinator
@@ -136,6 +165,7 @@ export function buildIntegrationSnapshot(
       error: failed ? inFlight.reason : undefined,
       startedAt,
       lastProgressAt,
+      detail: reportedDetail[inFlight.taskId] ?? null,
     },
     queue,
     queueEnqueuedAt: queue.length ? queueEnqueuedAt : undefined,
