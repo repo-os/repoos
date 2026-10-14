@@ -8,10 +8,10 @@ area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
-cli_override: github copilot
+cli_override: cursor
 model_override: default
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T08:27:02Z"
+updated_at: "2026-10-14T08:27:05Z"
 ---
 ## Problem
 Small cosmetic and validation bugs found on 2026-10-14. They are bundled because each is small and independent.
@@ -47,3 +47,4 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 - 2026-10-14T08:26:02Z · body
 - 2026-10-14T08:27:02Z · cli_override, model_override
 - 2026-10-14T08:27:02Z · cli_override
+- 2026-10-14T08:27:05Z · cli_override
