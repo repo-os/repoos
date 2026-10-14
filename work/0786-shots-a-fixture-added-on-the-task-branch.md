@@ -11,7 +11,7 @@ branch: feat/shots-a-fixture-added-on-the-task-branch
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-14T16:48:07Z"
-updated_at: "2026-10-14T18:28:10Z"
+updated_at: "2026-10-14T18:28:11Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -65,3 +65,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-14T18:25:10Z · body
 - 2026-10-14T18:26:52Z · body
 - 2026-10-14T18:28:10Z · status active→review
+- 2026-10-14T18:28:11Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
