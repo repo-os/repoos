@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 127120
-last_close_out_gate_at: "2026-10-14T04:44:55.430Z"
 id: "0774"
 title: Show process start time beside running chip
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 46e60db5ac4f490a2b6c127cddbec261902acda5
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-process-start-time-beside-running-c
 created_at: "2026-10-14T04:19:10Z"
-updated_at: "2026-10-14T04:44:55Z"
+updated_at: "2026-10-14T04:45:12Z"
+last_close_out_gate_ms: 127120
+last_close_out_gate_at: "2026-10-14T04:44:55.430Z"
 review_passes: 1
 ---
 ## Problem
@@ -77,4 +78,4 @@ Let's show the time when a process started running (and human readable like 17 h
 - 2026-10-14T04:38:12Z · status active→review
 - 2026-10-14T04:38:48Z · note: review pass 1: good to go
 - 2026-10-14T04:44:55Z · close-out gate completed in 127s
-
+- 2026-10-14T04:45:12Z · status review→done, release:success
