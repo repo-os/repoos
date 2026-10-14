@@ -2,14 +2,14 @@
 id: "0773"
 title: Split task Changes into UI and Code tabs
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-14T03:52:38Z"
-updated_at: "2026-10-14T03:52:57Z"
+updated_at: "2026-10-14T03:56:29Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ Now that UI changes can be quite long, let's split `UI changes` and `Code change
 - 2026-10-14T03:52:40Z · screenshots
 - 2026-10-14T03:52:40Z · screenshots
 - 2026-10-14T03:52:57Z · status draft→inbox, title, area, body
+- 2026-10-14T03:56:29Z · status inbox→ready
