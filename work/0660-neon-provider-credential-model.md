@@ -1,22 +1,20 @@
 ---
-last_close_out_gate_ms: 379261
-last_close_out_gate_at: "2026-10-14T15:30:16.872Z"
 id: "0660"
 title: Neon provider + credential model
 type: feature
-status: review
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
+status: done
 priority: p1
 area: server
 story: Cloud attachment storage
 depends_on: ["0658"]
+merged_commit: e4eacd1db3e0c296f85e0e1875e5d4e6959e9da5
 assigned_to: ai
 created_by: ""
 branch: feat/neon-provider-credential-model
 created_at: "2026-10-05T08:28:57Z"
-updated_at: "2026-10-14T15:30:16Z"
+updated_at: "2026-10-14T15:30:33Z"
+last_close_out_gate_ms: 379261
+last_close_out_gate_at: "2026-10-14T15:30:16.872Z"
 review_passes: 1
 ---
 Slice 3 of storage provider work (after 0658 interface + 0659 settings UI). Scope:
@@ -81,4 +79,4 @@ None — server/config slice, no UI change.
 - 2026-10-12T04:32:51Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-12T04:33:30Z · note: review pass 1: good to go
 - 2026-10-14T15:30:16Z · close-out gate completed in 379s
-
+- 2026-10-14T15:30:33Z · status review→done, release:success
