@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T15:38:45Z"
+updated_at: "2026-10-14T15:38:53Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 4
@@ -49,45 +49,48 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 ```json
 [
 {
-  "label": "Repo Context doc viewer with Open in editor link (light)",
-  "target": "default",
-  "route": "/repo?doc=docs/README.md",
-  "highlight": "[data-test-id=\"context-open-in-editor\"]",
-  "theme": "light"
+"label": "Repo Context doc viewer with Open in editor link (light)",
+"target": "default",
+"route": "/repo?doc=docs/README.md",
+"highlight": "[data-test-id=\"context-open-in-editor\"]",
+"theme": "light"
 },
 {
-  "label": "Repo Context doc viewer with Open in editor link (dark)",
-  "target": "default",
-  "route": "/repo?doc=docs/README.md",
-  "highlight": "[data-test-id=\"context-open-in-editor\"]",
-  "theme": "dark"
+"label": "Repo Context doc viewer with Open in editor link (dark)",
+"target": "default",
+"route": "/repo?doc=docs/README.md",
+"highlight": "[data-test-id=\"context-open-in-editor\"]",
+"theme": "dark"
 },
 {
-  "label": "Changes tab Refresh evidence and Add shot pulled right (light)",
-  "target": "default",
-  "route": "/work?task=0778&tab=changes",
-  "highlight": ".changes-summary-actions",
-  "steps": [
-    {
-      "click": "[data-test-id=\"changes-tab-ui\"]"
-    }
-  ],
-  "theme": "light"
+"label": "Changes tab Refresh evidence and Add shot pulled right (light)",
+"target": "default",
+"route": "/work?task=0778&tab=changes",
+"highlight": ".changes-summary-actions",
+"steps": [
+  {
+    "click": "[data-test-id=\"changes-tab-ui\"]"
+  }
+],
+"theme": "light"
 },
 {
-  "label": "Changes tab Refresh evidence and Add shot pulled right (dark)",
-  "target": "default",
-  "route": "/work?task=0778&tab=changes",
-  "highlight": ".changes-summary-actions",
-  "steps": [
-    {
-      "click": "[data-test-id=\"changes-tab-ui\"]"
-    }
-  ],
-  "theme": "dark"
+"label": "Changes tab Refresh evidence and Add shot pulled right (dark)",
+"target": "default",
+"route": "/work?task=0778&tab=changes",
+"highlight": ".changes-summary-actions",
+"steps": [
+  {
+    "click": "[data-test-id=\"changes-tab-ui\"]"
+  }
+],
+"theme": "dark"
 }
 ]
 ```
+
+## Shot evidence sequencing
+Item 5 (stalled close-out card) is implemented and unit-pinned (DOM order Cancel/Retry, CSS `.tc-pipeline-recover` pushed right via margin-left:auto, above the expand arrow) but NOT captured yet: the shots validator runs MAIN's compiled code at declaration time, and the `closeOut:stalled` fixture it needs ships with THIS branch. Review capture of the stalled card is possible only once the branch lands; at re-handoff the declaration should be /work?status=review + state closeOut:stalled in light and dark (route /work, not /, so the fixture card is in the viewport). Items 3 and 4 now declare light AND dark theme captures — the theme field came in via #0782.
 
 ## Activity
 
@@ -177,3 +180,4 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 - 2026-10-14T15:33:42Z · body
 - 2026-10-14T15:35:22Z · body
 - 2026-10-14T15:38:45Z · body: section Shots
+- 2026-10-14T15:38:53Z · body: section Shot evidence sequencing
