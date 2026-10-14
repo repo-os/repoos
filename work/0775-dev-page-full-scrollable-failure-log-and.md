@@ -2,14 +2,14 @@
 id: "0775"
 title: "Dev page: full scrollable failure log and a plain-language failure summary"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-page-full-scrollable-failure-log-and
 created_at: "2026-10-14T04:59:42Z"
-updated_at: "2026-10-14T06:25:05Z"
+updated_at: "2026-10-14T06:25:06Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -79,4 +79,4 @@ Auto-picking a free port for a target whose command does NOT use the `{port}` pl
 - 2026-10-14T06:11:42Z · body: section Shots
 - 2026-10-14T06:12:58Z · body
 - 2026-10-14T06:18:29Z · body: section Shots
-- 2026-10-14T06:25:05Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-14T06:25:06Z · status active→review
