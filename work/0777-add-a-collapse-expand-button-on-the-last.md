@@ -2,7 +2,7 @@
 id: "0777"
 title: Add a collapse/expand control to Last output
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: ""
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-14T07:13:06Z"
-updated_at: "2026-10-14T08:26:29Z"
+updated_at: "2026-10-14T08:26:30Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Add a collapse/expand button on the "Last output" section (on the right side, to
 - 2026-10-14T07:13:07Z · screenshots
 - 2026-10-14T07:13:23Z · status draft→inbox, title, area, body
 - 2026-10-14T08:26:29Z · model_override
+- 2026-10-14T08:26:30Z · status inbox→ready
