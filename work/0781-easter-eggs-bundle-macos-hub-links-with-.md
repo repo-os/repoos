@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-macos-hub-links-with-
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-14T09:07:37Z"
-updated_at: "2026-10-14T10:59:30Z"
+updated_at: "2026-10-14T10:59:31Z"
 last_check_failure: "repoos check at 2026-10-14T09:33:45.789Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 ---
 ## Problem
@@ -45,3 +45,4 @@ Start from ServerNavigationPolicy.decide() and the 0d18a91c2 fix ('open loopback
 - 2026-10-14T09:48:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-14T10:54:08Z · message_expired: not delivered within timeout
 - 2026-10-14T10:59:30Z · status active→review
+- 2026-10-14T10:59:31Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
