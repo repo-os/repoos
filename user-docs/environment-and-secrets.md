@@ -114,6 +114,23 @@ Keep this key in the server environment and out of task worktrees. Changing it
 requires rewrapping existing records while the old key is still available;
 losing it makes those credentials unrecoverable. See [Telegram](/telegram).
 
+### Attachment storage (Neon Object Storage)
+
+| Variable | Purpose |
+| --- | --- |
+| `REPOOS_NEON_STORAGE_ENDPOINT` | The branch's S3 endpoint URL for Neon Object Storage. |
+| `REPOOS_NEON_STORAGE_REGION` | The branch's S3 region, e.g. `us-east-2`. |
+| `REPOOS_NEON_STORAGE_BUCKET` | The bucket attachment objects are stored in. |
+| `REPOOS_NEON_STORAGE_ACCESS_KEY_ID` | The storage credential's S3 access key id. |
+| `REPOOS_NEON_STORAGE_SECRET_ACCESS_KEY` | The storage credential's S3 secret access key. |
+| `REPOOS_NEON_STORAGE_PREFIX` | Optional key prefix isolating this instance's objects. |
+
+These are only read when `[storage] provider = "neon"`; a repo that never
+configures cloud storage never needs them. They live in `.env`, never in
+committed config, and are the credential half of the model — the `repoos.toml`
+key selects the provider, the environment supplies how to reach it. Verified
+endpoint/limit/pricing details: [`docs/neon-object-storage.md`](https://github.com/repoos/repoos/blob/main/docs/neon-object-storage.md).
+
 ### Model providers and voice transcription
 
 | Variable | Purpose |
@@ -215,6 +232,18 @@ REPOOS_AUTH_DEV_BACKDOOR_CODE=your-local-code
 # the official provisioning service when redeeming a project bot credential.
 # Leave unset until the service is deployed; BYO bot tokens never live here.
 # REPOOS_TELEGRAM_PROVISIONING_KEY=...
+
+# Attachment storage — Neon Object Storage (#0660). Only read when
+# [storage] provider = "neon" in repoos.toml. The endpoint/region/bucket come
+# from the branch's storage state in the Neon Console; the key id and secret
+# come from a storage-scoped credential (neon credentials create --scope
+# storage:read --scope storage:write). Never committed: .env only.
+# REPOOS_NEON_STORAGE_ENDPOINT=https://br-….storage-c-2.us-east-2.aws.neon.tech
+# REPOOS_NEON_STORAGE_REGION=us-east-2
+# REPOOS_NEON_STORAGE_BUCKET=repoos-attachments
+# REPOOS_NEON_STORAGE_ACCESS_KEY_ID=nak_live_...
+# REPOOS_NEON_STORAGE_SECRET_ACCESS_KEY=nsk_live_...
+# REPOOS_NEON_STORAGE_PREFIX=
 
 # Model providers / voice transcription
 REPOOS_OPENROUTER_API_KEY=...

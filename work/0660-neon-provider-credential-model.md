@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-12T04:33:30Z"
-review_passes: 1
 id: "0660"
 title: Neon provider + credential model
 type: feature
@@ -16,6 +14,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/neon-provider-credential-model
 created_at: "2026-10-05T08:28:57Z"
+updated_at: "2026-10-12T04:32:50Z"
 ---
 Slice 3 of storage provider work (after 0658 interface + 0659 settings UI). Scope:
 - Neon Object Storage provider implementing the 0658 provider interface.
@@ -69,13 +68,4 @@ None — server/config slice, no UI change.
 - 2026-10-06T23:48:10Z · needs_input
 - 2026-10-12T03:58:58Z · status inbox→ready
 - 2026-10-12T03:59:31Z · status ready→active, branch
-- 2026-10-12T04:19:36Z · body
-- 2026-10-12T04:21:19Z · body
-- 2026-10-12T04:22:03Z · body
-- 2026-10-12T04:23:29Z · body
-- 2026-10-12T04:25:02Z · body
-- 2026-10-12T04:26:22Z · body
-- 2026-10-12T04:32:51Z · status active→review
-- 2026-10-12T04:32:51Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-12T04:33:30Z · note: review pass 1: good to go
-
+- 2026-10-12T04:32:50Z · status active→review
