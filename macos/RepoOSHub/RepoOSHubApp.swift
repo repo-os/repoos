@@ -46,6 +46,25 @@ struct RepoOSHubApp: App {
                 }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
             }
+            CommandMenu("Edit") {
+                Button("Find…") {
+                    appState.workspacePresentFind()
+                }
+                .keyboardShortcut("f", modifiers: .command)
+                .disabled(!appState.workspaceCanUseFind)
+
+                Button("Find Next") {
+                    appState.workspaceFindNext()
+                }
+                .keyboardShortcut("g", modifiers: .command)
+                .disabled(!appState.workspaceCanUseFind)
+
+                Button("Find Previous") {
+                    appState.workspaceFindPrevious()
+                }
+                .keyboardShortcut("g", modifiers: [.command, .shift])
+                .disabled(!appState.workspaceCanUseFind)
+            }
             CommandMenu("Go") {
                 Button("Quick Switcher…") {
                     appState.presentCommandPalette()
