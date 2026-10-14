@@ -50,3 +50,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-14T17:29:19Z · body
 - 2026-10-14T17:30:49Z · body
 - 2026-10-14T17:37:34Z · status active→review
+- 2026-10-14T17:37:34Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
