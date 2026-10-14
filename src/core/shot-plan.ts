@@ -1076,6 +1076,12 @@ export function declarationMatchesDeletedShot(
  * declarations that merely share those fields but differ in selector or steps.
  * Without a recorded declaration (legacy/auto shots) the shallow matcher is
  * the only signal available.
+ *
+ * Test-only today (#0778 review): no production caller remains — the delete
+ * route's raw path inlines this exact rule inside
+ * {@link removeDeclarationsForDeletedShot}. Kept (and reused by
+ * `removeDeclaredShots` users) so the raw-matching semantics stay exercised
+ * as a named, documented rule.
  */
 export function declarationRawMatchesDeletedShot(
   raw: unknown,
@@ -1085,7 +1091,6 @@ export function declarationRawMatchesDeletedShot(
   if (capturedDeclared) return sameDeclaredShotRaw(raw, capturedDeclared);
   return declaredShotMatchesShotRaw(raw, shot);
 }
-
 /** Match a raw JSON entry to a captured shot when `parseShot` rejects the entry. */
 export function declaredShotMatchesShotRaw(
   raw: unknown,
