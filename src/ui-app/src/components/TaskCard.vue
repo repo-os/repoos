@@ -458,6 +458,22 @@ function needsInputHint(task: Task): CardHint {
 const reviewVerdict = computed(() =>
   parseReviewVerdict(repo.reviewFor(props.task.id)?.report?.markdown),
 );
+const staleEvidenceOnly = computed(() => {
+  const report = repo.reviewFor(props.task.id)?.report;
+  return (
+    props.task.status === "review" &&
+    report?.state === "ok" &&
+    report.markdown.includes("STALE-EVIDENCE-ONLY")
+  );
+});
+const refreshEvidenceBusy = ref(false);
+async function refreshEvidenceFromCard(): Promise<void> {
+  refreshEvidenceBusy.value = true;
+  const result = await repo.refreshEvidence(props.task.id);
+  refreshEvidenceBusy.value = false;
+  if (!result.ok) repo.pushToast(result.error ?? "Evidence refresh failed", "error");
+  else repo.pushToast("Evidence refreshed — run Review again", "success");
+}
 const awaitingFreshReview = computed(() => {
   const report = repo.reviewFor(props.task.id)?.report;
   return (
@@ -1189,7 +1205,7 @@ async function openDebuggerFromError(): Promise<void> {
     </transition>
 
     <div
-      v-if="action || cardDoneError"
+      v-if="action || cardDoneError || staleEvidenceOnly"
       data-test-id="task-card-action-footer"
       class="tc-foot tc-actions tc-card-footer !ml-0 w-full"
     >
@@ -1225,6 +1241,22 @@ async function openDebuggerFromError(): Promise<void> {
         </svg>
         {{ busy ? "Working…" : action?.label }}
       </button>
+      <div v-if="staleEvidenceOnly" class="w-full border-t border-[var(--border)] p-2">
+        <p class="px-2 pb-2 text-center font-mono text-[10px] text-[var(--txt-dim)]">
+          Stale evidence is the only finding · <code>repoos verify {{ task.id }}</code>
+        </p>
+        <button
+          type="button"
+          data-test-id="task-card-refresh-evidence"
+          class="tc-card-footer-action flex w-full items-center justify-center gap-2 rounded-md border px-4 py-[9px] font-mono text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
+          :disabled="
+            refreshEvidenceBusy || repo.isRunning(task.id) || repo.reviewFor(task.id)?.running
+          "
+          @click.stop="refreshEvidenceFromCard"
+        >
+          {{ refreshEvidenceBusy ? "Refreshing evidence…" : "Refresh evidence" }}
+        </button>
+      </div>
       <DoneErrorCard
         v-if="cardDoneError"
         class="tc-done-error"

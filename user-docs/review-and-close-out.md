@@ -64,6 +64,13 @@ agent did — RepoOS reviews the new head again. A verdict of anything other tha
 to the engineer session, which is expected to fix them and re-hand off to
 review. The task's `review_rounds` counter goes up.
 
+The one exception is a `needs some work` whose *only* stated blocker is stale
+handoff evidence (the reviewer marks it `STALE-EVIDENCE-ONLY`): the change is
+fine, only the captures are old, so bouncing the engineer would burn a turn on
+nothing. That task **stays in `review`** — use **Refresh evidence** in the
+Changes tab (or `repoos verify <id>`) to re-capture on the current HEAD, then
+review again.
+
 This is deliberate self-correction, not a failure. If you move a task to review
 and then find it back in `active`, check its activity log — you'll see the
 review round and the findings that caused it.
@@ -380,7 +387,16 @@ evidence (#0755).
 the Changes tab compares that to the branch HEAD the review will use. When they
 differ — a fix landed after the capture — the UI changes sub-tab shows a
 **Stale capture** alert and the shot reads `check`, never `matches`; re-run the
-handoff capture on the final tree.
+handoff capture on the final tree. For a task already in review, use **Refresh
+evidence** in the Changes tab or run `repoos verify <id>`. RepoOS refreshes the
+shots and verification record against the current branch HEAD without an
+engineer turn. The worktree must be clean, and the action is refused while an
+agent or close-out is running.
+**Bookkeeping-only commits do not stale a capture (#0766):** HEAD movement
+provably caused by `work/*.md` task files — status flips, review counters,
+activity notes — never changes what the captures describe, so the record still
+reads as current for the reviewer; any other path (source, docs, config) makes
+the capture stale as before.
 **Whole-window default (#0613):** declared shots capture the whole
 visible viewport (`fullPage: false`) with changed elements outlined via
 `highlight`; `selector` (element crop) is the exception, and `fullPage` stays

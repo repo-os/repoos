@@ -44,6 +44,7 @@ import { buildStoryContext } from "../core/story-context.js";
 import {
   parseReviewVerdict as parseVerdictLabel,
   parseReviewRelevance,
+  reviewVerdictSection,
 } from "../core/review-verdict.js";
 import { extractReviewReportSections } from "../core/review-report-sections.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
@@ -70,7 +71,7 @@ import {
 } from "../core/review-passes.js";
 import {
   readUiHandoffGateEvidence,
-  handoffTreeStatus,
+  effectiveHandoffTreeStatus,
   handoffTreeNote,
   taskUiVerificationMode,
   type UiVerificationMode,
@@ -78,6 +79,7 @@ import {
 import { getCheckStore } from "../core/check-store.js";
 import type { CommandCaptureEvidence } from "./shot-capture.js";
 import { extractTaskProofCommands } from "../core/task-proof-commands.js";
+import { isEvidenceRefreshActive } from "./evidence-refresh-lock.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
 import {
   gatherReviewVerification,
@@ -115,6 +117,17 @@ export interface ReviewRunResult {
   skipped?: boolean;
   reason?: string;
   report?: ReviewReport;
+}
+
+/** Review failed only because handoff evidence is stale (#0766). */
+export function isStaleEvidenceOnlyReview(report: string, verdict: string | null): boolean {
+  const section = reviewVerdictSection(report);
+  return (
+    verdict !== "good to go" &&
+    verdict !== null &&
+    section !== null &&
+    section.includes("STALE-EVIDENCE-ONLY")
+  );
 }
 
 /**
@@ -414,6 +427,9 @@ export function reviewMission(
     "`good to go` — the change is correct and complete.",
     "`needs some work` — the change is close, but has issues worth fixing first.",
     "`back to the drawing board` — the change is off the mark.",
+    "If and only if the sole blocker is that otherwise usable UI evidence is stale",
+    "for the reviewed HEAD, include the exact marker `STALE-EVIDENCE-ONLY` in the",
+    "Verdict section. Never use it when code defects or any other blocker exists.",
     "",
     "## Relevance",
     "Open with EXACTLY one of these three labels, then one sentence explaining why.",
@@ -741,6 +757,9 @@ export class ReviewManager {
    * start.
    */
   canRun(task: Task): { ok: boolean; reason?: string } {
+    if (isEvidenceRefreshActive(task.id)) {
+      return { ok: false, reason: "evidence refresh is in progress for this task" };
+    }
     if (this.runs.has(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }
@@ -783,6 +802,9 @@ export class ReviewManager {
    * again"), never a continuation of the prior one (0110).
    */
   async run(task: Task): Promise<ReviewRunResult> {
+    if (isEvidenceRefreshActive(task.id)) {
+      return { ok: false, reason: "evidence refresh is in progress for this task" };
+    }
     if (this.isRunning(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }
@@ -816,7 +838,7 @@ export class ReviewManager {
       handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
       uiVerification: taskUiVerificationMode(this.config, task),
     });
-    const uiNote = this.uiVerificationSummary(task);
+    const uiNote = await this.uiVerificationSummary(task);
     const mission = uiNote
       ? `${missionBase}\n\n## Handoff UI verification (recorded at handoff)\n\n${uiNote}\n`
       : missionBase;
@@ -1172,14 +1194,24 @@ export class ReviewManager {
     }
 
     // Auto-bounce if review is ok and verdict is not "good to go"
-    // Fire-and-forget (don't await) so the review completion isn't delayed
+    // Fire-and-forget (don't await) so the review completion isn't delayed.
+    //
+    // A stale-only failure is the one exception (#0766): the change itself is
+    // fine — only the handoff evidence is old — so bouncing the engineer would
+    // burn a paid turn on nothing. It stays in review, and the human refreshes
+    // the evidence with the "Refresh evidence" action (TaskCard.vue, shown on
+    // review) and re-reviews. `autoBounce` is the only path here that moves the
+    // task out of review, so skipping it leaves the status untouched. Every
+    // other non-good verdict still bounces exactly as before.
     if (state === "ok" && verdict) {
       if (verdict !== "good to go") {
-        this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
-          console.error(
-            `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
-          );
-        });
+        if (!isStaleEvidenceOnlyReview(reportText, verdict)) {
+          this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
+            console.error(
+              `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
+            );
+          });
+        }
       } else {
         void this.onCleanReviewVerdict?.(task, report);
       }
@@ -1903,16 +1935,23 @@ export class ReviewManager {
   }
 
   /** UI handoff gate evidence path content for missions. */
-  uiVerificationSummary(task: Task): string | null {
+  async uiVerificationSummary(task: Task): Promise<string | null> {
     const evidence = readUiHandoffGateEvidence(this.config, task.id);
     if (!evidence) return null;
     // #0755: tie the evidence to the tree this review will use. The capture
     // recorded the tree it ran on (`sourceIdentity`); the worktree's HEAD now
     // is the reviewed tree. A mismatch is stale evidence — say so plainly, and
-    // never present it as verification of the reviewed HEAD.
+    // never present it as verification of the reviewed HEAD. HEAD movement that
+    // is provably pure task bookkeeping (#0766) does not count as a mismatch:
+    // work-file commits land after the capture and change nothing the captures
+    // describe.
     const worktree = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
     const reviewedHead = shortHeadOf(worktree ?? this.config.root);
-    const treeStatus = handoffTreeStatus(evidence, reviewedHead);
+    const treeStatus = await effectiveHandoffTreeStatus(
+      worktree ?? this.config.root,
+      evidence,
+      reviewedHead,
+    );
     const staleNote = handoffTreeNote(treeStatus, evidence, reviewedHead);
     // #0734: surface the exact capture URL, assertion outcomes, and the tested
     // tree/plan identity so the reviewer can tie evidence to the diff, and can

@@ -119,6 +119,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--wait · --json · --port",
       },
       {
+        name: "verify",
+        usage: "verify <id> [--json] [--port N]",
+        desc: "Refresh task shots and UI verification at the current branch HEAD",
+        flags: "--json · --port",
+      },
+      {
         name: "done",
         usage: "done <id> [--commit-dirty] [--wait] [--json] [--port N]",
         desc: "Move to done through the close-out pipeline (POST /api/tasks/:id/done)",

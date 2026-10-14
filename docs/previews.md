@@ -363,6 +363,17 @@ capture whose declaration changed — that was the #0720/#0727 stale-evidence
 failure. A capture taken before #0734 (no fingerprint) is deliberately NOT
 reusable, since it cannot be tied to the current plan.
 
+While a task is in review, **Refresh evidence** in the Changes tab or
+`repoos verify <id>` re-runs the browser and command capture plan and writes a
+new UI-verification record for the current worktree HEAD. The server refuses
+the action if the worktree is dirty or an agent/close-out is active. Refreshes
+replace prior automatic captures in gitignored storage and do not edit task
+Markdown. When a capture command writes outside `REPOOS_SHOT_DIR`, the refresh
+restores the tracked files and removes the untracked files it created, so the
+worktree stays clean either way; the response lists what was restored. HEAD
+movement that is only `work/*.md` task bookkeeping (status flips, review
+counters) does not make the refreshed record stale.
+
 **Whole-window default (#0613).** Declared shots capture the whole visible
 viewport by default (`fullPage: false`) with changed elements outlined via
 `highlight`. `selector` (element crop) is the only exception; `fullPage`

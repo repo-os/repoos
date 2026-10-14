@@ -143,6 +143,8 @@ export interface ShotStore {
   remove(name: string): ShotMeta | null;
   /** Delete every shot the server's automatic capture wrote; engineer-made shots stay. */
   removeAuto(): number;
+  /** Drop every stored shot before an explicit evidence refresh (#0766). */
+  clearForRefresh(): number;
   /** Absolute path for one stored file, or null when it is missing/escapes. */
   resolve(file: string): string | null;
 }
@@ -333,6 +335,12 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         );
       }
       return auto.length;
+    },
+    clearForRefresh() {
+      const all = list();
+      for (const shot of all) rmSync(join(dir, shot.name), { force: true });
+      if (all.length > 0) writeManifest(dir, []);
+      return all.length;
     },
     resolve(file) {
       const base = resolve(dir);

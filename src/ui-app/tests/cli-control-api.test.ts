@@ -21,8 +21,10 @@ import {
   cmdRunners,
   cmdStart,
   cmdStats,
+  cmdVerify,
   controlApiServerDownMessage,
 } from "../../commands/control-api";
+import { RepoOsApi } from "../../cli/repoos-api";
 
 const tmpRoots: string[] = [];
 const FIXTURE_PREFIX = "repoos-cli-api-";
@@ -336,6 +338,26 @@ describe("control API CLI", () => {
       await runJsonCmd(port, cmdAgentsRunning, []);
     });
     killSpawns(fx);
+  });
+
+  it("verify exits 1 without throwing when verification issues arrive in a 200 body", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const requestOk = vi.spyOn(RepoOsApi.prototype, "requestOk").mockResolvedValue({
+      ok: false,
+      headIdentity: "abc1234",
+      detail: "ui verification failed (1 issue(s)): boom",
+      issues: [{ message: "boom" }],
+    });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const code = await cmdVerify(["0766"]);
+    expect(code).toBe(1);
+    expect(requestOk).toHaveBeenCalledWith("POST", "/api/tasks/0766/verify", {});
+    const lines = log.mock.calls.map((c) => String(c[0]));
+    expect(lines.some((l) => l.includes("verification issues"))).toBe(true);
+    expect(lines.some((l) => l.includes("evidence refreshed"))).toBe(false);
+    log.mockRestore();
+    health.mockRestore();
+    requestOk.mockRestore();
   });
 
   it("done --json refuses when the task is not in review", async () => {

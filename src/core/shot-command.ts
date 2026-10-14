@@ -26,7 +26,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 import type { ShotTargetConfig } from "./types.js";
 import { matchGlob } from "./shot-targets.js";
 
@@ -206,7 +206,20 @@ export function runShotCommand(
       ...NO_RUN,
     };
   }
-  const cwd = target.cwd ? join(worktreeRoot, target.cwd) : worktreeRoot;
+  const resolvedRoot = resolve(worktreeRoot);
+  let cwd = resolvedRoot;
+  if (target.cwd) {
+    const candidate = resolve(resolvedRoot, target.cwd);
+    const rootPrefix = resolvedRoot.endsWith(sep) ? resolvedRoot : resolvedRoot + sep;
+    if (candidate !== resolvedRoot && !candidate.startsWith(rootPrefix)) {
+      return {
+        status: "failed",
+        reason: `capture target cwd escapes the worktree: ${target.cwd}`,
+        ...NO_RUN,
+      };
+    }
+    cwd = candidate;
+  }
   const timeout =
     target.timeoutMs && target.timeoutMs > 0 ? target.timeoutMs : DEFAULT_SHOT_TIMEOUT_MS;
   // A declared `args` list is appended as separate, shell-quoted tokens: the

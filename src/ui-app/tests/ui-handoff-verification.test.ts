@@ -1,10 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import {
   createPageGateCollector,
   formatPageGateIssues,
   type PageGateListenerPage,
 } from "../../core/page-browser-gate.js";
 import {
+  effectiveHandoffTreeStatus,
   handoffTreeNote,
   handoffTreeStatus,
   readUiHandoffGateEvidence,
@@ -13,21 +18,126 @@ import {
   type UiHandoffGateDeps,
 } from "../../server/ui-handoff-gate.js";
 import * as shotCapture from "../../server/shot-capture.js";
+import * as shotStore from "../../server/shots.js";
 import {
   resetPreviewVerificationSlot,
   withPreviewVerificationSlot,
 } from "../../server/preview-verification-slot.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import type { Task } from "../../core/types.js";
-import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 
 describe("UI handoff verification gate (#0680)", () => {
   const temps: string[] = [];
   afterEach(() => {
+    vi.restoreAllMocks();
     resetPreviewVerificationSlot();
     for (const t of temps.splice(0)) rmSync(t, { recursive: true, force: true });
+  });
+
+  it("uses an existing manual shot as the refresh plan when no declaration or path plan exists", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-manual-refresh-"));
+    temps.push(root);
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      preview: { targets: [{ name: "web", paths: ["src/**"], command: "echo" }] },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "manual-refresh",
+      title: "t",
+      path: "work/manual-refresh.md",
+      absPath: join(root, "work/manual-refresh.md"),
+      status: "review",
+      branch: "feat/manual-refresh",
+      area: "web",
+      body: "",
+    } as Task;
+    vi.spyOn(shotStore, "localShotStore").mockReturnValue({
+      list: () => [
+        {
+          name: "manual.png",
+          target: "web",
+          route: "/settings?tab=general",
+          label: "Settings view",
+          path: "work/.attachments/manual-refresh/shots/manual.png",
+          url: "/api/tasks/manual-refresh/shots/manual.png",
+          size: 10,
+          mime: "image/png",
+          capturedAt: new Date().toISOString(),
+        },
+      ],
+    } as ReturnType<typeof shotStore.localShotStore>);
+    const plan = shotCapture.planAutoCapture(config, task, { forceRefresh: true });
+    expect(plan).toMatchObject({
+      entries: [{ target: "web", route: "/settings?tab=general", label: "Settings view" }],
+    });
+  });
+
+  it("explicit refresh bypasses the normal engineer-capture pre-emption check", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-force-manual-"));
+    temps.push(root);
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      uiVerification: { enabled: true },
+      preview: { targets: [{ name: "web", paths: ["src/**"], command: "echo" }] },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "manual-force",
+      title: "t",
+      path: "work/manual-force.md",
+      absPath: join(root, "work/manual-force.md"),
+      status: "review",
+      branch: "feat/manual-force",
+      area: "web",
+      body: "",
+    } as Task;
+    vi.spyOn(shotStore, "localShotStore").mockReturnValue({
+      list: () => [
+        {
+          name: "manual.png",
+          target: "web",
+          route: "/settings",
+          label: "Settings",
+          path: "manual.png",
+          url: "/manual.png",
+          size: 10,
+          mime: "image/png",
+          capturedAt: new Date().toISOString(),
+        },
+      ],
+    } as ReturnType<typeof shotStore.localShotStore>);
+    const planSpy = vi
+      .spyOn(shotCapture, "planAutoCapture")
+      .mockImplementation((_config, _task, opts) =>
+        opts?.forceRefresh
+          ? {
+              entries: [
+                {
+                  target: "web",
+                  route: "/settings",
+                  provenance: { kind: "declared" },
+                },
+              ],
+              errors: [],
+              skips: [],
+              collapsed: [],
+            }
+          : { reason: "an engineer-made capture pre-empts the automatic one" },
+      );
+
+    const result = await runUiHandoffGate(config, task, undefined, () => {}, {
+      forceRefresh: true,
+      recordTaskNotes: false,
+    });
+
+    expect(result).toMatchObject({
+      skipped: true,
+      detail: "ui verification skipped — no preview manager",
+    });
+    expect(planSpy).toHaveBeenCalledWith(config, task, { forceRefresh: true });
   });
 
   it("collects console errors from a page", () => {
@@ -77,6 +187,7 @@ describe("UI handoff verification gate (#0680)", () => {
       area: "web",
       body: "",
     } as Task;
+    writeFileSync(task.absPath, "tracked task contents\n");
     const result = await runUiHandoffGate(config, task, undefined, () => {}, {
       syntheticIssues: [{ kind: "console", message: "stub page error" }],
     });
@@ -106,6 +217,7 @@ describe("UI handoff verification gate (#0680)", () => {
       area: "web",
       body: "",
     } as Task;
+    writeFileSync(task.absPath, "tracked task contents\n");
     vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
       entries: [
         {
@@ -145,9 +257,13 @@ describe("UI handoff verification gate (#0680)", () => {
         finalUrl: "http://127.0.0.1:9/",
         assertions: [],
       }),
+      forceRefresh: true,
+      recordTaskNotes: false,
     });
     expect(result.ok).toBe(false);
     expect(result.detail).toContain("overflow");
+    expect(shotCapture.planAutoCapture).toHaveBeenCalledWith(config, task, { forceRefresh: true });
+    expect(readFileSync(task.absPath, "utf8")).toBe("tracked task contents\n");
     // #0753: the capture keeps its OWN issues, so the Changes tab can show them
     // in that shot's popover instead of repeating the handoff list on every row.
     const evidence = readUiHandoffGateEvidence(config, task.id);
@@ -605,6 +721,107 @@ describe("UI handoff verification gate (#0680)", () => {
       }),
     );
     vi.restoreAllMocks();
+  });
+});
+
+/**
+ * The effective staleness verdict (#0766): a diff of nothing but `work/*.md`
+ * between the captured tree and the reviewed HEAD is task bookkeeping and keeps
+ * the capture current; anything else — source, docs, another path — stays
+ * stale, and git trouble fails closed.
+ */
+describe("effective handoff tree status — bookkeeping-only drift (#0766)", () => {
+  const temps: string[] = [];
+  afterEach(() => {
+    for (const t of temps.splice(0)) rmSync(t, { recursive: true, force: true });
+  });
+
+  /** A repo at a commit, with paths committed one at a time, latest sha tracked. */
+  function gitRepo(): {
+    root: string;
+    shaOf: (n: number) => string;
+    commit: (paths: string[]) => void;
+  } {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-bookkeeping-"));
+    temps.push(root);
+    const run = (args: string) =>
+      execSync(`git -C ${root} ${args}`, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    run("init -b main");
+    run("config user.email test@example.com");
+    run("config user.name Test");
+    writeFileSync(join(root, "README.md"), "repo\n");
+    run("add README.md");
+    run("commit -q -m base");
+    const shas: string[] = [run("rev-parse --short HEAD").trim()];
+    return {
+      root,
+      shaOf: (n: number) => shas[Math.min(n, shas.length - 1)],
+      commit: (paths: string[]) => {
+        for (const p of paths) {
+          const abs = join(root, p);
+          mkdirSync(join(abs, ".."), { recursive: true });
+          writeFileSync(abs, `content for ${p}\n`);
+        }
+        run(`add ${paths.join(" ")}`);
+        run("commit -q -m change");
+        shas.push(run("rev-parse --short HEAD").trim());
+      },
+    };
+  }
+
+  it("keeps the capture current when only task files moved the HEAD", async () => {
+    const repo = gitRepo();
+    repo.commit(["work/0766.md", "work/0765.md"]);
+    const status = await effectiveHandoffTreeStatus(
+      repo.root,
+      { sourceIdentity: repo.shaOf(0) },
+      repo.shaOf(1),
+    );
+    // A status flip / review-passes bump landing after the capture does not
+    // invalidate it.
+    expect(status).toBe("current");
+  });
+
+  it("keeps the capture stale when any other path moved the HEAD", async () => {
+    const repo = gitRepo();
+    repo.commit(["work/0766.md"]);
+    repo.commit(["src/feature.ts"]);
+    // Real source drifted between capture and review...
+    let status = await effectiveHandoffTreeStatus(
+      repo.root,
+      { sourceIdentity: repo.shaOf(0) },
+      repo.shaOf(2),
+    );
+    expect(status).toBe("stale");
+    // ...and so did docs (content a docs-site capture can legitimately show).
+    repo.commit(["user-docs/cli.md"]);
+    status = await effectiveHandoffTreeStatus(
+      repo.root,
+      { sourceIdentity: repo.shaOf(0) },
+      repo.shaOf(3),
+    );
+    expect(status).toBe("stale");
+  });
+
+  it("fails closed when the captured sha cannot classify the drift", async () => {
+    const repo = gitRepo();
+    // An unknown sha makes the diff impossible — never presented as current.
+    const status = await effectiveHandoffTreeStatus(
+      repo.root,
+      { sourceIdentity: "deadbee1" },
+      repo.shaOf(0),
+    );
+    expect(status).toBe("stale");
+  });
+
+  it("stays current when nothing moved or a side is missing", async () => {
+    const repo = gitRepo();
+    const head = repo.shaOf(0);
+    expect(await effectiveHandoffTreeStatus(repo.root, { sourceIdentity: head }, head)).toBe(
+      "current",
+    );
+    // No recorded tree: the mechanical status already says unknown, unchanged.
+    expect(await effectiveHandoffTreeStatus(repo.root, null, head)).toBe("unknown");
   });
 });
 
