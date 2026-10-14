@@ -102,7 +102,6 @@ import {
   endEvidenceRefresh,
   isEvidenceRefreshActive,
   tryBeginEvidenceRefresh,
-  withEvidenceRefreshLock,
 } from "../evidence-refresh-lock.js";
 import { computeTaskShotContext } from "../shot-context.js";
 import {
@@ -116,7 +115,6 @@ import {
 import { resolveShotTargets } from "../../core/shot-targets.js";
 import { captureDeclaredShot } from "../shot-capture.js";
 import type { PreviewManager } from "../preview.js";
-import type { RootLock } from "../repo-lock.js";
 import { STATUSES } from "../../core/types.js";
 import {
   ACTIVITY_HEADING,
@@ -1180,8 +1178,8 @@ export type GuardedForceRefreshCaptureResult = {
 };
 
 /**
- * Shared force-refresh capture for manual verify and automatic stale-only
- * recovery (#0766): run the gate, then post-capture worktree guard so command
+ * Shared force-refresh capture for manual verify (#0766): run the gate, then
+ * post-capture worktree guard so command
  * targets cannot leave tracked edits or a moved HEAD behind.
  */
 export async function guardedForceRefreshCapture(
@@ -1236,60 +1234,6 @@ export async function guardedForceRefreshCapture(
     detail: result.detail,
     restored: guarded.restored,
   };
-}
-
-/**
- * Server-owned stale-only evidence refresh (#0766): same capture path as manual
- * verify, with root + in-process locks so review cannot overlap capture.
- */
-export async function automaticStaleEvidenceRefresh(
-  config: RepoOSConfig,
-  task: Task,
-  previews: PreviewManager | undefined,
-  rootLock: RootLock,
-  closingOut: () => boolean,
-  log: TaskLog,
-): Promise<boolean> {
-  if (!task.branch || closingOut()) return false;
-  const worktree = worktreePathForBranch(config.root, task.branch);
-  if (!worktree) return false;
-  const headResult = await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000);
-  const head = headResult.status === 0 ? headResult.stdout.trim() : "";
-  if (!head) return false;
-  const attemptPath = join(
-    config.root,
-    config.cacheDir,
-    "ui-verification",
-    "auto-refresh-attempts",
-    `${task.id}-${head}.json`,
-  );
-  if (existsSync(attemptPath) || !rootLock.acquire(task.id, "close-out")) return false;
-  try {
-    const locked = await withEvidenceRefreshLock(task.id, async () => {
-      const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
-      if (dirty.status !== 0 || dirty.stdout.trim()) return false;
-      const currentEvidence = readUiHandoffGateEvidence(config, task.id);
-      if ((await effectiveHandoffTreeStatus(worktree, currentEvidence, head)) !== "stale") {
-        return false;
-      }
-      mkdirSync(join(attemptPath, ".."), { recursive: true });
-      writeFileSync(
-        attemptPath,
-        JSON.stringify({ taskId: task.id, head, at: new Date().toISOString() }),
-      );
-      const captured = await guardedForceRefreshCapture(config, task, worktree, previews, log);
-      if (captured.error) {
-        log(task.id, "warn", `automatic stale-evidence refresh failed: ${captured.error}`);
-      }
-      return (
-        !captured.skipped && !captured.error && captured.gateOk && captured.headIdentity === head
-      );
-    });
-    if (!locked.ok) return false;
-    return locked.value;
-  } finally {
-    rootLock.release(task.id);
-  }
 }
 
 /** Refresh handoff shots and verification against the reviewed worktree HEAD. */
