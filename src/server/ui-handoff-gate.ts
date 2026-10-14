@@ -35,7 +35,14 @@ import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import type { CaptureEntry } from "../core/shot-plan.js";
 import { provenanceCaption, parseShotPlan, shotPlanFingerprint } from "../core/shot-plan.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
-import { runGit, worktreePathForBranch } from "../core/git.js";
+import {
+  addDetachedWorktree,
+  linkInheritedEnv,
+  mainCheckoutRoot,
+  removeDetachedWorktree,
+  runGit,
+  worktreePathForBranch,
+} from "../core/git.js";
 import { isShotCaptureUnavailable } from "../commands/shot.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "../commands/ui-harness.js";
 import {
@@ -161,6 +168,52 @@ export function handoffTreeNote(
   return "handoff capture has no recorded tree — cannot be tied to the reviewed HEAD";
 }
 
+/**
+ * Paths whose movement never invalidates a capture (#0766). Task bookkeeping
+ * files (`work/*.md` — status flips, activity notes, review counters) land on
+ * the branch after the capture ran and do not change any app the captures
+ * describe; #0600 already treats work-file commits as the task's own
+ * bookkeeping everywhere else. Everything else — source, docs, config, another
+ * task's file — keeps the capture stale (fail-closed: docs are content a
+ * docs-site capture can legitimately show, so only task bookkeeping is exempt).
+ */
+const TASK_BOOKKEEPING_PATH_RE = /^work\/.*\.md$/;
+
+async function diffIsTaskBookkeepingOnly(
+  diffRoot: string,
+  fromSha: string,
+  toHead: string,
+): Promise<boolean> {
+  const diff = await runGit(diffRoot, ["diff", "--name-only", fromSha, toHead], 10_000);
+  if (diff.status !== 0) return false;
+  const paths = diff.stdout
+    .split("\n")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return paths.length > 0 && paths.every((p) => TASK_BOOKKEEPING_PATH_RE.test(p));
+}
+
+/**
+ * The staleness verdict as the review should act on it (#0766): the mechanical
+ * {@link handoffTreeStatus} comparison, softened only for HEAD movement that is
+ * provably pure task bookkeeping — a diff of nothing but `work/*.md` files
+ * between the captured tree and the reviewed one. Returns "stale" for every
+ * git problem (an unreachable sha, a missing worktree), so an unclassifiable
+ * drift is never presented as current evidence.
+ */
+export async function effectiveHandoffTreeStatus(
+  diffRoot: string | null | undefined,
+  evidence: Pick<UiHandoffGateEvidence, "sourceIdentity"> | null | undefined,
+  currentHead: string | null | undefined,
+): Promise<HandoffTreeStatus> {
+  const status = handoffTreeStatus(evidence, currentHead);
+  if (status !== "stale") return status;
+  const captured = evidence?.sourceIdentity?.trim();
+  const head = currentHead?.trim();
+  if (!diffRoot || !captured || !head || captured === head) return status;
+  return (await diffIsTaskBookkeepingOnly(diffRoot, captured, head)) ? "current" : "stale";
+}
+
 export interface UiHandoffGateResult {
   ok: boolean;
   skipped?: boolean;
@@ -169,7 +222,7 @@ export interface UiHandoffGateResult {
   shotResult?: ShotCaptureResult;
 }
 
-type TaskLog = (taskId: string, level: LogLevel, message: string) => void;
+export type TaskLog = (taskId: string, level: LogLevel, message: string) => void;
 
 function cacheRoot(root: string, cacheDir: string): string {
   return join(root, cacheDir || ".repoos");
@@ -463,6 +516,9 @@ export interface UiHandoffGateDeps {
   syntheticIssues?: PageGateIssue[];
   /** Test hook: the tested tree identity, when git is unavailable. */
   sourceIdentity?: string;
+  /** Explicit evidence refresh: replace engineer captures and keep task Markdown untouched. */
+  forceRefresh?: boolean;
+  recordTaskNotes?: boolean;
 }
 
 /** A blocking issue from a required assertion that failed (#0734). */
@@ -498,11 +554,16 @@ export async function runUiHandoffGate(
     return { ok: false, detail, evidencePath: path };
   }
 
-  if (!taskNeedsUiHandoffVerification(config, task)) {
+  // An explicit refresh is an operator request, so engineer-made captures do
+  // not pre-empt it. Still honor the repository-wide disabled policy.
+  if (
+    !resolvedUiVerification(config).enabled ||
+    (!deps.forceRefresh && !taskNeedsUiHandoffVerification(config, task))
+  ) {
     return { ok: true, skipped: true, detail: "ui verification not required for this task" };
   }
 
-  const plan = planAutoCapture(config, task);
+  const plan = planAutoCapture(config, task, { forceRefresh: deps.forceRefresh });
   if ("reason" in plan) {
     return { ok: true, skipped: true, detail: plan.reason };
   }
@@ -557,7 +618,8 @@ export async function runUiHandoffGate(
   let cleared = false;
   const ensureCleared = (): void => {
     if (!cleared) {
-      store.removeAuto();
+      if (deps.forceRefresh) store.clearForRefresh();
+      else store.removeAuto();
       cleared = true;
     }
   };
@@ -770,33 +832,66 @@ export async function runUiHandoffGate(
   // store the images, and record provenance (command, cwd, exit status,
   // stdout/stderr tail, image sizes). A command problem is a visible warning,
   // never a failed handoff, exactly as in the automatic capture path.
-  if (commandEntries.length > 0) {
-    const batch = captureCommandEntries({
-      config,
-      task,
-      entries: commandEntries,
-      commandRoot: sourceWorktree,
-      planFingerprint,
-      sourceIdentity,
-      store,
-      ensureCleared,
-    });
-    captured += batch.captured;
-    commandCaptures.push(...batch.evidence);
-    if (batch.fatal) {
-      log(task.id, "warn", `ui verification: shots: failed — ${batch.fatal}`);
+  //
+  // #0766: an explicit refresh runs commands in a detached worktree at the
+  // reviewed HEAD so a misbehaving command cannot dirty the task worktree.
+  let commandRoot = sourceWorktree;
+  let detachedCommandPath: string | undefined;
+  if (deps.forceRefresh && commandEntries.length > 0) {
+    const fullHead = await runGit(sourceWorktree, ["rev-parse", "HEAD"], 10_000);
+    if (fullHead.status !== 0 || !fullHead.stdout.trim()) {
+      return {
+        ok: false,
+        detail: "could not resolve the task worktree HEAD for command capture",
+      };
     }
-    for (const ev of batch.evidence) {
-      if (ev.status !== "captured") {
-        log(
-          task.id,
-          "warn",
-          `ui verification: shots: ${ev.status} — ${ev.reason ?? "capture failed"}`,
-        );
-        continue;
+    const mainRoot = mainCheckoutRoot(config.root);
+    const parentDir = join(mainRoot, config.cacheDir, "command-capture");
+    const detached = await addDetachedWorktree(mainRoot, parentDir, fullHead.stdout.trim());
+    if (!detached.ok) {
+      return {
+        ok: false,
+        detail: `could not create isolated worktree for command capture: ${detached.error}`,
+      };
+    }
+    detachedCommandPath = detached.path;
+    commandRoot = detached.path;
+    linkInheritedEnv(mainRoot, detached.path);
+  }
+  if (commandEntries.length > 0) {
+    try {
+      const batch = captureCommandEntries({
+        config,
+        task,
+        entries: commandEntries,
+        commandRoot,
+        planFingerprint,
+        sourceIdentity,
+        store,
+        ensureCleared,
+        clearPriorOnCommandSkip: deps.forceRefresh,
+      });
+      captured += batch.captured;
+      commandCaptures.push(...batch.evidence);
+      if (batch.fatal) {
+        log(task.id, "warn", `ui verification: shots: failed — ${batch.fatal}`);
       }
-      for (const msg of ev.warnings ?? []) {
-        log(task.id, "warn", `ui verification: shots: ${msg}`);
+      for (const ev of batch.evidence) {
+        if (ev.status !== "captured") {
+          log(
+            task.id,
+            "warn",
+            `ui verification: shots: ${ev.status} — ${ev.reason ?? "capture failed"}`,
+          );
+          continue;
+        }
+        for (const msg of ev.warnings ?? []) {
+          log(task.id, "warn", `ui verification: shots: ${msg}`);
+        }
+      }
+    } finally {
+      if (detachedCommandPath) {
+        await removeDetachedWorktree(mainCheckoutRoot(config.root), detachedCommandPath);
       }
     }
   }
@@ -825,12 +920,20 @@ export async function runUiHandoffGate(
   if (allIssues.length > 0) {
     const detail = `ui verification failed (${allIssues.length} issue(s)): ${formatPageGateIssues(allIssues)}`;
     log(task.id, "error", detail);
-    try {
-      patchTaskFile(config, task.absPath, { note: detail.slice(0, 500) });
-    } catch {
-      /* best-effort */
+    if (deps.recordTaskNotes !== false) {
+      try {
+        patchTaskFile(config, task.absPath, { note: detail.slice(0, 500) });
+      } catch {
+        /* best-effort */
+      }
     }
     return { ok: false, detail, evidencePath: path };
+  }
+
+  if (deps.forceRefresh && captured === 0) {
+    const detail = "evidence was not refreshed: no shots were captured";
+    log(task.id, "warn", `ui verification: ${detail}`);
+    return { ok: false, skipped: true, detail };
   }
 
   const warnNote =
