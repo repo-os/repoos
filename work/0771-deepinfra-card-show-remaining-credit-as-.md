@@ -3,6 +3,9 @@ id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -204,3 +207,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-14T00:06:08Z · body
 - 2026-10-14T00:06:58Z · status active→review
 - 2026-10-14T00:08:16Z · note: review pass 9: needs some work
+- 2026-10-14T00:08:16Z · needs_input
