@@ -147,10 +147,17 @@ repoos dev web logs
 A started target runs in the project's root checkout, detached from the server's
 own lifetime: it keeps running after you close the browser, and stops only when
 you ask, when the server stops, or when it crashes. Its state is one of
-`running`, `stopped`, `starting` or `failed`, and the last ~200 lines of its
-combined output are available. A running target also shows how long ago it
-started — "17 hours ago" beside its state — and hovering or focusing that time
-reveals the exact start timestamp.
+`running`, `stopped`, `starting` or `failed`, and the last 2000 lines of its
+combined output are available in a scrollable panel. A running target also shows
+how long ago it started — "17 hours ago" beside its state — and hovering or
+focusing that time reveals the exact start timestamp.
+
+When a target fails, the Dev page shows a plain-language summary above the log:
+what failed, the most likely cause, and how to fix it. A port already in use is
+detected from the output and, when it can, names the process holding the port —
+its PID and command — with a **Stop** action for a process RepoOS started. Enable
+the optional AI-written summary under **Settings → Advanced → Dev failure
+summaries**.
 
 ## See also
 

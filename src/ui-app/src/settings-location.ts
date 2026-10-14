@@ -50,6 +50,9 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   // Dev targets have a dedicated hand-rendered card on Advanced (#0749); a
   // plain comma-separated General row cannot express the four fields.
   "dev.targets",
+  // The Dev-failure AI summary toggle (#0775) is rendered with the Dev targets
+  // card on Advanced, not as a plain General row.
+  "dev.failureSummary.ai",
   // The agent-driver budget allowlist is edited on the Agents page's Budget
   // Controls tab (#0764), not by a plain General row.
   "budget.allowlist",
@@ -127,6 +130,10 @@ export function resolveSettingLocation(
   }
   if (key === "dev.targets") {
     // A hand-rendered card on Advanced (#0749); not an auto-rendered row.
+    return { tab: "advanced", hasUiRow: true };
+  }
+  if (key === "dev.failureSummary.ai") {
+    // Hand-rendered beside the Dev targets card on Advanced (#0775).
     return { tab: "advanced", hasUiRow: true };
   }
   if (key === "dev.inspector.enabled" || key === "dev.inspector.editorCommand") {

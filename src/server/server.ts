@@ -227,11 +227,13 @@ import {
 } from "./routes/release.js";
 import { getDeployments, postDeploy } from "./routes/deployments.js";
 import {
+  explainDevFailure,
   getDevTarget,
   getDevTargets,
   restartDevTarget,
   startDevTarget,
   stopDevTarget,
+  stopDevTargetHolder,
 } from "./routes/dev.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
@@ -2828,6 +2830,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/dev\/targets\/([^/]+)\/start$/, startDevTarget);
   router.register("POST", /^\/api\/dev\/targets\/([^/]+)\/stop$/, stopDevTarget);
   router.register("POST", /^\/api\/dev\/targets\/([^/]+)\/restart$/, restartDevTarget);
+  // #0775: stop the process holding a port a failed target could not bind
+  // (only one RepoOS started), and an optional AI failure explanation.
+  router.register("POST", /^\/api\/dev\/targets\/([^/]+)\/stop-holder$/, stopDevTargetHolder);
+  router.register("POST", /^\/api\/dev\/targets\/([^/]+)\/explain$/, explainDevFailure);
   router.register("GET", "/api/chat", getChat);
   router.register("POST", "/api/chat/message", sendChatMessage);
   router.register("POST", "/api/chat/interrupt", interruptChatMessage);

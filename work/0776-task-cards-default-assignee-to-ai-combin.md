@@ -1,15 +1,18 @@
 ---
+close_out_repair_count: 1
 id: "0776"
 title: "Task cards: default assignee to AI, combined area chip, compact file-change chip"
 type: feature
-status: review
+status: active
 priority: p1
 area: [ui, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-cards-default-assignee-to-ai-combin
 created_at: "2026-10-14T06:06:09Z"
-updated_at: "2026-10-14T06:45:49Z"
+updated_at: "2026-10-14T07:50:25Z"
+review_passes: 3
+review_rounds: 2
 ---
 ## Problem
 Three things on the task card and defaults are noisy or wrong:
@@ -34,6 +37,19 @@ Three things on the task card and defaults are noisy or wrong:
 ## Notes for AI
 Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core server cli ui' and 'web server'); 3 shows the '· open' chip and the '10f 377+' file chip on the card; 4 shows the lock chips for dependencies. The card is src/ui-app/src/components/TaskCard.vue (the assignee chip is around line 1040, the area chips and file-change chip near 1030-1060). The default is src/core/config.ts (defaultAssignee, around lines 191 and 2060).
 
+## Shots
+```json
+[
+{
+"target": "default",
+"route": "/work"
+}
+]
+```
+
+## Implementation notes
+This repo has no `site/` tree. The marketing site lives in `landing/` and describes no card chips, no areas, and no default assignee, so there was nothing to update there; the defaults/card documentation changes are in `user-docs/configuration.md` and `docs/concepts.md`. (#0776)
+
 ## Screenshots
 
 ![6](/api/tasks/0776/attachments/screenshot-1.png)
@@ -47,4 +63,33 @@ Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core
 - 2026-10-14T06:06:10Z · screenshots
 - 2026-10-14T06:15:44Z · status inbox→ready
 - 2026-10-14T06:15:46Z · status ready→active, branch
+- 2026-10-14T06:25:13Z · body
+- 2026-10-14T06:34:18Z · body: section Shots
+- 2026-10-14T06:37:17Z · body
+- 2026-10-14T06:38:42Z · body
 - 2026-10-14T06:45:49Z · status active→review
+- 2026-10-14T06:45:56Z · note: highlight .tc-area-chip, .tc-file-chip matched nothing on /
+- 2026-10-14T06:46:48Z · note: review pass 1: needs some work
+- 2026-10-14T06:46:48Z · status review→active
+- 2026-10-14T06:50:05Z · body: section Shots
+- 2026-10-14T06:51:07Z · body
+- 2026-10-14T06:52:33Z · body
+- 2026-10-14T07:02:06Z · status active→review
+- 2026-10-14T07:02:06Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cd1f486fb) during finalization (#0734)
+- 2026-10-14T07:02:07Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cd1f486fb) during finalization (#0734)
+- 2026-10-14T07:03:09Z · note: review pass 2: needs some work
+- 2026-10-14T07:03:09Z · status review→active
+- 2026-10-14T07:04:48Z · body: section Implementation notes
+- 2026-10-14T07:06:18Z · body
+- 2026-10-14T07:07:42Z · status active→review
+- 2026-10-14T07:07:42Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cd1f486fb) during finalization (#0734)
+- 2026-10-14T07:07:42Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cd1f486fb) during finalization (#0734)
+- 2026-10-14T07:08:38Z · note: review pass 3: needs some work
+- 2026-10-14T07:08:38Z · needs_input
+- 2026-10-14T07:43:02Z · body: section Shots
+- 2026-10-14T07:48:29Z · note: shot removed: auto: matched src/ui-app/**
+- 2026-10-14T07:49:25Z · body: section Shots
+- 2026-10-14T07:49:25Z · note: shot added: default/work
+- 2026-10-14T07:50:25Z · status review→active, needs_input
+- 2026-10-14T07:50:25Z · note: close-out repair: merge-conflict
+
