@@ -37,9 +37,9 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 ```json
 [
 {
-  "label": "placeholder while clearing stale captures",
-  "target": "default",
-  "route": "/work"
+"label": "placeholder while clearing stale captures",
+"target": "default",
+"route": "/work"
 }
 ]
 ```
@@ -87,3 +87,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T12:14:08Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-14T12:44:18Z · body: section Shots
 - 2026-10-14T13:01:12Z · body: section Shots
+- 2026-10-14T13:01:12Z · note: shot removed: auto: matched src/ui-app/**
