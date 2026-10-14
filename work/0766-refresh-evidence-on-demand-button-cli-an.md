@@ -229,3 +229,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-14T00:45:16Z · needs_input
 - 2026-10-14T00:47:29Z · status review→active
 - 2026-10-14T00:47:40Z · needs_input
+- 2026-10-14T00:47:40Z · message_delivered: 1 message(s)
