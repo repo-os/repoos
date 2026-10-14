@@ -33,10 +33,16 @@ enum ServerNavigationPolicy {
         opensNewWindow: Bool
     ) -> ServerNavigationAction {
         if opensNewWindow {
-            // A link the user clicked with target="_blank" (for example a dev target's
-            // URL on the Dev page) has no window inside this web view. Send a loopback
-            // URL to the default browser, where it works. Every other popup stays blocked.
-            if activation == .linkActivated, isLoopbackURL(requestURL) {
+            // A link the user clicked with target="_blank" has no window inside
+            // this web view. A loopback URL (for example a dev target's URL on
+            // the Dev page) or an https URL goes to the default browser through
+            // the same external-link path as a same-tab link. Same-origin
+            // popups and scripted popups with no user click stay blocked.
+            if activation == .linkActivated,
+               !isSameOrigin(requestURL, allowedOrigin),
+               isLoopbackURL(requestURL)
+                || (requestURL.scheme ?? "").lowercased() == "https"
+            {
                 return .openInDefaultBrowser(requestURL)
             }
             return .cancel(reason: .popup)
