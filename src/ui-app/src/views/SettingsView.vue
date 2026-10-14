@@ -28,6 +28,7 @@ import ScreenshotExpandButton from "../components/ScreenshotExpandButton.vue";
 import { pendingToShots } from "../lib/screenshot-viewer";
 import AuthSettingsPanel from "../components/AuthSettingsPanel.vue";
 import DevTargetsSettings from "../components/DevTargetsSettings.vue";
+import SettingsImportExport from "../components/SettingsImportExport.vue";
 import TelegramChatNotificationsSettings from "../components/TelegramChatNotificationsSettings.vue";
 import ServiceSettings from "../components/ServiceSettings.vue";
 import TelegramSettingsPanel from "../components/TelegramSettingsPanel.vue";
@@ -44,6 +45,7 @@ import {
   SETTINGS_TABS,
   type SettingsTabId,
 } from "../settings-location";
+import { TOML_ONLY_REMOTE_VALIDATION_KEYS } from "../lib/settings-transfer";
 
 const config = useConfigStore();
 const ui = useUiStore();
@@ -86,6 +88,7 @@ const activeTab = computed<TabId>(() => {
     q === "notifications" ||
     q === "security" ||
     q === "advanced" ||
+    q === "import-export" ||
     q === "support" ||
     q === "toml"
   ) {
@@ -794,6 +797,10 @@ function buildBody(): Record<string, unknown> {
     // (#0764); skipping it here keeps an unrelated Settings save from rewriting
     // its [[budget.allowlist]] rows.
     if (f.key === "budget.allowlist") continue;
+    // The Hetzner remote-validation details (#0779) are transferred by the
+    // Import/Export tab and edited in raw TOML; skipping them here keeps an
+    // unrelated Settings save from materialising their defaults.
+    if ((TOML_ONLY_REMOTE_VALIDATION_KEYS as readonly string[]).includes(f.key)) continue;
     let val = form[f.key];
     if (f.key.startsWith("board.columns.")) {
       const trimmed = typeof val === "string" ? val.trim() : String(val ?? "").trim();
@@ -1671,6 +1678,16 @@ onUnmounted(() => {
         </Card>
 
         <DevTargetsSettings />
+      </div>
+
+      <!-- ─── Import/Export tab (#0779) ─────────────────────── -->
+      <div
+        id="settings-panel-import-export"
+        role="tabpanel"
+        :aria-labelledby="`settings-tab-import-export`"
+        v-show="activeTab === 'import-export'"
+      >
+        <SettingsImportExport />
       </div>
 
       <!-- ─── Support tab ─────────────────────────────────── -->
