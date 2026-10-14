@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-14T00:15:07Z"
-review_passes: 9
 id: "0771"
 title: "DeepInfra card: show remaining credit as the headline number"
 type: bug
-status: review
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -15,6 +13,8 @@ model_override: haiku
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T17:02:59Z"
+updated_at: "2026-10-14T00:15:26Z"
+review_passes: 9
 last_check_failure: "repoos check at 2026-10-13T23:22:53.274Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 dev_error_count: 2
@@ -212,4 +212,4 @@ Start from the provider card for DeepInfra and its billing fetch on the server (
 - 2026-10-14T00:13:37Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (7d42f752c) during finalization (#0734)
 - 2026-10-14T00:13:37Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (7d42f752c) during finalization (#0734)
 - 2026-10-14T00:15:07Z · note: review pass 10: good to go
-
+- 2026-10-14T00:15:26Z · status review→active
