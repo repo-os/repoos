@@ -79,6 +79,15 @@ describe("declared shot assertions (#0734)", () => {
     expect(shotPlanFingerprint(other.entries)).not.toBe(fp1);
   });
 
+  it("fingerprints a dark theme differently from its light twin (#0778)", () => {
+    // A light capture must never satisfy a dark declaration: the theme is
+    // part of the plan identity, so re-declaring an existing shot in the other
+    // theme forces a fresh capture instead of reusing light evidence.
+    const light = buildCapturePlan(["default"], [{ route: "/", label: "Shot" }]);
+    const dark = buildCapturePlan(["default"], [{ route: "/", label: "Shot", theme: "dark" }]);
+    expect(shotPlanFingerprint(light.entries)).not.toBe(shotPlanFingerprint(dark.entries));
+  });
+
   it("treats two declarations as different when only their assertions differ", () => {
     const a = { route: "/", assert: [{ selector: ".row", minCount: 1 }] };
     const b = { route: "/", assert: [{ selector: ".row", minCount: 2 }] };

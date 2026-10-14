@@ -106,11 +106,9 @@ import {
 import { computeTaskShotContext } from "../shot-context.js";
 import {
   appendDeclaredShot,
-  declaredShotMatchesShot,
   parseShotEntry,
-  removeDeclaredShots,
+  removeDeclarationsForDeletedShot,
   resolveDeclaredTarget,
-  sameDeclaredShot,
 } from "../../core/shot-plan.js";
 import { resolveShotTargets } from "../../core/shot-targets.js";
 import { captureDeclaredShot } from "../shot-capture.js";
@@ -1639,16 +1637,19 @@ export const deleteTaskShot: RouteHandler = async (ctx, _req, res, params) => {
   // Sync the declaration: a matching ## Shots entry would be captured again at
   // the next handoff. A hand-added shot carries its own full declaration in
   // the manifest (`found.declared`), so it syncs THE exact entry — selector
-  // and steps included. Legacy and auto shots (no stored declaration) fall
-  // back to the shallow matcher, which requires at least one identifying
-  // field — an anonymous declaration (steps/highlight only) can never claim a
-  // deleted shot (#0627 review round 1). The body is re-read from disk so a
-  // declaration added concurrently is still seen.
-  const removal = removeDeclaredShots(
+  // and steps included. An entry that no longer parses (e.g. an invalid
+  // `state` edited in after capture) resolves to at most the one closest entry
+  // instead of every twin sharing label/route/target (#0778 review round 3).
+  // Legacy and auto shots (no stored declaration) fall back to the shallow
+  // matcher, which requires at least one identifying field — an anonymous
+  // declaration (steps/highlight only) can never claim a deleted shot (#0627
+  // review round 1). The body is re-read from disk so a declaration added
+  // concurrently is still seen.
+  const shotRef = { label: found.label, route: found.route, target: found.target };
+  const removal = removeDeclarationsForDeletedShot(
     readTaskBody(config, task.absPath),
-    found.declared
-      ? (declared) => sameDeclaredShot(declared, found.declared!)
-      : (declared) => declaredShotMatchesShot(declared, found),
+    shotRef,
+    found.declared,
   );
   // Declaration first, image second (review round 5). If the task file cannot
   // be read or written, nothing has been deleted and the caller gets a real

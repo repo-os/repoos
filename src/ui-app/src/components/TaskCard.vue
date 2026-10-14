@@ -1150,6 +1150,7 @@ async function openDebuggerFromError(): Promise<void> {
             <button
               type="button"
               class="tc-pipeline-recover-btn"
+              data-test-id="task-card-pipeline-cancel"
               :disabled="pipelineRecoverBusy"
               @click.stop="cancelStalledPipeline"
             >
@@ -1158,6 +1159,7 @@ async function openDebuggerFromError(): Promise<void> {
             <button
               type="button"
               class="tc-pipeline-recover-btn primary"
+              data-test-id="task-card-pipeline-retry"
               :disabled="pipelineRecoverBusy"
               @click.stop="retryStalledPipeline"
             >

@@ -73,8 +73,11 @@ function fixtureTask(over: Partial<Task> = {}): Task {
   };
 }
 
-function activePipeline(taskId: string, detail: string | null = null): IntegrationPipelineSnapshot {
-  const at = nowIso();
+function activePipeline(
+  taskId: string,
+  detail: string | null = null,
+  at: string = nowIso(),
+): IntegrationPipelineSnapshot {
   return {
     empty: false,
     active: {
@@ -181,6 +184,19 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       );
       pinnedIntegration = repo.integration;
       break;
+    case "closeOut:stalled":
+      // A fixed far-past attempt: idle past the stall threshold at any capture
+      // time, so the fixture task's card renders the stalled Cancel/Retry
+      // actions (#0778). The fixture task itself must exist for its card to
+      // render at all.
+      ensureFixtureTask(repo, "review");
+      repo.integration = activePipeline(
+        SHOT_PREVIEW_FIXTURE_TASK_ID,
+        null,
+        "2026-01-01T00:00:00.000Z",
+      );
+      pinnedIntegration = repo.integration;
+      break;
     case "card:doneError":
       ensureFixtureTask(repo, "review");
       repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID);
@@ -208,6 +224,18 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         filesChanged: 10,
         additions: 377,
         deletions: 5,
+      });
+      break;
+    case "drawer:reviewWithBranch":
+      // A review-status task with a non-empty branch, for TaskDrawer shots.
+      // TaskCard and TaskDrawer only show actions and UI-changes pane when the
+      // task has a branch and status is active/review. Seeded diff stats prevent
+      // a network request that would fail and put console errors on the page (#0778).
+      ensureFixtureTask(repo, "review", { branch: "feat/shot-fixture" });
+      repo.seedDiffStats(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        filesChanged: 3,
+        additions: 42,
+        deletions: 8,
       });
       break;
     default:

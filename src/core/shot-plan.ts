@@ -850,7 +850,38 @@ export function buildCapturePlan(
  * same bytes.
  */
 export function declaredShotsSectionContent(shots: DeclaredShot[]): string {
-  return `\`\`\`json\n${JSON.stringify(shots, null, 2)}\n\`\`\``;
+  return declaredShotsSectionContentFromItems(shots);
+}
+
+/** Fenced JSON for a `## Shots` list that may include invalid entries kept as raw objects. */
+export function declaredShotsSectionContentFromItems(items: unknown[]): string {
+  return `\`\`\`json\n${JSON.stringify(items, null, 2)}\n\`\`\``;
+}
+
+/**
+ * The raw JSON array inside a task's `## Shots` section. Structural problems
+ * (missing fence, invalid JSON) are reported in `errors`; per-entry validation
+ * errors are ignored so callers can edit the list without fixing unrelated entries.
+ */
+export function listShotsSectionItems(body: string): { items: unknown[] | null; errors: string[] } {
+  const section = shotsSection(body ?? "");
+  if (section === null) return { items: null, errors: [] };
+  const hasContent = /\S/.test(section);
+  if (!hasContent) return { items: [], errors: [] };
+  const block = firstFencedBlock(section);
+  if (block === null) {
+    return { items: null, errors: ["## Shots section has no fenced JSON list"] };
+  }
+  try {
+    const raw = JSON.parse(block) as unknown;
+    const items = Array.isArray(raw) ? raw : [raw];
+    return { items, errors: [] };
+  } catch (error) {
+    return {
+      items: null,
+      errors: [`## Shots JSON does not parse: ${(error as Error).message}`],
+    };
+  }
 }
 
 /**
@@ -905,7 +936,7 @@ export function declaredShotMatchesShot(
  * in selector or steps are NOT the same shot's declaration.
  */
 export function sameDeclaredShot(a: DeclaredShot, b: DeclaredShot): boolean {
-  for (const field of ["label", "target", "route", "selector", "highlight"] as const) {
+  for (const field of ["label", "target", "route", "selector", "highlight", "state"] as const) {
     if ((a[field] ?? undefined) !== (b[field] ?? undefined)) return false;
   }
   // #0782: theme is part of a declaration's identity — a light capture and a
@@ -971,22 +1002,262 @@ export function describeShotAssertion(assertion: ShotAssertion): string {
  * entries are all removed: a delete must not leave a declaration behind that
  * re-handoff would capture again. A body with no `## Shots` section (or an
  * already-malformed one, reported in `errors`) removes nothing.
+ *
+ * No production caller remains (#0778 review): the delete route goes through
+ * {@link removeDeclarationsForDeletedShot}, which wraps these semantics for
+ * the one case production needs. Kept as the concrete API of the fenced-list
+ * edit format — its tests document the removable-entry rules — and kept
+ * public in case a future caller (a CLI "drop one declaration" edit) wants
+ * the parse-before-remove behavior without the delete-shot framing.
  */
 export function removeDeclaredShots(
   body: string,
   match: (shot: DeclaredShot) => boolean,
+  matchRaw?: (raw: unknown) => boolean,
 ): { content: string; removed: number; errors: string[] } {
-  const parsed = parseShotPlan(body ?? "");
-  if (parsed.errors.length > 0) {
-    return { content: "", removed: 0, errors: parsed.errors };
+  const listed = listShotsSectionItems(body ?? "");
+  if (listed.errors.length > 0) {
+    return { content: "", removed: 0, errors: listed.errors };
   }
-  const kept = parsed.shots.filter((s) => !match(s));
-  if (kept.length === parsed.shots.length) {
+  if (listed.items === null) {
+    return { content: "", removed: 0, errors: [] };
+  }
+  const kept: unknown[] = [];
+  let removed = 0;
+  for (let i = 0; i < listed.items.length; i++) {
+    const raw = listed.items[i];
+    const parsed = parseShot(raw, `shot #${i + 1}`);
+    if (parsed.shot) {
+      if (match(parsed.shot)) {
+        removed++;
+        continue;
+      }
+      kept.push(parsed.shot);
+      continue;
+    }
+    if (matchRaw?.(raw)) {
+      removed++;
+      continue;
+    }
+    kept.push(raw);
+  }
+  if (removed === 0) {
     return { content: "", removed: 0, errors: [] };
   }
   return {
-    content: declaredShotsSectionContent(kept),
-    removed: parsed.shots.length - kept.length,
+    content: declaredShotsSectionContentFromItems(kept),
+    removed,
     errors: [],
   };
+}
+
+/**
+ * Whether a parsed declaration should be removed when deleting `shot` (#0778).
+ * A hand-added capture syncs THE exact entry via `capturedDeclared`
+ * (`sameDeclaredShot`) — a shallow label/route/target fallback here would also
+ * claim twin declarations that merely share those fields but differ in
+ * selector or steps (#0627). The shallow matcher applies only to legacy/auto
+ * shots with no recorded declaration.
+ */
+export function declarationMatchesDeletedShot(
+  entry: DeclaredShot,
+  shot: { label?: string; route?: string; target?: string },
+  capturedDeclared?: DeclaredShot,
+): boolean {
+  if (capturedDeclared) return sameDeclaredShot(entry, capturedDeclared);
+  return declaredShotMatchesShot(entry, shot);
+}
+
+/**
+ * Like {@link declarationMatchesDeletedShot} for a raw JSON list item — reached
+ * only when `parseShot` rejects the entry. When the capture recorded its own
+ * declaration (`capturedDeclared`), only structural equality removes the entry:
+ * falling back to the shallow label/route/target matcher would also claim twin
+ * declarations that merely share those fields but differ in selector or steps.
+ * Without a recorded declaration (legacy/auto shots) the shallow matcher is
+ * the only signal available.
+ *
+ * Test-only today (#0778 review): no production caller remains — the delete
+ * route's raw path inlines this exact rule inside
+ * {@link removeDeclarationsForDeletedShot}. Kept (and reused by
+ * `removeDeclaredShots` users) so the raw-matching semantics stay exercised
+ * as a named, documented rule.
+ */
+export function declarationRawMatchesDeletedShot(
+  raw: unknown,
+  shot: { label?: string; route?: string; target?: string },
+  capturedDeclared?: DeclaredShot,
+): boolean {
+  if (capturedDeclared) return sameDeclaredShotRaw(raw, capturedDeclared);
+  return declaredShotMatchesShotRaw(raw, shot);
+}
+/** Match a raw JSON entry to a captured shot when `parseShot` rejects the entry. */
+export function declaredShotMatchesShotRaw(
+  raw: unknown,
+  shot: { label?: string; route?: string; target?: string },
+): boolean {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return false;
+  const entry = raw as Record<string, unknown>;
+  const declared: DeclaredShot = {};
+  for (const key of ["label", "target", "route"] as const) {
+    if (typeof entry[key] === "string" && entry[key]) declared[key] = entry[key];
+  }
+  return declaredShotMatchesShot(declared, shot);
+}
+
+/**
+ * Similarity between an invalid raw `## Shots` item and the deleted shot's
+ * stored declaration, over every identity field EXCEPT `state` — the field
+ * whose rejected fixture value is why the entry is on the raw path at all
+ * (#0778). A post-capture edit that only broke `state` scores full marks, so
+ * it beats twins that also differ in selector or steps (review round 3).
+ * `theme` IS scored (#0782 merged its identity into these matchers): a
+ * light/dark wrong-theme twin is a different shot, and should not outrank the
+ * edited original.
+ */
+function declarationClosenessScore(raw: unknown, declared: DeclaredShot): number {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return 0;
+  const entry = raw as Record<string, unknown>;
+  let score = 0;
+  for (const field of [
+    "label",
+    "target",
+    "route",
+    "selector",
+    "highlight",
+    "glob",
+    "theme",
+  ] as const) {
+    if ((entry[field] ?? undefined) === (declared[field] ?? undefined)) score++;
+  }
+  if (JSON.stringify(entry.steps ?? []) === JSON.stringify(declared.steps ?? [])) score++;
+  if (JSON.stringify(entry.env ?? {}) === JSON.stringify(declared.env ?? {})) score++;
+  if (JSON.stringify(entry.args ?? []) === JSON.stringify(declared.args ?? [])) score++;
+  if (JSON.stringify(entry.assert ?? []) === JSON.stringify(declared.assert ?? [])) score++;
+  return score;
+}
+
+/**
+ * Remove the `## Shots` declarations describing one deleted capture (#0627,
+ * #0778). Valid entries follow {@link declarationMatchesDeletedShot}: THE
+ * exact entry when the deleted shot carries its stored declaration, else a
+ * shallow label/route/target match (a legacy/auto shot records no selector or
+ * steps, so every match goes — the caller warns — or a re-handoff would
+ * recapture the deleted evidence).
+ *
+ * Entries that no longer parse (e.g. an invalid `state` fixture edited in
+ * after capture) can never match exactly, so the shallow rule alone would
+ * claim every twin sharing label/route/target and delete them all (review
+ * round 3). Instead at most ONE invalid entry goes when the stored declaration
+ * is known: exact (`sameDeclaredShotRaw`) twins — identical duplicates all go,
+ * they ARE the same entry — else the lone shallow candidate (the #0778 r2
+ * post-capture edit), else the uniquely closest entry to the stored
+ * declaration, so selector/steps break the tie toward the edited original.
+ * Genuinely ambiguous twins (a closest-score tie) remove nothing: the image
+ * delete still succeeds, and a stale invalid declaration never resurrects
+ * (invalid entries are never captured), so the user trims the file by hand.
+ */
+export function removeDeclarationsForDeletedShot(
+  body: string,
+  shot: { label?: string; route?: string; target?: string },
+  capturedDeclared?: DeclaredShot,
+): { content: string; removed: number; errors: string[] } {
+  const listed = listShotsSectionItems(body ?? "");
+  if (listed.errors.length > 0) {
+    return { content: "", removed: 0, errors: listed.errors };
+  }
+  if (listed.items === null) {
+    return { content: "", removed: 0, errors: [] };
+  }
+  const validDrop = new Set<number>();
+  const rawExact: number[] = [];
+  const rawShallow: number[] = [];
+  const rawScores = new Map<number, number>();
+  for (let i = 0; i < listed.items.length; i++) {
+    const raw = listed.items[i];
+    const parsed = parseShot(raw, `shot #${i + 1}`);
+    if (parsed.shot) {
+      if (declarationMatchesDeletedShot(parsed.shot, shot, capturedDeclared)) validDrop.add(i);
+      continue;
+    }
+    if (!capturedDeclared) {
+      // Legacy/auto shot: nothing else identifies the entry, so every shallow
+      // match goes (the caller discloses the count).
+      if (declaredShotMatchesShotRaw(raw, shot)) rawExact.push(i);
+      continue;
+    }
+    if (sameDeclaredShotRaw(raw, capturedDeclared)) {
+      rawExact.push(i);
+      continue;
+    }
+    if (declaredShotMatchesShotRaw(raw, shot)) {
+      rawShallow.push(i);
+      rawScores.set(i, declarationClosenessScore(raw, capturedDeclared));
+    }
+  }
+  const rawDrop = new Set<number>();
+  if (rawExact.length > 0) {
+    for (const i of rawExact) rawDrop.add(i);
+  } else if (rawShallow.length === 1) {
+    rawDrop.add(rawShallow[0]!);
+  } else if (rawShallow.length > 1) {
+    let best = -1;
+    let bestScore = -1;
+    let tied = false;
+    for (const i of rawShallow) {
+      const s = rawScores.get(i) ?? 0;
+      if (s > bestScore) {
+        bestScore = s;
+        best = i;
+        tied = false;
+      } else if (s === bestScore) {
+        tied = true;
+      }
+    }
+    if (!tied && best !== -1) rawDrop.add(best);
+  }
+  if (validDrop.size === 0 && rawDrop.size === 0) {
+    return { content: "", removed: 0, errors: [] };
+  }
+  const kept: unknown[] = [];
+  for (let i = 0; i < listed.items.length; i++) {
+    if (validDrop.has(i) || rawDrop.has(i)) continue;
+    const parsed = parseShot(listed.items[i], `shot #${i + 1}`);
+    kept.push(parsed.shot ?? listed.items[i]);
+  }
+  return {
+    content: declaredShotsSectionContentFromItems(kept),
+    removed: validDrop.size + rawDrop.size,
+    errors: [],
+  };
+}
+
+/** Structural equality on a raw entry for delete sync when validation failed (#0778).
+ * Mirrors {@link sameDeclaredShot}'s structural identity EXCEPT that `state`
+ * is not compared: the common invalid-entry case is a `state` fixture edited
+ * in after capture (an unknown/typo'd fixture name), so requiring `state`
+ * equality would never match the entry being deleted. Twins differing in
+ * selector, steps, theme, or any other identity field still do not match, so
+ * only the selected entry is removed. */
+export function sameDeclaredShotRaw(raw: unknown, declared: DeclaredShot): boolean {
+  const parsed = parseShot(raw, "entry");
+  if (parsed.shot) return sameDeclaredShot(parsed.shot, declared);
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return false;
+  const entry = raw as Record<string, unknown>;
+  for (const field of [
+    "label",
+    "target",
+    "route",
+    "selector",
+    "highlight",
+    "glob",
+    "theme",
+  ] as const) {
+    if ((entry[field] ?? undefined) !== (declared[field] ?? undefined)) return false;
+  }
+  if (JSON.stringify(entry.steps ?? []) !== JSON.stringify(declared.steps ?? [])) return false;
+  if (JSON.stringify(entry.env ?? {}) !== JSON.stringify(declared.env ?? {})) return false;
+  if (JSON.stringify(entry.args ?? []) !== JSON.stringify(declared.args ?? [])) return false;
+  if (JSON.stringify(entry.assert ?? []) !== JSON.stringify(declared.assert ?? [])) return false;
+  return true;
 }

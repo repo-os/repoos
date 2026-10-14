@@ -3,6 +3,7 @@ import { MAX_AUTO_REVIEW_ROUNDS } from "../../core/needs-input.js";
 import {
   needsInputPrimaryAction,
   needsInputBannerText,
+  needsInputDetailVisible,
   needsInputStatusLabel,
   needsInputSuggestionText,
 } from "../src/lib/needs-input-ui";
@@ -97,6 +98,14 @@ describe("needsInputPrimaryAction (#0511)", () => {
       kind: "send-pm",
       label: "Send to PM (fleshes this out)",
     });
+  });
+
+  it("hides needs-input detail when it repeats the banner (#0778)", () => {
+    const banner = needsInputBannerText("review-rounds-exhausted");
+    expect(needsInputDetailVisible("review-rounds-exhausted", banner)).toBe(false);
+    expect(
+      needsInputDetailVisible("review-rounds-exhausted", "`needs some work` — one defect remains."),
+    ).toBe(true);
   });
 
   it("names review-rounds-exhausted and offers Send to engineer (not Review again) on a review task", () => {

@@ -251,8 +251,11 @@ images are gitignored and served by the running server from disk; only the
 To replace any other single `## Section` (create it if absent), use
 `--section "<heading>" --section-body "..."`. A `Shots` section written this way
 must be a fenced JSON list, and malformed content is rejected rather than
-silently falling back to a `/` capture. `--shots` cannot be combined with
-`--section` or `--body`.
+silently falling back to a `/` capture. `--shots '[]'` (an empty JSON list) writes
+an empty shot list (`## Shots\n```json\n[]`), which clears all declared shots and
+lets the task fall back to automatic captures. To remove the entire `## Shots`
+section instead, use `repoos update <id> --section "Shots" --section-body ""`.
+`--shots` cannot be combined with `--section` or `--body`.
 
 A full `--body` replace that would drop Problem / Desired UX / Acceptance
 criteria / Notes for AI is refused unless `--force` is passed; the error points
