@@ -1020,6 +1020,31 @@ export function removeDeclaredShots(
   };
 }
 
+/**
+ * Whether a parsed declaration should be removed when deleting `shot` (#0778).
+ * Hand-added captures store `capturedDeclared`; if the task file was edited
+ * after capture (e.g. invalid `state`), equality against that snapshot can fail
+ * while label/route/target still identify the same evidence row.
+ */
+export function declarationMatchesDeletedShot(
+  entry: DeclaredShot,
+  shot: { label?: string; route?: string; target?: string },
+  capturedDeclared?: DeclaredShot,
+): boolean {
+  if (capturedDeclared && sameDeclaredShot(entry, capturedDeclared)) return true;
+  return declaredShotMatchesShot(entry, shot);
+}
+
+/** Like {@link declarationMatchesDeletedShot} for a raw JSON list item. */
+export function declarationRawMatchesDeletedShot(
+  raw: unknown,
+  shot: { label?: string; route?: string; target?: string },
+  capturedDeclared?: DeclaredShot,
+): boolean {
+  if (capturedDeclared && sameDeclaredShotRaw(raw, capturedDeclared)) return true;
+  return declaredShotMatchesShotRaw(raw, shot);
+}
+
 /** Match a raw JSON entry to a captured shot when `parseShot` rejects the entry. */
 export function declaredShotMatchesShotRaw(
   raw: unknown,
