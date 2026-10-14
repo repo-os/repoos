@@ -38,6 +38,21 @@ const message = ref("");
 /** Target name a start/stop/restart request is in flight for. */
 const busy = ref<string | null>(null);
 
+/**
+ * Whether the optional AI failure summary is offered (#0775). Read from the
+ * live config so toggling it in Settings takes effect on the next poll.
+ */
+const aiSummariesEnabled = computed(() => {
+  const dev = config.data?.dev as { failureSummary?: { ai?: boolean } } | undefined;
+  return dev?.failureSummary?.ai === true;
+});
+/** AI-written summary per target, once asked for. */
+const aiSummary = ref<Record<string, string>>({});
+/** Explain request error per target. */
+const aiSummaryError = ref<Record<string, string>>({});
+/** Target name whose explain request is in flight, or null. */
+const aiBusy = ref<string | null>(null);
+
 /** The project this server serves — one group, matching one repoos.toml. */
 const projectName = computed(() => repo.repoName || "This project");
 
@@ -89,11 +104,9 @@ function startedAtTip(t: DevTargetView): string {
   return date || time || "unknown";
 }
 
-/** The last few output lines an at-a-glance view shows inline. */
-const LOG_PREVIEW_LINES = 6;
-
-function preview(log: string[]): string[] {
-  return log.slice(-LOG_PREVIEW_LINES);
+/** The full captured output for the last run, newest last (#0775). */
+function fullLog(log: string[]): string {
+  return log.join("\n");
 }
 
 async function load(silent = false): Promise<void> {
@@ -149,6 +162,54 @@ async function confirmRestartNow(): Promise<void> {
   const t = confirmRestart.value;
   confirmRestart.value = null;
   if (t) await act(t.name, "restart");
+}
+
+/**
+ * Ask the server for an AI-written explanation of a failed target (#0775). Only
+ * offered while the feature is enabled; the deterministic summary needs no
+ * model and is always shown.
+ */
+async function explainFailure(t: DevTargetView): Promise<void> {
+  if (aiBusy.value) return;
+  aiBusy.value = t.name;
+  const { [t.name]: _drop, ...restError } = aiSummaryError.value;
+  aiSummaryError.value = restError;
+  try {
+    const res = await api<{ ok: boolean; summary: string }>(
+      `/api/dev/targets/${encodeURIComponent(t.name)}/explain`,
+      JSON_OPTS("POST", {}),
+    );
+    aiSummary.value = { ...aiSummary.value, [t.name]: res.summary ?? "" };
+  } catch (err) {
+    aiSummaryError.value = {
+      ...aiSummaryError.value,
+      [t.name]: err instanceof Error ? err.message : String(err),
+    };
+  } finally {
+    aiBusy.value = null;
+  }
+}
+
+/**
+ * Stop the process holding the port a failed target could not bind (#0775). The
+ * server only permits this for a process RepoOS itself started.
+ */
+async function stopHolder(t: DevTargetView): Promise<void> {
+  if (busy.value) return;
+  busy.value = t.name;
+  message.value = "";
+  try {
+    await api(
+      `/api/dev/targets/${encodeURIComponent(t.name)}/stop-holder`,
+      JSON_OPTS("POST", {}),
+    );
+    message.value = `Stopped the process holding the port for ${t.label}`;
+  } catch (err) {
+    message.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    busy.value = null;
+    await load(true);
+  }
 }
 
 // Poll only while the tab is visible; a hidden tab costs nothing, and state is
@@ -292,9 +353,65 @@ watch(
               </div>
             </dl>
 
-            <p v-if="t.status === 'failed' && t.error" class="dev-failure" role="alert">
-              <strong>Failed:</strong> {{ t.error }}
-            </p>
+            <section
+              v-if="t.status === 'failed' && (t.failure || t.error)"
+              class="dev-failure dev-summary"
+              role="alert"
+            >
+              <template v-if="t.failure">
+                <p class="dev-summary-what">{{ t.failure.what }}</p>
+                <p class="dev-summary-line">
+                  <span class="dev-summary-key">Likely cause</span> {{ t.failure.cause }}
+                </p>
+                <p class="dev-summary-line">
+                  <span class="dev-summary-key">How to fix</span> {{ t.failure.fix }}
+                </p>
+                <div v-if="t.failure.holder" class="dev-holder">
+                  <p class="dev-summary-line dev-holder-line">
+                    <span class="dev-summary-key">Held by</span>
+                    <code class="dev-holder-command">{{ t.failure.holder.command }}</code>
+                    <span class="dev-holder-pid">PID {{ t.failure.holder.pid }}</span>
+                    <span v-if="t.failure.holder.stale" class="dev-holder-stale"
+                      >left over from an earlier run</span
+                    >
+                  </p>
+                  <Button
+                    v-if="t.failure.canStopHolder"
+                    variant="outline"
+                    size="sm"
+                    :disabled="busy === t.name"
+                    @click="stopHolder(t)"
+                  >
+                    Stop the process holding it
+                  </Button>
+                </div>
+                <p v-else-if="t.failure.kind === 'port-in-use'" class="dev-summary-hint">
+                  Run
+                  <code>lsof -iTCP:{{ t.failure.port }} -sTCP:LISTEN -t</code>
+                  to find the process holding the port.
+                </p>
+                <div v-if="aiSummariesEnabled" class="dev-ai">
+                  <Button
+                    v-if="!aiSummary[t.name]"
+                    variant="ghost"
+                    size="sm"
+                    :disabled="aiBusy !== null"
+                    @click="explainFailure(t)"
+                  >
+                    {{ aiBusy === t.name ? "Explaining…" : "Explain with AI" }}
+                  </Button>
+                  <p v-if="aiSummary[t.name]" class="dev-ai-text">
+                    <span class="dev-summary-key">AI summary</span> {{ aiSummary[t.name] }}
+                  </p>
+                  <p v-if="aiSummaryError[t.name]" class="dev-ai-error">
+                    {{ aiSummaryError[t.name] }}
+                  </p>
+                </div>
+              </template>
+              <p v-if="t.error" class="dev-summary-reported">
+                <span class="dev-summary-key">Reported</span> <code>{{ t.error }}</code>
+              </p>
+            </section>
 
             <div class="dev-actions">
               <Button
@@ -324,8 +441,16 @@ watch(
             </div>
 
             <div v-if="t.log.length" class="dev-log">
-              <div class="dev-log-head">Last output</div>
-              <pre class="dev-log-body"><code>{{ preview(t.log).join("\n") }}</code></pre>
+              <div class="dev-log-head">
+                Last output
+                <span class="dev-log-count">{{ t.log.length }} lines</span>
+              </div>
+              <pre
+                class="dev-log-body"
+                tabindex="0"
+                role="region"
+                :aria-label="`Full output for ${t.label}`"
+              ><code>{{ fullLog(t.log) }}</code></pre>
             </div>
             <p v-else class="dev-log-empty">No output yet.</p>
           </article>
@@ -546,6 +671,80 @@ watch(
   overflow-wrap: anywhere;
 }
 
+/* Plain-language failure summary (#0775): what failed, why, and the fix. */
+.dev-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.5;
+}
+.dev-summary-what {
+  margin: 0;
+  font-weight: 700;
+}
+.dev-summary-line {
+  margin: 0;
+}
+.dev-summary-key {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+  margin-right: 4px;
+}
+.dev-summary-reported {
+  margin: 0;
+  opacity: 0.85;
+}
+.dev-summary-reported code,
+.dev-summary-hint code {
+  font-family: "JetBrains Mono", monospace;
+}
+.dev-summary-hint {
+  margin: 0;
+}
+.dev-holder {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  border-top: 1px solid var(--red-border-tint);
+  padding-top: 6px;
+}
+.dev-holder-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dev-holder-command {
+  font-family: "JetBrains Mono", monospace;
+  overflow-wrap: anywhere;
+}
+.dev-holder-pid {
+  font-variant-numeric: tabular-nums;
+}
+.dev-holder-stale {
+  font-style: italic;
+  opacity: 0.85;
+}
+.dev-ai {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  border-top: 1px solid var(--red-border-tint);
+  padding-top: 6px;
+}
+.dev-ai-text,
+.dev-ai-error {
+  margin: 0;
+}
+.dev-ai-error {
+  font-weight: 600;
+}
+
 .dev-actions {
   display: flex;
   align-items: center;
@@ -560,6 +759,10 @@ watch(
   background: var(--md-body-bg);
 }
 .dev-log-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 10.5px;
   font-weight: 800;
   text-transform: uppercase;
@@ -567,6 +770,12 @@ watch(
   color: var(--txt-faint);
   padding: 7px 12px;
   border-bottom: 1px solid var(--border);
+}
+.dev-log-count {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--txt-dim);
 }
 .dev-log-body {
   margin: 0;
@@ -577,9 +786,14 @@ watch(
   color: var(--txt-dim);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  max-height: 180px;
+  max-height: 320px;
   overflow-y: auto;
   overflow-x: hidden;
+}
+/* The full log is a scroll region: focusable so keyboard users can scroll it. */
+.dev-log-body:focus-visible {
+  outline: 2px solid var(--border-bright);
+  outline-offset: -2px;
 }
 .dev-log-empty {
   margin: 0;
