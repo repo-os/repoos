@@ -11,7 +11,7 @@ branch: feat/shots-a-fixture-added-on-the-task-branch
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-14T16:48:07Z"
-updated_at: "2026-10-14T18:25:10Z"
+updated_at: "2026-10-14T18:26:52Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -63,3 +63,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-14T18:22:13Z · status review→active
 - 2026-10-14T18:22:13Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-10-14T18:25:10Z · body
+- 2026-10-14T18:26:52Z · body
