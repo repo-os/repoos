@@ -187,3 +187,4 @@ Item 5 (stalled close-out card) is implemented and unit-pinned (DOM order Cancel
 - 2026-10-14T15:44:28Z · body
 - 2026-10-14T15:52:13Z · body
 - 2026-10-14T15:59:21Z · status active→review
+- 2026-10-14T15:59:21Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
