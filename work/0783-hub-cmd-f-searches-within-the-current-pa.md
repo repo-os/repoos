@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-14T11:58:09Z"
+review_passes: 1
 id: "0783"
 title: "Hub: Cmd-F searches within the current page"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/hub-cmd-f-searches-within-the-current-pa
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-14T11:42:22Z"
-updated_at: "2026-10-14T11:58:09Z"
 ---
 ## Problem
 In the native macOS RepoOS Hub, Cmd-F does nothing. The app defines no Find command, so the key is ignored, and the web pages in the Hub have no find bar. Cmd-K opens the Quick Switcher, which is for jumping between servers and tasks, not for searching text on the page.
@@ -42,3 +43,4 @@ Start from macos/RepoOSHub/RepoOSHubApp.swift (the existing CommandMenu('Go') wi
 - 2026-10-14T11:57:24Z · status active→review
 - 2026-10-14T11:57:24Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-14T11:58:09Z · note: review pass 1: good to go
+
