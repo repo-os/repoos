@@ -1165,6 +1165,11 @@ export interface IntegrationPipelineSnapshot {
     startedAt: string | null;
     /** When stage progress was last reported (ISO); used for stall detection (#0740). */
     lastProgressAt: string | null;
+    /**
+     * In-stage progress detail, e.g. a slow bundle upload's size + elapsed
+     * time (#0782). Null/absent when the job has no finer-grained progress.
+     */
+    detail?: string | null;
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];

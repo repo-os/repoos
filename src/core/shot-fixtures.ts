@@ -5,6 +5,9 @@
  */
 export const SHOT_PREVIEW_FIXTURE_IDS = [
   "closeOut:active",
+  // #0782 — an active close-out mid-bundle-upload, so a capture can show the
+  // upload-progress card copy instead of the bare stage.
+  "closeOut:uploading",
   "card:doneError",
   "board:withReviewTask",
   // #0776 — a multi-area card with seeded diff stats, so a capture can show

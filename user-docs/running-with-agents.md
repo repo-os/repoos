@@ -157,8 +157,11 @@ session inherits them.
   Console errors, failed same-origin requests, overflow, blank captures, wrong-route
   redirects, and failed required `assert` entries **block handoff**; a missing
   `highlight`/`selector`/`waitFor` target is a **warning** with the screenshot
-  still saved (#0743). Use `state` fixtures (`closeOut:active`, `card:doneError`,
-  `board:withReviewTask`) when the UI only exists in a particular board state.
+  still saved (#0743). Use `state` fixtures (`closeOut:active`,
+  `closeOut:uploading`, `card:doneError`, `board:withReviewTask`,
+  `board:cardChips`, `dev:failed`) when the UI only exists in a particular board
+  state, and `theme` (`"light"`/`"dark"`) to capture the same route once per
+  theme (#0782).
   Concurrent verifications **queue** for the one preview slot. Evidence is written
   under `.repoos/ui-verification/`. When Playwright is missing, the gate skips with
   a visible note (same as other browser checks).

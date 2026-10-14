@@ -9,6 +9,7 @@ import { useNoticesStore } from "./notices";
 import { describeCloseOutFailure } from "../lib/closeOutFailure";
 import { builtInRunNotice } from "../lib/builtInRunNotice";
 import { retryCountFrom } from "../lib/retryHints";
+import { shotFixturePinnedIntegration } from "../lib/shot-preview-fixtures";
 import type { StoryListSortOrder } from "../../../core/stories.js";
 import type {
   AgentOutputEntry,
@@ -1719,7 +1720,10 @@ export const useRepoStore = defineStore("repo", () => {
     } else if (e.type === "auto-engineering.state") {
       autoEng.value = e.state;
     } else if (e.type === "integration") {
-      integration.value = e.pipeline;
+      // #0782: a preview shot fixture pins its seeded pipeline snapshot, so a
+      // live SSE update cannot replace it mid-capture (the card would fall
+      // back to the real idle pipeline before the screenshot).
+      integration.value = shotFixturePinnedIntegration() ?? e.pipeline;
     } else if (e.type === "test-run.started") {
       testRun.running = true;
       testRun.startedAt = e.at;
@@ -1781,7 +1785,7 @@ export const useRepoStore = defineStore("repo", () => {
       const r = await api<{ ok: boolean; pipeline: IntegrationPipelineSnapshot }>(
         "/api/integration/pipeline",
       );
-      if (r.pipeline) integration.value = r.pipeline;
+      if (r.pipeline) integration.value = shotFixturePinnedIntegration() ?? r.pipeline;
     } catch {
       /* non-fatal — the bar falls back to its idle state */
     }

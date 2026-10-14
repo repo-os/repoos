@@ -106,6 +106,11 @@ export async function captureEntryPage(
         onLoadingState: (message, route) => {
           warnings.push(`${message} on ${route}`);
         },
+        // #0782: a declared theme the driver could not set — the frame would
+        // show the wrong theme, so say so instead of passing silently.
+        onThemeMiss: (theme, route) => {
+          warnings.push(`theme ${theme} could not be applied on ${route}`);
+        },
       },
     );
     return { png, warnings };
