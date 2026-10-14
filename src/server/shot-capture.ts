@@ -19,7 +19,11 @@
  * resolved target, and `core/shot-page.ts` provides the page choreography both
  * paths share.
  */
-import { shotCapturePageUrl, extractFixturesFromSource, createFixtureValidator } from "../core/shot-fixtures.js";
+import {
+  shotCapturePageUrl,
+  extractFixturesFromSource,
+  createFixtureValidator,
+} from "../core/shot-fixtures.js";
 import { basename, extname, join } from "node:path";
 import { rmSync, readFileSync, existsSync } from "node:fs";
 import {
