@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-14T06:26:43Z"
-review_passes: 2
+last_close_out_gate_ms: 330541
+last_close_out_gate_at: "2026-10-14T06:55:38.345Z"
 id: "0775"
 title: "Dev page: full scrollable failure log and a plain-language failure summary"
 type: feature
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-page-full-scrollable-failure-log-and
 created_at: "2026-10-14T04:59:42Z"
+updated_at: "2026-10-14T06:55:38Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -82,4 +84,5 @@ Auto-picking a free port for a target whose command does NOT use the `{port}` pl
 - 2026-10-14T06:25:06Z · status active→review
 - 2026-10-14T06:25:06Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-14T06:26:43Z · note: review pass 2: good to go
+- 2026-10-14T06:55:38Z · close-out gate completed in 331s
 
