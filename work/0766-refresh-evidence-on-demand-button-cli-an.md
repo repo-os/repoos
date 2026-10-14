@@ -222,3 +222,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-14T00:26:55Z · needs_input
 - 2026-10-14T00:26:55Z · message_delivered: 1 message(s)
 - 2026-10-14T00:42:27Z · message_queued at 2026-10-14T00:42:27.635Z
+- 2026-10-14T00:42:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
