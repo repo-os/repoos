@@ -49,12 +49,12 @@ Now that UI changes can be quite long, let's split `UI changes` and `Code change
 "route": "/work?task=0773&tab=changes",
 "highlight": ".changes-tabs",
 "steps": [
-  {
-    "waitFor": ".changes-tabs"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "waitFor": ".changes-tabs"
+},
+{
+  "waitMs": 300
+}
 ]
 },
 {
@@ -63,12 +63,12 @@ Now that UI changes can be quite long, let's split `UI changes` and `Code change
 "route": "/work?task=0773&tab=changes",
 "highlight": ".ui-changes",
 "steps": [
-  {
-    "click": "[data-test-id=\"changes-tab-ui\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "[data-test-id=\"changes-tab-ui\"]"
+},
+{
+  "waitMs": 300
+}
 ]
 }
 ]
@@ -85,3 +85,4 @@ Now that UI changes can be quite long, let's split `UI changes` and `Code change
 - 2026-10-14T04:03:54Z · body
 - 2026-10-14T04:04:54Z · body: section Shots
 - 2026-10-14T04:10:34Z · message_queued at 2026-10-14T04:10:34.006Z
+- 2026-10-14T04:10:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
