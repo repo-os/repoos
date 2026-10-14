@@ -199,10 +199,7 @@ async function stopHolder(t: DevTargetView): Promise<void> {
   busy.value = t.name;
   message.value = "";
   try {
-    await api(
-      `/api/dev/targets/${encodeURIComponent(t.name)}/stop-holder`,
-      JSON_OPTS("POST", {}),
-    );
+    await api(`/api/dev/targets/${encodeURIComponent(t.name)}/stop-holder`, JSON_OPTS("POST", {}));
     message.value = `Stopped the process holding the port for ${t.label}`;
   } catch (err) {
     message.value = err instanceof Error ? err.message : String(err);

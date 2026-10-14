@@ -279,9 +279,7 @@ export class DevTargetManager {
    * `ss` fallback for Linux hosts without it). Never throws; null when nothing
    * can be resolved.
    */
-  private async lookupPortHolder(
-    port: number,
-  ): Promise<{ pid: number; command: string } | null> {
+  private async lookupPortHolder(port: number): Promise<{ pid: number; command: string } | null> {
     let pid = await this.firstPidOnPort(port);
     if (pid === undefined) pid = await this.firstPidFromSs(port);
     if (pid === undefined) return null;
@@ -290,12 +288,7 @@ export class DevTargetManager {
   }
 
   private async firstPidOnPort(port: number): Promise<number | undefined> {
-    const out = await captureCommand("lsof", [
-      "-nP",
-      `-iTCP:${port}`,
-      "-sTCP:LISTEN",
-      "-t",
-    ]);
+    const out = await captureCommand("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"]);
     const pid = out
       .split("\n")
       .map((l) => Number(l.trim()))

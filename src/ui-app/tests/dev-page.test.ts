@@ -330,9 +330,7 @@ describe("DevView failure summary (#0775)", () => {
     await stop!.trigger("click");
     await flush();
     expect(
-      calls.some(
-        (c) => c.url.endsWith("/api/dev/targets/web/stop-holder") && c.method === "POST",
-      ),
+      calls.some((c) => c.url.endsWith("/api/dev/targets/web/stop-holder") && c.method === "POST"),
     ).toBe(true);
   });
 
@@ -359,9 +357,7 @@ describe("DevView failure summary (#0775)", () => {
     useConfigStore().data = { dev: { failureSummary: { ai: true } } };
     const wrapper = mountView();
     await flush();
-    const explain = wrapper
-      .findAll("button")
-      .find((b) => b.text().trim() === "Explain with AI");
+    const explain = wrapper.findAll("button").find((b) => b.text().trim() === "Explain with AI");
     expect(explain, "explain button").toBeTruthy();
     await explain!.trigger("click");
     await flush();
