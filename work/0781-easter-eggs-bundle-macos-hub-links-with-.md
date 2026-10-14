@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-macos-hub-links-with-
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-14T09:07:37Z"
-updated_at: "2026-10-14T09:14:06Z"
+updated_at: "2026-10-14T09:16:41Z"
 ---
 ## Problem
 In the native macOS RepoOS Hub, links on server pages do nothing when they open a new window to an https site. Seen on the Releases page: 'Release guide', 'CI workflow', 'GitHub release' and the 'Watch the build' link.
@@ -38,3 +38,4 @@ Start from ServerNavigationPolicy.decide() and the 0d18a91c2 fix ('open loopback
 - 2026-10-14T09:14:04Z · model_override
 - 2026-10-14T09:14:05Z · status inbox→ready
 - 2026-10-14T09:14:06Z · status ready→active, branch
+- 2026-10-14T09:16:41Z · body
