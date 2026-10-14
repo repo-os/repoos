@@ -29,6 +29,7 @@ import {
   buildCapturePlan,
   parseShotPlan,
   provenanceCaption,
+  taskFixtureValidator,
   type CaptureEntry,
 } from "../core/shot-plan.js";
 import {
@@ -206,6 +207,8 @@ export interface CliShotPlanInput {
   env?: Record<string, string>;
   /** Per-entry output glob for a command capture target (#0769), from `--glob`. */
   glob?: string;
+  /** Fixture validator for the task branch, to accept branch-specific fixtures (#0786). */
+  fixtureValidator?: (id: string) => boolean;
 }
 
 /** The plan plus the visible notes `cmdShot` prints alongside it. */
@@ -237,7 +240,12 @@ export interface CliShotPlan {
  */
 export function buildCliShotPlan(input: CliShotPlanInput): CliShotPlan {
   const pinned = Boolean(input.route || input.selector);
-  const declared = pinned ? { shots: [], errors: [] } : parseShotPlan(input.body);
+  const declared = pinned
+    ? { shots: [], errors: [] }
+    : parseShotPlan(
+        input.body,
+        input.fixtureValidator ? { fixtureValidator: input.fixtureValidator } : undefined,
+      );
   const built = buildCapturePlan(input.targets, declared.shots, {
     matchedGlobs: input.matchedGlobs,
     docsContentOnly: input.docsContentOnly,
@@ -537,6 +545,19 @@ export async function cmdShot(args: string[]): Promise<number> {
     const commandTargets = new Set((worktreeConfig.shot?.targets ?? []).map((t) => t.name));
     // #0610: the requested route/selector is part of the plan, not a separate
     // candidate that lost to the fallback's `/`.
+    const fixtureValidator = taskFixtureValidator(
+      (path: string) => {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const { existsSync, readFileSync } = require("node:fs");
+          return existsSync(path) ? readFileSync(path, "utf8") : null;
+        } catch {
+          return null;
+        }
+      },
+      { root: worktreeRoot } as any,
+      task,
+    );
     const built = buildCliShotPlan({
       body: task.body,
       route: opts.route,
@@ -547,6 +568,7 @@ export async function cmdShot(args: string[]): Promise<number> {
       commandTargets,
       ...(opts.env ? { env: opts.env } : {}),
       ...(opts.glob ? { glob: opts.glob } : {}),
+      ...(fixtureValidator ? { fixtureValidator } : {}),
     });
     for (const error of built.declaredErrors) {
       console.error(c.yellow("  · ") + `declared shot list: ${error}`);

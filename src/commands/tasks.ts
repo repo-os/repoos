@@ -20,7 +20,6 @@ import {
   declaredShotsSectionContent,
   parseShotPlan,
   validateDeclaredShotTargets,
-  taskFixtureValidator,
 } from "../core/shot-plan.js";
 import { readBranchFixtureValidator } from "../core/shot-fixtures.js";
 import { deleteTaskFile, PathGuardError, WriteError } from "../server/write.js";
