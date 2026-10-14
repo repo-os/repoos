@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-upload-report-progress-so-slow
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-14T10:35:08Z"
-updated_at: "2026-10-14T12:44:18Z"
+updated_at: "2026-10-14T13:01:12Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -37,34 +37,9 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 ```json
 [
 {
-  "label": "Board card showing bundle upload progress (light theme)",
+  "label": "placeholder while clearing stale captures",
   "target": "default",
-  "route": "/work",
-  "highlight": "[data-test-id=\"task-card-agent-hint\"]",
-  "assert": [
-    {
-      "selector": "[data-test-id=\"task-card-agent-hint\"]",
-      "label": "the card shows live upload progress",
-      "text": "uploading bundle"
-    }
-  ],
-  "state": "closeOut:uploading",
-  "theme": "light"
-},
-{
-  "label": "Board card showing bundle upload progress (dark theme)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-test-id=\"task-card-agent-hint\"]",
-  "assert": [
-    {
-      "selector": "[data-test-id=\"task-card-agent-hint\"]",
-      "label": "the card shows live upload progress in dark theme",
-      "text": "uploading bundle"
-    }
-  ],
-  "state": "closeOut:uploading",
-  "theme": "dark"
+  "route": "/work"
 }
 ]
 ```
@@ -111,3 +86,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T12:14:08Z · message_queued at 2026-10-14T12:14:08.237Z
 - 2026-10-14T12:14:08Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-14T12:44:18Z · body: section Shots
+- 2026-10-14T13:01:12Z · body: section Shots
