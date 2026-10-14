@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-upload-report-progress-so-slow
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-14T10:35:08Z"
-updated_at: "2026-10-14T12:08:26Z"
+updated_at: "2026-10-14T12:08:27Z"
 review_passes: 4
 review_rounds: 2
 ---
