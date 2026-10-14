@@ -148,7 +148,9 @@ A started target runs in the project's root checkout, detached from the server's
 own lifetime: it keeps running after you close the browser, and stops only when
 you ask, when the server stops, or when it crashes. Its state is one of
 `running`, `stopped`, `starting` or `failed`, and the last ~200 lines of its
-combined output are available.
+combined output are available. A running target also shows how long ago it
+started — "17 hours ago" beside its state — and hovering or focusing that time
+reveals the exact start timestamp.
 
 ## See also
 
