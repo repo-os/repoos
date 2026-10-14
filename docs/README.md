@@ -68,6 +68,11 @@ can't assume any.
   indicator). Read before adding or editing an AI chat.
 - `previews.md` — how per-project preview targets work (`[preview]` config,
   area-based selection, the `repoos serve` fallback).
+- `neon-object-storage.md` — the Neon Object Storage provider (#0660): why SigV4
+  is hand-rolled with no SDK, why the synchronous transport is a child process
+  rather than a worker (Bun starves a worker's I/O under `Atomics.wait`), the
+  environment credential model, and the endpoint/limit/pricing facts verified
+  against Neon's docs.
 - `agent-model-recommendations.md`, `opencode-models.md`, `token-optimization.md`,
   `prompt-caching-audit.md` — agent and model operations.
 - `agent-compatibility.md` — the versioned coding-harness compatibility
