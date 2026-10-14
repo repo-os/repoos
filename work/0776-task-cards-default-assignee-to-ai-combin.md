@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-14T07:08:38Z"
-review_passes: 3
 id: "0776"
 title: "Task cards: default assignee to AI, combined area chip, compact file-change chip"
 type: feature
@@ -14,6 +12,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-cards-default-assignee-to-ai-combin
 created_at: "2026-10-14T06:06:09Z"
+updated_at: "2026-10-14T07:43:02Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Problem
@@ -40,22 +40,7 @@ Three things on the task card and defaults are noisy or wrong:
 Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core server cli ui' and 'web server'); 3 shows the '· open' chip and the '10f 377+' file chip on the card; 4 shows the lock chips for dependencies. The card is src/ui-app/src/components/TaskCard.vue (the assignee chip is around line 1040, the area chips and file-change chip near 1030-1060). The default is src/core/config.ts (defaultAssignee, around lines 191 and 2060).
 
 ## Shots
-```json
-[
-{
-"label": "Board card: one combined area chip and a file-count-only chip",
-"target": "default",
-"route": "/work",
-"highlight": ".tc-area-chip, .tc-file-chip",
-"steps": [
-{
-"waitFor": ".tc-file-chip"
-}
-],
-"state": "board:cardChips"
-}
-]
-```
+
 
 ## Implementation notes
 This repo has no `site/` tree. The marketing site lives in `landing/` and describes no card chips, no areas, and no default assignee, so there was nothing to update there; the defaults/card documentation changes are in `user-docs/configuration.md` and `docs/concepts.md`. (#0776)
@@ -96,4 +81,4 @@ This repo has no `site/` tree. The marketing site lives in `landing/` and descri
 - 2026-10-14T07:07:42Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cd1f486fb) during finalization (#0734)
 - 2026-10-14T07:08:38Z · note: review pass 3: needs some work
 - 2026-10-14T07:08:38Z · needs_input
-
+- 2026-10-14T07:43:02Z · body: section Shots
