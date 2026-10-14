@@ -2427,11 +2427,18 @@
 .tc-moving {
   color: var(--cyan);
 }
+/* Stalled close-out actions sit on the right (#0778): the hint row spans the
+   card width so the Cancel/Retry pair pushes to the far edge, clear of the
+   status label on the left. */
+.tc-hint:has(.tc-pipeline-recover) {
+  display: flex;
+  width: 100%;
+}
 .tc-hint .tc-pipeline-recover {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-left: 8px;
+  margin-left: auto;
   vertical-align: middle;
 }
 .tc-pipeline-recover-btn {
@@ -5429,6 +5436,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+.changes-summary-title.changes-summary-head .changes-summary-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 .diff-stats {
   display: flex;
