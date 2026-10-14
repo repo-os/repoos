@@ -1,4 +1,5 @@
 import { computed, ref } from "vue";
+import { AGENT_FAVORITES_KEY } from "../lib/settings-transfer";
 
 /**
  * Persistent localStorage-backed store for favorited coding agents (CLIs).
@@ -8,8 +9,6 @@ import { computed, ref } from "vue";
  * When at least one CLI is starred, the Agent+Model selector modal narrows
  * its CLI list to only the starred ones.
  */
-
-const AGENT_FAVORITES_KEY = "agent-cli-favorites";
 
 function loadAgentFavorites(): string[] {
   try {
