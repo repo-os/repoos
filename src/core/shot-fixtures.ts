@@ -37,7 +37,9 @@ export function isShotPreviewFixtureId(value: string): value is ShotPreviewFixtu
 
 /** Extract fixture ids from the source file's SHOT_PREVIEW_FIXTURE_IDS array (#0786). */
 export function extractFixturesFromSource(sourceContent: string): string[] {
-  const match = sourceContent.match(/export\s+const\s+SHOT_PREVIEW_FIXTURE_IDS\s*=\s*\[([\s\S]*?)\]\s+as\s+const/);
+  const match = sourceContent.match(
+    /export\s+const\s+SHOT_PREVIEW_FIXTURE_IDS\s*=\s*\[([\s\S]*?)\]\s+as\s+const/,
+  );
   if (!match) return [];
   const arrayContent = match[1];
   const fixtures: string[] = [];

@@ -1169,11 +1169,9 @@ describe("fixture validation from branch source (#0786)", () => {
 
   it("rejects a fixture unknown to both main and branch", () => {
     const branchValidator = createFixtureValidator(["closeOut:active"]);
-    const { shot, error } = parseShotEntry(
-      { route: "/board", state: "unknown:fixture" },
-      "entry",
-      { fixtureValidator: branchValidator },
-    );
+    const { shot, error } = parseShotEntry({ route: "/board", state: "unknown:fixture" }, "entry", {
+      fixtureValidator: branchValidator,
+    });
     expect(shot).toBeUndefined();
     expect(error).toContain('unknown "state" fixture "unknown:fixture"');
   });
