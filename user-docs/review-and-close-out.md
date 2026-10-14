@@ -64,6 +64,13 @@ agent did — RepoOS reviews the new head again. A verdict of anything other tha
 to the engineer session, which is expected to fix them and re-hand off to
 review. The task's `review_rounds` counter goes up.
 
+The one exception is a `needs some work` whose *only* stated blocker is stale
+handoff evidence (the reviewer marks it `STALE-EVIDENCE-ONLY`): the change is
+fine, only the captures are old, so bouncing the engineer would burn a turn on
+nothing. That task **stays in `review`** — use **Refresh evidence** in the
+Changes tab (or `repoos verify <id>`) to re-capture on the current HEAD, then
+review again.
+
 This is deliberate self-correction, not a failure. If you move a task to review
 and then find it back in `active`, check its activity log — you'll see the
 review round and the findings that caused it.
