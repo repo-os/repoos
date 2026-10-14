@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0776"
 title: "Task cards: default assignee to AI, combined area chip, compact file-change chip"
 type: feature
@@ -91,3 +92,4 @@ This repo has no `site/` tree. The marketing site lives in `landing/` and descri
 - 2026-10-14T07:49:25Z · note: shot added: default/work
 - 2026-10-14T07:50:25Z · status review→active, needs_input
 - 2026-10-14T07:50:25Z · note: close-out repair: merge-conflict
+
