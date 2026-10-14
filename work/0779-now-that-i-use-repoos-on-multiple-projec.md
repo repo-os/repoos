@@ -2,7 +2,7 @@
 id: "0779"
 title: Add settings import and export
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/add-settings-import-and-export
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-14T08:01:16Z"
-updated_at: "2026-10-14T08:25:01Z"
+updated_at: "2026-10-14T08:31:55Z"
 ---
 ## Problem
 
@@ -49,10 +49,10 @@ Now that I use repoos on multiple projects I need an easy way to copy important 
 ```json
 [
 {
-  "label": "Settings Import/Export tab with export options and import dropzone",
-  "target": "default",
-  "route": "/settings?tab=import-export",
-  "highlight": "#settings-panel-import-export"
+"label": "Settings Import/Export tab with export options and import dropzone",
+"target": "default",
+"route": "/settings?tab=import-export",
+"highlight": "#settings-panel-import-export"
 }
 ]
 ```
@@ -66,3 +66,4 @@ Now that I use repoos on multiple projects I need an easy way to copy important 
 - 2026-10-14T08:03:12Z · status ready→active, branch
 - 2026-10-14T08:21:16Z · body
 - 2026-10-14T08:25:01Z · body: section Shots
+- 2026-10-14T08:31:55Z · status active→review
