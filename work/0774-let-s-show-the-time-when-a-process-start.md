@@ -2,14 +2,14 @@
 id: "0774"
 title: Show process start time beside running chip
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-process-start-time-beside-running-c
 created_at: "2026-10-14T04:19:10Z"
-updated_at: "2026-10-14T04:30:59Z"
+updated_at: "2026-10-14T04:38:12Z"
 ---
 ## Problem
 
@@ -43,15 +43,15 @@ Let's show the time when a process started running (and human readable like 17 h
 "route": "/dev",
 "highlight": "[data-test-id=\"dev-started\"]",
 "steps": [
-  {
-    "click": "article.dev-card:has-text(\"Main UI\") .dev-actions button:first-of-type"
-  },
-  {
-    "waitMs": 15000
-  },
-  {
-    "waitFor": "[data-test-id=\"dev-started\"]"
-  }
+{
+  "click": "article.dev-card:has-text(\"Main UI\") .dev-actions button:first-of-type"
+},
+{
+  "waitMs": 15000
+},
+{
+  "waitFor": "[data-test-id=\"dev-started\"]"
+}
 ]
 }
 ]
@@ -71,3 +71,4 @@ Let's show the time when a process started running (and human readable like 17 h
 - 2026-10-14T04:26:33Z · body
 - 2026-10-14T04:29:23Z · body: section Shots
 - 2026-10-14T04:30:59Z · body
+- 2026-10-14T04:38:12Z · status active→review
