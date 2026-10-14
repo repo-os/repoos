@@ -2,14 +2,14 @@
 id: "0776"
 title: "Task cards: default assignee to AI, combined area chip, compact file-change chip"
 type: feature
-status: ready
+status: active
 priority: p1
 area: [ui, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/task-cards-default-assignee-to-ai-combin
 created_at: "2026-10-14T06:06:09Z"
-updated_at: "2026-10-14T06:15:44Z"
+updated_at: "2026-10-14T06:15:46Z"
 ---
 ## Problem
 Three things on the task card and defaults are noisy or wrong:
@@ -46,3 +46,4 @@ Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core
 - 2026-10-14T06:06:09Z · created · njachowski@gmail.com
 - 2026-10-14T06:06:10Z · screenshots
 - 2026-10-14T06:15:44Z · status inbox→ready
+- 2026-10-14T06:15:46Z · status ready→active, branch
