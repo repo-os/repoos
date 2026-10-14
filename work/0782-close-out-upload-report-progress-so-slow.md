@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-14T11:43:59Z"
-review_passes: 3
 id: "0782"
 title: "Close-out upload: report progress so slow uploads are not flagged as stalled"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -15,6 +13,8 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-upload-report-progress-so-slow
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-14T10:35:08Z"
+updated_at: "2026-10-14T11:46:35Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Problem
@@ -75,4 +75,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T11:42:55Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c5e628250) during finalization (#0734)
 - 2026-10-14T11:43:59Z · note: review pass 3: needs some work
 - 2026-10-14T11:43:59Z · needs_input
-
+- 2026-10-14T11:46:35Z · status review→active
