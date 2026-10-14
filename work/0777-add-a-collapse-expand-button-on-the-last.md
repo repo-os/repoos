@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-14T09:13:47Z"
-review_passes: 1
+last_close_out_gate_ms: 707192
+last_close_out_gate_at: "2026-10-14T09:43:26.086Z"
 id: "0777"
 title: Add a collapse/expand control to Last output
 type: feature
@@ -12,6 +12,8 @@ created_by: hello@repoos.org
 branch: feat/add-a-collapse-expand-control-to-last-ou
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-14T07:13:06Z"
+updated_at: "2026-10-14T09:43:26Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -82,4 +84,5 @@ Add a collapse/expand button on the "Last output" section (on the right side, to
 - 2026-10-14T09:03:58Z · body
 - 2026-10-14T09:13:00Z · status active→review
 - 2026-10-14T09:13:47Z · note: review pass 1: good to go
+- 2026-10-14T09:43:26Z · close-out gate completed in 707s
 
