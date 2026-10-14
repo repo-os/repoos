@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-14T05:29:39Z"
-review_passes: 25
+last_close_out_gate_ms: 210512
+last_close_out_gate_at: "2026-10-14T05:34:45.445Z"
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/refresh-evidence-on-demand-button-cli-an
 created_at: "2026-10-13T10:49:44Z"
+updated_at: "2026-10-14T05:34:45Z"
+review_passes: 25
 close_out_repair_count: 1
 review_rounds: 2
 dev_error_count: 1
@@ -275,4 +277,5 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-14T05:28:05Z · review_cli_override, review_model_override
 - 2026-10-14T05:28:11Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-14T05:29:38Z · note: review pass 27: good to go
+- 2026-10-14T05:34:45Z · close-out gate completed in 211s
 
