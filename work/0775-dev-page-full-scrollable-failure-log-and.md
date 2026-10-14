@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 330541
-last_close_out_gate_at: "2026-10-14T06:55:38.345Z"
 id: "0775"
 title: "Dev page: full scrollable failure log and a plain-language failure summary"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: d3964e925dc3ab2b86083fa5c6294e4e468c5a95
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-page-full-scrollable-failure-log-and
 created_at: "2026-10-14T04:59:42Z"
-updated_at: "2026-10-14T06:55:38Z"
+updated_at: "2026-10-14T06:55:50Z"
+last_close_out_gate_ms: 330541
+last_close_out_gate_at: "2026-10-14T06:55:38.345Z"
 review_passes: 2
 review_rounds: 1
 ---
@@ -85,4 +86,4 @@ Auto-picking a free port for a target whose command does NOT use the `{port}` pl
 - 2026-10-14T06:25:06Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-14T06:26:43Z · note: review pass 2: good to go
 - 2026-10-14T06:55:38Z · close-out gate completed in 331s
-
+- 2026-10-14T06:55:50Z · status review→done, release:success
