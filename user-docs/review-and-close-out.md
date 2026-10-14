@@ -350,7 +350,8 @@ log and activity, never a failed handoff. An engineer-made capture with
 [`repoos shot`](/cli#repoos-shot) before handoff pre-empts the automatic one.
 
 Shots can also be added and deleted by hand in the drawer's **UI changes**
-section (#0627) — no CLI needed — while the task is `active` or in `review`:
+sub-tab of the Changes tab (#0627) — no CLI needed — while the task is `active`
+or in `review`:
 
 - **Add shot** opens a plain-input modal (target dropdown, route, label,
   optional highlight/selector and steps — never raw JSON) that appends the
@@ -377,7 +378,7 @@ step that timed out and left the view loading cannot be mistaken for real
 evidence (#0755).
 **Stale captures (#0755):** each handoff capture stores the tree it ran on, and
 the Changes tab compares that to the branch HEAD the review will use. When they
-differ — a fix landed after the capture — the UI changes section shows a
+differ — a fix landed after the capture — the UI changes sub-tab shows a
 **Stale capture** alert and the shot reads `check`, never `matches`; re-run the
 handoff capture on the final tree.
 **Whole-window default (#0613):** declared shots capture the whole
@@ -390,8 +391,10 @@ over click steps to reach the right tab; a task drawer is reached the same way �
 elements. The PNGs are stored gitignored under `work/.attachments/<taskId>/shots/`
 (the default local attachment storage; cloud storage is opt-in, see
 [Attachment storage](/configuration#attachment-storage)) and appear as the
-**UI changes** section of the task drawer's Changes tab, so you
-see what actually rendered rather than only the diff. `repoos shot` picks its
+**UI changes** sub-tab of the task drawer's Changes tab, so you
+see what actually rendered rather than only the diff. The Changes tab splits
+**UI changes** and **Code changes** into sub-tabs (#0773): **UI changes** is
+selected by default when the task has shots, **Code changes** otherwise. `repoos shot` picks its
 target from the task's changed files (`[[preview.targets]].paths`, plus the
 default target's own `[preview] paths` for app diffs; test files are not UI
 evidence), and the drawer warns if the task's `area` disagrees — pick the
