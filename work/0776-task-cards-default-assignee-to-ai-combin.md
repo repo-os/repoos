@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-cards-default-assignee-to-ai-combin
 created_at: "2026-10-14T06:06:09Z"
-updated_at: "2026-10-14T07:43:02Z"
+updated_at: "2026-10-14T07:48:29Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -82,3 +82,4 @@ This repo has no `site/` tree. The marketing site lives in `landing/` and descri
 - 2026-10-14T07:08:38Z · note: review pass 3: needs some work
 - 2026-10-14T07:08:38Z · needs_input
 - 2026-10-14T07:43:02Z · body: section Shots
+- 2026-10-14T07:48:29Z · note: shot removed: auto: matched src/ui-app/**
