@@ -3,6 +3,9 @@ id: "0786"
 title: "Shots: a fixture added on the task branch can't be declared or captured until merge"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Branch-aware `parseShotPlan` / `--shots` validation is wired through CLI update, `planAutoCapture`, and handoff preflight, but `shotCapturePageUrl` still rejects any `state` not in main’s compiled `SHOT_PREVIEW_FIXTURE_IDS`, so branch-only fixtures can be declared yet fail at verify/handoff capture. That leaves the task’s core scenario half-fixed."
 priority: p2
 area: server
 assigned_to: ai
@@ -58,3 +61,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-14T17:50:41Z · status active→review
 - 2026-10-14T17:50:42Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-14T17:51:46Z · note: review pass 3: needs some work
+- 2026-10-14T17:51:46Z · needs_input
