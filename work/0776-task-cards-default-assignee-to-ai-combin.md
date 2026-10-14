@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 67340
-last_close_out_gate_at: "2026-10-14T08:04:13.098Z"
 id: "0776"
 title: "Task cards: default assignee to AI, combined area chip, compact file-change chip"
 type: feature
-status: review
+status: done
 priority: p1
 area: [ui, core]
+merged_commit: 35bfefef1305f63b428a57c34d2ddb9c39b15d0f
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-cards-default-assignee-to-ai-combin
 created_at: "2026-10-14T06:06:09Z"
-updated_at: "2026-10-14T08:04:13Z"
+updated_at: "2026-10-14T08:04:28Z"
+last_close_out_gate_ms: 67340
+last_close_out_gate_at: "2026-10-14T08:04:13.098Z"
 review_passes: 4
 close_out_repair_count: 1
 review_rounds: 2
@@ -99,4 +100,4 @@ This repo has no `site/` tree. The marketing site lives in `landing/` and descri
 - 2026-10-14T08:00:28Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-14T08:02:23Z · note: review pass 4: good to go
 - 2026-10-14T08:04:13Z · close-out gate completed in 67s
-
+- 2026-10-14T08:04:28Z · status review→done, release:success
