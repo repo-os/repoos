@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-upload-report-progress-so-slow
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-14T10:35:08Z"
-updated_at: "2026-10-14T10:54:06Z"
+updated_at: "2026-10-14T10:59:33Z"
 ---
 ## Problem
 The close-out card shows 'stalled · no progress' when a job is still moving. On 2026-10-14, #0777's bundle upload to bee took 228s (27 MB). The upload step reports no stage progress while it runs, so after 3 minutes the UI labels the job stalled, even though the job completed and the bee tests then started. The stall label is computed in src/ui-app/src/lib/integration-pipeline-ui.ts from the job's last progress time (DEFAULT_INTEGRATION_STALL_MS, 3 minutes).
@@ -34,3 +34,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T10:54:04Z · model_override
 - 2026-10-14T10:54:05Z · status inbox→ready
 - 2026-10-14T10:54:06Z · status ready→active, branch
+- 2026-10-14T10:59:33Z · message_queued at 2026-10-14T10:59:33.423Z
