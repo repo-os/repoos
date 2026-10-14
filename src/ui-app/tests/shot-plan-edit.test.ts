@@ -259,11 +259,10 @@ describe("removeDeclarationsForDeletedShot (#0778 review round 3)", () => {
     // The stored declaration matches neither exactly, and both twins are
     // equidistant from it (state is unscored, each differs only in selector),
     // so there is no single selected entry to remove.
-    const { content, removed } = removeDeclarationsForDeletedShot(
-      listBody([twinB, twinC]),
-      ref,
-      { ...ref, selector: ".a" },
-    );
+    const { content, removed } = removeDeclarationsForDeletedShot(listBody([twinB, twinC]), ref, {
+      ...ref,
+      selector: ".a",
+    });
     expect(removed).toBe(0);
     expect(content).toBe("");
   });
