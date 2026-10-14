@@ -3,6 +3,9 @@ id: "0782"
 title: "Close-out upload: report progress so slow uploads are not flagged as stalled"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p3
 area: [server, web]
 assigned_to: ai
@@ -79,3 +82,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T11:49:33Z · status active→review
 - 2026-10-14T11:49:33Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c5e628250) during finalization (#0734)
 - 2026-10-14T11:50:26Z · note: review pass 4: needs some work
+- 2026-10-14T11:50:26Z · needs_input
