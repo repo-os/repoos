@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 315396
-last_close_out_gate_at: "2026-10-14T16:52:47.245Z"
 id: "0778"
 title: "Easter eggs bundle: Shots validator and review card wording"
 type: bug
-status: review
+status: done
 priority: p3
 area: [web, server]
+merged_commit: abbd5aa11428f5346e2bd67bbe47831288a8b36e
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shots-validator-and-r
@@ -15,7 +14,9 @@ model_override: haiku
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T16:52:47Z"
+updated_at: "2026-10-14T16:52:59Z"
+last_close_out_gate_ms: 315396
+last_close_out_gate_at: "2026-10-14T16:52:47.245Z"
 review_passes: 5
 review_rounds: 2
 dev_error_count: 4
@@ -201,4 +202,4 @@ Item 5 (stalled close-out card) is implemented and unit-pinned (DOM order Cancel
 - 2026-10-14T16:06:57Z · note: review pass 5: good to go
 - 2026-10-14T16:22:16Z · body: section Shots
 - 2026-10-14T16:52:47Z · close-out gate completed in 315s
-
+- 2026-10-14T16:52:59Z · status review→done, release:success
