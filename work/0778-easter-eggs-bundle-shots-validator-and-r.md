@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T08:49:41Z"
+updated_at: "2026-10-14T08:51:49Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -50,9 +50,9 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 "route": "/repo?doc=docs/README.md",
 "highlight": "[data-test-id=\"context-open-in-editor\"]",
 "steps": [
-  {
-    "waitFor": ".doc-view-head"
-  }
+{
+  "waitFor": ".doc-view-head"
+}
 ]
 },
 {
@@ -61,15 +61,15 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 "route": "/repo?doc=docs/README.md",
 "highlight": "[data-test-id=\"context-open-in-editor\"]",
 "steps": [
-  {
-    "waitFor": ".doc-view-head"
-  },
-  {
-    "click": ".theme-toggle"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "waitFor": ".doc-view-head"
+},
+{
+  "click": ".theme-toggle"
+},
+{
+  "waitMs": 400
+}
 ]
 },
 {
@@ -78,15 +78,15 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 "route": "/work?task=0778&tab=changes",
 "highlight": ".changes-summary-actions",
 "steps": [
-  {
-    "waitFor": ".changes-tabs"
-  },
-  {
-    "click": "[data-test-id=\"changes-tab-ui\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "waitFor": ".changes-tabs"
+},
+{
+  "click": "[data-test-id=\"changes-tab-ui\"]"
+},
+{
+  "waitMs": 400
+}
 ]
 },
 {
@@ -95,18 +95,18 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 "route": "/work?task=0778&tab=changes",
 "highlight": ".changes-summary-actions",
 "steps": [
-  {
-    "waitFor": ".changes-tabs"
-  },
-  {
-    "click": "[data-test-id=\"changes-tab-ui\"]"
-  },
-  {
-    "click": ".theme-toggle"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "waitFor": ".changes-tabs"
+},
+{
+  "click": "[data-test-id=\"changes-tab-ui\"]"
+},
+{
+  "click": ".theme-toggle"
+},
+{
+  "waitMs": 400
+}
 ]
 }
 ]
@@ -135,3 +135,4 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 - 2026-10-14T08:47:19Z · status review→active
 - 2026-10-14T08:48:56Z · body: section Shots
 - 2026-10-14T08:49:41Z · body
+- 2026-10-14T08:51:49Z · body
