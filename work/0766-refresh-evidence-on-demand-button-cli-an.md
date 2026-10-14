@@ -10,10 +10,10 @@ created_by: njachowski@gmail.com
 branch: feat/refresh-evidence-on-demand-button-cli-an
 cli_override: cursor
 model_override: composer-2.5
-review_cli_override: github copilot
+review_cli_override: opencode
 review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-14T03:56:51Z"
+updated_at: "2026-10-14T04:25:49Z"
 review_passes: 24
 close_out_repair_count: 1
 review_rounds: 2
@@ -266,4 +266,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-14T03:49:45Z · body
 - 2026-10-14T03:50:29Z · status active→review
 - 2026-10-14T03:52:52Z · note: review pass 25: needs some work
-
+- 2026-10-14T04:25:49Z · review_cli_override
