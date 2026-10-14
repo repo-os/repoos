@@ -11,7 +11,7 @@ branch: feat/refresh-evidence-on-demand-button-cli-an
 review_cli_override: opencode
 review_model_override: opencode-go/hy3
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-14T04:52:39Z"
+updated_at: "2026-10-14T04:58:52Z"
 review_passes: 24
 close_out_repair_count: 1
 review_rounds: 2
