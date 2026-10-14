@@ -492,7 +492,7 @@ describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
         scopedCredits: [],
       },
       checklistError: null,
-      usage: [{ period: "2026.10", totalUsd: 5.00 }],
+      usage: [{ period: "2026.10", totalUsd: 5.0 }],
       usageError: null,
     });
     stubFetch([
@@ -548,7 +548,7 @@ describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
         scopedCredits: [],
       },
       checklistError: null,
-      usage: [{ period: "2026.10", totalUsd: 8.50 }],
+      usage: [{ period: "2026.10", totalUsd: 8.5 }],
       usageError: null,
     });
     stubFetch([
