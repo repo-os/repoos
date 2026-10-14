@@ -13,6 +13,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "closeOut:uploading",
   "card:doneError",
   "board:withReviewTask",
+  // #0778 — review-status task with a non-empty branch, so the task drawer
+  // shows UI-changes pane and actions like Add shot and Refresh evidence.
+  "drawer:reviewWithBranch",
   // #0776 — a multi-area card with seeded diff stats, so a capture can show
   // the combined area chip and the file-count chip.
   "board:cardChips",

@@ -90,6 +90,22 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(integrationPipelineStalled(repo.integration, Date.now())).toBe(true);
   });
 
+  it("seeds a review task with a branch and diff stats for drawer shots (#0778)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "drawer:reviewWithBranch");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "drawer:reviewWithBranch seeds the fixture task").toBeTruthy();
+    expect(task!.status).toBe("review");
+    expect(task!.branch).toBe("feat/shot-fixture");
+    expect(repo.diffStatsFor(SHOT_PREVIEW_FIXTURE_TASK_ID)).toEqual({
+      filesChanged: 3,
+      additions: 42,
+      deletions: 8,
+    });
+  });
+
   it("seeds a multi-area task with diff stats for card-chip shots (#0776)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);

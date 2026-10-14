@@ -226,6 +226,18 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         deletions: 5,
       });
       break;
+    case "drawer:reviewWithBranch":
+      // A review-status task with a non-empty branch, for TaskDrawer shots.
+      // TaskCard and TaskDrawer only show actions and UI-changes pane when the
+      // task has a branch and status is active/review. Seeded diff stats prevent
+      // a network request that would fail and put console errors on the page (#0778).
+      ensureFixtureTask(repo, "review", { branch: "feat/shot-fixture" });
+      repo.seedDiffStats(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        filesChanged: 3,
+        additions: 42,
+        deletions: 8,
+      });
+      break;
     default:
       break;
   }
