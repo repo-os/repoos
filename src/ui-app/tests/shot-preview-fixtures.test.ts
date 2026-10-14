@@ -42,9 +42,7 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(task, "closeOut:stalled seeds the fixture task").toBeTruthy();
     expect(task!.branch).toBe("");
     expect(repo.integration?.active?.taskId).toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
-    const { integrationPipelineStalled } = await import(
-      "../src/lib/integration-pipeline-ui"
-    );
+    const { integrationPipelineStalled } = await import("../src/lib/integration-pipeline-ui");
     expect(integrationPipelineStalled(repo.integration, Date.now())).toBe(true);
   });
 

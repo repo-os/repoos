@@ -155,10 +155,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       // actions (#0778). The fixture task itself must exist for its card to
       // render at all.
       ensureFixtureTask(repo, "review");
-      repo.integration = activePipeline(
-        SHOT_PREVIEW_FIXTURE_TASK_ID,
-        "2026-01-01T00:00:00.000Z",
-      );
+      repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID, "2026-01-01T00:00:00.000Z");
       break;
     case "card:doneError":
       ensureFixtureTask(repo, "review");
