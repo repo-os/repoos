@@ -19,3 +19,16 @@ export function tryBeginEvidenceRefresh(taskId: string): boolean {
 export function endEvidenceRefresh(taskId: string): void {
   active.delete(taskId);
 }
+
+/** Run `fn` while the in-process evidence-refresh mutex is held for `taskId`. */
+export async function withEvidenceRefreshLock<T>(
+  taskId: string,
+  fn: () => Promise<T>,
+): Promise<{ ok: true; value: T } | { ok: false }> {
+  if (!tryBeginEvidenceRefresh(taskId)) return { ok: false };
+  try {
+    return { ok: true, value: await fn() };
+  } finally {
+    endEvidenceRefresh(taskId);
+  }
+}

@@ -201,7 +201,6 @@ import { PreviewManager, probePreview } from "./preview.js";
 import { DevTargetManager } from "./dev.js";
 import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
-import { readUiHandoffGateEvidence, effectiveHandoffTreeStatus } from "./ui-handoff-gate.js";
 import { ReviewManager } from "./review.js";
 import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
 import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
@@ -370,7 +369,7 @@ import {
   listTaskShots,
   getTaskUiVerification,
   refreshTaskEvidence,
-  guardedForceRefreshCapture,
+  automaticStaleEvidenceRefresh,
   getTaskShot,
   uploadTaskShot,
   deleteTaskShot,
@@ -2054,56 +2053,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     runner,
     index,
     (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
-    async (task) => {
-      if (!task.branch || closeOutLock.closingOut()) return false;
-      const worktree = worktreePathForBranch(config.root, task.branch);
-      if (!worktree) return false;
-      const headResult = await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000);
-      const head = headResult.status === 0 ? headResult.stdout.trim() : "";
-      if (!head) return false;
-      const attemptPath = join(
-        config.root,
-        config.cacheDir,
-        "ui-verification",
-        "auto-refresh-attempts",
-        `${task.id}-${head}.json`,
-      );
-      if (existsSync(attemptPath) || !rootLock.acquire(task.id, "close-out")) return false;
-      try {
-        const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
-        if (dirty.status !== 0 || dirty.stdout.trim()) return false;
-        const currentEvidence = readUiHandoffGateEvidence(config, task.id);
-        if ((await effectiveHandoffTreeStatus(worktree, currentEvidence, head)) !== "stale") {
-          return false;
-        }
-        mkdirSync(join(attemptPath, ".."), { recursive: true });
-        writeFileSync(
-          attemptPath,
-          JSON.stringify({ taskId: task.id, head, at: new Date().toISOString() }),
-        );
-        const captured = await guardedForceRefreshCapture(
-          config,
-          task,
-          worktree,
-          previews,
-          (id, level, message) => {
-            logger.task(id, level, message);
-          },
-        );
-        if (captured.error) {
-          logger.task(
-            task.id,
-            "warn",
-            `automatic stale-evidence refresh failed: ${captured.error}`,
-          );
-        }
-        return (
-          !captured.skipped && !captured.error && captured.gateOk && captured.headIdentity === head
-        );
-      } finally {
-        rootLock.release(task.id);
-      }
-    },
+    async (task) =>
+      automaticStaleEvidenceRefresh(
+        config,
+        task,
+        previews,
+        rootLock,
+        () => closeOutLock.closingOut(),
+        (id, level, message) => {
+          logger.task(id, level, message);
+        },
+      ),
   );
 
   // Checks → Test Suite tab (0296-adjacent): an
