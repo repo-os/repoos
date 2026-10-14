@@ -16,7 +16,7 @@
  * skip with install advice, not a crash.
  */
 import { basename, extname, join } from "node:path";
-import { rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { c } from "../cli/colors.js";
 import { findRepoRoot, loadConfig, mainCheckoutRoot, resolveServePort } from "../core/config.js";
 import { changedPathsVsBase, currentBranch } from "../core/git.js";
@@ -548,8 +548,6 @@ export async function cmdShot(args: string[]): Promise<number> {
     const fixtureValidator = taskFixtureValidator(
       (path: string) => {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          const { existsSync, readFileSync } = require("node:fs");
           return existsSync(path) ? readFileSync(path, "utf8") : null;
         } catch {
           return null;
