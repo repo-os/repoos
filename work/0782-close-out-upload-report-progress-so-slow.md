@@ -2,7 +2,7 @@
 id: "0782"
 title: "Close-out upload: report progress so slow uploads are not flagged as stalled"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-upload-report-progress-so-slow
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-14T10:35:08Z"
-updated_at: "2026-10-14T12:08:23Z"
+updated_at: "2026-10-14T12:08:26Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -84,3 +84,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T11:50:26Z · note: review pass 4: needs some work
 - 2026-10-14T11:50:26Z · needs_input
 - 2026-10-14T12:08:23Z · model_override
+- 2026-10-14T12:08:26Z · status review→active
