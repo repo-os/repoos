@@ -33,6 +33,24 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.doneErrors[SHOT_PREVIEW_FIXTURE_TASK_ID]?.step).toBe("check");
   });
 
+  it("seeds a multi-area task with diff stats for card-chip shots (#0776)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "board:cardChips");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "board:cardChips seeds the fixture task").toBeTruthy();
+    expect(task!.areas).toEqual(["web", "server"]);
+    expect(task!.area).toBe("web, server");
+    expect(repo.diffStatsFor(SHOT_PREVIEW_FIXTURE_TASK_ID)).toEqual({
+      filesChanged: 10,
+      additions: 377,
+      deletions: 5,
+    });
+    // Still no branch: the card must not request diff stats for the fake id.
+    expect(task!.branch).toBe("");
+  });
+
   it(
     "gives the fixture task no branch so a mounted card never requests its diff stats " +
       "(#0768) — the server 404s for the fake id and the handoff UI gate records that " +
@@ -42,7 +60,11 @@ describe("shot preview board fixtures (#0743)", () => {
       const pinia = createPinia();
       setActivePinia(pinia);
       const repo = useRepoStore();
-      for (const fixture of ["card:doneError", "board:withReviewTask"] as const) {
+      for (const fixture of [
+        "card:doneError",
+        "board:withReviewTask",
+        "board:cardChips",
+      ] as const) {
         applyShotPreviewFixture(repo, fixture);
         const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
         expect(task, `${fixture} seeds the fixture task`).toBeTruthy();

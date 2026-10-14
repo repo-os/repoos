@@ -56,7 +56,8 @@ simply tasks grouped by this field.
 Who owns a task, via `assigned_to`. RepoOS treats **`ai` as a first-class
 assignee** alongside humans — a task assigned to `ai` is meant for an agent to
 execute. This is central to the model, not a tag: humans set direction, agents
-do work.
+do work. New tasks default to `ai` (the `defaultAssignee` setting, editable in
+Settings or `repoos.toml`); existing tasks keep whatever they already carry.
 
 ## Index
 
