@@ -79,3 +79,4 @@ Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core
 - 2026-10-14T06:51:07Z · body
 - 2026-10-14T06:52:33Z · body
 - 2026-10-14T07:02:06Z · status active→review
+- 2026-10-14T07:02:06Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cd1f486fb) during finalization (#0734)
