@@ -2,7 +2,7 @@
 id: "0782"
 title: "Close-out upload: report progress so slow uploads are not flagged as stalled"
 type: bug
-status: review
+status: ready
 priority: p3
 area: [server, web]
 assigned_to: ai
