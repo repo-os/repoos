@@ -1232,6 +1232,15 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       };
       cfg.dev = { ...cfg.dev, inspector };
     }
+    // [dev.failureSummary] (#0775) — the optional AI-written failure summary.
+    // Deterministic detection needs no config; this only gates the model call.
+    const devFailureAi = parsed["dev.failureSummary.ai"];
+    if (typeof devFailureAi === "boolean") {
+      cfg.dev = {
+        ...cfg.dev,
+        failureSummary: { ...(cfg.dev?.failureSummary ?? {}), ai: devFailureAi },
+      };
+    }
     // [[dev.targets]] (#0747) — the user-declared runnable dev targets. Bad
     // rows are recorded as validation errors on the config, not silently
     // dropped: the Dev page and CLI surface them so a typo is visible.
@@ -2713,6 +2722,21 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "declared here can be started; edit them under Advanced → Dev targets.",
     },
     {
+      // Rendered as a hand-rendered toggle on Advanced, next to the Dev targets
+      // card (#0775) — like `dev.targets`, this schema entry also exists so the
+      // search overlay and the "does this key have a UI row?" resolver find it.
+      key: "dev.failureSummary.ai",
+      label: "Explain dev failures with AI",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description:
+        "Offer an AI-written plain-language summary of a failed dev target, on top of the " +
+        "deterministic diagnosis (a port clash always names the port and the process holding " +
+        "it without any model call). Off by default because it spends a model call.",
+    },
+    {
       // Command-based capture targets (#0761). Deliberately raw-TOML-only, like
       // `[[preview.targets]]`: a capture target is a command + globs + optional
       // binary, and a plain Settings row cannot express the table. The schema
@@ -2874,6 +2898,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "dev.targets.label",
   "dev.targets.healthCheck.url",
   "dev.targets.healthCheck.file",
+  // Optional AI failure summary for dev targets (#0775).
+  "dev.failureSummary.ai",
   // Preview-only overrides (#0464): a `[preview.<base path>]` table applied
   // only by the preview/UI-test preview runtime. auth.enabled is the headline
   // case; any supported base key can be overridden the same way.

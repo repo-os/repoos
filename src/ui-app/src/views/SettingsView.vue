@@ -1639,7 +1639,37 @@ onUnmounted(() => {
         </Card>
 
         <!-- Dev targets (#0749): a dedicated hand-rendered card — the four
-             fields per target cannot be a plain comma-separated row. -->
+             fields per target cannot be a plain comma-separated row. The
+             AI-summary toggle (#0775) sits with it. -->
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Dev failure summaries
+            </div>
+            <div
+              id="setting-dev.failureSummary.ai"
+              data-config-key="dev.failureSummary.ai"
+              class="setting-row"
+            >
+              <div class="setting-info">
+                <div class="setting-label">Explain dev failures with AI</div>
+                <div class="setting-desc">
+                  Offer an AI-written plain-language summary of a failed dev target, on top of the
+                  deterministic diagnosis — a port clash always names the port and the process
+                  holding it without any model call. Off by default because it spends a model call.
+                </div>
+              </div>
+              <div class="setting-input">
+                <Switch
+                  :checked="!!form['dev.failureSummary.ai']"
+                  :disabled="config.saving"
+                  @update:checked="(v: boolean) => (form['dev.failureSummary.ai'] = v)"
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+
         <DevTargetsSettings />
       </div>
 
