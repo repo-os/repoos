@@ -94,3 +94,4 @@ This repo has no `site/` tree. The marketing site lives in `landing/` and descri
 - 2026-10-14T07:50:25Z · note: close-out repair: merge-conflict
 - 2026-10-14T07:53:04Z · body
 - 2026-10-14T08:00:28Z · status active→review
+- 2026-10-14T08:00:28Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
