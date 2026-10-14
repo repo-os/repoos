@@ -1,17 +1,34 @@
 ---
 id: "0774"
-title: Let's show the time when a process started running (and h…
+title: Show process start time beside running chip
 type: feature
-status: draft
+status: inbox
 priority: p2
-area: general
+area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-14T04:19:10Z"
-updated_at: "2026-10-14T04:19:17Z"
+updated_at: "2026-10-14T04:19:35Z"
 ---
-Let's show the time when a process started running (and human readable like 17 hours ago -- on hover you can show the full timestamp like Tues 11:18), but it next to the running chip.
+## Problem
+
+The running indicator does not show when a process started, so users cannot quickly tell how long it has been running.
+
+## Desired UX
+
+Show a human-readable elapsed time, such as “17 hours ago,” next to the running chip. On hover, show the start time as a timestamp, such as “Tues 11:18.”
+
+## Acceptance criteria
+
+- [ ] The running chip is accompanied by a human-readable time indicating when the process started.
+- [ ] Hovering over that time shows the process start timestamp.
+
+## Notes for AI
+
+- Place the time next to the existing running chip.
+- Use the process start time as the source for both displays.
+- Assume the hover timestamp should follow the existing date/time formatting conventions in the UI.
 
 ## Original prompt
 
@@ -25,3 +42,4 @@ Let's show the time when a process started running (and human readable like 17 h
 
 - 2026-10-14T04:19:10Z · created · hello@repoos.org
 - 2026-10-14T04:19:17Z · screenshots
+- 2026-10-14T04:19:35Z · status draft→inbox, title, area, body
