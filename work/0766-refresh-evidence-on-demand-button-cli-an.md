@@ -8,12 +8,11 @@ area: [core, server, cli, ui]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/refresh-evidence-on-demand-button-cli-an
-cli_override: cursor
-model_override: composer-2.5
+model_override: opencode-go/glm-5.3-flash
 review_cli_override: opencode
 review_model_override: opencode-go/hy3
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-14T04:26:00Z"
+updated_at: "2026-10-14T04:26:20Z"
 review_passes: 24
 close_out_repair_count: 1
 review_rounds: 2
@@ -268,3 +267,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-14T03:52:52Z · note: review pass 25: needs some work
 - 2026-10-14T04:25:49Z · review_cli_override
 - 2026-10-14T04:26:00Z · review_model_override
+- 2026-10-14T04:26:20Z · cli_override, model_override
