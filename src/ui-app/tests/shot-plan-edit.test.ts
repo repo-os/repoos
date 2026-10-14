@@ -333,4 +333,37 @@ describe("removeDeclarationsForDeletedShot (#0778 review round 3)", () => {
     expect(removed).toBe(0);
     expect(keptEntries(content)).toEqual([restated]);
   });
+
+  it("removes the broken-state twin whose theme matches and keeps the theme twin (#0782)", () => {
+    // `theme` is part of the raw identity (sameDeclaredShotRaw): a twin with a
+    // DIFFERENT theme is a declaration for another capture, so only the
+    // theme-matching broken-state twin goes when the stored declaration is
+    // known.
+    const captured = {
+      ...ref,
+      selector: ".a",
+      theme: "dark" as const,
+      state: "closeOut:active",
+    };
+    const matchingTheme = {
+      ...ref,
+      selector: ".a",
+      theme: "dark" as const,
+      state: "board:notARealFixture",
+    };
+    const otherTheme = {
+      ...ref,
+      selector: ".a",
+      theme: "light" as const,
+      state: "board:notARealFixture",
+    };
+    const { content, removed, errors } = removeDeclarationsForDeletedShot(
+      listBody([otherTheme, matchingTheme]),
+      ref,
+      captured,
+    );
+    expect(errors).toEqual([]);
+    expect(removed).toBe(1);
+    expect(keptEntries(content)).toEqual([otherTheme]);
+  });
 });

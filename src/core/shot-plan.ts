@@ -1119,7 +1119,15 @@ function declarationClosenessScore(raw: unknown, declared: DeclaredShot): number
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return 0;
   const entry = raw as Record<string, unknown>;
   let score = 0;
-  for (const field of ["label", "target", "route", "selector", "highlight", "glob", "theme"] as const) {
+  for (const field of [
+    "label",
+    "target",
+    "route",
+    "selector",
+    "highlight",
+    "glob",
+    "theme",
+  ] as const) {
     if ((entry[field] ?? undefined) === (declared[field] ?? undefined)) score++;
   }
   if (JSON.stringify(entry.steps ?? []) === JSON.stringify(declared.steps ?? [])) score++;
@@ -1236,7 +1244,15 @@ export function sameDeclaredShotRaw(raw: unknown, declared: DeclaredShot): boole
   if (parsed.shot) return sameDeclaredShot(parsed.shot, declared);
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return false;
   const entry = raw as Record<string, unknown>;
-  for (const field of ["label", "target", "route", "selector", "highlight", "glob", "theme"] as const) {
+  for (const field of [
+    "label",
+    "target",
+    "route",
+    "selector",
+    "highlight",
+    "glob",
+    "theme",
+  ] as const) {
     if ((entry[field] ?? undefined) !== (declared[field] ?? undefined)) return false;
   }
   if (JSON.stringify(entry.steps ?? []) !== JSON.stringify(declared.steps ?? [])) return false;
