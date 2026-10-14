@@ -6,7 +6,8 @@
  * the Start / Stop / Restart actions hitting the #0747 dev-target API, a failed
  * target's reason and log tail, the server open-URL link opening in a new tab,
  * the restart confirmation using the shared dialog (never a native confirm),
- * and the phone-width layout rule.
+ * the Last output collapse/expand control (#0777), and the phone-width layout
+ * rule.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
@@ -402,6 +403,52 @@ describe("DevView failure summary (#0775)", () => {
     } finally {
       window.history.replaceState({}, "", "/");
     }
+  });
+});
+
+describe("DevView Last output collapse (#0777)", () => {
+  it("collapses and expands the output body beside the line count, per target", async () => {
+    const log = Array.from({ length: 12 }, (_, i) => `line ${i}`);
+    installFetch({
+      targets: [
+        target({ name: "web", status: "failed", error: "boom", log }),
+        target({ name: "api", status: "running", log, url: "http://localhost:4000" }),
+      ],
+    });
+    const wrapper = mountView();
+    await flush();
+
+    const cards = wrapper.findAll(".dev-card");
+    // The log body's inline display — what v-show sets. Assert on this rather
+    // than `isVisible()`: jsdom caches computed style per element and never
+    // invalidates it for detached (VTU-mounted) nodes, so a pre-toggle
+    // `isVisible()` would keep returning the stale value after the toggle.
+    const bodyDisplay = (index: 0 | 1): string =>
+      (cards[index]!.find(".dev-log-body").element as HTMLElement).style.display;
+    const webToggle = cards[0]!.find(".dev-log-toggle");
+    const apiToggle = cards[1]!.find(".dev-log-toggle");
+    // The control sits beside the count in the section head, expanded at first.
+    expect(webToggle.exists()).toBe(true);
+    expect(webToggle.attributes("aria-expanded")).toBe("true");
+    expect(bodyDisplay(0)).not.toBe("none");
+
+    // Collapse: the body hides, the line count stays, the head marks itself.
+    await webToggle.trigger("click");
+    await flush();
+    expect(bodyDisplay(0)).toBe("none");
+    expect(webToggle.attributes("aria-expanded")).toBe("false");
+    expect(cards[0]!.find(".dev-log-count").text()).toContain("12 lines");
+    expect(cards[0]!.find(".dev-log-head").classes()).toContain("collapsed");
+
+    // Collapse is per target — the other card is untouched.
+    expect(apiToggle.attributes("aria-expanded")).toBe("true");
+    expect(bodyDisplay(1)).not.toBe("none");
+
+    // Expanding again restores the body.
+    await webToggle.trigger("click");
+    await flush();
+    expect(bodyDisplay(0)).not.toBe("none");
+    expect(webToggle.attributes("aria-expanded")).toBe("true");
   });
 });
 

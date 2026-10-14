@@ -15,6 +15,7 @@
  * way to keep the state current rather than inventing a second signal.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { ChevronDown } from "lucide-vue-next";
 import Button from "../components/ui/button.vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 import { api, JSON_OPTS } from "../api";
@@ -111,6 +112,26 @@ function startedAtTip(t: DevTargetView): string {
 /** The full captured output for the last run, newest last (#0775). */
 function fullLog(log: string[]): string {
   return log.join("\n");
+}
+
+/**
+ * Targets whose "Last output" body is collapsed (#0777), keyed by target
+ * name so the 4s poll replacing the list never resets the reader's choice.
+ * Per-view state only — nothing is persisted.
+ */
+const collapsedLogs = ref<Set<string>>(new Set());
+
+/** Toggle one target's "Last output" body between collapsed and expanded. */
+function toggleLog(name: string): void {
+  const next = new Set(collapsedLogs.value);
+  if (next.has(name)) next.delete(name);
+  else next.add(name);
+  collapsedLogs.value = next;
+}
+
+/** Whether one target's "Last output" body is currently collapsed. */
+function isLogCollapsed(name: string): boolean {
+  return collapsedLogs.value.has(name);
 }
 
 async function load(silent = false): Promise<void> {
@@ -458,11 +479,27 @@ watch(
             </div>
 
             <div v-if="t.log.length" class="dev-log">
-              <div class="dev-log-head">
-                Last output
-                <span class="dev-log-count">{{ t.log.length }} lines</span>
+              <div class="dev-log-head" :class="{ collapsed: isLogCollapsed(t.name) }">
+                <span>Last output</span>
+                <span class="dev-log-meta">
+                  <span class="dev-log-count">{{ t.log.length }} lines</span>
+                  <button
+                    type="button"
+                    class="dev-log-toggle"
+                    :title="isLogCollapsed(t.name) ? 'Expand the output' : 'Collapse the output'"
+                    :aria-label="isLogCollapsed(t.name) ? 'Expand output' : 'Collapse output'"
+                    :aria-expanded="!isLogCollapsed(t.name)"
+                    @click="toggleLog(t.name)"
+                  >
+                    <ChevronDown
+                      class="size-3.5 dev-log-chev"
+                      :class="{ open: !isLogCollapsed(t.name) }"
+                    />
+                  </button>
+                </span>
               </div>
               <pre
+                v-show="!isLogCollapsed(t.name)"
                 class="dev-log-body"
                 tabindex="0"
                 role="region"
@@ -777,7 +814,7 @@ watch(
 }
 .dev-log-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   font-size: 10.5px;
@@ -788,11 +825,53 @@ watch(
   padding: 7px 12px;
   border-bottom: 1px solid var(--border);
 }
+/* Collapsed: the body is hidden, so the divider would dangle over nothing. */
+.dev-log-head.collapsed {
+  border-bottom: none;
+}
+/* Right-side group: line count with the collapse/expand toggle beside it. */
+.dev-log-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .dev-log-count {
   font-weight: 600;
   text-transform: none;
   letter-spacing: 0;
   color: var(--txt-dim);
+}
+.dev-log-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--txt-dim);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.dev-log-toggle:hover {
+  background: var(--nav-hover-bg);
+  color: var(--txt);
+}
+.dev-log-toggle:focus-visible {
+  outline: 2px solid var(--border-bright);
+  outline-offset: 1px;
+}
+/* Same flip as the error card's collapse chevron: up while expanded. */
+.dev-log-chev {
+  transition: transform 0.15s;
+}
+.dev-log-chev.open {
+  transform: rotate(180deg);
 }
 .dev-log-body {
   margin: 0;
