@@ -391,7 +391,7 @@ declare the shot with its route.
 
 **Drawer add/delete (#0627).** Shots can also be added and deleted from the
 
-task drawer's UI changes section, while the task is `active` or in `review` —
+task drawer's UI changes sub-tab, while the task is `active` or in `review` —
 `POST /api/tasks/:id/shots` (declare + capture; the CLI's byte-upload on the
 same route is dispatched by the body's `data` field) and
 `DELETE /api/tasks/:id/shots/:name`. The non-obvious rules:
