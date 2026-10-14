@@ -2746,7 +2746,24 @@ export class CloseOutOrchestrator {
 
         const scopedRemoteRef =
           gatePlan?.scoped && gatePlan.changedRef ? gatePlan.changedRef : undefined;
-        remoteGateOutcome = await runRemoteGate(scopedRemoteRef);
+        // #0782 review: the upload heartbeat sets an in-stage detail line, but
+        // a FAILED upload never fires `onUploadComplete` — clear the line when
+        // the gate settles so "uploading…" can't linger until the next stage
+        // event. (A landed upload already cleared it; this is a no-op then.)
+        const runRemoteGateAndClear = async (
+          changedRef?: string,
+        ): Promise<typeof remoteGateOutcome> => {
+          try {
+            return await runRemoteGate(changedRef);
+          } finally {
+            try {
+              this.onUploadProgress?.(job.taskId, null);
+            } catch {
+              /* observation must never break close-out */
+            }
+          }
+        };
+        remoteGateOutcome = await runRemoteGateAndClear(scopedRemoteRef);
 
         // #0724 escape hatch, remote half: a SCOPED remote run that fails on a
         // real (non-transient) red suite is not proof the branch is broken — it
@@ -2767,7 +2784,7 @@ export class CloseOutOrchestrator {
             "scoped remote close-out gate failed — re-running the full suite once on the runner before failing the close-out",
             { detail: remoteGateOutcome.detail },
           );
-          remoteGateOutcome = await runRemoteGate();
+          remoteGateOutcome = await runRemoteGateAndClear();
           remoteScopedFellBackToFull = remoteGateOutcome.kind !== "fail";
         }
 
