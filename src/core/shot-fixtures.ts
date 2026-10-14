@@ -7,6 +7,7 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "closeOut:active",
   "card:doneError",
   "board:withReviewTask",
+  "board:cardChips",
 ] as const;
 
 export type ShotPreviewFixtureId = (typeof SHOT_PREVIEW_FIXTURE_IDS)[number];
