@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-upload-report-progress-so-slow
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-14T10:35:08Z"
-updated_at: "2026-10-14T13:17:20Z"
+updated_at: "2026-10-14T13:24:12Z"
 last_check_failure: "repoos check at 2026-10-14T13:15:57.514Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 62103fbb to 8a3e538e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 4
 review_rounds: 2
@@ -121,4 +121,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T13:07:04Z · body
 - 2026-10-14T13:15:57Z · message_expired: not delivered within timeout
 - 2026-10-14T13:17:20Z · body
-
+- 2026-10-14T13:24:12Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
