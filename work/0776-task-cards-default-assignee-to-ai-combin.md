@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-cards-default-assignee-to-ai-combin
 created_at: "2026-10-14T06:06:09Z"
-updated_at: "2026-10-14T06:34:18Z"
+updated_at: "2026-10-14T06:37:17Z"
 ---
 ## Problem
 Three things on the task card and defaults are noisy or wrong:
@@ -34,24 +34,24 @@ Three things on the task card and defaults are noisy or wrong:
 ## Notes for AI
 Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core server cli ui' and 'web server'); 3 shows the '· open' chip and the '10f 377+' file chip on the card; 4 shows the lock chips for dependencies. The card is src/ui-app/src/components/TaskCard.vue (the assignee chip is around line 1040, the area chips and file-change chip near 1030-1060). The default is src/core/config.ts (defaultAssignee, around lines 191 and 2060).
 
+## Shots
+```json
+[
+{
+"label": "Board cards: one combined area chip and a file-count-only chip",
+"target": "default",
+"route": "/",
+"highlight": ".tc-area-chip, .tc-file-chip"
+}
+]
+```
+
 ## Screenshots
 
 ![6](/api/tasks/0776/attachments/screenshot-1.png)
 ![7](/api/tasks/0776/attachments/screenshot-2.png)
 ![8](/api/tasks/0776/attachments/screenshot-3.png)
 ![9](/api/tasks/0776/attachments/screenshot-4.png)
-
-## Shots
-```json
-[
-{
-  "label": "Board cards: one combined area chip and a file-count-only chip",
-  "target": "default",
-  "route": "/",
-  "highlight": ".tc-area-chip, .tc-file-chip"
-}
-]
-```
 
 ## Activity
 
@@ -61,3 +61,4 @@ Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core
 - 2026-10-14T06:15:46Z · status ready→active, branch
 - 2026-10-14T06:25:13Z · body
 - 2026-10-14T06:34:18Z · body: section Shots
+- 2026-10-14T06:37:17Z · body
