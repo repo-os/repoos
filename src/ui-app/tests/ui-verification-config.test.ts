@@ -9,7 +9,13 @@ import { getConfigSchema, loadConfig, SUPPORTED_TOML_KEYS } from "../../core/con
 import type { RepoOSConfig } from "../../core/types.js";
 import { resolvedUiVerification } from "../../core/ui-verification-config.js";
 import { resolveSettingLocation } from "../src/settings-location.js";
-import { shouldAutoRefreshStaleEvidence } from "../../server/review.js";
+import {
+  ReviewManager,
+  isStaleEvidenceOnlyReview,
+  shouldAutoRefreshStaleEvidence,
+} from "../../server/review.js";
+import { vi } from "vitest";
+import type { Agent, Task } from "../../core/types.js";
 
 describe("uiVerification config (#0680)", () => {
   it("defaults to enabled with standard viewports", () => {
@@ -60,6 +66,37 @@ describe("uiVerification config (#0680)", () => {
         inspectorAvailable: true,
       }),
     ).toEqual({ tab: "general", hasUiRow: true });
+  });
+
+  it("does not auto-bounce stale-only findings when autoRefreshStaleOnce is off", () => {
+    const config = {
+      root: "/tmp",
+      workDir: "work",
+      cacheDir: ".repoos",
+      uiVerification: { autoRefreshStaleOnce: false },
+    } as RepoOSConfig;
+    const reviews = new ReviewManager(config, () => {});
+    const bounce = vi
+      .spyOn(reviews as unknown as { autoBounce: () => Promise<void> }, "autoBounce")
+      .mockResolvedValue(undefined);
+    const task = {
+      id: "0766",
+      title: "test",
+      status: "review",
+      path: "work/0766.md",
+      absPath: "/tmp/work/0766.md",
+    } as Task;
+    const agent = { name: "reviewer", cli: "fake", model: "m", enabled: true } as Agent;
+    const report = "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY\n";
+    (reviews as unknown as { finalizeRun: (...args: unknown[]) => void }).finalizeRun(
+      task,
+      agent,
+      [{ kind: "stdout", text: report }],
+      { accumulatedMs: 1 },
+      false,
+    );
+    expect(bounce).not.toHaveBeenCalled();
+    expect(isStaleEvidenceOnlyReview(report, "needs some work")).toBe(true);
   });
 
   it("auto-refreshes only an explicitly stale-evidence-only review when enabled", () => {

@@ -119,18 +119,26 @@ export interface ReviewRunResult {
   report?: ReviewReport;
 }
 
+/** Review failed only because handoff evidence is stale (#0766). */
+export function isStaleEvidenceOnlyReview(report: string, verdict: string | null): boolean {
+  const section = reviewVerdictSection(report);
+  return (
+    verdict !== "good to go" &&
+    verdict !== null &&
+    section !== null &&
+    section.includes("STALE-EVIDENCE-ONLY")
+  );
+}
+
 /** Automatic evidence recovery is opt-in and requires an explicit stale-only reviewer marker. */
 export function shouldAutoRefreshStaleEvidence(
   config: RepoOSConfig,
   report: string,
   verdict: string | null,
 ): boolean {
-  const section = reviewVerdictSection(report);
   return (
     config.uiVerification?.autoRefreshStaleOnce === true &&
-    verdict !== "good to go" &&
-    section !== null &&
-    section.includes("STALE-EVIDENCE-ONLY")
+    isStaleEvidenceOnlyReview(report, verdict)
   );
 }
 
@@ -1208,7 +1216,10 @@ export class ReviewManager {
     // Fire-and-forget (don't await) so the review completion isn't delayed
     if (state === "ok" && verdict) {
       if (verdict !== "good to go") {
-        if (!autoRefreshStaleEvidence) {
+        if (
+          !autoRefreshStaleEvidence &&
+          !isStaleEvidenceOnlyReview(reportText, verdict)
+        ) {
           this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
             console.error(
               `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
