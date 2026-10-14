@@ -138,6 +138,30 @@ final class ServerNavigationPolicyTests: XCTestCase {
         XCTAssertEqual(decision, .cancel(reason: .popup))
     }
 
+    func testUserClickedHTTPSPopupOpensInBrowser() {
+        let foreign = URL(string: "https://github.com/example/repo/releases")!
+        let decision = ServerNavigationPolicy.decide(
+            requestURL: foreign,
+            allowedOrigin: origin,
+            isMainFrame: true,
+            activation: .linkActivated,
+            opensNewWindow: true
+        )
+        XCTAssertEqual(decision, .openInDefaultBrowser(foreign))
+    }
+
+    func testAutomaticHTTPSPopupStaysBlocked() {
+        let foreign = URL(string: "https://github.com/example/repo/releases")!
+        let decision = ServerNavigationPolicy.decide(
+            requestURL: foreign,
+            allowedOrigin: origin,
+            isMainFrame: true,
+            activation: .other,
+            opensNewWindow: true
+        )
+        XCTAssertEqual(decision, .cancel(reason: .popup))
+    }
+
     func testURLErrorMapping() {
         XCTAssertEqual(
             ServerWebLoadFailure.fromURLError(URLError(.timedOut)),
