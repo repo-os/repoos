@@ -38,3 +38,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T12:08:27Z · status review→active
 - 2026-10-14T13:15:30Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-14T13:24:12Z · status ready→review
+- 2026-10-14T13:24:12Z · note: handoff requested (cli)
