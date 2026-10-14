@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T09:05:32Z"
+updated_at: "2026-10-14T09:11:00Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -74,3 +74,4 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 - 2026-10-14T08:59:54Z · handoff failed · remote validation failed: test failure: tests/task-shots-api.test.ts > DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627) > syncs THE exact declaration when the shot carries one (selector/steps included) on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-14T09:05:32Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/task-shots-api.test.ts > DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627) > syncs THE exact declaration when the shot carries one (selector/steps included) on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-14T09:05:32Z · note: handoff requested (cli)
+- 2026-10-14T09:11:00Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/task-shots-api.test.ts > DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627) > syncs THE exact declaration when the shot carries one (selector/steps included) on bee — fix it in the feature branch and re-run the gate
