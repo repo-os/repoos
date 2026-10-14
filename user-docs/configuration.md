@@ -1261,6 +1261,30 @@ provider = "local"
 
 The Settings page exposes this key as "Attachment storage".
 
+### Neon Object Storage credentials
+
+The `[storage]` section only chooses the provider; it never carries a secret.
+The Neon credential is supplied through the environment, exactly like the auth
+and model-provider keys, so no access key ever reaches `repoos.toml` or git.
+Set these in `.env` (gitignored) or a machine secret store:
+
+| Variable | Purpose |
+| --- | --- |
+| `REPOOS_NEON_STORAGE_ENDPOINT` | The branch's S3 endpoint URL, e.g. `https://br-….storage-c-2.us-east-2.aws.neon.tech`. |
+| `REPOOS_NEON_STORAGE_REGION` | The branch's S3 region, e.g. `us-east-2`. |
+| `REPOOS_NEON_STORAGE_BUCKET` | The bucket objects are stored in. |
+| `REPOOS_NEON_STORAGE_ACCESS_KEY_ID` | The storage credential's S3 access key id (`token_id`). |
+| `REPOOS_NEON_STORAGE_SECRET_ACCESS_KEY` | The storage credential's S3 secret access key. |
+| `REPOOS_NEON_STORAGE_PREFIX` | Optional key prefix isolating this instance's objects. |
+
+The endpoint, region and bucket come from the branch's storage state in the Neon
+Console or `GET /projects/{project}/branches/{branch}/storage`; the access key
+and secret come from a storage-scoped credential
+(`neon credentials create --scope storage:read --scope storage:write`). Full
+verified details, limits and pricing: [`docs/neon-object-storage.md`](https://github.com/repoos/repoos/blob/main/docs/neon-object-storage.md).
+Until every required variable is set, `neon` reports itself unavailable and
+attachments continue to use local storage.
+
 ## Notifications
 
 ```toml
