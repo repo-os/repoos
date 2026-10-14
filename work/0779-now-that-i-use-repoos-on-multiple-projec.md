@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/add-settings-import-and-export
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-14T08:01:16Z"
-updated_at: "2026-10-14T08:21:16Z"
+updated_at: "2026-10-14T08:25:01Z"
 ---
 ## Problem
 
@@ -45,6 +45,18 @@ This task covers the Settings tab and importing/exporting the listed settings. O
 
 Now that I use repoos on multiple projects I need an easy way to copy important settings between projects, starting with Agent+Model allowlists and Agent+Model favorites and starred coding agents and starred themes and remote validation. Please create a new tab in settings page called "Import/Export" where the user can go to specify which things they want to export and also to drop/select a file to import it if they are bringing in exported settings from another project. The export button should download an "export toml" file with a name like `repoos_<repo>_export_<timestamp>.toml` and put it in your ~/Downloads folder by default.
 
+## Shots
+```json
+[
+{
+  "label": "Settings Import/Export tab with export options and import dropzone",
+  "target": "default",
+  "route": "/settings?tab=import-export",
+  "highlight": "#settings-panel-import-export"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-14T08:01:16Z · created · hello@repoos.org
@@ -53,3 +65,4 @@ Now that I use repoos on multiple projects I need an easy way to copy important 
 - 2026-10-14T08:03:10Z · status inbox→ready
 - 2026-10-14T08:03:12Z · status ready→active, branch
 - 2026-10-14T08:21:16Z · body
+- 2026-10-14T08:25:01Z · body: section Shots
