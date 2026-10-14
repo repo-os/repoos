@@ -1549,6 +1549,30 @@ export interface SystemStats {
 export type DevTargetStatus = "running" | "stopped" | "starting" | "failed";
 
 /**
+ * A process holding a port a dev target could not bind (#0775). `repoosOwned`
+ * is true only when RepoOS recorded the PID, which is the single case the Dev
+ * page may offer a Stop action for.
+ */
+export interface DevPortHolder {
+  pid: number;
+  command: string;
+  repoosOwned: boolean;
+  target?: string;
+  stale: boolean;
+}
+
+/** The deterministic plain-language failure summary the server builds (#0775). */
+export interface DevFailureView {
+  kind: "port-in-use" | "process-exited" | "unknown";
+  what: string;
+  cause: string;
+  fix: string;
+  port?: number;
+  holder?: DevPortHolder;
+  canStopHolder: boolean;
+}
+
+/**
  * One declared dev target with its live state, from `GET /api/dev/targets`.
  * `kind` decides what the page shows: a `server` gets an open-URL link, an
  * `artifact` gets its output path, a `process` (a native app / non-URL process)
@@ -1572,6 +1596,8 @@ export interface DevTargetView {
   url?: string;
   /** `artifact` targets only — the repo-relative output path. */
   artifactPath?: string;
+  /** Plain-language failure summary, present only for a failed target (#0775). */
+  failure?: DevFailureView;
 }
 
 /** Response of `GET /api/dev/targets`. */

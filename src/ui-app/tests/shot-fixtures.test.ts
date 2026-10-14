@@ -23,4 +23,14 @@ describe("shot preview fixtures (#0743)", () => {
     const bad = `## Shots\n\`\`\`json\n[{"route":"/","state":"unknown"}]\n\`\`\``;
     expect(parseShotPlan(bad).errors[0]).toMatch(/unknown "state" fixture/);
   });
+
+  it("accepts the dev:failed fixture for the Dev page (#0775)", () => {
+    const url = shotCapturePageUrl("http://127.0.0.1:8000", {
+      route: "/dev",
+      state: "dev:failed",
+    });
+    expect(url).toBe("http://127.0.0.1:8000/dev?shotState=dev%3Afailed");
+    const body = `## Shots\n\`\`\`json\n[{"route":"/dev","state":"dev:failed"}]\n\`\`\``;
+    expect(parseShotPlan(body).errors).toEqual([]);
+  });
 });
