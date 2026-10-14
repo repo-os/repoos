@@ -25,7 +25,7 @@
  * tests can share it without touching git, a server or Playwright.
  */
 import type { PreviewConfig, ShotConfig } from "./types.js";
-import { isShotPreviewFixtureId } from "./shot-fixtures.js";
+import { SHOT_PREVIEW_FIXTURE_IDS, isShotPreviewFixtureId } from "./shot-fixtures.js";
 import { DEFAULT_PREVIEW_TARGET as DEFAULT_FALLBACK_TARGET } from "./shot-targets.js";
 
 /** One ordered step within a declared shot. Exactly one key per object. */
@@ -376,7 +376,7 @@ function parseShot(raw: unknown, where: string): { shot?: DeclaredShot; error?: 
       return {
         error:
           `${where}: unknown "state" fixture "${r.state}" — use one of: ` +
-          "closeOut:active, card:doneError, board:withReviewTask",
+          SHOT_PREVIEW_FIXTURE_IDS.join(", "),
       };
     }
     shot.state = r.state;
@@ -918,7 +918,7 @@ export function declaredShotMatchesShot(
  * in selector or steps are NOT the same shot's declaration.
  */
 export function sameDeclaredShot(a: DeclaredShot, b: DeclaredShot): boolean {
-  for (const field of ["label", "target", "route", "selector", "highlight"] as const) {
+  for (const field of ["label", "target", "route", "selector", "highlight", "state"] as const) {
     if ((a[field] ?? undefined) !== (b[field] ?? undefined)) return false;
   }
   if (JSON.stringify(a.steps ?? []) !== JSON.stringify(b.steps ?? [])) return false;
@@ -1069,6 +1069,122 @@ export function declaredShotMatchesShotRaw(
   return declaredShotMatchesShot(declared, shot);
 }
 
+/**
+ * Similarity between an invalid raw `## Shots` item and the deleted shot's
+ * stored declaration, over every identity field EXCEPT `state` — the field
+ * whose rejected fixture value is why the entry is on the raw path at all
+ * (#0778). A post-capture edit that only broke `state` scores full marks, so
+ * it beats twins that also differ in selector or steps (review round 3).
+ */
+function declarationClosenessScore(raw: unknown, declared: DeclaredShot): number {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return 0;
+  const entry = raw as Record<string, unknown>;
+  let score = 0;
+  for (const field of ["label", "target", "route", "selector", "highlight", "glob"] as const) {
+    if ((entry[field] ?? undefined) === (declared[field] ?? undefined)) score++;
+  }
+  if (JSON.stringify(entry.steps ?? []) === JSON.stringify(declared.steps ?? [])) score++;
+  if (JSON.stringify(entry.env ?? {}) === JSON.stringify(declared.env ?? {})) score++;
+  if (JSON.stringify(entry.args ?? []) === JSON.stringify(declared.args ?? [])) score++;
+  if (JSON.stringify(entry.assert ?? []) === JSON.stringify(declared.assert ?? [])) score++;
+  return score;
+}
+
+/**
+ * Remove the `## Shots` declarations describing one deleted capture (#0627,
+ * #0778). Valid entries follow {@link declarationMatchesDeletedShot}: THE
+ * exact entry when the deleted shot carries its stored declaration, else a
+ * shallow label/route/target match (a legacy/auto shot records no selector or
+ * steps, so every match goes — the caller warns — or a re-handoff would
+ * recapture the deleted evidence).
+ *
+ * Entries that no longer parse (e.g. an invalid `state` fixture edited in
+ * after capture) can never match exactly, so the shallow rule alone would
+ * claim every twin sharing label/route/target and delete them all (review
+ * round 3). Instead at most ONE invalid entry goes when the stored declaration
+ * is known: exact (`sameDeclaredShotRaw`) twins — identical duplicates all go,
+ * they ARE the same entry — else the lone shallow candidate (the #0778 r2
+ * post-capture edit), else the uniquely closest entry to the stored
+ * declaration, so selector/steps break the tie toward the edited original.
+ * Genuinely ambiguous twins (a closest-score tie) remove nothing: the image
+ * delete still succeeds, and a stale invalid declaration never resurrects
+ * (invalid entries are never captured), so the user trims the file by hand.
+ */
+export function removeDeclarationsForDeletedShot(
+  body: string,
+  shot: { label?: string; route?: string; target?: string },
+  capturedDeclared?: DeclaredShot,
+): { content: string; removed: number; errors: string[] } {
+  const listed = listShotsSectionItems(body ?? "");
+  if (listed.errors.length > 0) {
+    return { content: "", removed: 0, errors: listed.errors };
+  }
+  if (listed.items === null) {
+    return { content: "", removed: 0, errors: [] };
+  }
+  const validDrop = new Set<number>();
+  const rawExact: number[] = [];
+  const rawShallow: number[] = [];
+  const rawScores = new Map<number, number>();
+  for (let i = 0; i < listed.items.length; i++) {
+    const raw = listed.items[i];
+    const parsed = parseShot(raw, `shot #${i + 1}`);
+    if (parsed.shot) {
+      if (declarationMatchesDeletedShot(parsed.shot, shot, capturedDeclared)) validDrop.add(i);
+      continue;
+    }
+    if (!capturedDeclared) {
+      // Legacy/auto shot: nothing else identifies the entry, so every shallow
+      // match goes (the caller discloses the count).
+      if (declaredShotMatchesShotRaw(raw, shot)) rawExact.push(i);
+      continue;
+    }
+    if (sameDeclaredShotRaw(raw, capturedDeclared)) {
+      rawExact.push(i);
+      continue;
+    }
+    if (declaredShotMatchesShotRaw(raw, shot)) {
+      rawShallow.push(i);
+      rawScores.set(i, declarationClosenessScore(raw, capturedDeclared));
+    }
+  }
+  const rawDrop = new Set<number>();
+  if (rawExact.length > 0) {
+    for (const i of rawExact) rawDrop.add(i);
+  } else if (rawShallow.length === 1) {
+    rawDrop.add(rawShallow[0]!);
+  } else if (rawShallow.length > 1) {
+    let best = -1;
+    let bestScore = -1;
+    let tied = false;
+    for (const i of rawShallow) {
+      const s = rawScores.get(i) ?? 0;
+      if (s > bestScore) {
+        bestScore = s;
+        best = i;
+        tied = false;
+      } else if (s === bestScore) {
+        tied = true;
+      }
+    }
+    if (!tied && best !== -1) rawDrop.add(best);
+  }
+  if (validDrop.size === 0 && rawDrop.size === 0) {
+    return { content: "", removed: 0, errors: [] };
+  }
+  const kept: unknown[] = [];
+  for (let i = 0; i < listed.items.length; i++) {
+    if (validDrop.has(i) || rawDrop.has(i)) continue;
+    const parsed = parseShot(listed.items[i], `shot #${i + 1}`);
+    kept.push(parsed.shot ?? listed.items[i]);
+  }
+  return {
+    content: declaredShotsSectionContentFromItems(kept),
+    removed: validDrop.size + rawDrop.size,
+    errors: [],
+  };
+}
+
 /** Structural equality on a raw entry for delete sync when validation failed (#0778).
  * Mirrors {@link sameDeclaredShot}'s identity (which ignores `state`): the
  * common invalid-entry case is a `state` fixture edited in after capture, so
@@ -1080,14 +1196,7 @@ export function sameDeclaredShotRaw(raw: unknown, declared: DeclaredShot): boole
   if (parsed.shot) return sameDeclaredShot(parsed.shot, declared);
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return false;
   const entry = raw as Record<string, unknown>;
-  for (const field of [
-    "label",
-    "target",
-    "route",
-    "selector",
-    "highlight",
-    "glob",
-  ] as const) {
+  for (const field of ["label", "target", "route", "selector", "highlight", "glob"] as const) {
     if ((entry[field] ?? undefined) !== (declared[field] ?? undefined)) return false;
   }
   if (JSON.stringify(entry.steps ?? []) !== JSON.stringify(declared.steps ?? [])) return false;

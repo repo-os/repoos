@@ -13,6 +13,7 @@ import {
   declaredShotMatchesShot,
   declaredShotsSectionContent,
   parseShotEntry,
+  removeDeclarationsForDeletedShot,
   removeDeclaredShots,
   sameDeclaredShot,
 } from "../../core/shot-plan.js";
@@ -208,5 +209,82 @@ describe("sameDeclaredShot (#0627 review round 1)", () => {
         { ...base, steps: [{ click: ".a" }] },
       ),
     ).toBe(false);
+  });
+
+  it("is false when only the state fixture differs (#0778)", () => {
+    const base = { target: "default", route: "/", label: "A" };
+    expect(
+      sameDeclaredShot(
+        { ...base, state: "board:withReviewTask" },
+        { ...base, state: "closeOut:active" },
+      ),
+    ).toBe(false);
+    expect(sameDeclaredShot({ ...base, state: "board:withReviewTask" }, base)).toBe(false);
+  });
+});
+
+describe("removeDeclarationsForDeletedShot (#0778 review round 3)", () => {
+  const ref = { target: "default", route: "/", label: "Board" };
+  const stored = { ...ref, selector: ".a", state: "board:withReviewTask" };
+  const editedInvalid = { ...ref, selector: ".a", state: "board:notARealFixture" };
+  const twinInvalid = { ...ref, selector: ".b", state: "board:notARealFixture" };
+  const listBody = (items: unknown[]) => `## Shots\n\n${FENCED(JSON.stringify(items))}`;
+  const keptEntries = (content: string) =>
+    JSON.parse(content.match(/```json\n([\s\S]*?)\n```/)![1]!) as unknown[];
+
+  it("removes only the edited invalid entry when a twin shares label/route/target", () => {
+    const { content, removed, errors } = removeDeclarationsForDeletedShot(
+      listBody([editedInvalid, twinInvalid]),
+      ref,
+      stored,
+    );
+    expect(errors).toEqual([]);
+    expect(removed).toBe(1);
+    expect(keptEntries(content)).toEqual([twinInvalid]);
+  });
+
+  it("removes the lone invalid entry after a post-capture edit (no twin)", () => {
+    const { content, removed } = removeDeclarationsForDeletedShot(
+      listBody([{ ...ref, state: "board:notARealFixture" }]),
+      ref,
+      { ...ref, selector: ".drawer" },
+    );
+    expect(removed).toBe(1);
+    expect(keptEntries(content)).toEqual([]);
+  });
+
+  it("removes nothing when two invalid twins tie for closest (ambiguous)", () => {
+    const twinB = { ...ref, selector: ".b", state: "board:notARealFixture" };
+    const twinC = { ...ref, selector: ".c", state: "board:notARealFixture" };
+    // The stored declaration matches neither exactly, and both twins are
+    // equidistant from it (state is unscored, each differs only in selector),
+    // so there is no single selected entry to remove.
+    const { content, removed } = removeDeclarationsForDeletedShot(
+      listBody([twinB, twinC]),
+      ref,
+      { ...ref, selector: ".a" },
+    );
+    expect(removed).toBe(0);
+    expect(content).toBe("");
+  });
+
+  it("still removes every shallow match for a legacy shot with no stored declaration", () => {
+    const { content, removed } = removeDeclarationsForDeletedShot(
+      listBody([editedInvalid, twinInvalid]),
+      ref,
+    );
+    expect(removed).toBe(2);
+    expect(keptEntries(content)).toEqual([]);
+  });
+
+  it("removes THE exact valid entry when the shot carries its declaration", () => {
+    const other = { ...ref, selector: ".other" };
+    const { content, removed } = removeDeclarationsForDeletedShot(
+      listBody([other, stored]),
+      ref,
+      stored,
+    );
+    expect(removed).toBe(1);
+    expect(keptEntries(content)).toEqual([other]);
   });
 });

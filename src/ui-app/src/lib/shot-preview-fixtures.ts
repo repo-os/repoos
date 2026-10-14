@@ -55,8 +55,7 @@ function fixtureTask(over: Partial<Task> = {}): Task {
   };
 }
 
-function activePipeline(taskId: string): IntegrationPipelineSnapshot {
-  const at = nowIso();
+function activePipeline(taskId: string, at: string = nowIso()): IntegrationPipelineSnapshot {
   return {
     empty: false,
     active: {
@@ -149,6 +148,17 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   switch (fixture) {
     case "closeOut:active":
       repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID);
+      break;
+    case "closeOut:stalled":
+      // A fixed far-past attempt: idle past the stall threshold at any capture
+      // time, so the fixture task's card renders the stalled Cancel/Retry
+      // actions (#0778). The fixture task itself must exist for its card to
+      // render at all.
+      ensureFixtureTask(repo, "review");
+      repo.integration = activePipeline(
+        SHOT_PREVIEW_FIXTURE_TASK_ID,
+        "2026-01-01T00:00:00.000Z",
+      );
       break;
     case "card:doneError":
       ensureFixtureTask(repo, "review");
