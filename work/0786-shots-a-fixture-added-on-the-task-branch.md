@@ -3,6 +3,9 @@ id: "0786"
 title: "Shots: a fixture added on the task branch can't be declared or captured until merge"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Branch-aware fixture validation is wired through `--shots`, handoff `planAutoCapture`, and UI preflight/verify via `taskFixtureValidator` / `readBranchFixtureValidator`, which addresses the core #0778 failure mode. Sign-off is blocked by a failing unit test: `shot-fixtures.test.ts` still expects `shotCapturePageUrl` to throw on unknown `state`, but #0786 removed that guard."
 priority: p2
 area: server
 assigned_to: ai
@@ -67,3 +70,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-14T18:28:10Z · status active→review
 - 2026-10-14T18:28:11Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-14T18:29:37Z · note: review pass 4: needs some work
+- 2026-10-14T18:29:37Z · needs_input
