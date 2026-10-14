@@ -142,6 +142,28 @@ function safeVersionFile(root: string, filename: string): string | null {
   return relative(root, absolute).startsWith("..") ? null : absolute;
 }
 
+/**
+ * Whether this project is expected to build its own `dist/cli/index.js`.
+ * True only when `package.json` declares a `bin` target pointing at it
+ * (RepoOS itself, or any other project shipping the same binary) — the vast
+ * majority of managed projects (a docs site, a native app's companion UI, a
+ * backend service, …) never produce a CLI there, so a missing file for them
+ * is normal, not a regression. Same rule as the close-out gate's
+ * `expectsOwnCli` (`src/server/integration-orchestrator.ts`); kept as a
+ * small duplicate so this module stays import-light.
+ */
+export function expectsOwnCliRepo(root: string): boolean {
+  try {
+    const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as {
+      bin?: string | Record<string, string>;
+    };
+    const binPaths = typeof pkg.bin === "string" ? [pkg.bin] : Object.values(pkg.bin ?? {});
+    return binPaths.some((p) => p.replace(/^\.\//, "") === "dist/cli/index.js");
+  } catch {
+    return false;
+  }
+}
+
 function versionFor(
   config: RepoOSConfig,
   release: ReleaseConfig,
@@ -600,6 +622,62 @@ export async function cutNewRelease(
   if (!versionPath || !existsSync(versionPath)) {
     return { ok: false, status, output: "Configured version file is missing." };
   }
+  const relVersionPath = relative(config.root, versionPath);
+  const bumpSubject = `release: ${tag}`;
+  // Set once this run commits the bump below; drives the failure-path
+  // handling (rollback vs. explain) for every phase after this point.
+  let bumpedThisRun = false;
+  // Set once `pushing_main` succeeds — the bump is public from then on, so a
+  // later failure must never rewrite it away.
+  let mainPushed = false;
+  /**
+   * Fail after the version bump was committed. A failure before `pushing_main`
+   * leaves the bump as a local-only commit: roll it back when it is still
+   * exactly HEAD (nothing else landed on top), so the branch is back to its
+   * pre-release state; otherwise — or once the bump has been pushed — leave
+   * the history alone and say exactly where the bump is and how to undo it.
+   * Never rewrites pushed history: `mainPushed` short-circuits to the message.
+   */
+  async function failAfterBump(
+    output: string,
+  ): Promise<{ ok: boolean; status: ReleaseStatus; output: string }> {
+    if (!bumpedThisRun) return { ok: false, status, output };
+    if (!mainPushed) {
+      const head = await exec("git", ["log", "-1", "--format=%s"], config.root);
+      if (head.code === 0 && head.stdout.trim() === bumpSubject) {
+        const reset = await exec("git", ["reset", "--soft", "HEAD~1"], config.root);
+        // `--soft` keeps the index/worktree untouched, so restore just the
+        // version file from the pre-bump HEAD. A `--hard` reset here would
+        // destroy unrelated uncommitted work (e.g. the dirty source file a
+        // "state changed" failure just reported), and every other dirty path
+        // is left exactly as it was.
+        const restored =
+          reset.code === 0
+            ? await exec("git", ["checkout", "HEAD", "--", relVersionPath], config.root)
+            : reset;
+        if (restored.code === 0) {
+          return {
+            ok: false,
+            status: await getReleaseStatus(config, exec),
+            output:
+              `${output}\n\nThe version-bump commit (${bumpSubject}) was rolled back; ` +
+              `the branch is back to its pre-release state. Fix the failure and cut the release again.`,
+          };
+        }
+      }
+    }
+    const pushedNote = mainPushed
+      ? `The version bump (${bumpSubject}) was already pushed to ${release?.remote ?? "origin"}/${status.branch}; ` +
+        `do not reset it away — fix the failure and cut the release again, or revert it deliberately.`
+      : `The version bump was committed locally as "${bumpSubject}" but nothing was pushed. ` +
+        `Cut the release again with the same version to resume from the checks, or undo the bump with: ` +
+        `git reset --soft HEAD~1 && git checkout HEAD -- ${relVersionPath} (only while that commit is still HEAD).`;
+    return {
+      ok: false,
+      status: await getReleaseStatus(config, exec),
+      output: `${output}\n\n${pushedNote}`,
+    };
+  }
   // The release version is a committed source-of-truth change. A retry for a
   // version already committed (for example after a transient tag push failure)
   // skips this block and safely resumes from the gate.
@@ -612,7 +690,6 @@ export async function cutNewRelease(
     } catch {
       return { ok: false, status, output: "Could not update the configured version file." };
     }
-    const relVersionPath = relative(config.root, versionPath);
     const staged = await exec("git", ["add", "--", relVersionPath], config.root);
     const committed =
       staged.code === 0
@@ -620,7 +697,7 @@ export async function cutNewRelease(
             "git",
             // `--only` commits just the version bump; a plain commit would take
             // the whole index and sweep in whatever else was staged (#0353).
-            ["commit", "-o", "-m", `release: ${tag}`, "--", relVersionPath],
+            ["commit", "-o", "-m", bumpSubject, "--", relVersionPath],
             config.root,
           )
         : staged;
@@ -632,6 +709,7 @@ export async function cutNewRelease(
           captureOutput(committed.stdout, committed.stderr) || "Could not commit the version bump.",
       };
     }
+    bumpedThisRun = true;
   }
   // Rebuild first. `repoos check`'s first gate is a src/-vs-dist/ staleness
   // check — any edit or `bun run fmt` since the operator's last build (or a
@@ -642,15 +720,12 @@ export async function cutNewRelease(
   onProgress?.("building", "Rebuilding (bun run build)…");
   const build = await exec("bun", ["run", "build"], config.root, 600_000);
   if (build.code !== 0)
-    return {
-      ok: false,
-      status,
-      output:
-        captureOutput(build.stdout, build.stderr) ||
+    return failAfterBump(
+      captureOutput(build.stdout, build.stderr) ||
         (build.error?.message.includes("ENOENT")
           ? "Could not run `bun run build` — is bun on PATH?"
           : "`bun run build` failed."),
-    };
+    );
   // Remote Validation Runner (docs/remote-validation.md): hand the expensive
   // half of the gate — `bun install` + `bun run build` + `bun run test` — to a
   // disposable cloud VM, which is where `repoos check` flakes under local
@@ -677,13 +752,11 @@ export async function cutNewRelease(
     });
     if (remoteGateOutcome.kind === "fail") {
       const infra = remoteGateOutcome.retryable;
-      return {
-        ok: false,
-        status,
-        output: infra
+      return failAfterBump(
+        infra
           ? `Remote validation unavailable (infrastructure): ${remoteGateOutcome.detail} — the release was not cut.`
           : `Remote validation failed: ${remoteGateOutcome.detail}`,
-      };
+      );
     }
     if (remoteGateOutcome.kind === "local-only" && !remoteGateOutcome.skipTests) {
       onProgress?.(
@@ -706,19 +779,41 @@ export async function cutNewRelease(
     REPOOS_CHECK_STORE_ROOT: config.root,
   };
   const checkArgs = spawnedRepoosCheckArgs(config, remoteGateOutcome);
-  const check = await exec(
-    process.execPath,
-    [join(config.root, "dist", "cli", "index.js"), "check", ...checkArgs],
-    config.root,
-    600_000,
-    checkEnv,
-  );
+  // The gate runs through this project's own freshly built CLI — but only
+  // when the project actually ships one (#0780). A project whose package.json
+  // `bin` points at dist/cli/index.js (RepoOS itself) must have produced it
+  // with the rebuild above; anything else (a docs site, a native app's
+  // companion UI, …) never builds that file, so requiring it would fail every
+  // release. Those projects run the same `repoos check` plan through the
+  // globally linked CLI instead — the same fallback the close-out gate uses —
+  // with the project's own repoos.toml as the plan source either way.
+  const cliExpected = expectsOwnCliRepo(config.root);
+  const localCli = join(config.root, "dist", "cli", "index.js");
+  let check: CommandResult;
+  if (cliExpected) {
+    if (!existsSync(localCli)) {
+      return failAfterBump(
+        "dist/cli/index.js is missing even though this project's package.json bin points at it — " +
+          "check that `bun run build` produces the CLI and rebuild. The release was not cut.",
+      );
+    }
+    check = await exec(
+      process.execPath,
+      [localCli, "check", ...checkArgs],
+      config.root,
+      600_000,
+      checkEnv,
+    );
+  } else {
+    check = await exec("repoos", ["check", ...checkArgs], config.root, 600_000, checkEnv);
+    if (check.code !== 0 && check.error?.message.includes("ENOENT")) {
+      return failAfterBump(
+        "Could not run `repoos check` — is repoos on PATH? The release was not cut.",
+      );
+    }
+  }
   if (check.code !== 0)
-    return {
-      ok: false,
-      status,
-      output: captureOutput(check.stdout, check.stderr) || "repoos check failed.",
-    };
+    return failAfterBump(captureOutput(check.stdout, check.stderr) || "repoos check failed.");
   status = await getReleaseStatus(config, exec);
   if ((!status.ready || status.tag !== tag) && !status.clean) {
     // A routine settings save or task-file bookkeeping write can land during
@@ -727,7 +822,7 @@ export async function cutNewRelease(
     if (await checkpointSafeChurn(config, exec)) status = await getReleaseStatus(config, exec);
   }
   if (!status.ready || status.tag !== tag)
-    return { ok: false, status, output: "Repository state changed while release checks ran." };
+    return failAfterBump("Repository state changed while release checks ran.");
   onProgress?.("pushing_main", `Pushing ${status.branch}…`);
   const pushedMain = await exec(
     "git",
@@ -736,13 +831,11 @@ export async function cutNewRelease(
     120_000,
   );
   if (pushedMain.code !== 0) {
-    return {
-      ok: false,
-      status,
-      output:
-        captureOutput(pushedMain.stdout, pushedMain.stderr) || `Could not push ${status.branch}.`,
-    };
+    return failAfterBump(
+      captureOutput(pushedMain.stdout, pushedMain.stderr) || `Could not push ${status.branch}.`,
+    );
   }
+  mainPushed = true;
   onProgress?.("tagging", `Creating annotated tag ${tag}…`);
   const trimmedNotes = notes?.trim();
   // `--cleanup=verbatim` keeps Markdown headings ("# " lines) verbatim.
@@ -761,22 +854,17 @@ export async function cutNewRelease(
     config.root,
   );
   if (createdTag.code !== 0)
-    return {
-      ok: false,
-      status,
-      output: captureOutput(createdTag.stdout, createdTag.stderr) || "Could not create the tag.",
-    };
+    return failAfterBump(
+      captureOutput(createdTag.stdout, createdTag.stderr) || "Could not create the tag.",
+    );
   onProgress?.("pushing_tag", `Pushing ${tag} to trigger the release workflow…`);
   const pushed = await exec("git", ["push", release.remote ?? "origin", tag], config.root, 120_000);
   if (pushed.code !== 0) {
     await exec("git", ["tag", "-d", tag], config.root);
-    return {
-      ok: false,
-      status: await getReleaseStatus(config, exec),
-      output:
-        captureOutput(pushed.stdout, pushed.stderr) ||
+    return failAfterBump(
+      captureOutput(pushed.stdout, pushed.stderr) ||
         "Could not push the tag; the local tag was removed.",
-    };
+    );
   }
   return {
     ok: true,

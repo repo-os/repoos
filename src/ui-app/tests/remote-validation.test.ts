@@ -1063,6 +1063,155 @@ describe("prepareCandidateUpload (#0717)", () => {
   });
 });
 
+describe("upload progress heartbeat (#0782)", () => {
+  const HOST: RemoteHost = { ip: "203.0.113.9", user: "root" };
+  const MIRROR = "~/.repoos-cache/repo-deadbeef.git";
+
+  /** A real git repo so the bundle has a real, non-zero size. */
+  function makeRepo(): { root: string; candidateSha: string } {
+    const root = mkdtempSync(join(tmpdir(), "repoos-0782-"));
+    const git = (...args: string[]): string =>
+      execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "t@example.com");
+    git("config", "user.name", "T");
+    writeFileSync(join(root, "f.txt"), "one\n");
+    git("add", ".");
+    git("commit", "-qm", "base");
+    writeFileSync(join(root, "f.txt"), "two\n");
+    git("add", ".");
+    git("commit", "-qm", "candidate");
+    return { root, candidateSha: git("rev-parse", "HEAD") };
+  }
+
+  function realBundleExec(over: Partial<RemoteExecDeps> = {}): RemoteExecDeps {
+    const real = defaultRemoteExec().bundleRepo;
+    return fakeExec({ bundleRepo: vi.fn((cwd, out, o) => real(cwd, out, o)), ...over });
+  }
+
+  it("fires every few seconds during a slow upload so the stall timer resets", async () => {
+    const { root, candidateSha } = makeRepo();
+    try {
+      const bundlePath = join(root, "candidate.bundle");
+      const progress: { bundleBytes: number; elapsedSecs: number; attempt: number }[] = [];
+      const emitted: string[] = [];
+      let completed = 0;
+      // A slow transfer: slower than several heartbeat ticks.
+      const exec = realBundleExec({
+        uploadFile: vi.fn(async () => {
+          await new Promise((r) => setTimeout(r, 75));
+          return { ok: true };
+        }),
+      });
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: (s) => emitted.push(s),
+        onUploadProgress: (info) => progress.push({ ...info }),
+        uploadProgressIntervalMs: 10,
+        onUploadComplete: () => completed++,
+      });
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      // The heartbeat fired repeatedly while the bytes moved.
+      expect(progress.length).toBeGreaterThanOrEqual(2);
+      for (const p of progress) {
+        expect(p.bundleBytes).toBe(res.bundleBytes);
+        expect(p.bundleBytes).toBeGreaterThan(0);
+        expect(p.attempt).toBe(1);
+      }
+      expect(emitted.some((s) => s.includes("[uploading bundle"))).toBe(true);
+      // Completion fired exactly once, when the transfer landed.
+      expect(completed).toBe(1);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("stays silent on a fast upload that finishes before the first tick", async () => {
+    const { root, candidateSha } = makeRepo();
+    try {
+      const bundlePath = join(root, "candidate.bundle");
+      const progress: unknown[] = [];
+      const emitted: string[] = [];
+      let completed = 0;
+      const exec = realBundleExec();
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: (s) => emitted.push(s),
+        onUploadProgress: (info) => progress.push(info),
+        uploadProgressIntervalMs: 60_000,
+        onUploadComplete: () => completed++,
+      });
+      expect(res.ok).toBe(true);
+      expect(progress).toEqual([]);
+      expect(emitted.some((s) => s.includes("[uploading bundle"))).toBe(false);
+      // Completion still fires — the transfer landed, heartbeats or not.
+      expect(completed).toBe(1);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("fires completion once after a retried upload, never on failure", async () => {
+    const { root, candidateSha } = makeRepo();
+    try {
+      // First attempt fails, retry succeeds: completion fires exactly once.
+      const bundlePath = join(root, "candidate.bundle");
+      let calls = 0;
+      let completed = 0;
+      const exec = fakeExec({
+        uploadFile: vi.fn(async () => {
+          calls++;
+          return calls < 2 ? { ok: false, detail: "EPIPE" } : { ok: true };
+        }),
+      });
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+        onUploadComplete: () => completed++,
+      });
+      expect(res.ok).toBe(true);
+      expect(calls).toBe(2);
+      expect(completed).toBe(1);
+
+      // An upload that never lands never completes.
+      let failedCompleted = 0;
+      const failing = fakeExec({
+        uploadFile: vi.fn(async () => ({ ok: false, detail: "Broken pipe" })),
+      });
+      const failed = await prepareCandidateUpload(failing, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+        onUploadComplete: () => failedCompleted++,
+      });
+      expect(failed.ok).toBe(false);
+      expect(failedCompleted).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("validate.sh compatibility (#0725)", () => {
   it("parses mirror support from the prerequisite probe", () => {
     expect(

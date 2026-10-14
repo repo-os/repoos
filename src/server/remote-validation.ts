@@ -352,6 +352,19 @@ export interface ValidateOptions {
    * `bun run test -- --changed <ref>` (#0695). Handoff and close-out omit it.
    */
   changedRef?: string;
+  /**
+   * Heartbeat while the bundle upload is in flight (#0782) — fired every few
+   * seconds so a slow transfer resets the caller's stall timer instead of
+   * reading as a hang. Absent means "no heartbeat" (log lines still stream).
+   */
+  onUploadProgress?: (info: UploadProgressInfo) => void;
+  /** Heartbeat cadence override (tests); defaults to {@link UPLOAD_PROGRESS_INTERVAL_MS}. */
+  uploadProgressIntervalMs?: number;
+  /**
+   * Fired once when the bundle lands (#0782 review) — the caller clears its
+   * in-stage upload detail here. Not fired when the upload fails.
+   */
+  onUploadComplete?: () => void;
 }
 
 /** One host's live state, surfaced by `/api/remote-validation/status` (#0521). */
@@ -2015,6 +2028,62 @@ export type PreparedUpload =
 const UPLOAD_ATTEMPTS = 3;
 
 /**
+ * Periodic progress while a bundle upload is in flight (#0782). `scp` is a
+ * single opaque promise — without a heartbeat the close-out card labels a
+ * slow-but-moving upload "stalled · no progress" after 3 minutes. The
+ * interval fires every few seconds with the known bundle size and elapsed
+ * time so the caller can reset its stall timer and show the upload moving.
+ */
+export interface UploadProgressInfo {
+  /** Total bundle size in bytes (known before the transfer starts). */
+  bundleBytes: number;
+  /** Seconds since this upload attempt started. */
+  elapsedSecs: number;
+  /** 1-based attempt number within the retry loop. */
+  attempt: number;
+}
+
+/** Default heartbeat cadence for a slow bundle upload (#0782). */
+export const UPLOAD_PROGRESS_INTERVAL_MS = 5_000;
+
+/**
+ * One `scp` attempt with a progress heartbeat (#0782). The transfer itself
+ * reports no bytes, so the heartbeat re-announces the known bundle size plus
+ * elapsed time on an interval — the log line keeps the run visibly moving
+ * and `onUploadProgress` lets the caller reset its stall timer.
+ */
+async function uploadFileWithProgress(
+  exec: RemoteExecDeps,
+  host: RemoteHost,
+  bundlePath: string,
+  remoteBundle: string,
+  bundleBytes: number,
+  attempt: number,
+  emit: (s: string) => void,
+  onUploadProgress?: (info: UploadProgressInfo) => void,
+  uploadProgressIntervalMs: number = UPLOAD_PROGRESS_INTERVAL_MS,
+): Promise<{ ok: boolean; detail?: string }> {
+  const intervalMs =
+    Number.isFinite(uploadProgressIntervalMs) && uploadProgressIntervalMs > 0
+      ? uploadProgressIntervalMs
+      : UPLOAD_PROGRESS_INTERVAL_MS;
+  const startedAt = Date.now();
+  // Always armed while the transfer is in flight: a fast upload finishes
+  // before the first tick, so this only speaks up for genuinely slow ones.
+  const timer = setInterval(() => {
+    const elapsedSecs = Math.round((Date.now() - startedAt) / 1000);
+    emit(`[uploading bundle ${formatBytes(bundleBytes)} … ${elapsedSecs}s elapsed]\n`);
+    onUploadProgress?.({ bundleBytes, elapsedSecs, attempt });
+  }, intervalMs);
+  timer?.unref?.();
+  try {
+    return await exec.uploadFile(host, bundlePath, remoteBundle);
+  } finally {
+    clearInterval(timer);
+  }
+}
+
+/**
  * Bundle the candidate tree and upload it to a host, transferring only commits
  * the host does not already have (#0717).
  *
@@ -2042,6 +2111,21 @@ export async function prepareCandidateUpload(
     /** When false, ship a full `HEAD` bundle and omit the mirror arg (#0725). */
     incrementalUpload?: boolean;
     emit: (s: string) => void;
+    /**
+     * Heartbeat while each upload attempt is in flight (#0782) — fired every
+     * `uploadProgressIntervalMs` so a slow transfer resets the close-out
+     * stall timer instead of reading as a hang.
+     */
+    onUploadProgress?: (info: UploadProgressInfo) => void;
+    /** Heartbeat cadence; defaults to {@link UPLOAD_PROGRESS_INTERVAL_MS}. */
+    uploadProgressIntervalMs?: number;
+    /**
+     * Fired once when the bundle lands (#0782 review) — the caller clears its
+     * in-stage upload detail here, so the card stops saying "uploading" the
+     * moment the transfer finishes instead of lingering into the test run.
+     * Not fired when the upload fails.
+     */
+    onUploadComplete?: () => void;
   },
 ): Promise<PreparedUpload> {
   const { host, bundlePath, remoteBundle, worktreePath, candidateSha, mirrorPath, emit } = opts;
@@ -2067,9 +2151,20 @@ export async function prepareCandidateUpload(
     const uploadStartedAt = Date.now();
     let lastDetail = "";
     for (let attempt = 1; attempt <= UPLOAD_ATTEMPTS; attempt++) {
-      const up = await exec.uploadFile(host, bundlePath, remoteBundle);
+      const up = await uploadFileWithProgress(
+        exec,
+        host,
+        bundlePath,
+        remoteBundle,
+        bundleBytes,
+        attempt,
+        emit,
+        opts.onUploadProgress,
+        opts.uploadProgressIntervalMs,
+      );
       if (up.ok) {
         const uploadSecs = Math.round((Date.now() - uploadStartedAt) / 100) / 10;
+        opts.onUploadComplete?.();
         return {
           ok: true,
           bundlePath,
@@ -2156,9 +2251,20 @@ export async function prepareCandidateUpload(
   const uploadStartedAt = Date.now();
   let lastDetail = "";
   for (let attempt = 1; attempt <= UPLOAD_ATTEMPTS; attempt++) {
-    const up = await exec.uploadFile(host, bundlePath, remoteBundle);
+    const up = await uploadFileWithProgress(
+      exec,
+      host,
+      bundlePath,
+      remoteBundle,
+      bundleBytes,
+      attempt,
+      emit,
+      opts.onUploadProgress,
+      opts.uploadProgressIntervalMs,
+    );
     if (up.ok) {
       const uploadSecs = Math.round((Date.now() - uploadStartedAt) / 100) / 10;
+      opts.onUploadComplete?.();
       return {
         ok: true,
         bundlePath,
@@ -2565,6 +2671,11 @@ export class RemoteValidationRunner implements RemoteValidator {
           mirrorPath: remoteMirrorPath(this.config.root),
           incrementalUpload,
           emit,
+          ...(opts.onUploadProgress ? { onUploadProgress: opts.onUploadProgress } : {}),
+          ...(opts.uploadProgressIntervalMs !== undefined
+            ? { uploadProgressIntervalMs: opts.uploadProgressIntervalMs }
+            : {}),
+          ...(opts.onUploadComplete ? { onUploadComplete: opts.onUploadComplete } : {}),
         });
         if (!preparedUpload.ok) {
           const what =
@@ -4615,6 +4726,11 @@ export class TailscaleRunner implements RemoteValidator {
           mirrorPath: remoteMirrorPath(this.config.root),
           incrementalUpload,
           emit,
+          ...(opts.onUploadProgress ? { onUploadProgress: opts.onUploadProgress } : {}),
+          ...(opts.uploadProgressIntervalMs !== undefined
+            ? { uploadProgressIntervalMs: opts.uploadProgressIntervalMs }
+            : {}),
+          ...(opts.onUploadComplete ? { onUploadComplete: opts.onUploadComplete } : {}),
         });
         if (!preparedUpload.ok) {
           const detail =

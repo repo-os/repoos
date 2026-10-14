@@ -67,7 +67,7 @@ moves through these phases:
 | `preparing`    | re-read status; checkpoint safe churn if the tree is dirty (see below) |
 | `committing`   | write `version` into `versionFile`, commit as `release: v<x>` — **skipped** if the manifest is already at that version (retry path) |
 | `building`     | `bun run build` — so the staleness gate can't trip, and to confirm the tree compiles before any ref moves |
-| `checking`     | `repoos check` — the same definition-of-done gate as task close-out (build staleness, full build, tests, UI smoke, fmt/lint) |
+| `checking`     | `repoos check` — the same definition-of-done gate as task close-out (build staleness, full build, tests, UI smoke, fmt/lint). It runs through the project's own `dist/cli/index.js` only when the project's `package.json` `bin` points at it (RepoOS itself); any other project gates through the globally linked `repoos` instead, so a project with no CLI ships no `dist/cli/index.js` requirement |
 | `pushing_main` | `git push <remote> <branch>` |
 | `tagging`      | `git tag -a v<x> -m "Release v<x>"` — plus a second `-m` carrying the release notes when any were supplied |
 | `pushing_tag`  | `git push <remote> v<x>` — this is what triggers CI |
@@ -78,6 +78,15 @@ particular, a failure at or before `checking` means **no ref was pushed**. A
 failed `pushing_tag` deletes the local tag it just created so a retry starts
 clean.
 
+A failure after the version bump was committed never leaves that commit behind
+silently. While the bump is still local-only (anything before `pushing_main`
+succeeds) and still exactly HEAD, the cut rolls it back and says so — the
+branch is back to its pre-release state. Otherwise the failure output names
+the bump commit and how to undo it (`git reset --soft HEAD~1 && git checkout
+HEAD -- <versionFile>` while it is still HEAD); once the branch has been
+pushed the bump is public and is never rewritten away — the output says that
+instead.
+
 On success: `v<x> pushed. CI is now building the release — it becomes
 downloadable once that finishes.`
 
@@ -87,7 +96,8 @@ The version bump is a real committed change, so a retry after a transient
 failure (e.g. the tag push timed out) is safe: `cutNewRelease` sees the
 manifest already at the target version, **skips the commit phase**, and
 resumes from `building` → `checking` → push. Just click **Cut** again with the
-same version.
+same version. (When the failed cut already rolled its bump back, the retry
+simply bumps again — same result.)
 
 ### Safe-churn checkpoint
 

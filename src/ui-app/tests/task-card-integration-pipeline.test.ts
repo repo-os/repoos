@@ -114,6 +114,28 @@ describe("TaskCard integration pipeline (#0740)", () => {
     expect(wrapper.text()).toContain("Retry");
   });
 
+  it("shows upload progress on the active job while it moves (#0782)", async () => {
+    const repo = useRepoStore();
+    repo.integration = pipeline({
+      active: {
+        taskId: "0730",
+        stage: "check",
+        failed: false,
+        startedAt: "2026-10-07T13:00:00.000Z",
+        lastProgressAt: "2026-10-07T13:02:25.000Z",
+        detail: "uploading bundle 27 MB · 45s",
+      },
+    });
+    const wrapper = mount(TaskCard, {
+      props: { task: task("0730"), dragEnabled: false },
+      global: { plugins: [pinia] },
+    });
+    await nextTick();
+    const hint = wrapper.get('[data-test-id="task-card-agent-hint"]');
+    expect(hint.text()).toContain("uploading bundle 27 MB · 45s");
+    expect(hint.text()).not.toMatch(/stalled/);
+  });
+
   it("keeps the stalled actions right-aligned with Cancel before Retry (#0778)", async () => {
     vi.setSystemTime(new Date("2026-10-07T13:04:30.000Z"));
     const repo = useRepoStore();

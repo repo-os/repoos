@@ -673,6 +673,15 @@ export async function cmdShot(args: string[]): Promise<number> {
               warnings.push(`${message} on ${r}`);
               console.error(c.yellow("  · ") + `${message} on ${r} — capture went ahead`);
             },
+            // #0782: a declared theme the driver could not set — the frame
+            // would show the wrong theme, so warn instead of passing silently.
+            onThemeMiss: (theme, r) => {
+              warnings.push(`theme ${theme} could not be applied on ${r}`);
+              console.error(
+                c.yellow("  · ") +
+                  `theme "${theme}" could not be applied on ${r} — capture went ahead`,
+              );
+            },
           },
         );
       } catch (err) {
