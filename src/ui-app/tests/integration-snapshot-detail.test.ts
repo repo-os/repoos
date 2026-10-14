@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmFixture } from "./helpers";
 import { createJobCoordinator } from "../../server/integration-job.js";
-import { buildIntegrationSnapshot } from "../../server/integration-status.js";
+import { applyPipelineDetail, buildIntegrationSnapshot } from "../../server/integration-status.js";
 import { formatUploadBytes } from "../../server/integration-orchestrator.js";
 
 function makeCoordinator(): { root: string; coordinator: ReturnType<typeof createJobCoordinator> } {
@@ -79,5 +79,38 @@ describe("formatUploadBytes (#0782)", () => {
     expect(formatUploadBytes(27 * 1024 * 1024)).toBe("27 MB");
     expect(formatUploadBytes(1500)).toBe("1.5 KB");
     expect(formatUploadBytes(-1)).toBe("unknown");
+  });
+});
+
+describe("applyPipelineDetail (#0782 review)", () => {
+  it("sets the detail and refreshes the stall timer", () => {
+    const detail: Record<string, string> = {};
+    const at: Record<string, string> = { "0001": "2026-10-14T10:00:00.000Z" };
+    applyPipelineDetail(
+      detail,
+      at,
+      "0001",
+      "uploading bundle 27 MB · 45s",
+      "2026-10-14T10:00:45.000Z",
+    );
+    expect(detail["0001"]).toBe("uploading bundle 27 MB · 45s");
+    expect(at["0001"]).toBe("2026-10-14T10:00:45.000Z");
+  });
+
+  it("clears the detail when the transfer lands, leaving the timer alone", () => {
+    const detail: Record<string, string> = { "0001": "uploading bundle 27 MB · 45s" };
+    const at: Record<string, string> = { "0001": "2026-10-14T10:00:45.000Z" };
+    applyPipelineDetail(detail, at, "0001", null);
+    expect("0001" in detail).toBe(false);
+    expect(at["0001"]).toBe("2026-10-14T10:00:45.000Z");
+    // And the snapshot no longer carries the line.
+    const { root, coordinator } = makeCoordinator();
+    try {
+      coordinator.enqueue({ id: "0001", branch: "feat/t1" } as never);
+      const snap = buildIntegrationSnapshot(coordinator, {}, undefined, at, detail);
+      expect(snap.active?.detail).toBeNull();
+    } finally {
+      rmFixture(root);
+    }
   });
 });

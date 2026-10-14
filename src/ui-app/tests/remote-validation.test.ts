@@ -1095,6 +1095,7 @@ describe("upload progress heartbeat (#0782)", () => {
       const bundlePath = join(root, "candidate.bundle");
       const progress: { bundleBytes: number; elapsedSecs: number; attempt: number }[] = [];
       const emitted: string[] = [];
+      let completed = 0;
       // A slow transfer: slower than several heartbeat ticks.
       const exec = realBundleExec({
         uploadFile: vi.fn(async () => {
@@ -1112,6 +1113,7 @@ describe("upload progress heartbeat (#0782)", () => {
         emit: (s) => emitted.push(s),
         onUploadProgress: (info) => progress.push({ ...info }),
         uploadProgressIntervalMs: 10,
+        onUploadComplete: () => completed++,
       });
       expect(res.ok).toBe(true);
       if (!res.ok) return;
@@ -1123,6 +1125,8 @@ describe("upload progress heartbeat (#0782)", () => {
         expect(p.attempt).toBe(1);
       }
       expect(emitted.some((s) => s.includes("[uploading bundle"))).toBe(true);
+      // Completion fired exactly once, when the transfer landed.
+      expect(completed).toBe(1);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1134,6 +1138,7 @@ describe("upload progress heartbeat (#0782)", () => {
       const bundlePath = join(root, "candidate.bundle");
       const progress: unknown[] = [];
       const emitted: string[] = [];
+      let completed = 0;
       const exec = realBundleExec();
       const res = await prepareCandidateUpload(exec, {
         host: HOST,
@@ -1145,10 +1150,62 @@ describe("upload progress heartbeat (#0782)", () => {
         emit: (s) => emitted.push(s),
         onUploadProgress: (info) => progress.push(info),
         uploadProgressIntervalMs: 60_000,
+        onUploadComplete: () => completed++,
       });
       expect(res.ok).toBe(true);
       expect(progress).toEqual([]);
       expect(emitted.some((s) => s.includes("[uploading bundle"))).toBe(false);
+      // Completion still fires — the transfer landed, heartbeats or not.
+      expect(completed).toBe(1);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("fires completion once after a retried upload, never on failure", async () => {
+    const { root, candidateSha } = makeRepo();
+    try {
+      // First attempt fails, retry succeeds: completion fires exactly once.
+      const bundlePath = join(root, "candidate.bundle");
+      let calls = 0;
+      let completed = 0;
+      const exec = fakeExec({
+        uploadFile: vi.fn(async () => {
+          calls++;
+          return calls < 2 ? { ok: false, detail: "EPIPE" } : { ok: true };
+        }),
+      });
+      const res = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+        onUploadComplete: () => completed++,
+      });
+      expect(res.ok).toBe(true);
+      expect(calls).toBe(2);
+      expect(completed).toBe(1);
+
+      // An upload that never lands never completes.
+      let failedCompleted = 0;
+      const failing = fakeExec({
+        uploadFile: vi.fn(async () => ({ ok: false, detail: "Broken pipe" })),
+      });
+      const failed = await prepareCandidateUpload(failing, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+        onUploadComplete: () => failedCompleted++,
+      });
+      expect(failed.ok).toBe(false);
+      expect(failedCompleted).toBe(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
