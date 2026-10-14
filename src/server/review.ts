@@ -1216,10 +1216,7 @@ export class ReviewManager {
     // Fire-and-forget (don't await) so the review completion isn't delayed
     if (state === "ok" && verdict) {
       if (verdict !== "good to go") {
-        if (
-          !autoRefreshStaleEvidence &&
-          !isStaleEvidenceOnlyReview(reportText, verdict)
-        ) {
+        if (!autoRefreshStaleEvidence && !isStaleEvidenceOnlyReview(reportText, verdict)) {
           this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
             console.error(
               `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
