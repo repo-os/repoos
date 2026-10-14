@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, onBeforeUnmount, watch } from "vue";
 import type { Task } from "../types";
+import { FileText } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
@@ -1028,32 +1029,24 @@ async function openDebuggerFromError(): Promise<void> {
       </h3>
 
       <div class="mt-[11px] flex flex-wrap items-center gap-[6px]">
-        <template v-if="taskAreaChips.length">
-          <span
-            v-for="a in taskAreaChips"
-            :key="a.toLowerCase()"
-            class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
-            >{{ a }}</span
-          >
-        </template>
         <span
-          v-else
-          class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
-          >{{ task.area }}</span
+          v-if="taskAreaChips.length || task.area"
+          class="tc-area-chip rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
+          >{{ taskAreaChips.length ? taskAreaChips.join(", ") : task.area }}</span
         >
         <DependencyChip v-for="blocker in task.blockedBy" :key="blocker.id" :blocker="blocker" />
         <span
           v-if="task.assignee !== 'ai'"
-          class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
+          class="tc-assignee-chip rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
         >
           {{ task.assignee === "human" ? "◇ " + (task.assignedTo || "human") : "· open" }}
         </span>
         <span
           v-if="diffStats && diffStats.filesChanged > 0"
-          class="diff-stats-chip rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
+          class="tc-file-chip"
           :title="`${diffStats.filesChanged} files, +${diffStats.additions} −${diffStats.deletions}`"
         >
-          {{ diffStats.filesChanged }}f {{ diffStats.additions }}+
+          <FileText class="tc-file-chip-icon" aria-hidden="true" />{{ diffStats.filesChanged }}
         </span>
         <span
           v-else-if="diffStats && diffStats.filesChanged === 0 && task.branch"

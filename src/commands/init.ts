@@ -407,7 +407,7 @@ function repoosToml(namespace: string, areas: string[] = [], previewStub = false
   return `# RepoOS configuration. All fields optional — these are the defaults.
 
 ${ns}defaultStatus = "inbox"
-defaultAssignee = "unassigned"
+defaultAssignee = "ai"
 
 # Optional features, off by default — uncomment to turn them on. Real
 # secrets (API keys, client secrets) go in .env, never here (this file is
