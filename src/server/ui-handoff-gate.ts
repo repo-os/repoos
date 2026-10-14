@@ -33,7 +33,12 @@ import {
 import { shotCapturePageUrl } from "../core/shot-fixtures.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import type { CaptureEntry } from "../core/shot-plan.js";
-import { provenanceCaption, parseShotPlan, shotPlanFingerprint } from "../core/shot-plan.js";
+import {
+  provenanceCaption,
+  parseShotPlan,
+  shotPlanFingerprint,
+  taskFixtureValidator,
+} from "../core/shot-plan.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import {
   addDetachedWorktree,
@@ -325,7 +330,21 @@ export async function preflightUiEvidence(
   // Detect required assertions straight from the declaration, so a plan that
   // produced no entries (an unresolvable target, a docs-only route) still
   // blocks here rather than silently skipping past the requirement.
-  const declared = parseShotPlan(task.body ?? "");
+  const fixtureValidator = taskFixtureValidator(
+    (path: string) => {
+      try {
+        return existsSync(path) ? readFileSync(path, "utf8") : null;
+      } catch {
+        return null;
+      }
+    },
+    config,
+    task,
+  );
+  const declared = parseShotPlan(
+    task.body ?? "",
+    fixtureValidator ? { fixtureValidator } : undefined,
+  );
   const declaredRequiredAssertions = declared.shots.some((s) =>
     (s.assert ?? []).some((a) => a.optional !== true),
   );

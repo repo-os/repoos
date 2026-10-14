@@ -24,9 +24,14 @@
  * Parsing is pure (a string in, entries out) so the CLI, the server and the
  * tests can share it without touching git, a server or Playwright.
  */
-import type { PreviewConfig, ShotConfig } from "./types.js";
-import { SHOT_PREVIEW_FIXTURE_IDS, isShotPreviewFixtureId } from "./shot-fixtures.js";
+import type { PreviewConfig, ShotConfig, RepoOSConfig, Task } from "./types.js";
+import {
+  SHOT_PREVIEW_FIXTURE_IDS,
+  isShotPreviewFixtureId,
+  readBranchFixtureValidator,
+} from "./shot-fixtures.js";
 import { DEFAULT_PREVIEW_TARGET as DEFAULT_FALLBACK_TARGET } from "./shot-targets.js";
+import { worktreePathForBranch } from "./git.js";
 
 /** One ordered step within a declared shot. Exactly one key per object. */
 export type DeclaredStep =
@@ -1272,4 +1277,18 @@ export function sameDeclaredShotRaw(raw: unknown, declared: DeclaredShot): boole
   if (JSON.stringify(entry.args ?? []) !== JSON.stringify(declared.args ?? [])) return false;
   if (JSON.stringify(entry.assert ?? []) !== JSON.stringify(declared.assert ?? [])) return false;
   return true;
+}
+
+/**
+ * Get the fixture validator for a task's branch, if available (#0786).
+ * Used by all shot parsing paths (CLI, server, UI) to ensure consistent
+ * validation of branch-specific fixtures.
+ */
+export function taskFixtureValidator(
+  readFile: (path: string) => string | null,
+  config: RepoOSConfig,
+  task: Task,
+): ((id: string) => boolean) | undefined {
+  const worktreeDir = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+  return readBranchFixtureValidator(readFile, worktreeDir);
 }
