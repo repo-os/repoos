@@ -85,14 +85,7 @@ import {
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { checkGenericStatusPatch } from "../task-transitions.js";
-import {
-  readFileSync,
-  existsSync,
-  statSync,
-  unlinkSync,
-  mkdirSync,
-  writeFileSync,
-} from "node:fs";
+import { readFileSync, existsSync, statSync, unlinkSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-release.js";
 import { bootstrap } from "../../core/bootstrap.js";
@@ -1283,13 +1276,7 @@ export async function automaticStaleEvidenceRefresh(
         attemptPath,
         JSON.stringify({ taskId: task.id, head, at: new Date().toISOString() }),
       );
-      const captured = await guardedForceRefreshCapture(
-        config,
-        task,
-        worktree,
-        previews,
-        log,
-      );
+      const captured = await guardedForceRefreshCapture(config, task, worktree, previews, log);
       if (captured.error) {
         log(task.id, "warn", `automatic stale-evidence refresh failed: ${captured.error}`);
       }
