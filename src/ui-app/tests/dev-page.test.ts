@@ -19,7 +19,7 @@ import { useConfigStore } from "../src/stores/config";
 import { fmtDate, fmtTime } from "../src/lib/time";
 import { DEV_NAV, NAV, navFor, navFromConfig } from "../src/nav";
 import { flush, json } from "./component-test-helpers";
-import type { DevTargetView, Health } from "../src/types";
+import type { DevFailureView, DevTargetView, Health } from "../src/types";
 
 function makeHealth(over: Partial<Health> = {}): Health {
   return {
@@ -68,10 +68,19 @@ function installFetch(options: { targets?: DevTargetView[]; errors?: string[] })
       if (url.endsWith("/api/dev/targets")) {
         return json({ ok: true, targets: current, errors: options.errors ?? [] });
       }
-      const action = url.match(/\/api\/dev\/targets\/([^/]+)\/(start|stop|restart)$/);
+      const action = url.match(
+        /\/api\/dev\/targets\/([^/]+)\/(start|stop|restart|stop-holder|explain)$/,
+      );
       if (action) {
         const name = decodeURIComponent(action[1]);
         const kind = action[2];
+        if (kind === "explain") {
+          return json({ ok: true, summary: "The port is held by a stale vite process." });
+        }
+        if (kind === "stop-holder") {
+          const found = current.find((t) => t.name === name) ?? target({ name });
+          return json({ ok: true, target: found });
+        }
         // Reflect the action's outcome in the authoritative list, the way the
         // server would, so the follow-up refresh shows the new state.
         current = current.map((t) =>
@@ -272,6 +281,127 @@ describe("DevView layout and state (#0748)", () => {
     await flush();
     expect(wrapper.find(".dev-empty").exists()).toBe(true);
     expect(wrapper.findAll(".dev-card")).toHaveLength(0);
+  });
+});
+
+describe("DevView failure summary (#0775)", () => {
+  const failure: DevFailureView = {
+    kind: "port-in-use",
+    what: "Web app could not start: its port is already taken.",
+    cause: "Port 5173 is already in use by another process.",
+    fix: "Stop the process using port 5173, then start the target again.",
+    port: 5173,
+    holder: {
+      pid: 4242,
+      command: "node /opt/vite --strictPort",
+      repoosOwned: true,
+      target: "web",
+      stale: true,
+    },
+    canStopHolder: true,
+  };
+
+  it("shows the plain-language summary with the port holder's PID and command", async () => {
+    installFetch({
+      targets: [target({ status: "failed", error: "process exited with code 1", failure })],
+    });
+    const wrapper = mountView();
+    await flush();
+    const summary = wrapper.find(".dev-summary");
+    expect(summary.exists()).toBe(true);
+    expect(summary.text()).toContain("its port is already taken");
+    expect(summary.text()).toContain("Port 5173 is already in use");
+    expect(summary.text()).toContain("node /opt/vite --strictPort");
+    expect(summary.text()).toContain("4242");
+    // The raw server reason is still shown.
+    expect(summary.text()).toContain("process exited with code 1");
+  });
+
+  it("stops a RepoOS-owned port holder through the API", async () => {
+    const { calls } = installFetch({
+      targets: [target({ status: "failed", failure })],
+    });
+    const wrapper = mountView();
+    await flush();
+    const stop = wrapper
+      .findAll("button")
+      .find((b) => b.text().trim() === "Stop the process holding it");
+    expect(stop, "stop-holder button").toBeTruthy();
+    await stop!.trigger("click");
+    await flush();
+    expect(
+      calls.some((c) => c.url.endsWith("/api/dev/targets/web/stop-holder") && c.method === "POST"),
+    ).toBe(true);
+  });
+
+  it("shows the holder for the user to stop when RepoOS did not start it", async () => {
+    const foreign: DevFailureView = {
+      ...failure,
+      holder: { pid: 777, command: "python -m http.server 5173", repoosOwned: false, stale: false },
+      canStopHolder: false,
+    };
+    installFetch({ targets: [target({ status: "failed", failure: foreign })] });
+    const wrapper = mountView();
+    await flush();
+    const summary = wrapper.find(".dev-summary");
+    expect(summary.text()).toContain("python -m http.server 5173");
+    expect(summary.text()).toContain("777");
+    // No Stop action for a process RepoOS did not start.
+    expect(
+      summary.findAll("button").find((b) => b.text().trim() === "Stop the process holding it"),
+    ).toBeUndefined();
+  });
+
+  it("offers an AI summary only when enabled, and shows it after asking", async () => {
+    const { calls } = installFetch({ targets: [target({ status: "failed", failure })] });
+    useConfigStore().data = { dev: { failureSummary: { ai: true } } };
+    const wrapper = mountView();
+    await flush();
+    const explain = wrapper.findAll("button").find((b) => b.text().trim() === "Explain with AI");
+    expect(explain, "explain button").toBeTruthy();
+    await explain!.trigger("click");
+    await flush();
+    expect(
+      calls.some((c) => c.url.endsWith("/api/dev/targets/web/explain") && c.method === "POST"),
+    ).toBe(true);
+    expect(wrapper.find(".dev-ai-text").text()).toContain("stale vite process");
+  });
+
+  it("hides the AI summary button when the setting is off", async () => {
+    installFetch({ targets: [target({ status: "failed", failure })] });
+    const wrapper = mountView();
+    await flush();
+    expect(wrapper.find(".dev-ai").exists()).toBe(false);
+  });
+
+  it("renders the full captured log in a focusable scroll region", async () => {
+    const log = Array.from({ length: 50 }, (_, i) => `line ${i}`);
+    installFetch({ targets: [target({ status: "failed", error: "boom", log })] });
+    const wrapper = mountView();
+    await flush();
+    const body = wrapper.find(".dev-log-body");
+    expect(body.attributes("tabindex")).toBe("0");
+    expect(body.text()).toContain("line 0");
+    expect(body.text()).toContain("line 49");
+    expect(wrapper.find(".dev-log-count").text()).toContain("50 lines");
+  });
+
+  it("renders the dev:failed capture fixture without calling the API (#0775)", async () => {
+    useRepoStore().health = makeHealth({ isPreviewBuild: true });
+    window.history.replaceState({}, "", "/dev?shotState=dev:failed");
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    try {
+      const wrapper = mountView();
+      await flush();
+      const summary = wrapper.find(".dev-summary");
+      expect(summary.text()).toContain("Port 5173 is already in use");
+      expect(summary.text()).toContain("node /opt/vite --strictPort");
+      expect(wrapper.find(".dev-log-body").text()).toContain("already in use");
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
   });
 });
 
