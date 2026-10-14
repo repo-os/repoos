@@ -113,4 +113,22 @@ describe("TaskCard integration pipeline (#0740)", () => {
     expect(wrapper.find(".tc-pipeline-recover-btn").exists()).toBe(true);
     expect(wrapper.text()).toContain("Retry");
   });
+
+  it("keeps the stalled actions right-aligned with Cancel before Retry (#0778)", async () => {
+    vi.setSystemTime(new Date("2026-10-07T13:04:30.000Z"));
+    const repo = useRepoStore();
+    repo.integration = pipeline();
+    const wrapper = mount(TaskCard, {
+      props: { task: task("0730"), dragEnabled: false },
+      global: { plugins: [pinia] },
+    });
+    await nextTick();
+    const recover = wrapper.get(".tc-pipeline-recover");
+    const buttons = recover.findAll("button");
+    expect(buttons.map((b) => b.attributes("data-test-id"))).toEqual([
+      "task-card-pipeline-cancel",
+      "task-card-pipeline-retry",
+    ]);
+    expect(buttons[0]!.text()).toBe("Cancel");
+  });
 });
