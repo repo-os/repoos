@@ -71,9 +71,13 @@ function activePipeline(taskId: string): IntegrationPipelineSnapshot {
   };
 }
 
-function ensureFixtureTask(repo: RepoStore, status: Task["status"] = "review"): void {
+function ensureFixtureTask(
+  repo: RepoStore,
+  status: Task["status"] = "review",
+  overrides: Partial<Task> = {},
+): void {
   const existing = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
-  const task = fixtureTask({ status });
+  const task = fixtureTask({ status, ...overrides });
   if (existing) {
     Object.assign(existing, task);
   } else {
@@ -111,6 +115,17 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       break;
     case "board:withReviewTask":
       ensureFixtureTask(repo, "review");
+      break;
+    case "board:cardChips":
+      // A multi-area task with seeded diff stats, so the combined area chip
+      // and the file-count chip both render on the board (#0776). No branch
+      // (from the base fixture), so the card skips the diff-stats request.
+      ensureFixtureTask(repo, "review", { area: "web, server", areas: ["web", "server"] });
+      repo.seedDiffStats(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        filesChanged: 10,
+        additions: 377,
+        deletions: 5,
+      });
       break;
     default:
       break;
