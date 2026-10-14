@@ -33,6 +33,18 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.doneErrors[SHOT_PREVIEW_FIXTURE_TASK_ID]?.step).toBe("check");
   });
 
+  it("seeds an uploading close-out with visible bundle progress (#0782)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "closeOut:uploading");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "closeOut:uploading seeds the fixture task").toBeTruthy();
+    expect(task!.branch).toBe("");
+    expect(repo.integration?.active?.taskId).toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(repo.integration?.active?.detail).toContain("uploading bundle");
+  });
+
   it("seeds a multi-area task with diff stats for card-chip shots (#0776)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -62,6 +74,7 @@ describe("shot preview board fixtures (#0743)", () => {
       const repo = useRepoStore();
       for (const fixture of [
         "card:doneError",
+        "closeOut:uploading",
         "board:withReviewTask",
         "board:cardChips",
       ] as const) {
