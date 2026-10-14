@@ -8,9 +8,12 @@
 import { describe, expect, it } from "vitest";
 import {
   appendDeclaredShot,
+  declarationMatchesDeletedShot,
+  declarationRawMatchesDeletedShot,
   declaredShotMatchesShot,
   declaredShotsSectionContent,
   parseShotEntry,
+  removeDeclarationsForDeletedShot,
   removeDeclaredShots,
   sameDeclaredShot,
 } from "../../core/shot-plan.js";
@@ -121,6 +124,45 @@ describe("removeDeclaredShots", () => {
     expect(removed).toBe(0);
     expect(content).toBe("");
   });
+
+  it("removes a valid entry while another entry fails validation (#0778)", () => {
+    const mixed = `## Shots\n\n${FENCED(
+      JSON.stringify([
+        { target: "default", route: "/", label: "Board", state: "board:notARealFixture" },
+        { target: "default", route: "/agents", label: "Agents" },
+      ]),
+    )}`;
+    const { content, removed, errors } = removeDeclaredShots(mixed, (s) => s.label === "Agents");
+    expect(errors).toEqual([]);
+    expect(removed).toBe(1);
+    const parsed = JSON.parse(content!.match(/```json\n([\s\S]*?)\n```/)![1]!) as unknown[];
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0]).toMatchObject({ state: "board:notARealFixture" });
+  });
+
+  it("removes only the selected entry when twin invalid entries share label/route/target (#0778 review)", () => {
+    // Two entries that no longer parse (unknown state) and share every shallow
+    // field but differ in selector: deleting the captured shot must remove
+    // exactly its own declaration, not both twins.
+    const capturedDeclared = { target: "default", route: "/", label: "Board", selector: ".a" };
+    const twin = `## Shots\n\n${FENCED(
+      JSON.stringify([
+        { target: "default", route: "/", label: "Board", selector: ".a", state: "board:nope" },
+        { target: "default", route: "/", label: "Board", selector: ".b", state: "board:nope" },
+      ]),
+    )}`;
+    const shotRef = { label: "Board", route: "/", target: "default" };
+    const { content, removed, errors } = removeDeclaredShots(
+      twin,
+      (s) => declarationMatchesDeletedShot(s, shotRef, capturedDeclared),
+      (raw) => declarationRawMatchesDeletedShot(raw, shotRef, capturedDeclared),
+    );
+    expect(errors).toEqual([]);
+    expect(removed).toBe(1);
+    const parsed = JSON.parse(content!.match(/```json\n([\s\S]*?)\n```/)![1]!) as unknown[];
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0]).toMatchObject({ selector: ".b" });
+  });
 });
 
 describe("declaredShotMatchesShot", () => {
@@ -167,5 +209,163 @@ describe("sameDeclaredShot (#0627 review round 1)", () => {
         { ...base, steps: [{ click: ".a" }] },
       ),
     ).toBe(false);
+  });
+
+  it("is false when only the state fixture differs (#0778)", () => {
+    const base = { target: "default", route: "/", label: "A" };
+    expect(
+      sameDeclaredShot(
+        { ...base, state: "board:withReviewTask" },
+        { ...base, state: "closeOut:active" },
+      ),
+    ).toBe(false);
+    expect(sameDeclaredShot({ ...base, state: "board:withReviewTask" }, base)).toBe(false);
+  });
+});
+
+describe("removeDeclarationsForDeletedShot (#0778 review round 3)", () => {
+  const ref = { target: "default", route: "/", label: "Board" };
+  const stored = { ...ref, selector: ".a", state: "board:withReviewTask" };
+  const editedInvalid = { ...ref, selector: ".a", state: "board:notARealFixture" };
+  const twinInvalid = { ...ref, selector: ".b", state: "board:notARealFixture" };
+  const listBody = (items: unknown[]) => `## Shots\n\n${FENCED(JSON.stringify(items))}`;
+  const keptEntries = (content: string) =>
+    JSON.parse(content.match(/```json\n([\s\S]*?)\n```/)![1]!) as unknown[];
+
+  it("removes only the edited invalid entry when a twin shares label/route/target", () => {
+    const { content, removed, errors } = removeDeclarationsForDeletedShot(
+      listBody([editedInvalid, twinInvalid]),
+      ref,
+      stored,
+    );
+    expect(errors).toEqual([]);
+    expect(removed).toBe(1);
+    expect(keptEntries(content)).toEqual([twinInvalid]);
+  });
+
+  it("uses steps to distinguish invalid twins when their other fields match", () => {
+    const captured = {
+      ...ref,
+      selector: ".same",
+      steps: [{ click: ".captured" }],
+      state: "board:withReviewTask",
+    };
+    const edited = { ...captured, state: "board:notARealFixture" };
+    const twin = {
+      ...captured,
+      steps: [{ click: ".twin" }],
+      state: "board:notARealFixture",
+    };
+    const { content, removed, errors } = removeDeclarationsForDeletedShot(
+      listBody([edited, twin]),
+      ref,
+      captured,
+    );
+    expect(errors).toEqual([]);
+    expect(removed).toBe(1);
+    expect(keptEntries(content)).toEqual([twin]);
+  });
+
+  it("removes the lone invalid entry after a post-capture edit (no twin)", () => {
+    const { content, removed } = removeDeclarationsForDeletedShot(
+      listBody([{ ...ref, state: "board:notARealFixture" }]),
+      ref,
+      { ...ref, selector: ".drawer" },
+    );
+    expect(removed).toBe(1);
+    expect(keptEntries(content)).toEqual([]);
+  });
+
+  it("removes nothing when two invalid twins tie for closest (ambiguous)", () => {
+    const twinB = { ...ref, selector: ".b", state: "board:notARealFixture" };
+    const twinC = { ...ref, selector: ".c", state: "board:notARealFixture" };
+    // The stored declaration matches neither exactly, and both twins are
+    // equidistant from it (state is unscored, each differs only in selector),
+    // so there is no single selected entry to remove.
+    const { content, removed } = removeDeclarationsForDeletedShot(listBody([twinB, twinC]), ref, {
+      ...ref,
+      selector: ".a",
+    });
+    expect(removed).toBe(0);
+    expect(content).toBe("");
+  });
+
+  it("still removes every shallow match for a legacy shot with no stored declaration", () => {
+    const { content, removed } = removeDeclarationsForDeletedShot(
+      listBody([editedInvalid, twinInvalid]),
+      ref,
+    );
+    expect(removed).toBe(2);
+    expect(keptEntries(content)).toEqual([]);
+  });
+
+  it("removes THE exact valid entry when the shot carries its declaration", () => {
+    const other = { ...ref, selector: ".other" };
+    const { content, removed } = removeDeclarationsForDeletedShot(
+      listBody([other, stored]),
+      ref,
+      stored,
+    );
+    expect(removed).toBe(1);
+    expect(keptEntries(content)).toEqual([other]);
+  });
+
+  it("leaves a VALID re-stated entry behind when only its state was edited (#0778 review)", () => {
+    // Post-capture, the user corrected a declaration's state fixture to
+    // another VALID one and then deleted that capture. The stored declaration
+    // is the state the capture ran WITH, so the edited entry is structurally
+    // not the shot that was removed — and it cannot be attributed safely: a
+    // twin that differs only in state is a declaration for a DIFFERENT
+    // capture, and dropping it would delete the wrong entry. The conservative
+    // call is to keep the stale declaration: its image delete still succeeds,
+    // the kept entry is valid so it just re-captures (its NEW state) on the
+    // next handoff, and the user trims it by hand. Locked here so the intent
+    // is explicit, not accidental — unlike the invalid-state case above, raw
+    // closeness never runs for an entry that still parses.
+    const captured = { ...ref, selector: ".a", state: "closeOut:active" };
+    const restated = { ...captured, state: "card:doneError" };
+    const { content, removed, errors } = removeDeclarationsForDeletedShot(
+      listBody([restated]),
+      ref,
+      captured,
+    );
+    expect(errors).toEqual([]);
+    expect(removed).toBe(0);
+    // content "" (with removed 0) is the helper's "leave the section alone"
+    // signal — the caller must not rewrite the ## Shots list on a no-match.
+    expect(content).toBe("");
+  });
+
+  it("removes the broken-state twin whose theme matches and keeps the theme twin (#0782)", () => {
+    // `theme` is part of the raw identity (sameDeclaredShotRaw): a twin with a
+    // DIFFERENT theme is a declaration for another capture, so only the
+    // theme-matching broken-state twin goes when the stored declaration is
+    // known.
+    const captured = {
+      ...ref,
+      selector: ".a",
+      theme: "dark" as const,
+      state: "closeOut:active",
+    };
+    const matchingTheme = {
+      ...ref,
+      selector: ".a",
+      theme: "dark" as const,
+      state: "board:notARealFixture",
+    };
+    const otherTheme = {
+      ...ref,
+      selector: ".a",
+      theme: "light" as const,
+      state: "board:notARealFixture",
+    };
+    const { content, removed, errors } = removeDeclarationsForDeletedShot(
+      listBody([otherTheme, matchingTheme]),
+      ref,
+      captured,
+    );
+    expect(errors).toEqual([]);
+    expect(removed).toBe(1);
+    expect(keptEntries(content)).toEqual([otherTheme]);
   });
 });

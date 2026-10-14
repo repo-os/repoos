@@ -495,6 +495,21 @@ describe("Changes → UI changes rows (#0611)", () => {
     expect(wrapper.text()).toContain("Add shot");
   });
 
+  it("orders UI changes toolbar actions with Add shot on the right (#0778)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [makeShot()];
+    const wrapper = await mountChanges(pinia, makeTask({ status: "review" }));
+    await wrapper.find('[data-test-id="changes-tab-ui"]').trigger("click");
+    await flushPromises();
+    const actions = wrapper.find(".changes-summary-actions");
+    expect(actions.exists()).toBe(true);
+    const ids = actions.findAll("button").map((b) => b.attributes("data-test-id"));
+    expect(ids).toEqual(["refresh-evidence", "add-shot"]);
+  });
+
   it("shows a UI-changes empty state for an unmanaged, shot-less task", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

@@ -348,6 +348,7 @@ fixture the preview applies before capture (preview builds only, via
 `?shotState=` on the capture URL):
 
 - `closeOut:active` — integration pipeline bar visible (active close-out)
+- `closeOut:stalled` — fixture task card with the stalled Cancel/Retry actions (#0778)
 - `closeOut:uploading` — active close-out mid bundle upload, card shows the
   upload progress line (`#9999` fixture task, #0782)
 - `card:doneError` — review card with done-error footer (`#9999` fixture task)

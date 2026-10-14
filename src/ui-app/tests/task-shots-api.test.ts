@@ -19,7 +19,7 @@ import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createRepoOS } from "../../core/repoos";
 import { loadConfig } from "../../core/config.js";
-import { declaredShotsSectionContent } from "../../core/shot-plan.js";
+import { declaredShotsSectionContent, parseShotPlan } from "../../core/shot-plan.js";
 import { localShotStore } from "../../server/shots.js";
 import { patchTaskFile } from "../../server/write.js";
 import type { Task } from "../../core/types.js";
@@ -434,7 +434,7 @@ describe("DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627
     expect(localShotStore(repoos.config, task.id).list()).toHaveLength(1);
   });
 
-  it("refuses to delete while ## Shots is malformed, keeping the image", async () => {
+  it("refuses to delete while ## Shots JSON does not parse, keeping the image", async () => {
     const saved = seedShot("Task drawer open");
     if ("error" in saved) throw new Error("seed failed");
     task = patchSection("```json\n[ not json\n```");
@@ -445,6 +445,124 @@ describe("DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627
     });
     expect(capture.statusCode).toBe(400);
     expect(localShotStore(repoos.config, task.id).list()).toHaveLength(1);
+  });
+
+  it("removes its invalid declaration after post-capture edit when the shot carries declared (#0778 r2)", async () => {
+    const declared = {
+      target: "default",
+      route: "/",
+      label: "Agents tab",
+      selector: ".drawer",
+    };
+    const saved = localShotStore(repoos.config, task.id).save({
+      target: "default",
+      route: "/",
+      label: "Agents tab",
+      provenance: "declared: Agents tab",
+      declared,
+      data: PNG_1PX,
+    });
+    if ("error" in saved) throw new Error("seed failed");
+    task = patchSection(
+      `\`\`\`json\n${JSON.stringify(
+        [{ target: "default", route: "/", label: "Agents tab", state: "board:notARealFixture" }],
+        null,
+        2,
+      )}\n\`\`\``,
+    );
+
+    const { capture, res } = resCapture();
+    await deleteTaskShot(makeCtx() as never, emptyReq, res, {
+      param1: task.id,
+      param2: saved.name,
+    });
+
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 1 });
+    expect(readFileSync(task.absPath, "utf8")).toContain("```json\n[]");
+  });
+
+  it("removes only the edited invalid entry when twins share label/route/target (#0778 r3)", async () => {
+    // The stored declaration's selector singles out the post-capture edit;
+    // the twin (same label/route/target, different selector) must survive.
+    const declared = {
+      target: "default",
+      route: "/",
+      label: "Board",
+      selector: ".a",
+      state: "board:withReviewTask",
+    };
+    const saved = localShotStore(repoos.config, task.id).save({
+      target: "default",
+      route: "/",
+      label: "Board",
+      provenance: "declared: Board",
+      declared,
+      data: PNG_1PX,
+    });
+    if ("error" in saved) throw new Error("seed failed");
+    task = patchSection(
+      `\`\`\`json\n${JSON.stringify(
+        [
+          {
+            target: "default",
+            route: "/",
+            label: "Board",
+            selector: ".a",
+            state: "board:notARealFixture",
+          },
+          {
+            target: "default",
+            route: "/",
+            label: "Board",
+            selector: ".b",
+            state: "board:notARealFixture",
+          },
+        ],
+        null,
+        2,
+      )}\n\`\`\``,
+    );
+
+    const { capture, res } = resCapture();
+    await deleteTaskShot(makeCtx() as never, emptyReq, res, {
+      param1: task.id,
+      param2: saved.name,
+    });
+
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 1 });
+    const onDisk = readFileSync(task.absPath, "utf8");
+    expect(onDisk).toContain('"selector": ".b"');
+    expect(onDisk).not.toContain('"selector": ".a"');
+  });
+
+  it("deletes one shot when another declaration has an unknown state fixture (#0778)", async () => {
+    const saved = seedShot("Agents tab");
+    if ("error" in saved) throw new Error("seed failed");
+    task = patchSection(
+      `\`\`\`json\n${JSON.stringify(
+        [
+          { target: "default", route: "/", label: "Board", state: "board:notARealFixture" },
+          { target: "default", route: "/", label: "Agents tab" },
+        ],
+        null,
+        2,
+      )}\n\`\`\``,
+    );
+    expect(parseShotPlan(readFileSync(task.absPath, "utf8")).errors.length).toBeGreaterThan(0);
+
+    const { capture, res } = resCapture();
+    await deleteTaskShot(makeCtx() as never, emptyReq, res, {
+      param1: task.id,
+      param2: saved.name,
+    });
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 1 });
+    expect(localShotStore(repoos.config, task.id).list()).toEqual([]);
+    const onDisk = readFileSync(task.absPath, "utf8");
+    expect(onDisk).toContain("board:notARealFixture");
+    expect(onDisk).not.toMatch(/"label": "Agents tab"/);
   });
 
   it("reports a failed task-file update as a failure and keeps the image", async () => {

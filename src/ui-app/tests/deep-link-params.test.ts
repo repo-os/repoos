@@ -587,4 +587,38 @@ describe("context ?doc= deep-link (#0557)", () => {
     expect(wrapper.find(".ctx-tab.on").text()).toBe("Skills");
     wrapper.unmount();
   });
+
+  it("shows Open in editor on the doc viewer when an editor is configured (#0778)", async () => {
+    setRouteQuery({ doc: "docs/guide.md" });
+    const config = useConfigStore();
+    config.data = { dev: { inspector: { editorCommand: "zed {file}" } } };
+    const repo = useRepoStore();
+    repo.health = { ...(repo.health ?? { ok: true }), copyInspectorAvailable: true } as NonNullable<
+      typeof repo.health
+    >;
+    const docs = useDocsStore();
+    docs.docs = [{ path: "docs/guide.md", title: "Guide", mtimeMs: 1 }];
+    docs.selDoc = "docs/guide.md";
+    docs.docContent = "# Guide\n";
+    docs.docTitle = "Guide";
+    vi.spyOn(docs, "loadDoc").mockResolvedValue(undefined);
+    api.mockResolvedValue({ ok: true });
+
+    const wrapper = mount(ContextView, { global: { stubs: ctxStubs } });
+    await flushPromises();
+
+    const link = wrapper.find('[data-test-id="context-open-in-editor"]');
+    expect(link.exists()).toBe(true);
+    expect(link.text()).toBe("Open in editor ↗");
+    expect(link.classes()).toContain("page-help-link");
+    await link.trigger("click");
+    expect(api).toHaveBeenCalledWith(
+      "/api/dev/open-in-editor",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ file: "docs/guide.md" }),
+      }),
+    );
+    wrapper.unmount();
+  });
 });
