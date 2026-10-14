@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-14T00:43:12Z"
+updated_at: "2026-10-14T00:43:13Z"
 review_passes: 18
 close_out_repair_count: 1
 review_rounds: 2
@@ -224,3 +224,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-14T00:42:27Z · message_queued at 2026-10-14T00:42:27.635Z
 - 2026-10-14T00:42:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-14T00:43:12Z · status active→review
+- 2026-10-14T00:43:13Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (23b7021fc) during finalization (#0734)
