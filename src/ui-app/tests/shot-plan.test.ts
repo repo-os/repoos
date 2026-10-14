@@ -13,6 +13,8 @@ import {
   buildCapturePlan,
   parseShotPlan,
   resolveDeclaredTarget,
+  sameDeclaredShot,
+  shotPlanFingerprint,
   validateDeclaredShotTargets,
 } from "../../core/shot-plan";
 import {
@@ -156,6 +158,18 @@ describe("parseShotPlan", () => {
     const { shots, errors } = parseShotPlan("## Shots\n\nJust prose, no JSON.\n");
     expect(shots).toEqual([]);
     expect(errors[0]).toMatch(/no fenced JSON/i);
+  });
+
+  it("parses a light/dark theme and rejects anything else (#0782)", () => {
+    const ok = parseShotPlan(
+      bodyWithShots('[{"route":"/work","theme":"dark"},{"route":"/work","theme":"light"}]'),
+    );
+    expect(ok.errors).toEqual([]);
+    expect(ok.shots.map((s) => s.theme)).toEqual(["dark", "light"]);
+
+    const bad = parseShotPlan(bodyWithShots('[{"route":"/work","theme":"blue"}]'));
+    expect(bad.shots).toEqual([]);
+    expect(bad.errors[0]).toMatch(/"theme" expects "light" or "dark"/);
   });
 });
 
@@ -335,6 +349,29 @@ describe("buildCapturePlan", () => {
     );
     expect(entries).toHaveLength(1);
     expect(entries[0].highlight).toBe(".detect-row");
+  });
+
+  it("keeps a light and a dark capture of one route as two entries (#0782)", () => {
+    const { entries, collapsed } = buildCapturePlan(
+      ["default"],
+      [
+        { route: "/work", theme: "light", label: "Board (light)" },
+        { route: "/work", theme: "dark", label: "Board (dark)" },
+      ],
+    );
+    expect(entries).toHaveLength(2);
+    expect(collapsed).toEqual([]);
+    expect(entries.map((e) => e.theme)).toEqual(["light", "dark"]);
+    // Theme binds the plan identity: flipping it forces a re-capture, and the
+    // delete-sync treats the two declarations as different shots.
+    expect(shotPlanFingerprint([entries[0]!])).not.toBe(shotPlanFingerprint([entries[1]!]));
+    expect(
+      sameDeclaredShot({ route: "/work", theme: "light" }, { route: "/work", theme: "dark" }),
+    ).toBe(false);
+    expect(sameDeclaredShot({ route: "/work", theme: "light" }, { route: "/work" })).toBe(false);
+    expect(
+      sameDeclaredShot({ route: "/work", theme: "light" }, { route: "/work", theme: "light" }),
+    ).toBe(true);
   });
 
   it("rejects a declared target the resolution missed, with an actionable error", () => {
@@ -779,6 +816,106 @@ describe("captureShotPage highlight (#0603)", () => {
       },
     );
     expect(png).toBeInstanceOf(Buffer);
+  });
+});
+
+describe("captureShotPage theme (#0782)", () => {
+  interface Recorded {
+    evaluations: string[];
+    screenshots: number[];
+  }
+
+  /** A minimal page that records the theme scripts evaluate receives. */
+  function fakePage(options: { evaluate?: boolean } = {}): ShotDriverPage & Recorded {
+    const recorded: Recorded = { evaluations: [], screenshots: [] };
+    const page = {
+      async goto(): Promise<void> {},
+      async waitForLoadState(): Promise<void> {},
+      async waitForTimeout(): Promise<void> {},
+      async setViewportSize(): Promise<void> {},
+      locator(): unknown {
+        return {};
+      },
+      async screenshot(): Promise<Buffer> {
+        recorded.screenshots.push(recorded.evaluations.length);
+        return Buffer.from("png");
+      },
+      async close(): Promise<void> {},
+      ...(options.evaluate === false
+        ? {}
+        : {
+            async evaluate(body: string): Promise<unknown> {
+              recorded.evaluations.push(body);
+              return 0;
+            },
+          }),
+    } as unknown as ShotDriverPage & Recorded;
+    Object.assign(page, recorded);
+    return page;
+  }
+
+  it("pins the declared theme on the mounted page before the screenshot", async () => {
+    const page = fakePage();
+    await captureShotPage(
+      page,
+      "http://x/work",
+      { route: "/work", theme: "dark" },
+      {
+        waitMs: 0,
+        fullPage: false,
+      },
+    );
+    expect(page.evaluations).toHaveLength(1);
+    // The same two values the contrast audit writes: the stored choice (so the
+    // config store's own init agrees) and the resolved data-theme (so the
+    // mounted page restyles now).
+    expect(page.evaluations[0]).toContain('localStorage.setItem("repoos.theme", "dark")');
+    expect(page.evaluations[0]).toContain('document.documentElement.dataset.theme = "dark"');
+    // Applied before the frame was composed, not after it.
+    expect(page.screenshots).toEqual([1]);
+  });
+
+  it("touches nothing when the entry declares no theme", async () => {
+    const page = fakePage();
+    await captureShotPage(
+      page,
+      "http://x/work",
+      { route: "/work" },
+      {
+        waitMs: 0,
+        fullPage: false,
+      },
+    );
+    expect(page.evaluations).toEqual([]);
+  });
+
+  it("records a theme miss — never a silently wrong-theme frame", async () => {
+    const misses: string[] = [];
+    const page = fakePage({ evaluate: false });
+    const png = await captureShotPage(
+      page,
+      "http://x/work",
+      { route: "/work", theme: "light" },
+      { waitMs: 0, fullPage: false },
+      { onThemeMiss: (theme, route) => misses.push(`${theme} on ${route}`) },
+    );
+    expect(png).toBeInstanceOf(Buffer);
+    expect(misses).toEqual(["light on /work"]);
+
+    // Same verdict when evaluate exists but the script throws.
+    const throwing = fakePage();
+    (throwing as unknown as { evaluate: () => Promise<void> }).evaluate = async () => {
+      throw new Error("execution context destroyed");
+    };
+    const misses2: string[] = [];
+    await captureShotPage(
+      throwing,
+      "http://x/work",
+      { route: "/work", theme: "dark" },
+      { waitMs: 0, fullPage: false },
+      { onThemeMiss: (theme, route) => misses2.push(`${theme} on ${route}`) },
+    );
+    expect(misses2).toEqual(["dark on /work"]);
   });
 });
 

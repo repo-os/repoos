@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../core/shot-fixtures.js";
 import {
   applyShotPreviewFixture,
   readShotPreviewFixtureFromLocation,
+  shotFixturePinnedIntegration,
 } from "../src/lib/shot-preview-fixtures";
 import { useRepoStore } from "../src/stores/repo";
 
@@ -43,6 +44,37 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(task!.branch).toBe("");
     expect(repo.integration?.active?.taskId).toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
     expect(repo.integration?.active?.detail).toContain("uploading bundle");
+  });
+
+  it("keeps the seeded pipeline against a live refresh, then unpins (#0782)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "closeOut:uploading");
+    const seeded = shotFixturePinnedIntegration();
+    expect(seeded?.active?.detail).toContain("uploading bundle");
+
+    // The hydration refreshIntegration runs after an SSE gap: without the pin
+    // this real (idle) snapshot replaced the fixture mid-capture, and the card
+    // lost its "uploading bundle" line before the screenshot.
+    const idle = { empty: true, active: null, queue: [], at: new Date().toISOString() };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, pipeline: idle }),
+      })),
+    );
+    await repo.refreshIntegration();
+    expect(repo.integration?.active?.detail).toContain("uploading bundle");
+    expect(repo.integration?.active?.taskId).toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
+
+    // A fixture that seeds no pipeline must clear the pin so the LIVE
+    // snapshot is not frozen for the rest of the page's life.
+    applyShotPreviewFixture(repo, "board:withReviewTask");
+    expect(shotFixturePinnedIntegration()).toBeNull();
+    vi.unstubAllGlobals();
   });
 
   it("seeds a multi-area task with diff stats for card-chip shots (#0776)", () => {
