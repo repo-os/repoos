@@ -79,7 +79,16 @@
  * The SSE stream is the live heartbeat the Stage 3 UI subscribes to.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { existsSync, readdirSync, readFileSync, statSync, accessSync, constants } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  accessSync,
+  constants,
+  writeFileSync,
+} from "node:fs";
 import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { extname, join, dirname, resolve, basename, relative } from "node:path";
@@ -359,6 +368,7 @@ import {
   uploadScreenshot,
   listTaskShots,
   getTaskUiVerification,
+  refreshTaskEvidence,
   getTaskShot,
   uploadTaskShot,
   deleteTaskShot,
@@ -3202,6 +3212,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/shots$/, listTaskShots);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/ui-verification$/, getTaskUiVerification);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/verify$/, refreshTaskEvidence);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/shots$/, uploadTaskShot);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/shots\/([^/]+)$/, getTaskShot);
   // Task drawer shot management (#0627): declare-and-capture via POST (the

@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-14T05:29:39Z"
-review_passes: 25
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
@@ -10,8 +8,14 @@ area: [core, server, cli, ui]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/refresh-evidence-on-demand-button-cli-an
+cli_override: cursor
+model_override: composer-2.5
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-10-13T10:49:44Z"
+updated_at: "2026-10-13T20:06:34Z"
 close_out_repair_count: 1
+review_passes: 5
 review_rounds: 2
 dev_error_count: 1
 ---
@@ -112,167 +116,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-13T19:23:06Z · cli_override, model_override
 - 2026-10-13T19:23:10Z · cli_override
 - 2026-10-13T19:23:12Z · model_override
-- 2026-10-13T19:25:14Z · body
-- 2026-10-13T19:57:29Z · body
-- 2026-10-13T19:58:44Z · body
-- 2026-10-13T20:06:35Z · status active→review
-- 2026-10-13T20:09:08Z · note: review pass 7: needs some work
-- 2026-10-13T20:09:08Z · needs_input
-- 2026-10-13T21:57:16Z · status review→active
-- 2026-10-13T21:57:48Z · needs_input
-- 2026-10-13T22:02:00Z · body
-- 2026-10-13T22:03:57Z · status active→review
-- 2026-10-13T22:06:08Z · note: review pass 8: needs some work
-- 2026-10-13T22:06:08Z · needs_input
-- 2026-10-13T22:06:33Z · status review→active
-- 2026-10-13T22:06:56Z · needs_input
-- 2026-10-13T22:06:56Z · message_queued at 2026-10-13T22:06:56.510Z
-- 2026-10-13T22:10:25Z · status active→review
-- 2026-10-13T22:10:25Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (e779508d7) during finalization (#0734)
-- 2026-10-13T22:10:25Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (e779508d7) during finalization (#0734)
-- 2026-10-13T22:12:05Z · note: review pass 9: needs some work
-- 2026-10-13T22:12:05Z · needs_input
-- 2026-10-13T22:16:06Z · status review→active
-- 2026-10-13T22:16:23Z · needs_input
-- 2026-10-13T22:16:24Z · message_delivered: 1 message(s)
-- 2026-10-13T22:20:49Z · message_queued at 2026-10-13T22:20:49.804Z
-- 2026-10-13T22:20:58Z · body
-- 2026-10-13T22:22:18Z · body
-- 2026-10-13T22:23:07Z · status active→review
-- 2026-10-13T22:24:40Z · note: review pass 10: needs some work
-- 2026-10-13T22:24:40Z · needs_input
-- 2026-10-13T22:25:32Z · status review→active
-- 2026-10-13T22:25:49Z · needs_input
-- 2026-10-13T22:25:49Z · message_queued at 2026-10-13T22:25:49.942Z
-- 2026-10-13T22:29:53Z · status active→review
-- 2026-10-13T22:29:53Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (796132491) during finalization (#0734)
-- 2026-10-13T22:29:53Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (796132491) during finalization (#0734)
-- 2026-10-13T22:33:11Z · note: review pass 11: needs some work
-- 2026-10-13T22:33:11Z · needs_input
-- 2026-10-13T22:35:04Z · status review→active
-- 2026-10-13T22:35:22Z · needs_input
-- 2026-10-13T22:35:22Z · message_delivered: 2 message(s)
-- 2026-10-13T22:38:17Z · body
-- 2026-10-13T22:39:31Z · status active→review
-- 2026-10-13T22:41:18Z · note: review pass 12: needs some work
-- 2026-10-13T22:41:19Z · needs_input
-- 2026-10-13T22:44:34Z · status review→active
-- 2026-10-13T22:44:52Z · needs_input
-- 2026-10-13T22:44:52Z · message_queued at 2026-10-13T22:44:52.639Z
-- 2026-10-13T22:46:03Z · status active→review
-- 2026-10-13T22:46:03Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7e06cd672) during finalization (#0734)
-- 2026-10-13T22:46:04Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (7e06cd672) during finalization (#0734)
-- 2026-10-13T22:47:44Z · note: review pass 13: needs some work
-- 2026-10-13T22:47:44Z · needs_input
-- 2026-10-13T23:23:20Z · status review→active
-- 2026-10-13T23:23:27Z · message_delivered: 1 message(s)
-- 2026-10-13T23:23:48Z · needs_input
-- 2026-10-13T23:23:48Z · message_queued at 2026-10-13T23:23:48.425Z
-- 2026-10-13T23:25:40Z · body
-- 2026-10-13T23:27:13Z · body
-- 2026-10-13T23:27:51Z · status active→review
-- 2026-10-13T23:29:52Z · note: review pass 14: needs some work
-- 2026-10-13T23:29:52Z · needs_input
-- 2026-10-13T23:32:30Z · status review→active
-- 2026-10-13T23:32:43Z · needs_input
-- 2026-10-13T23:32:43Z · message_queued at 2026-10-13T23:32:43.536Z
-- 2026-10-13T23:34:20Z · status active→review
-- 2026-10-13T23:34:20Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a0934f8e4) during finalization (#0734)
-- 2026-10-13T23:34:21Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a0934f8e4) during finalization (#0734)
-- 2026-10-13T23:36:17Z · note: review pass 15: needs some work
-- 2026-10-13T23:36:17Z · needs_input
-- 2026-10-13T23:37:18Z · status review→active
-- 2026-10-13T23:37:31Z · needs_input
-- 2026-10-13T23:37:31Z · message_delivered: 2 message(s)
-- 2026-10-13T23:43:24Z · body
-- 2026-10-13T23:44:58Z · body
-- 2026-10-13T23:46:56Z · status active→review
-- 2026-10-13T23:48:34Z · note: review pass 16: needs some work
-- 2026-10-13T23:48:34Z · needs_input
-- 2026-10-13T23:51:31Z · status review→active
-- 2026-10-13T23:51:43Z · needs_input
-- 2026-10-13T23:51:43Z · message_queued at 2026-10-13T23:51:43.555Z
-- 2026-10-13T23:53:27Z · status active→review
-- 2026-10-13T23:53:27Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (037a858ef) during finalization (#0734)
-- 2026-10-13T23:53:28Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (037a858ef) during finalization (#0734)
-- 2026-10-13T23:55:40Z · note: review pass 17: needs some work
-- 2026-10-13T23:55:40Z · needs_input
-- 2026-10-13T23:56:36Z · status review→active
-- 2026-10-13T23:56:48Z · needs_input
-- 2026-10-13T23:56:48Z · message_delivered: 1 message(s)
-- 2026-10-14T00:01:56Z · body
-- 2026-10-14T00:02:58Z · body
-- 2026-10-14T00:04:38Z · body
-- 2026-10-14T00:05:33Z · status active→review
-- 2026-10-14T00:07:21Z · note: review pass 18: needs some work
-- 2026-10-14T00:07:21Z · needs_input
-- 2026-10-14T00:10:34Z · status review→active
-- 2026-10-14T00:10:45Z · needs_input
-- 2026-10-14T00:10:45Z · message_queued at 2026-10-14T00:10:45.858Z
-- 2026-10-14T00:12:01Z · status active→review
-- 2026-10-14T00:12:01Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (23b7021fc) during finalization (#0734)
-- 2026-10-14T00:12:02Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (23b7021fc) during finalization (#0734)
-- 2026-10-14T00:14:51Z · note: review pass 19: needs some work
-- 2026-10-14T00:14:51Z · needs_input
-- 2026-10-14T00:26:45Z · status review→active
-- 2026-10-14T00:26:55Z · needs_input
-- 2026-10-14T00:26:55Z · message_delivered: 1 message(s)
-- 2026-10-14T00:42:27Z · message_queued at 2026-10-14T00:42:27.635Z
-- 2026-10-14T00:42:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-14T00:43:12Z · status active→review
-- 2026-10-14T00:43:13Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (23b7021fc) during finalization (#0734)
-- 2026-10-14T00:45:16Z · note: review pass 20: needs some work
-- 2026-10-14T00:45:16Z · needs_input
-- 2026-10-14T00:47:29Z · status review→active
-- 2026-10-14T00:47:40Z · needs_input
-- 2026-10-14T00:47:40Z · message_delivered: 1 message(s)
-- 2026-10-14T00:49:02Z · body
-- 2026-10-14T00:49:55Z · body
-- 2026-10-14T00:51:25Z · body
-- 2026-10-14T00:52:40Z · status active→review
-- 2026-10-14T00:54:37Z · note: review pass 21: needs some work
-- 2026-10-14T00:54:37Z · needs_input
-- 2026-10-14T00:56:55Z · status review→active
-- 2026-10-14T00:57:06Z · needs_input
-- 2026-10-14T00:57:06Z · message_queued at 2026-10-14T00:57:06.557Z
-- 2026-10-14T00:59:06Z · status active→review
-- 2026-10-14T00:59:06Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (8930c2615) during finalization (#0734)
-- 2026-10-14T00:59:06Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (8930c2615) during finalization (#0734)
-- 2026-10-14T01:01:21Z · note: review pass 22: needs some work
-- 2026-10-14T01:01:21Z · needs_input
-- 2026-10-14T01:01:41Z · status review→active
-- 2026-10-14T01:01:51Z · needs_input
-- 2026-10-14T01:01:52Z · message_delivered: 1 message(s)
-- 2026-10-14T01:03:38Z · body
-- 2026-10-14T01:04:32Z · body
-- 2026-10-14T01:06:03Z · body
-- 2026-10-14T01:07:18Z · status active→review
-- 2026-10-14T01:09:32Z · note: review pass 23: needs some work
-- 2026-10-14T01:09:32Z · needs_input
-- 2026-10-14T01:11:12Z · status review→active
-- 2026-10-14T01:11:23Z · needs_input
-- 2026-10-14T01:11:23Z · message_queued at 2026-10-14T01:11:23.755Z
-- 2026-10-14T01:13:42Z · status active→review
-- 2026-10-14T01:13:42Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (78e8ce2fe) during finalization (#0734)
-- 2026-10-14T01:13:42Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (78e8ce2fe) during finalization (#0734)
-- 2026-10-14T01:16:15Z · note: review pass 24: needs some work
-- 2026-10-14T01:16:15Z · needs_input
-- 2026-10-14T03:38:02Z · status review→active
-- 2026-10-14T03:38:11Z · needs_input
-- 2026-10-14T03:49:45Z · body
-- 2026-10-14T03:50:29Z · status active→review
-- 2026-10-14T03:52:52Z · note: review pass 25: needs some work
-- 2026-10-14T04:25:49Z · review_cli_override
-- 2026-10-14T04:26:00Z · review_model_override
-- 2026-10-14T04:26:20Z · cli_override, model_override
-- 2026-10-14T04:26:23Z · model_override
-- 2026-10-14T04:27:04Z · status review→active
-- 2026-10-14T04:48:39Z · body
-- 2026-10-14T04:51:05Z · body
-- 2026-10-14T04:52:39Z · status active→review
-- 2026-10-14T05:07:41Z · note: review pass 26: failed — no usable report
-- 2026-10-14T05:07:41Z · needs_input
-- 2026-10-14T05:28:05Z · review_cli_override, review_model_override
-- 2026-10-14T05:28:11Z · needs_input (review-failed) cleared for review again by hello@repoos.org
-- 2026-10-14T05:29:38Z · note: review pass 27: good to go
-
+- 2026-10-13T20:06:34Z · status active→review

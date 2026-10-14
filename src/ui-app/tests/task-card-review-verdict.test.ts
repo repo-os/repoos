@@ -65,6 +65,25 @@ function mountCard(task: Task) {
 }
 
 describe("TaskCard review-passed hint reflects the actual verdict", () => {
+  it("offers evidence refresh and the CLI command for a stale-only review finding", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.reviews = {
+      "0001": {
+        running: false,
+        enabled: true,
+        lines: [],
+        report: report("## Verdict\nneeds some work. STALE-EVIDENCE-ONLY"),
+      },
+    };
+    const wrapper = mountCard(makeTask());
+    expect(wrapper.get('[data-test-id="task-card-refresh-evidence"]').text()).toContain(
+      "Refresh evidence",
+    );
+    expect(wrapper.text()).toContain("repoos verify 0001");
+  });
+
   it("shows the green ready hint and glow when the verdict is 'good to go'", () => {
     const pinia = createPinia();
     setActivePinia(pinia);

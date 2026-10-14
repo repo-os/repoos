@@ -73,4 +73,14 @@ describe("localShotStore.remove (#0627)", () => {
     expect(store.removeAuto()).toBe(1);
     expect(store.list()).toEqual([]);
   });
+
+  it("clearForRefresh removes every shot, including engineer-made ones (#0766)", () => {
+    const { config } = setup();
+    const store = localShotStore(config, "0766");
+    store.save({ target: "web", data: "aGk=", mime: "image/png", label: "engineer" });
+    store.save({ target: "web", data: "aGk=", mime: "image/png", origin: "auto" });
+    expect(store.list()).toHaveLength(2);
+    expect(store.clearForRefresh()).toBe(2);
+    expect(store.list()).toEqual([]);
+  });
 });

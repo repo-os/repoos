@@ -85,14 +85,24 @@ import {
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { checkGenericStatusPatch } from "../task-transitions.js";
-import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
+import { readFileSync, existsSync, statSync, unlinkSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-release.js";
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
-import { readUiHandoffGateEvidence, handoffTreeStatus } from "../ui-handoff-gate.js";
+import {
+  readUiHandoffGateEvidence,
+  effectiveHandoffTreeStatus,
+  runUiHandoffGate,
+  type TaskLog,
+} from "../ui-handoff-gate.js";
 import { localShotStore } from "../shots.js";
+import {
+  endEvidenceRefresh,
+  isEvidenceRefreshActive,
+  tryBeginEvidenceRefresh,
+} from "../evidence-refresh-lock.js";
 import { computeTaskShotContext } from "../shot-context.js";
 import {
   appendDeclaredShot,
@@ -104,6 +114,7 @@ import {
 } from "../../core/shot-plan.js";
 import { resolveShotTargets } from "../../core/shot-targets.js";
 import { captureDeclaredShot } from "../shot-capture.js";
+import type { PreviewManager } from "../preview.js";
 import { STATUSES } from "../../core/types.js";
 import {
   ACTIVITY_HEADING,
@@ -1080,7 +1091,7 @@ export const listTaskShots: RouteHandler = (ctx, _req, res, params) => {
 };
 
 /** Handoff UI verification evidence (#0680) for the Changes tab. */
-export const getTaskUiVerification: RouteHandler = (ctx, _req, res, params) => {
+export const getTaskUiVerification: RouteHandler = async (ctx, _req, res, params) => {
   const { config, index } = ctx;
   const taskId = params.param1;
   const task = index.getTask(taskId);
@@ -1091,9 +1102,11 @@ export const getTaskUiVerification: RouteHandler = (ctx, _req, res, params) => {
   // #0755: tie the evidence to the tree the review/close-out will use. The
   // stored `sourceIdentity` is the tree the capture ran on; `reviewedHead` is
   // the branch HEAD now, and `stale` says whether they differ. A stale capture
-  // is shown as such and never as verification.
+  // is shown as such and never as verification — except for HEAD movement that
+  // is pure task bookkeeping (#0766), which does not change what captures show.
   const reviewedHead = branchHeadForTask(config, task);
-  const status = handoffTreeStatus(evidence, reviewedHead);
+  const worktree = worktreeEvidenceSource(config, task);
+  const status = await effectiveHandoffTreeStatus(worktree, evidence, reviewedHead);
   if (!evidence) return json(res, 200, { ok: true, evidence: null });
   return json(res, 200, {
     ok: true,
@@ -1103,6 +1116,204 @@ export const getTaskUiVerification: RouteHandler = (ctx, _req, res, params) => {
       stale: status === "stale",
     },
   });
+};
+
+/**
+ * Post-capture worktree guard for the evidence refresh (#0766). Command
+ * targets run in a detached worktree during refresh, but web captures still
+ * use the task worktree's preview — and a concurrent human edit can land while
+ * capture runs.
+ *
+ * The pre-capture check guarantees the worktree was porcelain-clean; any
+ * porcelain after capture means the refresh must fail and report what changed.
+ * The guard never mutates the worktree (`git reset` / `git clean` are forbidden
+ * here — a failed refresh must not destroy a user's in-flight edit).
+ */
+export async function postCaptureWorktreeGuard(
+  worktree: string,
+  headBefore: string | null,
+): Promise<
+  | { ok: true; headAfter: string; restored: string[] }
+  | { ok: false; error: string; restored: string[] }
+> {
+  const status = await runGit(worktree, ["status", "--porcelain"], 10_000);
+  const dirt = status.status === 0 ? status.stdout.trim() : null;
+  const headAfter = shortHeadOf(worktree);
+  const headMoved = headBefore === null || headAfter === null || headAfter !== headBefore;
+  if (dirt === null) {
+    return {
+      ok: false,
+      error: "could not verify the worktree is clean after the capture",
+      restored: [],
+    };
+  }
+  if (headMoved) {
+    return {
+      ok: false,
+      error:
+        `the worktree's HEAD changed during the capture ` +
+        `(${headBefore ?? "unknown"} → ${headAfter ?? "unknown"}); ` +
+        "retry the refresh once the tree is settled",
+      restored: [],
+    };
+  }
+  if (dirt) {
+    const files = dirt.split("\n").filter((l) => l.trim());
+    return {
+      ok: false,
+      error: `the worktree was modified during the capture: ${files.join(", ")}`,
+      restored: [],
+    };
+  }
+  return { ok: true, headAfter, restored: [] };
+}
+
+export type GuardedForceRefreshCaptureResult = {
+  skipped: boolean;
+  gateOk: boolean;
+  headIdentity: string | null;
+  detail?: string;
+  restored: string[];
+  error?: string;
+};
+
+/**
+ * Shared force-refresh capture for manual verify (#0766): run the gate, then
+ * post-capture worktree guard so command
+ * targets cannot leave tracked edits or a moved HEAD behind.
+ */
+export async function guardedForceRefreshCapture(
+  config: RepoOSConfig,
+  task: Task,
+  worktree: string,
+  previews: PreviewManager | undefined,
+  log: TaskLog,
+): Promise<GuardedForceRefreshCaptureResult> {
+  const headBefore = shortHeadOf(worktree);
+  const result = await runUiHandoffGate(config, task, previews, log, {
+    forceRefresh: true,
+    recordTaskNotes: false,
+  });
+  if (result.skipped) {
+    return {
+      skipped: true,
+      gateOk: false,
+      headIdentity: null,
+      detail: result.detail,
+      restored: [],
+    };
+  }
+  const guarded = await postCaptureWorktreeGuard(worktree, headBefore);
+  for (const line of guarded.restored) {
+    log(task.id, "warn", `evidence refresh for #${task.id}: ${line}`);
+  }
+  if (!guarded.ok) {
+    return {
+      skipped: false,
+      gateOk: false,
+      headIdentity: null,
+      restored: guarded.restored,
+      error: guarded.error,
+    };
+  }
+  const evidence = readUiHandoffGateEvidence(config, task.id);
+  const headIdentity = evidence?.sourceIdentity ?? guarded.headAfter;
+  if (headIdentity !== guarded.headAfter) {
+    return {
+      skipped: false,
+      gateOk: false,
+      headIdentity,
+      restored: guarded.restored,
+      error: `evidence sourceIdentity (${headIdentity ?? "unknown"}) does not match post-capture HEAD (${guarded.headAfter})`,
+    };
+  }
+  return {
+    skipped: false,
+    gateOk: result.ok,
+    headIdentity,
+    detail: result.detail,
+    restored: guarded.restored,
+  };
+}
+
+/** Refresh handoff shots and verification against the reviewed worktree HEAD. */
+export const refreshTaskEvidence: RouteHandler = async (ctx, _req, res, params) => {
+  const { config, index, runner, reviews, closeOutLock, previews } = ctx;
+  const id = params.param1;
+  const task = index.getTask(id);
+  if (!task) return json(res, 404, { error: `Task #${id} not found` });
+  if (task.status !== "review") {
+    return json(res, 409, {
+      error: `Evidence can only be refreshed in review (#${id} is ${task.status})`,
+    });
+  }
+  if (!task.branch) return json(res, 409, { error: `Task #${id} has no branch to refresh` });
+  if (closeOutLock.closingOut())
+    return json(res, 409, { error: "A close-out is active; wait for it to finish" });
+  if (!tryBeginEvidenceRefresh(id)) {
+    return json(res, 409, { error: `Evidence refresh for #${id} is already running` });
+  }
+  let rootHeld = false;
+  try {
+    // Use the same durable root lock the close-out orchestrator acquires. The
+    // in-memory refresh lock is taken first so review cannot start during the
+    // awaited worktree checks below; this lock also serializes refresh against
+    // close-out across server timing/reload gaps.
+    if (!ctx.rootLock.acquire(id, "close-out")) {
+      return json(res, 409, {
+        error: "A close-out or root operation is active; wait for it to finish",
+      });
+    }
+    rootHeld = true;
+    if (runner.isRunning(id) || reviews.isRunning(id)) {
+      return json(res, 409, { error: `Task #${id} has an agent run in progress` });
+    }
+    const worktree = worktreePathForBranch(config.root, task.branch);
+    if (!worktree) {
+      return json(res, 409, { error: `Task #${id}'s worktree is unavailable` });
+    }
+    const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
+    if (dirty.status !== 0) {
+      return json(res, 409, { error: "Could not verify the task worktree is clean" });
+    }
+    if (dirty.stdout.trim()) {
+      return json(res, 409, {
+        error: `Task #${id}'s worktree is dirty; commit or discard changes before refreshing evidence`,
+      });
+    }
+    const captured = await guardedForceRefreshCapture(
+      config,
+      task,
+      worktree,
+      previews,
+      (taskId, level, message) => {
+        ctx.logger.task(taskId, level, message);
+      },
+    );
+    if (captured.skipped) {
+      return json(res, 409, {
+        error: `Evidence was not refreshed for #${id}: ${captured.detail ?? "verification was skipped"}`,
+      });
+    }
+    if (captured.error) {
+      return json(res, 409, {
+        error: captured.error,
+        ...(captured.restored.length ? { restored: captured.restored } : {}),
+      });
+    }
+    const evidence = readUiHandoffGateEvidence(config, id);
+    return json(res, 200, {
+      ok: captured.gateOk,
+      headIdentity: captured.headIdentity,
+      detail: captured.detail,
+      ...(captured.restored.length ? { restored: captured.restored } : {}),
+      issues: evidence?.issues ?? [],
+      shots: localShotStore(config, id).list(),
+    });
+  } finally {
+    if (rootHeld) ctx.rootLock.release(id);
+    endEvidenceRefresh(id);
+  }
 };
 
 /**
@@ -1117,6 +1328,18 @@ function branchHeadForTask(config: RepoOSConfig, task: Task): string | null {
   if (!task.branch) return null;
   const current = currentBranch(config.root);
   return current === task.branch ? shortHeadOf(config.root) : null;
+}
+
+/**
+ * The tree the bookkeeping-drift classification (#0766) diffs against: the
+ * task's worktree when it exists, else the root checkout — mirroring
+ * {@link branchHeadForTask}, so both sides of the comparison read the same git
+ * context. That fallback always yields a tree, so the staleness helper's
+ * fail-closed null path never applies here.
+ */
+function worktreeEvidenceSource(config: RepoOSConfig, task: Task): string | null {
+  const worktree = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
+  return worktree ?? config.root;
 }
 
 export const getTaskShot: RouteHandler = (ctx, _req, res, params) => {
@@ -1590,6 +1813,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (existing.isArchived) {
       return json(res, 400, {
         error: `Task #${id} is archived — unarchive it before starting work`,
+      });
+    }
+    if (isEvidenceRefreshActive(id)) {
+      return json(res, 409, {
+        error: `Evidence refresh is in progress for #${id}; wait for it to finish before starting the engineer`,
       });
     }
     const body = (await readBody(req)) as {
@@ -2102,6 +2330,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // #0679: a follow-up message while in `review` must land on an `active`
     // task so the engineer can commit fixes and hand off again.
     if (existing.status === "review") {
+      if (isEvidenceRefreshActive(id)) {
+        return json(res, 409, {
+          error: `Evidence refresh is in progress for #${id}; wait for it to finish before starting the engineer`,
+        });
+      }
       if (runner.isRunning(id)) {
         return json(res, 409, {
           error: `Task #${id} has an agent turn in progress — wait for it to finish`,

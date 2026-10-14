@@ -246,6 +246,46 @@ export async function cmdReview(args: string[]): Promise<number> {
   }
 }
 
+/** Refresh the current review tree's UI evidence without an engineer turn. */
+export async function cmdVerify(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) return (printErr(error), 1);
+  const id = rest[0];
+  if (!id) return (printErr("Usage: repoos verify <id> [--json] [--port N]"), 1);
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const result = await api.requestOk("POST", `/api/tasks/${id}/verify`, {});
+    if (opts.json) printJson(result);
+    else {
+      if (result.ok === false) {
+        console.log(
+          c.yellow("  ! ") +
+            c.dim(
+              `evidence refresh for #${id} finished with verification issues at ${result.headIdentity ?? "unknown HEAD"}`,
+            ),
+        );
+      } else {
+        console.log(
+          c.green("  ✓ ") +
+            c.dim(`evidence refreshed for #${id} at ${result.headIdentity ?? "unknown HEAD"}`),
+        );
+      }
+      if (result.detail) console.log(`  ${result.detail}`);
+      for (const line of Array.isArray(result.restored) ? result.restored : []) {
+        console.log(c.yellow(`  · ${line}`));
+      }
+      if (Array.isArray(result.issues) && result.issues.length) {
+        for (const issue of result.issues) console.log(c.yellow(`  · ${issue.message ?? issue}`));
+      }
+    }
+    return result.ok === false ? 1 : 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
 export async function cmdDone(args: string[]): Promise<number> {
   const { rest, opts, error } = parseCommonFlags(args);
   if (error) {
