@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-14T16:31:22Z"
+review_passes: 5
 id: "0778"
 title: "Easter eggs bundle: Shots validator and review card wording"
 type: bug
@@ -13,8 +15,6 @@ model_override: haiku
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T16:22:16Z"
-review_passes: 5
 review_rounds: 2
 dev_error_count: 4
 ---
@@ -48,57 +48,14 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 ## Shots
 ```json
 [
-{
-  "label": "Repo Context doc viewer Open in editor link (light)",
-  "target": "default",
-  "route": "/repo?doc=docs/README.md",
-  "highlight": "[data-test-id=\"context-open-in-editor\"]",
-  "theme": "light"
-},
-{
-  "label": "Repo Context doc viewer Open in editor link (dark)",
-  "target": "default",
-  "route": "/repo?doc=docs/README.md",
-  "highlight": "[data-test-id=\"context-open-in-editor\"]",
-  "theme": "dark"
-},
-{
-  "label": "Changes tab Refresh evidence and Add shot right-aligned (light)",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": ".changes-summary-actions",
-  "state": "drawer:reviewWithBranch",
-  "theme": "light"
-},
-{
-  "label": "Changes tab Refresh evidence and Add shot right-aligned (dark)",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": ".changes-summary-actions",
-  "state": "drawer:reviewWithBranch",
-  "theme": "dark"
-},
-{
-  "label": "Stalled close-out card Cancel and Retry on the right (light)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-test-id=\"task-card-pipeline-retry\"]",
-  "state": "closeOut:stalled",
-  "theme": "light"
-},
-{
-  "label": "Stalled close-out card Cancel and Retry on the right (dark)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-test-id=\"task-card-pipeline-retry\"]",
-  "state": "closeOut:stalled",
-  "theme": "dark"
-}
+{"label":"Repo Context doc viewer Open in editor link (light)","target":"default","route":"/repo?doc=docs/README.md","highlight":"[data-test-id=\"context-open-in-editor\"]","theme":"light"},
+{"label":"Repo Context doc viewer Open in editor link (dark)","target":"default","route":"/repo?doc=docs/README.md","highlight":"[data-test-id=\"context-open-in-editor\"]","theme":"dark"},
+{"label":"Changes tab Refresh evidence and Add shot right-aligned (light)","target":"default","route":"/work?task=9999&tab=changes","state":"drawer:reviewWithBranch","highlight":".changes-summary-actions","theme":"light"},
+{"label":"Changes tab Refresh evidence and Add shot right-aligned (dark)","target":"default","route":"/work?task=9999&tab=changes","state":"drawer:reviewWithBranch","highlight":".changes-summary-actions","theme":"dark"},
+{"label":"Stalled close-out card Cancel and Retry on the right (light)","target":"default","route":"/work","state":"closeOut:stalled","highlight":"[data-test-id=\"task-card-pipeline-retry\"]","theme":"light"},
+{"label":"Stalled close-out card Cancel and Retry on the right (dark)","target":"default","route":"/work","state":"closeOut:stalled","highlight":"[data-test-id=\"task-card-pipeline-retry\"]","theme":"dark"}
 ]
 ```
-
-## Shot evidence sequencing
-Item 5 (stalled close-out card) is implemented and unit-pinned (DOM order Cancel/Retry, CSS `.tc-pipeline-recover` pushed right via margin-left:auto, above the expand arrow) but NOT captured yet: the shots validator runs MAIN's compiled code at declaration time, and the `closeOut:stalled` fixture it needs ships with THIS branch. Review capture of the stalled card is possible only once the branch lands; at re-handoff the declaration should be /work?status=review + state closeOut:stalled in light and dark (route /work, not /, so the fixture card is in the viewport). Items 3 and 4 now declare light AND dark theme captures — the theme field came in via #0782.
 
 ## Activity
 
@@ -183,18 +140,6 @@ Item 5 (stalled close-out card) is implemented and unit-pinned (DOM order Cancel
 - 2026-10-14T15:25:59Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-14T15:26:56Z · cli_override, model_override
 - 2026-10-14T15:27:10Z · message_delivered: 2 message(s)
-- 2026-10-14T15:30:33Z · body: section Shots
-- 2026-10-14T15:31:23Z · body
-- 2026-10-14T15:33:42Z · body
-- 2026-10-14T15:35:22Z · body
-- 2026-10-14T15:38:45Z · body: section Shots
-- 2026-10-14T15:38:53Z · body: section Shot evidence sequencing
-- 2026-10-14T15:39:44Z · body
-- 2026-10-14T15:41:55Z · handoff failed · remote validation failed: test failure: tests/shot-plan-edit.test.ts > removeDeclarationsForDeletedShot (#0778 review round 3) > leaves a VALID re-stated entry behind when only its state was edited (#0778 review) on bee — fix it in the feature branch and re-run the gate
-- 2026-10-14T15:43:04Z · body
-- 2026-10-14T15:44:28Z · body
-- 2026-10-14T15:52:13Z · body
 - 2026-10-14T15:59:21Z · status active→review
-- 2026-10-14T15:59:21Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-10-14T16:06:57Z · note: review pass 5: good to go
-- 2026-10-14T16:22:16Z · body: section Shots
+- 2026-10-14T16:31:21Z · note: review pass 1: needs some work
+

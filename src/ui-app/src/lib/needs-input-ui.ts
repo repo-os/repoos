@@ -150,6 +150,16 @@ export function needsInputBannerText(reason: string | undefined, hasQuestions = 
   );
 }
 
+/** Hide detail when it would repeat the banner line (#0778). */
+export function needsInputDetailVisible(
+  reason: string | undefined,
+  detail: string | undefined,
+  hasQuestions = false,
+): boolean {
+  if (!detail?.trim() || reason === "dev-error") return false;
+  return detail.trim() !== needsInputBannerText(reason, hasQuestions).trim();
+}
+
 export function needsInputSuggestionText(
   reason: string | undefined,
   hasQuestions = false,

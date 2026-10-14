@@ -5,11 +5,17 @@
  */
 export const SHOT_PREVIEW_FIXTURE_IDS = [
   "closeOut:active",
+  // #0778 — like closeOut:active, but the attempt has been idle past the stall
+  // threshold, so the task card renders the stalled Cancel/Retry actions.
+  "closeOut:stalled",
   // #0782 — an active close-out mid-bundle-upload, so a capture can show the
   // upload-progress card copy instead of the bare stage.
   "closeOut:uploading",
   "card:doneError",
   "board:withReviewTask",
+  // #0778 — review-status task with a non-empty branch, so the task drawer
+  // shows UI-changes pane and actions like Add shot and Refresh evidence.
+  "drawer:reviewWithBranch",
   // #0776 — a multi-area card with seeded diff stats, so a capture can show
   // the combined area chip and the file-count chip.
   "board:cardChips",

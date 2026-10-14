@@ -33,7 +33,9 @@ function fixture(): string {
     "utf8",
   );
   mkdirSync(join(root, "work"), { recursive: true });
+  mkdirSync(join(root, "docs"), { recursive: true });
   writeFileSync(join(root, "work", "0636-task.md"), "# Task", "utf8");
+  writeFileSync(join(root, "docs", "guide.md"), "# Guide", "utf8");
   writeFileSync(join(root, "work", "notes.txt"), "not a task", "utf8");
   writeFileSync(join(root, "src", "ui-app", "Foo.vue"), "<template />", "utf8");
   return root;
@@ -91,6 +93,14 @@ describe("POST /api/dev/open-in-editor", () => {
     const result = await invoke({ file: "work/0636-task.md" }, configFor(root));
 
     // Not 400: the path passed validation and the (missing) editor was launched.
+    expect(result.status).toBe(500);
+    expect(result.body).toEqual({ error: "failed to launch editor" });
+  });
+
+  it("accepts a markdown file under docs/ (#0778)", async () => {
+    const root = fixture();
+    const result = await invoke({ file: "docs/guide.md" }, configFor(root));
+
     expect(result.status).toBe(500);
     expect(result.body).toEqual({ error: "failed to launch editor" });
   });

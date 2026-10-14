@@ -9,6 +9,17 @@ import {
   resolveRepoFileTarget,
 } from "../../core/copy-inspector.js";
 import { isTaskFilePath } from "../../core/task.js";
+import type { RepoOSConfig } from "../../core/types.js";
+
+/** Task markdown and repo docs the Context / task drawers may open in an editor (#0636, #0778). */
+function isOpenInEditorPath(config: RepoOSConfig, repoRel: string): boolean {
+  if (isTaskFilePath(config.workDir, repoRel, config.taskExtensions ?? [".md"])) {
+    return true;
+  }
+  const docsDir = (config.docsDir ?? "docs").replace(/\\/g, "/").replace(/\/$/, "");
+  const normalized = repoRel.replace(/\\/g, "/");
+  return normalized.startsWith(`${docsDir}/`) && normalized.endsWith(".md");
+}
 
 /**
  * Copy-inspector API gate (#0509): the managed repo must have RepoOS UI sources
@@ -98,10 +109,7 @@ export const postOpenInEditor: RouteHandler = async (ctx, req, res) => {
   // arbitrary repo file (`.env`, a source file) must be refused here — not just
   // left to the caller (#0636 review). `resolveRepoFileTarget` already
   // realpath-resolves, so a symlink out of the repo is rejected before this.
-  if (
-    !target ||
-    !isTaskFilePath(config.workDir, target.repoRel, config.taskExtensions ?? [".md"])
-  ) {
+  if (!target || !isOpenInEditorPath(config, target.repoRel)) {
     return json(res, 400, { error: "invalid file path" });
   }
 

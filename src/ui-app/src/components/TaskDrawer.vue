@@ -59,6 +59,7 @@ import { checkRunSkipped } from "../../../core/check-skip.js";
 import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
 import {
   needsInputBannerText,
+  needsInputDetailVisible,
   needsInputPrimaryAction,
   needsInputStatusLabel,
   needsInputSuggestionText,
@@ -4654,7 +4655,13 @@ watch(
               <!-- needsInputDetail for dev-error is internal skill-routing
                    metadata — not meaningful to users, so we hide it. -->
               <div
-                v-if="ui.active.needsInputDetail && ui.active.needsInputReason !== 'dev-error'"
+                v-if="
+                  needsInputDetailVisible(
+                    ui.active.needsInputReason,
+                    ui.active.needsInputDetail,
+                    activeNeedsInputQuestions,
+                  )
+                "
                 class="agent-waiting-detail"
               >
                 {{ ui.active.needsInputDetail }}
@@ -5589,26 +5596,28 @@ watch(
                    task is active/review with a branch — a capture needs the
                    worktree's preview, and both edit only the task .md plus the
                    gitignored attachments tree. -->
-              <Button
-                v-if="canManageShots"
-                variant="outline"
-                size="sm"
-                data-test-id="add-shot"
-                :disabled="addShotBusy"
-                @click="openAddShot"
-              >
-                {{ addShotBusy ? "Capturing…" : "Add shot" }}
-              </Button>
-              <Button
-                v-if="ui.active?.status === 'review'"
-                variant="outline"
-                size="sm"
-                data-test-id="refresh-evidence"
-                :disabled="refreshEvidenceBusy"
-                @click="refreshEvidence"
-              >
-                {{ refreshEvidenceBusy ? "Refreshing…" : "Refresh evidence" }}
-              </Button>
+              <div class="changes-summary-actions">
+                <Button
+                  v-if="ui.active?.status === 'review'"
+                  variant="outline"
+                  size="sm"
+                  data-test-id="refresh-evidence"
+                  :disabled="refreshEvidenceBusy"
+                  @click="refreshEvidence"
+                >
+                  {{ refreshEvidenceBusy ? "Refreshing…" : "Refresh evidence" }}
+                </Button>
+                <Button
+                  v-if="canManageShots"
+                  variant="outline"
+                  size="sm"
+                  data-test-id="add-shot"
+                  :disabled="addShotBusy"
+                  @click="openAddShot"
+                >
+                  {{ addShotBusy ? "Capturing…" : "Add shot" }}
+                </Button>
+              </div>
             </div>
             <div v-if="refreshEvidenceError" class="ff-error" role="alert">
               {{ refreshEvidenceError }}

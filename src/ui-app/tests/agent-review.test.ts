@@ -794,6 +794,8 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       );
       const taskFile = readFileSync(task.absPath, "utf8");
       expect(taskFile).toMatch(/^needs_input_reason: review-rounds-exhausted$/m);
+      expect(taskFile).toMatch(/^needs_input_detail:.*needs some work/m);
+      expect(taskFile).not.toMatch(/needs_input_detail:.*Human review needed/);
       expect(taskFile).toMatch(/^status: review$/m);
       // Still parked in review — no further automatic bounce.
       await waitFor(
