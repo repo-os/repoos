@@ -205,11 +205,50 @@ async function detectLoadingState(page: ShotDriverPage): Promise<string> {
   }
 }
 
+/**
+ * Pin the page's light/dark mode before capture (#0782). The app resolves its
+ * theme from `localStorage.repoos.theme` at first paint (`index.html`) and
+ * again when the config store initialises, so writing the same two values the
+ * contrast audit writes — the stored choice plus the resolved `data-theme` —
+ * restyles the mounted app without touching the DOM the shot is about. Like
+ * the highlight this is best-effort; an evaluate-less driver (or a throwing
+ * script) records a miss so a wrong-theme frame is never silent evidence.
+ */
+async function applyShotTheme(
+  page: ShotDriverPage,
+  theme: string,
+  route: string,
+  miss?: (theme: string, route: string) => void,
+): Promise<void> {
+  const evaluatable = page as unknown as { evaluate?: PageEvaluate };
+  const evaluate = evaluatable.evaluate;
+  if (typeof evaluate !== "function") {
+    miss?.(theme, route);
+    return;
+  }
+  const script = `(() => {
+    try { localStorage.setItem("repoos.theme", ${JSON.stringify(theme)}); } catch (e) {}
+    document.documentElement.dataset.theme = ${JSON.stringify(theme)};
+  })()`;
+  try {
+    await evaluate.call(page, script, "");
+  } catch {
+    miss?.(theme, route);
+  }
+}
+
 export interface ShotCaptureMissHandlers {
   onHighlightMiss?: (selector: string, route: string) => void;
   onSelectorMiss?: (selector: string, route: string) => void;
   /** Step selector timeouts become warnings instead of aborting capture (#0743). */
   onStepMiss?: (message: string, route: string) => void;
+  /**
+   * #0782: a declared `theme` could not be applied (the driver has no
+   * `evaluate`, or the script threw), so the capture would show the WRONG
+   * theme — recorded like a highlight miss instead of silently standing in
+   * as light/dark evidence.
+   */
+  onThemeMiss?: (theme: string, route: string) => void;
   /**
    * #0755: after the steps and settle, the page still shows a loading state
    * (a visible `aria-busy` region, or "Loading changes…" text). A capture of a
@@ -275,11 +314,13 @@ async function runStep(
 export async function captureShotPage(
   page: ShotDriverPage,
   url: string,
-  entry: { route: string } & Pick<CaptureEntry, "selector" | "steps" | "highlight" | "highlights">,
+  entry: {
+    route: string;
+  } & Pick<CaptureEntry, "selector" | "steps" | "highlight" | "highlights" | "theme">,
   options: ShotCaptureOptions,
   misses: ShotCaptureMissHandlers = {},
 ): Promise<Buffer> {
-  const { onHighlightMiss, onSelectorMiss, onStepMiss, onLoadingState } = misses;
+  const { onHighlightMiss, onSelectorMiss, onStepMiss, onLoadingState, onThemeMiss } = misses;
   await page.goto(url, { waitUntil: "load", timeout: SHOT_NAV_TIMEOUT_MS });
   try {
     await page.waitForLoadState("networkidle", { timeout: 10_000 });
@@ -296,6 +337,10 @@ export async function captureShotPage(
     const loading = await detectLoadingState(page);
     if (loading) onLoadingState(`loading state detected: ${loading}`, entry.route);
   }
+  // #0782: a declared light/dark capture pins the theme on the mounted page,
+  // after steps (they are theme-agnostic) and before the frame is composed, so
+  // the screenshot — and the assertion checks below — see the requested theme.
+  if (entry.theme) await applyShotTheme(page, entry.theme, entry.route, onThemeMiss);
   // Merged duplicate declarations carry each selector separately: apply and
   // miss-check them one by one, since a comma-joined list "matches" as soon as
   // any member does (#0613).

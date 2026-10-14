@@ -2253,6 +2253,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         ctx.reportedStages,
         resolvePipelineCheckPlan(ctx.config),
         ctx.reportedStageAt,
+        ctx.reportedDetail ?? {},
       ),
     });
 
@@ -3288,6 +3289,7 @@ export const getIntegrationPipeline: RouteHandler = (ctx, _req, res) => {
       ctx.reportedStages,
       resolvePipelineCheckPlan(ctx.config),
       ctx.reportedStageAt,
+      ctx.reportedDetail ?? {},
     ),
   });
 };
@@ -3325,6 +3327,7 @@ export const refreshInstallAndRetryIntegration: RouteHandler = async (ctx, _req,
       ctx.reportedStages,
       resolvePipelineCheckPlan(ctx.config),
       ctx.reportedStageAt,
+      ctx.reportedDetail ?? {},
     ),
   });
   ctx.triggerJobProcessing();
@@ -3367,6 +3370,7 @@ export const retryIntegration: RouteHandler = (ctx, _req, res, params) => {
       ctx.reportedStages,
       resolvePipelineCheckPlan(ctx.config),
       ctx.reportedStageAt,
+      ctx.reportedDetail ?? {},
     ),
   });
   ctx.triggerJobProcessing();
@@ -3454,6 +3458,7 @@ export const cancelDone: RouteHandler = (ctx, _req, res, params) => {
       ctx.reportedStages,
       resolvePipelineCheckPlan(ctx.config),
       ctx.reportedStageAt,
+      ctx.reportedDetail ?? {},
     ),
   });
   return json(res, 200, { ok: true });
