@@ -111,9 +111,7 @@ function devFailurePrompt(target: DevTargetView, output: string): string {
     `Command: ${target.command}`,
     `Recorded reason: ${target.error ?? "(none)"}`,
     ...(f ? [`Detected: ${f.what} ${f.cause} ${f.fix}`] : []),
-    ...(f?.holder
-      ? [`Port holder: pid ${f.holder.pid} — ${f.holder.command}`]
-      : []),
+    ...(f?.holder ? [`Port holder: pid ${f.holder.pid} — ${f.holder.command}`] : []),
     "",
     "Output (newest last, secrets redacted):",
     output,
@@ -148,7 +146,9 @@ export const explainDevFailure: RouteHandler = async (ctx, _req, res, params) =>
   const agent = debuggerAgent({
     cli: typeof override.cli === "string" && override.cli.trim() ? override.cli.trim() : undefined,
     model:
-      typeof override.model === "string" && override.model.trim() ? override.model.trim() : undefined,
+      typeof override.model === "string" && override.model.trim()
+        ? override.model.trim()
+        : undefined,
   });
   const result = await runPrompt(agent, devFailurePrompt(target, output), {
     cwd: ctx.config.root,

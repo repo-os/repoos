@@ -16,7 +16,10 @@ import {
 } from "../../core/dev-failure";
 import { DevTargetManager, devPidOwner } from "../../server/dev";
 
-function baseConfig(dev?: RepoOSConfig["dev"], root = "/tmp/repoos-dev-failure-unit"): RepoOSConfig {
+function baseConfig(
+  dev?: RepoOSConfig["dev"],
+  root = "/tmp/repoos-dev-failure-unit",
+): RepoOSConfig {
   return {
     root,
     workDir: "work",
@@ -37,9 +40,9 @@ function target(over: Partial<DevTargetConfig>): DevTargetConfig {
 describe("port-conflict detection (#0775)", () => {
   it("reads the port from the common server messages", () => {
     // Node's `listen` error.
-    expect(
-      detectPortConflict(["Error: listen EADDRINUSE: address already in use :::5173"]),
-    ).toBe(5173);
+    expect(detectPortConflict(["Error: listen EADDRINUSE: address already in use :::5173"])).toBe(
+      5173,
+    );
     // Vite with --strictPort.
     expect(detectPortConflict(["Error: Port 5173 is already in use"])).toBe(5173);
     expect(detectPortConflict(["Port 8080 is in use, trying another one..."])).toBe(8080);
