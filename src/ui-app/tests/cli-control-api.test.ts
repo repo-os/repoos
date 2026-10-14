@@ -348,9 +348,14 @@ describe("control API CLI", () => {
       detail: "ui verification failed (1 issue(s)): boom",
       issues: [{ message: "boom" }],
     });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const code = await cmdVerify(["0766"]);
     expect(code).toBe(1);
     expect(requestOk).toHaveBeenCalledWith("POST", "/api/tasks/0766/verify", {});
+    const lines = log.mock.calls.map((c) => String(c[0]));
+    expect(lines.some((l) => l.includes("verification issues"))).toBe(true);
+    expect(lines.some((l) => l.includes("evidence refreshed"))).toBe(false);
+    log.mockRestore();
     health.mockRestore();
     requestOk.mockRestore();
   });

@@ -258,10 +258,19 @@ export async function cmdVerify(args: string[]): Promise<number> {
     const result = await api.requestOk("POST", `/api/tasks/${id}/verify`, {});
     if (opts.json) printJson(result);
     else {
-      console.log(
-        c.green("  ✓ ") +
-          c.dim(`evidence refreshed for #${id} at ${result.headIdentity ?? "unknown HEAD"}`),
-      );
+      if (result.ok === false) {
+        console.log(
+          c.yellow("  ! ") +
+            c.dim(
+              `evidence refresh for #${id} finished with verification issues at ${result.headIdentity ?? "unknown HEAD"}`,
+            ),
+        );
+      } else {
+        console.log(
+          c.green("  ✓ ") +
+            c.dim(`evidence refreshed for #${id} at ${result.headIdentity ?? "unknown HEAD"}`),
+        );
+      }
       if (result.detail) console.log(`  ${result.detail}`);
       for (const line of Array.isArray(result.restored) ? result.restored : []) {
         console.log(c.yellow(`  · ${line}`));
