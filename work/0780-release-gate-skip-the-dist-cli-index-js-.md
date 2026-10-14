@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/release-gate-skip-the-dist-cli-index-js-
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-14T08:20:29Z"
-updated_at: "2026-10-14T08:42:40Z"
+updated_at: "2026-10-14T08:42:41Z"
 ---
 ## Problem
 Publishing a release from the Releases page fails for a project that has no CLI. Divot (a Swift app, no package bin) hit this when cutting v0.1.0:
@@ -46,3 +46,4 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 - 2026-10-14T08:31:17Z · body
 - 2026-10-14T08:32:10Z · body
 - 2026-10-14T08:42:40Z · status active→review
+- 2026-10-14T08:42:41Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
