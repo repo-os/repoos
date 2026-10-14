@@ -8,8 +8,9 @@ area: [web, server]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-14T08:01:16Z"
-updated_at: "2026-10-14T08:01:44Z"
+updated_at: "2026-10-14T08:02:52Z"
 ---
 ## Problem
 
@@ -48,3 +49,4 @@ Now that I use repoos on multiple projects I need an easy way to copy important 
 
 - 2026-10-14T08:01:16Z · created · hello@repoos.org
 - 2026-10-14T08:01:44Z · status draft→inbox, title, area, body
+- 2026-10-14T08:02:52Z · model_override
