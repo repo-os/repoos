@@ -2,7 +2,7 @@
 id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server, cli, ui]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/refresh-evidence-on-demand-button-cli-an
 review_cli_override: opencode
 review_model_override: opencode-go/hy3
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-14T04:26:23Z"
+updated_at: "2026-10-14T04:27:04Z"
 review_passes: 24
 close_out_repair_count: 1
 review_rounds: 2
@@ -268,3 +268,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-14T04:26:00Z · review_model_override
 - 2026-10-14T04:26:20Z · cli_override, model_override
 - 2026-10-14T04:26:23Z · model_override
+- 2026-10-14T04:27:04Z · status review→active
