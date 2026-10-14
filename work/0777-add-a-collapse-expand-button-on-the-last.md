@@ -2,7 +2,7 @@
 id: "0777"
 title: Add a collapse/expand control to Last output
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/add-a-collapse-expand-control-to-last-ou
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-14T07:13:06Z"
-updated_at: "2026-10-14T09:03:58Z"
+updated_at: "2026-10-14T09:13:00Z"
 ---
 ## Problem
 
@@ -55,9 +55,9 @@ Add a collapse/expand button on the "Last output" section (on the right side, to
 "route": "/dev?shotState=dev:failed",
 "highlight": ".dev-log-head",
 "steps": [
-  {
-    "click": ".dev-log-toggle"
-  }
+{
+  "click": ".dev-log-toggle"
+}
 ]
 }
 ]
@@ -79,3 +79,4 @@ Add a collapse/expand button on the "Last output" section (on the right side, to
 - 2026-10-14T08:31:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-14T09:02:50Z · body: section Shots
 - 2026-10-14T09:03:58Z · body
+- 2026-10-14T09:13:00Z · status active→review
