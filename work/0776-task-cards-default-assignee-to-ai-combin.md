@@ -2,14 +2,14 @@
 id: "0776"
 title: "Task cards: default assignee to AI, combined area chip, compact file-change chip"
 type: feature
-status: active
+status: review
 priority: p1
 area: [ui, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-cards-default-assignee-to-ai-combin
 created_at: "2026-10-14T06:06:09Z"
-updated_at: "2026-10-14T06:52:33Z"
+updated_at: "2026-10-14T07:02:06Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -78,3 +78,4 @@ Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core
 - 2026-10-14T06:50:05Z · body: section Shots
 - 2026-10-14T06:51:07Z · body
 - 2026-10-14T06:52:33Z · body
+- 2026-10-14T07:02:06Z · status active→review
