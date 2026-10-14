@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 89683
-last_close_out_gate_at: "2026-10-14T11:13:04.334Z"
 id: "0781"
 title: "Easter eggs bundle: macOS Hub links with target=_blank to https sites do nothing"
 type: bug
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: f41582df7ce3ced0b56ea5a283375c81eb0da495
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-macos-hub-links-with-
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-14T09:07:37Z"
-updated_at: "2026-10-14T11:13:04Z"
+updated_at: "2026-10-14T11:13:09Z"
+last_close_out_gate_ms: 89683
+last_close_out_gate_at: "2026-10-14T11:13:04.334Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-14T09:33:45.789Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 ---
@@ -51,4 +52,4 @@ Start from ServerNavigationPolicy.decide() and the 0d18a91c2 fix ('open loopback
 - 2026-10-14T10:59:31Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-14T10:59:59Z · note: review pass 1: good to go
 - 2026-10-14T11:13:04Z · close-out gate completed in 90s
-
+- 2026-10-14T11:13:09Z · status review→done, release:success
