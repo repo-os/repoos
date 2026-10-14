@@ -107,10 +107,12 @@ import { computeTaskShotContext } from "../shot-context.js";
 import {
   appendDeclaredShot,
   declaredShotMatchesShot,
+  declaredShotMatchesShotRaw,
   parseShotEntry,
   removeDeclaredShots,
   resolveDeclaredTarget,
   sameDeclaredShot,
+  sameDeclaredShotRaw,
 } from "../../core/shot-plan.js";
 import { resolveShotTargets } from "../../core/shot-targets.js";
 import { captureDeclaredShot } from "../shot-capture.js";
@@ -1649,6 +1651,9 @@ export const deleteTaskShot: RouteHandler = async (ctx, _req, res, params) => {
     found.declared
       ? (declared) => sameDeclaredShot(declared, found.declared!)
       : (declared) => declaredShotMatchesShot(declared, found),
+    found.declared
+      ? (raw) => sameDeclaredShotRaw(raw, found.declared!)
+      : (raw) => declaredShotMatchesShotRaw(raw, found),
   );
   // Declaration first, image second (review round 5). If the task file cannot
   // be read or written, nothing has been deleted and the caller gets a real

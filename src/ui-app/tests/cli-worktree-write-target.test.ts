@@ -120,6 +120,28 @@ describe("board-write commands resolve to the main checkout, not cwd (#0202)", (
     }
   });
 
+  it("cmdUpdate --shots '[]' clears the Shots section (#0778)", async () => {
+    const { root, taskPath, clean } = makeRepoWithTask();
+    try {
+      await withCwd(root, () => {
+        cmdUpdate([
+          "0001",
+          "--shots",
+          '[{"target":"default","route":"/","label":"One"}]',
+        ]);
+      });
+      expect(readFileSync(taskPath, "utf8")).toContain('"label": "One"');
+      await withCwd(root, () => {
+        cmdUpdate(["0001", "--shots", "[]"]);
+      });
+      const body = readFileSync(taskPath, "utf8");
+      expect(body).toContain("## Shots\n```json\n[]");
+      expect(parseShotPlan(body)).toEqual({ shots: [], errors: [] });
+    } finally {
+      clean();
+    }
+  });
+
   it("cmdUpdate --shots validates JSON and writes a fenced declaration", async () => {
     const { root, taskPath, clean } = makeRepoWithTask();
     try {

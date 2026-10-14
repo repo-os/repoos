@@ -121,6 +121,21 @@ describe("removeDeclaredShots", () => {
     expect(removed).toBe(0);
     expect(content).toBe("");
   });
+
+  it("removes a valid entry while another entry fails validation (#0778)", () => {
+    const mixed = `## Shots\n\n${FENCED(
+      JSON.stringify([
+        { target: "default", route: "/", label: "Board", state: "board:notARealFixture" },
+        { target: "default", route: "/agents", label: "Agents" },
+      ]),
+    )}`;
+    const { content, removed, errors } = removeDeclaredShots(mixed, (s) => s.label === "Agents");
+    expect(errors).toEqual([]);
+    expect(removed).toBe(1);
+    const parsed = JSON.parse(content!.match(/```json\n([\s\S]*?)\n```/)![1]!) as unknown[];
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0]).toMatchObject({ state: "board:notARealFixture" });
+  });
 });
 
 describe("declaredShotMatchesShot", () => {

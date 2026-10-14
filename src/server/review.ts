@@ -1668,11 +1668,15 @@ export class ReviewManager {
         needsInputClearsOnSuccessfulReview(current) ||
         current.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON
       ) {
+        const verdictDetail = reviewVerdictSection(report.markdown)
+          ?.split(/\r?\n/)
+          .find((line) => line.trim())
+          ?.trim();
         try {
           patchTaskFile(this.config, task.absPath, {
             needsInput: true,
             needsInputReason: "review-rounds-exhausted",
-            needsInputDetail: note,
+            needsInputDetail: verdictDetail,
           });
         } catch (err) {
           console.error(
