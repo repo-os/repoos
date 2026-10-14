@@ -130,18 +130,6 @@ export function isStaleEvidenceOnlyReview(report: string, verdict: string | null
   );
 }
 
-/** Automatic evidence recovery is opt-in and requires an explicit stale-only reviewer marker. */
-export function shouldAutoRefreshStaleEvidence(
-  config: RepoOSConfig,
-  report: string,
-  verdict: string | null,
-): boolean {
-  return (
-    config.uiVerification?.autoRefreshStaleOnce === true &&
-    isStaleEvidenceOnlyReview(report, verdict)
-  );
-}
-
 /**
  * Ceiling on one review run. Generous compared to the 3-minute one-shot
  * default: a reviewer reads a whole diff and may run the test suite, and a
@@ -1206,14 +1194,24 @@ export class ReviewManager {
     }
 
     // Auto-bounce if review is ok and verdict is not "good to go"
-    // Fire-and-forget (don't await) so the review completion isn't delayed
+    // Fire-and-forget (don't await) so the review completion isn't delayed.
+    //
+    // A stale-only failure is the one exception (#0766): the change itself is
+    // fine — only the handoff evidence is old — so bouncing the engineer would
+    // burn a paid turn on nothing. It stays in review, and the human refreshes
+    // the evidence with the "Refresh evidence" action (TaskCard.vue, shown on
+    // review) and re-reviews. `autoBounce` is the only path here that moves the
+    // task out of review, so skipping it leaves the status untouched. Every
+    // other non-good verdict still bounces exactly as before.
     if (state === "ok" && verdict) {
       if (verdict !== "good to go") {
-        this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
-          console.error(
-            `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
-          );
-        });
+        if (!isStaleEvidenceOnlyReview(reportText, verdict)) {
+          this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
+            console.error(
+              `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
+            );
+          });
+        }
       } else {
         void this.onCleanReviewVerdict?.(task, report);
       }

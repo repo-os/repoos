@@ -1615,8 +1615,6 @@ export interface UiVerificationConfig {
   enabled?: boolean;
   /** Viewport widths (px) to check `scrollWidth > innerWidth` on each captured route. */
   viewportWidths?: number[];
-  /** Once per reviewed HEAD, refresh stale-only evidence failures and re-run review. */
-  autoRefreshStaleOnce?: boolean;
 }
 
 /**
