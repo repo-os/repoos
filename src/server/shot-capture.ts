@@ -19,7 +19,7 @@
  * resolved target, and `core/shot-page.ts` provides the page choreography both
  * paths share.
  */
-import { shotCapturePageUrl, readBranchFixtureValidator } from "../core/shot-fixtures.js";
+import { shotCapturePageUrl } from "../core/shot-fixtures.js";
 import { basename, extname, join } from "node:path";
 import { rmSync, readFileSync, existsSync } from "node:fs";
 import {
@@ -27,6 +27,7 @@ import {
   parseShotPlan,
   provenanceCaption,
   shotPlanFingerprint,
+  taskFixtureValidator,
   type CaptureEntry,
   type DeclaredShot,
 } from "../core/shot-plan.js";
@@ -234,14 +235,17 @@ export function planAutoCapture(
   }
   const context = computeTaskShotContext(config, task);
   // Read fixtures from the task branch if available (#0786).
-  const worktreeDir = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
-  const fixtureValidator = readBranchFixtureValidator((path: string) => {
-    try {
-      return existsSync(path) ? readFileSync(path, "utf8") : null;
-    } catch {
-      return null;
-    }
-  }, worktreeDir);
+  const fixtureValidator = taskFixtureValidator(
+    (path: string) => {
+      try {
+        return existsSync(path) ? readFileSync(path, "utf8") : null;
+      } catch {
+        return null;
+      }
+    },
+    config,
+    task,
+  );
   const declared = parseShotPlan(task.body, fixtureValidator ? { fixtureValidator } : undefined);
   // #0603 review round 2: declared shots resolve targets the way `repoos shot`
   // does — changed paths, then the task's area, then the default command — so
