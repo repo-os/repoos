@@ -2,14 +2,14 @@
 id: "0774"
 title: Show process start time beside running chip
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/show-process-start-time-beside-running-c
 created_at: "2026-10-14T04:19:10Z"
-updated_at: "2026-10-14T04:22:37Z"
+updated_at: "2026-10-14T04:22:41Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Let's show the time when a process started running (and human readable like 17 h
 - 2026-10-14T04:19:17Z · screenshots
 - 2026-10-14T04:19:35Z · status draft→inbox, title, area, body
 - 2026-10-14T04:22:37Z · status inbox→ready
+- 2026-10-14T04:22:41Z · status ready→active, branch
