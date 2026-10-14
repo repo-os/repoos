@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-upload-report-progress-so-slow
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-14T10:35:08Z"
-updated_at: "2026-10-14T13:01:12Z"
+updated_at: "2026-10-14T13:01:13Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -88,3 +88,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T12:44:18Z · body: section Shots
 - 2026-10-14T13:01:12Z · body: section Shots
 - 2026-10-14T13:01:12Z · note: shot removed: auto: matched src/ui-app/**
+- 2026-10-14T13:01:13Z · note: shot removed: Board card showing bundle upload progress (light theme)
