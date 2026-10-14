@@ -519,16 +519,13 @@ function shotsSectionContent(
   let fixtureValidator: ((id: string) => boolean) | undefined;
   if (task && root) {
     const worktreeDir = task.branch ? worktreePathForBranch(root, task.branch) : null;
-    fixtureValidator = readBranchFixtureValidator(
-      (path: string) => {
-        try {
-          return existsSync(path) ? readFileSync(path, "utf8") : null;
-        } catch {
-          return null;
-        }
-      },
-      worktreeDir,
-    );
+    fixtureValidator = readBranchFixtureValidator((path: string) => {
+      try {
+        return existsSync(path) ? readFileSync(path, "utf8") : null;
+      } catch {
+        return null;
+      }
+    }, worktreeDir);
   }
   const parsed = parseShotPlan(body, fixtureValidator ? { fixtureValidator } : undefined);
   if (parsed.errors.length) {

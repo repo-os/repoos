@@ -235,16 +235,13 @@ export function planAutoCapture(
   const context = computeTaskShotContext(config, task);
   // Read fixtures from the task branch if available (#0786).
   const worktreeDir = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
-  const fixtureValidator = readBranchFixtureValidator(
-    (path: string) => {
-      try {
-        return existsSync(path) ? readFileSync(path, "utf8") : null;
-      } catch {
-        return null;
-      }
-    },
-    worktreeDir,
-  );
+  const fixtureValidator = readBranchFixtureValidator((path: string) => {
+    try {
+      return existsSync(path) ? readFileSync(path, "utf8") : null;
+    } catch {
+      return null;
+    }
+  }, worktreeDir);
   const declared = parseShotPlan(task.body, fixtureValidator ? { fixtureValidator } : undefined);
   // #0603 review round 2: declared shots resolve targets the way `repoos shot`
   // does — changed paths, then the task's area, then the default command — so
