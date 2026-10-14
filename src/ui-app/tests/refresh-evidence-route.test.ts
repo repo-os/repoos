@@ -7,7 +7,9 @@ import {
   refreshTaskEvidence,
   guardedForceRefreshCapture,
   postCaptureWorktreeGuard,
+  taskAction,
 } from "../../server/routes/tasks.js";
+import type { IncomingMessage } from "node:http";
 import * as git from "../../core/git.js";
 import { localShotStore } from "../../server/shots.js";
 import * as uiHandoffGate from "../../server/ui-handoff-gate.js";
@@ -158,6 +160,47 @@ describe("POST /api/tasks/:id/verify guards", () => {
     });
     expect(rootLock.acquire).toHaveBeenCalledWith(task.id, "close-out");
     expect(rootLock.release).toHaveBeenCalledWith(task.id);
+  });
+
+  it("refuses engineer start while evidence refresh is in progress", async () => {
+    const root = gitRoot();
+    const branch = execSync(`git -C ${root} branch --show-current`, { encoding: "utf8" }).trim();
+    writeFileSync(
+      join(root, "work/0766.md"),
+      `---\nid: "0766"\ntitle: test\nstatus: ready\nbranch: ${branch}\n---\n`,
+    );
+    const task = makeTask(root, "ready");
+    expect(tryBeginEvidenceRefresh(task.id)).toBe(true);
+    const res = response();
+    await taskAction(
+      context(task, root, {
+        config: {
+          root,
+          workDir: "work",
+          cacheDir: ".repoos",
+          defaultStatus: "inbox",
+          defaultAssignee: "unassigned",
+          agents: [{ name: "engineer", cli: "fake", model: "m", enabled: true }],
+        },
+        index: {
+          getTask: () => task,
+          getTasks: () => [task],
+          applyFileChange: vi.fn(),
+          refreshBranches: vi.fn(),
+        },
+        runner: { isRunning: () => false, start: vi.fn(() => ({ ok: true })) },
+        jobCoordinator: { getJob: () => null, enqueue: vi.fn(), allJobs: () => [] },
+        syncTaskBranch: async () => ({ ok: true, conflicts: [] }),
+        startUnifiedHandoff: () => ({ started: false }),
+        onServerStatusChange: vi.fn(),
+      }),
+      { headers: {} } as IncomingMessage,
+      res as never,
+      { param1: task.id, param2: "start" },
+    );
+    const { status, body } = res.result() as { status: number; body: { error?: string } };
+    expect(status).toBe(409);
+    expect(body.error).toContain("Evidence refresh is in progress");
   });
 
   it("refuses review while evidence refresh holds the in-process lock", () => {

@@ -100,6 +100,7 @@ import {
 import { localShotStore } from "../shots.js";
 import {
   endEvidenceRefresh,
+  isEvidenceRefreshActive,
   tryBeginEvidenceRefresh,
   withEvidenceRefreshLock,
 } from "../evidence-refresh-lock.js";
@@ -1870,6 +1871,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: `Task #${id} is archived — unarchive it before starting work`,
       });
     }
+    if (isEvidenceRefreshActive(id)) {
+      return json(res, 409, {
+        error: `Evidence refresh is in progress for #${id}; wait for it to finish before starting the engineer`,
+      });
+    }
     const body = (await readBody(req)) as {
       mode?: unknown;
       instruction?: unknown;
@@ -2380,6 +2386,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // #0679: a follow-up message while in `review` must land on an `active`
     // task so the engineer can commit fixes and hand off again.
     if (existing.status === "review") {
+      if (isEvidenceRefreshActive(id)) {
+        return json(res, 409, {
+          error: `Evidence refresh is in progress for #${id}; wait for it to finish before starting the engineer`,
+        });
+      }
       if (runner.isRunning(id)) {
         return json(res, 409, {
           error: `Task #${id} has an agent turn in progress — wait for it to finish`,
