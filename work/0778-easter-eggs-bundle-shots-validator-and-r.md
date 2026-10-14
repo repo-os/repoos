@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-14T16:31:22Z"
+review_passes: 5
 id: "0778"
 title: "Easter eggs bundle: Shots validator and review card wording"
 type: bug
@@ -13,8 +15,6 @@ model_override: haiku
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T16:31:21Z"
-review_passes: 4
 review_rounds: 2
 dev_error_count: 4
 ---
@@ -142,3 +142,4 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 - 2026-10-14T15:27:10Z · message_delivered: 2 message(s)
 - 2026-10-14T15:59:21Z · status active→review
 - 2026-10-14T16:31:21Z · note: review pass 1: needs some work
+
