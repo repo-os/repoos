@@ -4,6 +4,9 @@
 node_modules/
 coverage/
 
+# local scratch (diagnostic logs) — never commit
+var/
+
 # user docs site (docs.repoos.org) build cache — .vitepress/dist is covered by dist/
 user-docs/.vitepress/cache/
 # temp bundle Vite writes when loading config.mts; was committed by accident in
