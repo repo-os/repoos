@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-process-start-time-beside-running-c
 created_at: "2026-10-14T04:19:10Z"
-updated_at: "2026-10-14T04:38:12Z"
+updated_at: "2026-10-14T04:38:48Z"
 ---
 ## Problem
 
@@ -44,13 +44,13 @@ Let's show the time when a process started running (and human readable like 17 h
 "highlight": "[data-test-id=\"dev-started\"]",
 "steps": [
 {
-  "click": "article.dev-card:has-text(\"Main UI\") .dev-actions button:first-of-type"
+"click": "article.dev-card:has-text(\"Main UI\") .dev-actions button:first-of-type"
 },
 {
-  "waitMs": 15000
+"waitMs": 15000
 },
 {
-  "waitFor": "[data-test-id=\"dev-started\"]"
+"waitFor": "[data-test-id=\"dev-started\"]"
 }
 ]
 }
@@ -72,3 +72,4 @@ Let's show the time when a process started running (and human readable like 17 h
 - 2026-10-14T04:29:23Z · body: section Shots
 - 2026-10-14T04:30:59Z · body
 - 2026-10-14T04:38:12Z · status active→review
+- 2026-10-14T04:38:48Z · note: review pass 1: good to go
