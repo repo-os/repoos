@@ -1,4 +1,5 @@
 import { computed, ref } from "vue";
+import { AGENT_MODEL_FAVORITES_KEY as FAVORITES_STORAGE_KEY } from "../lib/settings-transfer";
 
 export interface Favorite {
   cli: string;
@@ -6,8 +7,6 @@ export interface Favorite {
   addedAt: number;
   recentlyUsedAt?: number;
 }
-
-const FAVORITES_STORAGE_KEY = "agent-model-favorites";
 
 function loadFavorites(): Favorite[] {
   try {

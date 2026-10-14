@@ -489,6 +489,23 @@ browser UI session never carries it, so the human path always falls through.
 `repoos override --help` prints the allowlist so a driver can choose an allowed
 pair.
 
+## Settings import/export
+
+**Settings → Import/Export** copies settings between projects. Choose which of
+the five transferable groups to include — the Agent+Model allowlist,
+Agent+Model favorites, starred coding agents, starred themes, and remote
+validation — and download them as a `repoos_<repo>_export_<timestamp>.toml`
+file (saved to the browser's default Downloads folder). On the target project,
+drop that file onto the same tab (or choose it) to review what it contains and
+apply it: only the settings present in the file change, everything else stays
+as it is.
+
+The allowlist and remote validation are written into the target's `repoos.toml`
+(the Hetzner provider details transfer too); the favorites and stars are
+browser-local and land in the target browser's storage. Per-host OS, labels
+and concurrency (`[[remoteValidation.tailscaleHosts]]` row attributes) are
+not transferred — only the host list is.
+
 ## UI handoff verification
 
 ```toml
