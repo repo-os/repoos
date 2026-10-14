@@ -25,7 +25,7 @@
  * tests can share it without touching git, a server or Playwright.
  */
 import type { PreviewConfig, ShotConfig } from "./types.js";
-import { SHOT_PREVIEW_FIXTURE_IDS, isShotPreviewFixtureId } from "./shot-fixtures.js";
+import { SHOT_PREVIEW_FIXTURE_IDS, isShotPreviewFixtureId, createFixtureValidator } from "./shot-fixtures.js";
 import { DEFAULT_PREVIEW_TARGET as DEFAULT_FALLBACK_TARGET } from "./shot-targets.js";
 
 /** One ordered step within a declared shot. Exactly one key per object. */
@@ -282,8 +282,9 @@ function parseStep(raw: unknown, where: string): { step?: DeclaredStep; error?: 
 export function parseShotEntry(
   raw: unknown,
   where = "shot",
+  opts?: { fixtureValidator?: (id: string) => boolean },
 ): { shot?: DeclaredShot; error?: string } {
-  return parseShot(raw, where);
+  return parseShot(raw, where, opts);
 }
 
 /** Validate one raw JSON assertion; returns the typed assertion or an error message. */
@@ -339,7 +340,11 @@ function parseAssertion(
 }
 
 /** Validate one raw JSON entry at list index `i`; returns the typed shot or an error message. */
-function parseShot(raw: unknown, where: string): { shot?: DeclaredShot; error?: string } {
+function parseShot(
+  raw: unknown,
+  where: string,
+  opts?: { fixtureValidator?: (id: string) => boolean },
+): { shot?: DeclaredShot; error?: string } {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return { error: `${where}: each entry must be an object` };
   }
@@ -381,7 +386,11 @@ function parseShot(raw: unknown, where: string): { shot?: DeclaredShot; error?: 
     if (typeof r.state !== "string" || !r.state) {
       return { error: `${where}: "state" expects a non-empty fixture name` };
     }
-    if (!isShotPreviewFixtureId(r.state)) {
+    // Check both branch fixtures (if provided) and the server's default list.
+    const isValid =
+      (opts?.fixtureValidator ? opts.fixtureValidator(r.state) : false) ||
+      isShotPreviewFixtureId(r.state);
+    if (!isValid) {
       return {
         error:
           `${where}: unknown "state" fixture "${r.state}" — use one of: ` +
@@ -446,7 +455,10 @@ function parseShot(raw: unknown, where: string): { shot?: DeclaredShot; error?: 
  * parse, so malformed JSON or entries are reported per entry instead of
  * dropping the whole list silently.
  */
-export function parseShotPlan(body: string): ParsedShotPlan {
+export function parseShotPlan(
+  body: string,
+  opts?: { fixtureValidator?: (id: string) => boolean },
+): ParsedShotPlan {
   const section = shotsSection(body ?? "");
   if (section === null) return { shots: [], errors: [] };
   const hasContent = /\S/.test(section);
@@ -468,7 +480,7 @@ export function parseShotPlan(body: string): ParsedShotPlan {
   const shots: DeclaredShot[] = [];
   const errors: string[] = [];
   for (let i = 0; i < items.length; i++) {
-    const parsed = parseShot(items[i], `shot #${i + 1}`);
+    const parsed = parseShot(items[i], `shot #${i + 1}`, opts);
     if (parsed.error) errors.push(parsed.error);
     else if (parsed.shot) shots.push(parsed.shot);
   }

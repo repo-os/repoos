@@ -19,9 +19,9 @@
  * resolved target, and `core/shot-page.ts` provides the page choreography both
  * paths share.
  */
-import { shotCapturePageUrl } from "../core/shot-fixtures.js";
+import { shotCapturePageUrl, extractFixturesFromSource, createFixtureValidator } from "../core/shot-fixtures.js";
 import { basename, extname, join } from "node:path";
-import { rmSync } from "node:fs";
+import { rmSync, readFileSync, existsSync } from "node:fs";
 import {
   buildCapturePlan,
   parseShotPlan,
@@ -233,7 +233,26 @@ export function planAutoCapture(
     };
   }
   const context = computeTaskShotContext(config, task);
-  const declared = parseShotPlan(task.body);
+  // Read fixtures from the task branch if available (#0786).
+  let fixtureValidator: ((id: string) => boolean) | undefined;
+  if (task.branch) {
+    const worktreeDir = worktreePathForBranch(config.root, task.branch);
+    if (worktreeDir) {
+      const fixturesPath = `${worktreeDir}/src/core/shot-fixtures.ts`;
+      if (existsSync(fixturesPath)) {
+        try {
+          const content = readFileSync(fixturesPath, "utf8");
+          const fixtures = extractFixturesFromSource(content);
+          if (fixtures.length > 0) {
+            fixtureValidator = createFixtureValidator(fixtures);
+          }
+        } catch {
+          /* ignore read errors */
+        }
+      }
+    }
+  }
+  const declared = parseShotPlan(task.body, fixtureValidator ? { fixtureValidator } : undefined);
   // #0603 review round 2: declared shots resolve targets the way `repoos shot`
   // does — changed paths, then the task's area, then the default command — so
   // an explicit declaration is honored even when the diff matches no glob.

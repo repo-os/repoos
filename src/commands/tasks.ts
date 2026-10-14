@@ -7,6 +7,7 @@
  * board command (see boardRepoOS()'s own comment for why).
  */
 import { readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { createRepoOS } from "../core/repoos.js";
 import { boardRoot, loadConfig, resolveColumnLabels } from "../core/config.js";
@@ -15,12 +16,13 @@ import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
 import { flagTaskSpecFlagsIfNeeded } from "../server/task-underspecified-flag.js";
 import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
-import { isAncestor } from "../core/git.js";
+import { isAncestor, worktreePathForBranch } from "../core/git.js";
 import {
   declaredShotsSectionContent,
   parseShotPlan,
   validateDeclaredShotTargets,
 } from "../core/shot-plan.js";
+import { extractFixturesFromSource, createFixtureValidator } from "../core/shot-fixtures.js";
 import { deleteTaskFile, PathGuardError, WriteError } from "../server/write.js";
 import { resolveCliCreator } from "../core/record-creator.js";
 import { normalizeSectionHeading, replaceSection } from "../core/task.js";
@@ -506,14 +508,39 @@ function screenshotFlagError(screenshots: string[], caption: string | undefined)
   return null;
 }
 
+/** Read fixture ids from the task's branch, if available (#0786). */
+function readBranchFixtures(root: string, task: Task): string[] | undefined {
+  if (!task.branch) return undefined;
+  const worktreeDir = worktreePathForBranch(root, task.branch);
+  if (!worktreeDir) return undefined;
+  const fixturesPath = `${worktreeDir}/src/core/shot-fixtures.ts`;
+  if (!existsSync(fixturesPath)) return undefined;
+  try {
+    const content = readFileSync(fixturesPath, "utf8");
+    const fixtures = extractFixturesFromSource(content);
+    return fixtures.length > 0 ? fixtures : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Accept raw JSON and write the exact fenced format the capture parser reads. */
 function shotsSectionContent(
   raw: string,
   preview: ReturnType<typeof loadConfig>["preview"],
   shot?: ReturnType<typeof loadConfig>["shot"],
+  task?: Task,
+  root?: string,
 ): string {
   const body = `## Shots\n\n\`\`\`json\n${raw}\n\`\`\``;
-  const parsed = parseShotPlan(body);
+  let fixtureValidator: ((id: string) => boolean) | undefined;
+  if (task && root) {
+    const branchFixtures = readBranchFixtures(root, task);
+    if (branchFixtures) {
+      fixtureValidator = createFixtureValidator(branchFixtures);
+    }
+  }
+  const parsed = parseShotPlan(body, fixtureValidator ? { fixtureValidator } : undefined);
   if (parsed.errors.length) {
     throw new Error(`Invalid --shots JSON: ${parsed.errors.join("; ")}`);
   }
@@ -759,7 +786,13 @@ export function cmdUpdate(args: string[]): void {
     try {
       patch.section = {
         heading: "Shots",
-        content: shotsSectionContent(pendingShots, repoos.config.preview, repoos.config.shot),
+        content: shotsSectionContent(
+          pendingShots,
+          repoos.config.preview,
+          repoos.config.shot,
+          task,
+          repoos.config.root,
+        ),
       };
     } catch (error) {
       console.error(c.red(`  ${(error as Error).message}`));

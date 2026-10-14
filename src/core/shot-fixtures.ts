@@ -35,6 +35,32 @@ export function isShotPreviewFixtureId(value: string): value is ShotPreviewFixtu
   return (SHOT_PREVIEW_FIXTURE_IDS as readonly string[]).includes(value);
 }
 
+/** Extract fixture ids from the source file's SHOT_PREVIEW_FIXTURE_IDS array (#0786). */
+export function extractFixturesFromSource(sourceContent: string): string[] {
+  const match = sourceContent.match(/export\s+const\s+SHOT_PREVIEW_FIXTURE_IDS\s*=\s*\[([\s\S]*?)\]\s+as\s+const/);
+  if (!match) return [];
+  const arrayContent = match[1];
+  const fixtures: string[] = [];
+  const lines = arrayContent.split("\n");
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('"') && trimmed.endsWith('",')) {
+      const id = trimmed.slice(1, -2);
+      fixtures.push(id);
+    } else if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+      const id = trimmed.slice(1, -1);
+      fixtures.push(id);
+    }
+  }
+  return fixtures;
+}
+
+/** Create a validator function for the given fixture ids (#0786). */
+export function createFixtureValidator(fixtureIds: readonly string[]): (value: string) => boolean {
+  const set = new Set(fixtureIds);
+  return (value: string): boolean => set.has(value);
+}
+
 /** Build the full page URL for one capture entry (origin + route + optional fixture query). */
 export function shotCapturePageUrl(
   previewOrigin: string,
