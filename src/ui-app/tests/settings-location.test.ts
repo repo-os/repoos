@@ -122,4 +122,17 @@ describe("resolveSettingLocation", () => {
     ).toEqual({ tab: "advanced", hasUiRow: true });
     expect(isGeneralSchemaFieldKey("dev.targets")).toBe(false);
   });
+
+  // #0775 — the AI dev-failure summary toggle is a hand-rendered control beside
+  // the Dev targets card on Advanced, and must be excluded from General.
+  it("routes the dev failure-summary AI toggle to the Advanced card", () => {
+    expect(
+      resolveSettingLocation(
+        "dev.failureSummary.ai",
+        field({ key: "dev.failureSummary.ai", type: "boolean", tier: "live" }),
+        ctx,
+      ),
+    ).toEqual({ tab: "advanced", hasUiRow: true });
+    expect(isGeneralSchemaFieldKey("dev.failureSummary.ai")).toBe(false);
+  });
 });
