@@ -77,3 +77,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T11:48:11Z · body: section Shots
 - 2026-10-14T11:48:54Z · body
 - 2026-10-14T11:49:33Z · status active→review
+- 2026-10-14T11:49:33Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c5e628250) during finalization (#0734)
