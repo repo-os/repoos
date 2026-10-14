@@ -59,7 +59,7 @@ export const startDevTarget: RouteHandler = async (ctx, _req, res, params) => {
   const name = decodeURIComponent(params.param1);
   const result = await dev.start(name);
   if (!result.ok) return json(res, result.target ? 502 : 404, { error: result.error });
-  return json(res, 200, { ok: true, target: result.target });
+  return json(res, 200, { ok: true, target: (await dev.getDetailed(name)) ?? result.target });
 };
 
 /** POST /api/dev/targets/:name/stop */
@@ -69,7 +69,7 @@ export const stopDevTarget: RouteHandler = async (ctx, _req, res, params) => {
   const name = decodeURIComponent(params.param1);
   const result = await dev.stop(name);
   if (!result.ok) return json(res, 404, { error: result.error });
-  return json(res, 200, { ok: true, target: result.target });
+  return json(res, 200, { ok: true, target: (await dev.getDetailed(name)) ?? result.target });
 };
 
 /** POST /api/dev/targets/:name/restart */
@@ -79,7 +79,7 @@ export const restartDevTarget: RouteHandler = async (ctx, _req, res, params) => 
   const name = decodeURIComponent(params.param1);
   const result = await dev.restart(name);
   if (!result.ok) return json(res, result.target ? 502 : 404, { error: result.error });
-  return json(res, 200, { ok: true, target: result.target });
+  return json(res, 200, { ok: true, target: (await dev.getDetailed(name)) ?? result.target });
 };
 
 /**

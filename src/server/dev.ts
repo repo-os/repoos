@@ -275,25 +275,34 @@ export class DevTargetManager {
   }
 
   /**
-   * The process listening on `port`, with its command line, via `lsof` (with an
-   * `ss` fallback for Linux hosts without it). Never throws; null when nothing
-   * can be resolved.
+   * The process listening on `port`, with its command line. Uses `lsof` where
+   * available (macOS/Linux), an `ss` fallback on Linux, and `netstat` on
+   * Windows. Best-effort: null when no tool can resolve it, in which case the
+   * page still shows the deterministic summary without a PID.
    */
   private async lookupPortHolder(port: number): Promise<{ pid: number; command: string } | null> {
-    let pid = await this.firstPidOnPort(port);
-    if (pid === undefined) pid = await this.firstPidFromSs(port);
+    const pid = await this.firstPidOnPort(port);
     if (pid === undefined) return null;
-    const command = await captureCommand("ps", ["-o", "command=", "-p", String(pid)]);
+    const command = await this.processCommand(pid);
     return { pid, command: command.trim() || `(pid ${pid})` };
   }
 
   private async firstPidOnPort(port: number): Promise<number | undefined> {
+    const fromLsof = await this.firstPidFromLsof(port);
+    if (fromLsof !== undefined) return fromLsof;
+    if (process.platform === "win32") {
+      const out = await captureCommand("netstat", ["-ano", "-p", "tcp"]);
+      return parseNetstatListenerPid(out, port);
+    }
+    return this.firstPidFromSs(port);
+  }
+
+  private async firstPidFromLsof(port: number): Promise<number | undefined> {
     const out = await captureCommand("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"]);
-    const pid = out
+    return out
       .split("\n")
       .map((l) => Number(l.trim()))
       .find((n) => Number.isInteger(n) && n > 0);
-    return pid;
   }
 
   /** Linux fallback when `lsof` is not installed. */
@@ -301,6 +310,16 @@ export class DevTargetManager {
     const out = await captureCommand("ss", ["-ltnpH", `sport = :${port}`]);
     const m = out.match(/pid=(\d+)/);
     return m ? Number(m[1]) : undefined;
+  }
+
+  /** The holder's command line, via `ps` (POSIX) or `tasklist` (Windows). */
+  private async processCommand(pid: number): Promise<string> {
+    if (process.platform === "win32") {
+      const out = await captureCommand("tasklist", ["/FI", `PID eq ${pid}`, "/FO", "CSV", "/NH"]);
+      const m = out.match(/^"([^"]+)"/m);
+      return m ? m[1] : "";
+    }
+    return captureCommand("ps", ["-o", "command=", "-p", String(pid)]);
   }
 
   /**
@@ -827,6 +846,23 @@ export function devPidOwner(
     if (state.pid === pid) return { target: name, stale: !live.has(name) };
   }
   return null;
+}
+
+/**
+ * The PID listening on `port` from Windows `netstat -ano -p tcp` output. Split
+ * out so the Windows fallback path is unit-tested off-Windows (#0775).
+ */
+export function parseNetstatListenerPid(output: string, port: number): number | undefined {
+  for (const line of output.split("\n")) {
+    if (!/\bLISTENING\b/i.test(line)) continue;
+    const cols = line.trim().split(/\s+/);
+    if (cols.length < 4) continue;
+    const local = cols[1] ?? "";
+    if (!local.endsWith(`:${port}`)) continue;
+    const pid = Number(cols[cols.length - 1]);
+    if (Number.isInteger(pid) && pid > 0) return pid;
+  }
+  return undefined;
 }
 
 /** The `{port}` token a dev target's fields may carry (#0751). */
