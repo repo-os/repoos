@@ -14,6 +14,24 @@ type RepoStore = ReturnType<typeof useRepoStore>;
 
 const nowIso = (): string => new Date().toISOString();
 
+/**
+ * The integration snapshot a fixture pinned (#0782), or null when none.
+ *
+ * The live pipeline arrives over SSE (`integration` events) and via
+ * `/api/integration/pipeline` hydration, and REPLACES the whole snapshot —
+ * during a capture that raced the fixture and the card showed the board's
+ * real (idle) pipeline instead of the seeded upload state. The store consults
+ * this pin on every live assignment so a preview fixture keeps its seeded
+ * pipeline for the page's lifetime. Only `applyShotPreviewFixture` writes it,
+ * and that runs solely on preview builds with `?shotState=` (plus tests).
+ */
+let pinnedIntegration: IntegrationPipelineSnapshot | null = null;
+
+/** The fixture-pinned pipeline snapshot, or null when nothing is pinned (#0782). */
+export function shotFixturePinnedIntegration(): IntegrationPipelineSnapshot | null {
+  return pinnedIntegration;
+}
+
 function fixtureTask(over: Partial<Task> = {}): Task {
   return {
     id: SHOT_PREVIEW_FIXTURE_TASK_ID,
@@ -55,7 +73,11 @@ function fixtureTask(over: Partial<Task> = {}): Task {
   };
 }
 
-function activePipeline(taskId: string, at: string = nowIso()): IntegrationPipelineSnapshot {
+function activePipeline(
+  taskId: string,
+  detail: string | null = null,
+  at: string = nowIso(),
+): IntegrationPipelineSnapshot {
   return {
     empty: false,
     active: {
@@ -64,6 +86,7 @@ function activePipeline(taskId: string, at: string = nowIso()): IntegrationPipel
       failed: false,
       startedAt: at,
       lastProgressAt: at,
+      detail,
     },
     queue: [],
     at,
@@ -145,9 +168,21 @@ export function shotFixtureDevTargets(
 
 /** Apply a named fixture to the live board (preview builds only). */
 export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFixtureId): void {
+  // Reset first: a fixture that seeds no pipeline must not leave a previous
+  // pin freezing the live snapshot (#0782).
+  pinnedIntegration = null;
   switch (fixture) {
     case "closeOut:active":
       repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID);
+      pinnedIntegration = repo.integration;
+      break;
+    case "closeOut:uploading":
+      ensureFixtureTask(repo, "review");
+      repo.integration = activePipeline(
+        SHOT_PREVIEW_FIXTURE_TASK_ID,
+        "uploading bundle 27 MB · 45s",
+      );
+      pinnedIntegration = repo.integration;
       break;
     case "closeOut:stalled":
       // A fixed far-past attempt: idle past the stall threshold at any capture
@@ -155,11 +190,13 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       // actions (#0778). The fixture task itself must exist for its card to
       // render at all.
       ensureFixtureTask(repo, "review");
-      repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID, "2026-01-01T00:00:00.000Z");
+      repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID, null, "2026-01-01T00:00:00.000Z");
+      pinnedIntegration = repo.integration;
       break;
     case "card:doneError":
       ensureFixtureTask(repo, "review");
       repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID);
+      pinnedIntegration = repo.integration;
       repo.doneErrors = {
         ...repo.doneErrors,
         [SHOT_PREVIEW_FIXTURE_TASK_ID]: {

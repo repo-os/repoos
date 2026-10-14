@@ -176,7 +176,7 @@ import { wireAttentionNotifications } from "./attention-notify.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
 import { computeSlowRunFlags } from "./attention-feed.js";
-import { buildIntegrationSnapshot } from "./integration-status.js";
+import { applyPipelineDetail, buildIntegrationSnapshot } from "./integration-status.js";
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
 import { clearWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
@@ -1458,6 +1458,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // indicator; recorded here so the live `integration` snapshot is accurate.
   const reportedStages: Record<string, DoneStep> = {};
   const reportedStageAt: Record<string, string> = {};
+  // In-stage progress detail per task id (#0782) — e.g. a slow bundle upload's
+  // size + elapsed time. Set by the orchestrator's upload heartbeat, cleared
+  // whenever a new stage is reported or the job leaves the pipeline.
+  const reportedDetail: Record<string, string> = {};
 
   /** Emit the current integration-pipeline snapshot to every SSE client (0207). */
   const emitIntegration = (): void => {
@@ -1468,6 +1472,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         reportedStages,
         resolvePipelineCheckPlan(config),
         reportedStageAt,
+        reportedDetail,
       ),
     });
   };
@@ -1492,6 +1497,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               const at = new Date().toISOString();
               reportedStages[job.taskId] = step;
               reportedStageAt[job.taskId] = at;
+              // A new stage supersedes any in-stage upload detail (#0782).
+              delete reportedDetail[job.taskId];
               emitEvent({
                 type: "task.progress",
                 id: job.taskId,
@@ -1546,6 +1553,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               detail: reason,
               at: new Date().toISOString(),
             });
+          },
+          (taskId, detail) => {
+            // #0782: the bundle upload is still moving — record the detail so
+            // the card shows it and refresh the stall timer from the same
+            // heartbeat (one SSE emission, no stage churn). A `null` detail
+            // fires when the transfer lands and clears the line, so
+            // "uploading…" never lingers into the remote test run.
+            applyPipelineDetail(reportedDetail, reportedStageAt, taskId, detail);
+            emitIntegration();
           },
         );
         const jobBefore = jobCoordinator.peekNext();
@@ -3597,6 +3613,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         awakeClock: watchdog ? () => watchdog!.awakeClock() : undefined,
         reportedStages,
         reportedStageAt,
+        reportedDetail,
         triggerJobProcessing,
         pendingReview,
         uiDir,

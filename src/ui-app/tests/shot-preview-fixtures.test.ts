@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../core/shot-fixtures.js";
 import {
   applyShotPreviewFixture,
   readShotPreviewFixtureFromLocation,
+  shotFixturePinnedIntegration,
 } from "../src/lib/shot-preview-fixtures";
 import { useRepoStore } from "../src/stores/repo";
 
@@ -31,6 +32,49 @@ describe("shot preview board fixtures (#0743)", () => {
     applyShotPreviewFixture(repo, "card:doneError");
     expect(repo.tasks.some((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
     expect(repo.doneErrors[SHOT_PREVIEW_FIXTURE_TASK_ID]?.step).toBe("check");
+  });
+
+  it("seeds an uploading close-out with visible bundle progress (#0782)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "closeOut:uploading");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "closeOut:uploading seeds the fixture task").toBeTruthy();
+    expect(task!.branch).toBe("");
+    expect(repo.integration?.active?.taskId).toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(repo.integration?.active?.detail).toContain("uploading bundle");
+  });
+
+  it("keeps the seeded pipeline against a live refresh, then unpins (#0782)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "closeOut:uploading");
+    const seeded = shotFixturePinnedIntegration();
+    expect(seeded?.active?.detail).toContain("uploading bundle");
+
+    // The hydration refreshIntegration runs after an SSE gap: without the pin
+    // this real (idle) snapshot replaced the fixture mid-capture, and the card
+    // lost its "uploading bundle" line before the screenshot.
+    const idle = { empty: true, active: null, queue: [], at: new Date().toISOString() };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, pipeline: idle }),
+      })),
+    );
+    await repo.refreshIntegration();
+    expect(repo.integration?.active?.detail).toContain("uploading bundle");
+    expect(repo.integration?.active?.taskId).toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
+
+    // A fixture that seeds no pipeline must clear the pin so the LIVE
+    // snapshot is not frozen for the rest of the page's life.
+    applyShotPreviewFixture(repo, "board:withReviewTask");
+    expect(shotFixturePinnedIntegration()).toBeNull();
+    vi.unstubAllGlobals();
   });
 
   it("seeds a stalled close-out so the card renders Cancel/Retry (#0778)", async () => {
@@ -75,6 +119,7 @@ describe("shot preview board fixtures (#0743)", () => {
       const repo = useRepoStore();
       for (const fixture of [
         "card:doneError",
+        "closeOut:uploading",
         "board:withReviewTask",
         "board:cardChips",
         "closeOut:stalled",

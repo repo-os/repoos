@@ -475,6 +475,11 @@ async function captureEntryWithGate(
         onLoadingState: (message, route) => {
           warnings.push(`${message} on ${route}`);
         },
+        // #0782: a declared theme the driver could not set would make the
+        // light/dark evidence wrong — recorded, never silent.
+        onThemeMiss: (theme, route) => {
+          warnings.push(`theme ${theme} could not be applied on ${route}`);
+        },
       },
     );
     issues.push(...collector.drain());

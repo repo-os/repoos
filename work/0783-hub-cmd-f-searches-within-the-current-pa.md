@@ -1,0 +1,50 @@
+---
+id: "0783"
+title: "Hub: Cmd-F searches within the current page"
+type: feature
+status: done
+priority: p3
+area: web
+merged_commit: b2ecc7fea1496382c0c0446997605283b03b5283
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: feat/hub-cmd-f-searches-within-the-current-pa
+cli_override: cursor
+model_override: composer-2.5
+created_at: "2026-10-14T11:42:22Z"
+updated_at: "2026-10-14T12:04:05Z"
+last_close_out_gate_ms: 68125
+last_close_out_gate_at: "2026-10-14T12:03:52.203Z"
+review_passes: 1
+---
+## Problem
+In the native macOS RepoOS Hub, Cmd-F does nothing. The app defines no Find command, so the key is ignored, and the web pages in the Hub have no find bar. Cmd-K opens the Quick Switcher, which is for jumping between servers and tasks, not for searching text on the page.
+
+## Desired UX
+- Cmd-F in the Hub opens find-in-page for the server page being shown, with next and previous matches and a close control.
+- Cmd-G and Shift-Cmd-G step through matches. Cmd-K stays the Quick Switcher.
+- If no web page is in focus (for example the native sidebar is active), Cmd-F does nothing rather than searching a different page.
+- The browser and PWA versions of the RepoOS UI are NOT changed. In a browser, Cmd-F already opens the browser's own find bar, and the app must not override it. The Hub fix only adds find where the native app has no find UI at all.
+
+## Acceptance criteria
+- Edit > Find menu item with Cmd-F, and Find Next and Find Previous with Cmd-G and Shift-Cmd-G.
+- Find runs in the active server's web view, and the match count is visible.
+- Works on Releases, Dev and Task pages; checked in light and dark appearance.
+- The browser and PWA UI has no keyboard handler added for Cmd-F (a test or review check confirms no preventDefault on Cmd-F in src/ui-app).
+
+## Notes for AI
+Start from macos/RepoOSHub/RepoOSHubApp.swift (the existing CommandMenu('Go') with Quick Switcher on Cmd-K) and the web view in macos/RepoOSHub/ServerWebView.swift. WKWebView supports in-page find on macOS 13 and later; check the deployment target first. Source: user request 2026-10-14.
+
+## Activity
+
+- 2026-10-14T11:42:22Z · created · njachowski@gmail.com
+- 2026-10-14T11:43:06Z · body
+- 2026-10-14T11:45:40Z · cli_override, model_override
+- 2026-10-14T11:45:47Z · status inbox→ready
+- 2026-10-14T11:45:49Z · status ready→active, branch
+- 2026-10-14T11:50:18Z · body
+- 2026-10-14T11:57:24Z · status active→review
+- 2026-10-14T11:57:24Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-14T11:58:09Z · note: review pass 1: good to go
+- 2026-10-14T12:03:52Z · close-out gate completed in 68s
+- 2026-10-14T12:04:05Z · status review→done, release:success
