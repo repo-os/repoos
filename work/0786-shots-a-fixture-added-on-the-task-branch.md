@@ -11,7 +11,7 @@ branch: feat/shots-a-fixture-added-on-the-task-branch
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-14T16:48:07Z"
-updated_at: "2026-10-14T17:07:03Z"
+updated_at: "2026-10-14T17:15:24Z"
 ---
 ## Problem
 When a task adds a new preview fixture (a `state` id in src/core/shot-fixtures.ts) and declares a shot that uses it, RepoOS checks the declaration against the fixture list compiled into the control-plane server and CLI (main's build), not the task branch's. Two things break (seen on #0778, 2026-10-14):
@@ -37,3 +37,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-14T17:06:45Z · cli_override, model_override
 - 2026-10-14T17:06:59Z · status inbox→ready
 - 2026-10-14T17:07:03Z · status ready→active, branch
+- 2026-10-14T17:15:24Z · body
