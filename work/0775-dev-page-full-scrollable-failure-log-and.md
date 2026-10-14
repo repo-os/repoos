@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-page-full-scrollable-failure-log-and
 created_at: "2026-10-14T04:59:42Z"
-updated_at: "2026-10-14T05:06:01Z"
+updated_at: "2026-10-14T05:15:16Z"
 ---
 ## Problem
 When a dev target fails, the Dev page shows only the last 5-6 lines of output. The Landing page (HMR) failure on 2026-10-14 showed only the Node stack trace, and the cause (port 5173 already in use, held by an orphaned vite process from Oct 12 with --strictPort) was not stated anywhere on the page.
@@ -33,3 +33,4 @@ Start from the Dev page view and the dev supervisor (#0747 dev target config and
 - 2026-10-14T04:59:42Z · created · njachowski@gmail.com
 - 2026-10-14T05:05:57Z · status inbox→ready
 - 2026-10-14T05:06:01Z · status ready→active, branch
+- 2026-10-14T05:15:16Z · message_queued at 2026-10-14T05:15:16.926Z
