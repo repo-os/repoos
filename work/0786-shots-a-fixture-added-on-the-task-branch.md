@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-14T18:29:37Z"
-review_passes: 4
 id: "0786"
 title: "Shots: a fixture added on the task branch can't be declared or captured until merge"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/shots-a-fixture-added-on-the-task-branch
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-14T16:48:07Z"
+updated_at: "2026-10-14T18:33:42Z"
+review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -71,4 +71,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-14T18:28:11Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-14T18:29:37Z · note: review pass 4: needs some work
 - 2026-10-14T18:29:37Z · needs_input
-
+- 2026-10-14T18:33:42Z · handoff failed · remote validation failed: test failure: tests/shot-fixtures.test.ts > shot preview fixtures (#0743) > rejects unknown fixture ids at capture URL build time on bee — fix it in the feature branch and re-run the gate
