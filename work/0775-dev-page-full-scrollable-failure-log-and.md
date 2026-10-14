@@ -80,3 +80,4 @@ Auto-picking a free port for a target whose command does NOT use the `{port}` pl
 - 2026-10-14T06:12:58Z · body
 - 2026-10-14T06:18:29Z · body: section Shots
 - 2026-10-14T06:25:06Z · status active→review
+- 2026-10-14T06:25:06Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
