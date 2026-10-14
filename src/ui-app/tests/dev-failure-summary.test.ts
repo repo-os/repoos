@@ -14,7 +14,7 @@ import {
   DEV_LOG_MAX_LINES,
   PORT_IN_USE,
 } from "../../core/dev-failure";
-import { DevTargetManager, devPidOwner } from "../../server/dev";
+import { DevTargetManager, devPidOwner, parseNetstatListenerPid } from "../../server/dev";
 import { getConfigSchema } from "../../core/config";
 
 function baseConfig(
@@ -144,6 +144,21 @@ describe("AI summary setting (#0775)", () => {
   it("is a schema-backed boolean, default off", () => {
     const field = getConfigSchema().find((f) => f.key === "dev.failureSummary.ai");
     expect(field).toMatchObject({ type: "boolean", default: false, tier: "live" });
+  });
+});
+
+describe("Windows port-holder fallback (#0775)", () => {
+  it("reads the listening PID from netstat output", () => {
+    const out = [
+      "  Proto  Local Address          Foreign Address        State           PID",
+      "  TCP    0.0.0.0:5173           0.0.0.0:0              LISTENING       41337",
+      "  TCP    [::]:5173              [::]:0                 LISTENING       41337",
+      "  TCP    0.0.0.0:15173          0.0.0.0:0              LISTENING       99999",
+      "  TCP    0.0.0.0:3000           0.0.0.0:0              ESTABLISHED     1",
+    ].join("\n");
+    expect(parseNetstatListenerPid(out, 5173)).toBe(41337);
+    expect(parseNetstatListenerPid(out, 15173)).toBe(99999);
+    expect(parseNetstatListenerPid(out, 8080)).toBeUndefined();
   });
 });
 

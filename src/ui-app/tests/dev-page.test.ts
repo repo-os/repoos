@@ -385,6 +385,24 @@ describe("DevView failure summary (#0775)", () => {
     expect(body.text()).toContain("line 49");
     expect(wrapper.find(".dev-log-count").text()).toContain("50 lines");
   });
+
+  it("renders the dev:failed capture fixture without calling the API (#0775)", async () => {
+    useRepoStore().health = makeHealth({ isPreviewBuild: true });
+    window.history.replaceState({}, "", "/dev?shotState=dev:failed");
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    try {
+      const wrapper = mountView();
+      await flush();
+      const summary = wrapper.find(".dev-summary");
+      expect(summary.text()).toContain("Port 5173 is already in use");
+      expect(summary.text()).toContain("node /opt/vite --strictPort");
+      expect(wrapper.find(".dev-log-body").text()).toContain("already in use");
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
+  });
 });
 
 describe("DevView actions (#0748)", () => {

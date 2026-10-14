@@ -18,6 +18,10 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Button from "../components/ui/button.vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 import { api, JSON_OPTS } from "../api";
+import {
+  readShotPreviewFixtureFromLocation,
+  shotFixtureDevTargets,
+} from "../lib/shot-preview-fixtures";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { fmtDate, fmtTime, relTime } from "../lib/time";
@@ -110,6 +114,19 @@ function fullLog(log: string[]): string {
 }
 
 async function load(silent = false): Promise<void> {
+  // A capture can pin a failed target via `?shotState=dev:failed` (preview
+  // builds only, #0775), so its shot shows the failure summary and port holder
+  // without needing a genuinely stuck port. Real data is used everywhere else.
+  if (repo.health?.isPreviewBuild) {
+    const fixture = shotFixtureDevTargets(readShotPreviewFixtureFromLocation(window.location));
+    if (fixture) {
+      targets.value = fixture;
+      configErrors.value = [];
+      loadError.value = "";
+      loading.value = false;
+      return;
+    }
+  }
   if (!silent) loading.value = true;
   try {
     const res = await api<DevTargetsResponse>("/api/dev/targets");
