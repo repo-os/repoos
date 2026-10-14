@@ -16,6 +16,7 @@ import { createPinia, setActivePinia } from "pinia";
 import DevView from "../src/views/DevView.vue";
 import { useRepoStore } from "../src/stores/repo";
 import { useConfigStore } from "../src/stores/config";
+import { fmtDate, fmtTime } from "../src/lib/time";
 import { DEV_NAV, NAV, navFor, navFromConfig } from "../src/nav";
 import { flush, json } from "./component-test-helpers";
 import type { DevTargetView, Health } from "../src/types";
@@ -195,6 +196,34 @@ describe("DevView layout and state (#0748)", () => {
     expect(card.find("a.dev-open").exists()).toBe(false);
     expect(card.text()).toContain("running while the process is alive");
     expect(card.find(".dev-log-body").text()).toContain("launched");
+  });
+
+  it("shows how long a running target has been up, with the exact start time on hover (#0774)", async () => {
+    // 17.5h keeps the assertion clear of the hour boundary in `relTime`.
+    const startedAt = new Date(Date.now() - 17.5 * 3_600_000).toISOString();
+    installFetch({
+      targets: [
+        target({ name: "web", kind: "process", status: "running", startedAt }),
+        target({ name: "api", status: "stopped", startedAt, url: "http://localhost:4000" }),
+      ],
+    });
+    const wrapper = mountView();
+    await flush();
+
+    const running = wrapper.findAll(".dev-card")[0];
+    const started = running.find('[data-test-id="dev-started"]');
+    expect(started.exists()).toBe(true);
+    expect(started.text()).toContain("17 hours ago");
+    // Hover/focus tooltip carries the exact start timestamp, formatted the way
+    // the rest of the UI formats date/time.
+    expect(started.attributes("data-tip")).toBe(`${fmtDate(startedAt)} at ${fmtTime(startedAt)}`);
+    // Focusable so keyboard users reach the tooltip too.
+    expect(started.attributes("tabindex")).toBe("0");
+
+    // A stopped target has no running chip, so no elapsed time either.
+    const stopped = wrapper.findAll(".dev-card")[1];
+    expect(stopped.find('[data-test-id="dev-started"]').exists()).toBe(false);
+    expect(stopped.find(".dev-state-pill").text()).toContain("Stopped");
   });
 
   it("shows a failed target's reason and its last output lines", async () => {
