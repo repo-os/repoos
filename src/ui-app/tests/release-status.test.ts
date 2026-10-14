@@ -5,7 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
 import type { RemoteValidator, CheckSummary } from "../../server/remote-validation";
-import { cutNewRelease, expectsOwnCliRepo, getReleaseStatus, type ReleaseCommandRunner } from "../../server/release";
+import {
+  cutNewRelease,
+  expectsOwnCliRepo,
+  getReleaseStatus,
+  type ReleaseCommandRunner,
+} from "../../server/release";
 import {
   collectReleaseCommits,
   findUnpushedReleaseNotes,
@@ -368,7 +373,10 @@ describe("release gate CLI selection (#0780)", () => {
     cfg: RepoOSConfig,
     calls: string[],
     opts: {
-      check?: (command: string, args: string[]) => { code: number | null; stdout: string; stderr: string; error?: Error };
+      check?: (
+        command: string,
+        args: string[],
+      ) => { code: number | null; stdout: string; stderr: string; error?: Error };
       gitOverrides?: Record<string, { code: number | null; stdout: string; stderr: string }>;
     } = {},
   ): ReleaseCommandRunner {
