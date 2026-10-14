@@ -16,7 +16,9 @@ import {
   sameDeclaredShot,
   shotPlanFingerprint,
   validateDeclaredShotTargets,
+  parseShotEntry,
 } from "../../core/shot-plan";
+import { extractFixturesFromSource, createFixtureValidator } from "../../core/shot-fixtures";
 import {
   buildCliShotPlan,
   parseShotArgs,
@@ -1115,5 +1117,73 @@ describe("captureShotPage loading-state detection (#0755)", () => {
       { onLoadingState: (message) => misses.push(message) },
     );
     expect(misses).toEqual([]);
+  });
+});
+
+describe("fixture validation from branch source (#0786)", () => {
+  it("extracts fixture ids from shot-fixtures.ts source", () => {
+    const source = `
+      export const SHOT_PREVIEW_FIXTURE_IDS = [
+        "closeOut:active",
+        "closeOut:stalled",
+        "custom:test",
+      ] as const;
+    `;
+    const fixtures = extractFixturesFromSource(source);
+    expect(fixtures).toContain("closeOut:active");
+    expect(fixtures).toContain("closeOut:stalled");
+    expect(fixtures).toContain("custom:test");
+  });
+
+  it("creates a validator from fixture ids", () => {
+    const fixtures = ["closeOut:active", "custom:new"];
+    const validator = createFixtureValidator(fixtures);
+    expect(validator("closeOut:active")).toBe(true);
+    expect(validator("custom:new")).toBe(true);
+    expect(validator("unknown")).toBe(false);
+  });
+
+  it("accepts a declared shot with a custom fixture from the branch", () => {
+    const validator = createFixtureValidator(["closeOut:active", "custom:branch-only"]);
+    const { shot, error } = parseShotEntry(
+      { route: "/board", state: "custom:branch-only" },
+      "entry",
+      { fixtureValidator: validator },
+    );
+    expect(error).toBeUndefined();
+    expect(shot?.state).toBe("custom:branch-only");
+  });
+
+  it("accepts fixtures from both main and branch lists", () => {
+    const branchValidator = createFixtureValidator(["closeOut:active", "custom:branch-only"]);
+    // closeOut:stalled is in main's list but not in the branch fixture list
+    // It should still be accepted because we check both
+    const { shot, error } = parseShotEntry(
+      { route: "/board", state: "closeOut:stalled" },
+      "entry",
+      { fixtureValidator: branchValidator },
+    );
+    expect(error).toBeUndefined();
+    expect(shot?.state).toBe("closeOut:stalled");
+  });
+
+  it("rejects a fixture unknown to both main and branch", () => {
+    const branchValidator = createFixtureValidator(["closeOut:active"]);
+    const { shot, error } = parseShotEntry(
+      { route: "/board", state: "unknown:fixture" },
+      "entry",
+      { fixtureValidator: branchValidator },
+    );
+    expect(shot).toBeUndefined();
+    expect(error).toContain('unknown "state" fixture "unknown:fixture"');
+  });
+
+  it("accepts fixtures in parseShotPlan with custom validator", () => {
+    const validator = createFixtureValidator(["custom:test"]);
+    const body = `## Shots\n\n\`\`\`json\n{"route": "/", "state": "custom:test"}\n\`\`\``;
+    const { shots, errors } = parseShotPlan(body, { fixtureValidator: validator });
+    expect(errors).toEqual([]);
+    expect(shots).toHaveLength(1);
+    expect(shots[0]?.state).toBe("custom:test");
   });
 });
