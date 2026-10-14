@@ -90,3 +90,4 @@ This repo has no `site/` tree. The marketing site lives in `landing/` and descri
 - 2026-10-14T07:06:18Z · body
 - 2026-10-14T07:07:42Z · status active→review
 - 2026-10-14T07:07:42Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cd1f486fb) during finalization (#0734)
+- 2026-10-14T07:07:42Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cd1f486fb) during finalization (#0734)
