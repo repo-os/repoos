@@ -75,7 +75,7 @@ taskExtensions = [".md"]  # file extensions treated as tasks
 
 # ── Board behavior ───────────────────────────────────────────────────────
 defaultStatus = "inbox"        # draft | inbox | ready | active | review | done
-defaultAssignee = "unassigned" # unassigned | ai | human
+defaultAssignee = "ai"         # unassigned | ai | human
 defaultTaskMode = "freeform"   # freeform | manual
 maxActiveTasks = 3             # 1-20; used when auto-engineering is on
 autoEngineeringMode = false
@@ -296,7 +296,7 @@ anything for you.
 
 ```toml
 defaultStatus = "inbox"
-defaultAssignee = "unassigned"
+defaultAssignee = "ai"
 defaultTaskMode = "freeform"
 maxActiveTasks = 3
 autoEngineeringMode = false
@@ -311,7 +311,7 @@ worktreeWarnThreshold = 20
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `defaultStatus` | select | `inbox` | yes | Status new tasks start in. One of `draft`, `inbox`, `ready`, `active`, `review`, `done`. |
-| `defaultAssignee` | select | `unassigned` | yes | Default assignee for new tasks: `unassigned`, `ai`, or `human`. |
+| `defaultAssignee` | select | `ai` | yes | Default assignee for new tasks: `unassigned`, `ai`, or `human`. Defaults to `ai`, so new tasks are picked up by an agent; existing tasks keep their own assignee. |
 | `defaultTaskMode` | select | `freeform` | yes | New-task flow: `freeform` (the AI writes the task) or `manual` (a form). Any other value falls back to `freeform`. |
 | `maxActiveTasks` | number | `3` | yes | Cap on simultaneously active tasks when `autoEngineeringMode` is on. Must be 1–20. |
 | `autoEngineeringMode` | boolean | `false` | yes | When true, RepoOS **event-driven** dispatch starts ready tasks automatically, up to `maxActiveTasks` (see below). |

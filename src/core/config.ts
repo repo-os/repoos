@@ -188,7 +188,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   storiesDir: "stories",
   taskExtensions: [".md"],
   defaultStatus: "inbox",
-  defaultAssignee: "unassigned",
+  defaultAssignee: "ai",
   cacheDir: ".repoos",
   theme: "system",
   uiTheme: "classic",
