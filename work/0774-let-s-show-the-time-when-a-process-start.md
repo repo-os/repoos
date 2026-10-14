@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-process-start-time-beside-running-c
 created_at: "2026-10-14T04:19:10Z"
-updated_at: "2026-10-14T04:29:23Z"
+updated_at: "2026-10-14T04:30:59Z"
 ---
 ## Problem
 
@@ -34,32 +34,32 @@ Show a human-readable elapsed time, such as “17 hours ago,” next to the runn
 
 Let's show the time when a process started running (and human readable like 17 hours ago -- on hover you can show the full timestamp like Tues 11:18), but it next to the running chip.
 
-## Screenshots
-
-![Screenshot-2026-10-14-at-11.08.38](/api/tasks/0774/attachments/screenshot-1.png)
-
 ## Shots
 ```json
 [
 {
-  "label": "Dev page: elapsed time beside a running target",
-  "target": "default",
-  "route": "/dev",
-  "highlight": "[data-test-id=\"dev-started\"]",
-  "steps": [
-    {
-      "click": "article.dev-card:has-text(\"Main UI\") .dev-actions button:first-of-type"
-    },
-    {
-      "waitMs": 15000
-    },
-    {
-      "waitFor": "[data-test-id=\"dev-started\"]"
-    }
-  ]
+"label": "Dev page: elapsed time beside a running target",
+"target": "default",
+"route": "/dev",
+"highlight": "[data-test-id=\"dev-started\"]",
+"steps": [
+  {
+    "click": "article.dev-card:has-text(\"Main UI\") .dev-actions button:first-of-type"
+  },
+  {
+    "waitMs": 15000
+  },
+  {
+    "waitFor": "[data-test-id=\"dev-started\"]"
+  }
+]
 }
 ]
 ```
+
+## Screenshots
+
+![Screenshot-2026-10-14-at-11.08.38](/api/tasks/0774/attachments/screenshot-1.png)
 
 ## Activity
 
@@ -70,3 +70,4 @@ Let's show the time when a process started running (and human readable like 17 h
 - 2026-10-14T04:22:41Z · status ready→active, branch
 - 2026-10-14T04:26:33Z · body
 - 2026-10-14T04:29:23Z · body: section Shots
+- 2026-10-14T04:30:59Z · body
