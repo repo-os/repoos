@@ -43,15 +43,19 @@ export function extractFixturesFromSource(sourceContent: string): string[] {
   if (!match) return [];
   const arrayContent = match[1];
   const fixtures: string[] = [];
+  // Split by lines and extract quoted strings, skipping comment lines
   const lines = arrayContent.split("\n");
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.startsWith('"') && trimmed.endsWith('",')) {
-      const id = trimmed.slice(1, -2);
-      fixtures.push(id);
-    } else if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
-      const id = trimmed.slice(1, -1);
-      fixtures.push(id);
+    // Skip lines that are comments or empty
+    if (!trimmed || trimmed.startsWith("//")) continue;
+    // Extract all quoted strings from this line
+    const quoteMatches = line.match(/"([^"]+)"/g);
+    if (quoteMatches) {
+      for (const quoteMatch of quoteMatches) {
+        const id = quoteMatch.slice(1, -1); // Remove surrounding quotes
+        fixtures.push(id);
+      }
     }
   }
   return fixtures;
@@ -84,9 +88,7 @@ export function shotCapturePageUrl(
   const path = entry.route.startsWith("/") ? entry.route : `/${entry.route}`;
   const url = new URL(`${origin}${path}`);
   if (entry.state) {
-    if (!isShotPreviewFixtureId(entry.state)) {
-      throw new Error(`unknown shot state fixture "${entry.state}"`);
-    }
+    // State is already validated at parse time, so no validation needed here (#0786)
     url.searchParams.set(SHOT_PREVIEW_FIXTURE_QUERY, entry.state);
   }
   return url.toString();

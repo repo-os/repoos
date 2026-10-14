@@ -1135,6 +1135,27 @@ describe("fixture validation from branch source (#0786)", () => {
     expect(fixtures).toContain("custom:test");
   });
 
+  it("extracts fixtures from single-line array", () => {
+    const source = `export const SHOT_PREVIEW_FIXTURE_IDS = ["closeOut:active", "custom:test"] as const;`;
+    const fixtures = extractFixturesFromSource(source);
+    expect(fixtures).toContain("closeOut:active");
+    expect(fixtures).toContain("custom:test");
+  });
+
+  it("extracts fixtures ignoring comments", () => {
+    const source = `
+      export const SHOT_PREVIEW_FIXTURE_IDS = [
+        "closeOut:active", // some comment
+        // "commented:out",
+        "custom:test",
+      ] as const;
+    `;
+    const fixtures = extractFixturesFromSource(source);
+    expect(fixtures).toContain("closeOut:active");
+    expect(fixtures).toContain("custom:test");
+    expect(fixtures).not.toContain("commented:out");
+  });
+
   it("creates a validator from fixture ids", () => {
     const fixtures = ["closeOut:active", "custom:new"];
     const validator = createFixtureValidator(fixtures);
