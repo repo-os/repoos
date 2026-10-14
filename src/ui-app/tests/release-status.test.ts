@@ -5,7 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
 import type { RemoteValidator, CheckSummary } from "../../server/remote-validation";
-import { cutNewRelease, getReleaseStatus, type ReleaseCommandRunner } from "../../server/release";
+import {
+  cutNewRelease,
+  expectsOwnCliRepo,
+  getReleaseStatus,
+  type ReleaseCommandRunner,
+} from "../../server/release";
 import {
   collectReleaseCommits,
   findUnpushedReleaseNotes,
@@ -140,15 +145,19 @@ describe("git-tag release status", () => {
         "git add -- package.json",
         "git commit -o -m release: v1.2.4 -- package.json",
         "bun run build",
+        "repoos check --profile full",
         "git push origin main",
         "git tag -a v1.2.4 -m Release v1.2.4",
         "git push origin v1.2.4",
       ]),
     );
+    // A no-bin project (this fixture's package.json declares none) gates
+    // through the globally linked repoos, never the project's dist CLI.
+    expect(calls.some((c) => c.includes("dist") && c.includes("check"))).toBe(false);
     // The rebuild must happen before repoos check (whose staleness gate it
     // defuses) and before any ref is pushed.
     expect(calls.indexOf("bun run build")).toBeLessThan(
-      calls.findIndex((c) => c.includes("dist") && c.includes("check")),
+      calls.findIndex((c) => c.startsWith("repoos check")),
     );
     expect(calls.indexOf("bun run build")).toBeLessThan(calls.indexOf("git push origin main"));
   });
@@ -164,7 +173,7 @@ describe("git-tag release status", () => {
       calls.push([command, ...args].join(" "));
       const key = args.join(" ");
       if (command !== "git") {
-        if (key.includes("dist") && key.includes("check")) phase = "dirty";
+        if (args.includes("check")) phase = "dirty";
         return { code: 0, stdout: "check passed", stderr: "" };
       }
       if (key === "commit -m chore: checkpoint bookkeeping/config before release") {
@@ -194,7 +203,7 @@ describe("git-tag release status", () => {
     const runner: ReleaseCommandRunner = async (command, args) => {
       const key = args.join(" ");
       if (command !== "git") {
-        if (key.includes("dist") && key.includes("check")) dirtyAfterCheck = " M src/a.ts\n";
+        if (args.includes("check")) dirtyAfterCheck = " M src/a.ts\n";
         return { code: 0, stdout: "check passed", stderr: "" };
       }
       if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
@@ -236,7 +245,7 @@ describe("git-tag release status", () => {
     const runner: ReleaseCommandRunner = async (command, args, _cwd, _timeout, env) => {
       calls.push([command, ...args].join(" "));
       if (command !== "git") {
-        if (command === process.execPath && args.some((a) => a.endsWith("check"))) {
+        if (args.includes("check")) {
           expect(env?.["REPOOS_SKIP_TESTS"]).toBe("1");
           expect(env?.["REPOOS_REMOTE_VALIDATION_DONE"]).toBe("1");
         }
@@ -266,7 +275,7 @@ describe("git-tag release status", () => {
     let called = false;
     const runner: ReleaseCommandRunner = async (command, args) => {
       if (command !== "git") {
-        if (command === process.execPath && args.some((a) => a.endsWith("check"))) {
+        if (args.includes("check")) {
           expect(args).toContain("--local-tests");
         }
         return { code: 0, stdout: "check passed", stderr: "" };
@@ -329,7 +338,7 @@ describe("git-tag release status", () => {
     const runner: ReleaseCommandRunner = async (command, args, _cwd, _timeout, env) => {
       calls.push([command, ...args].join(" "));
       if (command !== "git") {
-        if (command === process.execPath && args.some((a) => a.endsWith("check"))) {
+        if (args.includes("check")) {
           expect(env?.["REPOOS_SKIP_TESTS"]).toBeUndefined();
           expect(env?.["REPOOS_REMOTE_VALIDATION_DONE"]).toBe("1");
         }
@@ -353,6 +362,226 @@ describe("git-tag release status", () => {
     };
     const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner, undefined, remoteValidator);
     expect(result.ok).toBe(true);
+  });
+});
+
+// ── Release-gate CLI selection + version-bump rollback (#0780) ──
+
+describe("release gate CLI selection (#0780)", () => {
+  /** Runner with git passthrough plus per-test overrides for check/git keys. */
+  function releaseRunner(
+    cfg: RepoOSConfig,
+    calls: string[],
+    opts: {
+      check?: (
+        command: string,
+        args: string[],
+      ) => { code: number | null; stdout: string; stderr: string; error?: Error };
+      gitOverrides?: Record<string, { code: number | null; stdout: string; stderr: string }>;
+    } = {},
+  ): ReleaseCommandRunner {
+    return async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      if (command !== "git") {
+        if (args.includes("check") && opts.check) return opts.check(command, args);
+        return { code: 0, stdout: "check passed", stderr: "" };
+      }
+      const key = args.join(" ");
+      if (opts.gitOverrides?.[key]) return opts.gitOverrides[key];
+      if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
+        return { code: 0, stdout: "", stderr: "" };
+      }
+      return git()("git", args, cfg.root);
+    };
+  }
+
+  function writeManifest(cfg: RepoOSConfig, manifest: Record<string, unknown>): void {
+    writeFileSync(join(cfg.root, "package.json"), JSON.stringify(manifest));
+  }
+
+  it("detects a bin target pointing at dist/cli/index.js", () => {
+    const stringBin = config();
+    writeManifest(stringBin, { version: "1.0.0", bin: "dist/cli/index.js" });
+    expect(expectsOwnCliRepo(stringBin.root)).toBe(true);
+
+    const objectBin = config();
+    writeManifest(objectBin, { version: "1.0.0", bin: { repoos: "./dist/cli/index.js" } });
+    expect(expectsOwnCliRepo(objectBin.root)).toBe(true);
+
+    const noBin = config();
+    expect(expectsOwnCliRepo(noBin.root)).toBe(false);
+
+    const otherBin = config();
+    writeManifest(otherBin, { version: "1.0.0", bin: { app: "dist/app.js" } });
+    expect(expectsOwnCliRepo(otherBin.root)).toBe(false);
+
+    const broken = config();
+    writeManifest(broken, { version: "1.0.0", bin: { app: "dist/app.js" } });
+    writeFileSync(join(broken.root, "package.json"), "{ not json");
+    expect(expectsOwnCliRepo(broken.root)).toBe(false);
+
+    const missing = config();
+    rmSync(join(missing.root, "package.json"));
+    expect(expectsOwnCliRepo(missing.root)).toBe(false);
+  });
+
+  it("releases a no-bin project through the global repoos without requiring dist/cli/index.js", async () => {
+    const cfg = config(); // package.json has no bin — Divot-like
+    const calls: string[] = [];
+    const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", releaseRunner(cfg, calls));
+    expect(result.ok).toBe(true);
+    expect(calls).toContain("repoos check --profile full");
+    expect(existsSync(join(cfg.root, "dist", "cli", "index.js"))).toBe(false);
+    expect(calls.some((c) => c.includes(join("dist", "cli", "index.js")))).toBe(false);
+  });
+
+  it("gates a bin project through its own freshly built CLI", async () => {
+    const cfg = config();
+    writeManifest(cfg, { version: "1.2.3", bin: { repoos: "dist/cli/index.js" } });
+    mkdirSync(join(cfg.root, "dist", "cli"), { recursive: true });
+    writeFileSync(join(cfg.root, "dist", "cli", "index.js"), "// cli\n");
+    const calls: string[] = [];
+    const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", releaseRunner(cfg, calls));
+    expect(result.ok).toBe(true);
+    expect(
+      calls.some(
+        (c) =>
+          c.startsWith(process.execPath) &&
+          c.includes(join("dist", "cli", "index.js")) &&
+          c.includes(" check"),
+      ),
+    ).toBe(true);
+    expect(calls.some((c) => c.startsWith("repoos check"))).toBe(false);
+  });
+
+  it("fails a bin project clearly when its CLI build output is missing", async () => {
+    const cfg = config();
+    writeManifest(cfg, { version: "1.2.3", bin: "dist/cli/index.js" });
+    const calls: string[] = [];
+    const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", releaseRunner(cfg, calls));
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain("dist/cli/index.js is missing");
+    expect(result.output).toContain("package.json bin");
+    // The gate never ran and nothing was pushed — but the bump note explains
+    // where the local commit is.
+    expect(calls.some((c) => c.includes(" check"))).toBe(false);
+    expect(calls).not.toContain("git push origin main");
+    expect(result.output).toContain("nothing was pushed");
+  });
+
+  it("fails a no-bin project clearly when the global repoos CLI is not installed", async () => {
+    const cfg = config();
+    const calls: string[] = [];
+    const result = await cutNewRelease(
+      cfg,
+      "1.2.4",
+      "v1.2.4",
+      releaseRunner(cfg, calls, {
+        check: () => ({
+          code: null,
+          stdout: "",
+          stderr: "",
+          error: new Error("spawn repoos ENOENT"),
+        }),
+      }),
+    );
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain("is repoos on PATH");
+  });
+});
+
+describe("failed-release version-bump handling (#0780)", () => {
+  function releaseRunner(
+    cfg: RepoOSConfig,
+    calls: string[],
+    opts: {
+      check?: () => { code: number | null; stdout: string; stderr: string; error?: Error };
+      gitOverrides?: Record<string, { code: number | null; stdout: string; stderr: string }>;
+    } = {},
+  ): ReleaseCommandRunner {
+    return async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      if (command !== "git") {
+        if (args.includes("check") && opts.check) return opts.check();
+        return { code: 0, stdout: "built", stderr: "" };
+      }
+      const key = args.join(" ");
+      if (opts.gitOverrides?.[key]) return opts.gitOverrides[key];
+      if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
+        return { code: 0, stdout: "", stderr: "" };
+      }
+      return git()("git", args, cfg.root);
+    };
+  }
+
+  const failingCheck = () => ({ code: 1 as const, stdout: "", stderr: "gate red" });
+
+  it("rolls the bump back when a post-bump failure leaves it as HEAD", async () => {
+    const cfg = config();
+    const calls: string[] = [];
+    const result = await cutNewRelease(
+      cfg,
+      "1.2.4",
+      "v1.2.4",
+      releaseRunner(cfg, calls, {
+        check: failingCheck,
+        gitOverrides: {
+          "log -1 --format=%s": { code: 0, stdout: "release: v1.2.4\n", stderr: "" },
+          "reset --soft HEAD~1": { code: 0, stdout: "", stderr: "" },
+          "checkout HEAD -- package.json": { code: 0, stdout: "", stderr: "" },
+        },
+      }),
+    );
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain("gate red");
+    expect(result.output).toContain("rolled back");
+    expect(calls).toContain("git reset --soft HEAD~1");
+    expect(calls).toContain("git checkout HEAD -- package.json");
+    expect(calls).not.toContain("git push origin main");
+  });
+
+  it("keeps the bump with undo instructions when another commit landed on top", async () => {
+    const cfg = config();
+    const calls: string[] = [];
+    const result = await cutNewRelease(
+      cfg,
+      "1.2.4",
+      "v1.2.4",
+      releaseRunner(cfg, calls, {
+        check: failingCheck,
+        gitOverrides: {
+          "log -1 --format=%s": {
+            code: 0,
+            stdout: "chore: checkpoint bookkeeping/config before release\n",
+            stderr: "",
+          },
+        },
+      }),
+    );
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain("nothing was pushed");
+    expect(result.output).toContain("git reset --soft HEAD~1");
+    expect(calls.some((c) => c.startsWith("git reset --soft"))).toBe(false);
+  });
+
+  it("never rewrites history once the bump has been pushed", async () => {
+    const cfg = config();
+    const calls: string[] = [];
+    const result = await cutNewRelease(
+      cfg,
+      "1.2.4",
+      "v1.2.4",
+      releaseRunner(cfg, calls, {
+        gitOverrides: {
+          "tag -a v1.2.4 -m Release v1.2.4": { code: 1, stdout: "", stderr: "tag boom" },
+        },
+      }),
+    );
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain("already pushed");
+    expect(result.output).not.toContain("rolled back");
+    expect(calls.some((c) => c.includes("reset --soft"))).toBe(false);
+    expect(calls).not.toContain("git log -1 --format=%s");
   });
 });
 
