@@ -9,26 +9,31 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T08:21:11Z"
+updated_at: "2026-10-14T08:26:02Z"
 ---
 ## Problem
-Two small bugs found on 2026-10-14. Both are cosmetic or validation-only, so they are bundled.
+Small cosmetic and validation bugs found on 2026-10-14. They are bundled because each is small and independent.
 
 1. Shot can't be deleted when its state is invalid. A task whose ## Shots list contains an unknown state fixture (for example board:cardChips on #0776) fails the Shots validator. The UI then refuses to delete any shot on that task ('the task's ## Shots section is not a valid list — fix it before deleting'), so the bad shot can't be removed.
 2. Duplicate text on the 'Waiting for you' card. src/server/review.ts ~1675 writes the same sentence to needsInputDetail as to the reason, so the card shows it twice.
+3. The Repo Context page has no way to open the open doc in an editor. The task Spec section already has an 'Open in editor ↗' link at the top right of the box; the doc viewer should use the same link and styling.
+4. On the Changes tab, the 'Add shot' and 'Refresh evidence' buttons are not right-aligned. Both should be pulled to the right, with 'Add shot' as the rightmost button.
 
 ## Desired UX
 - Deleting a shot works even when other entries on the task are invalid. Validate only what is being written, and let the user remove the invalid entry.
 - The Waiting-for-you card shows the reason once. The detail carries something different (for example the last review's verdict line), or is hidden when it would repeat the reason.
+- The Repo Context doc viewer has an 'Open in editor ↗' link in the same place and style as the task Spec section.
+- On the Changes tab toolbar, 'Refresh evidence' sits to the right of the section label, with 'Add shot' furthest right.
 
 ## Acceptance criteria
 - Test: deleting a shot on a task with one invalid entry succeeds and removes only the selected entry.
 - Test: the Waiting-for-you card shows the reason once when the detail would repeat it.
 - CLI: repoos update --shots '[]' is rejected ('expected at least one shot'). Either accept an empty list to clear all shots, or document the --section Shots --section-body '' way.
-- Light and dark themes checked on the card.
+- Repo Context doc viewer shows the Open in editor link, matching the task Spec styling, in light and dark themes.
+- Changes tab buttons are right-aligned in that order, checked in light and dark themes.
 
 ## Notes for AI
-Source: user report 2026-10-14 on #0776 (shot delete error) and the Waiting-for-you card. Items are small and independent; commit per item so a reviewer can read them separately.
+Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-you card, the Repo Context doc viewer, and the Changes tab toolbar. Items are small and independent; commit per item so a reviewer can read them separately.
 
 ## Activity
 
@@ -37,3 +42,4 @@ Source: user report 2026-10-14 on #0776 (shot delete error) and the Waiting-for-
 - 2026-10-14T07:43:20Z · body
 - 2026-10-14T08:04:32Z · needs_input
 - 2026-10-14T08:21:11Z · status inbox→ready
+- 2026-10-14T08:26:02Z · body
