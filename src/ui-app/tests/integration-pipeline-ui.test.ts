@@ -64,4 +64,39 @@ describe("integration-pipeline-ui (#0740)", () => {
     const pipeline = snap({}, { lastProgressAt: "2026-10-07T13:00:00.000Z" });
     expect(integrationPipelineStalled(pipeline, now, DEFAULT_INTEGRATION_STALL_MS)).toBe(false);
   });
+
+  it("does not flag a stall when the upload heartbeat is recent, even past 3 minutes (#0782)", () => {
+    // Models #0777: the bundle upload took 228s with no stage change, but
+    // the upload heartbeat kept lastProgressAt fresh every few seconds.
+    const now = Date.parse("2026-10-07T13:05:00.000Z");
+    const pipeline = snap(
+      {},
+      {
+        stage: "check",
+        startedAt: "2026-10-07T13:00:00.000Z",
+        lastProgressAt: "2026-10-07T13:04:58.000Z",
+        detail: "uploading bundle 27 MB · 225s",
+      },
+    );
+    expect(integrationPipelineStalled(pipeline, now)).toBe(false);
+    const copy = integrationActiveCopy(pipeline, now);
+    expect(copy.stalled).toBe(false);
+    expect(copy.label).toContain("uploading bundle 27 MB · 225s");
+  });
+
+  it("shows upload progress instead of the bare stage while it moves (#0782)", () => {
+    const now = Date.parse("2026-10-07T13:02:00.000Z");
+    const pipeline = snap(
+      {},
+      {
+        stage: "check",
+        startedAt: "2026-10-07T13:00:00.000Z",
+        lastProgressAt: "2026-10-07T13:01:58.000Z",
+        detail: "uploading bundle 27 MB · 45s",
+      },
+    );
+    const copy = integrationActiveCopy(pipeline, now);
+    expect(copy.stalled).toBe(false);
+    expect(copy.label).toMatch(/^integrating · uploading bundle 27 MB · 45s/);
+  });
 });

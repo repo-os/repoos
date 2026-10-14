@@ -54,6 +54,8 @@ export interface CtoActionDeps {
   triggerJobProcessing: () => void;
   reportedStages: Record<string, DoneStep>;
   reportedStageAt: Record<string, string>;
+  /** In-stage progress detail per task id (#0782); absent means no detail. */
+  reportedDetail?: Record<string, string>;
   /** The live remote validator, when one exists — needed to kill a hung run (#0729). */
   remoteValidator?: RemoteValidator;
 }
@@ -230,6 +232,7 @@ export async function runCtoSafeAction(
         deps.reportedStages,
         resolvePipelineCheckPlan(deps.config),
         deps.reportedStageAt,
+        deps.reportedDetail ?? {},
       ),
     });
     recordRate(deps, action, taskId);

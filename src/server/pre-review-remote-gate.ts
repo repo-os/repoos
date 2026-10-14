@@ -11,7 +11,7 @@ import { CLOSEOUT_CHECK_ARGS, planJobCapabilities, resolveCheckPlan } from "../c
 import type { CheckRunPhase } from "../core/check-store.js";
 import type { RepoOSConfig } from "../core/types.js";
 import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
-import type { RemoteValidator } from "./remote-validation.js";
+import type { RemoteValidator, UploadProgressInfo } from "./remote-validation.js";
 
 /** Set on a spawned `repoos check` when a parent already ran the remote gate (#0520). */
 export const REPOOS_REMOTE_VALIDATION_DONE = "REPOOS_REMOTE_VALIDATION_DONE";
@@ -195,6 +195,14 @@ export async function runRemotePreReviewGate(params: {
   deadlineAt?: number;
   /** When set, the remote runner runs vitest in changed-path mode (#0695). */
   changedRef?: string;
+  /**
+   * Heartbeat while the bundle upload is in flight (#0782) — fired every few
+   * seconds so a slow transfer resets the caller's stall timer instead of
+   * reading as a hang.
+   */
+  onUploadProgress?: (info: UploadProgressInfo) => void;
+  /** Heartbeat cadence override (tests). */
+  uploadProgressIntervalMs?: number;
 }): Promise<RemotePreReviewOutcome> {
   const rv = params.config.remoteValidation;
   if (!rv?.enabled) return { kind: "skip" };
@@ -222,6 +230,10 @@ export async function runRemotePreReviewGate(params: {
     ...(capabilities.length ? { capabilities } : {}),
     ...(params.deadlineAt !== undefined ? { deadlineAt: params.deadlineAt } : {}),
     ...(changedRef ? { changedRef } : {}),
+    ...(params.onUploadProgress ? { onUploadProgress: params.onUploadProgress } : {}),
+    ...(params.uploadProgressIntervalMs !== undefined
+      ? { uploadProgressIntervalMs: params.uploadProgressIntervalMs }
+      : {}),
   });
   if (remote.ok) {
     return { kind: "local-only", skipTests: true };

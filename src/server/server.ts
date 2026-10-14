@@ -1458,6 +1458,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // indicator; recorded here so the live `integration` snapshot is accurate.
   const reportedStages: Record<string, DoneStep> = {};
   const reportedStageAt: Record<string, string> = {};
+  // In-stage progress detail per task id (#0782) — e.g. a slow bundle upload's
+  // size + elapsed time. Set by the orchestrator's upload heartbeat, cleared
+  // whenever a new stage is reported or the job leaves the pipeline.
+  const reportedDetail: Record<string, string> = {};
 
   /** Emit the current integration-pipeline snapshot to every SSE client (0207). */
   const emitIntegration = (): void => {
@@ -1468,6 +1472,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         reportedStages,
         resolvePipelineCheckPlan(config),
         reportedStageAt,
+        reportedDetail,
       ),
     });
   };
@@ -1492,6 +1497,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               const at = new Date().toISOString();
               reportedStages[job.taskId] = step;
               reportedStageAt[job.taskId] = at;
+              // A new stage supersedes any in-stage upload detail (#0782).
+              delete reportedDetail[job.taskId];
               emitEvent({
                 type: "task.progress",
                 id: job.taskId,
@@ -1546,6 +1553,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               detail: reason,
               at: new Date().toISOString(),
             });
+          },
+          (taskId, detail) => {
+            // #0782: the bundle upload is still moving — record the detail so
+            // the card shows it, and emit so the stall timer (which reads
+            // reportedStageAt, refreshed by the re-reported check stage above)
+            // sees a live job instead of a hang.
+            reportedDetail[taskId] = detail;
+            emitIntegration();
           },
         );
         const jobBefore = jobCoordinator.peekNext();
@@ -3597,6 +3612,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         awakeClock: watchdog ? () => watchdog!.awakeClock() : undefined,
         reportedStages,
         reportedStageAt,
+        reportedDetail,
         triggerJobProcessing,
         pendingReview,
         uiDir,
