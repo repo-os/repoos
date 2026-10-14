@@ -806,10 +806,22 @@ export interface DevTargetConfig {
   healthCheck?: DevHealthCheck;
 }
 
+/**
+ * Plain-language failure-summary options for dev targets (#0775). Detection of
+ * a port clash is always deterministic; this only controls the optional
+ * AI-written explanation, which costs a model call and so is opt-in.
+ */
+export interface DevFailureSummaryConfig {
+  /** Offer an AI-written summary of a failed dev target. Default off. */
+  ai?: boolean;
+}
+
 export interface DevConfig {
   inspector?: DevInspectorConfig;
   /** User-declared runnable dev targets (#0747). */
   targets?: DevTargetConfig[];
+  /** Failure-summary options (#0775). */
+  failureSummary?: DevFailureSummaryConfig;
 }
 
 /**

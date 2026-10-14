@@ -27,17 +27,34 @@
  *
  * Zero runtime deps: node:child_process / node:fs / node:http only.
  */
-import { spawn, type ChildProcess } from "node:child_process";
+import { execFile, spawn, type ChildProcess } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { createServer as createTcpServer } from "node:net";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { promisify } from "node:util";
 import type { RepoOSConfig, DevTargetConfig } from "../core/types.js";
+import {
+  DEV_LOG_MAX_LINES,
+  failureSummary,
+  PORT_IN_USE,
+  type DevFailure,
+} from "../core/dev-failure.js";
 
 /** The four states a dev target can be in. */
 export type DevTargetStatus = "running" | "stopped" | "starting" | "failed";
 
-/** How many output lines are kept per target, per the acceptance criteria. */
-export const DEV_LOG_TAIL_LINES = 200;
+/**
+ * How many output lines are kept per target — a full last-run log within a sane
+ * cap (#0775), so the Dev page can scroll the whole run rather than a 6-line
+ * tail. Ring-buffered in memory; only state changes (not every line) persist.
+ */
+export { DEV_LOG_MAX_LINES };
+
+/**
+ * @deprecated Use {@link DEV_LOG_MAX_LINES}. Kept as an alias so older imports
+ * keep compiling; the cap is no longer a short "tail".
+ */
+export const DEV_LOG_TAIL_LINES = DEV_LOG_MAX_LINES;
 
 /** How long a `server` target is given to answer its health check (ms). */
 const HEALTH_TIMEOUT_MS = 30_000;
@@ -64,8 +81,36 @@ export interface DevTargetState {
    * port, and so `view()` can show the real url of a running target.
    */
   resolvedPort?: number;
-  /** Last DEV_LOG_TAIL_LINES of combined stdout/stderr. */
+  /** Last DEV_LOG_MAX_LINES of combined stdout/stderr. */
   log: string[];
+}
+
+/** A process holding a port a target could not bind (#0775). */
+export interface DevPortHolder {
+  pid: number;
+  /** The holder's command line, for the user to judge what it is. */
+  command: string;
+  /**
+   * True only when a PID RepoOS itself recorded (a dev target's process) holds
+   * the port — the single case where the page may offer a Stop action. Anything
+   * else is shown with its PID and command for the user to decide.
+   */
+  repoosOwned: boolean;
+  /** The dev target whose recorded PID this is, when owned. */
+  target?: string;
+  /** True when the holder is left over from an earlier run (no live handle). */
+  stale: boolean;
+}
+
+/**
+ * The deterministic plain-language failure summary (#0775) the Dev page shows
+ * above the log. `holder` is filled by the server when it can resolve the
+ * process holding a contended port.
+ */
+export interface DevFailureView extends DevFailure {
+  holder?: DevPortHolder;
+  /** Whether the UI may offer a Stop action for the holder. */
+  canStopHolder: boolean;
 }
 
 /** A target plus its config and live state, as returned to the API/CLI. */
@@ -75,6 +120,8 @@ export interface DevTargetView extends DevTargetState {
   label: string;
   url?: string;
   artifactPath?: string;
+  /** Plain-language failure summary, present only for a failed target (#0775). */
+  failure?: DevFailureView;
 }
 
 /** Result of a start/stop/restart request. */
@@ -147,6 +194,155 @@ export class DevTargetManager {
   get(name: string): DevTargetView | null {
     const t = this.target(name);
     return t ? this.view(t) : null;
+  }
+
+  /**
+   * Every target with its state, log and — for a failed target — the full
+   * plain-language failure summary (#0775), including the process holding a
+   * contended port. Async because resolving the port holder shells out.
+   */
+  async listDetailed(): Promise<DevTargetView[]> {
+    return Promise.all(this.list().map((v) => this.enrichFailure(v)));
+  }
+
+  /** One target, failure-enriched, or null when unknown. */
+  async getDetailed(name: string): Promise<DevTargetView | null> {
+    const t = this.target(name);
+    if (!t) return null;
+    return this.enrichFailure(this.view(t));
+  }
+
+  /**
+   * The failure summary for a target, or null when it is not failed. Used by
+   * the explain route and the stop-holder action.
+   */
+  async describeFailure(name: string): Promise<DevFailureView | null> {
+    const detailed = await this.getDetailed(name);
+    return detailed?.failure ?? null;
+  }
+
+  /**
+   * Stop the process holding a port a failed target could not bind (#0775).
+   * Only ever kills a PID RepoOS recorded for one of its own dev targets — a
+   * foreign process is left alone, with its PID and command shown instead.
+   */
+  async stopHolder(name: string): Promise<DevActionResult> {
+    const t = this.target(name);
+    if (!t) return { ok: false, error: `Unknown dev target "${name}"` };
+    const failure = await this.describeFailure(name);
+    const holder = failure?.holder;
+    if (!holder) {
+      return { ok: false, error: `No port conflict detected for "${t.label ?? name}".` };
+    }
+    if (!holder.repoosOwned || !holder.target) {
+      return {
+        ok: false,
+        error: `Process ${holder.pid} was not started by RepoOS — stop it yourself with the command shown.`,
+      };
+    }
+    const live = this.running.get(holder.target);
+    if (live) {
+      await this.killProcess(holder.target);
+    } else {
+      await this.killPid(holder.pid, process.platform !== "win32");
+    }
+    const state = this.states.get(holder.target);
+    if (state && (state.status === "running" || state.status === "starting")) {
+      this.setState(holder.target, { status: "stopped", error: undefined, stoppedAt: now() });
+    }
+    return { ok: true, target: this.view(t) };
+  }
+
+  /**
+   * Fill a failed target's port-conflict summary with the process holding the
+   * port. Best-effort: when `lsof` is unavailable or finds nothing, the
+   * deterministic summary still renders without a holder.
+   */
+  private async enrichFailure(view: DevTargetView): Promise<DevTargetView> {
+    const f = view.failure;
+    if (!f || f.kind !== PORT_IN_USE || f.port === undefined) return view;
+    const found = await this.lookupPortHolder(f.port);
+    if (!found) return view;
+    const owner = this.pidOwner(found.pid);
+    const holder: DevPortHolder = {
+      pid: found.pid,
+      command: found.command,
+      repoosOwned: owner !== null,
+      stale: owner ? owner.stale : false,
+      ...(owner ? { target: owner.target } : {}),
+    };
+    return { ...view, failure: { ...f, holder, canStopHolder: owner !== null } };
+  }
+
+  /**
+   * The process listening on `port`, with its command line. Uses `lsof` where
+   * available (macOS/Linux), an `ss` fallback on Linux, and `netstat` on
+   * Windows. Best-effort: null when no tool can resolve it, in which case the
+   * page still shows the deterministic summary without a PID.
+   */
+  private async lookupPortHolder(port: number): Promise<{ pid: number; command: string } | null> {
+    const pid = await this.firstPidOnPort(port);
+    if (pid === undefined) return null;
+    const command = await this.processCommand(pid);
+    return { pid, command: command.trim() || `(pid ${pid})` };
+  }
+
+  private async firstPidOnPort(port: number): Promise<number | undefined> {
+    const fromLsof = await this.firstPidFromLsof(port);
+    if (fromLsof !== undefined) return fromLsof;
+    if (process.platform === "win32") {
+      const out = await captureCommand("netstat", ["-ano", "-p", "tcp"]);
+      return parseNetstatListenerPid(out, port);
+    }
+    return this.firstPidFromSs(port);
+  }
+
+  private async firstPidFromLsof(port: number): Promise<number | undefined> {
+    const out = await captureCommand("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"]);
+    return out
+      .split("\n")
+      .map((l) => Number(l.trim()))
+      .find((n) => Number.isInteger(n) && n > 0);
+  }
+
+  /** Linux fallback when `lsof` is not installed. */
+  private async firstPidFromSs(port: number): Promise<number | undefined> {
+    const out = await captureCommand("ss", ["-ltnpH", `sport = :${port}`]);
+    const m = out.match(/pid=(\d+)/);
+    return m ? Number(m[1]) : undefined;
+  }
+
+  /** The holder's command line, via `ps` (POSIX) or `tasklist` (Windows). */
+  private async processCommand(pid: number): Promise<string> {
+    if (process.platform === "win32") {
+      const out = await captureCommand("tasklist", ["/FI", `PID eq ${pid}`, "/FO", "CSV", "/NH"]);
+      const m = out.match(/^"([^"]+)"/m);
+      return m ? m[1] : "";
+    }
+    return captureCommand("ps", ["-o", "command=", "-p", String(pid)]);
+  }
+
+  /**
+   * The dev target whose recorded PID is `pid`, if any — the basis for treating
+   * a port holder as RepoOS-owned. `stale` means there is no live handle for it,
+   * so it is a leftover from an earlier run rather than a currently-supervised
+   * process.
+   */
+  private pidOwner(pid: number): { target: string; stale: boolean } | null {
+    return devPidOwner(this.states, new Set(this.running.keys()), pid);
+  }
+
+  /** The port a target is configured to use, when it declares one. */
+  private portHint(t: DevTargetConfig, state: DevTargetState): number | undefined {
+    if (state.resolvedPort !== undefined) return state.resolvedPort;
+    const url = t.healthCheck?.url ?? t.url;
+    if (!url) return undefined;
+    try {
+      const port = new URL(url).port;
+      return port ? Number(port) : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   /**
@@ -474,7 +670,7 @@ export class DevTargetManager {
     // target with no placeholder (no `resolvedPort`) keeps its declared values.
     const command = expandPort(t.command, state.resolvedPort) ?? t.command;
     const url = expandPort(t.url, state.resolvedPort);
-    return {
+    const view: DevTargetView = {
       name: t.name,
       kind: t.kind,
       command,
@@ -486,8 +682,22 @@ export class DevTargetManager {
       ...(state.pid !== undefined ? { pid: state.pid } : {}),
       ...(state.startedAt ? { startedAt: state.startedAt } : {}),
       ...(state.stoppedAt ? { stoppedAt: state.stoppedAt } : {}),
-      log: state.log.slice(-DEV_LOG_TAIL_LINES),
+      log: state.log.slice(-DEV_LOG_MAX_LINES),
     };
+    if (state.status === "failed") {
+      // The deterministic summary is available synchronously; `enrichFailure`
+      // adds the process holding a contended port when the API layer asks.
+      view.failure = {
+        ...failureSummary({
+          label: view.label,
+          error: state.error,
+          log: state.log,
+          portHint: this.portHint(t, state),
+        }),
+        canStopHolder: false,
+      };
+    }
+    return view;
   }
 
   private setState(name: string, patch: Partial<DevTargetState>): void {
@@ -507,7 +717,7 @@ export class DevTargetManager {
 
   private appendLog(name: string, line: string): void {
     const prev = this.states.get(name);
-    const log = [...(prev?.log ?? []), line].slice(-DEV_LOG_TAIL_LINES);
+    const log = [...(prev?.log ?? []), line].slice(-DEV_LOG_MAX_LINES);
     this.states.set(name, {
       ...(prev ?? { name, status: "starting" as const, log: [] }),
       name,
@@ -568,7 +778,7 @@ export class DevTargetManager {
           name,
           status:
             state.status === "running" || state.status === "starting" ? "stopped" : state.status,
-          log: Array.isArray(state.log) ? state.log.slice(-DEV_LOG_TAIL_LINES) : [],
+          log: Array.isArray(state.log) ? state.log.slice(-DEV_LOG_MAX_LINES) : [],
         });
       }
     } catch {
@@ -595,6 +805,23 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+const execFileAsync = promisify(execFile);
+
+/**
+ * Run a read-only command and capture stdout. Never throws: a non-zero exit
+ * (`lsof` exits 1 when no process holds the port) returns whatever stdout it
+ * produced, and a missing binary returns "".
+ */
+async function captureCommand(cmd: string, args: string[]): Promise<string> {
+  try {
+    const { stdout } = await execFileAsync(cmd, args, { timeout: 5000, maxBuffer: 1_000_000 });
+    return stdout;
+  } catch (err) {
+    const out = (err as { stdout?: string }).stdout;
+    return typeof out === "string" ? out : "";
+  }
+}
+
 /** Whether a PID is alive (best-effort; signal 0 sends nothing). */
 function isAlivePid(pid: number): boolean {
   try {
@@ -603,6 +830,39 @@ function isAlivePid(pid: number): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Which dev target (if any) recorded `pid`, and whether that target has no live
+ * handle (a leftover from an earlier run). Exported for the port-holder
+ * ownership test (#0775); the manager itself is the only caller.
+ */
+export function devPidOwner(
+  states: ReadonlyMap<string, DevTargetState>,
+  live: ReadonlySet<string>,
+  pid: number,
+): { target: string; stale: boolean } | null {
+  for (const [name, state] of states) {
+    if (state.pid === pid) return { target: name, stale: !live.has(name) };
+  }
+  return null;
+}
+
+/**
+ * The PID listening on `port` from Windows `netstat -ano -p tcp` output. Split
+ * out so the Windows fallback path is unit-tested off-Windows (#0775).
+ */
+export function parseNetstatListenerPid(output: string, port: number): number | undefined {
+  for (const line of output.split("\n")) {
+    if (!/\bLISTENING\b/i.test(line)) continue;
+    const cols = line.trim().split(/\s+/);
+    if (cols.length < 4) continue;
+    const local = cols[1] ?? "";
+    if (!local.endsWith(`:${port}`)) continue;
+    const pid = Number(cols[cols.length - 1]);
+    if (Number.isInteger(pid) && pid > 0) return pid;
+  }
+  return undefined;
 }
 
 /** The `{port}` token a dev target's fields may carry (#0751). */
