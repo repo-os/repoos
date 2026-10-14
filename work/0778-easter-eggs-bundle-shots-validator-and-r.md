@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T15:39:44Z"
+updated_at: "2026-10-14T15:41:55Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 4
@@ -69,7 +69,7 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 "highlight": ".changes-summary-actions",
 "steps": [
 {
-  "click": "[data-test-id=\"changes-tab-ui\"]"
+"click": "[data-test-id=\"changes-tab-ui\"]"
 }
 ],
 "theme": "light"
@@ -81,7 +81,7 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 "highlight": ".changes-summary-actions",
 "steps": [
 {
-  "click": "[data-test-id=\"changes-tab-ui\"]"
+"click": "[data-test-id=\"changes-tab-ui\"]"
 }
 ],
 "theme": "dark"
@@ -182,3 +182,4 @@ Item 5 (stalled close-out card) is implemented and unit-pinned (DOM order Cancel
 - 2026-10-14T15:38:45Z · body: section Shots
 - 2026-10-14T15:38:53Z · body: section Shot evidence sequencing
 - 2026-10-14T15:39:44Z · body
+- 2026-10-14T15:41:55Z · handoff failed · remote validation failed: test failure: tests/shot-plan-edit.test.ts > removeDeclarationsForDeletedShot (#0778 review round 3) > leaves a VALID re-stated entry behind when only its state was edited (#0778 review) on bee — fix it in the feature branch and re-run the gate
