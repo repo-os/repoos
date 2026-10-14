@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-process-start-time-beside-running-c
 created_at: "2026-10-14T04:19:10Z"
-updated_at: "2026-10-14T04:22:41Z"
+updated_at: "2026-10-14T04:26:33Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ Let's show the time when a process started running (and human readable like 17 h
 - 2026-10-14T04:19:35Z · status draft→inbox, title, area, body
 - 2026-10-14T04:22:37Z · status inbox→ready
 - 2026-10-14T04:22:41Z · status ready→active, branch
+- 2026-10-14T04:26:33Z · body
