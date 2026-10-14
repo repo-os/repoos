@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T15:44:28Z"
+updated_at: "2026-10-14T15:50:06Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 4
