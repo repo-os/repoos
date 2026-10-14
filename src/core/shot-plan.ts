@@ -1002,6 +1002,13 @@ export function describeShotAssertion(assertion: ShotAssertion): string {
  * entries are all removed: a delete must not leave a declaration behind that
  * re-handoff would capture again. A body with no `## Shots` section (or an
  * already-malformed one, reported in `errors`) removes nothing.
+ *
+ * No production caller remains (#0778 review): the delete route goes through
+ * {@link removeDeclarationsForDeletedShot}, which wraps these semantics for
+ * the one case production needs. Kept as the concrete API of the fenced-list
+ * edit format — its tests document the removable-entry rules — and kept
+ * public in case a future caller (a CLI "drop one declaration" edit) wants
+ * the parse-before-remove behavior without the delete-shot framing.
  */
 export function removeDeclaredShots(
   body: string,
@@ -1099,12 +1106,15 @@ export function declaredShotMatchesShotRaw(
  * whose rejected fixture value is why the entry is on the raw path at all
  * (#0778). A post-capture edit that only broke `state` scores full marks, so
  * it beats twins that also differ in selector or steps (review round 3).
+ * `theme` IS scored (#0782 merged its identity into these matchers): a
+ * light/dark wrong-theme twin is a different shot, and should not outrank the
+ * edited original.
  */
 function declarationClosenessScore(raw: unknown, declared: DeclaredShot): number {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return 0;
   const entry = raw as Record<string, unknown>;
   let score = 0;
-  for (const field of ["label", "target", "route", "selector", "highlight", "glob"] as const) {
+  for (const field of ["label", "target", "route", "selector", "highlight", "glob", "theme"] as const) {
     if ((entry[field] ?? undefined) === (declared[field] ?? undefined)) score++;
   }
   if (JSON.stringify(entry.steps ?? []) === JSON.stringify(declared.steps ?? [])) score++;
@@ -1210,17 +1220,18 @@ export function removeDeclarationsForDeletedShot(
 }
 
 /** Structural equality on a raw entry for delete sync when validation failed (#0778).
- * Mirrors {@link sameDeclaredShot}'s identity (which ignores `state`): the
- * common invalid-entry case is a `state` fixture edited in after capture, so
- * requiring `state` equality would never match the entry being deleted. Twins
- * differing in selector, steps, or any other identity field still do not match,
- * so only the selected entry is removed. */
+ * Mirrors {@link sameDeclaredShot}'s structural identity EXCEPT that `state`
+ * is not compared: the common invalid-entry case is a `state` fixture edited
+ * in after capture (an unknown/typo'd fixture name), so requiring `state`
+ * equality would never match the entry being deleted. Twins differing in
+ * selector, steps, theme, or any other identity field still do not match, so
+ * only the selected entry is removed. */
 export function sameDeclaredShotRaw(raw: unknown, declared: DeclaredShot): boolean {
   const parsed = parseShot(raw, "entry");
   if (parsed.shot) return sameDeclaredShot(parsed.shot, declared);
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return false;
   const entry = raw as Record<string, unknown>;
-  for (const field of ["label", "target", "route", "selector", "highlight", "glob"] as const) {
+  for (const field of ["label", "target", "route", "selector", "highlight", "glob", "theme"] as const) {
     if ((entry[field] ?? undefined) !== (declared[field] ?? undefined)) return false;
   }
   if (JSON.stringify(entry.steps ?? []) !== JSON.stringify(declared.steps ?? [])) return false;
