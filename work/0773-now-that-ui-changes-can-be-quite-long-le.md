@@ -20,8 +20,10 @@ Now that UI changes can be quite long, let's split `UI changes` and `Code change
 ## Screenshots
 
 ![Screenshot-2026-10-14-at-10.33.13](/api/tasks/0773/attachments/screenshot-1.png)
+![Screenshot-2026-10-14-at-10.33.23](/api/tasks/0773/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-10-14T03:52:38Z · created · hello@repoos.org
+- 2026-10-14T03:52:40Z · screenshots
 - 2026-10-14T03:52:40Z · screenshots
