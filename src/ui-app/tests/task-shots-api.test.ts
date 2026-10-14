@@ -447,6 +447,41 @@ describe("DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627
     expect(localShotStore(repoos.config, task.id).list()).toHaveLength(1);
   });
 
+  it("removes its invalid declaration after post-capture edit when the shot carries declared (#0778 r2)", async () => {
+    const declared = {
+      target: "default",
+      route: "/",
+      label: "Agents tab",
+      selector: ".drawer",
+    };
+    const saved = localShotStore(repoos.config, task.id).save({
+      target: "default",
+      route: "/",
+      label: "Agents tab",
+      provenance: "declared: Agents tab",
+      declared,
+      data: PNG_1PX,
+    });
+    if ("error" in saved) throw new Error("seed failed");
+    task = patchSection(
+      `\`\`\`json\n${JSON.stringify(
+        [{ target: "default", route: "/", label: "Agents tab", state: "board:notARealFixture" }],
+        null,
+        2,
+      )}\n\`\`\``,
+    );
+
+    const { capture, res } = resCapture();
+    await deleteTaskShot(makeCtx() as never, emptyReq, res, {
+      param1: task.id,
+      param2: saved.name,
+    });
+
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 1 });
+    expect(readFileSync(task.absPath, "utf8")).toContain("```json\n[]");
+  });
+
   it("deletes one shot when another declaration has an unknown state fixture (#0778)", async () => {
     const saved = seedShot("Agents tab");
     if ("error" in saved) throw new Error("seed failed");
