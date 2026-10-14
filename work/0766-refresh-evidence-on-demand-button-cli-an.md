@@ -3,6 +3,9 @@ id: "0766"
 title: "Refresh evidence on demand: button, CLI and API to re-run shots and UI verification on the current HEAD (no engineer round-trip)"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: [core, server, cli, ui]
 assigned_to: ai
@@ -252,3 +255,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-14T01:06:03Z · body
 - 2026-10-14T01:07:18Z · status active→review
 - 2026-10-14T01:09:32Z · note: review pass 23: needs some work
+- 2026-10-14T01:09:32Z · needs_input
