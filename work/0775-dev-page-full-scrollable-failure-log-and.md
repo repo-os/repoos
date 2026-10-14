@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-page-full-scrollable-failure-log-and
 created_at: "2026-10-14T04:59:42Z"
-updated_at: "2026-10-14T06:03:40Z"
+updated_at: "2026-10-14T06:09:29Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -35,6 +35,9 @@ When a dev target fails, the Dev page shows only the last 5-6 lines of output. T
 ## Notes for AI
 Start from the Dev page view and the dev supervisor (#0747 dev target config and supervisor, #0748 Dev page). Source: user report, 2026-10-14, Landing page (HMR) failure, and the decision on port handling from the same day.
 
+## Out of scope
+Auto-picking a free port for a target whose command does NOT use the `{port}` placeholder is deliberately out of scope: RepoOS cannot rewrite an arbitrary command's hard-coded port safely, and guessing one could mask a real conflict. The supported auto-pick path is the existing `{port}` placeholder (#0751). This task covers deterministic detection, naming the port holder's PID and command, the RepoOS-owned Stop action, the full scrollable log, and the optional AI summary.
+
 ## Activity
 
 - 2026-10-14T04:59:42Z · created · njachowski@gmail.com
@@ -52,3 +55,4 @@ Start from the Dev page view and the dev supervisor (#0747 dev target config and
 - 2026-10-14T06:02:23Z · status active→review
 - 2026-10-14T06:03:39Z · note: review pass 1: needs some work
 - 2026-10-14T06:03:40Z · status review→active
+- 2026-10-14T06:09:29Z · body: section Out of scope
