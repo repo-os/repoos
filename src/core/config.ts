@@ -2593,6 +2593,71 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Docker/Podman image to run the gate in on the tailscale runner. Default 'repoos-ci'.",
     },
     {
+      // Hetzner provider details (#0779). No Settings rows render these — the
+      // Import/Export tab transfers them and ⌘K search points at the raw TOML
+      // editor (see resolveSettingLocation) — but the schema entries are what
+      // make them PATCH-able, so an import can apply them without a hand edit.
+      // SettingsView's buildBody skips them for the same reason it skips the
+      // budget allowlist: an unrelated save must not materialise defaults.
+      key: "remoteValidation.serverType",
+      label: "Remote validation: Hetzner server type",
+      type: "string",
+      tier: "restart",
+      restartRequired: true,
+      default: "cax31",
+      description:
+        "Hetzner server type. Default 'cax31' (8 vCPU Ampere ARM / 16 GB) — must match the architecture the snapshot was built on.",
+    },
+    {
+      key: "remoteValidation.location",
+      label: "Remote validation: Hetzner location",
+      type: "string",
+      tier: "restart",
+      restartRequired: true,
+      default: "hil",
+      description: "Hetzner location slug. Default 'hil'.",
+    },
+    {
+      key: "remoteValidation.snapshotId",
+      label: "Remote validation: Hetzner snapshot",
+      type: "string",
+      tier: "restart",
+      restartRequired: true,
+      default: "",
+      description:
+        "ID or name of the prebuilt Hetzner snapshot the runner boots from. Unset by default.",
+    },
+    {
+      key: "remoteValidation.sshKeyName",
+      label: "Remote validation: Hetzner SSH key name",
+      type: "string",
+      tier: "restart",
+      restartRequired: true,
+      default: "",
+      description:
+        "Name of the SSH key registered in the Hetzner project, injected into the server. Unset by default.",
+    },
+    {
+      key: "remoteValidation.idleShutdownMinutes",
+      label: "Remote validation: warm-server lifetime",
+      type: "number",
+      tier: "restart",
+      restartRequired: true,
+      default: 8,
+      description:
+        "How long a warm server stays alive after a job so queued jobs reuse it. Default 8.",
+    },
+    {
+      key: "remoteValidation.maxServerLifetimeMinutes",
+      label: "Remote validation: maximum server lifetime",
+      type: "number",
+      tier: "restart",
+      restartRequired: true,
+      default: 120,
+      description:
+        "Hard cost stop-loss: any runner older than this many minutes is force-deleted. Default 120, minimum 10.",
+    },
+    {
       key: "remoteValidation.maxConcurrent",
       label: "Remote validation: concurrent runs",
       type: "select",

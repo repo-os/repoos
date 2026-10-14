@@ -1,6 +1,7 @@
 import { computed, reactive, ref, watch } from "vue";
 import { defineStore } from "pinia";
 import { api, ApiError, JSON_OPTS, MODEL_API_TIMEOUT_MS } from "../api";
+import { FAVORITE_THEMES_KEY } from "../lib/settings-transfer";
 import type {
   Agent,
   AgentsMeta,
@@ -133,8 +134,6 @@ export const MAX_FAVORITE_THEMES = 3;
 
 /** How many themes the bottom-left quick switcher shows (#0526). */
 export const MAX_VISIBLE_THEMES = 3;
-
-const FAVORITE_THEMES_KEY = "repoos.favoriteThemes";
 
 /**
  * Read starred themes from localStorage, defensively: unknown ids, non-strings,
