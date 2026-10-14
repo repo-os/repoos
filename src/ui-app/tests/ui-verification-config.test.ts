@@ -9,11 +9,7 @@ import { getConfigSchema, loadConfig, SUPPORTED_TOML_KEYS } from "../../core/con
 import type { RepoOSConfig } from "../../core/types.js";
 import { resolvedUiVerification } from "../../core/ui-verification-config.js";
 import { resolveSettingLocation } from "../src/settings-location.js";
-import {
-  ReviewManager,
-  isStaleEvidenceOnlyReview,
-  shouldAutoRefreshStaleEvidence,
-} from "../../server/review.js";
+import { ReviewManager } from "../../server/review.js";
 import { vi } from "vitest";
 import type { Agent, Task } from "../../core/types.js";
 
@@ -68,12 +64,12 @@ describe("uiVerification config (#0680)", () => {
     ).toEqual({ tab: "general", hasUiRow: true });
   });
 
-  it("does not auto-bounce stale-only findings when autoRefreshStaleOnce is off", () => {
+  it("auto-bounces stale-only findings like any other non-good verdict", () => {
     const config = {
       root: "/tmp",
       workDir: "work",
       cacheDir: ".repoos",
-      uiVerification: { autoRefreshStaleOnce: false },
+      uiVerification: { autoRefreshStaleOnce: true },
     } as RepoOSConfig;
     const reviews = new ReviewManager(config, () => {});
     const bounce = vi
@@ -91,47 +87,10 @@ describe("uiVerification config (#0680)", () => {
     (reviews as unknown as { finalizeRun: (...args: unknown[]) => void }).finalizeRun(
       task,
       agent,
-      [{ kind: "stdout", text: report }],
+      [{ type: "text", text: report }],
       { accumulatedMs: 1 },
       false,
     );
-    expect(bounce).not.toHaveBeenCalled();
-    expect(isStaleEvidenceOnlyReview(report, "needs some work")).toBe(true);
-  });
-
-  it("auto-refreshes only an explicitly stale-evidence-only review when enabled", () => {
-    const enabled = { uiVerification: { autoRefreshStaleOnce: true } } as RepoOSConfig;
-    const disabled = { uiVerification: { autoRefreshStaleOnce: false } } as RepoOSConfig;
-    expect(
-      shouldAutoRefreshStaleEvidence(
-        enabled,
-        "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY",
-        "needs some work",
-      ),
-    ).toBe(true);
-    expect(
-      shouldAutoRefreshStaleEvidence(
-        enabled,
-        "## Problem\nSTALE-EVIDENCE-ONLY\n\n## Verdict\nneeds some work",
-        "needs some work",
-      ),
-    ).toBe(false);
-    expect(
-      shouldAutoRefreshStaleEvidence(enabled, "bug plus stale capture", "needs some work"),
-    ).toBe(false);
-    expect(
-      shouldAutoRefreshStaleEvidence(
-        disabled,
-        "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY",
-        "needs some work",
-      ),
-    ).toBe(false);
-    expect(
-      shouldAutoRefreshStaleEvidence(
-        enabled,
-        "## Verdict\ngood to go. STALE-EVIDENCE-ONLY",
-        "good to go",
-      ),
-    ).toBe(false);
+    expect(bounce).toHaveBeenCalled();
   });
 });

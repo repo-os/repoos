@@ -369,7 +369,6 @@ import {
   listTaskShots,
   getTaskUiVerification,
   refreshTaskEvidence,
-  automaticStaleEvidenceRefresh,
   getTaskShot,
   uploadTaskShot,
   deleteTaskShot,
@@ -2047,23 +2046,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // implementation and writes a short report for whoever signs the task off.
   // Advisory only — it never moves a task to `done`.
   // Created after the runner so it can send auto-bounce messages to the engineer.
-  reviews = new ReviewManager(
-    config,
-    emitEvent,
-    runner,
-    index,
-    (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
-    async (task) =>
-      automaticStaleEvidenceRefresh(
-        config,
-        task,
-        previews,
-        rootLock,
-        () => closeOutLock.closingOut(),
-        (id, level, message) => {
-          logger.task(id, level, message);
-        },
-      ),
+  reviews = new ReviewManager(config, emitEvent, runner, index, (taskId, reason) =>
+    debugTldr?.onFailureEscalated(taskId, reason),
   );
 
   // Checks → Test Suite tab (0296-adjacent): an
