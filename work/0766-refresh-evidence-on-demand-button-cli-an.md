@@ -11,7 +11,7 @@ branch: feat/refresh-evidence-on-demand-button-cli-an
 review_cli_override: opencode
 review_model_override: opencode-go/hy3
 created_at: "2026-10-13T10:49:44Z"
-updated_at: "2026-10-14T04:58:52Z"
+updated_at: "2026-10-14T06:12:53Z"
 review_passes: 24
 close_out_repair_count: 1
 review_rounds: 2
@@ -272,3 +272,4 @@ Reuse the handoff capture and ui-handoff-gate code paths rather than copying the
 - 2026-10-14T04:48:39Z · body
 - 2026-10-14T04:51:05Z · body
 - 2026-10-14T04:52:39Z · status active→review
+- 2026-10-14T06:12:53Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
