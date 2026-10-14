@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-page-full-scrollable-failure-log-and
 created_at: "2026-10-14T04:59:42Z"
-updated_at: "2026-10-14T06:12:58Z"
+updated_at: "2026-10-14T06:18:29Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -42,17 +42,16 @@ Auto-picking a free port for a target whose command does NOT use the `{port}` pl
 ```json
 [
 {
-"label": "Dev page: full scrollable log and plain-language failure summary",
-"target": "default",
-"route": "/dev",
-"highlight": ".dev-summary",
-"state": "dev:failed"
+  "label": "Dev page: full scrollable log and plain-language failure summary",
+  "target": "default",
+  "route": "/dev",
+  "highlight": ".dev-summary"
 },
 {
-"label": "Settings → Advanced: Dev failure summaries AI toggle",
-"target": "default",
-"route": "/settings?tab=advanced",
-"highlight": "[data-config-key=\"dev.failureSummary.ai\"]"
+  "label": "Settings → Advanced: Dev failure summaries AI toggle",
+  "target": "default",
+  "route": "/settings?tab=advanced",
+  "highlight": "[data-config-key=\"dev.failureSummary.ai\"]"
 }
 ]
 ```
@@ -79,3 +78,4 @@ Auto-picking a free port for a target whose command does NOT use the `{port}` pl
 - 2026-10-14T06:11:01Z · note: highlight #setting-dev.failureSummary.ai matched nothing on /settings?tab=advanced
 - 2026-10-14T06:11:42Z · body: section Shots
 - 2026-10-14T06:12:58Z · body
+- 2026-10-14T06:18:29Z · body: section Shots
