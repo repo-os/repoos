@@ -58,7 +58,13 @@ describe("integration snapshot upload detail (#0782)", () => {
       coordinator.updateJob("0001", { enqueuedAt: "2026-01-01T00:00:00.000Z" });
       coordinator.enqueue({ id: "0002", branch: "feat/t2" } as never);
       coordinator.updateJob("0002", { enqueuedAt: "2026-01-01T00:00:01.000Z" });
-      const snap = buildIntegrationSnapshot(coordinator, {}, undefined, {}, { "0002": "uploading bundle 1 MB · 5s" });
+      const snap = buildIntegrationSnapshot(
+        coordinator,
+        {},
+        undefined,
+        {},
+        { "0002": "uploading bundle 1 MB · 5s" },
+      );
       expect(snap.active?.taskId).toBe("0001");
       expect(snap.active?.detail).toBeNull();
     } finally {
