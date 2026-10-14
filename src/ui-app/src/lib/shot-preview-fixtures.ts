@@ -65,6 +65,7 @@ function activePipeline(taskId: string): IntegrationPipelineSnapshot {
       failed: false,
       startedAt: at,
       lastProgressAt: at,
+      detail: null,
     },
     queue: [],
     at,

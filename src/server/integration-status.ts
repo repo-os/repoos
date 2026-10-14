@@ -39,6 +39,11 @@ export interface IntegrationSnapshot {
     /** When stage progress was last reported for this job (ISO). Used for
      *  stall detection (#0740); falls back to {@link startedAt}. */
     lastProgressAt: string | null;
+    /**
+     * In-stage progress detail, e.g. a slow bundle upload's size + elapsed
+     * time (#0782). Null when the job has no finer-grained progress to show.
+     */
+    detail: string | null;
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];
@@ -98,6 +103,7 @@ export function buildIntegrationSnapshot(
   reported: Record<string, DoneStep>,
   checkPlan?: PipelineCheckPlan,
   reportedAt: Record<string, string> = {},
+  reportedDetail: Record<string, string> = {},
   at = new Date().toISOString(),
 ): IntegrationSnapshot {
   const live = coordinator
@@ -136,6 +142,7 @@ export function buildIntegrationSnapshot(
       error: failed ? inFlight.reason : undefined,
       startedAt,
       lastProgressAt,
+      detail: reportedDetail[inFlight.taskId] ?? null,
     },
     queue,
     queueEnqueuedAt: queue.length ? queueEnqueuedAt : undefined,
