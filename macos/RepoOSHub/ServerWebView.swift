@@ -63,7 +63,7 @@ struct ServerWebView: NSViewRepresentable {
         Coordinator(model: model, appState: appState)
     }
 
-    func makeNSView(context: Context) -> WKWebView {
+    func makeNSView(context: Context) -> HubServerWebContainerView {
         let dataStore = ServerWebsiteDataStorePool.shared.dataStore(for: model.serverID)
         let configuration = IsolatedServerWebViewFactory.makeConfiguration(dataStore: dataStore)
         let webView = WKWebView(frame: .zero, configuration: configuration)
@@ -71,7 +71,10 @@ struct ServerWebView: NSViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
+        let container = HubServerWebContainerView(webView: webView)
         context.coordinator.webView = webView
+        context.coordinator.webContainer = container
+        context.coordinator.bindFindFocusTracking()
         context.coordinator.loadInitialPage()
         context.coordinator.observeHubCommands()
         // The Hub shell theme must never reach server content: pin the web
@@ -81,10 +84,10 @@ struct ServerWebView: NSViewRepresentable {
         // injected, forced, or bridged into the web view.
         context.coordinator.pinWebViewToSystemAppearance()
         context.coordinator.observeSystemAppearance()
-        return webView
+        return container
     }
 
-    func updateNSView(_ webView: WKWebView, context: Context) {
+    func updateNSView(_ container: HubServerWebContainerView, context: Context) {
         context.coordinator.model = model
         context.coordinator.appState = appState
         if context.coordinator.loadedOriginKey
@@ -104,6 +107,7 @@ struct ServerWebView: NSViewRepresentable {
         var model: ServerWebViewModel
         var appState: HubAppState
         weak var webView: WKWebView?
+        weak var webContainer: HubServerWebContainerView?
         var loadedOriginKey: String?
         private var commandObservers: [NSObjectProtocol] = []
         private var systemAppearanceObserver: NSObjectProtocol?
@@ -119,6 +123,13 @@ struct ServerWebView: NSViewRepresentable {
             }
             if let systemAppearanceObserver {
                 DistributedNotificationCenter.default().removeObserver(systemAppearanceObserver)
+            }
+        }
+
+        func bindFindFocusTracking() {
+            webContainer?.onKeyboardFocusChanged = { [weak self] focused in
+                guard let self, self.appState.selectedServerID == self.model.serverID else { return }
+                self.appState.setWorkspaceWebContentHasKeyboardFocus(focused)
             }
         }
 
@@ -187,6 +198,46 @@ struct ServerWebView: NSViewRepresentable {
                           let path = note.userInfo?[HubWebNavigationCommand.pathKey] as? String
                     else { return }
                     self.load(path: path)
+                }
+            )
+            commandObservers.append(
+                NotificationCenter.default.addObserver(
+                    forName: .hubWebFindPresent,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] note in
+                    guard let self,
+                          HubWebNavigationCommand.targets(note, serverID: serverID),
+                          self.appState.selectedServerID == serverID,
+                          self.webContainer?.containsKeyboardFocus(in: self.webView?.window) == true
+                    else { return }
+                    self.webContainer?.presentFindInterface()
+                }
+            )
+            commandObservers.append(
+                NotificationCenter.default.addObserver(
+                    forName: .hubWebFindNext,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] note in
+                    guard let self,
+                          HubWebNavigationCommand.targets(note, serverID: serverID),
+                          self.appState.selectedServerID == serverID
+                    else { return }
+                    self.webContainer?.findNext()
+                }
+            )
+            commandObservers.append(
+                NotificationCenter.default.addObserver(
+                    forName: .hubWebFindPrevious,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] note in
+                    guard let self,
+                          HubWebNavigationCommand.targets(note, serverID: serverID),
+                          self.appState.selectedServerID == serverID
+                    else { return }
+                    self.webContainer?.findPrevious()
                 }
             )
         }

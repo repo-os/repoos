@@ -335,6 +335,28 @@ extension Notification.Name {
     static let hubWebNavigationForward = Notification.Name("org.repoos.hub.webNavigation.forward")
     static let hubWebNavigationReload = Notification.Name("org.repoos.hub.webNavigation.reload")
     static let hubWebNavigationNavigate = Notification.Name("org.repoos.hub.webNavigation.navigate")
+    static let hubWebFindPresent = Notification.Name("org.repoos.hub.webFind.present")
+    static let hubWebFindNext = Notification.Name("org.repoos.hub.webFind.next")
+    static let hubWebFindPrevious = Notification.Name("org.repoos.hub.webFind.previous")
+}
+
+enum HubWebFindAction: String {
+    case present
+    case next
+    case previous
+
+    static let actionKey = "action"
+
+    static func userInfo(serverID: UUID, action: HubWebFindAction) -> [AnyHashable: Any] {
+        var info = HubWebNavigationCommand.userInfo(serverID: serverID)
+        info[actionKey] = action.rawValue
+        return info
+    }
+
+    static func action(from notification: Notification) -> HubWebFindAction? {
+        guard let raw = notification.userInfo?[actionKey] as? String else { return nil }
+        return HubWebFindAction(rawValue: raw)
+    }
 }
 
 enum HubWebNavigationCommand {

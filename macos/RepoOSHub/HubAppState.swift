@@ -11,6 +11,7 @@ final class HubAppState: ObservableObject {
     @Published var isCommandPalettePresented = false
     @Published var pinTaskContextServerID: UUID?
     @Published private(set) var workspaceNavigation = WorkspaceNavigationSnapshot.placeholder
+    @Published private(set) var workspaceWebContentHasKeyboardFocus = false
     @Published private(set) var pendingNavigationRequest: HubNavigationRequest?
     @Published private(set) var retainedWorkspaceServerIDs = Set<UUID>()
     @Published private(set) var runtimeInfoByServerID: [UUID: ServerRuntimeInfo] = [:]
@@ -148,6 +149,7 @@ final class HubAppState: ObservableObject {
         selectedServerID = id
         document.lastSelectedServerID = id
         workspaceNavigation = .placeholder
+        workspaceWebContentHasKeyboardFocus = false
         if let id {
             noteWorkspaceUsed(id)
         }
@@ -394,6 +396,44 @@ final class HubAppState: ObservableObject {
         } else if let id = selectedServerID {
             Task { await refreshHealth(for: id) }
         }
+    }
+
+    var workspaceCanUseFind: Bool {
+        workspaceNavigation.hasEmbeddedWebContent
+            && workspaceWebContentHasKeyboardFocus
+            && selectedServerID != nil
+    }
+
+    func setWorkspaceWebContentHasKeyboardFocus(_ focused: Bool) {
+        guard workspaceWebContentHasKeyboardFocus != focused else { return }
+        workspaceWebContentHasKeyboardFocus = focused
+    }
+
+    func workspacePresentFind() {
+        guard workspaceCanUseFind, let selectedServerID else { return }
+        NotificationCenter.default.post(
+            name: .hubWebFindPresent,
+            object: nil,
+            userInfo: HubWebFindAction.userInfo(serverID: selectedServerID, action: .present)
+        )
+    }
+
+    func workspaceFindNext() {
+        guard workspaceCanUseFind, let selectedServerID else { return }
+        NotificationCenter.default.post(
+            name: .hubWebFindNext,
+            object: nil,
+            userInfo: HubWebFindAction.userInfo(serverID: selectedServerID, action: .next)
+        )
+    }
+
+    func workspaceFindPrevious() {
+        guard workspaceCanUseFind, let selectedServerID else { return }
+        NotificationCenter.default.post(
+            name: .hubWebFindPrevious,
+            object: nil,
+            userInfo: HubWebFindAction.userInfo(serverID: selectedServerID, action: .previous)
+        )
     }
 
     func consumePendingNavigationRequest(for serverID: UUID) -> HubNavigationRequest? {
