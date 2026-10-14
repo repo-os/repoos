@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-upload-report-progress-so-slow
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-14T10:35:08Z"
-updated_at: "2026-10-14T11:48:11Z"
+updated_at: "2026-10-14T11:48:54Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -34,11 +34,11 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 ```json
 [
 {
-  "label": "Board card showing bundle upload progress",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=\"task-card-agent-hint\"]",
-  "state": "closeOut:uploading"
+"label": "Board card showing bundle upload progress",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"task-card-agent-hint\"]",
+"state": "closeOut:uploading"
 }
 ]
 ```
@@ -75,3 +75,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T11:46:35Z · status review→active
 - 2026-10-14T11:46:44Z · needs_input
 - 2026-10-14T11:48:11Z · body: section Shots
+- 2026-10-14T11:48:54Z · body
