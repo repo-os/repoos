@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-14T06:26:43Z"
+review_passes: 2
 id: "0775"
 title: "Dev page: full scrollable failure log and a plain-language failure summary"
 type: feature
@@ -9,9 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-page-full-scrollable-failure-log-and
 created_at: "2026-10-14T04:59:42Z"
-updated_at: "2026-10-14T06:26:43Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 When a dev target fails, the Dev page shows only the last 5-6 lines of output. The Landing page (HMR) failure on 2026-10-14 showed only the Node stack trace, and the cause (port 5173 already in use, held by an orphaned vite process from Oct 12 with --strictPort) was not stated anywhere on the page.
@@ -82,3 +82,4 @@ Auto-picking a free port for a target whose command does NOT use the `{port}` pl
 - 2026-10-14T06:25:06Z · status active→review
 - 2026-10-14T06:25:06Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-14T06:26:43Z · note: review pass 2: good to go
+
