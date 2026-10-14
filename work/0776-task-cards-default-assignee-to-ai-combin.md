@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-cards-default-assignee-to-ai-combin
 created_at: "2026-10-14T06:06:09Z"
-updated_at: "2026-10-14T06:46:48Z"
+updated_at: "2026-10-14T06:50:05Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -40,10 +40,16 @@ Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core
 ```json
 [
 {
-"label": "Board cards: one combined area chip and a file-count-only chip",
-"target": "default",
-"route": "/",
-"highlight": ".tc-area-chip, .tc-file-chip"
+  "label": "Board card: one combined area chip and a file-count-only chip",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".tc-area-chip, .tc-file-chip",
+  "steps": [
+    {
+      "waitFor": ".tc-file-chip"
+    }
+  ],
+  "state": "board:cardChips"
 }
 ]
 ```
@@ -69,3 +75,4 @@ Screenshots from the maintainer are attached: 1 and 2 show the area chips ('core
 - 2026-10-14T06:45:56Z · note: highlight .tc-area-chip, .tc-file-chip matched nothing on /
 - 2026-10-14T06:46:48Z · note: review pass 1: needs some work
 - 2026-10-14T06:46:48Z · status review→active
+- 2026-10-14T06:50:05Z · body: section Shots
