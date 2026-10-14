@@ -493,9 +493,11 @@ export interface DeepInfraScopedCredit {
 
 export interface DeepInfraChecklist {
   /**
-   * Ready-to-spend credit in USD. DeepInfra's `stripe_balance` is NEGATIVE
-   * when the account holds funds ready to spend, so a usable balance is the
-   * sign flipped positive; null when the balance is zero/absent.
+   * Remaining prepaid credits in USD. DeepInfra's `/payment/checklist`
+   * reports `stripe_balance` as negative funds including recent usage and
+   * `recent` as usage since the last invoice; subtracting `recent` gives prepaid
+   * credits shown in the billing page. Zero when none remain; null when the
+   * account is owed money.
    */
   availableUsd: number | null;
   /** Amount owed in USD — positive `stripe_balance` means money owed. */
@@ -535,12 +537,20 @@ interface DeepInfraChecklistBody {
 
 /**
  * Parse the authenticated `GET /payment/checklist` response
- * (https://docs.deepinfra.com/api-reference/billing/get-checklist). The sign
- * convention is the trap here: a NEGATIVE `stripe_balance` is credit ready to
- * spend, a POSITIVE one is debt — never render the raw value as a balance.
+ * (https://docs.deepinfra.com/api-reference/billing/get-checklist). There is
+ * no dedicated "prepaid credits" field in that response — the billing page's
+ * PREPAID CREDITS number adds up from two of its fields:
+ * `stripe_balance` ("negative value indicates funds ready-to-spend", a
+ * negative amount that includes pending usage) and `recent` ("usage since
+ * most recent invoice"). So remaining credit = max(0, -stripe_balance -
+ * recent); the user-visible check is the billing page showing, e.g.,
+ * -9.94 -(-7.13) → $2.81 prepaid alongside $7.13 monthly usage. A positive
+ * balance means money owed — never render it as credit.
  * Checklist dollar fields are USD; scoped credits are reported in CENTS and
  * converted here. Returns null when the 200 body doesn't carry the required
  * fields, so a shape change reads as an error instead of an all-dash row.
+ * Fetched without the optional `compute_owed` query flag (the default), which
+ * is the response shape the card's figures are verified against.
  */
 export function parseDeepInfraChecklist(body: unknown): DeepInfraChecklist | null {
   if (typeof body !== "object" || body === null) return null;
@@ -567,8 +577,8 @@ export function parseDeepInfraChecklist(body: unknown): DeepInfraChecklist | nul
       })
     : [];
   return {
-    availableUsd: stripeBalance != null && stripeBalance < 0 ? -stripeBalance : null,
-    owedUsd: stripeBalance != null && stripeBalance > 0 ? stripeBalance : null,
+    availableUsd: Math.max(0, Math.round((-stripeBalance - (num(c.recent) as number)) * 100) / 100),
+    owedUsd: stripeBalance > 0 ? stripeBalance : null,
     recentUsd: num(c.recent),
     limitUsd: num(c.limit),
     suspended: c.suspended === true,

@@ -466,15 +466,162 @@ describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
     await nextTick();
 
     const row = wrapper.findAll(".mp-row")[4];
-    expect(row.text()).toContain("Available credit");
+    expect(row.text()).toContain("Prepaid credits");
     expect(row.text()).toContain("$12.50");
-    expect(row.text()).toContain("Since last invoice");
+    expect(row.text()).toContain("Monthly usage");
     expect(row.text()).toContain("$3.25");
     expect(row.text()).toContain("Spending limit");
     expect(row.text()).toContain("Oct 2026");
     expect(row.text()).toContain("$4.50");
     expect(row.text()).toContain("$12.00");
     expect(row.text()).toContain("Llama launch");
+  });
+
+  it("keeps the last complete figures and marks them stale when usage refresh times out", async () => {
+    const fetchedAt = "2026-10-13T23:59:00.000Z";
+    const deepinfra = deepinfraUsageRoute({
+      kind: "deepinfra",
+      at: fetchedAt,
+      checklist: {
+        availableUsd: 4.56,
+        owedUsd: null,
+        recentUsd: 8.97,
+        limitUsd: null,
+        suspended: false,
+        suspendReason: null,
+        scopedCredits: [],
+      },
+      checklistError: null,
+      usage: [{ period: "2026.10", totalUsd: 5.0 }],
+      usageError: null,
+    });
+    stubFetch([
+      providersRoute(providersFixture([{ hasKey: true }, , , , { hasKey: true }])),
+      openrouterUsageRoute({
+        kind: "openrouter",
+        credits: null,
+        creditsError: null,
+        key: null,
+        keyError: null,
+      }),
+      goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
+      deepinfra,
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[4];
+    const refreshBtn = row.findAll("button").find((b) => b.text() === "Refresh");
+    deepinfra.body = {
+      kind: "deepinfra",
+      checklist: null,
+      checklistError: "The operation timed out.",
+      usage: null,
+      usageError: "The operation timed out.",
+    };
+    await refreshBtn!.trigger("click");
+    await flushPromises();
+    await nextTick();
+
+    expect(row.text()).toContain("Stale");
+    expect(row.find(".mp-stale").exists()).toBe(true);
+    expect(row.text()).toContain("As of");
+    expect(row.find(".mp-as-of").attributes("title")).toBe(fetchedAt);
+    expect(row.text()).toContain("$4.56");
+    expect(row.text()).toContain("$8.97");
+    expect(row.text()).not.toContain("Usage unavailable");
+    expect(row.text()).not.toContain("Balance unavailable");
+  });
+
+  it("keeps the figures when a refresh fails outright and shows the error below them", async () => {
+    const deepinfra = deepinfraUsageRoute({
+      kind: "deepinfra",
+      at: "2026-10-13T23:59:00.000Z",
+      checklist: {
+        availableUsd: 6.42,
+        owedUsd: null,
+        recentUsd: 3.18,
+        limitUsd: null,
+        suspended: false,
+        suspendReason: null,
+        scopedCredits: [],
+      },
+      checklistError: null,
+      usage: [{ period: "2026.10", totalUsd: 8.5 }],
+      usageError: null,
+    });
+    stubFetch([
+      providersRoute(providersFixture([{ hasKey: true }, , , , { hasKey: true }])),
+      openrouterUsageRoute({
+        kind: "openrouter",
+        credits: null,
+        creditsError: null,
+        key: null,
+        keyError: null,
+      }),
+      goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
+      deepinfra,
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[4];
+    const refreshBtn = row.findAll("button").find((b) => b.text() === "Refresh");
+    deepinfra.status = 502;
+    deepinfra.body = { error: "The operation timed out." };
+    await refreshBtn!.trigger("click");
+    await flushPromises();
+    await nextTick();
+
+    // Last good figures stay the main content, marked stale; the failure is a
+    // secondary banner with a Retry affordance.
+    expect(row.find(".mp-data").exists()).toBe(true);
+    expect(row.text()).toContain("$6.42");
+    expect(row.text()).toContain("$3.18");
+    expect(row.find(".mp-stale").exists()).toBe(true);
+    expect(row.text()).toContain("The operation timed out.");
+    expect(row.find(".mp-retry").exists()).toBe(true);
+  });
+
+  it("shows a fresh balance with the usage part-error on a partial first load, unmarked stale", async () => {
+    stubFetch([
+      providersRoute(providersFixture([{ hasKey: true }, , , , { hasKey: true }])),
+      openrouterUsageRoute({
+        kind: "openrouter",
+        credits: null,
+        creditsError: null,
+        key: null,
+        keyError: null,
+      }),
+      goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
+      deepinfraUsageRoute({
+        kind: "deepinfra",
+        checklist: {
+          availableUsd: 5.67,
+          owedUsd: null,
+          recentUsd: null,
+          limitUsd: null,
+          suspended: false,
+          suspendReason: null,
+          scopedCredits: [],
+        },
+        checklistError: null,
+        usage: null,
+        usageError: "The operation timed out.",
+      }),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[4];
+    expect(row.text()).toContain("Prepaid credits");
+    expect(row.text()).toContain("$5.67");
+    expect(row.text()).toContain("Usage unavailable: The operation timed out.");
+    expect(row.find(".mp-stale").exists()).toBe(false);
+    expect(row.text()).toContain("As of");
   });
 
   it("shows an owed amount instead of balance when stripe_balance is positive", async () => {
