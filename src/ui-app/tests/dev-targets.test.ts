@@ -13,9 +13,10 @@ import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RepoOSConfig, DevTargetConfig } from "../../core/types";
 import { loadConfig, parseDevTargets } from "../../core/config";
-import { DevTargetManager, DEV_LOG_TAIL_LINES } from "../../server/dev";
+import { DevTargetManager, DEV_LOG_MAX_LINES } from "../../server/dev";
 import type { RouteContext } from "../../server/routes/types";
 import {
+  explainDevFailure,
   getDevTarget,
   getDevTargets,
   restartDevTarget,
@@ -469,17 +470,19 @@ describe("DevTargetManager lifecycle", () => {
     }
   });
 
-  it("captures output into the log tail, capped at DEV_LOG_TAIL_LINES", async () => {
+  it("captures output into the log, capped at DEV_LOG_MAX_LINES", async () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-dev-log-"));
-    const cmd = `bun -e "for(let i=0;i<${DEV_LOG_TAIL_LINES + 50};i++)console.log('line',i);setTimeout(()=>{},5000)"`;
+    const cmd = `bun -e "for(let i=0;i<${DEV_LOG_MAX_LINES + 50};i++)console.log('line',i);setTimeout(()=>{},5000)"`;
     const mgr = new DevTargetManager(baseConfig({ targets: [target({ command: cmd })] }, dir));
     try {
       await mgr.start("web");
       // Give the child a moment to flush its output.
-      await new Promise((r) => setTimeout(r, 800));
+      await new Promise((r) => setTimeout(r, 1200));
       const log = mgr.get("web")?.log ?? [];
-      expect(log.length).toBeLessThanOrEqual(DEV_LOG_TAIL_LINES);
+      expect(log.length).toBeLessThanOrEqual(DEV_LOG_MAX_LINES);
       expect(log.length).toBeGreaterThan(0);
+      // The cap is a full last-run log, not a 6-line tail (#0775).
+      expect(DEV_LOG_MAX_LINES).toBe(2000);
     } finally {
       await mgr.stopAll();
       rmSync(dir, { recursive: true, force: true });
@@ -711,34 +714,53 @@ describe("dev target routes", () => {
     return { devTargets: mgr } as unknown as RouteContext;
   }
 
-  it("lists targets with their state", () => {
+  it("lists targets with their state", async () => {
     const mgr = new DevTargetManager(baseConfig({ targets: [target({})] }));
     const { res, fake } = makeRes();
-    getDevTargets(makeCtx(mgr), req, res, {});
+    await getDevTargets(makeCtx(mgr), req, res, {});
     expect(fake.status).toBe(200);
     expect(fake.payload.targets).toHaveLength(1);
     expect(fake.payload.targets[0].status).toBe("stopped");
   });
 
-  it("surfaces config validation errors on list", () => {
+  it("surfaces config validation errors on list", async () => {
     const cfg = baseConfig({ targets: [] });
     cfg.devTargetErrors = ["[dev.targets] web: a command is required"];
     const { res, fake } = makeRes();
-    getDevTargets(makeCtx(new DevTargetManager(cfg)), req, res, {});
+    await getDevTargets(makeCtx(new DevTargetManager(cfg)), req, res, {});
     expect(fake.payload.errors).toEqual(["[dev.targets] web: a command is required"]);
   });
 
-  it("404s an unknown target", () => {
+  it("404s an unknown target", async () => {
     const mgr = new DevTargetManager(baseConfig({ targets: [target({})] }));
     const { res, fake } = makeRes();
-    getDevTarget(makeCtx(mgr), req, res, { param1: "nope" });
+    await getDevTarget(makeCtx(mgr), req, res, { param1: "nope" });
     expect(fake.status).toBe(404);
   });
 
-  it("503s when the manager is absent (partial context)", () => {
+  it("503s when the manager is absent (partial context)", async () => {
     const { res, fake } = makeRes();
-    getDevTargets(makeCtx(undefined), req, res, {});
+    await getDevTargets(makeCtx(undefined), req, res, {});
     expect(fake.status).toBe(503);
+  });
+
+  it("403s the AI explanation when the setting is off (#0775)", async () => {
+    const mgr = new DevTargetManager(baseConfig({ targets: [target({})] }));
+    const ctx = { devTargets: mgr, config: baseConfig({ targets: [] }) } as unknown as RouteContext;
+    const { res, fake } = makeRes();
+    await explainDevFailure(ctx, req, res, { param1: "web" });
+    expect(fake.status).toBe(403);
+  });
+
+  it("400s the AI explanation for a target that is not failed (#0775)", async () => {
+    const mgr = new DevTargetManager(baseConfig({ targets: [target({})] }));
+    const ctx = {
+      devTargets: mgr,
+      config: baseConfig({ targets: [target({})], failureSummary: { ai: true } }),
+    } as unknown as RouteContext;
+    const { res, fake } = makeRes();
+    await explainDevFailure(ctx, req, res, { param1: "web" });
+    expect(fake.status).toBe(400);
   });
 
   it("starts, then stops, a target through the routes", async () => {

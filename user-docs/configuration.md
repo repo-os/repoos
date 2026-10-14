@@ -1484,7 +1484,19 @@ and the command is always resolved from the committed `repoos.toml` — no reque
 body ever supplies a command. Starting a target leaves it running independent of
 the browser; it stops only when you ask, when the server stops, or when it
 crashes. Status is one of `running`, `stopped`, `starting` or `failed`, and the
-last ~200 lines of a target's combined output are available.
+last 2000 lines of a target's combined output are kept and shown in a scrollable
+panel on the Dev page.
+
+When a target fails, the Dev page shows a plain-language summary above its
+output — what failed, the most likely cause, and how to fix it. A port already
+in use is detected from the output and names the port plus the process holding
+it (its PID and command), with a **Stop** action when that process is one RepoOS
+started; any other process is shown for you to stop yourself. An optional
+AI-written summary can be layered on top:
+
+| Key | Type | Default | Restart | Description |
+| --- | --- | --- | --- | --- |
+| `dev.failureSummary.ai` | boolean | `false` | no | Offer an AI-written plain-language summary of a failed dev target, in addition to the deterministic diagnosis. Off by default because it spends a model call. |
 
 An invalid row — a missing name or command, an unknown `kind`, a duplicate name,
 or a conflicting field such as a `url` on an `artifact` — is reported as a clear
