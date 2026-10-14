@@ -20,6 +20,7 @@ import ConfirmDialog from "../components/ConfirmDialog.vue";
 import { api, JSON_OPTS } from "../api";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
+import { fmtDate, fmtTime, relTime } from "../lib/time";
 import type { DevTargetStatus, DevTargetView, DevTargetsResponse } from "../types";
 
 const repo = useRepoStore();
@@ -62,6 +63,31 @@ const KIND_LABEL: Record<DevTargetView["kind"], string> = {
   artifact: "Build",
   process: "Process",
 };
+
+/** Whether a target is live, so its start time is the running chip's story. */
+function isRunning(t: DevTargetView): boolean {
+  return t.status === "running";
+}
+
+/**
+ * How long ago the target started, e.g. "17 hours ago". Shown beside the
+ * running chip; the page's 4s poll re-renders it, so it stays current while
+ * the target is up.
+ */
+function startedAgo(t: DevTargetView): string {
+  return relTime(t.startedAt);
+}
+
+/**
+ * The exact local start time for the hover/focus tooltip, following the app's
+ * date/time conventions (`lib/time.ts`), e.g. "Tue, 14 Oct at 11:18 AM".
+ */
+function startedAtTip(t: DevTargetView): string {
+  const date = fmtDate(t.startedAt);
+  const time = fmtTime(t.startedAt);
+  if (date && time) return `${date} at ${time}`;
+  return date || time || "unknown";
+}
 
 /** The last few output lines an at-a-glance view shows inline. */
 const LOG_PREVIEW_LINES = 6;
@@ -220,6 +246,15 @@ watch(
                 <span class="dev-state-pill" :data-status="t.status">
                   <span class="dev-dot"></span>{{ STATE_LABEL[t.status] }}
                 </span>
+                <span
+                  v-if="t.startedAt && isRunning(t)"
+                  class="dev-started"
+                  tabindex="0"
+                  data-test-id="dev-started"
+                  :data-tip="startedAtTip(t)"
+                  :aria-label="`Started ${startedAgo(t)} — ${startedAtTip(t)}`"
+                  >{{ startedAgo(t) }}</span
+                >
               </div>
               <code class="dev-card-name">{{ t.name }}</code>
             </div>
@@ -463,6 +498,22 @@ watch(
   border-radius: 50%;
   background: currentColor;
   flex-shrink: 0;
+}
+
+/* Elapsed time beside the running chip — muted so it reads as context for the
+   pill, not a second badge. Focusable: the shared tooltip shows the exact
+   start time on hover and keyboard focus. */
+.dev-started {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--txt-faint);
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+.dev-started:focus-visible {
+  outline: 2px solid var(--border-bright);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .dev-meta {
