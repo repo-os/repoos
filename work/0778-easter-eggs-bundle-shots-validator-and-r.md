@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T15:59:21Z"
+updated_at: "2026-10-14T16:06:57Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 4
@@ -188,3 +188,4 @@ Item 5 (stalled close-out card) is implemented and unit-pinned (DOM order Cancel
 - 2026-10-14T15:52:13Z · body
 - 2026-10-14T15:59:21Z · status active→review
 - 2026-10-14T15:59:21Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-14T16:06:57Z · note: review pass 5: good to go
