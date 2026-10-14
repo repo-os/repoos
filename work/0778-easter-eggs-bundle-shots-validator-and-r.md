@@ -10,8 +10,10 @@ created_by: njachowski@gmail.com
 branch: ""
 cli_override: cursor
 model_override: composer-2.5
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-10-14T07:43:09Z"
-updated_at: "2026-10-14T08:27:06Z"
+updated_at: "2026-10-14T08:27:10Z"
 ---
 ## Problem
 Small cosmetic and validation bugs found on 2026-10-14. They are bundled because each is small and independent.
@@ -49,3 +51,4 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 - 2026-10-14T08:27:02Z · cli_override
 - 2026-10-14T08:27:05Z · cli_override
 - 2026-10-14T08:27:06Z · model_override
+- 2026-10-14T08:27:10Z · review_cli_override, review_model_override
