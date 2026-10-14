@@ -482,6 +482,61 @@ describe("DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627
     expect(readFileSync(task.absPath, "utf8")).toContain("```json\n[]");
   });
 
+  it("removes only the edited invalid entry when twins share label/route/target (#0778 r3)", async () => {
+    // The stored declaration's selector singles out the post-capture edit;
+    // the twin (same label/route/target, different selector) must survive.
+    const declared = {
+      target: "default",
+      route: "/",
+      label: "Board",
+      selector: ".a",
+      state: "board:withReviewTask",
+    };
+    const saved = localShotStore(repoos.config, task.id).save({
+      target: "default",
+      route: "/",
+      label: "Board",
+      provenance: "declared: Board",
+      declared,
+      data: PNG_1PX,
+    });
+    if ("error" in saved) throw new Error("seed failed");
+    task = patchSection(
+      `\`\`\`json\n${JSON.stringify(
+        [
+          {
+            target: "default",
+            route: "/",
+            label: "Board",
+            selector: ".a",
+            state: "board:notARealFixture",
+          },
+          {
+            target: "default",
+            route: "/",
+            label: "Board",
+            selector: ".b",
+            state: "board:notARealFixture",
+          },
+        ],
+        null,
+        2,
+      )}\n\`\`\``,
+    );
+
+    const { capture, res } = resCapture();
+    await deleteTaskShot(makeCtx() as never, emptyReq, res, {
+      param1: task.id,
+      param2: saved.name,
+    });
+
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 1 });
+    const onDisk = readFileSync(task.absPath, "utf8");
+    expect(onDisk).toContain('"selector": ".b"');
+    expect(onDisk).not.toContain('"selector": ".a"');
+  });
+
   it("deletes one shot when another declaration has an unknown state fixture (#0778)", async () => {
     const saved = seedShot("Agents tab");
     if ("error" in saved) throw new Error("seed failed");
