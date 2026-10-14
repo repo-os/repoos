@@ -331,7 +331,9 @@ describe("removeDeclarationsForDeletedShot (#0778 review round 3)", () => {
     );
     expect(errors).toEqual([]);
     expect(removed).toBe(0);
-    expect(keptEntries(content)).toEqual([restated]);
+    // content "" (with removed 0) is the helper's "leave the section alone"
+    // signal — the caller must not rewrite the ## Shots list on a no-match.
+    expect(content).toBe("");
   });
 
   it("removes the broken-state twin whose theme matches and keeps the theme twin (#0782)", () => {
