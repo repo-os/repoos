@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-14T16:06:58Z"
-review_passes: 5
 id: "0778"
 title: "Easter eggs bundle: Shots validator and review card wording"
 type: bug
@@ -15,6 +13,8 @@ model_override: haiku
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T07:43:09Z"
+updated_at: "2026-10-14T16:22:16Z"
+review_passes: 5
 review_rounds: 2
 dev_error_count: 4
 ---
@@ -49,42 +49,50 @@ Source: user reports 2026-10-14 on #0776 (shot delete error), the Waiting-for-yo
 ```json
 [
 {
-"label": "Repo Context doc viewer with Open in editor link (light)",
-"target": "default",
-"route": "/repo?doc=docs/README.md",
-"highlight": "[data-test-id=\"context-open-in-editor\"]",
-"theme": "light"
+  "label": "Repo Context doc viewer Open in editor link (light)",
+  "target": "default",
+  "route": "/repo?doc=docs/README.md",
+  "highlight": "[data-test-id=\"context-open-in-editor\"]",
+  "theme": "light"
 },
 {
-"label": "Repo Context doc viewer with Open in editor link (dark)",
-"target": "default",
-"route": "/repo?doc=docs/README.md",
-"highlight": "[data-test-id=\"context-open-in-editor\"]",
-"theme": "dark"
+  "label": "Repo Context doc viewer Open in editor link (dark)",
+  "target": "default",
+  "route": "/repo?doc=docs/README.md",
+  "highlight": "[data-test-id=\"context-open-in-editor\"]",
+  "theme": "dark"
 },
 {
-"label": "Changes tab Refresh evidence and Add shot pulled right (light)",
-"target": "default",
-"route": "/work?task=0778&tab=changes",
-"highlight": ".changes-summary-actions",
-"steps": [
-{
-"click": "[data-test-id=\"changes-tab-ui\"]"
-}
-],
-"theme": "light"
+  "label": "Changes tab Refresh evidence and Add shot right-aligned (light)",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": ".changes-summary-actions",
+  "state": "drawer:reviewWithBranch",
+  "theme": "light"
 },
 {
-"label": "Changes tab Refresh evidence and Add shot pulled right (dark)",
-"target": "default",
-"route": "/work?task=0778&tab=changes",
-"highlight": ".changes-summary-actions",
-"steps": [
+  "label": "Changes tab Refresh evidence and Add shot right-aligned (dark)",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": ".changes-summary-actions",
+  "state": "drawer:reviewWithBranch",
+  "theme": "dark"
+},
 {
-"click": "[data-test-id=\"changes-tab-ui\"]"
-}
-],
-"theme": "dark"
+  "label": "Stalled close-out card Cancel and Retry on the right (light)",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"task-card-pipeline-retry\"]",
+  "state": "closeOut:stalled",
+  "theme": "light"
+},
+{
+  "label": "Stalled close-out card Cancel and Retry on the right (dark)",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"task-card-pipeline-retry\"]",
+  "state": "closeOut:stalled",
+  "theme": "dark"
 }
 ]
 ```
@@ -189,4 +197,4 @@ Item 5 (stalled close-out card) is implemented and unit-pinned (DOM order Cancel
 - 2026-10-14T15:59:21Z · status active→review
 - 2026-10-14T15:59:21Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-14T16:06:57Z · note: review pass 5: good to go
-
+- 2026-10-14T16:22:16Z · body: section Shots
