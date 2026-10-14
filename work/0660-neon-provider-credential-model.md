@@ -3,6 +3,9 @@ id: "0660"
 title: Neon provider + credential model
 type: feature
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p1
 area: server
 story: Cloud attachment storage
@@ -12,7 +15,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/neon-provider-credential-model
 created_at: "2026-10-05T08:28:57Z"
-updated_at: "2026-10-14T15:30:33Z"
+updated_at: "2026-10-14T15:30:38Z"
 last_close_out_gate_ms: 379261
 last_close_out_gate_at: "2026-10-14T15:30:16.872Z"
 review_passes: 1
@@ -80,3 +83,4 @@ None — server/config slice, no UI change.
 - 2026-10-12T04:33:30Z · note: review pass 1: good to go
 - 2026-10-14T15:30:16Z · close-out gate completed in 379s
 - 2026-10-14T15:30:33Z · status review→done, release:success
+- 2026-10-14T15:30:38Z · needs_input
