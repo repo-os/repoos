@@ -40,3 +40,4 @@ Start from macos/RepoOSHub/RepoOSHubApp.swift (the existing CommandMenu('Go') wi
 - 2026-10-14T11:45:49Z · status ready→active, branch
 - 2026-10-14T11:50:18Z · body
 - 2026-10-14T11:57:24Z · status active→review
+- 2026-10-14T11:57:24Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
