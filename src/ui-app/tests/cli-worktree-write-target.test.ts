@@ -124,11 +124,7 @@ describe("board-write commands resolve to the main checkout, not cwd (#0202)", (
     const { root, taskPath, clean } = makeRepoWithTask();
     try {
       await withCwd(root, () => {
-        cmdUpdate([
-          "0001",
-          "--shots",
-          '[{"target":"default","route":"/","label":"One"}]',
-        ]);
+        cmdUpdate(["0001", "--shots", '[{"target":"default","route":"/","label":"One"}]']);
       });
       expect(readFileSync(taskPath, "utf8")).toContain('"label": "One"');
       await withCwd(root, () => {
