@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-upload-report-progress-so-slow
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-10-14T10:35:08Z"
-updated_at: "2026-10-14T12:08:27Z"
+updated_at: "2026-10-14T12:14:08Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -85,3 +85,4 @@ Start from the remote validation upload in the integration orchestrator (src/ser
 - 2026-10-14T11:50:26Z · needs_input
 - 2026-10-14T12:08:23Z · model_override
 - 2026-10-14T12:08:26Z · status review→active
+- 2026-10-14T12:14:08Z · message_queued at 2026-10-14T12:14:08.237Z
