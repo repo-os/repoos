@@ -444,7 +444,7 @@ describe("Changes → UI changes rows (#0611)", () => {
     expect(wrapper.find(".shot-viewer-print img").attributes("src")).toBe("/u/1.png");
   });
 
-  it("leaves the warning banner, the code-diff section and the empty state alone", async () => {
+  it("shows UI changes by default when shots exist, and Code changes when they don't", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     installFetch();
@@ -453,25 +453,58 @@ describe("Changes → UI changes rows (#0611)", () => {
     shotsPayload = [makeShot({ label: "Bell popover" })];
     const wrapper = await mountChanges(pinia);
 
+    // With shots, the UI pane is the default: its warning and rows show, the
+    // code diff does not.
     expect(wrapper.find(".shot-warning").text()).toContain("resolve to the Docs site");
     expect(wrapper.find(".ui-changes").exists()).toBe(true);
+    expect(wrapper.find('[data-test-id="changes-tab-ui"]').attributes("aria-selected")).toBe(
+      "true",
+    );
+    expect(wrapper.find(".changes-summary[aria-label='Code changes summary']").exists()).toBe(
+      false,
+    );
+    expect(wrapper.find(".diff-file-list").exists()).toBe(false);
+
+    // Switching to Code reveals the diff and hides the UI pane.
+    await wrapper.find('[data-test-id="changes-tab-code"]').trigger("click");
+    expect(wrapper.find(".ui-changes").exists()).toBe(false);
+    expect(wrapper.find(".changes-summary[aria-label='Code changes summary']").exists()).toBe(true);
+    expect(wrapper.find(".diff-file-list").exists()).toBe(true);
+  });
+
+  it("defaults to Code changes with no shots, keeping the Add-shot affordance under UI", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [];
+    shotsWarning = undefined;
+    const wrapper = await mountChanges(pinia, makeTask());
+
+    // No shots → the code pane is the default; the diff is visible.
+    expect(wrapper.find('[data-test-id="changes-tab-code"]').attributes("aria-selected")).toBe(
+      "true",
+    );
+    expect(wrapper.find(".ui-changes").exists()).toBe(false);
     expect(wrapper.find(".changes-summary[aria-label='Code changes summary']").exists()).toBe(true);
     expect(wrapper.find(".diff-file-list").exists()).toBe(true);
 
-    // No shots and no warning at all: nothing is rendered as a problem and the
-    // rest of the tab is intact. Since #0627 the section itself still shows for
-    // an active task with a branch — it carries the Add-shot affordance — while
-    // a task outside active/review keeps the old disappear-entirely behavior.
+    // The Add-shot affordance (#0627) lives in the UI pane.
+    await wrapper.find('[data-test-id="changes-tab-ui"]').trigger("click");
+    expect(wrapper.find(".ui-changes").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Add shot");
+  });
+
+  it("shows a UI-changes empty state for an unmanaged, shot-less task", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
     shotsPayload = [];
-    shotsWarning = undefined;
-    const empty = await mountChanges(pinia, makeTask());
-    expect(empty.find(".shot-warning").exists()).toBe(false);
-    expect(empty.find(".ui-changes").exists()).toBe(true);
-    expect(empty.text()).toContain("Add shot");
-    expect(empty.find(".changes-summary[aria-label='Code changes summary']").exists()).toBe(true);
-    expect(empty.find(".diff-file-list").exists()).toBe(true);
     const unmanaged = await mountChanges(pinia, makeTask({ status: "ready" }));
+    await unmanaged.find('[data-test-id="changes-tab-ui"]').trigger("click");
     expect(unmanaged.find(".ui-changes").exists()).toBe(false);
+    expect(unmanaged.text()).toContain("No UI changes yet");
   });
 });
 
@@ -618,6 +651,8 @@ describe("Changes → handoff shot verdicts (#0753)", () => {
     });
 
     const wrapper = await mountChanges(pinia);
+    // No shots → Code is the default; the run-level issues live under the UI tab.
+    await wrapper.find('[data-test-id="changes-tab-ui"]').trigger("click");
     // The section should still render even with no shot rows, because there are
     // run-level issues to show.
     const uiChanges = wrapper.find(".ui-changes");
@@ -626,5 +661,48 @@ describe("Changes → handoff shot verdicts (#0753)", () => {
     const footnotes = wrapper.find(".ui-changes-footnotes");
     expect(footnotes.exists()).toBe(true);
     expect(footnotes.text()).toContain("No screenshots captured");
+  });
+});
+
+// ---- #0773: the Changes tab's UI changes / Code changes subtabs ----
+
+describe("Changes subtabs (#0773)", () => {
+  it("keeps an explicit sub-tab choice until the task changes", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    installFetch();
+    vi.stubGlobal("EventSource", FakeEventSource);
+    shotsPayload = [makeShot({ label: "Bell popover" })];
+    const wrapper = await mountChanges(pinia);
+
+    // Shots exist → UI changes is the default.
+    expect(wrapper.find('[data-test-id="changes-tab-ui"]').attributes("aria-selected")).toBe(
+      "true",
+    );
+
+    // An explicit pick sticks.
+    await wrapper.find('[data-test-id="changes-tab-code"]').trigger("click");
+    expect(wrapper.find('[data-test-id="changes-tab-code"]').attributes("aria-selected")).toBe(
+      "true",
+    );
+
+    // Opening a task with no shots resets the pick to that task's default: Code.
+    const ui = useUiStore();
+    shotsPayload = [];
+    ui.open(makeTask({ id: "0002", title: "Another", body: "" }));
+    ui.activeTab = "changes";
+    await flushPromises();
+    expect(wrapper.find('[data-test-id="changes-tab-code"]').attributes("aria-selected")).toBe(
+      "true",
+    );
+
+    // A new task with shots defaults back to UI changes.
+    shotsPayload = [makeShot()];
+    ui.open(makeTask({ id: "0003", title: "Third", body: "" }));
+    ui.activeTab = "changes";
+    await flushPromises();
+    expect(wrapper.find('[data-test-id="changes-tab-ui"]').attributes("aria-selected")).toBe(
+      "true",
+    );
   });
 });

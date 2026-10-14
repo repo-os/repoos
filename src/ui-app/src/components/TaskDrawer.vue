@@ -984,6 +984,43 @@ const addShotWarning = ref<string | undefined>(undefined);
 const deleteShotTarget = ref<ShotMeta | null>(null);
 const deleteShotBusy = ref(false);
 
+// ---- Changes tab subtabs: UI changes / Code changes (#0773) ----
+//
+// The Changes tab grew long enough that mixing captured UI shots with the code
+// diff hurt scanning. Split it into two subtabs in the debug tab's pill style.
+// `null` means the user has not picked one for the current task, so the default
+// follows the shots that exist: UI when the task has captured shots, code when
+// it does not. An explicit pick sticks until the drawer's task changes.
+type ChangesPane = "ui" | "code";
+const changesPane = ref<ChangesPane | null>(null);
+const hasTaskShots = computed(() => taskShots.value.length > 0);
+const activeChangesPane = computed<ChangesPane>(
+  () => changesPane.value ?? (hasTaskShots.value ? "ui" : "code"),
+);
+function selectChangesPane(pane: ChangesPane): void {
+  changesPane.value = pane;
+}
+/** True when the UI-changes section has anything to render. */
+const uiChangesVisible = computed(
+  () =>
+    !!ui.active &&
+    (uiChangeRows.value.length > 0 ||
+      uiShotProblems.value.length > 0 ||
+      uiHandoffOrphans.value.length > 0 ||
+      uiHandoffHasRunLevelIssues.value ||
+      uiHandoffStale.value ||
+      canManageShots.value),
+);
+// Re-evaluate the default when the selected task or the drawer's open state
+// changes — shots load asynchronously, so `activeChangesPane` derives it live
+// until the user clicks.
+watch(
+  () => [ui.active?.id, open.value] as const,
+  () => {
+    changesPane.value = null;
+  },
+);
+
 function openAddShot(): void {
   addShotError.value = undefined;
   addShotWarning.value = undefined;
@@ -5478,31 +5515,59 @@ watch(
           </section>
         </div>
         <div v-else-if="ui.activeTab === 'changes'" class="drawer-body">
-          <div v-if="ui.active && shotWarning" class="shot-warning shot-warning-changes">
+          <!-- #0773: the Changes tab's two subtabs, in the debug tab's pill
+               style. The default (see `activeChangesPane`) is driven by whether
+               the task has captured shots. -->
+          <div
+            v-if="ui.active && ui.active.branch"
+            class="changes-tabs"
+            role="tablist"
+            aria-label="Changes view"
+          >
+            <button
+              type="button"
+              class="changes-tab"
+              data-test-id="changes-tab-ui"
+              role="tab"
+              :class="{ active: activeChangesPane === 'ui' }"
+              :aria-selected="activeChangesPane === 'ui'"
+              @click="selectChangesPane('ui')"
+            >
+              UI changes
+            </button>
+            <button
+              type="button"
+              class="changes-tab"
+              data-test-id="changes-tab-code"
+              role="tab"
+              :class="{ active: activeChangesPane === 'code' }"
+              :aria-selected="activeChangesPane === 'code'"
+              @click="selectChangesPane('code')"
+            >
+              Code changes
+            </button>
+          </div>
+          <div
+            v-if="activeChangesPane === 'ui' && shotWarning"
+            class="shot-warning shot-warning-changes"
+          >
             {{ shotWarning }}
             <span class="shot-warning-hint">
               Pick the right target from the preview control above.
             </span>
           </div>
-          <!-- Captured preview shots (#0611). Same one-per-row shape as the New
-               task / New input pending attachments (ff-pending-*), because a
-               thumbnail grid had no room for the `## Shots` spec the reviewer
-               actually reads: label, target · route, selector, steps.
+          <!-- Captured preview shots (#0611), now the **UI changes** pane. Same
+               one-per-row shape as the New task / New input pending attachments
+               (ff-pending-*), because a thumbnail grid had no room for the
+               `## Shots` spec the reviewer actually reads: label, target ·
+               route, selector, steps.
 
                #0753: each row carries the handoff verdict as a green check /
                red cross icon, and this section's small status line + footnotes
                carry the handoff-wide context (when, tested tree, issues) the old
                standalone "Handoff UI verification" block held. -->
           <section
-            v-if="
-              ui.active &&
-              (uiChangeRows.length ||
-                uiShotProblems.length ||
-                uiHandoffOrphans.length ||
-                uiHandoffHasRunLevelIssues ||
-                uiHandoffStale ||
-                canManageShots)
-            "
+            v-if="activeChangesPane === 'ui' && uiChangesVisible"
             class="changes-summary ui-changes"
             aria-label="UI changes"
           >
@@ -5667,6 +5732,12 @@ watch(
               </li>
             </ul>
           </section>
+          <p
+            v-if="ui.active && ui.active.branch && activeChangesPane === 'ui' && !uiChangesVisible"
+            class="changes-empty"
+          >
+            No UI changes yet.
+          </p>
           <template v-if="!ui.active">
             <p class="changes-empty">Select a task to view changes.</p>
           </template>
@@ -5675,17 +5746,20 @@ watch(
           </template>
           <template
             v-else-if="
-              !ui.active.git?.worktreeExists && taskDiff !== undefined && taskDiff.patch === ''
+              activeChangesPane === 'code' &&
+              !ui.active.git?.worktreeExists &&
+              taskDiff !== undefined &&
+              taskDiff.patch === ''
             "
           >
             <p class="changes-empty">
               No saved code changes are available for this completed task.
             </p>
           </template>
-          <template v-else-if="taskDiff && taskDiff.patch === ''">
+          <template v-else-if="activeChangesPane === 'code' && taskDiff && taskDiff.patch === ''">
             <p class="changes-empty">No code changes yet</p>
           </template>
-          <template v-else>
+          <template v-else-if="activeChangesPane === 'code'">
             <section class="changes-summary" aria-label="Code changes summary">
               <div class="changes-summary-title">Code changes</div>
               <div v-if="taskDiffStats" class="diff-stats">
@@ -6261,6 +6335,32 @@ watch(
 /* Changes tab — full diff output */
 .changes-summary {
   margin-bottom: 12px;
+}
+
+/* Changes tab subtabs (#0773) — the debug tab's pill style, reused so the two
+   surfaces read the same. */
+.changes-tabs {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+.changes-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--txt-dim);
+  font: 600 11.5px var(--font-sans);
+  cursor: pointer;
+}
+.changes-tab.active {
+  border-color: var(--cyan-dim);
+  background: var(--cyan-dim);
+  color: var(--cyan);
 }
 
 .changes-summary-title {

@@ -974,6 +974,21 @@ function makeScreens(url: string): ScreenState[] {
       },
     },
     {
+      name: "drawer-changes-code",
+      prepare: async (p) => {
+        await openDrawer(p);
+        await clickTab(p, "Changes");
+        // The fixture tasks carry shots, so UI changes is the default sub-tab
+        // (#0773). Click Code so the diff header and file rows — the surface
+        // the original hard-coded-color regression lived on — keep their
+        // contrast coverage now that the two panes are no longer both visible.
+        await p.evaluate(() => {
+          document.querySelector<HTMLElement>('[data-test-id="changes-tab-code"]')?.click();
+        });
+        await waitFor(p, () => document.querySelectorAll(".diff-file-list").length > 0, 3000);
+      },
+    },
+    {
       name: "drawer-tokens",
       prepare: async (p) => {
         await openDrawer(p);
