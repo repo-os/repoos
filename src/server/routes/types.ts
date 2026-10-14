@@ -100,6 +100,12 @@ export interface RouteContext {
   reportedStages: Record<string, DoneStep>;
   /** ISO timestamp per task id when {@link reportedStages} last changed (#0740). */
   reportedStageAt: Record<string, string>;
+  /**
+   * In-stage progress detail per task id (#0782) — e.g. a slow bundle
+   * upload's size + elapsed time. Optional so route tests can build a partial
+   * context; absent means no detail.
+   */
+  reportedDetail?: Record<string, string>;
   triggerJobProcessing: () => void;
   pendingReview: Set<string>;
   uiDir: string | null;

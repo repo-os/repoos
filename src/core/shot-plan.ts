@@ -25,7 +25,7 @@
  * tests can share it without touching git, a server or Playwright.
  */
 import type { PreviewConfig, ShotConfig } from "./types.js";
-import { isShotPreviewFixtureId } from "./shot-fixtures.js";
+import { SHOT_PREVIEW_FIXTURE_IDS, isShotPreviewFixtureId } from "./shot-fixtures.js";
 import { DEFAULT_PREVIEW_TARGET as DEFAULT_FALLBACK_TARGET } from "./shot-targets.js";
 
 /** One ordered step within a declared shot. Exactly one key per object. */
@@ -92,6 +92,13 @@ export interface DeclaredShot {
    */
   state?: string;
   /**
+   * Pin the page's light/dark mode for this capture (#0782) — `"light"` or
+   * `"dark"`. A criterion like "visible in light and dark themes" gets one
+   * entry per theme on the same route; the capture pins the app's stored
+   * theme before the screenshot. Absent means the preview's current theme.
+   */
+  theme?: "light" | "dark";
+  /**
    * Meaningful assertions the capture must satisfy (#0734). One entry may carry
    * several; every non-optional one must pass or the handoff is blocked.
    */
@@ -148,6 +155,8 @@ export interface CaptureEntry {
   steps?: DeclaredStep[];
   /** Preview fixture id (#0743), threaded from the declared shot. */
   state?: string;
+  /** Light/dark mode pinned for this capture (#0782), threaded from the declared shot. */
+  theme?: "light" | "dark";
   /**
    * Meaningful assertions the capture must satisfy (#0734). Threaded from the
    * declared shot so the handoff gate can check them and block on failure;
@@ -376,10 +385,16 @@ function parseShot(raw: unknown, where: string): { shot?: DeclaredShot; error?: 
       return {
         error:
           `${where}: unknown "state" fixture "${r.state}" — use one of: ` +
-          "closeOut:active, card:doneError, board:withReviewTask",
+          SHOT_PREVIEW_FIXTURE_IDS.join(", "),
       };
     }
     shot.state = r.state;
+  }
+  if (r.theme !== undefined) {
+    if (r.theme !== "light" && r.theme !== "dark") {
+      return { error: `${where}: "theme" expects "light" or "dark"` };
+    }
+    shot.theme = r.theme;
   }
   if (r.env !== undefined) {
     if (typeof r.env !== "object" || r.env === null || Array.isArray(r.env)) {
@@ -766,6 +781,7 @@ export function buildCapturePlan(
       ...(!isCommand(resolved.target) && shot.steps?.length ? { steps: shot.steps } : {}),
       ...(!isCommand(resolved.target) && shot.assert?.length ? { assert: shot.assert } : {}),
       ...(!isCommand(resolved.target) && shot.state ? { state: shot.state } : {}),
+      ...(!isCommand(resolved.target) && shot.theme ? { theme: shot.theme } : {}),
       // #0769: command-only selection — env/args passed to the command and a
       // per-entry output glob that narrows which produced files become THIS
       // shot. Only ever carried for a command target.
@@ -801,9 +817,11 @@ export function buildCapturePlan(
   // and the same selector). The surviving entry keeps the first label.
   // #0734: assertions participate in the key — two entries that prove different
   // things are NOT near-duplicates, and collapsing them would silently drop one
-  // set of assertions.
+  // set of assertions. #0782: `theme` participates for the same reason — a
+  // light and a dark capture of one route are two pieces of evidence, not a
+  // near-duplicate pair.
   const collapseKey = (e: CaptureEntry): string =>
-    `${e.target}\0${e.route}\0${e.selector ?? ""}\0${e.state ?? ""}\0${JSON.stringify(e.steps ?? [])}\0${JSON.stringify(e.assert ?? [])}\0${JSON.stringify(e.env ?? {})}\0${JSON.stringify(e.args ?? [])}\0${e.glob ?? ""}`;
+    `${e.target}\0${e.route}\0${e.selector ?? ""}\0${e.state ?? ""}\0${e.theme ?? ""}\0${JSON.stringify(e.steps ?? [])}\0${JSON.stringify(e.assert ?? [])}\0${JSON.stringify(e.env ?? {})}\0${JSON.stringify(e.args ?? [])}\0${e.glob ?? ""}`;
   const collapsed: string[] = [];
   const deduped: CaptureEntry[] = [];
   for (const entry of entries) {
@@ -890,6 +908,9 @@ export function sameDeclaredShot(a: DeclaredShot, b: DeclaredShot): boolean {
   for (const field of ["label", "target", "route", "selector", "highlight"] as const) {
     if ((a[field] ?? undefined) !== (b[field] ?? undefined)) return false;
   }
+  // #0782: theme is part of a declaration's identity — a light capture and a
+  // dark capture of the same route are different shots.
+  if ((a.theme ?? undefined) !== (b.theme ?? undefined)) return false;
   if (JSON.stringify(a.steps ?? []) !== JSON.stringify(b.steps ?? [])) return false;
   // #0769: the command-selection fields are part of a declaration's identity —
   // two entries that differ only in env/args/glob are DIFFERENT shots.
@@ -919,6 +940,9 @@ export function shotPlanFingerprint(entries: CaptureEntry[]): string {
       highlights: e.highlights ?? (e.highlight ? [e.highlight] : []),
       assert: e.assert ?? [],
       state: e.state ?? null,
+      // #0782: the capture's light/dark mode changes the rendered frame, so it
+      // binds the plan identity like route/steps do.
+      theme: e.theme ?? null,
       // #0769: a declared entry's env/args/glob change what the command renders
       // and which files become the shot, so they bind the plan identity too.
       env: e.env ?? null,

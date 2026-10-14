@@ -222,7 +222,13 @@ runs; the CTO action is the recovery path when the automatic kill did not land
   source of truth).
 - **Transport**: bundle the candidate worktree (partial when the host mirror
   holds a usable base, otherwise full `HEAD`), upload over SSH. Failed uploads
-  retry up to three times without restarting the whole validation run. The run
+  retry up to three times without restarting the whole validation run. While an
+  upload is in flight a heartbeat every ~5s logs `[uploading bundle … Ns
+  elapsed]` and refreshes the pipeline's progress timestamp, so a slow transfer
+  (27 MB over a slow link took 228s, #0782) shows on the close-out card as `integrating ·
+  uploading bundle 27 MB · 45s` instead of reading as `stalled · no progress`.
+  The detail line clears the moment the transfer lands, so it never lingers
+  into the remote test run. The run
   log and structured events record bundle size and upload seconds. Self-contained
   — nothing is pushed to GitHub, no dependency on `origin` freshness.
 - **Execute**: `ssh` → `/opt/repoos/validate.sh <bundle> <sha> [artifacts]

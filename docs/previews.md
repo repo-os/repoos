@@ -320,7 +320,8 @@ browser's FINAL route after any
 redirect is also compared to the declared route — a login bounce or a
 client-side guard that lands elsewhere fails the shot rather than passing a
 screenshot of the wrong page. Declared shots with the same `target` + `route` +
-`steps` + `selector` + `assert` are collapsed to one capture, with `highlight`
+`steps` + `selector` + `assert` + `state` + `theme` (plus `env`/`args`/`glob`
+for command targets) are collapsed to one capture, with `highlight`
 selectors merged (comma-joined), so near-duplicates become one capture.
 
 **Meaningful assertions (#0734).** A declared entry may carry an `assert` list
@@ -347,8 +348,22 @@ fixture the preview applies before capture (preview builds only, via
 `?shotState=` on the capture URL):
 
 - `closeOut:active` — integration pipeline bar visible (active close-out)
+- `closeOut:uploading` — active close-out mid bundle upload, card shows the
+  upload progress line (`#9999` fixture task, #0782)
 - `card:doneError` — review card with done-error footer (`#9999` fixture task)
 - `board:withReviewTask` — board shows a review-column fixture card
+- `board:cardChips` — multi-area card with seeded diff stats (#0776)
+- `dev:failed` — Dev page shows a failed target with its failure summary (#0775)
+
+**Light and dark captures (#0782).** A declared entry may set `theme` to
+`"light"` or `"dark"`: the capture pins the page's stored theme before the
+screenshot (the same two values the contrast audit writes —
+`localStorage.repoos.theme` plus the resolved `data-theme`), so a criterion
+like "visible in light and dark themes" gets one capture per theme on the same
+route. `theme` participates in duplicate collapsing, the plan fingerprint and
+`sameDeclaredShot`, so the two captures survive as separate evidence and a
+changed declaration forces a fresh capture. A driver that cannot apply the
+theme records a visible warning instead of passing a wrong-theme frame.
 
 Concurrent handoff verifications queue for the single preview slot instead of
 evicting each other; a mid-capture preview disconnect retries once on a fresh
@@ -357,7 +372,8 @@ preview.
 **Stale-capture reuse (#0734).** An automatic capture is reused on a
 re-handoff only when it is bound to the SAME capture plan and the SAME tested
 tree: the shot manifest records a plan fingerprint (target/route/selector/
-steps/highlights/assertions) and the worktree HEAD sha, and a plan or tree that
+steps/highlights/assertions/state/theme) and the worktree HEAD sha, and a plan
+or tree that
 changed forces a fresh capture. A metadata note alone never stands down a
 capture whose declaration changed — that was the #0720/#0727 stale-evidence
 failure. A capture taken before #0734 (no fingerprint) is deliberately NOT

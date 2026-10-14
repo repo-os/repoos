@@ -68,7 +68,7 @@ import {
 export { hasDependencyInputChange } from "../core/dependency-install.js";
 import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
-import type { RemoteValidator } from "./remote-validation.js";
+import type { RemoteValidator, UploadProgressInfo } from "./remote-validation.js";
 import {
   checkEnvAfterRemoteGate,
   runRemotePreReviewGate,
@@ -149,6 +149,23 @@ export function formatCloseOutBudget(timeoutMs: number): string {
   if (Number.isInteger(minutes)) return `${minutes}m`;
   if (timeoutMs % 1000 === 0) return `${timeoutMs / 1000}s`;
   return `${Math.round(timeoutMs)}ms`;
+}
+
+/**
+ * Human-readable byte count for the upload-progress detail line (#0782),
+ * e.g. "27 MB". Exported for tests.
+ */
+export function formatUploadBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return "unknown";
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KB", "MB", "GB"];
+  let value = bytes / 1024;
+  let unit = units[0]!;
+  for (let i = 1; value >= 1024 && i < units.length; i++) {
+    value /= 1024;
+    unit = units[i]!;
+  }
+  return `${value.toFixed(value >= 10 ? 0 : 1)} ${unit}`;
 }
 
 /** Effective budget for one close-out attempt (#0573, adaptive default #0679). */
@@ -859,6 +876,16 @@ export class CloseOutOrchestrator {
       reason: string,
       verdict: ConflictResolutionVerdict,
     ) => void,
+    /**
+     * Fired every few seconds while the remote-validation bundle upload is in
+     * flight (#0782), with a human-readable detail line ("uploading bundle
+     * 27 MB · 45s"); fired once more with `null` when the transfer finishes
+     * so the card stops saying "uploading" before the test run starts
+     * (#0782 review). Appended last so existing positional constructor
+     * callers are unaffected. Observation only — must never disturb the
+     * close-out.
+     */
+    private onUploadProgress?: (taskId: string, detail: string | null) => void,
   ) {}
 
   /** Discard any in-flight resolution provenance for a task (#0692). */
@@ -2690,11 +2717,53 @@ export class CloseOutOrchestrator {
             // as the rest of the pipeline (#0573 → #0521's queue-deadline path):
             // without this, remote validation could sit past any local cap.
             ...(deadlineAt !== undefined ? { deadlineAt } : {}),
+            // #0782: a slow bundle upload (27 MB over a slow link took 228s)
+            // otherwise reports no stage progress for minutes and the card
+            // reads "stalled". Each heartbeat forwards a detail line so the
+            // card shows the upload moving instead of a hang; the server
+            // refreshes the stall timer from the same heartbeat (one SSE
+            // emission, no stage churn). A final `null` clears the line the
+            // moment the transfer lands, so it never lingers into the
+            // remote test run (#0782 review).
+            onUploadProgress: (info: UploadProgressInfo) => {
+              try {
+                this.onUploadProgress?.(
+                  job.taskId,
+                  `uploading bundle ${formatUploadBytes(info.bundleBytes)} · ${info.elapsedSecs}s`,
+                );
+              } catch {
+                /* observation must never break close-out */
+              }
+            },
+            onUploadComplete: () => {
+              try {
+                this.onUploadProgress?.(job.taskId, null);
+              } catch {
+                /* observation must never break close-out */
+              }
+            },
           });
 
         const scopedRemoteRef =
           gatePlan?.scoped && gatePlan.changedRef ? gatePlan.changedRef : undefined;
-        remoteGateOutcome = await runRemoteGate(scopedRemoteRef);
+        // #0782 review: the upload heartbeat sets an in-stage detail line, but
+        // a FAILED upload never fires `onUploadComplete` — clear the line when
+        // the gate settles so "uploading…" can't linger until the next stage
+        // event. (A landed upload already cleared it; this is a no-op then.)
+        const runRemoteGateAndClear = async (
+          changedRef?: string,
+        ): Promise<typeof remoteGateOutcome> => {
+          try {
+            return await runRemoteGate(changedRef);
+          } finally {
+            try {
+              this.onUploadProgress?.(job.taskId, null);
+            } catch {
+              /* observation must never break close-out */
+            }
+          }
+        };
+        remoteGateOutcome = await runRemoteGateAndClear(scopedRemoteRef);
 
         // #0724 escape hatch, remote half: a SCOPED remote run that fails on a
         // real (non-transient) red suite is not proof the branch is broken — it
@@ -2715,7 +2784,7 @@ export class CloseOutOrchestrator {
             "scoped remote close-out gate failed — re-running the full suite once on the runner before failing the close-out",
             { detail: remoteGateOutcome.detail },
           );
-          remoteGateOutcome = await runRemoteGate();
+          remoteGateOutcome = await runRemoteGateAndClear();
           remoteScopedFellBackToFull = remoteGateOutcome.kind !== "fail";
         }
 

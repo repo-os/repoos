@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-12T04:33:30Z"
-review_passes: 1
+updated_at: "2026-10-14T12:45:12Z"
+review_passes: 2
 id: "0660"
 title: Neon provider + credential model
 type: feature
@@ -78,4 +78,5 @@ None — server/config slice, no UI change.
 - 2026-10-12T04:32:51Z · status active→review
 - 2026-10-12T04:32:51Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-12T04:33:30Z · note: review pass 1: good to go
+- 2026-10-14T12:45:11Z · note: review pass 1: good to go
 
