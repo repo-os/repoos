@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-14T04:30:21Z"
-review_passes: 1
+last_close_out_gate_ms: 77738
+last_close_out_gate_at: "2026-10-14T04:38:34.502Z"
 id: "0773"
 title: Split task Changes into UI and Code tabs
 type: feature
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/split-task-changes-into-ui-and-code-tabs
 created_at: "2026-10-14T03:52:38Z"
+updated_at: "2026-10-14T04:38:34Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -89,4 +91,5 @@ Now that UI changes can be quite long, let's split `UI changes` and `Code change
 - 2026-10-14T04:10:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-14T04:29:28Z · status active→review
 - 2026-10-14T04:30:21Z · note: review pass 1: good to go
+- 2026-10-14T04:38:34Z · close-out gate completed in 78s
 
