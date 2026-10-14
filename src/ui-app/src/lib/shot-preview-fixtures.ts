@@ -55,7 +55,7 @@ function fixtureTask(over: Partial<Task> = {}): Task {
   };
 }
 
-function activePipeline(taskId: string): IntegrationPipelineSnapshot {
+function activePipeline(taskId: string, detail: string | null = null): IntegrationPipelineSnapshot {
   const at = nowIso();
   return {
     empty: false,
@@ -65,7 +65,7 @@ function activePipeline(taskId: string): IntegrationPipelineSnapshot {
       failed: false,
       startedAt: at,
       lastProgressAt: at,
-      detail: null,
+      detail,
     },
     queue: [],
     at,
@@ -150,6 +150,13 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   switch (fixture) {
     case "closeOut:active":
       repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID);
+      break;
+    case "closeOut:uploading":
+      ensureFixtureTask(repo, "review");
+      repo.integration = activePipeline(
+        SHOT_PREVIEW_FIXTURE_TASK_ID,
+        "uploading bundle 27 MB · 45s",
+      );
       break;
     case "card:doneError":
       ensureFixtureTask(repo, "review");
