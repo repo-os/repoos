@@ -375,11 +375,7 @@ describe("runShotCommand (#0761)", () => {
   it("rejects cwd that escapes the worktree via traversal", () => {
     const worktree = tmp("repoos-shot-cmd-escape-");
     const out = tmp("repoos-shot-cmd-out-");
-    const outcome = runShotCommand(
-      target({ command: writePng, cwd: "../../../" }),
-      worktree,
-      out,
-    );
+    const outcome = runShotCommand(target({ command: writePng, cwd: "../../../" }), worktree, out);
     expect(outcome.status).toBe("failed");
     if (outcome.status === "failed") {
       expect(outcome.reason).toContain("escapes the worktree");
