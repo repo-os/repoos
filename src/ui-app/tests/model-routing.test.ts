@@ -292,7 +292,7 @@ describe("policy", () => {
     const weak = answersWith(
       suitabilityAnswer({ [candidateKey(codex)]: 0.4, [candidateKey(claude)]: 0.3 }, 0.9),
     );
-    expect(hasSufficientEvidence(weak)).toBe(false);
+    expect(hasSufficientEvidence(weak, eligible.map(candidateKey))).toBe(false);
     const out = decideRouting({
       eligible,
       fallback,
@@ -311,7 +311,7 @@ describe("policy", () => {
         MIN_ANSWER_CONFIDENCE - 0.1,
       ),
     );
-    expect(hasSufficientEvidence(lowConf)).toBe(false);
+    expect(hasSufficientEvidence(lowConf, eligible.map(candidateKey))).toBe(false);
   });
 
   it("missing suitability answer is insufficient evidence, never a guess", () => {
@@ -322,13 +322,16 @@ describe("policy", () => {
         probability: 0.1,
       },
     };
-    expect(hasSufficientEvidence(missing as Record<string, RoutingAnswer>)).toBe(false);
+    expect(
+      hasSufficientEvidence(missing as Record<string, RoutingAnswer>, eligible.map(candidateKey)),
+    ).toBe(false);
   });
 
-  it("a suitability answer for an unknown candidate never selects that candidate", () => {
+  it("a suitability answer for an unknown candidate is insufficient evidence and falls back", () => {
     const stray = answersWith(
       suitabilityAnswer({ "ghost\u0000model\u0000": 0.99, [candidateKey(claude)]: 0.01 }),
     );
+    expect(hasSufficientEvidence(stray, eligible.map(candidateKey))).toBe(false);
     const out = decideRouting({
       eligible,
       fallback,
@@ -337,9 +340,29 @@ describe("policy", () => {
       costTime: {},
       weights: { costWeight: 0.5, timeWeight: 0.5 },
     });
+    expect(out).toMatchObject({ kind: "fallback", reason: "insufficient-evidence" });
+  });
+
+  it("high risk/ambiguity/scope tilts toward a more capable (higher-cost) candidate when suitability is tied", () => {
+    const tied = answersWith(
+      suitabilityAnswer({ [candidateKey(codex)]: 0.5, [candidateKey(claude)]: 0.5 }),
+    );
+    tied[ROUTING_QUESTION_IDS.risk] = { id: "risk", type: "noul", probability: 0.95 };
+    tied[ROUTING_QUESTION_IDS.ambiguity] = { id: "ambiguity", type: "noul", probability: 0.9 };
+    tied[ROUTING_QUESTION_IDS.scope] = { id: "scope", type: "noul", probability: 0.85 };
+    const out = decideRouting({
+      eligible,
+      fallback,
+      answers: tied,
+      failure: null,
+      costTime: {
+        [candidateKey(claude)]: { cost: 0.2, time: 0.2 },
+        [candidateKey(codex)]: { cost: 0.9, time: 0.8 },
+      },
+      weights: { costWeight: 0.5, timeWeight: 0.5 },
+    });
     expect(out.kind).toBe("selected");
-    if (out.kind === "selected")
-      expect(eligible.map(candidateKey)).toContain(candidateKey(out.candidate));
+    if (out.kind === "selected") expect(candidateKey(out.candidate)).toBe(candidateKey(codex));
   });
 
   it("is deterministic: the same input always yields the same outcome", () => {
@@ -430,6 +453,21 @@ describe("decideRoutingForRun (orchestration invariants)", () => {
     }));
     const out = await decideRoutingForRun(baseInput({ provider: { id: "jev", decide } }));
     expect(out.kind === "decided" && out.applied).toBe(true);
+  });
+
+  it("preserves provider-reported token usage on the decision result", async () => {
+    const decide = vi.fn(async () => ({
+      model: "jev-latest",
+      answers: answersWith(
+        suitabilityAnswer({ [candidateKey(codex)]: 0.9, [candidateKey(claude)]: 0.1 }),
+      ),
+      usage: { inputTokens: 120, outputTokens: 40 },
+    }));
+    const out = await decideRoutingForRun(baseInput({ provider: { id: "jev", decide } }));
+    expect(out.kind).toBe("decided");
+    if (out.kind === "decided") {
+      expect(out.providerUsage).toEqual({ inputTokens: 120, outputTokens: 40 });
+    }
   });
 
   it("a provider that throws never escapes: it becomes a fallback outcome", async () => {
@@ -670,6 +708,25 @@ describe("provider adapters", () => {
     });
     const provider = createJevProvider({ apiKey: "k", fetchImpl: f as unknown as typeof fetch });
     await expect(provider.decide({ ...request, timeoutMs: 20 })).rejects.toMatchObject({
+      kind: "timeout",
+    });
+  });
+
+  it("times out while the response body is still pending, not only before headers arrive", async () => {
+    const f = vi.fn(async (_url: string, init: RequestInit) => ({
+      status: 200,
+      ok: true,
+      json: () =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => {
+            const e = new Error("aborted");
+            e.name = "AbortError";
+            reject(e);
+          });
+        }),
+    }));
+    const provider = createJevProvider({ apiKey: "k", fetchImpl: f as unknown as typeof fetch });
+    await expect(provider.decide({ ...request, timeoutMs: 30 })).rejects.toMatchObject({
       kind: "timeout",
     });
   });
