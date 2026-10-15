@@ -27,6 +27,7 @@ import { sortHeadlessAgents } from "../lib/headless-agent-order";
 import ModelPlaygroundPanel from "../components/ModelPlaygroundPanel.vue";
 import ModelProvidersPanel from "../components/ModelProvidersPanel.vue";
 import BudgetControlsPanel from "../components/BudgetControlsPanel.vue";
+import ModelRoutingPanel from "../components/ModelRoutingPanel.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import Dialog from "../components/ui/dialog/root.vue";
 import DialogClose from "../components/ui/dialog/close.vue";
@@ -48,7 +49,8 @@ type AgentTab =
   | "detected"
   | "playground"
   | "providers"
-  | "budget-controls";
+  | "budget-controls"
+  | "model-routing";
 
 const AGENT_TAB_LABELS: Record<AgentTab, string> = {
   default: "Default Agents",
@@ -58,6 +60,7 @@ const AGENT_TAB_LABELS: Record<AgentTab, string> = {
   playground: "Model Playground",
   providers: "Model providers",
   "budget-controls": "Budget Controls",
+  "model-routing": "Model routing",
 };
 
 const AGENT_TABS: AgentTab[] = [
@@ -68,6 +71,7 @@ const AGENT_TABS: AgentTab[] = [
   "playground",
   "providers",
   "budget-controls",
+  "model-routing",
 ];
 
 const activeTab = ref<AgentTab>("default");
@@ -1096,6 +1100,7 @@ onUnmounted(() => {
         />
         <ModelProvidersPanel v-if="providersActivated" v-show="activeTab === 'providers'" />
         <BudgetControlsPanel v-show="activeTab === 'budget-controls'" />
+        <ModelRoutingPanel v-show="activeTab === 'model-routing'" />
       </div>
     </template>
     <Dialog

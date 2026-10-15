@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-15T20:17:33Z"
-review_passes: 1
 id: "0792"
 title: "Model routing adapter, config and shadow mode"
 type: feature
@@ -10,10 +8,8 @@ area: [agent, server, core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-adapter-config-and-shadow-
-cli_override: cursor
-model_override: composer-2.5
 created_at: "2026-10-15T07:47:16Z"
-dev_error_count: 3
+updated_at: "2026-10-15T20:16:06Z"
 ---
 ## Problem
 Task #0791 introduced a provider-neutral routing foundation (adapters, candidate filter, policy, `[model_routing]` parsing) but nothing user-facing or run-path-facing is wired yet. This task delivers the adapter, configuration, mode and UI layer so a human can select a provider, see credential status, and choose `off` or `shadow` with confidence that shadow mode never changes a selection. Automatic routing is explicitly out of scope; it is task 2.
@@ -49,18 +45,6 @@ Parent/context record: #0791.
 - Secrets follow the existing `.env` / env-var convention (`setDotEnvSecret`); never write keys to repoos.toml.
 - The foundation lives in `src/core/model-routing/` and `src/ui-app/tests/model-routing.test.ts`.
 
-## Shots
-```json
-[
-{
-"label": "Model routing tab with provider, mode, and credential status",
-"target": "default",
-"route": "/agents?tab=model-routing",
-"highlight": "[data-testid=\"model-routing-panel\"]"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-15T07:47:16Z · created · njachowski@gmail.com
@@ -71,56 +55,4 @@ Parent/context record: #0791.
 - 2026-10-15T09:47:14Z · needs_input
 - 2026-10-15T11:02:22Z · status inbox→ready
 - 2026-10-15T11:50:10Z · status ready→active, needs_input, branch
-- 2026-10-15T12:12:02Z · message_queued at 2026-10-15T12:12:02.667Z
-- 2026-10-15T12:12:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-15T12:34:39Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-10-15T15:23:20Z · message_expired: not delivered within timeout
-- 2026-10-15T15:23:31Z · cli_override, model_override
-- 2026-10-15T15:32:10Z · status active→ready
-- 2026-10-15T15:32:16Z · status ready→active
-- 2026-10-15T15:41:07Z · message_queued at 2026-10-15T15:41:07.638Z
-- 2026-10-15T15:41:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-15T16:46:40Z · message_expired: not delivered within timeout
-- 2026-10-15T16:51:36Z · body: section Shots
-- 2026-10-15T16:52:19Z · body
-- 2026-10-15T16:53:23Z · body
-- 2026-10-15T16:54:55Z · body
-- 2026-10-15T17:01:22Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate
-- 2026-10-15T17:18:02Z · body
-- 2026-10-15T17:18:58Z · body: section Shots
-- 2026-10-15T17:19:49Z · body
-- 2026-10-15T17:30:09Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on thinkpad — fix it in the feature branch and re-run the gate
-- 2026-10-15T17:30:09Z · handoff failed · handoff recovery attempted · finalization failed
-- 2026-10-15T17:49:33Z · message_queued at 2026-10-15T17:49:33.026Z
-- 2026-10-15T17:49:33Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-15T18:09:17Z · message_delivered: 1 message(s)
-- 2026-10-15T18:10:23Z · body
-- 2026-10-15T18:11:19Z · body: section Shots
-- 2026-10-15T18:11:25Z · body: section Shots
-- 2026-10-15T18:17:38Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on thinkpad — fix it in the feature branch and re-run the gate
-- 2026-10-15T18:30:33Z · body
-- 2026-10-15T18:31:26Z · body: section Shots
-- 2026-10-15T18:31:36Z · body: section Shots
-- 2026-10-15T18:37:38Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate
-- 2026-10-15T19:31:41Z · needs_input
-- 2026-10-15T19:32:07Z · message_queued at 2026-10-15T19:32:07.515Z
-- 2026-10-15T19:32:45Z · body
-- 2026-10-15T19:33:35Z · body: section Shots
-- 2026-10-15T19:33:41Z · body: section Shots
-- 2026-10-15T19:41:29Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate
-- 2026-10-15T19:41:30Z · handoff failed · handoff recovery attempted · finalization failed
-- 2026-10-15T19:46:46Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-10-15T19:46:46Z · note: handoff requested (cli)
-- 2026-10-15T19:52:27Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate
-- 2026-10-15T20:00:46Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
-- 2026-10-15T20:01:49Z · body
-- 2026-10-15T20:02:41Z · message_queued at 2026-10-15T20:02:41.047Z
-- 2026-10-15T20:03:09Z · body
-- 2026-10-15T20:06:41Z · body: section Shots
-- 2026-10-15T20:07:21Z · body
-- 2026-10-15T20:08:47Z · body
-- 2026-10-15T20:09:31Z · body: section Shots
 - 2026-10-15T20:16:06Z · status active→review
-- 2026-10-15T20:16:06Z · note: Task body is underspecified: missing sections: Desired UX
-- 2026-10-15T20:17:33Z · note: review pass 1: good to go
-

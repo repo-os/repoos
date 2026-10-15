@@ -11,6 +11,7 @@ export * from "./inputs.js";
 export * from "./stories.js";
 export * from "./models.js";
 export * from "./model-providers.js";
+export * from "./model-routing.js";
 export * from "./playground.js";
 export * from "./tasks.js";
 export * from "./ui.js";
