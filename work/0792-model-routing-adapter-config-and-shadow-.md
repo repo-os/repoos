@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 350242
-last_close_out_gate_at: "2026-10-15T20:23:35.832Z"
 id: "0792"
 title: "Model routing adapter, config and shadow mode"
 type: feature
-status: review
+status: done
 priority: p2
 area: [agent, server, core, web]
+merged_commit: 9a669f2ad78d11579f85f38003b050539a8da121
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-adapter-config-and-shadow-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T07:47:16Z"
-updated_at: "2026-10-15T20:23:35Z"
+updated_at: "2026-10-15T20:23:49Z"
+last_close_out_gate_ms: 350242
+last_close_out_gate_at: "2026-10-15T20:23:35.832Z"
 review_passes: 1
 dev_error_count: 3
 ---
@@ -126,4 +127,4 @@ Parent/context record: #0791.
 - 2026-10-15T20:16:06Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-10-15T20:17:33Z · note: review pass 1: good to go
 - 2026-10-15T20:23:35Z · close-out gate completed in 350s
-
+- 2026-10-15T20:23:49Z · status review→done, release:success
