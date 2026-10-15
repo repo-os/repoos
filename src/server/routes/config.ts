@@ -744,8 +744,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         }
         const onDisk = configuredCtoActions(loadConfig(config.root));
         const unchanged =
-          onDisk.length === normalized.length &&
-          onDisk.every((id, i) => id === normalized[i]);
+          onDisk.length === normalized.length && onDisk.every((id, i) => id === normalized[i]);
         if (!unchanged) patch[field.key] = normalized;
         continue;
       }
