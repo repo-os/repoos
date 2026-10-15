@@ -1,15 +1,11 @@
 ---
-last_close_out_gate_ms: 214517
-last_close_out_gate_at: "2026-10-15T09:46:52.984Z"
 id: "0787"
 title: Compact configurable activity animations; default to Orbital pixel
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "needs some work — The configurable styles, default, and Settings preview are present, but the bar width can overlap labels and required visual checks are incomplete."
+status: done
 priority: p2
 area: [web, core]
+merged_commit: 6799bfca01d67f03b39c52b8d39a5183bfa82339
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/compact-configurable-activity-animations
@@ -18,7 +14,9 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T09:46:52Z"
+updated_at: "2026-10-15T09:47:09Z"
+last_close_out_gate_ms: 214517
+last_close_out_gate_at: "2026-10-15T09:46:52.984Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -172,4 +170,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T08:19:50Z · note: review pass 3: needs some work
 - 2026-10-15T08:19:50Z · needs_input
 - 2026-10-15T09:46:52Z · close-out gate completed in 215s
-
+- 2026-10-15T09:47:09Z · status review→done, release:success
