@@ -608,6 +608,10 @@ export const useConfigStore = defineStore("config", () => {
     for (const f of res.schema) {
       const val = configValue(res.config, f.key) ?? f.default;
       if (f.type === "array") {
+        if (f.key === "cto.actions") {
+          form[f.key] = Array.isArray(val) ? val.filter((item) => typeof item === "string") : [];
+          continue;
+        }
         // Most array settings are plain strings; the remote-validation host
         // pool (#0521) arrives as host objects and must not render as
         // "[object Object]" — show its host names, which is what editing sends

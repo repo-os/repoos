@@ -61,6 +61,8 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   // Controls tab (#0764), not by a plain General row.
   "budget.allowlist",
   "attention.spendAlertUsd",
+  // Hand-rendered checkbox list beside ctoSkipHealthy (#0796).
+  "cto.actions",
 ]);
 
 /** Mirrors `isFieldVisible` in SettingsView.vue */
@@ -124,6 +126,9 @@ export function resolveSettingLocation(
     return { tab: "general", hasUiRow: true };
   }
   if (key === "activityAnimationStyle") {
+    return { tab: "general", hasUiRow: true };
+  }
+  if (key === "cto.actions") {
     return { tab: "general", hasUiRow: true };
   }
   if (key === "auth.enabled" || key === "auth.sessionMaxAge") {
