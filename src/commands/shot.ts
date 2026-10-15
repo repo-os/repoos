@@ -16,7 +16,7 @@
  * skip with install advice, not a crash.
  */
 import { basename, extname, join } from "node:path";
-import { rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { c } from "../cli/colors.js";
 import { findRepoRoot, loadConfig, mainCheckoutRoot, resolveServePort } from "../core/config.js";
 import { changedPathsVsBase, currentBranch } from "../core/git.js";
@@ -29,6 +29,7 @@ import {
   buildCapturePlan,
   parseShotPlan,
   provenanceCaption,
+  taskFixtureValidator,
   type CaptureEntry,
 } from "../core/shot-plan.js";
 import {
@@ -206,6 +207,8 @@ export interface CliShotPlanInput {
   env?: Record<string, string>;
   /** Per-entry output glob for a command capture target (#0769), from `--glob`. */
   glob?: string;
+  /** Fixture validator for the task branch, to accept branch-specific fixtures (#0786). */
+  fixtureValidator?: (id: string) => boolean;
 }
 
 /** The plan plus the visible notes `cmdShot` prints alongside it. */
@@ -237,7 +240,12 @@ export interface CliShotPlan {
  */
 export function buildCliShotPlan(input: CliShotPlanInput): CliShotPlan {
   const pinned = Boolean(input.route || input.selector);
-  const declared = pinned ? { shots: [], errors: [] } : parseShotPlan(input.body);
+  const declared = pinned
+    ? { shots: [], errors: [] }
+    : parseShotPlan(
+        input.body,
+        input.fixtureValidator ? { fixtureValidator: input.fixtureValidator } : undefined,
+      );
   const built = buildCapturePlan(input.targets, declared.shots, {
     matchedGlobs: input.matchedGlobs,
     docsContentOnly: input.docsContentOnly,
@@ -537,6 +545,17 @@ export async function cmdShot(args: string[]): Promise<number> {
     const commandTargets = new Set((worktreeConfig.shot?.targets ?? []).map((t) => t.name));
     // #0610: the requested route/selector is part of the plan, not a separate
     // candidate that lost to the fallback's `/`.
+    const fixtureValidator = taskFixtureValidator(
+      (path: string) => {
+        try {
+          return existsSync(path) ? readFileSync(path, "utf8") : null;
+        } catch {
+          return null;
+        }
+      },
+      mainConfig,
+      task,
+    );
     const built = buildCliShotPlan({
       body: task.body,
       route: opts.route,
@@ -547,6 +566,7 @@ export async function cmdShot(args: string[]): Promise<number> {
       commandTargets,
       ...(opts.env ? { env: opts.env } : {}),
       ...(opts.glob ? { glob: opts.glob } : {}),
+      ...(fixtureValidator ? { fixtureValidator } : {}),
     });
     for (const error of built.declaredErrors) {
       console.error(c.yellow("  · ") + `declared shot list: ${error}`);
@@ -625,6 +645,19 @@ export async function cmdShot(args: string[]): Promise<number> {
     }
 
     let currentTarget: string | undefined;
+    // Branch fixtures (#0786): URL building admits a `state` the task branch's
+    // source declares even before main's compiled list knows it.
+    const captureValidator = taskFixtureValidator(
+      (path: string) => {
+        try {
+          return existsSync(path) ? readFileSync(path, "utf8") : null;
+        } catch {
+          return null;
+        }
+      },
+      mainConfig,
+      task,
+    );
     let currentPreviewUrl = "";
     for (const entry of webPlan) {
       // Only one preview runs per task, so a different target must replace
@@ -643,7 +676,9 @@ export async function cmdShot(args: string[]): Promise<number> {
         currentTarget = entry.target;
       }
       const route = entry.route ?? "/";
-      const pageUrl = absolute ? route : shotCapturePageUrl(currentPreviewUrl, { ...entry, route });
+      const pageUrl = absolute
+        ? route
+        : shotCapturePageUrl(currentPreviewUrl, { ...entry, route }, captureValidator ?? undefined);
       const page = (await context!.newPage()) as unknown as ShotDriverPage;
       let png: Buffer;
       const warnings: string[] = [];

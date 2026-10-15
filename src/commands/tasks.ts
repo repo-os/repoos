@@ -6,7 +6,7 @@
  * of truth: the main checkout's. Never call createRepoOS() directly from a
  * board command (see boardRepoOS()'s own comment for why).
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { createRepoOS } from "../core/repoos.js";
 import { boardRoot, loadConfig, resolveColumnLabels } from "../core/config.js";
@@ -15,12 +15,13 @@ import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
 import { flagTaskSpecFlagsIfNeeded } from "../server/task-underspecified-flag.js";
 import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
-import { isAncestor } from "../core/git.js";
+import { isAncestor, worktreePathForBranch } from "../core/git.js";
 import {
   declaredShotsSectionContent,
   parseShotPlan,
   validateDeclaredShotTargets,
 } from "../core/shot-plan.js";
+import { readBranchFixtureValidator } from "../core/shot-fixtures.js";
 import { deleteTaskFile, PathGuardError, WriteError } from "../server/write.js";
 import { resolveCliCreator } from "../core/record-creator.js";
 import { normalizeSectionHeading, replaceSection } from "../core/task.js";
@@ -486,9 +487,23 @@ const SPEC_SECTION_NAMES = new Set([
   "Notes for AI",
 ]);
 
+function branchFixtureValidatorForTask(
+  task: Task,
+  root: string,
+): ((id: string) => boolean) | undefined {
+  const worktreeDir = task.branch ? worktreePathForBranch(root, task.branch) : null;
+  return readBranchFixtureValidator((path: string) => {
+    try {
+      return existsSync(path) ? readFileSync(path, "utf8") : null;
+    } catch {
+      return null;
+    }
+  }, worktreeDir);
+}
+
 /** Validate declarations before a CLI write can turn them into a blind `/` shot. */
-function shotsError(body: string): string | null {
-  const { errors } = parseShotPlan(body);
+function shotsError(body: string, fixtureValidator?: (id: string) => boolean): string | null {
+  const { errors } = parseShotPlan(body, fixtureValidator ? { fixtureValidator } : undefined);
   return errors.length
     ? `Invalid ## Shots: ${errors.join("; ")}. Use --shots '<JSON list>' to format it automatically.`
     : null;
@@ -511,9 +526,22 @@ function shotsSectionContent(
   raw: string,
   preview: ReturnType<typeof loadConfig>["preview"],
   shot?: ReturnType<typeof loadConfig>["shot"],
+  task?: Task,
+  root?: string,
 ): string {
   const body = `## Shots\n\n\`\`\`json\n${raw}\n\`\`\``;
-  const parsed = parseShotPlan(body);
+  let fixtureValidator: ((id: string) => boolean) | undefined;
+  if (task && root) {
+    const worktreeDir = task.branch ? worktreePathForBranch(root, task.branch) : null;
+    fixtureValidator = readBranchFixtureValidator((path: string) => {
+      try {
+        return existsSync(path) ? readFileSync(path, "utf8") : null;
+      } catch {
+        return null;
+      }
+    }, worktreeDir);
+  }
+  const parsed = parseShotPlan(body, fixtureValidator ? { fixtureValidator } : undefined);
   if (parsed.errors.length) {
     throw new Error(`Invalid --shots JSON: ${parsed.errors.join("; ")}`);
   }
@@ -699,26 +727,6 @@ export function cmdUpdate(args: string[]): void {
   }
 
   if (
-    patch.section &&
-    normalizeSectionHeading(patch.section.heading).toLowerCase() === "## shots"
-  ) {
-    const error = shotsError(`## Shots\n\n${patch.section.content}`);
-    if (error) {
-      console.error(c.red(`  ${error}`));
-      process.exitCode = 1;
-      return;
-    }
-  }
-  if (patch.body !== undefined) {
-    const error = shotsError(patch.body);
-    if (error) {
-      console.error(c.red(`  ${error}`));
-      process.exitCode = 1;
-      return;
-    }
-  }
-
-  if (
     Object.keys(patch).length === 0 &&
     pendingShots === undefined &&
     screenshots.length === 0 &&
@@ -755,11 +763,37 @@ export function cmdUpdate(args: string[]): void {
     process.exitCode = 1;
     return;
   }
+  const fixtureValidator = branchFixtureValidatorForTask(task, repoos.config.root);
+  if (
+    patch.section &&
+    normalizeSectionHeading(patch.section.heading).toLowerCase() === "## shots"
+  ) {
+    const error = shotsError(`## Shots\n\n${patch.section.content}`, fixtureValidator);
+    if (error) {
+      console.error(c.red(`  ${error}`));
+      process.exitCode = 1;
+      return;
+    }
+  }
+  if (patch.body !== undefined) {
+    const error = shotsError(patch.body, fixtureValidator);
+    if (error) {
+      console.error(c.red(`  ${error}`));
+      process.exitCode = 1;
+      return;
+    }
+  }
   if (pendingShots !== undefined) {
     try {
       patch.section = {
         heading: "Shots",
-        content: shotsSectionContent(pendingShots, repoos.config.preview, repoos.config.shot),
+        content: shotsSectionContent(
+          pendingShots,
+          repoos.config.preview,
+          repoos.config.shot,
+          task,
+          repoos.config.root,
+        ),
       };
     } catch (error) {
       console.error(c.red(`  ${(error as Error).message}`));
