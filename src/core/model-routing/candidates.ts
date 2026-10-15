@@ -98,10 +98,7 @@ export function filterCandidates(input: CandidateFilterInput): CandidateFilterRe
       });
       continue;
     }
-    if (
-      input.requiredContextTokens > 0 &&
-      harness.maxContextTokens < input.requiredContextTokens
-    ) {
+    if (input.requiredContextTokens > 0 && harness.maxContextTokens < input.requiredContextTokens) {
       rejected.push({
         candidate,
         reason:

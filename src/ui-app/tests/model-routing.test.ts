@@ -446,7 +446,10 @@ describe("policy", () => {
     });
     expect(codexMeasuredClaudeMissing.kind).toBe("selected");
     expect(codexMeasuredClaudeNeutral.kind).toBe("selected");
-    if (codexMeasuredClaudeMissing.kind === "selected" && codexMeasuredClaudeNeutral.kind === "selected") {
+    if (
+      codexMeasuredClaudeMissing.kind === "selected" &&
+      codexMeasuredClaudeNeutral.kind === "selected"
+    ) {
       expect(candidateKey(codexMeasuredClaudeMissing.candidate)).toBe(
         candidateKey(codexMeasuredClaudeNeutral.candidate),
       );
