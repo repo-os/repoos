@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T07:47:32Z"
-updated_at: "2026-10-15T07:47:33Z"
+updated_at: "2026-10-15T07:47:38Z"
 ---
 ## Problem
 After #0792 lands (adapter, config, UI and shadow mode), the router still does not influence any run. This task adds opt-in automatic routing for PM, engineer and reviewer runs, plus re-evaluation when review sends work back. It must stay inside the existing lifecycle: review, checks, approval, close-out and the recovery work in #0767 are not bypassed or duplicated.
@@ -48,7 +48,11 @@ Parent/context record: #0791. Depends on #0792.
 - Start from `src/core/model-routing/decide.ts` (`decideRoutingForRun`) and wire it at the resolver call sites, behind `mode`, so `off` and `shadow` stay identical to today.
 - Keep the decision logic in code; the provider returns signals only.
 
+## Desired UX
+On the Model routing section, show for each recent run whether automatic routing applied, the configuration chosen, and the fallback or block reason when it did not apply. Show shadow recommendations next to the actual selection. Render explanations only from recorded factors. Use the shared dropdown and dialog components and existing design tokens. The screen should not read as a log dump.
+
 ## Activity
 
 - 2026-10-15T07:47:32Z · created · njachowski@gmail.com
 - 2026-10-15T07:47:33Z · needs_input
+- 2026-10-15T07:47:38Z · body
