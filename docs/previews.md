@@ -353,7 +353,8 @@ fixture the preview applies before capture (preview builds only, via
   upload progress line (`#9999` fixture task, #0782)
 - `card:doneError` — review card with done-error footer (`#9999` fixture task)
 - `board:withReviewTask` — board shows a review-column fixture card
-- `board:cardChips` — multi-area card with seeded diff stats (#0776)
+- `board:cardChips` — multi-area human-assigned card with seeded diff stats,
+  so the area, human and file chips all render (#0776, #0795)
 - `dev:failed` — Dev page shows a failed target with its failure summary (#0775)
 
 **Light and dark captures (#0782).** A declared entry may set `theme` to

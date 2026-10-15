@@ -1,22 +1,15 @@
 ---
-updated_at: "2026-10-15T16:52:34Z"
-review_passes: 2
 id: "0795"
 title: "Easter eggs bundle: Hub find bar position, Done button, and Escape"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried."
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-hub-find-bar-position
 created_at: "2026-10-15T08:02:06Z"
-review_rounds: 1
-last_check_failure: "repoos check at 2026-10-15T11:36:40.023Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
-dev_error_count: 1
+updated_at: "2026-10-15T11:40:18Z"
 ---
 ## Problem
 Three small issues in the Hub's new Cmd-F find bar (from #0789), plus two small UI fixes for the task cards:
@@ -43,62 +36,10 @@ Three small issues in the Hub's new Cmd-F find bar (from #0789), plus two small 
 ## Notes for AI
 Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSHub/RepoOSHubApp.swift. Task cards: find the area chip rendering in src/ui-app/src/components (TaskCard.vue) and the existing file-changes chip styling for the human chip. Source: user request 2026-10-15.
 
-## Shots
-```json
-[
-{
-"label": "Work card: space-separated area chip and violet human chip (light)",
-"target": "default",
-"route": "/work",
-"highlight": ".tc-area-chip, .tc-human-chip",
-"state": "board:cardChips",
-"theme": "light"
-},
-{
-"label": "Work card: space-separated area chip and violet human chip (dark)",
-"target": "default",
-"route": "/work",
-"highlight": ".tc-area-chip, .tc-human-chip",
-"state": "board:cardChips",
-"theme": "dark"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-15T08:02:06Z · created · njachowski@gmail.com
 - 2026-10-15T08:08:00Z · status inbox→ready
 - 2026-10-15T10:18:20Z · body
 - 2026-10-15T10:19:12Z · status ready→active, branch
-- 2026-10-15T10:35:25Z · body
-- 2026-10-15T10:42:14Z · message_queued at 2026-10-15T10:42:14.090Z
-- 2026-10-15T10:42:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-15T10:46:27Z · body: section Shots
-- 2026-10-15T10:51:23Z · body
-- 2026-10-15T10:53:14Z · body
-- 2026-10-15T11:01:33Z · body
-- 2026-10-15T11:36:37Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-15T11:40:18Z · status active→review
-- 2026-10-15T11:40:19Z · note: handoff requested (cli)
-- 2026-10-15T11:40:46Z · note: highlight .tc-area-chip, .tc-human-chip matched nothing on /
-- 2026-10-15T11:40:52Z · note: highlight .tc-area-chip, .tc-human-chip matched nothing on /
-- 2026-10-15T11:45:30Z · body
-- 2026-10-15T11:47:54Z · status active→review
-- 2026-10-15T11:47:54Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (af62803c9) during finalization (#0734)
-- 2026-10-15T11:47:56Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (af62803c9) during finalization (#0734)
-- 2026-10-15T11:49:15Z · note: review pass 1: needs some work
-- 2026-10-15T11:49:16Z · status review→active
-- 2026-10-15T11:51:10Z · body: section Shots
-- 2026-10-15T11:52:35Z · body
-- 2026-10-15T12:12:03Z · message_queued at 2026-10-15T12:12:03.446Z
-- 2026-10-15T12:12:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-15T12:34:34Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried.
-- 2026-10-15T12:34:34Z · status active→review
-- 2026-10-15T12:34:35Z · note: handoff requested (cli)
-- 2026-10-15T12:35:28Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
-- 2026-10-15T15:23:20Z · message_expired: not delivered within timeout
-- 2026-10-15T16:50:00Z · body
-- 2026-10-15T16:50:51Z · status active→review
-- 2026-10-15T16:52:34Z · note: review pass 2: good to go
-
