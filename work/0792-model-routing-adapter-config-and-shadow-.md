@@ -2,7 +2,7 @@
 id: "0792"
 title: "Model routing adapter, config and shadow mode"
 type: feature
-status: active
+status: review
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/model-routing-adapter-config-and-shadow-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T07:47:16Z"
-updated_at: "2026-10-15T19:41:30Z"
+updated_at: "2026-10-15T19:46:46Z"
 dev_error_count: 3
 ---
 ## Problem
@@ -108,3 +108,5 @@ Parent/context record: #0791.
 - 2026-10-15T19:33:41Z · body: section Shots
 - 2026-10-15T19:41:29Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate
 - 2026-10-15T19:41:30Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-10-15T19:46:46Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-15T19:46:46Z · note: handoff requested (cli)
