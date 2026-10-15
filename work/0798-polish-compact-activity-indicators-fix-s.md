@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T17:04:58Z"
+updated_at: "2026-10-15T17:05:28Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-15T12:29:58.918Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -59,32 +59,27 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 ```json
 [
 {
-"label": "Settings - Activity animation preview at in-app size (coding / reviewing / agent)",
-"target": "default",
-"route": "/settings?tab=general",
-"highlight": ".activity-animation-preview",
-"steps": [
-{
-"waitFor": ".activity-animation-preview"
+  "label": "Settings activity preview — coding / reviewing / agent at app size",
+  "target": "default",
+  "route": "/settings?tab=general&setting=activityAnimationStyle",
+  "highlight": ".activity-animation-preview",
+  "steps": [
+    {
+      "waitMs": 600
+    }
+  ]
 },
 {
-"waitMs": 600
-}
-]
-},
-{
-"label": "Board task card - compact activity indicator beside a working task label",
-"target": "default",
-"route": "/",
-"highlight": "[data-test-id=\"task-card-agent-hint\"]",
-"steps": [
-{
-"waitFor": ".board"
-},
-{
-"waitMs": 600
-}
-]
+  "label": "Task card coding indicator on the board at real card size",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+    }
+  ],
+  "state": "board:activeCoding"
 }
 ]
 ```
@@ -119,3 +114,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T16:59:29Z · status review→active
 - 2026-10-15T17:04:57Z · message_queued at 2026-10-15T17:04:57.734Z
 - 2026-10-15T17:04:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-15T17:05:28Z · body: section Shots
