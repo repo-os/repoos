@@ -2,7 +2,7 @@
 id: "0789"
 title: "Hub: Find bar on Cmd-F is black and can't be typed into"
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "network problem reaching the model provider, not a code issue: ConnectionRefused: Unable to connect. Is the computer able to access the url?"
@@ -43,4 +43,4 @@ Start from the Find command in macos/RepoOSHub/RepoOSHubApp.swift (Edit menu, Cm
 - 2026-10-15T06:33:40Z · status ready→active, branch
 - 2026-10-15T06:42:30Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: ConnectionRefused: Unable to connect. Is the computer able to access the url?
 - 2026-10-15T07:16:54Z · body
-- 2026-10-15T07:24:44Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-15T07:24:44Z · status active→review
