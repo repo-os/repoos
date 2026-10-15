@@ -14,7 +14,7 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T17:18:58Z"
+updated_at: "2026-10-15T17:20:32Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 1
@@ -46,10 +46,10 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 ```json
 [
 {
-"label": "Settings general tab after decimal save fix",
-"target": "default",
-"route": "/settings?tab=general",
-"highlight": "#setting-activityAnimationStyle"
+  "label": "Settings general tab after decimal save fix",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": "#setting-activityAnimationStyle"
 }
 ]
 ```
@@ -105,3 +105,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T17:17:41Z · status review→active
 - 2026-10-15T17:17:41Z · note: `needs some work` — Server validator, schema `min`/`step`, and Settings “save only changed keys” match the spec and new tests; handoff UI evidence is **STALE** (tree `f313bbb6c` vs reviewed `fc0418663`) and the only PNG is an auto capture of `/` (board), not the declared `/settings?tab=general` shot. Re-capture on final HEAD before sign-off.
 - 2026-10-15T17:18:58Z · body
+- 2026-10-15T17:20:32Z · body: section Shots
