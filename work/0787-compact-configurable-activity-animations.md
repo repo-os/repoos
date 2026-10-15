@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/compact-configurable-activity-animations
 cli_override: cursor
-model_override: default
+model_override: composer-2.5
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T06:26:21Z"
+updated_at: "2026-10-15T06:26:27Z"
 ---
 ## Problem
 
@@ -68,3 +68,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T05:43:55Z · message_queued at 2026-10-15T05:43:55.916Z
 - 2026-10-15T05:43:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-15T06:26:21Z · cli_override, model_override
+- 2026-10-15T06:26:27Z · model_override
