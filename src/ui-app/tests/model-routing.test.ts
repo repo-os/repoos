@@ -49,6 +49,7 @@ import {
   RoutingProviderError,
   type RoutingAnswer,
   type RoutingDecisionProvider,
+  type RoutingRole,
 } from "../../core/model-routing/types.js";
 import { getConfigSchema, SUPPORTED_TOML_KEYS } from "../../core/config.js";
 
@@ -259,11 +260,11 @@ describe("candidate filtering", () => {
       ...allHarnesses,
       codex: {
         ...allHarnesses.codex,
-        supportedRoles: ["engineer"],
+        supportedRoles: ["engineer"] satisfies RoutingRole[],
       },
       "claude code": {
         ...allHarnesses["claude code"],
-        supportedRoles: ["pm", "reviewer"],
+        supportedRoles: ["pm", "reviewer"] satisfies RoutingRole[],
       },
     };
     const { eligible, rejected } = filterCandidates({
