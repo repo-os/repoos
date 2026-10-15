@@ -84,6 +84,7 @@ worktreeWarnThreshold = 20     # 0 disables the warning
 
 # ── Server and UI ────────────────────────────────────────────────────────
 servePort = 7171   # omit to derive a stable per-repo port (7200-7999)
+activityAnimationStyle = "orbital-pixel"   # compact agent-activity indicator; see table below
 strictBuild = false
 
 # ── Close-out (Move to done) ─────────────────────────────────────────────
@@ -399,12 +400,14 @@ labels are `Draft`, `Inbox`, `Ready`, `Active`, `Review`, `Done`.
 ```toml
 servePort = 7171
 strictBuild = false
+activityAnimationStyle = "orbital-pixel"
 ```
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `servePort` | number | derived per repo | yes | Port `repoos serve` binds by default. If omitted, RepoOS derives a stable port from the repo's path in the 7200–7999 range, so two checkouts never collide. Must be 1–65535. `--port` on the command line overrides it. |
 | `strictBuild` | boolean | `false` | yes | When true, a stale build makes `repoos` exit with an error instead of printing a warning. `REPOOS_STRICT_BUILD=1` (environment) and the `--strict-build` flag do the same without changing the file. |
+| `activityAnimationStyle` | select | `orbital-pixel` | yes | Motion beside coding, reviewing, and other agent-activity labels in the web UI. Values: `orbital-pixel` (default compact orbit), `cursor-scan-pulse`, `breathing-brackets`, `micro-dot-matrix`, `tiny-signal-bars`, `spark-diamond`, or `three-dots` (legacy horizontal dots). Omitted config uses `orbital-pixel`. Edit in **Settings → General → Activity animation**; the page previews all three activity states before save. Honors `prefers-reduced-motion` with a static indicator. |
 
 Appearance is **not** a `repoos.toml` setting. The dark/light/system theme and
 the UI design language are per-browser preferences stored in the browser, so
@@ -495,12 +498,15 @@ An optional decision model can choose the coding agent and model for PM,
 engineer and reviewer runs. It is **off by default**: with the section unset,
 RepoOS uses the configured role defaults and task overrides exactly as before.
 
-> **Status: foundation only.** The settings, provider adapters (direct Jev,
-> OpenRouter System One, and self-hosted Clef-Flash), candidate filtering and
-> fallback policy are implemented and parsed from `repoos.toml`. **Run-time
-> routing is not yet connected to PM, engineer or reviewer launches**, so
-> setting `mode` to `shadow` or `automatic` does not change any run today. The
-> sections below describe the intended behavior once wiring lands (#0792).
+> **Phase 1 (#0791) — library and config only.** Shipped today: `src/core/model-routing/`
+> (System One codec, direct Jev / OpenRouter / self-hosted Clef-Flash adapters,
+> candidate filter, policy, fixture tests), the seven `model_routing.*` keys in
+> `getConfigSchema()`, and parsing from `repoos.toml`. **Not in #0791:** server
+> run-path invocation, decision persistence, Agents UI, or review handback —
+> those are **#0792** (adapter hardening, UI, shadow mode), **#0793** (automatic
+> routing and handback), and **#0794** (human-only live credential checks). Until
+> #0792/#0793 land, `mode = shadow` or `automatic` does not change any run; the
+> subsections below describe the intended product behavior, not current wiring.
 
 ```toml
 [model_routing]
@@ -575,14 +581,15 @@ the gitignored `.env` file or the process environment and are never written to
 variable; it is validated to be a plain environment-variable name, so pasting a
 raw key into it is rejected with a warning.
 
-### Shadow evaluation first
+### Shadow evaluation first (after #0792)
 
-Start in `mode = "shadow"`. Each eligible run then records what the router would
-have chosen, the candidates it considered, and the provider's signals, while the
-run itself uses the configured agent. Compare those recommendations with real
-outcomes before enabling `automatic`.
+Once shadow mode is wired (#0792), start in `mode = "shadow"`. Each eligible run
+then records what the router would have chosen, the candidates it considered,
+and the provider's signals, while the run itself uses the configured agent.
+Compare those recommendations with real outcomes before enabling `automatic`
+(#0793).
 
-### Automatic mode, pins and limits
+### Automatic mode, pins and limits (after #0793)
 
 - An explicit human pin (a task's CLI or model override) always wins; the router
   is not consulted for a pinned run.
@@ -592,11 +599,13 @@ outcomes before enabling `automatic`.
 - The router cannot widen permissions or budgets. It only chooses among
   candidates that already pass these filters.
 
-### Fallbacks
+### Fallbacks (library behavior; applied on the run path in #0792/#0793)
 
 When the router cannot produce a trustworthy decision, the run uses the
 configured fallback if it is itself eligible, and otherwise stops with a clear
-message. The fallback applies for:
+message. The policy in `src/core/model-routing/` implements this for tests and
+future wiring; PM/engineer/reviewer launches do not call it until #0792/#0793.
+The fallback applies for:
 
 - no eligible candidates (the run is blocked with the reasons);
 - a provider error, timeout, or an unreachable server;

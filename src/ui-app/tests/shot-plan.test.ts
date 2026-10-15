@@ -178,6 +178,22 @@ describe("parseShotPlan", () => {
     expect(bad.shots).toEqual([]);
     expect(bad.errors[0]).toMatch(/"theme" expects "light" or "dark"/);
   });
+
+  it("parses viewportWidth and reducedMotion (#0787)", () => {
+    const ok = parseShotPlan(
+      bodyWithShots(
+        '[{"route":"/work","viewportWidth":390,"reducedMotion":true},{"route":"/","viewportWidth":1280}]',
+      ),
+    );
+    expect(ok.errors).toEqual([]);
+    expect(ok.shots[0]?.viewportWidth).toBe(390);
+    expect(ok.shots[0]?.reducedMotion).toBe(true);
+    expect(ok.shots[1]?.viewportWidth).toBe(1280);
+
+    const bad = parseShotPlan(bodyWithShots('[{"route":"/work","viewportWidth":100}]'));
+    expect(bad.shots).toEqual([]);
+    expect(bad.errors[0]).toMatch(/viewportWidth/);
+  });
 });
 
 describe("buildCapturePlan", () => {

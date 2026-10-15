@@ -207,7 +207,7 @@ function onOpenAutoFocus(e: Event): void {
       <div class="drawer-body">
         <div v-if="submitted" class="ff-done">
           <div class="ff-done-head">
-            <ActivityIndicator v-if="submittedPending" />
+            <ActivityIndicator v-if="submittedPending" activity="agent" />
             <span>{{ submittedPending ? "Creating your story" : "Story saved" }}</span>
           </div>
           <p v-if="submittedPending" class="ff-done-copy">
@@ -225,7 +225,7 @@ function onOpenAutoFocus(e: Event): void {
           </div>
           <div v-if="freeformLines.length" class="ff-stream" style="margin-top: 16px">
             <div class="ff-stream-head">
-              <ActivityIndicator />
+              <ActivityIndicator activity="agent" />
               PM agent
             </div>
             <div ref="ffLogEl" class="ff-stream-log">
@@ -294,7 +294,7 @@ function onOpenAutoFocus(e: Event): void {
               :disabled="ui.saving || !description.trim()"
               @click="createStory"
             >
-              <ActivityIndicator v-if="freeformRunning" />
+              <ActivityIndicator v-if="freeformRunning" activity="agent" />
               {{ freeformRunning ? "Saving…" : "Create story" }}
             </Button>
           </div>

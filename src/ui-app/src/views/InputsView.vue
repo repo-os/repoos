@@ -383,6 +383,7 @@ function tryOpenInput(ref: string, attempt: number): void {
               <ActivityIndicator
                 v-if="repo.enrichingInputs.has(i.id)"
                 size="sm"
+                activity="agent"
                 label="AI is writing title…"
               />
               <span class="input-status" :class="i.status"
