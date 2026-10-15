@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-heartbeat-during-long-gate-sta
 created_at: "2026-10-15T11:08:11Z"
-updated_at: "2026-10-15T16:59:31Z"
+updated_at: "2026-10-15T16:59:32Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 7cc16fdde81e9618359a879272d30db5d59fd2fe
 check_retry_count: 1
@@ -86,3 +86,4 @@ Start from the upload heartbeat (src/server/integration-orchestrator.ts ~2722-27
 - 2026-10-15T15:59:18Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-15T16:48:27Z · body
 - 2026-10-15T16:59:31Z · message_queued at 2026-10-15T16:59:31.957Z
+- 2026-10-15T16:59:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
