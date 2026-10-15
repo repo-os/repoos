@@ -87,7 +87,8 @@ export async function captureEntryPage(
   const warnings: string[] = [];
   const page = (await context.newPage()) as unknown as ShotDriverPage;
   try {
-    await page.setViewportSize(AUTO_VIEWPORT);
+    const width = entry.viewportWidth ?? AUTO_VIEWPORT.width;
+    await page.setViewportSize({ width, height: AUTO_VIEWPORT.height });
     const png = await captureShotPage(
       page,
       pageUrl,

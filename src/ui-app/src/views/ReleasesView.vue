@@ -1410,7 +1410,7 @@ onBeforeUnmount(() => {
                   placeholder="What's in this release? Type it here, generate a draft from the commits since the last release, or leave empty."
                 ></textarea>
                 <div v-if="generatingNotes" class="rel-notes-drafting" aria-live="polite">
-                  <ActivityIndicator size="sm" label="Drafting release notes…" />
+                  <ActivityIndicator size="sm" activity="agent" label="Drafting release notes…" />
                   <span>
                     Drafting release notes from the commits since the last release… you can keep
                     editing meanwhile.

@@ -46,6 +46,11 @@ import {
   type SettingsTabId,
 } from "../settings-location";
 import { TOML_ONLY_REMOTE_VALIDATION_KEYS } from "../lib/settings-transfer";
+import ActivityIndicator from "../components/ActivityIndicator.vue";
+import {
+  activityAnimationStyleOrDefault,
+  type ActivityAnimationStyle,
+} from "../../../core/activity-animation.js";
 
 const config = useConfigStore();
 const ui = useUiStore();
@@ -456,6 +461,18 @@ async function sendTestNotification(): Promise<void> {
 
 const generalFields = computed(() =>
   config.visibleFields.filter((field) => isGeneralSchemaFieldKey(field.key)),
+);
+
+const activityAnimationField = computed(() =>
+  config.schema.find((f) => f.key === "activityAnimationStyle"),
+);
+
+const activityAnimationPreviewStyle = computed((): ActivityAnimationStyle =>
+  activityAnimationStyleOrDefault(
+    typeof form.activityAnimationStyle === "string"
+      ? (form.activityAnimationStyle as ActivityAnimationStyle)
+      : undefined,
+  ),
 );
 
 // ---- Attachment storage (#0659) ----
@@ -1008,6 +1025,73 @@ onUnmounted(() => {
             <div class="setting-desc" style="padding: 4px 0 10px">
               Star up to 3 favorites — starred themes appear in the sidebar quick switcher. Click a
               theme to apply it.
+            </div>
+          </div>
+        </Card>
+
+        <Card v-if="activityAnimationField" style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Activity animation
+            </div>
+            <div id="setting-activityAnimationStyle" class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">{{ activityAnimationField.label }}</div>
+                <div class="setting-desc">{{ activityAnimationField.description }}</div>
+              </div>
+              <div class="setting-input">
+                <Select
+                  :model-value="
+                    String(form.activityAnimationStyle ?? activityAnimationField.default)
+                  "
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form.activityAnimationStyle = v)"
+                >
+                  <SelectTrigger class="h-[34px] w-[min(100%,240px)] rounded-[9px] px-[11px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem
+                        v-for="o in activityAnimationField.options"
+                        :key="o.value"
+                        :value="o.value"
+                        >{{ o.label }}</SelectItem
+                      >
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div class="activity-animation-preview" aria-hidden="true">
+              <div class="activity-animation-preview-line">
+                <ActivityIndicator
+                  :animation-style="activityAnimationPreviewStyle"
+                  activity="coding"
+                  label="Coding preview"
+                />
+                <span>CODING</span>
+              </div>
+              <div class="activity-animation-preview-line ai-reviewing-preview">
+                <ActivityIndicator
+                  :animation-style="activityAnimationPreviewStyle"
+                  variant="reviewing"
+                  activity="reviewing"
+                  label="Reviewing preview"
+                />
+                <span>REVIEWING</span>
+              </div>
+              <div class="activity-animation-preview-line">
+                <ActivityIndicator
+                  :animation-style="activityAnimationPreviewStyle"
+                  activity="agent"
+                  label="Agent working preview"
+                />
+                <span>AGENT WORKING</span>
+              </div>
+            </div>
+            <div class="setting-desc" style="padding: 4px 0 10px">
+              Preview at actual size — saved when you change the dropdown (auto-save).
             </div>
           </div>
         </Card>

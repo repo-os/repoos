@@ -1129,7 +1129,7 @@ async function openDebuggerFromError(): Promise<void> {
           "
         >
           <ActivityIndicator v-if="hint.cls === 'tc-coding'" />
-          <ActivityIndicator v-else-if="hint.cls === 'tc-pm-working'" />
+          <ActivityIndicator v-else-if="hint.cls === 'tc-pm-working'" activity="agent" />
           <ActivityIndicator
             v-else-if="hint.cls === 'tc-reviewing'"
             variant="reviewing"
