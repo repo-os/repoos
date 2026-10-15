@@ -11,7 +11,7 @@ branch: feat/cto-safe-actions-allow-an-empty-list-and
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:55:06Z"
-updated_at: "2026-10-15T10:25:00Z"
+updated_at: "2026-10-15T10:26:28Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -42,9 +42,9 @@ Start from src/server/routes/config.ts (the non-empty array check), src/core/con
 "route": "/settings?tab=general&focus=cto.actions",
 "highlight": "#setting-cto.actions",
 "steps": [
-  {
-    "waitFor": "#setting-cto.actions"
-  }
+{
+  "waitFor": "#setting-cto.actions"
+}
 ]
 },
 {
@@ -53,9 +53,9 @@ Start from src/server/routes/config.ts (the non-empty array check), src/core/con
 "route": "/settings?tab=general&focus=cto.actions",
 "highlight": "#setting-cto.actions",
 "steps": [
-  {
-    "waitFor": "#setting-cto.actions"
-  }
+{
+  "waitFor": "#setting-cto.actions"
+}
 ],
 "theme": "dark"
 }
@@ -77,3 +77,4 @@ Start from src/server/routes/config.ts (the non-empty array check), src/core/con
 - 2026-10-15T10:21:33Z · status review→active
 - 2026-10-15T10:22:14Z · body: section Shots
 - 2026-10-15T10:25:00Z · body
+- 2026-10-15T10:26:28Z · body
