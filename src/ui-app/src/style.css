@@ -2886,13 +2886,46 @@
   box-shadow: 0 0 6px var(--amber);
 }
 
-/* activity indicator — theme-aware pulsing dots (0049) */
+/* activity indicator — theme-aware pulsing dots (0049) + compact styles (#0787) */
 .ai {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   flex: none;
   vertical-align: middle;
+}
+.ai-compact {
+  gap: 0;
+  color: var(--violet);
+}
+.ai-compact.ai-reviewing {
+  color: var(--amber);
+}
+.tc-moving .ai-compact,
+.tc-moving .ai-dot {
+  color: var(--cyan);
+}
+.tc-moving .ai-dot {
+  background: var(--cyan);
+  box-shadow: 0 0 7px var(--cyan);
+}
+.ai-mark {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ai-w, 1ch);
+  height: 1em;
+  line-height: 1;
+  letter-spacing: 0;
+}
+.ai-style-orbital-pixel .ai-mark,
+.ai-style-spark-diamond .ai-mark {
+  --ai-w: 1.5ch;
+}
+.ai-style-breathing-brackets .ai-mark {
+  --ai-w: 2ch;
 }
 .ai-dot {
   width: 5px;
@@ -2907,15 +2940,126 @@
   box-shadow: 0 0 7px var(--amber);
   animation-name: review-sweep;
 }
-/* Board "moving to done" is cyan (#0456): the animation must match its label,
-   not the default violet, or the dots read as a different state. */
-.tc-moving .ai-dot {
-  background: var(--cyan);
-  box-shadow: 0 0 7px var(--cyan);
-}
 .ai-md .ai-dot {
   width: 7px;
   height: 7px;
+}
+/* Orbital pixel */
+.ai-orbit::before {
+  content: "";
+  width: 0.75em;
+  height: 0.75em;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.3;
+}
+.ai-orbit::after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 50%;
+  animation: ai-orbital 1.6s linear infinite;
+}
+.ai-motion-reviewing.ai-orbit::after {
+  animation: ai-scanorbit 2s ease-in-out infinite;
+}
+.ai-motion-agent.ai-orbit::after {
+  animation-duration: 2.6s;
+}
+/* Cursor / scan / pulse */
+.ai-caret::before {
+  content: "";
+  width: 0.42ch;
+  height: 0.9em;
+  background: currentColor;
+  animation: ai-blink 1.1s steps(1) infinite;
+}
+.ai-motion-reviewing.ai-caret::before {
+  width: 1ch;
+  height: 2px;
+  animation: ai-scan 1.6s ease-in-out infinite;
+}
+.ai-motion-agent.ai-caret::before {
+  width: 0.65ch;
+  height: 0.65ch;
+  border-radius: 50%;
+  animation: ai-breathe 1.7s ease-in-out infinite;
+}
+/* Breathing brackets */
+.ai-bracket::before {
+  content: "‹";
+  position: absolute;
+  left: 0;
+  animation: ai-leftbracket 1.5s ease-in-out infinite;
+}
+.ai-bracket::after {
+  content: "›";
+  position: absolute;
+  right: 0;
+  animation: ai-rightbracket 1.5s ease-in-out infinite;
+}
+.ai-motion-reviewing.ai-bracket::before {
+  content: "[";
+  animation: ai-fade 1.8s ease-in-out infinite;
+}
+.ai-motion-reviewing.ai-bracket::after {
+  content: "]";
+  animation: ai-fade 1.8s ease-in-out infinite reverse;
+}
+.ai-motion-agent.ai-bracket {
+  animation: ai-breathe 1.8s ease-in-out infinite;
+}
+/* Micro dot matrix */
+.ai-matrix i {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 50%;
+  left: var(--x);
+  top: var(--y);
+  animation: ai-fade 1.2s ease-in-out infinite;
+  animation-delay: var(--d);
+}
+.ai-motion-reviewing.ai-matrix i {
+  animation-name: ai-twinkle;
+  animation-duration: 1.8s;
+}
+.ai-motion-agent.ai-matrix {
+  animation: ai-rotate 3.5s linear infinite;
+}
+/* Tiny signal bars */
+.ai-bars {
+  gap: 2px;
+}
+.ai-bars i {
+  width: 2px;
+  height: 0.8em;
+  background: currentColor;
+  animation: ai-bars 1.2s ease-in-out infinite;
+  animation-delay: var(--d);
+}
+.ai-motion-reviewing.ai-bars i {
+  animation-name: ai-scanbar;
+  animation-duration: 1.8s;
+}
+.ai-motion-agent.ai-bars i {
+  animation-duration: 2s;
+}
+/* Spark / diamond */
+.ai-spark::before {
+  content: "✦";
+  display: block;
+  animation: ai-spark 2.2s ease-in-out infinite;
+}
+.ai-motion-reviewing.ai-spark::before {
+  content: "◇";
+  animation: ai-inspect 2.4s ease-in-out infinite;
+}
+.ai-motion-agent.ai-spark::before {
+  animation-duration: 3s;
 }
 @keyframes ai-bounce {
   0%,
@@ -2939,6 +3083,196 @@
     transform: scale(1.15);
     opacity: 1;
   }
+}
+@keyframes ai-blink {
+  0%,
+  65% {
+    opacity: 1;
+  }
+  66%,
+  100% {
+    opacity: 0.2;
+  }
+}
+@keyframes ai-scan {
+  0%,
+  100% {
+    transform: translateY(-5px);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(5px);
+    opacity: 1;
+  }
+}
+@keyframes ai-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes ai-leftbracket {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(-1px);
+    opacity: 1;
+  }
+}
+@keyframes ai-rightbracket {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(1px);
+    opacity: 1;
+  }
+}
+@keyframes ai-fade {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes ai-twinkle {
+  0%,
+  55%,
+  100% {
+    opacity: 0.2;
+  }
+  25%,
+  40% {
+    opacity: 1;
+  }
+}
+@keyframes ai-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ai-orbital {
+  from {
+    transform: rotate(0) translateY(-0.375em);
+  }
+  to {
+    transform: rotate(360deg) translateY(-0.375em);
+  }
+}
+@keyframes ai-scanorbit {
+  0%,
+  100% {
+    transform: translate(-3px, -3px);
+  }
+  50% {
+    transform: translate(3px, 3px);
+  }
+}
+@keyframes ai-bars {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+@keyframes ai-scanbar {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+    opacity: 0.3;
+  }
+  30%,
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+@keyframes ai-spark {
+  0%,
+  100% {
+    transform: scale(0.65) rotate(0);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1) rotate(90deg);
+    opacity: 1;
+  }
+}
+@keyframes ai-inspect {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.4;
+  }
+  40%,
+  65% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-compact .ai-mark::before,
+  .ai-compact .ai-mark::after,
+  .ai-compact .ai-matrix i,
+  .ai-compact .ai-bars i,
+  .ai-compact.ai-motion-agent.ai-bracket,
+  .ai-compact.ai-motion-agent.ai-matrix {
+    animation: none !important;
+    opacity: 0.85;
+    transform: none;
+  }
+  .ai-orbit::after {
+    transform: translateY(-0.2em);
+    opacity: 1;
+  }
+  .ai-legacy-dots .ai-dot {
+    animation: none;
+    opacity: 0.85;
+  }
+}
+/* Settings activity-animation preview rows */
+.activity-animation-preview {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+.activity-animation-preview-line {
+  display: flex;
+  align-items: center;
+  gap: 0.65ch;
+  margin: 10px 0;
+  white-space: nowrap;
+  color: var(--txt-dim);
+}
+.activity-animation-preview-line:first-child {
+  margin-top: 0;
+}
+.activity-animation-preview-line:last-child {
+  margin-bottom: 0;
+}
+.activity-animation-preview-line.ai-reviewing-preview {
+  color: var(--amber);
 }
 
 /* freeform PM-agent live stream (0049) */

@@ -215,6 +215,16 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "board:withReviewTask":
       ensureFixtureTask(repo, "review");
       break;
+    case "board:activeCoding":
+      ensureFixtureTask(repo, "active");
+      if (!repo.runningIds.includes(SHOT_PREVIEW_FIXTURE_TASK_ID)) {
+        repo.runningIds = [...repo.runningIds, SHOT_PREVIEW_FIXTURE_TASK_ID];
+      }
+      repo.agentActivityAt = {
+        ...repo.agentActivityAt,
+        [SHOT_PREVIEW_FIXTURE_TASK_ID]: nowIso(),
+      };
+      break;
     case "board:cardChips":
       // A multi-area task with seeded diff stats, so the combined area chip
       // and the file-count chip both render on the board (#0776). No branch

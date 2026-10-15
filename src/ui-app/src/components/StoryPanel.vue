@@ -273,7 +273,7 @@ async function deleteActiveStory(): Promise<void> {
           <DialogTitle>{{ story?.name }}</DialogTitle>
           <DialogDescription class="sr-only">Story details</DialogDescription>
           <div v-if="story" class="story-panel-sub">
-            <ActivityIndicator v-if="pmWorking" label="PM is working" />
+            <ActivityIndicator v-if="pmWorking" activity="agent" label="PM is working" />
             <span>{{ pmWorking ? "PM is working · " : "" }}{{ summaryLine }}</span>
           </div>
         </div>
