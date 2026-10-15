@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T08:06:45Z"
+updated_at: "2026-10-15T08:09:10Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 1
@@ -61,27 +61,63 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 ```json
 [
 {
-"label": "Activity animation preview (coding, reviewing, agent states)",
-"target": "default",
-"route": "/settings?tab=general",
-"highlight": "#setting-activityAnimationStyle",
-"steps": [
-{
-"waitMs": 400
-}
-]
+  "label": "Activity animation preview (light)",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": "#setting-activityAnimationStyle",
+  "steps": [
+    {
+      "waitMs": 400
+    }
+  ]
 },
 {
-"label": "Compact coding indicator on active task card",
-"target": "default",
-"route": "/",
-"highlight": "[data-test-id=task-card-agent-hint]",
-"steps": [
+  "label": "Active task card coding indicator on Work board",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+    }
+  ],
+  "state": "board:activeCoding"
+},
 {
-"waitMs": 400
-}
-],
-"state": "board:activeCoding"
+  "label": "Active task card indicator in dark theme",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+    }
+  ],
+  "state": "board:activeCoding",
+  "theme": "dark"
+},
+{
+  "label": "Active task card indicator at narrow width",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+    }
+  ],
+  "state": "board:activeCoding"
+},
+{
+  "label": "Activity animation preview with reduced motion",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": ".activity-animation-preview",
+  "steps": [
+    {
+      "waitMs": 400
+    }
+  ]
 }
 ]
 ```
@@ -123,3 +159,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T08:04:29Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (74a08f752) during finalization (#0734)
 - 2026-10-15T08:06:45Z · note: review pass 2: needs some work
 - 2026-10-15T08:06:45Z · status review→active
+- 2026-10-15T08:09:10Z · body: section Shots
