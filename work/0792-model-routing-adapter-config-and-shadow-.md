@@ -11,7 +11,7 @@ branch: feat/model-routing-adapter-config-and-shadow-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T07:47:16Z"
-updated_at: "2026-10-15T20:01:49Z"
+updated_at: "2026-10-15T20:02:07Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 6f5dc023f5b8b6ab00e3f79708160e36769e313a
 dev_error_count: 3
