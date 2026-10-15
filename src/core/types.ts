@@ -648,8 +648,8 @@ export interface RepoOSConfig {
   servePort?: number;
   /**
    * General editor launcher used by "Open in editor" links throughout the UI
-   * (task specs, context docs, failed tests). Takes precedence only when
-   * `dev.inspector.editorCommand` is unset.
+   * (task specs, context docs, failed tests). When both are set,
+   * `dev.inspector.editorCommand` overrides this setting.
    */
   editor?: EditorConfig;
   /**

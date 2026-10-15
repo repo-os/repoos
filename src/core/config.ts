@@ -2763,7 +2763,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: "",
       description:
-        "Optional editor launcher used by 'Open in editor' links (task specs, context docs, failed tests), e.g. `zed {file}:{line}`. Placeholders `{file}` and `{line}`; omit `{line}` to open without a line number. Takes precedence only when `dev.inspector.editorCommand` is unset.",
+        "Optional editor launcher used by 'Open in editor' links (task specs, context docs, failed tests), e.g. `zed {file}:{line}`. Placeholders `{file}` and `{line}`; omit `{line}` to open without a line number. When both are set, `dev.inspector.editorCommand` overrides this setting.",
     },
     {
       key: "dev.inspector.enabled",
