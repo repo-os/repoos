@@ -1,22 +1,20 @@
 ---
-last_close_out_gate_ms: 363191
-last_close_out_gate_at: "2026-10-15T11:06:18.352Z"
 id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `editor.command`, ungated open-in-editor routes, Task/Context/FailedTests wiring, `docs/open-in-editor.md`, and unit tests match the spec. Settings General is verified in light and dark on HEAD (`451292e5c`). Handoff still lacks proof of the Spec-row and Context “Open in editor” links in either theme (drawer shots are board-only; highlight missed; no fifth capture)."
+status: done
 priority: p2
 area: [web, server, cli]
+merged_commit: 2688acf732dbaf90c59e74266fe96adf874af0a0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T11:06:18Z"
+updated_at: "2026-10-15T11:06:33Z"
+last_close_out_gate_ms: 363191
+last_close_out_gate_at: "2026-10-15T11:06:18.352Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-15T10:42:58.931Z: repoos check failed: ui verification failed (4 issue(s)): [request] HTTP 404 for http://127.0.0.1:55861/api/tasks/9999 (http://127.0.0.1:55861/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:55861/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:55861/api/tasks/9999 (http://127.0.0.1:55861/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:5… (truncated)"
 review_passes: 6
@@ -60,7 +58,7 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 "highlight": "[data-test-id=\"open-in-editor\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"open-in-editor\"]"
+"waitFor": "[data-test-id=\"open-in-editor\"]"
 }
 ],
 "theme": "dark"
@@ -72,7 +70,7 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 "highlight": "[data-test-id=\"context-open-in-editor\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"context-open-in-editor\"]"
+"waitFor": "[data-test-id=\"context-open-in-editor\"]"
 }
 ],
 "theme": "light"
@@ -170,4 +168,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T10:44:04Z · body: section Shots
 - 2026-10-15T10:45:48Z · body
 - 2026-10-15T11:06:18Z · close-out gate completed in 363s
-
+- 2026-10-15T11:06:33Z · status review→done, release:success
