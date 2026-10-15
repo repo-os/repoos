@@ -2,7 +2,7 @@
 id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
-status: review
+status: active
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
@@ -10,10 +10,10 @@ created_by: njachowski@gmail.com
 branch: feat/adaptive-agent-model-routing-with-jev-or
 cli_override: cursor
 model_override: composer-2.5
+review_cli_override: github copilot
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T08:35:39Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: a98ce8424db77ec41fcc6d1425230c90bf41c2fd
+updated_at: "2026-10-15T09:47:42Z"
+review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -88,4 +88,13 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T08:19:09Z · body
 - 2026-10-15T08:23:25Z · body: section Phase 1 (this branch)
 - 2026-10-15T08:24:01Z · body: section Phase 1 (this branch)
-- 2026-10-15T08:35:39Z · status active→review
+- 2026-10-15T08:25:20Z · body
+- 2026-10-15T08:27:21Z · body
+- 2026-10-15T08:35:40Z · status active→review
+- 2026-10-15T08:35:41Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
+- 2026-10-15T08:35:42Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-15T08:36:39Z · note: review pass 1: needs some work
+- 2026-10-15T09:44:23Z · review_cli_override
+- 2026-10-15T09:47:14Z · needs_input
+- 2026-10-15T09:47:31Z · status review→active
+- 2026-10-15T09:47:42Z · needs_input

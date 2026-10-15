@@ -42,6 +42,7 @@ const repo = useRepoStore();
         <ActivityIndicator
           v-if="repo.enrichingInputs.has(input.id)"
           size="sm"
+          activity="agent"
           label="AI is writing title…"
         />
       </div>

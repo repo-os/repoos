@@ -10,8 +10,8 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T08:17:51Z"
-review_passes: 3
+updated_at: "2026-10-15T09:47:50Z"
+review_passes: 4
 review_rounds: 2
 dev_error_count: 1
 ---
@@ -46,50 +46,19 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 ```json
 [
 {
-"label": "Settings General tab with Editor command setting (light)",
-"target": "default",
-"route": "/settings?tab=general",
-"highlight": "#setting-editor\\.command"
+  "label": "Task drawer Spec row with Open in editor link (dark)",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": "[data-test-id=\"open-in-editor\"]",
+  "state": "drawer:reviewWithBranch",
+  "theme": "dark"
 },
 {
-"label": "Settings General tab with Editor command setting (dark)",
-"target": "default",
-"route": "/settings?tab=general",
-"highlight": "#setting-editor\\.command",
-"steps": [
-  {
-    "click": ".theme-toggle"
-  },
-  {
-    "waitMs": 300
-  }
-]
-},
-{
-"label": "Task drawer Spec row with Open in editor link (light)",
-"target": "default",
-"route": "/work?task=0790&tab=details",
-"highlight": "[data-test-id=\"open-in-editor\"]"
-},
-{
-"label": "Task drawer Spec row with Open in editor link (dark)",
-"target": "default",
-"route": "/work?task=0790&tab=details",
-"highlight": "[data-test-id=\"open-in-editor\"]",
-"steps": [
-  {
-    "click": ".theme-toggle"
-  },
-  {
-    "waitMs": 300
-  }
-]
-},
-{
-"label": "Context doc viewer with Open in editor link (light)",
-"target": "default",
-"route": "/repo?doc=docs/open-in-editor.md",
-"highlight": "[data-test-id=\"context-open-in-editor\"]"
+  "label": "Repo Context doc viewer with Open in editor link (light)",
+  "target": "default",
+  "route": "/repo?tab=docs&doc=docs/open-in-editor.md",
+  "highlight": "[data-test-id=\"context-open-in-editor\"]",
+  "theme": "light"
 }
 ]
 ```
@@ -130,3 +99,12 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T08:14:39Z · body
 - 2026-10-15T08:16:45Z · body: section Shots
 - 2026-10-15T08:17:51Z · body
+- 2026-10-15T08:21:13Z · body
+- 2026-10-15T08:21:46Z · body: section Decision
+- 2026-10-15T08:29:35Z · status active→review
+- 2026-10-15T08:30:46Z · note: click .theme-toggle: click: Timeout 5000ms exceeded. on /work?task=0790&tab=details
+- 2026-10-15T08:31:42Z · note: review pass 4: needs some work
+- 2026-10-15T08:31:42Z · needs_input
+- 2026-10-15T09:47:19Z · status review→active
+- 2026-10-15T09:47:28Z · needs_input
+- 2026-10-15T09:47:50Z · body: section Shots

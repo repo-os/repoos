@@ -3897,7 +3897,7 @@ watch(
           <template v-if="newMode === 'freeform'">
             <div v-if="freeformSubmitted" class="ff-done">
               <div class="ff-done-head">
-                <ActivityIndicator />
+                <ActivityIndicator activity="agent" />
                 <span>Creating your task</span>
               </div>
               <p class="ff-done-copy">
@@ -3982,7 +3982,7 @@ watch(
                   @click="createFreeform"
                   :disabled="ui.saving || !freeformText.trim()"
                 >
-                  <ActivityIndicator v-if="freeformRunning" />
+                  <ActivityIndicator v-if="freeformRunning" activity="agent" />
                   {{ freeformRunning ? "Asking the PM agent…" : "Create task" }}
                 </Button>
               </div>
@@ -4414,7 +4414,7 @@ watch(
                chat turn (the flag is the same server-side registry). Cleared
                on every run exit path server-side. -->
           <span v-if="repo.pmWorkingFor(ui.active.id)" class="drawer-run" role="status">
-            <ActivityIndicator />
+            <ActivityIndicator activity="agent" />
             {{
               ui.active.status === "draft"
                 ? "PM is working on this draft…"
@@ -4780,6 +4780,7 @@ watch(
                  so it's visible without switching to the PM tab. -->
             <ActivityIndicator
               v-if="ui.activeTab !== 'pm' && ui.active && repo.pmWorkingFor(ui.active.id)"
+              activity="agent"
               label="PM working"
             />
           </button>
