@@ -38,6 +38,7 @@ import {
   createJevProvider,
   createClefFlashProvider,
   createOpenRouterProvider,
+  mapOpenRouterSystemOneModel,
   OPENROUTER_SYSTEMONE_ENDPOINT,
   JEV_ENDPOINT,
   JEV_DEFAULT_MODEL,
@@ -343,6 +344,34 @@ describe("policy", () => {
     expect(out).toMatchObject({ kind: "fallback", reason: "insufficient-evidence" });
   });
 
+  it("does not invent neutral cost/time when data is missing for a candidate", () => {
+    const tied = answersWith(
+      suitabilityAnswer({ [candidateKey(codex)]: 0.5, [candidateKey(claude)]: 0.5 }),
+    );
+    const withCost = decideRouting({
+      eligible,
+      fallback,
+      answers: tied,
+      failure: null,
+      costTime: { [candidateKey(codex)]: { cost: 0.1, time: 0.1 } },
+      weights: { costWeight: 1, timeWeight: 0 },
+    });
+    const withoutCost = decideRouting({
+      eligible,
+      fallback,
+      answers: tied,
+      failure: null,
+      costTime: {},
+      weights: { costWeight: 1, timeWeight: 0 },
+    });
+    expect(withCost.kind).toBe("selected");
+    expect(withoutCost.kind).toBe("selected");
+    if (withCost.kind === "selected" && withoutCost.kind === "selected") {
+      expect(candidateKey(withCost.candidate)).toBe(candidateKey(codex));
+      expect(candidateKey(withoutCost.candidate)).not.toBe(candidateKey(codex));
+    }
+  });
+
   it("high risk/ambiguity/scope tilts toward a more capable (higher-cost) candidate when suitability is tied", () => {
     const tied = answersWith(
       suitabilityAnswer({ [candidateKey(codex)]: 0.5, [candidateKey(claude)]: 0.5 }),
@@ -443,7 +472,7 @@ describe("decideRoutingForRun (orchestration invariants)", () => {
     expect(decide).toHaveBeenCalledTimes(1);
   });
 
-  it("automatic mode applies the decision", async () => {
+  it("automatic mode applies only a scored selection, not a fallback or block", async () => {
     const decide = vi.fn(async () => ({
       model: "jev-latest",
       answers: answersWith(
@@ -451,8 +480,32 @@ describe("decideRoutingForRun (orchestration invariants)", () => {
       ),
       usage: null,
     }));
-    const out = await decideRoutingForRun(baseInput({ provider: { id: "jev", decide } }));
-    expect(out.kind === "decided" && out.applied).toBe(true);
+    const selected = await decideRoutingForRun(baseInput({ provider: { id: "jev", decide } }));
+    expect(selected.kind === "decided" && selected.applied).toBe(true);
+    if (selected.kind === "decided") expect(selected.outcome.kind).toBe("selected");
+
+    const timeout = await decideRoutingForRun(
+      baseInput({
+        provider: {
+          id: "jev",
+          decide: vi.fn(async () => {
+            throw new RoutingProviderError("timeout", "slow");
+          }),
+        },
+      }),
+    );
+    expect(timeout.kind === "decided" && timeout.applied).toBe(false);
+    if (timeout.kind === "decided") expect(timeout.outcome.kind).toBe("fallback");
+
+    const blocked = await decideRoutingForRun(
+      baseInput({
+        filter: { candidates: [kiro], allowlist: BASE_ALLOW, harnesses: allHarnesses },
+        fallback: null,
+        provider: { id: "jev", decide },
+      }),
+    );
+    expect(blocked.kind === "decided" && blocked.applied).toBe(false);
+    if (blocked.kind === "decided") expect(blocked.outcome.kind).toBe("blocked");
   });
 
   it("preserves provider-reported token usage on the decision result", async () => {
@@ -646,7 +699,15 @@ describe("provider adapters", () => {
     const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe(OPENROUTER_SYSTEMONE_ENDPOINT);
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer or-key");
-    expect(JSON.parse(init.body as string).model).toBe(JEV_DEFAULT_MODEL);
+    expect(JSON.parse(init.body as string).model).toBe("~typesafe/jev-latest");
+  });
+
+  it("mapOpenRouterSystemOneModel maps bare Jev ids and leaves qualified ids alone", () => {
+    expect(mapOpenRouterSystemOneModel("jev-latest")).toBe("~typesafe/jev-latest");
+    expect(mapOpenRouterSystemOneModel("jev-1.14")).toBe("typesafe/jev-1.14");
+    expect(mapOpenRouterSystemOneModel("typesafe/jev-1.14")).toBe("typesafe/jev-1.14");
+    expect(mapOpenRouterSystemOneModel("~typesafe/jev-latest")).toBe("~typesafe/jev-latest");
+    expect(mapOpenRouterSystemOneModel("Cloudflare/clef-flash")).toBe("Cloudflare/clef-flash");
   });
 
   it("Clef-Flash posts to the self-hosted /v1/systemone with no auth header when no key is set", async () => {

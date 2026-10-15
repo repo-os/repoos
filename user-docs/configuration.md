@@ -498,15 +498,17 @@ An optional decision model can choose the coding agent and model for PM,
 engineer and reviewer runs. It is **off by default**: with the section unset,
 RepoOS uses the configured role defaults and task overrides exactly as before.
 
-> **Phase 1 (#0791) — library and config only.** Shipped today: `src/core/model-routing/`
+> **Phase 1 (#0791) — library and config only.** Shipped in this task: `src/core/model-routing/`
 > (System One codec, direct Jev / OpenRouter / self-hosted Clef-Flash adapters,
 > candidate filter, policy, fixture tests), the seven `model_routing.*` keys in
-> `getConfigSchema()`, and parsing from `repoos.toml`. **Not in #0791:** server
-> run-path invocation, decision persistence, Agents UI, or review handback —
-> those are **#0792** (adapter hardening, UI, shadow mode), **#0793** (automatic
-> routing and handback), and **#0794** (human-only live credential checks). Until
-> #0792/#0793 land, `mode = shadow` or `automatic` does not change any run; the
-> subsections below describe the intended product behavior, not current wiring.
+> `getConfigSchema()`, and parsing from `repoos.toml`. This phase **does not**
+> satisfy the parent task’s full acceptance criteria (run-path routing, UI,
+> persistence, handback, live smoke). **Not in #0791:** server run-path invocation,
+> decision persistence or outcome linkage, Agents UI, or review handback — those
+> are **#0792** (adapter hardening, UI, shadow mode), **#0793** (automatic routing
+> and handback), and **#0794** (human-only live credential checks). Until #0792/#0793
+> land, `mode = shadow` or `automatic` does not change any run; the subsections
+> below describe the intended product behavior, not current wiring.
 
 ```toml
 [model_routing]
@@ -543,11 +545,12 @@ Set `model_routing.provider = "jev"` and `credentialEnv = "TYPESAFE_API_KEY"` (t
 **OpenRouter (Jev / TypeSafe via System One).** OpenRouter exposes the same
 System One contract at `POST https://openrouter.ai/api/v1/systemone`, billed to
 your OpenRouter account. Use this when you already have `REPOOS_OPENROUTER_API_KEY`
-for the Agents page but not a separate TypeSafe key. Bare ids such as `jev-latest`
-are mapped to OpenRouter's `typesafe/*` namespace. This is a **distinct provider
-option** in config (`provider = "openrouter"`), not a hidden transport inside the
-Jev adapter — switching between direct Jev and OpenRouter changes only endpoint
-and credential env, not the RepoOS routing policy.
+for the Agents page but not a separate TypeSafe key. Bare ids such as `jev-latest` and `jev-1.14` are mapped in the OpenRouter adapter
+to `~typesafe/jev-latest` and `typesafe/jev-1.14` before the request is sent;
+ids that already use the `typesafe/` or `~typesafe/` prefix are unchanged. This
+is a **distinct provider option** in config (`provider = "openrouter"`), not a
+hidden transport inside the Jev adapter — switching between direct Jev and
+OpenRouter changes only endpoint and credential env, not the RepoOS routing policy.
 
 ```toml
 [model_routing]

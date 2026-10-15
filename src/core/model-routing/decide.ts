@@ -152,8 +152,8 @@ export async function decideRoutingForRun(input: DecideRoutingInput): Promise<Ro
     kind: "decided",
     role,
     outcome,
-    // Shadow mode never changes the actual selection.
-    applied: effective.mode === "automatic",
+    // Automatic mode applies only a scored selection — not a fallback or block.
+    applied: effective.mode === "automatic" && outcome.kind === "selected",
     rejected: filtered.rejected,
     providerModel,
     providerUsage,
