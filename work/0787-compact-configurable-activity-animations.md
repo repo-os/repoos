@@ -3,9 +3,6 @@ id: "0787"
 title: Compact configurable activity animations; default to Orbital pixel
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T07:25:03Z"
+updated_at: "2026-10-15T07:42:10Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -72,7 +69,7 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 "highlight": "#setting-activityAnimationStyle",
 "steps": [
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ]
 }
@@ -98,3 +95,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T07:18:13Z · body
 - 2026-10-15T07:19:06Z · body: section Shots
 - 2026-10-15T07:25:03Z · handoff failed · remote validation failed: test failure: tests/done-error-card.test.ts > DoneErrorCard (auto-repair in flight — #0385) > shows the being-resolved framing instead of a bare dead-end error on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-15T07:42:10Z · needs_input
