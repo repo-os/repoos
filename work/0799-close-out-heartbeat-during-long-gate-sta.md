@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-heartbeat-during-long-gate-sta
 created_at: "2026-10-15T11:08:11Z"
-updated_at: "2026-10-15T11:49:28Z"
+updated_at: "2026-10-15T11:50:34Z"
 ---
 ## Problem
 The close-out card shows 'stalled · no progress' for runs that are still working. #0782 added a heartbeat for the bundle upload, but other long stages report nothing while they run: the remote test run on the validation host, and the local scoped gate steps. #0790's close-out was marked stalled after about 4 minutes with no log output, then finished normally. The stall timer only resets when a stage reports progress.
@@ -26,6 +26,42 @@ The close-out card shows 'stalled · no progress' for runs that are still workin
 ## Notes for AI
 Start from the upload heartbeat (src/server/integration-orchestrator.ts ~2722-2750, the #0782 work) and the stall logic in src/ui-app/src/lib/integration-pipeline-ui.ts. Source: #0790 close-out, 2026-10-15.
 
+## Shots
+```json
+[
+{
+  "label": "Close-out card shows the remote test-run step and elapsed time (light theme)",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"task-card-agent-hint\"]",
+  "assert": [
+    {
+      "selector": "[data-test-id=\"task-card-agent-hint\"]",
+      "label": "card shows the current step heartbeating, not stalled",
+      "text": "remote tests"
+    }
+  ],
+  "state": "closeOut:remoteTests",
+  "theme": "light"
+},
+{
+  "label": "Close-out card shows the remote test-run step and elapsed time (dark theme)",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"task-card-agent-hint\"]",
+  "assert": [
+    {
+      "selector": "[data-test-id=\"task-card-agent-hint\"]",
+      "label": "card shows the current step in dark theme",
+      "text": "remote tests"
+    }
+  ],
+  "state": "closeOut:remoteTests",
+  "theme": "dark"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-15T11:08:11Z · created · njachowski@gmail.com
@@ -36,3 +72,4 @@ Start from the upload heartbeat (src/server/integration-orchestrator.ts ~2722-27
 - 2026-10-15T11:46:03Z · body
 - 2026-10-15T11:47:24Z · body
 - 2026-10-15T11:49:28Z · body
+- 2026-10-15T11:50:34Z · body: section Shots
