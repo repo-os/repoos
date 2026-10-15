@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-15T10:33:37Z"
+review_passes: 4
 id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
@@ -15,9 +17,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T10:33:37Z"
 review_rounds: 2
-review_passes: 3
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -120,3 +120,4 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T10:31:25Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-15T10:33:36Z · note: review pass 4: needs some work
 - 2026-10-15T10:33:37Z · needs_input
+
