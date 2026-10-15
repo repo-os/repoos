@@ -329,7 +329,7 @@ describe("SettingsView board column labels (#0499)", () => {
     wrapper.unmount();
   });
 
-  it("auto-save omits hidden dev.inspector settings unless the build supports them (#0509)", async () => {
+  it("auto-save omits dev.inspector settings when hidden or unchanged (#0509, #0797)", async () => {
     const resp = settingsConfigResponse();
     resp.schema.push(
       schemaField("dev.inspector.enabled", "true"),
@@ -349,8 +349,11 @@ describe("SettingsView board column labels (#0499)", () => {
       await flushPromises();
       await vi.waitFor(() => expect(saveSpy).toHaveBeenCalled(), { timeout: 3000 });
       const body = saveSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
-      expect("dev.inspector.enabled" in body).toBe(available);
-      expect("dev.inspector.editorCommand" in body).toBe(available);
+      expect(body["board.columns.draft"]).toBe(available ? "Ideas 2" : "Ideas");
+      // Unrelated saves must never persist hidden inspector keys (#0509).
+      // Visible but unchanged inspector keys are omitted too (#0797).
+      expect("dev.inspector.enabled" in body).toBe(false);
+      expect("dev.inspector.editorCommand" in body).toBe(false);
       wrapper.unmount();
     }
     saveSpy.mockRestore();
