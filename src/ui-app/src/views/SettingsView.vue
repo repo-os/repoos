@@ -1112,72 +1112,68 @@ onUnmounted(() => {
           </button>
         </nav>
 
-        <section
-          :id="settingsSectionAnchor('themes')"
-          class="settings-section"
-          aria-label="Themes"
-        >
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Themes
-            </div>
-            <div class="theme-list">
-              <div
-                v-for="t in DESIGN_THEMES"
-                :key="t.id"
-                class="theme-row"
-                :class="{ current: config.uiTheme === t.id }"
-                role="button"
-                tabindex="0"
-                :aria-pressed="config.uiTheme === t.id"
-                :aria-label="`Use the ${t.label} theme`"
-                @click="config.setUiTheme(t.id)"
-                @keydown.enter.prevent="config.setUiTheme(t.id)"
-              >
-                <span
-                  class="theme-swatch"
-                  :style="{
-                    background: swatchFor(t.id).bg,
-                    '--sw-a': swatchFor(t.id).a,
-                    '--sw-b': swatchFor(t.id).b,
-                  }"
-                  aria-hidden="true"
+        <section :id="settingsSectionAnchor('themes')" class="settings-section" aria-label="Themes">
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>Themes
+              </div>
+              <div class="theme-list">
+                <div
+                  v-for="t in DESIGN_THEMES"
+                  :key="t.id"
+                  class="theme-row"
+                  :class="{ current: config.uiTheme === t.id }"
+                  role="button"
+                  tabindex="0"
+                  :aria-pressed="config.uiTheme === t.id"
+                  :aria-label="`Use the ${t.label} theme`"
+                  @click="config.setUiTheme(t.id)"
+                  @keydown.enter.prevent="config.setUiTheme(t.id)"
                 >
-                  <i></i><i></i>
-                </span>
-                <span class="theme-name">
-                  {{ t.label }}
-                  <span v-if="config.uiTheme === t.id" class="theme-active-badge">active</span>
-                </span>
-                <button
-                  type="button"
-                  class="theme-star"
-                  :class="{ on: config.isThemeFavorite(t.id) }"
-                  :aria-pressed="config.isThemeFavorite(t.id)"
-                  :aria-label="
-                    config.isThemeFavorite(t.id)
-                      ? `Remove ${t.label} from favorites`
-                      : `Add ${t.label} to favorites`
-                  "
-                  :title="
-                    config.isThemeFavorite(t.id) ? 'Remove from favorites' : 'Add to favorites'
-                  "
-                  @click.stop="toggleThemeFavorite(t.id)"
-                >
-                  {{ config.isThemeFavorite(t.id) ? "★" : "☆" }}
-                </button>
+                  <span
+                    class="theme-swatch"
+                    :style="{
+                      background: swatchFor(t.id).bg,
+                      '--sw-a': swatchFor(t.id).a,
+                      '--sw-b': swatchFor(t.id).b,
+                    }"
+                    aria-hidden="true"
+                  >
+                    <i></i><i></i>
+                  </span>
+                  <span class="theme-name">
+                    {{ t.label }}
+                    <span v-if="config.uiTheme === t.id" class="theme-active-badge">active</span>
+                  </span>
+                  <button
+                    type="button"
+                    class="theme-star"
+                    :class="{ on: config.isThemeFavorite(t.id) }"
+                    :aria-pressed="config.isThemeFavorite(t.id)"
+                    :aria-label="
+                      config.isThemeFavorite(t.id)
+                        ? `Remove ${t.label} from favorites`
+                        : `Add ${t.label} to favorites`
+                    "
+                    :title="
+                      config.isThemeFavorite(t.id) ? 'Remove from favorites' : 'Add to favorites'
+                    "
+                    @click.stop="toggleThemeFavorite(t.id)"
+                  >
+                    {{ config.isThemeFavorite(t.id) ? "★" : "☆" }}
+                  </button>
+                </div>
+              </div>
+              <div v-if="config.themeFavoritesNotice" class="theme-fav-note" role="status">
+                {{ config.themeFavoritesNotice }}
+              </div>
+              <div class="setting-desc" style="padding: 4px 0 10px">
+                Star up to 3 favorites — starred themes appear in the sidebar quick switcher. Click
+                a theme to apply it.
               </div>
             </div>
-            <div v-if="config.themeFavoritesNotice" class="theme-fav-note" role="status">
-              {{ config.themeFavoritesNotice }}
-            </div>
-            <div class="setting-desc" style="padding: 4px 0 10px">
-              Star up to 3 favorites — starred themes appear in the sidebar quick switcher. Click a
-              theme to apply it.
-            </div>
-          </div>
-        </Card>
+          </Card>
         </section>
 
         <section
@@ -1186,72 +1182,72 @@ onUnmounted(() => {
           class="settings-section"
           aria-label="Activity animation"
         >
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Activity animation
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>Activity animation
+              </div>
+              <div id="setting-activityAnimationStyle" class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">{{ activityAnimationField.label }}</div>
+                  <div class="setting-desc">{{ activityAnimationField.description }}</div>
+                </div>
+                <div class="setting-input">
+                  <Select
+                    :model-value="
+                      String(form.activityAnimationStyle ?? activityAnimationField.default)
+                    "
+                    :disabled="config.saving"
+                    @update:model-value="(v) => (form.activityAnimationStyle = v)"
+                  >
+                    <SelectTrigger class="h-[34px] w-[min(100%,240px)] rounded-[9px] px-[11px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                        <SelectItem
+                          v-for="o in activityAnimationField.options"
+                          :key="o.value"
+                          :value="o.value"
+                          >{{ o.label }}</SelectItem
+                        >
+                      </SelectViewport>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div class="activity-animation-preview" aria-hidden="true">
+                <div class="activity-animation-preview-line">
+                  <ActivityIndicator
+                    :animation-style="activityAnimationPreviewStyle"
+                    activity="coding"
+                    label="Coding preview"
+                  />
+                  <span>CODING</span>
+                </div>
+                <div class="activity-animation-preview-line ai-reviewing-preview">
+                  <ActivityIndicator
+                    :animation-style="activityAnimationPreviewStyle"
+                    variant="reviewing"
+                    activity="reviewing"
+                    label="Reviewing preview"
+                  />
+                  <span>REVIEWING</span>
+                </div>
+                <div class="activity-animation-preview-line">
+                  <ActivityIndicator
+                    :animation-style="activityAnimationPreviewStyle"
+                    activity="agent"
+                    label="Agent working preview"
+                  />
+                  <span>AGENT WORKING</span>
+                </div>
+              </div>
+              <div class="setting-desc" style="padding: 4px 0 10px">
+                Preview at actual size — saved when you change the dropdown (auto-save).
+              </div>
             </div>
-            <div id="setting-activityAnimationStyle" class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">{{ activityAnimationField.label }}</div>
-                <div class="setting-desc">{{ activityAnimationField.description }}</div>
-              </div>
-              <div class="setting-input">
-                <Select
-                  :model-value="
-                    String(form.activityAnimationStyle ?? activityAnimationField.default)
-                  "
-                  :disabled="config.saving"
-                  @update:model-value="(v) => (form.activityAnimationStyle = v)"
-                >
-                  <SelectTrigger class="h-[34px] w-[min(100%,240px)] rounded-[9px] px-[11px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem
-                        v-for="o in activityAnimationField.options"
-                        :key="o.value"
-                        :value="o.value"
-                        >{{ o.label }}</SelectItem
-                      >
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div class="activity-animation-preview" aria-hidden="true">
-              <div class="activity-animation-preview-line">
-                <ActivityIndicator
-                  :animation-style="activityAnimationPreviewStyle"
-                  activity="coding"
-                  label="Coding preview"
-                />
-                <span>CODING</span>
-              </div>
-              <div class="activity-animation-preview-line ai-reviewing-preview">
-                <ActivityIndicator
-                  :animation-style="activityAnimationPreviewStyle"
-                  variant="reviewing"
-                  activity="reviewing"
-                  label="Reviewing preview"
-                />
-                <span>REVIEWING</span>
-              </div>
-              <div class="activity-animation-preview-line">
-                <ActivityIndicator
-                  :animation-style="activityAnimationPreviewStyle"
-                  activity="agent"
-                  label="Agent working preview"
-                />
-                <span>AGENT WORKING</span>
-              </div>
-            </div>
-            <div class="setting-desc" style="padding: 4px 0 10px">
-              Preview at actual size — saved when you change the dropdown (auto-save).
-            </div>
-          </div>
-        </Card>
+          </Card>
         </section>
 
         <section
@@ -1267,81 +1263,81 @@ onUnmounted(() => {
                 <span class="live-dot"></span>{{ group.section.label }}
               </div>
               <template v-for="f in group.fields" :key="f.key">
-              <div :id="`setting-${f.key}`" :data-config-key="f.key" class="setting-row">
-                <div class="setting-info">
-                  <div class="setting-label">{{ f.label }}</div>
-                  <div class="setting-desc">{{ f.description }}</div>
+                <div :id="`setting-${f.key}`" :data-config-key="f.key" class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-label">{{ f.label }}</div>
+                    <div class="setting-desc">{{ f.description }}</div>
+                  </div>
+                  <div class="setting-input">
+                    <Select
+                      v-if="f.type === 'select'"
+                      :model-value="String(form[f.key])"
+                      :disabled="config.saving"
+                      @update:model-value="(v) => (form[f.key] = v)"
+                    >
+                      <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                          <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
+                            o.label
+                          }}</SelectItem>
+                        </SelectViewport>
+                      </SelectContent>
+                    </Select>
+                    <Switch
+                      v-else-if="f.type === 'boolean'"
+                      :checked="!!form[f.key]"
+                      :disabled="config.saving"
+                      @update:checked="(v: boolean) => (form[f.key] = v)"
+                    />
+                    <Input
+                      v-else-if="f.type === 'number'"
+                      :model-value="form[f.key] == null ? '' : String(form[f.key])"
+                      type="number"
+                      :min="f.key === 'attention.slowRunMultiplier' ? 1 : 0"
+                      :step="f.key === 'attention.slowRunMultiplier' ? 0.1 : 1"
+                      style="width: 100px"
+                      :disabled="config.saving"
+                      @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
+                    />
+                    <Input
+                      v-else-if="f.type === 'string'"
+                      :model-value="String(form[f.key] ?? '')"
+                      type="text"
+                      :disabled="config.saving"
+                      @update:model-value="(v) => (form[f.key] = v)"
+                    />
+                    <Input
+                      v-else-if="f.type === 'array'"
+                      :model-value="String(form[f.key] ?? '')"
+                      type="text"
+                      :placeholder="arrayPlaceholder(f.key)"
+                      :disabled="config.saving"
+                      @update:model-value="(v) => (form[f.key] = v)"
+                    />
+                  </div>
+                  <span v-if="f.restartRequired" class="restart-badge">restart required</span>
                 </div>
-                <div class="setting-input">
-                  <Select
-                    v-if="f.type === 'select'"
-                    :model-value="String(form[f.key])"
-                    :disabled="config.saving"
-                    @update:model-value="(v) => (form[f.key] = v)"
-                  >
-                    <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                        <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
-                          o.label
-                        }}</SelectItem>
-                      </SelectViewport>
-                    </SelectContent>
-                  </Select>
-                  <Switch
-                    v-else-if="f.type === 'boolean'"
-                    :checked="!!form[f.key]"
-                    :disabled="config.saving"
-                    @update:checked="(v: boolean) => (form[f.key] = v)"
-                  />
-                  <Input
-                    v-else-if="f.type === 'number'"
-                    :model-value="form[f.key] == null ? '' : String(form[f.key])"
-                    type="number"
-                    :min="f.key === 'attention.slowRunMultiplier' ? 1 : 0"
-                    :step="f.key === 'attention.slowRunMultiplier' ? 0.1 : 1"
-                    style="width: 100px"
-                    :disabled="config.saving"
-                    @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
-                  />
-                  <Input
-                    v-else-if="f.type === 'string'"
-                    :model-value="String(form[f.key] ?? '')"
-                    type="text"
-                    :disabled="config.saving"
-                    @update:model-value="(v) => (form[f.key] = v)"
-                  />
-                  <Input
-                    v-else-if="f.type === 'array'"
-                    :model-value="String(form[f.key] ?? '')"
-                    type="text"
-                    :placeholder="arrayPlaceholder(f.key)"
-                    :disabled="config.saving"
-                    @update:model-value="(v) => (form[f.key] = v)"
-                  />
+                <div
+                  v-if="f.key === 'ctoSkipHealthy' && ctoActionsField"
+                  :id="`setting-${ctoActionsField.key}`"
+                  :data-config-key="ctoActionsField.key"
+                  class="setting-row setting-row--stacked"
+                >
+                  <div class="setting-info">
+                    <div class="setting-label">{{ ctoActionsField.label }}</div>
+                    <div class="setting-desc">{{ CTO_ACTIONS_SETTINGS_ROW_DESC }}</div>
+                  </div>
+                  <div class="setting-input setting-input--wide">
+                    <CtoSafeActionsSettings
+                      :model-value="ctoActionsFormValue()"
+                      :disabled="config.saving"
+                      @update:model-value="setCtoActions"
+                    />
+                  </div>
                 </div>
-                <span v-if="f.restartRequired" class="restart-badge">restart required</span>
-              </div>
-              <div
-                v-if="f.key === 'ctoSkipHealthy' && ctoActionsField"
-                :id="`setting-${ctoActionsField.key}`"
-                :data-config-key="ctoActionsField.key"
-                class="setting-row setting-row--stacked"
-              >
-                <div class="setting-info">
-                  <div class="setting-label">{{ ctoActionsField.label }}</div>
-                  <div class="setting-desc">{{ CTO_ACTIONS_SETTINGS_ROW_DESC }}</div>
-                </div>
-                <div class="setting-input setting-input--wide">
-                  <CtoSafeActionsSettings
-                    :model-value="ctoActionsFormValue()"
-                    :disabled="config.saving"
-                    @update:model-value="setCtoActions"
-                  />
-                </div>
-              </div>
               </template>
             </div>
           </Card>
@@ -1352,51 +1348,52 @@ onUnmounted(() => {
           class="settings-section"
           aria-label="Attachments"
         >
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Attachments
-            </div>
-            <div id="setting-storage.provider" class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">Attachment storage</div>
-                <div class="setting-desc">
-                  Where attachment files — task and input screenshots — are stored. Local filesystem
-                  keeps them in gitignored <span class="mono">.attachments/</span> folders on this
-                  machine and is the default; Neon Object Storage is opt-in and needs credentials
-                  before it can be used.
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>Attachments
+              </div>
+              <div id="setting-storage.provider" class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Attachment storage</div>
+                  <div class="setting-desc">
+                    Where attachment files — task and input screenshots — are stored. Local
+                    filesystem keeps them in gitignored
+                    <span class="mono">.attachments/</span> folders on this machine and is the
+                    default; Neon Object Storage is opt-in and needs credentials before it can be
+                    used.
+                  </div>
                 </div>
+                <div class="setting-input tunnel-setting-actions">
+                  <span class="tunnel-status-chip">{{ storageStatusChip }}</span>
+                  <Select
+                    :model-value="String(form['storage.provider'] ?? 'local')"
+                    :disabled="config.saving"
+                    @update:model-value="(v) => (form['storage.provider'] = v)"
+                  >
+                    <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                        <SelectItem
+                          v-for="o in storageProviderOptions"
+                          :key="o.value"
+                          :value="o.value"
+                        >
+                          {{ o.label }}
+                        </SelectItem>
+                      </SelectViewport>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <span class="restart-badge">restart required</span>
               </div>
-              <div class="setting-input tunnel-setting-actions">
-                <span class="tunnel-status-chip">{{ storageStatusChip }}</span>
-                <Select
-                  :model-value="String(form['storage.provider'] ?? 'local')"
-                  :disabled="config.saving"
-                  @update:model-value="(v) => (form['storage.provider'] = v)"
-                >
-                  <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem
-                        v-for="o in storageProviderOptions"
-                        :key="o.value"
-                        :value="o.value"
-                      >
-                        {{ o.label }}
-                      </SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
+              <div class="setting-desc" style="padding: 0 0 12px; max-width: 72ch">
+                {{ storageExplanation }}
               </div>
-              <span class="restart-badge">restart required</span>
             </div>
-            <div class="setting-desc" style="padding: 0 0 12px; max-width: 72ch">
-              {{ storageExplanation }}
-            </div>
-          </div>
-        </Card>
+          </Card>
         </section>
 
         <section
@@ -1412,28 +1409,28 @@ onUnmounted(() => {
           class="settings-section"
           aria-label="Publishing"
         >
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Publishing
-            </div>
-            <div id="setting-tunnelEnabled" class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">Cloudflare publishing</div>
-                <div class="setting-desc">
-                  Configure a protected public hostname for a local RepoOS service. This card
-                  reports status; it does not start or stop cloudflared.
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>Publishing
+              </div>
+              <div id="setting-tunnelEnabled" class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Cloudflare publishing</div>
+                  <div class="setting-desc">
+                    Configure a protected public hostname for a local RepoOS service. This card
+                    reports status; it does not start or stop cloudflared.
+                  </div>
+                </div>
+                <div class="setting-input tunnel-setting-actions">
+                  <span class="tunnel-status-chip">{{ tunnelStatus }}</span>
+                  <Button variant="outline" size="sm" @click="ui.openTunnel()"
+                    >Configure publishing</Button
+                  >
                 </div>
               </div>
-              <div class="setting-input tunnel-setting-actions">
-                <span class="tunnel-status-chip">{{ tunnelStatus }}</span>
-                <Button variant="outline" size="sm" @click="ui.openTunnel()"
-                  >Configure publishing</Button
-                >
-              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
         </section>
 
         <section
@@ -1441,74 +1438,70 @@ onUnmounted(() => {
           class="settings-section"
           aria-label="Remote validation"
         >
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Remote validation
-            </div>
-            <div id="setting-remoteValidation.enabled" class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">Remote validation runner</div>
-                <div class="setting-desc">
-                  Run the close-out build + test suite on a disposable Hetzner VM instead of this
-                  machine, so MTD isn't blocked by local memory pressure. Off by default; enabling
-                  sends repo contents to Hetzner.
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>Remote validation
+              </div>
+              <div id="setting-remoteValidation.enabled" class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Remote validation runner</div>
+                  <div class="setting-desc">
+                    Run the close-out build + test suite on a disposable Hetzner VM instead of this
+                    machine, so MTD isn't blocked by local memory pressure. Off by default; enabling
+                    sends repo contents to Hetzner.
+                  </div>
+                </div>
+                <div class="setting-input tunnel-setting-actions">
+                  <span class="tunnel-status-chip">{{ rvStatusLabel }}</span>
+                  <Button variant="outline" size="sm" @click="ui.openRemoteValidation()">
+                    Configure runner
+                  </Button>
                 </div>
               </div>
-              <div class="setting-input tunnel-setting-actions">
-                <span class="tunnel-status-chip">{{ rvStatusLabel }}</span>
-                <Button variant="outline" size="sm" @click="ui.openRemoteValidation()">
-                  Configure runner
-                </Button>
-              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
         </section>
 
-        <section
-          :id="settingsSectionAnchor('board')"
-          class="settings-section"
-          aria-label="Board"
-        >
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Board
-            </div>
-            <div class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">Glide animations</div>
-                <div class="setting-desc">
-                  When a card changes state, animate it gliding between columns to show where it
-                  came from and where it went. Off by default; when off, cards change state
-                  instantly as before.
+        <section :id="settingsSectionAnchor('board')" class="settings-section" aria-label="Board">
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>Board
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Glide animations</div>
+                  <div class="setting-desc">
+                    When a card changes state, animate it gliding between columns to show where it
+                    came from and where it went. Off by default; when off, cards change state
+                    instantly as before.
+                  </div>
+                </div>
+                <div class="setting-input">
+                  <Switch :checked="ui.glideAnimations" @update:checked="ui.setGlideAnimations" />
                 </div>
               </div>
-              <div class="setting-input">
-                <Switch :checked="ui.glideAnimations" @update:checked="ui.setGlideAnimations" />
-              </div>
-            </div>
-            <div class="setting-row">
-              <div class="setting-info">
-                <div class="setting-label">Keyboard navigation</div>
-                <div class="setting-desc">
-                  Power-user shortcut mode: move around the board with the keyboard —
-                  <span class="mono">j</span>/<span class="mono">k</span> (
-                  <span class="mono">h</span>/<span class="mono">l</span> between columns),
-                  <span class="mono">Enter</span> to open, <span class="mono">Esc</span> to close or
-                  clear. Off by default; when off the board behaves exactly as before.
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">Keyboard navigation</div>
+                  <div class="setting-desc">
+                    Power-user shortcut mode: move around the board with the keyboard —
+                    <span class="mono">j</span>/<span class="mono">k</span> (
+                    <span class="mono">h</span>/<span class="mono">l</span> between columns),
+                    <span class="mono">Enter</span> to open, <span class="mono">Esc</span> to close
+                    or clear. Off by default; when off the board behaves exactly as before.
+                  </div>
+                </div>
+                <div class="setting-input">
+                  <Switch
+                    :checked="ui.keyboardNavEnabled"
+                    @update:checked="ui.setKeyboardNavEnabled"
+                  />
                 </div>
               </div>
-              <div class="setting-input">
-                <Switch
-                  :checked="ui.keyboardNavEnabled"
-                  @update:checked="ui.setKeyboardNavEnabled"
-                />
-              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
         </section>
       </div>
 

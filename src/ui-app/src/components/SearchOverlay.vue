@@ -253,7 +253,10 @@ async function navigateToSetting(
   const curTab = typeof cur.query.tab === "string" ? cur.query.tab : "general";
   const curFocus = (cur.query.focus ?? cur.query.setting) as string | undefined;
   if (cur.name === "settings" && curFocus === key && curTab === query.tab) {
-    await router.replace({ name: "settings", query: { tab: query.tab, ...(section ? { section } : {}) } });
+    await router.replace({
+      name: "settings",
+      query: { tab: query.tab, ...(section ? { section } : {}) },
+    });
   }
   await router.push({ name: "settings", query });
 }

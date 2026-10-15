@@ -384,7 +384,8 @@ function settingSearchResult(
   const sectionLabel = section ? generalSectionLabel(section) : undefined;
   // Show the section in the subtitle so a result names where it lives — but
   // don't repeat the tab name when the section is the tab's own default.
-  const where = sectionLabel && sectionLabel !== tabLabel ? `${tabLabel} · ${sectionLabel}` : tabLabel;
+  const where =
+    sectionLabel && sectionLabel !== tabLabel ? `${tabLabel} · ${sectionLabel}` : tabLabel;
   const subtitle = loc.hasUiRow
     ? `${where} · ${f.key}`
     : `${tabLabel} · ${f.key} · edit in repoos.toml`;
@@ -402,10 +403,7 @@ function settingSearchResult(
 }
 
 /** Extra section-name text so searching a section name surfaces its settings. */
-function settingSectionSearchText(
-  f: ConfigField,
-  ctx: SettingLocationContext | undefined,
-): string {
+function settingSectionSearchText(f: ConfigField, ctx: SettingLocationContext | undefined): string {
   const loc = resolveSettingLocation(f.key, f, ctx ?? { inspectorAvailable: false });
   if (!loc) return "";
   const section = settingSectionId(f.key, ctx, loc);
