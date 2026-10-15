@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-15T10:34:54Z"
+review_passes: 2
 id: "0796"
 title: "CTO safe actions: allow an empty list and pick actions with checkboxes"
 type: bug
@@ -11,9 +13,7 @@ branch: feat/cto-safe-actions-allow-an-empty-list-and
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:55:06Z"
-updated_at: "2026-10-15T10:34:54Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 1. Saving CTO safe actions with no action selected fails with 'CTO safe actions must be a non-empty array'. The server rejects every empty array for list settings (src/server/routes/config.ts ~728), but cto.actions is opt-in and its own description says 'Empty means report-only'. Turning all actions off should be allowed.
@@ -82,3 +82,4 @@ Start from src/server/routes/config.ts (the non-empty array check), src/core/con
 - 2026-10-15T10:33:47Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (636777398) during finalization (#0734)
 - 2026-10-15T10:33:48Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (636777398) during finalization (#0734)
 - 2026-10-15T10:34:54Z · note: review pass 2: good to go
+
