@@ -57,6 +57,25 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.integration?.active?.detail).toContain("uploading bundle");
   });
 
+  it("seeds a heartbeating remote test run, current step + elapsed, not stalled (#0799)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "closeOut:remoteTests");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "closeOut:remoteTests seeds the fixture task").toBeTruthy();
+    expect(repo.integration?.active?.detail).toBe("remote tests");
+    const { integrationActiveCopy, integrationPipelineStalled } =
+      await import("../src/lib/integration-pipeline-ui");
+    const now = Date.now();
+    expect(integrationPipelineStalled(repo.integration, now)).toBe(false);
+    const copy = integrationActiveCopy(repo.integration!, now);
+    expect(copy.stalled).toBe(false);
+    expect(copy.label).toContain("remote tests");
+    // A non-zero elapsed since the job started.
+    expect(copy.label).toMatch(/remote tests · \dm/);
+  });
+
   it("keeps the seeded pipeline against a live refresh, then unpins (#0782)", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -147,6 +166,7 @@ describe("shot preview board fixtures (#0743)", () => {
       for (const fixture of [
         "card:doneError",
         "closeOut:uploading",
+        "closeOut:remoteTests",
         "board:withReviewTask",
         "board:cardChips",
         "board:activeCoding",
