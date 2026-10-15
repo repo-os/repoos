@@ -18,7 +18,11 @@ describe("shot preview fixtures (#0743)", () => {
     // A branch-aware validator (#0786) admits ids main's compiled list lacks.
     const branch = (id: string) => id === "closeOut:stalled";
     expect(
-      shotCapturePageUrl("http://127.0.0.1:8000", { route: "/", state: "closeOut:stalled" }, branch),
+      shotCapturePageUrl(
+        "http://127.0.0.1:8000",
+        { route: "/", state: "closeOut:stalled" },
+        branch,
+      ),
     ).toContain("shotState=closeOut%3Astalled");
   });
 
