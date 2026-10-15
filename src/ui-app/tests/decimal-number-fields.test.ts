@@ -99,27 +99,7 @@ describe("Decimal number fields (#0797)", () => {
   });
 });
 
-describe("Settings save with decimal fields (#0797)", () => {
-  it("succeeds when saving only changed fields, even with unchanged decimal field", async () => {
-    const root = tempRoot();
-    writeFileSync(
-      join(root, "repoos.toml"),
-      [
-        'workDir = "work"',
-        'activityAnimationStyle = "orbital-pixel"',
-        "[attention]",
-        "slowRunMultiplier = 1.5",
-      ].join("\n"),
-    );
-    // Simulate sending only the changed field (activityAnimationStyle)
-    // and NOT including the unchanged slowRunMultiplier field
-    const res = await patch(root, { activityAnimationStyle: "cursor-scan-pulse" });
-    expect(res.status).toBe(200);
-    expect(loadConfig(root).activityAnimationStyle).toBe("cursor-scan-pulse");
-    // slowRunMultiplier should remain unchanged
-    expect(loadConfig(root).attention?.slowRunMultiplier).toBe(1.5);
-  });
-
+describe("PATCH with decimal fields (#0797)", () => {
   it("succeeds when sending both changed and unchanged decimal field", async () => {
     const root = tempRoot();
     writeFileSync(

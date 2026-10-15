@@ -51,6 +51,7 @@ import {
   activityAnimationStyleOrDefault,
   type ActivityAnimationStyle,
 } from "../../../core/activity-animation.js";
+import type { ConfigField } from "../types";
 
 const config = useConfigStore();
 const ui = useUiStore();
@@ -751,6 +752,8 @@ watch(
 // ---- Auto-save settings (mirrors the Agents page implementation) ----
 
 const form = reactive<Record<string, unknown>>({});
+/** Snapshot of form values after the last load or successful save — used to omit unchanged keys. */
+let baseline: Record<string, unknown> = {};
 let syncing = false;
 let autoSaveTimer: ReturnType<typeof setTimeout> | undefined;
 let saveInFlight = false;
@@ -761,6 +764,7 @@ function sync(): void {
   for (const key of Object.keys(config.form)) {
     form[key] = config.form[key];
   }
+  baseline = { ...form };
   syncing = false;
 }
 
@@ -799,6 +803,33 @@ function arrayPlaceholder(key: string): string {
   return ARRAY_PLACEHOLDERS[key] ?? "value1, value2";
 }
 
+/** Normalize a form value to the shape sent in a Settings PATCH body. */
+function valueForSave(f: ConfigField, raw: unknown): unknown {
+  let val = raw;
+  if (f.key.startsWith("board.columns.")) {
+    const trimmed = typeof val === "string" ? val.trim() : String(val ?? "").trim();
+    return trimmed || f.default;
+  }
+  if (f.type === "array" && typeof val === "string") {
+    return val
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return val;
+}
+
+function valuesEqual(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((item, i) => valuesEqual(item, b[i]));
+  }
+  if (typeof a === "number" && typeof b === "number") {
+    return Number.isFinite(a) && Number.isFinite(b) && a === b;
+  }
+  return false;
+}
+
 function buildBody(): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   for (const f of config.schema) {
@@ -818,19 +849,10 @@ function buildBody(): Record<string, unknown> {
     // Import/Export tab and edited in raw TOML; skipping them here keeps an
     // unrelated Settings save from materialising their defaults.
     if ((TOML_ONLY_REMOTE_VALIDATION_KEYS as readonly string[]).includes(f.key)) continue;
-    let val = form[f.key];
-    if (f.key.startsWith("board.columns.")) {
-      const trimmed = typeof val === "string" ? val.trim() : String(val ?? "").trim();
-      body[f.key] = trimmed || f.default;
-      continue;
-    }
-    if (f.type === "array" && typeof val === "string") {
-      val = val
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
-    body[f.key] = val;
+    const next = valueForSave(f, form[f.key]);
+    const prev = valueForSave(f, baseline[f.key]);
+    if (valuesEqual(next, prev)) continue;
+    body[f.key] = next;
   }
   return body;
 }
@@ -844,7 +866,9 @@ async function autoSave(): Promise<void> {
   savePending = false;
   let saved = false;
   try {
-    await config.save(buildBody());
+    const body = buildBody();
+    if (Object.keys(body).length === 0) return;
+    await config.save(body);
     saved = true;
   } catch {
     // The store exposes the error inline; keep edits in place for the next retry.
@@ -1140,8 +1164,8 @@ onUnmounted(() => {
                   v-else-if="f.type === 'number'"
                   :model-value="form[f.key] == null ? '' : String(form[f.key])"
                   type="number"
-                  :min="f.key === 'attention.slowRunMultiplier' ? 1 : 0"
-                  :step="f.key === 'attention.slowRunMultiplier' ? 0.1 : 1"
+                  :min="typeof f.min === 'number' ? f.min : 0"
+                  :step="typeof f.step === 'number' ? f.step : 1"
                   style="width: 100px"
                   :disabled="config.saving"
                   @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
