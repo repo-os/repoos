@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T07:39:21Z"
+updated_at: "2026-10-15T07:44:32Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -45,6 +45,30 @@ Start from dev.inspector.editorCommand in src/core/config.ts (~2755-2771, ~2901)
 ## Decision
 Opening local files is allowed on normal (non-dev) installs when an editor command is configured. The route no longer requires the dev UI build; it only runs the configured command template as an argv array (no shell), and only opens realpath-resolved paths inside the repo's worktree/docs/test files. dev.inspector.editorCommand still overrides editor.command when set, preserving the copy inspector's prior behavior and its dev-enabled gate.
 
+## Shots
+```json
+[
+{
+  "label": "General tab showing the new Editor command setting",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": "#setting-editor\\.command"
+},
+{
+  "label": "Task drawer Spec row with Open in editor link",
+  "target": "default",
+  "route": "/work?task=0790",
+  "highlight": "[data-test-id=\"open-in-editor\"]"
+},
+{
+  "label": "Context doc viewer with Open in editor link",
+  "target": "default",
+  "route": "/repo?tab=docs&doc=docs/open-in-editor.md",
+  "highlight": "[data-test-id=\"context-open-in-editor\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-15T06:33:35Z · created · njachowski@gmail.com
@@ -64,3 +88,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T07:36:34Z · body
 - 2026-10-15T07:37:24Z · body
 - 2026-10-15T07:39:21Z · body
+- 2026-10-15T07:44:32Z · body: section Shots
