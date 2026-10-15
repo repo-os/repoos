@@ -1,22 +1,20 @@
 ---
-last_close_out_gate_ms: 86307
-last_close_out_gate_at: "2026-10-15T18:23:28.273Z"
 id: "0797"
 title: "Settings: decimal number fields rejected on save (slow-check multiplier)"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection stalled repeatedly"
+status: done
 priority: p2
 area: [web, server]
+merged_commit: 6130f52e31404e769e3fdedf0b30d778a70c4b72
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/settings-decimal-number-fields-rejected-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T18:23:28Z"
+updated_at: "2026-10-15T18:23:50Z"
+last_close_out_gate_ms: 86307
+last_close_out_gate_at: "2026-10-15T18:23:28.273Z"
 review_passes: 6
 close_out_repair_count: 1
 review_rounds: 2
@@ -124,4 +122,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T18:17:51Z · status active→review
 - 2026-10-15T18:18:47Z · note: review pass 6: good to go
 - 2026-10-15T18:23:28Z · close-out gate completed in 86s
-
+- 2026-10-15T18:23:50Z · status review→done, release:success
