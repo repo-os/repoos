@@ -30,34 +30,34 @@ Start from the upload heartbeat (src/server/integration-orchestrator.ts ~2722-27
 ```json
 [
 {
-  "label": "Close-out card shows the remote test-run step and elapsed time (light theme)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-test-id=\"task-card-agent-hint\"]",
-  "assert": [
-    {
-      "selector": "[data-test-id=\"task-card-agent-hint\"]",
-      "label": "card shows the current step heartbeating, not stalled",
-      "text": "remote tests"
-    }
-  ],
-  "state": "closeOut:remoteTests",
-  "theme": "light"
+"label": "Close-out card shows the remote test-run step and elapsed time (light theme)",
+"target": "default",
+"route": "/work",
+"highlight": "[data-test-id=\"task-card-agent-hint\"]",
+"assert": [
+  {
+    "selector": "[data-test-id=\"task-card-agent-hint\"]",
+    "label": "card shows the current step heartbeating, not stalled",
+    "text": "remote tests"
+  }
+],
+"state": "closeOut:remoteTests",
+"theme": "light"
 },
 {
-  "label": "Close-out card shows the remote test-run step and elapsed time (dark theme)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-test-id=\"task-card-agent-hint\"]",
-  "assert": [
-    {
-      "selector": "[data-test-id=\"task-card-agent-hint\"]",
-      "label": "card shows the current step in dark theme",
-      "text": "remote tests"
-    }
-  ],
-  "state": "closeOut:remoteTests",
-  "theme": "dark"
+"label": "Close-out card shows the remote test-run step and elapsed time (dark theme)",
+"target": "default",
+"route": "/work",
+"highlight": "[data-test-id=\"task-card-agent-hint\"]",
+"assert": [
+  {
+    "selector": "[data-test-id=\"task-card-agent-hint\"]",
+    "label": "card shows the current step in dark theme",
+    "text": "remote tests"
+  }
+],
+"state": "closeOut:remoteTests",
+"theme": "dark"
 }
 ]
 ```
