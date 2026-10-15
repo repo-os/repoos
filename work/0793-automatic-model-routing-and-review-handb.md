@@ -2,7 +2,7 @@
 id: "0793"
 title: Automatic model routing and review handback re-evaluation
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [agent, server, core, web]
 depends_on: ["0792"]
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T07:47:32Z"
-updated_at: "2026-10-15T09:47:14Z"
+updated_at: "2026-10-15T11:02:07Z"
 ---
 ## Problem
 After #0792 lands (adapter, config, UI and shadow mode), the router still does not influence any run. This task adds opt-in automatic routing for PM, engineer and reviewer runs, plus re-evaluation when review sends work back. It must stay inside the existing lifecycle: review, checks, approval, close-out and the recovery work in #0767 are not bypassed or duplicated.
@@ -56,3 +56,4 @@ On the Model routing section, show for each recent run whether automatic routing
 - 2026-10-15T07:47:38Z · body
 - 2026-10-15T08:23:20Z · body: section Scope
 - 2026-10-15T09:47:14Z · needs_input
+- 2026-10-15T11:02:07Z · status inbox→ready
