@@ -3,6 +3,9 @@ id: "0786"
 title: "Shots: a fixture added on the task branch can't be declared or captured until merge"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Branch fixture validation is wired through CLI update, shot capture, verify preflight/gate, and display parsing; the #0778 failure mode is addressed. Sign-off is held up by a missing automated test for the verify warning / “X of Y” summary acceptance criterion."
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/shots-a-fixture-added-on-the-task-branch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-14T16:48:07Z"
-updated_at: "2026-10-15T04:48:20Z"
+updated_at: "2026-10-15T04:48:21Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -78,3 +81,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-15T04:44:14Z · body
 - 2026-10-15T04:47:34Z · status active→review
 - 2026-10-15T04:48:20Z · note: review pass 5: needs some work
+- 2026-10-15T04:48:21Z · needs_input
