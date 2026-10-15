@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-15T08:19:50Z"
-review_passes: 3
+last_close_out_gate_ms: 214517
+last_close_out_gate_at: "2026-10-15T09:46:52.984Z"
 id: "0787"
 title: Compact configurable activity animations; default to Orbital pixel
 type: feature
@@ -18,6 +18,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-15T05:23:43Z"
+updated_at: "2026-10-15T09:46:52Z"
+review_passes: 3
 review_rounds: 2
 dev_error_count: 1
 ---
@@ -169,4 +171,5 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T08:17:25Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (b10b2fbe6) during finalization (#0734)
 - 2026-10-15T08:19:50Z · note: review pass 3: needs some work
 - 2026-10-15T08:19:50Z · needs_input
+- 2026-10-15T09:46:52Z · close-out gate completed in 215s
 
