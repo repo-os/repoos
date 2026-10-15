@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-15T10:52:40Z"
+review_passes: 1
 id: "0797"
 title: "Settings: decimal number fields rejected on save (slow-check multiplier)"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T10:52:40Z"
 ---
 ## Problem
 Changing any setting (for example the activity animation) shows the red error 'Flag slow checks above (× median) must be a whole number', although that field was not touched.
@@ -49,3 +50,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T10:42:52Z · body
 - 2026-10-15T10:51:30Z · status active→review
 - 2026-10-15T10:52:40Z · note: review pass 1: needs some work
+
