@@ -226,10 +226,16 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       };
       break;
     case "board:cardChips":
-      // A multi-area task with seeded diff stats, so the combined area chip
-      // and the file-count chip both render on the board (#0776). No branch
-      // (from the base fixture), so the card skips the diff-stats request.
-      ensureFixtureTask(repo, "review", { area: "web, server", areas: ["web", "server"] });
+      // A multi-area task assigned to a human with seeded diff stats, so the
+      // combined area chip, the human chip and the file-count chip all render
+      // on the board (#0776, #0795). No branch (from the base fixture), so the
+      // card skips the diff-stats request.
+      ensureFixtureTask(repo, "review", {
+        area: "web, server",
+        areas: ["web", "server"],
+        assignee: "human",
+        assignedTo: "Nick",
+      });
       repo.seedDiffStats(SHOT_PREVIEW_FIXTURE_TASK_ID, {
         filesChanged: 10,
         additions: 377,
