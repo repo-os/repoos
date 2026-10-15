@@ -20,8 +20,10 @@ Fix the dropdowns on the model playground to match the style we use everywhere e
 ## Screenshots
 
 ![Screenshot-2026-10-15-at-12.31.15](/api/tasks/0788/attachments/screenshot-1.png)
+![Screenshot-2026-10-15-at-12.30.00](/api/tasks/0788/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-10-15T05:33:42Z · created · hello@repoos.org
+- 2026-10-15T05:33:44Z · screenshots
 - 2026-10-15T05:33:44Z · screenshots
