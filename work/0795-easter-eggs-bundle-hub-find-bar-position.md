@@ -2,17 +2,21 @@
 id: "0795"
 title: "Easter eggs bundle: Hub find bar position, Done button, and Escape"
 type: bug
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried."
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-hub-find-bar-position
 created_at: "2026-10-15T08:02:06Z"
-updated_at: "2026-10-15T12:12:03Z"
+updated_at: "2026-10-15T12:34:34Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-15T11:36:40.023Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
+dev_error_count: 1
 ---
 ## Problem
 Three small issues in the Hub's new Cmd-F find bar (from #0789), plus two small UI fixes for the task cards:
@@ -89,3 +93,5 @@ Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSH
 - 2026-10-15T11:52:35Z · body
 - 2026-10-15T12:12:03Z · message_queued at 2026-10-15T12:12:03.446Z
 - 2026-10-15T12:12:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-15T12:34:34Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried.
+- 2026-10-15T12:34:34Z · status active→review
