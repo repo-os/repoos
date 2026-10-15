@@ -68,7 +68,10 @@ async function postSystemOne(
     clearTimeout(timer);
   }
   if (res.status === 401 || res.status === 403) {
-    throw new RoutingProviderError("auth", `decision provider rejected credentials (HTTP ${res.status})`);
+    throw new RoutingProviderError(
+      "auth",
+      `decision provider rejected credentials (HTTP ${res.status})`,
+    );
   }
   if (!res.ok) {
     throw new RoutingProviderError("http", `decision provider returned HTTP ${res.status}`);
@@ -103,7 +106,10 @@ export function createJevProvider(opts: JevProviderOptions): RoutingDecisionProv
 /** Cloudflare Clef-Flash — self-hosted SGLang serving the same System One contract. */
 export function createClefFlashProvider(opts: ClefFlashProviderOptions): RoutingDecisionProvider {
   if (!opts.baseUrl) {
-    throw new RoutingProviderError("not-configured", "Clef-Flash needs a base URL of the self-hosted server");
+    throw new RoutingProviderError(
+      "not-configured",
+      "Clef-Flash needs a base URL of the self-hosted server",
+    );
   }
   const url = `${opts.baseUrl.replace(/\/+$/, "")}/v1/systemone`;
   const model = opts.model ?? CLEF_FLASH_DEFAULT_MODEL;

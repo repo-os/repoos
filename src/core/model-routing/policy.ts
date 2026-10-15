@@ -88,10 +88,7 @@ function failureReason(err: RoutingProviderError | null): PolicyFallbackReason {
 }
 
 /** Use the fallback when it is eligible; otherwise block with a clear reason. */
-function fallbackOrBlock(
-  input: PolicyInput,
-  reason: PolicyFallbackReason,
-): PolicyOutcome {
+function fallbackOrBlock(input: PolicyInput, reason: PolicyFallbackReason): PolicyOutcome {
   const fb = input.fallback;
   if (fb && input.eligible.some((c) => candidateKey(c) === candidateKey(fb))) {
     return { kind: "fallback", candidate: fb, reason };
@@ -114,8 +111,7 @@ function score(
 ): number {
   const suit = answers[ROUTING_QUESTION_IDS.suitability];
   // Suitability is a choice over candidate keys; the candidate's own probability is its signal.
-  const suitP =
-    suit && suit.type === "choice" ? (suit.probabilities[candidateKey(c)] ?? 0) : 0;
+  const suitP = suit && suit.type === "choice" ? (suit.probabilities[candidateKey(c)] ?? 0) : 0;
   const cost = ct?.cost ?? 0.5;
   const time = ct?.time ?? 0.5;
   const economy = 1 - (weights.costWeight * cost + weights.timeWeight * time);
