@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-15T06:31:02Z"
-updated_at: "2026-10-15T06:31:02Z"
+updated_at: "2026-10-15T06:33:38Z"
 ---
 ## Problem
 In the native macOS RepoOS Hub, Cmd-F now shows a black strip at the top of the window (from the #0783 Find work). Its text field can't be typed into, and no controls are readable, so the user can't search the page. Reported 2026-10-15.
@@ -33,3 +34,4 @@ Start from the Find command in macos/RepoOSHub/RepoOSHubApp.swift (Edit menu, Cm
 ## Activity
 
 - 2026-10-15T06:31:02Z · created · njachowski@gmail.com
+- 2026-10-15T06:33:38Z · model_override
