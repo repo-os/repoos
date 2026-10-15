@@ -2,14 +2,14 @@
 id: "0798"
 title: "Polish compact activity indicators: fix state motions and improve visible size"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T10:08:33Z"
+updated_at: "2026-10-15T10:19:23Z"
 ---
 ## Problem
 
@@ -57,3 +57,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 
 - 2026-10-15T10:08:29Z · created · njachowski@gmail.com
 - 2026-10-15T10:08:33Z · screenshots
+- 2026-10-15T10:19:23Z · status inbox→ready
