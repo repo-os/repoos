@@ -2889,12 +2889,14 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: "jev",
       options: [
-        { value: "jev", label: "TypeSafe Jev (hosted)" },
+        { value: "jev", label: "TypeSafe Jev (hosted, direct)" },
+        { value: "openrouter", label: "OpenRouter (Jev / TypeSafe via System One)" },
         { value: "clef-flash", label: "Cloudflare Clef-Flash (self-hosted)" },
       ],
       description:
-        "Which decision model answers routing questions. Jev is a hosted API; Clef-Flash runs on your " +
-        "own GPU server and needs a base URL. Switching providers does not require code changes.",
+        "Which decision backend answers routing questions. Jev uses TypeSafe directly; OpenRouter uses the " +
+        "same System One contract with your OpenRouter key (recommended when you already use OpenRouter); " +
+        "Clef-Flash runs on your own GPU server and needs a base URL. Switching providers does not require code changes.",
     },
     {
       key: "model_routing.model",
@@ -2904,7 +2906,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: "jev-latest",
       description:
-        "Provider model id. Jev: jev-latest or a pinned version such as jev-1.13.0. Clef-Flash: Cloudflare/clef-flash.",
+        "Provider model id. Jev: jev-latest or jev-1.13.0. OpenRouter: jev-latest (mapped to typesafe/*) or typesafe/jev-1.14. Clef-Flash: Cloudflare/clef-flash.",
     },
     {
       key: "model_routing.baseUrl",

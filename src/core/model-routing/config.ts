@@ -12,7 +12,7 @@
 import type { ModelRoutingConfig } from "../types.js";
 
 export const ROUTING_MODES = ["off", "shadow", "automatic"] as const;
-export const ROUTING_PROVIDERS = ["jev", "clef-flash"] as const;
+export const ROUTING_PROVIDERS = ["jev", "clef-flash", "openrouter"] as const;
 export const ROUTING_ROLES = ["pm", "engineer", "reviewer"] as const;
 
 export const DEFAULT_ROUTING_TIMEOUT_MS = 8000;
@@ -20,10 +20,13 @@ export const MIN_ROUTING_TIMEOUT_MS = 500;
 export const MAX_ROUTING_TIMEOUT_MS = 60000;
 
 /** Default credential env var per provider, following the existing REPOOS_*_API_KEY convention. */
-export const DEFAULT_CREDENTIAL_ENV: Record<"jev" | "clef-flash", string> = {
+export const DEFAULT_CREDENTIAL_ENV: Record<RoutingProviderToml, string> = {
   jev: "TYPESAFE_API_KEY",
   "clef-flash": "REPOOS_CLEF_FLASH_API_KEY",
+  openrouter: "REPOOS_OPENROUTER_API_KEY",
 };
+
+type RoutingProviderToml = (typeof ROUTING_PROVIDERS)[number];
 
 export interface ModelRoutingParseResult {
   config: ModelRoutingConfig;
@@ -34,7 +37,7 @@ export interface ModelRoutingParseResult {
 /** The resolved, effective routing settings used at decision time. */
 export interface EffectiveRouting {
   mode: "off" | "shadow" | "automatic";
-  provider: "jev" | "clef-flash" | null;
+  provider: RoutingProviderToml | null;
   model: string | null;
   baseUrl: string | null;
   credentialEnv: string | null;
@@ -66,7 +69,10 @@ export function parseModelRouting(raw: unknown): ModelRoutingParseResult {
   }
   if (r.provider !== undefined) {
     if (isOneOf(r.provider, ROUTING_PROVIDERS)) config.provider = r.provider;
-    else warnings.push(`[model_routing] provider must be "jev" or "clef-flash" — ignoring`);
+    else
+      warnings.push(
+        `[model_routing] provider must be one of ${ROUTING_PROVIDERS.join(", ")} — ignoring`,
+      );
   }
   if (typeof r.model === "string" && r.model.trim()) config.model = r.model.trim();
   if (typeof r.baseUrl === "string" && r.baseUrl.trim()) config.baseUrl = r.baseUrl.trim();
@@ -113,7 +119,9 @@ export function resolveEffectiveRouting(config: ModelRoutingConfig | undefined):
         ? "jev-latest"
         : provider === "clef-flash"
           ? "Cloudflare/clef-flash"
-          : null),
+          : provider === "openrouter"
+            ? "jev-latest"
+            : null),
     baseUrl: config?.baseUrl ?? null,
     credentialEnv: config?.credentialEnv ?? (provider ? DEFAULT_CREDENTIAL_ENV[provider] : null),
     roles: config?.roles ?? ["engineer", "reviewer", "pm"],

@@ -3,9 +3,6 @@ id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "network problem reaching the model provider, not a code issue: ConnectionRefused: Unable to connect. Is the computer able to access the url?"
 priority: p2
 area: [web, server, cli]
 assigned_to: ai
@@ -13,7 +10,9 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T07:26:09Z"
+updated_at: "2026-10-15T08:17:51Z"
+review_passes: 3
+review_rounds: 2
 dev_error_count: 1
 ---
 ## Problem
@@ -43,6 +42,58 @@ Start from dev.inspector.editorCommand in src/core/config.ts (~2755-2771, ~2901)
 ## Decision
 Opening local files is allowed on normal (non-dev) installs when an editor command is configured. The route no longer requires the dev UI build; it only runs the configured command template as an argv array (no shell), and only opens realpath-resolved paths inside the repo's worktree/docs/test files. dev.inspector.editorCommand still overrides editor.command when set, preserving the copy inspector's prior behavior and its dev-enabled gate.
 
+## Shots
+```json
+[
+{
+"label": "Settings General tab with Editor command setting (light)",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "#setting-editor\\.command"
+},
+{
+"label": "Settings General tab with Editor command setting (dark)",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "#setting-editor\\.command",
+"steps": [
+  {
+    "click": ".theme-toggle"
+  },
+  {
+    "waitMs": 300
+  }
+]
+},
+{
+"label": "Task drawer Spec row with Open in editor link (light)",
+"target": "default",
+"route": "/work?task=0790&tab=details",
+"highlight": "[data-test-id=\"open-in-editor\"]"
+},
+{
+"label": "Task drawer Spec row with Open in editor link (dark)",
+"target": "default",
+"route": "/work?task=0790&tab=details",
+"highlight": "[data-test-id=\"open-in-editor\"]",
+"steps": [
+  {
+    "click": ".theme-toggle"
+  },
+  {
+    "waitMs": 300
+  }
+]
+},
+{
+"label": "Context doc viewer with Open in editor link (light)",
+"target": "default",
+"route": "/repo?doc=docs/open-in-editor.md",
+"highlight": "[data-test-id=\"context-open-in-editor\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-15T06:33:35Z · created · njachowski@gmail.com
@@ -56,3 +107,26 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T07:20:42Z · body
 - 2026-10-15T07:25:27Z · body: section Decision
 - 2026-10-15T07:26:09Z · body
+- 2026-10-15T07:32:55Z · status active→review
+- 2026-10-15T07:34:02Z · note: review pass 1: needs some work
+- 2026-10-15T07:34:02Z · status review→active
+- 2026-10-15T07:36:34Z · body
+- 2026-10-15T07:37:24Z · body
+- 2026-10-15T07:39:21Z · body
+- 2026-10-15T07:44:32Z · body: section Shots
+- 2026-10-15T07:44:58Z · status active→review
+- 2026-10-15T07:45:36Z · note: highlight [data-test-id="open-in-editor"] matched nothing on /work?task=0790
+- 2026-10-15T07:46:11Z · note: review pass 2: needs some work
+- 2026-10-15T07:46:11Z · message_queued at 2026-10-15T07:46:11.986Z
+- 2026-10-15T07:46:12Z · status review→active
+- 2026-10-15T07:51:34Z · status active→review
+- 2026-10-15T07:51:35Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (f6163ecba) during finalization (#0734)
+- 2026-10-15T07:51:35Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (f6163ecba) during finalization (#0734)
+- 2026-10-15T07:52:50Z · note: review pass 3: needs some work
+- 2026-10-15T08:12:20Z · status review→active
+- 2026-10-15T08:12:20Z · note: Verdict needs some work — The implementation adds editor.command, ungates open-in-editor routes, wires Task/Context/FailedTests UI, documents the security boundary, and unit tests cover schema, routes, and drawer behavior. Handoff UI evidence does not satisfy the task drawer shot or the light/dark theme criterion.
+- 2026-10-15T08:12:21Z · message_delivered: 1 message(s)
+- 2026-10-15T08:13:33Z · needs_input (dev-error) dismissed by hello@repoos.org
+- 2026-10-15T08:14:39Z · body
+- 2026-10-15T08:16:45Z · body: section Shots
+- 2026-10-15T08:17:51Z · body
