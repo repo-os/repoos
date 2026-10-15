@@ -67,7 +67,7 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 "highlight": "#setting-activityAnimationStyle",
 "steps": [
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ]
 },
@@ -78,7 +78,7 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 }
 ],
 "state": "board:activeCoding"
@@ -90,7 +90,7 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 }
 ],
 "state": "board:activeCoding",
@@ -103,7 +103,7 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 }
 ],
 "state": "board:activeCoding"
@@ -115,7 +115,7 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 "highlight": ".activity-animation-preview",
 "steps": [
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ]
 }
@@ -162,3 +162,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T08:09:10Z · body: section Shots
 - 2026-10-15T08:10:06Z · body
 - 2026-10-15T08:17:25Z · status active→review
+- 2026-10-15T08:17:25Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (b10b2fbe6) during finalization (#0734)
