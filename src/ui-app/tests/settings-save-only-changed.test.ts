@@ -1,71 +1,141 @@
 /**
  * Settings view sends only changed fields on save (#0797).
- * This prevents an unchanged decimal field from blocking a save.
  */
-import { describe, it, expect, afterEach } from "vitest";
-import { Readable } from "node:stream";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { loadConfig } from "../../core/config.js";
-import { patchConfig } from "../../server/routes/config.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { flushPromises, mount } from "@vue/test-utils";
+import { reactive } from "vue";
+import { createPinia, setActivePinia } from "pinia";
+import * as apiMod from "../src/api";
+import { useConfigStore } from "../src/stores/config";
+import type { ConfigField } from "../src/types";
+import SettingsView from "../src/views/SettingsView.vue";
+import Select from "../src/components/ui/select/root.vue";
+import { ACTIVITY_ANIMATION_STYLES } from "../../core/activity-animation.js";
 
-const roots: string[] = [];
-function tempRoot(): string {
-  const root = mkdtempSync(join(tmpdir(), "repoos-settings-changed-test-"));
-  roots.push(root);
-  return root;
+const api = vi.spyOn(apiMod, "api");
+
+const routeState = reactive<{ query: Record<string, string | string[]> }>({ query: {} });
+const replaceSpy = vi.fn(
+  async (_to?: { query?: Record<string, string | string[]>; name?: string }) => {},
+);
+
+vi.mock("vue-router", () => ({
+  useRoute: () => routeState,
+  useRouter: () => ({ replace: replaceSpy, push: vi.fn() }),
+}));
+
+function schemaField(
+  key: string,
+  type: ConfigField["type"],
+  extra: Partial<ConfigField> = {},
+): ConfigField {
+  return {
+    key,
+    label: key,
+    type,
+    tier: "live",
+    restartRequired: false,
+    default: extra.default ?? (type === "number" ? 0 : ""),
+    description: "",
+    options: extra.options ?? [],
+    ...extra,
+  } as ConfigField;
 }
 
-afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+function settingsConfigResponse(): {
+  config: Record<string, unknown>;
+  schema: ConfigField[];
+} {
+  return {
+    config: {
+      maxActiveTasks: 3,
+      activityAnimationStyle: "orbital-pixel",
+      attention: { slowRunMultiplier: 1.5 },
+    },
+    schema: [
+      schemaField("maxActiveTasks", "number", { default: 3 }),
+      schemaField("activityAnimationStyle", "select", {
+        default: "orbital-pixel",
+        options: ACTIVITY_ANIMATION_STYLES.map((value) => ({ value, label: value })),
+      }),
+      schemaField("attention.slowRunMultiplier", "number", {
+        default: 1.5,
+        min: 0.1,
+        step: 0.1,
+      }),
+    ],
+  };
+}
+
+async function loadSettingsConfig(): Promise<void> {
+  api.mockResolvedValue(settingsConfigResponse());
+  await useConfigStore().load();
+}
+
+let pinia: ReturnType<typeof createPinia>;
+
+async function mountSettings(): Promise<ReturnType<typeof mount>> {
+  routeState.query = { tab: "general" };
+  const wrapper = mount(SettingsView, {
+    attachTo: document.body,
+    global: { plugins: [pinia] },
+  });
+  await flushPromises();
+  return wrapper;
+}
+
+function activityAnimationSelect(wrapper: ReturnType<typeof mount>) {
+  const row = document.getElementById("setting-activityAnimationStyle");
+  expect(row).not.toBeNull();
+  const match = wrapper
+    .findAllComponents(Select)
+    .find((c) => row?.contains(c.element as Node));
+  expect(match).toBeDefined();
+  return match!;
+}
+
+beforeEach(() => {
+  pinia = createPinia();
+  setActivePinia(pinia);
+  routeState.query = {};
+  replaceSpy.mockReset();
+  replaceSpy.mockImplementation(async (to?: { query?: Record<string, string | string[]> }) => {
+    if (to?.query !== undefined) {
+      routeState.query = { ...to.query };
+    }
+  });
+  vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) })),
+  );
+  (Element.prototype as unknown as Record<string, unknown>).scrollIntoView = vi.fn();
 });
 
-async function patch(root: string, body: Record<string, unknown>) {
-  const cfg = loadConfig(root);
-  const req = Readable.from([Buffer.from(JSON.stringify(body))]);
-  const res: {
-    statusCode?: number;
-    payload?: string;
-    writeHead(code: number): unknown;
-    end(payload: string): void;
-  } = {
-    writeHead(code: number) {
-      this.statusCode = code;
-    },
-    end(payload: string) {
-      this.payload = payload;
-    },
-  };
-  const ctx = {
-    config: { root, cacheDir: cfg.cacheDir, workDir: cfg.workDir },
-    repoos: { config: cfg },
-    index: { refreshAll() {} },
-    logger: { system() {} },
-  } as never;
-  await patchConfig(ctx, req as never, res as never, {});
-  return { status: res.statusCode ?? 0, payload: JSON.parse(res.payload ?? "{}") };
-}
+afterEach(() => {
+  api.mockReset();
+  vi.unstubAllGlobals();
+  localStorage.clear();
+  document.body.innerHTML = "";
+});
 
-describe("Settings save sends only changed fields (#0797)", () => {
-  it("succeeds when changing one field while leaving decimal field unchanged", async () => {
-    const root = tempRoot();
-    writeFileSync(
-      join(root, "repoos.toml"),
-      [
-        'workDir = "work"',
-        'activityAnimationStyle = "orbital-pixel"',
-        "[attention]",
-        "slowRunMultiplier = 1.5",
-      ].join("\n"),
-    );
+describe("SettingsView save sends only changed fields (#0797)", () => {
+  it("auto-save omits unchanged number fields when only activity animation changes", async () => {
+    await loadSettingsConfig();
+    const config = useConfigStore();
+    const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
 
-    // Simulate SettingsView sending only changed fields (not slowRunMultiplier)
-    // The old buggy behavior would send slowRunMultiplier: 1.5, which should fail
-    // but now sends only the changed field, which should succeed
-    const res = await patch(root, { activityAnimationStyle: "cursor-scan-pulse" });
-    expect(res.status).toBe(200);
-    expect(loadConfig(root).activityAnimationStyle).toBe("cursor-scan-pulse");
-    expect(loadConfig(root).attention?.slowRunMultiplier).toBe(1.5);
+    const wrapper = await mountSettings();
+    await activityAnimationSelect(wrapper).setValue("cursor-scan-pulse");
+    await flushPromises();
+    await vi.waitFor(() => expect(saveSpy).toHaveBeenCalled(), { timeout: 3000 });
+
+    const body = saveSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(body.activityAnimationStyle).toBe("cursor-scan-pulse");
+    expect("attention.slowRunMultiplier" in body).toBe(false);
+    expect("maxActiveTasks" in body).toBe(false);
+
+    saveSpy.mockRestore();
+    wrapper.unmount();
   });
 });
