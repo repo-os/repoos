@@ -48,6 +48,7 @@ import {
 import { TOML_ONLY_REMOTE_VALIDATION_KEYS } from "../lib/settings-transfer";
 import ActivityIndicator from "../components/ActivityIndicator.vue";
 import CtoSafeActionsSettings from "../components/CtoSafeActionsSettings.vue";
+import { CTO_ACTIONS_SETTINGS_ROW_DESC } from "../../../core/cto-actions.js";
 import {
   activityAnimationStyleOrDefault,
   type ActivityAnimationStyle,
@@ -1183,7 +1184,7 @@ onUnmounted(() => {
               >
                 <div class="setting-info">
                   <div class="setting-label">{{ ctoActionsField.label }}</div>
-                  <div class="setting-desc">{{ ctoActionsField.description }}</div>
+                  <div class="setting-desc">{{ CTO_ACTIONS_SETTINGS_ROW_DESC }}</div>
                 </div>
                 <div class="setting-input setting-input--wide">
                   <CtoSafeActionsSettings

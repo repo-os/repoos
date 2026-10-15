@@ -30,9 +30,6 @@ function toggle(id: CtoSafeActionId, checked: boolean): void {
 
 <template>
   <div class="cto-safe-actions" role="group" aria-label="CTO safe actions">
-    <p class="cto-safe-actions-note">
-      With every action off, the list is empty and the CTO stays report-only.
-    </p>
     <label v-for="id in CTO_SAFE_ACTION_IDS" :key="id" class="cto-safe-action-option">
       <Checkbox
         :checked="isChecked(id)"
@@ -60,13 +57,6 @@ function toggle(id: CtoSafeActionId, checked: boolean): void {
   flex-direction: column;
   gap: 0;
   max-width: 36rem;
-}
-
-.cto-safe-actions-note {
-  margin: 0 0 10px;
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--txt-muted);
 }
 
 .cto-safe-action-option {
