@@ -3,6 +3,9 @@ id: "0787"
 title: Compact configurable activity animations; default to Orbital pixel
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "needs some work — The configurable styles, default, and Settings preview are present, but the bar width can overlap labels and required visual checks are incomplete."
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -165,3 +168,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T08:17:25Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (b10b2fbe6) during finalization (#0734)
 - 2026-10-15T08:17:25Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (b10b2fbe6) during finalization (#0734)
 - 2026-10-15T08:19:50Z · note: review pass 3: needs some work
+- 2026-10-15T08:19:50Z · needs_input
