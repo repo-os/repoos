@@ -1778,12 +1778,14 @@ const editorConfigured = computed(() => {
   const inspector = (
     config.data?.dev as { inspector?: { enabled?: boolean; editorCommand?: string } } | undefined
   )?.inspector;
-  const devCommand = typeof inspector?.editorCommand === "string" ? inspector.editorCommand.trim() : "";
+  const devCommand =
+    typeof inspector?.editorCommand === "string" ? inspector.editorCommand.trim() : "";
   const usingDevOverride = !!devCommand;
   if (usingDevOverride && inspector?.enabled === false) return false;
-  const generalCommand = typeof (config.data?.editor as { command?: string } | undefined)?.command === "string"
-    ? (config.data?.editor as { command?: string }).command!.trim()
-    : "";
+  const generalCommand =
+    typeof (config.data?.editor as { command?: string } | undefined)?.command === "string"
+      ? (config.data?.editor as { command?: string }).command!.trim()
+      : "";
   const cmd = usingDevOverride ? devCommand : generalCommand;
   if (!cmd) return false;
   // Dev-only override needs the dev API; the general command works on any install.

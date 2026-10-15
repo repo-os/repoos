@@ -171,7 +171,8 @@ const editorConfigured = computed(() => {
   const inspector = (
     config.data?.dev as { inspector?: { enabled?: boolean; editorCommand?: string } } | undefined
   )?.inspector;
-  const devCommand = typeof inspector?.editorCommand === "string" ? inspector.editorCommand.trim() : "";
+  const devCommand =
+    typeof inspector?.editorCommand === "string" ? inspector.editorCommand.trim() : "";
   const usingDevOverride = !!devCommand;
   if (usingDevOverride && inspector?.enabled === false) return false;
   const generalCommand =

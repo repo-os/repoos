@@ -97,8 +97,7 @@ export const postOpenInEditor: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: "editor is disabled" });
   }
   const command =
-    devCommand ||
-    (typeof config.editor?.command === "string" ? config.editor.command.trim() : "");
+    devCommand || (typeof config.editor?.command === "string" ? config.editor.command.trim() : "");
   if (!command) {
     return json(res, 400, { error: "no editor command configured" });
   }
@@ -144,8 +143,7 @@ export const postOpenTestInEditor: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: "editor is disabled" });
   }
   const command =
-    devCommand ||
-    (typeof config.editor?.command === "string" ? config.editor.command.trim() : "");
+    devCommand || (typeof config.editor?.command === "string" ? config.editor.command.trim() : "");
   if (!command) {
     return json(res, 400, { error: "no editor command configured" });
   }
