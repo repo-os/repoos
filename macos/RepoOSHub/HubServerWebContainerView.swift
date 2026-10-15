@@ -16,6 +16,21 @@ final class HubServerWebContainerView: NSView, NSTextFinderBarContainer {
 
     var findBarView: NSView? {
         didSet {
+            if oldValue !== findBarView {
+                oldValue?.removeFromSuperview()
+            }
+            if let findBarView, findBarView.superview !== self {
+                // NSTextFinder hands the bar over but never installs it. Without
+                // this the bar has no window, cannot take focus, and the tiled
+                // gap shows the black loading underlay behind the web view (#0789).
+                // Pin it to the system appearance like the page so it stays
+                // readable in light and dark regardless of the Hub shell theme.
+                findBarView.appearance = HubSystemAppearance.appearance
+                addSubview(findBarView)
+            }
+            if let height = findBarView?.frame.height, height > 0 {
+                findBarHeight = height
+            }
             tileFindBarAndWebView()
             publishKeyboardFocusState()
         }
@@ -25,6 +40,17 @@ final class HubServerWebContainerView: NSView, NSTextFinderBarContainer {
         didSet {
             guard oldValue != isFindBarVisible else { return }
             tileFindBarAndWebView()
+            if !isFindBarVisible {
+                // Esc/close resigns the find field; hand typing back to the page
+                // only when focus did not already move somewhere else (e.g. the
+                // sidebar), so closing the bar never yanks focus away (#0789).
+                DispatchQueue.main.async { [weak self] in
+                    guard let self, let window = self.window else { return }
+                    if window.firstResponder == nil || window.firstResponder === window {
+                        window.makeFirstResponder(self.webView)
+                    }
+                }
+            }
             publishKeyboardFocusState()
         }
     }
@@ -32,7 +58,6 @@ final class HubServerWebContainerView: NSView, NSTextFinderBarContainer {
     init(webView: WKWebView) {
         self.webView = webView
         super.init(frame: .zero)
-        wantsLayer = true
         autoresizingMask = [.width, .height]
 
         webView.translatesAutoresizingMaskIntoConstraints = true
@@ -80,6 +105,13 @@ final class HubServerWebContainerView: NSView, NSTextFinderBarContainer {
         webView
     }
 
+    /// Keeps the NSTextFinder bar on the system appearance alongside the page,
+    /// so a Hub shell override never leaves it mismatched after a system
+    /// theme change (#0789).
+    func pinFindBarToSystemAppearance() {
+        findBarView?.appearance = HubSystemAppearance.appearance
+    }
+
     func findBarViewDidChangeHeight() {
         findBarHeight = findBarView?.frame.height ?? 0
         tileFindBarAndWebView()
@@ -93,11 +125,21 @@ final class HubServerWebContainerView: NSView, NSTextFinderBarContainer {
         if let findBarView, responder === findBarView || responder.isDescendant(of: findBarView) {
             return true
         }
+        // While editing the find field, AppKit swaps in the window's shared
+        // field editor, which lives outside the bar — still treat it as web
+        // focus so Find Next/Previous stay enabled while typing (#0789).
+        if isFindBarVisible, responder is NSText {
+            return true
+        }
         return responder === self || responder.isDescendant(of: self)
     }
 
     func presentFindInterface() {
         textFinder.performAction(.showFindInterface)
+        focusFindField()
+        // The bar usually arrives synchronously, but retry on the next runloop
+        // so the field still takes focus when it lands a beat later.
+        DispatchQueue.main.async { [weak self] in self?.focusFindField() }
         publishKeyboardFocusState()
     }
 
@@ -107,6 +149,35 @@ final class HubServerWebContainerView: NSView, NSTextFinderBarContainer {
 
     func findPrevious() {
         textFinder.performAction(.previousMatch)
+    }
+
+    /// Backstop for Esc when the find field itself does not consume it: the
+    /// field normally hides the bar via NSTextFinder, this covers focus states
+    /// around it. Web-page Esc never reaches here (WebKit consumes it).
+    override func cancelOperation(_ sender: Any?) {
+        if isFindBarVisible {
+            textFinder.performAction(.hideFindInterface)
+        } else {
+            super.cancelOperation(sender)
+        }
+    }
+
+    private func focusFindField() {
+        guard let window, let bar = findBarView, bar.superview != nil else { return }
+        // The bar's search box is an NSSearchField (an NSTextField subclass).
+        window.makeFirstResponder(findTextField(in: bar) ?? bar)
+    }
+
+    private func findTextField(in view: NSView) -> NSTextField? {
+        if let field = view as? NSTextField {
+            return field
+        }
+        for subview in view.subviews {
+            if let found = findTextField(in: subview) {
+                return found
+            }
+        }
+        return nil
     }
 
     private func publishKeyboardFocusState() {
