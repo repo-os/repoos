@@ -3,13 +3,17 @@ id: "0792"
 title: "Model routing adapter, config and shadow mode"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-adapter-config-and-shadow-
 created_at: "2026-10-15T07:47:16Z"
-updated_at: "2026-10-15T12:12:02Z"
+updated_at: "2026-10-15T15:23:20Z"
+dev_error_count: 1
 ---
 ## Problem
 Task #0791 introduced a provider-neutral routing foundation (adapters, candidate filter, policy, `[model_routing]` parsing) but nothing user-facing or run-path-facing is wired yet. This task delivers the adapter, configuration, mode and UI layer so a human can select a provider, see credential status, and choose `off` or `shadow` with confidence that shadow mode never changes a selection. Automatic routing is explicitly out of scope; it is task 2.
@@ -57,3 +61,5 @@ Parent/context record: #0791.
 - 2026-10-15T11:50:10Z · status ready→active, needs_input, branch
 - 2026-10-15T12:12:02Z · message_queued at 2026-10-15T12:12:02.667Z
 - 2026-10-15T12:12:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-15T12:34:39Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-15T15:23:20Z · message_expired: not delivered within timeout
