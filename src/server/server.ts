@@ -1563,6 +1563,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             applyPipelineDetail(reportedDetail, reportedStageAt, taskId, detail);
             emitIntegration();
           },
+          (taskId, detail) => {
+            // #0799: a steady heartbeat from a long non-upload stage — the
+            // remote test run or a local gate step. Same write as the upload
+            // detail: it refreshes the stall timer and shows the current step,
+            // so a healthy-but-quiet stage is never labelled "stalled".
+            applyPipelineDetail(reportedDetail, reportedStageAt, taskId, detail);
+            emitIntegration();
+          },
         );
         const jobBefore = jobCoordinator.peekNext();
         // Defer auto-reload for the duration of this job's processing: a
