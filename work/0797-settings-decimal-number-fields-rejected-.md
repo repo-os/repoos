@@ -3,6 +3,9 @@ id: "0797"
 title: "Settings: decimal number fields rejected on save (slow-check multiplier)"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Server-side validation and schema `min`/`step` for `attention.slowRunMultiplier` look correct, so saves that still POST `1.5` should succeed and the original error should disappear. The mergeable diff (`main...HEAD`) does not change `SettingsView.vue`; `buildBody()` still sends every visible schema field, and the “only changed fields” acceptance test is simulated `patchConfig` calls, not a mounted Settings save."
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T16:49:16Z"
+updated_at: "2026-10-15T16:49:17Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: a0d43b4a7c7cd77276b8f43d419e87f039a18b47
 review_rounds: 2
@@ -77,3 +80,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T16:48:17Z · status active→review
 - 2026-10-15T16:48:18Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-15T16:49:16Z · note: review pass 3: needs some work
+- 2026-10-15T16:49:17Z · needs_input
