@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-15T10:34:54Z"
-review_passes: 2
 id: "0796"
 title: "CTO safe actions: allow an empty list and pick actions with checkboxes"
 type: bug
@@ -13,7 +11,7 @@ branch: feat/cto-safe-actions-allow-an-empty-list-and
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:55:06Z"
-review_rounds: 1
+updated_at: "2026-10-15T10:20:09Z"
 ---
 ## Problem
 1. Saving CTO safe actions with no action selected fails with 'CTO safe actions must be a non-empty array'. The server rejects every empty array for list settings (src/server/routes/config.ts ~728), but cto.actions is opt-in and its own description says 'Empty means report-only'. Turning all actions off should be allowed.
@@ -33,53 +31,10 @@ review_rounds: 1
 ## Notes for AI
 Start from src/server/routes/config.ts (the non-empty array check), src/core/config.ts (cto.actions schema entry ~2215), src/core/cto-actions.ts (the allowed action names), and the Settings view that renders array fields. Source: user report 2026-10-15.
 
-## Shots
-```json
-[
-{
-"label": "CTO safe actions checkboxes (light)",
-"target": "default",
-"route": "/settings?tab=general&focus=cto.actions",
-"highlight": "#setting-cto.actions",
-"steps": [
-{
-"waitFor": "#setting-cto.actions"
-}
-]
-},
-{
-"label": "CTO safe actions checkboxes (dark)",
-"target": "default",
-"route": "/settings?tab=general&focus=cto.actions",
-"highlight": "#setting-cto.actions",
-"steps": [
-{
-"waitFor": "#setting-cto.actions"
-}
-],
-"theme": "dark"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-15T09:55:06Z · created · njachowski@gmail.com
 - 2026-10-15T09:57:59Z · cli_override, model_override
 - 2026-10-15T09:58:02Z · status inbox→ready
 - 2026-10-15T09:58:50Z · status ready→active, branch
-- 2026-10-15T10:09:05Z · body
-- 2026-10-15T10:09:29Z · body: section Shots
-- 2026-10-15T10:12:29Z · body
 - 2026-10-15T10:20:09Z · status active→review
-- 2026-10-15T10:20:24Z · note: highlight #setting-cto.actions matched nothing on /settings?tab=general
-- 2026-10-15T10:21:33Z · note: review pass 1: needs some work
-- 2026-10-15T10:21:33Z · status review→active
-- 2026-10-15T10:22:14Z · body: section Shots
-- 2026-10-15T10:25:00Z · body
-- 2026-10-15T10:26:28Z · body
-- 2026-10-15T10:33:47Z · status active→review
-- 2026-10-15T10:33:47Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (636777398) during finalization (#0734)
-- 2026-10-15T10:33:48Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (636777398) during finalization (#0734)
-- 2026-10-15T10:34:54Z · note: review pass 2: good to go
-
