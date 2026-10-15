@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-15T04:48:21Z"
+review_passes: 5
 id: "0786"
 title: "Shots: a fixture added on the task branch can't be declared or captured until merge"
 type: bug
@@ -14,8 +16,6 @@ branch: feat/shots-a-fixture-added-on-the-task-branch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-14T16:48:07Z"
-updated_at: "2026-10-15T04:48:21Z"
-review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -82,3 +82,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-15T04:47:34Z · status active→review
 - 2026-10-15T04:48:20Z · note: review pass 5: needs some work
 - 2026-10-15T04:48:21Z · needs_input
+
