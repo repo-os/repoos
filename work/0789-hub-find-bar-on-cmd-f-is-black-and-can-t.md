@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-15T07:25:27Z"
-review_passes: 1
+last_close_out_gate_ms: 85724
+last_close_out_gate_at: "2026-10-15T07:39:39.587Z"
 id: "0789"
 title: "Hub: Find bar on Cmd-F is black and can't be typed into"
 type: bug
@@ -15,6 +15,8 @@ created_by: njachowski@gmail.com
 branch: feat/hub-find-bar-on-cmd-f-is-black-and-can-t
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-15T06:31:02Z"
+updated_at: "2026-10-15T07:39:39Z"
+review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -47,4 +49,5 @@ Start from the Find command in macos/RepoOSHub/RepoOSHubApp.swift (Edit menu, Cm
 - 2026-10-15T07:24:44Z · status active→review
 - 2026-10-15T07:24:45Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-15T07:25:27Z · note: review pass 1: good to go
+- 2026-10-15T07:39:39Z · close-out gate completed in 86s
 
