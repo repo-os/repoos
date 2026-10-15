@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T07:14:59Z"
+updated_at: "2026-10-15T07:17:53Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -47,3 +47,4 @@ Start from dev.inspector.editorCommand in src/core/config.ts (~2755-2771, ~2901)
 - 2026-10-15T06:34:26Z · status inbox→ready
 - 2026-10-15T06:34:28Z · status ready→active, branch
 - 2026-10-15T06:41:52Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: ConnectionRefused: Unable to connect. Is the computer able to access the url?
+- 2026-10-15T07:17:53Z · body
