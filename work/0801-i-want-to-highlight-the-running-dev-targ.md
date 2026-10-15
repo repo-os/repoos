@@ -2,14 +2,14 @@
 id: "0801"
 title: Highlight running dev targets
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-15T18:16:48Z"
-updated_at: "2026-10-15T18:17:13Z"
+updated_at: "2026-10-15T18:21:50Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ I want to highlight the running dev targets in the same style we highlight the a
 - 2026-10-15T18:16:50Z · screenshots
 - 2026-10-15T18:16:51Z · screenshots
 - 2026-10-15T18:17:13Z · status draft→inbox, title, area, body
+- 2026-10-15T18:21:50Z · status inbox→ready
