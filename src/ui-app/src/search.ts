@@ -364,7 +364,6 @@ function scoreGlobalSettings(q: string, terms: string[], fields: ConfigField[]):
 /** Section id a rendered General setting belongs to, if any. */
 function settingSectionId(
   key: string,
-  ctx: SettingLocationContext | undefined,
   loc: { tab: SettingsTabId; hasUiRow: boolean },
 ): string | undefined {
   if (loc.tab !== "general" || !loc.hasUiRow) return undefined;
@@ -380,7 +379,7 @@ function settingSearchResult(
     hasUiRow: false,
   };
   const tabLabel = settingTabLabel(loc.tab);
-  const section = settingSectionId(f.key, ctx, loc);
+  const section = settingSectionId(f.key, loc);
   const sectionLabel = section ? generalSectionLabel(section) : undefined;
   // Show the section in the subtitle so a result names where it lives — but
   // don't repeat the tab name when the section is the tab's own default.
@@ -406,7 +405,7 @@ function settingSearchResult(
 function settingSectionSearchText(f: ConfigField, ctx: SettingLocationContext | undefined): string {
   const loc = resolveSettingLocation(f.key, f, ctx ?? { inspectorAvailable: false });
   if (!loc) return "";
-  const section = settingSectionId(f.key, ctx, loc);
+  const section = settingSectionId(f.key, loc);
   return section ? generalSectionLabel(section) : "";
 }
 
