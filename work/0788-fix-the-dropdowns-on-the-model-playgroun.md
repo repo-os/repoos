@@ -91,3 +91,4 @@ Fix the dropdowns on the model playground to match the style we use everywhere e
 - 2026-10-15T05:59:07Z · body: section Shots
 - 2026-10-15T06:09:13Z · status active→review
 - 2026-10-15T06:09:13Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (afcf0e126) during finalization (#0734)
+- 2026-10-15T06:09:13Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (afcf0e126) during finalization (#0734)
