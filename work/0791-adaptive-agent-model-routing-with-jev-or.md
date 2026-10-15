@@ -3,6 +3,9 @@ id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
 status: active
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
@@ -76,3 +79,4 @@ RepoOS currently chooses configured role defaults or explicit task overrides. Ad
 - 2026-10-15T08:07:23Z · message_queued at 2026-10-15T08:07:23.434Z
 - 2026-10-15T08:09:47Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate
 - 2026-10-15T08:17:11Z · model_override
+- 2026-10-15T08:18:07Z · needs_input
