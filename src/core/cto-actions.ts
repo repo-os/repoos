@@ -109,6 +109,11 @@ export const CTO_KILL_HUNG_VALIDATION_WARNING =
   "When enabled, RepoOS stops the validation container on remote hosts automatically — " +
   "not only when you click Stop in the UI.";
 
+/** Short copy for the Settings row — per-action lines carry the detail (#0796). */
+export const CTO_ACTIONS_SETTINGS_ROW_DESC =
+  "Choose which bounded recovery actions the CTO may run automatically (rate limited, audited " +
+  "in the bell). With every box unchecked the list is empty and the CTO stays report-only.";
+
 /** Long description for `getConfigSchema()` / docs — keep Settings and user-docs aligned. */
 export function ctoActionsSchemaDescription(): string {
   const actionLines = CTO_SAFE_ACTION_IDS.map(
