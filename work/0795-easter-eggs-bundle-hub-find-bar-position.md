@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
+last_handoff_failure_sha: af62803c9e39d127a72a4edb132446377e582a80
 id: "0795"
 title: "Easter eggs bundle: Hub find bar position, Done button, and Escape"
 type: bug
@@ -97,3 +99,4 @@ Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSH
 - 2026-10-15T12:34:34Z · status active→review
 - 2026-10-15T12:34:35Z · note: handoff requested (cli)
 - 2026-10-15T12:35:28Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
+
