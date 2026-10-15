@@ -645,6 +645,19 @@ export async function cmdShot(args: string[]): Promise<number> {
     }
 
     let currentTarget: string | undefined;
+    // Branch fixtures (#0786): URL building admits a `state` the task branch's
+    // source declares even before main's compiled list knows it.
+    const captureValidator = taskFixtureValidator(
+      (path: string) => {
+        try {
+          return existsSync(path) ? readFileSync(path, "utf8") : null;
+        } catch {
+          return null;
+        }
+      },
+      mainConfig,
+      task,
+    );
     let currentPreviewUrl = "";
     for (const entry of webPlan) {
       // Only one preview runs per task, so a different target must replace
@@ -665,7 +678,7 @@ export async function cmdShot(args: string[]): Promise<number> {
       const route = entry.route ?? "/";
       const pageUrl = absolute
         ? route
-        : shotCapturePageUrl(currentPreviewUrl, { ...entry, route }, fixtureValidator ?? undefined);
+        : shotCapturePageUrl(currentPreviewUrl, { ...entry, route }, captureValidator ?? undefined);
       const page = (await context!.newPage()) as unknown as ShotDriverPage;
       let png: Buffer;
       const warnings: string[] = [];
