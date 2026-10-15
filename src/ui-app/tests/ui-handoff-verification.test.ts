@@ -495,11 +495,13 @@ describe("UI handoff verification gate (#0680)", () => {
       ...entry,
       provenance: { kind: "declared", label: entry.label } as const,
     }));
-    const uncapturable = declared.slice(2).map(
-      (entry, i) =>
-        `shot #${i + 3}: "${entry.label}" — the declared shot could not be captured: ` +
-        "preview for target \"web\" did not start: port busy",
-    );
+    const uncapturable = declared
+      .slice(2)
+      .map(
+        (entry, i) =>
+          `shot #${i + 3}: "${entry.label}" — the declared shot could not be captured: ` +
+          'preview for target "web" did not start: port busy',
+      );
     vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
       entries: shots,
       errors: uncapturable,
@@ -512,20 +514,26 @@ describe("UI handoff verification gate (#0680)", () => {
         browser: { close: async () => {}, newPage: async () => ({}), newContext: async () => ({}) },
         context: { newPage: async () => ({}), close: async () => {} },
       }) as unknown as Awaited<ReturnType<NonNullable<UiHandoffGateDeps["launchBrowser"]>>>;
-    const result = await runUiHandoffGate(config, task, undefined, (id, level, msg) => {
-      logs.push(`${id} ${level} ${msg}`);
-    }, {
-      startPreview: async () => ({ url: "http://127.0.0.1:9" }),
-      launchBrowser: mockBrowser,
-      captureEntry: async (_ctx, url) => ({
-        png: Buffer.alloc(5000),
-        issues: [],
-        blank: false,
-        warnings: [],
-        finalUrl: url,
-        assertions: [],
-      }),
-    });
+    const result = await runUiHandoffGate(
+      config,
+      task,
+      undefined,
+      (id, level, msg) => {
+        logs.push(`${id} ${level} ${msg}`);
+      },
+      {
+        startPreview: async () => ({ url: "http://127.0.0.1:9" }),
+        launchBrowser: mockBrowser,
+        captureEntry: async (_ctx, url) => ({
+          png: Buffer.alloc(5000),
+          issues: [],
+          blank: false,
+          warnings: [],
+          finalUrl: url,
+          assertions: [],
+        }),
+      },
+    );
     expect(result.ok).toBe(true);
     const warnings = logs.filter((l) => l.includes("declared shot not captured"));
     expect(warnings).toHaveLength(4);
