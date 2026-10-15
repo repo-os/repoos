@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-hub-find-bar-position
 created_at: "2026-10-15T08:02:06Z"
-updated_at: "2026-10-15T11:47:56Z"
+updated_at: "2026-10-15T11:49:15Z"
 last_check_failure: "repoos check at 2026-10-15T11:36:40.023Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -81,3 +81,4 @@ Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSH
 - 2026-10-15T11:47:54Z · status active→review
 - 2026-10-15T11:47:54Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (af62803c9) during finalization (#0734)
 - 2026-10-15T11:47:56Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (af62803c9) during finalization (#0734)
+- 2026-10-15T11:49:15Z · note: review pass 1: needs some work
