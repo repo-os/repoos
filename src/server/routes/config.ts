@@ -559,11 +559,18 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       }
       patch[field.key] = val;
     } else if (field.type === "number") {
-      // Whole, non-negative numbers only (e.g. check.isolationRuns). Persist
-      // as TOML numeric syntax, not a quoted string.
       const num = Number(val);
-      if (!Number.isInteger(num) || num < 0) {
-        return json(res, 400, { error: `${field.label} must be a whole number` });
+      const min = field.min ?? 0;
+      // If step is defined and not an integer (e.g., 0.1), decimals are allowed.
+      // Otherwise, only whole numbers are allowed.
+      const allowDecimals = field.step !== undefined && !Number.isInteger(field.step);
+      const isValidNumber = allowDecimals ? Number.isFinite(num) : Number.isInteger(num);
+
+      if (!isValidNumber || num < min) {
+        const msg = allowDecimals
+          ? `${field.label} must be a number ${min > 0 ? `greater than ${min}` : `at least ${min}`}`
+          : `${field.label} must be a whole number`;
+        return json(res, 400, { error: msg });
       }
       patch[field.key] = num;
     } else if (field.type === "select") {

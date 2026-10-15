@@ -552,7 +552,7 @@ export function parseFlatToml(text: string): Record<string, unknown> {
         .split(",")
         .map((x) => unquoteTomlString(x.trim()))
         .filter(Boolean);
-    } else if (/^-?\d+$/.test(s)) {
+    } else if (/^-?\d+(\.\d+)?$/.test(s)) {
       val = Number(s);
     } else if (s === "true" || s === "false") {
       val = s === "true";
@@ -1816,12 +1816,12 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       if (
         typeof slowRunMultiplier === "number" &&
         Number.isFinite(slowRunMultiplier) &&
-        slowRunMultiplier >= 1
+        slowRunMultiplier > 0
       ) {
         attention.slowRunMultiplier = slowRunMultiplier;
       } else {
         console.warn(
-          `[attention] slowRunMultiplier must be a number >= 1, ` +
+          `[attention] slowRunMultiplier must be a number > 0, ` +
             `got ${JSON.stringify(slowRunMultiplier)} — using ${DEFAULT_CONFIG.attention?.slowRunMultiplier ?? 1.5}`,
         );
       }
@@ -1949,6 +1949,10 @@ export interface ConfigFieldMeta {
   default: unknown;
   options?: { value: string; label: string }[];
   description: string;
+  /** Minimum value for number fields */
+  min?: number;
+  /** Step size for number fields; if > 1, decimals are not allowed */
+  step?: number;
 }
 
 export function getConfigSchema(): ConfigFieldMeta[] {
@@ -2289,6 +2293,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       tier: "live",
       restartRequired: false,
       default: DEFAULT_CONFIG.attention?.slowRunMultiplier ?? 1.5,
+      min: 0.1,
+      step: 0.1,
       description:
         "While a check, handoff gate, close-out stage or bundle upload is running, " +
         "flag it in the bell when its elapsed time exceeds this multiple of the median " +
