@@ -100,3 +100,4 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T09:47:42Z · needs_input
 - 2026-10-15T09:54:49Z · body
 - 2026-10-15T09:56:13Z · status active→review
+- 2026-10-15T09:56:13Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
