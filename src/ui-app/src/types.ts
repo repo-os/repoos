@@ -1200,6 +1200,10 @@ export interface ConfigField {
   default: unknown;
   options?: { value: string; label: string }[];
   description: string;
+  /** Minimum value for number fields (schema + validator). */
+  min?: number;
+  /** Step for number inputs; non-integer step allows decimals on save. */
+  step?: number;
 }
 
 /**

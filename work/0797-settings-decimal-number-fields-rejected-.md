@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-10-15T18:18:47Z"
-review_passes: 6
 id: "0797"
 title: "Settings: decimal number fields rejected on save (slow-check multiplier)"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection stalled repeatedly"
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -16,9 +11,11 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:56:55Z"
+updated_at: "2026-10-15T18:17:50Z"
 close_out_repair_count: 1
+review_passes: 5
 review_rounds: 2
-dev_error_count: 2
+dev_error_count: 1
 ---
 ## Problem
 Changing any setting (for example the activity animation) shows the red error 'Flag slow checks above (× median) must be a whole number', although that field was not touched.
@@ -114,11 +111,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T17:31:01Z · needs_input
 - 2026-10-15T17:31:44Z · status review→active
 - 2026-10-15T17:31:44Z · note: close-out repair: merge-conflict
-- 2026-10-15T17:49:33Z · message_queued at 2026-10-15T17:49:33.640Z
-- 2026-10-15T17:49:33Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-15T18:05:28Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
-- 2026-10-15T18:09:12Z · message_delivered: 1 message(s)
-- 2026-10-15T18:10:37Z · body
-- 2026-10-15T18:17:51Z · status active→review
-- 2026-10-15T18:18:47Z · note: review pass 6: good to go
-
+- 2026-10-15T18:17:50Z · status active→review
