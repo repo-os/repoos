@@ -2,7 +2,7 @@
 id: "0796"
 title: "CTO safe actions: allow an empty list and pick actions with checkboxes"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/cto-safe-actions-allow-an-empty-list-and
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:55:06Z"
-updated_at: "2026-10-15T10:26:28Z"
+updated_at: "2026-10-15T10:33:47Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -43,7 +43,7 @@ Start from src/server/routes/config.ts (the non-empty array check), src/core/con
 "highlight": "#setting-cto.actions",
 "steps": [
 {
-  "waitFor": "#setting-cto.actions"
+"waitFor": "#setting-cto.actions"
 }
 ]
 },
@@ -54,7 +54,7 @@ Start from src/server/routes/config.ts (the non-empty array check), src/core/con
 "highlight": "#setting-cto.actions",
 "steps": [
 {
-  "waitFor": "#setting-cto.actions"
+"waitFor": "#setting-cto.actions"
 }
 ],
 "theme": "dark"
@@ -78,3 +78,4 @@ Start from src/server/routes/config.ts (the non-empty array check), src/core/con
 - 2026-10-15T10:22:14Z · body: section Shots
 - 2026-10-15T10:25:00Z · body
 - 2026-10-15T10:26:28Z · body
+- 2026-10-15T10:33:47Z · status active→review
