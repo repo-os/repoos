@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T11:49:08Z"
+updated_at: "2026-10-15T12:29:55Z"
 ---
 ## Problem
 
@@ -107,3 +107,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T11:44:45Z · body: section Shots
 - 2026-10-15T11:47:10Z · body
 - 2026-10-15T11:49:08Z · body
+- 2026-10-15T12:29:55Z · handoff failed · handoff recovery attempted · finalization failed
