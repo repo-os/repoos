@@ -305,7 +305,7 @@ function lastActivity(story: { lastActivity: string | null }): string {
             <div class="story-name-row">
               <h2 class="story-name">{{ story.name }}</h2>
               <span v-if="pmWorkingKeys.has(story.key)" class="story-badge story-badge-pm">
-                <ActivityIndicator /> PM is working
+                <ActivityIndicator activity="agent" /> PM is working
               </span>
               <span v-else-if="story.complete" class="story-badge story-badge-done">complete</span>
               <span v-else-if="story.attention > 0" class="story-badge story-badge-attention">
