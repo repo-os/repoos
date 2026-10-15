@@ -8,9 +8,10 @@ area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/compact-configurable-activity-animations
-model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
+cli_override: cursor
+model_override: default
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T05:43:56Z"
+updated_at: "2026-10-15T06:26:21Z"
 ---
 ## Problem
 
@@ -66,3 +67,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T05:38:54Z · status ready→active, branch
 - 2026-10-15T05:43:55Z · message_queued at 2026-10-15T05:43:55.916Z
 - 2026-10-15T05:43:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-15T06:26:21Z · cli_override, model_override
