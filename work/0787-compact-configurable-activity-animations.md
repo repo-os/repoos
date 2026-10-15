@@ -10,8 +10,10 @@ created_by: njachowski@gmail.com
 branch: feat/compact-configurable-activity-animations
 cli_override: cursor
 model_override: composer-2.5
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T06:26:27Z"
+updated_at: "2026-10-15T06:26:33Z"
 ---
 ## Problem
 
@@ -69,3 +71,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T05:43:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-15T06:26:21Z · cli_override, model_override
 - 2026-10-15T06:26:27Z · model_override
+- 2026-10-15T06:26:33Z · review_cli_override, review_model_override
