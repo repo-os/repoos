@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T08:14:39Z"
+updated_at: "2026-10-15T08:16:45Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -46,22 +46,50 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 ```json
 [
 {
-"label": "General tab showing the new Editor command setting",
-"target": "default",
-"route": "/settings?tab=general",
-"highlight": "#setting-editor\\.command"
+  "label": "Settings General tab with Editor command setting (light)",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": "#setting-editor\\.command"
 },
 {
-"label": "Task drawer Spec row with Open in editor link",
-"target": "default",
-"route": "/work?task=0790",
-"highlight": "[data-test-id=\"open-in-editor\"]"
+  "label": "Settings General tab with Editor command setting (dark)",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": "#setting-editor\\.command",
+  "steps": [
+    {
+      "click": ".theme-toggle"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
 },
 {
-"label": "Context doc viewer with Open in editor link",
-"target": "default",
-"route": "/repo?tab=docs&doc=docs/open-in-editor.md",
-"highlight": "[data-test-id=\"context-open-in-editor\"]"
+  "label": "Task drawer Spec row with Open in editor link (light)",
+  "target": "default",
+  "route": "/work?task=0790&tab=details",
+  "highlight": "[data-test-id=\"open-in-editor\"]"
+},
+{
+  "label": "Task drawer Spec row with Open in editor link (dark)",
+  "target": "default",
+  "route": "/work?task=0790&tab=details",
+  "highlight": "[data-test-id=\"open-in-editor\"]",
+  "steps": [
+    {
+      "click": ".theme-toggle"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
+},
+{
+  "label": "Context doc viewer with Open in editor link (light)",
+  "target": "default",
+  "route": "/repo?doc=docs/open-in-editor.md",
+  "highlight": "[data-test-id=\"context-open-in-editor\"]"
 }
 ]
 ```
@@ -100,3 +128,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T08:12:21Z · message_delivered: 1 message(s)
 - 2026-10-15T08:13:33Z · needs_input (dev-error) dismissed by hello@repoos.org
 - 2026-10-15T08:14:39Z · body
+- 2026-10-15T08:16:45Z · body: section Shots
