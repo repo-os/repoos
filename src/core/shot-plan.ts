@@ -909,8 +909,12 @@ export function listShotsSectionItems(body: string): { items: unknown[] | null; 
 export function appendDeclaredShot(
   body: string,
   shot: DeclaredShot,
+  opts?: { fixtureValidator?: (id: string) => boolean },
 ): { content: string; errors: string[] } {
-  const parsed = parseShotPlan(body ?? "");
+  const parsed = parseShotPlan(
+    body ?? "",
+    opts?.fixtureValidator ? { fixtureValidator: opts.fixtureValidator } : undefined,
+  );
   if (parsed.errors.length > 0) {
     return { content: "", errors: parsed.errors };
   }
@@ -1291,4 +1295,27 @@ export function taskFixtureValidator(
 ): ((id: string) => boolean) | undefined {
   const worktreeDir = task.branch ? worktreePathForBranch(config.root, task.branch) : null;
   return readBranchFixtureValidator(readFile, worktreeDir);
+}
+
+/** Count entries in a task's fenced `## Shots` JSON (parse errors ignored). */
+export function countDeclaredShotEntries(body: string): number {
+  const section = shotsSection(body ?? "");
+  if (section === null) return 0;
+  const block = firstFencedBlock(section);
+  if (block === null) return 0;
+  try {
+    const raw: unknown = JSON.parse(block);
+    const items = Array.isArray(raw) ? raw : [raw];
+    return items.length;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Pairing-only parse for the Changes tab: accept any declared `state` string so
+ * branch-only fixtures still show as rows before merge (#0786).
+ */
+export function parseShotPlanForDisplay(body: string): ParsedShotPlan {
+  return parseShotPlan(body ?? "", { fixtureValidator: (id) => id.length > 0 });
 }

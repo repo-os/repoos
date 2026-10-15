@@ -11,10 +11,13 @@ describe("shot preview fixtures (#0743)", () => {
     expect(url).toBe("http://127.0.0.1:8000/?shotState=closeOut%3Aactive");
   });
 
-  it("rejects unknown fixture ids at capture URL build time", () => {
-    expect(() =>
-      shotCapturePageUrl("http://127.0.0.1:8000", { route: "/", state: "nope" }),
-    ).toThrow(/unknown shot state/);
+  it("rejects unknown fixture ids when parsing ## Shots (not at URL build time)", () => {
+    const bad = `## Shots\n\`\`\`json\n[{"route":"/","state":"nope"}]\n\`\`\``;
+    expect(parseShotPlan(bad).errors[0]).toMatch(/unknown "state" fixture/);
+    // State is validated at parse time; URL build trusts the declaration (#0786).
+    expect(shotCapturePageUrl("http://127.0.0.1:8000", { route: "/", state: "nope" })).toContain(
+      "shotState=nope",
+    );
   });
 
   it("validates state in ## Shots JSON", () => {

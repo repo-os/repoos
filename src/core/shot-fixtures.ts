@@ -37,11 +37,20 @@ export function isShotPreviewFixtureId(value: string): value is ShotPreviewFixtu
 
 /** Extract fixture ids from the source file's SHOT_PREVIEW_FIXTURE_IDS array (#0786). */
 export function extractFixturesFromSource(sourceContent: string): string[] {
-  const match = sourceContent.match(
-    /export\s+const\s+SHOT_PREVIEW_FIXTURE_IDS\s*=\s*\[([\s\S]*?)\]\s+as\s+const/,
-  );
-  if (!match) return [];
-  const arrayContent = match[1];
+  const patterns = [
+    /export\s+const\s+SHOT_PREVIEW_FIXTURE_IDS\s*=\s*\[([\s\S]*?)\]\s*as\s+const\b/,
+    /export\s+const\s+SHOT_PREVIEW_FIXTURE_IDS\s*=\s*\[([\s\S]*?)\]\s*;/,
+    /export\s+const\s+SHOT_PREVIEW_FIXTURE_IDS\s*=\s*\[([\s\S]*?)\]\s*(?:as\s+const)?/,
+  ];
+  let arrayContent: string | undefined;
+  for (const pattern of patterns) {
+    const match = sourceContent.match(pattern);
+    if (match) {
+      arrayContent = match[1];
+      break;
+    }
+  }
+  if (!arrayContent) return [];
   const fixtures: string[] = [];
   // Split by lines and extract quoted strings, skipping comment lines
   const lines = arrayContent.split("\n");

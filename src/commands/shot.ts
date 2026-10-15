@@ -553,7 +553,7 @@ export async function cmdShot(args: string[]): Promise<number> {
           return null;
         }
       },
-      { root: worktreeRoot } as any,
+      mainConfig,
       task,
     );
     const built = buildCliShotPlan({
