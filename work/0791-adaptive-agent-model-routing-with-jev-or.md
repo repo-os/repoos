@@ -2,7 +2,7 @@
 id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
-status: review
+status: active
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/adaptive-agent-model-routing-with-jev-or
 cli_override: cursor
 model_override: claude-haiku-5-5-high
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T08:04:05Z"
+updated_at: "2026-10-15T08:04:06Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
