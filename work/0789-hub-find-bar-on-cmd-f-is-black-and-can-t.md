@@ -2,7 +2,7 @@
 id: "0789"
 title: "Hub: Find bar on Cmd-F is black and can't be typed into"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -35,3 +35,4 @@ Start from the Find command in macos/RepoOSHub/RepoOSHubApp.swift (Edit menu, Cm
 
 - 2026-10-15T06:31:02Z · created · njachowski@gmail.com
 - 2026-10-15T06:33:38Z · model_override
+- 2026-10-15T06:33:38Z · status inbox→ready
