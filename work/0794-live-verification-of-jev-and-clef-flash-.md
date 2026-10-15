@@ -13,7 +13,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T07:47:48Z"
-updated_at: "2026-10-15T08:23:23Z"
+updated_at: "2026-10-15T08:23:59Z"
 ---
 ## Problem
 Routing for #0791 needs one credentialed smoke check against each real decision backend before anyone relies on it. Automated tests use fixtures only. Those checks require a human because they need third-party accounts, billing, a self-hosted GPU host, and secrets that an agent must never handle.
@@ -23,6 +23,10 @@ This task is independent of #0792 and #0793. It does not block either, and they 
 Parent/context record: #0791.
 
 ## Required accounts and setup (human)
+1. **TypeSafe Jev (direct).** Optional if you use OpenRouter only. Generate an API key in the TypeSafe console. Record it only in `.env` as `TYPESAFE_API_KEY=...`.
+2. **OpenRouter (recommended for Jev and Clef on OpenRouter).** Use `REPOOS_OPENROUTER_API_KEY` in `.env`. Verify Jev with `provider = "openrouter"` and a System One request once #0792 ships. For Clef models on OpenRouter, use the same provider with the OpenRouter model slug. **Cloudflare-direct self-hosted Clef remains deferred** until you have a GPU host and account.
+3. **Cloudflare Clef-Flash (self-hosted, deferred).** When ready: SGLang on a GPU host, `provider = "clef-flash"`, `baseUrl`, optional `REPOOS_CLEF_FLASH_API_KEY`.
+4. Pin a model id for reproducibility (e.g. `jev-latest`, `typesafe/jev-1.14`, or an OpenRouter Clef slug).
 
 ## Checks to run (human, once the setup above exists)
 
@@ -41,3 +45,4 @@ Parent/context record: #0791.
 - 2026-10-15T07:47:54Z · assigned_to
 - 2026-10-15T08:23:22Z · body: section Required accounts and setup (human)
 - 2026-10-15T08:23:23Z · body: section Checks to run (human, once the setup above exists)
+- 2026-10-15T08:23:59Z · body: section Required accounts and setup (human)
