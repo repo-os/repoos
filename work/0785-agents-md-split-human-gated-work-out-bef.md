@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agents-md-split-human-gated-work-out-bef
 created_at: "2026-10-14T15:36:57Z"
-updated_at: "2026-10-15T17:18:01Z"
+updated_at: "2026-10-15T17:20:22Z"
 ---
 ## Problem
 When a task is flagged `needs_input_reason: needs-human-step`, nothing in AGENTS.md tells an agent driving the board what to do at close-out. On 2026-10-14 an interactive session ran Move to done on #0660 while it carried that flag. The landed code needed no human, but the human-only verification was split out afterwards (#0784) instead of before close-out. The human's rule is: never close out human-gated work as if the human part were done. Land only the scope an agent can finish, and split the human part into its own task first.
@@ -35,3 +35,4 @@ Keep it to a few lines in the existing style; do not restructure AGENTS.md. Do n
 - 2026-10-14T15:36:57Z · created · njachowski@gmail.com
 - 2026-10-15T11:02:17Z · status inbox→ready
 - 2026-10-15T17:18:01Z · status ready→active, branch
+- 2026-10-15T17:20:22Z · body
