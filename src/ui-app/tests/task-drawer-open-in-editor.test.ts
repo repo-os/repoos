@@ -43,9 +43,13 @@ async function mountDrawer(
   task: Task,
   editor: { enabled?: boolean; editorCommand?: string } | null,
   apiAvailable = true,
+  globalEditorCommand?: string,
 ): Promise<VueWrapper> {
   const config = useConfigStore();
-  config.data = { dev: { inspector: editor ?? {} } };
+  config.data = {
+    dev: { inspector: editor ?? {} },
+    ...(globalEditorCommand ? { editor: { command: globalEditorCommand } } : {}),
+  };
   const repo = useRepoStore();
   repo.tasks = [task];
   repo.health = { ok: true, copyInspectorAvailable: apiAvailable } as typeof repo.health;
@@ -127,5 +131,43 @@ describe("task drawer open in editor (#0636)", () => {
     wrapper = await mountDrawer(pinia, task, { enabled: true, editorCommand: "zed {file}" }, false);
 
     expect(wrapper.find('[data-test-id="open-in-editor"]').exists()).toBe(false);
+  });
+
+  it("shows a link on a normal install when only the general editor command is set", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    const task = makeTask();
+    const calls: Array<{ url: string; body: unknown }> = [];
+    stubApi(task, calls);
+    wrapper = await mountDrawer(
+      pinia,
+      task,
+      { enabled: true, editorCommand: "" },
+      false,
+      "zed {file}",
+    );
+
+    const link = wrapper.find('[data-test-id="open-in-editor"]');
+    expect(link.exists()).toBe(true);
+
+    await link.trigger("click");
+    await flush();
+
+    const open = calls.find((c) => c.url.includes("/api/dev/open-in-editor"));
+    expect(open, "the open-in-editor endpoint should be called").toBeTruthy();
+    expect(open!.body).toEqual({ file: "work/0001-test.md" });
+  });
+
+  it("hides the link when no editor is configured at all", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    const task = makeTask();
+    stubApi(task, []);
+    wrapper = await mountDrawer(pinia, task, { enabled: true, editorCommand: "" }, false);
+
+    expect(wrapper.find('[data-test-id="open-in-editor"]').exists()).toBe(false);
+    expect(wrapper.find('[data-test-id="open-in-editor-hint"]').exists()).toBe(true);
   });
 });

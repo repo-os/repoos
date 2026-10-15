@@ -1549,6 +1549,14 @@ validation error rather than being silently dropped. Edit the list under
 change is written through the config API), or hand-write the `[[dev.targets]]`
 tables. See [Dev targets](/dev-targets) for a full walkthrough.
 
+## Editor integration
+
+Applies to any install where RepoOS launches a local editor: task specs, context docs, and failed-test links.
+
+| Key | Type | Default | Restart | Description |
+| --- | --- | --- | --- | --- |
+| `editor.command` | string | `""` | no | Optional editor launcher used by "Open in editor" links, e.g. `zed {file}:{line}`. Placeholders `{file}` and `{line}`; omit `{line}` to open without a line number. Always visible in Settings. Overrides precedence: `dev.inspector.editorCommand` takes precedence when set. |
+
 ## Dev copy inspector (RepoOS self-host only)
 
 These settings appear under **Settings → Advanced** when this checkout has `src/ui-app/` **and** the running build was compiled with the dev UI bundle (`devUi: true` in `dist/.build-info.json` — a normal local `bun run build`, not `REPOOS_SHIP=1` / release tarballs). They are inert on release installs and when previewing another project's app.
