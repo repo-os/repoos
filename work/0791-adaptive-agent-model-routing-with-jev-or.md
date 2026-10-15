@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: a98ce8424db77ec41fcc6d1425230c90bf41c2fd
 id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
@@ -11,9 +9,11 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/adaptive-agent-model-routing-with-jev-or
 cli_override: cursor
-model_override: claude-haiku-5-5-high
+model_override: composer-2.5
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T08:09:47Z"
+updated_at: "2026-10-15T08:17:11Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: a98ce8424db77ec41fcc6d1425230c90bf41c2fd
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -75,4 +75,4 @@ RepoOS currently chooses configured role defaults or explicit task overrides. Ad
 - 2026-10-15T08:04:05Z · note: handoff requested (cli)
 - 2026-10-15T08:07:23Z · message_queued at 2026-10-15T08:07:23.434Z
 - 2026-10-15T08:09:47Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate
-
+- 2026-10-15T08:17:11Z · model_override
