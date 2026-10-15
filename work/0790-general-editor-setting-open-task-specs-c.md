@@ -2,7 +2,7 @@
 id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "network problem reaching the model provider, not a code issue: ConnectionRefused: Unable to connect. Is the computer able to access the url?"
@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T07:44:32Z"
+updated_at: "2026-10-15T07:44:58Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -49,22 +49,22 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 ```json
 [
 {
-  "label": "General tab showing the new Editor command setting",
-  "target": "default",
-  "route": "/settings?tab=general",
-  "highlight": "#setting-editor\\.command"
+"label": "General tab showing the new Editor command setting",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "#setting-editor\\.command"
 },
 {
-  "label": "Task drawer Spec row with Open in editor link",
-  "target": "default",
-  "route": "/work?task=0790",
-  "highlight": "[data-test-id=\"open-in-editor\"]"
+"label": "Task drawer Spec row with Open in editor link",
+"target": "default",
+"route": "/work?task=0790",
+"highlight": "[data-test-id=\"open-in-editor\"]"
 },
 {
-  "label": "Context doc viewer with Open in editor link",
-  "target": "default",
-  "route": "/repo?tab=docs&doc=docs/open-in-editor.md",
-  "highlight": "[data-test-id=\"context-open-in-editor\"]"
+"label": "Context doc viewer with Open in editor link",
+"target": "default",
+"route": "/repo?tab=docs&doc=docs/open-in-editor.md",
+"highlight": "[data-test-id=\"context-open-in-editor\"]"
 }
 ]
 ```
@@ -89,3 +89,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T07:37:24Z · body
 - 2026-10-15T07:39:21Z · body
 - 2026-10-15T07:44:32Z · body: section Shots
+- 2026-10-15T07:44:58Z · status active→review
