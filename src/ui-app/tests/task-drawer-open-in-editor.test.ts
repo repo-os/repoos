@@ -140,7 +140,13 @@ describe("task drawer open in editor (#0636)", () => {
     const task = makeTask();
     const calls: Array<{ url: string; body: unknown }> = [];
     stubApi(task, calls);
-    wrapper = await mountDrawer(pinia, task, { enabled: true, editorCommand: "" }, false, "zed {file}");
+    wrapper = await mountDrawer(
+      pinia,
+      task,
+      { enabled: true, editorCommand: "" },
+      false,
+      "zed {file}",
+    );
 
     const link = wrapper.find('[data-test-id="open-in-editor"]');
     expect(link.exists()).toBe(true);
