@@ -8,8 +8,9 @@ area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T05:23:55Z"
+updated_at: "2026-10-15T05:38:39Z"
 ---
 ## Problem
 
@@ -60,3 +61,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T05:23:44Z · screenshots
 - 2026-10-15T05:23:45Z · needs_input
 - 2026-10-15T05:23:55Z · needs_input, body
+- 2026-10-15T05:38:39Z · model_override
