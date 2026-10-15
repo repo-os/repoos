@@ -206,6 +206,13 @@ private func applyNativeSurfaceBackgrounds(
 ) {
     guard let view else { return }
     let typeName = String(describing: type(of: view))
+    // The workspace web container (page + NSTextFinder bar) manages its own
+    // surfaces: the page is pinned to the system appearance and the find bar
+    // draws with vibrancy. Painting flat Hub colors over it turns the bar into
+    // an unreadable solid strip (#0789).
+    if view is HubServerWebContainerView {
+        return
+    }
     guard !typeName.contains("WKWebView") else { return }
 
     // Keep the split-view/frame backing in sync with the selected Hub theme.
