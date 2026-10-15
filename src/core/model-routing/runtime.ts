@@ -3,10 +3,7 @@
  * provider instance and run config/credential probes without echoing secrets.
  */
 import type { ModelRoutingConfig, RepoOSConfig } from "../types.js";
-import {
-  resolveEffectiveRouting,
-  type EffectiveRouting,
-} from "./config.js";
+import { resolveEffectiveRouting, type EffectiveRouting } from "./config.js";
 import {
   createClefFlashProvider,
   createJevProvider,
@@ -165,8 +162,6 @@ export async function probeModelRouting(
 }
 
 /** Resolve effective routing from a flat browser config payload or nested modelRouting. */
-export function effectiveFromConfigLike(
-  config: ModelRoutingConfig | undefined,
-): EffectiveRouting {
+export function effectiveFromConfigLike(config: ModelRoutingConfig | undefined): EffectiveRouting {
   return resolveEffectiveRouting(config);
 }
