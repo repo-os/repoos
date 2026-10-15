@@ -469,11 +469,17 @@ describe("ModelPlaygroundPanel — shared agent+model picker", () => {
     await nextTick();
 
     const chip = wrapper.findComponent(ChatAgentModelChip);
-    expect(chip.props("cliOptions")).toEqual(["deepinfra", "openrouter"]);
+    const chipProps = chip.props() as {
+      cliOptions: string[];
+      cli: string;
+      model: string;
+      modelOptions: { value: string }[];
+    };
+    expect(chipProps.cliOptions).toEqual(["deepinfra", "openrouter"]);
     // The first catalog model auto-selects, so the picker opens on its provider.
-    expect(chip.props("cli")).toBe("deepinfra");
-    expect(chip.props("model")).toBe("deepinfra/zai-org/GLM-5.3-Flash");
-    expect((chip.props("modelOptions") as { value: string }[]).map((m) => m.value)).toEqual([
+    expect(chipProps.cli).toBe("deepinfra");
+    expect(chipProps.model).toBe("deepinfra/zai-org/GLM-5.3-Flash");
+    expect(chipProps.modelOptions.map((m) => m.value)).toEqual([
       "deepinfra/zai-org/GLM-5.3-Flash",
       "deepinfra/moonshotai/Kimi-K3",
     ]);
