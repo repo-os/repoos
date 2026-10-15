@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/highlight-running-dev-targets
 created_at: "2026-10-15T18:16:48Z"
-updated_at: "2026-10-15T18:21:54Z"
+updated_at: "2026-10-15T18:27:48Z"
 ---
 ## Problem
 
@@ -39,6 +39,19 @@ I want to highlight the running dev targets in the same style we highlight the a
 ![Screenshot-2026-10-16-at-01.14.30](/api/tasks/0801/attachments/screenshot-1.png)
 ![Screenshot-2026-10-16-at-01.14.50](/api/tasks/0801/attachments/screenshot-2.png)
 
+## Shots
+```json
+[
+{
+  "label": "Started dev target carries the cyan running glow; the stopped one does not",
+  "target": "default",
+  "route": "/dev",
+  "highlight": ".dev-card[data-running]",
+  "state": "dev:running"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-15T18:16:48Z · created · hello@repoos.org
@@ -47,3 +60,4 @@ I want to highlight the running dev targets in the same style we highlight the a
 - 2026-10-15T18:17:13Z · status draft→inbox, title, area, body
 - 2026-10-15T18:21:50Z · status inbox→ready
 - 2026-10-15T18:21:54Z · status ready→active, branch
+- 2026-10-15T18:27:48Z · body: section Shots
