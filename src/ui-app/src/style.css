@@ -1146,7 +1146,7 @@
 
 .editor-config-hint {
   margin-left: auto;
-  color: var(--txt-muted, var(--muted-foreground));
+  color: var(--txt-dim);
   font-size: 12px;
   font-weight: 400;
   white-space: nowrap;
