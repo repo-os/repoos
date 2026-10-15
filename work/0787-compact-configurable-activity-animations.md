@@ -2,7 +2,7 @@
 id: "0787"
 title: Compact configurable activity animations; default to Orbital pixel
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T08:10:06Z"
+updated_at: "2026-10-15T08:17:25Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 1
@@ -66,9 +66,9 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 "route": "/settings?tab=general",
 "highlight": "#setting-activityAnimationStyle",
 "steps": [
-  {
-    "waitMs": 400
-  }
+{
+  "waitMs": 400
+}
 ]
 },
 {
@@ -77,9 +77,9 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
 ],
 "state": "board:activeCoding"
 },
@@ -89,9 +89,9 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
 ],
 "state": "board:activeCoding",
 "theme": "dark"
@@ -102,9 +102,9 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
 ],
 "state": "board:activeCoding"
 },
@@ -114,9 +114,9 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 "route": "/settings?tab=general",
 "highlight": ".activity-animation-preview",
 "steps": [
-  {
-    "waitMs": 400
-  }
+{
+  "waitMs": 400
+}
 ]
 }
 ]
@@ -161,3 +161,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T08:06:45Z · status review→active
 - 2026-10-15T08:09:10Z · body: section Shots
 - 2026-10-15T08:10:06Z · body
+- 2026-10-15T08:17:25Z · status active→review
