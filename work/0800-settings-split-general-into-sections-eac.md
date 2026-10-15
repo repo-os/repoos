@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0800"
 title: "Settings: split General into sections, each searchable with its own URL"
 type: feature
@@ -71,3 +72,4 @@ Start from src/ui-app/src/settings-location.ts (SETTINGS_TABS and location mappi
 - 2026-10-15T18:23:57Z · note: review pass 2: good to go
 - 2026-10-15T18:29:20Z · status review→active
 - 2026-10-15T18:29:20Z · note: close-out repair: merge-conflict
+
