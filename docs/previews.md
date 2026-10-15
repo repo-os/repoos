@@ -351,6 +351,9 @@ fixture the preview applies before capture (preview builds only, via
 - `closeOut:stalled` — fixture task card with the stalled Cancel/Retry actions (#0778)
 - `closeOut:uploading` — active close-out mid bundle upload, card shows the
   upload progress line (`#9999` fixture task, #0782)
+- `closeOut:remoteTests` — active close-out in the remote test run; card shows
+  the "remote tests" step heartbeat and elapsed time, not stalled (`#9999`
+  fixture task, #0799)
 - `card:doneError` — review card with done-error footer (`#9999` fixture task)
 - `board:withReviewTask` — board shows a review-column fixture card
 - `board:cardChips` — multi-area card with seeded diff stats (#0776)

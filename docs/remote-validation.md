@@ -228,7 +228,11 @@ runs; the CTO action is the recovery path when the automatic kill did not land
   (27 MB over a slow link took 228s, #0782) shows on the close-out card as `integrating ·
   uploading bundle 27 MB · 45s` instead of reading as `stalled · no progress`.
   The detail line clears the moment the transfer lands, so it never lingers
-  into the remote test run. The run
+  into the remote test run. That test run is itself covered by the close-out
+  stage heartbeat (#0799): while it runs with no output, the card shows
+  `integrating · remote tests · Nm Ns` (the step name and elapsed job time) and
+  keeps the stall timer fresh, so it is only flagged stalled if the heartbeats
+  stop. The run
   log and structured events record bundle size and upload seconds. Self-contained
   — nothing is pushed to GitHub, no dependency on `origin` freshness.
 - **Execute**: `ssh` → `/opt/repoos/validate.sh <bundle> <sha> [artifacts]
