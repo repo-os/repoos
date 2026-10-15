@@ -42,13 +42,15 @@ const opening = ref(false);
 const paneRef = ref<HTMLElement | null>(null);
 
 const editorConfigured = computed(() => {
-  const cmd = (config.data?.dev as { inspector?: { editorCommand?: string } } | undefined)
+  const devCmd = (config.data?.dev as { inspector?: { editorCommand?: string } } | undefined)
     ?.inspector?.editorCommand;
-  return typeof cmd === "string" && cmd.trim().length > 0;
+  if (typeof devCmd === "string" && devCmd.trim()) return true;
+  const generalCmd = (config.data?.editor as { command?: string } | undefined)?.command;
+  return typeof generalCmd === "string" && generalCmd.trim().length > 0;
 });
 
 const EDITOR_HINT =
-  "Open in editor is off until an editor command is set: Settings → Advanced → “Copy inspector: editor command” (e.g. zed {file}:{line}).";
+  "Open in editor is off until an editor command is set: Settings → General → “Editor command” (or Settings → Advanced → “Copy inspector: editor command”), e.g. zed {file}:{line}.";
 
 const VIEWPORT_PAD = 12;
 
