@@ -27,6 +27,9 @@ export const ROUTING_POLICY_VERSION = "2";
 /** Below this provider confidence an answer is treated as insufficient evidence. */
 export const MIN_ANSWER_CONFIDENCE = 0.5;
 
+/** Normalized cost/time used when measurements are missing — neutral, not punitive. */
+export const ROUTING_NEUTRAL_COST_TIME = 0.5;
+
 /** Relative cost/time preference. Higher `costWeight` favors cheaper candidates. */
 export interface RoutingWeights {
   /** Weight on the candidate's expected cost (0..1). */
@@ -121,12 +124,8 @@ function score(
   const risk = noulProbability(answers, ROUTING_QUESTION_IDS.risk);
   const scope = noulProbability(answers, ROUTING_QUESTION_IDS.scope);
   const intensity = (ambiguity + risk + scope) / 3;
-  if (!ct) {
-    // Unknown cost/time for this candidate must not be faked as neutral — suitability only.
-    return suitP;
-  }
-  const cost = ct.cost;
-  const time = ct.time;
+  const cost = ct?.cost ?? ROUTING_NEUTRAL_COST_TIME;
+  const time = ct?.time ?? ROUTING_NEUTRAL_COST_TIME;
   const economy = 1 - (weights.costWeight * cost + weights.timeWeight * time);
   // High ambiguity/risk/scope → lean toward more capable (higher normalized cost); otherwise favor economy.
   const capabilityFit = intensity * cost + (1 - intensity) * economy;

@@ -12,13 +12,16 @@
  *    the two can never disagree.
  * 2. The candidate's CLI must be a drivable harness and installed/authenticated.
  * 3. A reasoning setting, if present, must be one the harness supports.
- * 4. Candidates are de-duplicated and returned in a stable order so decisions
+ * 4. The harness must support the run's role (pm, engineer, reviewer).
+ * 5. The harness/model context window must cover the brief's required size.
+ * 6. Candidates are de-duplicated and returned in a stable order so decisions
  *    are reproducible.
  *
  * Pure and node-free so it is trivially unit-testable.
  */
 import { isPairOnAllowlist } from "../budget-allowlist.js";
 import type { AgentModelAllowRow } from "../types.js";
+import type { RoutingRole } from "./types.js";
 
 /** One complete, valid coding-agent configuration the router may choose. */
 export interface RoutingCandidate {
@@ -36,9 +39,17 @@ export interface HarnessAvailability {
   available: boolean;
   /** Reasoning settings the harness/model supports (empty = none). */
   supportedReasoning: string[];
+  /** Roles this harness may run as for routing (must include the run's role). */
+  supportedRoles: RoutingRole[];
+  /** Maximum context window in tokens the harness/model can accept. */
+  maxContextTokens: number;
 }
 
 export interface CandidateFilterInput {
+  /** Role being routed (pm, engineer, reviewer). */
+  role: RoutingRole;
+  /** Tokens required by the bounded brief; `0` means no size check. */
+  requiredContextTokens: number;
   candidates: RoutingCandidate[];
   allowlist: AgentModelAllowRow[];
   /** Keyed by cli. A cli absent from this map is treated as unavailable. */
@@ -78,6 +89,25 @@ export function filterCandidates(input: CandidateFilterInput): CandidateFilterRe
     }
     if (candidate.reasoning !== null && !harness.supportedReasoning.includes(candidate.reasoning)) {
       rejected.push({ candidate, reason: `reasoning "${candidate.reasoning}" not supported` });
+      continue;
+    }
+    if (!harness.supportedRoles.includes(input.role)) {
+      rejected.push({
+        candidate,
+        reason: `harness does not support the ${input.role} role`,
+      });
+      continue;
+    }
+    if (
+      input.requiredContextTokens > 0 &&
+      harness.maxContextTokens < input.requiredContextTokens
+    ) {
+      rejected.push({
+        candidate,
+        reason:
+          `context window too small (needs ${input.requiredContextTokens} tokens, ` +
+          `supports ${harness.maxContextTokens})`,
+      });
       continue;
     }
     eligible.push(candidate);
