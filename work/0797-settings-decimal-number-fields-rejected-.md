@@ -14,7 +14,7 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T12:36:12Z"
+updated_at: "2026-10-15T12:48:36Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 1
@@ -72,3 +72,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T12:36:11Z · agent exited with an error (claude) · ✗ Server finalization stopped at check: remote validation failed: test failure: tests/board-column-labels.test.ts > SettingsView board column labels (#0499) > auto-save omits hidden dev.inspector settings unless the build supports them (#0509) on bee — fix it in the feature branch and re-run the gate. The same worktree can be resumed and retried.
 - 2026-10-15T12:36:11Z · status active→review
 - 2026-10-15T12:36:11Z · note: handoff requested (cli)
+- 2026-10-15T12:48:36Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
