@@ -87,9 +87,7 @@ async function mountSettings(): Promise<ReturnType<typeof mount>> {
 function activityAnimationSelect(wrapper: ReturnType<typeof mount>) {
   const row = document.getElementById("setting-activityAnimationStyle");
   expect(row).not.toBeNull();
-  const match = wrapper
-    .findAllComponents(Select)
-    .find((c) => row?.contains(c.element as Node));
+  const match = wrapper.findAllComponents(Select).find((c) => row?.contains(c.element as Node));
   expect(match).toBeDefined();
   return match!;
 }
