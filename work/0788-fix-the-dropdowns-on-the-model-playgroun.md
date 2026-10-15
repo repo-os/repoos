@@ -2,7 +2,7 @@
 id: "0788"
 title: Align model playground dropdowns and agent/model selector
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/align-model-playground-dropdowns-and-age
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-15T05:33:42Z"
-updated_at: "2026-10-15T05:59:07Z"
+updated_at: "2026-10-15T06:09:13Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -54,12 +54,12 @@ Fix the dropdowns on the model playground to match the style we use everywhere e
 "route": "/agents?tab=playground",
 "highlight": ".am-modal",
 "steps": [
-  {
-    "click": ".playground-chat-head .am-control"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": ".playground-chat-head .am-control"
+},
+{
+  "waitMs": 300
+}
 ]
 }
 ]
@@ -89,3 +89,4 @@ Fix the dropdowns on the model playground to match the style we use everywhere e
 - 2026-10-15T05:56:51Z · body
 - 2026-10-15T05:58:26Z · body
 - 2026-10-15T05:59:07Z · body: section Shots
+- 2026-10-15T06:09:13Z · status active→review
