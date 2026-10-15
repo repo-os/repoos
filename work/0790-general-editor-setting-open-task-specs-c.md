@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T07:20:42Z"
+updated_at: "2026-10-15T07:26:09Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -40,6 +40,9 @@ Setting the key by hand is not enough on a normal install, because the server ro
 ## Notes for AI
 Start from dev.inspector.editorCommand in src/core/config.ts (~2755-2771, ~2901), the copy-inspector routes (src/server/routes/copy-inspector.ts), TaskDrawer.vue editorConfigured (~1783) and openTaskInEditor. Source: user report 2026-10-15 — editor needs to be configurable for task specs and context files, not only the dev inspector.
 
+## Decision
+Opening local files is allowed on normal (non-dev) installs when an editor command is configured. The route no longer requires the dev UI build; it only runs the configured command template as an argv array (no shell), and only opens realpath-resolved paths inside the repo's worktree/docs/test files. dev.inspector.editorCommand still overrides editor.command when set, preserving the copy inspector's prior behavior and its dev-enabled gate.
+
 ## Activity
 
 - 2026-10-15T06:33:35Z · created · njachowski@gmail.com
@@ -51,3 +54,5 @@ Start from dev.inspector.editorCommand in src/core/config.ts (~2755-2771, ~2901)
 - 2026-10-15T07:18:40Z · body
 - 2026-10-15T07:20:03Z · body
 - 2026-10-15T07:20:42Z · body
+- 2026-10-15T07:25:27Z · body: section Decision
+- 2026-10-15T07:26:09Z · body
