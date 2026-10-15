@@ -2,7 +2,7 @@
 id: "0786"
 title: "Shots: a fixture added on the task branch can't be declared or captured until merge"
 type: bug
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/shots-a-fixture-added-on-the-task-branch
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-14T16:48:07Z"
-updated_at: "2026-10-15T05:24:26Z"
+updated_at: "2026-10-15T05:43:53Z"
 ---
 ## Problem
 When a task adds a new preview fixture (a `state` id in src/core/shot-fixtures.ts) and declares a shot that uses it, RepoOS checks the declaration against the fixture list compiled into the control-plane server and CLI (main's build), not the task branch's. Two things break (seen on #0778, 2026-10-14):
@@ -39,3 +39,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-14T17:07:03Z · status ready→active, branch
 - 2026-10-14T17:24:59Z · status active→review
 - 2026-10-15T05:24:26Z · status review→active
+- 2026-10-15T05:43:53Z · status active→review
