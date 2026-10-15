@@ -18,6 +18,8 @@ import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
 import AiChatThinking from "./AiChatThinking.vue";
+import ChatAgentModelChip from "./ChatAgentModelChip.vue";
+import type { SelectSearchOption } from "./SelectSearchGroup.vue";
 import ChatSendButton from "./ChatSendButton.vue";
 import { ArrowDown } from "lucide-vue-next";
 import { useChatScroll } from "../composables/useChatScroll";
@@ -135,6 +137,64 @@ function selectModel(m: CatalogModel): void {
   messages.value = [];
   sendError.value = "";
   draft.value = "";
+}
+
+/**
+ * The shared coding agent+model picker (`AgentModelModal` via
+ * `ChatAgentModelChip`, the same control every agent-chat header uses) wired
+ * to the playground catalog: the modal's "CLI" slot carries the provider id,
+ * its model list the provider's models, so per-CLI memory/favorites behave
+ * exactly as they do for coding agents. Picks resolve to a catalog runId and
+ * flow into the same `selected` the sidebar cards and chat send use.
+ */
+const playgroundCliOptions = computed<string[]>(() => providers.value.map((g) => g.id));
+
+const playgroundCli = computed<string>(() => {
+  const runId = selected.value?.runId;
+  if (runId) {
+    const group = providers.value.find((g) => g.models.some((m) => m.runId === runId));
+    if (group) return group.id;
+  }
+  return providers.value[0]?.id ?? "";
+});
+
+const playgroundModel = computed<string>(() => selected.value?.runId ?? "");
+
+const playgroundModelOptions = computed<SelectSearchOption[]>(() => {
+  const group = providers.value.find((g) => g.id === playgroundCli.value);
+  const models = group ? group.models : allModels.value;
+  return models.map((m) => ({ value: m.runId, label: m.name, disabled: false }));
+});
+
+function selectByRunId(runId: string): void {
+  const group = providers.value.find((g) => g.models.some((m) => m.runId === runId));
+  const m = group?.models.find((mm) => mm.runId === runId);
+  if (group && m) selectModel({ ...m, providerLabel: group.label });
+}
+
+/** Shared picker chose a provider: start its first model. The modal follows
+ *  with update:model (recalled pin or "default"), which wins. */
+function onPlaygroundCli(providerId: string): void {
+  if (providerId === playgroundCli.value) return;
+  const group = providers.value.find((g) => g.id === providerId);
+  const first = group?.models[0];
+  if (group && first) selectModel({ ...first, providerLabel: group.label });
+}
+
+/** Shared picker chose a model: resolve it to a catalog runId. "default" or an
+ *  unknown id (a stale recalled pin the catalog no longer carries) falls back
+ *  to the current provider's first model instead of stranding the chat. */
+function onPlaygroundModel(runId: string): void {
+  if (providers.value.some((g) => g.models.some((m) => m.runId === runId))) {
+    selectByRunId(runId);
+    return;
+  }
+  const fallbackGroup =
+    providers.value.find((g) => g.id === playgroundCli.value) ?? providers.value[0];
+  const first = fallbackGroup?.models[0];
+  if (fallbackGroup && first && first.runId !== selected.value?.runId) {
+    selectModel({ ...first, providerLabel: fallbackGroup.label });
+  }
 }
 
 function clearChat(): void {
@@ -295,6 +355,16 @@ onMounted(() => {
             <strong>{{ selected.name }}</strong>
             <span>{{ selected.providerLabel }} · active model</span>
           </div>
+          <ChatAgentModelChip
+            :cli-options="playgroundCliOptions"
+            :model-options="playgroundModelOptions"
+            :cli="playgroundCli"
+            :model="playgroundModel"
+            memory-key="playground:model"
+            :disabled="sending"
+            @update:cli="onPlaygroundCli"
+            @update:model="onPlaygroundModel"
+          />
           <button
             v-if="messages.length"
             type="button"
@@ -403,8 +473,7 @@ onMounted(() => {
   gap: 8px;
   flex: none;
 }
-.playground-filters input,
-.playground-filters select {
+.playground-filters input {
   width: 100%;
   padding: 7px 10px;
   border: 1px solid var(--border);
@@ -415,8 +484,7 @@ onMounted(() => {
   outline: 0;
   transition: 0.15s;
 }
-.playground-filters input:focus,
-.playground-filters select:focus {
+.playground-filters input:focus {
   border-color: var(--border-bright);
 }
 .playground-filters input::placeholder {
@@ -426,7 +494,10 @@ onMounted(() => {
   display: flex;
   gap: 8px;
 }
-.playground-filter-row select {
+/* The row's children are the shared Select triggers (native <select> went
+   away with the restyle); they split the row like every other paired control. */
+.playground-filter-row .playground-provider-select,
+.playground-filter-row .playground-cost-select {
   min-width: 0;
   flex: 1;
 }
