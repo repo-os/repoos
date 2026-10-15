@@ -455,6 +455,93 @@ describe("UI handoff verification gate (#0680)", () => {
     vi.restoreAllMocks();
   });
 
+  it("warns and reports captured vs declared when some declared shots cannot be captured (#0786)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-declwarn-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      workDir: "work",
+      uiVerification: { enabled: true },
+      preview: { targets: [{ name: "web", paths: ["src/ui-app/**"], command: "echo" }] },
+    } as unknown as RepoOSConfig;
+    // Six declared entries (parses cleanly via the standard fixture list),
+    // but the plan only captures two of them — entries 3–6 cannot be
+    // captured, so their declarations must be warned about by name and the
+    // summary must say 2 of 6, never a clean success.
+    const declared = [
+      { target: "web", route: "/agents", label: "Agents" },
+      { target: "web", route: "/", label: "Board" },
+      { target: "web", route: "/bogus", label: "Stalled card" },
+      { target: "web", route: "/also-bogus", label: "Upload card" },
+      { target: "web", route: "/third-bogus", label: "Drawer" },
+      { target: "web", route: "/fourth-bogus", label: "Dev page" },
+    ];
+    const task = {
+      id: "0786warn",
+      title: "t",
+      path: "work/0786warn.md",
+      absPath: join(root, "work/0786warn.md"),
+      status: "active",
+      branch: "feat/x",
+      area: "web",
+      body:
+        "## Shots\n```json\n" +
+        JSON.stringify(declared, null, 2) +
+        "\n```\n#0786 — declared shots, four uncapturable",
+    } as Task;
+    const shots = declared.slice(0, 2).map((entry) => ({
+      ...entry,
+      provenance: { kind: "declared", label: entry.label } as const,
+    }));
+    const uncapturable = declared.slice(2).map(
+      (entry, i) =>
+        `shot #${i + 3}: "${entry.label}" — the declared shot could not be captured: ` +
+        "preview for target \"web\" did not start: port busy",
+    );
+    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+      entries: shots,
+      errors: uncapturable,
+      skips: [],
+      collapsed: [],
+    });
+    const logs: string[] = [];
+    const mockBrowser: NonNullable<UiHandoffGateDeps["launchBrowser"]> = async () =>
+      ({
+        browser: { close: async () => {}, newPage: async () => ({}), newContext: async () => ({}) },
+        context: { newPage: async () => ({}), close: async () => {} },
+      }) as unknown as Awaited<ReturnType<NonNullable<UiHandoffGateDeps["launchBrowser"]>>>;
+    const result = await runUiHandoffGate(config, task, undefined, (id, level, msg) => {
+      logs.push(`${id} ${level} ${msg}`);
+    }, {
+      startPreview: async () => ({ url: "http://127.0.0.1:9" }),
+      launchBrowser: mockBrowser,
+      captureEntry: async (_ctx, url) => ({
+        png: Buffer.alloc(5000),
+        issues: [],
+        blank: false,
+        warnings: [],
+        finalUrl: url,
+        assertions: [],
+      }),
+    });
+    expect(result.ok).toBe(true);
+    const warnings = logs.filter((l) => l.includes("declared shot not captured"));
+    expect(warnings).toHaveLength(4);
+    for (const warned of ["Stalled card", "Upload card", "Drawer", "Dev page"]) {
+      expect(warnings.join("\n")).toContain(warned);
+    }
+    // The summary counts captured vs declared, not a bare clean success.
+    expect(result.detail).toMatch(/2 of 6 shots captured with clean console/);
+    expect(result.detail).toContain("4 shot warnings");
+    const evidence = readUiHandoffGateEvidence(config, task.id);
+    expect(
+      evidence?.warnings?.filter((w) => w.includes("declared shot not captured")),
+    ).toHaveLength(4);
+    vi.restoreAllMocks();
+  });
+
   it("records exact URL, assertions, and main-checkout evidence path (#0734)", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-uigate-"));
     temps.push(root);
