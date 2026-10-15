@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-15T16:49:17Z"
-review_passes: 3
 id: "0797"
 title: "Settings: decimal number fields rejected on save (slow-check multiplier)"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-15T09:56:55Z"
+updated_at: "2026-10-15T16:54:45Z"
+review_passes: 3
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: a0d43b4a7c7cd77276b8f43d419e87f039a18b47
 review_rounds: 2
