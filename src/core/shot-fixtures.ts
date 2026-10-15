@@ -35,17 +35,84 @@ export function isShotPreviewFixtureId(value: string): value is ShotPreviewFixtu
   return (SHOT_PREVIEW_FIXTURE_IDS as readonly string[]).includes(value);
 }
 
-/** Build the full page URL for one capture entry (origin + route + optional fixture query). */
+/** Extract fixture ids from the source file's SHOT_PREVIEW_FIXTURE_IDS array (#0786). */
+export function extractFixturesFromSource(sourceContent: string): string[] {
+  const patterns = [
+    /export\s+const\s+SHOT_PREVIEW_FIXTURE_IDS\s*=\s*\[([\s\S]*?)\]\s*as\s+const\b/,
+    /export\s+const\s+SHOT_PREVIEW_FIXTURE_IDS\s*=\s*\[([\s\S]*?)\]\s*;/,
+    /export\s+const\s+SHOT_PREVIEW_FIXTURE_IDS\s*=\s*\[([\s\S]*?)\]\s*(?:as\s+const)?/,
+  ];
+  let arrayContent: string | undefined;
+  for (const pattern of patterns) {
+    const match = sourceContent.match(pattern);
+    if (match) {
+      arrayContent = match[1];
+      break;
+    }
+  }
+  if (!arrayContent) return [];
+  const fixtures: string[] = [];
+  // Split by lines and extract quoted strings, skipping comment lines
+  const lines = arrayContent.split("\n");
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // Skip lines that are comments or empty
+    if (!trimmed || trimmed.startsWith("//")) continue;
+    // Extract all quoted strings from this line
+    const quoteMatches = line.match(/"([^"]+)"/g);
+    if (quoteMatches) {
+      for (const quoteMatch of quoteMatches) {
+        const id = quoteMatch.slice(1, -1); // Remove surrounding quotes
+        fixtures.push(id);
+      }
+    }
+  }
+  return fixtures;
+}
+
+/** Create a validator function for the given fixture ids (#0786). */
+export function createFixtureValidator(fixtureIds: readonly string[]): (value: string) => boolean {
+  const set = new Set(fixtureIds);
+  return (value: string): boolean => set.has(value);
+}
+
+/** Read branch fixtures and return a validator, or undefined if unavailable (#0786). */
+export function readBranchFixtureValidator(
+  readFile: (path: string) => string | null,
+  worktreePath: string | null,
+): ((id: string) => boolean) | undefined {
+  if (!worktreePath) return undefined;
+  const content = readFile(`${worktreePath}/src/core/shot-fixtures.ts`);
+  if (!content) return undefined;
+  const fixtures = extractFixturesFromSource(content);
+  return fixtures.length > 0 ? createFixtureValidator(fixtures) : undefined;
+}
+
+/**
+ * Build the full page URL for one capture entry (origin + route + optional
+ * fixture query). Fail-closed on fixture ids (#0786 review round 4): an
+ * unknown `state` throws naming the bad fixture and the valid ones, so a
+ * typo can never reach the page as a silently-applied no-op query. Declare
+ * `fixtureValidator` to admit a task branch's own fixtures (read from the
+ * branch's `shot-fixtures.ts`); it defaults to the standard list.
+ */
 export function shotCapturePageUrl(
   previewOrigin: string,
   entry: { route: string; state?: string },
+  fixtureValidator: (id: string) => boolean = isShotPreviewFixtureId,
 ): string {
   const origin = previewOrigin.replace(/\/$/, "");
   const path = entry.route.startsWith("/") ? entry.route : `/${entry.route}`;
   const url = new URL(`${origin}${path}`);
   if (entry.state) {
-    if (!isShotPreviewFixtureId(entry.state)) {
-      throw new Error(`unknown shot state fixture "${entry.state}"`);
+    // Validated again at URL build time: parse-time checks rule out most bad
+    // ids, but plan snapshots can drift, and a query param for a fixture the
+    // page does not know would capture a silently wrong screenshot.
+    if (!fixtureValidator(entry.state)) {
+      throw new Error(
+        `unknown "state" fixture "${entry.state}" — use one of: ` +
+          SHOT_PREVIEW_FIXTURE_IDS.join(", "),
+      );
     }
     url.searchParams.set(SHOT_PREVIEW_FIXTURE_QUERY, entry.state);
   }
