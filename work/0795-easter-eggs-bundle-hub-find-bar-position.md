@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-15T16:52:34Z"
+review_passes: 2
 id: "0795"
 title: "Easter eggs bundle: Hub find bar position, Done button, and Escape"
 type: bug
@@ -12,9 +14,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-hub-find-bar-position
 created_at: "2026-10-15T08:02:06Z"
-updated_at: "2026-10-15T16:52:34Z"
 review_rounds: 1
-review_passes: 1
 last_check_failure: "repoos check at 2026-10-15T11:36:40.023Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -101,3 +101,4 @@ Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSH
 - 2026-10-15T16:50:00Z · body
 - 2026-10-15T16:50:51Z · status active→review
 - 2026-10-15T16:52:34Z · note: review pass 2: good to go
+
