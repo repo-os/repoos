@@ -2,7 +2,7 @@
 id: "0798"
 title: "Polish compact activity indicators: fix state motions and improve visible size"
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried."
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T16:51:00Z"
+updated_at: "2026-10-15T16:58:16Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: e4aa4ed4b95c2e30ee8b247ebd90c51bb04558f9
 last_check_failure: "repoos check at 2026-10-15T12:29:58.918Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -59,32 +59,32 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 ```json
 [
 {
-  "label": "Settings - Activity animation preview at in-app size (coding / reviewing / agent)",
-  "target": "default",
-  "route": "/settings?tab=general",
-  "highlight": ".activity-animation-preview",
-  "steps": [
-    {
-      "waitFor": ".activity-animation-preview"
-    },
-    {
-      "waitMs": 600
-    }
-  ]
+"label": "Settings - Activity animation preview at in-app size (coding / reviewing / agent)",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": ".activity-animation-preview",
+"steps": [
+  {
+    "waitFor": ".activity-animation-preview"
+  },
+  {
+    "waitMs": 600
+  }
+]
 },
 {
-  "label": "Board task card - compact activity indicator beside a working task label",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=\"task-card-agent-hint\"]",
-  "steps": [
-    {
-      "waitFor": ".board"
-    },
-    {
-      "waitMs": 600
-    }
-  ]
+"label": "Board task card - compact activity indicator beside a working task label",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"task-card-agent-hint\"]",
+"steps": [
+  {
+    "waitFor": ".board"
+  },
+  {
+    "waitMs": 600
+  }
+]
 }
 ]
 ```
@@ -112,4 +112,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T15:59:19Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-15T16:49:34Z · body
 - 2026-10-15T16:51:00Z · body: section Shots
-
+- 2026-10-15T16:58:16Z · status active→review
