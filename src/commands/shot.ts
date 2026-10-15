@@ -663,7 +663,9 @@ export async function cmdShot(args: string[]): Promise<number> {
         currentTarget = entry.target;
       }
       const route = entry.route ?? "/";
-      const pageUrl = absolute ? route : shotCapturePageUrl(currentPreviewUrl, { ...entry, route });
+      const pageUrl = absolute
+        ? route
+        : shotCapturePageUrl(currentPreviewUrl, { ...entry, route }, fixtureValidator ?? undefined);
       const page = (await context!.newPage()) as unknown as ShotDriverPage;
       let png: Buffer;
       const warnings: string[] = [];

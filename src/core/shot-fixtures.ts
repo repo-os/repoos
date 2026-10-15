@@ -88,16 +88,32 @@ export function readBranchFixtureValidator(
   return fixtures.length > 0 ? createFixtureValidator(fixtures) : undefined;
 }
 
-/** Build the full page URL for one capture entry (origin + route + optional fixture query). */
+/**
+ * Build the full page URL for one capture entry (origin + route + optional
+ * fixture query). Fail-closed on fixture ids (#0786 review round 4): an
+ * unknown `state` throws naming the bad fixture and the valid ones, so a
+ * typo can never reach the page as a silently-applied no-op query. Declare
+ * `fixtureValidator` to admit a task branch's own fixtures (read from the
+ * branch's `shot-fixtures.ts`); it defaults to the standard list.
+ */
 export function shotCapturePageUrl(
   previewOrigin: string,
   entry: { route: string; state?: string },
+  fixtureValidator: (id: string) => boolean = isShotPreviewFixtureId,
 ): string {
   const origin = previewOrigin.replace(/\/$/, "");
   const path = entry.route.startsWith("/") ? entry.route : `/${entry.route}`;
   const url = new URL(`${origin}${path}`);
   if (entry.state) {
-    // State is already validated at parse time, so no validation needed here (#0786)
+    // Validated again at URL build time: parse-time checks rule out most bad
+    // ids, but plan snapshots can drift, and a query param for a fixture the
+    // page does not know would capture a silently wrong screenshot.
+    if (!fixtureValidator(entry.state)) {
+      throw new Error(
+        `unknown "state" fixture "${entry.state}" — use one of: ` +
+          SHOT_PREVIEW_FIXTURE_IDS.join(", "),
+      );
+    }
     url.searchParams.set(SHOT_PREVIEW_FIXTURE_QUERY, entry.state);
   }
   return url.toString();
