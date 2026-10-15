@@ -9,30 +9,35 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T08:02:06Z"
-updated_at: "2026-10-15T08:08:00Z"
+updated_at: "2026-10-15T10:18:20Z"
 ---
 ## Problem
-The Hub's new Cmd-F find bar (from #0789) has three issues on the native macOS app:
-1. It sits at the bottom left of the window. It should be at the top right, like the find bars in other Mac apps.
-2. It has a 'Replace' option. Find-only is enough, so remove Replace.
-3. The 'Done' button does nothing, and there's no other way to close the bar.
+Three small issues in the Hub's new Cmd-F find bar (from #0789), plus two small UI fixes for the task cards:
+1. The find bar sits at the bottom left of the window. It should be at the top right, like the find bars in other Mac apps.
+2. The bar has a 'Replace' option. Find-only is enough, so remove Replace.
+3. The 'Done' button does nothing, and there is no other way to close the bar.
+4. Task card area chips are separated by commas (for example 'agent, server'). Use spaces instead ('agent server').
+5. A task tagged human (not AI) should show a human icon, and the human chip should be a different colour so it stands out, in the same way the file-changes chip is distinct.
 
 ## Desired UX
 - The find bar opens in the top right corner of the window, over the content.
 - Remove the Replace option.
-- Close the bar with a button on the right side of the bar (an X, or Done that works), and with Escape.
-- After closing, focus returns to the page.
+- Close the bar with a button on the right side of the bar (an X, or Done that works), and with Escape. After closing, focus returns to the page.
+- Area chips on task cards are space-separated, with no commas.
+- Human-tagged tasks show a human icon and a distinct chip colour, both in light and dark themes.
 
 ## Acceptance criteria
-- Find bar appears in the top right of the window in light and dark appearance.
-- No Replace control.
-- Done or the close button hides the bar and clears the highlights; Escape does the same.
+- Find bar appears in the top right of the window in light and dark appearance, with no Replace control.
+- Done or the close button hides the bar and clears highlights; Escape does the same.
 - Test or manual check: Cmd-F, type, Escape closes, Cmd-F reopens with the field focused.
+- Task card area chips render as 'agent server', not 'agent, server'.
+- A human-tagged task card shows the human icon and the distinct chip, checked in light and dark themes.
 
 ## Notes for AI
-Start from the find bar view in macos/RepoOSHub/ServerWebView.swift and the Find menu items in macos/RepoOSHub/RepoOSHubApp.swift (Find, Find Next, Find Previous). Source: user report 2026-10-15 on the Hub's Cmd-F find bar (#0789).
+Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSHub/RepoOSHubApp.swift. Task cards: find the area chip rendering in src/ui-app/src/components (TaskCard.vue) and the existing file-changes chip styling for the human chip. Source: user request 2026-10-15.
 
 ## Activity
 
 - 2026-10-15T08:02:06Z · created · njachowski@gmail.com
 - 2026-10-15T08:08:00Z · status inbox→ready
+- 2026-10-15T10:18:20Z · body
