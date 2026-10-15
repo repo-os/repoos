@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/align-model-playground-dropdowns-and-age
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-15T05:33:42Z"
-updated_at: "2026-10-15T05:54:13Z"
+updated_at: "2026-10-15T05:56:51Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -39,11 +39,6 @@ Covers the model playground’s dropdown styling and its compatibility with the 
 
 Fix the dropdowns on the model playground to match the style we use everywhere else. Also I'd like the model playground to also work with the normal coding agent+model modal selector.
 
-## Screenshots
-
-![Screenshot-2026-10-15-at-12.31.15](/api/tasks/0788/attachments/screenshot-1.png)
-![Screenshot-2026-10-15-at-12.30.00](/api/tasks/0788/attachments/screenshot-2.png)
-
 ## Shots
 ```json
 [
@@ -55,6 +50,11 @@ Fix the dropdowns on the model playground to match the style we use everywhere e
 }
 ]
 ```
+
+## Screenshots
+
+![Screenshot-2026-10-15-at-12.31.15](/api/tasks/0788/attachments/screenshot-1.png)
+![Screenshot-2026-10-15-at-12.30.00](/api/tasks/0788/attachments/screenshot-2.png)
 
 ## Activity
 
@@ -72,3 +72,4 @@ Fix the dropdowns on the model playground to match the style we use everywhere e
 - 2026-10-15T05:49:48Z · status active→review
 - 2026-10-15T05:50:42Z · note: review pass 1: needs some work
 - 2026-10-15T05:50:42Z · status review→active
+- 2026-10-15T05:56:51Z · body
