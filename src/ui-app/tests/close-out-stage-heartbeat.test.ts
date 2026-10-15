@@ -113,7 +113,14 @@ function cardFor(
   reportedAt: Record<string, string>,
   nowIso: string,
 ) {
-  const serverSnap = buildIntegrationSnapshot(coordinator, {}, undefined, reportedAt, detail, nowIso);
+  const serverSnap = buildIntegrationSnapshot(
+    coordinator,
+    {},
+    undefined,
+    reportedAt,
+    detail,
+    nowIso,
+  );
   // The SSE payload carries this exact shape; the UI type narrows `stage` to
   // the pipeline union, so bridge it for the card-copy assertions.
   const snap = serverSnap as unknown as IntegrationPipelineSnapshot;
