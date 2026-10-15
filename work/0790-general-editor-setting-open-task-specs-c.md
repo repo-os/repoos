@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-15T07:46:11Z"
-review_passes: 2
 id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
@@ -15,6 +13,8 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
+updated_at: "2026-10-15T07:46:11Z"
+review_passes: 2
 review_rounds: 1
 dev_error_count: 1
 ---
@@ -92,4 +92,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T07:44:58Z · status active→review
 - 2026-10-15T07:45:36Z · note: highlight [data-test-id="open-in-editor"] matched nothing on /work?task=0790
 - 2026-10-15T07:46:11Z · note: review pass 2: needs some work
-
+- 2026-10-15T07:46:11Z · message_queued at 2026-10-15T07:46:11.986Z
