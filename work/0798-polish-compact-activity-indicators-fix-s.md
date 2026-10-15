@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T16:59:29Z"
+updated_at: "2026-10-15T17:04:57Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-15T12:29:58.918Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -117,3 +117,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T16:58:41Z · note: highlight [data-test-id="task-card-agent-hint"] matched nothing on /
 - 2026-10-15T16:59:29Z · note: review pass 1: needs some work
 - 2026-10-15T16:59:29Z · status review→active
+- 2026-10-15T17:04:57Z · message_queued at 2026-10-15T17:04:57.734Z
