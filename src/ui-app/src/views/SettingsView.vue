@@ -793,18 +793,6 @@ watch(
   { immediate: true },
 );
 
-// Refresh originalValues when inspector availability changes. Without this, fields that
-// become visible after initial load won't be in originalValues, so buildBody() treats them
-// as new fields and includes them even when unchanged.
-watch(
-  () => repo.health?.copyInspectorAvailable,
-  () => {
-    if (config.loaded && !syncing) {
-      sync();
-    }
-  },
-);
-
 // Load the support-bundle preview lazily, the first time its tab is opened.
 watch(
   activeTab,
