@@ -8,13 +8,44 @@
  * parsing. No test touches the network.
  */
 import { describe, expect, it, vi } from "vitest";
-import { parseModelRouting, resolveEffectiveRouting, routingActiveFor, DEFAULT_ROUTING_TIMEOUT_MS } from "../../core/model-routing/config.js";
-import { candidateKey, filterCandidates, type RoutingCandidate } from "../../core/model-routing/candidates.js";
-import { decideRouting, ROUTING_QUESTION_IDS, hasSufficientEvidence, MIN_ANSWER_CONFIDENCE } from "../../core/model-routing/policy.js";
-import { decideRoutingForRun, buildRoutingQuestions, type DecideRoutingInput } from "../../core/model-routing/decide.js";
-import { decodeSystemOneResponse, encodeSystemOneRequest } from "../../core/model-routing/system-one.js";
-import { createJevProvider, createClefFlashProvider, JEV_ENDPOINT, JEV_DEFAULT_MODEL, CLEF_FLASH_DEFAULT_MODEL } from "../../core/model-routing/providers.js";
-import { RoutingProviderError, type RoutingAnswer, type RoutingDecisionProvider } from "../../core/model-routing/types.js";
+import {
+  parseModelRouting,
+  resolveEffectiveRouting,
+  routingActiveFor,
+  DEFAULT_ROUTING_TIMEOUT_MS,
+} from "../../core/model-routing/config.js";
+import {
+  candidateKey,
+  filterCandidates,
+  type RoutingCandidate,
+} from "../../core/model-routing/candidates.js";
+import {
+  decideRouting,
+  ROUTING_QUESTION_IDS,
+  hasSufficientEvidence,
+  MIN_ANSWER_CONFIDENCE,
+} from "../../core/model-routing/policy.js";
+import {
+  decideRoutingForRun,
+  buildRoutingQuestions,
+  type DecideRoutingInput,
+} from "../../core/model-routing/decide.js";
+import {
+  decodeSystemOneResponse,
+  encodeSystemOneRequest,
+} from "../../core/model-routing/system-one.js";
+import {
+  createJevProvider,
+  createClefFlashProvider,
+  JEV_ENDPOINT,
+  JEV_DEFAULT_MODEL,
+  CLEF_FLASH_DEFAULT_MODEL,
+} from "../../core/model-routing/providers.js";
+import {
+  RoutingProviderError,
+  type RoutingAnswer,
+  type RoutingDecisionProvider,
+} from "../../core/model-routing/types.js";
 import { getConfigSchema, SUPPORTED_TOML_KEYS } from "../../core/config.js";
 
 const claude: RoutingCandidate = { cli: "claude code", model: "default", reasoning: null };
@@ -27,8 +58,17 @@ const allHarnesses = {
 };
 
 /** A suitability answer where each candidate's probability is set explicitly. */
-function suitabilityAnswer(probs: Record<string, number>, confidence: number | null = 0.9): RoutingAnswer {
-  return { id: ROUTING_QUESTION_IDS.suitability, type: "choice", choice: Object.keys(probs)[0], confidence, probabilities: probs };
+function suitabilityAnswer(
+  probs: Record<string, number>,
+  confidence: number | null = 0.9,
+): RoutingAnswer {
+  return {
+    id: ROUTING_QUESTION_IDS.suitability,
+    type: "choice",
+    choice: Object.keys(probs)[0],
+    confidence,
+    probabilities: probs,
+  };
 }
 
 function answersWith(suit: RoutingAnswer): Record<string, RoutingAnswer> {
@@ -55,7 +95,13 @@ describe("routing config", () => {
   });
 
   it("parses a valid section and resolves provider defaults", () => {
-    const { config, warnings } = parseModelRouting({ mode: "shadow", provider: "clef-flash", baseUrl: "http://gpu:30000", roles: ["reviewer"], timeoutMs: 4000 });
+    const { config, warnings } = parseModelRouting({
+      mode: "shadow",
+      provider: "clef-flash",
+      baseUrl: "http://gpu:30000",
+      roles: ["reviewer"],
+      timeoutMs: 4000,
+    });
     expect(warnings).toEqual([]);
     const eff = resolveEffectiveRouting(config);
     expect(eff.mode).toBe("shadow");
@@ -68,7 +114,12 @@ describe("routing config", () => {
   });
 
   it("drops invalid values with a warning instead of failing, falling back to off", () => {
-    const { config, warnings } = parseModelRouting({ mode: "yolo", provider: "openai", roles: ["engineer", "wizard"], timeoutMs: 999999 });
+    const { config, warnings } = parseModelRouting({
+      mode: "yolo",
+      provider: "openai",
+      roles: ["engineer", "wizard"],
+      timeoutMs: 999999,
+    });
     expect(config.mode).toBeUndefined();
     expect(config.provider).toBeUndefined();
     expect(config.roles).toEqual(["engineer"]);
@@ -85,7 +136,15 @@ describe("routing config", () => {
 
   it("exposes every routing key in the schema and the TOML allowlist", () => {
     const keys = getConfigSchema().map((f) => f.key);
-    for (const key of ["model_routing.mode", "model_routing.provider", "model_routing.model", "model_routing.baseUrl", "model_routing.credentialEnv", "model_routing.roles", "model_routing.timeoutMs"]) {
+    for (const key of [
+      "model_routing.mode",
+      "model_routing.provider",
+      "model_routing.model",
+      "model_routing.baseUrl",
+      "model_routing.credentialEnv",
+      "model_routing.roles",
+      "model_routing.timeoutMs",
+    ]) {
       expect(keys).toContain(key);
       expect(SUPPORTED_TOML_KEYS).toContain(key);
     }
@@ -98,7 +157,11 @@ describe("routing config", () => {
 
 describe("candidate filtering", () => {
   it("an empty allowlist is the unrestricted no-op", () => {
-    const { eligible, rejected } = filterCandidates({ candidates: [claude, codex], allowlist: [], harnesses: allHarnesses });
+    const { eligible, rejected } = filterCandidates({
+      candidates: [claude, codex],
+      allowlist: [],
+      harnesses: allHarnesses,
+    });
     expect(eligible.map((c) => c.cli).sort()).toEqual(["claude code", "codex"]);
     expect(rejected).toEqual([]);
   });
@@ -109,7 +172,9 @@ describe("candidate filtering", () => {
       allowlist: BASE_ALLOW,
       harnesses: allHarnesses,
     });
-    expect(eligible.map(candidateKey).sort()).toEqual([candidateKey(claude), candidateKey(codex)].sort());
+    expect(eligible.map(candidateKey).sort()).toEqual(
+      [candidateKey(claude), candidateKey(codex)].sort(),
+    );
     expect(rejected.find((r) => r.candidate.cli === "kiro")?.reason).toContain("allowlist");
     expect(rejected.find((r) => r.candidate.model === "gpt-9")?.reason).toContain("allowlist");
   });
@@ -135,9 +200,17 @@ describe("candidate filtering", () => {
   });
 
   it("de-duplicates and returns a stable order", () => {
-    const { eligible } = filterCandidates({ candidates: [codex, claude, codex, claude], allowlist: [], harnesses: allHarnesses });
+    const { eligible } = filterCandidates({
+      candidates: [codex, claude, codex, claude],
+      allowlist: [],
+      harnesses: allHarnesses,
+    });
     expect(eligible).toHaveLength(2);
-    const again = filterCandidates({ candidates: [claude, codex], allowlist: [], harnesses: allHarnesses });
+    const again = filterCandidates({
+      candidates: [claude, codex],
+      allowlist: [],
+      harnesses: allHarnesses,
+    });
     expect(eligible.map(candidateKey)).toEqual(again.eligible.map(candidateKey));
   });
 });
@@ -145,63 +218,137 @@ describe("candidate filtering", () => {
 describe("policy", () => {
   const eligible = [claude, codex];
   const fallback = claude;
-  const ok = answersWith(suitabilityAnswer({ [candidateKey(codex)]: 0.9, [candidateKey(claude)]: 0.1 }));
+  const ok = answersWith(
+    suitabilityAnswer({ [candidateKey(codex)]: 0.9, [candidateKey(claude)]: 0.1 }),
+  );
 
   it("with no candidates, blocks with an actionable message and never picks", () => {
-    const out = decideRouting({ eligible: [], fallback, answers: ok, failure: null, costTime: {}, weights: { costWeight: 0.5, timeWeight: 0.5 } });
+    const out = decideRouting({
+      eligible: [],
+      fallback,
+      answers: ok,
+      failure: null,
+      costTime: {},
+      weights: { costWeight: 0.5, timeWeight: 0.5 },
+    });
     expect(out.kind).toBe("blocked");
     if (out.kind === "blocked") expect(out.reason).toBe("no-candidates");
   });
 
   it("selects the highest-suitability eligible candidate when evidence is sufficient", () => {
-    const out = decideRouting({ eligible, fallback, answers: ok, failure: null, costTime: {}, weights: { costWeight: 0.5, timeWeight: 0.5 } });
+    const out = decideRouting({
+      eligible,
+      fallback,
+      answers: ok,
+      failure: null,
+      costTime: {},
+      weights: { costWeight: 0.5, timeWeight: 0.5 },
+    });
     expect(out.kind).toBe("selected");
     if (out.kind === "selected") expect(candidateKey(out.candidate)).toBe(candidateKey(codex));
   });
 
   it("falls back on provider failure when the fallback is eligible", () => {
-    const out = decideRouting({ eligible, fallback, answers: null, failure: new RoutingProviderError("timeout", "slow"), costTime: {}, weights: { costWeight: 0.5, timeWeight: 0.5 } });
+    const out = decideRouting({
+      eligible,
+      fallback,
+      answers: null,
+      failure: new RoutingProviderError("timeout", "slow"),
+      costTime: {},
+      weights: { costWeight: 0.5, timeWeight: 0.5 },
+    });
     expect(out).toMatchObject({ kind: "fallback", reason: "provider-failure" });
   });
 
   it("classifies a malformed response as malformed-response, not a generic failure", () => {
-    const out = decideRouting({ eligible, fallback, answers: null, failure: new RoutingProviderError("malformed", "bad"), costTime: {}, weights: { costWeight: 0.5, timeWeight: 0.5 } });
+    const out = decideRouting({
+      eligible,
+      fallback,
+      answers: null,
+      failure: new RoutingProviderError("malformed", "bad"),
+      costTime: {},
+      weights: { costWeight: 0.5, timeWeight: 0.5 },
+    });
     expect(out).toMatchObject({ kind: "fallback", reason: "malformed-response" });
   });
 
   it("blocks instead of picking a forbidden fallback when the fallback is not eligible", () => {
     const forbiddenFallback: RoutingCandidate = { cli: "kiro", model: "default", reasoning: null };
-    const out = decideRouting({ eligible, fallback: forbiddenFallback, answers: null, failure: new RoutingProviderError("timeout", "x"), costTime: {}, weights: { costWeight: 0.5, timeWeight: 0.5 } });
+    const out = decideRouting({
+      eligible,
+      fallback: forbiddenFallback,
+      answers: null,
+      failure: new RoutingProviderError("timeout", "x"),
+      costTime: {},
+      weights: { costWeight: 0.5, timeWeight: 0.5 },
+    });
     expect(out.kind).toBe("blocked");
     if (out.kind === "blocked") expect(out.reason).toBe("no-eligible-fallback");
   });
 
   it("treats low-confidence suitability as insufficient evidence and falls back", () => {
-    const weak = answersWith(suitabilityAnswer({ [candidateKey(codex)]: 0.4, [candidateKey(claude)]: 0.3 }, 0.9));
+    const weak = answersWith(
+      suitabilityAnswer({ [candidateKey(codex)]: 0.4, [candidateKey(claude)]: 0.3 }, 0.9),
+    );
     expect(hasSufficientEvidence(weak)).toBe(false);
-    const out = decideRouting({ eligible, fallback, answers: weak, failure: null, costTime: {}, weights: { costWeight: 0.5, timeWeight: 0.5 } });
+    const out = decideRouting({
+      eligible,
+      fallback,
+      answers: weak,
+      failure: null,
+      costTime: {},
+      weights: { costWeight: 0.5, timeWeight: 0.5 },
+    });
     expect(out).toMatchObject({ kind: "fallback", reason: "insufficient-evidence" });
   });
 
   it("treats a provider-reported low confidence as insufficient evidence even with a high top probability", () => {
-    const lowConf = answersWith(suitabilityAnswer({ [candidateKey(codex)]: 0.95, [candidateKey(claude)]: 0.05 }, MIN_ANSWER_CONFIDENCE - 0.1));
+    const lowConf = answersWith(
+      suitabilityAnswer(
+        { [candidateKey(codex)]: 0.95, [candidateKey(claude)]: 0.05 },
+        MIN_ANSWER_CONFIDENCE - 0.1,
+      ),
+    );
     expect(hasSufficientEvidence(lowConf)).toBe(false);
   });
 
   it("missing suitability answer is insufficient evidence, never a guess", () => {
-    const missing = { [ROUTING_QUESTION_IDS.ambiguity]: { id: "ambiguity", type: "noul" as const, probability: 0.1 } };
+    const missing = {
+      [ROUTING_QUESTION_IDS.ambiguity]: {
+        id: "ambiguity",
+        type: "noul" as const,
+        probability: 0.1,
+      },
+    };
     expect(hasSufficientEvidence(missing as Record<string, RoutingAnswer>)).toBe(false);
   });
 
   it("a suitability answer for an unknown candidate never selects that candidate", () => {
-    const stray = answersWith(suitabilityAnswer({ "ghost\u0000model\u0000": 0.99, [candidateKey(claude)]: 0.01 }));
-    const out = decideRouting({ eligible, fallback, answers: stray, failure: null, costTime: {}, weights: { costWeight: 0.5, timeWeight: 0.5 } });
+    const stray = answersWith(
+      suitabilityAnswer({ "ghost\u0000model\u0000": 0.99, [candidateKey(claude)]: 0.01 }),
+    );
+    const out = decideRouting({
+      eligible,
+      fallback,
+      answers: stray,
+      failure: null,
+      costTime: {},
+      weights: { costWeight: 0.5, timeWeight: 0.5 },
+    });
     expect(out.kind).toBe("selected");
-    if (out.kind === "selected") expect(eligible.map(candidateKey)).toContain(candidateKey(out.candidate));
+    if (out.kind === "selected")
+      expect(eligible.map(candidateKey)).toContain(candidateKey(out.candidate));
   });
 
   it("is deterministic: the same input always yields the same outcome", () => {
-    const input = { eligible, fallback, answers: ok, failure: null, costTime: {}, weights: { costWeight: 0.5, timeWeight: 0.5 } };
+    const input = {
+      eligible,
+      fallback,
+      answers: ok,
+      failure: null,
+      costTime: {},
+      weights: { costWeight: 0.5, timeWeight: 0.5 },
+    };
     expect(decideRouting(input)).toEqual(decideRouting(input));
   });
 });
@@ -221,28 +368,48 @@ describe("decideRoutingForRun (orchestration invariants)", () => {
 
   it("off mode never calls the provider", async () => {
     const decide = vi.fn();
-    const out = await decideRoutingForRun(baseInput({ effective: resolveEffectiveRouting({ mode: "off" }), provider: { id: "jev", decide } }));
+    const out = await decideRoutingForRun(
+      baseInput({
+        effective: resolveEffectiveRouting({ mode: "off" }),
+        provider: { id: "jev", decide },
+      }),
+    );
     expect(out.kind).toBe("disabled");
     expect(decide).not.toHaveBeenCalled();
   });
 
   it("a role not in the enabled list is never routed", async () => {
     const decide = vi.fn();
-    const out = await decideRoutingForRun(baseInput({ role: "reviewer", provider: { id: "jev", decide } }));
+    const out = await decideRoutingForRun(
+      baseInput({ role: "reviewer", provider: { id: "jev", decide } }),
+    );
     expect(out.kind).toBe("disabled");
     expect(decide).not.toHaveBeenCalled();
   });
 
   it("an explicit human pin wins and the provider is never called", async () => {
     const decide = vi.fn();
-    const out = await decideRoutingForRun(baseInput({ pinned: true, provider: { id: "jev", decide } }));
+    const out = await decideRoutingForRun(
+      baseInput({ pinned: true, provider: { id: "jev", decide } }),
+    );
     expect(out.kind).toBe("pinned");
     expect(decide).not.toHaveBeenCalled();
   });
 
   it("shadow mode records a recommendation but never applies it", async () => {
-    const decide = vi.fn(async () => ({ model: "jev-latest", answers: answersWith(suitabilityAnswer({ [candidateKey(codex)]: 0.9, [candidateKey(claude)]: 0.1 })), usage: null }));
-    const out = await decideRoutingForRun(baseInput({ effective: resolveEffectiveRouting({ mode: "shadow", roles: ["engineer"] }), provider: { id: "jev", decide } }));
+    const decide = vi.fn(async () => ({
+      model: "jev-latest",
+      answers: answersWith(
+        suitabilityAnswer({ [candidateKey(codex)]: 0.9, [candidateKey(claude)]: 0.1 }),
+      ),
+      usage: null,
+    }));
+    const out = await decideRoutingForRun(
+      baseInput({
+        effective: resolveEffectiveRouting({ mode: "shadow", roles: ["engineer"] }),
+        provider: { id: "jev", decide },
+      }),
+    );
     expect(out.kind).toBe("decided");
     if (out.kind === "decided") {
       expect(out.applied).toBe(false);
@@ -252,7 +419,13 @@ describe("decideRoutingForRun (orchestration invariants)", () => {
   });
 
   it("automatic mode applies the decision", async () => {
-    const decide = vi.fn(async () => ({ model: "jev-latest", answers: answersWith(suitabilityAnswer({ [candidateKey(codex)]: 0.9, [candidateKey(claude)]: 0.1 })), usage: null }));
+    const decide = vi.fn(async () => ({
+      model: "jev-latest",
+      answers: answersWith(
+        suitabilityAnswer({ [candidateKey(codex)]: 0.9, [candidateKey(claude)]: 0.1 }),
+      ),
+      usage: null,
+    }));
     const out = await decideRoutingForRun(baseInput({ provider: { id: "jev", decide } }));
     expect(out.kind === "decided" && out.applied).toBe(true);
   });
@@ -275,13 +448,25 @@ describe("decideRoutingForRun (orchestration invariants)", () => {
 
   it("with no eligible candidates the provider is not called and the run is blocked", async () => {
     const decide = vi.fn();
-    const out = await decideRoutingForRun(baseInput({ filter: { candidates: [kiro], allowlist: BASE_ALLOW, harnesses: allHarnesses }, fallback: null, provider: { id: "jev", decide } }));
+    const out = await decideRoutingForRun(
+      baseInput({
+        filter: { candidates: [kiro], allowlist: BASE_ALLOW, harnesses: allHarnesses },
+        fallback: null,
+        provider: { id: "jev", decide },
+      }),
+    );
     expect(decide).not.toHaveBeenCalled();
     expect(out.kind === "decided" && out.outcome.kind === "blocked").toBe(true);
   });
 
   it("the fallback is never a forbidden pair even when the provider recommends one", async () => {
-    const decide = vi.fn(async () => ({ model: "x", answers: answersWith(suitabilityAnswer({ [candidateKey(kiro)]: 0.99, [candidateKey(claude)]: 0.01 })), usage: null }));
+    const decide = vi.fn(async () => ({
+      model: "x",
+      answers: answersWith(
+        suitabilityAnswer({ [candidateKey(kiro)]: 0.99, [candidateKey(claude)]: 0.01 }),
+      ),
+      usage: null,
+    }));
     const out = await decideRoutingForRun(baseInput({ provider: { id: "jev", decide } }));
     if (out.kind === "decided" && out.outcome.kind !== "blocked") {
       expect(candidateKey(out.outcome.candidate)).not.toBe(candidateKey(kiro));
@@ -291,7 +476,9 @@ describe("decideRoutingForRun (orchestration invariants)", () => {
   it("the question set only ever offers eligible candidates to the provider", () => {
     const questions = buildRoutingQuestions([claude]);
     const suit = questions.find((q) => q.id === ROUTING_QUESTION_IDS.suitability);
-    expect(suit && suit.type === "choice" ? Object.keys(suit.criteria) : []).toEqual([candidateKey(claude)]);
+    expect(suit && suit.type === "choice" ? Object.keys(suit.criteria) : []).toEqual([
+      candidateKey(claude),
+    ]);
   });
 });
 
@@ -315,8 +502,19 @@ describe("System One wire codec", () => {
       answers: {
         ambiguity: { type: "noul", noul: 0.99 },
         risk: { type: "noul", noul: 0.2 },
-        scope: { type: "score", score: 0.67, confidence: 0.5, legend: {}, probabilities: { "0": 0.33, "1": 0.67 } },
-        suitability: { type: "choice", choice: "codex", confidence: 1.0, probabilities: { codex: 1.0, "claude code": 0.0 } },
+        scope: {
+          type: "score",
+          score: 0.67,
+          confidence: 0.5,
+          legend: {},
+          probabilities: { "0": 0.33, "1": 0.67 },
+        },
+        suitability: {
+          type: "choice",
+          choice: "codex",
+          confidence: 1.0,
+          probabilities: { codex: 1.0, "claude code": 0.0 },
+        },
       },
       usage: { input_tokens: 428, output_tokens: 73 },
     };
@@ -324,12 +522,18 @@ describe("System One wire codec", () => {
     const out = decodeSystemOneResponse(wire, ids);
     expect(out.model).toBe("jev-1.13.0");
     expect(out.answers.ambiguity).toEqual({ id: "ambiguity", type: "noul", probability: 0.99 });
-    expect(out.answers.suitability).toMatchObject({ type: "choice", choice: "codex", confidence: 1.0 });
+    expect(out.answers.suitability).toMatchObject({
+      type: "choice",
+      choice: "codex",
+      confidence: 1.0,
+    });
     expect(out.usage).toEqual({ inputTokens: 428, outputTokens: 73 });
   });
 
   it("fails closed on a missing answer rather than silently dropping a question", () => {
-    expect(() => decodeSystemOneResponse({ model: "m", answers: {} }, ["ambiguity"])).toThrow(RoutingProviderError);
+    expect(() => decodeSystemOneResponse({ model: "m", answers: {} }, ["ambiguity"])).toThrow(
+      RoutingProviderError,
+    );
   });
 
   it("fails closed on an unknown answer type", () => {
@@ -348,24 +552,42 @@ describe("System One wire codec", () => {
 });
 
 describe("provider adapters", () => {
-  const request = { brief: { state: "s" }, questions: buildRoutingQuestions([claude]), timeoutMs: 1000 };
+  const request = {
+    brief: { state: "s" },
+    questions: buildRoutingQuestions([claude]),
+    timeoutMs: 1000,
+  };
   const okBody = {
     model: "jev-latest",
     answers: {
       ambiguity: { type: "noul", noul: 0.1 },
       risk: { type: "noul", noul: 0.1 },
       scope: { type: "noul", noul: 0.1 },
-      suitability: { type: "choice", choice: candidateKey(claude), confidence: 0.9, probabilities: { [candidateKey(claude)]: 1 } },
+      suitability: {
+        type: "choice",
+        choice: candidateKey(claude),
+        confidence: 0.9,
+        probabilities: { [candidateKey(claude)]: 1 },
+      },
     },
   };
 
   function fetchReturning(status: number, body: unknown) {
-    return vi.fn(async () => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } }));
+    return vi.fn(
+      async () =>
+        new Response(JSON.stringify(body), {
+          status,
+          headers: { "content-type": "application/json" },
+        }),
+    );
   }
 
   it("Jev posts to the hosted endpoint with a bearer token and the default model", async () => {
     const f = fetchReturning(200, okBody);
-    const provider = createJevProvider({ apiKey: "k-123", fetchImpl: f as unknown as typeof fetch });
+    const provider = createJevProvider({
+      apiKey: "k-123",
+      fetchImpl: f as unknown as typeof fetch,
+    });
     const out = await provider.decide(request);
     const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe(JEV_ENDPOINT);
@@ -376,7 +598,10 @@ describe("provider adapters", () => {
 
   it("Clef-Flash posts to the self-hosted /v1/systemone with no auth header when no key is set", async () => {
     const f = fetchReturning(200, okBody);
-    const provider = createClefFlashProvider({ baseUrl: "http://gpu:30000/", fetchImpl: f as unknown as typeof fetch });
+    const provider = createClefFlashProvider({
+      baseUrl: "http://gpu:30000/",
+      fetchImpl: f as unknown as typeof fetch,
+    });
     await provider.decide(request);
     const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("http://gpu:30000/v1/systemone");
@@ -387,20 +612,34 @@ describe("provider adapters", () => {
   it("both adapters present the identical System One body, so switching is a config change", async () => {
     const f1 = fetchReturning(200, okBody);
     const f2 = fetchReturning(200, okBody);
-    await createJevProvider({ apiKey: "k", model: "jev-latest", fetchImpl: f1 as unknown as typeof fetch }).decide(request);
-    await createClefFlashProvider({ baseUrl: "http://x", model: "jev-latest", fetchImpl: f2 as unknown as typeof fetch }).decide(request);
+    await createJevProvider({
+      apiKey: "k",
+      model: "jev-latest",
+      fetchImpl: f1 as unknown as typeof fetch,
+    }).decide(request);
+    await createClefFlashProvider({
+      baseUrl: "http://x",
+      model: "jev-latest",
+      fetchImpl: f2 as unknown as typeof fetch,
+    }).decide(request);
     const b1 = JSON.parse((f1.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
     const b2 = JSON.parse((f2.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
     expect(b1).toEqual(b2);
   });
 
   it("maps 401/403 to an auth failure, never a silent success", async () => {
-    const provider = createJevProvider({ apiKey: "bad", fetchImpl: fetchReturning(401, {}) as unknown as typeof fetch });
+    const provider = createJevProvider({
+      apiKey: "bad",
+      fetchImpl: fetchReturning(401, {}) as unknown as typeof fetch,
+    });
     await expect(provider.decide(request)).rejects.toMatchObject({ kind: "auth" });
   });
 
   it("maps a 500 to an http failure", async () => {
-    const provider = createClefFlashProvider({ baseUrl: "http://x", fetchImpl: fetchReturning(500, {}) as unknown as typeof fetch });
+    const provider = createClefFlashProvider({
+      baseUrl: "http://x",
+      fetchImpl: fetchReturning(500, {}) as unknown as typeof fetch,
+    });
     await expect(provider.decide(request)).rejects.toMatchObject({ kind: "http" });
   });
 
@@ -415,7 +654,9 @@ describe("provider adapters", () => {
       });
     });
     const provider = createJevProvider({ apiKey: "k", fetchImpl: f as unknown as typeof fetch });
-    await expect(provider.decide({ ...request, timeoutMs: 20 })).rejects.toMatchObject({ kind: "timeout" });
+    await expect(provider.decide({ ...request, timeoutMs: 20 })).rejects.toMatchObject({
+      kind: "timeout",
+    });
   });
 
   it("maps a non-JSON 200 body to malformed, never a partial answer", async () => {
@@ -434,9 +675,17 @@ describe("provider adapters", () => {
 
   it("a provider failure routed through decideRoutingForRun still produces a safe outcome", async () => {
     const f = fetchReturning(503, {});
-    const provider: RoutingDecisionProvider = createClefFlashProvider({ baseUrl: "http://x", fetchImpl: f as unknown as typeof fetch });
+    const provider: RoutingDecisionProvider = createClefFlashProvider({
+      baseUrl: "http://x",
+      fetchImpl: f as unknown as typeof fetch,
+    });
     const out = await decideRoutingForRun({
-      effective: resolveEffectiveRouting({ mode: "automatic", provider: "clef-flash", baseUrl: "http://x", roles: ["engineer"] }),
+      effective: resolveEffectiveRouting({
+        mode: "automatic",
+        provider: "clef-flash",
+        baseUrl: "http://x",
+        roles: ["engineer"],
+      }),
       role: "engineer",
       pinned: false,
       stateText: "s",
@@ -445,6 +694,9 @@ describe("provider adapters", () => {
       costTime: {},
       provider,
     });
-    expect(out.kind === "decided" && out.outcome).toMatchObject({ kind: "fallback", reason: "provider-failure" });
+    expect(out.kind === "decided" && out.outcome).toMatchObject({
+      kind: "fallback",
+      reason: "provider-failure",
+    });
   });
 });

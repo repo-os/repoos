@@ -52,13 +52,17 @@ export function parseModelRouting(raw: unknown): ModelRoutingParseResult {
   const config: ModelRoutingConfig = {};
   if (raw === undefined || raw === null) return { config, warnings };
   if (typeof raw !== "object" || Array.isArray(raw)) {
-    return { config, warnings: ["[model_routing] must be a table — ignoring it, routing stays off"] };
+    return {
+      config,
+      warnings: ["[model_routing] must be a table — ignoring it, routing stays off"],
+    };
   }
   const r = raw as Record<string, unknown>;
 
   if (r.mode !== undefined) {
     if (isOneOf(r.mode, ROUTING_MODES)) config.mode = r.mode;
-    else warnings.push(`[model_routing] mode must be one of ${ROUTING_MODES.join(", ")} — using off`);
+    else
+      warnings.push(`[model_routing] mode must be one of ${ROUTING_MODES.join(", ")} — using off`);
   }
   if (r.provider !== undefined) {
     if (isOneOf(r.provider, ROUTING_PROVIDERS)) config.provider = r.provider;
@@ -103,10 +107,15 @@ export function resolveEffectiveRouting(config: ModelRoutingConfig | undefined):
   return {
     mode,
     provider,
-    model: config?.model ?? (provider === "jev" ? "jev-latest" : provider === "clef-flash" ? "Cloudflare/clef-flash" : null),
+    model:
+      config?.model ??
+      (provider === "jev"
+        ? "jev-latest"
+        : provider === "clef-flash"
+          ? "Cloudflare/clef-flash"
+          : null),
     baseUrl: config?.baseUrl ?? null,
-    credentialEnv:
-      config?.credentialEnv ?? (provider ? DEFAULT_CREDENTIAL_ENV[provider] : null),
+    credentialEnv: config?.credentialEnv ?? (provider ? DEFAULT_CREDENTIAL_ENV[provider] : null),
     roles: config?.roles ?? ["engineer", "reviewer", "pm"],
     timeoutMs: config?.timeoutMs ?? DEFAULT_ROUTING_TIMEOUT_MS,
   };
