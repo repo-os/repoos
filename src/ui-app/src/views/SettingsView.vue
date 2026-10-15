@@ -40,7 +40,11 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import SearchOverlay from "../components/SearchOverlay.vue";
 import {
+  GENERAL_SECTIONS,
+  GENERAL_FIELD_SECTIONS,
+  generalSectionForKey,
   isGeneralSchemaFieldKey,
+  isGeneralSectionId,
   resolveSettingLocation,
   SETTINGS_TABS,
   type SettingsTabId,
@@ -106,7 +110,10 @@ const activeTab = computed<TabId>(() => {
 
 function setTab(id: TabId): void {
   tomlFocusNotice.value = "";
-  void router.replace({ name: "settings", query: { ...route.query, tab: id } });
+  const query: Record<string, unknown> = { ...route.query, tab: id };
+  // A General section is meaningless on another tab — drop it when leaving.
+  if (id !== "general") delete query.section;
+  void router.replace({ name: "settings", query });
 }
 
 /** Dev-inspector settings only exist as a control when the build supports them. */
@@ -465,6 +472,83 @@ const generalFields = computed(() =>
   config.visibleFields.filter((field) => isGeneralSchemaFieldKey(field.key)),
 );
 
+// ── Named sections + section URLs (#0800) ─────────────────────────────
+// The General tab is rendered as focused, linkable sections. Which section a
+// schema row lands in is decided by generalSectionForKey — the same function
+// search uses to label a result, so a result's link and the rendered anchor
+// can never disagree. Sections are a navigation aid: no key or control moves.
+const generalFieldSections = computed(() =>
+  GENERAL_SECTIONS.filter((s) => GENERAL_FIELD_SECTIONS.includes(s.id))
+    .map((section) => ({
+      section,
+      fields: generalFields.value.filter((f) => generalSectionForKey(f.key) === section.id),
+    }))
+    .filter((group) => group.fields.length > 0),
+);
+
+/** Sections the nav can jump to — auto-field sections only when they render. */
+const generalNavSections = computed(() => {
+  const autoIds = new Set(generalFieldSections.value.map((g) => g.section.id));
+  return GENERAL_SECTIONS.filter((s) =>
+    GENERAL_FIELD_SECTIONS.includes(s.id) ? autoIds.has(s.id) : true,
+  );
+});
+
+const activeSection = computed<string | null>(() => {
+  const raw = route.query.section;
+  return typeof raw === "string" && isGeneralSectionId(raw) ? raw : null;
+});
+
+function settingsSectionAnchor(id: string): string {
+  return `settings-section-${id}`;
+}
+
+// The last section a scroll was applied for. Guards against re-scrolling the
+// section after a ?focus= deep link clears its query param (the focused row is
+// the more specific target and must keep the viewport).
+let appliedSection: string | null = null;
+
+function scrollSectionIntoView(id: string): void {
+  appliedSection = id;
+  void (async () => {
+    await waitForConfigLoaded();
+    await nextTick();
+    if (activeTab.value !== "general") return;
+    const el = document.getElementById(settingsSectionAnchor(id));
+    if (!el) return;
+    const main = el.closest<HTMLElement>(".main");
+    if (main) {
+      const elRect = el.getBoundingClientRect();
+      const mainRect = main.getBoundingClientRect();
+      const top = main.scrollTop + (elRect.top - mainRect.top) - 12;
+      main.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    } else {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    el.classList.add("flash");
+    window.setTimeout(() => el.classList.remove("flash"), 2000);
+  })();
+}
+
+/** Click a section chip: update the URL, or re-scroll if it's already active. */
+function goToSection(id: string): void {
+  if (activeSection.value === id) {
+    scrollSectionIntoView(id);
+    return;
+  }
+  void router.replace({
+    name: "settings",
+    query: { ...route.query, tab: "general", section: id },
+  });
+}
+
+/** Preserve a valid General `section` param when rewriting the query for a tab. */
+function retainedSectionQuery(tab: TabId): { section?: string } {
+  if (tab !== "general") return {};
+  const raw = route.query.section;
+  return typeof raw === "string" && isGeneralSectionId(raw) ? { section: raw } : {};
+}
+
 const activityAnimationField = computed(() =>
   config.schema.find((f) => f.key === "activityAnimationStyle"),
 );
@@ -709,9 +793,10 @@ watch(
         if (run !== focusNavigationRun) return;
         if (el) {
           focusSetting(key);
+          appliedSection = activeSection.value;
           void router.replace({
             name: "settings",
-            query: { tab: activeTab.value },
+            query: { tab: activeTab.value, ...retainedSectionQuery(activeTab.value) },
           });
         }
       };
@@ -751,12 +836,37 @@ watch(
       if (run !== focusNavigationRun) return;
       if (el) {
         focusSetting(key);
+        // The focused row is the more specific target; mark the section
+        // consumed so the section watcher below doesn't re-scroll past it.
+        appliedSection = activeSection.value;
         void router.replace({
           name: "settings",
-          query: { tab: targetTab },
+          query: { tab: targetTab, ...retainedSectionQuery(targetTab) },
         });
       }
     })();
+  },
+  { immediate: true },
+);
+
+// A `?section=` deep link (or a search result that carries one) opens that
+// section: switch to General and scroll to the named anchor. Deliberately
+// keyed on the query + config load only — when a focus handler later strips
+// its own ?focus= param while keeping `section`, this must not fire again and
+// yank the viewport off the row it just centered.
+watch(
+  [() => route.query.section, () => config.loaded, activeTab],
+  ([raw]) => {
+    if (activeTab.value !== "general") return;
+    const id = typeof raw === "string" ? raw : "";
+    if (!isGeneralSectionId(id)) return;
+    if (focusKey.value) {
+      // The focus watcher scrolls to the row (which lives in this section).
+      appliedSection = id;
+      return;
+    }
+    if (id === appliedSection) return;
+    scrollSectionIntoView(id);
   },
   { immediate: true },
 );
@@ -984,6 +1094,29 @@ onUnmounted(() => {
         :aria-labelledby="`settings-tab-general`"
         v-show="activeTab === 'general'"
       >
+        <nav
+          v-if="generalNavSections.length > 1"
+          class="settings-section-nav"
+          aria-label="General sections"
+        >
+          <button
+            v-for="s in generalNavSections"
+            :key="s.id"
+            type="button"
+            class="settings-section-chip"
+            :class="{ active: activeSection === s.id }"
+            :aria-current="activeSection === s.id ? 'true' : undefined"
+            @click="goToSection(s.id)"
+          >
+            {{ s.label }}
+          </button>
+        </nav>
+
+        <section
+          :id="settingsSectionAnchor('themes')"
+          class="settings-section"
+          aria-label="Themes"
+        >
         <Card style="padding: 0 18px 6px; margin-bottom: 16px">
           <div class="setting-group">
             <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
@@ -1045,8 +1178,15 @@ onUnmounted(() => {
             </div>
           </div>
         </Card>
+        </section>
 
-        <Card v-if="activityAnimationField" style="padding: 0 18px 6px; margin-bottom: 16px">
+        <section
+          v-if="activityAnimationField"
+          :id="settingsSectionAnchor('activity-animation')"
+          class="settings-section"
+          aria-label="Activity animation"
+        >
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
           <div class="setting-group">
             <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
               <span class="live-dot"></span>Activity animation
@@ -1112,13 +1252,21 @@ onUnmounted(() => {
             </div>
           </div>
         </Card>
+        </section>
 
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>General
-            </div>
-            <template v-for="f in generalFields" :key="f.key">
+        <section
+          v-for="group in generalFieldSections"
+          :key="group.section.id"
+          :id="settingsSectionAnchor(group.section.id)"
+          class="settings-section"
+          :aria-label="group.section.label"
+        >
+          <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <div class="setting-group">
+              <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+                <span class="live-dot"></span>{{ group.section.label }}
+              </div>
+              <template v-for="f in group.fields" :key="f.key">
               <div :id="`setting-${f.key}`" :data-config-key="f.key" class="setting-row">
                 <div class="setting-info">
                   <div class="setting-label">{{ f.label }}</div>
@@ -1194,10 +1342,16 @@ onUnmounted(() => {
                   />
                 </div>
               </div>
-            </template>
-          </div>
-        </Card>
+              </template>
+            </div>
+          </Card>
+        </section>
 
+        <section
+          :id="settingsSectionAnchor('attachments')"
+          class="settings-section"
+          aria-label="Attachments"
+        >
         <Card style="padding: 0 18px 6px; margin-bottom: 16px">
           <div class="setting-group">
             <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
@@ -1243,9 +1397,21 @@ onUnmounted(() => {
             </div>
           </div>
         </Card>
+        </section>
 
-        <ServiceSettings />
+        <section
+          :id="settingsSectionAnchor('service')"
+          class="settings-section"
+          aria-label="Background service"
+        >
+          <ServiceSettings />
+        </section>
 
+        <section
+          :id="settingsSectionAnchor('publishing')"
+          class="settings-section"
+          aria-label="Publishing"
+        >
         <Card style="padding: 0 18px 6px; margin-bottom: 16px">
           <div class="setting-group">
             <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
@@ -1268,7 +1434,13 @@ onUnmounted(() => {
             </div>
           </div>
         </Card>
+        </section>
 
+        <section
+          :id="settingsSectionAnchor('remote-validation')"
+          class="settings-section"
+          aria-label="Remote validation"
+        >
         <Card style="padding: 0 18px 6px; margin-bottom: 16px">
           <div class="setting-group">
             <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
@@ -1292,7 +1464,13 @@ onUnmounted(() => {
             </div>
           </div>
         </Card>
+        </section>
 
+        <section
+          :id="settingsSectionAnchor('board')"
+          class="settings-section"
+          aria-label="Board"
+        >
         <Card style="padding: 0 18px 6px; margin-bottom: 16px">
           <div class="setting-group">
             <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
@@ -1331,6 +1509,7 @@ onUnmounted(() => {
             </div>
           </div>
         </Card>
+        </section>
       </div>
 
       <!-- ─── Notifications tab ───────────────────────────── -->

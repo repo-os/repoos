@@ -1,6 +1,8 @@
 import type { Task, ConfigField, DocMeta, SkillMeta } from "./types";
 import { parseTaskAreas } from "../../core/areas.js";
 import {
+  generalSectionForKey,
+  generalSectionLabel,
   resolveSettingLocation,
   settingSearchAliases,
   settingTabLabel,
@@ -47,6 +49,10 @@ export type SearchResult =
       key: string;
       tab?: SettingsTabId;
       tabLabel?: string;
+      /** General-tab section id the setting renders under (#0800). */
+      section?: string;
+      /** Display name for `section`, for the result subtitle. */
+      sectionLabel?: string;
       tomlOnly?: boolean;
     };
 
@@ -355,6 +361,16 @@ function scoreGlobalSettings(q: string, terms: string[], fields: ConfigField[]):
   return topByScore(scoredSettings);
 }
 
+/** Section id a rendered General setting belongs to, if any. */
+function settingSectionId(
+  key: string,
+  ctx: SettingLocationContext | undefined,
+  loc: { tab: SettingsTabId; hasUiRow: boolean },
+): string | undefined {
+  if (loc.tab !== "general" || !loc.hasUiRow) return undefined;
+  return generalSectionForKey(key);
+}
+
 function settingSearchResult(
   f: ConfigField,
   ctx: SettingLocationContext | undefined,
@@ -364,8 +380,13 @@ function settingSearchResult(
     hasUiRow: false,
   };
   const tabLabel = settingTabLabel(loc.tab);
+  const section = settingSectionId(f.key, ctx, loc);
+  const sectionLabel = section ? generalSectionLabel(section) : undefined;
+  // Show the section in the subtitle so a result names where it lives — but
+  // don't repeat the tab name when the section is the tab's own default.
+  const where = sectionLabel && sectionLabel !== tabLabel ? `${tabLabel} · ${sectionLabel}` : tabLabel;
   const subtitle = loc.hasUiRow
-    ? `${tabLabel} · ${f.key}`
+    ? `${where} · ${f.key}`
     : `${tabLabel} · ${f.key} · edit in repoos.toml`;
   return {
     kind: "setting",
@@ -374,18 +395,32 @@ function settingSearchResult(
     key: f.key,
     tab: loc.tab,
     tabLabel,
+    section,
+    sectionLabel,
     tomlOnly: !loc.hasUiRow,
   } satisfies SearchResult;
 }
 
-function settingSearchCorpus(f: ConfigField): string {
-  const optionText = (f.options ?? []).map((o) => `${o.label} ${o.value}`).join(" ");
-  const aliases = settingSearchAliases(f.key);
-  return `${f.label} ${f.key} ${f.description ?? ""} ${optionText} ${aliases}`.trim();
+/** Extra section-name text so searching a section name surfaces its settings. */
+function settingSectionSearchText(
+  f: ConfigField,
+  ctx: SettingLocationContext | undefined,
+): string {
+  const loc = resolveSettingLocation(f.key, f, ctx ?? { inspectorAvailable: false });
+  if (!loc) return "";
+  const section = settingSectionId(f.key, ctx, loc);
+  return section ? generalSectionLabel(section) : "";
 }
 
-function settingFieldMatches(f: ConfigField, q: string): boolean {
-  const corpus = settingSearchCorpus(f);
+function settingSearchCorpus(f: ConfigField, ctx?: SettingLocationContext): string {
+  const optionText = (f.options ?? []).map((o) => `${o.label} ${o.value}`).join(" ");
+  const aliases = settingSearchAliases(f.key);
+  const sectionText = settingSectionSearchText(f, ctx);
+  return `${f.label} ${f.key} ${f.description ?? ""} ${optionText} ${aliases} ${sectionText}`.trim();
+}
+
+function settingFieldMatches(f: ConfigField, q: string, ctx?: SettingLocationContext): boolean {
+  const corpus = settingSearchCorpus(f, ctx);
   return (
     includes(f.label, q) ||
     includes(f.key, q) ||
@@ -405,13 +440,13 @@ function scoreSettingFields(
   locationCtx?: SettingLocationContext,
 ): SearchResult[] {
   const settingIdf = buildIdf(
-    fields.map((f) => settingSearchCorpus(f).toLowerCase()),
+    fields.map((f) => settingSearchCorpus(f, locationCtx).toLowerCase()),
     terms,
   );
   const scoredSettings: { result: SearchResult; score: number }[] = [];
   for (const f of fields) {
-    if (!settingFieldMatches(f, q)) continue;
-    const corpus = settingSearchCorpus(f);
+    if (!settingFieldMatches(f, q, locationCtx)) continue;
+    const corpus = settingSearchCorpus(f, locationCtx);
     const score =
       fieldScore(f.label, 3, terms, settingIdf, q) +
       fieldScore(f.key, 2, terms, settingIdf, q) +
