@@ -37,3 +37,4 @@ Keep it to a few lines in the existing style; do not restructure AGENTS.md. Do n
 - 2026-10-15T17:18:01Z · status ready→active, branch
 - 2026-10-15T17:20:22Z · body
 - 2026-10-15T17:29:43Z · status active→review
+- 2026-10-15T17:29:43Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
