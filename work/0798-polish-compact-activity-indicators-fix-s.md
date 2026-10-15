@@ -2,7 +2,7 @@
 id: "0798"
 title: "Polish compact activity indicators: fix state motions and improve visible size"
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried."
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T17:08:46Z"
+updated_at: "2026-10-15T17:10:52Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-15T12:29:58.918Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -64,9 +64,9 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 "route": "/settings?tab=general&setting=activityAnimationStyle",
 "highlight": ".activity-animation-preview",
 "steps": [
-  {
-    "waitMs": 600
-  }
+{
+  "waitMs": 600
+}
 ]
 },
 {
@@ -75,9 +75,9 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
 ],
 "state": "board:activeCoding"
 }
@@ -116,3 +116,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T17:04:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-15T17:05:28Z · body: section Shots
 - 2026-10-15T17:08:46Z · body
+- 2026-10-15T17:10:52Z · status active→review
