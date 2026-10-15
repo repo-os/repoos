@@ -9,11 +9,11 @@ needs_input_detail: "Acceptance criteria mention a real device, physical hardwar
 hold: true
 priority: p2
 area: [agent, server]
-assigned_to: ai
+assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T07:47:48Z"
-updated_at: "2026-10-15T07:47:49Z"
+updated_at: "2026-10-15T07:47:54Z"
 ---
 ## Problem
 Routing for #0791 needs one credentialed smoke check against each real decision backend before anyone relies on it. Automated tests use fixtures only. Those checks require a human because they need third-party accounts, billing, a self-hosted GPU host, and secrets that an agent must never handle.
@@ -44,3 +44,4 @@ Parent/context record: #0791.
 ## Activity
 
 - 2026-10-15T07:47:48Z · created · njachowski@gmail.com
+- 2026-10-15T07:47:54Z · assigned_to
