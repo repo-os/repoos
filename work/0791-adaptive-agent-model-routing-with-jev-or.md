@@ -14,7 +14,7 @@ branch: feat/adaptive-agent-model-routing-with-jev-or
 cli_override: cursor
 model_override: claude-haiku-5-5-high
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T07:31:11Z"
+updated_at: "2026-10-15T07:35:34Z"
 ---
 ## Problem
 RepoOS currently chooses configured role defaults or explicit task overrides. Add an optional decision-model router that chooses a coding-agent/model configuration for PM, engineer and reviewer runs, and reconsiders that choice when review sends work back. Use task context and measured historical outcomes to reduce total cost and time to an accepted result while preserving quality and the existing lifecycle.
@@ -63,3 +63,4 @@ RepoOS currently chooses configured role defaults or explicit task overrides. Ad
 - 2026-10-15T07:31:08Z · status inbox→ready
 - 2026-10-15T07:31:10Z · status ready→active, branch
 - 2026-10-15T07:31:11Z · needs_input
+- 2026-10-15T07:35:34Z · body
