@@ -4743,6 +4743,23 @@
   gap: 2px 10px;
 }
 
+/* Shared "running" highlight (#0801): the slow cyan breathing glow that marks
+   a live thing at a glance. A remote-runner host with runs in flight and a
+   started dev target use the exact same treatment; each surface opts in from
+   its own scoped rule (`border-color` + `animation`) so the surface's base
+   border still wins whenever it is not running. Only the keyframes are shared
+   here, by name. */
+@keyframes running-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 14px 1px var(--cyan-dim);
+    border-color: var(--cyan);
+  }
+}
+
 .field {
   margin-bottom: 13px;
 }

@@ -29,6 +29,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0775 — a failed dev target on the Dev page, so a capture can show the
   // plain-language failure summary, its port holder and the Stop action.
   "dev:failed",
+  // #0801 — a started dev target beside a stopped one, so a capture can show
+  // the running highlight (the same cyan glow an active remote runner uses).
+  "dev:running",
 ] as const;
 
 export type ShotPreviewFixtureId = (typeof SHOT_PREVIEW_FIXTURE_IDS)[number];
