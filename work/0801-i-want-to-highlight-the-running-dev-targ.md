@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-15T18:38:17Z"
+review_passes: 1
 id: "0801"
 title: Highlight running dev targets
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/highlight-running-dev-targets
 created_at: "2026-10-15T18:16:48Z"
-updated_at: "2026-10-15T18:38:17Z"
 ---
 ## Problem
 
@@ -64,3 +65,4 @@ I want to highlight the running dev targets in the same style we highlight the a
 - 2026-10-15T18:29:01Z · body
 - 2026-10-15T18:37:28Z · status active→review
 - 2026-10-15T18:38:17Z · note: review pass 1: good to go
+
