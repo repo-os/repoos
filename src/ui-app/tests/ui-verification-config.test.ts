@@ -61,9 +61,11 @@ describe("uiVerification config (#0680)", () => {
     const auto = getConfigSchema().find((f) => f.key === "uiVerification.autoRefreshStaleOnce");
     expect(auto).toMatchObject({ type: "boolean", tier: "live", default: false });
     expect(SUPPORTED_TOML_KEYS).toContain("uiVerification.autoRefreshStaleOnce");
-    expect(resolveSettingLocation("uiVerification.autoRefreshStaleOnce", auto, {
-      inspectorAvailable: true,
-    })).toEqual({ tab: "general", hasUiRow: true });
+    expect(
+      resolveSettingLocation("uiVerification.autoRefreshStaleOnce", auto, {
+        inspectorAvailable: true,
+      }),
+    ).toEqual({ tab: "general", hasUiRow: true });
     const dir = mkdtempSync(join(tmpdir(), "repoos-uiv-cfg-"));
     writeFileSync(join(dir, "repoos.toml"), "uiVerification.autoRefreshStaleOnce = true\n");
     try {
@@ -105,7 +107,10 @@ describe("uiVerification config (#0680)", () => {
       ),
     ).toBe(false);
     expect(
-      isStaleEvidenceOnlyReview("## Verdict\nneeds some work. STALE-EVIDENCE-ONLY", "needs some work"),
+      isStaleEvidenceOnlyReview(
+        "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY",
+        "needs some work",
+      ),
     ).toBe(true);
   });
 });
@@ -142,10 +147,12 @@ describe("stale-only review stays in review (#0766)", () => {
   }
 
   /** A manager whose engineer session is genuinely resumable, so a bounce would change status. */
-  function makeManager(opts: {
-    autoRefresh?: boolean;
-    onRefresh?: (task: Task) => Promise<boolean>;
-  } = {}): { reviews: ReviewManager; sent: () => number; refreshed: () => number } {
+  function makeManager(
+    opts: {
+      autoRefresh?: boolean;
+      onRefresh?: (task: Task) => Promise<boolean>;
+    } = {},
+  ): { reviews: ReviewManager; sent: () => number; refreshed: () => number } {
     let sent = 0;
     let refreshed = 0;
     const config = {
