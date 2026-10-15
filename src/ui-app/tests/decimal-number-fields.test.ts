@@ -107,13 +107,13 @@ describe("Settings save with decimal fields (#0797)", () => {
       [
         'workDir = "work"',
         'activityAnimationStyle = "orbital-pixel"',
-        '[attention]',
-        'slowRunMultiplier = 1.5',
+        "[attention]",
+        "slowRunMultiplier = 1.5",
       ].join("\n"),
     );
     // Simulate sending only the changed field (activityAnimationStyle)
     // and NOT including the unchanged slowRunMultiplier field
-    const res = await patch(root, { "activityAnimationStyle": "cursor-scan-pulse" });
+    const res = await patch(root, { activityAnimationStyle: "cursor-scan-pulse" });
     expect(res.status).toBe(200);
     expect(loadConfig(root).activityAnimationStyle).toBe("cursor-scan-pulse");
     // slowRunMultiplier should remain unchanged
@@ -127,13 +127,13 @@ describe("Settings save with decimal fields (#0797)", () => {
       [
         'workDir = "work"',
         'activityAnimationStyle = "orbital-pixel"',
-        '[attention]',
-        'slowRunMultiplier = 1.5',
+        "[attention]",
+        "slowRunMultiplier = 1.5",
       ].join("\n"),
     );
     // Simulate sending both fields (old behavior - send everything)
     const res = await patch(root, {
-      "activityAnimationStyle": "cursor-scan-pulse",
+      activityAnimationStyle: "cursor-scan-pulse",
       "attention.slowRunMultiplier": 1.5,
     });
     expect(res.status).toBe(200);

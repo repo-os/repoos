@@ -28,10 +28,10 @@ describe("SettingsView sends only changed fields (#0797)", () => {
       join(root, "repoos.toml"),
       [
         'workDir = "work"',
-        '[attention]',
-        'slowRunMultiplier = 1.5',
-        '[activityAnimationStyle]',
-        'enabled = true',
+        "[attention]",
+        "slowRunMultiplier = 1.5",
+        "[activityAnimationStyle]",
+        "enabled = true",
       ].join("\n"),
     );
 
@@ -48,13 +48,13 @@ describe("SettingsView sends only changed fields (#0797)", () => {
 
     // Simulate the form state and original values
     const form: Record<string, unknown> = {
-      "activityAnimationStyle": "off", // Changed
+      activityAnimationStyle: "off", // Changed
       "attention.slowRunMultiplier": 1.5, // Unchanged
       // ... other fields
     };
 
     const originalValues: Record<string, unknown> = {
-      "activityAnimationStyle": true, // Original was true
+      activityAnimationStyle: true, // Original was true
       "attention.slowRunMultiplier": 1.5, // Original was 1.5
       // ... other fields
     };
