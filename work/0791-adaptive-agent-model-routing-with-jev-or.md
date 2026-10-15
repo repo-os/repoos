@@ -15,7 +15,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T11:33:04Z"
+updated_at: "2026-10-15T11:33:05Z"
 review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 1
@@ -137,3 +137,4 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T11:08:47Z · needs_input
 - 2026-10-15T11:33:04Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-10-15T11:33:04Z · status active→review
+- 2026-10-15T11:33:05Z · note: handoff requested (cli)
