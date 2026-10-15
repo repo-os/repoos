@@ -11,7 +11,7 @@ branch: feat/general-editor-setting-open-task-specs-c
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T10:35:22Z"
+updated_at: "2026-10-15T10:35:41Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-15T10:10:00.331Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65515/api/tasks/9999 (http://127.0.0.1:65515/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65515/api/tasks/9999)"
 review_passes: 5
@@ -154,3 +154,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T10:32:46Z · body
 - 2026-10-15T10:34:20Z · body
 - 2026-10-15T10:35:22Z · status active→review
+- 2026-10-15T10:35:41Z · note: highlight [data-test-id="open-in-editor"] matched nothing on /work?task=9999&tab=details
