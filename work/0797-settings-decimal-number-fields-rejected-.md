@@ -2,7 +2,7 @@
 id: "0797"
 title: "Settings: decimal number fields rejected on save (slow-check multiplier)"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T17:06:19Z"
+updated_at: "2026-10-15T17:06:57Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -95,3 +95,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T17:04:29Z · body: section Shots
 - 2026-10-15T17:05:09Z · body
 - 2026-10-15T17:06:19Z · body
+- 2026-10-15T17:06:57Z · status active→review
