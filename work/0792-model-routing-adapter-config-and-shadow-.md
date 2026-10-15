@@ -11,8 +11,10 @@ area: [agent, server, core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-adapter-config-and-shadow-
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-15T07:47:16Z"
-updated_at: "2026-10-15T15:23:20Z"
+updated_at: "2026-10-15T15:23:31Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -63,3 +65,4 @@ Parent/context record: #0791.
 - 2026-10-15T12:12:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-15T12:34:39Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-15T15:23:20Z · message_expired: not delivered within timeout
+- 2026-10-15T15:23:31Z · cli_override, model_override
