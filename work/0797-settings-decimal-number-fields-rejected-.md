@@ -3,9 +3,6 @@ id: "0797"
 title: "Settings: decimal number fields rejected on save (slow-check multiplier)"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Server validator, schema `min`/`step`, and Settings “save only changed keys” match the spec and new tests; handoff UI evidence is **STALE** (tree `f313bbb6c` vs reviewed `fc0418663`) and the only PNG is an auto capture of `/` (board), not the declared `/settings?tab=general` shot. Re-capture on final HEAD before sign-off."
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -110,3 +107,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T17:23:41Z · body
 - 2026-10-15T17:30:01Z · status active→review
 - 2026-10-15T17:31:01Z · note: review pass 5: good to go
+- 2026-10-15T17:31:01Z · needs_input
