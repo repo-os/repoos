@@ -1,0 +1,35 @@
+---
+id: "0789"
+title: "Hub: Find bar on Cmd-F is black and can't be typed into"
+type: bug
+status: inbox
+priority: p2
+area: web
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-15T06:31:02Z"
+updated_at: "2026-10-15T06:31:02Z"
+---
+## Problem
+In the native macOS RepoOS Hub, Cmd-F now shows a black strip at the top of the window (from the #0783 Find work). Its text field can't be typed into, and no controls are readable, so the user can't search the page. Reported 2026-10-15.
+
+The app's own search overlay ('Search settings by name or config key', from SearchOverlay.vue) also appeared in one screenshot. The web UI does not bind Cmd-F itself, so it isn't clear what opened that overlay. It needs to be traced before the fix.
+
+## Desired UX
+- Cmd-F opens a visible, typeable find bar for the current page only, in light and dark appearance, with the match count, next and previous, and a close control.
+- Esc closes it. Cmd-G and Shift-Cmd-G step through matches.
+- Cmd-K stays the app-wide search. Cmd-F does NOT open the app's settings or task search, since the browser convention is in-page find.
+
+## Acceptance criteria
+- Typing in the Find bar filters the page and highlights matches; the match count updates.
+- The bar's text field takes focus when it opens.
+- The bar is readable in light and dark appearance.
+- Trace and record what opened the settings-search overlay in the screenshot, and fix it if it was a Cmd-F path (for example, a shared key handler on the Hub side).
+
+## Notes for AI
+Start from the Find command in macos/RepoOSHub/RepoOSHubApp.swift (Edit menu, Cmd-F) and workspacePresentFind in macos/RepoOSHub/HubAppState.swift, plus the find bar view in macos/RepoOSHub/ServerWebView.swift. The Find work is #0783 (done). Source: user report 2026-10-15.
+
+## Activity
+
+- 2026-10-15T06:31:02Z · created · njachowski@gmail.com
