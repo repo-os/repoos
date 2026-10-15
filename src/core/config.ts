@@ -1816,12 +1816,12 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       if (
         typeof slowRunMultiplier === "number" &&
         Number.isFinite(slowRunMultiplier) &&
-        slowRunMultiplier > 0
+        slowRunMultiplier >= 0.1
       ) {
         attention.slowRunMultiplier = slowRunMultiplier;
       } else {
         console.warn(
-          `[attention] slowRunMultiplier must be a number > 0, ` +
+          `[attention] slowRunMultiplier must be a number >= 0.1, ` +
             `got ${JSON.stringify(slowRunMultiplier)} — using ${DEFAULT_CONFIG.attention?.slowRunMultiplier ?? 1.5}`,
         );
       }
