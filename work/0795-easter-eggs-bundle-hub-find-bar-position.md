@@ -1,20 +1,18 @@
 ---
-last_close_out_gate_ms: 369188
-last_close_out_gate_at: "2026-10-15T17:04:36.666Z"
 id: "0795"
 title: "Easter eggs bundle: Hub find bar position, Done button, and Escape"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried."
+status: done
 priority: p3
 area: web
+merged_commit: af62803c9e39d127a72a4edb132446377e582a80
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-hub-find-bar-position
 created_at: "2026-10-15T08:02:06Z"
-updated_at: "2026-10-15T17:04:36Z"
+updated_at: "2026-10-15T17:04:54Z"
+last_close_out_gate_ms: 369188
+last_close_out_gate_at: "2026-10-15T17:04:36.666Z"
 review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-10-15T11:36:40.023Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -104,4 +102,4 @@ Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSH
 - 2026-10-15T16:50:51Z · status active→review
 - 2026-10-15T16:52:34Z · note: review pass 2: good to go
 - 2026-10-15T17:04:36Z · close-out gate completed in 369s
-
+- 2026-10-15T17:04:54Z · status review→done, release:success
