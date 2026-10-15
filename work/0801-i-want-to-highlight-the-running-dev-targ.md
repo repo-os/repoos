@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-15T18:38:17Z"
-review_passes: 1
 id: "0801"
 title: Highlight running dev targets
 type: feature
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/highlight-running-dev-targets
 created_at: "2026-10-15T18:16:48Z"
+updated_at: "2026-10-15T18:37:27Z"
 ---
 ## Problem
 
@@ -35,19 +34,6 @@ Running dev targets are highlighted in the same style as active remote runners t
 
 I want to highlight the running dev targets in the same style we highlight the active remote runners (those running checks) so it's easier to immediately tell which dev targets are running (the started ones, not the stopped ones).
 
-## Shots
-```json
-[
-{
-"label": "Started dev target carries the cyan running glow; the stopped one does not",
-"target": "default",
-"route": "/dev",
-"highlight": ".dev-card[data-running]",
-"state": "dev:running"
-}
-]
-```
-
 ## Screenshots
 
 ![Screenshot-2026-10-16-at-01.14.30](/api/tasks/0801/attachments/screenshot-1.png)
@@ -61,8 +47,4 @@ I want to highlight the running dev targets in the same style we highlight the a
 - 2026-10-15T18:17:13Z · status draft→inbox, title, area, body
 - 2026-10-15T18:21:50Z · status inbox→ready
 - 2026-10-15T18:21:54Z · status ready→active, branch
-- 2026-10-15T18:27:48Z · body: section Shots
-- 2026-10-15T18:29:01Z · body
-- 2026-10-15T18:37:28Z · status active→review
-- 2026-10-15T18:38:17Z · note: review pass 1: good to go
-
+- 2026-10-15T18:37:27Z · status active→review

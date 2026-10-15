@@ -43,6 +43,16 @@ describe("shot preview fixtures (#0743)", () => {
     expect(parseShotPlan(body).errors).toEqual([]);
   });
 
+  it("accepts the dev:running fixture for the Dev page (#0801)", () => {
+    const url = shotCapturePageUrl("http://127.0.0.1:8000", {
+      route: "/dev",
+      state: "dev:running",
+    });
+    expect(url).toBe("http://127.0.0.1:8000/dev?shotState=dev%3Arunning");
+    const body = `## Shots\n\`\`\`json\n[{"route":"/dev","state":"dev:running"}]\n\`\`\``;
+    expect(parseShotPlan(body).errors).toEqual([]);
+  });
+
   it("accepts the closeOut:stalled fixture for the stalled card (#0778)", () => {
     const url = shotCapturePageUrl("http://127.0.0.1:8000", {
       route: "/",
