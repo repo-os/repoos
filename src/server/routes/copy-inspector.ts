@@ -80,10 +80,12 @@ export const postCopyInspectorOpen: RouteHandler = async (ctx, req, res) => {
 };
 
 /**
- * The task detail page's "Open in editor" link (#0636): open a task's own
- * markdown file (under `work/`) in the editor configured for the copy
- * inspector. Reuses the same gate + `dev.inspector.editorCommand`, but resolves
- * a general repo-relative file instead of only `src/` sources.
+ * The task detail page's "Open in editor" link (#0636, generalized in #0790):
+ * open a task's own markdown file (under `work/`), a context doc, or a failed
+ * test file in the configured editor. Uses `dev.inspector.editorCommand` when set
+ * (dev-inspector override), otherwise falls back to the general `editor.command`
+ * setting, which works on normal (non-dev) installs too. Resolves a general
+ * repo-relative file instead of only `src/` sources.
  */
 export const postOpenInEditor: RouteHandler = async (ctx, req, res) => {
   const { config } = ctx;
