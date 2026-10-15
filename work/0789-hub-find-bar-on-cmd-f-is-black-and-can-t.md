@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/hub-find-bar-on-cmd-f-is-black-and-can-t
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-15T06:31:02Z"
-updated_at: "2026-10-15T07:16:54Z"
+updated_at: "2026-10-15T07:24:44Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -43,3 +43,4 @@ Start from the Find command in macos/RepoOSHub/RepoOSHubApp.swift (Edit menu, Cm
 - 2026-10-15T06:33:40Z · status ready→active, branch
 - 2026-10-15T06:42:30Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: ConnectionRefused: Unable to connect. Is the computer able to access the url?
 - 2026-10-15T07:16:54Z · body
+- 2026-10-15T07:24:44Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
