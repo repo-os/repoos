@@ -1,21 +1,19 @@
 ---
-last_close_out_gate_ms: 85724
-last_close_out_gate_at: "2026-10-15T07:39:39.587Z"
 id: "0789"
 title: "Hub: Find bar on Cmd-F is black and can't be typed into"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "network problem reaching the model provider, not a code issue: ConnectionRefused: Unable to connect. Is the computer able to access the url?"
+status: done
 priority: p2
 area: web
+merged_commit: b3e260927fd06467c95f543caf89007b5447ad84
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/hub-find-bar-on-cmd-f-is-black-and-can-t
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-15T06:31:02Z"
-updated_at: "2026-10-15T07:39:39Z"
+updated_at: "2026-10-15T07:39:56Z"
+last_close_out_gate_ms: 85724
+last_close_out_gate_at: "2026-10-15T07:39:39.587Z"
 review_passes: 1
 dev_error_count: 1
 ---
@@ -50,4 +48,4 @@ Start from the Find command in macos/RepoOSHub/RepoOSHubApp.swift (Edit menu, Cm
 - 2026-10-15T07:24:45Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-15T07:25:27Z · note: review pass 1: good to go
 - 2026-10-15T07:39:39Z · close-out gate completed in 86s
-
+- 2026-10-15T07:39:56Z · status review→done, release:success
