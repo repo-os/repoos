@@ -2,7 +2,7 @@
 id: "0787"
 title: Compact configurable activity animations; default to Orbital pixel
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T06:26:33Z"
+updated_at: "2026-10-15T08:29:33Z"
 ---
 ## Problem
 
@@ -72,3 +72,5 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T06:26:21Z · cli_override, model_override
 - 2026-10-15T06:26:27Z · model_override
 - 2026-10-15T06:26:33Z · review_cli_override, review_model_override
+- 2026-10-15T08:29:33Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-15T08:29:33Z · note: handoff requested (cli)
