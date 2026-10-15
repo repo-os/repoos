@@ -3,9 +3,6 @@ id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — The branch correctly adds `editor.command`, ungates `postOpenInEditor` / `postOpenTestInEditor`, wires Task/Context/FailedTests UI with hints, documents the security boundary, and unit tests cover schema, routes, and drawer behavior. Handoff PNGs do not satisfy the theme/link acceptance criteria: the “task drawer” capture is the board with no drawer or `open-in-editor` control, and there are no Settings General light/dark shots on disk (only two PNGs in `shots.json` at HEAD `2fd8af941`)."
 priority: p2
 area: [web, server, cli]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/general-editor-setting-open-task-specs-c
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T10:30:25Z"
+updated_at: "2026-10-15T10:30:31Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-15T10:10:00.331Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65515/api/tasks/9999 (http://127.0.0.1:65515/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65515/api/tasks/9999)"
 review_passes: 5
@@ -128,3 +125,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T10:28:14Z · body
 - 2026-10-15T10:30:21Z · cli_override, model_override
 - 2026-10-15T10:30:25Z · status review→active
+- 2026-10-15T10:30:31Z · needs_input
