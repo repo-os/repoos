@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: e4aa4ed4b95c2e30ee8b247ebd90c51bb04558f9
 id: "0798"
 title: "Polish compact activity indicators: fix state motions and improve visible size"
 type: bug
@@ -117,3 +119,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T12:34:28Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried.
 - 2026-10-15T15:23:24Z · note: handoff requested (ui-review)
 - 2026-10-15T15:59:19Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
+
