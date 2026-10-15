@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T07:20:03Z"
+updated_at: "2026-10-15T07:20:42Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -50,3 +50,4 @@ Start from dev.inspector.editorCommand in src/core/config.ts (~2755-2771, ~2901)
 - 2026-10-15T07:17:53Z · body
 - 2026-10-15T07:18:40Z · body
 - 2026-10-15T07:20:03Z · body
+- 2026-10-15T07:20:42Z · body
