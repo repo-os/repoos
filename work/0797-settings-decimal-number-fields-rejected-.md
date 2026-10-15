@@ -112,3 +112,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T17:31:44Z · status review→active
 - 2026-10-15T17:31:44Z · note: close-out repair: merge-conflict
 - 2026-10-15T17:49:33Z · message_queued at 2026-10-15T17:49:33.640Z
+- 2026-10-15T17:49:33Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
