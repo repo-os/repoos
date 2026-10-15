@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-15T17:09:10Z"
+review_passes: 1
 id: "0799"
 title: "Close-out: heartbeat during long gate stages so healthy runs are not shown as stalled"
 type: bug
@@ -12,7 +14,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-heartbeat-during-long-gate-sta
 created_at: "2026-10-15T11:08:11Z"
-updated_at: "2026-10-15T17:09:10Z"
 last_check_failure: "repoos check at 2026-10-15T12:29:59.204Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -87,3 +88,4 @@ Start from the upload heartbeat (src/server/integration-orchestrator.ts ~2722-27
 - 2026-10-15T17:04:52Z · body
 - 2026-10-15T17:08:03Z · status active→review
 - 2026-10-15T17:09:10Z · note: review pass 1: good to go
+
