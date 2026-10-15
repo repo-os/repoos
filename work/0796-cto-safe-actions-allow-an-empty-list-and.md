@@ -11,7 +11,7 @@ branch: feat/cto-safe-actions-allow-an-empty-list-and
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:55:06Z"
-updated_at: "2026-10-15T10:21:33Z"
+updated_at: "2026-10-15T10:22:14Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -37,15 +37,27 @@ Start from src/server/routes/config.ts (the non-empty array check), src/core/con
 ```json
 [
 {
-"label": "CTO safe actions checkboxes",
-"target": "default",
-"route": "/settings?tab=general",
-"highlight": "#setting-cto.actions",
-"steps": [
+  "label": "CTO safe actions checkboxes (light)",
+  "target": "default",
+  "route": "/settings?tab=general&focus=cto.actions",
+  "highlight": "#setting-cto.actions",
+  "steps": [
+    {
+      "waitFor": "#setting-cto.actions"
+    }
+  ]
+},
 {
-"waitMs": 400
-}
-]
+  "label": "CTO safe actions checkboxes (dark)",
+  "target": "default",
+  "route": "/settings?tab=general&focus=cto.actions",
+  "highlight": "#setting-cto.actions",
+  "steps": [
+    {
+      "waitFor": "#setting-cto.actions"
+    }
+  ],
+  "theme": "dark"
 }
 ]
 ```
@@ -63,3 +75,4 @@ Start from src/server/routes/config.ts (the non-empty array check), src/core/con
 - 2026-10-15T10:20:24Z · note: highlight #setting-cto.actions matched nothing on /settings?tab=general
 - 2026-10-15T10:21:33Z · note: review pass 1: needs some work
 - 2026-10-15T10:21:33Z · status review→active
+- 2026-10-15T10:22:14Z · body: section Shots
