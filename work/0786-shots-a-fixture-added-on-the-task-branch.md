@@ -3,6 +3,9 @@ id: "0786"
 title: "Shots: a fixture added on the task branch can't be declared or captured until merge"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Branch fixture validation is wired through CLI `--shots`, capture URL build, handoff UI gate, and shot capture; the #0778 silent-drop on new `state` ids is fixed, and `shot-plan.test.ts` covers declare + plan inclusion. Sign-off is still blocked because the spec’s second acceptance criterion has no automated test for verify/handoff warnings or the `N of M` summary (`declared shot not captured` / `X of Y shots` only appear in `ui-handoff-gate.ts`, with no matching test)."
 priority: p2
 area: server
 assigned_to: ai
@@ -90,4 +93,5 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-15T05:36:24Z · body
 - 2026-10-15T05:43:53Z · status active→review
 - 2026-10-15T05:45:11Z · note: review pass 6: needs some work
+- 2026-10-15T05:45:11Z · needs_input
 - 2026-10-15T05:45:11Z · needs_input
