@@ -81,9 +81,9 @@ describe("resolveSettingLocation", () => {
   // #0790 — the general editor command renders as a General Settings row so a
   // normal (non-dev) install can configure "Open in editor".
   it("routes editor.command to General", () => {
-    expect(
-      resolveSettingLocation("editor.command", field({ key: "editor.command" }), ctx),
-    ).toEqual({ tab: "general", hasUiRow: true });
+    expect(resolveSettingLocation("editor.command", field({ key: "editor.command" }), ctx)).toEqual(
+      { tab: "general", hasUiRow: true },
+    );
     expect(isGeneralSchemaFieldKey("editor.command")).toBe(true);
   });
 
