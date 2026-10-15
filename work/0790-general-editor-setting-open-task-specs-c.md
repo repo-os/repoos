@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T09:56:09Z"
+updated_at: "2026-10-15T10:00:47Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 1
@@ -109,3 +109,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T09:47:28Z · needs_input
 - 2026-10-15T09:47:50Z · body: section Shots
 - 2026-10-15T09:56:09Z · body
+- 2026-10-15T10:00:47Z · body
