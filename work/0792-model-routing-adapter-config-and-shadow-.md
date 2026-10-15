@@ -3,6 +3,9 @@ id: "0792"
 title: "Model routing adapter, config and shadow mode"
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX"
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
@@ -51,4 +54,5 @@ Parent/context record: #0791.
 - 2026-10-15T07:47:17Z · needs_input
 - 2026-10-15T07:47:23Z · body
 - 2026-10-15T08:23:13Z · body: section Scope
+- 2026-10-15T09:47:14Z · needs_input
 - 2026-10-15T09:47:14Z · needs_input
