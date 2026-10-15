@@ -163,3 +163,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T08:10:06Z · body
 - 2026-10-15T08:17:25Z · status active→review
 - 2026-10-15T08:17:25Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (b10b2fbe6) during finalization (#0734)
+- 2026-10-15T08:17:25Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (b10b2fbe6) during finalization (#0734)
