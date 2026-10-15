@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-hub-find-bar-position
 created_at: "2026-10-15T08:02:06Z"
-updated_at: "2026-10-15T10:51:23Z"
+updated_at: "2026-10-15T10:53:14Z"
 ---
 ## Problem
 Three small issues in the Hub's new Cmd-F find bar (from #0789), plus two small UI fixes for the task cards:
@@ -69,3 +69,4 @@ Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSH
 - 2026-10-15T10:42:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-15T10:46:27Z · body: section Shots
 - 2026-10-15T10:51:23Z · body
+- 2026-10-15T10:53:14Z · body
