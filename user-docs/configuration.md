@@ -39,9 +39,12 @@ The Settings UI edits the most common fields directly, and its raw
 `[release]`, `[stories]`, `[[deployments]]`, `[[distribution]]`, `[worktrees]`,
 `[tunnel]`, and anything the tabs don't surface. On the Settings page, use
 **Search settings** in the page header (or press ⌘K / Ctrl+K while on Settings)
-to jump to a control by name or config key; keys that only exist in the raw file
-open the **repoos.toml** tab. The global top-bar search (⌘K elsewhere) still
-searches tasks, docs, and settings together.
+to jump to a control by name, config key, or section — a result links to the
+named section that holds it. The General tab is split into named sections, each
+with its own URL (for example `/settings?tab=general&section=model-routing`),
+so a section can be linked directly the way a task can. Keys that only exist in
+the raw file open the **repoos.toml** tab. The global top-bar search (⌘K
+elsewhere) still searches tasks, docs, and settings together.
 
 ## Annotated starter `repoos.toml`
 
