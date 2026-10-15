@@ -13,7 +13,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T07:47:48Z"
-updated_at: "2026-10-15T08:23:59Z"
+updated_at: "2026-10-15T08:24:00Z"
 ---
 ## Problem
 Routing for #0791 needs one credentialed smoke check against each real decision backend before anyone relies on it. Automated tests use fixtures only. Those checks require a human because they need third-party accounts, billing, a self-hosted GPU host, and secrets that an agent must never handle.
@@ -29,7 +29,10 @@ Parent/context record: #0791.
 4. Pin a model id for reproducibility (e.g. `jev-latest`, `typesafe/jev-1.14`, or an OpenRouter Clef slug).
 
 ## Checks to run (human, once the setup above exists)
-
+- **Jev:** one minimal System One request via **direct TypeSafe or OpenRouter** (noul + choice). Record HTTP status, returned `model`, and usage only.
+- **Clef:** via OpenRouter when listed; otherwise note "Cloudflare-direct not run".
+- **Missing keys:** with routing keys unset, confirm RepoOS shows not set and normal role execution still works.
+- Record response-shape mismatches as follow-up bugs.
 
 ## Evidence rules
 - Leave every measured or observed field blank until a human has run the check. Do not fill in results on anyone's behalf.
@@ -46,3 +49,4 @@ Parent/context record: #0791.
 - 2026-10-15T08:23:22Z · body: section Required accounts and setup (human)
 - 2026-10-15T08:23:23Z · body: section Checks to run (human, once the setup above exists)
 - 2026-10-15T08:23:59Z · body: section Required accounts and setup (human)
+- 2026-10-15T08:24:00Z · body: section Checks to run (human, once the setup above exists)
