@@ -79,3 +79,4 @@ Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSH
 - 2026-10-15T11:40:52Z · note: highlight .tc-area-chip, .tc-human-chip matched nothing on /
 - 2026-10-15T11:45:30Z · body
 - 2026-10-15T11:47:54Z · status active→review
+- 2026-10-15T11:47:54Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (af62803c9) during finalization (#0734)
