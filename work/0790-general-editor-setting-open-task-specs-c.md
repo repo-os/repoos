@@ -1,6 +1,4 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-10-15T10:42:58.931Z: repoos check failed: ui verification failed (4 issue(s)): [request] HTTP 404 for http://127.0.0.1:55861/api/tasks/9999 (http://127.0.0.1:55861/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:55861/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:55861/api/tasks/9999 (http://127.0.0.1:55861/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:5… (truncated)"
 id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
@@ -17,6 +15,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T06:33:35Z"
 updated_at: "2026-10-15T10:42:58Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-15T10:42:58.931Z: repoos check failed: ui verification failed (4 issue(s)): [request] HTTP 404 for http://127.0.0.1:55861/api/tasks/9999 (http://127.0.0.1:55861/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:55861/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:55861/api/tasks/9999 (http://127.0.0.1:55861/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:5… (truncated)"
 review_passes: 6
 review_rounds: 2
 dev_error_count: 1
@@ -58,7 +58,7 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 "highlight": "[data-test-id=\"open-in-editor\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"open-in-editor\"]"
+"waitFor": "[data-test-id=\"open-in-editor\"]"
 }
 ],
 "theme": "light"
@@ -70,7 +70,7 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 "highlight": "[data-test-id=\"open-in-editor\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"open-in-editor\"]"
+"waitFor": "[data-test-id=\"open-in-editor\"]"
 }
 ],
 "theme": "dark"
@@ -96,7 +96,7 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 "highlight": "[data-test-id=\"context-open-in-editor\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"context-open-in-editor\"]"
+"waitFor": "[data-test-id=\"context-open-in-editor\"]"
 }
 ],
 "theme": "light"
