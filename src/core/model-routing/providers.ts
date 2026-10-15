@@ -119,10 +119,7 @@ async function postSystemOne(
       }
       throw new RoutingProviderError("malformed", "decision provider returned non-JSON");
     }
-    return decodeSystemOneResponse(
-      body,
-      request.questions.map((q) => q.id),
-    );
+    return decodeSystemOneResponse(body, request.questions);
   } finally {
     clearTimeout(timer);
   }
