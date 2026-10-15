@@ -41,52 +41,82 @@ function encodeQuestion(q: RoutingQuestion): Record<string, unknown> {
 /** Decode and validate a System One response body. Throws `malformed` on any drift. */
 export function decodeSystemOneResponse(
   body: unknown,
-  requestedIds: string[],
+  questions: RoutingQuestion[],
 ): RoutingDecisionResponse {
   if (!isRecord(body)) throw malformed("response is not a JSON object");
   const model = typeof body.model === "string" ? body.model : "";
   if (!isRecord(body.answers)) throw malformed("response has no answers object");
   const answers: Record<string, RoutingAnswer> = {};
-  for (const id of requestedIds) {
-    const raw = body.answers[id];
-    if (raw === undefined) throw malformed(`answer missing for question "${id}"`);
-    answers[id] = decodeAnswer(id, raw);
+  for (const question of questions) {
+    const raw = body.answers[question.id];
+    if (raw === undefined) throw malformed(`answer missing for question "${question.id}"`);
+    answers[question.id] = decodeAnswer(question, raw);
   }
   return { model, answers, usage: decodeUsage(body.usage) };
 }
 
-function decodeAnswer(id: string, raw: unknown): RoutingAnswer {
+function decodeAnswer(question: RoutingQuestion, raw: unknown): RoutingAnswer {
+  const id = question.id;
   if (!isRecord(raw)) throw malformed(`answer "${id}" is not an object`);
-  if (raw.type === "noul") {
+  if (question.type === "noul") {
+    if (raw.type !== "noul") {
+      throw malformed(`answer "${id}" must be type "noul", got "${String(raw.type)}"`);
+    }
     const p = raw.noul;
     if (!isProbability(p)) throw malformed(`noul "${id}" has no probability in [0,1]`);
     return { id, type: "noul", probability: p };
   }
-  if (raw.type === "choice") {
+  if (question.type === "choice") {
+    if (raw.type !== "choice") {
+      throw malformed(`answer "${id}" must be type "choice", got "${String(raw.type)}"`);
+    }
     if (typeof raw.choice !== "string" || !raw.choice) {
       throw malformed(`choice "${id}" has no choice`);
+    }
+    if (!(raw.choice in question.criteria)) {
+      throw malformed(`choice "${id}" is not one of the offered criteria`);
+    }
+    const probabilities = decodeProbabilities(id, raw.probabilities);
+    for (const key of Object.keys(probabilities)) {
+      if (!(key in question.criteria)) {
+        throw malformed(`probability key "${key}" for "${id}" is not a valid criterion`);
+      }
     }
     return {
       id,
       type: "choice",
       choice: raw.choice,
       confidence: optionalProbability(raw.confidence),
-      probabilities: decodeProbabilities(id, raw.probabilities),
+      probabilities,
     };
   }
-  if (raw.type === "score") {
+  if (question.type === "score") {
+    if (raw.type !== "score") {
+      throw malformed(`answer "${id}" must be type "score", got "${String(raw.type)}"`);
+    }
     if (typeof raw.score !== "number" || !Number.isFinite(raw.score)) {
       throw malformed(`score "${id}" has no finite score`);
+    }
+    const maxIndex = question.criteria.length - 1;
+    if (!Number.isInteger(raw.score) || raw.score < 0 || raw.score > maxIndex) {
+      throw malformed(`score "${id}" is not a valid index for this question`);
+    }
+    const probabilities = decodeProbabilities(id, raw.probabilities);
+    for (const key of Object.keys(probabilities)) {
+      const idx = Number(key);
+      if (!Number.isInteger(idx) || idx < 0 || idx > maxIndex) {
+        throw malformed(`probability key "${key}" for "${id}" is not a valid score index`);
+      }
     }
     return {
       id,
       type: "score",
       score: raw.score,
       confidence: optionalProbability(raw.confidence),
-      probabilities: decodeProbabilities(id, raw.probabilities),
+      probabilities,
     };
   }
-  throw malformed(`answer "${id}" has unknown type`);
+  throw malformed(`answer "${id}" has unknown question type`);
 }
 
 function decodeProbabilities(id: string, raw: unknown): Record<string, number> {

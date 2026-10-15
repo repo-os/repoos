@@ -694,52 +694,76 @@ describe("System One wire codec", () => {
       answers: {
         ambiguity: { type: "noul", noul: 0.99 },
         risk: { type: "noul", noul: 0.2 },
-        scope: {
-          type: "score",
-          score: 0.67,
-          confidence: 0.5,
-          legend: {},
-          probabilities: { "0": 0.33, "1": 0.67 },
-        },
+        scope: { type: "noul", noul: 0.67 },
         suitability: {
           type: "choice",
-          choice: "codex",
+          choice: candidateKey(codex),
           confidence: 1.0,
-          probabilities: { codex: 1.0, "claude code": 0.0 },
+          probabilities: {
+            [candidateKey(codex)]: 1.0,
+            [candidateKey(claude)]: 0.0,
+          },
         },
       },
       usage: { input_tokens: 428, output_tokens: 73 },
     };
-    const ids = ["ambiguity", "risk", "scope", "suitability"];
-    const out = decodeSystemOneResponse(wire, ids);
+    const out = decodeSystemOneResponse(wire, request.questions);
     expect(out.model).toBe("jev-1.13.0");
     expect(out.answers.ambiguity).toEqual({ id: "ambiguity", type: "noul", probability: 0.99 });
+    expect(out.answers.scope).toEqual({ id: "scope", type: "noul", probability: 0.67 });
     expect(out.answers.suitability).toMatchObject({
       type: "choice",
-      choice: "codex",
+      choice: candidateKey(codex),
       confidence: 1.0,
     });
     expect(out.usage).toEqual({ inputTokens: 428, outputTokens: 73 });
   });
 
   it("fails closed on a missing answer rather than silently dropping a question", () => {
-    expect(() => decodeSystemOneResponse({ model: "m", answers: {} }, ["ambiguity"])).toThrow(
+    const questions = buildRoutingQuestions([claude]);
+    expect(() => decodeSystemOneResponse({ model: "m", answers: {} }, questions)).toThrow(
       RoutingProviderError,
     );
   });
 
+  it("rejects a well-formed answer whose type does not match the question", () => {
+    const wire = {
+      model: "m",
+      answers: {
+        ambiguity: { type: "noul", noul: 0.1 },
+        risk: { type: "noul", noul: 0.1 },
+        scope: {
+          type: "score",
+          score: 1,
+          confidence: 0.5,
+          probabilities: { "0": 0.5, "1": 0.5 },
+        },
+        suitability: {
+          type: "choice",
+          choice: candidateKey(claude),
+          confidence: 0.9,
+          probabilities: { [candidateKey(claude)]: 1 },
+        },
+      },
+    };
+    expect(() => decodeSystemOneResponse(wire, request.questions)).toThrow(/scope.*noul/i);
+  });
+
   it("fails closed on an unknown answer type", () => {
     const wire = { model: "m", answers: { q: { type: "essay", text: "hi" } } };
-    expect(() => decodeSystemOneResponse(wire, ["q"])).toThrow(/unknown type/);
+    const questions = [{ id: "q", type: "noul" as const, instructions: "?" }];
+    expect(() => decodeSystemOneResponse(wire, questions)).toThrow(/must be type "noul"/);
   });
 
   it("rejects an out-of-range noul probability", () => {
     const wire = { model: "m", answers: { q: { type: "noul", noul: 7 } } };
-    expect(() => decodeSystemOneResponse(wire, ["q"])).toThrow(/probability/);
+    const questions = [{ id: "q", type: "noul" as const, instructions: "?" }];
+    expect(() => decodeSystemOneResponse(wire, questions)).toThrow(/probability/);
   });
 
   it("rejects a non-object response body", () => {
-    expect(() => decodeSystemOneResponse("<html>", ["q"])).toThrow(/not a JSON object/);
+    const questions = [{ id: "q", type: "noul" as const, instructions: "?" }];
+    expect(() => decodeSystemOneResponse("<html>", questions)).toThrow(/not a JSON object/);
   });
 });
 
