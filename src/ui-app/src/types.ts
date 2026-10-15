@@ -1395,6 +1395,24 @@ export interface ModelProvidersKeyResponse {
   hasKey: boolean;
 }
 
+export interface ModelRoutingStatusResponse {
+  effective: {
+    mode: "off" | "shadow" | "automatic";
+    provider: "jev" | "openrouter" | "clef-flash" | null;
+    model: string | null;
+    baseUrl: string | null;
+    credentialEnv: string | null;
+    roles: Array<"pm" | "engineer" | "reviewer">;
+    timeoutMs: number;
+  };
+  credentialEnv: string | null;
+  credentialPresent: boolean;
+  providerReady: boolean;
+  issues: string[];
+  ok?: boolean;
+  at?: string;
+}
+
 /** One rolling usage window from the opencode Go usage API. */
 export interface ModelProviderUsageWindow {
   id: string;
