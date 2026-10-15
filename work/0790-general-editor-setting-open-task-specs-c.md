@@ -3,6 +3,9 @@ id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — The branch correctly adds `editor.command`, ungates `postOpenInEditor` / `postOpenTestInEditor`, wires Task/Context/FailedTests UI with hints, documents the security boundary, and unit tests cover schema, routes, and drawer behavior. Handoff PNGs do not satisfy the theme/link acceptance criteria: the “task drawer” capture is the board with no drawer or `open-in-editor` control, and there are no Settings General light/dark shots on disk (only two PNGs in `shots.json` at HEAD `2fd8af941`)."
 priority: p2
 area: [web, server, cli]
 assigned_to: ai
@@ -10,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T10:09:44Z"
+updated_at: "2026-10-15T10:09:45Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 1
@@ -114,3 +117,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T10:07:23Z · status active→review
 - 2026-10-15T10:08:20Z · note: highlight [data-test-id="open-in-editor"] matched nothing on /work?task=9999&tab=details
 - 2026-10-15T10:09:44Z · note: review pass 5: needs some work
+- 2026-10-15T10:09:45Z · needs_input
