@@ -2,7 +2,7 @@
 id: "0797"
 title: "Settings: decimal number fields rejected on save (slow-check multiplier)"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — Server validator, schema `min`/`step`, and Settings “save only changed keys” match the spec and new tests; handoff UI evidence is **STALE** (tree `f313bbb6c` vs reviewed `fc0418663`) and the only PNG is an auto capture of `/` (board), not the declared `/settings?tab=general` shot. Re-capture on final HEAD before sign-off."
@@ -14,7 +14,7 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T17:13:16Z"
+updated_at: "2026-10-15T17:17:41Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 1
@@ -102,3 +102,5 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T17:08:00Z · note: review pass 4: needs some work
 - 2026-10-15T17:08:01Z · needs_input
 - 2026-10-15T17:13:16Z · handoff failed · remote validation failed: test failure: tests/board-column-labels.test.ts > SettingsView board column labels (#0499) > auto-save omits hidden dev.inspector settings unless the build supports them (#0509) on bee — fix it in the feature branch and re-run the gate
+- 2026-10-15T17:17:41Z · status review→active
+- 2026-10-15T17:17:41Z · note: `needs some work` — Server validator, schema `min`/`step`, and Settings “save only changed keys” match the spec and new tests; handoff UI evidence is **STALE** (tree `f313bbb6c` vs reviewed `fc0418663`) and the only PNG is an auto capture of `/` (board), not the declared `/settings?tab=general` shot. Re-capture on final HEAD before sign-off.
