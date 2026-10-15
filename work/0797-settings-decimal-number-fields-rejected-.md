@@ -16,8 +16,6 @@ model_override: haiku
 created_at: "2026-10-15T09:56:55Z"
 updated_at: "2026-10-15T16:54:45Z"
 review_passes: 3
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: a0d43b4a7c7cd77276b8f43d419e87f039a18b47
 review_rounds: 2
 dev_error_count: 1
 ---
@@ -81,4 +79,5 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T16:48:18Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-15T16:49:16Z · note: review pass 3: needs some work
 - 2026-10-15T16:49:17Z · needs_input
+
 
