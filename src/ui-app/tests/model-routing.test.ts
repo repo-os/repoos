@@ -259,11 +259,11 @@ describe("candidate filtering", () => {
       ...allHarnesses,
       codex: {
         ...allHarnesses.codex,
-        supportedRoles: ["engineer"] as const,
+        supportedRoles: ["engineer"],
       },
       "claude code": {
         ...allHarnesses["claude code"],
-        supportedRoles: ["pm", "reviewer"] as const,
+        supportedRoles: ["pm", "reviewer"],
       },
     };
     const { eligible, rejected } = filterCandidates({
