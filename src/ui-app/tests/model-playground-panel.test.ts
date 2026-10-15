@@ -324,7 +324,7 @@ describe("ModelPlaygroundPanel — filtering", () => {
       "OpenRouter",
     ]);
 
-    await wrapper.find(".playground-provider-select").setValue("openrouter");
+    (wrapper.vm as any).providerFilter = "openrouter";
     await nextTick();
     expect(wrapper.findAll(".playground-provider-label").map((l) => l.text())).toEqual([
       "OpenRouter",
@@ -333,7 +333,7 @@ describe("ModelPlaygroundPanel — filtering", () => {
       "meta-llama/Llama-4-Maverick",
     ]);
 
-    await wrapper.find(".playground-provider-select").setValue("");
+    (wrapper.vm as any).providerFilter = "";
     await nextTick();
     expect(wrapper.findAll(".playground-model-card")).toHaveLength(3);
   });
@@ -344,18 +344,21 @@ describe("ModelPlaygroundPanel — filtering", () => {
     await flushPromises();
     await nextTick();
 
-    await wrapper.find(".playground-cost-select").setValue("1");
+    (wrapper.vm as any).maxCost = "1";
+    await nextTick();
     await nextTick();
     let names = wrapper.findAll(".playground-model-name").map((n) => n.text());
     expect(names).toContain("zai-org/GLM-5.3-Flash");
     expect(names).toContain("meta-llama/Llama-4-Maverick");
     expect(names).not.toContain("moonshotai/Kimi-K3");
 
-    await wrapper.find(".playground-cost-select").setValue("10");
+    (wrapper.vm as any).maxCost = "10";
+    await nextTick();
     await nextTick();
     expect(wrapper.findAll(".playground-model-card")).toHaveLength(3);
 
-    await wrapper.find(".playground-cost-select").setValue("");
+    (wrapper.vm as any).maxCost = "";
+    await nextTick();
     await nextTick();
     expect(wrapper.findAll(".playground-model-card")).toHaveLength(3);
   });
@@ -380,7 +383,8 @@ describe("ModelPlaygroundPanel — filtering", () => {
     await flushPromises();
     await nextTick();
 
-    await wrapper.find(".playground-cost-select").setValue("0.5");
+    (wrapper.vm as any).maxCost = "0.5";
+    await nextTick();
     await nextTick();
     expect(wrapper.findAll(".playground-model-name").map((n) => n.text())).toEqual([
       "unknown/mystery-model",
@@ -393,8 +397,9 @@ describe("ModelPlaygroundPanel — filtering", () => {
     await flushPromises();
     await nextTick();
 
-    await wrapper.find(".playground-provider-select").setValue("deepinfra");
-    await wrapper.find(".playground-cost-select").setValue("1");
+    (wrapper.vm as any).providerFilter = "deepinfra";
+    (wrapper.vm as any).maxCost = "1";
+    await nextTick();
     await nextTick();
     expect(wrapper.findAll(".playground-model-name").map((n) => n.text())).toEqual([
       "zai-org/GLM-5.3-Flash",
@@ -426,7 +431,8 @@ describe("ModelPlaygroundPanel — filtering", () => {
     await flushPromises();
     await nextTick();
 
-    await wrapper.find(".playground-cost-select").setValue("1");
+    (wrapper.vm as any).maxCost = "1";
+    await nextTick();
     await nextTick();
     expect(wrapper.findAll(".playground-provider-label").map((l) => l.text())).toEqual([
       "DeepInfra",

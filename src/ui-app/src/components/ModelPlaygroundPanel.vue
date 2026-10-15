@@ -11,6 +11,12 @@ import type {
   PlaygroundProviderGroup,
 } from "../types";
 import Button from "./ui/button.vue";
+import Select from "./ui/select/root.vue";
+import SelectContent from "./ui/select/content.vue";
+import SelectItem from "./ui/select/item.vue";
+import SelectTrigger from "./ui/select/trigger.vue";
+import SelectValue from "./ui/select/value.vue";
+import SelectViewport from "./ui/select/viewport.vue";
 import AiChatThinking from "./AiChatThinking.vue";
 import ChatSendButton from "./ChatSendButton.vue";
 import { ArrowDown } from "lucide-vue-next";
@@ -191,24 +197,32 @@ onMounted(() => {
           aria-label="Search models by name"
         />
         <div class="playground-filter-row">
-          <select
-            v-model="providerFilter"
-            class="playground-provider-select"
-            aria-label="Filter by provider"
-          >
-            <option value="">All providers</option>
-            <option v-for="g in providers" :key="g.id" :value="g.id">{{ g.label }}</option>
-          </select>
-          <select
-            v-model="maxCost"
-            class="playground-cost-select"
-            aria-label="Filter by maximum token cost"
-          >
-            <option value="">Any cost</option>
-            <option v-for="t in COST_THRESHOLDS" :key="t" :value="String(t)">
-              ≤ {{ fmtPrice(t) }} / 1M
-            </option>
-          </select>
+          <Select :model-value="providerFilter || '__all__'" @update:model-value="providerFilter = $event === '__all__' ? '' : $event">
+            <SelectTrigger class="playground-provider-select" aria-label="Filter by provider">
+              <SelectValue placeholder="All providers" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                <SelectItem value="__all__">All providers</SelectItem>
+                <SelectItem v-for="g in providers" :key="g.id" :value="g.id">
+                  {{ g.label }}
+                </SelectItem>
+              </SelectViewport>
+            </SelectContent>
+          </Select>
+          <Select :model-value="maxCost || '__any__'" @update:model-value="maxCost = $event === '__any__' ? '' : $event">
+            <SelectTrigger class="playground-cost-select" aria-label="Filter by maximum token cost">
+              <SelectValue placeholder="Any cost" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                <SelectItem value="__any__">Any cost</SelectItem>
+                <SelectItem v-for="t in COST_THRESHOLDS" :key="t" :value="String(t)">
+                  ≤ {{ fmtPrice(t) }} / 1M
+                </SelectItem>
+              </SelectViewport>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
