@@ -3,6 +3,9 @@ id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "needs some work — This branch adds the routing adapters, config parsing, candidate filter, and decision policy. The foundation is useful, but candidate eligibility and scoring have gaps that can produce invalid or biased recommendations."
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
@@ -12,7 +15,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T10:33:36Z"
+updated_at: "2026-10-15T10:33:37Z"
 review_rounds: 2
 review_passes: 3
 handoff_signal_retry_count: 1
@@ -116,3 +119,4 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T10:31:24Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
 - 2026-10-15T10:31:25Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-15T10:33:36Z · note: review pass 4: needs some work
+- 2026-10-15T10:33:37Z · needs_input
