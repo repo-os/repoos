@@ -11,7 +11,7 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T17:04:29Z"
+updated_at: "2026-10-15T17:05:09Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -93,3 +93,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T17:01:56Z · needs_input
 - 2026-10-15T17:02:23Z · message_queued at 2026-10-15T17:02:23.614Z
 - 2026-10-15T17:04:29Z · body: section Shots
+- 2026-10-15T17:05:09Z · body
