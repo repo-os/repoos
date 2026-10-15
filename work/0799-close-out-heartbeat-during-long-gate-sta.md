@@ -1,17 +1,21 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-15T12:29:59.204Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0799"
 title: "Close-out: heartbeat during long gate stages so healthy runs are not shown as stalled"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried."
 priority: p2
 area: [server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-heartbeat-during-long-gate-sta
 created_at: "2026-10-15T11:08:11Z"
-updated_at: "2026-10-15T11:50:34Z"
+updated_at: "2026-10-15T15:23:21Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-15T12:29:59.204Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
+dev_error_count: 1
 ---
 ## Problem
 The close-out card shows 'stalled · no progress' for runs that are still working. #0782 added a heartbeat for the bundle upload, but other long stages report nothing while they run: the remote test run on the validation host, and the local scoped gate steps. #0790's close-out was marked stalled after about 4 minutes with no log output, then finished normally. The stall timer only resets when a stage reports progress.
@@ -37,11 +41,11 @@ Start from the upload heartbeat (src/server/integration-orchestrator.ts ~2722-27
 "route": "/work",
 "highlight": "[data-test-id=\"task-card-agent-hint\"]",
 "assert": [
-  {
-    "selector": "[data-test-id=\"task-card-agent-hint\"]",
-    "label": "card shows the current step heartbeating, not stalled",
-    "text": "remote tests"
-  }
+{
+"selector": "[data-test-id=\"task-card-agent-hint\"]",
+"label": "card shows the current step heartbeating, not stalled",
+"text": "remote tests"
+}
 ],
 "state": "closeOut:remoteTests",
 "theme": "light"
@@ -52,11 +56,11 @@ Start from the upload heartbeat (src/server/integration-orchestrator.ts ~2722-27
 "route": "/work",
 "highlight": "[data-test-id=\"task-card-agent-hint\"]",
 "assert": [
-  {
-    "selector": "[data-test-id=\"task-card-agent-hint\"]",
-    "label": "card shows the current step in dark theme",
-    "text": "remote tests"
-  }
+{
+"selector": "[data-test-id=\"task-card-agent-hint\"]",
+"label": "card shows the current step in dark theme",
+"text": "remote tests"
+}
 ],
 "state": "closeOut:remoteTests",
 "theme": "dark"
@@ -75,4 +79,5 @@ Start from the upload heartbeat (src/server/integration-orchestrator.ts ~2722-27
 - 2026-10-15T11:47:24Z · body
 - 2026-10-15T11:49:28Z · body
 - 2026-10-15T11:50:34Z · body: section Shots
-
+- 2026-10-15T12:34:29Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried.
+- 2026-10-15T15:23:21Z · note: handoff requested (ui-review)
