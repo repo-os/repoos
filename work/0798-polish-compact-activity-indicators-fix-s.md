@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: e4aa4ed4b95c2e30ee8b247ebd90c51bb04558f9
 id: "0798"
 title: "Polish compact activity indicators: fix state motions and improve visible size"
 type: bug
@@ -14,7 +12,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T15:59:19Z"
+updated_at: "2026-10-15T16:46:39Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: e4aa4ed4b95c2e30ee8b247ebd90c51bb04558f9
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-15T12:29:58.918Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
