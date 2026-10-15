@@ -390,6 +390,9 @@ import {
   getModelProviders,
   getModelProviderUsage,
   setModelProviderKey,
+  getModelRoutingStatus,
+  postModelRoutingProbe,
+  postModelRoutingKey,
   // Agents routes
   runningAgents,
   queuedAgents,
@@ -3290,6 +3293,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/model-providers", getModelProviders);
   router.register("GET", /^\/api\/model-providers\/([^/]+)\/usage$/, getModelProviderUsage);
   router.register("POST", /^\/api\/model-providers\/([^/]+)\/key$/, setModelProviderKey);
+  router.register("GET", "/api/model-routing/status", getModelRoutingStatus);
+  router.register("POST", "/api/model-routing/probe", postModelRoutingProbe);
+  router.register("POST", "/api/model-routing/key", postModelRoutingKey);
 
   // Agent routes
   router.register("GET", "/api/agents/running", runningAgents);
