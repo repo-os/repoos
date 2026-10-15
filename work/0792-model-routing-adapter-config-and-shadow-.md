@@ -14,7 +14,7 @@ branch: feat/model-routing-adapter-config-and-shadow-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T07:47:16Z"
-updated_at: "2026-10-15T15:32:16Z"
+updated_at: "2026-10-15T15:41:07Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -68,3 +68,4 @@ Parent/context record: #0791.
 - 2026-10-15T15:23:31Z · cli_override, model_override
 - 2026-10-15T15:32:10Z · status active→ready
 - 2026-10-15T15:32:16Z · status ready→active
+- 2026-10-15T15:41:07Z · message_queued at 2026-10-15T15:41:07.638Z
