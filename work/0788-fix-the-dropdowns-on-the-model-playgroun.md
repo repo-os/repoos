@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/align-model-playground-dropdowns-and-age
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-15T05:33:42Z"
-updated_at: "2026-10-15T05:42:47Z"
+updated_at: "2026-10-15T05:43:33Z"
 ---
 ## Problem
 
@@ -42,6 +42,18 @@ Fix the dropdowns on the model playground to match the style we use everywhere e
 ![Screenshot-2026-10-15-at-12.31.15](/api/tasks/0788/attachments/screenshot-1.png)
 ![Screenshot-2026-10-15-at-12.30.00](/api/tasks/0788/attachments/screenshot-2.png)
 
+## Shots
+```json
+[
+{
+  "label": "Model playground filters using shared dropdown style",
+  "target": "default",
+  "route": "/agents?tab=playground",
+  "highlight": ".playground-filter-row"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-15T05:33:42Z · created · hello@repoos.org
@@ -54,3 +66,4 @@ Fix the dropdowns on the model playground to match the style we use everywhere e
 - 2026-10-15T05:37:03Z · model_override
 - 2026-10-15T05:41:38Z · body
 - 2026-10-15T05:42:47Z · body
+- 2026-10-15T05:43:33Z · body: section Shots
