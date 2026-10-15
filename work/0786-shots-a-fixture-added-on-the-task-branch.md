@@ -94,3 +94,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-15T05:45:11Z · needs_input
 - 2026-10-15T05:52:58Z · status review→active
 - 2026-10-15T05:53:08Z · needs_input
+- 2026-10-15T05:53:08Z · message_delivered: 1 message(s)
