@@ -2,7 +2,10 @@
 id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Connection stalled repeatedly"
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
@@ -12,10 +15,11 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T11:08:47Z"
+updated_at: "2026-10-15T11:33:04Z"
 review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 1
+dev_error_count: 1
 ---
 ## Problem
 RepoOS currently chooses configured role defaults or explicit task overrides. Add an optional decision-model router that chooses a coding-agent/model configuration for PM, engineer and reviewer runs, and reconsiders that choice when review sends work back. Use task context and measured historical outcomes to reduce total cost and time to an accepted result while preserving quality and the existing lifecycle.
@@ -131,3 +135,5 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T11:04:09Z · needs_input
 - 2026-10-15T11:08:37Z · status review→active
 - 2026-10-15T11:08:47Z · needs_input
+- 2026-10-15T11:33:04Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-10-15T11:33:04Z · status active→review
