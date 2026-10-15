@@ -2,15 +2,15 @@
 id: "0788"
 title: Align model playground dropdowns and agent/model selector
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/align-model-playground-dropdowns-and-age
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T05:33:42Z"
-updated_at: "2026-10-15T05:35:46Z"
+updated_at: "2026-10-15T05:35:48Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Fix the dropdowns on the model playground to match the style we use everywhere e
 - 2026-10-15T05:34:02Z · status draft→inbox, title, area, body
 - 2026-10-15T05:35:45Z · model_override
 - 2026-10-15T05:35:46Z · status inbox→ready
+- 2026-10-15T05:35:48Z · status ready→active, branch
