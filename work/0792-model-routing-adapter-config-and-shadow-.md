@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T07:47:16Z"
-updated_at: "2026-10-15T07:47:23Z"
+updated_at: "2026-10-15T07:48:12Z"
 ---
 ## Problem
 Task #0791 introduced a provider-neutral routing foundation (adapters, candidate filter, policy, `[model_routing]` parsing) but nothing user-facing or run-path-facing is wired yet. This task delivers the adapter, configuration, mode and UI layer so a human can select a provider, see credential status, and choose `off` or `shadow` with confidence that shadow mode never changes a selection. Automatic routing is explicitly out of scope; it is task 2.
