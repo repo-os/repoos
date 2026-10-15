@@ -11,9 +11,9 @@ area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/shots-a-fixture-added-on-the-task-branch
-model_override: default
+model_override: deepinfra/zai-org/GLM-5.3-Flash
 created_at: "2026-10-14T16:48:07Z"
-updated_at: "2026-10-15T04:53:14Z"
+updated_at: "2026-10-15T04:53:21Z"
 review_passes: 5
 review_rounds: 2
 ---
@@ -82,3 +82,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-15T04:48:20Z · note: review pass 5: needs some work
 - 2026-10-15T04:48:21Z · needs_input
 - 2026-10-15T04:53:14Z · cli_override, model_override
+- 2026-10-15T04:53:21Z · model_override
