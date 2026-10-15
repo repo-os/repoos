@@ -77,6 +77,7 @@ function activePipeline(
   taskId: string,
   detail: string | null = null,
   at: string = nowIso(),
+  lastProgressAt: string = at,
 ): IntegrationPipelineSnapshot {
   return {
     empty: false,
@@ -85,7 +86,7 @@ function activePipeline(
       stage: "check",
       failed: false,
       startedAt: at,
-      lastProgressAt: at,
+      lastProgressAt,
       detail,
     },
     queue: [],
@@ -184,6 +185,21 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       );
       pinnedIntegration = repo.integration;
       break;
+    case "closeOut:remoteTests": {
+      // Started a few minutes ago (a non-zero elapsed on the card) but
+      // heartbeating now, so it shows the current step + elapsed and is NOT
+      // stalled (#0799).
+      ensureFixtureTask(repo, "review");
+      const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();
+      repo.integration = activePipeline(
+        SHOT_PREVIEW_FIXTURE_TASK_ID,
+        "remote tests",
+        startedAt,
+        nowIso(),
+      );
+      pinnedIntegration = repo.integration;
+      break;
+    }
     case "closeOut:stalled":
       // A fixed far-past attempt: idle past the stall threshold at any capture
       // time, so the fixture task's card renders the stalled Cancel/Retry

@@ -95,9 +95,11 @@ export function integrationActiveCopy(
   const detail = active.detail?.trim();
   if (detail) {
     return {
+      // A live in-stage detail line — the #0782 bundle upload or a #0799
+      // heartbeat naming the current long stage (e.g. "remote tests").
       label: `integrating · ${detail}${elapsedBit}`,
       title:
-        "Close-out is uploading the candidate bundle to the remote runner — a slow network can take several minutes. Progress refreshes every few seconds; the job is only flagged stalled when nothing moves for a while.",
+        "Close-out is working — the detail line shows the current step. Progress refreshes every few seconds; the job is only flagged stalled when nothing arrives for a while.",
       stalled: false,
     };
   }
