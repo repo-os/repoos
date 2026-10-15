@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-15T07:52:50Z"
-review_passes: 3
 id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "network problem reaching the model provider, not a code issue: ConnectionRefused: Unable to connect. Is the computer able to access the url?"
@@ -15,6 +13,8 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
+updated_at: "2026-10-15T08:12:20Z"
+review_passes: 3
 review_rounds: 2
 dev_error_count: 1
 ---
@@ -98,4 +98,5 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T07:51:35Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (f6163ecba) during finalization (#0734)
 - 2026-10-15T07:51:35Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (f6163ecba) during finalization (#0734)
 - 2026-10-15T07:52:50Z · note: review pass 3: needs some work
-
+- 2026-10-15T08:12:20Z · status review→active
+- 2026-10-15T08:12:20Z · note: Verdict needs some work — The implementation adds editor.command, ungates open-in-editor routes, wires Task/Context/FailedTests UI, documents the security boundary, and unit tests cover schema, routes, and drawer behavior. Handoff UI evidence does not satisfy the task drawer shot or the light/dark theme criterion.
