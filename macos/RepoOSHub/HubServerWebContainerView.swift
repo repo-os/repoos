@@ -282,10 +282,8 @@ final class HubFindBarView: NSVisualEffectView, NSSearchFieldDelegate {
         switch status {
         case .idle, .matches:
             statusLabel.stringValue = ""
-            statusLabel.textColor = .secondaryLabelColor
         case .noMatches:
             statusLabel.stringValue = "No matches"
-            statusLabel.textColor = .secondaryLabelColor
         }
     }
 
