@@ -2,14 +2,14 @@
 id: "0799"
 title: "Close-out: heartbeat during long gate stages so healthy runs are not shown as stalled"
 type: bug
-status: ready
+status: active
 priority: p2
 area: [server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/close-out-heartbeat-during-long-gate-sta
 created_at: "2026-10-15T11:08:11Z"
-updated_at: "2026-10-15T11:10:05Z"
+updated_at: "2026-10-15T11:10:08Z"
 ---
 ## Problem
 The close-out card shows 'stalled · no progress' for runs that are still working. #0782 added a heartbeat for the bundle upload, but other long stages report nothing while they run: the remote test run on the validation host, and the local scoped gate steps. #0790's close-out was marked stalled after about 4 minutes with no log output, then finished normally. The stall timer only resets when a stage reports progress.
@@ -30,3 +30,4 @@ Start from the upload heartbeat (src/server/integration-orchestrator.ts ~2722-27
 
 - 2026-10-15T11:08:11Z · created · njachowski@gmail.com
 - 2026-10-15T11:10:05Z · status inbox→ready
+- 2026-10-15T11:10:08Z · status ready→active, branch
