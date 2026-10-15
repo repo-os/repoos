@@ -109,6 +109,7 @@ import {
   parseShotEntry,
   removeDeclarationsForDeletedShot,
   resolveDeclaredTarget,
+  taskFixtureValidator,
 } from "../../core/shot-plan.js";
 import { resolveShotTargets } from "../../core/shot-targets.js";
 import { captureDeclaredShot } from "../shot-capture.js";
@@ -1520,7 +1521,19 @@ async function declareTaskShot(
   // The existing `## Shots` list must parse BEFORE anything is captured: a
   // malformed list cannot take the new declaration, and capturing first would
   // leave an image with no declaration behind (review round 5).
-  const preflight = appendDeclaredShot(readTaskBody(config, task.absPath), entry);
+  const fixtureValidator = taskFixtureValidator(
+    (path: string) => {
+      try {
+        return existsSync(path) ? readFileSync(path, "utf8") : null;
+      } catch {
+        return null;
+      }
+    },
+    config,
+    task,
+  );
+  const appendOpts = fixtureValidator ? { fixtureValidator } : undefined;
+  const preflight = appendDeclaredShot(readTaskBody(config, task.absPath), entry, appendOpts);
   if (preflight.errors.length > 0) {
     return json(res, 400, {
       error: `the task's ## Shots section is not a valid list — fix it first: ${preflight.errors.join("; ")}`,
@@ -1563,7 +1576,7 @@ async function declareTaskShot(
   // same note so the capture's caveats are visible without a second write.
   // The body is re-read from disk right before the section write so an entry a
   // concurrent writer just added is never clobbered by a stale snapshot.
-  const append = appendDeclaredShot(readTaskBody(config, task.absPath), entry);
+  const append = appendDeclaredShot(readTaskBody(config, task.absPath), entry, appendOpts);
   if (append.errors.length > 0) {
     // The shot itself is captured and stored; the declaration just needs fixing.
     return json(res, 201, {

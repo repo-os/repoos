@@ -12,7 +12,7 @@
  * here as a pure function — no API change, no capture change — and the drawer
  * just renders the result.
  */
-import { declaredShotMatchesShot, parseShotPlan } from "../../../core/shot-plan.js";
+import { declaredShotMatchesShot, parseShotPlanForDisplay } from "../../../core/shot-plan.js";
 import type { DeclaredShot, DeclaredStep } from "../../../core/shot-plan.js";
 import type { ShotMeta } from "../types";
 
@@ -121,7 +121,7 @@ function provenanceOf(meta: ShotMeta): string | undefined {
  * doesn't parse, simply yields rows with `ShotMeta` fields alone.
  */
 export function shotRows(shots: ShotMeta[], body: string | undefined): ShotRow[] {
-  const declared = parseShotPlan(body ?? "").shots;
+  const declared = parseShotPlanForDisplay(body ?? "").shots;
   const paired = pairDeclared(shots, declared);
   return shots.map((meta, index) => {
     const entry = paired[index];
@@ -198,7 +198,7 @@ export function uncapturedDeclared(
   shots: ShotMeta[],
   body: string | undefined,
 ): Omit<ShotRow, "meta">[] {
-  const declared = parseShotPlan(body ?? "").shots;
+  const declared = parseShotPlanForDisplay(body ?? "").shots;
   const paired = new Set(pairDeclared(shots, declared).filter((e) => e));
   return declared
     .filter((entry) => !paired.has(entry))
