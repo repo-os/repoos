@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-15T10:09:46Z"
-review_passes: 5
 id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
@@ -15,6 +13,8 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
+updated_at: "2026-10-15T10:09:57Z"
+review_passes: 5
 review_rounds: 2
 dev_error_count: 1
 ---
@@ -118,4 +118,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T10:08:20Z · note: highlight [data-test-id="open-in-editor"] matched nothing on /work?task=9999&tab=details
 - 2026-10-15T10:09:44Z · note: review pass 5: needs some work
 - 2026-10-15T10:09:45Z · needs_input
-
+- 2026-10-15T10:09:57Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65515/api/tasks/9999 (http://127.0.0.1:65515/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65515/api/tasks/9999)
