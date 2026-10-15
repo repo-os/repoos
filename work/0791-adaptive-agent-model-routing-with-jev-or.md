@@ -2,7 +2,7 @@
 id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: needs-human-step
 needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
@@ -15,7 +15,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T09:47:14Z"
+updated_at: "2026-10-15T09:47:31Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -99,3 +99,4 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T08:36:39Z · note: review pass 1: needs some work
 - 2026-10-15T09:44:23Z · review_cli_override
 - 2026-10-15T09:47:14Z · needs_input
+- 2026-10-15T09:47:31Z · status review→active
