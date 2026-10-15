@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 335869
-last_close_out_gate_at: "2026-10-15T18:47:52.871Z"
 id: "0801"
 title: Highlight running dev targets
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: c49169037e3f2e89ec2fbeb8893bb2b237861f15
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/highlight-running-dev-targets
 created_at: "2026-10-15T18:16:48Z"
-updated_at: "2026-10-15T18:47:52Z"
+updated_at: "2026-10-15T18:48:06Z"
+last_close_out_gate_ms: 335869
+last_close_out_gate_at: "2026-10-15T18:47:52.871Z"
 review_passes: 1
 ---
 ## Problem
@@ -68,4 +69,4 @@ I want to highlight the running dev targets in the same style we highlight the a
 - 2026-10-15T18:37:28Z · status active→review
 - 2026-10-15T18:38:17Z · note: review pass 1: good to go
 - 2026-10-15T18:47:52Z · close-out gate completed in 336s
-
+- 2026-10-15T18:48:06Z · status review→done, release:success
