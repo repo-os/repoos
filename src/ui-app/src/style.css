@@ -1143,6 +1143,14 @@
 .page-help-link:hover {
   text-decoration: underline;
 }
+
+.editor-config-hint {
+  margin-left: auto;
+  color: var(--txt-dim);
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
 @media (max-width: 720px) {
   .page-header {
     align-items: flex-start;

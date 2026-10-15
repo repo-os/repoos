@@ -654,6 +654,12 @@ export interface RepoOSConfig {
    */
   servePort?: number;
   /**
+   * General editor launcher used by "Open in editor" links throughout the UI
+   * (task specs, context docs, failed tests). When both are set,
+   * `dev.inspector.editorCommand` overrides this setting.
+   */
+  editor?: EditorConfig;
+  /**
    * Dev/local tooling (#0509). Ignored on release builds (no dev UI bundle /
    * RepoOS sources in the repo).
    */
@@ -767,6 +773,11 @@ export interface AreaConfig {
 export interface DevInspectorConfig {
   enabled?: boolean;
   editorCommand?: string;
+}
+
+/** General editor launcher used by "Open in editor" links. */
+export interface EditorConfig {
+  command?: string;
 }
 
 /**

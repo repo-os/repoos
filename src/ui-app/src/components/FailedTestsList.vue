@@ -7,9 +7,8 @@ import { useRepoStore } from "../stores/repo";
 /**
  * A run's failing tests (`file > suite > test`), file first, each with an
  * "Open" link that launches the test file in the configured editor. Shared by
- * the Checks Runs tab and the release failure panel. The link only shows when
- * it can work: the dev API is available and an editor command is configured
- * (same gate as the task drawer's "Open in editor").
+ * the Checks Runs tab and the release failure panel. Uses the general
+ * `editor.command` setting, or `dev.inspector.editorCommand` when set.
  */
 const props = defineProps<{ tests: string[] }>();
 
@@ -20,9 +19,18 @@ const editorConfigured = computed(() => {
   const inspector = (
     config.data?.dev as { inspector?: { enabled?: boolean; editorCommand?: string } } | undefined
   )?.inspector;
-  if (inspector?.enabled === false) return false;
-  const cmd = inspector?.editorCommand;
-  return repo.health?.copyInspectorAvailable === true && typeof cmd === "string" && !!cmd.trim();
+  const devCommand =
+    typeof inspector?.editorCommand === "string" ? inspector.editorCommand.trim() : "";
+  const usingDevOverride = !!devCommand;
+  if (usingDevOverride && inspector?.enabled === false) return false;
+  const generalCommand =
+    typeof (config.data?.editor as { command?: string } | undefined)?.command === "string"
+      ? (config.data?.editor as { command?: string }).command!.trim()
+      : "";
+  const cmd = usingDevOverride ? devCommand : generalCommand;
+  if (!cmd) return false;
+  if (usingDevOverride && repo.health?.copyInspectorAvailable !== true) return false;
+  return true;
 });
 
 const rows = computed(() =>
@@ -57,6 +65,14 @@ async function open(test: string): Promise<void> {
       >
         Open ↗
       </button>
+      <span
+        v-else
+        class="editor-config-hint"
+        data-test-id="failed-test-open-hint"
+        :aria-label="'Configure an editor in Settings → General to enable Open in editor'"
+      >
+        Set editor
+      </span>
     </li>
   </ul>
 </template>
