@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-heartbeat-during-long-gate-sta
 created_at: "2026-10-15T11:08:11Z"
-updated_at: "2026-10-15T16:46:46Z"
+updated_at: "2026-10-15T16:48:27Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 7cc16fdde81e9618359a879272d30db5d59fd2fe
 check_retry_count: 1
@@ -84,4 +84,4 @@ Start from the upload heartbeat (src/server/integration-orchestrator.ts ~2722-27
 - 2026-10-15T12:34:29Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried.
 - 2026-10-15T15:23:21Z · note: handoff requested (ui-review)
 - 2026-10-15T15:59:18Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-10-15T16:48:27Z · body
