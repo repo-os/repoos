@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-15T12:29:58.918Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0798"
 title: "Polish compact activity indicators: fix state motions and improve visible size"
 type: bug
@@ -108,3 +110,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T11:47:10Z · body
 - 2026-10-15T11:49:08Z · body
 - 2026-10-15T12:29:55Z · handoff failed · handoff recovery attempted · finalization failed
+
