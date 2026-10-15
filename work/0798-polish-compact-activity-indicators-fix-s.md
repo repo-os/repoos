@@ -58,7 +58,7 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 "highlight": ".activity-animation-preview",
 "steps": [
 {
-  "waitMs": 600
+"waitMs": 600
 }
 ]
 },
@@ -69,7 +69,7 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 }
 ],
 "state": "board:activeCoding"
@@ -81,7 +81,7 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 }
 ],
 "state": "board:activeCoding",
