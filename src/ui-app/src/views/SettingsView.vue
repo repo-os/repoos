@@ -761,7 +761,12 @@ function sync(): void {
   syncing = true;
   for (const key of Object.keys(config.form)) {
     form[key] = config.form[key];
-    originalValues[key] = config.form[key];
+    // Only track original values for visible fields. If a field wasn't tracked
+    // before (e.g., dev.inspector when build support changes), don't add it
+    // now so it's included as "changed" in the next save.
+    if (isFieldVisible(key) && key in originalValues) {
+      originalValues[key] = config.form[key];
+    }
   }
   syncing = false;
 }
@@ -844,8 +849,9 @@ function buildBody(): Record<string, unknown> {
       processedVal = val;
     }
 
-    // Only include fields that have changed from their original values
-    if (!valuesEqual(processedVal, originalValues[f.key])) {
+    // Only include fields that have changed from their original values. If a
+    // field is newly visible (not in originalValues), it will be included.
+    if (!(f.key in originalValues) || !valuesEqual(processedVal, originalValues[f.key])) {
       body[f.key] = processedVal;
     }
   }
