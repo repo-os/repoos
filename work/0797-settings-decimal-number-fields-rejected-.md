@@ -11,7 +11,7 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T09:58:07Z"
+updated_at: "2026-10-15T10:13:02Z"
 ---
 ## Problem
 Changing any setting (for example the activity animation) shows the red error 'Flag slow checks above (× median) must be a whole number', although that field was not touched.
@@ -42,3 +42,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T09:57:58Z · cli_override, model_override
 - 2026-10-15T09:58:06Z · status inbox→ready
 - 2026-10-15T09:58:07Z · status ready→active, branch
+- 2026-10-15T10:13:02Z · body
