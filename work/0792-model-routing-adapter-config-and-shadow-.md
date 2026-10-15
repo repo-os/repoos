@@ -2,7 +2,7 @@
 id: "0792"
 title: "Model routing adapter, config and shadow mode"
 type: feature
-status: review
+status: active
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
