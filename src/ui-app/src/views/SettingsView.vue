@@ -759,14 +759,28 @@ let savePending = false;
 
 function sync(): void {
   syncing = true;
-  for (const key of Object.keys(config.form)) {
-    form[key] = config.form[key];
-    // Only track original values for visible fields. If a field wasn't tracked
-    // before (e.g., dev.inspector when build support changes), don't add it
-    // now so it's included as "changed" in the next save.
-    if (isFieldVisible(key) && key in originalValues) {
-      originalValues[key] = config.form[key];
+  for (const f of config.schema) {
+    if (!isFieldVisible(f.key)) continue;
+    if (f.key === "dev.targets" || f.key === "budget.allowlist") continue;
+    if ((TOML_ONLY_REMOTE_VALIDATION_KEYS as readonly string[]).includes(f.key)) continue;
+
+    const val = config.form[f.key];
+    let processedVal: unknown;
+
+    if (f.key.startsWith("board.columns.")) {
+      const trimmed = typeof val === "string" ? val.trim() : String(val ?? "").trim();
+      processedVal = trimmed || f.default;
+    } else if (f.type === "array" && typeof val === "string") {
+      processedVal = val
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    } else {
+      processedVal = val;
     }
+
+    form[f.key] = val;
+    originalValues[f.key] = processedVal;
   }
   syncing = false;
 }
