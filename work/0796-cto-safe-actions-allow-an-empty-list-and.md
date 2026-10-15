@@ -2,16 +2,17 @@
 id: "0796"
 title: "CTO safe actions: allow an empty list and pick actions with checkboxes"
 type: bug
-status: inbox
+status: done
 priority: p2
 area: [web, server]
+merged_commit: 636777398a6bda906bbb7e3147983ac60933c9e2
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/cto-safe-actions-allow-an-empty-list-and
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:55:06Z"
-updated_at: "2026-10-15T10:43:04Z"
+updated_at: "2026-10-15T10:43:42Z"
 last_close_out_gate_ms: 138839
 last_close_out_gate_at: "2026-10-15T10:43:00.266Z"
 review_passes: 2
@@ -87,3 +88,4 @@ Start from src/server/routes/config.ts (the non-empty array check), src/core/con
 - 2026-10-15T10:43:00Z · close-out gate completed in 139s
 - 2026-10-15T10:43:04Z · note: handoff requested (cli)
 - 2026-10-15T10:43:04Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-15T10:43:42Z · status inbox→done, release:success
