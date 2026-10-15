@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 356771
-last_close_out_gate_at: "2026-10-15T19:35:30.580Z"
 id: "0800"
 title: "Settings: split General into sections, each searchable with its own URL"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 82557bdc4ef2b25434b05f8d56eff9c38610d5d1
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/settings-split-general-into-sections-eac
 created_at: "2026-10-15T15:15:17Z"
-updated_at: "2026-10-15T19:35:30Z"
+updated_at: "2026-10-15T19:35:42Z"
+last_close_out_gate_ms: 356771
+last_close_out_gate_at: "2026-10-15T19:35:30.580Z"
 review_passes: 3
 close_out_repair_count: 1
 ---
@@ -80,4 +81,4 @@ Start from src/ui-app/src/settings-location.ts (SETTINGS_TABS and location mappi
 - 2026-10-15T18:44:57Z · status active→review
 - 2026-10-15T18:46:00Z · note: review pass 3: good to go
 - 2026-10-15T19:35:30Z · close-out gate completed in 357s
-
+- 2026-10-15T19:35:42Z · status review→done, release:success
