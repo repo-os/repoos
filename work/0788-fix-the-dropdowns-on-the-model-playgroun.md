@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-15T06:10:09Z"
-review_passes: 2
 id: "0788"
 title: Align model playground dropdowns and agent/model selector
 type: feature
@@ -10,9 +8,9 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/align-model-playground-dropdowns-and-age
-model_override: opencode/muse-spark-1.3-contributor-free
+model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T05:33:42Z"
-review_rounds: 1
+updated_at: "2026-10-15T05:49:47Z"
 ---
 ## Problem
 
@@ -39,32 +37,6 @@ Covers the model playground’s dropdown styling and its compatibility with the 
 
 Fix the dropdowns on the model playground to match the style we use everywhere else. Also I'd like the model playground to also work with the normal coding agent+model modal selector.
 
-## Shots
-```json
-[
-{
-"label": "Model playground filters using shared dropdown style",
-"target": "default",
-"route": "/agents?tab=playground",
-"highlight": ".playground-filter-row"
-},
-{
-"label": "Playground chat header with shared agent+model picker open",
-"target": "default",
-"route": "/agents?tab=playground",
-"highlight": ".am-modal",
-"steps": [
-{
-"click": ".playground-chat-head .am-control"
-},
-{
-"waitMs": 300
-}
-]
-}
-]
-```
-
 ## Screenshots
 
 ![Screenshot-2026-10-15-at-12.31.15](/api/tasks/0788/attachments/screenshot-1.png)
@@ -79,18 +51,4 @@ Fix the dropdowns on the model playground to match the style we use everywhere e
 - 2026-10-15T05:35:45Z · model_override
 - 2026-10-15T05:35:46Z · status inbox→ready
 - 2026-10-15T05:35:48Z · status ready→active, branch
-- 2026-10-15T05:37:03Z · model_override
-- 2026-10-15T05:41:38Z · body
-- 2026-10-15T05:42:47Z · body
-- 2026-10-15T05:43:33Z · body: section Shots
-- 2026-10-15T05:49:48Z · status active→review
-- 2026-10-15T05:50:42Z · note: review pass 1: needs some work
-- 2026-10-15T05:50:42Z · status review→active
-- 2026-10-15T05:56:51Z · body
-- 2026-10-15T05:58:26Z · body
-- 2026-10-15T05:59:07Z · body: section Shots
-- 2026-10-15T06:09:13Z · status active→review
-- 2026-10-15T06:09:13Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (afcf0e126) during finalization (#0734)
-- 2026-10-15T06:09:13Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (afcf0e126) during finalization (#0734)
-- 2026-10-15T06:10:09Z · note: review pass 2: good to go
-
+- 2026-10-15T05:49:47Z · status active→review
