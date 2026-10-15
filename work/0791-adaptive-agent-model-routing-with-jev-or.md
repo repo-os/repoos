@@ -2,7 +2,7 @@
 id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
-status: active
+status: review
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
@@ -99,4 +99,4 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T09:47:31Z · status review→active
 - 2026-10-15T09:47:42Z · needs_input
 - 2026-10-15T09:54:49Z · body
-- 2026-10-15T09:56:13Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-15T09:56:13Z · status active→review
