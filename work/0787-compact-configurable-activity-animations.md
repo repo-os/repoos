@@ -3,24 +3,21 @@ id: "0787"
 title: Compact configurable activity animations; default to Orbital pixel
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Desired UX, Notes for AI"
 priority: p2
 area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T05:23:45Z"
+updated_at: "2026-10-15T05:23:55Z"
 ---
-## Request
+## Problem
 
 Replace the space-hungry activity indicator with a configurable animation style. The human approved six compact animation families shown in this chat and requests all six plus the existing animation, with **Orbital pixel** as the new default. Expose the same setting in the Settings page and repoos.toml. Preserve the existing animation colors for each activity/state and theme.
 
 The attached screenshot shows the current three horizontal dots beside "CODING · ACTIVE JUST NOW". The goal is to use about 1–2 monospace character widths for the indicator itself, rather than 4+ spaces. Keep the existing activity labels and behavior.
 
-## Animation options
+## Desired UX
 
 Provide these seven named choices, using a single style selection for coding, reviewing, and general AI agent work. Each new family supports those activity states:
 
@@ -34,7 +31,7 @@ Provide these seven named choices, using a single style selection for coding, re
 
 Reference prototype (local to the originating interactive session): /Users/nick/.codex/visualizations/2026/10/15/01a13ddd-613e-7170-8b22-eeb1a3ef9857/compact-agent-motion.html. This is a motion reference, not production code; the descriptions above are the durable specification if the file is unavailable on a runner. Prototype colors are NOT requested: inherit the app's existing animation colors/tokens, preferably through currentColor.
 
-## Implementation scope
+## Notes for AI
 
 - Inspect and extend the shared ActivityIndicator component and its consumers rather than introducing divergent per-page implementations. Ensure coding, reviewing, and generic AI working indicators consistently honor the setting wherever the existing shared animation appears.
 - Add a validated enum setting to repoos.toml configuration and getConfigSchema(), with a styled dropdown in the appropriate Settings tab. Use stable serialized option names. Omitted configuration defaults to Orbital pixel, including existing repos without an explicit choice. Explicit selection of the legacy animation preserves it. Follow existing save, reload, and config validation conventions.
@@ -62,3 +59,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T05:23:43Z · created · njachowski@gmail.com
 - 2026-10-15T05:23:44Z · screenshots
 - 2026-10-15T05:23:45Z · needs_input
+- 2026-10-15T05:23:55Z · needs_input, body
