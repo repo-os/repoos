@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 6f5dc023f5b8b6ab00e3f79708160e36769e313a
 id: "0792"
 title: "Model routing adapter, config and shadow mode"
 type: feature
@@ -111,3 +113,4 @@ Parent/context record: #0791.
 - 2026-10-15T19:46:46Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-15T19:46:46Z · note: handoff requested (cli)
 - 2026-10-15T19:52:27Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate
+
