@@ -52,10 +52,10 @@ Parent/context record: #0791.
 ```json
 [
 {
-  "label": "Model routing tab on Agents page",
-  "target": "default",
-  "route": "/agents?tab=model-routing",
-  "highlight": "[data-testid=\"model-routing-panel\"]"
+"label": "Model routing tab on Agents page",
+"target": "default",
+"route": "/agents?tab=model-routing",
+"highlight": "[data-testid=\"model-routing-panel\"]"
 }
 ]
 ```
