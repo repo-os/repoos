@@ -1,5 +1,4 @@
 ---
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-15T11:36:40.023Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0795"
 title: "Easter eggs bundle: Hub find bar position, Done button, and Escape"
@@ -74,4 +73,5 @@ Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSH
 - 2026-10-15T10:53:14Z · body
 - 2026-10-15T11:01:33Z · body
 - 2026-10-15T11:36:37Z · handoff failed · handoff recovery attempted · finalization failed
+
 
