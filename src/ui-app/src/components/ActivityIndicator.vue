@@ -2,6 +2,7 @@
 defineOptions({ name: "ActivityIndicator" });
 
 import { computed } from "vue";
+import { getActivePinia } from "pinia";
 import {
   activityAnimationStyleOrDefault,
   type ActivityAnimationStyle,
@@ -29,11 +30,12 @@ const props = withDefaults(
   },
 );
 
-const config = useConfigStore();
+const pinia = getActivePinia();
+const config = pinia ? useConfigStore(pinia) : null;
 
 const style = computed((): ActivityAnimationStyle => {
   if (props.animationStyle) return props.animationStyle;
-  const raw = config.form.activityAnimationStyle;
+  const raw = config?.form.activityAnimationStyle;
   return activityAnimationStyleOrDefault(
     typeof raw === "string" ? (raw as ActivityAnimationStyle) : undefined,
   );
