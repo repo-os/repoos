@@ -13,7 +13,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T07:47:48Z"
-updated_at: "2026-10-15T07:47:54Z"
+updated_at: "2026-10-15T08:23:22Z"
 ---
 ## Problem
 Routing for #0791 needs one credentialed smoke check against each real decision backend before anyone relies on it. Automated tests use fixtures only. Those checks require a human because they need third-party accounts, billing, a self-hosted GPU host, and secrets that an agent must never handle.
@@ -23,9 +23,7 @@ This task is independent of #0792 and #0793. It does not block either, and they 
 Parent/context record: #0791.
 
 ## Required accounts and setup (human)
-1. **TypeSafe Jev.** Create or sign in to a TypeSafe account and generate an API key in the TypeSafe console (keys page). Confirm the key works in the TypeSafe playground first. Record the key only in your local gitignored `.env` as `TYPESAFE_API_KEY=...`. Do not paste it into this task, a commit, a chat, or any repo file.
-2. **Cloudflare Clef-Flash (self-hosted).** Requires a GPU host able to run the 9B model (the model card was tested on a single H200). Serve it with SGLang per the model card, so that `POST <baseUrl>/v1/systemone` answers. Optionally protect it and set `REPOOS_CLEF_FLASH_API_KEY` in `.env`. Record the base URL you will use (for example an internal address), not any credential.
-3. Confirm which Jev model id you will pin (for example `jev-latest` or a dated version) so the check is reproducible.
+
 
 ## Checks to run (human, once the setup above exists)
 - Jev: send one minimal System One request (a noul question and one choice question) with the configured key. Expect a 200 response with `answers` keyed by question id. Record the HTTP status, the returned `model`, and the usage numbers only. Do not record the key.
@@ -45,3 +43,4 @@ Parent/context record: #0791.
 
 - 2026-10-15T07:47:48Z · created · njachowski@gmail.com
 - 2026-10-15T07:47:54Z · assigned_to
+- 2026-10-15T08:23:22Z · body: section Required accounts and setup (human)
