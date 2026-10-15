@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-15T12:29:59.204Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0799"
 title: "Close-out: heartbeat during long gate stages so healthy runs are not shown as stalled"
 type: bug
@@ -73,3 +75,4 @@ Start from the upload heartbeat (src/server/integration-orchestrator.ts ~2722-27
 - 2026-10-15T11:47:24Z · body
 - 2026-10-15T11:49:28Z · body
 - 2026-10-15T11:50:34Z · body: section Shots
+
