@@ -121,8 +121,12 @@ function score(
   const risk = noulProbability(answers, ROUTING_QUESTION_IDS.risk);
   const scope = noulProbability(answers, ROUTING_QUESTION_IDS.scope);
   const intensity = (ambiguity + risk + scope) / 3;
-  const cost = ct?.cost ?? 0.5;
-  const time = ct?.time ?? 0.5;
+  if (!ct) {
+    // Unknown cost/time for this candidate must not be faked as neutral — suitability only.
+    return suitP;
+  }
+  const cost = ct.cost;
+  const time = ct.time;
   const economy = 1 - (weights.costWeight * cost + weights.timeWeight * time);
   // High ambiguity/risk/scope → lean toward more capable (higher normalized cost); otherwise favor economy.
   const capabilityFit = intensity * cost + (1 - intensity) * economy;

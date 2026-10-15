@@ -144,6 +144,20 @@ export function createJevProvider(opts: JevProviderOptions): RoutingDecisionProv
 }
 
 /**
+ * Map a configured model id to OpenRouter's System One namespace.
+ * Verified: openrouter.ai/docs/guides/community/typesafe-sdk — bare `jev-*` →
+ * `typesafe/*`, `jev-latest` → `~typesafe/jev-latest`; already-qualified ids pass through.
+ */
+export function mapOpenRouterSystemOneModel(model: string): string {
+  const m = model.trim();
+  if (!m) return m;
+  if (m.startsWith("typesafe/") || m.startsWith("~typesafe/")) return m;
+  if (m === "jev-latest") return "~typesafe/jev-latest";
+  if (m.startsWith("jev-")) return `typesafe/${m}`;
+  return m;
+}
+
+/**
  * OpenRouter — hosted System One API for TypeSafe models (e.g. Jev) on your
  * OpenRouter account. Not a separate decision model: it is an alternate transport
  * to the same Jev/Clef models OpenRouter exposes, using `REPOOS_OPENROUTER_API_KEY`.
@@ -156,7 +170,8 @@ export function createOpenRouterProvider(opts: OpenRouterProviderOptions): Routi
     );
   }
   const url = opts.endpoint ?? OPENROUTER_SYSTEMONE_ENDPOINT;
-  const model = opts.model ?? JEV_DEFAULT_MODEL;
+  const configured = opts.model ?? JEV_DEFAULT_MODEL;
+  const model = mapOpenRouterSystemOneModel(configured);
   const fetchImpl = opts.fetchImpl ?? fetch;
   return {
     id: "openrouter",
