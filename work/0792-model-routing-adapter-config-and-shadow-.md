@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-15T20:17:33Z"
+review_passes: 1
 id: "0792"
 title: "Model routing adapter, config and shadow mode"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/model-routing-adapter-config-and-shadow-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T07:47:16Z"
-updated_at: "2026-10-15T20:17:33Z"
 dev_error_count: 3
 ---
 ## Problem
@@ -122,3 +123,4 @@ Parent/context record: #0791.
 - 2026-10-15T20:16:06Z · status active→review
 - 2026-10-15T20:16:06Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-10-15T20:17:33Z · note: review pass 1: good to go
+
