@@ -47,6 +47,8 @@ import {
 } from "../settings-location";
 import { TOML_ONLY_REMOTE_VALIDATION_KEYS } from "../lib/settings-transfer";
 import ActivityIndicator from "../components/ActivityIndicator.vue";
+import CtoSafeActionsSettings from "../components/CtoSafeActionsSettings.vue";
+import { CTO_ACTIONS_SETTINGS_ROW_DESC } from "../../../core/cto-actions.js";
 import {
   activityAnimationStyleOrDefault,
   type ActivityAnimationStyle,
@@ -468,6 +470,17 @@ const activityAnimationField = computed(() =>
   config.schema.find((f) => f.key === "activityAnimationStyle"),
 );
 
+const ctoActionsField = computed(() => config.schema.find((f) => f.key === "cto.actions"));
+
+function ctoActionsFormValue(): string[] {
+  const raw = form["cto.actions"];
+  return Array.isArray(raw) ? raw.filter((item): item is string => typeof item === "string") : [];
+}
+
+function setCtoActions(next: string[]): void {
+  form["cto.actions"] = next;
+}
+
 const activityAnimationPreviewStyle = computed((): ActivityAnimationStyle =>
   activityAnimationStyleOrDefault(
     typeof form.activityAnimationStyle === "string"
@@ -845,6 +858,14 @@ function buildBody(): Record<string, unknown> {
     // (#0764); skipping it here keeps an unrelated Settings save from rewriting
     // its [[budget.allowlist]] rows.
     if (f.key === "budget.allowlist") continue;
+    if (f.key === "cto.actions") {
+      const next = ctoActionsFormValue();
+      const prev = Array.isArray(baseline["cto.actions"])
+        ? baseline["cto.actions"].filter((item): item is string => typeof item === "string")
+        : [];
+      if (!valuesEqual(next, prev)) body[f.key] = next;
+      continue;
+    }
     // The Hetzner remote-validation details (#0779) are transferred by the
     // Import/Export tab and edited in raw TOML; skipping them here keeps an
     // unrelated Settings save from materialising their defaults.
@@ -1060,7 +1081,6 @@ onUnmounted(() => {
             </div>
             <div id="setting-activityAnimationStyle" class="setting-row">
               <div class="setting-info">
-                <div class="setting-label">{{ activityAnimationField.label }}</div>
                 <div class="setting-desc">{{ activityAnimationField.description }}</div>
               </div>
               <div class="setting-input">
@@ -1115,7 +1135,7 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="setting-desc" style="padding: 4px 0 10px">
-              Preview at actual size — saved when you change the dropdown (auto-save).
+              Shown at in-app size — changes save automatically.
             </div>
           </div>
         </Card>
@@ -1125,69 +1145,83 @@ onUnmounted(() => {
             <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
               <span class="live-dot"></span>General
             </div>
-            <div
-              v-for="f in generalFields"
-              :key="f.key"
-              :id="`setting-${f.key}`"
-              :data-config-key="f.key"
-              class="setting-row"
-            >
-              <div class="setting-info">
-                <div class="setting-label">{{ f.label }}</div>
-                <div class="setting-desc">{{ f.description }}</div>
+            <template v-for="f in generalFields" :key="f.key">
+              <div :id="`setting-${f.key}`" :data-config-key="f.key" class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-label">{{ f.label }}</div>
+                  <div class="setting-desc">{{ f.description }}</div>
+                </div>
+                <div class="setting-input">
+                  <Select
+                    v-if="f.type === 'select'"
+                    :model-value="String(form[f.key])"
+                    :disabled="config.saving"
+                    @update:model-value="(v) => (form[f.key] = v)"
+                  >
+                    <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                        <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
+                          o.label
+                        }}</SelectItem>
+                      </SelectViewport>
+                    </SelectContent>
+                  </Select>
+                  <Switch
+                    v-else-if="f.type === 'boolean'"
+                    :checked="!!form[f.key]"
+                    :disabled="config.saving"
+                    @update:checked="(v: boolean) => (form[f.key] = v)"
+                  />
+                  <Input
+                    v-else-if="f.type === 'number'"
+                    :model-value="form[f.key] == null ? '' : String(form[f.key])"
+                    type="number"
+                    :min="typeof f.min === 'number' ? f.min : 0"
+                    :step="typeof f.step === 'number' ? f.step : 1"
+                    style="width: 100px"
+                    :disabled="config.saving"
+                    @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
+                  />
+                  <Input
+                    v-else-if="f.type === 'string'"
+                    :model-value="String(form[f.key] ?? '')"
+                    type="text"
+                    :disabled="config.saving"
+                    @update:model-value="(v) => (form[f.key] = v)"
+                  />
+                  <Input
+                    v-else-if="f.type === 'array'"
+                    :model-value="String(form[f.key] ?? '')"
+                    type="text"
+                    :placeholder="arrayPlaceholder(f.key)"
+                    :disabled="config.saving"
+                    @update:model-value="(v) => (form[f.key] = v)"
+                  />
+                </div>
+                <span v-if="f.restartRequired" class="restart-badge">restart required</span>
               </div>
-              <div class="setting-input">
-                <Select
-                  v-if="f.type === 'select'"
-                  :model-value="String(form[f.key])"
-                  :disabled="config.saving"
-                  @update:model-value="(v) => (form[f.key] = v)"
-                >
-                  <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
-                        o.label
-                      }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-                <Switch
-                  v-else-if="f.type === 'boolean'"
-                  :checked="!!form[f.key]"
-                  :disabled="config.saving"
-                  @update:checked="(v: boolean) => (form[f.key] = v)"
-                />
-                <Input
-                  v-else-if="f.type === 'number'"
-                  :model-value="form[f.key] == null ? '' : String(form[f.key])"
-                  type="number"
-                  :min="typeof f.min === 'number' ? f.min : 0"
-                  :step="typeof f.step === 'number' ? f.step : 1"
-                  style="width: 100px"
-                  :disabled="config.saving"
-                  @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
-                />
-                <Input
-                  v-else-if="f.type === 'string'"
-                  :model-value="String(form[f.key] ?? '')"
-                  type="text"
-                  :disabled="config.saving"
-                  @update:model-value="(v) => (form[f.key] = v)"
-                />
-                <Input
-                  v-else-if="f.type === 'array'"
-                  :model-value="String(form[f.key] ?? '')"
-                  type="text"
-                  :placeholder="arrayPlaceholder(f.key)"
-                  :disabled="config.saving"
-                  @update:model-value="(v) => (form[f.key] = v)"
-                />
+              <div
+                v-if="f.key === 'ctoSkipHealthy' && ctoActionsField"
+                :id="`setting-${ctoActionsField.key}`"
+                :data-config-key="ctoActionsField.key"
+                class="setting-row setting-row--stacked"
+              >
+                <div class="setting-info">
+                  <div class="setting-label">{{ ctoActionsField.label }}</div>
+                  <div class="setting-desc">{{ CTO_ACTIONS_SETTINGS_ROW_DESC }}</div>
+                </div>
+                <div class="setting-input setting-input--wide">
+                  <CtoSafeActionsSettings
+                    :model-value="ctoActionsFormValue()"
+                    :disabled="config.saving"
+                    @update:model-value="setCtoActions"
+                  />
+                </div>
               </div>
-              <span v-if="f.restartRequired" class="restart-badge">restart required</span>
-            </div>
+            </template>
           </div>
         </Card>
 

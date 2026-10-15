@@ -1,0 +1,122 @@
+---
+id: "0798"
+title: "Polish compact activity indicators: fix state motions and improve visible size"
+type: bug
+status: done
+priority: p2
+area: web
+merged_commit: be446a1a549cfeb4c5abd984311658b2c77d7546
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: feat/polish-compact-activity-indicators-fix-s
+created_at: "2026-10-15T10:08:29Z"
+updated_at: "2026-10-15T17:22:52Z"
+last_close_out_gate_ms: 382060
+last_close_out_gate_at: "2026-10-15T17:22:29.392Z"
+review_passes: 2
+review_rounds: 1
+last_check_failure: "repoos check at 2026-10-15T12:29:58.918Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
+dev_error_count: 1
+---
+## Problem
+
+Follow-up to #0787 (now done). The human compared the shipped Activity animation Settings preview with the original animated concepts and found the shipped indicators less polished and too small. They approve a follow-up fixing the motion and improving visible size, keeping the compact 1–2 character-width goal and existing activity/theme colors.
+
+Source screenshot attached: Screenshot 2026-10-15 at 17.03.10.png. The earlier screenshot (also attached) shows the original three-dot indicator and compactness problem. Original motion prototype: /Users/nick/.codex/visualizations/2026/10/15/01a13ddd-613e-7170-8b22-eeb1a3ef9857/compact-agent-motion.html (local reference only; the specification below must stand on its own on remote runners).
+
+Confirmed source issue: ActivityIndicator.vue applies ai-motion-coding/reviewing/agent to the outer .ai wrapper, while the CSS uses same-element selectors such as .ai-motion-reviewing.ai-orbit::after against the inner .ai-mark. Those rules do not match the rendered DOM. Reviewing and generic agent motions fall back to coding motion; analogous selectors affect the other styles and some reduced-motion rules.
+
+Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em with a 1px border, giving an approximately 11px outside diameter at 12px text versus approximately 14px in the 16px prototype. Increasing the reserved width alone will not make the visible glyph larger.
+
+## Desired UX
+
+- Keep Orbital pixel as the default, all seven existing options, and the existing Settings/repoos.toml configuration contract.
+- Make all activity-specific motions actually work. Orbital coding: 1.6s linear orbit; reviewing: 2s diagonal scan inside the ring; generic agent: 2.6s orbit. Restore each family's distinctions: caret/scan/breathing dot; angle/square/breathing brackets; pulsing/scanning/rotating matrix; typing/scanning/slow-wave bars; spark/diamond/slower spark. Preserve the original three-dot option.
+- Use 1.5ch as the preferred compact footprint for Orbital pixel and any currently 1ch family that benefits from a little more room; retain up to 2ch for brackets. Size the visible glyph independently of the label's small text. Target a roughly 12–14px orbital ring outside diameter and a clearly visible ~3px dot at normal UI scale, adjusting the exact geometry to fit the reserved slot and its motion without clipping, overlap, or layout shift. A 1.5ch reservation is a target, not justification to draw outside its bounds: permit up to 2ch where actual font metrics require it.
+- Tune the other compact styles proportionately so none becomes a faint speck in real task cards. Keep motion restrained and distinguishable, without making every style the same size/shape or increasing the legacy spacing problem.
+- Preserve current working/reviewing/other activity color tokens in each theme. Do not copy the prototype's uniform blue palette. Make the moving mark clearly legible against its actual background; keep the orbit track subordinate to the moving dot, tuning opacity rather than replacing the palette.
+- Improve the Settings preview so it faithfully shows actual in-app size and all three distinct motions. Keep normal-size readable labels and consistent alignment/gap; use less visually competing nested framing and redundant heading/copy if consistent with Settings conventions. Do not enlarge only the Settings demo while leaving task-card indicators tiny. Avoid an unrelated Settings redesign.
+- Honor reduced motion with a stable, legible mark for every style/state, including parent-applied matrix/bracket animation. Preserve accessible labels and do not announce animation frames.
+
+## Notes for AI
+
+- Work in a new task worktree; do not modify the completed #0787 branch. Start with src/ui-app/src/components/ActivityIndicator.vue and the activity-indicator/Settings-preview blocks in src/ui-app/src/style.css, plus SettingsView.vue only as needed.
+- Fix selectors to match the real parent/child structure, or deliberately move motion classes to the animated mark. Audit all six families and reduced-motion selectors together; changing only Orbital pixel leaves the same regression elsewhere.
+- Confirm generic working consumers actually receive agent motion where semantically appropriate; preview-only props are not enough. Keep existing activity-state semantics.
+- Use shared sizing rules and inherited colors. Prefer no new user configuration: this is a fix/polish pass on the existing setting.
+- Scope documentation updates to any behavior/configuration descriptions directly affected. Rebuild after UI changes; run scoped repoos check before review.
+
+## Acceptance criteria
+
+- Browser-level regression verification renders the real component and checks computed animation names/durations for coding, reviewing, and agent variants across all six new styles. Tests must catch the current parent/child selector failure rather than only assert class names or stylesheet text.
+- Orbital pixel visibly orbits for coding, scans for reviewing, and uses the slower agent orbit. Other families show their specified state distinctions.
+- At actual task-card and Settings-preview sizes, indicators are clearly readable, remain within a measured 1–2ch compact allocation including motion, and neither overlap labels nor introduce layout shifts. Check the smallest normal label context and narrow cards.
+- Reduced-motion browser verification confirms no descendant or wrapper animation remains active for any new family and every style retains a visible static mark.
+- Verify representative light/dark themes, current working/reviewing colors, and moving-dot/track visibility. Capture Settings and actual task-card evidence; inspect the animations over time, because still screenshots cannot prove correct motion.
+- All seven existing choices and persisted configuration keep working; Orbital pixel remains the default. No runtime dependencies added.
+
+## Shots
+```json
+[
+{
+"label": "Settings activity preview — coding / reviewing / agent at app size",
+"target": "default",
+"route": "/settings?tab=general&setting=activityAnimationStyle",
+"highlight": ".activity-animation-preview",
+"steps": [
+{
+"waitMs": 600
+}
+]
+},
+{
+"label": "Task card coding indicator on the board at real card size",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+"steps": [
+{
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
+],
+"state": "board:activeCoding"
+}
+]
+```
+
+## Screenshots
+
+![Screenshot-2026-10-15-at-17.03.10](/api/tasks/0798/attachments/screenshot-1.png)
+![Screenshot-2026-10-15-at-11.40.44](/api/tasks/0798/attachments/screenshot-2.png)
+
+## Activity
+
+- 2026-10-15T10:08:29Z · created · njachowski@gmail.com
+- 2026-10-15T10:08:33Z · screenshots
+- 2026-10-15T10:19:23Z · status inbox→ready
+- 2026-10-15T11:01:52Z · status ready→active, branch
+- 2026-10-15T11:08:40Z · message_queued at 2026-10-15T11:08:40.018Z
+- 2026-10-15T11:08:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-15T11:40:28Z · body
+- 2026-10-15T11:44:45Z · body: section Shots
+- 2026-10-15T11:47:10Z · body
+- 2026-10-15T11:49:08Z · body
+- 2026-10-15T12:29:55Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-10-15T12:34:28Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried.
+- 2026-10-15T15:23:24Z · note: handoff requested (ui-review)
+- 2026-10-15T15:59:19Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-15T16:49:34Z · body
+- 2026-10-15T16:51:00Z · body: section Shots
+- 2026-10-15T16:58:16Z · status active→review
+- 2026-10-15T16:58:40Z · note: waitFor .board: waitFor: Timeout 5000ms exceeded. on /
+- 2026-10-15T16:58:41Z · note: highlight [data-test-id="task-card-agent-hint"] matched nothing on /
+- 2026-10-15T16:59:29Z · note: review pass 1: needs some work
+- 2026-10-15T16:59:29Z · status review→active
+- 2026-10-15T17:04:57Z · message_queued at 2026-10-15T17:04:57.734Z
+- 2026-10-15T17:04:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-15T17:05:28Z · body: section Shots
+- 2026-10-15T17:08:46Z · body
+- 2026-10-15T17:10:52Z · status active→review
+- 2026-10-15T17:12:10Z · note: review pass 2: good to go
+- 2026-10-15T17:22:29Z · close-out gate completed in 382s
+- 2026-10-15T17:22:52Z · status review→done, release:success

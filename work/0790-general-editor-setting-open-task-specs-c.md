@@ -2,16 +2,22 @@
 id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
-status: active
+status: done
 priority: p2
 area: [web, server, cli]
+merged_commit: 2688acf732dbaf90c59e74266fe96adf874af0a0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
-model_override: opencode-go/cat-jam-free
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T09:56:09Z"
-review_passes: 4
+updated_at: "2026-10-15T11:06:33Z"
+last_close_out_gate_ms: 363191
+last_close_out_gate_at: "2026-10-15T11:06:18.352Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-15T10:42:58.931Z: repoos check failed: ui verification failed (4 issue(s)): [request] HTTP 404 for http://127.0.0.1:55861/api/tasks/9999 (http://127.0.0.1:55861/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:55861/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:55861/api/tasks/9999 (http://127.0.0.1:55861/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:5… (truncated)"
+review_passes: 6
 review_rounds: 2
 dev_error_count: 1
 ---
@@ -46,19 +52,42 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 ```json
 [
 {
-"label": "Task drawer Spec row with Open in editor link (dark)",
+"label": "Task drawer Spec row Open in editor (dark)",
 "target": "default",
-"route": "/work?task=9999&tab=details",
+"route": "/work?task=0790&tab=details",
 "highlight": "[data-test-id=\"open-in-editor\"]",
-"state": "drawer:reviewWithBranch",
+"steps": [
+{
+"waitFor": "[data-test-id=\"open-in-editor\"]"
+}
+],
 "theme": "dark"
 },
 {
-"label": "Repo Context doc viewer with Open in editor link (light)",
+"label": "Repo Context doc Open in editor (light)",
 "target": "default",
 "route": "/repo?tab=docs&doc=docs/open-in-editor.md",
 "highlight": "[data-test-id=\"context-open-in-editor\"]",
+"steps": [
+{
+"waitFor": "[data-test-id=\"context-open-in-editor\"]"
+}
+],
 "theme": "light"
+},
+{
+"label": "Settings General editor command (light)",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "#setting-editor\\.command",
+"theme": "light"
+},
+{
+"label": "Settings General editor command (dark)",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "#setting-editor\\.command",
+"theme": "dark"
 }
 ]
 ```
@@ -109,3 +138,34 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T09:47:28Z · needs_input
 - 2026-10-15T09:47:50Z · body: section Shots
 - 2026-10-15T09:56:09Z · body
+- 2026-10-15T10:00:47Z · body
+- 2026-10-15T10:02:06Z · body
+- 2026-10-15T10:07:23Z · status active→review
+- 2026-10-15T10:08:20Z · note: highlight [data-test-id="open-in-editor"] matched nothing on /work?task=9999&tab=details
+- 2026-10-15T10:09:44Z · note: review pass 5: needs some work
+- 2026-10-15T10:09:45Z · needs_input
+- 2026-10-15T10:09:57Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65515/api/tasks/9999 (http://127.0.0.1:65515/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65515/api/tasks/9999)
+- 2026-10-15T10:10:21Z · body: section Shots
+- 2026-10-15T10:11:57Z · body
+- 2026-10-15T10:18:57Z · body
+- 2026-10-15T10:20:42Z · body
+- 2026-10-15T10:28:14Z · body
+- 2026-10-15T10:30:21Z · cli_override, model_override
+- 2026-10-15T10:30:25Z · status review→active
+- 2026-10-15T10:30:31Z · needs_input
+- 2026-10-15T10:31:03Z · message_queued at 2026-10-15T10:31:03.884Z
+- 2026-10-15T10:31:42Z · body: section Shots
+- 2026-10-15T10:32:46Z · body
+- 2026-10-15T10:34:20Z · body
+- 2026-10-15T10:35:22Z · status active→review
+- 2026-10-15T10:35:41Z · note: highlight [data-test-id="open-in-editor"] matched nothing on /work?task=9999&tab=details
+- 2026-10-15T10:35:55Z · note: highlight [data-test-id="open-in-editor"] matched nothing on /work?task=9999&tab=details
+- 2026-10-15T10:37:04Z · note: review pass 6: needs some work
+- 2026-10-15T10:37:05Z · needs_input
+- 2026-10-15T10:42:39Z · body: section Shots
+- 2026-10-15T10:42:55Z · note: ui verification failed (4 issue(s)): [request] HTTP 404 for http://127.0.0.1:55861/api/tasks/9999 (http://127.0.0.1:55861/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:55861/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:55861/api/tasks/9999 (http://127.0.0.1:55861/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:55861/api/tasks/9999)
+- 2026-10-15T10:42:58Z · message_delivered: 1 message(s)
+- 2026-10-15T10:44:04Z · body: section Shots
+- 2026-10-15T10:45:48Z · body
+- 2026-10-15T11:06:18Z · close-out gate completed in 363s
+- 2026-10-15T11:06:33Z · status review→done, release:success

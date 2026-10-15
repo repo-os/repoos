@@ -11,13 +11,17 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0782 — an active close-out mid-bundle-upload, so a capture can show the
   // upload-progress card copy instead of the bare stage.
   "closeOut:uploading",
+  // #0799 — an active close-out in the remote test run, so a capture can show
+  // a non-upload stage heartbeat ("remote tests" + elapsed) on the card.
+  "closeOut:remoteTests",
   "card:doneError",
   "board:withReviewTask",
   // #0778 — review-status task with a non-empty branch, so the task drawer
   // shows UI-changes pane and actions like Add shot and Refresh evidence.
   "drawer:reviewWithBranch",
-  // #0776 — a multi-area card with seeded diff stats, so a capture can show
-  // the combined area chip and the file-count chip.
+  // #0776/#0795 — a multi-area, human-assigned card with seeded diff stats, so
+  // a capture can show the combined area chip, the human chip and the
+  // file-count chip.
   "board:cardChips",
   // #0787 — active engineer run on the board so captures can show the compact
   // coding indicator on a task card.

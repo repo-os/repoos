@@ -2,9 +2,13 @@
 id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
-status: review
+status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p2
 area: [agent, server, core, web]
+merged_commit: 7bbc48374e704aca0844404d313378d089d45146
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/adaptive-agent-model-routing-with-jev-or
@@ -12,9 +16,13 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T09:56:14Z"
-review_passes: 1
+updated_at: "2026-10-15T11:53:24Z"
+last_close_out_gate_ms: 374967
+last_close_out_gate_at: "2026-10-15T11:52:46.772Z"
+review_passes: 6
+review_rounds: 2
 handoff_signal_retry_count: 1
+dev_error_count: 1
 ---
 ## Problem
 RepoOS currently chooses configured role defaults or explicit task overrides. Add an optional decision-model router that chooses a coding-agent/model configuration for PM, engineer and reviewer runs, and reconsiders that choice when review sends work back. Use task context and measured historical outcomes to reduce total cost and time to an accepted result while preserving quality and the existing lifecycle.
@@ -102,3 +110,42 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T09:56:13Z · status active→review
 - 2026-10-15T09:56:13Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
 - 2026-10-15T09:56:14Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-15T09:58:30Z · note: review pass 2: needs some work
+- 2026-10-15T09:58:30Z · status review→active
+- 2026-10-15T10:06:31Z · body
+- 2026-10-15T10:15:23Z · status active→review
+- 2026-10-15T10:15:24Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
+- 2026-10-15T10:15:24Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-15T10:17:12Z · note: review pass 3: needs some work
+- 2026-10-15T10:17:12Z · status review→active
+- 2026-10-15T10:24:22Z · body
+- 2026-10-15T10:31:24Z · status active→review
+- 2026-10-15T10:31:24Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
+- 2026-10-15T10:31:25Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-15T10:33:36Z · note: review pass 4: needs some work
+- 2026-10-15T10:33:37Z · needs_input
+- 2026-10-15T10:43:43Z · status review→active
+- 2026-10-15T10:43:57Z · needs_input
+- 2026-10-15T10:52:42Z · message_queued at 2026-10-15T10:52:42.902Z
+- 2026-10-15T10:52:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-15T10:53:17Z · body
+- 2026-10-15T11:00:08Z · body
+- 2026-10-15T11:00:59Z · body
+- 2026-10-15T11:02:27Z · status active→review
+- 2026-10-15T11:02:28Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-15T11:03:01Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
+- 2026-10-15T11:04:09Z · note: review pass 5: needs some work
+- 2026-10-15T11:04:09Z · needs_input
+- 2026-10-15T11:08:37Z · status review→active
+- 2026-10-15T11:08:47Z · needs_input
+- 2026-10-15T11:33:04Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-10-15T11:33:04Z · status active→review
+- 2026-10-15T11:33:05Z · note: handoff requested (cli)
+- 2026-10-15T11:39:24Z · body
+- 2026-10-15T11:41:30Z · status active→review
+- 2026-10-15T11:41:30Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
+- 2026-10-15T11:41:32Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-15T11:45:17Z · note: review pass 6: good to go
+- 2026-10-15T11:52:46Z · close-out gate completed in 375s
+- 2026-10-15T11:53:14Z · status review→done, release:success
+- 2026-10-15T11:53:24Z · needs_input

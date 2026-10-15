@@ -123,6 +123,21 @@ for repair/retry. See `docs/close-out-pipeline.md` and
 `repoos mv <id> done` is **not** this pipeline: it only changes task metadata.
 Never use it as a substitute for landing a branch through Move to done.
 
+**Never close out human-gated work as if the human part were done.** A task
+carrying `needs_input_reason: needs-human-step` has acceptance criteria that
+need a real device, account, credentials or third-party sign-up. Before
+`repoos done <id>` (or Move to done): confirm the scope being landed needs no
+human (the tests use fakes and nothing depends on that human step); if a
+criterion does, file that part first —
+`repoos new "<title>" --depends-on <id>`, then
+`repoos update <new> --assigned-to human --hold true` (`repoos new` defaults to
+`assigned_to: ai`, so the reassignment is required) — narrow the original task
+to the agent-doable scope, and only then close out. If the human part cannot be
+separated from the code, do not close out; report it to the human. Applies to
+interactive sessions and the CTO/driver path alike. Incident: #0660 was closed
+out while it carried the flag (2026-10-14) and the human-only verification was
+split out afterwards, as #0784 — the wrong order.
+
 ### Integration conflicts: narrow resolution vs full cycle
 
 When another task lands first and a task that already passed review now
