@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-15T10:10:00.331Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65515/api/tasks/9999 (http://127.0.0.1:65515/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65515/api/tasks/9999)"
 id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
@@ -119,3 +121,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T10:09:44Z · note: review pass 5: needs some work
 - 2026-10-15T10:09:45Z · needs_input
 - 2026-10-15T10:09:57Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65515/api/tasks/9999 (http://127.0.0.1:65515/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65515/api/tasks/9999)
+
