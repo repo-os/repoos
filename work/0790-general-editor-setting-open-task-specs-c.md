@@ -2,7 +2,7 @@
 id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
-status: review
+status: active
 priority: p2
 area: [web, server, cli]
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T07:32:55Z"
+updated_at: "2026-10-15T08:12:20Z"
 ---
 ## Problem
 'Open in editor' only works through the copy inspector's setting, dev.inspector.editorCommand, and only in dev/local builds. The only editor setting lives in a group that is hidden unless the copy inspector is available. So on a normal install there is nowhere to set an editor, and the controls that use one stay hidden or dead:
@@ -43,3 +43,4 @@ Start from dev.inspector.editorCommand in src/core/config.ts (~2755-2771, ~2901)
 - 2026-10-15T06:34:26Z · status inbox→ready
 - 2026-10-15T06:34:28Z · status ready→active, branch
 - 2026-10-15T07:32:55Z · status active→review
+- 2026-10-15T08:12:20Z · status review→active
