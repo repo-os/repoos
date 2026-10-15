@@ -220,6 +220,10 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       if (!repo.runningIds.includes(SHOT_PREVIEW_FIXTURE_TASK_ID)) {
         repo.runningIds = [...repo.runningIds, SHOT_PREVIEW_FIXTURE_TASK_ID];
       }
+      repo.agentActivityAt = {
+        ...repo.agentActivityAt,
+        [SHOT_PREVIEW_FIXTURE_TASK_ID]: nowIso(),
+      };
       break;
     case "board:cardChips":
       // A multi-area task with seeded diff stats, so the combined area chip

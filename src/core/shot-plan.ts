@@ -99,6 +99,16 @@ export interface DeclaredShot {
    */
   theme?: "light" | "dark";
   /**
+   * Viewport width in px for this capture (#0787). Height stays the default
+   * handoff height (800). Use a narrow width (e.g. 390) to show constrained
+   * board layouts.
+   */
+  viewportWidth?: number;
+  /**
+   * When true, emulate `prefers-reduced-motion: reduce` before capture (#0787).
+   */
+  reducedMotion?: boolean;
+  /**
    * Meaningful assertions the capture must satisfy (#0734). One entry may carry
    * several; every non-optional one must pass or the handoff is blocked.
    */
@@ -157,6 +167,10 @@ export interface CaptureEntry {
   state?: string;
   /** Light/dark mode pinned for this capture (#0782), threaded from the declared shot. */
   theme?: "light" | "dark";
+  /** Viewport width in px (#0787), threaded from the declared shot. */
+  viewportWidth?: number;
+  /** Emulate reduced motion (#0787), threaded from the declared shot. */
+  reducedMotion?: boolean;
   /**
    * Meaningful assertions the capture must satisfy (#0734). Threaded from the
    * declared shot so the handoff gate can check them and block on failure;
@@ -395,6 +409,19 @@ function parseShot(raw: unknown, where: string): { shot?: DeclaredShot; error?: 
       return { error: `${where}: "theme" expects "light" or "dark"` };
     }
     shot.theme = r.theme;
+  }
+  if (r.viewportWidth !== undefined) {
+    const w = Number(r.viewportWidth);
+    if (!Number.isFinite(w) || w < 280 || w > 3840) {
+      return { error: `${where}: "viewportWidth" expects a number between 280 and 3840` };
+    }
+    shot.viewportWidth = Math.floor(w);
+  }
+  if (r.reducedMotion !== undefined) {
+    if (typeof r.reducedMotion !== "boolean") {
+      return { error: `${where}: "reducedMotion" expects true or false` };
+    }
+    shot.reducedMotion = r.reducedMotion;
   }
   if (r.env !== undefined) {
     if (typeof r.env !== "object" || r.env === null || Array.isArray(r.env)) {
@@ -782,6 +809,10 @@ export function buildCapturePlan(
       ...(!isCommand(resolved.target) && shot.assert?.length ? { assert: shot.assert } : {}),
       ...(!isCommand(resolved.target) && shot.state ? { state: shot.state } : {}),
       ...(!isCommand(resolved.target) && shot.theme ? { theme: shot.theme } : {}),
+      ...(!isCommand(resolved.target) && shot.viewportWidth
+        ? { viewportWidth: shot.viewportWidth }
+        : {}),
+      ...(!isCommand(resolved.target) && shot.reducedMotion ? { reducedMotion: true } : {}),
       // #0769: command-only selection — env/args passed to the command and a
       // per-entry output glob that narrows which produced files become THIS
       // shot. Only ever carried for a command target.
@@ -821,7 +852,7 @@ export function buildCapturePlan(
   // light and a dark capture of one route are two pieces of evidence, not a
   // near-duplicate pair.
   const collapseKey = (e: CaptureEntry): string =>
-    `${e.target}\0${e.route}\0${e.selector ?? ""}\0${e.state ?? ""}\0${e.theme ?? ""}\0${JSON.stringify(e.steps ?? [])}\0${JSON.stringify(e.assert ?? [])}\0${JSON.stringify(e.env ?? {})}\0${JSON.stringify(e.args ?? [])}\0${e.glob ?? ""}`;
+    `${e.target}\0${e.route}\0${e.selector ?? ""}\0${e.state ?? ""}\0${e.theme ?? ""}\0${e.viewportWidth ?? ""}\0${e.reducedMotion ? "1" : ""}\0${JSON.stringify(e.steps ?? [])}\0${JSON.stringify(e.assert ?? [])}\0${JSON.stringify(e.env ?? {})}\0${JSON.stringify(e.args ?? [])}\0${e.glob ?? ""}`;
   const collapsed: string[] = [];
   const deduped: CaptureEntry[] = [];
   for (const entry of entries) {
@@ -942,6 +973,8 @@ export function sameDeclaredShot(a: DeclaredShot, b: DeclaredShot): boolean {
   // #0782: theme is part of a declaration's identity — a light capture and a
   // dark capture of the same route are different shots.
   if ((a.theme ?? undefined) !== (b.theme ?? undefined)) return false;
+  if ((a.viewportWidth ?? undefined) !== (b.viewportWidth ?? undefined)) return false;
+  if ((a.reducedMotion ?? undefined) !== (b.reducedMotion ?? undefined)) return false;
   if (JSON.stringify(a.steps ?? []) !== JSON.stringify(b.steps ?? [])) return false;
   // #0769: the command-selection fields are part of a declaration's identity —
   // two entries that differ only in env/args/glob are DIFFERENT shots.
@@ -974,6 +1007,8 @@ export function shotPlanFingerprint(entries: CaptureEntry[]): string {
       // #0782: the capture's light/dark mode changes the rendered frame, so it
       // binds the plan identity like route/steps do.
       theme: e.theme ?? null,
+      viewportWidth: e.viewportWidth ?? null,
+      reducedMotion: e.reducedMotion ?? null,
       // #0769: a declared entry's env/args/glob change what the command renders
       // and which files become the shot, so they bind the plan identity too.
       env: e.env ?? null,
@@ -1130,6 +1165,8 @@ function declarationClosenessScore(raw: unknown, declared: DeclaredShot): number
   ] as const) {
     if ((entry[field] ?? undefined) === (declared[field] ?? undefined)) score++;
   }
+  if ((entry.viewportWidth ?? undefined) === (declared.viewportWidth ?? undefined)) score++;
+  if ((entry.reducedMotion ?? undefined) === (declared.reducedMotion ?? undefined)) score++;
   if (JSON.stringify(entry.steps ?? []) === JSON.stringify(declared.steps ?? [])) score++;
   if (JSON.stringify(entry.env ?? {}) === JSON.stringify(declared.env ?? {})) score++;
   if (JSON.stringify(entry.args ?? []) === JSON.stringify(declared.args ?? [])) score++;
@@ -1255,6 +1292,8 @@ export function sameDeclaredShotRaw(raw: unknown, declared: DeclaredShot): boole
   ] as const) {
     if ((entry[field] ?? undefined) !== (declared[field] ?? undefined)) return false;
   }
+  if ((entry.viewportWidth ?? undefined) !== (declared.viewportWidth ?? undefined)) return false;
+  if ((entry.reducedMotion ?? undefined) !== (declared.reducedMotion ?? undefined)) return false;
   if (JSON.stringify(entry.steps ?? []) !== JSON.stringify(declared.steps ?? [])) return false;
   if (JSON.stringify(entry.env ?? {}) !== JSON.stringify(declared.env ?? {})) return false;
   if (JSON.stringify(entry.args ?? []) !== JSON.stringify(declared.args ?? [])) return false;
