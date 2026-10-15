@@ -2,7 +2,7 @@
 id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
-status: active
+status: review
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/adaptive-agent-model-routing-with-jev-or
 cli_override: cursor
 model_override: claude-haiku-5-5-high
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T07:58:14Z"
+updated_at: "2026-10-15T08:04:05Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -69,3 +69,5 @@ RepoOS currently chooses configured role defaults or explicit task overrides. Ad
 - 2026-10-15T07:51:37Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-15T07:51:58Z · body
 - 2026-10-15T07:58:14Z · handoff failed · remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate
+- 2026-10-15T08:04:05Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-15T08:04:05Z · note: handoff requested (cli)
