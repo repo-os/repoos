@@ -2,7 +2,7 @@
 id: "0797"
 title: "Settings: decimal number fields rejected on save (slow-check multiplier)"
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — Server validator, schema `min`/`step`, and Settings “save only changed keys” match the spec and new tests; handoff UI evidence is **STALE** (tree `f313bbb6c` vs reviewed `fc0418663`) and the only PNG is an auto capture of `/` (board), not the declared `/settings?tab=general` shot. Re-capture on final HEAD before sign-off."
@@ -14,7 +14,7 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T17:23:41Z"
+updated_at: "2026-10-15T17:30:01Z"
 review_passes: 4
 review_rounds: 2
 dev_error_count: 1
@@ -108,3 +108,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T17:20:32Z · body: section Shots
 - 2026-10-15T17:22:01Z · body
 - 2026-10-15T17:23:41Z · body
+- 2026-10-15T17:30:01Z · status active→review
