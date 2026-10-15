@@ -236,6 +236,40 @@ describe("DevView layout and state (#0748)", () => {
     expect(stopped.find(".dev-state-pill").text()).toContain("Stopped");
   });
 
+  it("marks a started target as running for the highlight, and not a stopped one (#0801)", async () => {
+    installFetch({
+      targets: [
+        target({ name: "web", status: "running" }),
+        target({ name: "api", status: "stopped", url: "http://localhost:4000" }),
+        target({ name: "job", status: "starting", url: "http://localhost:5000" }),
+        target({ name: "bad", status: "failed", url: "http://localhost:6000" }),
+      ],
+    });
+    const wrapper = mountView();
+    await flush();
+
+    const cards = wrapper.findAll(".dev-card");
+    // Same hook the active remote runner uses: `data-running` drives the glow.
+    expect(cards[0]!.attributes("data-running")).toBe("true");
+    // Stopped, starting and failed targets are not highlighted as running.
+    expect(cards[1]!.attributes("data-running")).toBeUndefined();
+    expect(cards[2]!.attributes("data-running")).toBeUndefined();
+    expect(cards[3]!.attributes("data-running")).toBeUndefined();
+  });
+
+  it("reuses the shared remote-runner running glow rather than a new style (#0801)", () => {
+    const dev = readFileSync(join(resolve(__dirname, ".."), "src/views/DevView.vue"), "utf8");
+    const runners = readFileSync(
+      join(resolve(__dirname, ".."), "src/components/RemoteRunnersPanel.vue"),
+      "utf8",
+    );
+    const globals = readFileSync(join(resolve(__dirname, ".."), "src/style.css"), "utf8");
+    // The pulse is defined once, globally, and both surfaces reference it by name.
+    expect(globals).toMatch(/@keyframes running-glow-pulse/);
+    expect(dev).toMatch(/animation:\s*running-glow-pulse/);
+    expect(runners).toMatch(/animation:\s*running-glow-pulse/);
+  });
+
   it("shows a failed target's reason and its last output lines", async () => {
     installFetch({
       targets: [
@@ -399,6 +433,25 @@ describe("DevView failure summary (#0775)", () => {
       expect(summary.text()).toContain("Port 5173 is already in use");
       expect(summary.text()).toContain("node /opt/vite --strictPort");
       expect(wrapper.find(".dev-log-body").text()).toContain("already in use");
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
+  });
+
+  it("renders the dev:running capture fixture with one highlighted target (#0801)", async () => {
+    useRepoStore().health = makeHealth({ isPreviewBuild: true });
+    window.history.replaceState({}, "", "/dev?shotState=dev:running");
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    try {
+      const wrapper = mountView();
+      await flush();
+      const cards = wrapper.findAll(".dev-card");
+      expect(cards).toHaveLength(2);
+      // The started target carries the shared running hook; the stopped one doesn't.
+      expect(cards[0]!.attributes("data-running")).toBe("true");
+      expect(cards[1]!.attributes("data-running")).toBeUndefined();
       expect(fetchSpy).not.toHaveBeenCalled();
     } finally {
       window.history.replaceState({}, "", "/");

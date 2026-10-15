@@ -334,6 +334,7 @@ watch(
             :key="t.name"
             class="dev-card"
             :data-status="t.status"
+            :data-running="isRunning(t) || undefined"
           >
             <div class="dev-card-head">
               <div class="dev-card-title">
@@ -611,6 +612,18 @@ watch(
 }
 .dev-card[data-status="failed"] {
   border-color: var(--red-border-tint);
+}
+/* A started target gets the same "running" highlight as an active remote
+   runner (#0801): the shared cyan breathing glow. Stopped/starting/failed
+   targets never set `data-running`, so their base border stands. */
+.dev-card[data-running] {
+  border-color: var(--cyan);
+  animation: running-glow-pulse 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dev-card[data-running] {
+    animation: none;
+  }
 }
 
 .dev-card-head {
