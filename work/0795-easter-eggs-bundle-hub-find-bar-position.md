@@ -13,8 +13,6 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-hub-find-bar-position
 created_at: "2026-10-15T08:02:06Z"
 updated_at: "2026-10-15T16:52:07Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
-last_handoff_failure_sha: af62803c9e39d127a72a4edb132446377e582a80
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-15T11:36:40.023Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -102,3 +100,4 @@ Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSH
 - 2026-10-15T15:23:20Z · message_expired: not delivered within timeout
 - 2026-10-15T16:50:00Z · body
 - 2026-10-15T16:50:51Z · status active→review
+
