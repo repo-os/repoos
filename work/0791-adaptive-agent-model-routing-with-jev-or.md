@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-15T11:04:09Z"
+review_passes: 5
 id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
@@ -15,8 +17,6 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T11:04:09Z"
-review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 1
 ---
@@ -132,3 +132,4 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T11:03:01Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
 - 2026-10-15T11:04:09Z · note: review pass 5: needs some work
 - 2026-10-15T11:04:09Z · needs_input
+
