@@ -2,14 +2,14 @@
 id: "0800"
 title: "Settings: split General into sections, each searchable with its own URL"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/settings-split-general-into-sections-eac
 created_at: "2026-10-15T15:15:17Z"
-updated_at: "2026-10-15T18:35:57Z"
+updated_at: "2026-10-15T18:44:57Z"
 close_out_repair_count: 1
 review_passes: 2
 ---
@@ -74,3 +74,4 @@ Start from src/ui-app/src/settings-location.ts (SETTINGS_TABS and location mappi
 - 2026-10-15T18:29:20Z · note: close-out repair: merge-conflict
 - 2026-10-15T18:33:50Z · body
 - 2026-10-15T18:35:57Z · body
+- 2026-10-15T18:44:57Z · status active→review
