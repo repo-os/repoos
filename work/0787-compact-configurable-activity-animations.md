@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T07:54:02Z"
+updated_at: "2026-10-15T07:55:38Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -61,15 +61,27 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 ```json
 [
 {
-"label": "Activity animation setting with live preview",
-"target": "default",
-"route": "/settings?tab=general",
-"highlight": "#setting-activityAnimationStyle",
-"steps": [
+  "label": "Activity animation preview (coding, reviewing, agent states)",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": "#setting-activityAnimationStyle",
+  "steps": [
+    {
+      "waitMs": 400
+    }
+  ]
+},
 {
-"waitMs": 400
-}
-]
+  "label": "Compact coding indicator on active task card",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=task-card-agent-hint]",
+  "steps": [
+    {
+      "waitMs": 400
+    }
+  ],
+  "state": "board:activeCoding"
 }
 ]
 ```
@@ -103,3 +115,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T07:52:21Z · status active→review
 - 2026-10-15T07:54:01Z · note: review pass 1: needs some work
 - 2026-10-15T07:54:02Z · status review→active
+- 2026-10-15T07:55:38Z · body: section Shots
