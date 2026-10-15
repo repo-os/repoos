@@ -2,7 +2,7 @@
 id: "0792"
 title: "Model routing adapter, config and shadow mode"
 type: feature
-status: inbox
+status: ready
 needs_input: true
 needs_input_reason: underspecified
 needs_input_detail: "missing sections: Desired UX"
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T07:47:16Z"
-updated_at: "2026-10-15T09:47:14Z"
+updated_at: "2026-10-15T11:02:22Z"
 ---
 ## Problem
 Task #0791 introduced a provider-neutral routing foundation (adapters, candidate filter, policy, `[model_routing]` parsing) but nothing user-facing or run-path-facing is wired yet. This task delivers the adapter, configuration, mode and UI layer so a human can select a provider, see credential status, and choose `off` or `shadow` with confidence that shadow mode never changes a selection. Automatic routing is explicitly out of scope; it is task 2.
@@ -56,3 +56,4 @@ Parent/context record: #0791.
 - 2026-10-15T08:23:13Z · body: section Scope
 - 2026-10-15T09:47:14Z · needs_input
 - 2026-10-15T09:47:14Z · needs_input
+- 2026-10-15T11:02:22Z · status inbox→ready
