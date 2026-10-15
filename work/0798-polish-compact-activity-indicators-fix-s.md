@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-15T16:59:29Z"
+review_passes: 1
 id: "0798"
 title: "Polish compact activity indicators: fix state motions and improve visible size"
 type: bug
@@ -12,7 +14,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T16:59:29Z"
 last_check_failure: "repoos check at 2026-10-15T12:29:58.918Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -114,3 +115,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T16:58:40Z · note: waitFor .board: waitFor: Timeout 5000ms exceeded. on /
 - 2026-10-15T16:58:41Z · note: highlight [data-test-id="task-card-agent-hint"] matched nothing on /
 - 2026-10-15T16:59:29Z · note: review pass 1: needs some work
+
