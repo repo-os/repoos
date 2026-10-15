@@ -1681,7 +1681,7 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       cfg.remoteValidation = { ...cfg.remoteValidation, maxConcurrent: rvMaxConcurrent };
     }
     const rvHangIdle = parsed["remoteValidation.hangIdleMinutes"];
-    if (typeof rvHangIdle === "number" && Number.isFinite(rvHangIdle) && rvHangIdle > 0) {
+    if (typeof rvHangIdle === "number" && Number.isInteger(rvHangIdle) && rvHangIdle > 0) {
       cfg.remoteValidation = { ...cfg.remoteValidation, hangIdleMinutes: rvHangIdle };
     }
     const rvFallback = parsed["remoteValidation.fallbackToLocal"];
