@@ -122,3 +122,4 @@ Parent/context record: #0791.
 - 2026-10-15T20:08:47Z · body
 - 2026-10-15T20:09:31Z · body: section Shots
 - 2026-10-15T20:16:06Z · status active→review
+- 2026-10-15T20:16:06Z · note: Task body is underspecified: missing sections: Desired UX
