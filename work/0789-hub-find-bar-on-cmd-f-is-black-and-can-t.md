@@ -2,7 +2,7 @@
 id: "0789"
 title: "Hub: Find bar on Cmd-F is black and can't be typed into"
 type: bug
-status: active
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/hub-find-bar-on-cmd-f-is-black-and-can-t
 model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-10-15T06:31:02Z"
-updated_at: "2026-10-15T06:33:40Z"
+updated_at: "2026-10-15T08:29:34Z"
 ---
 ## Problem
 In the native macOS RepoOS Hub, Cmd-F now shows a black strip at the top of the window (from the #0783 Find work). Its text field can't be typed into, and no controls are readable, so the user can't search the page. Reported 2026-10-15.
@@ -37,3 +37,4 @@ Start from the Find command in macos/RepoOSHub/RepoOSHubApp.swift (Edit menu, Cm
 - 2026-10-15T06:33:38Z · model_override
 - 2026-10-15T06:33:38Z · status inbox→ready
 - 2026-10-15T06:33:40Z · status ready→active, branch
+- 2026-10-15T08:29:34Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
