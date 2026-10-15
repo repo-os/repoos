@@ -3,9 +3,6 @@ id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
 status: active
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/adaptive-agent-model-routing-with-jev-or
 cli_override: cursor
 model_override: claude-haiku-5-5-high
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T07:38:20Z"
+updated_at: "2026-10-15T07:45:40Z"
 ---
 ## Problem
 RepoOS currently chooses configured role defaults or explicit task overrides. Add an optional decision-model router that chooses a coding-agent/model configuration for PM, engineer and reviewer runs, and reconsiders that choice when review sends work back. Use task context and measured historical outcomes to reduce total cost and time to an accepted result while preserving quality and the existing lifecycle.
@@ -66,3 +63,4 @@ RepoOS currently chooses configured role defaults or explicit task overrides. Ad
 - 2026-10-15T07:35:34Z · body
 - 2026-10-15T07:36:24Z · body
 - 2026-10-15T07:38:20Z · body
+- 2026-10-15T07:45:40Z · needs_input
