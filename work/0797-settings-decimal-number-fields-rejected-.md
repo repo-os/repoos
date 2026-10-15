@@ -11,7 +11,7 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T17:02:23Z"
+updated_at: "2026-10-15T17:04:29Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -38,6 +38,18 @@ Two things are wrong:
 
 ## Notes for AI
 Start from the number branch in src/server/routes/config.ts (~560-570) and the Settings save path in src/ui-app/src/views/SettingsView.vue. Source: user report 2026-10-15.
+
+## Shots
+```json
+[
+{
+  "label": "Settings general tab after decimal save fix",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": "#setting-activityAnimationStyle"
+}
+]
+```
 
 ## Activity
 
@@ -80,3 +92,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T17:01:51Z · cli_override, model_override
 - 2026-10-15T17:01:56Z · needs_input
 - 2026-10-15T17:02:23Z · message_queued at 2026-10-15T17:02:23.614Z
+- 2026-10-15T17:04:29Z · body: section Shots
