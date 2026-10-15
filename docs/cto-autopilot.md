@@ -150,3 +150,12 @@ the AGENTS.md rules that matter to a driver. `--json` makes it loadable by a
 driver agent. It replaces the hand-written handoff doc that went stale in
 minutes (#0731). Durable lessons belong in `docs/driver-notes.md`, in the repo,
 not in an agent's private memory.
+
+A driver that lands a task still obeys the rule in AGENTS.md's **Review and
+sign-off** section: never close out a task flagged `needs-human-step` as if the
+human part were done. Confirm the landed scope needs no human; if an acceptance
+criterion does, split it into its own task first (`repoos new "<title>"
+--depends-on <id>`, then `--assigned-to human --hold true`) and narrow the
+original before Move to done (#0660, #0784). The approval policy already refuses
+to auto-approve any `needs-input` task, so this only arises when a driver lands
+one by hand.
