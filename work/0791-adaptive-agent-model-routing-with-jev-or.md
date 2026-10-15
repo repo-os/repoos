@@ -113,3 +113,4 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T10:17:12Z · status review→active
 - 2026-10-15T10:24:22Z · body
 - 2026-10-15T10:31:24Z · status active→review
+- 2026-10-15T10:31:24Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
