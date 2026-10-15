@@ -197,7 +197,10 @@ onMounted(() => {
           aria-label="Search models by name"
         />
         <div class="playground-filter-row">
-          <Select :model-value="providerFilter || '__all__'" @update:model-value="providerFilter = $event === '__all__' ? '' : $event">
+          <Select
+            :model-value="providerFilter || '__all__'"
+            @update:model-value="providerFilter = $event === '__all__' ? '' : $event"
+          >
             <SelectTrigger class="playground-provider-select" aria-label="Filter by provider">
               <SelectValue placeholder="All providers" />
             </SelectTrigger>
@@ -210,7 +213,10 @@ onMounted(() => {
               </SelectViewport>
             </SelectContent>
           </Select>
-          <Select :model-value="maxCost || '__any__'" @update:model-value="maxCost = $event === '__any__' ? '' : $event">
+          <Select
+            :model-value="maxCost || '__any__'"
+            @update:model-value="maxCost = $event === '__any__' ? '' : $event"
+          >
             <SelectTrigger class="playground-cost-select" aria-label="Filter by maximum token cost">
               <SelectValue placeholder="Any cost" />
             </SelectTrigger>
