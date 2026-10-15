@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T08:29:35Z"
+updated_at: "2026-10-15T08:30:46Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -133,3 +133,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T08:21:13Z · body
 - 2026-10-15T08:21:46Z · body: section Decision
 - 2026-10-15T08:29:35Z · status active→review
+- 2026-10-15T08:30:46Z · note: click .theme-toggle: click: Timeout 5000ms exceeded. on /work?task=0790&tab=details
