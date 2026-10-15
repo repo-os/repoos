@@ -2,7 +2,7 @@
 id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
-status: active
+status: review
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T11:00:59Z"
+updated_at: "2026-10-15T11:02:27Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 1
@@ -124,3 +124,4 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T10:53:17Z · body
 - 2026-10-15T11:00:08Z · body
 - 2026-10-15T11:00:59Z · body
+- 2026-10-15T11:02:27Z · status active→review
