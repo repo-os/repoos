@@ -11,10 +11,10 @@ area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/shots-a-fixture-added-on-the-task-branch
-cli_override: claude code
-model_override: haiku
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-14T16:48:07Z"
-updated_at: "2026-10-14T19:14:12Z"
+updated_at: "2026-10-15T04:40:10Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -74,3 +74,4 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-14T18:33:42Z · handoff failed · remote validation failed: test failure: tests/shot-fixtures.test.ts > shot preview fixtures (#0743) > rejects unknown fixture ids at capture URL build time on bee — fix it in the feature branch and re-run the gate
 - 2026-10-14T19:14:12Z · status review→active
 - 2026-10-14T19:14:12Z · note: Taking over in interactive session to finish review-pass-4 findings (human chose option 1)
+- 2026-10-15T04:40:10Z · cli_override, model_override
