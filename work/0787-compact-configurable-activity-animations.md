@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-15T07:54:01Z"
-review_passes: 1
 id: "0787"
 title: Compact configurable activity animations; default to Orbital pixel
 type: feature
-status: review
+status: active
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -15,6 +13,9 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-15T05:23:43Z"
+updated_at: "2026-10-15T07:54:02Z"
+review_rounds: 1
+review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -101,4 +102,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T07:44:58Z · body
 - 2026-10-15T07:52:21Z · status active→review
 - 2026-10-15T07:54:01Z · note: review pass 1: needs some work
-
+- 2026-10-15T07:54:02Z · status review→active
