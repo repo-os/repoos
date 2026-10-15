@@ -60,3 +60,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T10:19:23Z · status inbox→ready
 - 2026-10-15T11:01:52Z · status ready→active, branch
 - 2026-10-15T11:08:40Z · message_queued at 2026-10-15T11:08:40.018Z
+- 2026-10-15T11:08:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
