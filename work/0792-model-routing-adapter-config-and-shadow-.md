@@ -2,7 +2,7 @@
 id: "0792"
 title: "Model routing adapter, config and shadow mode"
 type: feature
-status: active
+status: review
 priority: p2
 area: [agent, server, core, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/model-routing-adapter-config-and-shadow-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T07:47:16Z"
-updated_at: "2026-10-15T20:09:31Z"
+updated_at: "2026-10-15T20:16:06Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 6f5dc023f5b8b6ab00e3f79708160e36769e313a
 dev_error_count: 3
@@ -54,10 +54,10 @@ Parent/context record: #0791.
 ```json
 [
 {
-  "label": "Model routing tab with provider, mode, and credential status",
-  "target": "default",
-  "route": "/agents?tab=model-routing",
-  "highlight": "[data-testid=\"model-routing-panel\"]"
+"label": "Model routing tab with provider, mode, and credential status",
+"target": "default",
+"route": "/agents?tab=model-routing",
+"highlight": "[data-testid=\"model-routing-panel\"]"
 }
 ]
 ```
@@ -121,3 +121,4 @@ Parent/context record: #0791.
 - 2026-10-15T20:07:21Z · body
 - 2026-10-15T20:08:47Z · body
 - 2026-10-15T20:09:31Z · body: section Shots
+- 2026-10-15T20:16:06Z · status active→review
