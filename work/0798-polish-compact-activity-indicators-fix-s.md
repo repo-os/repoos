@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T11:44:45Z"
+updated_at: "2026-10-15T11:47:10Z"
 ---
 ## Problem
 
@@ -48,52 +48,52 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - Verify representative light/dark themes, current working/reviewing colors, and moving-dot/track visibility. Capture Settings and actual task-card evidence; inspect the animations over time, because still screenshots cannot prove correct motion.
 - All seven existing choices and persisted configuration keep working; Orbital pixel remains the default. No runtime dependencies added.
 
-## Screenshots
-
-![Screenshot-2026-10-15-at-17.03.10](/api/tasks/0798/attachments/screenshot-1.png)
-![Screenshot-2026-10-15-at-11.40.44](/api/tasks/0798/attachments/screenshot-2.png)
-
 ## Shots
 ```json
 [
 {
-  "label": "Settings activity preview — coding / reviewing / agent at app size",
-  "target": "default",
-  "route": "/settings?tab=general&setting=activityAnimationStyle",
-  "highlight": ".activity-animation-preview",
-  "steps": [
-    {
-      "waitMs": 600
-    }
-  ]
+"label": "Settings activity preview — coding / reviewing / agent at app size",
+"target": "default",
+"route": "/settings?tab=general&setting=activityAnimationStyle",
+"highlight": ".activity-animation-preview",
+"steps": [
+  {
+    "waitMs": 600
+  }
+]
 },
 {
-  "label": "Task card coding indicator at real card size",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-  "steps": [
-    {
-      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-    }
-  ],
-  "state": "board:activeCoding"
+"label": "Task card coding indicator at real card size",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+"steps": [
+  {
+    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+  }
+],
+"state": "board:activeCoding"
 },
 {
-  "label": "Task card coding indicator (dark theme)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-  "steps": [
-    {
-      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-    }
-  ],
-  "state": "board:activeCoding",
-  "theme": "dark"
+"label": "Task card coding indicator (dark theme)",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+"steps": [
+  {
+    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+  }
+],
+"state": "board:activeCoding",
+"theme": "dark"
 }
 ]
 ```
+
+## Screenshots
+
+![Screenshot-2026-10-15-at-17.03.10](/api/tasks/0798/attachments/screenshot-1.png)
+![Screenshot-2026-10-15-at-11.40.44](/api/tasks/0798/attachments/screenshot-2.png)
 
 ## Activity
 
@@ -105,3 +105,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T11:08:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-15T11:40:28Z · body
 - 2026-10-15T11:44:45Z · body: section Shots
+- 2026-10-15T11:47:10Z · body
