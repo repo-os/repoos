@@ -751,7 +751,6 @@ watch(
 // ---- Auto-save settings (mirrors the Agents page implementation) ----
 
 const form = reactive<Record<string, unknown>>({});
-const originalValues: Record<string, unknown> = {};
 let syncing = false;
 let autoSaveTimer: ReturnType<typeof setTimeout> | undefined;
 let saveInFlight = false;
@@ -759,28 +758,8 @@ let savePending = false;
 
 function sync(): void {
   syncing = true;
-  for (const f of config.schema) {
-    if (!isFieldVisible(f.key)) continue;
-    if (f.key === "dev.targets" || f.key === "budget.allowlist") continue;
-    if ((TOML_ONLY_REMOTE_VALIDATION_KEYS as readonly string[]).includes(f.key)) continue;
-
-    const val = config.form[f.key];
-    let processedVal: unknown;
-
-    if (f.key.startsWith("board.columns.")) {
-      const trimmed = typeof val === "string" ? val.trim() : String(val ?? "").trim();
-      processedVal = trimmed || f.default;
-    } else if (f.type === "array" && typeof val === "string") {
-      processedVal = val
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-    } else {
-      processedVal = val;
-    }
-
-    form[f.key] = val;
-    originalValues[f.key] = processedVal;
+  for (const key of Object.keys(config.form)) {
+    form[key] = config.form[key];
   }
   syncing = false;
 }
@@ -820,14 +799,6 @@ function arrayPlaceholder(key: string): string {
   return ARRAY_PLACEHOLDERS[key] ?? "value1, value2";
 }
 
-function valuesEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.length === b.length && a.every((v, i) => v === b[i]);
-  }
-  return false;
-}
-
 function buildBody(): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   for (const f of config.schema) {
@@ -847,27 +818,19 @@ function buildBody(): Record<string, unknown> {
     // Import/Export tab and edited in raw TOML; skipping them here keeps an
     // unrelated Settings save from materialising their defaults.
     if ((TOML_ONLY_REMOTE_VALIDATION_KEYS as readonly string[]).includes(f.key)) continue;
-
     let val = form[f.key];
-    let processedVal: unknown;
-
     if (f.key.startsWith("board.columns.")) {
       const trimmed = typeof val === "string" ? val.trim() : String(val ?? "").trim();
-      processedVal = trimmed || f.default;
-    } else if (f.type === "array" && typeof val === "string") {
-      processedVal = val
+      body[f.key] = trimmed || f.default;
+      continue;
+    }
+    if (f.type === "array" && typeof val === "string") {
+      val = val
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-    } else {
-      processedVal = val;
     }
-
-    // Only include fields that have changed from their original values. If a
-    // field is newly visible (not in originalValues), it will be included.
-    if (!(f.key in originalValues) || !valuesEqual(processedVal, originalValues[f.key])) {
-      body[f.key] = processedVal;
-    }
+    body[f.key] = val;
   }
   return body;
 }
