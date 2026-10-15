@@ -79,3 +79,4 @@ Start from src/server/routes/config.ts (the non-empty array check), src/core/con
 - 2026-10-15T10:25:00Z · body
 - 2026-10-15T10:26:28Z · body
 - 2026-10-15T10:33:47Z · status active→review
+- 2026-10-15T10:33:47Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (636777398) during finalization (#0734)
