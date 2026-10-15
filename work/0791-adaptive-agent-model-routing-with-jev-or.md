@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T10:52:42Z"
+updated_at: "2026-10-15T10:52:43Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 1
@@ -120,3 +120,4 @@ Delivers the provider-neutral routing **foundation** in `src/core/model-routing/
 - 2026-10-15T10:43:43Z · status review→active
 - 2026-10-15T10:43:57Z · needs_input
 - 2026-10-15T10:52:42Z · message_queued at 2026-10-15T10:52:42.902Z
+- 2026-10-15T10:52:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
