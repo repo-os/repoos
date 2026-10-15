@@ -1,6 +1,8 @@
 /**
  * Compact configurable activity indicators (#0787).
  */
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
@@ -78,5 +80,10 @@ describe("ActivityIndicator (#0787)", () => {
     const wrapper = mountIndicator({ label: "Coding…" });
     const root = wrapper.get('[role="status"]');
     expect(root.attributes("aria-label")).toBe("Coding…");
+  });
+
+  it("disables compact motion under prefers-reduced-motion (#0787)", () => {
+    const css = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
+    expect(css).toMatch(/prefers-reduced-motion:\s*reduce[\s\S]*\.ai-compact/);
   });
 });
