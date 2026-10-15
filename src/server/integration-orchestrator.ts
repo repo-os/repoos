@@ -168,6 +168,42 @@ export function formatUploadBytes(bytes: number): string {
   return `${value.toFixed(value >= 10 ? 0 : 1)} ${unit}`;
 }
 
+/**
+ * Cadence for the in-stage heartbeat (#0799). Long stages — the remote test
+ * run and each local gate step — otherwise report no stage progress for
+ * minutes and the close-out card labels a healthy job "stalled · no progress".
+ * The heartbeat refreshes the server's stall timer and shows a moving detail
+ * line (the current step), so "stalled" only appears when heartbeats truly
+ * stop.
+ */
+export const STAGE_HEARTBEAT_INTERVAL_MS = 5_000;
+
+/**
+ * Emit a steady heartbeat every `intervalMs` while a long stage runs (#0799),
+ * calling `label()` each tick for the current step name. A `null` label skips
+ * that tick (e.g. while the #0782 upload heartbeat owns the detail line).
+ * Returns a stop function the caller must invoke when the stage finishes. The
+ * timer is unref'd so it never holds the process open, and observer errors are
+ * swallowed — a heartbeat must never disturb the close-out. Exported for tests.
+ */
+export function startStageHeartbeat(
+  emit: (detail: string) => void,
+  label: () => string | null,
+  intervalMs: number = STAGE_HEARTBEAT_INTERVAL_MS,
+): () => void {
+  const tick = (): void => {
+    try {
+      const detail = label();
+      if (detail) emit(detail);
+    } catch {
+      /* a heartbeat must never disturb the close-out */
+    }
+  };
+  const timer = setInterval(tick, intervalMs);
+  timer?.unref?.();
+  return () => clearInterval(timer);
+}
+
 /** Effective budget for one close-out attempt (#0573, adaptive default #0679). */
 export function closeOutTimeoutMs(config: RepoOSConfig): number {
   return effectiveCloseOutTimeoutMs(config);
@@ -673,6 +709,23 @@ export function tailLine(stdout: string, stderr: string): string {
   return tail;
 }
 
+/**
+ * The current `repoos check` step name from a stream chunk (#0799). The child
+ * CLI prints each step as `  ◆ <name>`; the close-out heartbeat shows that name
+ * while the step runs, so a long local gate step is visibly moving instead of
+ * reading as a hang. Takes the LAST heading in the text and tolerates ANSI
+ * colour codes. Exported for tests.
+ */
+export function parseCheckStepHeading(text: string): string | null {
+  const matches = stripAnsi(text).matchAll(/◆\s*([^\n\r]+)/g);
+  let last: string | null = null;
+  for (const m of matches) {
+    const name = m[1]?.trim();
+    if (name) last = name;
+  }
+  return last;
+}
+
 export interface ProcessRunResult {
   status: number | null;
   stdout: string;
@@ -886,6 +939,16 @@ export class CloseOutOrchestrator {
      * close-out.
      */
     private onUploadProgress?: (taskId: string, detail: string | null) => void,
+    /**
+     * Fired at a steady interval while a long NON-upload stage runs (#0799) —
+     * the remote test run and each local gate step — with a short detail line
+     * naming the current step ("remote tests", "full build"). Unlike
+     * `onUploadProgress`, it never carries `null`; the server already clears the
+     * detail when the next stage is reported. Observation only — must never
+     * disturb the close-out. Appended last so existing positional constructor
+     * callers are unaffected.
+     */
+    private onStageHeartbeat?: (taskId: string, detail: string) => void,
   ) {}
 
   /** Discard any in-flight resolution provenance for a task (#0692). */
@@ -909,6 +972,25 @@ export class CloseOutOrchestrator {
           /* fail-soft: the build step will report the real error */
         }
       }
+    }
+  }
+
+  /**
+   * Run one long stage while emitting a steady heartbeat (#0799). `label`
+   * returns the step name currently shown on the card, or `null` to skip a
+   * tick (e.g. while the #0782 upload heartbeat owns the detail line). The
+   * heartbeat refreshes the server's stall timer from the same detail write.
+   */
+  private async withStageHeartbeat<T>(
+    taskId: string,
+    label: () => string | null,
+    fn: () => Promise<T>,
+  ): Promise<T> {
+    const stop = startStageHeartbeat((detail) => this.onStageHeartbeat?.(taskId, detail), label);
+    try {
+      return await fn();
+    } finally {
+      stop();
     }
   }
 
@@ -2644,12 +2726,17 @@ export class CloseOutOrchestrator {
       // by their plan and run below through `repoos check`.
       if (hasBuildStep) {
         this.onProgress?.("build");
-        let buildRes = await runProcess("bun", ["run", "build"], {
-          cwd: wtPath,
-          timeout: 300_000,
-          isCancelled: () => this.isCancelled(job.taskId),
-          ...(deadlineAt !== undefined ? { deadlineAt } : {}),
-        });
+        // A long build reports nothing between the "build" stage events; the
+        // heartbeat keeps the card live instead of reading as a hang (#0799).
+        const buildLabel = (): string => "building candidate";
+        let buildRes = await this.withStageHeartbeat(job.taskId, buildLabel, () =>
+          runProcess("bun", ["run", "build"], {
+            cwd: wtPath,
+            timeout: 300_000,
+            isCancelled: () => this.isCancelled(job.taskId),
+            ...(deadlineAt !== undefined ? { deadlineAt } : {}),
+          }),
+        );
         if (buildRes.cancelled) {
           return { ok: false, cancelled: true, reason: CANCEL_REASON };
         }
@@ -2657,12 +2744,14 @@ export class CloseOutOrchestrator {
           return this.timeoutResult();
         }
         if (commandMissing(buildRes)) {
-          buildRes = await runProcess("npm", ["run", "build"], {
-            cwd: wtPath,
-            timeout: 300_000,
-            isCancelled: () => this.isCancelled(job.taskId),
-            ...(deadlineAt !== undefined ? { deadlineAt } : {}),
-          });
+          buildRes = await this.withStageHeartbeat(job.taskId, buildLabel, () =>
+            runProcess("npm", ["run", "build"], {
+              cwd: wtPath,
+              timeout: 300_000,
+              isCancelled: () => this.isCancelled(job.taskId),
+              ...(deadlineAt !== undefined ? { deadlineAt } : {}),
+            }),
+          );
         }
         if (buildRes.cancelled) {
           return { ok: false, cancelled: true, reason: CANCEL_REASON };
@@ -2705,6 +2794,11 @@ export class CloseOutOrchestrator {
       let remoteScopedFellBackToFull = false;
       if (remoteGateEnabled && !reuseRemoteTests) {
         this.onProgress?.("check");
+        // #0799: the remote test run (after the bundle lands) can produce no
+        // output for minutes. `remoteUploading` defers the stage heartbeat to
+        // the #0782 upload heartbeat while the transfer is in flight, then the
+        // stage heartbeat takes over for the test run.
+        let remoteUploading = false;
         const runRemoteGate = (changedRef?: string) =>
           runRemotePreReviewGate({
             config: this.config,
@@ -2727,6 +2821,7 @@ export class CloseOutOrchestrator {
             // remote test run (#0782 review).
             onUploadProgress: (info: UploadProgressInfo) => {
               try {
+                remoteUploading = true;
                 this.onUploadProgress?.(
                   job.taskId,
                   `uploading bundle ${formatUploadBytes(info.bundleBytes)} · ${info.elapsedSecs}s`,
@@ -2737,6 +2832,7 @@ export class CloseOutOrchestrator {
             },
             onUploadComplete: () => {
               try {
+                remoteUploading = false;
                 this.onUploadProgress?.(job.taskId, null);
               } catch {
                 /* observation must never break close-out */
@@ -2756,6 +2852,7 @@ export class CloseOutOrchestrator {
           try {
             return await runRemoteGate(changedRef);
           } finally {
+            remoteUploading = false;
             try {
               this.onUploadProgress?.(job.taskId, null);
             } catch {
@@ -2763,7 +2860,10 @@ export class CloseOutOrchestrator {
             }
           }
         };
-        remoteGateOutcome = await runRemoteGateAndClear(scopedRemoteRef);
+        const remoteGateLabel = (): string | null => (remoteUploading ? null : "remote tests");
+        remoteGateOutcome = await this.withStageHeartbeat(job.taskId, remoteGateLabel, () =>
+          runRemoteGateAndClear(scopedRemoteRef),
+        );
 
         // #0724 escape hatch, remote half: a SCOPED remote run that fails on a
         // real (non-transient) red suite is not proof the branch is broken — it
@@ -2784,7 +2884,9 @@ export class CloseOutOrchestrator {
             "scoped remote close-out gate failed — re-running the full suite once on the runner before failing the close-out",
             { detail: remoteGateOutcome.detail },
           );
-          remoteGateOutcome = await runRemoteGateAndClear();
+          remoteGateOutcome = await this.withStageHeartbeat(job.taskId, remoteGateLabel, () =>
+            runRemoteGateAndClear(),
+          );
           remoteScopedFellBackToFull = remoteGateOutcome.kind !== "fail";
         }
 
@@ -2912,6 +3014,18 @@ export class CloseOutOrchestrator {
           this.taskChecks && this.onTaskCheckEvent
             ? this.taskChecks.start(job.taskId, "merge-gate", this.onTaskCheckEvent)
             : undefined;
+        // #0799: track the running step from the child's own `◆ <name>`
+        // headings, so the heartbeat names the current local gate step instead
+        // of the coarse "check" stage while a long step runs. The chunk buffer
+        // tolerates a heading split across two stream reads.
+        let currentCheckStep = "running check";
+        let checkStepBuffer = "";
+        const noteCheckStep = (chunk: string): void => {
+          checkStepBuffer = (checkStepBuffer + chunk).slice(-2000);
+          const heading = parseCheckStepHeading(checkStepBuffer);
+          if (heading) currentCheckStep = heading;
+        };
+        const checkLabel = (): string | null => currentCheckStep;
         const rawCheck = (
           cli: string,
           args: string[],
@@ -2921,7 +3035,10 @@ export class CloseOutOrchestrator {
             cwd: wtPath,
             timeout: 600_000,
             env,
-            onChunk: checkHandle?.chunk,
+            onChunk: (chunk) => {
+              noteCheckStep(chunk);
+              checkHandle?.chunk(chunk);
+            },
             isCancelled: () => this.isCancelled(job.taskId),
             ...(deadlineAt !== undefined ? { deadlineAt } : {}),
           });
@@ -3028,7 +3145,9 @@ export class CloseOutOrchestrator {
           return { checkRes, outcome };
         };
 
-        let { checkRes, outcome } = await runGatePass(baseCheckArgs, checkEnv);
+        let { checkRes, outcome } = await this.withStageHeartbeat(job.taskId, checkLabel, () =>
+          runGatePass(baseCheckArgs, checkEnv),
+        );
 
         // A check killed by Stop MTD (#0459) is not a gate failure — abort.
         if (checkRes.cancelled) {
@@ -3061,7 +3180,11 @@ export class CloseOutOrchestrator {
           // record rather than repeating the scoped note.
           fullEnv.REPOOS_CHECK_GATE_NOTE =
             "scoped close-out gate failed — re-ran the full suite once before failing the close-out";
-          ({ checkRes, outcome } = await runGatePass(baseCheckArgs, fullEnv));
+          const retry = await this.withStageHeartbeat(job.taskId, checkLabel, () =>
+            runGatePass(baseCheckArgs, fullEnv),
+          );
+          checkRes = retry.checkRes;
+          outcome = retry.outcome;
           if (checkRes.cancelled) {
             checkHandle?.done(checkRes.status);
             return { ok: false, cancelled: true, reason: CANCEL_REASON };
