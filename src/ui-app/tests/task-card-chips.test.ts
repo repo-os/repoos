@@ -1,7 +1,7 @@
 /**
  * 0776: the board card's metadata row.
  *
- * - every area collapses into ONE comma-separated chip (not one per area)
+ * - every area collapses into ONE space-separated chip (not one per area)
  * - the file-change chip shows only the changed-file count with a document
  *   icon; the +/- line counts live in the tooltip
  * - an AI-assigned task shows no assignee chip, so a default-new task is clean
@@ -133,14 +133,14 @@ afterEach(() => {
 });
 
 describe("TaskCard area chip (#0776)", () => {
-  it("renders multiple areas as one comma-separated chip", async () => {
+  it("renders multiple areas as one space-separated chip", async () => {
     const pinia = newPinia();
     const task = makeTask({ area: "web, server", areas: ["web", "server"] });
     const wrapper = await mountCard(pinia, task);
 
     const chips = wrapper.findAll(".tc-area-chip");
     expect(chips).toHaveLength(1);
-    expect(chips[0].text()).toBe("web, server");
+    expect(chips[0].text()).toBe("web server");
   });
 
   it("falls back to the joined area string when only `area` is present", async () => {
@@ -150,7 +150,7 @@ describe("TaskCard area chip (#0776)", () => {
 
     const chips = wrapper.findAll(".tc-area-chip");
     expect(chips).toHaveLength(1);
-    expect(chips[0].text()).toBe("web, server");
+    expect(chips[0].text()).toBe("web server");
   });
 });
 
@@ -176,6 +176,7 @@ describe("TaskCard assignee chip (#0776)", () => {
     const pinia = newPinia();
     const wrapper = await mountCard(pinia, makeTask({ assignee: "ai", assignedTo: "ai" }));
     expect(wrapper.find(".tc-assignee-chip").exists()).toBe(false);
+    expect(wrapper.find(".tc-human-chip").exists()).toBe(false);
   });
 
   it("shows '· open' for a task left unassigned", async () => {
@@ -187,5 +188,33 @@ describe("TaskCard assignee chip (#0776)", () => {
     const chip = wrapper.find(".tc-assignee-chip");
     expect(chip.exists()).toBe(true);
     expect(chip.text()).toContain("· open");
+  });
+});
+
+describe("TaskCard human chip (#0795)", () => {
+  it("shows a person icon and the assignee for a human-assigned task", async () => {
+    const pinia = newPinia();
+    const wrapper = await mountCard(
+      pinia,
+      makeTask({ id: "0003", assignee: "human", assignedTo: "Nick" }),
+    );
+
+    const chip = wrapper.find(".tc-human-chip");
+    expect(chip.exists()).toBe(true);
+    expect(chip.text()).toContain("Nick");
+    // The person glyph renders as an inline SVG, like the file-change chip.
+    expect(chip.find("svg").exists()).toBe(true);
+    // A human task uses the distinct chip, not the neutral assignee chip.
+    expect(wrapper.find(".tc-assignee-chip").exists()).toBe(false);
+  });
+
+  it("falls back to 'human' when no assignee name is set", async () => {
+    const pinia = newPinia();
+    const wrapper = await mountCard(
+      pinia,
+      makeTask({ id: "0004", assignee: "human", assignedTo: "" }),
+    );
+
+    expect(wrapper.find(".tc-human-chip").text()).toContain("human");
   });
 });
