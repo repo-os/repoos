@@ -8,10 +8,12 @@
  * search / provider / token-cost filters, which must compose and never
  * hide provider error groups.
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import { nextTick } from "vue";
+import { createPinia, setActivePinia } from "pinia";
 import ModelPlaygroundPanel from "../src/components/ModelPlaygroundPanel.vue";
+import ChatAgentModelChip from "../src/components/ChatAgentModelChip.vue";
 import type { PlaygroundProviderGroup } from "../src/types";
 
 function deepinfraGroup(overrides: Partial<PlaygroundProviderGroup> = {}): PlaygroundProviderGroup {
@@ -81,6 +83,12 @@ function stubModelsFetch(providers: PlaygroundProviderGroup[]): ReturnType<typeo
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+// The panel now renders the shared agent+model picker (AgentModelModal via
+// ChatAgentModelChip), which reads pinia stores — every mount needs one.
+beforeEach(() => {
+  setActivePinia(createPinia());
 });
 
 describe("ModelPlaygroundPanel — model list rendering", () => {
@@ -439,5 +447,90 @@ describe("ModelPlaygroundPanel — filtering", () => {
       "Together",
     ]);
     expect(wrapper.find(".playground-provider-error").text()).toBe("Together is down");
+  });
+});
+
+describe("ModelPlaygroundPanel — shared agent+model picker", () => {
+  it("renders the shared coding agent+model picker in the chat header", async () => {
+    stubModelsFetch([deepinfraGroup(), openrouterGroup()]);
+    const wrapper = mount(ModelPlaygroundPanel);
+    await flushPromises();
+    await nextTick();
+
+    const chip = wrapper.findComponent(ChatAgentModelChip);
+    expect(chip.exists()).toBe(true);
+    expect(wrapper.find(".playground-chat-head .am-control").exists()).toBe(true);
+  });
+
+  it("offers the catalog through the shared picker: providers as CLIs, runIds as models", async () => {
+    stubModelsFetch([deepinfraGroup(), openrouterGroup()]);
+    const wrapper = mount(ModelPlaygroundPanel);
+    await flushPromises();
+    await nextTick();
+
+    const chip = wrapper.findComponent(ChatAgentModelChip);
+    expect(chip.props("cliOptions")).toEqual(["deepinfra", "openrouter"]);
+    // The first catalog model auto-selects, so the picker opens on its provider.
+    expect(chip.props("cli")).toBe("deepinfra");
+    expect(chip.props("model")).toBe("deepinfra/zai-org/GLM-5.3-Flash");
+    expect((chip.props("modelOptions") as { value: string }[]).map((m) => m.value)).toEqual([
+      "deepinfra/zai-org/GLM-5.3-Flash",
+      "deepinfra/moonshotai/Kimi-K3",
+    ]);
+  });
+
+  it("routes a pick from the shared picker to the active model and the chat payload", async () => {
+    const fetchMock = stubModelsFetch([deepinfraGroup(), openrouterGroup()]);
+    fetchMock.mockImplementation(async (url: string, opts?: RequestInit) => {
+      if (url.includes("/api/playground/models")) {
+        return {
+          ok: true,
+          json: async () => ({
+            providers: [deepinfraGroup(), openrouterGroup()],
+            at: new Date().toISOString(),
+          }),
+        } as Response;
+      }
+      if (url.includes("/api/playground/chat")) {
+        const body = JSON.parse(String(opts?.body));
+        expect(body.runId).toBe("openrouter/meta-llama/Llama-4-Maverick");
+        return { ok: true, json: async () => ({ ok: true, text: "It's RepoOS." }) } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+
+    const wrapper = mount(ModelPlaygroundPanel);
+    await flushPromises();
+    await nextTick();
+
+    const chip = wrapper.findComponent(ChatAgentModelChip);
+    chip.vm.$emit("update:cli", "openrouter");
+    await nextTick();
+    chip.vm.$emit("update:model", "openrouter/meta-llama/Llama-4-Maverick");
+    await nextTick();
+
+    expect(wrapper.find(".playground-active-info strong").text()).toBe(
+      "meta-llama/Llama-4-Maverick",
+    );
+
+    await wrapper.find(".playground-starters button").trigger("click");
+    await flushPromises();
+    await nextTick();
+    expect(wrapper.findAll(".playground-bubble")).toHaveLength(2);
+  });
+
+  it("falls back to the provider's first model when the shared picker yields no known runId", async () => {
+    stubModelsFetch([deepinfraGroup()]);
+    const wrapper = mount(ModelPlaygroundPanel);
+    await flushPromises();
+    await nextTick();
+
+    const chip = wrapper.findComponent(ChatAgentModelChip);
+    // "default" is what the modal emits when it has no remembered pin: it is
+    // not a catalog runId and must not strand the chat.
+    chip.vm.$emit("update:model", "default");
+    await nextTick();
+
+    expect(wrapper.find(".playground-active-info strong").text()).toBe("zai-org/GLM-5.3-Flash");
   });
 });
