@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-15T08:06:45Z"
+review_passes: 2
 id: "0787"
 title: Compact configurable activity animations; default to Orbital pixel
 type: feature
@@ -13,9 +15,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T08:06:45Z"
 review_rounds: 1
-review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -122,3 +122,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T08:04:29Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (74a08f752) during finalization (#0734)
 - 2026-10-15T08:04:29Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (74a08f752) during finalization (#0734)
 - 2026-10-15T08:06:45Z · note: review pass 2: needs some work
+
