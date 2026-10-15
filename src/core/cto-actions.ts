@@ -93,6 +93,45 @@ export const CTO_ACTION_LABELS: Record<CtoSafeActionId, string> = {
   "kill-hung-validation": "Kill hung validation run",
 };
 
+/** One-line Settings copy per action (#0796). */
+export const CTO_ACTION_SETTING_DESCRIPTIONS: Record<CtoSafeActionId, string> = {
+  "restart-stalled-agent":
+    "Restart a dead active engineer, reusing the session when the failure looks like a stall.",
+  "refresh-main-install": "Run the lockfile install in the primary checkout on main.",
+  "requeue-closeout-after-env-fix":
+    "Refresh main and re-queue a close-out that failed for an environmental reason.",
+  "kill-hung-validation":
+    "Stop a remote validation run whose output stalled on an idle host so it can retry elsewhere.",
+};
+
+/** Shown beside the kill-hung-validation checkbox in Settings (#0796). */
+export const CTO_KILL_HUNG_VALIDATION_WARNING =
+  "When enabled, RepoOS stops the validation container on remote hosts automatically — " +
+  "not only when you click Stop in the UI.";
+
+/** Long description for `getConfigSchema()` / docs — keep Settings and user-docs aligned. */
+export function ctoActionsSchemaDescription(): string {
+  const actionLines = CTO_SAFE_ACTION_IDS.map(
+    (id) =>
+      `${CTO_ACTION_LABELS[id]} (${id}): ${CTO_ACTION_SETTING_DESCRIPTIONS[id]}` +
+      (id === "kill-hung-validation" ? ` ${CTO_KILL_HUNG_VALIDATION_WARNING}` : ""),
+  );
+  return (
+    "Opt-in allowlist of bounded actions the CTO may take automatically (rate limited, audited " +
+    "in the bell). " +
+    actionLines.join(" ") +
+    " With every box unchecked the list is empty and the CTO stays report-only."
+  );
+}
+
+/** Reject unknown ids before persisting `cto.actions`. */
+export function assertKnownCtoSafeActionIds(ids: string[]): string | null {
+  for (const id of ids) {
+    if (!isCtoSafeActionId(id)) return id;
+  }
+  return null;
+}
+
 /**
  * Pure rate-limit check: `recent` is ISO timestamps within the last hour for
  * this action's scope key.

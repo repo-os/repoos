@@ -47,6 +47,7 @@ import {
 } from "../settings-location";
 import { TOML_ONLY_REMOTE_VALIDATION_KEYS } from "../lib/settings-transfer";
 import ActivityIndicator from "../components/ActivityIndicator.vue";
+import CtoSafeActionsSettings from "../components/CtoSafeActionsSettings.vue";
 import {
   activityAnimationStyleOrDefault,
   type ActivityAnimationStyle,
@@ -467,6 +468,17 @@ const activityAnimationField = computed(() =>
   config.schema.find((f) => f.key === "activityAnimationStyle"),
 );
 
+const ctoActionsField = computed(() => config.schema.find((f) => f.key === "cto.actions"));
+
+function ctoActionsFormValue(): string[] {
+  const raw = form["cto.actions"];
+  return Array.isArray(raw) ? raw.filter((item): item is string => typeof item === "string") : [];
+}
+
+function setCtoActions(next: string[]): void {
+  form["cto.actions"] = next;
+}
+
 const activityAnimationPreviewStyle = computed((): ActivityAnimationStyle =>
   activityAnimationStyleOrDefault(
     typeof form.activityAnimationStyle === "string"
@@ -814,6 +826,10 @@ function buildBody(): Record<string, unknown> {
     // (#0764); skipping it here keeps an unrelated Settings save from rewriting
     // its [[budget.allowlist]] rows.
     if (f.key === "budget.allowlist") continue;
+    if (f.key === "cto.actions") {
+      body[f.key] = ctoActionsFormValue();
+      continue;
+    }
     // The Hetzner remote-validation details (#0779) are transferred by the
     // Import/Export tab and edited in raw TOML; skipping them here keeps an
     // unrelated Settings save from materialising their defaults.
@@ -1101,9 +1117,8 @@ onUnmounted(() => {
             <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
               <span class="live-dot"></span>General
             </div>
+            <template v-for="f in generalFields" :key="f.key">
             <div
-              v-for="f in generalFields"
-              :key="f.key"
               :id="`setting-${f.key}`"
               :data-config-key="f.key"
               class="setting-row"
@@ -1164,6 +1179,25 @@ onUnmounted(() => {
               </div>
               <span v-if="f.restartRequired" class="restart-badge">restart required</span>
             </div>
+            <div
+              v-if="f.key === 'ctoSkipHealthy' && ctoActionsField"
+              :id="`setting-${ctoActionsField.key}`"
+              :data-config-key="ctoActionsField.key"
+              class="setting-row setting-row--stacked"
+            >
+              <div class="setting-info">
+                <div class="setting-label">{{ ctoActionsField.label }}</div>
+                <div class="setting-desc">{{ ctoActionsField.description }}</div>
+              </div>
+              <div class="setting-input setting-input--wide">
+                <CtoSafeActionsSettings
+                  :model-value="ctoActionsFormValue()"
+                  :disabled="config.saving"
+                  @update:model-value="setCtoActions"
+                />
+              </div>
+            </div>
+            </template>
           </div>
         </Card>
 
