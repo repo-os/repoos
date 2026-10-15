@@ -1,16 +1,16 @@
 ---
-updated_at: "2026-10-15T18:23:57Z"
-review_passes: 2
 id: "0800"
 title: "Settings: split General into sections, each searchable with its own URL"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/settings-split-general-into-sections-eac
 created_at: "2026-10-15T15:15:17Z"
+updated_at: "2026-10-15T18:29:20Z"
+review_passes: 2
 ---
 ## Problem
 The General settings tab is too long to find things quickly. Model routing (Jev / Clef-Flash), for example, sits among unrelated options. Sections are not searchable on their own and have no URL, so you can't link to one the way task URLs work.
@@ -69,4 +69,5 @@ Start from src/ui-app/src/settings-location.ts (SETTINGS_TABS and location mappi
 - 2026-10-15T18:22:51Z · status active→review
 - 2026-10-15T18:23:54Z · note: review pass 1: good to go
 - 2026-10-15T18:23:57Z · note: review pass 2: good to go
-
+- 2026-10-15T18:29:20Z · status review→active
+- 2026-10-15T18:29:20Z · note: close-out repair: merge-conflict
