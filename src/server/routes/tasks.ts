@@ -102,6 +102,7 @@ import {
   endEvidenceRefresh,
   isEvidenceRefreshActive,
   tryBeginEvidenceRefresh,
+  withEvidenceRefreshLock,
 } from "../evidence-refresh-lock.js";
 import { computeTaskShotContext } from "../shot-context.js";
 import {
@@ -114,6 +115,7 @@ import {
 import { resolveShotTargets } from "../../core/shot-targets.js";
 import { captureDeclaredShot } from "../shot-capture.js";
 import type { PreviewManager } from "../preview.js";
+import type { RootLock } from "../repo-lock.js";
 import { STATUSES } from "../../core/types.js";
 import {
   ACTIVITY_HEADING,
@@ -1233,6 +1235,109 @@ export async function guardedForceRefreshCapture(
     detail: result.detail,
     restored: guarded.restored,
   };
+}
+
+/**
+ * Dependencies the automatic stale-only evidence refresh needs from the server
+ * (#0772). Kept explicit rather than reaching into a `RouteContext` so the
+ * critical lock/revalidation ordering is testable in isolation.
+ */
+export interface AutomaticStaleEvidenceRefreshDeps {
+  config: RepoOSConfig;
+  previews?: PreviewManager;
+  /** The durable root lock, shared with close-out and hotfix. */
+  rootLock: RootLock;
+  /** True while a close-out owns the repo; the refresh must stand down. */
+  closingOut: () => boolean;
+  /** Task log sink. */
+  log: TaskLog;
+  /**
+   * Re-read the task under both locks. Returns null when the task is gone;
+   * otherwise the caller re-checks it is still a plain `review` task.
+   */
+  getReviewTask: (id: string) => Task | null;
+  /** True while an engineer turn owns the task. */
+  isAgentRunning: (id: string) => boolean;
+  /** True while a reviewer owns the task. */
+  isReviewRunning: (id: string) => boolean;
+}
+
+/** One auto-refresh attempt per task + reviewed HEAD, under the cache dir. */
+function tryRecordAutoRefreshAttempt(config: RepoOSConfig, taskId: string, head: string): boolean {
+  const dir = join(config.root, config.cacheDir, "ui-verification", "auto-refresh-attempts");
+  const attemptPath = join(dir, `${taskId}-${head}.json`);
+  if (existsSync(attemptPath)) return false;
+  try {
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(attemptPath, JSON.stringify({ taskId, head, at: new Date().toISOString() }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Server-owned stale-only evidence refresh (#0772): the automatic counterpart
+ * to POST /verify. A review that fails only because handoff evidence is stale
+ * refreshes its captures at the current HEAD and re-reviews, without an
+ * engineer round trip.
+ *
+ * The locks and revalidation ordering are the whole point (#0766 review passes
+ * 16–24). The in-process evidence-refresh mutex is reserved *synchronously* as
+ * the first thing this function does — before the HEAD lookup or any other
+ * await — so an engineer start, follow-up message, or manual review that
+ * checks the mutex can no longer slip into the gap between the review
+ * finishing and the capture starting. Everything else (task status, live
+ * engineer/review runs, worktree cleanliness, current-HEAD staleness) is then
+ * revalidated under both locks; a task that moved on is left untouched.
+ *
+ * Returns true only when a capture actually ran and produced current evidence.
+ */
+export async function automaticStaleEvidenceRefresh(
+  deps: AutomaticStaleEvidenceRefreshDeps,
+  task: Task,
+): Promise<boolean> {
+  const { config, previews, rootLock, closingOut, log } = deps;
+  if (!task.branch) return false;
+  const worktree = worktreePathForBranch(config.root, task.branch);
+  if (!worktree) return false;
+
+  const locked = await withEvidenceRefreshLock(task.id, async () => {
+    if (closingOut()) return false;
+    if (!rootLock.acquire(task.id, "close-out")) return false;
+    try {
+      // Revalidate under both locks against the live server state: the review
+      // that triggered this may be superseded, the task may have left review,
+      // or an engineer turn/reviewer may have grabbed it in the interim.
+      const current = deps.getReviewTask(task.id) ?? task;
+      if (current.status !== "review" || current.isArchived) return false;
+      if (deps.isAgentRunning(task.id) || deps.isReviewRunning(task.id)) return false;
+      if (closingOut()) return false;
+
+      const headResult = await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000);
+      const head = headResult.status === 0 ? headResult.stdout.trim() : "";
+      if (!head) return false;
+      const currentEvidence = readUiHandoffGateEvidence(config, task.id);
+      if ((await effectiveHandoffTreeStatus(worktree, currentEvidence, head)) !== "stale") {
+        return false;
+      }
+      const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
+      if (dirty.status !== 0 || dirty.stdout.trim()) return false;
+      // Once per reviewed HEAD: a capture that does not clear the stale marker
+      // must not loop the reviewer forever.
+      if (!tryRecordAutoRefreshAttempt(config, task.id, head)) return false;
+      const captured = await guardedForceRefreshCapture(config, current, worktree, previews, log);
+      if (captured.error) {
+        log(task.id, "warn", `automatic stale-evidence refresh failed: ${captured.error}`);
+      }
+      return (
+        !captured.skipped && !captured.error && captured.gateOk && captured.headIdentity === head
+      );
+    } finally {
+      rootLock.release(task.id);
+    }
+  });
+  return locked.ok && locked.value;
 }
 
 /** Refresh handoff shots and verification against the reviewed worktree HEAD. */
