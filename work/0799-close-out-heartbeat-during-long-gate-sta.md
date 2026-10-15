@@ -32,3 +32,4 @@ Start from the upload heartbeat (src/server/integration-orchestrator.ts ~2722-27
 - 2026-10-15T11:10:05Z · status inbox→ready
 - 2026-10-15T11:10:08Z · status ready→active, branch
 - 2026-10-15T11:25:50Z · message_queued at 2026-10-15T11:25:50.722Z
+- 2026-10-15T11:25:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
