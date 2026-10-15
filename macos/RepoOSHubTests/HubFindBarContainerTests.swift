@@ -69,6 +69,40 @@ final class HubFindBarContainerTests: XCTestCase {
     }
 
     @MainActor
+    func testCancelOperationHidesTheBar() {
+        let container = makeContainer()
+        container.presentFindInterface()
+
+        // Escape is routed to `cancelOperation` on the responder chain as a
+        // backstop when the field editor does not consume it.
+        container.cancelOperation(nil)
+
+        XCTAssertFalse(container.isFindBarVisible)
+    }
+
+    @MainActor
+    func testHidingFindBarReturnsFocusToThePage() {
+        let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+        let container = HubServerWebContainerView(webView: webView)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = container
+        window.makeKeyAndOrderFront(nil)
+        container.presentFindInterface()
+
+        container.hideFindInterface()
+        // Focus moves back on the next run loop.
+        RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+
+        XCTAssertTrue(window.firstResponder === container.webView)
+        window.close()
+    }
+
+    @MainActor
     func testContainsKeyboardFocusIsFalseWithoutAWindow() {
         let container = makeContainer()
 

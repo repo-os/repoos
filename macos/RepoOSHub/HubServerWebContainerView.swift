@@ -142,21 +142,25 @@ final class HubServerWebContainerView: NSView {
 
     func hideFindInterface() {
         guard isFindBarVisible else { return }
+        // Capture whether the bar held focus before hiding it: `findBarOwnsFocus`
+        // only reports true while the bar is visible.
+        let restorePageFocus = window.map { findBarOwnsFocus(in: $0) } ?? false
         findBar.isHidden = true
         clearFindHighlights()
         findBar.setStatus(.idle)
-        // Hand typing back to the page only when focus did not already move
-        // somewhere else (e.g. the sidebar), so closing never yanks focus (#0789).
-        DispatchQueue.main.async { [weak self] in
-            guard let self, let window = self.window else { return }
-            if window.firstResponder == nil || window.firstResponder === window
-                || self.findBarOwnsFocus(in: window)
-            {
-                window.makeFirstResponder(self.webView)
-            }
-        }
         needsLayout = true
         layoutSubtreeIfNeeded()
+        // Hand typing back to the page only when the find field (or the bar)
+        // held focus, so closing never yanks focus away from somewhere the user
+        // moved it (e.g. the sidebar) (#0789). Republish focus after the
+        // transfer so Cmd-F/Cmd-G stay enabled once the page is focused again.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let window = self.window else { return }
+            if restorePageFocus || window.firstResponder == nil || window.firstResponder === window {
+                window.makeFirstResponder(self.webView)
+            }
+            self.publishKeyboardFocusState()
+        }
         publishKeyboardFocusState()
     }
 
