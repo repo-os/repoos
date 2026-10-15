@@ -1768,11 +1768,10 @@ function openAssignedStory(): void {
 }
 
 /**
- * "Open in editor" on the Spec row (#0636). Reuses the copy-inspector's
- * configured editor command (`dev.inspector.editorCommand`) and its dev-only
- * API gate, so a task markdown can be opened in the same editor with no
- * separate setting. The link only appears when it can actually work: the dev
- * API is available and a command is configured.
+ * "Open in editor" on the Spec row (#0636). Uses the general `editor.command`
+ * setting, or `dev.inspector.editorCommand` when set. The general setting works on
+ * any install; the dev override needs the dev API. The link only appears when
+ * an editor command is configured.
  */
 const editorConfigured = computed(() => {
   const inspector = (
@@ -5012,6 +5011,14 @@ watch(
             >
               Open in editor ↗
             </button>
+            <span
+              v-else
+              class="editor-config-hint"
+              data-test-id="open-in-editor-hint"
+              :aria-label="'Configure an editor in Settings → General to enable Open in editor'"
+            >
+              Set editor in Settings → General
+            </span>
           </div>
           <div v-if="specExpanded">
             <div

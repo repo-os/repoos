@@ -474,6 +474,14 @@ watch(
               >
                 Open in editor ↗
               </button>
+              <span
+                v-else
+                class="editor-config-hint"
+                data-test-id="context-open-in-editor-hint"
+                :aria-label="'Configure an editor in Settings → General to enable Open in editor'"
+              >
+                Set editor in Settings → General
+              </span>
             </div>
             <div
               ref="markdownRoot"
