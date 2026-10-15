@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T07:43:31Z"
+updated_at: "2026-10-15T07:44:58Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -97,3 +97,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T07:25:03Z · handoff failed · remote validation failed: test failure: tests/done-error-card.test.ts > DoneErrorCard (auto-repair in flight — #0385) > shows the being-resolved framing instead of a bare dead-end error on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-15T07:42:10Z · needs_input
 - 2026-10-15T07:43:31Z · body
+- 2026-10-15T07:44:58Z · body
