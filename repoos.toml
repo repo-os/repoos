@@ -100,6 +100,7 @@ remoteValidation.containerImage = "repoos-ci"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
 remoteValidation.engineerSelfCheckRemote = true
+activityAnimationStyle = "micro-dot-matrix"
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
 user = "nick"
