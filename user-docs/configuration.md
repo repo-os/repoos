@@ -498,17 +498,14 @@ An optional decision model can choose the coding agent and model for PM,
 engineer and reviewer runs. It is **off by default**: with the section unset,
 RepoOS uses the configured role defaults and task overrides exactly as before.
 
-> **Phase 1 (#0791) — library and config only.** Shipped in this task: `src/core/model-routing/`
-> (System One codec, direct Jev / OpenRouter / self-hosted Clef-Flash adapters,
-> candidate filter, policy, fixture tests), the seven `model_routing.*` keys in
-> `getConfigSchema()`, and parsing from `repoos.toml`. This phase **does not**
-> satisfy the parent task’s full acceptance criteria (run-path routing, UI,
-> persistence, handback, live smoke). **Not in #0791:** server run-path invocation,
-> decision persistence or outcome linkage, Agents UI, or review handback — those
-> are **#0792** (adapter hardening, UI, shadow mode), **#0793** (automatic routing
-> and handback), and **#0794** (human-only live credential checks). Until #0792/#0793
-> land, `mode = shadow` or `automatic` does not change any run; the subsections
-> below describe the intended product behavior, not current wiring.
+> **Shipped (#0791 + #0792):** `src/core/model-routing/` (System One codec, Jev /
+> OpenRouter / Clef-Flash adapters, candidate filter, policy), the seven
+> `model_routing.*` keys in `getConfigSchema()`, TOML parsing, and the **Model
+> routing** tab on the Agents page (provider, mode, roles, timeout, credential
+> presence, configuration probe). **Still upcoming:** run-path invocation and
+> decision persistence (**#0793**), review handback re-evaluation, and human-only
+> live credential verification (**#0794**). Until **#0793** lands, `shadow` and
+> `automatic` do not change which agent runs — configure and validate here first.
 
 ```toml
 [model_routing]
@@ -584,13 +581,19 @@ the gitignored `.env` file or the process environment and are never written to
 variable; it is validated to be a plain environment-variable name, so pasting a
 raw key into it is rejected with a warning.
 
-### Shadow evaluation first (after #0792)
+### Shadow evaluation first
 
-Once shadow mode is wired (#0792), start in `mode = "shadow"`. Each eligible run
-then records what the router would have chosen, the candidates it considered,
-and the provider's signals, while the run itself uses the configured agent.
+Configure routing on the Agents page (**Model routing** tab) or in TOML, then
+start in `mode = "shadow"`. Once run-path wiring lands (#0793), each eligible run
+will record what the router would have chosen, the candidates it considered,
+and the provider's signals, while the run itself keeps the configured agent.
 Compare those recommendations with real outcomes before enabling `automatic`
 (#0793).
+
+The **Test configuration** button checks parsing, provider requirements, and
+whether the named `credentialEnv` variable is set — it does not call the hosted
+API. **Test live connection** issues one real decision call when you are ready;
+use it sparingly and never in automated tests.
 
 ### Automatic mode, pins and limits (after #0793)
 
