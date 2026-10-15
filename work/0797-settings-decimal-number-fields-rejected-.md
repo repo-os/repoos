@@ -2,7 +2,7 @@
 id: "0797"
 title: "Settings: decimal number fields rejected on save (slow-check multiplier)"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T16:47:28Z"
+updated_at: "2026-10-15T16:48:17Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: a0d43b4a7c7cd77276b8f43d419e87f039a18b47
 review_rounds: 2
@@ -74,3 +74,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T12:48:36Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-10-15T15:23:19Z · needs_input
 - 2026-10-15T16:47:28Z · body
+- 2026-10-15T16:48:17Z · status active→review
