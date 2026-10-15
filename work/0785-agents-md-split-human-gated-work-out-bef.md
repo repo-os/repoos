@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 2952
-last_close_out_gate_at: "2026-10-15T17:31:49.431Z"
 id: "0785"
 title: "AGENTS.md: split human-gated work out before Move to done"
 type: chore
-status: review
+status: done
 priority: p3
 area: docs
+merged_commit: eb502a4b0077f24c87491c5c019aded1aca7dc94
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agents-md-split-human-gated-work-out-bef
 created_at: "2026-10-14T15:36:57Z"
-updated_at: "2026-10-15T17:31:49Z"
+updated_at: "2026-10-15T17:31:53Z"
+last_close_out_gate_ms: 2952
+last_close_out_gate_at: "2026-10-15T17:31:49.431Z"
 review_passes: 1
 ---
 ## Problem
@@ -43,4 +44,4 @@ Keep it to a few lines in the existing style; do not restructure AGENTS.md. Do n
 - 2026-10-15T17:29:43Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-15T17:30:20Z · note: review pass 1: good to go
 - 2026-10-15T17:31:49Z · close-out gate completed in 3s
-
+- 2026-10-15T17:31:53Z · status review→done, release:success
