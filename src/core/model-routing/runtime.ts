@@ -13,7 +13,8 @@ import {
   createOpenRouterProvider,
 } from "./providers.js";
 import { buildRoutingQuestions } from "./decide.js";
-import type { RoutingCandidate, RoutingDecisionProvider } from "./types.js";
+import type { RoutingCandidate } from "./candidates.js";
+import type { RoutingDecisionProvider } from "./types.js";
 import { RoutingProviderError } from "./types.js";
 
 /** Read the named credential from the process environment (never log it). */
