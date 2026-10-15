@@ -730,7 +730,7 @@ export async function runUiHandoffGate(
           currentUrl = started.url;
           currentTarget = entry.target;
         }
-        const pageUrl = shotCapturePageUrl(currentUrl, entry);
+        const pageUrl = shotCapturePageUrl(currentUrl, entry, fixtureValidator ?? undefined);
         let png: Buffer;
         let issues: PageGateIssue[];
         let warnings: string[] = [];

@@ -562,6 +562,19 @@ export async function runAutoShotCapture(
   if ("reason" in plan) {
     return finish("skipped", plan.reason);
   }
+  // Branch fixtures (#0786): URL building admits a `state` the task branch's
+  // source declares, even before main's compiled list knows it.
+  const branchValidator = taskFixtureValidator(
+    (path: string) => {
+      try {
+        return existsSync(path) ? readFileSync(path, "utf8") : null;
+      } catch {
+        return null;
+      }
+    },
+    config,
+    task,
+  );
   const commandTargets = new Set((config.shot?.targets ?? []).map((t) => t.name));
   // #0734: reuse an existing automatic capture ONLY when it is bound to the
   // SAME plan and the SAME tested tree. A metadata note alone must not stand
@@ -654,7 +667,7 @@ export async function runAutoShotCapture(
         currentUrl = started.url;
         currentTarget = entry.target;
       }
-      const pageUrl = shotCapturePageUrl(currentUrl, entry);
+      const pageUrl = shotCapturePageUrl(currentUrl, entry, branchValidator ?? undefined);
       let png: Buffer;
       let warnings: string[] = [];
       try {
@@ -809,6 +822,19 @@ export async function captureDeclaredShot(
     declared?: DeclaredShot;
   },
 ): Promise<DeclaredShotCapture> {
+  // Branch fixtures (#0786): URL building admits a `state` the task branch's
+  // source declares, even though main's compiled list does not know it yet.
+  const branchValidator = taskFixtureValidator(
+    (path: string) => {
+      try {
+        return existsSync(path) ? readFileSync(path, "utf8") : null;
+      } catch {
+        return null;
+      }
+    },
+    config,
+    task,
+  );
   // One preview at a time (#0271) — but a manual capture never evicts what a
   // human is viewing; that slot is BUSY, not available. A same-task preview
   // whose target cannot be identified (no label — a legacy registry record)
@@ -885,7 +911,7 @@ export async function captureDeclaredShot(
       url = startedPreview.url;
       startedPreviewForTask = !startedPreview.reused;
     }
-    const pageUrl = shotCapturePageUrl(url, entry);
+    const pageUrl = shotCapturePageUrl(url, entry, branchValidator ?? undefined);
     let captured: CapturedPage;
     try {
       captured = await captureEntryPage(context, pageUrl, entry);
