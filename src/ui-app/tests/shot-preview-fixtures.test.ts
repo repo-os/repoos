@@ -117,7 +117,7 @@ describe("shot preview board fixtures (#0743)", () => {
     });
   });
 
-  it("seeds a multi-area task with diff stats for card-chip shots (#0776)", () => {
+  it("seeds a multi-area human task with diff stats for card-chip shots (#0776, #0795)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const repo = useRepoStore();
@@ -126,6 +126,8 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(task, "board:cardChips seeds the fixture task").toBeTruthy();
     expect(task!.areas).toEqual(["web", "server"]);
     expect(task!.area).toBe("web, server");
+    expect(task!.assignee).toBe("human");
+    expect(task!.assignedTo).toBe("Nick");
     expect(repo.diffStatsFor(SHOT_PREVIEW_FIXTURE_TASK_ID)).toEqual({
       filesChanged: 10,
       additions: 377,
