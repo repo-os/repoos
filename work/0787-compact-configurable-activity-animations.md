@@ -2,7 +2,7 @@
 id: "0787"
 title: Compact configurable activity animations; default to Orbital pixel
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: ""
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T05:38:39Z"
+updated_at: "2026-10-15T05:38:40Z"
 ---
 ## Problem
 
@@ -62,3 +62,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T05:23:45Z · needs_input
 - 2026-10-15T05:23:55Z · needs_input, body
 - 2026-10-15T05:38:39Z · model_override
+- 2026-10-15T05:38:40Z · status inbox→ready
