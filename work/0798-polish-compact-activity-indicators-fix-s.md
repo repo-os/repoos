@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T11:01:52Z"
+updated_at: "2026-10-15T11:08:40Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T10:08:33Z · screenshots
 - 2026-10-15T10:19:23Z · status inbox→ready
 - 2026-10-15T11:01:52Z · status ready→active, branch
+- 2026-10-15T11:08:40Z · message_queued at 2026-10-15T11:08:40.018Z
