@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T15:23:24Z"
+updated_at: "2026-10-15T15:59:19Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-15T12:29:58.918Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
@@ -116,3 +116,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T12:29:55Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-15T12:34:28Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried.
 - 2026-10-15T15:23:24Z · note: handoff requested (ui-review)
+- 2026-10-15T15:59:19Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
