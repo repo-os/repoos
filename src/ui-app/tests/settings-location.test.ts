@@ -78,6 +78,15 @@ describe("resolveSettingLocation", () => {
     expect(resolveSettingLocation("remoteValidation.notInSchema", undefined, ctx)).toBeNull();
   });
 
+  // #0790 — the general editor command renders as a General Settings row so a
+  // normal (non-dev) install can configure "Open in editor".
+  it("routes editor.command to General", () => {
+    expect(
+      resolveSettingLocation("editor.command", field({ key: "editor.command" }), ctx),
+    ).toEqual({ tab: "general", hasUiRow: true });
+    expect(isGeneralSchemaFieldKey("editor.command")).toBe(true);
+  });
+
   // #0573 — the close-out budget must render as a real Settings control, not
   // fall through to the raw repoos.toml editor.
   it("gives closeOut.timeoutMs a rendered General row", () => {
