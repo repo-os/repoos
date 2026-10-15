@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T05:33:42Z"
-updated_at: "2026-10-15T05:34:02Z"
+updated_at: "2026-10-15T05:35:45Z"
 ---
 ## Problem
 
@@ -47,3 +48,4 @@ Fix the dropdowns on the model playground to match the style we use everywhere e
 - 2026-10-15T05:33:44Z · screenshots
 - 2026-10-15T05:33:44Z · screenshots
 - 2026-10-15T05:34:02Z · status draft→inbox, title, area, body
+- 2026-10-15T05:35:45Z · model_override
