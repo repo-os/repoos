@@ -7,10 +7,13 @@ import {
   refreshTaskEvidence,
   guardedForceRefreshCapture,
   postCaptureWorktreeGuard,
+  automaticStaleEvidenceRefresh,
   taskAction,
 } from "../../server/routes/tasks.js";
+import type { AutomaticStaleEvidenceRefreshDeps } from "../../server/routes/tasks.js";
 import type { IncomingMessage } from "node:http";
 import * as git from "../../core/git.js";
+import type { RootLock } from "../../server/repo-lock.js";
 import { localShotStore } from "../../server/shots.js";
 import * as uiHandoffGate from "../../server/ui-handoff-gate.js";
 import {
@@ -84,6 +87,41 @@ function gitRoot(): string {
   execSync(`git -C ${root} add README.md`, { stdio: "ignore" });
   execSync(`git -C ${root} commit -m initial`, { stdio: "ignore" });
   return root;
+}
+
+/** Dependencies for the automatic refresh with benign defaults (#0772). */
+function automaticDeps(
+  root: string,
+  task: Task,
+  overrides: Partial<AutomaticStaleEvidenceRefreshDeps> = {},
+): AutomaticStaleEvidenceRefreshDeps {
+  return {
+    config: { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+    rootLock: { acquire: () => true, release: () => true } as unknown as RootLock,
+    closingOut: () => false,
+    log: vi.fn(),
+    getReviewTask: () => task,
+    isAgentRunning: () => false,
+    isReviewRunning: () => false,
+    ...overrides,
+  };
+}
+
+/** Hold the automatic refresh at its HEAD lookup so its locks stay held. */
+function blockGitHeadLookup(): { release: () => void; restore: () => void } {
+  const origRunGit = git.runGit;
+  let release!: () => void;
+  const spy = vi.spyOn(git, "runGit").mockImplementation((cwd, args, timeout) => {
+    if (args[0] === "rev-parse" && args[1] === "--short" && args[2] === "HEAD") {
+      return new Promise((resolve) => {
+        release = () => {
+          void origRunGit(cwd, args, timeout).then(resolve);
+        };
+      });
+    }
+    return origRunGit(cwd, args, timeout);
+  });
+  return { release: () => release(), restore: () => spy.mockRestore() };
 }
 
 describe("POST /api/tasks/:id/verify guards", () => {
@@ -270,6 +308,78 @@ describe("POST /api/tasks/:id/verify guards", () => {
       status: 409,
       body: { error: expect.stringContaining("Evidence was not refreshed") },
     });
+  });
+});
+
+describe("automatic stale-evidence refresh serialization (#0772)", () => {
+  it("reserves the refresh lock before its first await and blocks a review start", async () => {
+    const root = gitRoot();
+    const task = makeTask(root, "review");
+    const { release, restore } = blockGitHeadLookup();
+    const refresh = automaticStaleEvidenceRefresh(automaticDeps(root, task), task);
+    // The mutex is held synchronously, before the blocked HEAD lookup resolves.
+    expect(isEvidenceRefreshActive(task.id)).toBe(true);
+    const config = {
+      root,
+      workDir: "work",
+      cacheDir: ".repoos",
+      agents: [{ name: "reviewer", cli: "opencode", model: "default", enabled: true }],
+    } as RepoOSConfig;
+    const reviews = new ReviewManager(config, () => {});
+    expect(reviews.canRun(task).ok).toBe(false);
+    expect(reviews.canRun(task).reason).toContain("evidence refresh");
+    await expect(reviews.run(task)).resolves.toMatchObject({ ok: false });
+    release();
+    await refresh;
+    expect(isEvidenceRefreshActive(task.id)).toBe(false);
+    restore();
+  });
+
+  it("blocks an engineer start while the automatic refresh holds the lock", async () => {
+    const root = gitRoot();
+    const branch = execSync(`git -C ${root} branch --show-current`, { encoding: "utf8" }).trim();
+    writeFileSync(
+      join(root, "work/0766.md"),
+      `---\nid: "0766"\ntitle: test\nstatus: ready\nbranch: ${branch}\n---\n`,
+    );
+    const readyTask = makeTask(root, "ready");
+    const reviewTask = { ...readyTask, status: "review" } as Task;
+    const { release, restore } = blockGitHeadLookup();
+    const refresh = automaticStaleEvidenceRefresh(automaticDeps(root, reviewTask), reviewTask);
+    expect(isEvidenceRefreshActive(reviewTask.id)).toBe(true);
+    const res = response();
+    await taskAction(
+      context(readyTask, root, {
+        config: {
+          root,
+          workDir: "work",
+          cacheDir: ".repoos",
+          defaultStatus: "inbox",
+          defaultAssignee: "unassigned",
+          agents: [{ name: "engineer", cli: "fake", model: "m", enabled: true }],
+        },
+        index: {
+          getTask: () => readyTask,
+          getTasks: () => [readyTask],
+          applyFileChange: vi.fn(),
+          refreshBranches: vi.fn(),
+        },
+        runner: { isRunning: () => false, start: vi.fn(() => ({ ok: true })) },
+        jobCoordinator: { getJob: () => null, enqueue: vi.fn(), allJobs: () => [] },
+        syncTaskBranch: async () => ({ ok: true, conflicts: [] }),
+        startUnifiedHandoff: () => ({ started: false }),
+        onServerStatusChange: vi.fn(),
+      }),
+      { headers: {} } as IncomingMessage,
+      res as never,
+      { param1: readyTask.id, param2: "start" },
+    );
+    const { status, body } = res.result() as { status: number; body: { error?: string } };
+    expect(status).toBe(409);
+    expect(body.error).toContain("Evidence refresh is in progress");
+    release();
+    await refresh;
+    restore();
   });
 });
 
@@ -584,5 +694,91 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
     }).trim();
     expect(headAfter).not.toBe(shortHead);
     expect(porcelainOf(root)).toBe("");
+  });
+
+  it("automatic refresh never changes tracked files or HEAD (#0772)", async () => {
+    const { root, shortHead, config, task } = commandRepo(RUN_COMMAND);
+    // Seed evidence captured at a different tree so the automatic path sees the
+    // stale marker a stale-only review would have flagged.
+    const evidenceDir = join(root, ".repoos/ui-verification");
+    mkdirSync(evidenceDir, { recursive: true });
+    writeFileSync(
+      join(evidenceDir, "0766.json"),
+      JSON.stringify({
+        at: new Date().toISOString(),
+        issues: [],
+        blankShots: [],
+        captures: 1,
+        sourceIdentity: "deadbeef",
+      }),
+    );
+    const refreshed = await automaticStaleEvidenceRefresh(
+      {
+        config: { ...config, uiVerification: { enabled: true, autoRefreshStaleOnce: true } },
+        rootLock: { acquire: () => true, release: () => true } as unknown as RootLock,
+        closingOut: () => false,
+        log: () => {},
+        getReviewTask: () => task,
+        isAgentRunning: () => false,
+        isReviewRunning: () => false,
+      },
+      task,
+    );
+    expect(refreshed).toBe(true);
+    const headAfter = execSync(`git -C ${root} rev-parse --short HEAD`, {
+      encoding: "utf8",
+    }).trim();
+    expect(headAfter).toBe(shortHead);
+    expect(porcelainOf(root)).toBe("");
+    expect(readUiHandoffGateEvidence(config, "0766")?.sourceIdentity).toBe(shortHead);
+  });
+
+  it("automatic refresh stands down when the task is no longer in review (#0772)", async () => {
+    const { root, config, task } = commandRepo(RUN_COMMAND);
+    const activeTask = { ...task, status: "active" } as Task;
+    let captured = false;
+    const gateSpy = vi.spyOn(uiHandoffGate, "runUiHandoffGate").mockImplementation(async () => {
+      captured = true;
+      return { ok: true, detail: "ok", evidencePath: "" };
+    });
+    const refreshed = await automaticStaleEvidenceRefresh(
+      {
+        config: { ...config, uiVerification: { enabled: true, autoRefreshStaleOnce: true } },
+        rootLock: { acquire: () => true, release: () => true } as unknown as RootLock,
+        closingOut: () => false,
+        log: () => {},
+        getReviewTask: () => activeTask,
+        isAgentRunning: () => false,
+        isReviewRunning: () => false,
+      },
+      activeTask,
+    );
+    gateSpy.mockRestore();
+    expect(refreshed).toBe(false);
+    expect(captured).toBe(false);
+  });
+
+  it("automatic refresh stands down while an engineer turn is live (#0772)", async () => {
+    const { root, config, task } = commandRepo(RUN_COMMAND);
+    let captured = false;
+    const gateSpy = vi.spyOn(uiHandoffGate, "runUiHandoffGate").mockImplementation(async () => {
+      captured = true;
+      return { ok: true, detail: "ok", evidencePath: "" };
+    });
+    const refreshed = await automaticStaleEvidenceRefresh(
+      {
+        config: { ...config, uiVerification: { enabled: true, autoRefreshStaleOnce: true } },
+        rootLock: { acquire: () => true, release: () => true } as unknown as RootLock,
+        closingOut: () => false,
+        log: () => {},
+        getReviewTask: () => task,
+        isAgentRunning: () => true,
+        isReviewRunning: () => false,
+      },
+      task,
+    );
+    gateSpy.mockRestore();
+    expect(refreshed).toBe(false);
+    expect(captured).toBe(false);
   });
 });

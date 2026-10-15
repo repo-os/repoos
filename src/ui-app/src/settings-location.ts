@@ -192,6 +192,8 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
   "uiVerification.enabled":
     "handoff browser gate playwright console overflow screenshot verification review block",
   "uiVerification.viewportWidths": "handoff ui verification mobile desktop overflow viewport width",
+  "uiVerification.autoRefreshStaleOnce":
+    "automatically refresh stale screenshots evidence review rerun once",
   activityAnimationStyle:
     "activity indicator animation coding reviewing agent working dots orbital compact",
   "reviewVerification.guardTestCheck":
