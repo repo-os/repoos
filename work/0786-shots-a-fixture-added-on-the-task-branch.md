@@ -2,7 +2,7 @@
 id: "0786"
 title: "Shots: a fixture added on the task branch can't be declared or captured until merge"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — Branch fixture validation is wired through CLI update, shot capture, verify preflight/gate, and display parsing; the #0778 failure mode is addressed. Sign-off is held up by a missing automated test for the verify warning / “X of Y” summary acceptance criterion."
@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/shots-a-fixture-added-on-the-task-branch
 model_override: deepinfra/zai-org/GLM-5.3-Flash
 created_at: "2026-10-14T16:48:07Z"
-updated_at: "2026-10-15T04:54:20Z"
+updated_at: "2026-10-15T05:24:25Z"
 review_passes: 5
 review_rounds: 2
 ---
@@ -83,3 +83,5 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-15T04:48:21Z · needs_input
 - 2026-10-15T04:53:14Z · cli_override, model_override
 - 2026-10-15T04:53:21Z · model_override
+- 2026-10-15T05:24:25Z · status review→active
+- 2026-10-15T05:24:25Z · note: Verdict needs some work — Branch fixture validation is wired through CLI update, shot capture, verify preflight/gate, and display parsing; the #0778 failure mode is addressed. Sign-off is held up by a missing automated test for the verify warning / “X of Y” summary acceptance criterion.
