@@ -24,6 +24,97 @@ export const SETTINGS_TAB_LABELS: Record<SettingsTabId, string> = Object.fromEnt
   SETTINGS_TABS.map((t) => [t.id, t.label]),
 ) as Record<SettingsTabId, string>;
 
+/**
+ * A named, linkable region inside a Settings tab (#0800). The tab is the
+ * primary axis; a `section` is a stable anchor within it, addressed as
+ * `/settings?tab=general&section=model-routing` the way a task has a URL.
+ *
+ * Sections are a navigation aid, not a schema change: every config key keeps
+ * its value and its existing control. The id is part of the public URL — treat
+ * it as stable and rename only deliberately.
+ */
+export interface SettingsSection {
+  id: string;
+  label: string;
+}
+
+/**
+ * General-tab sections, in the order they render top to bottom. Ids are stable
+ * URL parameters. The sections listed in `GENERAL_FIELD_SECTIONS` are rendered
+ * automatically from schema rows; the others are hand-rendered cards.
+ */
+export const GENERAL_SECTIONS: readonly SettingsSection[] = [
+  { id: "themes", label: "Themes" },
+  { id: "activity-animation", label: "Activity animation" },
+  { id: "general", label: "General" },
+  { id: "model-routing", label: "Model routing" },
+  { id: "close-out", label: "Close-out" },
+  { id: "automation", label: "Automation & approval" },
+  { id: "screenshots", label: "Screenshots" },
+  { id: "attachments", label: "Attachments" },
+  { id: "service", label: "Background service" },
+  { id: "publishing", label: "Publishing" },
+  { id: "remote-validation", label: "Remote validation" },
+  { id: "board", label: "Board" },
+];
+
+/**
+ * General sections whose rows are built from `generalFields` (schema keys). The
+ * remaining General sections are hand-rendered cards whose markup already lives
+ * in SettingsView (Themes, Attachments, Publishing, …).
+ */
+export const GENERAL_FIELD_SECTIONS: readonly string[] = [
+  "general",
+  "model-routing",
+  "close-out",
+  "automation",
+  "screenshots",
+];
+
+const GENERAL_SECTION_BY_ID = new Map(GENERAL_SECTIONS.map((s) => [s.id, s]));
+
+/** Display name for a General section id (falls back to the id). */
+export function generalSectionLabel(id: string): string {
+  return GENERAL_SECTION_BY_ID.get(id)?.label ?? id;
+}
+
+/** Whether `id` names a real General section — used to ignore a stray URL param. */
+export function isGeneralSectionId(id: string): boolean {
+  return GENERAL_SECTION_BY_ID.has(id);
+}
+
+/**
+ * Section id that renders a given General-tab setting key. Every General key
+ * maps to exactly one section; an unmapped key falls back to `general` so no
+ * row can be orphaned. Hand-rendered keys (Publishing, Attachments, …) are
+ * listed here too, so the section a search result links to is the same anchor
+ * the page renders that row under.
+ */
+export function generalSectionForKey(key: string): string {
+  if (key === "activityAnimationStyle") return "activity-animation";
+  if (key === "tunnelEnabled") return "publishing";
+  if (key === "remoteValidation.enabled") return "remote-validation";
+  if (key === "storage.provider") return "attachments";
+  if (key.startsWith("model_routing.")) return "model-routing";
+  if (key.startsWith("closeOut.")) return "close-out";
+  if (key === "shot.maxAutoShots") return "screenshots";
+  if (
+    key === "ctoSkipHealthy" ||
+    key === "cto.actions" ||
+    key === "automation.paused" ||
+    key === "autoEngineeringMode" ||
+    key === "skillSuggestions" ||
+    key === "attention.slowRunMultiplier" ||
+    key.startsWith("autoEngineering.") ||
+    key.startsWith("approval.") ||
+    key.startsWith("uiVerification.") ||
+    key.startsWith("reviewVerification.")
+  ) {
+    return "automation";
+  }
+  return "general";
+}
+
 export interface SettingLocationContext {
   /** When false, dev.inspector.* rows are not rendered on Advanced. */
   inspectorAvailable: boolean;

@@ -7685,6 +7685,55 @@
   border-radius: 4px 4px 0 0;
 }
 
+/* settings sections (#0800): named, linkable anchors inside a tab */
+.settings-section {
+  scroll-margin-top: 16px;
+  border-radius: 15px;
+}
+.settings-section.flash {
+  animation: setting-section-flash 2.2s ease;
+}
+@keyframes setting-section-flash {
+  0%,
+  55% {
+    box-shadow: 0 0 0 2px var(--cyan);
+  }
+}
+.settings-section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -6px 0 16px;
+}
+.settings-section-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--txt-dim);
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.12s,
+    border-color 0.12s;
+}
+.settings-section-chip:hover {
+  color: var(--txt);
+}
+.settings-section-chip.active {
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+.settings-section-chip:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
 /* settings */
 .setting-group {
   margin-bottom: 16px;

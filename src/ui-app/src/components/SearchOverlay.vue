@@ -240,13 +240,23 @@ async function navigateToSetting(
   tab: SettingsTabId,
   key: string,
   tomlOnly: boolean,
+  section?: string,
 ): Promise<void> {
-  const query = tomlOnly ? { tab: "toml" as const, focus: key } : { tab, focus: key };
+  // A General result carries the section it lives in, so the URL lands on that
+  // section (#0800) as well as the focused row. A toml-only key has no section.
+  const query = tomlOnly
+    ? { tab: "toml" as const, focus: key }
+    : section
+      ? { tab, section, focus: key }
+      : { tab, focus: key };
   const cur = router.currentRoute.value;
   const curTab = typeof cur.query.tab === "string" ? cur.query.tab : "general";
   const curFocus = (cur.query.focus ?? cur.query.setting) as string | undefined;
   if (cur.name === "settings" && curFocus === key && curTab === query.tab) {
-    await router.replace({ name: "settings", query: { tab: query.tab } });
+    await router.replace({
+      name: "settings",
+      query: { tab: query.tab, ...(section ? { section } : {}) },
+    });
   }
   await router.push({ name: "settings", query });
 }
@@ -280,7 +290,7 @@ function openResult(r: SearchResult): void {
   } else if (r.kind === "setting") {
     addRecentSearch(query.value);
     if (props.scope === "settings" && r.tab) {
-      void navigateToSetting(r.tab, r.key, r.tomlOnly === true);
+      void navigateToSetting(r.tab, r.key, r.tomlOnly === true, r.section);
     } else {
       void router.push({ name: "settings", query: { focus: r.key } });
     }
