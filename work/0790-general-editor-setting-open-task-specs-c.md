@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 363191
+last_close_out_gate_at: "2026-10-15T11:06:18.352Z"
 id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
@@ -14,7 +16,7 @@ branch: feat/general-editor-setting-open-task-specs-c
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T10:45:48Z"
+updated_at: "2026-10-15T11:06:18Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-15T10:42:58.931Z: repoos check failed: ui verification failed (4 issue(s)): [request] HTTP 404 for http://127.0.0.1:55861/api/tasks/9999 (http://127.0.0.1:55861/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:55861/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:55861/api/tasks/9999 (http://127.0.0.1:55861/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:5… (truncated)"
 review_passes: 6
@@ -57,9 +59,9 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 "route": "/work?task=0790&tab=details",
 "highlight": "[data-test-id=\"open-in-editor\"]",
 "steps": [
-  {
-    "waitFor": "[data-test-id=\"open-in-editor\"]"
-  }
+{
+  "waitFor": "[data-test-id=\"open-in-editor\"]"
+}
 ],
 "theme": "dark"
 },
@@ -69,9 +71,9 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 "route": "/repo?tab=docs&doc=docs/open-in-editor.md",
 "highlight": "[data-test-id=\"context-open-in-editor\"]",
 "steps": [
-  {
-    "waitFor": "[data-test-id=\"context-open-in-editor\"]"
-  }
+{
+  "waitFor": "[data-test-id=\"context-open-in-editor\"]"
+}
 ],
 "theme": "light"
 },
@@ -167,3 +169,5 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T10:42:58Z · message_delivered: 1 message(s)
 - 2026-10-15T10:44:04Z · body: section Shots
 - 2026-10-15T10:45:48Z · body
+- 2026-10-15T11:06:18Z · close-out gate completed in 363s
+
