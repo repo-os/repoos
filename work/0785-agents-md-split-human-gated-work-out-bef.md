@@ -2,14 +2,18 @@
 id: "0785"
 title: "AGENTS.md: split human-gated work out before Move to done"
 type: chore
-status: inbox
+status: done
 priority: p3
 area: docs
+merged_commit: eb502a4b0077f24c87491c5c019aded1aca7dc94
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/agents-md-split-human-gated-work-out-bef
 created_at: "2026-10-14T15:36:57Z"
-updated_at: "2026-10-14T15:36:57Z"
+updated_at: "2026-10-15T17:31:53Z"
+last_close_out_gate_ms: 2952
+last_close_out_gate_at: "2026-10-15T17:31:49.431Z"
+review_passes: 1
 ---
 ## Problem
 When a task is flagged `needs_input_reason: needs-human-step`, nothing in AGENTS.md tells an agent driving the board what to do at close-out. On 2026-10-14 an interactive session ran Move to done on #0660 while it carried that flag. The landed code needed no human, but the human-only verification was split out afterwards (#0784) instead of before close-out. The human's rule is: never close out human-gated work as if the human part were done. Land only the scope an agent can finish, and split the human part into its own task first.
@@ -33,3 +37,11 @@ Keep it to a few lines in the existing style; do not restructure AGENTS.md. Do n
 ## Activity
 
 - 2026-10-14T15:36:57Z · created · njachowski@gmail.com
+- 2026-10-15T11:02:17Z · status inbox→ready
+- 2026-10-15T17:18:01Z · status ready→active, branch
+- 2026-10-15T17:20:22Z · body
+- 2026-10-15T17:29:43Z · status active→review
+- 2026-10-15T17:29:43Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-15T17:30:20Z · note: review pass 1: good to go
+- 2026-10-15T17:31:49Z · close-out gate completed in 3s
+- 2026-10-15T17:31:53Z · status review→done, release:success

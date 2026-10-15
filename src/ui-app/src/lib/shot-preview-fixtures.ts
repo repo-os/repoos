@@ -77,6 +77,7 @@ function activePipeline(
   taskId: string,
   detail: string | null = null,
   at: string = nowIso(),
+  lastProgressAt: string = at,
 ): IntegrationPipelineSnapshot {
   return {
     empty: false,
@@ -85,7 +86,7 @@ function activePipeline(
       stage: "check",
       failed: false,
       startedAt: at,
-      lastProgressAt: at,
+      lastProgressAt,
       detail,
     },
     queue: [],
@@ -184,6 +185,21 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       );
       pinnedIntegration = repo.integration;
       break;
+    case "closeOut:remoteTests": {
+      // Started a few minutes ago (a non-zero elapsed on the card) but
+      // heartbeating now, so it shows the current step + elapsed and is NOT
+      // stalled (#0799).
+      ensureFixtureTask(repo, "review");
+      const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();
+      repo.integration = activePipeline(
+        SHOT_PREVIEW_FIXTURE_TASK_ID,
+        "remote tests",
+        startedAt,
+        nowIso(),
+      );
+      pinnedIntegration = repo.integration;
+      break;
+    }
     case "closeOut:stalled":
       // A fixed far-past attempt: idle past the stall threshold at any capture
       // time, so the fixture task's card renders the stalled Cancel/Retry
@@ -226,10 +242,16 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       };
       break;
     case "board:cardChips":
-      // A multi-area task with seeded diff stats, so the combined area chip
-      // and the file-count chip both render on the board (#0776). No branch
-      // (from the base fixture), so the card skips the diff-stats request.
-      ensureFixtureTask(repo, "review", { area: "web, server", areas: ["web", "server"] });
+      // A multi-area task assigned to a human with seeded diff stats, so the
+      // combined area chip, the human chip and the file-count chip all render
+      // on the board (#0776, #0795). No branch (from the base fixture), so the
+      // card skips the diff-stats request.
+      ensureFixtureTask(repo, "review", {
+        area: "web, server",
+        areas: ["web", "server"],
+        assignee: "human",
+        assignedTo: "Nick",
+      });
       repo.seedDiffStats(SHOT_PREVIEW_FIXTURE_TASK_ID, {
         filesChanged: 10,
         additions: 377,

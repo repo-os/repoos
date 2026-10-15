@@ -21,6 +21,7 @@ import {
 import { effectiveAreaVocabulary } from "../../core/areas.js";
 import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
 import { normalizeAllowlistRows } from "../../core/budget-allowlist.js";
+import { configuredCtoActions, isCtoSafeActionId } from "../../core/cto-actions.js";
 import { describeStorage } from "../../core/storage/index.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import type { Logger } from "../../core/logger.js";
@@ -529,7 +530,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     const val = body[field.key];
 
     if (field.type === "string") {
-      if (field.key === "dev.inspector.editorCommand") {
+      if (field.key === "dev.inspector.editorCommand" || field.key === "editor.command") {
         patch[field.key] = typeof val === "string" ? val.trim() : "";
         continue;
       }
@@ -729,6 +730,29 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         if (shorthand && shorthandHost && !hostNames.includes(shorthandHost)) {
           patch["remoteValidation.tailscaleHost"] = list[0]!;
         }
+        continue;
+      }
+      if (field.key === "cto.actions") {
+        if (!Array.isArray(val)) {
+          return json(res, 400, { error: `${field.label} must be an array of action names` });
+        }
+        const normalized: string[] = [];
+        for (const item of val) {
+          if (typeof item !== "string" || !item.trim()) {
+            return json(res, 400, {
+              error: `${field.label} entries must be non-empty strings`,
+            });
+          }
+          const id = item.trim();
+          if (!isCtoSafeActionId(id)) {
+            return json(res, 400, { error: `Unknown CTO safe action: ${id}` });
+          }
+          if (!normalized.includes(id)) normalized.push(id);
+        }
+        const onDisk = configuredCtoActions(loadConfig(config.root));
+        const unchanged =
+          onDisk.length === normalized.length && onDisk.every((id, i) => id === normalized[i]);
+        if (!unchanged) patch[field.key] = normalized;
         continue;
       }
       if (!Array.isArray(val) || !val.length) {

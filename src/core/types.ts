@@ -578,6 +578,10 @@ export interface RepoOSConfig {
    */
   budget?: BudgetConfig;
   /**
+   * Adaptive agent/model routing (#0791). Default off; see ModelRoutingConfig.
+   */
+  modelRouting?: ModelRoutingConfig;
+  /**
    * Attention bell and `GET /api/attention` (#0687).
    */
   attention?: AttentionConfig;
@@ -653,6 +657,12 @@ export interface RepoOSConfig {
    * whose port other tooling hardcodes (e.g. this dogfood repo → 7171).
    */
   servePort?: number;
+  /**
+   * General editor launcher used by "Open in editor" links throughout the UI
+   * (task specs, context docs, failed tests). When both are set,
+   * `dev.inspector.editorCommand` overrides this setting.
+   */
+  editor?: EditorConfig;
   /**
    * Dev/local tooling (#0509). Ignored on release builds (no dev UI bundle /
    * RepoOS sources in the repo).
@@ -767,6 +777,11 @@ export interface AreaConfig {
 export interface DevInspectorConfig {
   enabled?: boolean;
   editorCommand?: string;
+}
+
+/** General editor launcher used by "Open in editor" links. */
+export interface EditorConfig {
+  command?: string;
 }
 
 /**
@@ -1762,6 +1777,29 @@ export interface BudgetConfig {
    * caller — not a human in the UI) may set as an engineer/reviewer override.
    */
   allowlist?: AgentModelAllowRow[];
+}
+
+/**
+ * Adaptive agent/model routing (#0791), declared as `[model_routing]` in
+ * repoos.toml. Default: `mode = "off"` — the router is never invoked and
+ * existing selection is unchanged. Secrets are NOT stored here: the API key is
+ * read from the env/.env store via `credentialEnv`.
+ */
+export interface ModelRoutingConfig {
+  /** off: never invoked. shadow: recorded only. automatic: applied within limits. */
+  mode?: "off" | "shadow" | "automatic";
+  /** Decision backend. */
+  provider?: "jev" | "clef-flash" | "openrouter";
+  /** Provider model id (e.g. "jev-latest", "Cloudflare/clef-flash"). */
+  model?: string;
+  /** Clef-Flash only: base URL of the self-hosted server. */
+  baseUrl?: string;
+  /** Name of the env var holding the provider API key (never the key itself). */
+  credentialEnv?: string;
+  /** Roles the router may be invoked for. */
+  roles?: Array<"pm" | "engineer" | "reviewer">;
+  /** Hard timeout for one decision call, in milliseconds. */
+  timeoutMs?: number;
 }
 
 /** Close-out (Move to done) pipeline budget (#0573). */
