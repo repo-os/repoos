@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0791"
 title: Adaptive agent/model routing with Jev or Clef-Flash
 type: feature
@@ -64,3 +65,4 @@ RepoOS currently chooses configured role defaults or explicit task overrides. Ad
 - 2026-10-15T07:36:24Z · body
 - 2026-10-15T07:38:20Z · body
 - 2026-10-15T07:45:40Z · needs_input
+
