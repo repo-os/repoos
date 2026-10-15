@@ -87,16 +87,18 @@ export const postCopyInspectorOpen: RouteHandler = async (ctx, req, res) => {
  */
 export const postOpenInEditor: RouteHandler = async (ctx, req, res) => {
   const { config } = ctx;
-  if (!copyInspectorApiEnabled(config.root)) {
-    return json(res, 404, { error: "not available" });
-  }
-  if (config.dev?.inspector?.enabled === false) {
+  // Prefer the dev-only inspector override when set; otherwise fall back to the
+  // general editor command, which works on normal (non-dev) installs too.
+  const devInspector = config.dev?.inspector;
+  const devCommand =
+    typeof devInspector?.editorCommand === "string" ? devInspector.editorCommand.trim() : "";
+  const usingDevOverride = !!devCommand;
+  if (usingDevOverride && devInspector?.enabled === false) {
     return json(res, 400, { error: "editor is disabled" });
   }
   const command =
-    typeof config.dev?.inspector?.editorCommand === "string"
-      ? config.dev.inspector.editorCommand.trim()
-      : "";
+    devCommand ||
+    (typeof config.editor?.command === "string" ? config.editor.command.trim() : "");
   if (!command) {
     return json(res, 400, { error: "no editor command configured" });
   }
@@ -134,16 +136,16 @@ export const postOpenInEditor: RouteHandler = async (ctx, req, res) => {
  */
 export const postOpenTestInEditor: RouteHandler = async (ctx, req, res) => {
   const { config } = ctx;
-  if (!copyInspectorApiEnabled(config.root)) {
-    return json(res, 404, { error: "not available" });
-  }
-  if (config.dev?.inspector?.enabled === false) {
+  const devInspector = config.dev?.inspector;
+  const devCommand =
+    typeof devInspector?.editorCommand === "string" ? devInspector.editorCommand.trim() : "";
+  const usingDevOverride = !!devCommand;
+  if (usingDevOverride && devInspector?.enabled === false) {
     return json(res, 400, { error: "editor is disabled" });
   }
   const command =
-    typeof config.dev?.inspector?.editorCommand === "string"
-      ? config.dev.inspector.editorCommand.trim()
-      : "";
+    devCommand ||
+    (typeof config.editor?.command === "string" ? config.editor.command.trim() : "");
   if (!command) {
     return json(res, 400, { error: "no editor command configured" });
   }
