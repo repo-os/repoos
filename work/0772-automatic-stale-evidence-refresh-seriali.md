@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 346586
-last_close_out_gate_at: "2026-10-15T18:53:55.575Z"
 id: "0772"
 title: "Automatic stale-evidence refresh: serialize with engineer starts and reviews"
 type: bug
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: 9db5e519d1b3763971a589ab35bbf05e18dd6cc2
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/automatic-stale-evidence-refresh-seriali
 created_at: "2026-10-14T03:37:55Z"
-updated_at: "2026-10-15T18:53:55Z"
+updated_at: "2026-10-15T18:54:09Z"
+last_close_out_gate_ms: 346586
+last_close_out_gate_at: "2026-10-15T18:53:55.575Z"
 review_passes: 1
 ---
 ## Problem
@@ -57,4 +58,4 @@ Start from the manual refresh implementation added by #0766 (routes/tasks.ts ver
 - 2026-10-15T18:32:20Z · status active→review
 - 2026-10-15T18:33:25Z · note: review pass 1: good to go
 - 2026-10-15T18:53:55Z · close-out gate completed in 347s
-
+- 2026-10-15T18:54:09Z · status review→done, release:success
