@@ -46,6 +46,10 @@ import type {
   WhisperConfig,
   AreaConfig,
 } from "./types.js";
+import {
+  ACTIVITY_ANIMATION_STYLES,
+  ACTIVITY_ANIMATION_STYLE_LABELS,
+} from "./activity-animation.js";
 import { DEFAULT_MAX_AUTO_SHOTS, STATUSES } from "./types.js";
 import { agentModelAllowRows } from "./budget-allowlist.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
@@ -193,6 +197,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   theme: "system",
   uiTheme: "classic",
   defaultTaskMode: "freeform",
+  activityAnimationStyle: "orbital-pixel",
   tunnelEnabled: false,
   ntfyEnabled: false,
   ntfyTopic: "",
@@ -1252,6 +1257,13 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof get("ntfyBaseUrl") === "string") cfg.ntfyBaseUrl = get("ntfyBaseUrl") as string;
     const taskMode = get("defaultTaskMode");
     if (taskMode === "freeform" || taskMode === "manual") cfg.defaultTaskMode = taskMode;
+    const activityStyle = get("activityAnimationStyle");
+    if (
+      typeof activityStyle === "string" &&
+      (ACTIVITY_ANIMATION_STYLES as readonly string[]).includes(activityStyle)
+    ) {
+      cfg.activityAnimationStyle = activityStyle as (typeof ACTIVITY_ANIMATION_STYLES)[number];
+    }
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
     if (typeof get("autoEngineeringMode") === "boolean")
       cfg.autoEngineeringMode = get("autoEngineeringMode") as boolean;
@@ -2064,6 +2076,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         { value: "manual", label: "Manual form" },
       ],
       description: "Which flow the New task drawer opens with",
+    },
+    {
+      key: "activityAnimationStyle",
+      label: "Activity animation",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.activityAnimationStyle,
+      options: ACTIVITY_ANIMATION_STYLES.map((value) => ({
+        value,
+        label: ACTIVITY_ANIMATION_STYLE_LABELS[value],
+      })),
+      description:
+        "Motion beside coding, reviewing, and other agent-activity labels. Compact styles use about 1–2 character widths; Three dots keeps the legacy row.",
     },
     {
       key: "defaultAssignee",
@@ -2890,6 +2916,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "defaultStatus",
   "defaultAssignee",
   "defaultTaskMode",
+  "activityAnimationStyle",
   "maxActiveTasks",
   "autoEngineeringMode",
   "autoEngineering.pmVeto",

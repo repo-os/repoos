@@ -474,6 +474,15 @@ export function findConfigValueProblems(parsed: Record<string, unknown>): string
   enumCheck("defaultStatus", STATUSES);
   enumCheck("defaultAssignee", ["ai", "human", "unassigned"]);
   enumCheck("defaultTaskMode", ["freeform", "manual"]);
+  enumCheck("activityAnimationStyle", [
+    "orbital-pixel",
+    "cursor-scan-pulse",
+    "breathing-brackets",
+    "micro-dot-matrix",
+    "tiny-signal-bars",
+    "spark-diamond",
+    "three-dots",
+  ]);
   enumCheck("theme", ["dark", "light", "system"]);
   enumCheck("uiTheme", UI_THEMES);
 

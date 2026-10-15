@@ -49,6 +49,8 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   // General (#0659) that carries the availability explanation beside the
   // select, so it must not also auto-render as a plain General row.
   "storage.provider",
+  // Hand-rendered card with live preview (#0787).
+  "activityAnimationStyle",
   // Dev targets have a dedicated hand-rendered card on Advanced (#0749); a
   // plain comma-separated General row cannot express the four fields.
   "dev.targets",
@@ -121,6 +123,9 @@ export function resolveSettingLocation(
     // Dedicated hand-rendered "Attachments" card on General (#0659).
     return { tab: "general", hasUiRow: true };
   }
+  if (key === "activityAnimationStyle") {
+    return { tab: "general", hasUiRow: true };
+  }
   if (key === "auth.enabled" || key === "auth.sessionMaxAge") {
     return { tab: "security", hasUiRow: true };
   }
@@ -182,6 +187,8 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
   "uiVerification.enabled":
     "handoff browser gate playwright console overflow screenshot verification review block",
   "uiVerification.viewportWidths": "handoff ui verification mobile desktop overflow viewport width",
+  activityAnimationStyle:
+    "activity indicator animation coding reviewing agent working dots orbital compact",
   "reviewVerification.guardTestCheck":
     "guard negative test review clamp needs some work check step rejection block disable turn off",
   "reviewVerification.testGlobs":
