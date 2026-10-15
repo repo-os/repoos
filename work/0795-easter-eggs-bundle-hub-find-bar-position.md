@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-hub-find-bar-position
 created_at: "2026-10-15T08:02:06Z"
-updated_at: "2026-10-15T10:42:14Z"
+updated_at: "2026-10-15T10:46:27Z"
 ---
 ## Problem
 Three small issues in the Hub's new Cmd-F find bar (from #0789), plus two small UI fixes for the task cards:
@@ -36,6 +36,28 @@ Three small issues in the Hub's new Cmd-F find bar (from #0789), plus two small 
 ## Notes for AI
 Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSHub/RepoOSHubApp.swift. Task cards: find the area chip rendering in src/ui-app/src/components (TaskCard.vue) and the existing file-changes chip styling for the human chip. Source: user request 2026-10-15.
 
+## Shots
+```json
+[
+{
+  "label": "Task card: space-separated area chip and violet human chip (light)",
+  "target": "default",
+  "route": "/",
+  "highlight": ".tc-area-chip, .tc-human-chip",
+  "state": "board:cardChips",
+  "theme": "light"
+},
+{
+  "label": "Task card: space-separated area chip and violet human chip (dark)",
+  "target": "default",
+  "route": "/",
+  "highlight": ".tc-area-chip, .tc-human-chip",
+  "state": "board:cardChips",
+  "theme": "dark"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-15T08:02:06Z · created · njachowski@gmail.com
@@ -45,3 +67,4 @@ Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSH
 - 2026-10-15T10:35:25Z · body
 - 2026-10-15T10:42:14Z · message_queued at 2026-10-15T10:42:14.090Z
 - 2026-10-15T10:42:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-15T10:46:27Z · body: section Shots
