@@ -1053,7 +1053,6 @@ onUnmounted(() => {
             </div>
             <div id="setting-activityAnimationStyle" class="setting-row">
               <div class="setting-info">
-                <div class="setting-label">{{ activityAnimationField.label }}</div>
                 <div class="setting-desc">{{ activityAnimationField.description }}</div>
               </div>
               <div class="setting-input">
@@ -1108,7 +1107,7 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="setting-desc" style="padding: 4px 0 10px">
-              Preview at actual size — saved when you change the dropdown (auto-save).
+              Shown at in-app size — changes save automatically.
             </div>
           </div>
         </Card>
