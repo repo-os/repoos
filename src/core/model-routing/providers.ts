@@ -49,6 +49,29 @@ export interface ClefFlashProviderOptions {
   fetchImpl?: typeof fetch;
 }
 
+/** Bound body reads to the same abort signal as the fetch (streaming stall protection). */
+async function readJsonWithAbort(res: Response, signal: AbortSignal): Promise<unknown> {
+  if (signal.aborted) {
+    const e = new Error("aborted");
+    e.name = "AbortError";
+    throw e;
+  }
+  return await Promise.race([
+    res.json(),
+    new Promise<never>((_resolve, reject) => {
+      signal.addEventListener(
+        "abort",
+        () => {
+          const e = new Error("aborted");
+          e.name = "AbortError";
+          reject(e);
+        },
+        { once: true },
+      );
+    }),
+  ]);
+}
+
 /** Shared POST-and-decode path for both adapters. */
 async function postSystemOne(
   url: string,
@@ -59,42 +82,50 @@ async function postSystemOne(
 ): Promise<RoutingDecisionResponse> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), request.timeoutMs);
-  let res: Response;
   try {
-    res = await fetchImpl(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...headers },
-      body: JSON.stringify(encodeSystemOneRequest(model, request)),
-      signal: controller.signal,
-    });
-  } catch (err) {
-    const aborted = (err as { name?: string })?.name === "AbortError";
-    throw new RoutingProviderError(
-      aborted ? "timeout" : "transport",
-      aborted ? `decision timed out after ${request.timeoutMs}ms` : "decision request failed",
+    let res: Response;
+    try {
+      res = await fetchImpl(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify(encodeSystemOneRequest(model, request)),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      const aborted = (err as { name?: string })?.name === "AbortError";
+      throw new RoutingProviderError(
+        aborted ? "timeout" : "transport",
+        aborted ? `decision timed out after ${request.timeoutMs}ms` : "decision request failed",
+      );
+    }
+    if (res.status === 401 || res.status === 403) {
+      throw new RoutingProviderError(
+        "auth",
+        `decision provider rejected credentials (HTTP ${res.status})`,
+      );
+    }
+    if (!res.ok) {
+      throw new RoutingProviderError("http", `decision provider returned HTTP ${res.status}`);
+    }
+    let body: unknown;
+    try {
+      body = await readJsonWithAbort(res, controller.signal);
+    } catch (err) {
+      if ((err as { name?: string })?.name === "AbortError") {
+        throw new RoutingProviderError(
+          "timeout",
+          `decision timed out after ${request.timeoutMs}ms`,
+        );
+      }
+      throw new RoutingProviderError("malformed", "decision provider returned non-JSON");
+    }
+    return decodeSystemOneResponse(
+      body,
+      request.questions.map((q) => q.id),
     );
   } finally {
     clearTimeout(timer);
   }
-  if (res.status === 401 || res.status === 403) {
-    throw new RoutingProviderError(
-      "auth",
-      `decision provider rejected credentials (HTTP ${res.status})`,
-    );
-  }
-  if (!res.ok) {
-    throw new RoutingProviderError("http", `decision provider returned HTTP ${res.status}`);
-  }
-  let body: unknown;
-  try {
-    body = await res.json();
-  } catch {
-    throw new RoutingProviderError("malformed", "decision provider returned non-JSON");
-  }
-  return decodeSystemOneResponse(
-    body,
-    request.questions.map((q) => q.id),
-  );
 }
 
 /** TypeSafe Jev — hosted System One API. */

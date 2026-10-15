@@ -22,7 +22,7 @@ import { candidateKey } from "./candidates.js";
 import { RoutingProviderError, type RoutingAnswer } from "./types.js";
 
 /** Bump when the question set or scoring changes, so decisions stay reproducible. */
-export const ROUTING_POLICY_VERSION = "1";
+export const ROUTING_POLICY_VERSION = "2";
 
 /** Below this provider confidence an answer is treated as insufficient evidence. */
 export const MIN_ANSWER_CONFIDENCE = 0.5;
@@ -102,7 +102,12 @@ function fallbackOrBlock(input: PolicyInput, reason: PolicyFallbackReason): Poli
   };
 }
 
-/** Score one candidate. Higher is better. Suitability dominates, then risk/ambiguity, then cost/time. */
+function noulProbability(answers: Record<string, RoutingAnswer>, id: string): number {
+  const a = answers[id];
+  return a?.type === "noul" ? a.probability : 0.5;
+}
+
+/** Score one candidate. Higher is better. Suitability dominates; ambiguity/risk/scope modulate capability vs economy. */
 function score(
   c: RoutingCandidate,
   answers: Record<string, RoutingAnswer>,
@@ -112,10 +117,16 @@ function score(
   const suit = answers[ROUTING_QUESTION_IDS.suitability];
   // Suitability is a choice over candidate keys; the candidate's own probability is its signal.
   const suitP = suit && suit.type === "choice" ? (suit.probabilities[candidateKey(c)] ?? 0) : 0;
+  const ambiguity = noulProbability(answers, ROUTING_QUESTION_IDS.ambiguity);
+  const risk = noulProbability(answers, ROUTING_QUESTION_IDS.risk);
+  const scope = noulProbability(answers, ROUTING_QUESTION_IDS.scope);
+  const intensity = (ambiguity + risk + scope) / 3;
   const cost = ct?.cost ?? 0.5;
   const time = ct?.time ?? 0.5;
   const economy = 1 - (weights.costWeight * cost + weights.timeWeight * time);
-  return suitP * 0.7 + economy * 0.3;
+  // High ambiguity/risk/scope → lean toward more capable (higher normalized cost); otherwise favor economy.
+  const capabilityFit = intensity * cost + (1 - intensity) * economy;
+  return suitP * 0.55 + capabilityFit * 0.25 + economy * 0.2;
 }
 
 /** Decide one routing outcome. Pure: the same input always yields the same output. */
@@ -135,7 +146,8 @@ export function decideRouting(input: PolicyInput): PolicyOutcome {
   }
 
   const answers = input.answers;
-  if (!hasSufficientEvidence(answers)) {
+  const eligibleKeys = input.eligible.map(candidateKey);
+  if (!hasSufficientEvidence(answers, eligibleKeys)) {
     return fallbackOrBlock(input, "insufficient-evidence");
   }
 
@@ -153,14 +165,23 @@ export function decideRouting(input: PolicyInput): PolicyOutcome {
 }
 
 /**
- * Evidence is sufficient only when the suitability answer exists, is a choice,
- * and its top probability clears the calibrated threshold. Anything weaker is
- * treated as insufficient evidence and falls back.
+ * Evidence is sufficient only when the suitability answer exists, is a choice
+ * over **eligible** candidates, and its top eligible probability clears the
+ * calibrated threshold. Unknown choice/probability keys are rejected.
  */
-export function hasSufficientEvidence(answers: Record<string, RoutingAnswer>): boolean {
+export function hasSufficientEvidence(
+  answers: Record<string, RoutingAnswer>,
+  eligibleKeys: readonly string[],
+): boolean {
   const suit = answers[ROUTING_QUESTION_IDS.suitability];
   if (!suit || suit.type !== "choice") return false;
-  const top = Math.max(0, ...Object.values(suit.probabilities));
+  const allowed = new Set(eligibleKeys);
+  if (!allowed.has(suit.choice)) return false;
+  for (const key of Object.keys(suit.probabilities)) {
+    if (!allowed.has(key)) return false;
+  }
+  const eligibleProbs = eligibleKeys.map((k) => suit.probabilities[k] ?? 0);
+  const top = eligibleProbs.length ? Math.max(0, ...eligibleProbs) : 0;
   if (top < MIN_ANSWER_CONFIDENCE) return false;
   if (suit.confidence !== null && suit.confidence < MIN_ANSWER_CONFIDENCE) return false;
   return true;
