@@ -11,7 +11,7 @@ branch: feat/adaptive-agent-model-routing-with-jev-or
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T08:18:00Z"
+updated_at: "2026-10-15T08:18:07Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: a98ce8424db77ec41fcc6d1425230c90bf41c2fd
 handoff_signal_retry_count: 1
