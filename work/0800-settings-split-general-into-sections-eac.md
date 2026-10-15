@@ -36,3 +36,4 @@ Start from src/ui-app/src/settings-location.ts (SETTINGS_TABS and location mappi
 - 2026-10-15T17:17:49Z · status inbox→ready
 - 2026-10-15T17:17:54Z · status ready→active, branch
 - 2026-10-15T17:22:55Z · message_queued at 2026-10-15T17:22:55.051Z
+- 2026-10-15T17:22:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
