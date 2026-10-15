@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T16:49:34Z"
+updated_at: "2026-10-15T16:51:00Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: e4aa4ed4b95c2e30ee8b247ebd90c51bb04558f9
 check_retry_count: 1
@@ -60,40 +60,32 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 ```json
 [
 {
-"label": "Settings activity preview — coding / reviewing / agent at app size",
-"target": "default",
-"route": "/settings?tab=general&setting=activityAnimationStyle",
-"highlight": ".activity-animation-preview",
-"steps": [
-{
-"waitMs": 600
-}
-]
+  "label": "Settings - Activity animation preview at in-app size (coding / reviewing / agent)",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": ".activity-animation-preview",
+  "steps": [
+    {
+      "waitFor": ".activity-animation-preview"
+    },
+    {
+      "waitMs": 600
+    }
+  ]
 },
 {
-"label": "Task card coding indicator at real card size",
-"target": "default",
-"route": "/work",
-"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-"steps": [
-{
-"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-}
-],
-"state": "board:activeCoding"
-},
-{
-"label": "Task card coding indicator (dark theme)",
-"target": "default",
-"route": "/work",
-"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-"steps": [
-{
-"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-}
-],
-"state": "board:activeCoding",
-"theme": "dark"
+  "label": "Board task card - compact activity indicator beside a working task label",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"task-card-agent-hint\"]",
+  "steps": [
+    {
+      "waitFor": ".board"
+    },
+    {
+      "waitMs": 600
+    }
+  ]
 }
 ]
 ```
@@ -120,3 +112,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T15:23:24Z · note: handoff requested (ui-review)
 - 2026-10-15T15:59:19Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-15T16:49:34Z · body
+- 2026-10-15T16:51:00Z · body: section Shots
