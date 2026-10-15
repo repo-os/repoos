@@ -24,6 +24,7 @@ import {
   ROUTING_QUESTION_IDS,
   hasSufficientEvidence,
   MIN_ANSWER_CONFIDENCE,
+  ROUTING_NEUTRAL_COST_TIME,
 } from "../../core/model-routing/policy.js";
 import {
   decideRoutingForRun,
@@ -54,10 +55,33 @@ import { getConfigSchema, SUPPORTED_TOML_KEYS } from "../../core/config.js";
 const claude: RoutingCandidate = { cli: "claude code", model: "default", reasoning: null };
 const codex: RoutingCandidate = { cli: "codex", model: "gpt-5", reasoning: null };
 const kiro: RoutingCandidate = { cli: "kiro", model: "default", reasoning: null };
+const ALL_ROLES = ["pm", "engineer", "reviewer"] as const;
+const LARGE_CONTEXT = 1_000_000;
+
 const allHarnesses = {
-  "claude code": { available: true, supportedReasoning: [] },
-  codex: { available: true, supportedReasoning: ["low", "high"] },
-  kiro: { available: true, supportedReasoning: [] },
+  "claude code": {
+    available: true,
+    supportedReasoning: [],
+    supportedRoles: [...ALL_ROLES],
+    maxContextTokens: LARGE_CONTEXT,
+  },
+  codex: {
+    available: true,
+    supportedReasoning: ["low", "high"],
+    supportedRoles: [...ALL_ROLES],
+    maxContextTokens: LARGE_CONTEXT,
+  },
+  kiro: {
+    available: true,
+    supportedReasoning: [],
+    supportedRoles: [...ALL_ROLES],
+    maxContextTokens: LARGE_CONTEXT,
+  },
+};
+
+const defaultFilter = {
+  role: "engineer" as const,
+  requiredContextTokens: 0,
 };
 
 /** A suitability answer where each candidate's probability is set explicitly. */
@@ -161,6 +185,7 @@ describe("routing config", () => {
 describe("candidate filtering", () => {
   it("an empty allowlist is the unrestricted no-op", () => {
     const { eligible, rejected } = filterCandidates({
+      ...defaultFilter,
       candidates: [claude, codex],
       allowlist: [],
       harnesses: allHarnesses,
@@ -171,6 +196,7 @@ describe("candidate filtering", () => {
 
   it("a non-empty allowlist is a hard ceiling: unlisted CLIs and models are refused", () => {
     const { eligible, rejected } = filterCandidates({
+      ...defaultFilter,
       candidates: [claude, codex, kiro, { cli: "codex", model: "gpt-9", reasoning: null }],
       allowlist: BASE_ALLOW,
       harnesses: allHarnesses,
@@ -184,9 +210,17 @@ describe("candidate filtering", () => {
 
   it("refuses a candidate whose harness is not installed or authenticated", () => {
     const { eligible, rejected } = filterCandidates({
+      ...defaultFilter,
       candidates: [claude],
       allowlist: [],
-      harnesses: { "claude code": { available: false, supportedReasoning: [] } },
+      harnesses: {
+        "claude code": {
+          available: false,
+          supportedReasoning: [],
+          supportedRoles: [...ALL_ROLES],
+          maxContextTokens: LARGE_CONTEXT,
+        },
+      },
     });
     expect(eligible).toEqual([]);
     expect(rejected[0].reason).toContain("not installed");
@@ -194,6 +228,7 @@ describe("candidate filtering", () => {
 
   it("refuses an unsupported reasoning setting rather than pairing it blindly", () => {
     const { eligible, rejected } = filterCandidates({
+      ...defaultFilter,
       candidates: [{ cli: "codex", model: "gpt-5", reasoning: "extreme" }],
       allowlist: [],
       harnesses: allHarnesses,
@@ -204,17 +239,54 @@ describe("candidate filtering", () => {
 
   it("de-duplicates and returns a stable order", () => {
     const { eligible } = filterCandidates({
+      ...defaultFilter,
       candidates: [codex, claude, codex, claude],
       allowlist: [],
       harnesses: allHarnesses,
     });
     expect(eligible).toHaveLength(2);
     const again = filterCandidates({
+      ...defaultFilter,
       candidates: [claude, codex],
       allowlist: [],
       harnesses: allHarnesses,
     });
     expect(eligible.map(candidateKey)).toEqual(again.eligible.map(candidateKey));
+  });
+
+  it("excludes an available harness that does not support the run role before scoring", () => {
+    const engineerOnly = {
+      ...allHarnesses,
+      codex: {
+        ...allHarnesses.codex,
+        supportedRoles: ["engineer"] as const,
+      },
+      "claude code": {
+        ...allHarnesses["claude code"],
+        supportedRoles: ["pm", "reviewer"] as const,
+      },
+    };
+    const { eligible, rejected } = filterCandidates({
+      ...defaultFilter,
+      role: "engineer",
+      candidates: [claude, codex],
+      allowlist: [],
+      harnesses: engineerOnly,
+    });
+    expect(eligible.map(candidateKey)).toEqual([candidateKey(codex)]);
+    expect(rejected.find((r) => r.candidate.cli === "claude code")?.reason).toContain("engineer");
+
+    const answers = answersWith(suitabilityAnswer({ [candidateKey(codex)]: 0.9 }));
+    const out = decideRouting({
+      eligible,
+      fallback: codex,
+      answers,
+      failure: null,
+      costTime: {},
+      weights: { costWeight: 0.5, timeWeight: 0.5 },
+    });
+    expect(out.kind).toBe("selected");
+    if (out.kind === "selected") expect(out.candidate.cli).toBe("codex");
   });
 });
 
@@ -344,31 +416,39 @@ describe("policy", () => {
     expect(out).toMatchObject({ kind: "fallback", reason: "insufficient-evidence" });
   });
 
-  it("does not invent neutral cost/time when data is missing for a candidate", () => {
+  it("treats missing cost/time as a neutral midpoint so suitability ties are not broken", () => {
     const tied = answersWith(
       suitabilityAnswer({ [candidateKey(codex)]: 0.5, [candidateKey(claude)]: 0.5 }),
     );
-    const withCost = decideRouting({
+    const weights = { costWeight: 0.5, timeWeight: 0.5 };
+    const codexMeasuredClaudeMissing = decideRouting({
       eligible,
       fallback,
       answers: tied,
       failure: null,
       costTime: { [candidateKey(codex)]: { cost: 0.1, time: 0.1 } },
-      weights: { costWeight: 1, timeWeight: 0 },
+      weights,
     });
-    const withoutCost = decideRouting({
+    const codexMeasuredClaudeNeutral = decideRouting({
       eligible,
       fallback,
       answers: tied,
       failure: null,
-      costTime: {},
-      weights: { costWeight: 1, timeWeight: 0 },
+      costTime: {
+        [candidateKey(codex)]: { cost: 0.1, time: 0.1 },
+        [candidateKey(claude)]: {
+          cost: ROUTING_NEUTRAL_COST_TIME,
+          time: ROUTING_NEUTRAL_COST_TIME,
+        },
+      },
+      weights,
     });
-    expect(withCost.kind).toBe("selected");
-    expect(withoutCost.kind).toBe("selected");
-    if (withCost.kind === "selected" && withoutCost.kind === "selected") {
-      expect(candidateKey(withCost.candidate)).toBe(candidateKey(codex));
-      expect(candidateKey(withoutCost.candidate)).not.toBe(candidateKey(codex));
+    expect(codexMeasuredClaudeMissing.kind).toBe("selected");
+    expect(codexMeasuredClaudeNeutral.kind).toBe("selected");
+    if (codexMeasuredClaudeMissing.kind === "selected" && codexMeasuredClaudeNeutral.kind === "selected") {
+      expect(candidateKey(codexMeasuredClaudeMissing.candidate)).toBe(
+        candidateKey(codexMeasuredClaudeNeutral.candidate),
+      );
     }
   });
 
@@ -413,7 +493,12 @@ describe("decideRoutingForRun (orchestration invariants)", () => {
     role: "engineer",
     pinned: false,
     stateText: "task body",
-    filter: { candidates: [claude, codex], allowlist: BASE_ALLOW, harnesses: allHarnesses },
+    filter: {
+      ...defaultFilter,
+      candidates: [claude, codex],
+      allowlist: BASE_ALLOW,
+      harnesses: allHarnesses,
+    },
     fallback: claude,
     costTime: {},
     provider: null,
@@ -499,7 +584,12 @@ describe("decideRoutingForRun (orchestration invariants)", () => {
 
     const blocked = await decideRoutingForRun(
       baseInput({
-        filter: { candidates: [kiro], allowlist: BASE_ALLOW, harnesses: allHarnesses },
+        filter: {
+          ...defaultFilter,
+          candidates: [kiro],
+          allowlist: BASE_ALLOW,
+          harnesses: allHarnesses,
+        },
         fallback: null,
         provider: { id: "jev", decide },
       }),
@@ -543,7 +633,12 @@ describe("decideRoutingForRun (orchestration invariants)", () => {
     const decide = vi.fn();
     const out = await decideRoutingForRun(
       baseInput({
-        filter: { candidates: [kiro], allowlist: BASE_ALLOW, harnesses: allHarnesses },
+        filter: {
+          ...defaultFilter,
+          candidates: [kiro],
+          allowlist: BASE_ALLOW,
+          harnesses: allHarnesses,
+        },
         fallback: null,
         provider: { id: "jev", decide },
       }),
@@ -826,7 +921,12 @@ describe("provider adapters", () => {
       role: "engineer",
       pinned: false,
       stateText: "s",
-      filter: { candidates: [claude], allowlist: [], harnesses: allHarnesses },
+      filter: {
+        ...defaultFilter,
+        candidates: [claude],
+        allowlist: [],
+        harnesses: allHarnesses,
+      },
       fallback: claude,
       costTime: {},
       provider,

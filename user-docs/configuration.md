@@ -602,6 +602,23 @@ Compare those recommendations with real outcomes before enabling `automatic`
 - The router cannot widen permissions or budgets. It only chooses among
   candidates that already pass these filters.
 
+### Candidate filtering (library behavior)
+
+Before any provider call, `filterCandidates` in `src/core/model-routing/candidates.ts`
+drops configurations that fail deterministic checks: budget allowlist, harness
+availability, reasoning support, **the run's role** (`pm`, `engineer`, or
+`reviewer` must appear in the harness's `supportedRoles`), and **required context
+size** (`requiredContextTokens` must not exceed the harness's `maxContextTokens`).
+Callers supply those facts from doctor/auth probes when wiring lands in #0792/#0793.
+
+### Scoring and missing cost/time (library behavior)
+
+The routing policy scores every candidate on the same components (suitability,
+task-intensity, economy). When normalized cost or time is unknown for a candidate,
+the policy uses a fixed neutral midpoint (`ROUTING_NEUTRAL_COST_TIME`, currently
+`0.5`) rather than omitting economy terms — missing measurements do not penalize
+a candidate relative to one with data.
+
 ### Fallbacks (library behavior; applied on the run path in #0792/#0793)
 
 When the router cannot produce a trustworthy decision, the run uses the
