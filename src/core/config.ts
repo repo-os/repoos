@@ -48,6 +48,7 @@ import type {
 } from "./types.js";
 import { DEFAULT_MAX_AUTO_SHOTS, STATUSES } from "./types.js";
 import { agentModelAllowRows } from "./budget-allowlist.js";
+import { parseModelRouting } from "./model-routing/config.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
 import { parseDevTargets } from "./dev-targets.js";
 import { parseTailscaleHosts } from "./remote-hosts.js";
@@ -1770,6 +1771,17 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // behaviour is the unrestricted default, so a typo never blocks the server).
     const budgetAllowlist = agentModelAllowRows(parsed["budget.allowlist"]);
     if (budgetAllowlist.length) cfg.budget = { allowlist: budgetAllowlist };
+    // [model_routing] (#0791) — adaptive agent/model routing. Default off; a
+    // malformed value is dropped with a warning and never blocks server boot.
+    const routingRaw: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (key.startsWith("model_routing.")) routingRaw[key.slice("model_routing.".length)] = value;
+    }
+    if (Object.keys(routingRaw).length) {
+      const routing = parseModelRouting(routingRaw);
+      for (const warning of routing.warnings) console.warn(`[repoos] ${warning}`);
+      if (Object.keys(routing.config).length) cfg.modelRouting = routing.config;
+    }
     const closeOutInstallCommand = parsed["closeOut.installCommand"];
     if (typeof closeOutInstallCommand === "string" && closeOutInstallCommand.trim()) {
       cfg.closeOut = {
@@ -2852,6 +2864,88 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "restricted. Declared in repoos.toml as [[budget.allowlist]] rows (cli + models); edit it " +
         "on the Agents page's Budget Controls tab.",
     },
+    // Adaptive agent/model routing (#0791). Default off; shadow recommended first.
+    {
+      key: "model_routing.mode",
+      label: "Model routing mode",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "off",
+      options: [
+        { value: "off", label: "Off — existing agent and model choice (default)" },
+        { value: "shadow", label: "Shadow — record recommendations, never change selection" },
+        { value: "automatic", label: "Automatic — apply recommendations within budget limits" },
+      ],
+      description:
+        "Whether an adaptive decision model chooses the coding agent and model for PM, engineer and " +
+        "reviewer runs. Start in Shadow to compare recommendations with real outcomes before enabling Automatic.",
+    },
+    {
+      key: "model_routing.provider",
+      label: "Routing decision provider",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "jev",
+      options: [
+        { value: "jev", label: "TypeSafe Jev (hosted)" },
+        { value: "clef-flash", label: "Cloudflare Clef-Flash (self-hosted)" },
+      ],
+      description:
+        "Which decision model answers routing questions. Jev is a hosted API; Clef-Flash runs on your " +
+        "own GPU server and needs a base URL. Switching providers does not require code changes.",
+    },
+    {
+      key: "model_routing.model",
+      label: "Routing model id",
+      type: "string",
+      tier: "live",
+      restartRequired: false,
+      default: "jev-latest",
+      description:
+        "Provider model id. Jev: jev-latest or a pinned version such as jev-1.13.0. Clef-Flash: Cloudflare/clef-flash.",
+    },
+    {
+      key: "model_routing.baseUrl",
+      label: "Clef-Flash server URL",
+      type: "string",
+      tier: "live",
+      restartRequired: false,
+      default: "",
+      description:
+        "Base URL of your self-hosted Clef-Flash (SGLang) server, e.g. http://localhost:30000. Used only when the provider is Clef-Flash.",
+    },
+    {
+      key: "model_routing.credentialEnv",
+      label: "Routing API key variable",
+      type: "string",
+      tier: "live",
+      restartRequired: false,
+      default: "TYPESAFE_API_KEY",
+      description:
+        "Name of the environment variable that holds the provider API key. The key itself is never stored in repoos.toml; set it in the gitignored .env file.",
+    },
+    {
+      key: "model_routing.roles",
+      label: "Roles the router may choose for",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: ["engineer", "reviewer", "pm"],
+      description:
+        "Which runs the router is consulted for: pm, engineer and/or reviewer. Roles left out keep their configured agent.",
+    },
+    {
+      key: "model_routing.timeoutMs",
+      label: "Routing decision timeout (ms)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 8000,
+      description:
+        "How long one routing decision may take before the configured fallback is used. Between 500 and 60000 ms.",
+    },
     // [board.columns] — display-only label overrides (#0396).
     ...STATUSES.map((status) => ({
       key: `board.columns.${status}`,
@@ -3051,6 +3145,14 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "tunnel.domain",
   "tunnel.tunnel_id",
   "tunnel.apps",
+  // Adaptive agent/model routing (#0791)
+  "model_routing.mode",
+  "model_routing.provider",
+  "model_routing.model",
+  "model_routing.baseUrl",
+  "model_routing.credentialEnv",
+  "model_routing.roles",
+  "model_routing.timeoutMs",
   // Close-out (Move to done) pipeline budget (#0573)
   "closeOut.timeoutMs",
   "closeOut.gate",
