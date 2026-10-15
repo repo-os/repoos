@@ -5,9 +5,10 @@
  * and by hand).
  */
 import { describe, expect, it, afterEach } from "vitest";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { loadConfig } from "../../core/config";
 import {
   buildCapturePlan,
@@ -18,7 +19,11 @@ import {
   validateDeclaredShotTargets,
   parseShotEntry,
 } from "../../core/shot-plan";
-import { extractFixturesFromSource, createFixtureValidator } from "../../core/shot-fixtures";
+import {
+  extractFixturesFromSource,
+  createFixtureValidator,
+  readBranchFixtureValidator,
+} from "../../core/shot-fixtures";
 import {
   buildCliShotPlan,
   parseShotArgs,
@@ -1204,5 +1209,24 @@ describe("fixture validation from branch source (#0786)", () => {
     expect(errors).toEqual([]);
     expect(shots).toHaveLength(1);
     expect(shots[0]?.state).toBe("custom:test");
+  });
+
+  it("readBranchFixtureValidator reads this repo's shot-fixtures.ts end-to-end (#0786)", () => {
+    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+    const fixturesPath = join(repoRoot, "src/core/shot-fixtures.ts");
+    const validator = readBranchFixtureValidator(
+      (path) => (existsSync(path) ? readFileSync(path, "utf8") : null),
+      repoRoot,
+    );
+    expect(validator).toBeDefined();
+    expect(validator!("closeOut:stalled")).toBe(true);
+    const body =
+      '## Shots\n\n```json\n[{"route":"/","state":"closeOut:stalled","target":"default"}]\n```';
+    const { shots, errors } = parseShotPlan(body, { fixtureValidator: validator! });
+    expect(errors).toEqual([]);
+    expect(shots[0]?.state).toBe("closeOut:stalled");
+    const built = buildCapturePlan(["default"], shots, {});
+    expect(built.entries).toHaveLength(1);
+    expect(built.entries[0]?.state).toBe("closeOut:stalled");
   });
 });

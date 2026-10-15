@@ -34,6 +34,7 @@ import { shotCapturePageUrl } from "../core/shot-fixtures.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import type { CaptureEntry } from "../core/shot-plan.js";
 import {
+  countDeclaredShotEntries,
   provenanceCaption,
   parseShotPlan,
   shotPlanFingerprint,
@@ -592,6 +593,23 @@ export async function runUiHandoffGate(
     return { ok: true, skipped: true, detail: plan.reason };
   }
 
+  const fixtureValidator = taskFixtureValidator(
+    (path: string) => {
+      try {
+        return existsSync(path) ? readFileSync(path, "utf8") : null;
+      } catch {
+        return null;
+      }
+    },
+    config,
+    task,
+  );
+  const declaredParse = parseShotPlan(
+    task.body ?? "",
+    fixtureValidator ? { fixtureValidator } : undefined,
+  );
+  const declaredEntryCount = countDeclaredShotEntries(task.body ?? "");
+
   const viewports = resolvedUiVerification(config).viewportWidths ?? [1024, 375];
   // #0765: the gate handles BOTH kinds of capture. A web entry (#0734) is driven
   // in a browser and checked for console errors / routes / assertions; a command
@@ -622,6 +640,22 @@ export async function runUiHandoffGate(
   const commandCaptures: CommandCaptureEvidence[] = [];
   const allWarnings: string[] = [];
   let captured = 0;
+  for (const error of declaredParse.errors) {
+    const line = `declared shot not captured — ${error}`;
+    allWarnings.push(line);
+    log(task.id, "warn", `ui verification: ${line}`);
+  }
+  for (const error of plan.errors) {
+    if (declaredParse.errors.includes(error)) continue;
+    const line = `declared shot not captured — ${error}`;
+    allWarnings.push(line);
+    log(task.id, "warn", `ui verification: ${line}`);
+  }
+  for (const skip of plan.skips) {
+    const line = `declared shot not captured — ${skip}`;
+    allWarnings.push(line);
+    log(task.id, "warn", `ui verification: ${line}`);
+  }
 
   // #0734: identity of what is being captured, so a reviewer can tie the
   // evidence to the tested source/plan rather than trusting a timestamp. The
@@ -964,7 +998,10 @@ export async function runUiHandoffGate(
     allWarnings.length > 0
       ? ` (${allWarnings.length} shot warning${allWarnings.length === 1 ? "" : "s"})`
       : "";
-  const count = `${captured} shot${captured === 1 ? "" : "s"}`;
+  const count =
+    declaredEntryCount > 0
+      ? `${captured} of ${declaredEntryCount} shot${declaredEntryCount === 1 ? "" : "s"}`
+      : `${captured} shot${captured === 1 ? "" : "s"}`;
   // A command-only task has no console to be clean (#0765) — say what the
   // evidence actually is rather than the web phrase.
   const shotDetail =
