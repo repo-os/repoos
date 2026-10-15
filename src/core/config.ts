@@ -22,6 +22,7 @@ import type {
   CheckContrastPair,
   CheckThemeScope,
   DevInspectorConfig,
+  EditorConfig,
   DevTargetConfig,
   DeploymentConfig,
   DistributionConfig,
@@ -1231,6 +1232,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         editorCommand: typeof devInspectorEditor === "string" ? devInspectorEditor.trim() : "",
       };
       cfg.dev = { ...cfg.dev, inspector };
+    }
+    const editorCommand = parsed["editor.command"];
+    if (typeof editorCommand === "string") {
+      cfg.editor = { ...cfg.editor, command: editorCommand.trim() };
     }
     // [dev.failureSummary] (#0775) — the optional AI-written failure summary.
     // Deterministic detection needs no config; this only gates the model call.
@@ -2751,6 +2756,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Comma-separated; empty means none.",
     },
     {
+      key: "editor.command",
+      label: "Editor command",
+      type: "string",
+      tier: "live",
+      restartRequired: false,
+      default: "",
+      description:
+        "Optional editor launcher used by 'Open in editor' links (task specs, context docs, failed tests), e.g. `zed {file}:{line}`. Placeholders `{file}` and `{line}`; omit `{line}` to open without a line number. Takes precedence only when `dev.inspector.editorCommand` is unset.",
+    },
+    {
       key: "dev.inspector.enabled",
       label: "Copy inspector",
       type: "boolean",
@@ -2899,6 +2914,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "worktreeWarnThreshold",
   "dev.inspector.enabled",
   "dev.inspector.editorCommand",
+  "editor.command",
   "board.columns.draft",
   "board.columns.inbox",
   "board.columns.ready",
