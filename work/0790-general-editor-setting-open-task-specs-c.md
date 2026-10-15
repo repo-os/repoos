@@ -3,6 +3,9 @@ id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — The branch correctly adds `editor.command`, ungates open-in-editor routes with the documented security boundary, wires Task/Context/FailedTests (and copy-inspector hints), and unit tests cover schema, routes, and drawer logic. Handoff PNGs only cover three of five declared shots (Settings light/dark and task drawer light); task drawer dark and Context doc “Open in editor” are missing, so the light/dark link criterion is not fully evidenced."
 priority: p2
 area: [web, server, cli]
 assigned_to: ai
@@ -135,3 +138,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T08:29:35Z · status active→review
 - 2026-10-15T08:30:46Z · note: click .theme-toggle: click: Timeout 5000ms exceeded. on /work?task=0790&tab=details
 - 2026-10-15T08:31:42Z · note: review pass 4: needs some work
+- 2026-10-15T08:31:42Z · needs_input
