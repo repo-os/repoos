@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/settings-split-general-into-sections-eac
 created_at: "2026-10-15T15:15:17Z"
-updated_at: "2026-10-15T17:29:06Z"
+updated_at: "2026-10-15T18:09:55Z"
 ---
 ## Problem
 The General settings tab is too long to find things quickly. Model routing (Jev / Clef-Flash), for example, sits among unrelated options. Sections are not searchable on their own and have no URL, so you can't link to one the way task URLs work.
@@ -30,6 +30,29 @@ The General settings tab is too long to find things quickly. Model routing (Jev 
 ## Notes for AI
 Start from src/ui-app/src/settings-location.ts (SETTINGS_TABS and location mapping) and src/ui-app/src/views/SettingsView.vue (the General group and section rendering). Source: user request 2026-10-15.
 
+## Shots
+```json
+[
+{
+  "label": "General tab split into named sections with a section nav",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": ".settings-section-nav"
+},
+{
+  "label": "Model routing section opened directly by its URL",
+  "target": "default",
+  "route": "/settings?tab=general&section=model-routing",
+  "highlight": "#settings-section-model-routing",
+  "steps": [
+    {
+      "waitMs": 900
+    }
+  ]
+}
+]
+```
+
 ## Activity
 
 - 2026-10-15T15:15:17Z · created · njachowski@gmail.com
@@ -38,3 +61,4 @@ Start from src/ui-app/src/settings-location.ts (SETTINGS_TABS and location mappi
 - 2026-10-15T17:22:55Z · message_queued at 2026-10-15T17:22:55.051Z
 - 2026-10-15T17:22:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-15T17:29:06Z · body
+- 2026-10-15T18:09:55Z · body: section Shots
