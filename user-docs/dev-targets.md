@@ -150,7 +150,9 @@ you ask, when the server stops, or when it crashes. Its state is one of
 `running`, `stopped`, `starting` or `failed`, and the last 2000 lines of its
 combined output are available in a scrollable panel. A running target also shows
 how long ago it started — "17 hours ago" beside its state — and hovering or
-focusing that time reveals the exact start timestamp.
+focusing that time reveals the exact start timestamp. A started target's card
+carries a soft cyan glow — the same highlight an active remote runner shows while
+it runs checks — so a running target stands out from a stopped one at a glance.
 
 When a target fails, the Dev page shows a plain-language summary above the log:
 what failed, the most likely cause, and how to fix it. A port already in use is
