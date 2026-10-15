@@ -201,7 +201,10 @@ describe("GET /api/model-routing/status", () => {
 
   it("never echoes a secret value", async () => {
     const root = tmpDir();
-    writeFileSync(join(root, "repoos.toml"), '[model_routing]\nmode = "shadow"\nprovider = "jev"\n');
+    writeFileSync(
+      join(root, "repoos.toml"),
+      '[model_routing]\nmode = "shadow"\nprovider = "jev"\n',
+    );
     writeFileSync(join(root, ".env"), "TYPESAFE_API_KEY=super-secret-value\n");
     loadConfig(root);
     handle = await startServer({ root, host: "127.0.0.1", port: 0, disableAuth: true });

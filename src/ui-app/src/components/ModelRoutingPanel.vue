@@ -185,7 +185,9 @@ onMounted(() => {
       <strong>off by default</strong>. Shadow mode records what it would have chosen without
       changing the agent actually used. Automatic mode applies recommendations only within your
       budget allowlist — enable it after shadow looks good.
-      <a class="model-pricing-link" href="/repo?doc=user-docs/configuration.md#adaptive-model-routing-model_routing"
+      <a
+        class="model-pricing-link"
+        href="/repo?doc=user-docs/configuration.md#adaptive-model-routing-model_routing"
         >Read the configuration guide</a
       >.
     </p>
@@ -287,10 +289,7 @@ onMounted(() => {
       <div>
         <dt>Credential</dt>
         <dd data-testid="routing-credential-status">
-          <span
-            class="mr-pill"
-            :class="status?.credentialPresent ? 'mr-pill-ok' : 'mr-pill-warn'"
-          >
+          <span class="mr-pill" :class="status?.credentialPresent ? 'mr-pill-ok' : 'mr-pill-warn'">
             {{ statusLoading ? "Checking…" : status?.credentialPresent ? "Set" : "Not set" }}
           </span>
           <code class="mr-env-name">{{ credentialEnv }}</code>
