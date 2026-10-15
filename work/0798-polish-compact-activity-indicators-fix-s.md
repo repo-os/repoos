@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
-updated_at: "2026-10-15T11:47:10Z"
+updated_at: "2026-10-15T11:49:08Z"
 ---
 ## Problem
 
@@ -57,9 +57,9 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 "route": "/settings?tab=general&setting=activityAnimationStyle",
 "highlight": ".activity-animation-preview",
 "steps": [
-  {
-    "waitMs": 600
-  }
+{
+  "waitMs": 600
+}
 ]
 },
 {
@@ -68,9 +68,9 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
 ],
 "state": "board:activeCoding"
 },
@@ -80,9 +80,9 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
 ],
 "state": "board:activeCoding",
 "theme": "dark"
@@ -106,3 +106,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T11:40:28Z · body
 - 2026-10-15T11:44:45Z · body: section Shots
 - 2026-10-15T11:47:10Z · body
+- 2026-10-15T11:49:08Z · body
