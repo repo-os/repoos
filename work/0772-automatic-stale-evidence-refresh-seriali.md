@@ -36,3 +36,4 @@ Start from the manual refresh implementation added by #0766 (routes/tasks.ts ver
 - 2026-10-14T05:42:00Z · status inbox→ready
 - 2026-10-15T17:33:56Z · status ready→active, branch
 - 2026-10-15T17:49:32Z · message_queued at 2026-10-15T17:49:32.335Z
+- 2026-10-15T17:49:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
