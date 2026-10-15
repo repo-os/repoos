@@ -2,14 +2,14 @@
 id: "0795"
 title: "Easter eggs bundle: Hub find bar position, Done button, and Escape"
 type: bug
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T08:02:06Z"
-updated_at: "2026-10-15T08:02:06Z"
+updated_at: "2026-10-15T08:08:00Z"
 ---
 ## Problem
 The Hub's new Cmd-F find bar (from #0789) has three issues on the native macOS app:
@@ -35,3 +35,4 @@ Start from the find bar view in macos/RepoOSHub/ServerWebView.swift and the Find
 ## Activity
 
 - 2026-10-15T08:02:06Z · created · njachowski@gmail.com
+- 2026-10-15T08:08:00Z · status inbox→ready
