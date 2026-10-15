@@ -117,7 +117,7 @@ function done(): void {
       <div class="drawer-body">
         <div v-if="submitted" class="ff-done">
           <div class="ff-done-head">
-            <ActivityIndicator />
+            <ActivityIndicator activity="agent" />
             <span>Creating your input</span>
           </div>
           <p class="ff-done-copy">

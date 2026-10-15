@@ -355,13 +355,13 @@ function onDocBodyTranscribed(text: string): void {
               @click="createFreeform"
               :disabled="ui.saving || !freeformText.trim()"
             >
-              <ActivityIndicator v-if="freeformRunning" />
+              <ActivityIndicator v-if="freeformRunning" activity="agent" />
               {{ freeformRunning ? "Asking the PM agent…" : "Create document" }}
             </Button>
           </div>
           <div v-if="freeformLines.length" class="ff-stream">
             <div class="ff-stream-head">
-              <ActivityIndicator />
+              <ActivityIndicator activity="agent" />
               PM agent
             </div>
             <div class="ff-stream-log" ref="ffLogEl">

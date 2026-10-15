@@ -34,6 +34,7 @@ export interface ShotDriverPage {
   waitForLoadState(state: string, options?: { timeout?: number }): Promise<void>;
   waitForTimeout(ms: number): Promise<void>;
   setViewportSize(viewport: { width: number; height: number }): Promise<void>;
+  emulateMedia?(options: { reducedMotion?: "reduce" | "no-preference" }): Promise<void>;
   locator(selector: string): ShotLocator;
   screenshot(options?: { fullPage?: boolean }): Promise<Buffer>;
   close(): Promise<void>;
@@ -214,6 +215,16 @@ async function detectLoadingState(page: ShotDriverPage): Promise<string> {
  * the highlight this is best-effort; an evaluate-less driver (or a throwing
  * script) records a miss so a wrong-theme frame is never silent evidence.
  */
+async function applyReducedMotion(page: ShotDriverPage): Promise<void> {
+  const emulate = page.emulateMedia;
+  if (typeof emulate !== "function") return;
+  try {
+    await emulate.call(page, { reducedMotion: "reduce" });
+  } catch {
+    /* best-effort */
+  }
+}
+
 async function applyShotTheme(
   page: ShotDriverPage,
   theme: string,
@@ -316,7 +327,10 @@ export async function captureShotPage(
   url: string,
   entry: {
     route: string;
-  } & Pick<CaptureEntry, "selector" | "steps" | "highlight" | "highlights" | "theme">,
+  } & Pick<
+    CaptureEntry,
+    "selector" | "steps" | "highlight" | "highlights" | "theme" | "reducedMotion"
+  >,
   options: ShotCaptureOptions,
   misses: ShotCaptureMissHandlers = {},
 ): Promise<Buffer> {
@@ -341,6 +355,7 @@ export async function captureShotPage(
   // after steps (they are theme-agnostic) and before the frame is composed, so
   // the screenshot — and the assertion checks below — see the requested theme.
   if (entry.theme) await applyShotTheme(page, entry.theme, entry.route, onThemeMiss);
+  if (entry.reducedMotion) await applyReducedMotion(page);
   // Merged duplicate declarations carry each selector separately: apply and
   // miss-check them one by one, since a comma-joined list "matches" as soon as
   // any member does (#0613).

@@ -84,6 +84,7 @@ worktreeWarnThreshold = 20     # 0 disables the warning
 
 # ── Server and UI ────────────────────────────────────────────────────────
 servePort = 7171   # omit to derive a stable per-repo port (7200-7999)
+activityAnimationStyle = "orbital-pixel"   # compact agent-activity indicator; see table below
 strictBuild = false
 
 # ── Close-out (Move to done) ─────────────────────────────────────────────
@@ -399,12 +400,14 @@ labels are `Draft`, `Inbox`, `Ready`, `Active`, `Review`, `Done`.
 ```toml
 servePort = 7171
 strictBuild = false
+activityAnimationStyle = "orbital-pixel"
 ```
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `servePort` | number | derived per repo | yes | Port `repoos serve` binds by default. If omitted, RepoOS derives a stable port from the repo's path in the 7200–7999 range, so two checkouts never collide. Must be 1–65535. `--port` on the command line overrides it. |
 | `strictBuild` | boolean | `false` | yes | When true, a stale build makes `repoos` exit with an error instead of printing a warning. `REPOOS_STRICT_BUILD=1` (environment) and the `--strict-build` flag do the same without changing the file. |
+| `activityAnimationStyle` | select | `orbital-pixel` | yes | Motion beside coding, reviewing, and other agent-activity labels in the web UI. Values: `orbital-pixel` (default compact orbit), `cursor-scan-pulse`, `breathing-brackets`, `micro-dot-matrix`, `tiny-signal-bars`, `spark-diamond`, or `three-dots` (legacy horizontal dots). Omitted config uses `orbital-pixel`. Edit in **Settings → General → Activity animation**; the page previews all three activity states before save. Honors `prefers-reduced-motion` with a static indicator. |
 
 Appearance is **not** a `repoos.toml` setting. The dark/light/system theme and
 the UI design language are per-browser preferences stored in the browser, so
