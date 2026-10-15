@@ -773,7 +773,6 @@ export interface EditorConfig {
   command?: string;
 }
 
-
 /**
  * A dev target's kind (#0747, `process` added in #0752).
  *
