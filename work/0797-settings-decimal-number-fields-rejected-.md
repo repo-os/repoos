@@ -43,10 +43,10 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 ```json
 [
 {
-  "label": "Settings general tab after decimal save fix",
-  "target": "default",
-  "route": "/settings?tab=general",
-  "highlight": "#setting-activityAnimationStyle"
+"label": "Settings general tab after decimal save fix",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "#setting-activityAnimationStyle"
 }
 ]
 ```
