@@ -130,6 +130,18 @@ export function isStaleEvidenceOnlyReview(report: string, verdict: string | null
   );
 }
 
+/** Automatic evidence recovery is opt-in and requires an explicit stale-only reviewer marker. */
+export function shouldAutoRefreshStaleEvidence(
+  config: RepoOSConfig,
+  report: string,
+  verdict: string | null,
+): boolean {
+  return (
+    config.uiVerification?.autoRefreshStaleOnce === true &&
+    isStaleEvidenceOnlyReview(report, verdict)
+  );
+}
+
 /**
  * Ceiling on one review run. Generous compared to the 3-minute one-shot
  * default: a reviewer reads a whole diff and may run the test suite, and a
@@ -655,6 +667,8 @@ export class ReviewManager {
   private readonly db: RepoOSDb | null;
   /** Failure tl;dr trigger (#0570) — fire-and-forget diagnosis of `review-failed`. */
   private readonly onDiagnosableFailure?: (taskId: string, reason: string) => void;
+  /** Server-owned, guarded UI evidence refresh used only for stale-only reports (#0772). */
+  private readonly onStaleEvidenceRefresh?: (task: Task) => Promise<boolean>;
   /** Opt-in approval policy (#0686): fired when a run review finishes `good to go`. */
   private onCleanReviewVerdict?: (task: Task, report: ReviewReport) => void;
 
@@ -664,12 +678,14 @@ export class ReviewManager {
     runner?: AgentRunner,
     index?: LiveIndex,
     onDiagnosableFailure?: (taskId: string, reason: string) => void,
+    onStaleEvidenceRefresh?: (task: Task) => Promise<boolean>,
   ) {
     this.config = config;
     this.emit = emit;
     this.runner = runner;
     this.index = index;
     this.onDiagnosableFailure = onDiagnosableFailure;
+    this.onStaleEvidenceRefresh = onStaleEvidenceRefresh;
     this.logger = createLogger(config.root);
     this.db = getRepoOSDb(config.root);
   }
@@ -1198,11 +1214,17 @@ export class ReviewManager {
     //
     // A stale-only failure is the one exception (#0766): the change itself is
     // fine — only the handoff evidence is old — so bouncing the engineer would
-    // burn a paid turn on nothing. It stays in review, and the human refreshes
-    // the evidence with the "Refresh evidence" action (TaskCard.vue, shown on
-    // review) and re-reviews. `autoBounce` is the only path here that moves the
-    // task out of review, so skipping it leaves the status untouched. Every
-    // other non-good verdict still bounces exactly as before.
+    // burn a paid turn on nothing. It stays in review. When the automatic
+    // recovery below is enabled the server refreshes the evidence and
+    // re-reviews; otherwise the human uses the "Refresh evidence" action
+    // (TaskCard.vue, shown on review). `autoBounce` is the only path here that
+    // moves the task out of review, so skipping it leaves the status untouched.
+    // Every other non-good verdict still bounces exactly as before, and this is
+    // independent of the auto-refresh setting: a stale-only failure never
+    // bounces.
+    const autoRefreshStaleEvidence =
+      shouldAutoRefreshStaleEvidence(this.config, reportText, verdict) &&
+      !!this.onStaleEvidenceRefresh;
     if (state === "ok" && verdict) {
       if (verdict !== "good to go") {
         if (!isStaleEvidenceOnlyReview(reportText, verdict)) {
@@ -1225,6 +1247,42 @@ export class ReviewManager {
     // (auto-bounce bookkeeping, capped at MAX_AUTO_REVIEW_ROUNDS) vs
     // review_passes (all successful passes).
     if (state === "ok") this.bumpReviewPasses(task);
+
+    // Automatic stale-only recovery (#0772). Deferred to the next macrotask so
+    // the review-completion path (SSE, session recording) finishes first and
+    // the run is no longer registered as in flight — the refresh revalidates
+    // live runs under its own locks anyway. The refresh callback itself takes
+    // the same locks every engineer/review start takes, so a task that moved on
+    // in the meantime is left alone.
+    if (autoRefreshStaleEvidence) {
+      setTimeout(() => {
+        void this.refreshStaleEvidenceAndRereview(task);
+      }, 0).unref?.();
+    }
+  }
+
+  /**
+   * Refresh stale evidence for a stale-only review and start exactly one new
+   * review (#0772). The refresh callback owns the locking and revalidates the
+   * task's status and live runs; this only re-reads the task and re-reviews when
+   * the refresh reported success and the task is still a live review.
+   */
+  private async refreshStaleEvidenceAndRereview(task: Task): Promise<void> {
+    try {
+      const refreshed = await this.onStaleEvidenceRefresh?.(task);
+      if (!refreshed) return;
+      const current = this.index?.getTask(task.id) ?? task;
+      if (current.status === "review" && !current.isArchived) {
+        this.logger.task(task.id, "info", "stale-only evidence refreshed; starting one new review");
+        void this.run(current);
+      }
+    } catch (err) {
+      this.logger.task(
+        task.id,
+        "warn",
+        `automatic stale-evidence refresh failed: ${(err as Error).message}`,
+      );
+    }
   }
 
   /**
