@@ -71,9 +71,9 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 "route": "/settings?tab=general",
 "highlight": "#setting-activityAnimationStyle",
 "steps": [
-  {
-    "waitMs": 400
-  }
+{
+  "waitMs": 400
+}
 ]
 }
 ]
