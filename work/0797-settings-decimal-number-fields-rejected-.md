@@ -11,7 +11,7 @@ branch: feat/settings-decimal-number-fields-rejected-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-10-15T09:56:55Z"
-updated_at: "2026-10-15T10:32:14Z"
+updated_at: "2026-10-15T10:40:13Z"
 ---
 ## Problem
 Changing any setting (for example the activity animation) shows the red error 'Flag slow checks above (× median) must be a whole number', although that field was not touched.
@@ -45,3 +45,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T10:13:02Z · body
 - 2026-10-15T10:26:37Z · handoff failed · remote validation failed: test failure: tests/board-column-labels.test.ts > SettingsView board column labels (#0499) > auto-save omits hidden dev.inspector settings unless the build supports them (#0509), tests/remote-host-config.test.ts > remoteValidation.hangIdleMinutes (#0729) > ignores a non-positive or non-numeric value, keeping the default on bee — fix it in the feature branch and re-run the gate
 - 2026-10-15T10:32:14Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/board-column-labels.test.ts > SettingsView board column labels (#0499) > auto-save omits hidden dev.inspector settings unless the build supports them (#0509), tests/remote-host-config.test.ts > remoteValidation.hangIdleMinutes (#0729) > ignores a non-positive or non-numeric value, keeping the default on bee — fix it in the feature branch and re-run the gate
+- 2026-10-15T10:40:13Z · body
