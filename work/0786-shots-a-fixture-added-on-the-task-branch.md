@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-15T06:00:32Z"
-review_passes: 7
+last_close_out_gate_ms: 80668
+last_close_out_gate_at: "2026-10-15T06:02:35.607Z"
 id: "0786"
 title: "Shots: a fixture added on the task branch can't be declared or captured until merge"
 type: bug
@@ -12,6 +12,8 @@ created_by: njachowski@gmail.com
 branch: feat/shots-a-fixture-added-on-the-task-branch
 model_override: deepinfra/zai-org/GLM-5.3-Flash
 created_at: "2026-10-14T16:48:07Z"
+updated_at: "2026-10-15T06:02:35Z"
+review_passes: 7
 review_rounds: 2
 ---
 ## Problem
@@ -99,4 +101,5 @@ Look at where the plan is built (buildCapturePlan / parseShot in src/core/shot-p
 - 2026-10-15T05:58:36Z · body
 - 2026-10-15T05:59:26Z · status active→review
 - 2026-10-15T06:00:31Z · note: review pass 7: good to go
+- 2026-10-15T06:02:35Z · close-out gate completed in 81s
 
