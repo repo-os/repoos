@@ -21,6 +21,11 @@ import {
 import { effectiveAreaVocabulary } from "../../core/areas.js";
 import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
 import { normalizeAllowlistRows } from "../../core/budget-allowlist.js";
+import {
+  MAX_ROUTING_TIMEOUT_MS,
+  MIN_ROUTING_TIMEOUT_MS,
+  ROUTING_ROLES,
+} from "../../core/model-routing/config.js";
 import { configuredCtoActions, isCtoSafeActionId } from "../../core/cto-actions.js";
 import { describeStorage } from "../../core/storage/index.js";
 import type { RepoOSConfig } from "../../core/types.js";
@@ -64,6 +69,7 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
     uiTheme: _ignoredUiTheme,
     areas: _rawAreas,
     budget: _rawBudget,
+    modelRouting: _rawModelRouting,
     ...rest
   } = config;
   // The declared area vocabulary (#0583) is exposed to the browser as plain
@@ -104,6 +110,14 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
      * so the Budget Controls tab round-trips exactly what the parser accepted.
      */
     "budget.allowlist": (_rawBudget as { allowlist?: unknown } | undefined)?.allowlist ?? [],
+    "model_routing.mode": (_rawModelRouting as { mode?: string } | undefined)?.mode,
+    "model_routing.provider": (_rawModelRouting as { provider?: string } | undefined)?.provider,
+    "model_routing.model": (_rawModelRouting as { model?: string } | undefined)?.model,
+    "model_routing.baseUrl": (_rawModelRouting as { baseUrl?: string } | undefined)?.baseUrl,
+    "model_routing.credentialEnv": (_rawModelRouting as { credentialEnv?: string } | undefined)
+      ?.credentialEnv,
+    "model_routing.roles": (_rawModelRouting as { roles?: unknown } | undefined)?.roles,
+    "model_routing.timeoutMs": (_rawModelRouting as { timeoutMs?: number } | undefined)?.timeoutMs,
     /**
      * Declared dev targets (#0749): the Settings control edits this
      * `[[dev.targets]]` list. Exposed as the parsed objects (never the raw
@@ -534,6 +548,10 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         patch[field.key] = typeof val === "string" ? val.trim() : "";
         continue;
       }
+      if (field.key === "model_routing.baseUrl") {
+        patch[field.key] = typeof val === "string" ? val.trim() : "";
+        continue;
+      }
       if (field.key === "whisper.apiKey") {
         // The form always carries this field (default ""). An empty value means
         // "leave the existing key untouched" — never wipe a TOML/env key, and
@@ -572,6 +590,13 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           ? `${field.label} must be a number ${min > 0 ? `greater than ${min}` : `at least ${min}`}`
           : `${field.label} must be a whole number`;
         return json(res, 400, { error: msg });
+      }
+      if (field.key === "model_routing.timeoutMs") {
+        if (num < MIN_ROUTING_TIMEOUT_MS || num > MAX_ROUTING_TIMEOUT_MS) {
+          return json(res, 400, {
+            error: `${field.label} must be between ${MIN_ROUTING_TIMEOUT_MS} and ${MAX_ROUTING_TIMEOUT_MS}`,
+          });
+        }
       }
       patch[field.key] = num;
     } else if (field.type === "select") {
@@ -730,6 +755,29 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         if (shorthand && shorthandHost && !hostNames.includes(shorthandHost)) {
           patch["remoteValidation.tailscaleHost"] = list[0]!;
         }
+        continue;
+      }
+      if (field.key === "model_routing.roles") {
+        if (!Array.isArray(val)) {
+          return json(res, 400, { error: `${field.label} must be an array of role names` });
+        }
+        const normalized: string[] = [];
+        for (const item of val) {
+          if (typeof item !== "string" || !item.trim()) {
+            return json(res, 400, {
+              error: `${field.label} entries must be non-empty strings`,
+            });
+          }
+          const role = item.trim();
+          if (!(ROUTING_ROLES as readonly string[]).includes(role)) {
+            return json(res, 400, { error: `Unknown routing role: ${role}` });
+          }
+          if (!normalized.includes(role)) normalized.push(role);
+        }
+        if (normalized.length === 0) {
+          return json(res, 400, { error: "Select at least one role for the router." });
+        }
+        patch[field.key] = normalized;
         continue;
       }
       if (field.key === "cto.actions") {
