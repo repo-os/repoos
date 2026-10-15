@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: a0d43b4a7c7cd77276b8f43d419e87f039a18b47
 id: "0797"
 title: "Settings: decimal number fields rejected on save (slow-check multiplier)"
 type: bug
@@ -73,3 +75,4 @@ Start from the number branch in src/server/routes/config.ts (~560-570) and the S
 - 2026-10-15T12:36:11Z · status active→review
 - 2026-10-15T12:36:11Z · note: handoff requested (cli)
 - 2026-10-15T12:48:36Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+
