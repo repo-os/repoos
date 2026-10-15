@@ -492,6 +492,160 @@ browser UI session never carries it, so the human path always falls through.
 `repoos override --help` prints the allowlist so a driver can choose an allowed
 pair.
 
+## Adaptive model routing (`[model_routing]`)
+
+An optional decision model can choose the coding agent and model for PM,
+engineer and reviewer runs. It is **off by default**: with the section unset,
+RepoOS uses the configured role defaults and task overrides exactly as before.
+
+> **Phase 1 (#0791) — library and config only.** Shipped in this task: `src/core/model-routing/`
+> (System One codec, direct Jev / OpenRouter / self-hosted Clef-Flash adapters,
+> candidate filter, policy, fixture tests), the seven `model_routing.*` keys in
+> `getConfigSchema()`, and parsing from `repoos.toml`. This phase **does not**
+> satisfy the parent task’s full acceptance criteria (run-path routing, UI,
+> persistence, handback, live smoke). **Not in #0791:** server run-path invocation,
+> decision persistence or outcome linkage, Agents UI, or review handback — those
+> are **#0792** (adapter hardening, UI, shadow mode), **#0793** (automatic routing
+> and handback), and **#0794** (human-only live credential checks). Until #0792/#0793
+> land, `mode = shadow` or `automatic` does not change any run; the subsections
+> below describe the intended product behavior, not current wiring.
+
+```toml
+[model_routing]
+mode = "shadow"              # off | shadow | automatic
+provider = "jev"             # jev | openrouter | clef-flash
+model = "jev-latest"         # or a pinned id such as "jev-1.13.0"
+credentialEnv = "TYPESAFE_API_KEY"
+roles = ["engineer", "reviewer", "pm"]
+timeoutMs = 8000             # 500–60000
+```
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `model_routing.mode` | `off` | `off` never calls the router. `shadow` records a recommendation for each decision but **never changes the selection**. `automatic` applies the recommendation, within the budget allowlist and role limits. |
+| `model_routing.provider` | `jev` | Which decision backend answers: direct TypeSafe Jev, OpenRouter System One, or self-hosted Clef-Flash. |
+| `model_routing.model` | `jev-latest` (Jev / OpenRouter) / `Cloudflare/clef-flash` (Clef-Flash) | Provider model id. |
+| `model_routing.baseUrl` | — | Clef-Flash only: base URL of your self-hosted server, e.g. `http://localhost:30000`. |
+| `model_routing.credentialEnv` | `TYPESAFE_API_KEY` (Jev) / `REPOOS_OPENROUTER_API_KEY` (OpenRouter) / `REPOOS_CLEF_FLASH_API_KEY` (Clef-Flash) | Name of the environment variable holding the key. The key itself is never stored in `repoos.toml`. |
+| `model_routing.roles` | all three | Which runs consult the router. A role left out keeps its configured agent. |
+| `model_routing.timeoutMs` | `8000` | One decision call's ceiling. A timeout falls back; it never blocks the run. |
+
+### Choosing a provider
+
+**TypeSafe Jev (hosted, direct).** Jev is served by `POST https://api.typesafe.ai/v1/systemone`
+with `Authorization: Bearer <key>`. Get a key from the TypeSafe console, then put
+it in the gitignored `.env`:
+
+```sh
+TYPESAFE_API_KEY=...
+```
+
+Set `model_routing.provider = "jev"` and `credentialEnv = "TYPESAFE_API_KEY"` (the default).
+
+**OpenRouter (Jev / TypeSafe via System One).** OpenRouter exposes the same
+System One contract at `POST https://openrouter.ai/api/v1/systemone`, billed to
+your OpenRouter account. Use this when you already have `REPOOS_OPENROUTER_API_KEY`
+for the Agents page but not a separate TypeSafe key. Bare ids such as `jev-latest` and `jev-1.14` are mapped in the OpenRouter adapter
+to `~typesafe/jev-latest` and `typesafe/jev-1.14` before the request is sent;
+ids that already use the `typesafe/` or `~typesafe/` prefix are unchanged. This
+is a **distinct provider option** in config (`provider = "openrouter"`), not a
+hidden transport inside the Jev adapter — switching between direct Jev and
+OpenRouter changes only endpoint and credential env, not the RepoOS routing policy.
+
+```toml
+[model_routing]
+provider = "openrouter"
+model = "jev-latest"
+credentialEnv = "REPOOS_OPENROUTER_API_KEY"
+```
+
+Clef models on OpenRouter (when listed) use the same provider and model id; direct
+self-hosted Clef-Flash remains `provider = "clef-flash"` with `baseUrl`.
+
+**Cloudflare Clef-Flash (self-hosted).** Clef-Flash is a 9B open-weight model you
+run yourself (for example with SGLang on a GPU host). It answers the same
+`/v1/systemone` contract, so the same code path serves both. Set:
+
+```toml
+[model_routing]
+provider = "clef-flash"
+baseUrl = "http://localhost:30000"
+```
+
+An API key is optional for a self-hosted server. If you protect it, set
+`REPOOS_CLEF_FLASH_API_KEY` in `.env` (or point `credentialEnv` at another
+variable). No key is needed for an unprotected local server.
+
+### Secret handling
+
+Routing keys follow the same convention as the other provider keys: they live in
+the gitignored `.env` file or the process environment and are never written to
+`repoos.toml`, logged, or echoed back to the browser. `credentialEnv` names a
+variable; it is validated to be a plain environment-variable name, so pasting a
+raw key into it is rejected with a warning.
+
+### Shadow evaluation first (after #0792)
+
+Once shadow mode is wired (#0792), start in `mode = "shadow"`. Each eligible run
+then records what the router would have chosen, the candidates it considered,
+and the provider's signals, while the run itself uses the configured agent.
+Compare those recommendations with real outcomes before enabling `automatic`
+(#0793).
+
+### Automatic mode, pins and limits (after #0793)
+
+- An explicit human pin (a task's CLI or model override) always wins; the router
+  is not consulted for a pinned run.
+- Candidates are filtered **in code**, not by the model, against the budget
+  allowlist (`[[budget.allowlist]]`), harness availability and reasoning support.
+  An empty allowlist is unrestricted; a non-empty one is a hard ceiling.
+- The router cannot widen permissions or budgets. It only chooses among
+  candidates that already pass these filters.
+
+### Candidate filtering (library behavior)
+
+Before any provider call, `filterCandidates` in `src/core/model-routing/candidates.ts`
+drops configurations that fail deterministic checks: budget allowlist, harness
+availability, reasoning support, **the run's role** (`pm`, `engineer`, or
+`reviewer` must appear in the harness's `supportedRoles`), and **required context
+size** (`requiredContextTokens` must not exceed the harness's `maxContextTokens`).
+Callers supply those facts from doctor/auth probes when wiring lands in #0792/#0793.
+
+### Scoring and missing cost/time (library behavior)
+
+The routing policy scores every candidate on the same components (suitability,
+task-intensity, economy). When normalized cost or time is unknown for a candidate,
+the policy uses a fixed neutral midpoint (`ROUTING_NEUTRAL_COST_TIME`, currently
+`0.5`) rather than omitting economy terms — missing measurements do not penalize
+a candidate relative to one with data.
+
+### Fallbacks (library behavior; applied on the run path in #0792/#0793)
+
+When the router cannot produce a trustworthy decision, the run uses the
+configured fallback if it is itself eligible, and otherwise stops with a clear
+message. The policy in `src/core/model-routing/` implements this for tests and
+future wiring; PM/engineer/reviewer launches do not call it until #0792/#0793.
+The fallback applies for:
+
+- no eligible candidates (the run is blocked with the reasons);
+- a provider error, timeout, or an unreachable server;
+- a malformed or unsupported response;
+- insufficient evidence (provider confidence below the calibrated floor).
+
+A failing router never silently disables review and never selects a pair the
+allowlist forbids.
+
+### Limitations
+
+- Provider confidence is reported by the model; it is not an established measure
+  of real-world accuracy. The thresholds are explicit, versioned policy constants,
+  and should be calibrated on your own runs before you rely on them.
+- Historical outcome data informs the evaluation report; it does not by itself
+  make the router learn. Fine-tuning and a full bandit optimizer are out of
+  scope.
+- Clef-Flash throughput depends on your hardware. A slow self-hosted server will
+  hit `timeoutMs` and fall back rather than stall the run.
+
 ## Settings import/export
 
 **Settings → Import/Export** copies settings between projects. Choose which of
