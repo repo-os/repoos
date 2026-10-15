@@ -25,8 +25,7 @@ export const ACTIVITY_ANIMATION_STYLE_LABELS: Record<ActivityAnimationStyle, str
 
 export function isActivityAnimationStyle(value: unknown): value is ActivityAnimationStyle {
   return (
-    typeof value === "string" &&
-    (ACTIVITY_ANIMATION_STYLES as readonly string[]).includes(value)
+    typeof value === "string" && (ACTIVITY_ANIMATION_STYLES as readonly string[]).includes(value)
   );
 }
 

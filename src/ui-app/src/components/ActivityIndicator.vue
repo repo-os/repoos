@@ -89,11 +89,7 @@ const matrixPositions = [
       class="ai-mark ai-bracket"
       aria-hidden="true"
     ></span>
-    <span
-      v-else-if="style === 'micro-dot-matrix'"
-      class="ai-mark ai-matrix"
-      aria-hidden="true"
-    >
+    <span v-else-if="style === 'micro-dot-matrix'" class="ai-mark ai-matrix" aria-hidden="true">
       <i
         v-for="(dot, idx) in matrixPositions"
         :key="idx"
