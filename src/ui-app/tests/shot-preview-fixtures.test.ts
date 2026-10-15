@@ -30,9 +30,9 @@ describe("shot preview board fixtures (#0743)", () => {
     setActivePinia(pinia);
     const repo = useRepoStore();
     applyShotPreviewFixture(repo, "board:activeCoding");
-    expect(repo.tasks.some((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID && t.status === "active")).toBe(
-      true,
-    );
+    expect(
+      repo.tasks.some((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID && t.status === "active"),
+    ).toBe(true);
     expect(repo.isRunning(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
   });
 
