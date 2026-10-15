@@ -3,13 +3,16 @@ id: "0787"
 title: Compact configurable activity animations; default to Orbital pixel
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Desired UX, Notes for AI"
 priority: p2
 area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T05:23:44Z"
+updated_at: "2026-10-15T05:23:45Z"
 ---
 ## Request
 
@@ -58,3 +61,4 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 
 - 2026-10-15T05:23:43Z · created · njachowski@gmail.com
 - 2026-10-15T05:23:44Z · screenshots
+- 2026-10-15T05:23:45Z · needs_input
