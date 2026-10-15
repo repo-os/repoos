@@ -126,6 +126,32 @@ export function readShotPreviewFixtureFromLocation(
 export function shotFixtureDevTargets(
   fixture: ShotPreviewFixtureId | null,
 ): DevTargetView[] | null {
+  if (fixture === "dev:running") {
+    // #0801 — one started target (which should glow) beside one stopped target
+    // (which should not), so a capture shows the highlight contrast.
+    return [
+      {
+        name: "landing",
+        kind: "server",
+        command: "cd landing && bun run dev -- --port 5173 --host 127.0.0.1 --strictPort",
+        label: "Landing page (HMR)",
+        status: "running",
+        pid: 51234,
+        url: "http://127.0.0.1:5173",
+        startedAt: new Date(Date.now() - 12 * 60_000).toISOString(),
+        log: ["VITE v5.4.10  ready in 210 ms", "", "  ➜  Local:   http://127.0.0.1:5173/"],
+      },
+      {
+        name: "docs",
+        kind: "server",
+        command: "cd user-docs && bun run dev -- --port 5174 --host 127.0.0.1 --strictPort",
+        label: "Docs site (HMR)",
+        status: "stopped",
+        url: "http://127.0.0.1:5174",
+        log: ["[repoos] stopped"],
+      },
+    ];
+  }
   if (fixture !== "dev:failed") return null;
   return [
     {

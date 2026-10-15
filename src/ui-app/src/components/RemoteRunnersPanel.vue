@@ -482,19 +482,11 @@ function fmtAgo(iso: string): string {
   flex-direction: column;
   gap: 8px;
 }
+/* Same "running" treatment as a started dev target (#0801): the shared
+   `running-glow-pulse` keyframes live in the global stylesheet. */
 .rr-host[data-running] {
   border-color: var(--cyan);
-  animation: rr-pulse 2s ease-in-out infinite;
-}
-@keyframes rr-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-  50% {
-    box-shadow: 0 0 14px 1px var(--cyan-dim);
-    border-color: var(--cyan);
-  }
+  animation: running-glow-pulse 2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .rr-host[data-running] {
