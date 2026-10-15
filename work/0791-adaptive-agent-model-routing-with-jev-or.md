@@ -9,9 +9,12 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/adaptive-agent-model-routing-with-jev-or
 cli_override: cursor
-model_override: claude-haiku-5-5-high
+model_override: composer-2.5
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T07:31:10Z"
+updated_at: "2026-10-15T08:24:01Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: a98ce8424db77ec41fcc6d1425230c90bf41c2fd
+handoff_signal_retry_count: 1
 ---
 ## Problem
 RepoOS currently chooses configured role defaults or explicit task overrides. Add an optional decision-model router that chooses a coding-agent/model configuration for PM, engineer and reviewer runs, and reconsiders that choice when review sends work back. Use task context and measured historical outcomes to reduce total cost and time to an accepted result while preserving quality and the existing lifecycle.
@@ -49,6 +52,11 @@ RepoOS currently chooses configured role defaults or explicit task overrides. Ad
 - https://huggingface.co/Cloudflare/clef-flash
 - https://blog.cloudflare.com/clef-decision-models/
 
+## Phase 1 (this branch)
+Delivers the provider-neutral routing **foundation** in `src/core/model-routing/`: System One codec; direct Jev, OpenRouter System One, and self-hosted Clef-Flash adapters; `[model_routing]` parsing and `getConfigSchema()` keys; candidate filter, policy, and `decideRoutingForRun` (fixture-tested); `user-docs/configuration.md` including OpenRouter as a distinct provider.
+
+**Follow-ups:** Agents UI + shadow wiring (#0792), automatic run-path + handback (#0793), live credentialed smoke (#0794).
+
 ## Activity
 
 - 2026-10-15T07:09:55Z · created · njachowski@gmail.com
@@ -59,3 +67,24 @@ RepoOS currently chooses configured role defaults or explicit task overrides. Ad
 - 2026-10-15T07:31:05Z · model_override
 - 2026-10-15T07:31:08Z · status inbox→ready
 - 2026-10-15T07:31:10Z · status ready→active, branch
+- 2026-10-15T07:31:11Z · needs_input
+- 2026-10-15T07:35:34Z · body
+- 2026-10-15T07:36:24Z · body
+- 2026-10-15T07:38:20Z · body
+- 2026-10-15T07:45:40Z · needs_input
+- 2026-10-15T07:51:37Z · message_queued at 2026-10-15T07:51:37.753Z
+- 2026-10-15T07:51:37Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-15T07:51:58Z · body
+- 2026-10-15T07:58:14Z · handoff failed · remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate
+- 2026-10-15T08:04:05Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-15T08:04:05Z · note: handoff requested (cli)
+- 2026-10-15T08:07:23Z · message_queued at 2026-10-15T08:07:23.434Z
+- 2026-10-15T08:09:47Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate
+- 2026-10-15T08:17:11Z · model_override
+- 2026-10-15T08:18:07Z · needs_input
+- 2026-10-15T08:18:08Z · message_delivered: 2 message(s)
+- 2026-10-15T08:18:38Z · needs_input
+- 2026-10-15T08:18:39Z · message_queued at 2026-10-15T08:18:39.179Z
+- 2026-10-15T08:19:09Z · body
+- 2026-10-15T08:23:25Z · body: section Phase 1 (this branch)
+- 2026-10-15T08:24:01Z · body: section Phase 1 (this branch)

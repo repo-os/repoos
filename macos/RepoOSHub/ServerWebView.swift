@@ -258,6 +258,7 @@ struct ServerWebView: NSViewRepresentable {
         /// so it cannot resolve to the Hub override.
         func pinWebViewToSystemAppearance() {
             webView?.appearance = HubSystemAppearance.appearance
+            webContainer?.pinFindBarToSystemAppearance()
         }
 
         func observeSystemAppearance() {

@@ -7,13 +7,14 @@
  * after deterministic candidate filtering against the human-approved budget
  * allowlist and role capabilities. Providers never see or change permissions.
  *
- * Two adapters implement this interface: TypeSafe Jev (hosted) and Cloudflare
- * Clef-Flash (self-hosted, same System One request/response contract). Switching
- * providers is a config change, never a code change.
+ * Three adapters implement this interface: TypeSafe Jev (hosted), Cloudflare
+ * Clef-Flash (self-hosted), and OpenRouter (hosted System One proxy for Jev and
+ * other TypeSafe models on your OpenRouter account). Switching providers is a
+ * config change, never a code change.
  */
 
 /** Which decision backend the user selected. `off` disables the router entirely. */
-export type RoutingProviderId = "jev" | "clef-flash";
+export type RoutingProviderId = "jev" | "clef-flash" | "openrouter";
 
 /**
  * Routing mode (see `[model_routing] mode`).

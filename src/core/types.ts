@@ -1771,7 +1771,7 @@ export interface ModelRoutingConfig {
   /** off: never invoked. shadow: recorded only. automatic: applied within limits. */
   mode?: "off" | "shadow" | "automatic";
   /** Decision backend. */
-  provider?: "jev" | "clef-flash";
+  provider?: "jev" | "clef-flash" | "openrouter";
   /** Provider model id (e.g. "jev-latest", "Cloudflare/clef-flash"). */
   model?: string;
   /** Clef-Flash only: base URL of the self-hosted server. */

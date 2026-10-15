@@ -19,12 +19,21 @@ import {
 
 /** Hosted TypeSafe endpoint (verified: docs.typesafe.ai quickstart). */
 export const JEV_ENDPOINT = "https://api.typesafe.ai/v1/systemone";
+/** OpenRouter System One proxy (same wire shape; bills to OpenRouter). */
+export const OPENROUTER_SYSTEMONE_ENDPOINT = "https://openrouter.ai/api/v1/systemone";
 /** Default Jev model: the floating alias. Pin a version (e.g. "jev-1.13.0") in config for reproducibility. */
 export const JEV_DEFAULT_MODEL = "jev-latest";
 /** Default Clef-Flash model id as served by SGLang. */
 export const CLEF_FLASH_DEFAULT_MODEL = "Cloudflare/clef-flash";
 
 export interface JevProviderOptions {
+  apiKey: string;
+  model?: string;
+  endpoint?: string;
+  fetchImpl?: typeof fetch;
+}
+
+export interface OpenRouterProviderOptions {
   apiKey: string;
   model?: string;
   endpoint?: string;
@@ -103,6 +112,28 @@ export function createJevProvider(opts: JevProviderOptions): RoutingDecisionProv
   };
 }
 
+/**
+ * OpenRouter — hosted System One API for TypeSafe models (e.g. Jev) on your
+ * OpenRouter account. Not a separate decision model: it is an alternate transport
+ * to the same Jev/Clef models OpenRouter exposes, using `REPOOS_OPENROUTER_API_KEY`.
+ */
+export function createOpenRouterProvider(opts: OpenRouterProviderOptions): RoutingDecisionProvider {
+  if (!opts.apiKey) {
+    throw new RoutingProviderError(
+      "not-configured",
+      "OpenRouter routing needs an API key (REPOOS_OPENROUTER_API_KEY)",
+    );
+  }
+  const url = opts.endpoint ?? OPENROUTER_SYSTEMONE_ENDPOINT;
+  const model = opts.model ?? JEV_DEFAULT_MODEL;
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  return {
+    id: "openrouter",
+    decide: (request) =>
+      postSystemOne(url, { Authorization: `Bearer ${opts.apiKey}` }, model, request, fetchImpl),
+  };
+}
+
 /** Cloudflare Clef-Flash — self-hosted SGLang serving the same System One contract. */
 export function createClefFlashProvider(opts: ClefFlashProviderOptions): RoutingDecisionProvider {
   if (!opts.baseUrl) {
@@ -125,5 +156,5 @@ export function createClefFlashProvider(opts: ClefFlashProviderOptions): Routing
 
 /** Narrow a stored provider string to a known id, or null. */
 export function parseRoutingProviderId(value: unknown): RoutingProviderId | null {
-  return value === "jev" || value === "clef-flash" ? value : null;
+  return value === "jev" || value === "clef-flash" || value === "openrouter" ? value : null;
 }

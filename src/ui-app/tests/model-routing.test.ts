@@ -37,6 +37,8 @@ import {
 import {
   createJevProvider,
   createClefFlashProvider,
+  createOpenRouterProvider,
+  OPENROUTER_SYSTEMONE_ENDPOINT,
   JEV_ENDPOINT,
   JEV_DEFAULT_MODEL,
   CLEF_FLASH_DEFAULT_MODEL,
@@ -596,6 +598,19 @@ describe("provider adapters", () => {
     expect(out.answers.suitability).toMatchObject({ type: "choice" });
   });
 
+  it("OpenRouter posts to the System One proxy with the OpenRouter bearer token", async () => {
+    const f = fetchReturning(200, okBody);
+    const provider = createOpenRouterProvider({
+      apiKey: "or-key",
+      fetchImpl: f as unknown as typeof fetch,
+    });
+    await provider.decide(request);
+    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(OPENROUTER_SYSTEMONE_ENDPOINT);
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer or-key");
+    expect(JSON.parse(init.body as string).model).toBe(JEV_DEFAULT_MODEL);
+  });
+
   it("Clef-Flash posts to the self-hosted /v1/systemone with no auth header when no key is set", async () => {
     const f = fetchReturning(200, okBody);
     const provider = createClefFlashProvider({
@@ -671,6 +686,10 @@ describe("provider adapters", () => {
 
   it("refuses to construct a Clef-Flash provider without a base URL", () => {
     expect(() => createClefFlashProvider({ baseUrl: "" })).toThrow(RoutingProviderError);
+  });
+
+  it("refuses to construct an OpenRouter provider without a key", () => {
+    expect(() => createOpenRouterProvider({ apiKey: "" })).toThrow(RoutingProviderError);
   });
 
   it("a provider failure routed through decideRoutingForRun still produces a safe outcome", async () => {

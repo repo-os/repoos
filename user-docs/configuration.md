@@ -495,17 +495,17 @@ An optional decision model can choose the coding agent and model for PM,
 engineer and reviewer runs. It is **off by default**: with the section unset,
 RepoOS uses the configured role defaults and task overrides exactly as before.
 
-> **Status: foundation only.** The settings, provider adapters (Jev and
-> Clef-Flash), candidate filtering and fallback policy are implemented and
-> parsed from `repoos.toml`. **Run-time routing is not yet connected to PM,
-> engineer or reviewer launches**, so setting `mode` to `shadow` or `automatic`
-> does not change any run today. The sections below describe the intended
-> behavior once wiring lands.
+> **Status: foundation only.** The settings, provider adapters (direct Jev,
+> OpenRouter System One, and self-hosted Clef-Flash), candidate filtering and
+> fallback policy are implemented and parsed from `repoos.toml`. **Run-time
+> routing is not yet connected to PM, engineer or reviewer launches**, so
+> setting `mode` to `shadow` or `automatic` does not change any run today. The
+> sections below describe the intended behavior once wiring lands (#0792).
 
 ```toml
 [model_routing]
 mode = "shadow"              # off | shadow | automatic
-provider = "jev"             # jev | clef-flash
+provider = "jev"             # jev | openrouter | clef-flash
 model = "jev-latest"         # or a pinned id such as "jev-1.13.0"
 credentialEnv = "TYPESAFE_API_KEY"
 roles = ["engineer", "reviewer", "pm"]
@@ -514,23 +514,44 @@ timeoutMs = 8000             # 500–60000
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `mode` | `off` | `off` never calls the router. `shadow` records a recommendation for each decision but **never changes the selection**. `automatic` applies the recommendation, within the budget allowlist and role limits. |
-| `provider` | `jev` | Which decision backend answers. Switching providers is a config change. |
-| `model` | `jev-latest` (Jev) / `Cloudflare/clef-flash` (Clef-Flash) | Provider model id. |
-| `baseUrl` | — | Clef-Flash only: base URL of your self-hosted server, e.g. `http://localhost:30000`. |
-| `credentialEnv` | `TYPESAFE_API_KEY` (Jev) / `REPOOS_CLEF_FLASH_API_KEY` (Clef-Flash) | Name of the environment variable holding the key. The key itself is never stored in `repoos.toml`. |
-| `roles` | all three | Which runs consult the router. A role left out keeps its configured agent. |
-| `timeoutMs` | `8000` | One decision call's ceiling. A timeout falls back; it never blocks the run. |
+| `model_routing.mode` | `off` | `off` never calls the router. `shadow` records a recommendation for each decision but **never changes the selection**. `automatic` applies the recommendation, within the budget allowlist and role limits. |
+| `model_routing.provider` | `jev` | Which decision backend answers: direct TypeSafe Jev, OpenRouter System One, or self-hosted Clef-Flash. |
+| `model_routing.model` | `jev-latest` (Jev / OpenRouter) / `Cloudflare/clef-flash` (Clef-Flash) | Provider model id. |
+| `model_routing.baseUrl` | — | Clef-Flash only: base URL of your self-hosted server, e.g. `http://localhost:30000`. |
+| `model_routing.credentialEnv` | `TYPESAFE_API_KEY` (Jev) / `REPOOS_OPENROUTER_API_KEY` (OpenRouter) / `REPOOS_CLEF_FLASH_API_KEY` (Clef-Flash) | Name of the environment variable holding the key. The key itself is never stored in `repoos.toml`. |
+| `model_routing.roles` | all three | Which runs consult the router. A role left out keeps its configured agent. |
+| `model_routing.timeoutMs` | `8000` | One decision call's ceiling. A timeout falls back; it never blocks the run. |
 
 ### Choosing a provider
 
-**TypeSafe Jev (hosted).** Jev is served by `POST https://api.typesafe.ai/v1/systemone`
+**TypeSafe Jev (hosted, direct).** Jev is served by `POST https://api.typesafe.ai/v1/systemone`
 with `Authorization: Bearer <key>`. Get a key from the TypeSafe console, then put
 it in the gitignored `.env`:
 
 ```sh
 TYPESAFE_API_KEY=...
 ```
+
+Set `model_routing.provider = "jev"` and `credentialEnv = "TYPESAFE_API_KEY"` (the default).
+
+**OpenRouter (Jev / TypeSafe via System One).** OpenRouter exposes the same
+System One contract at `POST https://openrouter.ai/api/v1/systemone`, billed to
+your OpenRouter account. Use this when you already have `REPOOS_OPENROUTER_API_KEY`
+for the Agents page but not a separate TypeSafe key. Bare ids such as `jev-latest`
+are mapped to OpenRouter's `typesafe/*` namespace. This is a **distinct provider
+option** in config (`provider = "openrouter"`), not a hidden transport inside the
+Jev adapter — switching between direct Jev and OpenRouter changes only endpoint
+and credential env, not the RepoOS routing policy.
+
+```toml
+[model_routing]
+provider = "openrouter"
+model = "jev-latest"
+credentialEnv = "REPOOS_OPENROUTER_API_KEY"
+```
+
+Clef models on OpenRouter (when listed) use the same provider and model id; direct
+self-hosted Clef-Flash remains `provider = "clef-flash"` with `baseUrl`.
 
 **Cloudflare Clef-Flash (self-hosted).** Clef-Flash is a 9B open-weight model you
 run yourself (for example with SGLang on a GPU host). It answers the same

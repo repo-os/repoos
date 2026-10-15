@@ -1,11 +1,13 @@
 ---
+updated_at: "2026-10-15T08:19:50Z"
+review_passes: 3
 id: "0787"
 title: Compact configurable activity animations; default to Orbital pixel
 type: feature
-status: active
+status: review
 needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "needs some work — The configurable styles, default, and Settings preview are present, but the bar width can overlap labels and required visual checks are incomplete."
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -16,7 +18,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-15T05:23:43Z"
-updated_at: "2026-10-15T07:25:03Z"
+review_rounds: 2
 dev_error_count: 1
 ---
 ## Problem
@@ -58,26 +60,74 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - Verify config default/enum validation/persistence and shared component state/style selection with focused meaningful tests.
 - Verify live coding, reviewing, and generic working examples, reduced motion, narrow task cards, and light/dark theme rendering. Rebuild after UI changes and run the scoped repoos check before review.
 
-## Screenshots
-
-![Current coding activity indicator: three horizontal dots occupy too much inline space](/api/tasks/0787/attachments/screenshot-1.png)
-
 ## Shots
 ```json
 [
 {
-"label": "Activity animation setting with live preview",
+"label": "Activity animation preview (light)",
 "target": "default",
 "route": "/settings?tab=general",
 "highlight": "#setting-activityAnimationStyle",
 "steps": [
-  {
-    "waitMs": 400
-  }
+{
+"waitMs": 400
+}
+]
+},
+{
+"label": "Active task card coding indicator on Work board",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+"steps": [
+{
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
+],
+"state": "board:activeCoding"
+},
+{
+"label": "Active task card indicator in dark theme",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+"steps": [
+{
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
+],
+"state": "board:activeCoding",
+"theme": "dark"
+},
+{
+"label": "Active task card indicator at narrow width",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+"steps": [
+{
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
+],
+"state": "board:activeCoding"
+},
+{
+"label": "Activity animation preview with reduced motion",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": ".activity-animation-preview",
+"steps": [
+{
+"waitMs": 400
+}
 ]
 }
 ]
 ```
+
+## Screenshots
+
+![Current coding activity indicator: three horizontal dots occupy too much inline space](/api/tasks/0787/attachments/screenshot-1.png)
 
 ## Activity
 
@@ -98,3 +148,25 @@ Reference prototype (local to the originating interactive session): /Users/nick/
 - 2026-10-15T07:18:13Z · body
 - 2026-10-15T07:19:06Z · body: section Shots
 - 2026-10-15T07:25:03Z · handoff failed · remote validation failed: test failure: tests/done-error-card.test.ts > DoneErrorCard (auto-repair in flight — #0385) > shows the being-resolved framing instead of a bare dead-end error on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-15T07:42:10Z · needs_input
+- 2026-10-15T07:43:31Z · body
+- 2026-10-15T07:44:58Z · body
+- 2026-10-15T07:52:21Z · status active→review
+- 2026-10-15T07:54:01Z · note: review pass 1: needs some work
+- 2026-10-15T07:54:02Z · status review→active
+- 2026-10-15T07:55:38Z · body: section Shots
+- 2026-10-15T07:56:22Z · body
+- 2026-10-15T07:57:21Z · body
+- 2026-10-15T08:04:29Z · status active→review
+- 2026-10-15T08:04:29Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (74a08f752) during finalization (#0734)
+- 2026-10-15T08:04:29Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (74a08f752) during finalization (#0734)
+- 2026-10-15T08:06:45Z · note: review pass 2: needs some work
+- 2026-10-15T08:06:45Z · status review→active
+- 2026-10-15T08:09:10Z · body: section Shots
+- 2026-10-15T08:10:06Z · body
+- 2026-10-15T08:17:25Z · status active→review
+- 2026-10-15T08:17:25Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (b10b2fbe6) during finalization (#0734)
+- 2026-10-15T08:17:25Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (b10b2fbe6) during finalization (#0734)
+- 2026-10-15T08:19:50Z · note: review pass 3: needs some work
+- 2026-10-15T08:19:50Z · needs_input
+
