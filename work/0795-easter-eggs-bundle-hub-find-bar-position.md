@@ -2,14 +2,14 @@
 id: "0795"
 title: "Easter eggs bundle: Hub find bar position, Done button, and Escape"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-hub-find-bar-position
 created_at: "2026-10-15T08:02:06Z"
-updated_at: "2026-10-15T10:19:12Z"
+updated_at: "2026-10-15T11:40:18Z"
 ---
 ## Problem
 Three small issues in the Hub's new Cmd-F find bar (from #0789), plus two small UI fixes for the task cards:
@@ -42,3 +42,4 @@ Find bar: macos/RepoOSHub/ServerWebView.swift and the Find menu in macos/RepoOSH
 - 2026-10-15T08:08:00Z · status inbox→ready
 - 2026-10-15T10:18:20Z · body
 - 2026-10-15T10:19:12Z · status ready→active, branch
+- 2026-10-15T11:40:18Z · status active→review
