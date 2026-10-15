@@ -43,24 +43,24 @@ Fix the dropdowns on the model playground to match the style we use everywhere e
 ```json
 [
 {
-  "label": "Model playground filters using shared dropdown style",
-  "target": "default",
-  "route": "/agents?tab=playground",
-  "highlight": ".playground-filter-row"
+"label": "Model playground filters using shared dropdown style",
+"target": "default",
+"route": "/agents?tab=playground",
+"highlight": ".playground-filter-row"
 },
 {
-  "label": "Playground chat header with shared agent+model picker open",
-  "target": "default",
-  "route": "/agents?tab=playground",
-  "highlight": ".am-modal",
-  "steps": [
-    {
-      "click": ".playground-chat-head .am-control"
-    },
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "Playground chat header with shared agent+model picker open",
+"target": "default",
+"route": "/agents?tab=playground",
+"highlight": ".am-modal",
+"steps": [
+  {
+    "click": ".playground-chat-head .am-control"
+  },
+  {
+    "waitMs": 300
+  }
+]
 }
 ]
 ```
