@@ -13,8 +13,6 @@ created_by: njachowski@gmail.com
 branch: feat/polish-compact-activity-indicators-fix-s
 created_at: "2026-10-15T10:08:29Z"
 updated_at: "2026-10-15T16:58:16Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: e4aa4ed4b95c2e30ee8b247ebd90c51bb04558f9
 last_check_failure: "repoos check at 2026-10-15T12:29:58.918Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -113,3 +111,4 @@ Sizing issue: Orbital pixel already reserves 1.5ch, but its ring is only 0.75em 
 - 2026-10-15T16:49:34Z · body
 - 2026-10-15T16:51:00Z · body: section Shots
 - 2026-10-15T16:58:16Z · status active→review
+
