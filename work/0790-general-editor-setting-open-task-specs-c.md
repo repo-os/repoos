@@ -2,7 +2,7 @@
 id: "0790"
 title: "General editor setting: open task specs, context docs and files in the user's editor"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "network problem reaching the model provider, not a code issue: ConnectionRefused: Unable to connect. Is the computer able to access the url?"
@@ -13,9 +13,9 @@ created_by: njachowski@gmail.com
 branch: feat/general-editor-setting-open-task-specs-c
 model_override: opencode-go/cat-jam-free
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T07:46:11Z"
+updated_at: "2026-10-15T07:46:12Z"
+review_rounds: 2
 review_passes: 2
-review_rounds: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -93,3 +93,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T07:45:36Z · note: highlight [data-test-id="open-in-editor"] matched nothing on /work?task=0790
 - 2026-10-15T07:46:11Z · note: review pass 2: needs some work
 - 2026-10-15T07:46:11Z · message_queued at 2026-10-15T07:46:11.986Z
+- 2026-10-15T07:46:12Z · status review→active
