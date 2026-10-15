@@ -77,8 +77,7 @@ async function computedAnim(
 ): Promise<Anim> {
   return page.evaluate(
     ({ html, fontPx, selector, pseudo, webFont }) => {
-      document.body.innerHTML =
-        `<div style="font-family:${webFont};font-size:${fontPx}px">${html}</div>`;
+      document.body.innerHTML = `<div style="font-family:${webFont};font-size:${fontPx}px">${html}</div>`;
       const el = document.querySelector(selector);
       if (!el) return { name: `MISSING:${selector}`, duration: "" };
       const cs = pseudo ? getComputedStyle(el, pseudo) : getComputedStyle(el);
@@ -102,30 +101,163 @@ interface Expectation {
 const EXPECTATIONS: Expectation[] = [
   // Orbital pixel: coding orbits, reviewing scans inside the ring, agent is a
   // slower orbit.
-  { style: "orbital-pixel", motion: "coding", selector: ".ai-orbit", pseudo: "::after", name: "ai-orbital", duration: "1.6s" },
-  { style: "orbital-pixel", motion: "reviewing", selector: ".ai-orbit", pseudo: "::after", name: "ai-scanorbit", duration: "2s" },
-  { style: "orbital-pixel", motion: "agent", selector: ".ai-orbit", pseudo: "::after", name: "ai-orbital", duration: "2.6s" },
+  {
+    style: "orbital-pixel",
+    motion: "coding",
+    selector: ".ai-orbit",
+    pseudo: "::after",
+    name: "ai-orbital",
+    duration: "1.6s",
+  },
+  {
+    style: "orbital-pixel",
+    motion: "reviewing",
+    selector: ".ai-orbit",
+    pseudo: "::after",
+    name: "ai-scanorbit",
+    duration: "2s",
+  },
+  {
+    style: "orbital-pixel",
+    motion: "agent",
+    selector: ".ai-orbit",
+    pseudo: "::after",
+    name: "ai-orbital",
+    duration: "2.6s",
+  },
   // Cursor / scan / pulse.
-  { style: "cursor-scan-pulse", motion: "coding", selector: ".ai-caret", pseudo: "::before", name: "ai-blink", duration: "1.1s" },
-  { style: "cursor-scan-pulse", motion: "reviewing", selector: ".ai-caret", pseudo: "::before", name: "ai-scan", duration: "1.6s" },
-  { style: "cursor-scan-pulse", motion: "agent", selector: ".ai-caret", pseudo: "::before", name: "ai-breathe", duration: "1.7s" },
+  {
+    style: "cursor-scan-pulse",
+    motion: "coding",
+    selector: ".ai-caret",
+    pseudo: "::before",
+    name: "ai-blink",
+    duration: "1.1s",
+  },
+  {
+    style: "cursor-scan-pulse",
+    motion: "reviewing",
+    selector: ".ai-caret",
+    pseudo: "::before",
+    name: "ai-scan",
+    duration: "1.6s",
+  },
+  {
+    style: "cursor-scan-pulse",
+    motion: "agent",
+    selector: ".ai-caret",
+    pseudo: "::before",
+    name: "ai-breathe",
+    duration: "1.7s",
+  },
   // Breathing brackets.
-  { style: "breathing-brackets", motion: "coding", selector: ".ai-bracket", pseudo: "::before", name: "ai-leftbracket", duration: "1.5s" },
-  { style: "breathing-brackets", motion: "coding", selector: ".ai-bracket", pseudo: "::after", name: "ai-rightbracket", duration: "1.5s" },
-  { style: "breathing-brackets", motion: "reviewing", selector: ".ai-bracket", pseudo: "::before", name: "ai-fade", duration: "1.8s" },
-  { style: "breathing-brackets", motion: "agent", selector: ".ai-bracket", pseudo: null, name: "ai-breathe", duration: "1.8s" },
+  {
+    style: "breathing-brackets",
+    motion: "coding",
+    selector: ".ai-bracket",
+    pseudo: "::before",
+    name: "ai-leftbracket",
+    duration: "1.5s",
+  },
+  {
+    style: "breathing-brackets",
+    motion: "coding",
+    selector: ".ai-bracket",
+    pseudo: "::after",
+    name: "ai-rightbracket",
+    duration: "1.5s",
+  },
+  {
+    style: "breathing-brackets",
+    motion: "reviewing",
+    selector: ".ai-bracket",
+    pseudo: "::before",
+    name: "ai-fade",
+    duration: "1.8s",
+  },
+  {
+    style: "breathing-brackets",
+    motion: "agent",
+    selector: ".ai-bracket",
+    pseudo: null,
+    name: "ai-breathe",
+    duration: "1.8s",
+  },
   // Micro dot matrix.
-  { style: "micro-dot-matrix", motion: "coding", selector: ".ai-matrix i", pseudo: null, name: "ai-fade", duration: "1.2s" },
-  { style: "micro-dot-matrix", motion: "reviewing", selector: ".ai-matrix i", pseudo: null, name: "ai-twinkle", duration: "1.8s" },
-  { style: "micro-dot-matrix", motion: "agent", selector: ".ai-matrix", pseudo: null, name: "ai-rotate", duration: "3.5s" },
+  {
+    style: "micro-dot-matrix",
+    motion: "coding",
+    selector: ".ai-matrix i",
+    pseudo: null,
+    name: "ai-fade",
+    duration: "1.2s",
+  },
+  {
+    style: "micro-dot-matrix",
+    motion: "reviewing",
+    selector: ".ai-matrix i",
+    pseudo: null,
+    name: "ai-twinkle",
+    duration: "1.8s",
+  },
+  {
+    style: "micro-dot-matrix",
+    motion: "agent",
+    selector: ".ai-matrix",
+    pseudo: null,
+    name: "ai-rotate",
+    duration: "3.5s",
+  },
   // Tiny signal bars.
-  { style: "tiny-signal-bars", motion: "coding", selector: ".ai-bars i", pseudo: null, name: "ai-bars", duration: "1.2s" },
-  { style: "tiny-signal-bars", motion: "reviewing", selector: ".ai-bars i", pseudo: null, name: "ai-scanbar", duration: "1.8s" },
-  { style: "tiny-signal-bars", motion: "agent", selector: ".ai-bars i", pseudo: null, name: "ai-bars", duration: "2s" },
+  {
+    style: "tiny-signal-bars",
+    motion: "coding",
+    selector: ".ai-bars i",
+    pseudo: null,
+    name: "ai-bars",
+    duration: "1.2s",
+  },
+  {
+    style: "tiny-signal-bars",
+    motion: "reviewing",
+    selector: ".ai-bars i",
+    pseudo: null,
+    name: "ai-scanbar",
+    duration: "1.8s",
+  },
+  {
+    style: "tiny-signal-bars",
+    motion: "agent",
+    selector: ".ai-bars i",
+    pseudo: null,
+    name: "ai-bars",
+    duration: "2s",
+  },
   // Spark / diamond.
-  { style: "spark-diamond", motion: "coding", selector: ".ai-spark", pseudo: "::before", name: "ai-spark", duration: "2.2s" },
-  { style: "spark-diamond", motion: "reviewing", selector: ".ai-spark", pseudo: "::before", name: "ai-inspect", duration: "2.4s" },
-  { style: "spark-diamond", motion: "agent", selector: ".ai-spark", pseudo: "::before", name: "ai-spark", duration: "3s" },
+  {
+    style: "spark-diamond",
+    motion: "coding",
+    selector: ".ai-spark",
+    pseudo: "::before",
+    name: "ai-spark",
+    duration: "2.2s",
+  },
+  {
+    style: "spark-diamond",
+    motion: "reviewing",
+    selector: ".ai-spark",
+    pseudo: "::before",
+    name: "ai-inspect",
+    duration: "2.4s",
+  },
+  {
+    style: "spark-diamond",
+    motion: "agent",
+    selector: ".ai-spark",
+    pseudo: "::before",
+    name: "ai-spark",
+    duration: "3s",
+  },
 ];
 
 const STYLE_SELECTORS: Record<string, { selector: string; pseudo: string | null }> = {
@@ -180,8 +312,7 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
       const signature = (motion: Motion, style: string) =>
         page.evaluate(
           ({ html, webFont }) => {
-            document.body.innerHTML =
-              `<div style="font-family:${webFont};font-size:12px">${html}</div>`;
+            document.body.innerHTML = `<div style="font-family:${webFont};font-size:12px">${html}</div>`;
             const root = document.querySelector(".ai")!;
             // Every descendant + pseudo-element animation, as name@duration.
             return root
@@ -226,12 +357,16 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
             ({ html, fontPx, webFont }) => {
               document.body.innerHTML =
                 `<div style="font-family:${webFont};font-size:${fontPx}px">` +
-                `${html}<span id="ch-probe" style="display:inline-block;width:1ch"></span></div>`;
+                `${html}<span id="ch-probe" style="display:inline-block;width:1ch"></span>` +
+                `<span id="line-ref">Ag</span></div>`;
               const mark = document.querySelector(".ai-mark")!;
+              const ai = document.querySelector(".ai")!;
               const probe = document.querySelector("#ch-probe")!;
-              const markRect = mark.getBoundingClientRect();
+              const ref = document.querySelector("#line-ref")!;
               return {
-                markW: markRect.width,
+                markW: mark.getBoundingClientRect().width,
+                aiH: ai.getBoundingClientRect().height,
+                lineH: ref.getBoundingClientRect().height,
                 ch: probe.getBoundingClientRect().width,
               };
             },
@@ -239,8 +374,13 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
           );
           // A real 0.5px slack absorbs subpixel rounding.
           expect(res.ch, `${style} @${fontPx}px: ch resolved`).toBeGreaterThan(0);
-          expect(res.markW, `${style} @${fontPx}px (${res.markW}px vs 2ch=${2 * res.ch}px)`).toBeLessThanOrEqual(
-            2 * res.ch + 0.5,
+          expect(
+            res.markW,
+            `${style} @${fontPx}px (${res.markW}px vs 2ch=${2 * res.ch}px)`,
+          ).toBeLessThanOrEqual(2 * res.ch + 0.5);
+          // The mark must not grow the surrounding text line.
+          expect(res.aiH, `${style} @${fontPx}px mark height vs line box`).toBeLessThanOrEqual(
+            res.lineH + 0.5,
           );
         }
       }
@@ -270,8 +410,7 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
         for (const motion of ["coding", "reviewing", "agent"] as Motion[]) {
           const running = await page.evaluate(
             ({ html, webFont }) => {
-              document.body.innerHTML =
-                `<div style="font-family:${webFont};font-size:12px">${html}</div>`;
+              document.body.innerHTML = `<div style="font-family:${webFont};font-size:12px">${html}</div>`;
               const root = document.querySelector(".ai")!;
               const mark = document.querySelector(".ai-mark")!;
               const anims = root.getAnimations({ subtree: true });
