@@ -530,7 +530,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     const val = body[field.key];
 
     if (field.type === "string") {
-      if (field.key === "dev.inspector.editorCommand") {
+      if (field.key === "dev.inspector.editorCommand" || field.key === "editor.command") {
         patch[field.key] = typeof val === "string" ? val.trim() : "";
         continue;
       }

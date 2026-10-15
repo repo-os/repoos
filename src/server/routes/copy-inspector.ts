@@ -80,23 +80,26 @@ export const postCopyInspectorOpen: RouteHandler = async (ctx, req, res) => {
 };
 
 /**
- * The task detail page's "Open in editor" link (#0636): open a task's own
- * markdown file (under `work/`) in the editor configured for the copy
- * inspector. Reuses the same gate + `dev.inspector.editorCommand`, but resolves
- * a general repo-relative file instead of only `src/` sources.
+ * The task detail page's "Open in editor" link (#0636, generalized in #0790):
+ * open a task's own markdown file (under `work/`), a context doc, or a failed
+ * test file in the configured editor. Uses `dev.inspector.editorCommand` when set
+ * (dev-inspector override), otherwise falls back to the general `editor.command`
+ * setting, which works on normal (non-dev) installs too. Resolves a general
+ * repo-relative file instead of only `src/` sources.
  */
 export const postOpenInEditor: RouteHandler = async (ctx, req, res) => {
   const { config } = ctx;
-  if (!copyInspectorApiEnabled(config.root)) {
-    return json(res, 404, { error: "not available" });
-  }
-  if (config.dev?.inspector?.enabled === false) {
+  // Prefer the dev-only inspector override when set; otherwise fall back to the
+  // general editor command, which works on normal (non-dev) installs too.
+  const devInspector = config.dev?.inspector;
+  const devCommand =
+    typeof devInspector?.editorCommand === "string" ? devInspector.editorCommand.trim() : "";
+  const usingDevOverride = !!devCommand;
+  if (usingDevOverride && devInspector?.enabled === false) {
     return json(res, 400, { error: "editor is disabled" });
   }
   const command =
-    typeof config.dev?.inspector?.editorCommand === "string"
-      ? config.dev.inspector.editorCommand.trim()
-      : "";
+    devCommand || (typeof config.editor?.command === "string" ? config.editor.command.trim() : "");
   if (!command) {
     return json(res, 400, { error: "no editor command configured" });
   }
@@ -134,16 +137,15 @@ export const postOpenInEditor: RouteHandler = async (ctx, req, res) => {
  */
 export const postOpenTestInEditor: RouteHandler = async (ctx, req, res) => {
   const { config } = ctx;
-  if (!copyInspectorApiEnabled(config.root)) {
-    return json(res, 404, { error: "not available" });
-  }
-  if (config.dev?.inspector?.enabled === false) {
+  const devInspector = config.dev?.inspector;
+  const devCommand =
+    typeof devInspector?.editorCommand === "string" ? devInspector.editorCommand.trim() : "";
+  const usingDevOverride = !!devCommand;
+  if (usingDevOverride && devInspector?.enabled === false) {
     return json(res, 400, { error: "editor is disabled" });
   }
   const command =
-    typeof config.dev?.inspector?.editorCommand === "string"
-      ? config.dev.inspector.editorCommand.trim()
-      : "";
+    devCommand || (typeof config.editor?.command === "string" ? config.editor.command.trim() : "");
   if (!command) {
     return json(res, 400, { error: "no editor command configured" });
   }
