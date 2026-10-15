@@ -11,7 +11,7 @@ branch: feat/general-editor-setting-open-task-specs-c
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T06:33:35Z"
-updated_at: "2026-10-15T10:31:42Z"
+updated_at: "2026-10-15T10:32:46Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-15T10:10:00.331Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65515/api/tasks/9999 (http://127.0.0.1:65515/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65515/api/tasks/9999)"
 review_passes: 5
@@ -49,41 +49,41 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 ```json
 [
 {
-  "label": "Task drawer Spec row with Open in editor link (light)",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": "[data-test-id=\"open-in-editor\"]",
-  "state": "drawer:reviewWithBranch",
-  "theme": "light"
+"label": "Task drawer Spec row with Open in editor link (light)",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": "[data-test-id=\"open-in-editor\"]",
+"state": "drawer:reviewWithBranch",
+"theme": "light"
 },
 {
-  "label": "Task drawer Spec row with Open in editor link (dark)",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": "[data-test-id=\"open-in-editor\"]",
-  "state": "drawer:reviewWithBranch",
-  "theme": "dark"
+"label": "Task drawer Spec row with Open in editor link (dark)",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": "[data-test-id=\"open-in-editor\"]",
+"state": "drawer:reviewWithBranch",
+"theme": "dark"
 },
 {
-  "label": "Settings General editor command (light)",
-  "target": "default",
-  "route": "/settings?tab=general",
-  "highlight": "#setting-editor\\.command",
-  "theme": "light"
+"label": "Settings General editor command (light)",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "#setting-editor\\.command",
+"theme": "light"
 },
 {
-  "label": "Settings General editor command (dark)",
-  "target": "default",
-  "route": "/settings?tab=general",
-  "highlight": "#setting-editor\\.command",
-  "theme": "dark"
+"label": "Settings General editor command (dark)",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "#setting-editor\\.command",
+"theme": "dark"
 },
 {
-  "label": "Repo Context doc viewer Open in editor (light)",
-  "target": "default",
-  "route": "/repo?tab=docs&doc=docs/README.md",
-  "highlight": "[data-test-id=\"context-open-in-editor\"]",
-  "theme": "light"
+"label": "Repo Context doc viewer Open in editor (light)",
+"target": "default",
+"route": "/repo?tab=docs&doc=docs/README.md",
+"highlight": "[data-test-id=\"context-open-in-editor\"]",
+"theme": "light"
 }
 ]
 ```
@@ -151,3 +151,4 @@ Opening local files is allowed on normal (non-dev) installs when an editor comma
 - 2026-10-15T10:30:31Z · needs_input
 - 2026-10-15T10:31:03Z · message_queued at 2026-10-15T10:31:03.884Z
 - 2026-10-15T10:31:42Z · body: section Shots
+- 2026-10-15T10:32:46Z · body
