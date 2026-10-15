@@ -11,7 +11,7 @@ branch: feat/adaptive-agent-model-routing-with-jev-or
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-15T07:09:55Z"
-updated_at: "2026-10-15T08:23:25Z"
+updated_at: "2026-10-15T08:24:01Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/config-docs.test.ts > repoos.toml and environment docs > documents every field in the config schema, tests/config-docs.test.ts > repoos.toml and environment docs > documents every key the parser supports, including parser-only sections on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: a98ce8424db77ec41fcc6d1425230c90bf41c2fd
 handoff_signal_retry_count: 1
@@ -53,7 +53,9 @@ RepoOS currently chooses configured role defaults or explicit task overrides. Ad
 - https://blog.cloudflare.com/clef-decision-models/
 
 ## Phase 1 (this branch)
+Delivers the provider-neutral routing **foundation** in `src/core/model-routing/`: System One codec; direct Jev, OpenRouter System One, and self-hosted Clef-Flash adapters; `[model_routing]` parsing and `getConfigSchema()` keys; candidate filter, policy, and `decideRoutingForRun` (fixture-tested); `user-docs/configuration.md` including OpenRouter as a distinct provider.
 
+**Follow-ups:** Agents UI + shadow wiring (#0792), automatic run-path + handback (#0793), live credentialed smoke (#0794).
 
 ## Activity
 
@@ -85,3 +87,4 @@ RepoOS currently chooses configured role defaults or explicit task overrides. Ad
 - 2026-10-15T08:18:39Z · message_queued at 2026-10-15T08:18:39.179Z
 - 2026-10-15T08:19:09Z · body
 - 2026-10-15T08:23:25Z · body: section Phase 1 (this branch)
+- 2026-10-15T08:24:01Z · body: section Phase 1 (this branch)
