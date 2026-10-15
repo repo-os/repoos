@@ -50,7 +50,7 @@ const editorConfigured = computed(() => {
 });
 
 const EDITOR_HINT =
-  "Open in editor is off until an editor command is set: Settings → Advanced → “Copy inspector: editor command” (e.g. zed {file}:{line}).";
+  "Open in editor is off until an editor command is set: Settings → General → “Editor command” (or Settings → Advanced → “Copy inspector: editor command”), e.g. zed {file}:{line}.";
 
 const VIEWPORT_PAD = 12;
 

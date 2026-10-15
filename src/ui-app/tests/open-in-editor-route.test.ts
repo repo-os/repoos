@@ -145,6 +145,18 @@ describe("POST /api/dev/open-in-editor", () => {
 
     expect(result.status).toBe(400);
   });
+
+  it("accepts a task markdown using only the general editor.command setting (no dev override)", async () => {
+    const root = fixture();
+    const config = configFor(root, {
+      dev: undefined,
+      editor: { command: "__repoos_missing_editor__ {file}" },
+    });
+    const result = await invoke({ file: "work/0636-task.md" }, config);
+
+    expect(result.status).toBe(500);
+    expect(result.body).toEqual({ error: "failed to launch editor" });
+  });
 });
 
 describe("POST /api/dev/open-test-in-editor", () => {
