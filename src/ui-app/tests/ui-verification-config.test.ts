@@ -1,7 +1,7 @@
 /**
  * #0680 — Settings schema and TOML contract for UI handoff verification.
- * #0766 — stale-only reviews stay in review (no engineer bounce), and the
- * removed `uiVerification.autoRefreshStaleOnce` setting no longer exists.
+ * #0766 — stale-only reviews stay in review (no engineer bounce).
+ * #0772 — re-adds the opt-in automatic stale refresh setting and wiring.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -11,7 +11,11 @@ import { getConfigSchema, loadConfig, SUPPORTED_TOML_KEYS } from "../../core/con
 import type { Agent, RepoOSConfig, Task } from "../../core/types.js";
 import { resolvedUiVerification } from "../../core/ui-verification-config.js";
 import { resolveSettingLocation } from "../src/settings-location.js";
-import { ReviewManager } from "../../server/review.js";
+import {
+  ReviewManager,
+  isStaleEvidenceOnlyReview,
+  shouldAutoRefreshStaleEvidence,
+} from "../../server/review.js";
 
 describe("uiVerification config (#0680)", () => {
   it("defaults to enabled with standard viewports", () => {
@@ -53,26 +57,61 @@ describe("uiVerification config (#0680)", () => {
     expect(loc).toEqual({ tab: "general", hasUiRow: true });
   });
 
-  it("no longer defines the removed autoRefreshStaleOnce setting (#0766)", () => {
-    // #0772 re-adds the automatic path; until then no schema key, no TOML key,
-    // and no Settings control may exist for a setting nothing reads.
-    expect(getConfigSchema().some((f) => f.key === "uiVerification.autoRefreshStaleOnce")).toBe(
-      false,
-    );
-    expect(SUPPORTED_TOML_KEYS).not.toContain("uiVerification.autoRefreshStaleOnce");
+  it("exposes the auto-refresh stale evidence setting (#0772)", () => {
+    const auto = getConfigSchema().find((f) => f.key === "uiVerification.autoRefreshStaleOnce");
+    expect(auto).toMatchObject({ type: "boolean", tier: "live", default: false });
+    expect(SUPPORTED_TOML_KEYS).toContain("uiVerification.autoRefreshStaleOnce");
+    expect(
+      resolveSettingLocation("uiVerification.autoRefreshStaleOnce", auto, {
+        inspectorAvailable: true,
+      }),
+    ).toEqual({ tab: "general", hasUiRow: true });
     const dir = mkdtempSync(join(tmpdir(), "repoos-uiv-cfg-"));
     writeFileSync(join(dir, "repoos.toml"), "uiVerification.autoRefreshStaleOnce = true\n");
     try {
       const cfg = loadConfig(dir);
+      expect(cfg.uiVerification?.autoRefreshStaleOnce).toBe(true);
+      // The key alone must not invent an `enabled` value.
       expect(cfg.uiVerification?.enabled).toBeUndefined();
       expect(resolvedUiVerification(cfg).enabled).toBe(true);
-      // An old config file carrying the key must simply be ignored, not parsed.
-      expect(
-        (cfg.uiVerification as Record<string, unknown> | undefined)?.autoRefreshStaleOnce,
-      ).toBeUndefined();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it("only auto-refreshes an explicit stale-only marker when enabled (#0772)", () => {
+    const enabled = { uiVerification: { autoRefreshStaleOnce: true } } as RepoOSConfig;
+    const disabled = { uiVerification: { autoRefreshStaleOnce: false } } as RepoOSConfig;
+    expect(
+      shouldAutoRefreshStaleEvidence(
+        enabled,
+        "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY",
+        "needs some work",
+      ),
+    ).toBe(true);
+    expect(
+      shouldAutoRefreshStaleEvidence(enabled, "## Verdict\nneeds some work\n", "needs some work"),
+    ).toBe(false);
+    expect(
+      shouldAutoRefreshStaleEvidence(
+        disabled,
+        "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY",
+        "needs some work",
+      ),
+    ).toBe(false);
+    expect(
+      shouldAutoRefreshStaleEvidence(
+        enabled,
+        "## Verdict\ngood to go. STALE-EVIDENCE-ONLY",
+        "good to go",
+      ),
+    ).toBe(false);
+    expect(
+      isStaleEvidenceOnlyReview(
+        "## Verdict\nneeds some work. STALE-EVIDENCE-ONLY",
+        "needs some work",
+      ),
+    ).toBe(true);
   });
 });
 
@@ -108,8 +147,14 @@ describe("stale-only review stays in review (#0766)", () => {
   }
 
   /** A manager whose engineer session is genuinely resumable, so a bounce would change status. */
-  function makeManager(): { reviews: ReviewManager; sent: () => number } {
+  function makeManager(
+    opts: {
+      autoRefresh?: boolean;
+      onRefresh?: (task: Task) => Promise<boolean>;
+    } = {},
+  ): { reviews: ReviewManager; sent: () => number; refreshed: () => number } {
     let sent = 0;
+    let refreshed = 0;
     const config = {
       root,
       workDir: "work",
@@ -119,6 +164,7 @@ describe("stale-only review stays in review (#0766)", () => {
       defaultStatus: "inbox",
       defaultAssignee: "unassigned",
       cacheDir: ".repoos",
+      ...(opts.autoRefresh ? { uiVerification: { autoRefreshStaleOnce: true } } : {}),
       agents: [
         { name: "reviewer", cli: "fake", model: "m", enabled: true },
         { name: "engineer", cli: "fake", model: "m", enabled: true },
@@ -132,7 +178,22 @@ describe("stale-only review stays in review (#0766)", () => {
       },
       system: () => {},
     };
-    return { reviews: new ReviewManager(config, () => {}, runner as never), sent: () => sent };
+    const onRefresh = async (task: Task): Promise<boolean> => {
+      refreshed += 1;
+      return opts.onRefresh ? opts.onRefresh(task) : false;
+    };
+    return {
+      reviews: new ReviewManager(
+        config,
+        () => {},
+        runner as never,
+        undefined,
+        undefined,
+        opts.autoRefresh ? onRefresh : undefined,
+      ),
+      sent: () => sent,
+      refreshed: () => refreshed,
+    };
   }
 
   function finalize(reviews: ReviewManager, task: Task, report: string): void {
@@ -167,5 +228,30 @@ describe("stale-only review stays in review (#0766)", () => {
       expect(readFileSync(absPath, "utf8")).toContain("status: active");
     });
     expect(sent()).toBe(1);
+  });
+
+  it("stale-only with auto-refresh enabled refreshes once and never bounces (#0772)", async () => {
+    const { reviews, sent, refreshed } = makeManager({ autoRefresh: true });
+    const { task, absPath } = writeTask();
+    finalize(reviews, task, "## Verdict\n`needs some work` — STALE-EVIDENCE-ONLY\n");
+    await vi.waitFor(() => {
+      expect(refreshed()).toBe(1);
+    });
+    // Give any stray bounce a chance to run; there must be none.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(sent()).toBe(0);
+    expect(refreshed()).toBe(1);
+    const content = readFileSync(absPath, "utf8");
+    expect(content).toContain("status: review");
+    expect(content).not.toContain("status: active");
+  });
+
+  it("stale-only with the setting off does not even attempt a refresh (#0772)", async () => {
+    const { reviews, sent, refreshed } = makeManager();
+    const { task } = writeTask();
+    finalize(reviews, task, "## Verdict\n`needs some work` — STALE-EVIDENCE-ONLY\n");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(sent()).toBe(0);
+    expect(refreshed()).toBe(0);
   });
 });

@@ -1879,10 +1879,14 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
 
     const uiVerifEnabled = parsed["uiVerification.enabled"];
     const uiVerifWidthsRaw = parsed["uiVerification.viewportWidths"];
+    const uiVerifAutoRefresh = parsed["uiVerification.autoRefreshStaleOnce"];
     const uiVerifWidths = parsePositiveNumberList(uiVerifWidthsRaw);
-    if (uiVerifEnabled !== undefined || uiVerifWidths.length) {
+    if (uiVerifEnabled !== undefined || uiVerifWidths.length || uiVerifAutoRefresh !== undefined) {
       const uiVerification: UiVerificationConfig = {};
       if (typeof uiVerifEnabled === "boolean") uiVerification.enabled = uiVerifEnabled;
+      if (typeof uiVerifAutoRefresh === "boolean") {
+        uiVerification.autoRefreshStaleOnce = uiVerifAutoRefresh;
+      }
       const widths = uiVerifWidths.filter((n) => Number.isFinite(n) && n > 0);
       if (widths.length) uiVerification.viewportWidths = widths.map((n) => Math.floor(n));
       cfg.uiVerification = uiVerification;
@@ -2472,6 +2476,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description:
         "When enabled, tasks with a shot capture plan run browser checks at handoff (console errors, " +
         "failed same-origin requests, horizontal overflow) before review. Playwright missing skips with a note.",
+    },
+    {
+      key: "uiVerification.autoRefreshStaleOnce",
+      label: "Auto-refresh stale review evidence once",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description:
+        "When a review explicitly reports that stale UI evidence is its only blocker, refresh captures at the current HEAD and run one new review automatically.",
     },
     {
       key: "uiVerification.viewportWidths",
@@ -3217,6 +3231,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "automation.paused",
   "uiVerification.enabled",
   "uiVerification.viewportWidths",
+  "uiVerification.autoRefreshStaleOnce",
   "reviewVerification.guardTestCheck",
   "reviewVerification.testGlobs",
   // Remote validation
