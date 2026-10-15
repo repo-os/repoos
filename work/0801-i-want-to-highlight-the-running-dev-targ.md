@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/highlight-running-dev-targets
 created_at: "2026-10-15T18:16:48Z"
-updated_at: "2026-10-15T18:27:48Z"
+updated_at: "2026-10-15T18:29:01Z"
 ---
 ## Problem
 
@@ -34,23 +34,23 @@ Running dev targets are highlighted in the same style as active remote runners t
 
 I want to highlight the running dev targets in the same style we highlight the active remote runners (those running checks) so it's easier to immediately tell which dev targets are running (the started ones, not the stopped ones).
 
-## Screenshots
-
-![Screenshot-2026-10-16-at-01.14.30](/api/tasks/0801/attachments/screenshot-1.png)
-![Screenshot-2026-10-16-at-01.14.50](/api/tasks/0801/attachments/screenshot-2.png)
-
 ## Shots
 ```json
 [
 {
-  "label": "Started dev target carries the cyan running glow; the stopped one does not",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-card[data-running]",
-  "state": "dev:running"
+"label": "Started dev target carries the cyan running glow; the stopped one does not",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-card[data-running]",
+"state": "dev:running"
 }
 ]
 ```
+
+## Screenshots
+
+![Screenshot-2026-10-16-at-01.14.30](/api/tasks/0801/attachments/screenshot-1.png)
+![Screenshot-2026-10-16-at-01.14.50](/api/tasks/0801/attachments/screenshot-2.png)
 
 ## Activity
 
@@ -61,3 +61,4 @@ I want to highlight the running dev targets in the same style we highlight the a
 - 2026-10-15T18:21:50Z · status inbox→ready
 - 2026-10-15T18:21:54Z · status ready→active, branch
 - 2026-10-15T18:27:48Z · body: section Shots
+- 2026-10-15T18:29:01Z · body
