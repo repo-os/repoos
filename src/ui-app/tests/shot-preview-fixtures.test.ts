@@ -25,6 +25,17 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.integration?.empty).toBe(false);
   });
 
+  it("seeds an active coding run for board card indicator shots (#0787)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "board:activeCoding");
+    expect(repo.tasks.some((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID && t.status === "active")).toBe(
+      true,
+    );
+    expect(repo.isRunning(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
+  });
+
   it("seeds a review card with done-error footer state", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -138,6 +149,7 @@ describe("shot preview board fixtures (#0743)", () => {
         "closeOut:uploading",
         "board:withReviewTask",
         "board:cardChips",
+        "board:activeCoding",
         "closeOut:stalled",
       ] as const) {
         applyShotPreviewFixture(repo, fixture);
