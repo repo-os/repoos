@@ -1041,7 +1041,9 @@ onUnmounted(() => {
               </div>
               <div class="setting-input">
                 <Select
-                  :model-value="String(form.activityAnimationStyle ?? activityAnimationField.default)"
+                  :model-value="
+                    String(form.activityAnimationStyle ?? activityAnimationField.default)
+                  "
                   :disabled="config.saving"
                   @update:model-value="(v) => (form.activityAnimationStyle = v)"
                 >
