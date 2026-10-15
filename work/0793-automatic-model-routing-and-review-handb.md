@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T07:47:32Z"
-updated_at: "2026-10-15T07:48:09Z"
+updated_at: "2026-10-15T08:23:20Z"
 ---
 ## Problem
 After #0792 lands (adapter, config, UI and shadow mode), the router still does not influence any run. This task adds opt-in automatic routing for PM, engineer and reviewer runs, plus re-evaluation when review sends work back. It must stay inside the existing lifecycle: review, checks, approval, close-out and the recovery work in #0767 are not bypassed or duplicated.
@@ -26,11 +26,12 @@ Parent/context record: #0791. Depends on #0792.
 - Explicit human pins are honored first. Router decisions are stored separately from human overrides so future rounds can be reconsidered.
 - Deterministic filtering (already in `src/core/model-routing/candidates.ts`) is applied on every decision: budget allowlist, role/tool capability, installed and authenticated harness, context support and known availability. The router cannot expand permissions or budgets.
 - Safe fallback or block on no candidates, provider failure, timeout, malformed response or insufficient evidence. Never select a forbidden pair; never silently disable review.
+- **OpenRouter-backed decision models** use the same provider-agnostic contract and policy boundaries as direct Jev/Clef; only endpoint, credential env and model id differ.
 - Bounded context brief: task/input/story, role, scope/risk, current diff for review, prior findings and attempts, and relevant historical results. Treat task and code text as data, not as instructions that change routing policy.
 - Persist each decision (candidate set, selection, factors, provider/model, timing, fallback reason) and link it to the run's session accounting. Use `recordOneShotSession` for any one-shot decision call (taskId as appropriate, sessionType not `pm`).
 - Re-evaluate on review handback using the actual findings and attempt history, comparing continuing the existing session with switching or escalating. Do not penalize a coding model for infrastructure, provider or gate-setup failures. Bound retries and escalations. Respect pause, locks and live-run coordination.
 - Coordinate with #0767 centralized recovery. Do not introduce a competing recovery loop.
-- Docs and user-docs: both providers, secret handling, shadow evaluation, automatic mode, fallbacks and limitations (updating the `[model_routing]` section under #0791).
+- Docs and user-docs: all three provider options, secret handling, shadow evaluation, automatic mode, fallbacks and limitations (updating the `[model_routing]` section under #0791).
 
 ## Acceptance criteria
 - Automatic mode respects pins, role capabilities and allowlists for PM, engineer and reviewer; covered by tests for empty and singleton candidate sets, unavailable providers, invalid or low-confidence responses, timeouts, unknown costs, and restart-safe decision records.
@@ -56,3 +57,4 @@ On the Model routing section, show for each recent run whether automatic routing
 - 2026-10-15T07:47:32Z · created · njachowski@gmail.com
 - 2026-10-15T07:47:33Z · needs_input
 - 2026-10-15T07:47:38Z · body
+- 2026-10-15T08:23:20Z · body: section Scope
