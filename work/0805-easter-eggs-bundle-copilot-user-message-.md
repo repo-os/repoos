@@ -2,14 +2,14 @@
 id: "0805"
 title: "Easter eggs bundle: Copilot event lines, and Set editor hints as links"
 type: bug
-status: ready
+status: active
 priority: p3
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-bundle-copilot-event-lines-a
 created_at: "2026-10-16T08:55:26Z"
-updated_at: "2026-10-16T10:25:54Z"
+updated_at: "2026-10-16T11:55:05Z"
 ---
 ## Problem
 One open easter-eggs bundle, collecting small, independent fixes. Items:
@@ -38,3 +38,4 @@ Commit per item so a reviewer can read them separately. Use the router's link co
 - 2026-10-16T10:04:30Z · area, body
 - 2026-10-16T10:04:40Z · title
 - 2026-10-16T10:25:54Z · status inbox→ready
+- 2026-10-16T11:55:05Z · status ready→active, branch
