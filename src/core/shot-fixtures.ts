@@ -19,6 +19,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0778 — review-status task with a non-empty branch, so the task drawer
   // shows UI-changes pane and actions like Add shot and Refresh evidence.
   "drawer:reviewWithBranch",
+  // #0804 — a ready task flagged by the decision-model human-step check, so a
+  // capture can show the flag's explanation on the card.
+  "card:humanStep",
   // #0776/#0795 — a multi-area, human-assigned card with seeded diff stats, so
   // a capture can show the combined area chip, the human chip and the
   // file-count chip.

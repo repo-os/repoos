@@ -667,6 +667,10 @@ const hint = computed<CardHint | null>(() => {
       cls: "tc-stalled",
     };
   }
+  // #0804: a ready/inbox task the start check (keyword or decision model)
+  // flagged must show that on the card — the board otherwise looks idle and
+  // the explanation the model produced is invisible.
+  if (needsInputSurfaces(t)) return needsInputHint(t);
   // 0381: a PM chat run can touch a task in ANY status — ready, inbox,
   // even done. Without this the card would look idle while the PM works.
   if (pmWorking) return PM_WORKING_HINT;
