@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-16T15:33:18.112Z: repoos check failed: ui verification failed (10 issue(s)): [request] HTTP 404 for http://127.0.0.1:57937/api/tasks/9999 (http://127.0.0.1:57937/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:57937/api/tasks/9999); [assertion] Handoff-conflict modal lists changed files with +/- counts (light): selector #handoff-conflict-title matched 0 element(s), expected at least 1 (nothing rendered — the feature state may be absent) (… (truncated)"
 id: "0810"
 title: "Worktree changed after handoff: list the changed files with +/- lines in the modal (scrollable, max 60% height)"
 type: feature
@@ -109,3 +111,4 @@ Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Wor
 - 2026-10-16T15:22:00Z · body
 - 2026-10-16T15:33:14Z · note: ui verification failed (10 issue(s)): [request] HTTP 404 for http://127.0.0.1:57937/api/tasks/9999 (http://127.0.0.1:57937/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:57937/api/tasks/9999); [assertion] Handoff-conflict modal lists changed files with +/- counts (light): selector #handoff-conflict-title matched 0 element(s), expected at least 1 (nothing rendered — the feature state may be absent) (captured http://127.0
 - 2026-10-16T15:33:15Z · handoff failed · handoff recovery attempted · finalization failed
+
