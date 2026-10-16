@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-jev-and-openrouter-only-hi
 created_at: "2026-10-16T11:59:41Z"
-updated_at: "2026-10-16T12:33:32Z"
+updated_at: "2026-10-16T12:34:15Z"
 ---
 ## Problem
 After #0803 landed, three things are wrong on the Model routing page, and one scope change is needed:
@@ -39,7 +39,7 @@ Start from src/core/model-routing/runtime.ts (readRoutingCredential, credentialL
 ```json
 [
 {
-  "label": "Model routing: decision-provider options are Jev and OpenRouter only (no Clef-Flash)",
+  "label": "Decision-provider options are Jev and OpenRouter only (no Clef-Flash)",
   "route": "/agents?tab=model-routing",
   "highlight": "[data-testid=\"model-routing-panel\"]",
   "steps": [
@@ -52,9 +52,16 @@ Start from src/core/model-routing/runtime.ts (readRoutingCredential, credentialL
   ]
 },
 {
-  "label": "Model routing: key and provider-ready status",
+  "label": "Routing status — light theme",
   "route": "/agents?tab=model-routing",
-  "highlight": "[data-testid=\"routing-credential-status\"]"
+  "highlight": "[data-testid=\"routing-credential-status\"]",
+  "theme": "light"
+},
+{
+  "label": "Routing status — dark theme",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-testid=\"routing-credential-status\"]",
+  "theme": "dark"
 }
 ]
 ```
@@ -69,3 +76,4 @@ Start from src/core/model-routing/runtime.ts (readRoutingCredential, credentialL
 - 2026-10-16T12:22:25Z · body
 - 2026-10-16T12:24:26Z · body
 - 2026-10-16T12:33:32Z · body: section Shots
+- 2026-10-16T12:34:15Z · body: section Shots
