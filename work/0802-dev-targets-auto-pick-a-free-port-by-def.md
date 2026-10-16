@@ -2,14 +2,14 @@
 id: "0802"
 title: "Dev targets: auto-pick a free port by default, with a per-target fixed-port option"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-pick-a-free-port-by-def
 created_at: "2026-10-15T19:36:15Z"
-updated_at: "2026-10-16T02:14:16Z"
+updated_at: "2026-10-16T02:23:38Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -55,13 +55,13 @@ Start from src/server/dev.ts (the {port} substitution, which already picks a fre
 "highlight": "#dev-target-port",
 "steps": [
 {
-  "waitFor": "[aria-label=\"Edit Landing page (HMR)\"]"
+"waitFor": "[aria-label=\"Edit Landing page (HMR)\"]"
 },
 {
-  "click": "[aria-label=\"Edit Landing page (HMR)\"]"
+"click": "[aria-label=\"Edit Landing page (HMR)\"]"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ]
 }
@@ -87,3 +87,4 @@ Start from src/server/dev.ts (the {port} substitution, which already picks a fre
 - 2026-10-16T02:08:51Z · status review→active
 - 2026-10-16T02:13:23Z · body: section Shots
 - 2026-10-16T02:14:16Z · body
+- 2026-10-16T02:23:38Z · status active→review
