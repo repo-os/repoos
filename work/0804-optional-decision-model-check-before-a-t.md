@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-16T09:24:50Z"
-review_passes: 1
 id: "0804"
 title: "Optional decision-model check before a task starts: should it be split into AI and human tasks?"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
@@ -14,6 +12,10 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/optional-decision-model-check-before-a-t
 created_at: "2026-10-16T05:07:46Z"
+updated_at: "2026-10-16T09:24:50Z"
+review_rounds: 1
+routing_switches: 1
+review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -82,4 +84,4 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 - 2026-10-16T09:23:44Z · note: highlight .tc-needs-detail matched nothing on /
 - 2026-10-16T09:23:47Z · note: highlight .tc-needs-detail matched nothing on /
 - 2026-10-16T09:24:50Z · note: review pass 1: needs some work
-
+- 2026-10-16T09:24:50Z · status review→active
