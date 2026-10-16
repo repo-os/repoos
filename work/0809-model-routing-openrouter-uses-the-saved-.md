@@ -2,14 +2,14 @@
 id: "0809"
 title: "Model routing: Jev and OpenRouter only (hide Clef-Flash), OpenRouter uses the saved key, consistent status, plain 'OpenRouter' label"
 type: bug
-status: ready
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/model-routing-jev-and-openrouter-only-hi
 created_at: "2026-10-16T11:59:41Z"
-updated_at: "2026-10-16T12:11:51Z"
+updated_at: "2026-10-16T12:11:54Z"
 ---
 ## Problem
 After #0803 landed, three things are wrong on the Model routing page, and one scope change is needed:
@@ -40,3 +40,4 @@ Start from src/core/model-routing/runtime.ts (readRoutingCredential, credentialL
 - 2026-10-16T11:59:41Z · created · njachowski@gmail.com
 - 2026-10-16T12:07:34Z · title, body
 - 2026-10-16T12:11:51Z · status inbox→ready
+- 2026-10-16T12:11:54Z · status ready→active, branch
