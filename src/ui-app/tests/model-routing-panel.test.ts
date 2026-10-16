@@ -13,6 +13,7 @@ import AgentsView from "../src/views/AgentsView.vue";
 import { useConfigStore } from "../src/stores/config";
 import { safeConfigForBrowser } from "../../server/routes/config.js";
 import { loadConfig } from "../../core/config.js";
+import type { RepoOSConfig } from "../../core/types.js";
 import { startServer, type ServerHandle } from "../../server/server.js";
 import { buildRoutingProvider, modelRoutingStatus } from "../../core/model-routing/runtime.js";
 import { resolveEffectiveRouting } from "../../core/model-routing/config.js";
@@ -87,7 +88,7 @@ describe("ModelRoutingPanel", () => {
               ...modelRoutingStatus({
                 root: "/tmp",
                 modelRouting: { mode: "shadow", provider: "jev" },
-              }),
+              } as RepoOSConfig),
             }),
           };
         }
@@ -116,7 +117,7 @@ describe("ModelRoutingPanel", () => {
               ...modelRoutingStatus({
                 root: "/tmp",
                 modelRouting: { mode: "shadow", provider: "jev" },
-              }),
+              } as RepoOSConfig),
             }),
           };
         }
@@ -146,7 +147,7 @@ describe("AgentsView model routing tab", () => {
           return {
             ok: true,
             json: async () => ({
-              ...modelRoutingStatus({ root: "/tmp", modelRouting: undefined }),
+              ...modelRoutingStatus({ root: "/tmp", modelRouting: undefined } as RepoOSConfig),
             }),
           };
         }
@@ -192,7 +193,7 @@ describe("modelRoutingStatus", () => {
     const status = modelRoutingStatus({
       root: "/tmp",
       modelRouting: { mode: "shadow", provider: "openrouter" },
-    });
+    } as RepoOSConfig);
     expect(status.credentialPresent).toBe(false);
     expect(status.issues[0]).toMatch(/Model providers/i);
   });
