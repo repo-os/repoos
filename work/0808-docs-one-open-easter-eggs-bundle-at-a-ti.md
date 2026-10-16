@@ -2,7 +2,7 @@
 id: "0808"
 title: "Docs: one open easter-eggs bundle at a time, areas may mix"
 type: chore
-status: review
+status: active
 priority: p3
 area: docs
 assigned_to: ai
