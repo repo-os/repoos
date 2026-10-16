@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../core/shot-fixtures.js";
 import {
+  applyShotPreviewConfigFixture,
   applyShotPreviewFixture,
   readShotPreviewFixtureFromLocation,
   shotFixturePinnedIntegration,
 } from "../src/lib/shot-preview-fixtures";
+import { useConfigStore } from "../src/stores/config";
 import { useRepoStore } from "../src/stores/repo";
 
 describe("shot preview board fixtures (#0743)", () => {
@@ -13,7 +15,35 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(readShotPreviewFixtureFromLocation({ search: "?shotState=closeOut%3Aactive" })).toBe(
       "closeOut:active",
     );
+    expect(readShotPreviewFixtureFromLocation({ search: "?shotState=editor%3Aunconfigured" })).toBe(
+      "editor:unconfigured",
+    );
     expect(readShotPreviewFixtureFromLocation({ search: "" })).toBeNull();
+  });
+
+  it("clears the configured editor so the Set-editor hint renders (#0805)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    config.data = { editor: { command: "zed {file}" }, dev: { inspector: { editorCommand: "" } } };
+
+    applyShotPreviewConfigFixture(config, "editor:unconfigured");
+
+    expect((config.data?.editor as { command?: string }).command).toBe("");
+    expect(
+      (config.data?.dev as { inspector?: { editorCommand?: string } }).inspector?.editorCommand,
+    ).toBe("");
+  });
+
+  it("leaves other config fixtures untouched (#0805)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    config.data = { editor: { command: "zed {file}" } };
+
+    applyShotPreviewConfigFixture(config, "board:withReviewTask");
+
+    expect((config.data?.editor as { command?: string }).command).toBe("zed {file}");
   });
 
   it("seeds close-out pipeline state for integration bar shots", () => {

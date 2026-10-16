@@ -7,10 +7,12 @@ import {
   type ShotPreviewFixtureId,
   isShotPreviewFixtureId,
 } from "../../../core/shot-fixtures.js";
+import type { useConfigStore } from "../stores/config";
 import type { useRepoStore } from "../stores/repo";
 import type { DevTargetView, IntegrationPipelineSnapshot, Task } from "../types";
 
 type RepoStore = ReturnType<typeof useRepoStore>;
+type ConfigStore = ReturnType<typeof useConfigStore>;
 
 const nowIso = (): string => new Date().toISOString();
 
@@ -311,4 +313,28 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     default:
       break;
   }
+}
+
+/**
+ * Apply a config-touching shot fixture (#0805). Deliberately separate from
+ * `applyShotPreviewFixture`: the editor setting only exists after
+ * `config.load()` resolves, so clearing it there would have to run AFTER the
+ * load — otherwise the real `/api/config` response restores the editor command
+ * and the "Set editor" hint this fixture exists to capture stays hidden.
+ *
+ * `editor:unconfigured` blanks both the general `editor.command` and the
+ * dev-inspector override, so `editorConfigured` is false on every surface that
+ * shows the hint (TaskDrawer Spec row, Context doc viewer, failed-tests list).
+ */
+export function applyShotPreviewConfigFixture(
+  config: ConfigStore,
+  fixture: ShotPreviewFixtureId,
+): void {
+  if (fixture !== "editor:unconfigured") return;
+  const data = config.data;
+  if (!data) return;
+  const editor = data.editor as { command?: string } | undefined;
+  if (editor) editor.command = "";
+  const dev = data.dev as { inspector?: { editorCommand?: string } } | undefined;
+  if (dev?.inspector) dev.inspector.editorCommand = "";
 }

@@ -298,6 +298,23 @@ describe("parseClaudeEvent (0109)", () => {
         expect(parseCopilotEvent(`{"type":"${t}","data":{}}`)).toEqual({});
       }
     });
+
+    it("swallows the echoed user message and the assistant idle heartbeat (#0805)", () => {
+      // Both are internal events the chat already surfaces — the user's own
+      // message and the assistant's turn — so they must not become
+      // "unknown protocol event" transcript lines.
+      expect(parseCopilotEvent('{"type":"user.message","data":{"content":"hi copilot"}}')).toEqual(
+        {},
+      );
+      expect(parseCopilotEvent('{"type":"assistant.idle","data":{}}')).toEqual({});
+      // Any genuinely unrecognised type still surfaces the diagnostic.
+      expect(parseCopilotEvent('{"type":"future.copilot_event","data":{}}')).toEqual({
+        entry: {
+          type: "sys",
+          d: 'Copilot emitted an unknown protocol event "future.copilot_event".',
+        },
+      });
+    });
   });
 
   it("swallows rate_limit events", () => {

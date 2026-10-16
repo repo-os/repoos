@@ -361,6 +361,10 @@ fixture the preview applies before capture (preview builds only, via
 - `board:cardChips` — multi-area human-assigned card with seeded diff stats,
   so the area, human and file chips all render (#0776, #0795)
 - `dev:failed` — Dev page shows a failed target with its failure summary (#0775)
+- `editor:unconfigured` — clears the configured editor so the fallback
+  "Set editor in Settings → General" hint renders instead of the
+  "Open in editor" button (Task drawer Spec row, Context doc viewer,
+  failed-tests list, #0805)
 
 **Light and dark captures (#0782).** A declared entry may set `theme` to
 `"light"` or `"dark"`: the capture pins the page's stored theme before the
