@@ -2,14 +2,14 @@
 id: "0809"
 title: "Model routing: Jev and OpenRouter only (hide Clef-Flash), OpenRouter uses the saved key, consistent status, plain 'OpenRouter' label"
 type: bug
-status: active
+status: ready
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-jev-and-openrouter-only-hi
 created_at: "2026-10-16T11:59:41Z"
-updated_at: "2026-10-16T12:22:25Z"
+updated_at: "2026-10-16T15:36:50Z"
 ---
 ## Problem
 After #0803 landed, three things are wrong on the Model routing page, and one scope change is needed:
@@ -43,3 +43,4 @@ Start from src/core/model-routing/runtime.ts (readRoutingCredential, credentialL
 - 2026-10-16T12:11:54Z · status ready→active, branch
 - 2026-10-16T12:21:15Z · body
 - 2026-10-16T12:22:25Z · body
+- 2026-10-16T15:36:50Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
