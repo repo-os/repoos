@@ -22,6 +22,8 @@ const KEY_ORDER = [
   "questions",
   "needs_input_reason",
   "needs_input_detail",
+  "human_step_decision",
+  "human_step_decision_key",
   "debug_tldr",
   "debug_tldr_at",
   "debug_tldr_key",
@@ -469,6 +471,12 @@ export function parseTask(args: ParseTaskArgs): Task {
       typeof data.needs_input_reason === "string" ? data.needs_input_reason : undefined,
     needsInputDetail:
       typeof data.needs_input_detail === "string" ? data.needs_input_detail : undefined,
+    humanStepDecision:
+      data.human_step_decision === "agent" || data.human_step_decision === "human"
+        ? data.human_step_decision
+        : undefined,
+    humanStepDecisionKey:
+      typeof data.human_step_decision_key === "string" ? data.human_step_decision_key : undefined,
     debugTldr: typeof data.debug_tldr === "string" ? data.debug_tldr : undefined,
     debugTldrAt: typeof data.debug_tldr_at === "string" ? data.debug_tldr_at : undefined,
     debugTldrKey: typeof data.debug_tldr_key === "string" ? data.debug_tldr_key : undefined,
@@ -567,6 +575,13 @@ export function serializeTask(task: Task): string {
     }
   }
   if (task.questions && task.questions.length > 0) data.questions = task.questions;
+  // #0804: the decision-model verdict persists independently of `needs_input`
+  // (an "agent" verdict suppresses the keyword check with no flag set), and its
+  // fingerprint only rides along while the verdict itself is set.
+  if (task.humanStepDecision) {
+    data.human_step_decision = task.humanStepDecision;
+    if (task.humanStepDecisionKey) data.human_step_decision_key = task.humanStepDecisionKey;
+  }
   if (task.needsMerge) data.needs_merge = true;
   if (task.noSourceChange) data.no_source_change = true;
   // #0657: `is_archived` is orthogonal to status. Only ever write the flag

@@ -53,8 +53,11 @@ import {
   flagTaskSpecFlagsIfNeeded,
   isUnderspecifiedSweepEligible,
   needsInputClearsOnPmMessage,
+  NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
   UNDERSPECIFIED_NEEDS_INPUT_REASON,
 } from "../task-underspecified-flag.js";
+import { needsHumanStepFingerprint } from "../../core/task-underspecified.js";
+import { runHumanStepDecisionCheck } from "../human-step-decision.js";
 import {
   answeringQuestionsMatchTask,
   wrapPmMessageWithQuestionContext,
@@ -1980,6 +1983,45 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (runner.isRunning(id)) {
       return json(res, 400, { error: `Task #${id} is already running` });
     }
+    // #0804: an optional decision-model check runs before a ready task moves to
+    // active. It only blocks a start in automatic routing mode; off, shadow,
+    // unavailable and failed all fall through to the keyword check below, so a
+    // model outage can never block a task on its own.
+    let humanStepOverride: "agent" | "human" | undefined;
+    if (existing.status === "ready") {
+      const check = await runHumanStepDecisionCheck(config, existing);
+      if (check.outcome === "shadow") {
+        logger.task(id, "info", "Human-step decision recorded (shadow mode)", {
+          needsHumanStep: check.decision?.needsHumanStep ?? null,
+          detail: check.detail,
+        });
+      } else if (check.outcome === "failed") {
+        logger.task(id, "warn", "Human-step decision check failed — using the keyword check", {
+          error: check.error,
+        });
+      } else if (check.outcome === "human") {
+        const detail =
+          check.detail ?? "The decision model says this task needs a step only a human can do.";
+        const flagged = patchTaskFile(config, existing.absPath, {
+          needsInput: true,
+          needsInputReason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+          needsInputDetail: detail,
+          humanStepDecision: "human",
+          humanStepDecisionKey: needsHumanStepFingerprint(existing.body),
+        });
+        index.applyFileChange(flagged.absPath, { guarded: true });
+        logger.task(id, "warn", "Task needs a human-only step — not started", { detail });
+        return json(res, 409, {
+          ok: false,
+          error: detail,
+          reason: NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON,
+          needsInput: true,
+          detail,
+        });
+      } else if (check.outcome === "agent") {
+        humanStepOverride = "agent";
+      }
+    }
     const baseEngineer = resolveAgentForTask(config, existing);
     if (!baseEngineer) {
       return json(res, 400, {
@@ -2034,6 +2076,13 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (needsInputClearsOnNewEngineerRun(existing.needsInputReason)) {
       patch.needsInput = false;
     }
+    // #0804: persist an "agent" verdict from the decision model so later
+    // sweeps and the post-start keyword pass respect it, and clear a stale
+    // keyword flag in the same write.
+    if (humanStepOverride === "agent") {
+      patch.humanStepDecision = "agent";
+      patch.humanStepDecisionKey = needsHumanStepFingerprint(existing.body);
+    }
     if (!existing.branch) patch.branch = branch;
     // Patch (and commit) the task file in main BEFORE forking the worktree's
     // branch — ensureWorktree forks from main's current committed HEAD, so
@@ -2056,7 +2105,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     const startedTask = index.getTask(updated.id);
     if (startedTask) {
       const assessment = assessTaskUnderspecified(startedTask.body, { area: startedTask.area });
-      const flagged = flagTaskSpecFlagsIfNeeded(config, startedTask);
+      const flagged = flagTaskSpecFlagsIfNeeded(config, startedTask, {
+        humanStepDecision: humanStepOverride,
+      });
       if (flagged) {
         index.applyFileChange(flagged.absPath, { guarded: true });
       }
