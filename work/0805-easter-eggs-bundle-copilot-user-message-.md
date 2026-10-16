@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-copilot-event-lines-a
 created_at: "2026-10-16T08:55:26Z"
-updated_at: "2026-10-16T12:00:45Z"
+updated_at: "2026-10-16T12:02:57Z"
 ---
 ## Problem
 One open easter-eggs bundle, collecting small, independent fixes. Items:
@@ -31,6 +31,24 @@ One open easter-eggs bundle, collecting small, independent fixes. Items:
 ## Notes for AI
 Commit per item so a reviewer can read them separately. Use the router's link component for item 2. Keep the aria-label wording. Marks superseded when landed: #0806. Source: user reports 2026-10-16.
 
+## Shots
+```json
+[
+{
+  "label": "Task drawer Spec row — editor hint is now a link to Settings → General",
+  "target": "default",
+  "route": "/work?task=0805&tab=details",
+  "highlight": "[data-test-id=\"open-in-editor-hint\"]"
+},
+{
+  "label": "Context doc viewer — editor hint is now a link to Settings → General",
+  "target": "default",
+  "route": "/repo?doc=docs/README.md",
+  "highlight": "[data-test-id=\"context-open-in-editor-hint\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-16T08:55:26Z · created · njachowski@gmail.com
@@ -40,3 +58,4 @@ Commit per item so a reviewer can read them separately. Use the router's link co
 - 2026-10-16T10:25:54Z · status inbox→ready
 - 2026-10-16T11:55:05Z · status ready→active, branch
 - 2026-10-16T12:00:45Z · body
+- 2026-10-16T12:02:57Z · body: section Shots
