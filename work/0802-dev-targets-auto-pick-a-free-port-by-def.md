@@ -2,14 +2,14 @@
 id: "0802"
 title: "Dev targets: auto-pick a free port by default, with a per-target fixed-port option"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T19:36:15Z"
-updated_at: "2026-10-15T19:36:15Z"
+updated_at: "2026-10-16T00:43:55Z"
 ---
 ## Problem
 #0775 added the plain-language failure summary for a dev target whose port is taken, but not the automatic port choice it was asked to include. The three dev targets in repoos.toml now use the {port} placeholder, so they pick a free port, but nothing decides that for every target, and there is no setting for it.
@@ -32,3 +32,4 @@ Start from src/server/dev.ts (the {port} substitution, which already picks a fre
 ## Activity
 
 - 2026-10-15T19:36:15Z · created · njachowski@gmail.com
+- 2026-10-16T00:43:55Z · status inbox→ready
