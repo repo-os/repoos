@@ -12,6 +12,7 @@ import {
   parseModelRouting,
   resolveEffectiveRouting,
   routingActiveFor,
+  ROUTING_PROVIDER_CHOICES,
   DEFAULT_ROUTING_TIMEOUT_MS,
 } from "../../core/model-routing/config.js";
 import {
@@ -180,6 +181,25 @@ describe("routing config", () => {
 
   it("defaults the routing timeout to the documented constant", () => {
     expect(resolveEffectiveRouting(undefined).timeoutMs).toBe(DEFAULT_ROUTING_TIMEOUT_MS);
+  });
+
+  // #0809 — Clef-Flash is retained in the schema so existing configs parse, but
+  // the UI must offer exactly Jev and OpenRouter, with OpenRouter plain.
+  it("offers exactly Jev and OpenRouter as selectable providers, plainly labelled", () => {
+    expect(ROUTING_PROVIDER_CHOICES.map((p) => p.value)).toEqual(["jev", "openrouter"]);
+    expect(ROUTING_PROVIDER_CHOICES.map((p) => p.label)).toEqual([
+      "TypeSafe Jev (direct)",
+      "OpenRouter",
+    ]);
+    // The label must not enumerate decision models.
+    expect(ROUTING_PROVIDER_CHOICES.some((p) => /clef/i.test(p.label))).toBe(false);
+    expect(ROUTING_PROVIDER_CHOICES.some((p) => /model/i.test(p.label))).toBe(false);
+  });
+
+  it("still parses a legacy clef-flash provider so existing configs do not break", () => {
+    const { config, warnings } = parseModelRouting({ provider: "clef-flash" });
+    expect(warnings).toEqual([]);
+    expect(resolveEffectiveRouting(config).provider).toBe("clef-flash");
   });
 });
 
