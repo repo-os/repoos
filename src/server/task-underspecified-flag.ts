@@ -4,9 +4,20 @@ import {
   UNDERSPECIFIED_NEEDS_INPUT_REASON,
   assessTaskNeedsHumanStep,
   assessTaskUnderspecified,
+  needsHumanStepFingerprint,
 } from "../core/task-underspecified.js";
 export { NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON, UNDERSPECIFIED_NEEDS_INPUT_REASON };
 import { patchTaskFile } from "./write.js";
+
+/** Optional decision-model verdict threaded in by the start path (#0804). */
+export interface HumanStepFlagOptions {
+  /**
+   * `"agent"` when the decision model judged the task needs no human-only step.
+   * It suppresses the keyword heuristic for this task (and clears a stale
+   * keyword flag). The persisted verdict does the same on later sweeps.
+   */
+  humanStepDecision?: "agent" | "human";
+}
 
 /**
  * Raise `needs_input` for an under-specified task body without clobbering an
@@ -17,7 +28,11 @@ export function isPastFleshOutStage(task: Pick<Task, "status">): boolean {
   return task.status === "active" || task.status === "review" || task.status === "done";
 }
 
-export function flagNeedsHumanStepIfNeeded(config: RepoOSConfig, task: Task): Task | null {
+export function flagNeedsHumanStepIfNeeded(
+  config: RepoOSConfig,
+  task: Task,
+  opts?: HumanStepFlagOptions,
+): Task | null {
   if (task.needsInput) {
     if (task.needsInputReason && task.needsInputReason !== NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON) {
       return null;
@@ -25,6 +40,26 @@ export function flagNeedsHumanStepIfNeeded(config: RepoOSConfig, task: Task): Ta
     if ((task.questions?.length ?? 0) > 0 && !task.needsInputReason) {
       return null;
     }
+  }
+
+  // #0804: when the decision model judged this task needs no human-only step,
+  // it overrides the keyword heuristic — the model is the higher-quality signal
+  // the user opted into. A stored verdict only suppresses the check while the
+  // acceptance criteria it was made on are unchanged.
+  const modelSaidAgent =
+    opts?.humanStepDecision === "agent" ||
+    (task.humanStepDecision === "agent" &&
+      task.humanStepDecisionKey === needsHumanStepFingerprint(task.body));
+  if (modelSaidAgent) {
+    if (task.needsInput && task.needsInputReason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON) {
+      const hasQuestions = (task.questions?.length ?? 0) > 0;
+      return patchTaskFile(config, task.absPath, {
+        needsInput: hasQuestions,
+        needsInputReason: null,
+        needsInputDetail: null,
+      });
+    }
+    return null;
   }
 
   const { needsHumanStep, detail } = assessTaskNeedsHumanStep(task.body, { area: task.area });
@@ -119,10 +154,14 @@ export function isUnderspecifiedSweepEligible(task: Task): boolean {
  * Run human-step and underspecified assessments. Human-only acceptance criteria
  * take precedence over stub-body detection when both would flag.
  */
-export function flagTaskSpecFlagsIfNeeded(config: RepoOSConfig, task: Task): Task | null {
+export function flagTaskSpecFlagsIfNeeded(
+  config: RepoOSConfig,
+  task: Task,
+  opts?: HumanStepFlagOptions,
+): Task | null {
   let current = task;
   let changed: Task | null = null;
-  const human = flagNeedsHumanStepIfNeeded(config, current);
+  const human = flagNeedsHumanStepIfNeeded(config, current, opts);
   if (human) {
     changed = human;
     current = human;

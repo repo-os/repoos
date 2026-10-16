@@ -2489,6 +2489,14 @@
   font-weight: 800;
   line-height: 1;
 }
+/* #0804: the decision model's bounded explanation, shown under the flag hint
+   so the reason a start was blocked is readable on the card itself. */
+.tc-needs-detail {
+  margin: 5px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--txt-dim);
+}
 .tc-review-warn {
   color: var(--amber);
 }

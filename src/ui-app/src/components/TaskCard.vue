@@ -20,6 +20,7 @@ import {
   needsInputBannerText,
   needsInputStatusLabel,
   needsInputSurfaces,
+  needsInputDetailVisible,
 } from "../lib/needs-input-ui";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
@@ -451,6 +452,16 @@ function needsInputHint(task: Task): CardHint {
     cls: "tc-needs-input",
   };
 }
+
+/** The flag's detail line (#0804): the decision model's explanation on a
+ *  human-step flag, or any other per-reason detail the drawer would show. */
+const needsInputDetailLine = computed<string | null>(() => {
+  const t = props.task;
+  if (!needsInputSurfaces(t)) return null;
+  const hasQuestions = (t.questions?.length ?? 0) > 0;
+  if (!needsInputDetailVisible(t.needsInputReason, t.needsInputDetail, hasQuestions)) return null;
+  return t.needsInputDetail?.trim() || null;
+});
 
 /** The last automatic review's actual outcome for this task, when one
  *  exists — null while no report has landed yet, or its state is
@@ -1179,6 +1190,9 @@ async function openDebuggerFromError(): Promise<void> {
             slow
           </span>
         </span>
+        <p v-if="needsInputDetailLine" class="tc-needs-detail" :title="needsInputDetailLine">
+          {{ needsInputDetailLine }}
+        </p>
       </div>
     </div>
 

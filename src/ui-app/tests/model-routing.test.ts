@@ -172,6 +172,7 @@ describe("routing config", () => {
       "model_routing.credentialEnv",
       "model_routing.roles",
       "model_routing.timeoutMs",
+      "model_routing.humanStepCheck",
     ]) {
       expect(keys).toContain(key);
       expect(SUPPORTED_TOML_KEYS).toContain(key);
