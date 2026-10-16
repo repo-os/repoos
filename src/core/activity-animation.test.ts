@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   ACTIVITY_ANIMATION_STYLES,
+  ACTIVITY_ANIMATION_STYLE_LABELS,
   DEFAULT_ACTIVITY_ANIMATION_STYLE,
   activityAnimationStyleOrDefault,
   normalizeActivityAnimationStyle,
@@ -53,5 +54,13 @@ describe("activity animation config (#0787)", () => {
     expect(field?.default).toBe("orbital-pixel");
     expect(field?.options?.map((o) => o.value)).toEqual([...ACTIVITY_ANIMATION_STYLES]);
     expect(SUPPORTED_TOML_KEYS).toContain("activityAnimationStyle");
+  });
+
+  it("adds arcade-hopper and puppy-tracks without moving the orbital default (#0807)", () => {
+    expect(ACTIVITY_ANIMATION_STYLES).toContain("arcade-hopper");
+    expect(ACTIVITY_ANIMATION_STYLES).toContain("puppy-tracks");
+    expect(ACTIVITY_ANIMATION_STYLE_LABELS["arcade-hopper"]).toBe("Arcade hopper");
+    expect(ACTIVITY_ANIMATION_STYLE_LABELS["puppy-tracks"]).toBe("Puppy tracks");
+    expect(DEFAULT_ACTIVITY_ANIMATION_STYLE).toBe("orbital-pixel");
   });
 });

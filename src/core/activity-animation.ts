@@ -6,6 +6,8 @@ export const ACTIVITY_ANIMATION_STYLES = [
   "micro-dot-matrix",
   "tiny-signal-bars",
   "spark-diamond",
+  "arcade-hopper",
+  "puppy-tracks",
   "three-dots",
 ] as const;
 
@@ -20,6 +22,8 @@ export const ACTIVITY_ANIMATION_STYLE_LABELS: Record<ActivityAnimationStyle, str
   "micro-dot-matrix": "Micro dot matrix",
   "tiny-signal-bars": "Tiny signal bars",
   "spark-diamond": "Spark / diamond",
+  "arcade-hopper": "Arcade hopper",
+  "puppy-tracks": "Puppy tracks",
   "three-dots": "Three dots (legacy)",
 };
 
