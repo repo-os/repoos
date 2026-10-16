@@ -14,7 +14,7 @@ branch: feat/model-routing-take-the-jev-clef-flash-ke
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T03:22:50Z"
+updated_at: "2026-10-16T03:28:24Z"
 ---
 ## Problem
 The Model routing page is confusing and asks for things users don't need to supply:
@@ -58,3 +58,4 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 - 2026-10-16T03:22:47Z · status inbox→ready
 - 2026-10-16T03:22:49Z · status ready→active, branch
 - 2026-10-16T03:22:50Z · needs_input
+- 2026-10-16T03:28:24Z · message_queued at 2026-10-16T03:28:24.251Z
