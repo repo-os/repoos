@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/optional-decision-model-check-before-a-t
 created_at: "2026-10-16T05:07:46Z"
-updated_at: "2026-10-16T09:04:29Z"
+updated_at: "2026-10-16T09:06:43Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -34,6 +34,25 @@ The start check flags a task as needing a human step by matching single words in
 ## Notes for AI
 Start from the needs-human check on task start (src/core/ or src/server, grep needs-human-step and the keyword match) and the routing provider contract in src/core/model-routing. The decision must stay bounded: a fixed question set, a short explanation, no free-text action from the model. Depends on #0803 for the provider key path. Source: user request 2026-10-16.
 
+## Shots
+```json
+[
+{
+  "label": "Decision-model human-step flag on a ready task card",
+  "target": "default",
+  "route": "/",
+  "highlight": ".tc-needs-detail",
+  "state": "card:humanStep"
+},
+{
+  "label": "Human-step check setting on the Model routing tab",
+  "target": "default",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-testid=routing-human-step-check]"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-16T05:07:46Z · created · njachowski@gmail.com
@@ -46,3 +65,4 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 - 2026-10-16T08:53:00Z · body
 - 2026-10-16T08:54:34Z · body
 - 2026-10-16T09:04:29Z · body
+- 2026-10-16T09:06:43Z · body: section Shots
