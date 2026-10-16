@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-one-open-easter-eggs-bundle-at-a-ti
 created_at: "2026-10-16T10:04:51Z"
-updated_at: "2026-10-16T11:28:50Z"
+updated_at: "2026-10-16T11:41:52Z"
 last_check_failure: "repoos check at 2026-10-16T11:28:49.726Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -41,4 +41,4 @@ Edit AGENTS.md and docs/easter-eggs-bundles.md on this task's branch. Do not com
 - 2026-10-16T11:13:16Z · message_queued at 2026-10-16T11:13:16.941Z
 - 2026-10-16T11:28:50Z · message_queued at 2026-10-16T11:28:50.407Z
 - 2026-10-16T11:28:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-
+- 2026-10-16T11:41:52Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
