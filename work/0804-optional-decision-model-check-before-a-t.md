@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-16T09:41:20Z"
+review_passes: 2
 id: "0804"
 title: "Optional decision-model check before a task starts: should it be split into AI and human tasks?"
 type: feature
@@ -12,10 +14,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/optional-decision-model-check-before-a-t
 created_at: "2026-10-16T05:07:46Z"
-updated_at: "2026-10-16T09:41:20Z"
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -111,3 +111,4 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 - 2026-10-16T09:40:08Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (13632f1a0) during finalization (#0734)
 - 2026-10-16T09:40:09Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (13632f1a0) during finalization (#0734)
 - 2026-10-16T09:41:20Z · note: review pass 2: good to go
+
