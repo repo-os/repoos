@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-16T11:59:42Z"
-review_passes: 1
+last_close_out_gate_ms: 401895
+last_close_out_gate_at: "2026-10-16T12:24:24.580Z"
 id: "0807"
 title: Add Arcade hopper and Puppy tracks activity animations
 type: feature
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-arcade-hopper-and-puppy-tracks-activ
 created_at: "2026-10-16T09:55:07Z"
+updated_at: "2026-10-16T12:24:24Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -95,4 +97,5 @@ Extend the existing validated config enum, schema options, config persistence, a
 - 2026-10-16T11:55:07Z · message_expired: not delivered within timeout
 - 2026-10-16T11:58:49Z · status active→review
 - 2026-10-16T11:59:42Z · note: review pass 1: good to go
+- 2026-10-16T12:24:24Z · close-out gate completed in 402s
 
