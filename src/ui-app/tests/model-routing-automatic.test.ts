@@ -550,6 +550,26 @@ describe("resolveRoutedAgent", () => {
     expect(out.agent).toEqual(baseCodex);
   });
 
+  it("resolves an automatic selection for the pm and reviewer roles too", async () => {
+    for (const role of ["pm", "reviewer"] as const) {
+      const store = memStore();
+      const pmBase = baseAgent({ name: role, cli: "claude code", model: "default" });
+      const out = await resolveRoutedAgent(
+        {
+          config: makeConfig(),
+          provider: providerChoosing(candidateKey(codex)),
+          harnesses: HARNESSES,
+          store,
+          recordSession: false,
+        },
+        { role, task: makeTask(), base: pmBase, pinned: false },
+      );
+      expect(out.decision?.role).toBe(role);
+      expect(out.agent?.cli).toBe("codex");
+      expect(out.agent?.model).toBe("gpt-5");
+    }
+  });
+
   it("builds a bounded brief that includes role and task context", () => {
     const brief = buildRoutingBrief({ task: makeTask(), role: "reviewer" });
     expect(brief).toContain("Role: reviewer");
