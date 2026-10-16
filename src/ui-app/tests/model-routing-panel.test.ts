@@ -17,6 +17,7 @@ import type { RepoOSConfig } from "../../core/types.js";
 import { startServer, type ServerHandle } from "../../server/server.js";
 import { buildRoutingProvider, modelRoutingStatus } from "../../core/model-routing/runtime.js";
 import { resolveEffectiveRouting } from "../../core/model-routing/config.js";
+import * as providerKeys from "../../core/providers/provider-keys.js";
 
 const tmpRoots: string[] = [];
 
@@ -24,7 +25,9 @@ afterEach(() => {
   for (const r of tmpRoots) rmSync(r, { recursive: true, force: true });
   tmpRoots.length = 0;
   delete process.env.TYPESAFE_API_KEY;
+  delete process.env.REPOOS_OPENROUTER_API_KEY;
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 function tmpDir(): string {
@@ -189,7 +192,7 @@ describe("AgentsView model routing tab", () => {
 
 describe("modelRoutingStatus", () => {
   it("reports a Model providers message when OpenRouter routing has no key", () => {
-    delete process.env.REPOOS_OPENROUTER_API_KEY;
+    vi.spyOn(providerKeys, "readProviderKey").mockReturnValue("");
     const status = modelRoutingStatus({
       root: "/tmp",
       modelRouting: { mode: "shadow", provider: "openrouter" },
