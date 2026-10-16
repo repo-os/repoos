@@ -102,7 +102,6 @@ dev.inspector.editorCommand = "zed {file}:{line}"
 remoteValidation.engineerSelfCheckRemote = true
 activityAnimationStyle = "tiny-signal-bars"
 model_routing.mode = "shadow"
-model_routing.credentialEnv = "apikey_23ac8cf33c2237468a84539bb050322a23_949f1972fa700d05a93d3e931591ca2b33ebeb87c220c286b19716c054e39baa"
 model_routing.provider = "jev"
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
