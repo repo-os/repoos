@@ -156,9 +156,9 @@ describe("routing config", () => {
     expect(resolveEffectiveRouting(config).mode).toBe("off");
   });
 
-  it("rejects a credential that looks like a raw key rather than an env var name", () => {
-    const { config, warnings } = parseModelRouting({ credentialEnv: "sk-live-abc123!" });
-    expect(config.credentialEnv).toBeUndefined();
+  it("ignores legacy credentialEnv in repoos.toml with a warning", () => {
+    const { config, warnings } = parseModelRouting({ credentialEnv: "TYPESAFE_API_KEY" });
+    expect("credentialEnv" in config).toBe(false);
     expect(warnings.some((w) => w.includes("credentialEnv"))).toBe(true);
   });
 
@@ -169,7 +169,6 @@ describe("routing config", () => {
       "model_routing.provider",
       "model_routing.model",
       "model_routing.baseUrl",
-      "model_routing.credentialEnv",
       "model_routing.roles",
       "model_routing.timeoutMs",
       "model_routing.humanStepCheck",

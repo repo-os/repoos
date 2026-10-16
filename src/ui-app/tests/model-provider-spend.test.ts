@@ -30,6 +30,8 @@ describe("MODEL_PROVIDERS registry", () => {
   it("lists live providers followed by dashboard-only providers", () => {
     expect(MODEL_PROVIDERS.map((p) => p.id)).toEqual([
       "openrouter",
+      "jev",
+      "clef-flash",
       "opencode-go",
       "cursor",
       "opencode-zen",
@@ -43,10 +45,16 @@ describe("MODEL_PROVIDERS registry", () => {
     ]);
   });
 
-  it("marks the three supported providers live with env vars; the rest as link-outs", () => {
+  it("marks keyed providers live with env vars; the rest as link-outs", () => {
     const openrouter = modelProviderById("openrouter")!;
     expect(openrouter.kind).toBe("live");
     expect(openrouter.envVar).toBe("REPOOS_OPENROUTER_API_KEY");
+    const jev = modelProviderById("jev")!;
+    expect(jev.kind).toBe("live");
+    expect(jev.envVar).toBe("TYPESAFE_API_KEY");
+    const clef = modelProviderById("clef-flash")!;
+    expect(clef.kind).toBe("live");
+    expect(clef.envVar).toBe("REPOOS_CLEF_FLASH_API_KEY");
     const go = modelProviderById("opencode-go")!;
     expect(go.kind).toBe("live");
     expect(go.envVar).toBe("REPOOS_OPENCODE_GO_API_KEY");

@@ -11,7 +11,7 @@
  *     upstream failures as 502s with clean messages.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { IncomingMessage } from "node:http";
@@ -35,6 +35,8 @@ const ENV_KEYS = [
   "REPOOS_OPENROUTER_API_KEY",
   "REPOOS_OPENCODE_GO_API_KEY",
   "REPOOS_DEEPINFRA_API_KEY",
+  "TYPESAFE_API_KEY",
+  "REPOOS_CLEF_FLASH_API_KEY",
 ] as const;
 const tmpRoots: string[] = [];
 
@@ -136,6 +138,8 @@ describe("GET /api/model-providers", () => {
     expect(capture.statusCode).toBe(200);
     expect(capture.body.providers.map((p: { id: string }) => p.id)).toEqual([
       "openrouter",
+      "jev",
+      "clef-flash",
       "opencode-go",
       "cursor",
       "opencode-zen",
@@ -161,6 +165,26 @@ describe("GET /api/model-providers", () => {
 });
 
 describe("POST /api/model-providers/:id/key", () => {
+  it("saves a Jev key to .env only and does not modify repoos.toml", async () => {
+    const root = tmpRoot();
+    const tomlBefore = '[model_routing]\nmode = "shadow"\nprovider = "jev"\n';
+    writeFileSync(join(root, "repoos.toml"), tomlBefore);
+    const ctx = makeCtx(root);
+    const { capture, res } = makeRes();
+    await setModelProviderKey(
+      ctx as never,
+      reqWithBody({ key: "sk-test-fake-0803-jev" }) as IncomingMessage,
+      res as never,
+      { param1: "jev" },
+    );
+    expect(capture.statusCode).toBe(200);
+    expect(readFileSync(join(root, "repoos.toml"), "utf8")).toBe(tomlBefore);
+    expect(readFileSync(join(root, ".env"), "utf8")).toContain(
+      "TYPESAFE_API_KEY=sk-test-fake-0803-jev",
+    );
+    expect(process.env.TYPESAFE_API_KEY).toBe("sk-test-fake-0803-jev");
+  });
+
   it("saves the key to .env under the fixed env var and updates process.env", async () => {
     const root = tmpRoot();
     const ctx = makeCtx(root);
