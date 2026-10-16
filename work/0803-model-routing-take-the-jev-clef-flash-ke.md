@@ -14,7 +14,7 @@ branch: feat/model-routing-take-the-jev-clef-flash-ke
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T05:04:25Z"
+updated_at: "2026-10-16T05:04:27Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -63,3 +63,4 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 - 2026-10-16T03:28:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-16T05:04:24Z · needs_input
 - 2026-10-16T05:04:25Z · needs_input
+- 2026-10-16T05:04:27Z · message_expired: not delivered within timeout
