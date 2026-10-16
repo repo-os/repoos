@@ -21,6 +21,7 @@ import SelectItem from "./ui/select/item.vue";
 import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
+import Switch from "./ui/switch.vue";
 import { devTargetError, emptyDevTargetDraft, type DevTargetDraft } from "../lib/dev-targets";
 
 const props = defineProps<{
@@ -175,6 +176,44 @@ function close(): void {
             @blur="touched = true"
           />
         </div>
+        <div v-if="draft.kind === 'server'" class="field">
+          <div class="field-header">
+            <label for="dev-target-port">Port</label>
+          </div>
+          <label class="dev-target-autoport">
+            <Switch
+              :checked="draft.autoPort"
+              :disabled="busy"
+              @update:checked="(v: boolean) => (draft.autoPort = v)"
+            />
+            <span>Auto-pick a free port</span>
+          </label>
+          <div class="dev-target-port-row">
+            <input
+              id="dev-target-port"
+              v-model="draft.port"
+              type="number"
+              min="1"
+              max="65535"
+              inputmode="numeric"
+              class="mono"
+              placeholder="5173"
+              :disabled="busy"
+              :aria-label="draft.autoPort ? 'Preferred port' : 'Fixed port'"
+              @blur="touched = true"
+            />
+            <span class="dev-target-hint">{{
+              draft.autoPort ? "Preferred port (optional)" : "Fixed port"
+            }}</span>
+          </div>
+          <p class="dev-target-hint">
+            Fills <code>{port}</code> in the command, URL and health check. With auto-pick on
+            (default) RepoOS uses this port when it is free and otherwise a free one, so the target
+            never clashes; leave it blank to always let RepoOS choose. With auto-pick off the port
+            is used as-is — if it is taken, the target fails and the Dev page names the process
+            holding it.
+          </p>
+        </div>
         <div v-else-if="draft.kind === 'artifact'" class="field">
           <label for="dev-target-artifact">Output path</label>
           <input
@@ -301,5 +340,29 @@ function close(): void {
   font-size: 11px;
   line-height: 1.5;
   color: var(--txt-faint);
+}
+.dev-target-hint code {
+  font-family: "JetBrains Mono", monospace;
+  color: var(--txt-dim);
+}
+.dev-target-autoport {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--txt);
+  cursor: pointer;
+}
+.dev-target-port-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 8px;
+}
+.dev-target-port-row input {
+  max-width: 120px;
+}
+.dev-target-port-row .dev-target-hint {
+  margin: 0;
 }
 </style>
