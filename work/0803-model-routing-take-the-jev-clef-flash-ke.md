@@ -2,7 +2,7 @@
 id: "0803"
 title: "Model routing: take the Jev / Clef-Flash key the same way Model providers does"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T03:22:45Z"
+updated_at: "2026-10-16T03:22:47Z"
 ---
 ## Problem
 The Model routing page is confusing and asks for things users don't need to supply:
@@ -52,3 +52,4 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 - 2026-10-16T03:21:50Z · body
 - 2026-10-16T03:22:44Z · needs_input
 - 2026-10-16T03:22:45Z · cli_override, model_override
+- 2026-10-16T03:22:47Z · status inbox→ready
