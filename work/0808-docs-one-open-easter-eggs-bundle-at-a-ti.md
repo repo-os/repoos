@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-16T11:28:49.726Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0808"
 title: "Docs: one open easter-eggs bundle at a time, areas may mix"
 type: chore
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-one-open-easter-eggs-bundle-at-a-ti
 created_at: "2026-10-16T10:04:51Z"
-updated_at: "2026-10-16T11:13:16Z"
+updated_at: "2026-10-16T11:28:50Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-16T11:28:49.726Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
 The easter-eggs rules were unclear, so several bundles were filed separately: #0805 and #0806 were both open at once. The user wants a single open bundle at a time, so small tweaks get grouped instead of spread across tasks.
@@ -40,4 +40,4 @@ Edit AGENTS.md and docs/easter-eggs-bundles.md on this task's branch. Do not com
 - 2026-10-16T10:28:57Z · body
 - 2026-10-16T11:13:14Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-10-16T11:13:16Z · message_queued at 2026-10-16T11:13:16.941Z
-
+- 2026-10-16T11:28:50Z · message_queued at 2026-10-16T11:28:50.407Z
