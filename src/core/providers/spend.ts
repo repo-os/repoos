@@ -26,6 +26,8 @@ const FETCH_TIMEOUT_MS = 8000;
 
 export type ModelProviderId =
   | "openrouter"
+  | "jev"
+  | "clef-flash"
   | "opencode-go"
   | "cursor"
   | "opencode-zen"
@@ -51,7 +53,13 @@ export interface ModelProviderRow {
   /** One line under the label explaining what the row shows and why. */
   note: string;
   envVar: string | null;
-  configKey: "openrouterApiKey" | "opencodeGoApiKey" | "deepinfraApiKey" | null;
+  configKey:
+    | "openrouterApiKey"
+    | "typesafeApiKey"
+    | "clefFlashApiKey"
+    | "opencodeGoApiKey"
+    | "deepinfraApiKey"
+    | null;
 }
 
 export const MODEL_PROVIDERS: ModelProviderRow[] = [
@@ -63,6 +71,24 @@ export const MODEL_PROVIDERS: ModelProviderRow[] = [
     note: "Credit balance, daily/weekly/monthly spend and rate limits, live from the OpenRouter API.",
     envVar: "REPOOS_OPENROUTER_API_KEY",
     configKey: "openrouterApiKey",
+  },
+  {
+    id: "jev",
+    label: "TypeSafe Jev",
+    kind: "live",
+    dashboardUrl: "https://typesafe.ai/",
+    note: "Direct Jev API key for adaptive model routing (System One). No spend API — save the key here or on Model routing.",
+    envVar: "TYPESAFE_API_KEY",
+    configKey: "typesafeApiKey",
+  },
+  {
+    id: "clef-flash",
+    label: "Clef-Flash (server token)",
+    kind: "live",
+    dashboardUrl: "https://github.com/cloudflare/clef-flash",
+    note: "Optional bearer token for your self-hosted Clef-Flash SGLang server. The server URL is set on Model routing.",
+    envVar: "REPOOS_CLEF_FLASH_API_KEY",
+    configKey: "clefFlashApiKey",
   },
   {
     id: "opencode-go",

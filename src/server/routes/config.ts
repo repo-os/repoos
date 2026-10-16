@@ -114,8 +114,6 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
     "model_routing.provider": (_rawModelRouting as { provider?: string } | undefined)?.provider,
     "model_routing.model": (_rawModelRouting as { model?: string } | undefined)?.model,
     "model_routing.baseUrl": (_rawModelRouting as { baseUrl?: string } | undefined)?.baseUrl,
-    "model_routing.credentialEnv": (_rawModelRouting as { credentialEnv?: string } | undefined)
-      ?.credentialEnv,
     "model_routing.roles": (_rawModelRouting as { roles?: unknown } | undefined)?.roles,
     "model_routing.timeoutMs": (_rawModelRouting as { timeoutMs?: number } | undefined)?.timeoutMs,
     /**

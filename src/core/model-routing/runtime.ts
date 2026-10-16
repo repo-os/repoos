@@ -3,6 +3,7 @@
  * provider instance and run config/credential probes without echoing secrets.
  */
 import type { ModelRoutingConfig, RepoOSConfig } from "../types.js";
+import { modelProviderById } from "../providers/spend.js";
 import { resolveEffectiveRouting, type EffectiveRouting } from "./config.js";
 import {
   createClefFlashProvider,
@@ -13,11 +14,30 @@ import { buildRoutingQuestions } from "./decide.js";
 import type { RoutingCandidate } from "./candidates.js";
 import type { RoutingDecisionProvider } from "./types.js";
 import { RoutingProviderError } from "./types.js";
+import { readProviderKey } from "../providers/provider-keys.js";
 
-/** Read the named credential from the process environment (never log it). */
-export function readRoutingCredential(envName: string | null | undefined): string {
-  if (!envName) return "";
-  return (process.env[envName] ?? "").trim();
+/** Plain-language credential status for the Model routing UI. */
+export type RoutingCredentialLabel = "saved" | "not_set" | "not_needed";
+
+function routingProviderRow(provider: EffectiveRouting["provider"]) {
+  if (!provider) return null;
+  if (provider === "jev") return modelProviderById("jev");
+  if (provider === "openrouter") return modelProviderById("openrouter");
+  if (provider === "clef-flash") return modelProviderById("clef-flash");
+  return null;
+}
+
+/** Read the configured provider key (never log it). */
+export function readRoutingCredential(
+  config: RepoOSConfig | undefined,
+  effective: EffectiveRouting,
+): string {
+  const row = routingProviderRow(effective.provider);
+  if (!row) return "";
+  if (!config) {
+    return row.envVar ? (process.env[row.envVar] ?? "").trim() : "";
+  }
+  return readProviderKey(config, row).trim();
 }
 
 /**
@@ -27,9 +47,10 @@ export function readRoutingCredential(envName: string | null | undefined): strin
 export function buildRoutingProvider(
   effective: EffectiveRouting,
   fetchImpl?: typeof fetch,
+  config?: RepoOSConfig,
 ): RoutingDecisionProvider | null {
   if (effective.mode === "off" || !effective.provider) return null;
-  const apiKey = readRoutingCredential(effective.credentialEnv);
+  const apiKey = readRoutingCredential(config, effective);
   try {
     switch (effective.provider) {
       case "jev":
@@ -64,38 +85,67 @@ export function buildRoutingProvider(
 
 export interface ModelRoutingStatus {
   effective: EffectiveRouting;
-  credentialEnv: string | null;
+  /** Model-providers row id used to save keys for this provider, when applicable. */
+  keyProviderId: "jev" | "openrouter" | "clef-flash" | null;
   credentialPresent: boolean;
+  credentialLabel: RoutingCredentialLabel;
   /** True when a provider instance could be constructed right now. */
   providerReady: boolean;
   /** Human-readable blockers when mode is not off but routing cannot run. */
   issues: string[];
 }
 
+function credentialLabelFor(effective: EffectiveRouting, present: boolean): RoutingCredentialLabel {
+  if (effective.provider === "clef-flash") {
+    return present ? "saved" : "not_needed";
+  }
+  if (effective.provider === "openrouter" || effective.provider === "jev") {
+    return present ? "saved" : "not_set";
+  }
+  return "not_needed";
+}
+
 export function modelRoutingStatus(config: RepoOSConfig | undefined): ModelRoutingStatus {
   const effective = resolveEffectiveRouting(config?.modelRouting);
-  const credentialEnv = effective.credentialEnv;
-  const credentialPresent = credentialEnv ? readRoutingCredential(credentialEnv).length > 0 : false;
+  const row = routingProviderRow(effective.provider);
+  const keyProviderId =
+    row?.id === "jev" || row?.id === "openrouter" || row?.id === "clef-flash" ? row.id : null;
+  const credentialPresent =
+    effective.provider === "clef-flash"
+      ? readRoutingCredential(config, effective).length > 0
+      : effective.provider === "openrouter" || effective.provider === "jev"
+        ? readRoutingCredential(config, effective).length > 0
+        : false;
+  const credentialLabel = credentialLabelFor(effective, credentialPresent);
   const issues: string[] = [];
 
   if (effective.mode !== "off") {
     if (!effective.provider) {
-      issues.push("Choose a routing provider.");
+      issues.push("Choose a decision provider.");
     } else if (effective.provider === "clef-flash") {
-      if (!effective.baseUrl) issues.push("Clef-Flash needs a self-hosted server base URL.");
-    } else if (!credentialPresent) {
-      issues.push(
-        `Set ${credentialEnv ?? "the API key variable"} in your gitignored .env file (or export it in the shell).`,
-      );
+      if (!effective.baseUrl) {
+        issues.push(
+          "Set your self-hosted Clef-Flash server URL above (for example http://localhost:30000).",
+        );
+      }
+    } else if (effective.provider === "openrouter") {
+      if (!credentialPresent) {
+        issues.push(
+          "Save your OpenRouter API key on the Model providers tab — routing reuses that key (System One is only the request format).",
+        );
+      }
+    } else if (effective.provider === "jev" && !credentialPresent) {
+      issues.push("Save your TypeSafe Jev API key below (stored in .env only).");
     }
   }
 
-  const providerReady = buildRoutingProvider(effective) !== null;
+  const providerReady = buildRoutingProvider(effective, undefined, config) !== null;
 
   return {
     effective,
-    credentialEnv,
+    keyProviderId,
     credentialPresent,
+    credentialLabel,
     providerReady,
     issues,
   };
@@ -133,7 +183,7 @@ export async function probeModelRouting(
 
   if (!opts?.live) return out;
 
-  const provider = buildRoutingProvider(effective, opts.fetchImpl);
+  const provider = buildRoutingProvider(effective, opts.fetchImpl, config);
   if (!provider) {
     out.live = { ok: false, message: status.issues[0] ?? "Routing provider is not ready." };
     out.ok = false;
