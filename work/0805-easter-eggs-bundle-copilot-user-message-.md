@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-copilot-event-lines-a
 created_at: "2026-10-16T08:55:26Z"
-updated_at: "2026-10-16T12:17:28Z"
+updated_at: "2026-10-16T12:18:52Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -38,28 +38,28 @@ Commit per item so a reviewer can read them separately. Use the router's link co
 ```json
 [
 {
-  "label": "Task drawer Spec row — editor hint link (dark)",
-  "target": "default",
-  "route": "/work?task=0805&tab=details",
-  "highlight": "[data-test-id=\"open-in-editor-hint\"]",
-  "state": "editor:unconfigured",
-  "theme": "dark"
+"label": "Task drawer Spec row — editor hint link (dark)",
+"target": "default",
+"route": "/work?task=0805&tab=details",
+"highlight": "[data-test-id=\"open-in-editor-hint\"]",
+"state": "editor:unconfigured",
+"theme": "dark"
 },
 {
-  "label": "Task drawer Spec row — editor hint link (light)",
-  "target": "default",
-  "route": "/work?task=0805&tab=details",
-  "highlight": "[data-test-id=\"open-in-editor-hint\"]",
-  "state": "editor:unconfigured",
-  "theme": "light"
+"label": "Task drawer Spec row — editor hint link (light)",
+"target": "default",
+"route": "/work?task=0805&tab=details",
+"highlight": "[data-test-id=\"open-in-editor-hint\"]",
+"state": "editor:unconfigured",
+"theme": "light"
 },
 {
-  "label": "Context doc viewer — editor hint link (dark)",
-  "target": "default",
-  "route": "/repo?doc=docs/README.md",
-  "highlight": "[data-test-id=\"context-open-in-editor-hint\"]",
-  "state": "editor:unconfigured",
-  "theme": "dark"
+"label": "Context doc viewer — editor hint link (dark)",
+"target": "default",
+"route": "/repo?doc=docs/README.md",
+"highlight": "[data-test-id=\"context-open-in-editor-hint\"]",
+"state": "editor:unconfigured",
+"theme": "dark"
 }
 ]
 ```
@@ -82,3 +82,4 @@ Commit per item so a reviewer can read them separately. Use the router's link co
 - 2026-10-16T12:15:44Z · note: review pass 1: needs some work
 - 2026-10-16T12:15:45Z · status review→active
 - 2026-10-16T12:17:28Z · body: section Shots
+- 2026-10-16T12:18:52Z · body
