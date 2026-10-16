@@ -366,13 +366,19 @@ export async function resolveRoutedAgent(
 
     // Review handback compares continuing vs switching/escalating, using the
     // eligible set and attempt history. It never runs a provider call itself.
+    // Only same-harness alternatives are considered: a cross-harness switch
+    // cannot resume the engineer's session id, so it is not an actionable
+    // "switch" and must not be recorded as the configuration actually used.
     const handbackInput = input.handback;
+    const handbackEligible = handbackInput
+      ? filtered.eligible.filter((c) => c.cli === base.cli)
+      : filtered.eligible;
     let handback: HandbackOutcome | null = null;
     if (handbackInput) {
       handback = evaluateHandback({
         role: "engineer",
         current: candidateForAgent(base),
-        eligible: filtered.eligible,
+        eligible: handbackEligible,
         ...handbackInput,
       });
     }
@@ -384,7 +390,7 @@ export async function resolveRoutedAgent(
         handback &&
         (handback.action === "switch" || handback.action === "escalate") &&
         handback.candidate &&
-        filtered.eligible.some(
+        handbackEligible.some(
           (c) =>
             c.cli === handback!.candidate!.cli &&
             c.model === handback!.candidate!.model &&

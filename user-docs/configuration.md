@@ -629,9 +629,10 @@ Two rules matter most:
   harness, a gate or verification that could not run, a mechanical clamp of the
   reviewer's verdict) is **not** attributed to the coding model — the
   configuration is kept rather than penalized.
-- A cross-harness switch cannot resume an existing session id, so only a
-  same-harness model change is applied to a resumed handback turn. The decision
-  record still shows the recommendation and why it was kept.
+- Handback switches and escalations are drawn only from **same-harness**
+  alternatives, because a cross-harness switch cannot resume the engineer's
+  session id. A switch prefers a genuinely different model; the decision record
+  always shows the configuration actually used.
 
 ### Candidate filtering (library behavior)
 

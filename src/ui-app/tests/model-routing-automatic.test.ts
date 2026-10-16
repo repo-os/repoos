@@ -487,10 +487,15 @@ describe("resolveRoutedAgent", () => {
   it("applies a bounded handback switch for a same-harness model change", async () => {
     const store = memStore();
     const baseCodex = baseAgent({ cli: "codex", model: "gpt-5" });
-    // Provider picks nothing actionable; the handback drives a switch to claude.
+    // The allowlist offers a second codex model, so a same-harness switch is
+    // actionable and resumable. The provider's recommendation (claude) is not
+    // eligible, so the handback drives the switch.
+    const config = makeConfig({
+      budget: { allowlist: [{ cli: "codex", models: ["gpt-5", "gpt-5-mini"] }] },
+    });
     const out = await resolveRoutedAgent(
       {
-        config: makeConfig(),
+        config,
         provider: providerChoosing(candidateKey(claude)),
         harnesses: HARNESSES,
         store,
@@ -511,9 +516,38 @@ describe("resolveRoutedAgent", () => {
       },
     );
     expect(out.handback?.action).toBe("switch");
-    // claude code vs codex is a different harness, so the engineer agent is kept
-    // (a session id cannot port across harnesses) — the decision is still recorded.
+    expect(out.agent?.cli).toBe("codex");
+    expect(out.agent?.model).toBe("gpt-5-mini");
     expect(out.decision?.handback?.action).toBe("switch");
+  });
+
+  it("does not attribute an infrastructure handback failure to the model", async () => {
+    const store = memStore();
+    const baseCodex = baseAgent({ cli: "codex", model: "gpt-5" });
+    const out = await resolveRoutedAgent(
+      {
+        config: makeConfig(),
+        provider: null,
+        harnesses: HARNESSES,
+        store,
+        recordSession: false,
+      },
+      {
+        role: "engineer",
+        task: makeTask(),
+        base: baseCodex,
+        pinned: false,
+        handback: {
+          findings: { bugs: true, edgeCases: false, suggestions: false, blocking: true },
+          failureKind: "gate-setup",
+          attempts: 3,
+          switches: 1,
+          escalations: 1,
+        },
+      },
+    );
+    expect(out.handback?.action).toBe("continue");
+    expect(out.agent).toEqual(baseCodex);
   });
 
   it("builds a bounded brief that includes role and task context", () => {
