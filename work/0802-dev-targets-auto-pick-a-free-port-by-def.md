@@ -54,15 +54,15 @@ Start from src/server/dev.ts (the {port} substitution, which already picks a fre
 "route": "/settings?tab=advanced",
 "highlight": "#dev-target-port",
 "steps": [
-  {
-    "waitFor": "[aria-label=\"Edit Landing page (HMR)\"]"
-  },
-  {
-    "click": "[aria-label=\"Edit Landing page (HMR)\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "waitFor": "[aria-label=\"Edit Landing page (HMR)\"]"
+},
+{
+  "click": "[aria-label=\"Edit Landing page (HMR)\"]"
+},
+{
+  "waitMs": 300
+}
 ]
 }
 ]
