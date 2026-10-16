@@ -892,6 +892,17 @@ const handoffConflictFilesUnavailable = computed(
     !!handoffConflictTask.value &&
     !!repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.filesUnavailable,
 );
+
+// A store-seeded conflict (the shot-preview fixture, #0810) opens the modal from
+// the card. Skip when this task's drawer is open — the drawer renders its own
+// modal, and two would stack.
+watch(
+  () => repo.worktreeHandoffConflictFor(props.task.id),
+  (conflict) => {
+    if (conflict && ui.active?.id !== props.task.id) handoffConflictTask.value = props.task;
+  },
+  { immediate: true },
+);
 const dirtyScope = computed(() =>
   dirtyTask.value ? repo.dirtyScopeFor(dirtyTask.value.id) : ("main" as const),
 );
