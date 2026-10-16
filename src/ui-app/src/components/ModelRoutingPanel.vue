@@ -233,8 +233,8 @@ onMounted(() => {
       <span class="live-dot"></span>Model routing
     </div>
     <p class="agent-desc">
-      An optional decision model (TypeSafe Jev or OpenRouter) can recommend which
-      coding agent and model to use for PM, engineer, and reviewer runs. It is
+      An optional decision model (TypeSafe Jev or OpenRouter) can recommend which coding agent and
+      model to use for PM, engineer, and reviewer runs. It is
       <strong>off by default</strong>. Shadow mode records what it would have chosen without
       changing the agent actually used. Automatic mode applies recommendations only within your
       budget allowlist — enable it after shadow looks good.
@@ -337,9 +337,7 @@ onMounted(() => {
 
     <p v-if="usesOpenRouterKey && mode !== 'off'" class="mr-openrouter-note" role="note">
       OpenRouter routing uses the same API key as the
-      <router-link
-        to="/agents?tab=model-providers"
-        data-testid="routing-openrouter-link"
+      <router-link to="/agents?tab=model-providers" data-testid="routing-openrouter-link"
         >Model providers</router-link
       >
       tab — <strong>save the key there, not here</strong>. System One is only the request format, so
