@@ -381,6 +381,12 @@ cannot tell from the code alone:
   images you attached (the command prints their URLs). Dropping the human's
   screenshots makes the engineer and reviewer guess at the visual problem, so
   an image attached to the request is an image that lands on the task (#0763).
+- **Features that take an API key** must follow `docs/api-keys.md`: register the
+  provider in `MODEL_PROVIDERS` with a fixed `envVar`, save only through
+  `setDotEnvSecret` / `POST /api/model-providers/:id/key`, never write keys or
+  env-var names into `repoos.toml`, show masked save-on-Save UI with Saved /
+  Not set status only, use fake values in tests, and never paste live keys into
+  tasks, chat, or config fields (incident: #0803).
 - Zero runtime dependencies is a hard design constraint. Do not add a runtime
   dependency without an explicit task authorizing it. Dev dependencies (test
   runners, types) are fine.

@@ -30,8 +30,8 @@ const ROUTING_MODES = [
 
 const PROVIDERS = [
   { value: "jev", label: "TypeSafe Jev (direct)" },
-  { value: "openrouter", label: "OpenRouter (System One)" },
-  { value: "clef-flash", label: "Clef-Flash (self-hosted)" },
+  { value: "openrouter", label: "OpenRouter (Jev and Clef models)" },
+  { value: "clef-flash", label: "Clef-Flash (your own server)" },
 ] as const;
 
 const ROLE_OPTIONS = [
@@ -55,13 +55,10 @@ function cfgRoles(): string[] {
 const mode = computed(() => cfgStr("model_routing.mode", "off"));
 const provider = computed(() => cfgStr("model_routing.provider", "jev"));
 const showClefUrl = computed(() => provider.value === "clef-flash");
-const credentialEnv = computed(() => {
-  const custom = cfgStr("model_routing.credentialEnv");
-  if (custom) return custom;
-  if (provider.value === "openrouter") return "REPOOS_OPENROUTER_API_KEY";
-  if (provider.value === "clef-flash") return "REPOOS_CLEF_FLASH_API_KEY";
-  return "TYPESAFE_API_KEY";
-});
+const usesOpenRouterKey = computed(() => provider.value === "openrouter");
+const showsKeyForm = computed(
+  () => provider.value === "jev" || provider.value === "clef-flash",
+);
 
 const status = ref<ModelRoutingStatusResponse | null>(null);
 const statusLoading = ref(false);
@@ -138,10 +135,6 @@ async function setBaseUrl(v: string): Promise<void> {
   await patch({ "model_routing.baseUrl": v.trim() });
 }
 
-async function setCredentialEnv(v: string): Promise<void> {
-  await patch({ "model_routing.credentialEnv": v.trim() });
-}
-
 async function setTimeoutMs(v: number): Promise<void> {
   await patch({ "model_routing.timeoutMs": v });
 }
@@ -180,12 +173,40 @@ async function runProbe(live: boolean): Promise<void> {
   }
 }
 
+const keySaveLabel = computed(() => {
+  if (provider.value === "clef-flash") return "Save token";
+  return "Save key";
+});
+
+const keyPlaceholder = computed(() => {
+  if (provider.value === "clef-flash") {
+    return "Optional bearer token — stored in .env only";
+  }
+  return "Paste API key — stored in .env only";
+});
+
+function credentialStatusText(): string {
+  if (statusLoading.value) return "Checking…";
+  const label = status.value?.credentialLabel;
+  if (label === "saved") return "Saved";
+  if (label === "not_needed") return "Not needed";
+  if (label === "not_set") return "Not set";
+  return usesOpenRouterKey.value ? "Not set" : "—";
+}
+
+function providerReadyText(): string {
+  if (mode.value === "off") return "—";
+  if (status.value?.providerReady) return "Ready";
+  return "Not ready";
+}
+
 async function saveKey(): Promise<void> {
-  if (keySaving.value) return;
+  const id = status.value?.keyProviderId;
+  if (!id || keySaving.value) return;
   keySaving.value = true;
   keyError.value = "";
   try {
-    await api("/api/model-routing/key", JSON_OPTS("POST", { key: keyDraft.value }));
+    await api(`/api/model-providers/${id}/key`, JSON_OPTS("POST", { key: keyDraft.value }));
     keyDraft.value = "";
     keyFormOpen.value = false;
     await refreshStatus();
@@ -284,16 +305,7 @@ onMounted(() => {
           data-testid="routing-base-url"
           @update:model-value="(v) => void setBaseUrl(String(v))"
         />
-      </label>
-
-      <label class="field">
-        <span class="field-label">API key variable</span>
-        <Input
-          :model-value="cfgStr('model_routing.credentialEnv', credentialEnv)"
-          class="mr-input"
-          data-testid="routing-credential-env"
-          @update:model-value="(v) => void setCredentialEnv(String(v))"
-        />
+        <span class="mr-field-hint">Self-hosted SGLang — not a Cloudflare API key.</span>
       </label>
 
       <label class="field">
@@ -325,20 +337,34 @@ onMounted(() => {
       </div>
     </div>
 
+    <p v-if="usesOpenRouterKey && mode !== 'off'" class="mr-openrouter-note" role="note">
+      OpenRouter routing uses the same API key as the
+      <router-link to="/agents?tab=model-providers">Model providers</router-link> tab. System One
+      is only the request format — you do not need a second key here.
+    </p>
+
     <dl class="kv-rows mr-status" style="--kv-label-w: 10rem">
       <div>
-        <dt>Credential</dt>
+        <dt>{{ usesOpenRouterKey ? "OpenRouter key" : provider === "clef-flash" ? "Server token" : "Jev key" }}</dt>
         <dd data-testid="routing-credential-status">
-          <span class="mr-pill" :class="status?.credentialPresent ? 'mr-pill-ok' : 'mr-pill-warn'">
-            {{ statusLoading ? "Checking…" : status?.credentialPresent ? "Set" : "Not set" }}
+          <span
+            class="mr-pill"
+            :class="
+              status?.credentialLabel === 'saved'
+                ? 'mr-pill-ok'
+                : status?.credentialLabel === 'not_needed'
+                  ? 'mr-pill-muted'
+                  : 'mr-pill-warn'
+            "
+          >
+            {{ credentialStatusText() }}
           </span>
-          <code class="mr-env-name">{{ credentialEnv }}</code>
         </dd>
       </div>
       <div>
         <dt>Provider ready</dt>
         <dd data-testid="routing-provider-ready">
-          {{ status?.providerReady ? "Yes" : mode === "off" ? "—" : "Not yet" }}
+          {{ providerReadyText() }}
         </dd>
       </div>
     </dl>
@@ -349,7 +375,7 @@ onMounted(() => {
       </ul>
     </div>
 
-    <div class="mr-key-row">
+    <div v-if="showsKeyForm" class="mr-key-row">
       <button
         v-if="!keyFormOpen"
         type="button"
@@ -357,18 +383,26 @@ onMounted(() => {
         data-testid="routing-key-toggle"
         @click="keyFormOpen = true"
       >
-        {{ status?.credentialPresent ? "Replace API key" : "Paste API key" }}
+        {{
+          status?.credentialPresent
+            ? provider === "clef-flash"
+              ? "Replace token"
+              : "Replace API key"
+            : provider === "clef-flash"
+              ? "Add optional token"
+              : "Paste API key"
+        }}
       </button>
       <div v-else class="mr-key-form">
         <input
           v-model="keyDraft"
           type="password"
           autocomplete="off"
-          :aria-label="`API key for ${credentialEnv}`"
-          placeholder="Paste key — stored in .env only"
+          :aria-label="provider === 'clef-flash' ? 'Clef-Flash bearer token' : 'TypeSafe Jev API key'"
+          :placeholder="keyPlaceholder"
         />
         <Button variant="outline" size="sm" :disabled="keySaving" @click="saveKey">
-          {{ keySaving ? "Saving…" : "Save key" }}
+          {{ keySaving ? "Saving…" : keySaveLabel }}
         </Button>
         <Button variant="ghost" size="sm" @click="keyFormOpen = false">Cancel</Button>
         <div v-if="keyError" class="ff-error">{{ keyError }}</div>
@@ -489,10 +523,19 @@ onMounted(() => {
   border-radius: 8px;
   background: var(--panel-solid);
 }
-.mr-env-name {
-  margin-left: 8px;
+.mr-field-hint {
+  display: block;
+  margin-top: 4px;
   font-size: 12px;
   color: var(--txt-dim);
+}
+.mr-openrouter-note {
+  font-size: 13px;
+  color: var(--txt-dim);
+  margin: 8px 0 0;
+}
+.mr-openrouter-note a {
+  color: var(--accent);
 }
 .mr-pill {
   display: inline-block;
@@ -510,6 +553,10 @@ onMounted(() => {
 .mr-pill-warn {
   background: color-mix(in srgb, var(--amber) 20%, transparent);
   color: var(--amber);
+}
+.mr-pill-muted {
+  background: color-mix(in srgb, var(--txt-dim) 14%, transparent);
+  color: var(--txt-dim);
 }
 .mr-issues ul {
   margin: 0;
