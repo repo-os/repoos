@@ -118,6 +118,36 @@ describe("Settings control contract for [[dev.targets]] (#0749)", () => {
     }
   });
 
+  // #0802 — the per-target port setting round-trips, and the default
+  // (auto-pick on) stays implicit so an untouched row gains no line.
+  it("writes auto-pick off and a fixed port, and reads them back", async () => {
+    const root = repo('workDir = "work"\n');
+    try {
+      const res = await patch(root, { devTargets: [{ ...WEB, autoPort: false, port: 5173 }] });
+      expect(res.status).toBe(200);
+      const text = readFileSync(join(root, "repoos.toml"), "utf8");
+      expect(text).toContain("autoPort = false");
+      expect(text).toContain("port = 5173");
+      const cfg = loadConfig(root);
+      expect(cfg.dev?.targets?.[0]).toMatchObject({ autoPort: false, port: 5173 });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps auto-pick on implicit and still writes the preferred port", async () => {
+    const root = repo('workDir = "work"\n');
+    try {
+      const res = await patch(root, { devTargets: [{ ...WEB, autoPort: true, port: 5173 }] });
+      expect(res.status).toBe(200);
+      const text = readFileSync(join(root, "repoos.toml"), "utf8");
+      expect(text).not.toContain("autoPort");
+      expect(text).toContain("port = 5173");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("exposes targets (and validation errors) to the browser config", () => {
     const safe = safeConfigForBrowser({
       dev: { targets: [{ name: "web", kind: "server", command: "x", url: "http://x" }] },
@@ -297,6 +327,8 @@ describe("Settings control client-side validation (#0749)", () => {
       label: "Web app",
       healthCheckUrl: "http://localhost:5173/health",
       healthCheckFile: "",
+      autoPort: true,
+      port: "",
     });
     expect(targetFromDraft(draft)).toMatchObject({
       name: "web",
@@ -320,6 +352,23 @@ describe("Settings control client-side validation (#0749)", () => {
       url: "http://localhost:9999",
     };
     expect(devTargetError(draft)).toContain('an "artifact" target cannot have a url');
+  });
+
+  // #0802 — the auto-pick-off-without-a-port rule is the parser's, surfaced
+  // inline in the dialog exactly as the server would report it.
+  it("surfaces the auto-pick-off-without-a-port error", () => {
+    const draft = {
+      ...emptyDevTargetDraft(),
+      name: "web",
+      kind: "server" as const,
+      command: "bun run dev --port {port}",
+      url: "http://localhost:{port}",
+      autoPort: false,
+    };
+    expect(devTargetError(draft)).toContain("auto-pick is off but no port is set");
+    // Turning auto-pick back on (or setting a port) clears it.
+    expect(devTargetError({ ...draft, autoPort: true })).toBeNull();
+    expect(devTargetError({ ...draft, port: "5173" })).toBeNull();
   });
 
   it("accepts a process draft and rejects a health check on one", () => {

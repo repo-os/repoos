@@ -817,6 +817,22 @@ export interface DevTargetConfig {
   command: string;
   /** `server` target's URL, e.g. `http://localhost:5173`. `process` never has one. */
   url?: string;
+  /**
+   * The port used for the `{port}` placeholder in `command`/`url`/`healthCheck`
+   * (#0802). With auto-pick on (the default) this is the PREFERRED port — used
+   * when it is free, with a free OS-assigned port as the fallback — so a stable
+   * URL when possible, a clash avoided otherwise. With auto-pick off it is the
+   * FIXED port: a port already in use fails the target with the plain-language
+   * summary instead of being replaced. Omitted means "no preference": a free
+   * port is always chosen.
+   */
+  port?: number;
+  /**
+   * Whether RepoOS chooses the port for `{port}` (#0802). Default `true`. Set
+   * `false` to pin the target to {@link port} and let a conflict fail — the Dev
+   * page then names the process holding the port rather than moving the target.
+   */
+  autoPort?: boolean;
   /** `artifact` target's repo-relative output path. Optional. */
   artifactPath?: string;
   /** Human label shown in the UI; defaults to `name`. Optional. */

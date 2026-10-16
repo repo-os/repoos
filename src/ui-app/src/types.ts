@@ -1663,6 +1663,8 @@ export interface DevTargetView {
   log: string[];
   /** `server` targets only — the URL the open link points at. */
   url?: string;
+  /** The port the target uses — its resolved `{port}`, or a fixed port (#0802). */
+  port?: number;
   /** `artifact` targets only — the repo-relative output path. */
   artifactPath?: string;
   /** Plain-language failure summary, present only for a failed target (#0775). */

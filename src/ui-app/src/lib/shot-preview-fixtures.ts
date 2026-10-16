@@ -138,6 +138,7 @@ export function shotFixtureDevTargets(
         status: "running",
         pid: 51234,
         url: "http://127.0.0.1:5173",
+        port: 5173,
         startedAt: new Date(Date.now() - 12 * 60_000).toISOString(),
         log: ["VITE v5.4.10  ready in 210 ms", "", "  ➜  Local:   http://127.0.0.1:5173/"],
       },
@@ -148,6 +149,7 @@ export function shotFixtureDevTargets(
         label: "Docs site (HMR)",
         status: "stopped",
         url: "http://127.0.0.1:5174",
+        port: 5174,
         log: ["[repoos] stopped"],
       },
     ];
