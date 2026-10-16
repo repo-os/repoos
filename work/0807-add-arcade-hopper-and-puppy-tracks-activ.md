@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-arcade-hopper-and-puppy-tracks-activ
 created_at: "2026-10-16T09:55:07Z"
-updated_at: "2026-10-16T11:49:46Z"
+updated_at: "2026-10-16T11:51:23Z"
 ---
 ## Problem
 
@@ -69,12 +69,12 @@ Extend the existing validated config enum, schema options, config persistence, a
 "route": "/settings?focus=activityAnimationStyle",
 "highlight": "#setting-activityAnimationStyle",
 "steps": [
-  {
-    "click": "#setting-activityAnimationStyle button[role=\"combobox\"]"
-  },
-  {
-    "waitMs": 500
-  }
+{
+  "click": "#setting-activityAnimationStyle button[role=\"combobox\"]"
+},
+{
+  "waitMs": 500
+}
 ]
 }
 ]
@@ -90,3 +90,4 @@ Extend the existing validated config enum, schema options, config persistence, a
 - 2026-10-16T11:44:32Z · body
 - 2026-10-16T11:46:42Z · body: section Shots
 - 2026-10-16T11:49:46Z · body
+- 2026-10-16T11:51:23Z · body
