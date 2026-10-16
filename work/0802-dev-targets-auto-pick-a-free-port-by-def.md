@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-pick-a-free-port-by-def
 created_at: "2026-10-15T19:36:15Z"
-updated_at: "2026-10-16T02:13:23Z"
+updated_at: "2026-10-16T02:14:16Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -35,35 +35,35 @@ Start from src/server/dev.ts (the {port} substitution, which already picks a fre
 ```json
 [
 {
-  "label": "Dev page: chosen port and real URL (light)",
-  "target": "default",
-  "route": "/dev?shotState=dev:running",
-  "highlight": ".dev-port",
-  "theme": "light"
+"label": "Dev page: chosen port and real URL (light)",
+"target": "default",
+"route": "/dev?shotState=dev:running",
+"highlight": ".dev-port",
+"theme": "light"
 },
 {
-  "label": "Dev page: chosen port and real URL (dark)",
-  "target": "default",
-  "route": "/dev?shotState=dev:running",
-  "highlight": ".dev-port",
-  "theme": "dark"
+"label": "Dev page: chosen port and real URL (dark)",
+"target": "default",
+"route": "/dev?shotState=dev:running",
+"highlight": ".dev-port",
+"theme": "dark"
 },
 {
-  "label": "Settings to Advanced: dev target auto-pick and fixed-port control",
-  "target": "default",
-  "route": "/settings?tab=advanced",
-  "highlight": "#dev-target-port",
-  "steps": [
-    {
-      "waitFor": "[aria-label=\"Edit Landing page (HMR)\"]"
-    },
-    {
-      "click": "[aria-label=\"Edit Landing page (HMR)\"]"
-    },
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "Settings to Advanced: dev target auto-pick and fixed-port control",
+"target": "default",
+"route": "/settings?tab=advanced",
+"highlight": "#dev-target-port",
+"steps": [
+  {
+    "waitFor": "[aria-label=\"Edit Landing page (HMR)\"]"
+  },
+  {
+    "click": "[aria-label=\"Edit Landing page (HMR)\"]"
+  },
+  {
+    "waitMs": 300
+  }
+]
 }
 ]
 ```
@@ -86,3 +86,4 @@ Start from src/server/dev.ts (the {port} substitution, which already picks a fre
 - 2026-10-16T02:08:51Z · message_delivered: 1 message(s)
 - 2026-10-16T02:08:51Z · status review→active
 - 2026-10-16T02:13:23Z · body: section Shots
+- 2026-10-16T02:14:16Z · body
