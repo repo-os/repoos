@@ -5012,14 +5012,15 @@ watch(
             >
               Open in editor ↗
             </button>
-            <span
+            <router-link
               v-else
               class="editor-config-hint"
               data-test-id="open-in-editor-hint"
+              :to="{ path: '/settings', query: { tab: 'general', section: 'general' } }"
               :aria-label="'Configure an editor in Settings → General to enable Open in editor'"
             >
               Set editor in Settings → General
-            </span>
+            </router-link>
           </div>
           <div v-if="specExpanded">
             <div

@@ -21,6 +21,7 @@ import ReleaseUpdateNotification from "./components/ReleaseUpdateNotification.vu
 import DependencyOverrideDialog from "./components/DependencyOverrideDialog.vue";
 import { configureUiRecovery, checkUiBuild, showOffline } from "./lib/uiRecovery";
 import {
+  applyShotPreviewConfigFixture,
   applyShotPreviewFixture,
   readShotPreviewFixtureFromLocation,
 } from "./lib/shot-preview-fixtures";
@@ -78,6 +79,11 @@ onMounted(async () => {
   await docs.loadDocs();
   await docs.loadSkills();
   await config.load();
+  // Config-touching fixtures run AFTER the load, so the real /api/config
+  // response cannot overwrite the seeded state (#0805).
+  if (shotFixture && repo.health?.isPreviewBuild) {
+    applyShotPreviewConfigFixture(config, shotFixture);
+  }
   // The per-task pickers in the drawer need the live model list too, not just
   // the Agents page — without this they fall back to the static list and can
   // offer models the selected CLI doesn't support (0064). Fire-and-forget:
