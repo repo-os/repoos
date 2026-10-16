@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0804"
 title: "Optional decision-model check before a task starts: should it be split into AI and human tasks?"
 type: feature
@@ -110,3 +111,4 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 - 2026-10-16T09:41:20Z · note: review pass 2: good to go
 - 2026-10-16T09:57:23Z · status review→active, needs_input
 - 2026-10-16T09:57:23Z · note: close-out repair: merge-conflict
+
