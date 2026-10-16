@@ -3,6 +3,9 @@ id: "0803"
 title: "Model routing: take the Jev / Clef-Flash key the same way Model providers does"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p1
 area: [web, server]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/model-routing-take-the-jev-clef-flash-ke
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T03:22:49Z"
+updated_at: "2026-10-16T03:22:50Z"
 ---
 ## Problem
 The Model routing page is confusing and asks for things users don't need to supply:
@@ -54,3 +57,4 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 - 2026-10-16T03:22:45Z · cli_override, model_override
 - 2026-10-16T03:22:47Z · status inbox→ready
 - 2026-10-16T03:22:49Z · status ready→active, branch
+- 2026-10-16T03:22:50Z · needs_input
