@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-16T11:59:42Z"
-review_passes: 1
 id: "0807"
 title: Add Arcade hopper and Puppy tracks activity animations
 type: feature
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-arcade-hopper-and-puppy-tracks-activ
 created_at: "2026-10-16T09:55:07Z"
+updated_at: "2026-10-16T15:36:50Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -95,4 +95,4 @@ Extend the existing validated config enum, schema options, config persistence, a
 - 2026-10-16T11:55:07Z · message_expired: not delivered within timeout
 - 2026-10-16T11:58:49Z · status active→review
 - 2026-10-16T11:59:42Z · note: review pass 1: good to go
-
+- 2026-10-16T15:36:50Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
