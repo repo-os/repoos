@@ -2,14 +2,14 @@
 id: "0805"
 title: "Easter eggs bundle: Copilot event lines, and Set editor hints as links"
 type: bug
-status: active
+status: ready
 priority: p3
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-copilot-event-lines-a
 created_at: "2026-10-16T08:55:26Z"
-updated_at: "2026-10-16T12:20:38Z"
+updated_at: "2026-10-16T15:36:50Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -84,3 +84,4 @@ Commit per item so a reviewer can read them separately. Use the router's link co
 - 2026-10-16T12:17:28Z · body: section Shots
 - 2026-10-16T12:18:52Z · body
 - 2026-10-16T12:20:38Z · body
+- 2026-10-16T15:36:50Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
