@@ -22,6 +22,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0804 — a ready task flagged by the decision-model human-step check, so a
   // capture can show the flag's explanation on the card.
   "card:humanStep",
+  // #0810 — a task with a pending worktree-handoff conflict, so a capture can
+  // show the "Worktree changed after handoff" modal listing the changed files.
+  "drawer:handoffConflict",
   // #0776/#0795 — a multi-area, human-assigned card with seeded diff stats, so
   // a capture can show the combined area chip, the human chip and the
   // file-count chip.
