@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/worktree-changed-after-handoff-list-the-
 created_at: "2026-10-16T12:17:43Z"
-updated_at: "2026-10-16T12:38:02Z"
+updated_at: "2026-10-16T12:56:12Z"
 ---
 ## Problem
 When a task's worktree changes after handoff, the 'Worktree changed after handoff' modal says what the HEAD moved from and to, but not which files changed. The user has to guess what they're discarding, or open a terminal to check. Example: #0807 was blocked by a repoos.toml commit and two task-file updates, and the modal did not say so.
@@ -38,26 +38,26 @@ Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Wor
 "route": "/work?task=9999&tab=details",
 "highlight": ".dirty-card--conflict .dirty-list",
 "steps": [
-  {
-    "waitFor": "#handoff-conflict-title"
-  }
+{
+  "waitFor": "#handoff-conflict-title"
+}
 ],
 "assert": [
-  {
-    "selector": "#handoff-conflict-title",
-    "label": "the modal is open",
-    "text": "Worktree changed after handoff"
-  },
-  {
-    "selector": ".dirty-list .dirty-file",
-    "label": "changed files are listed",
-    "minCount": 3
-  },
-  {
-    "selector": ".dirty-actions button",
-    "label": "the three actions are present",
-    "count": 3
-  }
+{
+  "selector": "#handoff-conflict-title",
+  "label": "the modal is open",
+  "text": "Worktree changed after handoff"
+},
+{
+  "selector": ".dirty-list .dirty-file",
+  "label": "changed files are listed",
+  "minCount": 3
+},
+{
+  "selector": ".dirty-actions button",
+  "label": "the three actions are present",
+  "count": 3
+}
 ],
 "state": "drawer:handoffConflict",
 "theme": "light"
@@ -68,26 +68,26 @@ Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Wor
 "route": "/work?task=9999&tab=details",
 "highlight": ".dirty-card--conflict .dirty-list",
 "steps": [
-  {
-    "waitFor": "#handoff-conflict-title"
-  }
+{
+  "waitFor": "#handoff-conflict-title"
+}
 ],
 "assert": [
-  {
-    "selector": "#handoff-conflict-title",
-    "label": "the modal is open in dark theme",
-    "text": "Worktree changed after handoff"
-  },
-  {
-    "selector": ".dirty-list .dirty-file",
-    "label": "changed files are listed in dark theme",
-    "minCount": 3
-  },
-  {
-    "selector": ".dirty-actions button",
-    "label": "the three actions are present in dark theme",
-    "count": 3
-  }
+{
+  "selector": "#handoff-conflict-title",
+  "label": "the modal is open in dark theme",
+  "text": "Worktree changed after handoff"
+},
+{
+  "selector": ".dirty-list .dirty-file",
+  "label": "changed files are listed in dark theme",
+  "minCount": 3
+},
+{
+  "selector": ".dirty-actions button",
+  "label": "the three actions are present in dark theme",
+  "count": 3
+}
 ],
 "state": "drawer:handoffConflict",
 "theme": "dark"
@@ -103,3 +103,4 @@ Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Wor
 - 2026-10-16T12:31:15Z · body
 - 2026-10-16T12:36:44Z · body: section Shots
 - 2026-10-16T12:38:02Z · body
+- 2026-10-16T12:56:12Z · message_queued at 2026-10-16T12:56:12.680Z
