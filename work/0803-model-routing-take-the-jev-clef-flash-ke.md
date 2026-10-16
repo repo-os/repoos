@@ -3,6 +3,9 @@ id: "0803"
 title: "Model routing: take the Jev / Clef-Flash key the same way Model providers does"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
 priority: p1
 area: [web, server]
 assigned_to: ai
@@ -11,8 +14,8 @@ branch: feat/model-routing-take-the-jev-clef-flash-ke
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T05:25:41Z"
-dev_error_count: 1
+updated_at: "2026-10-16T05:41:16Z"
+dev_error_count: 2
 ---
 ## Problem
 The Model routing page is confusing and asks for things users don't need to supply:
@@ -96,3 +99,4 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 - 2026-10-16T05:17:18Z · handoff failed · remote validation failed: test failure: tests/model-providers-routes.test.ts > GET /api/model-providers > lists all provider rows with hasKey booleans and never any key material on bee — fix it in the feature branch and re-run the gate
 - 2026-10-16T05:25:40Z · message_delivered: 1 message(s)
 - 2026-10-16T05:25:41Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/model-providers-routes.test.ts > GET /api/model-providers > lists all provider rows with hasKey booleans and never any key material on bee — fix it in the feature branch and re-run the gate
+- 2026-10-16T05:25:44Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
