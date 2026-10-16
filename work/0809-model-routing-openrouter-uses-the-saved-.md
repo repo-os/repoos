@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-jev-and-openrouter-only-hi
 created_at: "2026-10-16T11:59:41Z"
-updated_at: "2026-10-16T12:22:25Z"
+updated_at: "2026-10-16T12:24:26Z"
 ---
 ## Problem
 After #0803 landed, three things are wrong on the Model routing page, and one scope change is needed:
@@ -43,3 +43,4 @@ Start from src/core/model-routing/runtime.ts (readRoutingCredential, credentialL
 - 2026-10-16T12:11:54Z · status ready→active, branch
 - 2026-10-16T12:21:15Z · body
 - 2026-10-16T12:22:25Z · body
+- 2026-10-16T12:24:26Z · body
