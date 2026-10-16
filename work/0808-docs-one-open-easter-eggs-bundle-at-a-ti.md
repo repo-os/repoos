@@ -2,14 +2,14 @@
 id: "0808"
 title: "Docs: one open easter-eggs bundle at a time, areas may mix"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: docs
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-16T10:04:51Z"
-updated_at: "2026-10-16T10:04:51Z"
+updated_at: "2026-10-16T10:25:34Z"
 ---
 ## Problem
 The easter-eggs rules were unclear, so several bundles were filed separately: #0805 and #0806 were both open at once. The user wants a single open bundle at a time, so small tweaks get grouped instead of spread across tasks.
@@ -33,3 +33,4 @@ Edit AGENTS.md and docs/easter-eggs-bundles.md on this task's branch. Do not com
 ## Activity
 
 - 2026-10-16T10:04:51Z · created · njachowski@gmail.com
+- 2026-10-16T10:25:34Z · status inbox→ready
