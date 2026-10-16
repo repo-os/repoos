@@ -9,9 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-one-open-easter-eggs-bundle-at-a-ti
 created_at: "2026-10-16T10:04:51Z"
-updated_at: "2026-10-16T11:48:24Z"
-review_passes: 1
-last_check_failure: "repoos check at 2026-10-16T11:28:49.726Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
+updated_at: "2026-10-16T11:41:52Z"
 ---
 ## Problem
 The easter-eggs rules were unclear, so several bundles were filed separately: #0805 and #0806 were both open at once. The user wants a single open bundle at a time, so small tweaks get grouped instead of spread across tasks.
@@ -37,14 +35,4 @@ Edit AGENTS.md and docs/easter-eggs-bundles.md on this task's branch. Do not com
 - 2026-10-16T10:04:51Z · created · njachowski@gmail.com
 - 2026-10-16T10:25:34Z · status inbox→ready
 - 2026-10-16T10:25:45Z · status ready→active, branch
-- 2026-10-16T10:28:57Z · body
-- 2026-10-16T11:13:14Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
-- 2026-10-16T11:13:16Z · message_queued at 2026-10-16T11:13:16.941Z
-- 2026-10-16T11:28:50Z · message_queued at 2026-10-16T11:28:50.407Z
-- 2026-10-16T11:28:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-16T11:41:53Z · status active→review
-- 2026-10-16T11:41:53Z · note: handoff requested (cli)
-- 2026-10-16T11:41:53Z · status active→review
-- 2026-10-16T11:41:54Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-16T11:42:30Z · note: review pass 1: good to go
-- 2026-10-16T11:45:05Z · body
+- 2026-10-16T11:41:52Z · status active→review
