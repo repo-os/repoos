@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/automatic-model-routing-and-review-handb
 created_at: "2026-10-15T07:47:32Z"
-updated_at: "2026-10-16T01:59:53Z"
+updated_at: "2026-10-16T02:02:51Z"
 ---
 ## Problem
 After #0792 lands (adapter, config, UI and shadow mode), the router still does not influence any run. This task adds opt-in automatic routing for PM, engineer and reviewer runs, plus re-evaluation when review sends work back. It must stay inside the existing lifecycle: review, checks, approval, close-out and the recovery work in #0767 are not bypassed or duplicated.
@@ -80,3 +80,4 @@ On the Model routing section, show for each recent run whether automatic routing
 - 2026-10-16T01:56:10Z · body
 - 2026-10-16T01:57:47Z · body
 - 2026-10-16T01:59:53Z · body
+- 2026-10-16T02:02:51Z · body
