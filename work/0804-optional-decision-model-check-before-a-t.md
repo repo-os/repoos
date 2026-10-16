@@ -2,7 +2,7 @@
 id: "0804"
 title: "Optional decision-model check before a task starts: should it be split into AI and human tasks?"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/optional-decision-model-check-before-a-t
 created_at: "2026-10-16T05:07:46Z"
-updated_at: "2026-10-16T09:16:54Z"
+updated_at: "2026-10-16T09:23:33Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -38,26 +38,26 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 ```json
 [
 {
-  "label": "Decision-model human-step flag on a ready task card (light)",
-  "target": "default",
-  "route": "/",
-  "highlight": ".tc-needs-detail",
-  "state": "card:humanStep",
-  "theme": "light"
+"label": "Decision-model human-step flag on a ready task card (light)",
+"target": "default",
+"route": "/",
+"highlight": ".tc-needs-detail",
+"state": "card:humanStep",
+"theme": "light"
 },
 {
-  "label": "Decision-model human-step flag on a ready task card (dark)",
-  "target": "default",
-  "route": "/",
-  "highlight": ".tc-needs-detail",
-  "state": "card:humanStep",
-  "theme": "dark"
+"label": "Decision-model human-step flag on a ready task card (dark)",
+"target": "default",
+"route": "/",
+"highlight": ".tc-needs-detail",
+"state": "card:humanStep",
+"theme": "dark"
 },
 {
-  "label": "Human-step check setting on the Model routing tab",
-  "target": "default",
-  "route": "/agents?tab=model-routing",
-  "highlight": "[data-testid=routing-human-step-check]"
+"label": "Human-step check setting on the Model routing tab",
+"target": "default",
+"route": "/agents?tab=model-routing",
+"highlight": "[data-testid=routing-human-step-check]"
 }
 ]
 ```
@@ -77,3 +77,4 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 - 2026-10-16T09:06:43Z · body: section Shots
 - 2026-10-16T09:14:45Z · body
 - 2026-10-16T09:16:54Z · body: section Shots
+- 2026-10-16T09:23:33Z · status active→review
