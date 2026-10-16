@@ -35,3 +35,4 @@ Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Wor
 - 2026-10-16T12:23:51Z · status inbox→ready
 - 2026-10-16T12:23:53Z · status ready→active, branch
 - 2026-10-16T15:45:06Z · status active→review
+- 2026-10-16T15:45:06Z · note: handoff requested (cli)
