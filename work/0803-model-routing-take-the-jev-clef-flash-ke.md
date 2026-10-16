@@ -12,33 +12,38 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T03:11:44Z"
+updated_at: "2026-10-16T03:16:58Z"
 ---
 ## Problem
-The Model routing page asks for an 'API key variable' as free text. Users paste the secret itself into that field, which is confusing and unsafe: the field saves on every character typed, the secret ends up in repoos.toml (model_routing.credentialEnv), and the server commits repoos.toml. The test buttons do nothing because the provider is never ready. The field's placeholder is also shown as real text, so deleting it saves immediately.
+The Model routing page is confusing and asks for things users don't need to supply:
+1. It asks for a free-text 'API key variable'. Users paste the secret into it, which saves into repoos.toml (model_routing.credentialEnv) and gets committed by the server. Saving also happens on every character typed, and the placeholder is shown as real text.
+2. It lists 'OpenRouter (System One)' as if it needed a different key. It doesn't: the OpenRouter adapter reads REPOOS_OPENROUTER_API_KEY, the same key saved on the Model providers page. 'System One' only names the request format.
+3. It lists 'Self-hosted Clef-Flash' as if a cloud key were needed. The adapter calls a self-hosted SGLang server at a base URL, with an optional bearer token. No Cloudflare key is used. A Cloudflare-hosted Clef-Flash would need its own account setup and is not built.
 
-The Model providers page already handles secrets safely (src/server/routes/model-providers.ts): a masked input, saved only to the gitignored .env under a fixed env-var name from a registry, never written to repoos.toml, never logged, and never echoed back (rows only show whether a value is set).
+The Model providers page already saves secrets safely (src/server/routes/model-providers.ts): a masked input, saved only to the gitignored .env under a fixed name, never written to repoos.toml, never logged, never echoed back.
 
 ## Desired UX
-- Model routing uses the same save path as Model providers. The user picks the provider (Jev, Clef-Flash, OpenRouter), pastes the value into a masked field with a real placeholder, and clicks Save. Nothing saves while typing.
-- The env-var name is fixed per provider and not shown as an editable field. The page shows 'Saved' or 'Not set' only.
-- Remove the free-text 'API key variable' field, or move it to an advanced note.
-- Test configuration and Test live connection show a clear result in plain language: what is missing, or the live response.
-- Provider ready turns on when a value is saved and the provider is selected.
+- Provider choices, in plain words:
+- TypeSafe Jev (direct): needs a Jev key. Entered through the same masked, save-only-on-Save path as Model providers, under a fixed env-var name. No free-text variable field.
+- OpenRouter (Jev and Clef models): uses the OpenRouter key already saved on the Model providers page. No second key. If that key is missing, say so and link to Model providers.
+- Clef-Flash (your own server): asks for the server address and an optional token. No cloud key. Only appears as a choice when that address is set, or with a clear 'set up your own server' note.
+- Remove the free-text 'API key variable' field.
+- Status reads Saved / Not set / Ready in plain words.
+- Test configuration and Test live connection report the result in the UI, including what is missing.
 
 ## Acceptance criteria
-- Jev, Clef-Flash and OpenRouter (routing) are registered in the model-providers registry with fixed env-var names, so they share the same save path.
-- Saving a value does not change repoos.toml or any tracked file. A test checks this using a fake placeholder value.
-- The input is masked, uses a real placeholder attribute, and saves only on the Save action.
-- After saving, the page shows Saved and Provider ready updates without a reload.
-- Test buttons report the result in the UI, including the not-set case.
+- Jev is registered in the model-providers registry with a fixed env-var name, so it shares the save path. Saving a key does not change repoos.toml or any tracked file; a test checks this with a fake value.
+- OpenRouter routing reads the existing OpenRouter key and shows no separate key field. A test covers the missing-key message.
+- Clef-Flash asks only for the server address and optional token, and the optional token is saved through the same .env path.
+- The input is masked, uses a real placeholder attribute, and saves only on Save. Provider ready updates without a reload.
 - Light and dark themes; keyboard accessible.
 
 ## Notes for AI
-Start from src/server/routes/model-providers.ts (registry, the .env writer, the save route) and src/ui-app/src/components/ModelProvidersPanel.vue (masked input form), then src/ui-app/src/components/ModelRoutingPanel.vue and model_routing.credentialEnv in src/core/model-routing/config.ts. Tests use fake values only. Source: user report 2026-10-16.
+Start from src/server/routes/model-providers.ts (registry, the .env writer, the save route), src/core/model-routing/providers.ts (OpenRouter and Clef-Flash adapters), src/core/config.ts (REPOOS_OPENROUTER_API_KEY), src/ui-app/src/components/ModelProvidersPanel.vue and src/ui-app/src/components/ModelRoutingPanel.vue. Tests use fake values only. Source: user report 2026-10-16.
 
 ## Activity
 
 - 2026-10-16T03:11:27Z · created · njachowski@gmail.com
 - 2026-10-16T03:11:28Z · needs_input
 - 2026-10-16T03:11:44Z · body
+- 2026-10-16T03:16:58Z · body
