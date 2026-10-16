@@ -20,8 +20,9 @@ first, then come back here.
   corrections, docs follow-ups — collect them into one `Easter eggs bundle`
   task (title it with the themes it covers) rather than one task per fix or a
   hotfix to `main`: one worktree, one check run, one review, one close-out. Keep
-  it to about 3–6 items in one area family, and never fold them into a
-  release-critical task. See
+  it to about 3–6 items (they may mix areas) and add new small fixes to that open
+  bundle rather than filing another; never fold them into a release-critical
+  task. See
   [Easter-eggs bundles](../docs/easter-eggs-bundles.md) for the reasoning and
   the task template.
 - Encode the order with `dependsOn`. The sequencing judgment belongs **here**,
