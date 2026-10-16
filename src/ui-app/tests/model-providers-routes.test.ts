@@ -138,6 +138,8 @@ describe("GET /api/model-providers", () => {
     expect(capture.statusCode).toBe(200);
     expect(capture.body.providers.map((p: { id: string }) => p.id)).toEqual([
       "openrouter",
+      "jev",
+      "clef-flash",
       "opencode-go",
       "cursor",
       "opencode-zen",
