@@ -644,6 +644,21 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
 
   // No PM agent configured: leave the draft exactly as created (the fallback
   // behavior — the original prompt is already preserved under its heading).
+  // Automatic model routing (#0793) also applies to PM authoring runs that
+  // create a task before a task id exists: the decision is recorded with a null
+  // task id and the raw prompt as the brief. A picker override is a human pin.
+  const routedPmCreate = await resolveRoutedAgent(
+    { config },
+    {
+      role: "pm",
+      task: null,
+      base: pm,
+      pinned: !!hasFreeformOverride,
+      briefExtra: explanation,
+    },
+  );
+  if (routedPmCreate.agent) pm = routedPmCreate.agent;
+
   if (!pm) {
     return json(res, 201, {
       ok: true,
