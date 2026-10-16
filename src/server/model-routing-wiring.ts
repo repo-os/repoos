@@ -339,7 +339,10 @@ export async function resolveRoutedAgent(
       harnesses,
     });
 
-    const provider = "provider" in deps ? (deps.provider ?? null) : buildRoutingProvider(effective);
+    const provider =
+      "provider" in deps
+        ? (deps.provider ?? null)
+        : buildRoutingProvider(effective, undefined, config);
 
     const decision = await decideRoutingForRun({
       effective,
