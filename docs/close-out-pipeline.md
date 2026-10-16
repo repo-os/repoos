@@ -165,9 +165,8 @@ array (`git diff --numstat` from the handoff commit to the live worktree — com
 uncommitted edits, untracked files included) that the "Worktree changed after handoff"
 modal renders with each file's `+N / -M` line counts (#0810). **Exception (#0600):**
 commits after handoff that touch only `work/*.md` task files (RepoOS bookkeeping on the
-task branch, or
-`syncTaskBranch` merging main and bringing in another task's committed task file) do not
-count as implementation drift. Mixed drift (any source path, or a dirty non-bookkeeping
+task branch, or `syncTaskBranch` merging main and bringing in another task's committed
+task file) do not count as implementation drift. Mixed drift (any source path, or a dirty non-bookkeeping
 tree) still fails. **Exception (#0624):** a conflict-free merge of main into the task
 branch while it is in review does not count either — the guard tolerates HEAD drift when
 every commit on the task's first-parent chain since handoff is either bookkeeping-only,
