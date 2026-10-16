@@ -5,7 +5,7 @@ type: bug
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection stalled repeatedly"
+needs_input_detail: "Error: [unavailable] read ETIMEDOUT"
 priority: p1
 area: [web, server]
 assigned_to: ai
@@ -14,8 +14,8 @@ branch: feat/model-routing-take-the-jev-clef-flash-ke
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T05:54:26Z"
-dev_error_count: 3
+updated_at: "2026-10-16T05:58:00Z"
+dev_error_count: 4
 ---
 ## Problem
 The Model routing page is confusing and asks for things users don't need to supply:
