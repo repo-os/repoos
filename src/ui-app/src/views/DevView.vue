@@ -676,7 +676,10 @@ watch(
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 999px;
-  color: var(--txt-dim);
+  /* `--txt` (not `--txt-dim`): the muted token measured just under the WCAG
+     floor on this pill's mixed background in the light/gruvbox scopes, and the
+     Dev page is now part of the rendered contrast audit (#0802). */
+  color: var(--txt);
   background: color-mix(in srgb, var(--border) 55%, transparent);
 }
 .dev-state-pill[data-status="running"] {
