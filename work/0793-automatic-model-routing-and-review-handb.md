@@ -2,15 +2,16 @@
 id: "0793"
 title: Automatic model routing and review handback re-evaluation
 type: feature
-status: inbox
+status: done
 priority: p2
 area: [agent, server, core, web]
 depends_on: ["0792"]
+merged_commit: 957525c98ccb7592dab3ebb06b1a58ee1a395d92
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/automatic-model-routing-and-review-handb
 created_at: "2026-10-15T07:47:32Z"
-updated_at: "2026-10-16T02:16:10Z"
+updated_at: "2026-10-16T02:16:35Z"
 last_close_out_gate_ms: 83031
 last_close_out_gate_at: "2026-10-16T02:16:07.311Z"
 review_passes: 1
@@ -89,3 +90,4 @@ On the Model routing section, show for each recent run whether automatic routing
 - 2026-10-16T02:16:07Z · close-out gate completed in 83s
 - 2026-10-16T02:16:09Z · note: handoff requested (cli)
 - 2026-10-16T02:16:10Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-16T02:16:35Z · status inbox→done, release:success
