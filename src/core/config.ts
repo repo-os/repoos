@@ -2950,15 +2950,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       tier: "live",
       restartRequired: false,
       default: "jev",
+      // Jev and OpenRouter only (#0809). The parser still accepts "clef-flash"
+      // so an existing config parses, but it is not offered as a choice.
       options: [
-        { value: "jev", label: "TypeSafe Jev (hosted, direct)" },
-        { value: "openrouter", label: "OpenRouter (Jev / TypeSafe via System One)" },
-        { value: "clef-flash", label: "Cloudflare Clef-Flash (self-hosted)" },
+        { value: "jev", label: "TypeSafe Jev (direct)" },
+        { value: "openrouter", label: "OpenRouter" },
       ],
       description:
         "Which decision backend answers routing questions. Jev uses TypeSafe directly; OpenRouter uses the " +
-        "same System One contract with your OpenRouter key (recommended when you already use OpenRouter); " +
-        "Clef-Flash runs on your own GPU server and needs a base URL. Switching providers does not require code changes.",
+        "same System One contract with your OpenRouter key (recommended when you already use OpenRouter). " +
+        "Switching providers does not require code changes.",
     },
     {
       key: "model_routing.model",
@@ -2968,17 +2969,21 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: "jev-latest",
       description:
-        "Provider model id. Jev: jev-latest or jev-1.13.0. OpenRouter: jev-latest (mapped to typesafe/*) or typesafe/jev-1.14. Clef-Flash: Cloudflare/clef-flash.",
+        "Provider model id. Jev: jev-latest or jev-1.13.0. OpenRouter: jev-latest (mapped to typesafe/*) or typesafe/jev-1.14.",
     },
     {
+      // Retained so an existing `[model_routing]` table with a self-hosted
+      // provider still parses. Not rendered in Settings and not a selectable
+      // provider (#0809) — see GENERAL_EXCLUDED_KEYS in settings-location.ts.
       key: "model_routing.baseUrl",
-      label: "Clef-Flash server URL",
+      label: "Model routing server URL (retained)",
       type: "string",
       tier: "live",
       restartRequired: false,
       default: "",
       description:
-        "Base URL of your self-hosted Clef-Flash (SGLang) server, e.g. http://localhost:30000. Used only when the provider is Clef-Flash.",
+        "Reserved for the retained self-hosted decision adapter. Kept so an existing [model_routing] " +
+        "table still parses; there is no UI for it.",
     },
     {
       key: "model_routing.roles",

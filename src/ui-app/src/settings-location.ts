@@ -154,6 +154,9 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   "attention.spendAlertUsd",
   // Hand-rendered checkbox list beside ctoSkipHealthy (#0796).
   "cto.actions",
+  // Clef-Flash is not a selectable provider (#0809); the key is retained so an
+  // existing `[model_routing]` table parses, but there is no server-URL field.
+  "model_routing.baseUrl",
 ]);
 
 /** Mirrors `isFieldVisible` in SettingsView.vue */
