@@ -34,7 +34,10 @@ export function readRoutingCredential(
 ): string {
   const row = routingProviderRow(effective.provider);
   if (!row) return "";
-  return readProviderKey(config ?? { root: process.cwd() }, row).trim();
+  if (!config) {
+    return row.envVar ? (process.env[row.envVar] ?? "").trim() : "";
+  }
+  return readProviderKey(config, row).trim();
 }
 
 /**
@@ -107,7 +110,9 @@ function credentialLabelFor(
 
 export function modelRoutingStatus(config: RepoOSConfig | undefined): ModelRoutingStatus {
   const effective = resolveEffectiveRouting(config?.modelRouting);
-  const keyProviderId = routingProviderRow(effective.provider)?.id ?? null;
+  const row = routingProviderRow(effective.provider);
+  const keyProviderId =
+    row?.id === "jev" || row?.id === "openrouter" || row?.id === "clef-flash" ? row.id : null;
   const credentialPresent =
     effective.provider === "clef-flash"
       ? readRoutingCredential(config, effective).length > 0
