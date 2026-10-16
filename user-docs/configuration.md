@@ -502,19 +502,20 @@ engineer and reviewer runs. It is **off by default**: with the section unset,
 RepoOS uses the configured role defaults and task overrides exactly as before.
 
 > **Shipped (#0791 + #0792 + #0793):** `src/core/model-routing/` (System One
-> codec, Jev / OpenRouter / Clef-Flash adapters, candidate filter, policy,
+> codec, TypeSafe Jev and OpenRouter adapters, candidate filter, policy,
 > handback re-evaluation, restart-safe decision records), the six
 > `model_routing.*` keys in `getConfigSchema()`, TOML parsing, and the **Model
 > routing** tab on the Agents page (provider, mode, roles, timeout, credential
 > presence, configuration probe, and recent decisions). Routing is now invoked
 > on the PM, engineer and reviewer run paths (including review handback). The
 > only remaining follow-up is the human-only live credentialed smoke test
-> (**#0794**).
+> (**#0794**). A self-hosted Clef-Flash adapter is retained in the code and its
+> fixtures, but it is not a selectable provider (#0809).
 
 ```toml
 [model_routing]
 mode = "shadow"              # off | shadow | automatic
-provider = "jev"             # jev | openrouter | clef-flash
+provider = "jev"             # jev | openrouter
 model = "jev-latest"         # or a pinned id such as "jev-1.13.0"
 roles = ["engineer", "reviewer", "pm"]
 timeoutMs = 8000             # 500–60000
@@ -524,9 +525,9 @@ humanStepCheck = false       # ask before a ready task starts (default off)
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `model_routing.mode` | `off` | `off` never calls the router. `shadow` records a recommendation for each decision but **never changes the selection**. `automatic` applies the recommendation, within the budget allowlist and role limits. |
-| `model_routing.provider` | `jev` | Which decision backend answers: direct TypeSafe Jev, OpenRouter System One, or self-hosted Clef-Flash. |
-| `model_routing.model` | `jev-latest` (Jev / OpenRouter) / `Cloudflare/clef-flash` (Clef-Flash) | Provider model id. |
-| `model_routing.baseUrl` | — | Clef-Flash only: base URL of your self-hosted server, e.g. `http://localhost:30000`. |
+| `model_routing.provider` | `jev` | Which decision backend answers: direct TypeSafe Jev or OpenRouter System One. |
+| `model_routing.model` | `jev-latest` | Provider model id. |
+| `model_routing.baseUrl` | — | Retained so an existing `[model_routing]` table with the self-hosted adapter still parses. It has no UI and is not a selectable provider. |
 | `model_routing.roles` | all three | Which runs consult the router. A role left out keeps its configured agent. |
 | `model_routing.timeoutMs` | `8000` | One decision call's ceiling. A timeout falls back; it never blocks the run. |
 | `model_routing.humanStepCheck` | `false` | Before a `ready` task starts, ask the decision model whether it needs steps only a human can do and should be split into an AI task and a human task. Uses the same provider as routing. It only blocks a start when `mode = "automatic"`; in `shadow` it records the verdict without blocking, and when the provider is off, unavailable, or fails, the existing keyword check runs instead — a failure never blocks a task on its own. |
@@ -558,24 +559,9 @@ model = "jev-latest"
 ```
 
 Save `REPOOS_OPENROUTER_API_KEY` on the **Model providers** tab — routing reuses
-that key; you do not configure a second key for System One.
-
-Clef models on OpenRouter (when listed) use the same provider and model id; direct
-self-hosted Clef-Flash remains `provider = "clef-flash"` with `baseUrl`.
-
-**Cloudflare Clef-Flash (self-hosted).** Clef-Flash is a 9B open-weight model you
-run yourself (for example with SGLang on a GPU host). It answers the same
-`/v1/systemone` contract, so the same code path serves both. Set:
-
-```toml
-[model_routing]
-provider = "clef-flash"
-baseUrl = "http://localhost:30000"
-```
-
-An API key is optional for a self-hosted server. If you protect it, save an
-optional bearer token on **Model routing** (stored as `REPOOS_CLEF_FLASH_API_KEY`
-in `.env`). No key is needed for an unprotected local server.
+that key, so the Model routing tab shows no key field for it and links to Model
+providers instead. When the key is missing, routing reports the credential as not
+set and the provider as not ready.
 
 ### Secret handling
 
@@ -597,9 +583,8 @@ the recorded factors only. Compare those recommendations with real outcomes
 before enabling `automatic`.
 
 The **Test configuration** button checks parsing, provider requirements, and
-whether the required key (or Clef-Flash server URL) is set — it does not call
-the hosted API. **Test live connection** issues one real decision call when you
-are ready;
+whether the required key is set — it does not call the hosted API. **Test live
+connection** issues one real decision call when you are ready;
 use it sparingly and never in automated tests.
 
 ### Automatic mode, pins and limits
@@ -679,8 +664,6 @@ allowlist forbids.
 - Historical outcome data informs the evaluation report; it does not by itself
   make the router learn. Fine-tuning and a full bandit optimizer are out of
   scope.
-- Clef-Flash throughput depends on your hardware. A slow self-hosted server will
-  hit `timeoutMs` and fall back rather than stall the run.
 
 ## Settings import/export
 
