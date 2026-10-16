@@ -1628,6 +1628,17 @@ const handoffConflictFilesUnavailable = computed(
     !!repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.filesUnavailable,
 );
 
+// A store-seeded conflict (the shot-preview fixture, #0810) must open the modal
+// without a real Move-to-done failure. On the normal path the failed call has
+// already set `handoffConflictTask` synchronously; this only adds the seeded case.
+watch(
+  () => (ui.active ? repo.worktreeHandoffConflictFor(ui.active.id) : null),
+  (conflict) => {
+    if (conflict && ui.active) handoffConflictTask.value = ui.active;
+  },
+  { immediate: true },
+);
+
 async function discardHandoffConflict(): Promise<void> {
   const t = handoffConflictTask.value;
   handoffConflictTask.value = null;

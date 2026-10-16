@@ -2816,6 +2816,15 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   /**
+   * Seed a pending worktree-handoff conflict without a real 409. Used by the
+   * shot-preview fixture (#0810): the modal only opens from a failed Move to
+   * done, which a capture cannot trigger.
+   */
+  function seedWorktreeHandoffConflict(id: string, conflict: WorktreeHandoffConflict): void {
+    worktreeHandoffConflicts.value = { ...worktreeHandoffConflicts.value, [id]: conflict };
+  }
+
+  /**
    * Load a task's durable usage totals (time/tokens/cost + role breakdown,
    * 0230). Best-effort — a task with no recorded sessions just yields no data.
    */
@@ -3733,6 +3742,7 @@ export const useRepoStore = defineStore("repo", () => {
     loadDiffStats,
     diffStatsFor,
     seedDiffStats,
+    seedWorktreeHandoffConflict,
     taskUsage,
     loadTaskUsage,
     taskUsageFor,

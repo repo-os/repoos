@@ -160,7 +160,10 @@ interactive sessions should treat the lock the same way.
 `POST /api/tasks/:id/done` compares the live worktree to that snapshot **before**
 enqueueing the close-out job. If `HEAD` moved or the tree is dirty after handoff, the
 request fails fast with `worktree changed after handoff: …` (file list and mtimes for
-attribution) — the merge gate does not run. **Exception (#0600):** commits after handoff
+attribution) — the merge gate does not run. The response also carries a per-file `files`
+array (`git diff --numstat` from the handoff commit to the live worktree — committed and
+uncommitted edits, untracked files included) that the "Worktree changed after handoff"
+modal renders with each file's `+N / -M` line counts (#0810). **Exception (#0600):** commits after handoff
 that touch only `work/*.md` task files (RepoOS bookkeeping on the task branch, or
 `syncTaskBranch` merging main and bringing in another task's committed task file) do not
 count as implementation drift. Mixed drift (any source path, or a dirty non-bookkeeping
