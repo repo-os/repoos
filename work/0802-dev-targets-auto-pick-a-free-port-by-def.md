@@ -2,7 +2,7 @@
 id: "0802"
 title: "Dev targets: auto-pick a free port by default, with a per-target fixed-port option"
 type: feature
-status: review
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -10,6 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-pick-a-free-port-by-def
 created_at: "2026-10-15T19:36:15Z"
 updated_at: "2026-10-16T02:08:51Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -75,3 +76,4 @@ Start from src/server/dev.ts (the {port} substitution, which already picks a fre
 - 2026-10-16T02:07:56Z · note: highlight #dev-target-port matched nothing on /settings?tab=advanced
 - 2026-10-16T02:08:51Z · note: review pass 1: needs some work
 - 2026-10-16T02:08:51Z · message_delivered: 1 message(s)
+- 2026-10-16T02:08:51Z · status review→active
