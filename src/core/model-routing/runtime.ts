@@ -95,10 +95,7 @@ export interface ModelRoutingStatus {
   issues: string[];
 }
 
-function credentialLabelFor(
-  effective: EffectiveRouting,
-  present: boolean,
-): RoutingCredentialLabel {
+function credentialLabelFor(effective: EffectiveRouting, present: boolean): RoutingCredentialLabel {
   if (effective.provider === "clef-flash") {
     return present ? "saved" : "not_needed";
   }
@@ -127,7 +124,9 @@ export function modelRoutingStatus(config: RepoOSConfig | undefined): ModelRouti
       issues.push("Choose a decision provider.");
     } else if (effective.provider === "clef-flash") {
       if (!effective.baseUrl) {
-        issues.push("Set your self-hosted Clef-Flash server URL above (for example http://localhost:30000).");
+        issues.push(
+          "Set your self-hosted Clef-Flash server URL above (for example http://localhost:30000).",
+        );
       }
     } else if (effective.provider === "openrouter") {
       if (!credentialPresent) {

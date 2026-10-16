@@ -165,7 +165,7 @@ describe("GET /api/model-providers", () => {
 describe("POST /api/model-providers/:id/key", () => {
   it("saves a Jev key to .env only and does not modify repoos.toml", async () => {
     const root = tmpRoot();
-    const tomlBefore = "[model_routing]\nmode = \"shadow\"\nprovider = \"jev\"\n";
+    const tomlBefore = '[model_routing]\nmode = "shadow"\nprovider = "jev"\n';
     writeFileSync(join(root, "repoos.toml"), tomlBefore);
     const ctx = makeCtx(root);
     const { capture, res } = makeRes();
@@ -177,7 +177,9 @@ describe("POST /api/model-providers/:id/key", () => {
     );
     expect(capture.statusCode).toBe(200);
     expect(readFileSync(join(root, "repoos.toml"), "utf8")).toBe(tomlBefore);
-    expect(readFileSync(join(root, ".env"), "utf8")).toContain("TYPESAFE_API_KEY=sk-test-fake-0803-jev");
+    expect(readFileSync(join(root, ".env"), "utf8")).toContain(
+      "TYPESAFE_API_KEY=sk-test-fake-0803-jev",
+    );
     expect(process.env.TYPESAFE_API_KEY).toBe("sk-test-fake-0803-jev");
   });
 

@@ -56,9 +56,7 @@ const mode = computed(() => cfgStr("model_routing.mode", "off"));
 const provider = computed(() => cfgStr("model_routing.provider", "jev"));
 const showClefUrl = computed(() => provider.value === "clef-flash");
 const usesOpenRouterKey = computed(() => provider.value === "openrouter");
-const showsKeyForm = computed(
-  () => provider.value === "jev" || provider.value === "clef-flash",
-);
+const showsKeyForm = computed(() => provider.value === "jev" || provider.value === "clef-flash");
 
 const status = ref<ModelRoutingStatusResponse | null>(null);
 const statusLoading = ref(false);
@@ -339,13 +337,21 @@ onMounted(() => {
 
     <p v-if="usesOpenRouterKey && mode !== 'off'" class="mr-openrouter-note" role="note">
       OpenRouter routing uses the same API key as the
-      <router-link to="/agents?tab=model-providers">Model providers</router-link> tab. System One
-      is only the request format — you do not need a second key here.
+      <router-link to="/agents?tab=model-providers">Model providers</router-link> tab. System One is
+      only the request format — you do not need a second key here.
     </p>
 
     <dl class="kv-rows mr-status" style="--kv-label-w: 10rem">
       <div>
-        <dt>{{ usesOpenRouterKey ? "OpenRouter key" : provider === "clef-flash" ? "Server token" : "Jev key" }}</dt>
+        <dt>
+          {{
+            usesOpenRouterKey
+              ? "OpenRouter key"
+              : provider === "clef-flash"
+                ? "Server token"
+                : "Jev key"
+          }}
+        </dt>
         <dd data-testid="routing-credential-status">
           <span
             class="mr-pill"
@@ -398,7 +404,9 @@ onMounted(() => {
           v-model="keyDraft"
           type="password"
           autocomplete="off"
-          :aria-label="provider === 'clef-flash' ? 'Clef-Flash bearer token' : 'TypeSafe Jev API key'"
+          :aria-label="
+            provider === 'clef-flash' ? 'Clef-Flash bearer token' : 'TypeSafe Jev API key'
+          "
           :placeholder="keyPlaceholder"
         />
         <Button variant="outline" size="sm" :disabled="keySaving" @click="saveKey">
