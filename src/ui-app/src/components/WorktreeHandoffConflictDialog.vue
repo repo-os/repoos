@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted } from "vue";
 import Button from "./ui/button.vue";
 
 /** One file changed since handoff, with its +/- line counts. */
-export interface HandoffChangedFile {
+interface HandoffChangedFile {
   path: string;
   added: number;
   removed: number;
