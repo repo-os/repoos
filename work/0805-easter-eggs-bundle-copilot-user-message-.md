@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 372453
-last_close_out_gate_at: "2026-10-16T15:17:33.183Z"
 id: "0805"
 title: "Easter eggs bundle: Copilot event lines, and Set editor hints as links"
 type: bug
-status: review
+status: done
 priority: p3
 area: [web, server]
+merged_commit: 5f7712ada74c74f4c95f3a96c212b49e4554482a
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-copilot-event-lines-a
 created_at: "2026-10-16T08:55:26Z"
-updated_at: "2026-10-16T15:17:33Z"
+updated_at: "2026-10-16T15:18:04Z"
+last_close_out_gate_ms: 372453
+last_close_out_gate_at: "2026-10-16T15:17:33.183Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1
@@ -94,4 +95,4 @@ Commit per item so a reviewer can read them separately. Use the router's link co
 - 2026-10-16T15:09:23Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-16T15:10:23Z · note: review pass 3: good to go
 - 2026-10-16T15:17:33Z · close-out gate completed in 372s
-
+- 2026-10-16T15:18:04Z · status review→done, release:success
