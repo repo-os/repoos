@@ -2,14 +2,14 @@
 id: "0804"
 title: "Optional decision-model check before a task starts: should it be split into AI and human tasks?"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/optional-decision-model-check-before-a-t
 created_at: "2026-10-16T05:07:46Z"
-updated_at: "2026-10-16T10:01:43Z"
+updated_at: "2026-10-16T10:11:30Z"
 close_out_repair_count: 1
 review_passes: 2
 review_rounds: 1
@@ -112,3 +112,4 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 - 2026-10-16T09:57:23Z · status review→active, needs_input
 - 2026-10-16T09:57:23Z · note: close-out repair: merge-conflict
 - 2026-10-16T10:01:43Z · body
+- 2026-10-16T10:11:30Z · status active→review
