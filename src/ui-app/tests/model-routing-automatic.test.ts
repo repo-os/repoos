@@ -24,6 +24,7 @@ import {
 } from "../../core/model-routing/decision-store.js";
 import type { RoutingDecisionRecord } from "../../core/model-routing/decisions.js";
 import { ROUTING_QUESTION_IDS } from "../../core/model-routing/policy.js";
+import { RoutingProviderError } from "../../core/model-routing/types.js";
 import type { RoutingAnswer, RoutingDecisionProvider } from "../../core/model-routing/types.js";
 import type { HarnessAvailability } from "../../core/model-routing/candidates.js";
 import type { RoutingDecisionStore } from "../../core/model-routing/decision-store.js";
@@ -177,6 +178,14 @@ describe("routing candidate set", () => {
   it("candidateForAgent carries the agent's complete configuration", () => {
     expect(candidateForAgent({ cli: "codex", model: "gpt-5" })).toEqual(codex);
     expect(candidateForAgent(null)).toBeNull();
+  });
+
+  it("handles a singleton candidate set", () => {
+    const candidates = buildCandidateSet({
+      allowlist: [{ cli: "claude code", models: ["default"] }],
+      agentPairs: [],
+    });
+    expect(candidates).toEqual([claude]);
   });
 });
 
@@ -450,6 +459,29 @@ describe("resolveRoutedAgent", () => {
     );
     expect(out.agent).toEqual(base);
     expect(out.decision?.kind).toBe("fallback");
+  });
+
+  it("treats a provider timeout as a fallback, and unknown cost as neutral", async () => {
+    const store = memStore();
+    const provider: RoutingDecisionProvider = {
+      id: "jev",
+      decide: vi.fn(async () => {
+        throw new RoutingProviderError("timeout", "slow");
+      }),
+    };
+    const out = await resolveRoutedAgent(
+      {
+        config: makeConfig(),
+        provider,
+        harnesses: HARNESSES,
+        store,
+        costTime: {},
+        recordSession: false,
+      },
+      { role: "engineer", task: makeTask(), base, pinned: false },
+    );
+    expect(out.agent).toEqual(base);
+    expect(out.decision?.fallbackReason).toBe("provider-failure");
   });
 
   it("applies a bounded handback switch for a same-harness model change", async () => {
