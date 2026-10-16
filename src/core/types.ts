@@ -443,6 +443,8 @@ export interface ModelProviderKeysConfig {
   openrouterApiKey?: string;
   opencodeGoApiKey?: string;
   deepinfraApiKey?: string;
+  typesafeApiKey?: string;
+  clefFlashApiKey?: string;
 }
 
 /** Resolved configuration (after defaults + repoos.toml merge). */
@@ -1801,7 +1803,8 @@ export interface BudgetConfig {
  * Adaptive agent/model routing (#0791), declared as `[model_routing]` in
  * repoos.toml. Default: `mode = "off"` — the router is never invoked and
  * existing selection is unchanged. Secrets are NOT stored here: the API key is
- * read from the env/.env store via `credentialEnv`.
+ * read from the gitignored `.env` via the model-providers registry (fixed env
+ * var names per provider).
  */
 export interface ModelRoutingConfig {
   /** off: never invoked. shadow: recorded only. automatic: applied within limits. */
@@ -1812,8 +1815,6 @@ export interface ModelRoutingConfig {
   model?: string;
   /** Clef-Flash only: base URL of the self-hosted server. */
   baseUrl?: string;
-  /** Name of the env var holding the provider API key (never the key itself). */
-  credentialEnv?: string;
   /** Roles the router may be invoked for. */
   roles?: Array<"pm" | "engineer" | "reviewer">;
   /** Hard timeout for one decision call, in milliseconds. */

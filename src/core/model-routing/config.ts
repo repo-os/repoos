@@ -6,8 +6,8 @@
  * is dropped with a reason rather than blocking server boot, and the safe
  * default (`mode = "off"`) applies. An unset section is exactly off.
  *
- * Secrets are never read from or written to TOML. `credentialEnv` names an
- * environment variable; the key itself lives in the gitignored `.env` store.
+ * Secrets are never read from or written to TOML. Keys use fixed env var names
+ * from the model-providers registry and live in the gitignored `.env` store.
  */
 import type { ModelRoutingConfig } from "../types.js";
 
@@ -76,10 +76,10 @@ export function parseModelRouting(raw: unknown): ModelRoutingParseResult {
   }
   if (typeof r.model === "string" && r.model.trim()) config.model = r.model.trim();
   if (typeof r.baseUrl === "string" && r.baseUrl.trim()) config.baseUrl = r.baseUrl.trim();
-  if (typeof r.credentialEnv === "string" && isEnvName(r.credentialEnv)) {
-    config.credentialEnv = r.credentialEnv.trim();
-  } else if (r.credentialEnv !== undefined) {
-    warnings.push("[model_routing] credentialEnv must be an environment variable name, not a key");
+  if (r.credentialEnv !== undefined) {
+    warnings.push(
+      "[model_routing] credentialEnv in repoos.toml is ignored — remove it and save API keys through Model providers or Model routing (.env only)",
+    );
   }
   if (Array.isArray(r.roles)) {
     const roles = r.roles.filter((x): x is "pm" | "engineer" | "reviewer" =>
@@ -123,7 +123,7 @@ export function resolveEffectiveRouting(config: ModelRoutingConfig | undefined):
             ? "jev-latest"
             : null),
     baseUrl: config?.baseUrl ?? null,
-    credentialEnv: config?.credentialEnv ?? (provider ? DEFAULT_CREDENTIAL_ENV[provider] : null),
+    credentialEnv: provider ? DEFAULT_CREDENTIAL_ENV[provider] : null,
     roles: config?.roles ?? ["engineer", "reviewer", "pm"],
     timeoutMs: config?.timeoutMs ?? DEFAULT_ROUTING_TIMEOUT_MS,
   };
@@ -139,9 +139,4 @@ export function routingActiveFor(
 
 function isOneOf<T extends string>(value: unknown, allowed: readonly T[]): value is T {
   return typeof value === "string" && (allowed as readonly string[]).includes(value);
-}
-
-/** An env var name: letters, digits, underscore; not starting with a digit. */
-function isEnvName(value: string): boolean {
-  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(value.trim());
 }

@@ -1409,8 +1409,9 @@ export interface ModelRoutingStatusResponse {
     roles: Array<"pm" | "engineer" | "reviewer">;
     timeoutMs: number;
   };
-  credentialEnv: string | null;
+  keyProviderId: "jev" | "openrouter" | "clef-flash" | null;
   credentialPresent: boolean;
+  credentialLabel: "saved" | "not_set" | "not_needed";
   providerReady: boolean;
   issues: string[];
   ok?: boolean;
