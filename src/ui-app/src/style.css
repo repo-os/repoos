@@ -2913,6 +2913,16 @@
 .ai-compact {
   gap: 0;
   color: var(--violet);
+  /* Whole-shape marks (Arcade hopper, Puppy tracks) read their period from
+     `--cycle`: 1s while coding, a slower 1.35s reviewing beat and 1.2s for
+     generic agent work (#0807). */
+  --cycle: 1s;
+}
+.ai-compact.ai-motion-reviewing {
+  --cycle: 1.35s;
+}
+.ai-compact.ai-motion-agent {
+  --cycle: 1.2s;
 }
 .ai-compact.ai-reviewing {
   color: var(--amber);
@@ -2956,6 +2966,12 @@
    get the 2ch ceiling the task allows when real font metrics require it. */
 .ai-style-breathing-brackets .ai-mark,
 .ai-style-spark-diamond .ai-mark {
+  --ai-w: 2ch;
+}
+/* Arcade hopper and Puppy tracks stamp whole shapes that need the full 2ch
+   reserved slot to stay legible at 9–12px (#0807). */
+.ai-style-arcade-hopper .ai-mark,
+.ai-style-puppy-tracks .ai-mark {
   --ai-w: 2ch;
 }
 .ai-dot {
@@ -3105,6 +3121,115 @@
 }
 .ai-motion-agent .ai-spark::before {
   animation-duration: 3s;
+}
+/* Arcade hopper — a chunky monochrome arcade alien silhouette: two antennae,
+   two cutout eyes and blocky feet. Coding jumps in place with a landing squash
+   and a left/right tilt at the apex; reviewing leans and peeks sideways instead
+   of jumping; generic agent work jumps at the slower 1.2s cycle (#0807). The
+   eye cutouts are real `mask-composite` holes, so whatever surface the label
+   sits on shows through — no per-theme surface color is hard-coded. */
+.ai-hopper i {
+  position: absolute;
+  width: 0.92em;
+  height: 0.65em;
+  left: calc(50% - 0.46em);
+  bottom: 0.06em;
+  background: currentColor;
+  clip-path: polygon(
+    18% 0,
+    28% 0,
+    28% 15%,
+    72% 15%,
+    72% 0,
+    82% 0,
+    82% 25%,
+    100% 25%,
+    100% 78%,
+    82% 78%,
+    82% 100%,
+    63% 100%,
+    63% 78%,
+    37% 78%,
+    37% 100%,
+    18% 100%,
+    18% 78%,
+    0 78%,
+    0 25%,
+    18% 25%
+  );
+  mask-image: linear-gradient(#fff, #fff), linear-gradient(#fff, #fff), linear-gradient(#fff, #fff);
+  mask-size:
+    100% 100%,
+    14% 18%,
+    14% 18%;
+  mask-position:
+    0 0,
+    0.2208em 0.26em,
+    0.5608em 0.26em;
+  mask-repeat: no-repeat;
+  mask-composite: exclude;
+  -webkit-mask-image:
+    linear-gradient(#fff, #fff), linear-gradient(#fff, #fff), linear-gradient(#fff, #fff);
+  -webkit-mask-size:
+    100% 100%,
+    14% 18%,
+    14% 18%;
+  -webkit-mask-position:
+    0 0,
+    0.2208em 0.26em,
+    0.5608em 0.26em;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-composite: xor;
+  animation: ai-hop var(--cycle) ease-in-out infinite;
+}
+.ai-motion-reviewing .ai-hopper i {
+  animation-name: ai-hop-peek;
+}
+/* Puppy tracks — two recognizable paw prints (solid pad + four toes) on a
+   diagonal. They alternate large/small, bright/faint stamps so the whole
+   footprint visibly takes a step; reviewing swings them wider like a
+   sniff/search; agent work keeps the step at the slower cycle (#0807). */
+.ai-paws i {
+  position: absolute;
+  width: 0.58em;
+  height: 0.55em;
+  left: 0.04em;
+  top: 0.02em;
+  animation: ai-paw-step var(--cycle) ease-in-out infinite;
+}
+.ai-paws i:last-child {
+  left: auto;
+  right: 0.04em;
+  top: auto;
+  bottom: 0.02em;
+  animation-delay: calc(var(--cycle) * -0.5);
+}
+.ai-paws i::before {
+  content: "";
+  position: absolute;
+  left: 0.12em;
+  bottom: 0;
+  width: 0.34em;
+  height: 0.28em;
+  background: currentColor;
+  border-radius: 55% 55% 40% 40%;
+}
+.ai-paws i::after {
+  content: "";
+  position: absolute;
+  left: 0.02em;
+  top: 0.12em;
+  width: 0.12em;
+  height: 0.16em;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow:
+    0.13em -0.1em 0 currentColor,
+    0.29em -0.1em 0 currentColor,
+    0.42em 0 0 currentColor;
+}
+.ai-motion-reviewing .ai-paws i {
+  animation-name: ai-paw-sniff;
 }
 @keyframes ai-bounce {
   0%,
@@ -3271,16 +3396,68 @@
     opacity: 1;
   }
 }
+@keyframes ai-hop {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(0.8);
+  }
+  35% {
+    transform: translateY(-0.33em) rotate(-14deg);
+  }
+  65% {
+    transform: translateY(-0.33em) rotate(14deg);
+  }
+}
+@keyframes ai-hop-peek {
+  0%,
+  100% {
+    transform: translateX(-0.09em) rotate(-18deg);
+  }
+  50% {
+    transform: translateX(0.09em) rotate(18deg);
+  }
+}
+@keyframes ai-paw-step {
+  0%,
+  100% {
+    transform: translateY(0.05em) scale(0.65) rotate(-15deg);
+    opacity: 0.2;
+  }
+  35%,
+  55% {
+    transform: translateY(0) scale(1) rotate(10deg);
+    opacity: 1;
+  }
+}
+@keyframes ai-paw-sniff {
+  0%,
+  100% {
+    transform: scale(0.65) rotate(-25deg);
+    opacity: 0.25;
+  }
+  40%,
+  60% {
+    transform: scale(1) rotate(25deg);
+    opacity: 1;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .ai-compact .ai-mark::before,
   .ai-compact .ai-mark::after,
   .ai-compact .ai-matrix i,
   .ai-compact .ai-bars i,
+  .ai-compact .ai-hopper i,
+  .ai-compact .ai-paws i,
   .ai-compact.ai-motion-agent .ai-bracket,
   .ai-compact.ai-motion-agent .ai-matrix {
     animation: none !important;
     opacity: 0.85;
     transform: none;
+  }
+  /* Puppy tracks keep both prints visible; the trailing stamp reads dimmer so
+     the pair still looks like a step rather than two equal blobs (#0807). */
+  .ai-compact .ai-paws i:last-child {
+    opacity: 0.45;
   }
   .ai-orbit::after {
     transform: translateY(-0.375em);
