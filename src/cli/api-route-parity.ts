@@ -130,6 +130,7 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   (r) => r.pattern.startsWith("/api/playground"),
   (r) => r.pattern.startsWith("/api/model-providers"),
   exact("GET", "/api/model-routing/status"),
+  exact("GET", "/api/model-routing/decisions"),
   exact("POST", "/api/model-routing/probe"),
   exact("POST", "/api/model-routing/key"),
   exact("GET", "/api/agents/queued"),

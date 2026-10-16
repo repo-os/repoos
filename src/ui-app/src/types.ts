@@ -1417,6 +1417,48 @@ export interface ModelRoutingStatusResponse {
   at?: string;
 }
 
+/** One complete routing configuration. */
+export interface RoutingCandidateView {
+  cli: string;
+  model: string;
+  reasoning: string | null;
+}
+
+/** One persisted routing decision (#0793), rendered from recorded factors only. */
+export interface RoutingDecisionView {
+  id: string;
+  at: string;
+  taskId: string | null;
+  role: "pm" | "engineer" | "reviewer";
+  mode: "off" | "shadow" | "automatic";
+  kind: "selected" | "fallback" | "blocked" | "pinned" | "disabled";
+  applied: boolean;
+  selection: RoutingCandidateView | null;
+  recommendation: RoutingCandidateView | null;
+  actual: RoutingCandidateView | null;
+  fallbackReason: string | null;
+  blockReason: string | null;
+  message: string | null;
+  provider: string | null;
+  providerModel: string | null;
+  durationMs: number;
+  handback?: {
+    action: "continue" | "switch" | "escalate" | "accept" | "block";
+    reason: string;
+    category: "infrastructure" | "coding" | "none";
+    candidate: RoutingCandidateView | null;
+    attempts: number;
+    switches: number;
+    escalations: number;
+    bounded: boolean;
+  };
+}
+
+export interface ModelRoutingDecisionsResponse {
+  decisions: RoutingDecisionView[];
+  at?: string;
+}
+
 /** One rolling usage window from the opencode Go usage API. */
 export interface ModelProviderUsageWindow {
   id: string;

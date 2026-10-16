@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-16T02:11:18Z"
-review_passes: 1
 id: "0793"
 title: Automatic model routing and review handback re-evaluation
 type: feature
@@ -12,6 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/automatic-model-routing-and-review-handb
 created_at: "2026-10-15T07:47:32Z"
+updated_at: "2026-10-16T02:10:19Z"
 ---
 ## Problem
 After #0792 lands (adapter, config, UI and shadow mode), the router still does not influence any run. This task adds opt-in automatic routing for PM, engineer and reviewer runs, plus re-evaluation when review sends work back. It must stay inside the existing lifecycle: review, checks, approval, close-out and the recovery work in #0767 are not bypassed or duplicated.
@@ -50,18 +49,6 @@ Parent/context record: #0791. Depends on #0792.
 ## Desired UX
 On the Model routing section, show for each recent run whether automatic routing applied, the configuration chosen, and the fallback or block reason when it did not apply. Show shadow recommendations next to the actual selection. Render explanations only from recorded factors. Use the shared dropdown and dialog components and existing design tokens. The screen should not read as a log dump.
 
-## Shots
-```json
-[
-{
-"label": "Model routing tab: recent routing decisions",
-"target": "default",
-"route": "/agents?tab=model-routing",
-"highlight": "[data-testid=\"model-routing-panel\"]"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-15T07:47:32Z · created · njachowski@gmail.com
@@ -71,17 +58,4 @@ On the Model routing section, show for each recent run whether automatic routing
 - 2026-10-15T09:47:14Z · needs_input
 - 2026-10-15T11:02:07Z · status inbox→ready
 - 2026-10-16T00:43:34Z · status ready→active, branch
-- 2026-10-16T00:57:20Z · body
-- 2026-10-16T00:58:29Z · body
-- 2026-10-16T00:59:26Z · body: section Shots
-- 2026-10-16T01:01:27Z · body
-- 2026-10-16T01:03:19Z · body
-- 2026-10-16T01:19:37Z · message_queued at 2026-10-16T01:19:37.909Z
-- 2026-10-16T01:19:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-16T01:56:10Z · body
-- 2026-10-16T01:57:47Z · body
-- 2026-10-16T01:59:53Z · body
-- 2026-10-16T02:02:51Z · body
 - 2026-10-16T02:10:19Z · status active→review
-- 2026-10-16T02:11:18Z · note: review pass 1: good to go
-
