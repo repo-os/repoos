@@ -1843,9 +1843,7 @@ export class ReviewManager {
           task,
           base: baseEngineer,
           pinned:
-            isModelOverridePinned(task.modelOverride) ||
-            !!task.cliOverride ||
-            !!task.agentOverride,
+            isModelOverridePinned(task.modelOverride) || !!task.cliOverride || !!task.agentOverride,
           briefExtra:
             `Review round ${reviewRounds + 1} findings:\n` +
             `Bugs:\n${sections.bugs ?? "(none)"}\n` +
@@ -1898,8 +1896,7 @@ export class ReviewManager {
         if (newSwitches > 0) doc.data.routing_switches = newSwitches;
         if (newEscalations > 0) doc.data.routing_escalations = newEscalations;
         const rest = Object.keys(doc.data).filter(
-          (k) =>
-            k !== "review_rounds" && k !== "routing_switches" && k !== "routing_escalations",
+          (k) => k !== "review_rounds" && k !== "routing_switches" && k !== "routing_escalations",
         );
         const keys = [
           "review_rounds",

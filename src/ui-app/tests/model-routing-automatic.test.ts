@@ -14,34 +14,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 import { candidateKey, type RoutingCandidate } from "../../core/model-routing/candidates.js";
-import {
-  buildCandidateSet,
-  candidateForAgent,
-} from "../../core/model-routing/candidate-set.js";
-import {
-  buildHarnessAvailability,
-  capabilityForCli,
-} from "../../core/model-routing/harness.js";
-import {
-  buildRoutingBrief,
-  resolveRoutedAgent,
-} from "../../server/model-routing-wiring.js";
-import {
-  classifyHandbackFailure,
-  evaluateHandback,
-} from "../../core/model-routing/handback.js";
+import { buildCandidateSet, candidateForAgent } from "../../core/model-routing/candidate-set.js";
+import { buildHarnessAvailability, capabilityForCli } from "../../core/model-routing/harness.js";
+import { buildRoutingBrief, resolveRoutedAgent } from "../../server/model-routing-wiring.js";
+import { classifyHandbackFailure, evaluateHandback } from "../../core/model-routing/handback.js";
 import {
   createRoutingDecisionStore,
   routingDecisionsPath,
 } from "../../core/model-routing/decision-store.js";
 import type { RoutingDecisionRecord } from "../../core/model-routing/decisions.js";
-import {
-  ROUTING_QUESTION_IDS,
-} from "../../core/model-routing/policy.js";
-import type {
-  RoutingAnswer,
-  RoutingDecisionProvider,
-} from "../../core/model-routing/types.js";
+import { ROUTING_QUESTION_IDS } from "../../core/model-routing/policy.js";
+import type { RoutingAnswer, RoutingDecisionProvider } from "../../core/model-routing/types.js";
 import type { HarnessAvailability } from "../../core/model-routing/candidates.js";
 import type { RoutingDecisionStore } from "../../core/model-routing/decision-store.js";
 
@@ -199,7 +182,10 @@ describe("routing candidate set", () => {
 
 describe("harness capability facts", () => {
   it("marks an unavailable harness unavailable and excludes it from roles if not drivable", () => {
-    const map = buildHarnessAvailability(["claude code", "opencode", "gemini"], (cli) => cli !== "gemini");
+    const map = buildHarnessAvailability(
+      ["claude code", "opencode", "gemini"],
+      (cli) => cli !== "gemini",
+    );
     expect(map["claude code"].available).toBe(true);
     expect(map["opencode"].available).toBe(true);
     // gemini is not an AGENT_CLIS value → never a candidate.
@@ -436,7 +422,9 @@ describe("resolveRoutedAgent", () => {
     const store = memStore();
     const out = await resolveRoutedAgent(
       {
-        config: makeConfig({ budget: { allowlist: [{ cli: "opencode", models: ["big pickle"] }] } }),
+        config: makeConfig({
+          budget: { allowlist: [{ cli: "opencode", models: ["big pickle"] }] },
+        }),
         provider: providerChoosing(candidateKey(codex)),
         harnesses: HARNESSES,
         store,

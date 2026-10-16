@@ -23,7 +23,11 @@ import { agentsForConfig } from "../core/config.js";
 import { agentModelAllowRows } from "../core/budget-allowlist.js";
 import { readDetectCache } from "../core/detect-cache.js";
 import { resolveEffectiveRouting, routingActiveFor } from "../core/model-routing/config.js";
-import { filterCandidates, type HarnessAvailability, type RoutingCandidate } from "../core/model-routing/candidates.js";
+import {
+  filterCandidates,
+  type HarnessAvailability,
+  type RoutingCandidate,
+} from "../core/model-routing/candidates.js";
 import { buildCandidateSet, candidateForAgent } from "../core/model-routing/candidate-set.js";
 import { buildHarnessAvailability } from "../core/model-routing/harness.js";
 import { decideRoutingForRun, type RoutingDecision } from "../core/model-routing/decide.js";
@@ -44,11 +48,7 @@ import {
 } from "../core/model-routing/handback.js";
 import type { RoutingDecisionProvider, RoutingRole } from "../core/model-routing/types.js";
 import { randomUUID } from "node:crypto";
-import {
-  mergeAgentOverride,
-  recordOneShotSession,
-  type PromptResult,
-} from "./agents.js";
+import { mergeAgentOverride, recordOneShotSession, type PromptResult } from "./agents.js";
 
 /** Upper bound on the brief handed to the provider. */
 export const MAX_ROUTING_BRIEF_CHARS = 6000;
@@ -123,9 +123,7 @@ export function resolveHarnessAvailability(
 ): Record<string, HarnessAvailability> {
   const detected = readDetectCache(config.root, config.cacheDir);
   if (detected && detected.agents.length > 0) {
-    const byCli = new Map(
-      detected.agents.filter((a) => !!a.cli).map((a) => [a.cli as string, a]),
-    );
+    const byCli = new Map(detected.agents.filter((a) => !!a.cli).map((a) => [a.cli as string, a]));
     return buildHarnessAvailability(clis, (cli) => {
       const agent = byCli.get(cli);
       if (!agent) return false;
@@ -147,10 +145,7 @@ function candidateClis(config: RepoOSConfig, candidates: RoutingCandidate[]): st
 }
 
 /** The synthetic Agent used only to record a decision call's usage. */
-function decisionAccountingAgent(
-  providerId: string | null,
-  model: string | null,
-): Agent {
+function decisionAccountingAgent(providerId: string | null, model: string | null): Agent {
   return {
     name: `Model router (${providerId ?? "none"})`,
     cli: providerId ?? "model-router",
@@ -207,7 +202,16 @@ function buildRecord(opts: {
   handback?: HandbackOutcome | null;
 }): RoutingDecisionRecord {
   const { decision } = opts;
-  const base: Omit<RoutingDecisionRecord, "kind" | "selection" | "fallbackReason" | "blockReason" | "message" | "applied" | "recommendation"> = {
+  const base: Omit<
+    RoutingDecisionRecord,
+    | "kind"
+    | "selection"
+    | "fallbackReason"
+    | "blockReason"
+    | "message"
+    | "applied"
+    | "recommendation"
+  > = {
     id: randomUUID(),
     at: opts.now.toISOString(),
     taskId: opts.taskId,
@@ -335,8 +339,7 @@ export async function resolveRoutedAgent(
       harnesses,
     });
 
-    const provider =
-      "provider" in deps ? (deps.provider ?? null) : buildRoutingProvider(effective);
+    const provider = "provider" in deps ? (deps.provider ?? null) : buildRoutingProvider(effective);
 
     const decision = await decideRoutingForRun({
       effective,
@@ -389,7 +392,11 @@ export async function resolveRoutedAgent(
         )
       ) {
         appliedCandidate = handback.candidate;
-      } else if (decision.kind === "decided" && decision.applied && decision.outcome.kind === "selected") {
+      } else if (
+        decision.kind === "decided" &&
+        decision.applied &&
+        decision.outcome.kind === "selected"
+      ) {
         appliedCandidate = decision.outcome.candidate;
       }
     }
@@ -409,7 +416,7 @@ export async function resolveRoutedAgent(
     });
     if (handback) {
       record.handback = {
-        ...(record.handback!),
+        ...record.handback!,
         attempts: handbackInput!.attempts,
         switches: handbackInput!.switches,
         escalations: handbackInput!.escalations,
@@ -435,8 +442,7 @@ export async function resolveRoutedAgent(
 function persistRecord(deps: RoutingWiringDeps, record: RoutingDecisionRecord): void {
   if (deps.persist === false) return;
   try {
-    const store =
-      deps.store ?? createRoutingDecisionStore(deps.config.root, deps.config.cacheDir);
+    const store = deps.store ?? createRoutingDecisionStore(deps.config.root, deps.config.cacheDir);
     store.append(record);
   } catch {
     // Best-effort.
