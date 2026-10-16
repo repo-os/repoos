@@ -63,7 +63,9 @@ export function buildCandidateSet(input: CandidateSetInput): RoutingCandidate[] 
 }
 
 /** The complete configuration for one configured Agent, as a routing candidate. */
-export function candidateForAgent(agent: { cli: string; model: string } | null | undefined): RoutingCandidate | null {
+export function candidateForAgent(
+  agent: { cli: string; model: string } | null | undefined,
+): RoutingCandidate | null {
   if (!agent) return null;
   return { cli: agent.cli, model: agent.model, reasoning: null };
 }

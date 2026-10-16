@@ -88,9 +88,7 @@ async function refreshStatus(): Promise<void> {
 async function refreshDecisions(): Promise<void> {
   decisionsLoading.value = true;
   try {
-    const res = await api<ModelRoutingDecisionsResponse>(
-      "/api/model-routing/decisions?limit=10",
-    );
+    const res = await api<ModelRoutingDecisionsResponse>("/api/model-routing/decisions?limit=10");
     decisions.value = res.decisions ?? [];
   } catch {
     decisions.value = [];
