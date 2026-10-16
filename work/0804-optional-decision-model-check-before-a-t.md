@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/optional-decision-model-check-before-a-t
 created_at: "2026-10-16T05:07:46Z"
-updated_at: "2026-10-16T09:24:50Z"
+updated_at: "2026-10-16T09:27:09Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -41,26 +41,44 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 ```json
 [
 {
-"label": "Decision-model human-step flag on a ready task card (light)",
-"target": "default",
-"route": "/",
-"highlight": ".tc-needs-detail",
-"state": "card:humanStep",
-"theme": "light"
+  "label": "Ready card: decision-model human-step flag and explanation",
+  "target": "default",
+  "route": "/work?status=ready",
+  "highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
+    }
+  ],
+  "assert": [
+    {
+      "selector": "[data-task-id=\"9999\"] .tc-needs-detail",
+      "label": "the card shows the model explanation",
+      "text": "Decision model"
+    }
+  ],
+  "state": "card:humanStep",
+  "theme": "light"
 },
 {
-"label": "Decision-model human-step flag on a ready task card (dark)",
-"target": "default",
-"route": "/",
-"highlight": ".tc-needs-detail",
-"state": "card:humanStep",
-"theme": "dark"
-},
-{
-"label": "Human-step check setting on the Model routing tab",
-"target": "default",
-"route": "/agents?tab=model-routing",
-"highlight": "[data-testid=routing-human-step-check]"
+  "label": "Ready card: decision-model human-step flag and explanation (dark)",
+  "target": "default",
+  "route": "/work?status=ready",
+  "highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
+    }
+  ],
+  "assert": [
+    {
+      "selector": "[data-task-id=\"9999\"] .tc-needs-detail",
+      "label": "the card shows the model explanation in dark theme",
+      "text": "Decision model"
+    }
+  ],
+  "state": "card:humanStep",
+  "theme": "dark"
 }
 ]
 ```
@@ -85,3 +103,4 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 - 2026-10-16T09:23:47Z · note: highlight .tc-needs-detail matched nothing on /
 - 2026-10-16T09:24:50Z · note: review pass 1: needs some work
 - 2026-10-16T09:24:50Z · status review→active
+- 2026-10-16T09:27:09Z · body: section Shots
