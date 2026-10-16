@@ -2,7 +2,7 @@
 id: "0810"
 title: "Worktree changed after handoff: list the changed files with +/- lines in the modal (scrollable, max 60% height)"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
