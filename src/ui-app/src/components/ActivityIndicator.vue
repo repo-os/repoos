@@ -102,5 +102,12 @@ const matrixPositions = [
       <i v-for="n in 3" :key="n" :style="{ '--d': `${(n - 1) * 0.18}s` }"></i>
     </span>
     <span v-else-if="style === 'spark-diamond'" class="ai-mark ai-spark" aria-hidden="true"></span>
+    <span v-else-if="style === 'arcade-hopper'" class="ai-mark ai-hopper" aria-hidden="true">
+      <i></i>
+    </span>
+    <span v-else-if="style === 'puppy-tracks'" class="ai-mark ai-paws" aria-hidden="true">
+      <i></i>
+      <i></i>
+    </span>
   </span>
 </template>
