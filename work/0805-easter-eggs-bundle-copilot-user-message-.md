@@ -3,6 +3,9 @@ id: "0805"
 title: "Easter eggs bundle: Copilot event lines, and Set editor hints as links"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the cursor agent timed out after 900s
 priority: p3
 area: [web, server]
 assigned_to: ai
@@ -88,3 +91,4 @@ Commit per item so a reviewer can read them separately. Use the router's link co
 - 2026-10-16T12:25:46Z · status active→review
 - 2026-10-16T12:25:47Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-16T12:56:13Z · note: review pass 2: failed — no usable report
+- 2026-10-16T12:56:13Z · needs_input
