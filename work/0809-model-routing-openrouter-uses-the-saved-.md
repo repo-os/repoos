@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-jev-and-openrouter-only-hi
 created_at: "2026-10-16T11:59:41Z"
-updated_at: "2026-10-16T12:24:26Z"
+updated_at: "2026-10-16T12:33:32Z"
 ---
 ## Problem
 After #0803 landed, three things are wrong on the Model routing page, and one scope change is needed:
@@ -35,6 +35,30 @@ After #0803 landed, three things are wrong on the Model routing page, and one sc
 ## Notes for AI
 Start from src/core/model-routing/runtime.ts (readRoutingCredential, credentialLabelFor, modelRoutingStatus), src/ui-app/src/components/ModelRoutingPanel.vue (the provider options around line 34, showClefUrl, showsKeyForm), src/core/model-routing/config.ts (ROUTING_PROVIDERS) and the Model providers key path in src/server/routes/model-providers.ts. Keep the Clef-Flash schema value so existing configs still parse, but hide it from the UI. Tests use fake values only. Source: user report 2026-10-16.
 
+## Shots
+```json
+[
+{
+  "label": "Model routing: decision-provider options are Jev and OpenRouter only (no Clef-Flash)",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-testid=\"model-routing-panel\"]",
+  "steps": [
+    {
+      "click": "[data-testid=\"routing-provider\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
+},
+{
+  "label": "Model routing: key and provider-ready status",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-testid=\"routing-credential-status\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-16T11:59:41Z · created · njachowski@gmail.com
@@ -44,3 +68,4 @@ Start from src/core/model-routing/runtime.ts (readRoutingCredential, credentialL
 - 2026-10-16T12:21:15Z · body
 - 2026-10-16T12:22:25Z · body
 - 2026-10-16T12:24:26Z · body
+- 2026-10-16T12:33:32Z · body: section Shots
