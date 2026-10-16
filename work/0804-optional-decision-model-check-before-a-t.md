@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/optional-decision-model-check-before-a-t
 created_at: "2026-10-16T05:07:46Z"
-updated_at: "2026-10-16T09:40:08Z"
+updated_at: "2026-10-16T09:40:09Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -109,3 +109,4 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 - 2026-10-16T09:31:54Z · body
 - 2026-10-16T09:40:08Z · status active→review
 - 2026-10-16T09:40:08Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (13632f1a0) during finalization (#0734)
+- 2026-10-16T09:40:09Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (13632f1a0) during finalization (#0734)
