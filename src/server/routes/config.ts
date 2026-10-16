@@ -365,6 +365,8 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         artifactPath: r.artifactPath,
         label: r.label,
       };
+      if (typeof r.autoPort === "boolean") row.autoPort = r.autoPort;
+      if (r.port !== undefined && r.port !== "") row.port = r.port;
       if (typeof r.healthCheckUrl === "string" && r.healthCheckUrl.trim()) {
         row["healthCheck.url"] = r.healthCheckUrl.trim();
       }
@@ -388,6 +390,11 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       if (t.url) row.url = t.url;
       if (t.artifactPath) row.artifactPath = t.artifactPath;
       if (t.label) row.label = t.label;
+      // #0802: write the auto-pick opt-OUT only (the default is on), so a row
+      // that never touched the setting gains no line. `port` is written
+      // whenever set — it is the preferred port even while auto-pick is on.
+      if (t.autoPort === false) row.autoPort = false;
+      if (t.port !== undefined) row.port = t.port;
       if (t.healthCheck?.url) row["healthCheck.url"] = t.healthCheck.url;
       if (t.healthCheck?.file) row["healthCheck.file"] = t.healthCheck.file;
       return row;
@@ -404,6 +411,8 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       url: t.url ?? "",
       artifactPath: t.artifactPath ?? "",
       label: t.label ?? "",
+      autoPort: t.autoPort !== false,
+      port: t.port ?? 0,
       hcUrl: t.healthCheck?.url ?? "",
       hcFile: t.healthCheck?.file ?? "",
     });

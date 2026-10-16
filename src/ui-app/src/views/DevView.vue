@@ -371,6 +371,13 @@ watch(
                   </a>
                 </dd>
               </div>
+              <div v-if="t.kind === 'server' && t.port !== undefined">
+                <dt>Port</dt>
+                <dd class="kv-wrap">
+                  <code class="dev-port">{{ t.port }}</code>
+                  <span v-if="isRunning(t)" class="dev-port-note">in use now</span>
+                </dd>
+              </div>
               <div v-else-if="t.kind === 'artifact' && t.artifactPath">
                 <dt>Output</dt>
                 <dd>
@@ -669,7 +676,10 @@ watch(
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 999px;
-  color: var(--txt-dim);
+  /* `--txt` (not `--txt-dim`): the muted token measured just under the WCAG
+     floor on this pill's mixed background in the light/gruvbox scopes, and the
+     Dev page is now part of the rendered contrast audit (#0802). */
+  color: var(--txt);
   background: color-mix(in srgb, var(--border) 55%, transparent);
 }
 .dev-state-pill[data-status="running"] {
@@ -725,6 +735,18 @@ watch(
 }
 .dev-open:hover {
   text-decoration: underline;
+}
+/* The chosen port (#0802), shown beside the URL so a running target's real
+   port is visible at a glance. */
+.dev-port {
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--txt);
+}
+.dev-port-note {
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--txt-faint);
 }
 
 .dev-failure {

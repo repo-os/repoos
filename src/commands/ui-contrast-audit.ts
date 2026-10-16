@@ -746,7 +746,19 @@ A second column's worth of content so the board is not a single card.
 function makeAuditFixture(): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-contrast-"));
   mkdirSync(join(root, "work"), { recursive: true });
-  writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\nuiTheme = "classic"\n');
+  // A declared dev target so the `/dev` screen (#0802) renders a real card —
+  // its command, URL and chosen port are text the audit must gate in every
+  // theme scope, not just the empty state.
+  writeFileSync(
+    join(root, "repoos.toml"),
+    'theme = "dark"\nuiTheme = "classic"\n' +
+      "\n[[dev.targets]]\n" +
+      'name = "web"\n' +
+      'kind = "server"\n' +
+      'command = "bun run dev --port 5173"\n' +
+      'url = "http://127.0.0.1:5173"\n' +
+      'label = "Web app"\n',
+  );
   writeFileSync(join(root, "work", "0001-fixture-task.md"), FIXTURE_TASK_A);
   writeFileSync(join(root, "work", "0002-fixture-done.md"), FIXTURE_TASK_B);
   // A real git repo with one uncommitted change, so the drawer's Changes tab
@@ -1011,6 +1023,9 @@ function makeScreens(url: string): ScreenState[] {
     },
     { name: "agents", prepare: (p) => gotoApp(p, url, "/agents") },
     { name: "settings", prepare: (p) => gotoApp(p, url, "/settings") },
+    // The Dev page (#0802): the declared target's command, real URL and chosen
+    // port are text that must meet the floor in every theme scope.
+    { name: "dev", prepare: (p) => gotoApp(p, url, "/dev") },
     {
       name: "context-docs",
       prepare: async (p) => {

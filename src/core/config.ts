@@ -2851,7 +2851,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description:
         "The things you run yourself while developing — a local HMR web server, a debug build, a native app process — " +
         "as opposed to task previews, which RepoOS manages for a task's worktree. Only commands " +
-        "declared here can be started; edit them under Advanced → Dev targets.",
+        "declared here can be started; edit them under Advanced → Dev targets. Each target auto-picks " +
+        "a free port by default; turn that off per target to pin a fixed port.",
     },
     {
       // Rendered as a hand-rendered toggle on Advanced, next to the Dev targets
@@ -3114,6 +3115,9 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "dev.targets.url",
   "dev.targets.artifactPath",
   "dev.targets.label",
+  // #0802: per-target port handling — auto-pick on by default, else a fixed port.
+  "dev.targets.autoPort",
+  "dev.targets.port",
   "dev.targets.healthCheck.url",
   "dev.targets.healthCheck.file",
   // Optional AI failure summary for dev targets (#0775).
