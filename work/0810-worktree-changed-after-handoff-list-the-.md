@@ -2,7 +2,7 @@
 id: "0810"
 title: "Worktree changed after handoff: list the changed files with +/- lines in the modal (scrollable, max 60% height)"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -112,4 +112,4 @@ Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Wor
 - 2026-10-16T15:33:15Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-16T15:35:17Z · body: section Shots
 - 2026-10-16T15:37:55Z · body
-- 2026-10-16T15:45:06Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-16T15:45:06Z · status active→review
