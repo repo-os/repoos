@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 1016
-last_close_out_gate_at: "2026-10-16T11:48:53.925Z"
 id: "0808"
 title: "Docs: one open easter-eggs bundle at a time, areas may mix"
 type: chore
-status: review
+status: done
 priority: p3
 area: docs
+merged_commit: 294ac8f324f9bb1ad46d3dd6fc7608646f70b6b4
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-one-open-easter-eggs-bundle-at-a-ti
 created_at: "2026-10-16T10:04:51Z"
-updated_at: "2026-10-16T11:48:53Z"
+updated_at: "2026-10-16T11:48:57Z"
+last_close_out_gate_ms: 1016
+last_close_out_gate_at: "2026-10-16T11:48:53.925Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-16T11:28:49.726Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
@@ -51,4 +52,4 @@ Edit AGENTS.md and docs/easter-eggs-bundles.md on this task's branch. Do not com
 - 2026-10-16T11:42:30Z · note: review pass 1: good to go
 - 2026-10-16T11:45:05Z · body
 - 2026-10-16T11:48:53Z · close-out gate completed in 1s
-
+- 2026-10-16T11:48:57Z · status review→done, release:success
