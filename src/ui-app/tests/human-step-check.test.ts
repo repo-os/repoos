@@ -270,4 +270,24 @@ ${body}`,
       fx.clean();
     }
   });
+
+  it("preserves a persisted 'human' verdict when the keyword check would miss or reword it", () => {
+    // No word the regex matches, so without the model guard the check would
+    // clear the model's flag on the next sweep.
+    const cleanBody = KEYS_BODY.replace(
+      "- [ ] The dev config no longer reads the API keys from disk",
+      "- [ ] The token store is replaced",
+    );
+    const key = needsHumanStepFingerprint(cleanBody);
+    const fx = fixture(
+      `needs_input: true\nneeds_input_reason: needs-human-step\nneeds_input_detail: Decision model says so\nhuman_step_decision: human\nhuman_step_decision_key: ${key}\n`,
+      cleanBody,
+    );
+    try {
+      expect(flagNeedsHumanStepIfNeeded(fx.config, fx.task)).toBeNull();
+      expect(fx.reread().needsInputReason).toBe("needs-human-step");
+    } finally {
+      fx.clean();
+    }
+  });
 });

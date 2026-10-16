@@ -42,14 +42,14 @@ export function flagNeedsHumanStepIfNeeded(
     }
   }
 
-  // #0804: when the decision model judged this task needs no human-only step,
-  // it overrides the keyword heuristic — the model is the higher-quality signal
-  // the user opted into. A stored verdict only suppresses the check while the
-  // acceptance criteria it was made on are unchanged.
+  // #0804: a persisted decision-model verdict overrides the keyword heuristic
+  // while the acceptance criteria it was made on are unchanged. "agent" clears
+  // (and keeps clearing) the flag; "human" preserves the model's flag and its
+  // explanation even when the regex would have missed or reworded it.
+  const fingerprint = needsHumanStepFingerprint(task.body);
   const modelSaidAgent =
     opts?.humanStepDecision === "agent" ||
-    (task.humanStepDecision === "agent" &&
-      task.humanStepDecisionKey === needsHumanStepFingerprint(task.body));
+    (task.humanStepDecision === "agent" && task.humanStepDecisionKey === fingerprint);
   if (modelSaidAgent) {
     if (task.needsInput && task.needsInputReason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON) {
       const hasQuestions = (task.questions?.length ?? 0) > 0;
@@ -59,6 +59,19 @@ export function flagNeedsHumanStepIfNeeded(
         needsInputDetail: null,
       });
     }
+    return null;
+  }
+
+  const modelSaidHuman =
+    opts?.humanStepDecision === "human" ||
+    (task.humanStepDecision === "human" && task.humanStepDecisionKey === fingerprint);
+  if (modelSaidHuman) {
+    if (task.needsInput && task.needsInputReason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON) {
+      return null;
+    }
+    // No flag present: leave it that way. A dismissed or otherwise-cleared flag
+    // must not be resurrected by a later sweep, and the keyword detail would be
+    // strictly worse than the model's own text.
     return null;
   }
 
