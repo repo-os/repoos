@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-16T11:42:30Z"
-review_passes: 1
 id: "0808"
 title: "Docs: one open easter-eggs bundle at a time, areas may mix"
 type: chore
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/docs-one-open-easter-eggs-bundle-at-a-ti
 created_at: "2026-10-16T10:04:51Z"
+updated_at: "2026-10-16T11:45:05Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-10-16T11:28:49.726Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -47,4 +47,4 @@ Edit AGENTS.md and docs/easter-eggs-bundles.md on this task's branch. Do not com
 - 2026-10-16T11:41:53Z · status active→review
 - 2026-10-16T11:41:54Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-16T11:42:30Z · note: review pass 1: good to go
-
+- 2026-10-16T11:45:05Z · body
