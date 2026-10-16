@@ -2,14 +2,14 @@
 id: "0804"
 title: "Optional decision-model check before a task starts: should it be split into AI and human tasks?"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [server, web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-16T05:07:46Z"
-updated_at: "2026-10-16T05:07:46Z"
+updated_at: "2026-10-16T05:40:53Z"
 ---
 ## Problem
 The start check flags a task as needing a human step by matching single words in its acceptance criteria (for example 'keys', 'accounts'). That produces false positives: #0803 was stopped at start for the word 'keys' in an agent-doable scope. Word matching can't tell a real human step (a device or a real account) from a word that just appears in the criteria.
@@ -33,3 +33,4 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 ## Activity
 
 - 2026-10-16T05:07:46Z · created · njachowski@gmail.com
+- 2026-10-16T05:40:53Z · status inbox→ready
