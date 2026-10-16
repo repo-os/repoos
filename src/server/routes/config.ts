@@ -118,6 +118,8 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
       ?.credentialEnv,
     "model_routing.roles": (_rawModelRouting as { roles?: unknown } | undefined)?.roles,
     "model_routing.timeoutMs": (_rawModelRouting as { timeoutMs?: number } | undefined)?.timeoutMs,
+    "model_routing.humanStepCheck": (_rawModelRouting as { humanStepCheck?: boolean } | undefined)
+      ?.humanStepCheck,
     /**
      * Declared dev targets (#0749): the Settings control edits this
      * `[[dev.targets]]` list. Exposed as the parsed objects (never the raw

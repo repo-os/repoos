@@ -116,6 +116,13 @@ export interface TaskPatch {
   needsInputReason?: string | null;
   /** Free-text detail for why `needsInput` was set, or null to clear it. See {@link Task.needsInputDetail}. */
   needsInputDetail?: string | null;
+  /**
+   * Decision-model human-step verdict (#0804): `"agent"` / `"human"`, or null
+   * to clear it. Persisted independently of `needs_input`.
+   */
+  humanStepDecision?: "agent" | "human" | null;
+  /** Fingerprint of the acceptance criteria the verdict was made on. */
+  humanStepDecisionKey?: string | null;
   /** Clear (false) or set (true) the branch-drifted flag. */
   needsMerge?: boolean;
   /**
@@ -311,6 +318,12 @@ export function patchTaskFile(
   }
   if (patch.needsInputDetail !== undefined) {
     current.needsInputDetail = patch.needsInputDetail ?? undefined;
+  }
+  if (patch.humanStepDecision !== undefined) {
+    current.humanStepDecision = patch.humanStepDecision ?? undefined;
+  }
+  if (patch.humanStepDecisionKey !== undefined) {
+    current.humanStepDecisionKey = patch.humanStepDecisionKey ?? undefined;
   }
   if (patch.needsMerge !== undefined) {
     if (patch.needsMerge !== current.needsMerge) changes.push("needs_merge");
