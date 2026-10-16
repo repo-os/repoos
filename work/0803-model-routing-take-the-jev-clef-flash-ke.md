@@ -3,6 +3,9 @@ id: "0803"
 title: "Model routing: take the Jev / Clef-Flash key the same way Model providers does"
 type: bug
 status: done
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p1
 area: [web, server]
 merged_commit: "03c8bbe49dad75293cedc09d93f2e0146c590654"
@@ -12,7 +15,7 @@ branch: feat/model-routing-take-the-jev-clef-flash-ke
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T09:39:42Z"
+updated_at: "2026-10-16T12:25:06Z"
 last_close_out_gate_ms: 103604
 last_close_out_gate_at: "2026-10-16T09:38:35.201Z"
 review_passes: 1
@@ -98,3 +101,4 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 - 2026-10-16T08:56:47Z · note: review pass 1: good to go
 - 2026-10-16T09:38:35Z · close-out gate completed in 104s
 - 2026-10-16T09:39:42Z · status review→done, release:success
+- 2026-10-16T12:25:06Z · needs_input
