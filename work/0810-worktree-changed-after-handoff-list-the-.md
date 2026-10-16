@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/worktree-changed-after-handoff-list-the-
 created_at: "2026-10-16T12:17:43Z"
-updated_at: "2026-10-16T12:31:15Z"
+updated_at: "2026-10-16T12:36:44Z"
 ---
 ## Problem
 When a task's worktree changes after handoff, the 'Worktree changed after handoff' modal says what the HEAD moved from and to, but not which files changed. The user has to guess what they're discarding, or open a terminal to check. Example: #0807 was blocked by a repoos.toml commit and two task-file updates, and the modal did not say so.
@@ -29,9 +29,76 @@ When a task's worktree changes after handoff, the 'Worktree changed after handof
 ## Notes for AI
 Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Worktree changed after handoff' and 'Discard post-handoff edits'). Build the file list from git diff --numstat between the handoff commit and HEAD on the server side. Use the shared dialog components and the existing modal styles (AGENTS.md). Source: user request 2026-10-16 after #0807.
 
+## Shots
+```json
+[
+{
+  "label": "Handoff-conflict modal lists changed files with +/- counts (light)",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".dirty-card--conflict .dirty-list",
+  "steps": [
+    {
+      "waitFor": "#handoff-conflict-title"
+    }
+  ],
+  "assert": [
+    {
+      "selector": "#handoff-conflict-title",
+      "label": "the modal is open",
+      "text": "Worktree changed after handoff"
+    },
+    {
+      "selector": ".dirty-list .dirty-file",
+      "label": "changed files are listed",
+      "minCount": 3
+    },
+    {
+      "selector": ".dirty-actions button",
+      "label": "the three actions are present",
+      "count": 3
+    }
+  ],
+  "state": "drawer:handoffConflict",
+  "theme": "light"
+},
+{
+  "label": "Handoff-conflict modal lists changed files with +/- counts (dark)",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".dirty-card--conflict .dirty-list",
+  "steps": [
+    {
+      "waitFor": "#handoff-conflict-title"
+    }
+  ],
+  "assert": [
+    {
+      "selector": "#handoff-conflict-title",
+      "label": "the modal is open in dark theme",
+      "text": "Worktree changed after handoff"
+    },
+    {
+      "selector": ".dirty-list .dirty-file",
+      "label": "changed files are listed in dark theme",
+      "minCount": 3
+    },
+    {
+      "selector": ".dirty-actions button",
+      "label": "the three actions are present in dark theme",
+      "count": 3
+    }
+  ],
+  "state": "drawer:handoffConflict",
+  "theme": "dark"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-16T12:17:43Z · created · njachowski@gmail.com
 - 2026-10-16T12:23:51Z · status inbox→ready
 - 2026-10-16T12:23:53Z · status ready→active, branch
 - 2026-10-16T12:31:15Z · body
+- 2026-10-16T12:36:44Z · body: section Shots
