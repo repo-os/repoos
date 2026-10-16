@@ -11,7 +11,7 @@ branch: feat/model-routing-take-the-jev-clef-flash-ke
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T05:25:40Z"
+updated_at: "2026-10-16T05:25:41Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -61,10 +61,10 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 "highlight": "[data-testid=routing-key-toggle]",
 "steps": [
 {
-  "click": "[data-testid=routing-key-toggle]"
+"click": "[data-testid=routing-key-toggle]"
 },
 {
-  "waitMs": 200
+"waitMs": 200
 }
 ]
 }
@@ -95,3 +95,4 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 - 2026-10-16T05:11:35Z · body: section Shots
 - 2026-10-16T05:17:18Z · handoff failed · remote validation failed: test failure: tests/model-providers-routes.test.ts > GET /api/model-providers > lists all provider rows with hasKey booleans and never any key material on bee — fix it in the feature branch and re-run the gate
 - 2026-10-16T05:25:40Z · message_delivered: 1 message(s)
+- 2026-10-16T05:25:41Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/model-providers-routes.test.ts > GET /api/model-providers > lists all provider rows with hasKey booleans and never any key material on bee — fix it in the feature branch and re-run the gate
