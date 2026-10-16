@@ -210,9 +210,9 @@ describe("ModelRoutingPanel", () => {
     await flushPromises();
     expect(wrapper.find("[data-testid='routing-credential-status']").text()).toContain("Saved");
     expect(wrapper.find("[data-testid='routing-provider-ready']").text()).toContain("Ready");
-    expect(
-      wrapper.find("[data-testid='routing-credential-status'] .mr-pill").classes(),
-    ).toContain("mr-pill-ok");
+    expect(wrapper.find("[data-testid='routing-credential-status'] .mr-pill").classes()).toContain(
+      "mr-pill-ok",
+    );
     // OpenRouter never asks for a key on this page.
     expect(wrapper.find("[data-testid='routing-key-toggle']").exists()).toBe(false);
     wrapper.unmount();
@@ -241,9 +241,9 @@ describe("ModelRoutingPanel", () => {
     await flushPromises();
     expect(wrapper.find("[data-testid='routing-credential-status']").text()).toContain("Not set");
     expect(wrapper.find("[data-testid='routing-provider-ready']").text()).toContain("Not ready");
-    expect(
-      wrapper.find("[data-testid='routing-credential-status'] .mr-pill").classes(),
-    ).toContain("mr-pill-warn");
+    expect(wrapper.find("[data-testid='routing-credential-status'] .mr-pill").classes()).toContain(
+      "mr-pill-warn",
+    );
     const link = wrapper.find("[data-testid='routing-openrouter-link']");
     expect(link.exists()).toBe(true);
     expect(link.attributes("href")).toBe("/agents?tab=model-providers");
