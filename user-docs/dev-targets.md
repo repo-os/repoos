@@ -17,7 +17,8 @@ feature.
 
 ## Fields
 
-Every target has four fields, plus two optional ones:
+Every target has a `name`, a `kind` and a `command`; the rest are optional and
+depend on the kind:
 
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
