@@ -115,8 +115,11 @@ function pickAlternative(
   const currentKey = current ? candidateKey(current) : null;
   const others = eligible.filter((c) => candidateKey(c) !== currentKey);
   if (others.length === 0) return null;
+  // Prefer a genuinely different model over another reasoning variant of the
+  // same model: only a model (or cli) change is an actionable switch.
+  const differentModel = current ? others.find((c) => c.model !== current.model) : others[0];
   // Deterministic: first in the filter's stable order.
-  return others[0];
+  return differentModel ?? others[0];
 }
 
 function pickMostCapable(
