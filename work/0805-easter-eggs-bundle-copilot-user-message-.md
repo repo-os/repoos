@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-16T15:10:23Z"
-review_passes: 2
+updated_at: "2026-10-16T12:23:05Z"
+review_passes: 1
 id: "0805"
 title: "Easter eggs bundle: Copilot event lines, and Set editor hints as links"
 type: bug
@@ -11,8 +11,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-copilot-event-lines-a
 created_at: "2026-10-16T08:55:26Z"
-review_rounds: 1
-routing_switches: 1
 ---
 ## Problem
 One open easter-eggs bundle, collecting small, independent fixes. Items:
@@ -34,36 +32,6 @@ One open easter-eggs bundle, collecting small, independent fixes. Items:
 ## Notes for AI
 Commit per item so a reviewer can read them separately. Use the router's link component for item 2. Keep the aria-label wording. Marks superseded when landed: #0806. Source: user reports 2026-10-16.
 
-## Shots
-```json
-[
-{
-"label": "Task drawer Spec row — editor hint link (dark)",
-"target": "default",
-"route": "/work?task=0805&tab=details",
-"highlight": "[data-test-id=\"open-in-editor-hint\"]",
-"state": "editor:unconfigured",
-"theme": "dark"
-},
-{
-"label": "Task drawer Spec row — editor hint link (light)",
-"target": "default",
-"route": "/work?task=0805&tab=details",
-"highlight": "[data-test-id=\"open-in-editor-hint\"]",
-"state": "editor:unconfigured",
-"theme": "light"
-},
-{
-"label": "Context doc viewer — editor hint link (dark)",
-"target": "default",
-"route": "/repo?doc=docs/README.md",
-"highlight": "[data-test-id=\"context-open-in-editor-hint\"]",
-"state": "editor:unconfigured",
-"theme": "dark"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-16T08:55:26Z · created · njachowski@gmail.com
@@ -72,23 +40,6 @@ Commit per item so a reviewer can read them separately. Use the router's link co
 - 2026-10-16T10:04:40Z · title
 - 2026-10-16T10:25:54Z · status inbox→ready
 - 2026-10-16T11:55:05Z · status ready→active, branch
-- 2026-10-16T12:00:45Z · body
-- 2026-10-16T12:02:57Z · body: section Shots
-- 2026-10-16T12:05:44Z · body
-- 2026-10-16T12:07:18Z · body
 - 2026-10-16T12:14:39Z · status active→review
-- 2026-10-16T12:14:55Z · note: highlight [data-test-id="open-in-editor-hint"] matched nothing on /work?task=0805&tab=details
-- 2026-10-16T12:14:58Z · note: highlight [data-test-id="context-open-in-editor-hint"] matched nothing on /repo?doc=docs/README.md
-- 2026-10-16T12:15:44Z · note: review pass 1: needs some work
-- 2026-10-16T12:15:45Z · status review→active
-- 2026-10-16T12:17:28Z · body: section Shots
-- 2026-10-16T12:18:52Z · body
-- 2026-10-16T12:20:38Z · body
-- 2026-10-16T12:24:56Z · body
-- 2026-10-16T12:25:46Z · status active→review
-- 2026-10-16T12:25:47Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-10-16T12:56:13Z · note: review pass 2: failed — no usable report
-- 2026-10-16T12:56:13Z · needs_input
-- 2026-10-16T15:09:23Z · needs_input (review-failed) cleared for review again by hello@repoos.org
-- 2026-10-16T15:10:23Z · note: review pass 3: good to go
+- 2026-10-16T12:23:05Z · note: review pass 1: good to go
 

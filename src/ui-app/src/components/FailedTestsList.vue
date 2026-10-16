@@ -65,14 +65,15 @@ async function open(test: string): Promise<void> {
       >
         Open ↗
       </button>
-      <span
+      <router-link
         v-else
         class="editor-config-hint"
         data-test-id="failed-test-open-hint"
+        :to="{ path: '/settings', query: { tab: 'general', section: 'general' } }"
         :aria-label="'Configure an editor in Settings → General to enable Open in editor'"
       >
-        Set editor
-      </span>
+        Set editor in Settings → General
+      </router-link>
     </li>
   </ul>
 </template>
