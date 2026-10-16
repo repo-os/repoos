@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-pick-a-free-port-by-def
 created_at: "2026-10-15T19:36:15Z"
-updated_at: "2026-10-16T01:55:15Z"
+updated_at: "2026-10-16T01:58:49Z"
 ---
 ## Problem
 #0775 added the plain-language failure summary for a dev target whose port is taken, but not the automatic port choice it was asked to include. The three dev targets in repoos.toml now use the {port} placeholder, so they pick a free port, but nothing decides that for every target, and there is no setting for it.
@@ -29,6 +29,35 @@ updated_at: "2026-10-16T01:55:15Z"
 ## Notes for AI
 Start from src/server/dev.ts (the {port} substitution, which already picks a free port at start time) and src/core/dev-failure.ts (the summary). Source: the 2026-10-16 dev target failure (Landing page on 5173), and #0775, which shipped the summary without the auto-pick.
 
+## Shots
+```json
+[
+{
+  "label": "Dev page: the chosen port and real URL",
+  "target": "default",
+  "route": "/dev?shotState=dev:running",
+  "highlight": ".dev-port"
+},
+{
+  "label": "Settings to Advanced: dev target auto-pick and fixed-port control",
+  "target": "default",
+  "route": "/settings?tab=advanced",
+  "highlight": "#dev-target-port",
+  "steps": [
+    {
+      "waitFor": "[aria-label^=Edit]"
+    },
+    {
+      "click": "[aria-label^=Edit]"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
+}
+]
+```
+
 ## Activity
 
 - 2026-10-15T19:36:15Z · created · njachowski@gmail.com
@@ -38,3 +67,4 @@ Start from src/server/dev.ts (the {port} substitution, which already picks a fre
 - 2026-10-16T01:19:38Z · message_queued at 2026-10-16T01:19:38.343Z
 - 2026-10-16T01:19:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-16T01:55:15Z · body
+- 2026-10-16T01:58:49Z · body: section Shots
