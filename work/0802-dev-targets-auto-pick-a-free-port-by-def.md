@@ -88,3 +88,4 @@ Start from src/server/dev.ts (the {port} substitution, which already picks a fre
 - 2026-10-16T02:13:23Z · body: section Shots
 - 2026-10-16T02:14:16Z · body
 - 2026-10-16T02:23:38Z · status active→review
+- 2026-10-16T02:23:38Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (1a9b848a0) during finalization (#0734)
