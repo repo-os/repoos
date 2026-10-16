@@ -39,24 +39,24 @@ Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Wor
 "highlight": ".dirty-card--conflict .dirty-list",
 "steps": [
 {
-  "waitFor": "#handoff-conflict-title"
+"waitFor": "#handoff-conflict-title"
 }
 ],
 "assert": [
 {
-  "selector": "#handoff-conflict-title",
-  "label": "the modal is open",
-  "text": "Worktree changed after handoff"
+"selector": "#handoff-conflict-title",
+"label": "the modal is open",
+"text": "Worktree changed after handoff"
 },
 {
-  "selector": ".dirty-list .dirty-file",
-  "label": "changed files are listed",
-  "minCount": 3
+"selector": ".dirty-list .dirty-file",
+"label": "changed files are listed",
+"minCount": 3
 },
 {
-  "selector": ".dirty-actions button",
-  "label": "the three actions are present",
-  "count": 3
+"selector": ".dirty-actions button",
+"label": "the three actions are present",
+"count": 3
 }
 ],
 "state": "drawer:handoffConflict",
@@ -69,24 +69,24 @@ Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Wor
 "highlight": ".dirty-card--conflict .dirty-list",
 "steps": [
 {
-  "waitFor": "#handoff-conflict-title"
+"waitFor": "#handoff-conflict-title"
 }
 ],
 "assert": [
 {
-  "selector": "#handoff-conflict-title",
-  "label": "the modal is open in dark theme",
-  "text": "Worktree changed after handoff"
+"selector": "#handoff-conflict-title",
+"label": "the modal is open in dark theme",
+"text": "Worktree changed after handoff"
 },
 {
-  "selector": ".dirty-list .dirty-file",
-  "label": "changed files are listed in dark theme",
-  "minCount": 3
+"selector": ".dirty-list .dirty-file",
+"label": "changed files are listed in dark theme",
+"minCount": 3
 },
 {
-  "selector": ".dirty-actions button",
-  "label": "the three actions are present in dark theme",
-  "count": 3
+"selector": ".dirty-actions button",
+"label": "the three actions are present in dark theme",
+"count": 3
 }
 ],
 "state": "drawer:handoffConflict",
@@ -104,3 +104,4 @@ Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Wor
 - 2026-10-16T12:36:44Z · body: section Shots
 - 2026-10-16T12:38:02Z · body
 - 2026-10-16T12:56:12Z · message_queued at 2026-10-16T12:56:12.680Z
+- 2026-10-16T12:56:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
