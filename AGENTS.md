@@ -437,15 +437,21 @@ cannot tell from the code alone:
   turns up several small, independent, low-risk fixes — cosmetic, copy,
   test-race hardening, tiny UI or data-source corrections, docs follow-ups —
   collect them into ONE task titled `Easter eggs bundle: <themes>` instead of
-  filing one task each or committing each straight to `main`. A bundle pays the
+  filing one task each or committing each straight to `main`. There is only
+  ONE open easter-eggs bundle at a time: a new small fix is added to the open
+  bundle (update its body and items), not filed as a new task, and you start
+  another bundle only after the open one has landed. A bundle pays the
   per-task overhead — one worktree, one `repoos check` run, one review, one
   close-out and its server reload — once instead of once per item. The bundle
   body lists every item with its source task id, a one-line fix and one test per
   item; commit per item so a reviewer can read them separately; and mark each
-  source task superseded when the bundle lands. Never fold easter eggs INTO a
-  release-critical or machinery task — a failing small item would hold up the
-  big one. Keep a bundle to about 3–6 items in one area family, file it p2/p3,
-  and run it while big tasks soak or wait. A bundle is an ordinary task: it still
+  source task superseded when the bundle lands — an explicit note in the task
+  body, leaving its `status:` as it is, never `repoos mv <id> done`. Never fold
+  easter eggs INTO a release-critical or machinery task — a failing small item
+  would hold up the big one. Keep a bundle to about 3–6 items, and they may mix
+  areas (web, server, docs) as long as every item is small and independent; an
+  open bundle already at that size is split, not grown. File it p2/p3, and run
+  it while big tasks soak or wait. A bundle is an ordinary task: it still
   runs the gate and goes to review — it just pays that overhead once for several
   fixes. When the human explicitly asks for a hotfix on `main`, the direct-commit
   exception above still applies. See `docs/easter-eggs-bundles.md`; #0721 is the
