@@ -51,12 +51,14 @@ import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
   deterministicSessionId,
   extractOneShotReportText,
+  isModelOverridePinned,
   resolveReviewer,
   resolveReviewerForTask,
   usageCostSource,
   type AgentRunner,
   type PromptResult,
 } from "./agents.js";
+import { resolveRoutedAgent } from "./model-routing-wiring.js";
 import { NEEDS_INPUT_DISMISSED_LINE_RE } from "./needs-input-dismiss.js";
 import { UNDERSPECIFIED_NEEDS_INPUT_REASON } from "./task-underspecified-flag.js";
 import { patchTaskFile } from "./write.js";
@@ -824,11 +826,29 @@ export class ReviewManager {
     if (this.isRunning(task.id)) {
       return { ok: false, reason: "a review is already running for this task" };
     }
-    const agent = resolveReviewerForTask(this.config, task);
-    if (!agent) {
+    const baseReviewer = resolveReviewerForTask(this.config, task);
+    if (!baseReviewer) {
       this.logger.task(task.id, "info", "review skipped — agent disabled");
       return { ok: false, skipped: true, reason: "the review agent is disabled" };
     }
+    // Automatic model routing (#0793): choose the reviewer configuration when
+    // enabled. Off/shadow and human pins return the base reviewer unchanged,
+    // and routing can never disable the review.
+    let agent = baseReviewer;
+    const routed = await resolveRoutedAgent(
+      { config: this.config },
+      {
+        role: "reviewer",
+        task,
+        base: baseReviewer,
+        pinned:
+          !!task.reviewAgentOverride ||
+          !!task.reviewCliOverride ||
+          isModelOverridePinned(task.reviewModelOverride),
+        briefExtra: `Reviewing branch ${task.branch ?? "(none)"} against ${currentBranch(this.config.root) ?? "main"}.`,
+      },
+    );
+    if (routed.agent) agent = routed.agent;
     const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
     if (!workdir) {
       this.logger.task(task.id, "info", "review skipped — no worktree", { branch: task.branch });
@@ -1805,8 +1825,49 @@ export class ReviewManager {
 
       // Get the engineer agent
       const { resolveAgentForTask } = await import("./agents.js");
-      const engineerAgent = resolveAgentForTask(this.config, task);
-      if (!engineerAgent) return;
+      const baseEngineer = resolveAgentForTask(this.config, task);
+      if (!baseEngineer) return;
+
+      // Automatic model routing on handback (#0793): compare continuing the
+      // existing engineer configuration with switching or escalating, using the
+      // findings and attempt history. Infrastructure / gate-setup failures are
+      // never attributed to the model. The decision is recorded either way.
+      const priorSwitches =
+        typeof task.extra?.routing_switches === "number" ? task.extra.routing_switches : 0;
+      const priorEscalations =
+        typeof task.extra?.routing_escalations === "number" ? task.extra.routing_escalations : 0;
+      const routed = await resolveRoutedAgent(
+        { config: this.config },
+        {
+          role: "engineer",
+          task,
+          base: baseEngineer,
+          pinned:
+            isModelOverridePinned(task.modelOverride) || !!task.cliOverride || !!task.agentOverride,
+          briefExtra:
+            `Review round ${reviewRounds + 1} findings:\n` +
+            `Bugs:\n${sections.bugs ?? "(none)"}\n` +
+            `Edge cases:\n${sections.edgeCases ?? "(none)"}`,
+          handback: {
+            findings: {
+              bugs: !!sections.bugs,
+              edgeCases: !!sections.edgeCases,
+              suggestions: !!sections.suggestions,
+              blocking: true,
+            },
+            // A mechanical clamp is a gate/verification failure, not the model's.
+            failureKind: report.clampReason ? "gate-setup" : "review-findings",
+            attempts: reviewRounds,
+            switches: priorSwitches,
+            escalations: priorEscalations,
+          },
+        },
+      );
+      // A cross-harness switch cannot safely resume the engineer's session id,
+      // so only a same-harness model change is applied to the resume turn. The
+      // decision record still shows the recommendation and why it was kept.
+      let engineerAgent = routed.agent ?? baseEngineer;
+      if (engineerAgent.cli !== baseEngineer.cli) engineerAgent = baseEngineer;
 
       const sent = this.runner.send(task.id, message, engineerAgent, { skipBoardDivergence: true });
       if (!sent.ok) {
@@ -1830,8 +1891,19 @@ export class ReviewManager {
         const raw = readFileSync(task.absPath, "utf8");
         const doc = parseDocument(raw);
         doc.data.review_rounds = newRounds;
-        const keys = Object.keys(doc.data).filter((k) => k !== "review_rounds");
-        keys.unshift("review_rounds");
+        const newSwitches = priorSwitches + (routed.handback?.action === "switch" ? 1 : 0);
+        const newEscalations = priorEscalations + (routed.handback?.action === "escalate" ? 1 : 0);
+        if (newSwitches > 0) doc.data.routing_switches = newSwitches;
+        if (newEscalations > 0) doc.data.routing_escalations = newEscalations;
+        const rest = Object.keys(doc.data).filter(
+          (k) => k !== "review_rounds" && k !== "routing_switches" && k !== "routing_escalations",
+        );
+        const keys = [
+          "review_rounds",
+          ...(newSwitches > 0 ? ["routing_switches"] : []),
+          ...(newEscalations > 0 ? ["routing_escalations"] : []),
+          ...rest,
+        ];
         writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
       } catch (err) {
         console.error(
