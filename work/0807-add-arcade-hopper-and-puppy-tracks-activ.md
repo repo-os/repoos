@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-arcade-hopper-and-puppy-tracks-activ
 created_at: "2026-10-16T09:55:07Z"
-updated_at: "2026-10-16T11:44:32Z"
+updated_at: "2026-10-16T11:46:42Z"
 ---
 ## Problem
 
@@ -60,6 +60,26 @@ Extend the existing validated config enum, schema options, config persistence, a
 - Reduced-motion verification confirms all parent/child animations stop and marks remain visible. Inspect motion over time; screenshots alone do not prove animation fidelity. Capture Settings and real task-card evidence.
 - Rebuild after UI changes, run focused meaningful tests and the scoped repoos check, and hand off through normal RepoOS review.
 
+## Shots
+```json
+[
+{
+  "label": "Activity animation settings: Arcade hopper and Puppy tracks now in the dropdown",
+  "target": "default",
+  "route": "/settings?focus=activityAnimationStyle",
+  "highlight": "#setting-activityAnimationStyle",
+  "steps": [
+    {
+      "click": "#setting-activityAnimationStyle button[role=\"combobox\"]"
+    },
+    {
+      "waitMs": 500
+    }
+  ]
+}
+]
+```
+
 ## Activity
 
 - 2026-10-16T09:55:07Z · created · njachowski@gmail.com
@@ -68,3 +88,4 @@ Extend the existing validated config enum, schema options, config persistence, a
 - 2026-10-16T10:41:38Z · message_queued at 2026-10-16T10:41:38.967Z
 - 2026-10-16T10:41:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-16T11:44:32Z · body
+- 2026-10-16T11:46:42Z · body: section Shots
