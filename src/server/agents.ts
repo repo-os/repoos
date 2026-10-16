@@ -2037,6 +2037,11 @@ export function parseCopilotEvent(
     type === "assistant.tool_call_delta" ||
     type === "assistant.turn_start" ||
     type === "assistant.turn_end" ||
+    // Input echoed back and the idle heartbeat: the chat already shows the
+    // user's own message and the assistant's turn, so surfacing these would
+    // only duplicate them as "unknown protocol event" noise.
+    type === "user.message" ||
+    type === "assistant.idle" ||
     type === "prompt_cache_break"
   )
     return { sessionID };
