@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-16T13:28:56.157Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0809"
 title: "Model routing: Jev and OpenRouter only (hide Clef-Flash), OpenRouter uses the saved key, consistent status, plain 'OpenRouter' label"
 type: bug
@@ -77,3 +79,4 @@ Start from src/core/model-routing/runtime.ts (readRoutingCredential, credentialL
 - 2026-10-16T12:24:26Z · body
 - 2026-10-16T12:33:32Z · body: section Shots
 - 2026-10-16T12:34:15Z · body: section Shots
+
