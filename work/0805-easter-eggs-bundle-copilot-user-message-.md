@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-copilot-event-lines-a
 created_at: "2026-10-16T08:55:26Z"
-updated_at: "2026-10-16T12:14:39Z"
+updated_at: "2026-10-16T12:23:05Z"
 ---
 ## Problem
 One open easter-eggs bundle, collecting small, independent fixes. Items:
@@ -40,3 +40,4 @@ Commit per item so a reviewer can read them separately. Use the router's link co
 - 2026-10-16T10:25:54Z · status inbox→ready
 - 2026-10-16T11:55:05Z · status ready→active, branch
 - 2026-10-16T12:14:39Z · status active→review
+- 2026-10-16T12:23:05Z · note: review pass 1: good to go
