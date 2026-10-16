@@ -42,6 +42,7 @@ import type {
   RoutingAnswer,
   RoutingDecisionProvider,
 } from "../../core/model-routing/types.js";
+import type { HarnessAvailability } from "../../core/model-routing/candidates.js";
 import type { RoutingDecisionStore } from "../../core/model-routing/decision-store.js";
 
 const claude: RoutingCandidate = { cli: "claude code", model: "default", reasoning: null };
@@ -49,7 +50,7 @@ const codex: RoutingCandidate = { cli: "codex", model: "gpt-5", reasoning: null 
 
 const ALL_ROLES = ["pm", "engineer", "reviewer"] as const;
 
-const HARNESSES = {
+const HARNESSES: Record<string, HarnessAvailability> = {
   "claude code": {
     available: true,
     supportedReasoning: [],
@@ -69,7 +70,7 @@ const HARNESSES = {
     supportedRoles: [...ALL_ROLES],
     maxContextTokens: 1_000_000,
   },
-} as const;
+};
 
 const ALLOW = [
   { cli: "claude code", models: ["default"] },
@@ -156,8 +157,6 @@ function memStore(): RoutingDecisionStore & { records: RoutingDecisionRecord[] }
   };
   return store;
 }
-
-const weights: RoutingWeights = { costWeight: 0.5, timeWeight: 0.5 };
 
 describe("routing candidate set", () => {
   it("uses the allowlist as the whole universe when non-empty", () => {
