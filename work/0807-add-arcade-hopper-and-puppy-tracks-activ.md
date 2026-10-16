@@ -2,7 +2,7 @@
 id: "0807"
 title: Add Arcade hopper and Puppy tracks activity animations
 type: feature
-status: review
+status: active
 priority: p2
 area: [web, core]
 assigned_to: ai
