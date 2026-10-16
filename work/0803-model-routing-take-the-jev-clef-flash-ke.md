@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T03:16:58Z"
+updated_at: "2026-10-16T03:21:50Z"
 ---
 ## Problem
 The Model routing page is confusing and asks for things users don't need to supply:
@@ -21,6 +21,8 @@ The Model routing page is confusing and asks for things users don't need to supp
 3. It lists 'Self-hosted Clef-Flash' as if a cloud key were needed. The adapter calls a self-hosted SGLang server at a base URL, with an optional bearer token. No Cloudflare key is used. A Cloudflare-hosted Clef-Flash would need its own account setup and is not built.
 
 The Model providers page already saves secrets safely (src/server/routes/model-providers.ts): a masked input, saved only to the gitignored .env under a fixed name, never written to repoos.toml, never logged, never echoed back.
+
+Incident: a Jev key was pasted into the variable field, saved to repoos.toml and committed locally (f54341535). The key is deactivated. The commit was not pushed.
 
 ## Desired UX
 - Provider choices, in plain words:
@@ -37,6 +39,7 @@ The Model providers page already saves secrets safely (src/server/routes/model-p
 - Clef-Flash asks only for the server address and optional token, and the optional token is saved through the same .env path.
 - The input is masked, uses a real placeholder attribute, and saves only on Save. Provider ready updates without a reload.
 - Light and dark themes; keyboard accessible.
+- Docs: update the agent-facing docs (AGENTS.md and the docs/ folder) with a short how-to for building any feature that takes an API key. It must say: register the key in the model-providers registry with a fixed env-var name; write it only through the .env writer, never to repoos.toml or any tracked file; never make the env-var name a free-text field; show only saved or not-set status; use fake values in tests; and never paste a live key into a task, a chat or a config field. Include the incident above as the reason.
 
 ## Notes for AI
 Start from src/server/routes/model-providers.ts (registry, the .env writer, the save route), src/core/model-routing/providers.ts (OpenRouter and Clef-Flash adapters), src/core/config.ts (REPOOS_OPENROUTER_API_KEY), src/ui-app/src/components/ModelProvidersPanel.vue and src/ui-app/src/components/ModelRoutingPanel.vue. Tests use fake values only. Source: user report 2026-10-16.
@@ -47,3 +50,4 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 - 2026-10-16T03:11:28Z · needs_input
 - 2026-10-16T03:11:44Z · body
 - 2026-10-16T03:16:58Z · body
+- 2026-10-16T03:21:50Z · body
