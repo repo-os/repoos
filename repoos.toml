@@ -102,7 +102,7 @@ dev.inspector.editorCommand = "zed {file}:{line}"
 remoteValidation.engineerSelfCheckRemote = true
 activityAnimationStyle = "tiny-signal-bars"
 model_routing.mode = "shadow"
-model_routing.credentialEnv = "TYPESAFE_AP"
+model_routing.credentialEnv = "TYPESAFE_"
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
 user = "nick"
