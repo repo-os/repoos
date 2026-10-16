@@ -518,6 +518,7 @@ provider = "jev"             # jev | openrouter | clef-flash
 model = "jev-latest"         # or a pinned id such as "jev-1.13.0"
 roles = ["engineer", "reviewer", "pm"]
 timeoutMs = 8000             # 500–60000
+humanStepCheck = false       # ask before a ready task starts (default off)
 ```
 
 | Key | Default | Meaning |
@@ -528,6 +529,7 @@ timeoutMs = 8000             # 500–60000
 | `model_routing.baseUrl` | — | Clef-Flash only: base URL of your self-hosted server, e.g. `http://localhost:30000`. |
 | `model_routing.roles` | all three | Which runs consult the router. A role left out keeps its configured agent. |
 | `model_routing.timeoutMs` | `8000` | One decision call's ceiling. A timeout falls back; it never blocks the run. |
+| `model_routing.humanStepCheck` | `false` | Before a `ready` task starts, ask the decision model whether it needs steps only a human can do and should be split into an AI task and a human task. Uses the same provider as routing. It only blocks a start when `mode = "automatic"`; in `shadow` it records the verdict without blocking, and when the provider is off, unavailable, or fails, the existing keyword check runs instead — a failure never blocks a task on its own. |
 
 ### Choosing a provider
 

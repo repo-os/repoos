@@ -178,6 +178,16 @@ export interface Task {
    */
   needsInputDetail?: string;
   /**
+   * Last decision-model verdict about a human-only step (#0804): `"agent"` when
+   * the model said an AI agent can do the whole task, `"human"` when it said a
+   * separate human task is needed. Unset for tasks that never ran the check.
+   * `"agent"` suppresses the keyword heuristic for the task while
+   * {@link humanStepDecisionKey} still matches the acceptance criteria.
+   */
+  humanStepDecision?: "agent" | "human";
+  /** Fingerprint of the acceptance-criteria text the decision was made on. */
+  humanStepDecisionKey?: string;
+  /**
    * One-line AI tl;dr for the current failure — root cause + next action,
    * produced by the task's Debugger agent and shown as a callout above the
    * task drawer's tabs (#0570). Best-effort: absent when the Debugger is
@@ -1819,6 +1829,15 @@ export interface ModelRoutingConfig {
   roles?: Array<"pm" | "engineer" | "reviewer">;
   /** Hard timeout for one decision call, in milliseconds. */
   timeoutMs?: number;
+  /**
+   * Ask the decision model, before a ready task starts, whether it contains
+   * steps only a human can do and should be split into an AI task and a human
+   * task (#0804). Off by default. Uses the same provider as routing: the model
+   * only blocks a start in `automatic` routing mode (`shadow` records the
+   * verdict without blocking), and any provider failure falls back to the
+   * keyword check.
+   */
+  humanStepCheck?: boolean;
 }
 
 /** Close-out (Move to done) pipeline budget (#0573). */

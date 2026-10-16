@@ -20,6 +20,7 @@ import {
   needsInputBannerText,
   needsInputStatusLabel,
   needsInputSurfaces,
+  needsInputDetailVisible,
 } from "../lib/needs-input-ui";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
@@ -452,6 +453,16 @@ function needsInputHint(task: Task): CardHint {
   };
 }
 
+/** The flag's detail line (#0804): the decision model's explanation on a
+ *  human-step flag, or any other per-reason detail the drawer would show. */
+const needsInputDetailLine = computed<string | null>(() => {
+  const t = props.task;
+  if (!needsInputSurfaces(t)) return null;
+  const hasQuestions = (t.questions?.length ?? 0) > 0;
+  if (!needsInputDetailVisible(t.needsInputReason, t.needsInputDetail, hasQuestions)) return null;
+  return t.needsInputDetail?.trim() || null;
+});
+
 /** The last automatic review's actual outcome for this task, when one
  *  exists — null while no report has landed yet, or its state is
  *  unparseable. Distinct from `reviewFor(id)?.running`: that's whether a
@@ -656,6 +667,10 @@ const hint = computed<CardHint | null>(() => {
       cls: "tc-stalled",
     };
   }
+  // #0804: a ready/inbox task the start check (keyword or decision model)
+  // flagged must show that on the card — the board otherwise looks idle and
+  // the explanation the model produced is invisible.
+  if (needsInputSurfaces(t)) return needsInputHint(t);
   // 0381: a PM chat run can touch a task in ANY status — ready, inbox,
   // even done. Without this the card would look idle while the PM works.
   if (pmWorking) return PM_WORKING_HINT;
@@ -1179,6 +1194,9 @@ async function openDebuggerFromError(): Promise<void> {
             slow
           </span>
         </span>
+        <p v-if="needsInputDetailLine" class="tc-needs-detail" :title="needsInputDetailLine">
+          {{ needsInputDetailLine }}
+        </p>
       </div>
     </div>
 

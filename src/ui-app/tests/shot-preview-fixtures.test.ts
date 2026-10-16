@@ -45,6 +45,20 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.doneErrors[SHOT_PREVIEW_FIXTURE_TASK_ID]?.step).toBe("check");
   });
 
+  it("seeds a ready card flagged by the decision-model human-step check (#0804)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "card:humanStep");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "card:humanStep seeds the fixture task").toBeTruthy();
+    expect(task!.status).toBe("ready");
+    expect(task!.needsInput).toBe(true);
+    expect(task!.needsInputReason).toBe("needs-human-step");
+    // The bounded explanation the flag hangs off — never raw model text.
+    expect(task!.needsInputDetail).toContain("Decision model");
+  });
+
   it("seeds an uploading close-out with visible bundle progress (#0782)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -167,6 +181,7 @@ describe("shot preview board fixtures (#0743)", () => {
       const repo = useRepoStore();
       for (const fixture of [
         "card:doneError",
+        "card:humanStep",
         "closeOut:uploading",
         "closeOut:remoteTests",
         "board:withReviewTask",
