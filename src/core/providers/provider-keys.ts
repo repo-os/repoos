@@ -4,10 +4,7 @@
  */
 import type { RepoOSConfig } from "../types.js";
 import type { ModelProviderRow } from "./spend.js";
-import {
-  readProviderKeyFromHarness,
-  type HarnessAuthStore,
-} from "./harness-auth.js";
+import { readProviderKeyFromHarness, type HarnessAuthStore } from "./harness-auth.js";
 
 /**
  * The stored key for a live row, read through process.env FIRST so a save
