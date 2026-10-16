@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/worktree-changed-after-handoff-list-the-
 created_at: "2026-10-16T12:17:43Z"
-updated_at: "2026-10-16T15:22:00Z"
+updated_at: "2026-10-16T15:33:14Z"
 ---
 ## Problem
 When a task's worktree changes after handoff, the 'Worktree changed after handoff' modal says what the HEAD moved from and to, but not which files changed. The user has to guess what they're discarding, or open a terminal to check. Example: #0807 was blocked by a repoos.toml commit and two task-file updates, and the modal did not say so.
@@ -107,3 +107,4 @@ Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Wor
 - 2026-10-16T12:56:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-16T15:18:47Z · body
 - 2026-10-16T15:22:00Z · body
+- 2026-10-16T15:33:14Z · note: ui verification failed (10 issue(s)): [request] HTTP 404 for http://127.0.0.1:57937/api/tasks/9999 (http://127.0.0.1:57937/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:57937/api/tasks/9999); [assertion] Handoff-conflict modal lists changed files with +/- counts (light): selector #handoff-conflict-title matched 0 element(s), expected at least 1 (nothing rendered — the feature state may be absent) (captured http://127.0
