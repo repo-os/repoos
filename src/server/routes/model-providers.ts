@@ -25,36 +25,12 @@ import {
   fetchOpenCodeGoUsage,
   fetchDeepInfraSpend,
 } from "../../core/providers/spend.js";
-import type { ModelProviderRow } from "../../core/providers/spend.js";
-import {
-  readProviderKeyFromHarness,
-  type HarnessAuthStore,
-} from "../../core/providers/harness-auth.js";
+import { readProviderKey } from "../../core/providers/provider-keys.js";
+
+export { readProviderKey };
 
 /** Cap on pasted key length — real provider keys are far shorter. */
 const MAX_KEY_LEN = 500;
-
-/**
- * The stored key for a live row, read through process.env FIRST so a save
- * (which updates process.env in place, see `setDotEnvSecret`) is visible
- * immediately, then the boot-time config snapshot, then the coding agents' own
- * auth stores (#0676) — a key that only lives in pi/opencode's login store is
- * still a key this install can spend against. Empty string when unset.
- * Exported for tests.
- */
-export function readProviderKey(
-  config: RepoOSConfig,
-  row: ModelProviderRow,
-  harnessStores?: HarnessAuthStore[],
-): string {
-  const fromEnv = row.envVar ? process.env[row.envVar] : undefined;
-  if (fromEnv) return fromEnv;
-  if (row.configKey) {
-    const fromConfig = config.modelProviders?.[row.configKey];
-    if (fromConfig) return fromConfig;
-  }
-  return readProviderKeyFromHarness(row.id, harnessStores);
-}
 
 export const getModelProviders: RouteHandler = async (ctx, _req, res) => {
   const providers = MODEL_PROVIDERS.map((p) => ({
@@ -83,6 +59,11 @@ export const getModelProviderUsage: RouteHandler = async (ctx, _req, res, params
     });
   }
   try {
+    if (row.id === "jev" || row.id === "clef-flash") {
+      return json(res, 400, {
+        error: `${row.label} has no spend API in RepoOS — the saved key is used for adaptive model routing only.`,
+      });
+    }
     if (row.id === "openrouter") {
       const spend = await fetchOpenRouterSpend(apiKey);
       if (!spend.credits && !spend.key) {

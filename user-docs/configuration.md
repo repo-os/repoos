@@ -503,7 +503,7 @@ RepoOS uses the configured role defaults and task overrides exactly as before.
 
 > **Shipped (#0791 + #0792 + #0793):** `src/core/model-routing/` (System One
 > codec, Jev / OpenRouter / Clef-Flash adapters, candidate filter, policy,
-> handback re-evaluation, restart-safe decision records), the seven
+> handback re-evaluation, restart-safe decision records), the six
 > `model_routing.*` keys in `getConfigSchema()`, TOML parsing, and the **Model
 > routing** tab on the Agents page (provider, mode, roles, timeout, credential
 > presence, configuration probe, and recent decisions). Routing is now invoked
@@ -516,7 +516,6 @@ RepoOS uses the configured role defaults and task overrides exactly as before.
 mode = "shadow"              # off | shadow | automatic
 provider = "jev"             # jev | openrouter | clef-flash
 model = "jev-latest"         # or a pinned id such as "jev-1.13.0"
-credentialEnv = "TYPESAFE_API_KEY"
 roles = ["engineer", "reviewer", "pm"]
 timeoutMs = 8000             # 500–60000
 ```
@@ -527,7 +526,6 @@ timeoutMs = 8000             # 500–60000
 | `model_routing.provider` | `jev` | Which decision backend answers: direct TypeSafe Jev, OpenRouter System One, or self-hosted Clef-Flash. |
 | `model_routing.model` | `jev-latest` (Jev / OpenRouter) / `Cloudflare/clef-flash` (Clef-Flash) | Provider model id. |
 | `model_routing.baseUrl` | — | Clef-Flash only: base URL of your self-hosted server, e.g. `http://localhost:30000`. |
-| `model_routing.credentialEnv` | `TYPESAFE_API_KEY` (Jev) / `REPOOS_OPENROUTER_API_KEY` (OpenRouter) / `REPOOS_CLEF_FLASH_API_KEY` (Clef-Flash) | Name of the environment variable holding the key. The key itself is never stored in `repoos.toml`. |
 | `model_routing.roles` | all three | Which runs consult the router. A role left out keeps its configured agent. |
 | `model_routing.timeoutMs` | `8000` | One decision call's ceiling. A timeout falls back; it never blocks the run. |
 
@@ -535,13 +533,11 @@ timeoutMs = 8000             # 500–60000
 
 **TypeSafe Jev (hosted, direct).** Jev is served by `POST https://api.typesafe.ai/v1/systemone`
 with `Authorization: Bearer <key>`. Get a key from the TypeSafe console, then put
-it in the gitignored `.env`:
+it through the **Model providers** tab on Agents (or the **Model routing** tab's
+masked save control). Keys land in the gitignored `.env` under the fixed name
+`TYPESAFE_API_KEY` — never in `repoos.toml`.
 
-```sh
-TYPESAFE_API_KEY=...
-```
-
-Set `model_routing.provider = "jev"` and `credentialEnv = "TYPESAFE_API_KEY"` (the default).
+Set `model_routing.provider = "jev"`.
 
 **OpenRouter (Jev / TypeSafe via System One).** OpenRouter exposes the same
 System One contract at `POST https://openrouter.ai/api/v1/systemone`, billed to
@@ -557,8 +553,10 @@ OpenRouter changes only endpoint and credential env, not the RepoOS routing poli
 [model_routing]
 provider = "openrouter"
 model = "jev-latest"
-credentialEnv = "REPOOS_OPENROUTER_API_KEY"
 ```
+
+Save `REPOOS_OPENROUTER_API_KEY` on the **Model providers** tab — routing reuses
+that key; you do not configure a second key for System One.
 
 Clef models on OpenRouter (when listed) use the same provider and model id; direct
 self-hosted Clef-Flash remains `provider = "clef-flash"` with `baseUrl`.
@@ -573,17 +571,17 @@ provider = "clef-flash"
 baseUrl = "http://localhost:30000"
 ```
 
-An API key is optional for a self-hosted server. If you protect it, set
-`REPOOS_CLEF_FLASH_API_KEY` in `.env` (or point `credentialEnv` at another
-variable). No key is needed for an unprotected local server.
+An API key is optional for a self-hosted server. If you protect it, save an
+optional bearer token on **Model routing** (stored as `REPOOS_CLEF_FLASH_API_KEY`
+in `.env`). No key is needed for an unprotected local server.
 
 ### Secret handling
 
 Routing keys follow the same convention as the other provider keys: they live in
 the gitignored `.env` file or the process environment and are never written to
-`repoos.toml`, logged, or echoed back to the browser. `credentialEnv` names a
-variable; it is validated to be a plain environment-variable name, so pasting a
-raw key into it is rejected with a warning.
+`repoos.toml`, logged, or echoed back to the browser. Env var names are fixed
+per provider in the model-providers registry — do not add a free-text “key
+variable” field. See `docs/api-keys.md` for the agent-facing checklist.
 
 ### Shadow evaluation first
 
@@ -597,8 +595,9 @@ the recorded factors only. Compare those recommendations with real outcomes
 before enabling `automatic`.
 
 The **Test configuration** button checks parsing, provider requirements, and
-whether the named `credentialEnv` variable is set — it does not call the hosted
-API. **Test live connection** issues one real decision call when you are ready;
+whether the required key (or Clef-Flash server URL) is set — it does not call
+the hosted API. **Test live connection** issues one real decision call when you
+are ready;
 use it sparingly and never in automated tests.
 
 ### Automatic mode, pins and limits

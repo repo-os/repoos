@@ -14,7 +14,7 @@ import { useConfigStore } from "../src/stores/config";
 import { safeConfigForBrowser } from "../../server/routes/config.js";
 import { loadConfig } from "../../core/config.js";
 import { startServer, type ServerHandle } from "../../server/server.js";
-import { buildRoutingProvider } from "../../core/model-routing/runtime.js";
+import { buildRoutingProvider, modelRoutingStatus } from "../../core/model-routing/runtime.js";
 import { resolveEffectiveRouting } from "../../core/model-routing/config.js";
 
 const tmpRoots: string[] = [];
@@ -84,11 +84,10 @@ describe("ModelRoutingPanel", () => {
           return {
             ok: true,
             json: async () => ({
-              effective: resolveEffectiveRouting({ mode: "shadow", provider: "jev" }),
-              credentialEnv: "TYPESAFE_API_KEY",
-              credentialPresent: false,
-              providerReady: false,
-              issues: ["Set TYPESAFE_API_KEY"],
+              ...modelRoutingStatus({
+                root: "/tmp",
+                modelRouting: { mode: "shadow", provider: "jev" },
+              }),
             }),
           };
         }
@@ -100,6 +99,7 @@ describe("ModelRoutingPanel", () => {
     });
     await flushPromises();
     expect(wrapper.find("[data-testid='routing-credential-status']").text()).toContain("Not set");
+    expect(wrapper.find("[data-testid='routing-credential-env']").exists()).toBe(false);
     wrapper.unmount();
   });
 
@@ -113,11 +113,10 @@ describe("ModelRoutingPanel", () => {
           return {
             ok: true,
             json: async () => ({
-              effective: resolveEffectiveRouting({ mode: "shadow", provider: "jev" }),
-              credentialEnv: "TYPESAFE_API_KEY",
-              credentialPresent: false,
-              providerReady: false,
-              issues: [],
+              ...modelRoutingStatus({
+                root: "/tmp",
+                modelRouting: { mode: "shadow", provider: "jev" },
+              }),
             }),
           };
         }
@@ -147,11 +146,7 @@ describe("AgentsView model routing tab", () => {
           return {
             ok: true,
             json: async () => ({
-              effective: resolveEffectiveRouting(undefined),
-              credentialEnv: null,
-              credentialPresent: false,
-              providerReady: false,
-              issues: [],
+              ...modelRoutingStatus({ root: "/tmp", modelRouting: undefined }),
             }),
           };
         }
@@ -188,6 +183,18 @@ describe("AgentsView model routing tab", () => {
     expect(tab!.classes()).toContain("active");
     expect(wrapper.find("[data-testid='model-routing-panel']").exists()).toBe(true);
     wrapper.unmount();
+  });
+});
+
+describe("modelRoutingStatus", () => {
+  it("reports a Model providers message when OpenRouter routing has no key", () => {
+    delete process.env.REPOOS_OPENROUTER_API_KEY;
+    const status = modelRoutingStatus({
+      root: "/tmp",
+      modelRouting: { mode: "shadow", provider: "openrouter" },
+    });
+    expect(status.credentialPresent).toBe(false);
+    expect(status.issues[0]).toMatch(/Model providers/i);
   });
 });
 
