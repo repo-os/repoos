@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-16T02:24:33Z"
-review_passes: 2
+last_close_out_gate_ms: 179291
+last_close_out_gate_at: "2026-10-16T02:29:56.143Z"
 id: "0802"
 title: "Dev targets: auto-pick a free port by default, with a per-target fixed-port option"
 type: feature
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-pick-a-free-port-by-def
 created_at: "2026-10-15T19:36:15Z"
+updated_at: "2026-10-16T02:29:56Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -91,4 +93,5 @@ Start from src/server/dev.ts (the {port} substitution, which already picks a fre
 - 2026-10-16T02:23:38Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (1a9b848a0) during finalization (#0734)
 - 2026-10-16T02:23:39Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (1a9b848a0) during finalization (#0734)
 - 2026-10-16T02:24:33Z · note: review pass 2: good to go
+- 2026-10-16T02:29:56Z · close-out gate completed in 179s
 
