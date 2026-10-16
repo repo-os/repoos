@@ -45,12 +45,12 @@ Start from src/core/model-routing/runtime.ts (readRoutingCredential, credentialL
 "route": "/agents?tab=model-routing",
 "highlight": "[data-testid=\"model-routing-panel\"]",
 "steps": [
-  {
-    "click": "[data-testid=\"routing-provider\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "[data-testid=\"routing-provider\"]"
+},
+{
+  "waitMs": 300
+}
 ]
 },
 {
@@ -80,3 +80,4 @@ Start from src/core/model-routing/runtime.ts (readRoutingCredential, credentialL
 - 2026-10-16T12:33:32Z · body: section Shots
 - 2026-10-16T12:34:15Z · body: section Shots
 - 2026-10-16T13:28:58Z · message_queued at 2026-10-16T13:28:58.152Z
+- 2026-10-16T13:28:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
