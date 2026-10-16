@@ -106,6 +106,44 @@ describe("worktree handoff guard (#0598)", () => {
     }
   });
 
+  it("lists files changed since handoff with +/- counts and marks task files (#0810)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/numstat";
+      const wt = ensureWorktree(root, branch);
+      mkdirSync(join(wt.path, "work"), { recursive: true });
+      writeFileSync(join(wt.path, "keep.txt"), "a\n");
+      writeFileSync(join(wt.path, "work", "0810-self.md"), "---\nid: 0810\n---\n");
+      git(wt.path, ["add", "-A"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      writeHandoffSnapshot(root, ".repoos", {
+        taskId: "n1",
+        branch,
+        sha,
+        at: "2026-10-16T00:00:00Z",
+        clean: true,
+      });
+      // A committed source file added after handoff plus a task-file edit…
+      writeFileSync(join(wt.path, "src.ts"), "line1\nline2\nline3\n");
+      writeFileSync(join(wt.path, "work", "0810-self.md"), "---\nid: 0810\nstatus: review\n---\n");
+      git(wt.path, ["add", "-A"]);
+      git(wt.path, ["commit", "-m", "post-handoff"]);
+      // …and an uncommitted working-tree edit.
+      writeFileSync(join(wt.path, "keep.txt"), "a\nb\n");
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+      const byPath = new Map((check.files ?? []).map((f) => [f.path, f]));
+      expect(byPath.get("src.ts")).toMatchObject({ added: 3, removed: 0, taskFile: false });
+      expect(byPath.get("keep.txt")).toMatchObject({ added: 1, removed: 0, taskFile: false });
+      expect(byPath.get("work/0810-self.md")?.taskFile).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
   it("allows HEAD drift when only task markdown bookkeeping changed (#0600)", async () => {
     const { root, clean } = makeRepo();
     try {

@@ -1619,8 +1619,13 @@ const handoffConflictMessage = computed(() =>
 );
 const handoffConflictFiles = computed(() =>
   handoffConflictTask.value
-    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.dirtyFiles ?? [])
+    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.files ?? [])
     : [],
+);
+const handoffConflictFilesUnavailable = computed(
+  () =>
+    !!handoffConflictTask.value &&
+    !!repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.filesUnavailable,
 );
 
 async function discardHandoffConflict(): Promise<void> {
@@ -6197,7 +6202,8 @@ watch(
   <WorktreeHandoffConflictDialog
     :task="handoffConflictTask"
     :message="handoffConflictMessage"
-    :dirty-files="handoffConflictFiles"
+    :files="handoffConflictFiles"
+    :files-unavailable="handoffConflictFilesUnavailable"
     @discard="discardHandoffConflict"
     @send-back="sendBackHandoffConflict"
     @cancel="cancelHandoffConflict"

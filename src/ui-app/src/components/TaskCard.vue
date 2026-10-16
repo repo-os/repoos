@@ -884,8 +884,13 @@ const handoffConflictMessage = computed(() =>
 );
 const handoffConflictFiles = computed(() =>
   handoffConflictTask.value
-    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.dirtyFiles ?? [])
+    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.files ?? [])
     : [],
+);
+const handoffConflictFilesUnavailable = computed(
+  () =>
+    !!handoffConflictTask.value &&
+    !!repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.filesUnavailable,
 );
 const dirtyScope = computed(() =>
   dirtyTask.value ? repo.dirtyScopeFor(dirtyTask.value.id) : ("main" as const),
@@ -1367,7 +1372,8 @@ async function openDebuggerFromError(): Promise<void> {
   <WorktreeHandoffConflictDialog
     :task="handoffConflictTask"
     :message="handoffConflictMessage"
-    :dirty-files="handoffConflictFiles"
+    :files="handoffConflictFiles"
+    :files-unavailable="handoffConflictFilesUnavailable"
     @discard="discardHandoffConflict"
     @send-back="sendBackHandoffConflict"
     @cancel="cancelHandoffConflict"
