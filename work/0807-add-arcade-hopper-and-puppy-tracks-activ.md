@@ -2,14 +2,14 @@
 id: "0807"
 title: Add Arcade hopper and Puppy tracks activity animations
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-16T09:55:07Z"
-updated_at: "2026-10-16T09:55:07Z"
+updated_at: "2026-10-16T09:58:50Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ Extend the existing validated config enum, schema options, config persistence, a
 ## Activity
 
 - 2026-10-16T09:55:07Z · created · njachowski@gmail.com
+- 2026-10-16T09:58:50Z · status inbox→ready
