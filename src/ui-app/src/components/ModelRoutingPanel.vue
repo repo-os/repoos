@@ -19,6 +19,7 @@ import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
 import Input from "./ui/input.vue";
+import { ROUTING_PROVIDER_CHOICES } from "../../../core/model-routing/config.js";
 
 const config = useConfigStore();
 
@@ -28,11 +29,9 @@ const ROUTING_MODES = [
   { value: "automatic", label: "Automatic — apply within budget limits" },
 ] as const;
 
-const PROVIDERS = [
-  { value: "jev", label: "TypeSafe Jev (direct)" },
-  { value: "openrouter", label: "OpenRouter (Jev and Clef models)" },
-  { value: "clef-flash", label: "Clef-Flash (your own server)" },
-] as const;
+// Jev and OpenRouter only (#0809). Clef-Flash is not offered: no option, no
+// server address field, no server token field. Its adapter is retained.
+const PROVIDERS = ROUTING_PROVIDER_CHOICES;
 
 const ROLE_OPTIONS = [
   { id: "pm", label: "Product manager" },
@@ -54,9 +53,9 @@ function cfgRoles(): string[] {
 
 const mode = computed(() => cfgStr("model_routing.mode", "off"));
 const provider = computed(() => cfgStr("model_routing.provider", "jev"));
-const showClefUrl = computed(() => provider.value === "clef-flash");
 const usesOpenRouterKey = computed(() => provider.value === "openrouter");
-const showsKeyForm = computed(() => provider.value === "jev" || provider.value === "clef-flash");
+// Only Jev takes a key on this page; OpenRouter reuses the Model providers key.
+const showsKeyForm = computed(() => provider.value === "jev");
 
 const status = ref<ModelRoutingStatusResponse | null>(null);
 const statusLoading = ref(false);
@@ -129,10 +128,6 @@ async function setModel(v: string): Promise<void> {
   await patch({ "model_routing.model": v.trim() });
 }
 
-async function setBaseUrl(v: string): Promise<void> {
-  await patch({ "model_routing.baseUrl": v.trim() });
-}
-
 async function setTimeoutMs(v: number): Promise<void> {
   await patch({ "model_routing.timeoutMs": v });
 }
@@ -177,17 +172,10 @@ async function runProbe(live: boolean): Promise<void> {
   }
 }
 
-const keySaveLabel = computed(() => {
-  if (provider.value === "clef-flash") return "Save token";
-  return "Save key";
-});
+const keySaveLabel = computed(() => "Save key");
 
-const keyPlaceholder = computed(() => {
-  if (provider.value === "clef-flash") {
-    return "Optional bearer token — stored in .env only";
-  }
-  return "Paste API key — stored in .env only";
-});
+// A real placeholder so the empty masked field never looks broken (#0809).
+const keyPlaceholder = computed(() => "Paste API key — stored in .env only");
 
 function credentialStatusText(): string {
   if (statusLoading.value) return "Checking…";
@@ -245,8 +233,8 @@ onMounted(() => {
       <span class="live-dot"></span>Model routing
     </div>
     <p class="agent-desc">
-      An optional decision model (Jev, OpenRouter, or self-hosted Clef-Flash) can recommend which
-      coding agent and model to use for PM, engineer, and reviewer runs. It is
+      An optional decision model (TypeSafe Jev or OpenRouter) can recommend which coding agent and
+      model to use for PM, engineer, and reviewer runs. It is
       <strong>off by default</strong>. Shadow mode records what it would have chosen without
       changing the agent actually used. Automatic mode applies recommendations only within your
       budget allowlist — enable it after shadow looks good.
@@ -300,18 +288,6 @@ onMounted(() => {
         />
       </label>
 
-      <label v-if="showClefUrl" class="field">
-        <span class="field-label">Clef-Flash server URL</span>
-        <Input
-          :model-value="cfgStr('model_routing.baseUrl')"
-          class="mr-input"
-          placeholder="http://localhost:30000"
-          data-testid="routing-base-url"
-          @update:model-value="(v) => void setBaseUrl(String(v))"
-        />
-        <span class="mr-field-hint">Self-hosted SGLang — not a Cloudflare API key.</span>
-      </label>
-
       <label class="field">
         <span class="field-label">Decision timeout (ms)</span>
         <Input
@@ -361,21 +337,16 @@ onMounted(() => {
 
     <p v-if="usesOpenRouterKey && mode !== 'off'" class="mr-openrouter-note" role="note">
       OpenRouter routing uses the same API key as the
-      <router-link to="/agents?tab=model-providers">Model providers</router-link> tab. System One is
-      only the request format — you do not need a second key here.
+      <router-link to="/agents?tab=model-providers" data-testid="routing-openrouter-link"
+        >Model providers</router-link
+      >
+      tab — <strong>save the key there, not here</strong>. System One is only the request format, so
+      there is no separate key field on this page.
     </p>
 
     <dl class="kv-rows mr-status" style="--kv-label-w: 10rem">
       <div>
-        <dt>
-          {{
-            usesOpenRouterKey
-              ? "OpenRouter key"
-              : provider === "clef-flash"
-                ? "Server token"
-                : "Jev key"
-          }}
-        </dt>
+        <dt>{{ usesOpenRouterKey ? "OpenRouter key" : "Jev key" }}</dt>
         <dd data-testid="routing-credential-status">
           <span
             class="mr-pill"
@@ -413,27 +384,24 @@ onMounted(() => {
         data-testid="routing-key-toggle"
         @click="keyFormOpen = true"
       >
-        {{
-          status?.credentialPresent
-            ? provider === "clef-flash"
-              ? "Replace token"
-              : "Replace API key"
-            : provider === "clef-flash"
-              ? "Add optional token"
-              : "Paste API key"
-        }}
+        {{ status?.credentialPresent ? "Replace API key" : "Paste API key" }}
       </button>
       <div v-else class="mr-key-form">
         <input
           v-model="keyDraft"
           type="password"
           autocomplete="off"
-          :aria-label="
-            provider === 'clef-flash' ? 'Clef-Flash bearer token' : 'TypeSafe Jev API key'
-          "
+          aria-label="TypeSafe Jev API key"
           :placeholder="keyPlaceholder"
+          data-testid="routing-key-input"
         />
-        <Button variant="outline" size="sm" :disabled="keySaving" @click="saveKey">
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="keySaving"
+          data-testid="routing-key-save"
+          @click="saveKey"
+        >
           {{ keySaving ? "Saving…" : keySaveLabel }}
         </Button>
         <Button variant="ghost" size="sm" @click="keyFormOpen = false">Cancel</Button>
@@ -554,12 +522,6 @@ onMounted(() => {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel-solid);
-}
-.mr-field-hint {
-  display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--txt-dim);
 }
 .mr-openrouter-note {
   font-size: 13px;
