@@ -17,7 +17,8 @@ feature.
 
 ## Fields
 
-Every target has four fields, plus two optional ones:
+Every target has a `name`, a `kind` and a `command`; the rest are optional and
+depend on the kind:
 
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
@@ -25,6 +26,8 @@ Every target has four fields, plus two optional ones:
 | `kind` | `server` \| `artifact` \| `process` | yes | A `server` is a long-lived process with a URL. An `artifact` is a build that produces a file and exits. A `process` is a long-lived foreground process with no URL and no build artifact — a native macOS app, a daemon. |
 | `command` | string | yes | The shell command, run in the project's **root checkout** — never a task worktree. |
 | `url` | string | for `server` | The server's URL, e.g. `http://localhost:5173`. Shown as the open-URL link. |
+| `port` | number | no | The port used for `{port}`. With auto-pick on it is the **preferred** port (used when free); with auto-pick off it is the **fixed** port. |
+| `autoPort` | boolean | no | Auto-pick a free port for `{port}`. Default `true`. Set `false` to pin the target to `port` and let a clash fail. |
 | `artifactPath` | string | for `artifact` | Repo-relative path of the build output, e.g. `dist/app-debug.apk`. |
 | `label` | string | no | A human label shown in the UI. Defaults to `name`. |
 | `healthCheck` | table | no | When the target counts as healthy — see below. Not used for a `process`. |
@@ -75,10 +78,10 @@ label = "Web app"
 healthCheck.url = "http://localhost:5173/health"
 ```
 
-A local HMR web server on a free port, so it never clashes with another app on
-the machine. `{port}` in the command, `url` and `healthCheck` is replaced with
-the same OS-assigned port when the target starts — exactly like
-`[[preview.targets]]` — and the Dev page shows the real URL it bound:
+A local HMR web server whose port RepoOS chooses, so it never clashes with
+another app on the machine. **Auto-pick a free port** is on by default: `{port}`
+in the command, `url` and `healthCheck` is replaced with the same port, and the
+Dev page shows the real URL it bound:
 
 ```toml
 [[dev.targets]]
@@ -89,6 +92,25 @@ url = "http://localhost:{port}"
 label = "Web app"
 healthCheck = { url = "http://localhost:{port}/health" }
 ```
+
+Set `port` to state a **preferred** port: RepoOS uses it when it is free and
+falls back to a free one when it is taken. Turn `autoPort` off to pin the target
+to a **fixed** port instead — a clash then fails with the plain-language summary
+that names the process holding the port, rather than being moved:
+
+```toml
+[[dev.targets]]
+name = "web"
+kind = "server"
+command = "bun run dev --port {port}"
+url = "http://localhost:{port}"
+port = 5173
+autoPort = false          # use 5173 as-is; a clash fails with the summary
+```
+
+Auto-pick only ever picks a port — it never stops another process. Only a process
+RepoOS itself started can be stopped (the **Stop** action in the failure
+summary).
 
 An Android debug build that produces an APK:
 
@@ -157,9 +179,10 @@ it runs checks — so a running target stands out from a stopped one at a glance
 When a target fails, the Dev page shows a plain-language summary above the log:
 what failed, the most likely cause, and how to fix it. A port already in use is
 detected from the output and, when it can, names the process holding the port —
-its PID and command — with a **Stop** action for a process RepoOS started. Enable
-the optional AI-written summary under **Settings → Advanced → Dev failure
-summaries**.
+its PID and command — with a **Stop** action for a process RepoOS started. A
+`{port}` target avoids that entirely while auto-pick is on (the default); turn it
+off with `autoPort = false` when you need a fixed port. Enable the optional
+AI-written summary under **Settings → Advanced → Dev failure summaries**.
 
 ## See also
 
