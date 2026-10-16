@@ -11,7 +11,7 @@ branch: feat/model-routing-take-the-jev-clef-flash-ke
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T05:10:43Z"
+updated_at: "2026-10-16T05:11:35Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -44,6 +44,33 @@ Incident: a Jev key was pasted into the variable field, saved to repoos.toml and
 ## Notes for AI
 Start from src/server/routes/model-providers.ts (registry, the .env writer, the save route), src/core/model-routing/providers.ts (OpenRouter and Clef-Flash adapters), src/core/config.ts (REPOOS_OPENROUTER_API_KEY), src/ui-app/src/components/ModelProvidersPanel.vue and src/ui-app/src/components/ModelRoutingPanel.vue. Tests use fake values only. Source: user report 2026-10-16.
 
+## Shots
+```json
+[
+{
+  "label": "Model routing without API key variable field",
+  "target": "default",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-testid=model-routing-panel] .mr-status",
+  "state": "board:withReviewTask"
+},
+{
+  "label": "Jev key save form",
+  "target": "default",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-testid=routing-key-toggle]",
+  "steps": [
+    {
+      "click": "[data-testid=routing-key-toggle]"
+    },
+    {
+      "waitMs": 200
+    }
+  ]
+}
+]
+```
+
 ## Activity
 
 - 2026-10-16T03:11:27Z · created · njachowski@gmail.com
@@ -65,3 +92,4 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 - 2026-10-16T05:04:57Z · message_queued at 2026-10-16T05:04:57.891Z
 - 2026-10-16T05:09:54Z · body
 - 2026-10-16T05:10:43Z · body
+- 2026-10-16T05:11:35Z · body: section Shots
