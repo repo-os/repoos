@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-16T12:15:44Z"
+review_passes: 1
 id: "0805"
 title: "Easter eggs bundle: Copilot event lines, and Set editor hints as links"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-copilot-event-lines-a
 created_at: "2026-10-16T08:55:26Z"
-updated_at: "2026-10-16T12:15:44Z"
 ---
 ## Problem
 One open easter-eggs bundle, collecting small, independent fixes. Items:
@@ -65,3 +66,4 @@ Commit per item so a reviewer can read them separately. Use the router's link co
 - 2026-10-16T12:14:55Z · note: highlight [data-test-id="open-in-editor-hint"] matched nothing on /work?task=0805&tab=details
 - 2026-10-16T12:14:58Z · note: highlight [data-test-id="context-open-in-editor-hint"] matched nothing on /repo?doc=docs/README.md
 - 2026-10-16T12:15:44Z · note: review pass 1: needs some work
+
