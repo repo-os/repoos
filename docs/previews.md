@@ -355,6 +355,8 @@ fixture the preview applies before capture (preview builds only, via
   the "remote tests" step heartbeat and elapsed time, not stalled (`#9999`
   fixture task, #0799)
 - `card:doneError` — review card with done-error footer (`#9999` fixture task)
+- `card:humanStep` — ready card flagged by the decision-model human-step check,
+  showing the model's bounded explanation (`#9999` fixture task, #0804)
 - `board:withReviewTask` — board shows a review-column fixture card
 - `board:cardChips` — multi-area human-assigned card with seeded diff stats,
   so the area, human and file chips all render (#0776, #0795)

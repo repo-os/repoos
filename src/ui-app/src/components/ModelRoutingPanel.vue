@@ -145,6 +145,12 @@ async function toggleRole(role: string, enabled: boolean): Promise<void> {
   await patch({ "model_routing.roles": [...set] });
 }
 
+const humanStepCheck = computed(() => config.data?.["model_routing.humanStepCheck"] === true);
+
+async function setHumanStepCheck(enabled: boolean): Promise<void> {
+  await patch({ "model_routing.humanStepCheck": enabled });
+}
+
 async function runProbe(live: boolean): Promise<void> {
   if (probing.value) return;
   probing.value = true;
@@ -333,6 +339,24 @@ onMounted(() => {
           {{ r.label }}
         </label>
       </div>
+    </div>
+
+    <div class="mr-roles">
+      <span class="field-label">Before a task starts</span>
+      <label class="mr-role-chip" style="margin-top: 6px">
+        <input
+          type="checkbox"
+          :checked="humanStepCheck"
+          data-testid="routing-human-step-check"
+          @change="(e) => void setHumanStepCheck((e.target as HTMLInputElement).checked)"
+        />
+        Ask the decision model whether the task needs a human-only step
+      </label>
+      <p class="agent-desc" style="margin: 6px 0 0">
+        Off by default. Uses the provider above. It only blocks a start when Mode is Automatic; in
+        Shadow it records the verdict without blocking, and if the provider is unavailable or fails,
+        the existing keyword check runs instead.
+      </p>
     </div>
 
     <p v-if="usesOpenRouterKey && mode !== 'off'" class="mr-openrouter-note" role="note">
