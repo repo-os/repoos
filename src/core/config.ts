@@ -1922,10 +1922,16 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
   if (opencodeGoApiKey) modelProviders.opencodeGoApiKey = opencodeGoApiKey;
   const deepinfraApiKey = process.env.REPOOS_DEEPINFRA_API_KEY;
   if (deepinfraApiKey) modelProviders.deepinfraApiKey = deepinfraApiKey;
+  const typesafeApiKey = process.env.TYPESAFE_API_KEY;
+  if (typesafeApiKey) modelProviders.typesafeApiKey = typesafeApiKey;
+  const clefFlashApiKey = process.env.REPOOS_CLEF_FLASH_API_KEY;
+  if (clefFlashApiKey) modelProviders.clefFlashApiKey = clefFlashApiKey;
   if (
     modelProviders.openrouterApiKey ||
     modelProviders.opencodeGoApiKey ||
-    modelProviders.deepinfraApiKey
+    modelProviders.deepinfraApiKey ||
+    modelProviders.typesafeApiKey ||
+    modelProviders.clefFlashApiKey
   ) {
     cfg.modelProviders = modelProviders;
   }
@@ -2975,16 +2981,6 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Base URL of your self-hosted Clef-Flash (SGLang) server, e.g. http://localhost:30000. Used only when the provider is Clef-Flash.",
     },
     {
-      key: "model_routing.credentialEnv",
-      label: "Routing API key variable",
-      type: "string",
-      tier: "live",
-      restartRequired: false,
-      default: "TYPESAFE_API_KEY",
-      description:
-        "Name of the environment variable that holds the provider API key. The key itself is never stored in repoos.toml; set it in the gitignored .env file.",
-    },
-    {
       key: "model_routing.roles",
       label: "Roles the router may choose for",
       type: "array",
@@ -3226,7 +3222,6 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "model_routing.provider",
   "model_routing.model",
   "model_routing.baseUrl",
-  "model_routing.credentialEnv",
   "model_routing.roles",
   "model_routing.timeoutMs",
   "model_routing.humanStepCheck",

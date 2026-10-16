@@ -132,7 +132,6 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   exact("GET", "/api/model-routing/status"),
   exact("GET", "/api/model-routing/decisions"),
   exact("POST", "/api/model-routing/probe"),
-  exact("POST", "/api/model-routing/key"),
   exact("GET", "/api/agents/queued"),
   exact("GET", "/api/agents/detect"),
   exact("GET", "/api/agents/detect/stream"),

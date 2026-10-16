@@ -1,15 +1,20 @@
 ---
+close_out_repair_count: 1
 id: "0804"
 title: "Optional decision-model check before a task starts: should it be split into AI and human tasks?"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/optional-decision-model-check-before-a-t
 created_at: "2026-10-16T05:07:46Z"
-updated_at: "2026-10-16T09:23:32Z"
+updated_at: "2026-10-16T09:57:23Z"
+review_passes: 2
+review_rounds: 1
+routing_switches: 1
+dev_error_count: 1
 ---
 ## Problem
 The start check flags a task as needing a human step by matching single words in its acceptance criteria (for example 'keys', 'accounts'). That produces false positives: #0803 was stopped at start for the word 'keys' in an agent-doable scope. Word matching can't tell a real human step (a device or a real account) from a word that just appears in the criteria.
@@ -30,9 +35,80 @@ The start check flags a task as needing a human step by matching single words in
 ## Notes for AI
 Start from the needs-human check on task start (src/core/ or src/server, grep needs-human-step and the keyword match) and the routing provider contract in src/core/model-routing. The decision must stay bounded: a fixed question set, a short explanation, no free-text action from the model. Depends on #0803 for the provider key path. Source: user request 2026-10-16.
 
+## Shots
+```json
+[
+{
+"label": "Ready card: decision-model human-step flag and explanation",
+"target": "default",
+"route": "/work?status=ready",
+"highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
+"steps": [
+{
+"waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
+}
+],
+"assert": [
+{
+"selector": "[data-task-id=\"9999\"] .tc-needs-detail",
+"label": "the card shows the model explanation",
+"text": "Decision model"
+}
+],
+"state": "card:humanStep",
+"theme": "light"
+},
+{
+"label": "Ready card: decision-model human-step flag and explanation (dark)",
+"target": "default",
+"route": "/work?status=ready",
+"highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
+"steps": [
+{
+"waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
+}
+],
+"assert": [
+{
+"selector": "[data-task-id=\"9999\"] .tc-needs-detail",
+"label": "the card shows the model explanation in dark theme",
+"text": "Decision model"
+}
+],
+"state": "card:humanStep",
+"theme": "dark"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-16T05:07:46Z · created · njachowski@gmail.com
 - 2026-10-16T05:40:53Z · status inbox→ready
 - 2026-10-16T05:41:28Z · status ready→active, branch
-- 2026-10-16T09:23:32Z · status active→review
+- 2026-10-16T05:48:44Z · message_queued at 2026-10-16T05:48:44.071Z
+- 2026-10-16T05:48:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-16T07:09:56Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-10-16T08:35:43Z · message_expired: not delivered within timeout
+- 2026-10-16T08:53:00Z · body
+- 2026-10-16T08:54:34Z · body
+- 2026-10-16T09:04:29Z · body
+- 2026-10-16T09:06:43Z · body: section Shots
+- 2026-10-16T09:14:45Z · body
+- 2026-10-16T09:16:54Z · body: section Shots
+- 2026-10-16T09:23:33Z · status active→review
+- 2026-10-16T09:23:44Z · note: highlight .tc-needs-detail matched nothing on /
+- 2026-10-16T09:23:47Z · note: highlight .tc-needs-detail matched nothing on /
+- 2026-10-16T09:24:50Z · note: review pass 1: needs some work
+- 2026-10-16T09:24:50Z · status review→active
+- 2026-10-16T09:27:09Z · body: section Shots
+- 2026-10-16T09:28:15Z · body
+- 2026-10-16T09:29:52Z · body
+- 2026-10-16T09:31:54Z · body
+- 2026-10-16T09:40:08Z · status active→review
+- 2026-10-16T09:40:08Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (13632f1a0) during finalization (#0734)
+- 2026-10-16T09:40:09Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (13632f1a0) during finalization (#0734)
+- 2026-10-16T09:41:20Z · note: review pass 2: good to go
+- 2026-10-16T09:57:23Z · status review→active, needs_input
+- 2026-10-16T09:57:23Z · note: close-out repair: merge-conflict
+
