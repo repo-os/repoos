@@ -258,6 +258,56 @@ const EXPECTATIONS: Expectation[] = [
     name: "ai-spark",
     duration: "3s",
   },
+  // Arcade hopper: coding jumps, reviewing peeks sideways, agent jumps slower.
+  {
+    style: "arcade-hopper",
+    motion: "coding",
+    selector: ".ai-hopper i",
+    pseudo: null,
+    name: "ai-hop",
+    duration: "1s",
+  },
+  {
+    style: "arcade-hopper",
+    motion: "reviewing",
+    selector: ".ai-hopper i",
+    pseudo: null,
+    name: "ai-hop-peek",
+    duration: "1.35s",
+  },
+  {
+    style: "arcade-hopper",
+    motion: "agent",
+    selector: ".ai-hopper i",
+    pseudo: null,
+    name: "ai-hop",
+    duration: "1.2s",
+  },
+  // Puppy tracks: coding steps, reviewing sniffs wider, agent steps slower.
+  {
+    style: "puppy-tracks",
+    motion: "coding",
+    selector: ".ai-paws i",
+    pseudo: null,
+    name: "ai-paw-step",
+    duration: "1s",
+  },
+  {
+    style: "puppy-tracks",
+    motion: "reviewing",
+    selector: ".ai-paws i",
+    pseudo: null,
+    name: "ai-paw-sniff",
+    duration: "1.35s",
+  },
+  {
+    style: "puppy-tracks",
+    motion: "agent",
+    selector: ".ai-paws i",
+    pseudo: null,
+    name: "ai-paw-step",
+    duration: "1.2s",
+  },
 ];
 
 const STYLE_SELECTORS: Record<string, { selector: string; pseudo: string | null }> = {
@@ -267,6 +317,8 @@ const STYLE_SELECTORS: Record<string, { selector: string; pseudo: string | null 
   "micro-dot-matrix": { selector: ".ai-matrix", pseudo: null },
   "tiny-signal-bars": { selector: ".ai-bars", pseudo: null },
   "spark-diamond": { selector: ".ai-spark", pseudo: "::before" },
+  "arcade-hopper": { selector: ".ai-hopper i", pseudo: null },
+  "puppy-tracks": { selector: ".ai-paws i", pseudo: null },
 };
 
 describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
@@ -428,6 +480,64 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
           expect(running.markH).toBeGreaterThan(0);
         }
       }
+    } finally {
+      await page.close();
+    }
+  });
+
+  it("arcade-hopper eye cutouts reveal the surface behind the mark (#0807)", async () => {
+    const page = await browser!.newPage();
+    try {
+      await page.goto("about:blank", { waitUntil: "load", timeout: 10_000 });
+      await page.evaluate(
+        ({ css }) => {
+          const s = document.createElement("style");
+          // Freeze the hop so the geometry we measure is not mid-transform.
+          s.textContent = `${css}\n.ai-hopper i { animation: none !important; }`;
+          document.head.appendChild(s);
+          document.body.style.margin = "0";
+        },
+        { css: pageCss },
+      );
+      const shot = page as unknown as {
+        screenshot(opts: {
+          clip: { x: number; y: number; width: number; height: number };
+        }): Promise<{ equals(other: unknown): boolean }>;
+      };
+      const fontPx = 48;
+      const geom = await page.evaluate(
+        ({ html, webFont, fontPx }) => {
+          document.body.innerHTML = `<div style="font-family:${webFont};font-size:${fontPx}px">${html}</div>`;
+          const body = document.querySelector(".ai-hopper i")!;
+          const r = body.getBoundingClientRect();
+          return {
+            eyeX: r.left + 0.2208 * fontPx + (0.14 * r.width) / 2,
+            eyeY: r.top + 0.26 * fontPx + (0.18 * r.height) / 2,
+            // Midway between the two eye holes, so this point is solid body.
+            bodyX: r.left + r.width * 0.5,
+            bodyY: r.top + r.height * 0.5,
+          };
+        },
+        { html: renderHtml("arcade-hopper", "coding"), webFont, fontPx },
+      );
+      const onePixel = (x: number, y: number) => ({
+        clip: { x: Math.round(x), y: Math.round(y), width: 1, height: 1 },
+      });
+      const eye = await shot.screenshot(onePixel(geom.eyeX, geom.eyeY));
+      const solid = await shot.screenshot(onePixel(geom.bodyX, geom.bodyY));
+      // Hide the mark (keeping its layout) so the same pixels show the surface.
+      await page.evaluate(() => {
+        const s = document.createElement("style");
+        s.textContent = ".ai-hopper i { visibility: hidden !important; }";
+        document.head.appendChild(s);
+      });
+      const surfaceBehindEye = await shot.screenshot(onePixel(geom.eyeX, geom.eyeY));
+      const surfaceBehindSolid = await shot.screenshot(onePixel(geom.bodyX, geom.bodyY));
+      expect(eye.equals(surfaceBehindEye), "eye cutout should show the surface through").toBe(true);
+      expect(
+        solid.equals(surfaceBehindSolid),
+        "the solid silhouette should paint over the surface",
+      ).toBe(false);
     } finally {
       await page.close();
     }
