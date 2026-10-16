@@ -7,6 +7,7 @@ import { json, readBody } from "./utils.js";
 import { setDotEnvSecret } from "../../core/config.js";
 import { modelRoutingStatus, probeModelRouting } from "../../core/model-routing/runtime.js";
 import { resolveEffectiveRouting } from "../../core/model-routing/config.js";
+import { listRecentRoutingDecisions } from "../model-routing-wiring.js";
 
 const MAX_KEY_LEN = 500;
 
@@ -14,6 +15,20 @@ export const getModelRoutingStatus: RouteHandler = async (ctx, _req, res) => {
   const status = modelRoutingStatus(ctx.config);
   return json(res, 200, {
     ...status,
+    at: new Date().toISOString(),
+  });
+};
+
+/**
+ * Recent routing decisions (#0793), newest first. Rendered straight from the
+ * recorded factors — the UI never fabricates an explanation.
+ */
+export const getModelRoutingDecisions: RouteHandler = (ctx, req, res) => {
+  const url = new URL(req.url ?? "/", "http://localhost");
+  const limitParam = Number(url.searchParams.get("limit"));
+  const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.floor(limitParam) : 25;
+  return json(res, 200, {
+    decisions: listRecentRoutingDecisions(ctx.config, limit),
     at: new Date().toISOString(),
   });
 };

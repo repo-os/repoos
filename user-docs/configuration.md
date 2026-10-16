@@ -501,14 +501,15 @@ An optional decision model can choose the coding agent and model for PM,
 engineer and reviewer runs. It is **off by default**: with the section unset,
 RepoOS uses the configured role defaults and task overrides exactly as before.
 
-> **Shipped (#0791 + #0792):** `src/core/model-routing/` (System One codec, Jev /
-> OpenRouter / Clef-Flash adapters, candidate filter, policy), the seven
+> **Shipped (#0791 + #0792 + #0793):** `src/core/model-routing/` (System One
+> codec, Jev / OpenRouter / Clef-Flash adapters, candidate filter, policy,
+> handback re-evaluation, restart-safe decision records), the seven
 > `model_routing.*` keys in `getConfigSchema()`, TOML parsing, and the **Model
 > routing** tab on the Agents page (provider, mode, roles, timeout, credential
-> presence, configuration probe). **Still upcoming:** run-path invocation and
-> decision persistence (**#0793**), review handback re-evaluation, and human-only
-> live credential verification (**#0794**). Until **#0793** lands, `shadow` and
-> `automatic` do not change which agent runs — configure and validate here first.
+> presence, configuration probe, and recent decisions). Routing is now invoked
+> on the PM, engineer and reviewer run paths (including review handback). The
+> only remaining follow-up is the human-only live credentialed smoke test
+> (**#0794**).
 
 ```toml
 [model_routing]
@@ -587,18 +588,20 @@ raw key into it is rejected with a warning.
 ### Shadow evaluation first
 
 Configure routing on the Agents page (**Model routing** tab) or in TOML, then
-start in `mode = "shadow"`. Once run-path wiring lands (#0793), each eligible run
-will record what the router would have chosen, the candidates it considered,
-and the provider's signals, while the run itself keeps the configured agent.
-Compare those recommendations with real outcomes before enabling `automatic`
-(#0793).
+start in `mode = "shadow"`. Each eligible run records what the router would have
+chosen, the candidates it considered, and the provider's signals, while the run
+itself keeps the configured agent. The **Recent decisions** list on the same tab
+shows, per run, the role, the configuration actually used, the shadow
+recommendation when it differs, and any fallback or block reason — rendered from
+the recorded factors only. Compare those recommendations with real outcomes
+before enabling `automatic`.
 
 The **Test configuration** button checks parsing, provider requirements, and
 whether the named `credentialEnv` variable is set — it does not call the hosted
 API. **Test live connection** issues one real decision call when you are ready;
 use it sparingly and never in automated tests.
 
-### Automatic mode, pins and limits (after #0793)
+### Automatic mode, pins and limits
 
 - An explicit human pin (a task's CLI or model override) always wins; the router
   is not consulted for a pinned run.
@@ -607,6 +610,29 @@ use it sparingly and never in automated tests.
   An empty allowlist is unrestricted; a non-empty one is a hard ceiling.
 - The router cannot widen permissions or budgets. It only chooses among
   candidates that already pass these filters.
+- Every decision is persisted under `.repoos/model-routing/decisions.json` and
+  survives a server restart. The decision call's token usage is recorded in the
+  Tokens/session accounting under the `routing` session type (never `pm`).
+
+### Review handback re-evaluation
+
+When review sends work back, the router compares continuing the existing
+engineer configuration with switching to another eligible one or escalating to
+the most capable. The decision uses the recorded review findings and the task's
+attempt history, and it is **bounded** — one switch, one escalation, then a human
+is asked. It never bypasses review, checks, approval or close-out, and it never
+edits a reviewed worktree.
+
+Two rules matter most:
+
+- A failure classified as **infrastructure** (provider error, timeout, missing
+  harness, a gate or verification that could not run, a mechanical clamp of the
+  reviewer's verdict) is **not** attributed to the coding model — the
+  configuration is kept rather than penalized.
+- Handback switches and escalations are drawn only from **same-harness**
+  alternatives, because a cross-harness switch cannot resume the engineer's
+  session id. A switch prefers a genuinely different model; the decision record
+  always shows the configuration actually used.
 
 ### Candidate filtering (library behavior)
 
@@ -615,7 +641,10 @@ drops configurations that fail deterministic checks: budget allowlist, harness
 availability, reasoning support, **the run's role** (`pm`, `engineer`, or
 `reviewer` must appear in the harness's `supportedRoles`), and **required context
 size** (`requiredContextTokens` must not exceed the harness's `maxContextTokens`).
-Callers supply those facts from doctor/auth probes when wiring lands in #0792/#0793.
+The run paths supply those facts from the detection cache (`harness.ts` provides
+the static capability table), and `candidate-set.ts` builds the candidate
+universe from the allowlist (or the configured agents when the allowlist is
+empty), pairing each cli+model with the reasoning levels its harness supports.
 
 ### Scoring and missing cost/time (library behavior)
 
@@ -629,9 +658,9 @@ a candidate relative to one with data.
 
 When the router cannot produce a trustworthy decision, the run uses the
 configured fallback if it is itself eligible, and otherwise stops with a clear
-message. The policy in `src/core/model-routing/` implements this for tests and
-future wiring; PM/engineer/reviewer launches do not call it until #0792/#0793.
-The fallback applies for:
+message. On the run paths (`model-routing-wiring.ts`) a fallback or block never
+changes the agent: the run proceeds with the canonical configured/pinned agent,
+exactly as with routing off. The fallback applies for:
 
 - no eligible candidates (the run is blocked with the reasons);
 - a provider error, timeout, or an unreachable server;
