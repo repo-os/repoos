@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/worktree-changed-after-handoff-list-the-
 created_at: "2026-10-16T12:17:43Z"
-updated_at: "2026-10-16T15:35:17Z"
+updated_at: "2026-10-16T15:37:55Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-16T15:33:18.112Z: repoos check failed: ui verification failed (10 issue(s)): [request] HTTP 404 for http://127.0.0.1:57937/api/tasks/9999 (http://127.0.0.1:57937/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:57937/api/tasks/9999); [assertion] Handoff-conflict modal lists changed files with +/- counts (light): selector #handoff-conflict-title matched 0 element(s), expected at least 1 (nothing rendered — the feature state may be absent) (… (truncated)"
 ---
@@ -35,64 +35,64 @@ Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Wor
 ```json
 [
 {
-  "label": "Handoff-conflict modal lists changed files with +/- counts (light)",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".dirty-card--conflict .dirty-list",
-  "steps": [
-    {
-      "waitFor": "#handoff-conflict-title"
-    }
-  ],
-  "assert": [
-    {
-      "selector": "#handoff-conflict-title",
-      "label": "the modal is open",
-      "text": "Worktree changed after handoff"
-    },
-    {
-      "selector": ".dirty-list .dirty-file",
-      "label": "changed files are listed",
-      "minCount": 3
-    },
-    {
-      "selector": ".dirty-actions button",
-      "label": "the three actions are present",
-      "count": 3
-    }
-  ],
-  "state": "card:handoffConflict",
-  "theme": "light"
+"label": "Handoff-conflict modal lists changed files with +/- counts (light)",
+"target": "default",
+"route": "/work",
+"highlight": ".dirty-card--conflict .dirty-list",
+"steps": [
+  {
+    "waitFor": "#handoff-conflict-title"
+  }
+],
+"assert": [
+  {
+    "selector": "#handoff-conflict-title",
+    "label": "the modal is open",
+    "text": "Worktree changed after handoff"
+  },
+  {
+    "selector": ".dirty-list .dirty-file",
+    "label": "changed files are listed",
+    "minCount": 3
+  },
+  {
+    "selector": ".dirty-actions button",
+    "label": "the three actions are present",
+    "count": 3
+  }
+],
+"state": "card:handoffConflict",
+"theme": "light"
 },
 {
-  "label": "Handoff-conflict modal lists changed files with +/- counts (dark)",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".dirty-card--conflict .dirty-list",
-  "steps": [
-    {
-      "waitFor": "#handoff-conflict-title"
-    }
-  ],
-  "assert": [
-    {
-      "selector": "#handoff-conflict-title",
-      "label": "the modal is open in dark theme",
-      "text": "Worktree changed after handoff"
-    },
-    {
-      "selector": ".dirty-list .dirty-file",
-      "label": "changed files are listed in dark theme",
-      "minCount": 3
-    },
-    {
-      "selector": ".dirty-actions button",
-      "label": "the three actions are present in dark theme",
-      "count": 3
-    }
-  ],
-  "state": "card:handoffConflict",
-  "theme": "dark"
+"label": "Handoff-conflict modal lists changed files with +/- counts (dark)",
+"target": "default",
+"route": "/work",
+"highlight": ".dirty-card--conflict .dirty-list",
+"steps": [
+  {
+    "waitFor": "#handoff-conflict-title"
+  }
+],
+"assert": [
+  {
+    "selector": "#handoff-conflict-title",
+    "label": "the modal is open in dark theme",
+    "text": "Worktree changed after handoff"
+  },
+  {
+    "selector": ".dirty-list .dirty-file",
+    "label": "changed files are listed in dark theme",
+    "minCount": 3
+  },
+  {
+    "selector": ".dirty-actions button",
+    "label": "the three actions are present in dark theme",
+    "count": 3
+  }
+],
+"state": "card:handoffConflict",
+"theme": "dark"
 }
 ]
 ```
@@ -112,3 +112,4 @@ Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Wor
 - 2026-10-16T15:33:14Z · note: ui verification failed (10 issue(s)): [request] HTTP 404 for http://127.0.0.1:57937/api/tasks/9999 (http://127.0.0.1:57937/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:57937/api/tasks/9999); [assertion] Handoff-conflict modal lists changed files with +/- counts (light): selector #handoff-conflict-title matched 0 element(s), expected at least 1 (nothing rendered — the feature state may be absent) (captured http://127.0
 - 2026-10-16T15:33:15Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-16T15:35:17Z · body: section Shots
+- 2026-10-16T15:37:55Z · body
