@@ -2,14 +2,15 @@
 id: "0804"
 title: "Optional decision-model check before a task starts: should it be split into AI and human tasks?"
 type: feature
-status: inbox
+status: done
 priority: p2
 area: [server, web, core]
+merged_commit: 43de7dcb3a28df6c89131fc10cb3350a925eb8ac
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/optional-decision-model-check-before-a-t
 created_at: "2026-10-16T05:07:46Z"
-updated_at: "2026-10-16T10:26:29Z"
+updated_at: "2026-10-16T10:27:48Z"
 last_close_out_gate_ms: 144047
 last_close_out_gate_at: "2026-10-16T10:26:25.372Z"
 review_passes: 3
@@ -119,3 +120,4 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 - 2026-10-16T10:26:25Z · close-out gate completed in 144s
 - 2026-10-16T10:26:28Z · note: handoff requested (cli)
 - 2026-10-16T10:26:29Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-16T10:27:48Z · status inbox→done, release:success
