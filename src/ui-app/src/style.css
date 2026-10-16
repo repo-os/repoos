@@ -1146,10 +1146,20 @@
 
 .editor-config-hint {
   margin-left: auto;
-  color: var(--txt-dim);
+  color: var(--cyan);
   font-size: 12px;
   font-weight: 400;
   white-space: nowrap;
+  text-decoration: none;
+}
+.editor-config-hint:hover,
+.editor-config-hint:focus-visible {
+  text-decoration: underline;
+}
+.editor-config-hint:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 @media (max-width: 720px) {
   .page-header {

@@ -7,12 +7,21 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { nextTick } from "vue";
+import { createRouter, createMemoryHistory, type Router } from "vue-router";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
 import { useConfigStore } from "../src/stores/config";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
 import { EMPTY_COUNTS, FakeEventSource, json, makeTask } from "./component-test-helpers";
 import type { Task } from "../src/types";
+
+/** Router with a catch-all route so `router-link` resolves hrefs (#0805). */
+function makeRouter(): Router {
+  return createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: "/:pathMatch(.*)*", component: { template: "<div />" } }],
+  });
+}
 
 async function flush(): Promise<void> {
   for (let i = 0; i < 8; i++) await nextTick();
@@ -53,10 +62,11 @@ async function mountDrawer(
   const repo = useRepoStore();
   repo.tasks = [task];
   repo.health = { ok: true, copyInspectorAvailable: apiAvailable } as typeof repo.health;
+  const router = makeRouter();
   const wrapper = mount(TaskDrawer, {
     attachTo: document.body,
     global: {
-      plugins: [pinia],
+      plugins: [pinia, router],
       stubs: { teleport: false, Transition: true },
     },
   });
@@ -169,5 +179,22 @@ describe("task drawer open in editor (#0636)", () => {
 
     expect(wrapper.find('[data-test-id="open-in-editor"]').exists()).toBe(false);
     expect(wrapper.find('[data-test-id="open-in-editor-hint"]').exists()).toBe(true);
+  });
+
+  it("hint is a focusable link to the editor setting (#0805)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    const task = makeTask();
+    stubApi(task, []);
+    wrapper = await mountDrawer(pinia, task, { enabled: true, editorCommand: "" }, false);
+
+    const hint = wrapper.get('[data-test-id="open-in-editor-hint"]');
+    expect(hint.element.tagName).toBe("A");
+    expect(hint.attributes("href")).toBe("/settings?tab=general&section=general");
+    expect(hint.text()).toBe("Set editor in Settings → General");
+
+    (hint.element as HTMLAnchorElement).focus();
+    expect(document.activeElement).toBe(hint.element);
   });
 });
