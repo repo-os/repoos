@@ -152,6 +152,33 @@ export function assessTaskNeedsHumanStep(
   return { needsHumanStep: true, detail, signals: uniqueSignals };
 }
 
+/**
+ * Flatten a verdict field into a short, stable fingerprint. Not cryptographic —
+ * it only needs to notice when the acceptance criteria the decision was made on
+ * have changed so a stale "agent" verdict stops suppressing the keyword check.
+ */
+function fingerprint(text: string): string {
+  let hash = 5381;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+/**
+ * Fingerprint of the acceptance-criteria text the human-step keyword or model
+ * decision is made on (#0804). Same scan text the keyword check reads, so a
+ * body edit that adds or removes criteria invalidates a stored verdict.
+ */
+export function needsHumanStepFingerprint(body: string): string {
+  const trimmed = body.trim();
+  const acSection = extractSection(trimmed, "## Acceptance criteria");
+  const scanText = acSection
+    ? stripTemplatePlaceholderLines(sectionContent(acSection))
+    : stripTemplatePlaceholderLines(bodyForLengthCheck(trimmed));
+  return fingerprint(scanText);
+}
+
 export function assessTaskUnderspecified(
   body: string,
   opts?: { area?: string | null },
