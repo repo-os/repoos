@@ -36,3 +36,4 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 - 2026-10-16T05:40:53Z · status inbox→ready
 - 2026-10-16T05:41:28Z · status ready→active, branch
 - 2026-10-16T05:48:44Z · message_queued at 2026-10-16T05:48:44.071Z
+- 2026-10-16T05:48:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
