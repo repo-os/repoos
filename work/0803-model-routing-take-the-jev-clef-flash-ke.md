@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-16T08:56:47Z"
-review_passes: 1
+last_close_out_gate_ms: 103604
+last_close_out_gate_at: "2026-10-16T09:38:35.201Z"
 id: "0803"
 title: "Model routing: take the Jev / Clef-Flash key the same way Model providers does"
 type: bug
@@ -16,6 +16,8 @@ branch: feat/model-routing-take-the-jev-clef-flash-ke
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-16T03:11:27Z"
+updated_at: "2026-10-16T09:38:35Z"
+review_passes: 1
 dev_error_count: 5
 ---
 ## Problem
@@ -96,4 +98,5 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 - 2026-10-16T08:48:03Z · body
 - 2026-10-16T08:55:36Z · status active→review
 - 2026-10-16T08:56:47Z · note: review pass 1: good to go
+- 2026-10-16T09:38:35Z · close-out gate completed in 104s
 
