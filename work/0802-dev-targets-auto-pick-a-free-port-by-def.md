@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-pick-a-free-port-by-def
 created_at: "2026-10-15T19:36:15Z"
-updated_at: "2026-10-16T02:23:38Z"
+updated_at: "2026-10-16T02:23:39Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -89,3 +89,4 @@ Start from src/server/dev.ts (the {port} substitution, which already picks a fre
 - 2026-10-16T02:14:16Z · body
 - 2026-10-16T02:23:38Z · status active→review
 - 2026-10-16T02:23:38Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (1a9b848a0) during finalization (#0734)
+- 2026-10-16T02:23:39Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (1a9b848a0) during finalization (#0734)
