@@ -481,6 +481,8 @@ export function findConfigValueProblems(parsed: Record<string, unknown>): string
     "micro-dot-matrix",
     "tiny-signal-bars",
     "spark-diamond",
+    "arcade-hopper",
+    "puppy-tracks",
     "three-dots",
   ]);
   enumCheck("theme", ["dark", "light", "system"]);
