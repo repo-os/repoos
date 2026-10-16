@@ -4,7 +4,7 @@
  * Clicking it asks the server to open the task's own markdown file.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mount, type VueWrapper } from "@vue/test-utils";
+import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { nextTick } from "vue";
 import { createRouter, createMemoryHistory, type Router } from "vue-router";
@@ -53,6 +53,7 @@ async function mountDrawer(
   editor: { enabled?: boolean; editorCommand?: string } | null,
   apiAvailable = true,
   globalEditorCommand?: string,
+  router: Router = makeRouter(),
 ): Promise<VueWrapper> {
   const config = useConfigStore();
   config.data = {
@@ -62,7 +63,6 @@ async function mountDrawer(
   const repo = useRepoStore();
   repo.tasks = [task];
   repo.health = { ok: true, copyInspectorAvailable: apiAvailable } as typeof repo.health;
-  const router = makeRouter();
   const wrapper = mount(TaskDrawer, {
     attachTo: document.body,
     global: {
@@ -187,7 +187,15 @@ describe("task drawer open in editor (#0636)", () => {
     FakeEventSource.instances = [];
     const task = makeTask();
     stubApi(task, []);
-    wrapper = await mountDrawer(pinia, task, { enabled: true, editorCommand: "" }, false);
+    const router = makeRouter();
+    wrapper = await mountDrawer(
+      pinia,
+      task,
+      { enabled: true, editorCommand: "" },
+      false,
+      undefined,
+      router,
+    );
 
     const hint = wrapper.get('[data-test-id="open-in-editor-hint"]');
     expect(hint.element.tagName).toBe("A");
@@ -196,5 +204,14 @@ describe("task drawer open in editor (#0636)", () => {
 
     (hint.element as HTMLAnchorElement).focus();
     expect(document.activeElement).toBe(hint.element);
+
+    // A native anchor activates on Enter; jsdom does not synthesize that click.
+    const el = hint.element as HTMLAnchorElement;
+    el.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }),
+    );
+    el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await flushPromises();
+    expect(router.currentRoute.value.fullPath).toContain("/settings?tab=general&section=general");
   });
 });
