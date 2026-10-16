@@ -50,6 +50,39 @@ like any other. The only thing it saves is paying that overhead once for several
 fixes instead of once each — it is never a shortcut past the branch, the check
 or the review.
 
+## One open bundle at a time
+
+There is **only one open easter-eggs bundle at a time**. When another small fix
+turns up while a bundle is open, it is added to that bundle — update the bundle
+task's body and item list — not filed as a new task. Start a new bundle only
+after the open one has landed. Filing bundles in parallel is how small tweaks
+end up spread across several half-empty tasks instead of grouped, and it is the
+mistake this rule exists to stop (2026-10-16: #0805 and #0806 were both open at
+once).
+
+## Adding an item to the open bundle
+
+1. Update the open bundle task's body: add the item to the **Problem** list with
+   its source task id and the one-line fix, and add its test to the **Acceptance
+   criteria**.
+2. Commit the item separately on the bundle's branch, so the review still reads
+   item by item.
+3. When the bundle lands, mark the source task superseded (next section).
+
+An open bundle already at 3–6 items is **split, not grown**: the new fix waits
+for the open one to land or goes into its own task. The guide is one small
+bundle in flight, not an ever-growing catch-all.
+
+## Marking a source task superseded
+
+A source task whose fix was absorbed into the bundle is marked superseded **in
+its body, not its status**: add an explicit note naming the bundle — for example
+`Superseded by #<bundle id>; its fix lands there.` — and leave `status:` exactly
+as it is. Do **not** use `repoos mv <id> done`: that only flips the status
+frontmatter and never merges anything (see `AGENTS.md`), so it would falsely
+record the fix as landed. The bundle's own close-out is what actually lands the
+work.
+
 ## When an item grows
 
 Bundles go wrong when an item turns out to be bigger than it looked. When that
@@ -63,10 +96,12 @@ in its own task.
 ## Rules of thumb
 
 - **3–6 items.** Below that, the overhead saved is marginal; above it the bundle
-  becomes hard to review and one failing item blocks too much.
-- **One area family.** Keep the bundle inside one area (all `web`, or all
-  `server`), so the gate's changed-path selection stays relevant and the diff
-  reads as one story.
+  becomes hard to review and one failing item blocks too much. An open bundle
+  already at that size is split, not grown.
+- **Areas may mix.** A bundle may span areas (`web`, `server`, `docs`) when
+  every item is small and independent. Each item still commits separately, so
+  the review reads item by item; do not let the mix become a home for a change
+  that needs its own design decision or review.
 - **p2/p3.** An easter-egg bundle is not urgent; it is the work you run while a
   big task soaks in review or waits on a dependency, not the work that
   road-blocks one.
@@ -76,8 +111,9 @@ in its own task.
 - **Commit per item.** One commit per fix keeps the review readable and makes a
   single problematic item trivial to drop or revert.
 - **Mark sources superseded.** Each item records the task it came from; when the
-  bundle lands, mark those source tasks superseded so nothing is re-implemented
-  later.
+  bundle lands, add an explicit note to those source tasks saying the bundle
+  supersedes them — in the body, leaving `status:` alone (see **Marking a source
+  task superseded**) — so nothing is re-implemented later.
 
 ## The task template
 
