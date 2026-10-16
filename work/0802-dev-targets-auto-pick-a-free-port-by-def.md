@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-16T02:08:51Z"
+review_passes: 1
 id: "0802"
 title: "Dev targets: auto-pick a free port by default, with a per-target fixed-port option"
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/dev-targets-auto-pick-a-free-port-by-def
 created_at: "2026-10-15T19:36:15Z"
-updated_at: "2026-10-16T02:08:51Z"
 ---
 ## Problem
 #0775 added the plain-language failure summary for a dev target whose port is taken, but not the automatic port choice it was asked to include. The three dev targets in repoos.toml now use the {port} placeholder, so they pick a free port, but nothing decides that for every target, and there is no setting for it.
@@ -73,3 +74,4 @@ Start from src/server/dev.ts (the {port} substitution, which already picks a fre
 - 2026-10-16T02:07:55Z · note: click [aria-label^=Edit]: click: Error: strict mode violation: locator('[aria-label^=Edit]') resolved to 3 elements: on /settings?tab=advanced
 - 2026-10-16T02:07:56Z · note: highlight #dev-target-port matched nothing on /settings?tab=advanced
 - 2026-10-16T02:08:51Z · note: review pass 1: needs some work
+
