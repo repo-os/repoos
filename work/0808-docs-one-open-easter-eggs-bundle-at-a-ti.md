@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-16T11:28:49.726Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0808"
 title: "Docs: one open easter-eggs bundle at a time, areas may mix"
 type: chore
@@ -38,3 +40,4 @@ Edit AGENTS.md and docs/easter-eggs-bundles.md on this task's branch. Do not com
 - 2026-10-16T10:28:57Z · body
 - 2026-10-16T11:13:14Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-10-16T11:13:16Z · message_queued at 2026-10-16T11:13:16.941Z
+
