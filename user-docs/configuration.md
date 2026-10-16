@@ -1668,17 +1668,23 @@ label = "Divot bar"
 | `dev.targets[].kind` | `server` \| `artifact` \| `process` | yes | `server` is a long-lived process with a URL; `artifact` is a build that produces a file and exits; `process` is a long-lived foreground process with no URL and no build artifact (a native app, a daemon). |
 | `dev.targets[].command` | string | yes | Shell command run in the project's **root checkout** (never a task worktree). May contain `{port}` (see below). |
 | `dev.targets[].url` | string | for `server` | The server's URL, e.g. `http://localhost:5173`. May contain `{port}`. A `process` never has one. |
+| `dev.targets[].port` | number | no | The port used for `{port}` (#0802). With auto-pick on it is the preferred port — used when free — otherwise a free one is chosen; with auto-pick off it is the fixed port. |
+| `dev.targets[].autoPort` | boolean | no | Auto-pick a free port for `{port}` (#0802). Default `true`; set `false` to pin the target to `port` and let a clash fail with the summary. |
 | `dev.targets[].artifactPath` | string | for `artifact` | Repo-relative path of the build output. |
 | `dev.targets[].label` | string | no | Human label shown in the UI; defaults to `name`. |
 | `dev.targets[].healthCheck.url` | string | no | URL polled until it answers before a `server` target is reported running. Defaults to `url`; may contain `{port}`. |
 | `dev.targets[].healthCheck.file` | string | no | Repo-relative file that must exist before the target is reported running. |
 
 `{port}` in a target's `command`, `url` or `healthCheck.url` is replaced with a
-free, OS-assigned port chosen when the target starts — the same handling
-`[[preview.targets]]` uses — so a dev server that would otherwise clash with
-another app binds cleanly. The substituted port is the same one in all three
-fields, and the Dev page shows the real URL of a running target. A target with
-no `{port}` behaves exactly as before, keeping its fixed port.
+port chosen when the target starts. Auto-pick is **on by default** (#0802): a
+preferred `port` is used when it is free, otherwise a free, OS-assigned port is
+chosen — the same handling `[[preview.targets]]` uses — so a dev server that
+would otherwise clash with another app binds cleanly. The substituted port is
+the same in all three fields, and the Dev page shows the real URL of a running
+target. Set `autoPort = false` to pin the target to `port` instead: a port
+already in use then fails with the plain-language summary (naming the process
+holding it) rather than being moved. Picking a port never stops another process.
+A target with no `{port}` behaves exactly as before, keeping its fixed port.
 
 A row must have a way to be judged healthy: a `server` has a `url`, an `artifact`
 has an `artifactPath`, and a `process` is healthy while its process is alive (so

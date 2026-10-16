@@ -12,13 +12,16 @@
  * `name` and the manager looks the command up in config.
  *
  * A target's `command`, `url` and `healthCheck.url` may contain a `{port}`
- * placeholder (#0751). Exactly like a `[[preview.targets]]` command, the
- * manager substitutes a free, OS-assigned port chosen at start time (never a
- * hardcoded range), so a dev server that would otherwise clash with another app
- * on the machine binds cleanly. The substituted port is remembered in the
- * target's state, so the Dev page shows the REAL url of a running target and a
- * reload handover re-adopts it with the same port. A target with no `{port}`
- * behaves exactly as before — its fixed port or url is untouched.
+ * placeholder (#0751). By default (#0802) RepoOS picks the port: the target's
+ * configured `port` when it is free, otherwise a free OS-assigned one chosen at
+ * start time (never a hardcoded range), so a dev server that would otherwise
+ * clash with another app on the machine binds cleanly. Turning auto-pick off
+ * pins the target to its `port`; a clash then fails with the plain-language
+ * summary instead. Picking a port never stops another process. The substituted
+ * port is remembered in the target's state, so the Dev page shows the REAL url
+ * of a running target and a reload handover re-adopts it with the same port. A
+ * target with no `{port}` behaves exactly as before — its fixed port or url is
+ * untouched.
  *
  * This deliberately mirrors the preview supervisor (src/server/preview.ts):
  * same registry + persisted-file + orphan-cleanup shape, same
@@ -119,6 +122,8 @@ export interface DevTargetView extends DevTargetState {
   command: string;
   label: string;
   url?: string;
+  /** The port the target uses — its resolved `{port}`, or a fixed port (#0802). */
+  port?: number;
   artifactPath?: string;
   /** Plain-language failure summary, present only for a failed target (#0775). */
   failure?: DevFailureView;
@@ -335,6 +340,7 @@ export class DevTargetManager {
   /** The port a target is configured to use, when it declares one. */
   private portHint(t: DevTargetConfig, state: DevTargetState): number | undefined {
     if (state.resolvedPort !== undefined) return state.resolvedPort;
+    if (t.port !== undefined) return t.port;
     const url = t.healthCheck?.url ?? t.url;
     if (!url) return undefined;
     try {
@@ -381,15 +387,24 @@ export class DevTargetManager {
     const cwd = this.config.root;
     const processGroup = process.platform !== "win32";
 
-    // #0751: a target whose command/url/healthCheck uses `{port}` gets a free,
-    // OS-assigned port chosen now, exactly like `[[preview.targets]]`. A target
+    // #0751/#0802: a target whose command/url/healthCheck uses `{port}` gets a
+    // port chosen now. Auto-pick (the default) prefers the target's configured
+    // `port` when it is free and otherwise falls back to a free OS-assigned
+    // port; auto-pick off uses the configured port as-is, so a clash fails with
+    // the plain-language summary rather than being silently moved. A target
     // with no placeholder keeps its declared command and url untouched.
     let resolvedPort: number | undefined;
     if (usesPortPlaceholder(t)) {
       try {
-        resolvedPort = await reservePort();
+        resolvedPort = t.autoPort === false ? t.port : await reservePort(t.port);
       } catch (err) {
         const message = `could not reserve a port for "${t.name}": ${(err as Error).message}`;
+        this.setState(t.name, { status: "failed", error: message });
+        this.appendLog(t.name, `[repoos] ${message}`);
+        return { ok: false, error: message, target: this.view(t) };
+      }
+      if (resolvedPort === undefined) {
+        const message = `could not resolve a port for "${t.name}": auto-pick is off but no port is set`;
         this.setState(t.name, { status: "failed", error: message });
         this.appendLog(t.name, `[repoos] ${message}`);
         return { ok: false, error: message, target: this.view(t) };
@@ -670,12 +685,14 @@ export class DevTargetManager {
     // target with no placeholder (no `resolvedPort`) keeps its declared values.
     const command = expandPort(t.command, state.resolvedPort) ?? t.command;
     const url = expandPort(t.url, state.resolvedPort);
+    const port = this.portHint(t, state);
     const view: DevTargetView = {
       name: t.name,
       kind: t.kind,
       command,
       label: t.label ?? t.name,
       ...(url ? { url } : {}),
+      ...(port !== undefined ? { port } : {}),
       ...(t.artifactPath ? { artifactPath: t.artifactPath } : {}),
       status: state.status,
       ...(state.error ? { error: state.error } : {}),
@@ -892,19 +909,34 @@ export function expandPort(
 }
 
 /**
- * A fresh, OS-assigned port, released just before the target's process binds —
- * the same approach `[[preview.targets]]` uses (#0751). Choosing the port here
- * (rather than a fixed one in config) is what keeps a dev server from clashing
- * with another app on the machine.
+ * A free port, released just before the target's process binds — the same
+ * approach `[[preview.targets]]` uses (#0751). Choosing the port here (rather
+ * than a fixed one in config) is what keeps a dev server from clashing with
+ * another app on the machine.
+ *
+ * #0802: when the target declares a preferred port, bind it first and keep it
+ * if it is free; an `EADDRINUSE` falls back to an OS-assigned port. That gives
+ * a stable URL when the port is available and a non-clashing one when it is
+ * not. The fallback never signals the process holding the port — only a port
+ * is reserved, nothing is stopped.
  */
-function reservePort(): Promise<number> {
+function reservePort(preferred?: number): Promise<number> {
   return new Promise((resolvePort, reject) => {
-    const srv = createTcpServer();
-    srv.once("error", reject);
-    srv.listen(0, "127.0.0.1", () => {
-      const port = (srv.address() as { port: number }).port;
-      srv.close(() => resolvePort(port));
-    });
+    const attempt = (port: number, allowFallback: boolean): void => {
+      const srv = createTcpServer();
+      srv.once("error", (err) => {
+        if (allowFallback && (err as NodeJS.ErrnoException).code === "EADDRINUSE") {
+          attempt(0, false);
+          return;
+        }
+        reject(err);
+      });
+      srv.listen(port, "127.0.0.1", () => {
+        const actual = (srv.address() as { port: number }).port;
+        srv.close(() => resolvePort(actual));
+      });
+    };
+    attempt(preferred ?? 0, preferred !== undefined);
   });
 }
 
