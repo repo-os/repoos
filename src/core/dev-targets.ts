@@ -36,6 +36,21 @@ function parseInlineHealthCheck(raw: string): { url?: string; file?: string } | 
 }
 
 /**
+ * The `{port}` token a dev target's templated fields may carry (#0802). Kept
+ * as a literal here so this node-free module never imports the server.
+ */
+const DEV_PORT_TOKEN = "{port}";
+
+/** Whether any of a target's fields use the `{port}` placeholder. */
+function usesPortPlaceholder(t: DevTargetConfig): boolean {
+  return (
+    t.command.includes(DEV_PORT_TOKEN) ||
+    (t.url?.includes(DEV_PORT_TOKEN) ?? false) ||
+    (t.healthCheck?.url?.includes(DEV_PORT_TOKEN) ?? false)
+  );
+}
+
+/**
  * Parse the `[[dev.targets]]` array of tables — the user-declared runnable dev
  * targets. Returns `{ targets, errors }`; `loadConfig` records the errors on
  * the config so the API/UI can surface them.
@@ -121,6 +136,31 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
     const label = typeof r.label === "string" ? r.label.trim() : "";
     if (label) target.label = label;
 
+    // #0802: per-target port handling. `autoPort` defaults to on; an explicit
+    // `false` opts into a fixed `port`. The value is accepted for any kind — a
+    // process's command may still use `{port}` — but only `server` targets get
+    // the control in the Settings dialog.
+    const autoPortRaw = r.autoPort;
+    if (autoPortRaw !== undefined && typeof autoPortRaw !== "boolean") {
+      errors.push(`[dev.targets] ${name}: autoPort must be true or false`);
+      continue;
+    }
+    if (typeof autoPortRaw === "boolean") target.autoPort = autoPortRaw;
+    const portRaw = r.port;
+    if (portRaw !== undefined && portRaw !== "") {
+      const port =
+        typeof portRaw === "number"
+          ? portRaw
+          : typeof portRaw === "string"
+            ? Number(portRaw.trim())
+            : Number.NaN;
+      if (!Number.isInteger(port) || port < 1 || port > 65535) {
+        errors.push(`[dev.targets] ${name}: port must be a whole number between 1 and 65535`);
+        continue;
+      }
+      target.port = port;
+    }
+
     // healthCheck arrives in one of three shapes, all accepted here so the
     // documented `healthCheck = { url = "..." }` actually works:
     //   - an object, from a real TOML parser (or a test passing rows directly);
@@ -166,6 +206,15 @@ export function parseDevTargets(parsed: Record<string, unknown>): {
     if (kindRaw === "process" && target.healthCheck) {
       errors.push(
         `[dev.targets] ${name}: a "process" target cannot have a healthCheck (it is running while its process is alive)`,
+      );
+      continue;
+    }
+    // #0802: auto-pick off pins the target to a fixed port. A `{port}` target
+    // with no port to pin it to would otherwise leak a literal `{port}` into
+    // the shell — reject it rather than run something nonsensical.
+    if (target.autoPort === false && usesPortPlaceholder(target) && target.port === undefined) {
+      errors.push(
+        `[dev.targets] ${name}: auto-pick is off but no port is set — set a port or turn auto-pick back on`,
       );
       continue;
     }

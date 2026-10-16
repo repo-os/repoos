@@ -7,7 +7,7 @@
  * and it shows an inline validation error instead of saving an invalid row.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { nextTick } from "vue";
 import DevTargetsSettings from "../src/components/DevTargetsSettings.vue";
@@ -121,6 +121,8 @@ describe("DevTargetsSettings card (#0749)", () => {
       label: "Debug APK",
       healthCheckUrl: "",
       healthCheckFile: "",
+      autoPort: true,
+      port: "",
     });
     await nextTick();
 
@@ -146,6 +148,8 @@ describe("DevTargetsSettings card (#0749)", () => {
       label: "",
       healthCheckUrl: "",
       healthCheckFile: "",
+      autoPort: true,
+      port: "",
     });
     await nextTick();
 
@@ -158,5 +162,28 @@ describe("DevTargetsSettings card (#0749)", () => {
     const wrapper = mountCard();
     // The card itself never persists on mount.
     expect(wrapper.find(".dev-targets-row").exists()).toBe(true);
+  });
+
+  // #0802 — the per-target port control lives in the edit dialog. It must be a
+  // real Settings control (not a raw-TOML-only key) with copy on what happens
+  // when the port is taken.
+  it("shows the auto-pick control and fixed port in the edit dialog", async () => {
+    seed([{ ...web, autoPort: false, port: 5173 }]);
+    const wrapper = mount(DevTargetsSettings, {
+      global: { plugins: [pinia] },
+      attachTo: document.body,
+    });
+    await wrapper.get('[aria-label="Edit Web app"]').trigger("click");
+    await flushPromises();
+    await nextTick();
+    const body = document.body.textContent ?? "";
+    expect(body).toContain("Auto-pick a free port");
+    expect(body).toContain("Fixed port");
+    expect(body).toContain("names the process holding it");
+    const port = document.body.querySelector<HTMLInputElement>("#dev-target-port");
+    expect(port).not.toBeNull();
+    expect(port?.value).toBe("5173");
+    wrapper.unmount();
+    document.body.innerHTML = "";
   });
 });

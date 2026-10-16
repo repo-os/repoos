@@ -22,6 +22,10 @@ export interface DevTargetDraft {
   label: string;
   healthCheckUrl: string;
   healthCheckFile: string;
+  /** Auto-pick a free port for `{port}` (#0802); default on. */
+  autoPort: boolean;
+  /** Fixed/preferred port as typed; validated by the parser ("" = unset). */
+  port: string;
 }
 
 /** A target as `safeConfigForBrowser` serializes it (`dev.targets`). */
@@ -33,6 +37,10 @@ export interface DevTargetPayload {
   artifactPath?: string;
   label?: string;
   healthCheck?: { url?: string; file?: string };
+  /** Auto-pick off when explicitly `false` (#0802); omitted means on. */
+  autoPort?: boolean;
+  /** Preferred/fixed port for `{port}` (#0802). */
+  port?: number;
 }
 
 /** A blank draft for the "Add target" dialog. */
@@ -46,6 +54,8 @@ export function emptyDevTargetDraft(): DevTargetDraft {
     label: "",
     healthCheckUrl: "",
     healthCheckFile: "",
+    autoPort: true,
+    port: "",
   };
 }
 
@@ -60,6 +70,8 @@ export function draftFromTarget(t: DevTargetPayload): DevTargetDraft {
     label: t.label ?? "",
     healthCheckUrl: t.healthCheck?.url ?? "",
     healthCheckFile: t.healthCheck?.file ?? "",
+    autoPort: t.autoPort !== false,
+    port: t.port !== undefined ? String(t.port) : "",
   };
 }
 
@@ -74,6 +86,8 @@ export function targetFromDraft(d: DevTargetDraft): Record<string, unknown> {
     label: d.label,
     healthCheckUrl: d.healthCheckUrl,
     healthCheckFile: d.healthCheckFile,
+    autoPort: d.autoPort,
+    port: d.port.trim(),
   };
 }
 
@@ -92,7 +106,9 @@ function parseRowFromDraft(d: DevTargetDraft): Record<string, unknown> {
     url: d.url,
     artifactPath: d.artifactPath,
     label: d.label,
+    autoPort: d.autoPort,
   };
+  if (d.port.trim()) row.port = d.port.trim();
   if (d.healthCheckUrl.trim()) row["healthCheck.url"] = d.healthCheckUrl.trim();
   if (d.healthCheckFile.trim()) row["healthCheck.file"] = d.healthCheckFile.trim();
   return row;

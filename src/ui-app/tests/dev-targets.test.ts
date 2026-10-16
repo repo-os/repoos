@@ -8,11 +8,14 @@
  */
 import { describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
+import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RepoOSConfig, DevTargetConfig } from "../../core/types";
 import { loadConfig, parseDevTargets } from "../../core/config";
+import { PORT_IN_USE } from "../../core/dev-failure";
 import { DevTargetManager, DEV_LOG_MAX_LINES } from "../../server/dev";
 import type { RouteContext } from "../../server/routes/types";
 import {
@@ -63,6 +66,52 @@ async function waitForDead(pid: number, ms = 2000): Promise<boolean> {
     await new Promise((r) => setTimeout(r, 50));
   }
   return !isAlive(pid);
+}
+
+/** Hold a free TCP port in-process (the "port is taken" side of a test). */
+function holdPort(): Promise<{ port: number; close: () => Promise<void> }> {
+  return new Promise((resolve, reject) => {
+    const srv = createServer();
+    srv.once("error", reject);
+    srv.listen(0, "127.0.0.1", () => {
+      const port = (srv.address() as { port: number }).port;
+      resolve({ port, close: () => new Promise<void>((r) => srv.close(() => r())) });
+    });
+  });
+}
+
+/** Reserve then release a port, leaving it free for the target to bind. */
+async function freePort(): Promise<number> {
+  const held = await holdPort();
+  await held.close();
+  return held.port;
+}
+
+/**
+ * A genuinely foreign process holding a port RepoOS did not start — a helper
+ * `bun -e` child that binds an OS-assigned port and reports it. Used to prove
+ * auto-pick never stops such a process.
+ */
+function spawnPortHolder(): Promise<{ pid: number; port: number; kill: () => void }> {
+  const script =
+    "const n=require('node:net');const s=n.createServer();" +
+    "s.listen(0,'127.0.0.1',()=>console.log(s.address().port));setInterval(()=>{},1000)";
+  const child = spawn(process.execPath, ["-e", script], {
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  return new Promise((resolve, reject) => {
+    let buf = "";
+    const timer = setTimeout(() => reject(new Error("holder did not report a port")), 5000);
+    child.stdout!.on("data", (c: Buffer) => {
+      buf += c.toString("utf8");
+      const m = buf.match(/(\d+)/);
+      if (m) {
+        clearTimeout(timer);
+        resolve({ pid: child.pid!, port: Number(m[1]), kill: () => child.kill("SIGKILL") });
+      }
+    });
+    child.once("error", reject);
+  });
 }
 
 describe("parseDevTargets", () => {
@@ -266,6 +315,98 @@ describe("parseDevTargets", () => {
     });
     expect(errors).toEqual([]);
     expect(targets[0].healthCheck).toEqual({ file: "dist/app.apk" });
+  });
+
+  // #0802 — per-target port handling: auto-pick on by default, a fixed port
+  // when it is turned off.
+  it("parses auto-pick off with a fixed port, and defaults auto-pick on", () => {
+    const { targets, errors } = parseDevTargets({
+      "dev.targets": [
+        {
+          name: "web",
+          kind: "server",
+          command: "bun run dev --port {port}",
+          url: "http://localhost:{port}",
+          autoPort: false,
+          port: 5173,
+        },
+        {
+          name: "docs",
+          kind: "server",
+          command: "bun run dev --port {port}",
+          url: "http://localhost:{port}",
+        },
+      ],
+    });
+    expect(errors).toEqual([]);
+    expect(targets[0]).toMatchObject({ autoPort: false, port: 5173 });
+    // Auto-pick is on by default: nothing is stored, the manager treats the
+    // absent value as true.
+    expect(targets[1].autoPort).toBeUndefined();
+    expect(targets[1].port).toBeUndefined();
+  });
+
+  it("accepts a numeric-string port (the Settings form sends a string)", () => {
+    const { targets, errors } = parseDevTargets({
+      "dev.targets": [
+        {
+          name: "web",
+          kind: "server",
+          command: "x {port}",
+          url: "http://localhost:{port}",
+          autoPort: false,
+          port: "4321",
+        },
+      ],
+    });
+    expect(errors).toEqual([]);
+    expect(targets[0].port).toBe(4321);
+  });
+
+  it("rejects an out-of-range port", () => {
+    const { errors } = parseDevTargets({
+      "dev.targets": [
+        {
+          name: "web",
+          kind: "server",
+          command: "x {port}",
+          url: "http://localhost:{port}",
+          port: 70000,
+        },
+      ],
+    });
+    expect(errors[0]).toContain("port must be a whole number between 1 and 65535");
+  });
+
+  it("rejects auto-pick off with a {port} and no port to pin", () => {
+    const { errors } = parseDevTargets({
+      "dev.targets": [
+        {
+          name: "web",
+          kind: "server",
+          command: "x {port}",
+          url: "http://localhost:{port}",
+          autoPort: false,
+        },
+      ],
+    });
+    expect(errors[0]).toContain("auto-pick is off but no port is set");
+  });
+
+  it("allows auto-pick off with a literal fixed port and no {port}", () => {
+    const { targets, errors } = parseDevTargets({
+      "dev.targets": [
+        {
+          name: "web",
+          kind: "server",
+          command: "bun run dev --port 5173",
+          url: "http://localhost:5173",
+          autoPort: false,
+        },
+      ],
+    });
+    expect(errors).toEqual([]);
+    expect(targets[0].autoPort).toBe(false);
   });
 });
 
@@ -689,6 +830,138 @@ describe("DevTargetManager lifecycle", () => {
       expect(restarted.target?.command).toContain(String(Number(url2.split(":").pop())));
     } finally {
       await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("dev target auto-pick (#0802)", () => {
+  /** A `{port}` server that answers its health check, so `start` can report running. */
+  function portServerTarget(over: Partial<DevTargetConfig>): DevTargetConfig {
+    return {
+      name: "web",
+      kind: "server",
+      command:
+        `bun -e "const h=require('node:http');` +
+        `const p=Number(process.argv[1]);` +
+        `h.createServer((q,s)=>s.end('ok')).listen(p);setTimeout(()=>{},60000)" {port}`,
+      url: "http://127.0.0.1:{port}",
+      healthCheck: { url: "http://127.0.0.1:{port}/health" },
+      ...over,
+    };
+  }
+
+  it("starts on a free port when the preferred port is taken (auto-pick on)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-autoport-"));
+    const held = await holdPort();
+    const mgr = new DevTargetManager(
+      baseConfig({ targets: [portServerTarget({ port: held.port })] }, dir),
+    );
+    try {
+      const result = await mgr.start("web");
+      expect(result.ok).toBe(true);
+      const view = mgr.get("web");
+      const port = Number((view?.url ?? "").split(":").pop());
+      expect(port).toBeGreaterThan(0);
+      // The taken preferred port was skipped for a free one.
+      expect(port).not.toBe(held.port);
+      expect(view?.port).toBe(port);
+      expect(view?.command).toContain(String(port));
+    } finally {
+      await mgr.stopAll();
+      await held.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("uses the preferred port when it is free (auto-pick on)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-prefport-"));
+    const port = await freePort();
+    const mgr = new DevTargetManager(baseConfig({ targets: [portServerTarget({ port })] }, dir));
+    try {
+      const result = await mgr.start("web");
+      expect(result.ok).toBe(true);
+      expect(mgr.get("web")?.port).toBe(port);
+      expect(mgr.get("web")?.url).toBe(`http://127.0.0.1:${port}`);
+    } finally {
+      await mgr.stopAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("fails with the port-in-use summary when auto-pick is off and the port is taken", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-fixedport-"));
+    const held = await holdPort();
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          targets: [
+            {
+              name: "web",
+              kind: "server",
+              // No url: the child exits on EADDRINUSE and the summary is read
+              // from its output. A health file that never appears makes
+              // `waitForReady` loop until the child dies, so the failure is
+              // deterministic rather than relying on a single 500ms check.
+              command:
+                `bun -e "const h=require('node:http');` +
+                `h.createServer((q,s)=>s.end('ok')).listen(Number(process.argv[1]),'127.0.0.1')" {port}`,
+              healthCheck: { file: "never-appears.txt" },
+              autoPort: false,
+              port: held.port,
+            },
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("web");
+      expect(result.ok).toBe(false);
+      const detail = await mgr.getDetailed("web");
+      expect(detail?.status).toBe("failed");
+      expect(detail?.failure?.kind).toBe(PORT_IN_USE);
+      expect(detail?.failure?.port).toBe(held.port);
+      // The fixed port was the one substituted into the command.
+      expect(detail?.command).toContain(String(held.port));
+    } finally {
+      await mgr.stopAll();
+      await held.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("never stops a process RepoOS did not start", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-dev-foreign-"));
+    const holder = await spawnPortHolder();
+    const mgr = new DevTargetManager(
+      baseConfig(
+        {
+          targets: [
+            {
+              name: "web",
+              kind: "server",
+              command:
+                `bun -e "const h=require('node:http');` +
+                `h.createServer((q,s)=>s.end('ok')).listen(Number(process.argv[1]),'127.0.0.1')" {port}`,
+              healthCheck: { file: "never-appears.txt" },
+              autoPort: false,
+              port: holder.port,
+            },
+          ],
+        },
+        dir,
+      ),
+    );
+    try {
+      const result = await mgr.start("web");
+      expect(result.ok).toBe(false);
+      // The foreign holder is untouched — auto-pick only reserves a port, it
+      // never signals a process RepoOS did not start.
+      expect(isAlive(holder.pid)).toBe(true);
+    } finally {
+      await mgr.stopAll();
+      holder.kill();
       rmSync(dir, { recursive: true, force: true });
     }
   });
