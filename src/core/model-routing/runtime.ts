@@ -27,7 +27,17 @@ function routingProviderRow(provider: EffectiveRouting["provider"]) {
   return null;
 }
 
-/** Read the configured provider key (never log it). */
+/**
+ * Read the configured provider key (never log it).
+ *
+ * Routing reads through the SAME path the Model providers tab uses (#0809):
+ * `readProviderKey` checks `process.env` first (a save updates it in place),
+ * then the config snapshot, then the harness auth stores. That is what keeps
+ * the routing status and the Model providers tab agreeing on whether a key is
+ * present — a key saved there is a key routing sees, and vice versa. When no
+ * config is supplied (e.g. a bare probe) the fixed env var is read directly,
+ * which is the same first step.
+ */
 export function readRoutingCredential(
   config: RepoOSConfig | undefined,
   effective: EffectiveRouting,
@@ -110,12 +120,14 @@ export function modelRoutingStatus(config: RepoOSConfig | undefined): ModelRouti
   const row = routingProviderRow(effective.provider);
   const keyProviderId =
     row?.id === "jev" || row?.id === "openrouter" || row?.id === "clef-flash" ? row.id : null;
+  // One read drives both the credential label and provider readiness, so the
+  // two can never disagree (the #0809 inconsistency).
   const credentialPresent =
+    effective.provider === "jev" ||
+    effective.provider === "openrouter" ||
     effective.provider === "clef-flash"
       ? readRoutingCredential(config, effective).length > 0
-      : effective.provider === "openrouter" || effective.provider === "jev"
-        ? readRoutingCredential(config, effective).length > 0
-        : false;
+      : false;
   const credentialLabel = credentialLabelFor(effective, credentialPresent);
   const issues: string[] = [];
 

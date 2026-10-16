@@ -558,7 +558,9 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         continue;
       }
       if (field.key === "model_routing.baseUrl") {
-        patch[field.key] = typeof val === "string" ? val.trim() : "";
+        // Retained but not rendered (#0809): only change it when the body
+        // actually carries a value, so an unrelated Settings save can't clear it.
+        if (typeof val === "string") patch[field.key] = val.trim();
         continue;
       }
       if (field.key === "whisper.apiKey") {

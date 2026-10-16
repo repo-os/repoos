@@ -15,6 +15,20 @@ export const ROUTING_MODES = ["off", "shadow", "automatic"] as const;
 export const ROUTING_PROVIDERS = ["jev", "clef-flash", "openrouter"] as const;
 export const ROUTING_ROLES = ["pm", "engineer", "reviewer"] as const;
 
+/**
+ * Providers the Model routing UI offers, in display order (#0809).
+ *
+ * Clef-Flash is deliberately absent: its adapter and fixture tests ship, but
+ * there is no live user path, so it must never be selectable. `ROUTING_PROVIDERS`
+ * keeps the value — and its credential env — so an existing `[model_routing]`
+ * table still parses. OpenRouter carries a plain label on purpose: it exposes
+ * many decision models, so the option must not enumerate any.
+ */
+export const ROUTING_PROVIDER_CHOICES = [
+  { value: "jev", label: "TypeSafe Jev (direct)" },
+  { value: "openrouter", label: "OpenRouter" },
+] as const;
+
 export const DEFAULT_ROUTING_TIMEOUT_MS = 8000;
 export const MIN_ROUTING_TIMEOUT_MS = 500;
 export const MAX_ROUTING_TIMEOUT_MS = 60000;
