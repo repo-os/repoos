@@ -14,7 +14,7 @@ branch: feat/model-routing-take-the-jev-clef-flash-ke
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T08:36:59Z"
+updated_at: "2026-10-16T08:45:37Z"
 dev_error_count: 5
 ---
 ## Problem
@@ -51,25 +51,11 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 ```json
 [
 {
-"label": "Model routing without API key variable field",
-"target": "default",
-"route": "/agents?tab=model-routing",
-"highlight": "[data-testid=model-routing-panel] .mr-status",
-"state": "board:withReviewTask"
-},
-{
-"label": "Jev key save form",
-"target": "default",
-"route": "/agents?tab=model-routing",
-"highlight": "[data-testid=routing-key-toggle]",
-"steps": [
-{
-"click": "[data-testid=routing-key-toggle]"
-},
-{
-"waitMs": 200
-}
-]
+  "label": "Model routing credentials UX",
+  "target": "default",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-testid=\"model-routing-panel\"]",
+  "state": "board:withReviewTask"
 }
 ]
 ```
@@ -104,3 +90,4 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 - 2026-10-16T05:48:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-16T05:54:26Z · message_delivered: 1 message(s)
 - 2026-10-16T08:36:59Z · body
+- 2026-10-16T08:45:37Z · body: section Shots
