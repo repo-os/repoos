@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/optional-decision-model-check-before-a-t
 created_at: "2026-10-16T05:07:46Z"
-updated_at: "2026-10-16T09:29:52Z"
+updated_at: "2026-10-16T09:31:54Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -47,14 +47,14 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 "highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
+"waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
 }
 ],
 "assert": [
 {
-  "selector": "[data-task-id=\"9999\"] .tc-needs-detail",
-  "label": "the card shows the model explanation",
-  "text": "Decision model"
+"selector": "[data-task-id=\"9999\"] .tc-needs-detail",
+"label": "the card shows the model explanation",
+"text": "Decision model"
 }
 ],
 "state": "card:humanStep",
@@ -67,14 +67,14 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 "highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
+"waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
 }
 ],
 "assert": [
 {
-  "selector": "[data-task-id=\"9999\"] .tc-needs-detail",
-  "label": "the card shows the model explanation in dark theme",
-  "text": "Decision model"
+"selector": "[data-task-id=\"9999\"] .tc-needs-detail",
+"label": "the card shows the model explanation in dark theme",
+"text": "Decision model"
 }
 ],
 "state": "card:humanStep",
@@ -106,3 +106,4 @@ Start from the needs-human check on task start (src/core/ or src/server, grep ne
 - 2026-10-16T09:27:09Z · body: section Shots
 - 2026-10-16T09:28:15Z · body
 - 2026-10-16T09:29:52Z · body
+- 2026-10-16T09:31:54Z · body
