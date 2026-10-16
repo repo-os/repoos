@@ -424,9 +424,9 @@ export async function resolveRoutedAgent(
     }
     persistRecord(deps, record);
 
-    if (effective.mode === "automatic") {
-      recordDecisionUsage(deps, decision, input.task?.id ?? null, durationMs);
-    }
+    // Every decision call records its usage, in shadow and automatic mode alike
+    // (the call happened even when the selection was not applied).
+    recordDecisionUsage(deps, decision, input.task?.id ?? null, durationMs);
 
     if (!appliedCandidate) {
       return { agent: base, decision: record, handback };
