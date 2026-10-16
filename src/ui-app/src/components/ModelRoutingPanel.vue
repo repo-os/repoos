@@ -6,7 +6,11 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useConfigStore } from "../stores/config";
 import { api, JSON_OPTS } from "../api";
-import type { ModelRoutingStatusResponse } from "../types";
+import type {
+  ModelRoutingDecisionsResponse,
+  ModelRoutingStatusResponse,
+  RoutingDecisionView,
+} from "../types";
 import Button from "./ui/button.vue";
 import Select from "./ui/select/root.vue";
 import SelectContent from "./ui/select/content.vue";
@@ -61,6 +65,8 @@ const credentialEnv = computed(() => {
 
 const status = ref<ModelRoutingStatusResponse | null>(null);
 const statusLoading = ref(false);
+const decisions = ref<RoutingDecisionView[]>([]);
+const decisionsLoading = ref(false);
 const probeMessage = ref("");
 const probing = ref(false);
 const keyDraft = ref("");
@@ -77,6 +83,40 @@ async function refreshStatus(): Promise<void> {
   } finally {
     statusLoading.value = false;
   }
+}
+
+async function refreshDecisions(): Promise<void> {
+  decisionsLoading.value = true;
+  try {
+    const res = await api<ModelRoutingDecisionsResponse>(
+      "/api/model-routing/decisions?limit=10",
+    );
+    decisions.value = res.decisions ?? [];
+  } catch {
+    decisions.value = [];
+  } finally {
+    decisionsLoading.value = false;
+  }
+}
+
+function candLabel(c: RoutingDecisionView["actual"]): string {
+  if (!c) return "—";
+  return c.reasoning ? `${c.cli} · ${c.model} · ${c.reasoning}` : `${c.cli} · ${c.model}`;
+}
+
+function decisionStatus(d: RoutingDecisionView): string {
+  if (d.kind === "pinned") return "Pinned";
+  if (d.mode === "shadow") return "Shadow";
+  if (d.applied) return "Applied";
+  if (d.kind === "fallback") return "Fallback";
+  if (d.kind === "blocked") return "Blocked";
+  return "Recorded";
+}
+
+function shortTime(iso: string): string {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return iso;
+  return new Date(t).toLocaleString();
 }
 
 async function patch(partial: Record<string, unknown>): Promise<void> {
@@ -162,11 +202,13 @@ watch(
   () => config.data,
   () => {
     void refreshStatus();
+    void refreshDecisions();
   },
 );
 
 onMounted(() => {
   void refreshStatus();
+  void refreshDecisions();
 });
 </script>
 
@@ -368,6 +410,45 @@ onMounted(() => {
     <p v-if="probeMessage" class="mr-probe-msg" data-testid="routing-probe-message">
       {{ probeMessage }}
     </p>
+
+    <div class="mr-decisions">
+      <div class="field-label">Recent decisions</div>
+      <p v-if="decisionsLoading" class="agent-desc">Loading…</p>
+      <p v-else-if="!decisions.length" class="agent-desc">
+        Nothing recorded yet. Decisions appear here once a run is routed in shadow or automatic
+        mode.
+      </p>
+      <ul v-else class="mr-decision-list" data-testid="routing-decisions">
+        <li v-for="d in decisions" :key="d.id" class="mr-decision">
+          <div class="mr-decision-head">
+            <span class="mr-decision-role">{{ d.role }}</span>
+            <span class="mr-dec-pill" :class="`mr-dec-${d.kind}`">{{ decisionStatus(d) }}</span>
+            <span v-if="d.taskId" class="mr-dec-task">#{{ d.taskId }}</span>
+            <time class="mr-dec-time">{{ shortTime(d.at) }}</time>
+          </div>
+          <div class="mr-decision-body">
+            <span class="mr-dec-k">Chosen</span>
+            <span class="mr-dec-v">{{ candLabel(d.actual) }}</span>
+            <template v-if="d.mode === 'shadow' && d.recommendation">
+              <span class="mr-dec-k">Recommended</span>
+              <span class="mr-dec-v">{{ candLabel(d.recommendation) }}</span>
+            </template>
+            <template v-if="d.fallbackReason">
+              <span class="mr-dec-k">Fallback</span>
+              <span class="mr-dec-v">{{ d.fallbackReason }}</span>
+            </template>
+            <template v-if="d.kind === 'blocked'">
+              <span class="mr-dec-k">Blocked</span>
+              <span class="mr-dec-v">{{ d.message || d.blockReason }}</span>
+            </template>
+            <template v-if="d.handback">
+              <span class="mr-dec-k">Handback</span>
+              <span class="mr-dec-v">{{ d.handback.action }} — {{ d.handback.reason }}</span>
+            </template>
+          </div>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -459,5 +540,78 @@ onMounted(() => {
   font-size: 13px;
   color: var(--txt-dim);
   margin: 8px 0 0;
+}
+.mr-decisions {
+  margin: 20px 0 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.mr-decision-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mr-decision {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--panel-solid);
+}
+.mr-decision-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.mr-decision-role {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.mr-dec-task {
+  color: var(--txt-dim);
+}
+.mr-dec-time {
+  margin-left: auto;
+  color: var(--txt-dim);
+  font-size: 11px;
+}
+.mr-dec-pill {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--txt-dim) 16%, transparent);
+  color: var(--txt-dim);
+}
+.mr-dec-selected {
+  background: color-mix(in srgb, var(--green) 18%, transparent);
+  color: var(--green);
+}
+.mr-dec-blocked {
+  background: color-mix(in srgb, var(--amber) 20%, transparent);
+  color: var(--amber);
+}
+.mr-dec-fallback {
+  background: color-mix(in srgb, var(--amber) 16%, transparent);
+  color: var(--amber);
+}
+.mr-decision-body {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 10px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.mr-dec-k {
+  color: var(--txt-dim);
+}
+.mr-dec-v {
+  overflow-wrap: anywhere;
 }
 </style>

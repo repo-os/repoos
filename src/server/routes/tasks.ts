@@ -21,6 +21,7 @@ import {
   extractOneShotReportText,
   type PromptResult,
 } from "../agents.js";
+import { resolveRoutedAgent } from "../model-routing-wiring.js";
 import {
   markPmWorking,
   clearPmWorking,
@@ -1964,12 +1965,28 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (runner.isRunning(id)) {
       return json(res, 400, { error: `Task #${id} is already running` });
     }
-    const agent = resolveAgentForTask(config, existing);
-    if (!agent) {
+    const baseEngineer = resolveAgentForTask(config, existing);
+    if (!baseEngineer) {
       return json(res, 400, {
         error: "No enabled engineer agent is configured on the Agents page",
       });
     }
+    // Automatic model routing (#0793) may replace the engineer configuration
+    // when `[model_routing] mode = "automatic"`; off/shadow and human pins
+    // return the base agent unchanged. Routing never blocks a start.
+    const routedStart = await resolveRoutedAgent(
+      { config },
+      {
+        role: "engineer",
+        task: existing,
+        base: baseEngineer,
+        pinned:
+          isModelOverridePinned(existing.modelOverride) ||
+          !!existing.cliOverride ||
+          !!existing.agentOverride,
+      },
+    );
+    const agent = routedStart.agent ?? baseEngineer;
     const mode = body?.mode;
     const clean = mode === "clean" && !existing.hotfix;
     const freshSession = mode === "fresh";
@@ -2424,12 +2441,6 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: `Only active or review tasks accept messages (#${id} is ${existing.status})`,
       });
     }
-    const agent = resolveAgentForTask(config, existing);
-    if (!agent) {
-      return json(res, 400, {
-        error: "No enabled engineer agent is configured on the Agents page",
-      });
-    }
     const body = (await readBody(req)) as { text?: unknown; now?: unknown; [key: string]: unknown };
     // #0684: the engineer message route resolves the agent from the task's
     // persisted overrides only — reject a body override instead of dropping it.
@@ -2517,6 +2528,25 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       }
       interrupted = true;
     }
+    const baseEngineerMessage = resolveAgentForTask(config, existing);
+    if (!baseEngineerMessage) {
+      return json(res, 400, {
+        error: "No enabled engineer agent is configured on the Agents page",
+      });
+    }
+    const routedMessage = await resolveRoutedAgent(
+      { config },
+      {
+        role: "engineer",
+        task: existing,
+        base: baseEngineerMessage,
+        pinned:
+          isModelOverridePinned(existing.modelOverride) ||
+          !!existing.cliOverride ||
+          !!existing.agentOverride,
+      },
+    );
+    const agent = routedMessage.agent ?? baseEngineerMessage;
     const sendRes = runner.send(id, text, agent, { resumePreamble: preamble });
     if (!sendRes.ok) {
       return json(res, 400, {
@@ -3208,6 +3238,19 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
       error: "PM agent is not configured — enable it on the Agents page",
     });
   }
+  // Automatic model routing (#0793) may replace the PM configuration when
+  // `[model_routing] mode = "automatic"`. A per-request or persisted PM
+  // override is a human pin and is honored first.
+  const routedPm = await resolveRoutedAgent(
+    { config },
+    {
+      role: "pm",
+      task: existing,
+      base: pm,
+      pinned: !!hasPmOverride,
+    },
+  );
+  if (routedPm.agent) pm = routedPm.agent;
 
   // Antigravity is worktree-bound for every turn, including an existing PM
   // chat. Refuse to fall back to the main checkout when a task has no managed
