@@ -2,14 +2,14 @@
 id: "0807"
 title: Add Arcade hopper and Puppy tracks activity animations
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-arcade-hopper-and-puppy-tracks-activ
 created_at: "2026-10-16T09:55:07Z"
-updated_at: "2026-10-16T11:51:23Z"
+updated_at: "2026-10-16T12:23:20Z"
 ---
 ## Problem
 
@@ -70,10 +70,10 @@ Extend the existing validated config enum, schema options, config persistence, a
 "highlight": "#setting-activityAnimationStyle",
 "steps": [
 {
-  "click": "#setting-activityAnimationStyle button[role=\"combobox\"]"
+"click": "#setting-activityAnimationStyle button[role=\"combobox\"]"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ]
 }
@@ -91,3 +91,5 @@ Extend the existing validated config enum, schema options, config persistence, a
 - 2026-10-16T11:46:42Z · body: section Shots
 - 2026-10-16T11:49:46Z · body
 - 2026-10-16T11:51:23Z · body
+- 2026-10-16T12:23:20Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-16T12:23:20Z · note: handoff requested (cli)
