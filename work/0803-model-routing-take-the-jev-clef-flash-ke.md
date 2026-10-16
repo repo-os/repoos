@@ -3,6 +3,9 @@ id: "0803"
 title: "Model routing: take the Jev / Clef-Flash key the same way Model providers does"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: needs-human-step
+needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 priority: p1
 area: [web, server]
 assigned_to: ai
@@ -59,3 +62,4 @@ Start from src/server/routes/model-providers.ts (registry, the .env writer, the 
 - 2026-10-16T03:28:24Z · message_queued at 2026-10-16T03:28:24.251Z
 - 2026-10-16T03:28:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-16T05:04:24Z · needs_input
+- 2026-10-16T05:04:25Z · needs_input
