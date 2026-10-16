@@ -14,8 +14,8 @@ branch: feat/model-routing-take-the-jev-clef-flash-ke
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-16T03:11:27Z"
-updated_at: "2026-10-16T05:58:00Z"
-dev_error_count: 4
+updated_at: "2026-10-16T08:35:44Z"
+dev_error_count: 5
 ---
 ## Problem
 The Model routing page is confusing and asks for things users don't need to supply:
