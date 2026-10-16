@@ -10,7 +10,6 @@ created_by: njachowski@gmail.com
 branch: feat/model-routing-jev-and-openrouter-only-hi
 created_at: "2026-10-16T11:59:41Z"
 updated_at: "2026-10-16T15:10:43Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-16T13:28:56.157Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -82,3 +81,4 @@ Start from src/core/model-routing/runtime.ts (readRoutingCredential, credentialL
 - 2026-10-16T13:28:58Z · message_queued at 2026-10-16T13:28:58.152Z
 - 2026-10-16T13:28:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-16T15:10:43Z · body
+
