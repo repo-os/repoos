@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-decision-cards-show-respon
 created_at: "2026-10-17T11:25:18Z"
-updated_at: "2026-10-17T11:30:33Z"
+updated_at: "2026-10-17T11:32:29Z"
 ---
 ## Problem
 #0811 was marked done, but only the live test result card landed. The Recent decisions list is still the old layout:
@@ -34,9 +34,22 @@ Source: #0811's scope (src/ui-app/src/components/ModelRoutingPanel.vue, the Rece
 ## Notes for AI
 Start from ModelRoutingPanel.vue (the test card around lines 630-660, the Recent decisions list from line 681, and shortTime). Use the shared tooltip component (AGENTS.md: no native title tooltips). Source: user report 2026-10-17.
 
+## Shots
+```json
+[
+{
+  "label": "Model routing tab: live test card collapses to a summary; decision cards show response time, cost and relative timestamps",
+  "target": "default",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-testid=\"model-routing-panel\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-17T11:25:18Z · created · njachowski@gmail.com
 - 2026-10-17T11:25:41Z · status inbox→ready
 - 2026-10-17T11:26:00Z · status ready→active, branch
 - 2026-10-17T11:30:33Z · body
+- 2026-10-17T11:32:29Z · body: section Shots
