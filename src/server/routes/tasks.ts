@@ -1035,7 +1035,15 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     void syncTaskBranch(updated);
   }
 
-  return json(res, 200, index.getTask(updated.id));
+  const current = index.getTask(updated.id);
+  const requirementsNotice =
+    body.body !== undefined || body.section !== undefined
+      ? (index.consumeRequirementsNotice?.(updated.id) ?? null)
+      : null;
+  return json(res, 200, {
+    ...current,
+    ...(requirementsNotice ? { requirementsNotice } : {}),
+  });
 };
 
 export const deleteTask: RouteHandler = async (ctx, _req, res, params) => {

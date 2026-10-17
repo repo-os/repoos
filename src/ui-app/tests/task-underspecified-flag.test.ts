@@ -139,6 +139,7 @@ function makeCtx(
       getTask: () => readTaskFile(fx),
       getTasks: () => [readTaskFile(fx)],
       applyFileChange: () => {},
+      consumeRequirementsNotice: () => null,
       refreshBranches: () => {},
     } as any,
     indexReady: Promise.resolve(),

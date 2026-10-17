@@ -19,6 +19,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0778 — review-status task with a non-empty branch, so the task drawer
   // shows UI-changes pane and actions like Add shot and Refresh evidence.
   "drawer:reviewWithBranch",
+  // #0817 — active task with requirement sections so the drawer shows Update
+  // requirements on the spec header (the action is active-only).
+  "drawer:activeRequirements",
   // #0804 — a ready task flagged by the decision-model human-step check, so a
   // capture can show the flag's explanation on the card.
   "card:humanStep",

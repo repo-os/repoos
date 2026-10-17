@@ -39,6 +39,7 @@ import { normalizeTaskDependencies, validateTaskDependencies } from "../core/tas
 import { taskPriorityError, taskTypeError } from "../core/task-fields.js";
 import { appendScreenshotsSection, type ScreenshotMeta } from "./attachments.js";
 import { storiesDirOf } from "../core/story-definition-files.js";
+import { summarizeRequirementsChange } from "../core/task-body-diff.js";
 
 /**
  * Body sections that are user-owned or append-only: they live in the task body
@@ -88,6 +89,18 @@ function bodyDropsSpecSections(currentBody: string, newBody: string): boolean {
   return SPEC_SECTION_HEADINGS.some(
     (h) => extractSection(currentBody, h) !== null && extractSection(newBody, h) === null,
   );
+}
+
+/**
+ * The activity entry recorded for a body edit. #0817: when the edit changes
+ * requirement sections, name them (added/edited/removed) so the Activity log
+ * says what moved rather than a bare `body`. Falls back to `body` for a
+ * change outside the requirement sections (e.g. a `## Shots` edit, or a
+ * whitespace-only rewrite) — those are bookkeeping, not requirements.
+ */
+function bodyChangeEntry(oldBody: string, newBody: string): string {
+  const change = summarizeRequirementsChange(oldBody, newBody);
+  return change ? `body: ${change.summary}` : "body";
 }
 
 export interface TaskPatch {
@@ -430,7 +443,7 @@ export function patchTaskFile(
       throw new WriteError("## Activity is append-only and cannot be edited as a section");
     }
     const nextBody = replaceSection(current.body, normalizedHeading, content);
-    if (nextBody !== current.body) changes.push(`body: section ${heading}`);
+    if (nextBody !== current.body) changes.push(bodyChangeEntry(current.body, nextBody));
     current.body = nextBody;
   } else if (patch.body !== undefined) {
     if (!patch.force && bodyDropsSpecSections(current.body, patch.body)) {
@@ -459,7 +472,7 @@ export function patchTaskFile(
       nextBody = removeSection(nextBody, h);
     }
     nextBody = [nextBody.replace(/\s+$/, ""), ...preserved].filter(Boolean).join("\n\n");
-    if (nextBody !== current.body) changes.push("body");
+    if (nextBody !== current.body) changes.push(bodyChangeEntry(current.body, nextBody));
     current.body = nextBody;
   }
   if (patch.addScreenshot) {
