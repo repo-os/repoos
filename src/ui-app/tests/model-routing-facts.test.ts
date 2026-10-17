@@ -31,6 +31,7 @@ import {
 import { historyFromSessions, candidateHistory } from "../../server/candidate-history.js";
 import {
   MAX_ROUTING_BRIEF_CHARS,
+  MIN_ROUTING_BRIEF_CHARS,
   buildCandidateFacts,
   buildRoutingBrief,
   briefMaxChars,
@@ -139,8 +140,8 @@ describe("brief budget (#0812)", () => {
     expect(briefMaxChars(undefined)).toBe(MAX_ROUTING_BRIEF_CHARS);
     // Known window → a fixed share (25%) of it, converted at 4 chars/token.
     expect(briefMaxChars(200_000)).toBe(200_000 * 0.25 * 4);
-    // A tiny window never starves the brief below the fallback.
-    expect(briefMaxChars(1_000)).toBe(MAX_ROUTING_BRIEF_CHARS);
+    // A tiny window still yields the floor, not a degenerate budget.
+    expect(briefMaxChars(1_000)).toBe(MIN_ROUTING_BRIEF_CHARS);
   });
 
   it("truncates the brief to the supplied budget", () => {
