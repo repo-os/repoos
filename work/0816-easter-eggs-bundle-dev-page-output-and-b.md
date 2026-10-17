@@ -2,7 +2,7 @@
 id: "0816"
 title: "Easter eggs bundle: Dev page output and buttons, integration timer, badges, Human list"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-dev-page-output-and-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T08:02:53Z"
-updated_at: "2026-10-17T09:19:37Z"
+updated_at: "2026-10-17T09:27:41Z"
 review_passes: 1
 ---
 ## Problem
@@ -108,3 +108,4 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 - 2026-10-17T09:17:51Z · body
 - 2026-10-17T09:19:07Z · cli_override, model_override
 - 2026-10-17T09:19:37Z · body
+- 2026-10-17T09:27:41Z · status active→review
