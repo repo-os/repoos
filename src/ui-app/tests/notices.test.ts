@@ -400,27 +400,43 @@ describe("ingestCloseOutOutcome (#0640)", () => {
 });
 
 describe("timer history hydration on startup (#0819)", () => {
-  it("loads the stored close-out outcomes so a fresh page sees up to 15 runs", async () => {
-    // The server keeps recent outcomes on disk; a fresh page load must hydrate
-    // them, not start with only the live events seen since mount.
-    const outcomes: CloseOutOutcomeEvent[] = Array.from({ length: 15 }, (_, i) => ({
-      taskId: `0${i}`,
-      outcome: "succeeded",
-      finishedAt: new Date(Date.parse("2026-10-03T18:00:00.000Z") - i * 60_000).toISOString(),
-      reason: "",
-      durationMs: (i + 1) * 60_000,
-    }));
+  /** A durable outcome the attention feed carries alongside its items. */
+  const outcome = (
+    taskId: string,
+    minutesAgo: number,
+    durationMs: number,
+    kind: CloseOutOutcomeEvent["outcome"] = "succeeded",
+  ): CloseOutOutcomeEvent => ({
+    taskId,
+    outcome: kind,
+    finishedAt: new Date(Date.parse("2026-10-03T18:00:00.000Z") - minutesAgo * 60_000).toISOString(),
+    reason: "",
+    durationMs,
+  });
+
+  /**
+   * The server keeps recent outcomes on disk. A fresh page load fetches
+   * `/api/attention` at startup and must hydrate the timer history from the
+   * raw outcomes it carries — not start with only live events seen since mount.
+   * The dedicated outcomes endpoint is stubbed empty so this proves the
+   * attention-feed path is the carrier.
+   */
+  function stubStartup(closeOutOutcomes: CloseOutOutcomeEvent[]): void {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) => {
         const path = String(url);
-        if (path.includes("/api/close-out/outcomes"))
-          return { ok: true, status: 200, json: async () => ({ outcomes }) };
         if (path.includes("/api/attention"))
-          return { ok: true, status: 200, json: async () => ({ items: [] }) };
+          return { ok: true, status: 200, json: async () => ({ items: [], closeOutOutcomes }) };
+        if (path.includes("/api/close-out/outcomes"))
+          return { ok: true, status: 200, json: async () => ({ outcomes: [] }) };
         return { ok: true, status: 200, json: async () => ({ state: "idle" }) };
       }),
     );
+  }
+
+  it("shows a median of 15 runs on a fresh load with 15 stored succeeded outcomes", async () => {
+    stubStartup(Array.from({ length: 15 }, (_, i) => outcome(`0${i}`, i, (i + 1) * 60_000)));
 
     const s = useNoticesStore();
     s.start();
@@ -429,7 +445,31 @@ describe("timer history hydration on startup (#0819)", () => {
     s.stop();
 
     expect(s.closeOutOutcomes).toHaveLength(15);
+    // Newest first, and the median uses all 15 (1m..15m → 8m).
+    expect(s.closeOutOutcomes[0]!.taskId).toBe("00");
     expect(integrationMedianTip(s.closeOutOutcomes)).toContain("Median 8m 00s · 15 runs");
+  });
+
+  it("does not count a failed stored outcome in the median", async () => {
+    stubStartup([
+      outcome("ok1", 0, 60_000),
+      outcome("ok2", 1, 180_000),
+      outcome("ok3", 2, 300_000),
+      outcome("bad", 3, 999_999, "failed"),
+      outcome("late", 4, 999_999, "timedOut"),
+    ]);
+
+    const s = useNoticesStore();
+    s.start();
+    await flush();
+    await flush();
+    s.stop();
+
+    // Five raw rows stored, but only the three succeeded runs feed the median.
+    expect(s.closeOutOutcomes).toHaveLength(5);
+    const tip = integrationMedianTip(s.closeOutOutcomes);
+    expect(tip).toContain("Median 3m 00s · 3 runs");
+    expect(tip).not.toContain("999");
   });
 });
 
