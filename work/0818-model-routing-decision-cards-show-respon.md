@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-decision-cards-show-respon
 created_at: "2026-10-17T11:25:18Z"
-updated_at: "2026-10-17T11:32:29Z"
+updated_at: "2026-10-17T11:33:20Z"
 ---
 ## Problem
 #0811 was marked done, but only the live test result card landed. The Recent decisions list is still the old layout:
@@ -38,10 +38,10 @@ Start from ModelRoutingPanel.vue (the test card around lines 630-660, the Recent
 ```json
 [
 {
-  "label": "Model routing tab: live test card collapses to a summary; decision cards show response time, cost and relative timestamps",
-  "target": "default",
-  "route": "/agents?tab=model-routing",
-  "highlight": "[data-testid=\"model-routing-panel\"]"
+"label": "Model routing tab: live test card collapses to a summary; decision cards show response time, cost and relative timestamps",
+"target": "default",
+"route": "/agents?tab=model-routing",
+"highlight": "[data-testid=\"model-routing-panel\"]"
 }
 ]
 ```
@@ -53,3 +53,4 @@ Start from ModelRoutingPanel.vue (the test card around lines 630-660, the Recent
 - 2026-10-17T11:26:00Z · status ready→active, branch
 - 2026-10-17T11:30:33Z · body
 - 2026-10-17T11:32:29Z · body: section Shots
+- 2026-10-17T11:33:20Z · body
