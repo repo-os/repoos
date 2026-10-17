@@ -4,7 +4,12 @@ defineOptions({ name: "ActivityIndicator" });
 import { computed } from "vue";
 import { getActivePinia } from "pinia";
 import {
+  ACTIVITY_ANIMATION_STYLE_SLOT_CH,
+  activityAnimationSizeCh,
+  activityAnimationSizeOrDefault,
   activityAnimationStyleOrDefault,
+  normalizeActivityAnimationSize,
+  type ActivityAnimationSize,
   type ActivityAnimationStyle,
 } from "../../../core/activity-animation.js";
 import { useConfigStore } from "../stores/config";
@@ -21,6 +26,8 @@ const props = withDefaults(
     activity?: ActivityMotion;
     /** Settings preview — does not read repo config. */
     animationStyle?: ActivityAnimationStyle;
+    /** Settings preview — does not read repo config. */
+    animationSize?: ActivityAnimationSize;
   }>(),
   {
     size: "sm",
@@ -39,6 +46,33 @@ const style = computed((): ActivityAnimationStyle => {
   return activityAnimationStyleOrDefault(
     typeof raw === "string" ? (raw as ActivityAnimationStyle) : undefined,
   );
+});
+
+const animationSize = computed((): ActivityAnimationSize => {
+  if (props.animationSize) return props.animationSize;
+  return activityAnimationSizeOrDefault(
+    normalizeActivityAnimationSize(config?.form.activityAnimationSize),
+  );
+});
+
+const sizeCh = computed(() => activityAnimationSizeCh(animationSize.value));
+const sized = computed(() => sizeCh.value !== null);
+
+/**
+ * Explicit sizes reserve exactly the chosen `ch` allocation and scale the
+ * style's artwork by that target over its established Auto slot. Auto leaves
+ * both variables unset, so the stylesheet's original per-style geometry applies
+ * byte-for-byte.
+ */
+const sizeStyle = computed((): Record<string, string> | undefined => {
+  const target = sizeCh.value;
+  if (target === null) return undefined;
+  const slot = ACTIVITY_ANIMATION_STYLE_SLOT_CH[style.value];
+  const scale = slot > 0 ? target / slot : 1;
+  return {
+    "--ai-size-ch": String(target),
+    "--ai-scale": String(scale),
+  };
 });
 
 const motion = computed((): ActivityMotion => {
@@ -68,7 +102,9 @@ const matrixPositions = [
       legacyDots ? 'ai-legacy-dots' : 'ai-compact',
       !legacyDots && `ai-style-${style}`,
       !legacyDots && `ai-motion-${motion}`,
+      sized ? 'ai-sized' : '',
     ]"
+    :style="sizeStyle"
     role="status"
     :aria-label="label"
   >

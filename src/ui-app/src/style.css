@@ -2919,6 +2919,8 @@
   gap: 4px;
   flex: none;
   vertical-align: middle;
+  /* Legacy dot row's lift; explicit sizes replace it with a ch-relative jump. */
+  --ai-dot-bounce: -3px;
 }
 .ai-compact {
   gap: 0;
@@ -2960,6 +2962,16 @@
   height: 1.1em;
   line-height: 1;
   letter-spacing: 0;
+  /* Fixed-pixel details keep the established Auto look; explicit sizes swap
+     these for em-relative values so dots, hairlines and travel scale with the
+     artwork instead of only widening its slot. */
+  --ai-hairline: 1.5px;
+  --ai-ring-dot: 3px;
+  --ai-glow-sm: 4px;
+  --ai-glow-md: 5px;
+  --ai-scan-y: 5px;
+  --ai-scanorbit-xy: 3px;
+  --ai-bracket-x: 1px;
 }
 /* JetBrains Mono's `ch` is 0.6em (measured in WebKit), so a 1em orbital ring
    needs ~1.7ch to fit inside its slot; the extra 0.25ch stays well under the
@@ -2984,6 +2996,21 @@
 .ai-style-puppy-tracks .ai-mark {
   --ai-w: 2ch;
 }
+/* Explicit size (#0813). The artwork's em-based geometry is scaled by
+   `--ai-scale` (target / the style's Auto slot) so shapes, motion and detail
+   grow together. The per-style `--ai-w` slot then resolves in the mark's larger
+   font, reserving exactly the chosen allocation in the parent label's `ch`.
+   Auto never gets this class, preserving the rules above. */
+.ai-sized .ai-mark {
+  font-size: calc(1em * var(--ai-scale));
+  --ai-hairline: 0.125em;
+  --ai-ring-dot: 0.25em;
+  --ai-glow-sm: 0.33em;
+  --ai-glow-md: 0.42em;
+  --ai-scan-y: 0.42em;
+  --ai-scanorbit-xy: 0.25em;
+  --ai-bracket-x: 0.083em;
+}
 .ai-dot {
   width: 5px;
   height: 5px;
@@ -3001,6 +3028,17 @@
   width: 7px;
   height: 7px;
 }
+/* Legacy dot row at an explicit size: the whole group — dots, gaps and the
+   bounce — is measured in the chosen `ch` allocation. Auto keeps the original
+   px geometry above (#0813). */
+.ai-sized.ai-legacy-dots {
+  gap: calc(var(--ai-size-ch) * 0.125ch);
+  --ai-dot-bounce: calc(var(--ai-size-ch) * -0.2ch);
+}
+.ai-sized .ai-dot {
+  width: calc(var(--ai-size-ch) * 0.25ch);
+  height: calc(var(--ai-size-ch) * 0.25ch);
+}
 /* Orbital pixel. The ring is 1em wide (≈12px at the 12px Settings preview)
    with the dot riding its inner edge; the track stays subordinate via opacity
    so the moving dot reads against any theme background (#0798). */
@@ -3008,18 +3046,18 @@
   content: "";
   width: 1em;
   height: 1em;
-  border: 1.5px solid currentColor;
+  border: var(--ai-hairline) solid currentColor;
   border-radius: 50%;
   opacity: 0.4;
 }
 .ai-orbit::after {
   content: "";
   position: absolute;
-  width: 3px;
-  height: 3px;
+  width: var(--ai-ring-dot);
+  height: var(--ai-ring-dot);
   background: currentColor;
   border-radius: 50%;
-  box-shadow: 0 0 4px currentColor;
+  box-shadow: 0 0 var(--ai-glow-sm) currentColor;
   animation: ai-orbital 1.6s linear infinite;
 }
 .ai-motion-reviewing .ai-orbit::after {
@@ -3079,8 +3117,8 @@
 /* Micro dot matrix */
 .ai-matrix i {
   position: absolute;
-  width: 3px;
-  height: 3px;
+  width: var(--ai-ring-dot);
+  height: var(--ai-ring-dot);
   background: currentColor;
   border-radius: 50%;
   left: var(--x);
@@ -3102,7 +3140,7 @@
 }
 .ai-bars i {
   width: 0.2em;
-  min-width: 1.5px;
+  min-width: var(--ai-hairline);
   height: 0.8em;
   border-radius: 1px;
   background: currentColor;
@@ -3122,7 +3160,7 @@
   display: block;
   font-size: 1.3em;
   line-height: 1;
-  text-shadow: 0 0 5px currentColor;
+  text-shadow: 0 0 var(--ai-glow-md) currentColor;
   animation: ai-spark 2.2s ease-in-out infinite;
 }
 .ai-motion-reviewing .ai-spark::before {
@@ -3249,7 +3287,7 @@
     opacity: 0.35;
   }
   40% {
-    transform: translateY(-3px);
+    transform: translateY(var(--ai-dot-bounce));
     opacity: 1;
   }
 }
@@ -3277,11 +3315,11 @@
 @keyframes ai-scan {
   0%,
   100% {
-    transform: translateY(-5px);
+    transform: translateY(calc(var(--ai-scan-y) * -1));
     opacity: 0.5;
   }
   50% {
-    transform: translateY(5px);
+    transform: translateY(var(--ai-scan-y));
     opacity: 1;
   }
 }
@@ -3303,7 +3341,7 @@
     opacity: 0.5;
   }
   50% {
-    transform: translateX(-1px);
+    transform: translateX(calc(var(--ai-bracket-x) * -1));
     opacity: 1;
   }
 }
@@ -3314,7 +3352,7 @@
     opacity: 0.5;
   }
   50% {
-    transform: translateX(1px);
+    transform: translateX(var(--ai-bracket-x));
     opacity: 1;
   }
 }
@@ -3354,10 +3392,10 @@
 @keyframes ai-scanorbit {
   0%,
   100% {
-    transform: translate(-3px, -3px);
+    transform: translate(calc(var(--ai-scanorbit-xy) * -1), calc(var(--ai-scanorbit-xy) * -1));
   }
   50% {
-    transform: translate(3px, 3px);
+    transform: translate(var(--ai-scanorbit-xy), var(--ai-scanorbit-xy));
   }
 }
 @keyframes ai-bars {
@@ -3505,6 +3543,40 @@
 }
 .activity-animation-preview-line.ai-reviewing-preview {
   color: var(--amber);
+}
+/* Size control beside the animation-style select (#0813). Auto is the
+   documented default; the range stays disabled until it is switched off. */
+.activity-size-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.activity-size-auto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--txt-dim);
+  cursor: pointer;
+  user-select: none;
+}
+.activity-size-range {
+  width: 150px;
+  accent-color: var(--cyan);
+  cursor: pointer;
+}
+.activity-size-range:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.activity-size-value {
+  min-width: 4ch;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--txt);
+  text-align: right;
 }
 
 /* freeform PM-agent live stream (0049) */

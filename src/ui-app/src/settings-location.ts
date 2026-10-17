@@ -91,7 +91,9 @@ export function isGeneralSectionId(id: string): boolean {
  * the page renders that row under.
  */
 export function generalSectionForKey(key: string): string {
-  if (key === "activityAnimationStyle") return "activity-animation";
+  if (key === "activityAnimationStyle" || key === "activityAnimationSize") {
+    return "activity-animation";
+  }
   if (key === "tunnelEnabled") return "publishing";
   if (key === "remoteValidation.enabled") return "remote-validation";
   if (key === "storage.provider") return "attachments";
@@ -140,8 +142,9 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   // General (#0659) that carries the availability explanation beside the
   // select, so it must not also auto-render as a plain General row.
   "storage.provider",
-  // Hand-rendered card with live preview (#0787).
+  // Hand-rendered card with live preview (#0787, #0813).
   "activityAnimationStyle",
+  "activityAnimationSize",
   // Dev targets have a dedicated hand-rendered card on Advanced (#0749); a
   // plain comma-separated General row cannot express the four fields.
   "dev.targets",
@@ -219,7 +222,7 @@ export function resolveSettingLocation(
     // Dedicated hand-rendered "Attachments" card on General (#0659).
     return { tab: "general", hasUiRow: true };
   }
-  if (key === "activityAnimationStyle") {
+  if (key === "activityAnimationStyle" || key === "activityAnimationSize") {
     return { tab: "general", hasUiRow: true };
   }
   if (key === "cto.actions") {
@@ -290,6 +293,7 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
     "automatically refresh stale screenshots evidence review rerun once",
   activityAnimationStyle:
     "activity indicator animation coding reviewing agent working dots orbital compact",
+  activityAnimationSize: "activity indicator animation size larger smaller scale slider char width",
   "reviewVerification.guardTestCheck":
     "guard negative test review clamp needs some work check step rejection block disable turn off",
   "reviewVerification.testGlobs":
