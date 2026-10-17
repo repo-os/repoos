@@ -74,6 +74,26 @@ export interface RoutingDecisionRecord {
   policyVersion: string;
   durationMs: number;
   handback?: HandbackDecisionRecord;
+  /**
+   * Brief provenance (#0812): how large the brief actually was, its budget, and
+   * the decision model's context window when known — so "why did it decide on
+   * so little?" is answerable from the record alone. Distinct from `brief`,
+   * which is the brief text itself.
+   */
+  briefBudget?: {
+    /** Characters handed to the provider (after truncation). */
+    chars: number;
+    /** The budget the brief was allowed. */
+    maxChars: number;
+    /** The decision model's context window in tokens, or null when unknown. */
+    contextTokens: number | null;
+  };
+  /**
+   * Facts offered per candidate (#0812), keyed by candidateKey, with the
+   * rendered line (or null when nothing was known). Bounded by the candidate
+   * set, so it stays small enough for the retained-decision file.
+   */
+  facts?: Array<{ key: string; summary: string | null }>;
 }
 
 /** The persisted document: a bounded, newest-first list. */
