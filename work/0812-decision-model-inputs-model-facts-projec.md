@@ -1,16 +1,16 @@
 ---
-updated_at: "2026-10-17T05:34:53Z"
-review_passes: 1
 id: "0812"
 title: "Decision model inputs: model facts, project history, task progress, and a clear objective"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/decision-model-inputs-model-facts-projec
 created_at: "2026-10-17T04:33:38Z"
+updated_at: "2026-10-17T06:02:19Z"
+review_passes: 1
 ---
 ## Problem
 The decision model is often unsure ('insufficient evidence') because it is sent little: a brief capped at 6,000 characters, three yes/no-style questions, and a choice among candidates that are labelled only 'cli / model / reasoning'. It is not told what to optimise for. Its context window is much larger than what we send, and we don't read that window from the provider.
@@ -48,4 +48,4 @@ Start from src/server/model-routing-wiring.ts (buildRoutingBrief, MAX_ROUTING_BR
 - 2026-10-17T05:24:56Z · body
 - 2026-10-17T05:33:49Z · status active→review
 - 2026-10-17T05:34:53Z · note: review pass 1: good to go
-
+- 2026-10-17T06:02:19Z · status review→active
