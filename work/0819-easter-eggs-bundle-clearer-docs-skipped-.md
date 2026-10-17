@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T16:21:39Z"
+updated_at: "2026-10-17T16:22:37Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -45,16 +45,16 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 ```json
 [
 {
-"label": "Integration timer chip in the bar (median tooltip is hover-only)",
-"target": "default",
-"route": "/",
-"highlight": "[data-test-id=\"integration-timer\"]",
-"steps": [
-{
-"waitFor": "[data-test-id=\"integration-timer\"]"
-}
-],
-"state": "closeOut:active"
+  "label": "Integration timer chip on the board bar (median tooltip is hover-only)",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"integration-timer\"]",
+  "steps": [
+    {
+      "waitFor": "[data-test-id=\"integration-timer\"]"
+    }
+  ],
+  "state": "closeOut:active"
 }
 ]
 ```
@@ -92,3 +92,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T16:20:32Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9832a9b89) during finalization (#0734)
 - 2026-10-17T16:21:37Z · note: review pass 2: needs some work
 - 2026-10-17T16:21:39Z · status review→active
+- 2026-10-17T16:22:37Z · body
