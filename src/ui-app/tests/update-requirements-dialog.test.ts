@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
-import { h } from "vue";
+import { h, type VNode } from "vue";
 import UpdateRequirementsDialog from "../src/components/UpdateRequirementsDialog.vue";
 import type { RequirementsChange } from "../../core/task-body-diff";
 
@@ -21,9 +21,9 @@ const Slot = {
 const ButtonStub = {
   inheritAttrs: false,
   setup:
-    (_props: unknown, { slots, attrs }: { slots: { default?: () => unknown }; attrs: object }) =>
+    (_props: unknown, ctx: { slots: { default?: () => VNode[] }; attrs: Record<string, unknown> }) =>
     () =>
-      h("button", attrs, slots.default?.()),
+      h("button", ctx.attrs, ctx.slots.default?.() ?? []),
 };
 const dialogStubs = {
   teleport: true,
