@@ -310,6 +310,29 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         deletions: 8,
       });
       break;
+    case "drawer:activeRequirements":
+      // #0817 — active fixture with requirement sections so captures can show
+      // the Update requirements action and editor without keeping #0817 active.
+      ensureFixtureTask(repo, "active", {
+        body: [
+          "## Problem",
+          "",
+          "Requirements change while the engineer works from a worktree copy.",
+          "",
+          "## Desired UX",
+          "",
+          "- Update requirements action on active tasks",
+          "",
+          "## Acceptance criteria",
+          "",
+          "- Activity records which sections changed",
+          "",
+          "## Notes for AI",
+          "",
+          "Fixture body for shot capture.",
+        ].join("\n"),
+      });
+      break;
     case "card:handoffConflict":
       // #0810 — the "Worktree changed after handoff" modal only opens from a
       // failed Move to done. Seed the pending conflict on a board card so a

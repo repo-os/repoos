@@ -194,6 +194,17 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(conflict?.files?.[0]?.added).toBeGreaterThan(0);
   });
 
+  it("seeds an active task with requirement sections for Update requirements shots (#0817)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "drawer:activeRequirements");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task!.status).toBe("active");
+    expect(task!.body).toContain("## Acceptance criteria");
+    expect(task!.branch).toBe("");
+  });
+
   it("seeds a multi-area human task with diff stats for card-chip shots (#0776, #0795)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
