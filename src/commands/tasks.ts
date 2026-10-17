@@ -457,6 +457,7 @@ export const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
   body: "body",
   branch: "branch",
   "assigned-to": "assignedTo",
+  "human-step-override": "humanStepOverride",
   "needs-input": "needsInput",
   "needs-merge": "needsMerge",
   hold: "hold",
@@ -763,6 +764,29 @@ export function cmdUpdate(args: string[]): void {
     process.exitCode = 1;
     return;
   }
+  // #0815: `--human-step-override "<reason>"` clears a `needs-human-step`
+  // keyword match on purpose. Record the reason in the activity log and drop
+  // the flag — but never clobber a different `needs_input` reason.
+  if (patch.humanStepOverride !== undefined) {
+    const reason = (patch.humanStepOverride ?? "").trim();
+    if (reason) {
+      if (patch.needsInput === true) {
+        console.error(c.red("  --human-step-override cannot be combined with --needs-input true"));
+        process.exitCode = 1;
+        return;
+      }
+      if (!task.needsInput || task.needsInputReason === "needs-human-step") {
+        patch.needsInput = false;
+        patch.needsInputReason = null;
+        patch.needsInputDetail = null;
+      }
+      patch.humanStepOverride = reason;
+      patch.note = `human-step override: ${reason}`;
+    } else {
+      patch.humanStepOverride = null;
+      patch.note = "human-step override cleared";
+    }
+  }
   const fixtureValidator = branchFixtureValidatorForTask(task, repoos.config.root);
   if (
     patch.section &&
@@ -852,6 +876,34 @@ function parseQuestions(raw: string): string[] {
 }
 
 /**
+ * Resolve `repoos new`'s assignee from `--assigned-to` / `--ai` / `--human`
+ * (#0815). Returns `{ value: undefined }` when none was given (the configured
+ * default applies), or `{ error }` for a conflicting or unknown selection.
+ */
+function resolveNewAssignee(
+  flags: Record<string, string | boolean>,
+): { value?: string; error?: string } {
+  const selectors = [
+    flags.ai ? "--ai" : null,
+    flags.human ? "--human" : null,
+    typeof flags["assigned-to"] === "string" ? "--assigned-to" : null,
+  ].filter((s): s is string => s !== null);
+  if (selectors.length > 1) {
+    return { error: `Use only one of --ai, --human, --assigned-to (got ${selectors.join(", ")})` };
+  }
+  let raw: string | undefined;
+  if (flags.human) raw = "human";
+  else if (flags.ai) raw = "ai";
+  else if (typeof flags["assigned-to"] === "string") raw = flags["assigned-to"];
+  if (raw === undefined) return {};
+  const value = raw.trim().toLowerCase();
+  if (value !== "ai" && value !== "human") {
+    return { error: `--assigned-to must be one of: ai, human (got "${raw}")` };
+  }
+  return { value };
+}
+
+/**
  * `repoos new <title> [--ai] [--needs-input true] [--questions "..."]
  *   [--depends-on ids] [--hold true|false] [--paths a,b] [...]`
  *
@@ -874,8 +926,8 @@ export function cmdNew(args: string[]): void {
       process.exitCode = 1;
       return;
     }
-    if (key === "ai") {
-      flags.ai = true;
+    if (key === "ai" || key === "human") {
+      flags[key] = true;
       continue;
     }
     const raw = args[++i];
@@ -902,6 +954,18 @@ export function cmdNew(args: string[]): void {
     process.exitCode = 1;
     return;
   }
+  // #0815: `--assigned-to ai|human` plus the `--ai` / `--human` shorthands.
+  // Validate before creating anything so a bad selector never leaves a task.
+  const assigneeChoice = resolveNewAssignee(flags);
+  if (assigneeChoice.error) {
+    console.error(c.red(`  ${assigneeChoice.error}`));
+    process.exitCode = 1;
+    return;
+  }
+  const humanStepOverride =
+    typeof flags["human-step-override"] === "string"
+      ? flags["human-step-override"].trim() || undefined
+      : undefined;
   let body = (flags.body as string) || "";
   // #0763: validate --caption/--screenshot BEFORE creating anything, so a bad
   // flag or a missing/oversize/unsupported image never leaves a half-made task.
@@ -953,7 +1017,8 @@ export function cmdNew(args: string[]): void {
       dependsOn:
         typeof flags["depends-on"] === "string" ? parseListFlag(flags["depends-on"]) : undefined,
       priority: (flags.priority as string) || undefined,
-      assignedTo: flags.ai ? "ai" : undefined,
+      assignedTo: assigneeChoice.value,
+      humanStepOverride,
       body: body || undefined,
       needsInput: flags["needs-input"] === "true",
       hold: flags.hold === undefined ? undefined : flags.hold === "true",

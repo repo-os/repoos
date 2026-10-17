@@ -28,11 +28,41 @@ export function isPastFleshOutStage(task: Pick<Task, "status">): boolean {
   return task.status === "active" || task.status === "review" || task.status === "done";
 }
 
+/**
+ * Drop one of our own flag reasons (#0815), preserving any agent questions that
+ * also keep the human blocked. Returns the rewritten task, or null when there
+ * was nothing of ours to clear.
+ */
+function clearOwnedFlag(
+  config: RepoOSConfig,
+  task: Task,
+  reason: string,
+): Task | null {
+  if (!task.needsInput || task.needsInputReason !== reason) return null;
+  const hasQuestions = (task.questions?.length ?? 0) > 0;
+  return patchTaskFile(config, task.absPath, {
+    needsInput: hasQuestions,
+    needsInputReason: null,
+    needsInputDetail: null,
+  });
+}
+
 export function flagNeedsHumanStepIfNeeded(
   config: RepoOSConfig,
   task: Task,
   opts?: HumanStepFlagOptions,
 ): Task | null {
+  // #0815: a task assigned to a human is the human's own checklist — the
+  // keyword heuristic for agent work never applies, and a stale flag from a
+  // previous assignee is cleared rather than kept.
+  if (task.assignee === "human") {
+    return clearOwnedFlag(config, task, NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON);
+  }
+  // #0815: an explicit human override clears the keyword match on purpose (and
+  // survives later sweeps) until the override is removed.
+  if (task.humanStepOverride) {
+    return clearOwnedFlag(config, task, NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON);
+  }
   if (task.needsInput) {
     if (task.needsInputReason && task.needsInputReason !== NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON) {
       return null;
@@ -75,7 +105,10 @@ export function flagNeedsHumanStepIfNeeded(
     return null;
   }
 
-  const { needsHumanStep, detail } = assessTaskNeedsHumanStep(task.body, { area: task.area });
+  const { needsHumanStep, detail } = assessTaskNeedsHumanStep(task.body, {
+    area: task.area,
+    assignee: task.assignee,
+  });
   if (!needsHumanStep) {
     if (task.needsInput && task.needsInputReason === NEEDS_HUMAN_STEP_NEEDS_INPUT_REASON) {
       const hasQuestions = (task.questions?.length ?? 0) > 0;
@@ -104,6 +137,11 @@ export function flagNeedsHumanStepIfNeeded(
 }
 
 export function flagUnderspecifiedIfNeeded(config: RepoOSConfig, task: Task): Task | null {
+  // #0815: a human task never has to carry an agent task body, so the
+  // underspecified rule does not apply — clear our stale flag if one is set.
+  if (task.assignee === "human") {
+    return clearOwnedFlag(config, task, UNDERSPECIFIED_NEEDS_INPUT_REASON);
+  }
   if (task.needsInput) {
     if (task.needsInputReason && task.needsInputReason !== UNDERSPECIFIED_NEEDS_INPUT_REASON) {
       return null;
@@ -116,7 +154,10 @@ export function flagUnderspecifiedIfNeeded(config: RepoOSConfig, task: Task): Ta
 
   // Once work has started (or finished) a stub body no longer needs a human:
   // never raise the flag, and drop a stale one.
-  const { underspecified, detail } = assessTaskUnderspecified(task.body, { area: task.area });
+  const { underspecified, detail } = assessTaskUnderspecified(task.body, {
+    area: task.area,
+    assignee: task.assignee,
+  });
   if (!underspecified || isPastFleshOutStage(task)) {
     if (task.needsInput && task.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON) {
       // Drop only the obsolete reason; agent questions keep the human blocked.

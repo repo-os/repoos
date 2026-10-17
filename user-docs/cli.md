@@ -102,8 +102,11 @@ command's flag table, so a flag cannot be added without appearing in `--help`.
 | `--paths` | Comma-separated files the task touches, e.g. `src/a.ts,src/b.ts`. |
 | `--needs-input` | `true` or `false` — flag the task as needing human input. |
 | `--questions` | Open questions for the human, newline-separated or a JSON list. |
-| `--ai` | Assign to an AI agent |
+| `--assigned-to` | `ai` or `human` — who owns the task. Any other value is refused. |
+| `--ai` | Shorthand for `--assigned-to ai` |
+| `--human` | Shorthand for `--assigned-to human` |
 | `--body` | Task body; pass `-` to read from stdin |
+| `--human-step-override` | A reason that clears a `needs-human-step` keyword match on an AI task (see below). |
 | `--shots` | Raw JSON list declaring the `## Shots` section; pass `-` to read from stdin. |
 | `--screenshot` | Attach a local image file to the task's `## Screenshots` section. Repeatable (`--screenshot a.png --screenshot b.png`). |
 | `--caption` | Alt text for a single `--screenshot` image. |
@@ -114,6 +117,33 @@ values (e.g. `priority 'medium' is not valid; use one of p0, p1, p2, p3`), and
 is never silently defaulted. The same check applies to `repoos update` and the
 HTTP API. Task files that already carry a legacy value (`priority: high`,
 `type: ux`) still load and display as-is — only new writes are checked.
+
+A task assigned to a human is created with a `## Human task` note saying so, and
+skips the agent task-body checks: `## Notes for AI` is optional and the task is
+not flagged `underspecified` or `needs-human-step`. This is the one-command way
+to put human work on the board:
+
+```bash
+repoos new "Flush the Divot DNS cache" --assigned-to human --hold true
+```
+
+Pass at most one of `--assigned-to`, `--ai` and `--human`; combining them is an
+error.
+
+On an AI task, acceptance criteria that mention a device, account, or
+credentials raise `needs-human-step`. When that is a keyword false positive,
+clear it deliberately with a reason — on creation or with `repoos update`. The
+reason is stored on the task and written to its activity log, so the clearance
+is on the record rather than a silent rewording:
+
+```bash
+repoos new "Reduce the retry backoff" --human-step-override "the API-key mention is a fixture"
+repoos update 0815 --human-step-override "no real credentials are involved"
+```
+
+The override only clears the `needs-human-step` flag; the matched keywords are
+still listed in `needs_input_detail` until the override is set. Pass an empty
+value (`--human-step-override ""`) to remove it.
 
 ### `repoos list [status]`
 
@@ -193,10 +223,11 @@ down, the CLI exits with a clear message instead of a generic fetch error.
 
 Edits a task's metadata or body: `--title`, `--area`, `--story`,
 `--depends-on`, `--priority`, `--type`, `--body`, `--branch`, `--assigned-to`,
-`--needs-input`, `--needs-merge`, `--hold`, `--paths`, `--questions`,
-`--clear-questions`, `--shots`, `--section` / `--section-body`, `--force`, and
-per-role agent pins (`--agent`, `--cli`, `--model`, plus `--pm-*` and
-`--review-*` variants). Run `repoos update --help` for the full, generated list.
+`--human-step-override`, `--needs-input`, `--needs-merge`, `--hold`, `--paths`,
+`--questions`, `--clear-questions`, `--shots`, `--section` / `--section-body`,
+`--force`, and per-role agent pins (`--agent`, `--cli`, `--model`, plus `--pm-*`
+and `--review-*` variants). Run `repoos update --help` for the full, generated
+list.
 These write the same fields as `PATCH /api/tasks/<id>` and are what
 engineer/reviewer runs read.
 `POST /api/tasks/<id>/start` and `/message` reject override fields in the

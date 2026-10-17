@@ -1008,7 +1008,9 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   // Re-run the underspecified check on every body change (#0613) — not only
   // draft promotion. If the body becomes well-specified again the flag clears;
   // clearing when underspecified persists is handled inside flagTaskSpecFlagsIfNeeded.
-  if (body.body !== undefined || body.section !== undefined) {
+  // #0815: an assignee change re-runs it too, so moving a task to a human
+  // clears the agent-oriented flags (and the human-assigned skip holds).
+  if (body.body !== undefined || body.section !== undefined || body.assignedTo !== undefined) {
     const current = index.getTask(updated.id);
     if (current) {
       const flagged = flagTaskSpecFlagsIfNeeded(config, current);
@@ -1988,7 +1990,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // unavailable and failed all fall through to the keyword check below, so a
     // model outage can never block a task on its own.
     let humanStepOverride: "agent" | "human" | undefined;
-    if (existing.status === "ready") {
+    // #0815: human-assigned tasks and tasks carrying an explicit human
+    // override never run the agent-oriented keyword/model human-step check.
+    if (existing.status === "ready" && existing.assignee !== "human" && !existing.humanStepOverride) {
       const check = await runHumanStepDecisionCheck(config, existing);
       if (check.outcome === "shadow") {
         logger.task(id, "info", "Human-step decision recorded (shadow mode)", {
@@ -2104,7 +2108,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // It does not block start; it records a visible activity note.
     const startedTask = index.getTask(updated.id);
     if (startedTask) {
-      const assessment = assessTaskUnderspecified(startedTask.body, { area: startedTask.area });
+      const assessment = assessTaskUnderspecified(startedTask.body, {
+        area: startedTask.area,
+        assignee: startedTask.assignee,
+      });
       const flagged = flagTaskSpecFlagsIfNeeded(config, startedTask, {
         humanStepDecision: humanStepOverride,
       });
