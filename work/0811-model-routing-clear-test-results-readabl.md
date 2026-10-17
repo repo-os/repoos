@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 64505
-last_close_out_gate_at: "2026-10-17T05:39:16.926Z"
 id: "0811"
 title: "Model routing: clear test results, readable decision cards, plain fallback reasons"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: d3e60cad585f4096d2b2ddee260c586f977d4651
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-clear-test-results-readabl
 created_at: "2026-10-17T04:20:42Z"
-updated_at: "2026-10-17T05:39:16Z"
+updated_at: "2026-10-17T05:39:37Z"
+last_close_out_gate_ms: 64505
+last_close_out_gate_at: "2026-10-17T05:39:16.926Z"
 review_passes: 1
 ---
 ## Problem
@@ -62,4 +63,4 @@ Start from ModelRoutingPanel.vue (Test live connection, Recent decisions) and ru
 - 2026-10-17T05:24:04Z · status active→review
 - 2026-10-17T05:25:09Z · note: review pass 1: good to go
 - 2026-10-17T05:39:16Z · close-out gate completed in 65s
-
+- 2026-10-17T05:39:37Z · status review→done, release:success
