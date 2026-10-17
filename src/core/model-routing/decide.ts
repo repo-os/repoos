@@ -26,6 +26,7 @@ import {
   type RoutingCandidate,
 } from "./candidates.js";
 import { type EffectiveRouting, routingActiveFor } from "./config.js";
+import { candidateFactLine, type CandidateFacts } from "./facts.js";
 import {
   RoutingProviderError,
   type RoutingAnswer,
@@ -34,6 +35,17 @@ import {
   type RoutingQuestion,
   type RoutingRole,
 } from "./types.js";
+
+/**
+ * The objective stated to the decision model (#0812). A decision is only
+ * meaningful against a stated goal, so the suitability question carries this
+ * verbatim rather than leaving the model to guess what "best" means.
+ */
+export const ROUTING_OBJECTIVE =
+  "Choose the candidate that completes this kind of task well in the fewest " +
+  "rounds, at the lowest cost that still meets that bar. 'Well' means the review " +
+  "passes first time: the change reaches review with the check gate green and no " +
+  "blocking review findings.";
 
 export type RoutingDecision =
   | { kind: "disabled" }
@@ -68,14 +80,34 @@ export interface DecideRoutingInput {
   weights?: RoutingWeights;
   /** Provider instance, or null when none could be constructed (e.g. missing key). */
   provider: RoutingDecisionProvider | null;
+  /** Facts gathered for each eligible candidate, keyed by candidateKey (#0812). */
+  candidateFacts?: Record<string, CandidateFacts>;
 }
 
-/** The fixed question set, versioned with ROUTING_POLICY_VERSION. */
-export function buildRoutingQuestions(candidates: RoutingCandidate[]): RoutingQuestion[] {
+/**
+ * The label for one candidate offered to the provider. `reasoning` is included
+ * only when the candidate actually has a reasoning level (most harnesses do
+ * not), and the facts line is appended only for the fields that are known.
+ */
+export function candidateLabel(c: RoutingCandidate, facts?: CandidateFacts): string {
+  const base = c.reasoning
+    ? `${c.cli} / ${c.model} / reasoning ${c.reasoning}`
+    : `${c.cli} / ${c.model}`;
+  const line = facts ? candidateFactLine(facts) : null;
+  return line ? `${base} — ${line}` : base;
+}
+
+/**
+ * The fixed question set, versioned with ROUTING_POLICY_VERSION. The objective
+ * and per-candidate facts (#0812) are part of the question content.
+ */
+export function buildRoutingQuestions(
+  candidates: RoutingCandidate[],
+  opts: { objective?: string; facts?: Record<string, CandidateFacts> } = {},
+): RoutingQuestion[] {
   const criteria: Record<string, string> = {};
   for (const c of candidates) {
-    const label = c.reasoning ? `${c.cli} / ${c.model} / ${c.reasoning}` : `${c.cli} / ${c.model}`;
-    criteria[candidateKey(c)] = label;
+    criteria[candidateKey(c)] = candidateLabel(c, opts.facts?.[candidateKey(c)]);
   }
   return [
     {
@@ -96,7 +128,9 @@ export function buildRoutingQuestions(candidates: RoutingCandidate[]): RoutingQu
     {
       id: ROUTING_QUESTION_IDS.suitability,
       type: "choice",
-      instructions: "Which coding-agent configuration is best suited to this work?",
+      instructions:
+        `Which coding-agent configuration is best suited to this work? ` +
+        `${opts.objective ?? ROUTING_OBJECTIVE}`,
       criteria,
     },
   ];
@@ -123,7 +157,7 @@ export async function decideRoutingForRun(input: DecideRoutingInput): Promise<Ro
   } else {
     const request: RoutingDecisionRequest = {
       brief: { state: input.stateText },
-      questions: buildRoutingQuestions(eligible),
+      questions: buildRoutingQuestions(eligible, { facts: input.candidateFacts }),
       timeoutMs: effective.timeoutMs,
     };
     try {

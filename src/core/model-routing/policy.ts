@@ -22,7 +22,8 @@ import { candidateKey } from "./candidates.js";
 import { RoutingProviderError, type RoutingAnswer } from "./types.js";
 
 /** Bump when the question set or scoring changes, so decisions stay reproducible. */
-export const ROUTING_POLICY_VERSION = "2";
+// 3 — the suitability question carries the objective and per-candidate facts (#0812).
+export const ROUTING_POLICY_VERSION = "3";
 
 /** Below this provider confidence an answer is treated as insufficient evidence. */
 export const MIN_ANSWER_CONFIDENCE = 0.5;
