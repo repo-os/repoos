@@ -613,6 +613,50 @@ export class RepoOSDb {
     }
   }
 
+  /**
+   * Sessions run by one candidate (coding agent + model), optionally scoped to
+   * a role/sessionType (#0812). Feeds the per-candidate project history the
+   * routing decision uses. Newest first.
+   */
+  getCandidateSessions(codingAgent: string, model: string, sessionType?: string): SessionRecord[] {
+    if (!this.available || !this.db) return [];
+    try {
+      const where = "codingAgent = ? AND model = ?" + (sessionType ? " AND sessionType = ?" : "");
+      const args = sessionType ? [codingAgent, model, sessionType] : [codingAgent, model];
+      return this.db
+        .prepare(`SELECT * FROM sessions WHERE ${where} ORDER BY startedAt DESC`)
+        .all(...args) as SessionRecord[];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Count sessions whose taskId is in `taskIds` and whose sessionType is in
+   * `sessionTypes`, returned per task (#0812). Used to derive average review
+   * rounds for a candidate's completed work without a cross join.
+   */
+  getTaskSessionTypeCounts(taskIds: string[], sessionTypes: string[]): Map<string, number> {
+    const out = new Map<string, number>();
+    if (!this.available || !this.db || taskIds.length === 0 || sessionTypes.length === 0)
+      return out;
+    try {
+      const taskPlaceholders = taskIds.map(() => "?").join(", ");
+      const typePlaceholders = sessionTypes.map(() => "?").join(", ");
+      const rows = this.db
+        .prepare(
+          `SELECT taskId, COUNT(*) as n FROM sessions
+           WHERE taskId IN (${taskPlaceholders}) AND sessionType IN (${typePlaceholders})
+           GROUP BY taskId`,
+        )
+        .all(...taskIds, ...sessionTypes) as Array<{ taskId: string; n: number }>;
+      for (const row of rows) out.set(row.taskId, row.n);
+    } catch {
+      // Fail-soft: an unavailable aggregate is simply absent.
+    }
+    return out;
+  }
+
   /** Retrieve all sessions for a task. */
   getTaskSessions(taskId: string): SessionRecord[] {
     if (!this.available || !this.db) return [];

@@ -22,13 +22,31 @@ import type { Agent, RepoOSConfig, Task } from "../core/types.js";
 import { agentsForConfig } from "../core/config.js";
 import { agentModelAllowRows } from "../core/budget-allowlist.js";
 import { readDetectCache } from "../core/detect-cache.js";
+import { getRepoOSDb } from "../core/db.js";
+import { getDiffStats } from "../core/git.js";
+import { DEFAULT_APPROVAL_UI_AREAS } from "../core/approval-policy.js";
+import { parseTaskAreas } from "../core/areas.js";
+import { parseShotPlan } from "../core/shot-plan.js";
+import { listReviewPasses } from "../core/review-passes.js";
 import { resolveEffectiveRouting, routingActiveFor } from "../core/model-routing/config.js";
 import {
-  filterCandidates,
   candidateKey,
+  filterCandidates,
   type HarnessAvailability,
   type RoutingCandidate,
 } from "../core/model-routing/candidates.js";
+import {
+  billingForCli,
+  candidateFactLine,
+  lookupModelMetadata,
+  normalizeModelId,
+  resolveCandidateFacts,
+  resolveDecisionContextTokens,
+  type BillingKind,
+  type CandidateFacts,
+  type ModelMetadata,
+  type ProjectRoleHistory,
+} from "../core/model-routing/facts.js";
 import { buildCandidateSet, candidateForAgent } from "../core/model-routing/candidate-set.js";
 import { buildHarnessAvailability } from "../core/model-routing/harness.js";
 import { decideRoutingForRun, type RoutingDecision } from "../core/model-routing/decide.js";
@@ -38,6 +56,7 @@ import {
   candidateProbability,
   evidenceSummary,
 } from "../core/model-routing/policy.js";
+import { candidateHistory } from "./candidate-history.js";
 import {
   MAX_ROUTING_DECISIONS,
   type RoutingDecisionRecord,
@@ -55,8 +74,43 @@ import type { RoutingDecisionProvider, RoutingRole } from "../core/model-routing
 import { randomUUID } from "node:crypto";
 import { mergeAgentOverride, recordOneShotSession, type PromptResult } from "./agents.js";
 
-/** Upper bound on the brief handed to the provider. */
+/**
+ * Safe fallback for the brief when the decision model's context window is
+ * unknown (#0812): the historical fixed cap.
+ */
 export const MAX_ROUTING_BRIEF_CHARS = 6000;
+
+/**
+ * Share of the decision model's context window the brief may use, when that
+ * window is known. Deliberately conservative — the brief is one input to a
+ * call that also carries questions and expects a structured answer, so it must
+ * not crowd the response out. A policy constant, versioned with the questions.
+ */
+export const DEFAULT_ROUTING_BRIEF_SHARE = 0.25;
+
+/** Rough characters per token for budgeting a text brief (conservative). */
+export const BRIEF_CHARS_PER_TOKEN = 4;
+
+/** Lower bound on a computed budget, so a tiny reported window still allows a brief. */
+export const MIN_ROUTING_BRIEF_CHARS = 1000;
+
+/**
+ * The brief character budget for a decision model: a fixed share of its context
+ * window when known, else the safe fixed fallback. A very small computed budget
+ * is floored at {@link MIN_ROUTING_BRIEF_CHARS} so the brief is never degenerate.
+ */
+export function briefMaxChars(
+  contextTokens: number | null | undefined,
+  share: number = DEFAULT_ROUTING_BRIEF_SHARE,
+): number {
+  if (contextTokens == null || !Number.isFinite(contextTokens) || contextTokens <= 0) {
+    return MAX_ROUTING_BRIEF_CHARS;
+  }
+  const safeShare =
+    Number.isFinite(share) && share > 0 && share < 1 ? share : DEFAULT_ROUTING_BRIEF_SHARE;
+  const budget = Math.floor(contextTokens * safeShare * BRIEF_CHARS_PER_TOKEN);
+  return Math.max(MIN_ROUTING_BRIEF_CHARS, budget);
+}
 
 export interface RoutingWiringDeps {
   config: RepoOSConfig;
@@ -77,6 +131,23 @@ export interface RoutingWiringDeps {
   recordSession?: boolean;
   /** Injected clock, for deterministic tests. */
   now?: () => Date;
+  /**
+   * Provider metadata keyed by normalized model id (#0812). Overrides the
+   * curated snapshot; `undefined` uses `PROVIDER_MODEL_METADATA`.
+   */
+  metadata?: Record<string, ModelMetadata>;
+  /**
+   * Per-candidate project history resolver (#0812). When provided it replaces
+   * the sessions-DB lookup, so tests stay hermetic.
+   */
+  history?: (
+    role: "pm" | "engineer" | "reviewer",
+    candidate: RoutingCandidate,
+  ) => ProjectRoleHistory | null;
+  /** Explicit decision-model context window in tokens, overriding the lookup. */
+  decisionContextTokens?: number | null;
+  /** Share of the decision model's context window the brief may use. */
+  briefContextShare?: number;
 }
 
 export interface RouteRunInput {
@@ -99,11 +170,141 @@ export interface RouteRunResult {
   handback: HandbackOutcome | null;
 }
 
-/** Build the bounded state brief. Task/code text is data, never instructions. */
+/**
+ * Task progress facts for the routing brief (#0812): how far the task has
+ * already got. Any field that cannot be read stays null and is omitted.
+ */
+export interface TaskProgress {
+  /** Engineer runs recorded for this task so far. */
+  engineerRounds: number | null;
+  /** Review passes recorded for this task so far. */
+  reviewRounds: number | null;
+  /** The latest review pass verdict, when one exists. */
+  latestReviewVerdict: string | null;
+  /** Files changed on the task branch vs main. */
+  diffFiles: number | null;
+  /** Lines added on the task branch vs main. */
+  diffLinesAdded: number | null;
+  /** Lines removed on the task branch vs main. */
+  diffLinesRemoved: number | null;
+  /** True when the task declares shots or sits in a UI area. */
+  uiShots: boolean;
+  /** Milliseconds since the task was created, when known. */
+  openMs: number | null;
+}
+
+/** One line of task progress, with unknown parts omitted; null when empty. */
+export function formatTaskProgress(progress: TaskProgress): string | null {
+  const parts: string[] = [];
+  if (progress.engineerRounds != null) parts.push(`engineer rounds ${progress.engineerRounds}`);
+  if (progress.reviewRounds != null) parts.push(`review rounds ${progress.reviewRounds}`);
+  if (progress.latestReviewVerdict) parts.push(`latest review: ${progress.latestReviewVerdict}`);
+  if (progress.diffFiles != null) {
+    const add = progress.diffLinesAdded ?? 0;
+    const del = progress.diffLinesRemoved ?? 0;
+    parts.push(
+      `diff ${progress.diffFiles} file${progress.diffFiles === 1 ? "" : "s"}, +${add}/-${del}`,
+    );
+  }
+  parts.push(`UI shots: ${progress.uiShots ? "yes" : "no"}`);
+  if (progress.openMs != null) parts.push(`open ${formatDuration(progress.openMs)}`);
+  return parts.length ? parts.join(" · ") : null;
+}
+
+function formatDuration(ms: number): string {
+  const minutes = Math.floor(ms / 60_000);
+  if (minutes < 60) return `${Math.max(0, minutes)}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours}.${Math.floor((minutes % 60) / 6)}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
+/**
+ * Assemble task progress from the task, its sessions and its review passes.
+ * Best-effort: any reader that fails leaves its fields null. Never throws.
+ */
+export function buildTaskProgress(
+  task: Task | null,
+  config: RepoOSConfig,
+  opts: { now?: () => Date } = {},
+): TaskProgress | null {
+  if (!task) return null;
+  const now = (opts.now ?? (() => new Date()))();
+
+  let engineerRounds: number | null = null;
+  let reviewRounds: number | null = null;
+  try {
+    const sessions = getRepoOSDb(config.root)?.getTaskSessions(task.id) ?? [];
+    if (sessions.length > 0) {
+      engineerRounds = sessions.filter((s) => s.sessionType === "engineer").length;
+      reviewRounds = sessions.filter(
+        (s) => s.sessionType === "reviewer" || s.sessionType === "review",
+      ).length;
+    }
+  } catch {
+    // Absent sessions DB — leave rounds unknown.
+  }
+
+  let latestReviewVerdict: string | null = null;
+  try {
+    const passes = listReviewPasses(config, task.id);
+    reviewRounds ??= passes.length > 0 ? passes.length : null;
+    latestReviewVerdict = passes.length > 0 ? passes[passes.length - 1]!.verdict : null;
+  } catch {
+    // No review artifacts — leave the verdict unknown.
+  }
+
+  let diffFiles: number | null = null;
+  let diffLinesAdded: number | null = null;
+  let diffLinesRemoved: number | null = null;
+  const worktree = task.git?.worktreePath;
+  if (worktree) {
+    try {
+      const stats = getDiffStats(worktree, "main");
+      diffFiles = stats.filesChanged;
+      diffLinesAdded = stats.additions;
+      diffLinesRemoved = stats.deletions;
+    } catch {
+      // Not a git worktree (or git unavailable) — leave the diff unknown.
+    }
+  }
+
+  const uiAreas = config.approval?.autoApprove?.uiAreas?.length
+    ? config.approval.autoApprove.uiAreas.map((a) => a.trim().toLowerCase())
+    : DEFAULT_APPROVAL_UI_AREAS;
+  const areas = parseTaskAreas(task.area ?? task.areas).map((a) => a.toLowerCase());
+  const declaredShots = parseShotPlan(task.body ?? "").shots.length;
+  const uiShots = declaredShots > 0 || areas.some((a) => uiAreas.includes(a));
+
+  let openMs: number | null = null;
+  if (task.created_at) {
+    const created = Date.parse(task.created_at);
+    if (Number.isFinite(created)) openMs = Math.max(0, now.getTime() - created);
+  }
+
+  return {
+    engineerRounds,
+    reviewRounds,
+    latestReviewVerdict,
+    diffFiles,
+    diffLinesAdded,
+    diffLinesRemoved,
+    uiShots,
+    openMs,
+  };
+}
+
+/**
+ * Build the bounded state brief. Task/code text is data, never instructions.
+ * `maxChars` budgets the brief to the decision model's context window (#0812);
+ * it defaults to the safe fixed fallback.
+ */
 export function buildRoutingBrief(opts: {
   task: Task | null;
   role: RoutingRole;
   extra?: string;
+  maxChars?: number;
+  progress?: TaskProgress | null;
 }): string {
   const { task, role } = opts;
   const parts: string[] = [`Role: ${role}`];
@@ -112,13 +313,63 @@ export function buildRoutingBrief(opts: {
     parts.push(
       `Status: ${task.status} · Type: ${task.type ?? "unset"} · Priority: ${task.priority ?? "unset"} · Area: ${task.area ?? "unset"}`,
     );
+    const progress = opts.progress ? formatTaskProgress(opts.progress) : null;
+    if (progress) parts.push(`Progress: ${progress}`);
     if (task.body) parts.push(`Description:\n${task.body}`);
   }
   if (opts.extra) parts.push(opts.extra);
   const text = parts.join("\n\n");
-  return text.length > MAX_ROUTING_BRIEF_CHARS
-    ? `${text.slice(0, MAX_ROUTING_BRIEF_CHARS)}\n… (brief truncated)`
-    : text;
+  const maxChars = opts.maxChars ?? MAX_ROUTING_BRIEF_CHARS;
+  return text.length > maxChars ? `${text.slice(0, maxChars)}\n… (brief truncated)` : text;
+}
+
+/** Per-candidate facts plus the metadata needed to render the record summary. */
+export interface CandidateFactsBundle {
+  /** Facts keyed by candidateKey, for the decision questions. */
+  facts: Record<string, CandidateFacts>;
+  /** One-line summary per candidateKey, or null when nothing was known. */
+  summaryByKey: Record<string, string | null>;
+}
+
+/**
+ * Gather whatever facts are known for each candidate (#0812): model metadata
+ * (price/context/billing) and the project's own history. History defaults to
+ * the sessions DB; `deps.history` replaces it (tests). Never throws.
+ */
+export function buildCandidateFacts(opts: {
+  candidates: RoutingCandidate[];
+  role: RoutingRole;
+  harnesses: Record<string, HarnessAvailability>;
+  metadata?: Record<string, ModelMetadata>;
+  history?: RoutingWiringDeps["history"];
+  db?: ReturnType<typeof getRepoOSDb>;
+  billing?: (cli: string) => BillingKind | null;
+}): CandidateFactsBundle {
+  const facts: Record<string, CandidateFacts> = {};
+  const summaryByKey: Record<string, string | null> = {};
+  for (const candidate of opts.candidates) {
+    try {
+      const key = candidateKey(candidate);
+      const normalized = normalizeModelId(candidate.model);
+      const injected = opts.metadata?.[normalized] ?? opts.metadata?.[key] ?? null;
+      const metadata = injected ?? lookupModelMetadata(candidate.model);
+      const history = opts.history
+        ? opts.history(opts.role, candidate)
+        : candidateHistory(opts.db ?? null, opts.role, candidate.cli, candidate.model);
+      const resolved = resolveCandidateFacts({
+        candidate,
+        metadata,
+        harnessContextTokens: opts.harnesses[candidate.cli]?.maxContextTokens ?? null,
+        billing: opts.billing?.(candidate.cli) ?? billingForCli(candidate.cli),
+        history,
+      });
+      facts[key] = resolved;
+      summaryByKey[key] = candidateFactLine(resolved);
+    } catch {
+      // A fact-gathering failure must never remove a candidate from the set.
+    }
+  }
+  return { facts, summaryByKey };
 }
 
 /** Resolve the harness availability map, preferring live detection data. */
@@ -205,6 +456,10 @@ function buildRecord(opts: {
   durationMs: number;
   providerId: string | null;
   handback?: HandbackOutcome | null;
+  /** Brief provenance (#0812). */
+  briefBudget?: RoutingDecisionRecord["briefBudget"];
+  /** Per-candidate facts offered (#0812). */
+  facts?: RoutingDecisionRecord["facts"];
 }): RoutingDecisionRecord {
   const { decision } = opts;
   const decided = decision.kind === "decided";
@@ -245,6 +500,8 @@ function buildRecord(opts: {
     answers,
     policyVersion: ROUTING_POLICY_VERSION,
     durationMs: opts.durationMs,
+    ...(opts.briefBudget ? { briefBudget: opts.briefBudget } : {}),
+    ...(opts.facts ? { facts: opts.facts } : {}),
     ...(opts.handback
       ? {
           handback: {
@@ -365,15 +622,40 @@ export async function resolveRoutedAgent(
         ? (deps.provider ?? null)
         : buildRoutingProvider(effective, undefined, config);
 
+    // Budget the brief to the decision model's real context window (#0812):
+    // look the window up from provider metadata, take a fixed share, and fall
+    // back to the safe fixed size when it is unknown.
+    const decisionContextTokens = resolveDecisionContextTokens(
+      effective.provider,
+      effective.model,
+      { override: deps.decisionContextTokens, metadata: deps.metadata },
+    );
+    const maxChars = briefMaxChars(decisionContextTokens, deps.briefContextShare);
+    const progress = buildTaskProgress(input.task, config, { now });
+    const brief = buildRoutingBrief({
+      task: input.task,
+      role: input.role,
+      extra: input.briefExtra,
+      maxChars,
+      progress,
+    });
+
+    // Facts each candidate can be judged on (#0812): price, context, billing
+    // and this project's own history for the role.
+    const factBundle = buildCandidateFacts({
+      candidates: filtered.eligible,
+      role: input.role,
+      harnesses,
+      metadata: deps.metadata,
+      history: deps.history,
+      db: deps.history ? null : getRepoOSDb(config.root),
+    });
+
     const decision = await decideRoutingForRun({
       effective,
       role: input.role,
       pinned: false,
-      stateText: buildRoutingBrief({
-        task: input.task,
-        role: input.role,
-        extra: input.briefExtra,
-      }),
+      stateText: brief,
       filter: {
         role: input.role,
         requiredContextTokens: 0,
@@ -384,6 +666,7 @@ export async function resolveRoutedAgent(
       fallback: candidateForAgent(base),
       costTime: deps.costTime ?? {},
       provider,
+      candidateFacts: factBundle.facts,
     });
 
     const durationMs = Date.now() - startedAt;
@@ -443,6 +726,11 @@ export async function resolveRoutedAgent(
       durationMs,
       providerId: config.modelRouting?.provider ?? null,
       handback,
+      briefBudget: { chars: brief.length, maxChars, contextTokens: decisionContextTokens },
+      facts: filtered.eligible.map((c) => ({
+        key: candidateKey(c),
+        summary: factBundle.summaryByKey[candidateKey(c)] ?? null,
+      })),
     });
     if (handback) {
       record.handback = {
