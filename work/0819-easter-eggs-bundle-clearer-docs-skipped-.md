@@ -96,3 +96,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T16:22:49Z · title
 - 2026-10-17T16:23:59Z · status active→review
 - 2026-10-17T16:24:00Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9832a9b89) during finalization (#0734)
+- 2026-10-17T16:24:00Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9832a9b89) during finalization (#0734)
