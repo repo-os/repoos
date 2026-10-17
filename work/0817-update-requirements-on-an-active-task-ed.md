@@ -11,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T12:05:23Z"
+updated_at: "2026-10-17T12:05:40Z"
 last_check_failure: "repoos check at 2026-10-17T11:55:24.478Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 2006998e to 5709c308) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 3
 review_rounds: 2
@@ -41,58 +41,49 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 ```json
 [
 {
-"label": "Update requirements action on active task (light)",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": "[data-test-id=\"update-requirements\"]",
-"state": "drawer:activeRequirements",
-"theme": "light"
+  "label": "Update requirements action on active task (light)",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": "[data-test-id=\"update-requirements\"]",
+  "steps": [
+    {
+      "waitFor": "[data-test-id=\"update-requirements\"]"
+    }
+  ],
+  "state": "drawer:activeRequirements",
+  "theme": "light"
 },
 {
-"label": "Update requirements action on active task (dark)",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": "[data-test-id=\"update-requirements\"]",
-"state": "drawer:activeRequirements",
-"theme": "dark"
+  "label": "Update requirements action on active task (dark)",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": "[data-test-id=\"update-requirements\"]",
+  "steps": [
+    {
+      "waitFor": "[data-test-id=\"update-requirements\"]"
+    }
+  ],
+  "state": "drawer:activeRequirements",
+  "theme": "dark"
 },
 {
-"label": "Update requirements editor open (light)",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".sm-modal",
-"steps": [
-{
-"waitFor": "[data-test-id=\"update-requirements\"]"
-},
-{
-"click": "[data-test-id=\"update-requirements\"]"
-},
-{
-"waitMs": 400
-}
-],
-"state": "drawer:activeRequirements",
-"theme": "light"
-},
-{
-"label": "Update requirements editor open (dark)",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".sm-modal",
-"steps": [
-{
-"waitFor": "[data-test-id=\"update-requirements\"]"
-},
-{
-"click": "[data-test-id=\"update-requirements\"]"
-},
-{
-"waitMs": 400
-}
-],
-"state": "drawer:activeRequirements",
-"theme": "dark"
+  "label": "Update requirements editor open (light)",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".sm-modal",
+  "steps": [
+    {
+      "waitFor": "[data-test-id=\"update-requirements\"]"
+    },
+    {
+      "click": "[data-test-id=\"update-requirements\"]"
+    },
+    {
+      "waitFor": ".sm-modal"
+    }
+  ],
+  "state": "drawer:activeRequirements",
+  "theme": "light"
 }
 ]
 ```
@@ -178,3 +169,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T12:04:17Z · handoff failed · check failed after 2 automatic retries · ui verification failed (8 issue(s)): [request] HTTP 404 for http://127.0.0.1:57950/api/tasks/9999 (http://127.0.0.1:57950/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:57950/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:57950/api/tasks/9999 (http://127.0.0.1:57950/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:57950/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:57950/api/tasks/9999 (http://127.0.0.1:57950/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:57950/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:57950/api/tasks/9999 (http://127.0.0.1:57950/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:57950/api/tasks/9999)
 - 2026-10-17T12:04:53Z · message_delivered: 1 message(s)
 - 2026-10-17T12:05:23Z · message_queued at 2026-10-17T12:05:23.833Z
+- 2026-10-17T12:05:40Z · body: section Shots
