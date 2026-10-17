@@ -310,6 +310,33 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         deletions: 8,
       });
       break;
+    case "card:handoffConflict":
+      // #0810 — the "Worktree changed after handoff" modal only opens from a
+      // failed Move to done. Seed the pending conflict on a board card so a
+      // capture can show the changed-file list with its +/- counts. No branch
+      // (like the other card fixtures): a card for the fake id must not fire a
+      // diff-stats request, and the modal is reached without opening a drawer.
+      ensureFixtureTask(repo, "review");
+      repo.seedWorktreeHandoffConflict(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        message: "worktree changed after handoff: HEAD is 4f2a9c1e but handoff recorded 1b7d0a33.",
+        files: [
+          {
+            path: "src/ui-app/src/components/WorktreeHandoffConflictDialog.vue",
+            added: 41,
+            removed: 6,
+            taskFile: false,
+          },
+          { path: "src/ui-app/src/style.css", added: 32, removed: 0, taskFile: false },
+          { path: "repoos.toml", added: 2, removed: 1, taskFile: false },
+          {
+            path: "work/0807-close-out-blocked-by-a-repoos-tom.md",
+            added: 5,
+            removed: 2,
+            taskFile: true,
+          },
+        ],
+      });
+      break;
     default:
       break;
   }
