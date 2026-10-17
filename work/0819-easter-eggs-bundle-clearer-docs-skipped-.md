@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T18:15:03Z"
+updated_at: "2026-10-17T18:15:23Z"
 last_check_failure: "repoos check at 2026-10-17T18:01:16.427Z: repoos check failed: ui verification failed (32 issue(s)): [request] HTTP 404 for http://127.0.0.1:53612/api/tasks/9999/diff-stats (http://127.0.0.1:53612/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:53612/api/tasks/9999/diff-stats); [request] HTTP 404 for http://127.0.0.1:53612/api/tasks/9999/diff (http://127.0.0.1:53612/api/tasks/9999/diff); [request] Failed to load resource: the server responded with a s… (truncated)"
 review_passes: 5
 review_rounds: 2
@@ -248,3 +248,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T18:15:02Z · note: click .shot-row img: click: Error: strict mode violation: locator('.shot-row img') resolved to 2 elements: on /work?task=9999&tab=changes
 - 2026-10-17T18:15:03Z · note: waitFor .shot-viewer-shot-head: waitFor: Timeout 5000ms exceeded. on /work?task=9999&tab=changes
 - 2026-10-17T18:15:03Z · note: highlight .shot-viewer-shot-head matched nothing on /work?task=9999&tab=changes
+- 2026-10-17T18:15:23Z · note: click .shot-row img: click: Error: strict mode violation: locator('.shot-row img') resolved to 2 elements: on /work?task=9999&tab=changes
