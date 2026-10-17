@@ -578,14 +578,21 @@ start in `mode = "shadow"`. Each eligible run records what the router would have
 chosen, the candidates it considered, and the provider's signals, while the run
 itself keeps the configured agent. The **Recent decisions** list on the same tab
 shows, per run, the role, the configuration actually used, the shadow
-recommendation when it differs, and any fallback or block reason — rendered from
-the recorded factors only. Compare those recommendations with real outcomes
-before enabling `automatic`.
+recommendation when it differs, the response time, and the provider's token usage
+(or dollar cost when it reports one) — rendered from the recorded factors only.
+Each card expands (collapsed by default) to the question that was sent and the
+answer that came back. A fallback is written in plain words rather than as an
+error: an insufficient-evidence fallback says the model was not confident enough
+and the role default was used, with the top probability and the threshold.
+Compare those recommendations with real outcomes before enabling `automatic`.
 
 The **Test configuration** button checks parsing, provider requirements, and
 whether the required key is set — it does not call the hosted API. **Test live
-connection** issues one real decision call when you are ready;
-use it sparingly and never in automated tests.
+connection** issues one real decision call when you are ready; while it runs it
+shows a waiting state, then a result card (green outline on success, red on
+failure) with the test question, the answer and each option's probability, the
+model that answered, the response time, and the provider's usage — a failure adds
+a plain reason and what to check. Use it sparingly and never in automated tests.
 
 ### Automatic mode, pins and limits
 
@@ -597,7 +604,9 @@ use it sparingly and never in automated tests.
 - The router cannot widen permissions or budgets. It only chooses among
   candidates that already pass these filters.
 - Every decision is persisted under `.repoos/model-routing/decisions.json` and
-  survives a server restart. The decision call's token usage is recorded in the
+  survives a server restart. The record keeps the bounded brief that was sent and
+  the provider's answers, so a card's details view renders exactly what was asked
+  and returned. The decision call's token usage is recorded in the
   Tokens/session accounting under the `routing` session type (never `pm`).
 
 ### Review handback re-evaluation
