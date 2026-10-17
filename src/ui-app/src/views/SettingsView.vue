@@ -1308,7 +1308,9 @@ onUnmounted(() => {
                         aria-label="Activity animation size in pixels"
                         :aria-valuetext="activityAnimationSizeValueText"
                         @input="
-                          setActivityAnimationSizeFromRange(($event.target as HTMLInputElement).value)
+                          setActivityAnimationSizeFromRange(
+                            ($event.target as HTMLInputElement).value,
+                          )
                         "
                       />
                       <span
