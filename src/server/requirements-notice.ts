@@ -9,10 +9,11 @@
  * (a UI save, `repoos update --body`, or a direct file edit the watcher picks
  * up), so the notice does not depend on the write path.
  *
- * Delivery mirrors the `/message` route: an engineer already in a session gets
- * `runner.send` (which queues while a turn is live); a task whose engineer has
- * not started yet is started so the new requirements are actually read. A task
- * that is not `active` is never notified.
+ * Delivery mirrors the `/message` route: the notice goes to the engineer's
+ * session with `runner.send`, queueing while a turn is live. A task that has
+ * never started an engineer has no session to message — this deliberately does
+ * NOT auto-start one, so a paused or human-owned active task is never woken by
+ * a requirements edit. A task that is not `active` is never notified.
  */
 import type { Agent, RepoOSConfig, Task } from "../core/types.js";
 import { worktreePathForBranch } from "../core/git.js";
@@ -22,18 +23,11 @@ import { resolveAgentForTask } from "./agents.js";
 
 /** The subset of `AgentRunner` this module needs (keeps tests lightweight). */
 export interface RequirementsNoticeRunner {
-  output(taskId: string): unknown;
   send(
     taskId: string,
     text: string,
     agent: Agent,
     opts?: { resumePreamble?: string; skipBoardDivergence?: boolean; cwd?: string },
-  ): { ok: boolean; queued?: boolean; reason?: string };
-  start(
-    task: Task,
-    branch: string,
-    agent: Agent,
-    opts?: { cwd?: string; resumePreamble?: string },
   ): { ok: boolean; queued?: boolean; reason?: string };
 }
 
@@ -67,23 +61,21 @@ export function notifyEngineerOfRequirementsChange(
   if (!change) return { sent: false, reason: "no requirement sections changed" };
   const summary = change.summary;
 
-  if (!task.branch) return { sent: false, summary, reason: "task has no branch" };
   const agent = resolveAgentForTask(deps.config, task);
   if (!agent) return { sent: false, summary, reason: "no enabled engineer agent" };
 
-  const cwd = worktreePathForBranch(deps.config.root, task.branch) ?? deps.config.root;
-  const text = requirementsChangeMessage(task, change);
-  const hasSession = deps.runner.output(task.id) !== null;
-  const result = hasSession
-    ? deps.runner.send(task.id, text, agent, {
-        resumePreamble: resumePreamble(deps.config, task, task.branch, cwd) || undefined,
-        skipBoardDivergence: true,
-        cwd,
-      })
-    : deps.runner.start(task, task.branch, agent, { cwd, resumePreamble: text });
-
+  const cwd = task.branch
+    ? (worktreePathForBranch(deps.config.root, task.branch) ?? deps.config.root)
+    : undefined;
+  const preamble =
+    task.branch && cwd ? resumePreamble(deps.config, task, task.branch, cwd) : "";
+  const result = deps.runner.send(task.id, requirementsChangeMessage(task, change), agent, {
+    resumePreamble: preamble || undefined,
+    skipBoardDivergence: true,
+    cwd,
+  });
   if (!result.ok) {
     return { sent: false, summary, reason: result.reason ?? "could not notify engineer" };
   }
-  return { sent: true, queued: "queued" in result ? result.queued : undefined, summary };
+  return { sent: true, queued: result.queued === true, summary };
 }
