@@ -11,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T09:29:00Z"
+updated_at: "2026-10-17T09:29:57Z"
 ---
 ## Problem
 Requirements (the task body: Problem, Desired UX, Acceptance criteria, Notes) are changed on main while the task is active, but the engineer works from its own copy of the task file in its worktree. A change made on main is not seen by the engineer until someone tells it or it merges main. On #0816 the engineer had to work out what had changed, because the body edits only reached a message.
@@ -43,3 +43,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T09:16:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-17T09:19:08Z · cli_override, model_override
 - 2026-10-17T09:29:00Z · body
+- 2026-10-17T09:29:57Z · body
