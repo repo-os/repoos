@@ -518,6 +518,7 @@ watch(
                   <button
                     type="button"
                     class="dev-log-toggle"
+                    :data-tip="isLogExpanded(t) ? 'Collapse the output' : 'Expand the output'"
                     :aria-label="isLogExpanded(t) ? 'Collapse output' : 'Expand output'"
                     :aria-expanded="isLogExpanded(t)"
                     @click="toggleLog(t)"
