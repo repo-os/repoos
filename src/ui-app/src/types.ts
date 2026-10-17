@@ -174,6 +174,16 @@ export interface Task {
    *  exited without a clean handoff (capped at 2, #0271 follow-up). Unlike
    *  the other two, the task stays `active` throughout. */
   handoffSignalRetryCount?: number;
+  /** Present on PATCH when a requirements body edit ran the #0817 engineer notice. */
+  requirementsNotice?: RequirementsNotice;
+}
+
+/** Result of the automatic engineer notice after a requirements edit (#0817). */
+export interface RequirementsNotice {
+  sent: boolean;
+  queued?: boolean;
+  summary?: string;
+  reason?: string;
 }
 
 export interface DependencyBlocker {

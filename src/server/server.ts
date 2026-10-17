@@ -202,6 +202,7 @@ import { DevTargetManager } from "./dev.js";
 import { ConfigWatcher } from "./config-watch.js";
 import { runAutoShotCapture } from "./shot-capture.js";
 import { ReviewManager } from "./review.js";
+import { notifyEngineerOfRequirementsChange } from "./requirements-notice.js";
 import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
 import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
 import { DebugTldrManager } from "./debug-tldr.js";
@@ -2645,6 +2646,26 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (runner.isHandoffInFlight(task.id)) return true; // our own finalization's write
     startUnifiedHandoff(prev, { origin: "task-file" });
     return false;
+  });
+
+  // #0817: any body change that reaches the index — a drawer save, `repoos
+  // update --body`, or a direct file edit the watcher catches — tells an active
+  // task's engineer which requirement sections changed, so nothing depends on
+  // a human remembering to pass them along. The notice never writes the
+  // engineer's worktree copy; it only reports what moved.
+  index.setBodyChangeNotifier((task: Task, prev: Task) => {
+    const result = notifyEngineerOfRequirementsChange({ config, runner }, task, prev.body);
+    if (result.sent) {
+      logger.task(task.id, "info", `requirements changed — notified engineer: ${result.summary}`, {
+        queued: result.queued === true,
+      });
+    } else if (result.summary) {
+      logger.task(task.id, "warn", `requirements changed but engineer not notified`, {
+        reason: result.reason,
+        summary: result.summary,
+      });
+    }
+    return result;
   });
 
   /**

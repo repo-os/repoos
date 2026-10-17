@@ -31,6 +31,11 @@ import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
+import {
+  applyShotPreviewFixture,
+  isShotPreviewCaptureActive,
+  readShotPreviewFixtureFromLocation,
+} from "../lib/shot-preview-fixtures.js";
 import type { Task } from "../types";
 
 const DRAFT_EMPTY = "No drafts yet. Agent proposals land here.";
@@ -100,6 +105,14 @@ async function openFromTaskParam(raw: string): Promise<void> {
     return;
   }
   const id = raw.replace(/^#/, "");
+  // Shot capture can mount this view before App.vue's onMounted applies the
+  // fixture — seed client state first so ?task=9999 never hits the API (#0817).
+  if (typeof window !== "undefined" && isShotPreviewCaptureActive(window.location)) {
+    const shotFixture = readShotPreviewFixtureFromLocation(window.location);
+    if (shotFixture && repo.health?.isPreviewBuild) {
+      applyShotPreviewFixture(repo, shotFixture);
+    }
+  }
   // The board index is loaded before this view mounts (App.vue gates the
   // router on repo.init()), so the task is normally already local. A local
   // miss means the id is off-board (deleted, or an index that drifted) —
@@ -110,6 +123,9 @@ async function openFromTaskParam(raw: string): Promise<void> {
     // delay clearing the URL (a refresh while the param lingers would
     // re-open the panel).
     void ui.openTask(local);
+  } else if (typeof window !== "undefined" && isShotPreviewCaptureActive(window.location)) {
+    // Fixture-only id during capture — never request a missing task from the API.
+    return;
   } else {
     try {
       ui.open(await api<Task>(`/api/tasks/${encodeURIComponent(id)}`));

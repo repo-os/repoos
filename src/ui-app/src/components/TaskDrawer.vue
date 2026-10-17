@@ -91,6 +91,7 @@ import { hotfixBannerText } from "../lib/hotfix";
 import ReviewConfirmDialog from "./ReviewConfirmDialog.vue";
 import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
+import UpdateRequirementsDialog from "./UpdateRequirementsDialog.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
@@ -142,6 +143,10 @@ import CopyableNumber from "./CopyableNumber.vue";
 import PmChatSurface from "./PmChatSurface.vue";
 import AreaPicker from "./AreaPicker.vue";
 import { defaultTaskArea, formatTaskAreas, parseTaskAreas } from "../../../core/areas.js";
+import {
+  summarizeRequirementsChange,
+  type RequirementsChange,
+} from "../../../core/task-body-diff.js";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -2006,6 +2011,62 @@ function handleSpecCardClick(): void {
 function applySpec(markdown: string): void {
   draft.body = markdown;
   specModalOpen.value = false;
+}
+
+// ---- Update requirements (#0817) ----
+//
+// An active task's requirements live in the body the engineer reads from its
+// worktree copy. This editor writes the board copy, and after saving shows the
+// human exactly which sections changed. The server owns the activity entry and
+// the engineer notice; this surface only edits and reports.
+
+const requirementsOpen = ref(false);
+const requirementsBusy = ref(false);
+const requirementsError = ref("");
+const requirementsResult = ref<RequirementsChange | null>(null);
+
+function openRequirementsEditor(): void {
+  requirementsError.value = "";
+  requirementsResult.value = null;
+  requirementsOpen.value = true;
+}
+
+function closeRequirementsEditor(): void {
+  requirementsOpen.value = false;
+  requirementsResult.value = null;
+  requirementsError.value = "";
+}
+
+/**
+ * Save a requirements edit through the same PATCH route the details form uses,
+ * then keep the dialog open showing the changed sections. `force` lets this
+ * explicit editor remove a whole spec section, which the generic body guard
+ * otherwise rejects (#0613).
+ */
+async function saveRequirements(nextBody: string): Promise<void> {
+  const task = ui.active;
+  if (!task || requirementsBusy.value) return;
+  requirementsBusy.value = true;
+  requirementsError.value = "";
+  try {
+    const before = task.body ?? "";
+    const updated = await repo.patchTask(task.id, { body: nextBody, force: true });
+    const notice = updated.requirementsNotice;
+    if (notice?.summary && !notice.sent) {
+      const why = notice.reason ? `: ${notice.reason}` : "";
+      repo.pushToast(`Requirements saved, but the engineer was not notified${why}`, "error");
+    }
+    requirementsResult.value = summarizeRequirementsChange(before, updated.body);
+    // The body now matches the board; keep the draft in step without resetting
+    // other unsaved field edits.
+    draft.body = updated.body;
+    original.body = updated.body;
+    ui.syncActive(updated);
+  } catch (err) {
+    requirementsError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    requirementsBusy.value = false;
+  }
 }
 
 let draftFromId = "";
@@ -5019,6 +5080,17 @@ watch(
               spec
             </button>
             <button
+              v-if="ui.active.status === 'active'"
+              type="button"
+              class="page-help-link"
+              data-test-id="update-requirements"
+              :disabled="ui.saving"
+              data-tip="Edit the requirements the engineer works from; saving records the change and messages the engineer"
+              @click="openRequirementsEditor"
+            >
+              Update requirements
+            </button>
+            <button
               v-if="editorConfigured"
               type="button"
               class="page-help-link"
@@ -6251,6 +6323,17 @@ watch(
     :body="draft.body"
     @update:open="(v) => (specModalOpen = v)"
     @save="applySpec"
+  />
+
+  <UpdateRequirementsDialog
+    :open="requirementsOpen"
+    :body="ui.active?.body ?? draft.body"
+    :busy="requirementsBusy"
+    :error="requirementsError"
+    :result="requirementsResult"
+    @update:open="(v) => (v ? (requirementsOpen = v) : closeRequirementsEditor())"
+    @save="saveRequirements"
+    @done="closeRequirementsEditor"
   />
 
   <ScreenshotViewer
