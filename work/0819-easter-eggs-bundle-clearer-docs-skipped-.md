@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T15:59:20Z"
+updated_at: "2026-10-17T16:00:55Z"
 ---
 ## Problem
 Four small items, one open easter-eggs bundle:
@@ -37,22 +37,22 @@ Four small items, one open easter-eggs bundle:
 ## Notes for AI
 Start from the shot-warning text in the handoff capture code (grep for 'docs captures need a declared route') and the screenshot viewer (grep for 'Wider images scale down'). For item 2, see src/server/requirements-notice.ts and src/server/live-index.ts. For item 3, see commitConfigWrite in src/server/routes/config.ts and the dirty-main guard in src/server/routes/tasks.ts. For item 4, see src/ui-app/src/stores/notices.ts, src/ui-app/src/lib/integration-pipeline-ui.ts (integrationDurationSamples, integrationMedianTip, INTEGRATION_MEDIAN_SAMPLE = 15) and src/ui-app/src/components/IntegrationStatusBar.vue. For item 4 the median counts only close-outs with outcome 'succeeded' (CloseOutOutcome in src/ui-app/src/types.ts). Failed and timed-out runs are excluded, so the median reflects a normal run. Keep the #0682 intent in item 3. Source: user reports 2026-10-17.
 
-## Screenshots
-
-![Approved bird-track shape reference: tapered central toe, splayed side toes, and short heel](/api/tasks/0819/attachments/screenshot-1.png)
-
 ## Shots
 ```json
 [
 {
-  "label": "Integration timer chip (median tooltip is hover-only)",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=\"integration-timer\"]",
-  "state": "closeOut:active"
+"label": "Integration timer chip (median tooltip is hover-only)",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"integration-timer\"]",
+"state": "closeOut:active"
 }
 ]
 ```
+
+## Screenshots
+
+![Approved bird-track shape reference: tapered central toe, splayed side toes, and short heel](/api/tasks/0819/attachments/screenshot-1.png)
 
 ## Activity
 
@@ -70,3 +70,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T15:56:33Z · body
 - 2026-10-17T15:57:56Z · body
 - 2026-10-17T15:59:20Z · body
+- 2026-10-17T16:00:55Z · body
