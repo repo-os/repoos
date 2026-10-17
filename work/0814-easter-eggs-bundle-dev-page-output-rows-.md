@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-rows-
 created_at: "2026-10-17T05:50:02Z"
-updated_at: "2026-10-17T06:26:29Z"
+updated_at: "2026-10-17T06:27:22Z"
 ---
 ## Problem
 Four small Dev page and integration UI issues, bundled into the one open easter-eggs bundle:
@@ -36,6 +36,24 @@ Four small Dev page and integration UI issues, bundled into the one open easter-
 ## Notes for AI
 Start from the Dev page view (grep for 'Last output' and 'Restart') and the integration pipeline timer (src/ui-app/src/lib/integration-pipeline-ui.ts and the chip component that shows the elapsed timer). Store the per-target expand state the same way other view preferences are remembered. Use the shared tooltip or popover component (AGENTS.md: no native title tooltips). Source: user requests 2026-10-17.
 
+## Shots
+```json
+[
+{
+  "label": "Dev card: actions sit below the target name, and a failed run opens with six scrollable output lines",
+  "target": "default",
+  "route": "/dev?shotState=dev:failed",
+  "highlight": ".dev-card"
+},
+{
+  "label": "Dev card: a clean run starts minimised, with Start/Stop/Restart on the right",
+  "target": "default",
+  "route": "/dev?shotState=dev:running",
+  "highlight": ".dev-card"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-17T05:50:02Z · created · njachowski@gmail.com
@@ -45,3 +63,4 @@ Start from the Dev page view (grep for 'Last output' and 'Restart') and the inte
 - 2026-10-17T06:21:57Z · body
 - 2026-10-17T06:24:25Z · body
 - 2026-10-17T06:26:29Z · body
+- 2026-10-17T06:27:22Z · body: section Shots
