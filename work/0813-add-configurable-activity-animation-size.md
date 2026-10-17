@@ -2,14 +2,14 @@
 id: "0813"
 title: Add configurable activity animation size slider with Auto sizing
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-configurable-activity-animation-size
 created_at: "2026-10-17T05:02:36Z"
-updated_at: "2026-10-17T05:35:00Z"
+updated_at: "2026-10-17T05:42:36Z"
 ---
 ## Problem
 
@@ -71,3 +71,4 @@ Prefer one global size preference applied across styles rather than per-style sa
 - 2026-10-17T05:31:51Z · body
 - 2026-10-17T05:33:39Z · body
 - 2026-10-17T05:35:00Z · body
+- 2026-10-17T05:42:36Z · status active→review
