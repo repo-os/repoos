@@ -59,10 +59,10 @@ const sizeCh = computed(() => activityAnimationSizeCh(animationSize.value));
 const sized = computed(() => sizeCh.value !== null);
 
 /**
- * Explicit sizes reserve exactly the chosen `ch` allocation and scale the
- * style's artwork by that target over its established Auto slot. Auto leaves
- * both variables unset, so the stylesheet's original per-style geometry applies
- * byte-for-byte.
+ * Explicit sizes scale the style's artwork (and its reserved slot, because the
+ * slot is measured in the mark's now-larger font) by the chosen target over the
+ * style's established Auto slot. Auto leaves both variables unset, so the
+ * stylesheet's original per-style geometry applies byte-for-byte.
  */
 const sizeStyle = computed((): Record<string, string> | undefined => {
   const target = sizeCh.value;
