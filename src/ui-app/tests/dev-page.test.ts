@@ -148,6 +148,32 @@ describe("Dev nav gating (#0748)", () => {
 });
 
 describe("DevView layout and state (#0748)", () => {
+  it("places Start, Stop and Restart on the right, below the target name (#0814)", async () => {
+    installFetch({ targets: [target({ name: "site", status: "stopped" })] });
+    const wrapper = mountView();
+    await flush();
+
+    const card = wrapper.find(".dev-card");
+    const side = card.find(".dev-card-head .dev-card-side");
+    expect(side.exists()).toBe(true);
+    const name = side.find(".dev-card-name");
+    const actions = side.find(".dev-actions");
+    expect(name.text()).toBe("site");
+    expect(actions.exists()).toBe(true);
+    // The actions sit directly below the name, in the same right-hand column.
+    expect(name.element.nextElementSibling).toBe(actions.element);
+    expect(actions.findAll("button").map((b) => b.text().trim())).toEqual([
+      "Start",
+      "Stop",
+      "Restart",
+    ]);
+    // No second action row elsewhere in the card.
+    expect(card.findAll(".dev-actions")).toHaveLength(1);
+
+    const source = readFileSync(join(resolve(__dirname, ".."), "src/views/DevView.vue"), "utf8");
+    expect(source).toMatch(/\.dev-card-side\s*\{[^}]*align-items:\s*flex-end/);
+  });
+
   it("groups targets by project and shows name, kind, state and label", async () => {
     installFetch({
       targets: [
@@ -459,8 +485,48 @@ describe("DevView failure summary (#0775)", () => {
   });
 });
 
-describe("DevView Last output collapse (#0777)", () => {
-  it("collapses and expands the output body beside the line count, per target", async () => {
+describe("DevView Last output (#0777/#0814)", () => {
+  it("starts a successful run minimised and a failed run expanded", async () => {
+    const log = Array.from({ length: 12 }, (_, i) => `line ${i}`);
+    installFetch({
+      targets: [
+        target({ name: "web", status: "failed", error: "boom", log }),
+        target({ name: "api", status: "stopped", log, url: "http://localhost:4000" }),
+      ],
+    });
+    const wrapper = mountView();
+    await flush();
+
+    const cards = wrapper.findAll(".dev-card");
+    const bodyDisplay = (index: 0 | 1): string =>
+      (cards[index]!.find(".dev-log-body").element as HTMLElement).style.display;
+    // A failed last run opens so the error is visible; a clean one is folded.
+    expect(cards[0]!.find(".dev-log-toggle").attributes("aria-expanded")).toBe("true");
+    expect(bodyDisplay(0)).not.toBe("none");
+    expect(cards[1]!.find(".dev-log-toggle").attributes("aria-expanded")).toBe("false");
+    expect(bodyDisplay(1)).toBe("none");
+    expect(cards[1]!.find(".dev-log-count").text()).toContain("12 lines");
+  });
+
+  it("shows six lines at a time and scrolls for the rest", async () => {
+    const log = Array.from({ length: 50 }, (_, i) => `line ${i}`);
+    installFetch({ targets: [target({ status: "failed", error: "boom", log })] });
+    const wrapper = mountView();
+    await flush();
+
+    const body = wrapper.find(".dev-log-body");
+    expect(body.attributes("data-max-lines")).toBe("6");
+    expect(body.attributes("tabindex")).toBe("0");
+    expect(body.text()).toContain("line 0");
+    expect(body.text()).toContain("line 49");
+
+    const source = readFileSync(join(resolve(__dirname, ".."), "src/views/DevView.vue"), "utf8");
+    // Six lines (line-height 1.5) plus the panel's vertical padding, then scroll.
+    expect(source).toMatch(/max-height:\s*calc\(6 \* 1\.5em \+ 20px\)/);
+    expect(source).toMatch(/\.dev-log-body\s*\{[^}]*overflow-y:\s*auto/);
+  });
+
+  it("collapses and expands the output body, per target", async () => {
     const log = Array.from({ length: 12 }, (_, i) => `line ${i}`);
     installFetch({
       targets: [
@@ -480,7 +546,7 @@ describe("DevView Last output collapse (#0777)", () => {
       (cards[index]!.find(".dev-log-body").element as HTMLElement).style.display;
     const webToggle = cards[0]!.find(".dev-log-toggle");
     const apiToggle = cards[1]!.find(".dev-log-toggle");
-    // The control sits beside the count in the section head, expanded at first.
+    // The control sits beside the count in the section head.
     expect(webToggle.exists()).toBe(true);
     expect(webToggle.attributes("aria-expanded")).toBe("true");
     expect(bodyDisplay(0)).not.toBe("none");
@@ -493,15 +559,47 @@ describe("DevView Last output collapse (#0777)", () => {
     expect(cards[0]!.find(".dev-log-count").text()).toContain("12 lines");
     expect(cards[0]!.find(".dev-log-head").classes()).toContain("collapsed");
 
-    // Collapse is per target — the other card is untouched.
+    // Expand the other card without touching the first.
+    await apiToggle.trigger("click");
+    await flush();
     expect(apiToggle.attributes("aria-expanded")).toBe("true");
     expect(bodyDisplay(1)).not.toBe("none");
+    expect(webToggle.attributes("aria-expanded")).toBe("false");
 
     // Expanding again restores the body.
     await webToggle.trigger("click");
     await flush();
     expect(bodyDisplay(0)).not.toBe("none");
     expect(webToggle.attributes("aria-expanded")).toBe("true");
+  });
+
+  it("remembers the expanded state per target after leaving and coming back", async () => {
+    const log = ["one", "two", "three"];
+    installFetch({
+      targets: [
+        target({ name: "web", status: "stopped", log }),
+        target({ name: "api", status: "stopped", log, url: "http://localhost:4000" }),
+      ],
+    });
+
+    const first = mountView();
+    await flush();
+    // Both start folded (successful runs), then the reader opens one.
+    await first.findAll(".dev-card")[0]!.find(".dev-log-toggle").trigger("click");
+    await flush();
+    expect(first.findAll(".dev-card")[0]!.find(".dev-log-toggle").attributes("aria-expanded")).toBe(
+      "true",
+    );
+    first.unmount();
+
+    // A fresh mount reads the saved choice, while the untouched target keeps
+    // its clean-run default.
+    const second = mountView();
+    await flush();
+    const cards = second.findAll(".dev-card");
+    expect(cards[0]!.find(".dev-log-toggle").attributes("aria-expanded")).toBe("true");
+    expect((cards[0]!.find(".dev-log-body").element as HTMLElement).style.display).not.toBe("none");
+    expect(cards[1]!.find(".dev-log-toggle").attributes("aria-expanded")).toBe("false");
   });
 });
 

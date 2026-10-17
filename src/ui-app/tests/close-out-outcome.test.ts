@@ -201,6 +201,9 @@ describe("orchestrator reports a close-out outcome (#0640)", () => {
       expect(outcomes).toHaveLength(1);
       expect(outcomes[0]).toMatchObject({ taskId: "T1", outcome: "succeeded", reason: "" });
       expect(Number.isNaN(Date.parse(outcomes[0].finishedAt))).toBe(false);
+      // #0814: the outcome carries the timing the status bar's median uses.
+      expect(outcomes[0].startedAt).toBeTruthy();
+      expect(outcomes[0].durationMs).toBeGreaterThanOrEqual(0);
     } finally {
       clean();
     }

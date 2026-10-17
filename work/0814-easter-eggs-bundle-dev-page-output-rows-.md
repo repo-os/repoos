@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-17T06:38:35Z"
-review_passes: 1
 id: "0814"
 title: "Easter eggs bundle: Dev page output rows, output collapse memory, and button layout"
 type: feature
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-rows-
 created_at: "2026-10-17T05:50:02Z"
+updated_at: "2026-10-17T06:37:28Z"
 ---
 ## Problem
 Four small Dev page and integration UI issues, bundled into the one open easter-eggs bundle:
@@ -37,35 +36,10 @@ Four small Dev page and integration UI issues, bundled into the one open easter-
 ## Notes for AI
 Start from the Dev page view (grep for 'Last output' and 'Restart') and the integration pipeline timer (src/ui-app/src/lib/integration-pipeline-ui.ts and the chip component that shows the elapsed timer). Store the per-target expand state the same way other view preferences are remembered. Use the shared tooltip or popover component (AGENTS.md: no native title tooltips). Source: user requests 2026-10-17.
 
-## Shots
-```json
-[
-{
-"label": "Dev card: actions sit below the target name, and a failed run opens with six scrollable output lines",
-"target": "default",
-"route": "/dev?shotState=dev:failed",
-"highlight": ".dev-card"
-},
-{
-"label": "Dev card: a clean run starts minimised, with Start/Stop/Restart on the right",
-"target": "default",
-"route": "/dev?shotState=dev:running",
-"highlight": ".dev-card"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-17T05:50:02Z · created · njachowski@gmail.com
 - 2026-10-17T06:13:02Z · body
 - 2026-10-17T06:14:20Z · status inbox→ready
 - 2026-10-17T06:14:26Z · status ready→active, branch
-- 2026-10-17T06:21:57Z · body
-- 2026-10-17T06:24:25Z · body
-- 2026-10-17T06:26:29Z · body
-- 2026-10-17T06:27:22Z · body: section Shots
-- 2026-10-17T06:29:11Z · body
-- 2026-10-17T06:37:29Z · status active→review
-- 2026-10-17T06:38:34Z · note: review pass 1: good to go
-
+- 2026-10-17T06:37:28Z · status active→review

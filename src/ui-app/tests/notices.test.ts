@@ -296,6 +296,18 @@ describe("ingestCloseOutOutcome (#0640)", () => {
     expect(s.notices[0].createdAt).toBe(finishedAt);
   });
 
+  it("keeps one raw timing row per run for the status bar median (#0814)", () => {
+    const s = useNoticesStore();
+    const event = closeOut({
+      startedAt: "2026-10-03T16:58:00.000Z",
+      durationMs: 120_000,
+    });
+    s.ingestCloseOutOutcome(event);
+    // A repeated poll/SSE delivery must not double-count the sample.
+    s.ingestCloseOutOutcome(event);
+    expect(s.closeOutOutcomes).toEqual([event]);
+  });
+
   it("names the failure with the first reason line and a distinct failure kind", () => {
     const s = useNoticesStore();
     s.ingestCloseOutOutcome(
