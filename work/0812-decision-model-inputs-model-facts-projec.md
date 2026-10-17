@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/decision-model-inputs-model-facts-projec
 created_at: "2026-10-17T04:33:38Z"
-updated_at: "2026-10-17T06:02:33Z"
+updated_at: "2026-10-17T06:07:15Z"
 review_passes: 1
 ---
 ## Problem
@@ -50,3 +50,4 @@ Start from src/server/model-routing-wiring.ts (buildRoutingBrief, MAX_ROUTING_BR
 - 2026-10-17T05:34:53Z · note: review pass 1: good to go
 - 2026-10-17T06:02:19Z · status review→active
 - 2026-10-17T06:02:33Z · message_delivered: 1 message(s)
+- 2026-10-17T06:07:15Z · body
