@@ -181,6 +181,35 @@ describe("IntegrationStatusBar", () => {
     expect(wrapper.find('[data-test-id="integration-timer-tip"]').exists()).toBe(false);
   });
 
+  it("mounts the timer in the collapsed strip and opens its tooltip there (#0819)", async () => {
+    // The handoff capture lands on the folded strip by default, so the timer
+    // and its two-line pane must work in that variant too, not only expanded.
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    const notices = useNoticesStore();
+    notices.closeOutOutcomes = Array.from({ length: 5 }, (_, i) => ({
+      taskId: `0${i}`,
+      outcome: "succeeded",
+      finishedAt: new Date(Date.now() - i * 60_000).toISOString(),
+      reason: "",
+      durationMs: (i + 1) * 60_000,
+    })) as CloseOutOutcomeEvent[];
+    ui.setIntegrationBarCollapsed(true);
+    repo.integration = activeSnapshot();
+    const wrapper = render();
+    await nextTick();
+
+    const chip = wrapper.get('.ibar-strip [data-test-id="integration-timer"]');
+    expect(chip.text()).toBe("3m 07s");
+    await chip.trigger("mouseenter");
+    await nextTick();
+    const tip = wrapper.get('[data-test-id="integration-timer-tip"]');
+    expect(tip.get(".timer-tip-chip").text()).toBe("Median 3m 00s · 5 runs");
+    expect(tip.get(".timer-tip-line").text()).toBe(
+      "Click to switch between elapsed time and a countdown",
+    );
+  });
+
   it("does not auto-collapse while a job is active", async () => {
     const repo = useRepoStore();
     const ui = useUiStore();

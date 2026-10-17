@@ -686,7 +686,10 @@ async function fileSetupTask(): Promise<void> {
     <!-- Timer tooltip (#0819). The global plain-text tooltip cannot style a
          chip or a fainter italic instruction, so this two-line pane is
          teleported to <body> (the bar's stacking context would trap it),
-         anchored above the chip, and pointer-transparent. -->
+         anchored above the chip, and pointer-transparent. It deliberately does
+         NOT set `data-overlay-layer`: per #0575 that attribute is for
+         interactive floating layers, never a click-through tooltip, and
+         `pointer-events: none` is what keeps it inert while a modal is open. -->
     <Teleport to="body">
       <div
         v-if="timerTipOpen"
