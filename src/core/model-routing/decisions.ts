@@ -5,13 +5,15 @@
  * that produced the run, so a later round can reconsider it. The record is
  * deliberately flat and JSON-safe (no Dates, no class instances) so it survives
  * a server restart unchanged and renders directly from recorded factors — the UI
- * never invents an explanation the provider did not produce.
+ * never invents an explanation the provider did not produce. The record also
+ * keeps the bounded brief and the provider's answers, so the UI can show the
+ * exact question and answer behind a decision when the user expands it.
  *
  * Pure type module: the fs-backed store lives in `decision-store.ts`.
  */
 import type { RoutingCandidate } from "./candidates.js";
-import type { PolicyBlockReason, PolicyFallbackReason } from "./policy.js";
-import type { RoutingProviderId, RoutingRole } from "./types.js";
+import type { PolicyBlockReason, PolicyFallbackReason, RoutingDecisionEvidence } from "./policy.js";
+import type { RoutingAnswer, RoutingProviderId, RoutingRole, RoutingUsage } from "./types.js";
 
 /** How the decision ended. */
 export type RoutingDecisionKind = "selected" | "fallback" | "blocked" | "pinned" | "disabled";
@@ -57,16 +59,28 @@ export interface RoutingDecisionRecord {
   rejected: Array<{ key: string; reason: string }>;
   provider: RoutingProviderId | null;
   providerModel: string | null;
-  providerUsage: { inputTokens: number | null; outputTokens: number | null } | null;
+  providerUsage: RoutingUsage | null;
+  /**
+   * The provider's suitability probability for the selection/recommendation,
+   * when it answered. Null when no answer was recorded.
+   */
+  selectionProbability: number | null;
+  /** Recorded evidence summary from the provider's answer, for a plain explanation. */
+  evidence: RoutingDecisionEvidence | null;
+  /** The bounded context brief sent to the provider (for the expandable details). */
+  brief: string | null;
+  /** The provider's normalized answers (for the expandable details), or null. */
+  answers: Record<string, RoutingAnswer> | null;
   policyVersion: string;
   durationMs: number;
   handback?: HandbackDecisionRecord;
   /**
    * Brief provenance (#0812): how large the brief actually was, its budget, and
    * the decision model's context window when known — so "why did it decide on
-   * so little?" is answerable from the record alone.
+   * so little?" is answerable from the record alone. Distinct from `brief`,
+   * which is the brief text itself.
    */
-  brief?: {
+  briefBudget?: {
     /** Characters handed to the provider (after truncation). */
     chars: number;
     /** The budget the brief was allowed. */

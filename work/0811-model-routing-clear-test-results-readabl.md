@@ -2,14 +2,18 @@
 id: "0811"
 title: "Model routing: clear test results, readable decision cards, plain fallback reasons"
 type: feature
-status: inbox
+status: done
 priority: p2
 area: [web, server]
+merged_commit: d3e60cad585f4096d2b2ddee260c586f977d4651
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/model-routing-clear-test-results-readabl
 created_at: "2026-10-17T04:20:42Z"
-updated_at: "2026-10-17T04:20:42Z"
+updated_at: "2026-10-17T05:39:37Z"
+last_close_out_gate_ms: 64505
+last_close_out_gate_at: "2026-10-17T05:39:16.926Z"
+review_passes: 1
 ---
 ## Problem
 1. 'Test live connection' only shows one line ('Live decision call succeeded.'). The user can't see what was asked, what came back, which model answered, how long it took, or what it cost. It also gives no feedback while waiting.
@@ -32,6 +36,31 @@ updated_at: "2026-10-17T04:20:42Z"
 ## Notes for AI
 Start from ModelRoutingPanel.vue (Test live connection, Recent decisions) and runtime.ts (the live probe and its result). The fallback reason strings are in policy.ts (failureReason, insufficient-evidence). Keep the probe call minimal and do not change how decisions are made. Source: user questions 2026-10-17 after model routing started working.
 
+## Shots
+```json
+[
+{
+"label": "Model routing tab: live-test result card area and recent decision cards",
+"target": "default",
+"route": "/agents?tab=model-routing",
+"highlight": "[data-testid=\"routing-probe-live\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-17T04:20:42Z · created · njachowski@gmail.com
+- 2026-10-17T04:51:00Z · status inbox→ready
+- 2026-10-17T04:51:03Z · status ready→active, branch
+- 2026-10-17T05:02:26Z · body
+- 2026-10-17T05:05:31Z · body
+- 2026-10-17T05:07:05Z · body: section Shots
+- 2026-10-17T05:08:03Z · body
+- 2026-10-17T05:12:27Z · body
+- 2026-10-17T05:13:57Z · body
+- 2026-10-17T05:15:56Z · body
+- 2026-10-17T05:24:04Z · status active→review
+- 2026-10-17T05:25:09Z · note: review pass 1: good to go
+- 2026-10-17T05:39:16Z · close-out gate completed in 65s
+- 2026-10-17T05:39:37Z · status review→done, release:success

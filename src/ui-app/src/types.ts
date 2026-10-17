@@ -1416,6 +1416,46 @@ export interface ModelRoutingStatusResponse {
   issues: string[];
   ok?: boolean;
   at?: string;
+  /** Present only on a live probe response (\`POST /api/model-routing/probe\`). */
+  live?: ModelRoutingLiveResultView;
+}
+
+/** One option the live probe's provider could choose, with its probability. */
+export interface RoutingLiveOptionView {
+  key: string;
+  label: string;
+  probability: number;
+}
+
+/** Provider-reported usage for one decision call, as recorded or probed. */
+export interface RoutingUsageView {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  /** Dollar cost, when the provider reports one (never estimated). */
+  costUsd?: number | null;
+}
+
+/** One question/answer pair from the live probe, labeled for display. */
+export interface RoutingLiveAnswerView {
+  id: string;
+  type: "noul" | "choice" | "score";
+  question: string;
+  chosen?: string;
+  confidence?: number | null;
+  probability?: number;
+  options?: RoutingLiveOptionView[];
+}
+
+/** The result of the optional live decision call (\`Test live connection\`). */
+export interface ModelRoutingLiveResultView {
+  ok: boolean;
+  message: string;
+  hint?: string;
+  model?: string;
+  durationMs: number;
+  usage?: RoutingUsageView | null;
+  prompt?: string;
+  answers?: RoutingLiveAnswerView[];
 }
 
 /** One complete routing configuration. */
@@ -1442,9 +1482,22 @@ export interface RoutingDecisionView {
   message: string | null;
   provider: string | null;
   providerModel: string | null;
+  providerUsage: RoutingUsageView | null;
+  /** The provider's suitability probability for the selection, when it answered. */
+  selectionProbability: number | null;
+  /** Recorded evidence summary (top probability, threshold, confidence), or null. */
+  evidence: {
+    topProbability: number;
+    threshold: number;
+    confidence: number | null;
+  } | null;
+  /** The bounded brief sent to the provider (the details view's "question sent"). */
+  brief: string | null;
+  /** The provider's normalized answers (the details view's "answer received"). */
+  answers: Record<string, RoutingAnswerView> | null;
   durationMs: number;
   /** Brief provenance (#0812): size, budget and the decision model's window. */
-  brief?: { chars: number; maxChars: number; contextTokens: number | null };
+  briefBudget?: { chars: number; maxChars: number; contextTokens: number | null };
   /** Per-candidate facts offered to the decision model (#0812). */
   facts?: Array<{ key: string; summary: string | null }>;
   handback?: {
@@ -1458,6 +1511,24 @@ export interface RoutingDecisionView {
     bounded: boolean;
   };
 }
+
+/** A normalized provider answer, as recorded on a decision. */
+export type RoutingAnswerView =
+  | { id: string; type: "noul"; probability: number }
+  | {
+      id: string;
+      type: "choice";
+      choice: string;
+      confidence: number | null;
+      probabilities: Record<string, number>;
+    }
+  | {
+      id: string;
+      type: "score";
+      score: number;
+      confidence: number | null;
+      probabilities: Record<string, number>;
+    };
 
 export interface ModelRoutingDecisionsResponse {
   decisions: RoutingDecisionView[];
