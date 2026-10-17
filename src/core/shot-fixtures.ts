@@ -22,6 +22,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0817 — active task with requirement sections so the drawer shows Update
   // requirements on the spec header (the action is active-only).
   "drawer:activeRequirements",
+  // #0819 — a task whose Changes tab carries a captured shot (with its handoff
+  // verdict and warning) plus a docs-target skip note, so a capture can show the
+  // screenshot viewer header and the "no docs shot declared" warning + link.
+  "drawer:shotEvidence",
   // #0804 — a ready task flagged by the decision-model human-step check, so a
   // capture can show the flag's explanation on the card.
   "card:humanStep",
