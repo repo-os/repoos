@@ -104,6 +104,7 @@ activityAnimationStyle = "puppy-tracks"
 model_routing.mode = "shadow"
 model_routing.provider = "openrouter"
 activityAnimationSize = "24"
+model_routing.humanStepCheck = true
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
 user = "nick"
