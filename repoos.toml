@@ -103,6 +103,7 @@ remoteValidation.engineerSelfCheckRemote = true
 activityAnimationStyle = "arcade-hopper"
 model_routing.mode = "shadow"
 model_routing.provider = "openrouter"
+activityAnimationSize = "2"
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
 user = "nick"
