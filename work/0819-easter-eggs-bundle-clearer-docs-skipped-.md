@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T15:33:36Z"
+updated_at: "2026-10-17T15:33:38Z"
 ---
 ## Problem
 Four small items, one open easter-eggs bundle:
@@ -22,7 +22,7 @@ Four small items, one open easter-eggs bundle:
 - Item 1: the skipped docs warning reads 'Docs site skipped: no docs shot declared', with a short link that explains how to declare a docs route for the task. The screenshot viewer header shows the shot's check (or cross) and any warning for that shot.
 - Item 2: no change in behaviour; new tests lock in the existing behaviour for the two paths.
 - Item 3: a Settings save changes repoos.toml on disk only, with no commit to main. A repoos.toml change left uncommitted shows in the Move to done dirty-main prompt.
-- Item 4: the timer tooltip shows the median of up to the last 15 runs with timing data, loaded from the server, so a fresh page shows the same count as a long-open one. The tooltip is wider, with two lines: the median as a chip on line 1, and the click instruction on line 2 in a fainter, italic style.
+- Item 4: the timer tooltip shows the median of up to the last 15 SUCCEEDED close-outs with timing data, loaded from the server, so a fresh page shows the same count as a long-open one. Failed and timed-out runs are not counted. The tooltip is wider, with two lines: the median as a chip on line 1, and the click instruction on line 2 in a fainter, italic style.
 
 ## Acceptance criteria
 - Test: a docs-only change with no declared docs shot shows the new warning text and the declare link.
@@ -51,3 +51,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T15:06:34Z · body: Problem (added 2, removed 1); Desired UX (added 1); Acceptance criteria (added 2); Notes for AI (added 1, removed 1)
 - 2026-10-17T15:32:36Z · body: Problem (added 5, removed 4); Desired UX (added 3, removed 2); Acceptance criteria (added 5, removed 4); Notes for AI (added 1, removed 1)
 - 2026-10-17T15:33:36Z · body: Notes for AI (added 1, removed 1)
+- 2026-10-17T15:33:38Z · body: Desired UX (added 1, removed 1)
