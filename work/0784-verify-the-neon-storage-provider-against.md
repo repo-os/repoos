@@ -3,9 +3,6 @@ id: "0784"
 title: Verify the Neon storage provider against a live Neon account
 type: chore
 status: inbox
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 hold: true
 priority: p2
 area: server
@@ -14,7 +11,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-14T15:29:01Z"
-updated_at: "2026-10-14T15:30:08Z"
+updated_at: "2026-10-17T07:06:44Z"
 ---
 ## Problem
 #0660 added the Neon Object Storage provider. It has hand-rolled SigV4 signing, env-based credentials and a registry fallback, but it is tested only against a fake transport. The task was flagged needs-human-step because proving it works needs real Neon credentials, which only a human can provide. This task holds that human-only part, split out so #0660's code could land.
@@ -36,3 +33,4 @@ Human-only verification. Do not start it as an engineer. Two non-blocking review
 - 2026-10-14T15:29:01Z · created · njachowski@gmail.com
 - 2026-10-14T15:29:02Z · needs_input
 - 2026-10-14T15:30:08Z · held, assigned_to
+- 2026-10-17T07:06:44Z · needs_input
