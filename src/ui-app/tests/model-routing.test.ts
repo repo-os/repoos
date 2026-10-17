@@ -7,7 +7,7 @@
  * shape, both provider adapters via injected fetch, and `[model_routing]`
  * parsing. No test touches the network.
  */
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   parseModelRouting,
   resolveEffectiveRouting,
@@ -53,6 +53,8 @@ import {
   type RoutingRole,
 } from "../../core/model-routing/types.js";
 import { getConfigSchema, SUPPORTED_TOML_KEYS } from "../../core/config.js";
+import { probeModelRouting } from "../../core/model-routing/runtime.js";
+import type { RepoOSConfig } from "../../core/types.js";
 
 const claude: RoutingCandidate = { cli: "claude code", model: "default", reasoning: null };
 const codex: RoutingCandidate = { cli: "codex", model: "gpt-5", reasoning: null };
@@ -983,5 +985,118 @@ describe("provider adapters", () => {
       kind: "fallback",
       reason: "provider-failure",
     });
+  });
+});
+
+describe("live routing probe", () => {
+  const probeCandidateKey = "probe\u0000connection\u0000";
+  const cfg = {
+    modelRouting: { mode: "automatic", provider: "jev", roles: ["engineer"] },
+  } as unknown as RepoOSConfig;
+
+  function systemOneBody() {
+    return {
+      model: "jev-latest",
+      answers: {
+        ambiguity: { type: "noul", noul: 0.1 },
+        risk: { type: "noul", noul: 0.2 },
+        scope: { type: "noul", noul: 0.3 },
+        suitability: {
+          type: "choice",
+          choice: probeCandidateKey,
+          confidence: 0.9,
+          probabilities: { [probeCandidateKey]: 1 },
+        },
+      },
+      usage: { input_tokens: 428, output_tokens: 73 },
+    };
+  }
+
+  afterEach(() => {
+    delete process.env.TYPESAFE_API_KEY;
+  });
+
+  it("returns the question, answer, model, time and usage on success", async () => {
+    process.env.TYPESAFE_API_KEY = "test-key";
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify(systemOneBody()), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    const out = await probeModelRouting(cfg, {
+      live: true,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect(out.live?.ok).toBe(true);
+    expect(out.live?.message).toBe("Live decision call succeeded.");
+    expect(out.live?.model).toBe("jev-latest");
+    expect(out.live?.durationMs).toBeGreaterThanOrEqual(0);
+    expect(out.live?.usage).toEqual({ inputTokens: 428, outputTokens: 73 });
+    expect(out.live?.prompt).toBe("RepoOS routing connection test.");
+    const suit = out.live?.answers?.find((a) => a.id === "suitability");
+    expect(suit?.question).toMatch(/best suited/i);
+    expect(suit?.chosen).toBe("probe / connection");
+    expect(suit?.options?.[0]).toMatchObject({ label: "probe / connection", probability: 1 });
+  });
+
+  it("sends the probe candidate under a readable label, not a raw key", async () => {
+    process.env.TYPESAFE_API_KEY = "test-key";
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify(systemOneBody()), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    await probeModelRouting(cfg, { live: true, fetchImpl: fetchImpl as unknown as typeof fetch });
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as {
+      questions: { suitability: { criteria: Record<string, string> } };
+    };
+    expect(Object.values(body.questions.suitability.criteria)).toEqual(["probe / connection"]);
+  });
+
+  it("returns a plain reason and what to check on an auth failure", async () => {
+    process.env.TYPESAFE_API_KEY = "bad";
+    const fetchImpl = vi.fn(async () => new Response("{}", { status: 401 }));
+    const out = await probeModelRouting(cfg, {
+      live: true,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect(out.live?.ok).toBe(false);
+    expect(out.live?.message).toMatch(/credentials/i);
+    expect(out.live?.hint).toMatch(/API key/i);
+  });
+
+  it("reports an unconfigured provider with a plain reason, without a call", async () => {
+    delete process.env.TYPESAFE_API_KEY;
+    const fetchImpl = vi.fn();
+    const out = await probeModelRouting(cfg, {
+      live: true,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect(out.live?.ok).toBe(false);
+    expect(out.live?.durationMs).toBe(0);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("reports a provider-reported dollar cost when the provider gives one", async () => {
+    process.env.TYPESAFE_API_KEY = "test-key";
+    const body = systemOneBody();
+    (body.usage as Record<string, unknown>).cost = 0.0004;
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    const out = await probeModelRouting(cfg, {
+      live: true,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect(out.live?.usage?.costUsd).toBeCloseTo(0.0004);
   });
 });

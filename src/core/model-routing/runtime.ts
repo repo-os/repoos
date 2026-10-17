@@ -12,7 +12,13 @@ import {
 } from "./providers.js";
 import { buildRoutingQuestions } from "./decide.js";
 import type { RoutingCandidate } from "./candidates.js";
-import type { RoutingDecisionProvider } from "./types.js";
+import type {
+  RoutingAnswer,
+  RoutingDecisionProvider,
+  RoutingFailureKind,
+  RoutingQuestion,
+  RoutingUsage,
+} from "./types.js";
 import { RoutingProviderError } from "./types.js";
 import { readProviderKey } from "../providers/provider-keys.js";
 
@@ -165,14 +171,129 @@ export function modelRoutingStatus(config: RepoOSConfig | undefined): ModelRouti
 
 export interface ModelRoutingProbeResult extends ModelRoutingStatus {
   ok: boolean;
-  live?: { ok: boolean; message: string };
+  live?: ModelRoutingLiveResult;
+}
+
+/** One option the probe's provider could choose, with its probability. */
+export interface RoutingLiveOption {
+  /** Stable option key (a candidate key for a choice question). */
+  key: string;
+  /** Human-readable label, e.g. "claude code / default". */
+  label: string;
+  /** Probability in [0,1]. */
+  probability: number;
+}
+
+/** One question/answer pair from the live probe, labeled for display. */
+export interface RoutingLiveAnswer {
+  id: string;
+  type: "noul" | "choice" | "score";
+  /** The question that was asked. */
+  question: string;
+  /** For a choice/score answer: the label of the chosen option. */
+  chosen?: string;
+  /** The provider's own confidence, when reported. */
+  confidence?: number | null;
+  /** For a noul answer: the probability. */
+  probability?: number;
+  /** For choice/score answers: options ordered by probability, highest first. */
+  options?: RoutingLiveOption[];
+}
+
+/** The result of the optional live decision call, rendered by the UI. */
+export interface ModelRoutingLiveResult {
+  ok: boolean;
+  /** Success summary, or the plain-language failure reason. */
+  message: string;
+  /** What to check next, on failure. */
+  hint?: string;
+  /** The model id the provider reported back. */
+  model?: string;
+  /** Wall-clock duration of the provider call, in milliseconds. */
+  durationMs: number;
+  /** Provider-reported usage, when it reported any. */
+  usage?: RoutingUsage | null;
+  /** The context brief sent (the test question, in plain terms). */
+  prompt?: string;
+  /** The provider's answers, labeled for display. */
+  answers?: RoutingLiveAnswer[];
 }
 
 const PROBE_CANDIDATE: RoutingCandidate = {
   cli: "probe",
-  model: "probe",
+  model: "connection",
   reasoning: null,
 };
+
+/** Order options by probability, highest first, with a display label. */
+function orderedOptions(
+  probabilities: Record<string, number>,
+  label: (key: string) => string,
+): RoutingLiveOption[] {
+  return Object.entries(probabilities)
+    .map(([key, probability]) => ({ key, label: label(key), probability }))
+    .sort((a, b) => b.probability - a.probability);
+}
+
+/** Label the probe's normalized answers from the questions that produced them. */
+export function liveAnswers(
+  questions: RoutingQuestion[],
+  answers: Record<string, RoutingAnswer>,
+): RoutingLiveAnswer[] {
+  return questions.map((q) => {
+    const a = answers[q.id];
+    if (a.type === "choice") {
+      const criteria = q.type === "choice" ? q.criteria : {};
+      return {
+        id: q.id,
+        type: "choice" as const,
+        question: q.instructions,
+        chosen: criteria[a.choice] ?? a.choice,
+        confidence: a.confidence,
+        options: orderedOptions(a.probabilities, (k) => criteria[k] ?? k),
+      };
+    }
+    if (a.type === "score") {
+      const criteria = q.type === "score" ? q.criteria : [];
+      return {
+        id: q.id,
+        type: "score" as const,
+        question: q.instructions,
+        confidence: a.confidence,
+        options: orderedOptions(a.probabilities, (k) => criteria[Number(k)] ?? k),
+      };
+    }
+    return {
+      id: q.id,
+      type: "noul" as const,
+      question: q.instructions,
+      probability: a.probability,
+    };
+  });
+}
+
+/** Plain-language "what to check" for a failed live call. */
+function liveFailureHint(kind: RoutingFailureKind | null): string {
+  switch (kind) {
+    case "auth":
+      return "Check the API key is saved and still valid for the selected provider.";
+    case "timeout":
+      return "The provider did not answer in time. Raise the decision timeout or try again.";
+    case "not-configured":
+      return "Finish the routing settings above: choose a provider and save its API key.";
+    case "malformed":
+    case "unsupported":
+      return "The provider returned an answer the router could not read. Confirm it speaks the System One format.";
+    case "http":
+      return "The provider returned an error. Check the provider's status and your account.";
+    case "transport":
+      return "The provider could not be reached. Check your network connection and try again.";
+    default:
+      return "Check the provider settings above and try again.";
+  }
+}
+
+const PROBE_PROMPT = "RepoOS routing connection test.";
 
 /**
  * Validate routing configuration and credential presence. When `live` is true,
@@ -197,26 +318,48 @@ export async function probeModelRouting(
 
   const provider = buildRoutingProvider(effective, opts.fetchImpl, config);
   if (!provider) {
-    out.live = { ok: false, message: status.issues[0] ?? "Routing provider is not ready." };
+    out.live = {
+      ok: false,
+      message: status.issues[0] ?? "Routing provider is not ready.",
+      hint: liveFailureHint("not-configured"),
+      durationMs: 0,
+    };
     out.ok = false;
     return out;
   }
 
+  const questions = buildRoutingQuestions([PROBE_CANDIDATE]);
+  const startedAt = Date.now();
   try {
-    await provider.decide({
-      brief: { state: "RepoOS routing connection test." },
-      questions: buildRoutingQuestions([PROBE_CANDIDATE]),
+    const response = await provider.decide({
+      brief: { state: PROBE_PROMPT },
+      questions,
       timeoutMs: Math.min(effective.timeoutMs, 5000),
     });
-    out.live = { ok: true, message: "Live decision call succeeded." };
+    out.live = {
+      ok: true,
+      message: "Live decision call succeeded.",
+      model: response.model || undefined,
+      durationMs: Date.now() - startedAt,
+      usage: response.usage,
+      prompt: PROBE_PROMPT,
+      answers: liveAnswers(questions, response.answers),
+    };
   } catch (err) {
+    const kind = err instanceof RoutingProviderError ? err.kind : null;
     const message =
       err instanceof RoutingProviderError
         ? err.message
         : err instanceof Error
           ? err.message
           : "Live decision call failed.";
-    out.live = { ok: false, message };
+    out.live = {
+      ok: false,
+      message,
+      hint: liveFailureHint(kind),
+      durationMs: Date.now() - startedAt,
+      prompt: PROBE_PROMPT,
+    };
     out.ok = false;
   }
 
