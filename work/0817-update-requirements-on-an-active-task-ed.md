@@ -11,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T11:49:23Z"
+updated_at: "2026-10-17T11:49:37Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-17T11:35:01.530Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 5fee14c7 to 5a922be7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -162,3 +162,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T11:48:30Z · body
 - 2026-10-17T11:49:05Z · status active→review
 - 2026-10-17T11:49:23Z · note: highlight [data-test-id="update-requirements"] matched nothing on /work?task=9999&tab=details
+- 2026-10-17T11:49:37Z · note: highlight [data-test-id="update-requirements"] matched nothing on /work?task=9999&tab=details
