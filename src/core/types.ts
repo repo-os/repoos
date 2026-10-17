@@ -511,9 +511,10 @@ export interface RepoOSConfig {
    */
   activityAnimationStyle?: ActivityAnimationStyle;
   /**
-   * Size of the inline activity animation, in character widths of the
-   * surrounding label font. `auto` (the default) keeps each style's established
-   * footprint; `"1"`–`"3"` scale artwork, motion and reserved space together.
+   * Fixed pixel width of the inline activity animation, the same on every
+   * surface. One of `"8"`–`"24"` px; the default is the middle step. Legacy
+   * character-width values (`auto`, `"1"`–`"3"`) are mapped onto the ladder on
+   * read.
    */
   activityAnimationSize?: ActivityAnimationSize;
   /** User-defined agents (defaults are applied at runtime when this is empty). */

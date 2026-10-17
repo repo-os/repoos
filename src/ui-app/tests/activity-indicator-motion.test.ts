@@ -19,6 +19,11 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import ActivityIndicator from "../src/components/ActivityIndicator.vue";
 import {
+  ACTIVITY_ANIMATION_SIZES,
+  ACTIVITY_ANIMATION_SIZE_MAX_PX,
+  DEFAULT_ACTIVITY_ANIMATION_SIZE,
+} from "../../core/activity-animation.js";
+import {
   isPlaywrightUnavailable,
   launchWebkit,
   type SmokeBrowser,
@@ -395,7 +400,7 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
     }
   });
 
-  it("keeps every compact mark within a 1–2ch allocation at card and preview sizes", async () => {
+  it("renders every compact mark at the same fixed pixel width at card and preview sizes (#0816)", async () => {
     const page = await browser!.newPage();
     try {
       await page.goto("about:blank", { waitUntil: "load", timeout: 10_000 });
@@ -407,36 +412,32 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
         },
         { css: pageCss },
       );
+      const target = Number(DEFAULT_ACTIVITY_ANIMATION_SIZE);
       for (const fontPx of [9, 12]) {
         for (const style of Object.keys(STYLE_SELECTORS)) {
           const res = await page.evaluate(
             ({ html, fontPx, webFont }) => {
               document.body.innerHTML =
                 `<div style="font-family:${webFont};font-size:${fontPx}px">` +
-                `${html}<span id="ch-probe" style="display:inline-block;width:1ch"></span>` +
-                `<span id="line-ref">Ag</span></div>`;
+                `${html}<span id="next-label">AGENT</span></div>`;
               const mark = document.querySelector(".ai-mark")!;
               const ai = document.querySelector(".ai")!;
-              const probe = document.querySelector("#ch-probe")!;
-              const ref = document.querySelector("#line-ref")!;
               return {
                 markW: mark.getBoundingClientRect().width,
-                aiH: ai.getBoundingClientRect().height,
-                lineH: ref.getBoundingClientRect().height,
-                ch: probe.getBoundingClientRect().width,
+                aiRight: ai.getBoundingClientRect().right,
+                nextLeft: document.querySelector("#next-label")!.getBoundingClientRect().left,
               };
             },
             { html: renderHtml(style, "coding"), fontPx, webFont },
           );
-          // A real 0.5px slack absorbs subpixel rounding.
-          expect(res.ch, `${style} @${fontPx}px: ch resolved`).toBeGreaterThan(0);
-          expect(
-            res.markW,
-            `${style} @${fontPx}px (${res.markW}px vs 2ch=${2 * res.ch}px)`,
-          ).toBeLessThanOrEqual(2 * res.ch + 0.5);
-          // The mark must not grow the surrounding text line.
-          expect(res.aiH, `${style} @${fontPx}px mark height vs line box`).toBeLessThanOrEqual(
-            res.lineH + 0.5,
+          // Fixed pixel width, identical at both font sizes. A 0.5px slack
+          // absorbs subpixel rounding.
+          expect(res.markW, `${style} @${fontPx}px (${res.markW}px vs ${target}px)`).toBeCloseTo(
+            target,
+            0,
+          );
+          expect(res.nextLeft + 0.5, `${style} @${fontPx}px label overlap`).toBeGreaterThan(
+            res.aiRight,
           );
         }
       }
@@ -445,7 +446,7 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
     }
   });
 
-  it("scales artwork, reserved width and the height envelope at every explicit size (#0813)", async () => {
+  it("scales artwork, reserved width and the height envelope at every pixel size (#0816)", async () => {
     const page = await browser!.newPage();
     try {
       await page.goto("about:blank", { waitUntil: "load", timeout: 10_000 });
@@ -477,7 +478,7 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
         "arcade-hopper": { selector: ".ai-hopper i", pseudo: null, metric: "width" },
         "puppy-tracks": { selector: ".ai-paws i", pseudo: null, metric: "width" },
       };
-      const sizes = ["1", "1.5", "2", "2.5", "3"];
+      const sizes = ACTIVITY_ANIMATION_SIZES;
       for (const fontPx of [9, 12]) {
         for (const style of Object.keys(art)) {
           const htmls = sizes.map((size) => renderHtml(style, "coding", size));
@@ -527,10 +528,12 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
           );
           for (const row of res) {
             const target = Number(row.size);
+            // The reserved width is exactly the chosen pixel size, whatever the
+            // surrounding font — a 0.5px slack absorbs subpixel rounding.
             expect(
-              row.markW / row.ch,
-              `${style} @${fontPx}px size ${row.size}: reserved ${row.markW}px for ${row.ch}px/ch`,
-            ).toBeCloseTo(target, 1);
+              row.markW,
+              `${style} @${fontPx}px size ${row.size}: reserved ${row.markW}px`,
+            ).toBeCloseTo(target, 0);
             // The mark must not grow outside the wrapper's reserved height.
             expect(
               row.aiH + 0.5,
@@ -547,10 +550,10 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
           }
           const first = res[0]!;
           const last = res.at(-1)!;
-          // Artwork and vertical envelope grow with the slot (3× between 1ch
-          // and 3ch). A width-only change leaves this ratio at 1.
+          // Artwork and vertical envelope grow with the setting (3× between the
+          // smallest and largest). A width-only change leaves this ratio at 1.
           expect(first.art, `${style}: measurable artwork`).toBeGreaterThan(0);
-          expect(last.art / first.art, `${style}: artwork scales with the slot`).toBeGreaterThan(
+          expect(last.art / first.art, `${style}: artwork scales with the setting`).toBeGreaterThan(
             2.7,
           );
           expect(last.markH / first.markH, `${style}: mark height scales`).toBeGreaterThan(2.7);
@@ -561,7 +564,7 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
     }
   });
 
-  it("scales the legacy dot group as one unit and keeps Auto's original size (#0813)", async () => {
+  it("sizes the legacy dot group at fixed pixels as one unit (#0816)", async () => {
     const page = await browser!.newPage();
     try {
       await page.goto("about:blank", { waitUntil: "load", timeout: 10_000 });
@@ -605,20 +608,15 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
           },
           { html, webFont },
         );
-      const auto = await measure(renderHtml("three-dots", "coding"));
-      const one = await measure(renderHtml("three-dots", "coding", "1"));
-      const three = await measure(renderHtml("three-dots", "coding", "3"));
-      // Auto keeps the legacy px row exactly as before.
-      expect(auto.dotW).toBe(5);
-      expect(auto.dotH).toBe(5);
-      expect(auto.gap).toBe(4);
-      // Explicit sizes reserve the chosen ch allocation and scale the whole
-      // group — dots, gaps and jump distance together.
-      expect(one.groupW / one.ch).toBeCloseTo(1, 1);
-      expect(three.groupW / three.ch).toBeCloseTo(3, 1);
-      expect(three.dotW / one.dotW).toBeCloseTo(3, 1);
-      expect(Math.abs(auto.ty), "Auto keeps the −3px legacy lift").toBeCloseTo(3, 1);
-      expect(Math.abs(three.ty) / Math.abs(one.ty), "bounce distance scales").toBeCloseTo(3, 1);
+      const small = await measure(renderHtml("three-dots", "coding", "8"));
+      const large = await measure(renderHtml("three-dots", "coding", "24"));
+      // The whole group — dots and gaps together — reserves the chosen pixel
+      // width, and scales as one unit between settings (24 / 8 = 3×).
+      expect(small.groupW).toBeCloseTo(8, 0);
+      expect(large.groupW).toBeCloseTo(24, 0);
+      expect(large.dotW / small.dotW).toBeCloseTo(3, 1);
+      expect(large.dotH / small.dotH).toBeCloseTo(3, 1);
+      expect(large.ty / small.ty, "bounce distance scales").toBeCloseTo(3, 1);
     } finally {
       await page.close();
     }
@@ -668,7 +666,7 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
     }
   });
 
-  it("keeps every style static and visible under reduced motion at the largest size (#0813)", async () => {
+  it("keeps every style static and visible under reduced motion at the largest size (#0816)", async () => {
     const page = await browser!.newPage();
     try {
       await page.goto("about:blank", { waitUntil: "load", timeout: 10_000 });
@@ -697,9 +695,12 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
               height: rect.height,
             };
           },
-          { html: renderHtml(style, "coding", "3"), webFont },
+          {
+            html: renderHtml(style, "coding", String(ACTIVITY_ANIMATION_SIZE_MAX_PX)),
+            webFont,
+          },
         );
-        expect(running.count, `${style} still animating at 3ch`).toBe(0);
+        expect(running.count, `${style} still animating at the largest size`).toBe(0);
         expect(running.width, `${style} static mark width`).toBeGreaterThan(0);
         expect(running.height, `${style} static mark height`).toBeGreaterThan(0);
       }

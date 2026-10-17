@@ -4,9 +4,9 @@ defineOptions({ name: "ActivityIndicator" });
 import { computed } from "vue";
 import { getActivePinia } from "pinia";
 import {
-  ACTIVITY_ANIMATION_STYLE_SLOT_CH,
-  activityAnimationSizeCh,
+  ACTIVITY_ANIMATION_STYLE_SLOT,
   activityAnimationSizeOrDefault,
+  activityAnimationSizePx,
   activityAnimationStyleOrDefault,
   normalizeActivityAnimationSize,
   type ActivityAnimationSize,
@@ -49,29 +49,30 @@ const style = computed((): ActivityAnimationStyle => {
 });
 
 const animationSize = computed((): ActivityAnimationSize => {
-  if (props.animationSize) return props.animationSize;
+  if (props.animationSize !== undefined) {
+    return activityAnimationSizeOrDefault(normalizeActivityAnimationSize(props.animationSize));
+  }
   return activityAnimationSizeOrDefault(
     normalizeActivityAnimationSize(config?.form.activityAnimationSize),
   );
 });
 
-const sizeCh = computed(() => activityAnimationSizeCh(animationSize.value));
-const sized = computed(() => sizeCh.value !== null);
+const sizePx = computed(() => activityAnimationSizePx(animationSize.value));
+const sized = computed(() => sizePx.value > 0);
 
 /**
- * Explicit sizes scale the style's artwork (and its reserved slot, because the
- * slot is measured in the mark's now-larger font) by the chosen target over the
- * style's established Auto slot. Auto leaves both variables unset, so the
- * stylesheet's original per-style geometry applies byte-for-byte.
+ * The chosen size is the reserved width in pixels, so it renders at the same
+ * size on every surface (#0816). `--ai-size-px` is that fixed width; the
+ * artwork's font is given a fixed pixel size of `size / slot` so each style's
+ * em-based geometry fills the slot without reading the surrounding font.
  */
-const sizeStyle = computed((): Record<string, string> | undefined => {
-  const target = sizeCh.value;
-  if (target === null) return undefined;
-  const slot = ACTIVITY_ANIMATION_STYLE_SLOT_CH[style.value];
-  const scale = slot > 0 ? target / slot : 1;
+const sizeStyle = computed((): Record<string, string> => {
+  const px = sizePx.value;
+  const slot = ACTIVITY_ANIMATION_STYLE_SLOT[style.value];
+  const markPx = slot > 0 ? px / slot : px;
   return {
-    "--ai-size-ch": String(target),
-    "--ai-scale": String(scale),
+    "--ai-size-px": `${px}px`,
+    "--ai-mark-px": `${markPx}px`,
   };
 });
 

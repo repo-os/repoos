@@ -877,6 +877,17 @@ export const useRepoStore = defineStore("repo", () => {
       .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")),
   );
 
+  /** Human-assigned tasks (#0816) for the work queue's collapsible Human list:
+   *  the tasks carrying the violet human chip that still need a person. A done
+   *  task needs nothing more, and an archived task is parked (it lives in
+   *  `archivedTasks`), so both are excluded — the same "assigned to you" test
+   *  `humanNeedsReasons` uses. */
+  const humanTasks = computed<Task[]>(() =>
+    tasks.value
+      .filter((t) => t.assignee === "human" && t.status !== "done" && !t.isArchived)
+      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")),
+  );
+
   function setSortOrder(order: SortOrder): void {
     sortOrder.value = order;
     try {
@@ -3691,6 +3702,7 @@ export const useRepoStore = defineStore("repo", () => {
     fmtDate,
     byStatus,
     archivedTasks,
+    humanTasks,
     statusColor,
     connectSSE,
     refresh,
