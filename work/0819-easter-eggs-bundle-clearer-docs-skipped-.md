@@ -3,6 +3,9 @@ id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and timer tooltip"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Items 1–4 look solid (clearer docs skip copy, viewer header, config write without auto-commit, attention-fed median/tooltip) with matching tests and a green gate, but **item 5 (Model routing checkbox label and help) is not in the diff**; `ModelRoutingPanel.vue` still shows the old “Ask the decision model…” copy."
 priority: p3
 area: web
 assigned_to: ai
@@ -117,3 +120,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T17:00:29Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cb1944731) during finalization (#0734)
 - 2026-10-17T17:00:30Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cb1944731) during finalization (#0734)
 - 2026-10-17T17:01:41Z · note: review pass 5: needs some work
+- 2026-10-17T17:01:41Z · needs_input
