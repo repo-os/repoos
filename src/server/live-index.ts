@@ -23,6 +23,7 @@ import type {
 } from "../core/types.js";
 import type { SystemStats } from "./system.js";
 import type { AutoEngineeringDecision } from "./auto-engineering.js";
+import type { RequirementsNoticeResult } from "./requirements-notice.js";
 import type { IntegrationSnapshot } from "./integration-status.js";
 import type { RepoStatus } from "./repo-status.js";
 import type { Input } from "../core/input.js";
@@ -318,7 +319,10 @@ export class LiveIndex {
    * sections changed, regardless of whether the write came from the HTTP
    * route, the CLI, or a direct file edit the watcher picked up.
    */
-  private bodyChangeNotifier: ((task: Task, prev: Task) => void) | null = null;
+  private bodyChangeNotifier: ((task: Task, prev: Task) => RequirementsNoticeResult | void) | null =
+    null;
+  /** Last #0817 notice result per task, for PATCH responses (consumed once). */
+  private pendingRequirementsNotice = new Map<string, RequirementsNoticeResult>();
 
   /** Wire the #0210 review-transition guard. The server owns the logic. */
   setReviewGuard(fn: (task: Task, prev: Task) => Promise<boolean>): void {
@@ -326,8 +330,15 @@ export class LiveIndex {
   }
 
   /** Wire the #0817 requirements-change notifier. The server owns the logic. */
-  setBodyChangeNotifier(fn: (task: Task, prev: Task) => void): void {
+  setBodyChangeNotifier(fn: (task: Task, prev: Task) => RequirementsNoticeResult | void): void {
     this.bodyChangeNotifier = fn;
+  }
+
+  /** Notice from the most recent body change on this task (PATCH only). */
+  consumeRequirementsNotice(taskId: string): RequirementsNoticeResult | null {
+    const result = this.pendingRequirementsNotice.get(taskId) ?? null;
+    this.pendingRequirementsNotice.delete(taskId);
+    return result;
   }
 
   constructor(config: RepoOSConfig) {
@@ -527,7 +538,8 @@ export class LiveIndex {
     // never break the index update.
     if (existing && existing.body !== task.body && this.bodyChangeNotifier) {
       try {
-        this.bodyChangeNotifier(task, existing);
+        const notice = this.bodyChangeNotifier(task, existing);
+        if (notice) this.pendingRequirementsNotice.set(task.id, notice);
       } catch {
         /* best-effort — the index update already landed */
       }

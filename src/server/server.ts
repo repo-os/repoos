@@ -2653,7 +2653,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // task's engineer which requirement sections changed, so nothing depends on
   // a human remembering to pass them along. The notice never writes the
   // engineer's worktree copy; it only reports what moved.
-  index.setBodyChangeNotifier((task: Task, prev: Task): void => {
+  index.setBodyChangeNotifier((task: Task, prev: Task) => {
     const result = notifyEngineerOfRequirementsChange({ config, runner }, task, prev.body);
     if (result.sent) {
       logger.task(task.id, "info", `requirements changed — notified engineer: ${result.summary}`, {
@@ -2665,6 +2665,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         summary: result.summary,
       });
     }
+    return result;
   });
 
   /**

@@ -318,6 +318,27 @@ describe("LiveIndex requirements-change hook", () => {
     expect(text).toContain("Acceptance criteria");
   });
 
+  it("stores the notice result for PATCH responses", () => {
+    const { root, absPath } = setupTask("active");
+    const index = new LiveIndex(config(root));
+    index.refreshAll();
+    index.setBodyChangeNotifier(() => ({
+      sent: false,
+      summary: "Acceptance criteria (added 1)",
+      reason: "no session for this task",
+    }));
+
+    const next = BODY.replace("- Do not touch the worktree copy\n", "- Report the change\n");
+    patchTaskFile(config(root), absPath, { body: next, force: true });
+    index.applyFileChange(absPath);
+
+    expect(index.consumeRequirementsNotice("0817")).toMatchObject({
+      sent: false,
+      reason: "no session for this task",
+    });
+    expect(index.consumeRequirementsNotice("0817")).toBeNull();
+  });
+
   it("fires on a body change applied through a file write (the CLI path)", () => {
     const { root, absPath } = setupTask("active");
     const index = new LiveIndex(config(root));
