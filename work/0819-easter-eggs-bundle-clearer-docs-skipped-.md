@@ -250,3 +250,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T18:15:03Z · note: highlight .shot-viewer-shot-head matched nothing on /work?task=9999&tab=changes
 - 2026-10-17T18:15:23Z · note: click .shot-row img: click: Error: strict mode violation: locator('.shot-row img') resolved to 2 elements: on /work?task=9999&tab=changes
 - 2026-10-17T18:15:23Z · note: waitFor .shot-viewer-shot-head: waitFor: Timeout 5000ms exceeded. on /work?task=9999&tab=changes
+- 2026-10-17T18:15:23Z · note: highlight .shot-viewer-shot-head matched nothing on /work?task=9999&tab=changes
