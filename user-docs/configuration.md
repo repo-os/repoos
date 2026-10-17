@@ -88,6 +88,7 @@ worktreeWarnThreshold = 20     # 0 disables the warning
 # ── Server and UI ────────────────────────────────────────────────────────
 servePort = 7171   # omit to derive a stable per-repo port (7200-7999)
 activityAnimationStyle = "orbital-pixel"   # compact agent-activity indicator; see table below
+activityAnimationSize = "auto"             # "auto", or 1–3ch in 0.5ch steps; see table below
 strictBuild = false
 
 # ── Close-out (Move to done) ─────────────────────────────────────────────
@@ -404,6 +405,7 @@ labels are `Draft`, `Inbox`, `Ready`, `Active`, `Review`, `Done`.
 servePort = 7171
 strictBuild = false
 activityAnimationStyle = "orbital-pixel"
+activityAnimationSize = "auto"
 ```
 
 | Field | Type | Default | Committed | Effect |
@@ -411,6 +413,7 @@ activityAnimationStyle = "orbital-pixel"
 | `servePort` | number | derived per repo | yes | Port `repoos serve` binds by default. If omitted, RepoOS derives a stable port from the repo's path in the 7200–7999 range, so two checkouts never collide. Must be 1–65535. `--port` on the command line overrides it. |
 | `strictBuild` | boolean | `false` | yes | When true, a stale build makes `repoos` exit with an error instead of printing a warning. `REPOOS_STRICT_BUILD=1` (environment) and the `--strict-build` flag do the same without changing the file. |
 | `activityAnimationStyle` | select | `orbital-pixel` | yes | Motion beside coding, reviewing, and other agent-activity labels in the web UI. Values: `orbital-pixel` (default compact orbit), `cursor-scan-pulse`, `breathing-brackets`, `micro-dot-matrix`, `tiny-signal-bars`, `spark-diamond`, `arcade-hopper` (alien that jumps and tilts), `puppy-tracks` (two alternating paw prints), or `three-dots` (legacy horizontal dots). Omitted config uses `orbital-pixel`. Edit in **Settings → General → Activity animation**; the page previews all three activity states before save. Honors `prefers-reduced-motion` with a static indicator. |
+| `activityAnimationSize` | select | `auto` | yes | Inline allocation for the activity animation, in character widths (`ch`) of the surrounding label font. Values are the quoted strings `"auto"`, `"1"`, `"1.5"`, `"2"`, `"2.5"`, `"3"`; a hand-written numeric TOML value (`2`) is normalized to the same value. `auto` preserves each style's established compact footprint (including the legacy Three dots row); an explicit size scales the artwork, motion and reserved layout together. Omitted config uses `auto`. Edit in **Settings → General → Activity animation**; the preview updates live. Honors `prefers-reduced-motion` at every size. |
 
 Appearance is **not** a `repoos.toml` setting. The dark/light/system theme and
 the UI design language are per-browser preferences stored in the browser, so
