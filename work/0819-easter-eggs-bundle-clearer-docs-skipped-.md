@@ -3,6 +3,9 @@ id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and timer tooltip"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — All five bundle items are implemented with matching unit/integration tests and the gate passed, but handoff shots did not open the screenshot viewer, so light/dark **viewer header** (check + warning) is not visually verified despite a solid `screenshot-viewer.test.ts` case."
 priority: p3
 area: web
 assigned_to: ai
@@ -249,4 +252,5 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T18:15:23Z · note: waitFor .shot-viewer-shot-head: waitFor: Timeout 5000ms exceeded. on /work?task=9999&tab=changes
 - 2026-10-17T18:15:23Z · note: highlight .shot-viewer-shot-head matched nothing on /work?task=9999&tab=changes
 - 2026-10-17T18:15:46Z · note: review pass 6: needs some work
+- 2026-10-17T18:15:46Z · needs_input
 - 2026-10-17T18:15:46Z · needs_input
