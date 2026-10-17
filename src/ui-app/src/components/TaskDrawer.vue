@@ -1619,8 +1619,24 @@ const handoffConflictMessage = computed(() =>
 );
 const handoffConflictFiles = computed(() =>
   handoffConflictTask.value
-    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.dirtyFiles ?? [])
+    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.files ?? [])
     : [],
+);
+const handoffConflictFilesUnavailable = computed(
+  () =>
+    !!handoffConflictTask.value &&
+    !!repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.filesUnavailable,
+);
+
+// A store-seeded conflict (the shot-preview fixture, #0810) must open the modal
+// without a real Move-to-done failure. On the normal path the failed call has
+// already set `handoffConflictTask` synchronously; this only adds the seeded case.
+watch(
+  () => (ui.active ? repo.worktreeHandoffConflictFor(ui.active.id) : null),
+  (conflict) => {
+    if (conflict && ui.active) handoffConflictTask.value = ui.active;
+  },
+  { immediate: true },
 );
 
 async function discardHandoffConflict(): Promise<void> {
@@ -6198,7 +6214,8 @@ watch(
   <WorktreeHandoffConflictDialog
     :task="handoffConflictTask"
     :message="handoffConflictMessage"
-    :dirty-files="handoffConflictFiles"
+    :files="handoffConflictFiles"
+    :files-unavailable="handoffConflictFilesUnavailable"
     @discard="discardHandoffConflict"
     @send-back="sendBackHandoffConflict"
     @cancel="cancelHandoffConflict"

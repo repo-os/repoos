@@ -1192,6 +1192,58 @@ function parseNumstat(statOutput: string): DiffStats {
   return { filesChanged, additions, deletions };
 }
 
+/** One file's added/removed line counts from `git diff --numstat`. */
+export interface NumstatEntry {
+  path: string;
+  added: number;
+  removed: number;
+  /** git reported `-` for a count because the content is binary. */
+  binary?: boolean;
+}
+
+/**
+ * Parse `git diff --numstat -z` output into per-file entries. With `-z` each
+ * record is `added<TAB>removed<TAB>path` NUL-terminated, so paths holding
+ * spaces, tabs or quotes arrive verbatim instead of C-quoted.
+ */
+export function parseNumstatEntries(output: string): NumstatEntry[] {
+  const out: NumstatEntry[] = [];
+  for (const record of output.split("\0")) {
+    if (!record) continue;
+    const match = record.match(/^(\d+|-)\t(\d+|-)\t([\s\S]*)$/);
+    if (!match) continue;
+    const binary = match[1] === "-" || match[2] === "-";
+    out.push({
+      path: match[3]!,
+      added: match[1] === "-" ? 0 : parseInt(match[1]!, 10),
+      removed: match[2] === "-" ? 0 : parseInt(match[2]!, 10),
+      ...(binary ? { binary: true } : {}),
+    });
+  }
+  return out;
+}
+
+/**
+ * Per-file added/removed line counts from `git diff --numstat`. `args` are the
+ * revision and pathspec arguments that follow the diff flags, so the caller
+ * chooses the comparison (e.g. one commit against the working tree). Returns
+ * null when git cannot produce the diff, so callers fail closed rather than
+ * showing an incomplete list.
+ */
+export async function diffNumstat(
+  worktree: string,
+  args: string[],
+  timeoutMs = 15_000,
+): Promise<NumstatEntry[] | null> {
+  const res = await runGit(
+    worktree,
+    ["-c", "core.quotepath=false", "diff", "--numstat", "--no-renames", "-z", ...args],
+    timeoutMs,
+  );
+  if (res.status !== 0) return null;
+  return parseNumstatEntries(res.stdout);
+}
+
 /**
  * Get diff statistics comparing a branch point to the current worktree.
  * This deliberately includes committed, staged, and unstaged source edits so
