@@ -56,8 +56,7 @@ export function integrationMedianDuration(
 }
 
 /** The line-2 instruction shown under the median in the timer tooltip (#0819). */
-export const INTEGRATION_TIMER_INSTRUCTION =
-  "Click to switch between elapsed time and a countdown";
+export const INTEGRATION_TIMER_INSTRUCTION = "Click to switch between elapsed time and a countdown";
 
 /** Copy shown when no succeeded, timed close-out has been recorded yet. */
 export const INTEGRATION_NO_MEDIAN_COPY =

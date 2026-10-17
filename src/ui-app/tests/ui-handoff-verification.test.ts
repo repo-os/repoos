@@ -1127,6 +1127,11 @@ describe("command-target capture evidence (#0765)", () => {
 });
 
 describe("docs shot skip copy and help link (#0819)", () => {
+  const docTemps: string[] = [];
+  afterEach(() => {
+    for (const t of docTemps.splice(0)) rmSync(t, { recursive: true, force: true });
+  });
+
   it("recognises the actionable docs skip in a run-level warning", () => {
     const warning = "Docs site skipped: no docs shot declared";
     expect(isDocsShotSkip(warning)).toBe(true);
@@ -1148,5 +1153,60 @@ describe("docs shot skip copy and help link (#0819)", () => {
     const drawer = readFileSync(join(__dirname, "../src/components/TaskDrawer.vue"), "utf8");
     expect(drawer).toContain("DOCS_SHOT_ROUTE_DOC");
     expect(drawer).toContain("How to declare a docs route");
+  });
+
+  it("records the docs skip verbatim, without the declared-shot failure framing", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-docsskip-"));
+    docTemps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      workDir: "work",
+      uiVerification: { enabled: true },
+      preview: { targets: [{ name: "web", paths: ["src/**"], command: "echo" }] },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "0819docs",
+      title: "t",
+      path: "work/0819docs.md",
+      absPath: join(root, "work/0819docs.md"),
+      status: "review",
+      branch: "feat/x",
+      area: "web",
+      body: "",
+    } as Task;
+
+    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+      entries: [{ target: "web", route: "/", label: "Board", provenance: { kind: "auto" } }],
+      errors: [],
+      skips: ["Docs site skipped: no docs shot declared"],
+      collapsed: [],
+    });
+    const mockBrowser: NonNullable<UiHandoffGateDeps["launchBrowser"]> = async () =>
+      ({
+        browser: { close: async () => {}, newPage: async () => ({}), newContext: async () => ({}) },
+        context: { newPage: async () => ({}), close: async () => {} },
+      }) as unknown as Awaited<ReturnType<NonNullable<UiHandoffGateDeps["launchBrowser"]>>>;
+
+    const result = await runUiHandoffGate(config, task, undefined, () => {}, {
+      startPreview: async () => ({ url: "http://127.0.0.1:9" }),
+      launchBrowser: mockBrowser,
+      captureEntry: async (_ctx, url) => ({
+        png: Buffer.alloc(5000),
+        issues: [],
+        blank: false,
+        warnings: [],
+        finalUrl: url,
+        assertions: [],
+      }),
+    });
+
+    expect(result.ok).toBe(true);
+    const evidence = readUiHandoffGateEvidence(config, task.id);
+    const warnings = evidence?.warnings ?? [];
+    expect(warnings).toContain("Docs site skipped: no docs shot declared");
+    expect(warnings.some((w) => w.includes("declared shot not captured — Docs"))).toBe(false);
+    vi.restoreAllMocks();
   });
 });
