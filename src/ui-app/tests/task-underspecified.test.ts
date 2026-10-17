@@ -172,6 +172,13 @@ describe("assessTaskUnderspecified", () => {
     const result = assessTaskUnderspecified(body);
     expect(result.detail).not.toContain("placeholder markers");
   });
+
+  it("skips a task assigned to a human (#0815)", () => {
+    const stub = "## Original prompt\n\nRough idea only.\n";
+    expect(assessTaskUnderspecified(stub, { assignee: "human" }).underspecified).toBe(false);
+    // The same stub still flags for an AI task.
+    expect(assessTaskUnderspecified(stub, { assignee: "ai" }).underspecified).toBe(true);
+  });
 });
 
 describe("assessTaskNeedsHumanStep (#0698)", () => {
@@ -207,6 +214,15 @@ describe("assessTaskNeedsHumanStep (#0698)", () => {
     expect(result.needsHumanStep).toBe(true);
     expect(result.signals.length).toBeGreaterThan(0);
     expect(result.detail).toContain(NEEDS_HUMAN_STEP_HINT.slice(0, 40));
+  });
+
+  it("skips a task assigned to a human (#0815)", () => {
+    const body = wellFormed.replace(
+      "- [ ] Unit tests pass",
+      "- [ ] Verify on a real device with production credentials",
+    );
+    expect(assessTaskNeedsHumanStep(body, { assignee: "human" }).needsHumanStep).toBe(false);
+    expect(assessTaskNeedsHumanStep(body, { assignee: "ai" }).needsHumanStep).toBe(true);
   });
 });
 
