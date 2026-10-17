@@ -116,3 +116,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T10:09:20Z · status review→active
 - 2026-10-17T10:09:23Z · note: waitFor [data-test-id="update-requirements"]: waitFor: Timeout 5000ms exceeded. on /work?task=0817&tab=details
 - 2026-10-17T10:09:24Z · note: click [data-test-id="update-requirements"]: click: Timeout 5000ms exceeded. on /work?task=0817&tab=details
+- 2026-10-17T10:09:24Z · note: highlight .sm-modal matched nothing on /work?task=0817&tab=details
