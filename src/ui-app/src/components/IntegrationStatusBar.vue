@@ -4,10 +4,14 @@ import { storeToRefs } from "pinia";
 import { ChevronDown, ChevronUp } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
+import { useNoticesStore } from "../stores/notices";
 import { formatDuration } from "../lib/time";
 import {
   integrationActiveCopy,
   integrationBarActiveTitle,
+  integrationCountdownLabel,
+  integrationMedianDuration,
+  integrationMedianTip,
   integrationPipelineStalled,
   integrationStageLabel,
 } from "../lib/integration-pipeline-ui";
@@ -28,6 +32,7 @@ const AUTO_COLLAPSE_MS = 10_000;
 const repo = useRepoStore();
 const { integration } = storeToRefs(repo);
 const ui = useUiStore();
+const notices = useNoticesStore();
 
 /** True when the bar is folded to a thin strip (persisted across reloads).
  *  Lives in the ui store, not a local ref, so "Move to done" can expand it
@@ -117,6 +122,37 @@ const elapsed = computed(() => {
   if (!startedAt || active.value?.failed) return "";
   const ms = now.value - new Date(startedAt).getTime();
   return Number.isNaN(ms) ? "" : formatDuration(ms);
+});
+
+// ── Median timer + countdown (#0814) ───────────────────────────────────────
+// The chip counts up by default. Hovering/focusing it explains the median of
+// the last 15 timed close-outs; clicking switches to a countdown from that
+// median (clearly italic and prefixed T-), so "how long is normal?" is one
+// glance away without changing the default elapsed readout.
+const timerHistory = computed(() => integrationMedianDuration(notices.closeOutOutcomes));
+const timerTip = computed(() => integrationMedianTip(notices.closeOutOutcomes));
+const timerCountdown = ref(false);
+
+watch(timerHistory, (history) => {
+  if (!history) timerCountdown.value = false;
+});
+
+function toggleTimerMode(): void {
+  if (!timerHistory.value) return;
+  timerCountdown.value = !timerCountdown.value;
+}
+
+/** The chip's text: elapsed time, or T-remaining when countdown mode is on. */
+const timerText = computed(() => {
+  const history = timerHistory.value;
+  if (timerCountdown.value && history) {
+    const startedAt = active.value?.startedAt;
+    if (!startedAt) return "";
+    const ms = now.value - new Date(startedAt).getTime();
+    if (Number.isNaN(ms)) return "";
+    return integrationCountdownLabel(ms, history.medianMs);
+  }
+  return elapsed.value;
 });
 
 // ── Auto-minimise when idle ────────────────────────────────────────────────
@@ -392,12 +428,15 @@ async function fileSetupTask(): Promise<void> {
 <template>
   <div class="ibar-wrap" :class="{ collapsed }">
     <!-- Collapsed thin strip: one row with a summary pill + expand toggle -->
-    <button
+    <div
       v-if="collapsed"
-      type="button"
       class="ibar-strip"
+      role="button"
+      tabindex="0"
       :title="stripTooltip"
       @click="collapsed = false"
+      @keydown.enter.prevent="collapsed = false"
+      @keydown.space.prevent="collapsed = false"
     >
       <span
         class="strip-dot"
@@ -413,12 +452,21 @@ async function fileSetupTask(): Promise<void> {
             <template v-else>
               integrating…
               <span class="mono dim">{{ integrationStageLabel(active.stage) }}</span>
-              <span
-                v-if="elapsed"
-                class="ibar-chip mono"
-                :title="'Elapsed since integration started'"
-                >{{ elapsed }}</span
+              <button
+                v-if="timerText"
+                type="button"
+                class="ibar-chip ibar-chip--timer mono"
+                :class="{ 'ibar-chip--countdown': timerCountdown && timerHistory }"
+                :data-tip="timerTip"
+                :aria-label="timerTip"
+                :aria-pressed="timerHistory ? timerCountdown : undefined"
+                data-test-id="integration-timer"
+                @click.stop="toggleTimerMode"
+                @keydown.enter.stop
+                @keydown.space.stop
               >
+                {{ timerText }}
+              </button>
             </template>
           </template>
         </template>
@@ -433,7 +481,7 @@ async function fileSetupTask(): Promise<void> {
         </span>
       </span>
       <ChevronUp class="strip-chev" aria-hidden="true" />
-    </button>
+    </div>
 
     <!-- Expanded bar -->
     <div v-else ref="barEl" class="ibar">
@@ -457,12 +505,19 @@ async function fileSetupTask(): Promise<void> {
               <span class="ibar-stalled">{{ activeBarTitle }}</span>
             </template>
             <template v-else> integrating</template>
-            <span
-              v-if="elapsed && !pipelineStalled"
-              class="ibar-chip mono"
-              :title="'Elapsed since integration started'"
-              >{{ elapsed }}</span
+            <button
+              v-if="timerText && !pipelineStalled"
+              type="button"
+              class="ibar-chip ibar-chip--timer mono"
+              :class="{ 'ibar-chip--countdown': timerCountdown && timerHistory }"
+              :data-tip="timerTip"
+              :aria-label="timerTip"
+              :aria-pressed="timerHistory ? timerCountdown : undefined"
+              data-test-id="integration-timer"
+              @click="toggleTimerMode"
             >
+              {{ timerText }}
+            </button>
           </span>
 
           <div v-if="pipelineStalled && !active.failed" class="ibar-stall-actions">
@@ -684,6 +739,30 @@ async function fileSetupTask(): Promise<void> {
   padding: 1px 8px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* Clickable timer chip (#0814): counts up by default, switches to a countdown
+   from the recent-run median on click. It is a button so keyboard users reach
+   the same tooltip and toggle. */
+.ibar-chip--timer {
+  font-family: inherit;
+  line-height: inherit;
+  border: none;
+  cursor: pointer;
+}
+.ibar-chip--timer:hover {
+  color: var(--txt);
+  background: var(--nav-hover-bg);
+}
+.ibar-chip--timer:focus-visible {
+  outline: 2px solid var(--border-bright);
+  outline-offset: 2px;
+}
+/* Countdown mode is deliberately distinct from the elapsed stopwatch. */
+.ibar-chip--countdown {
+  font-style: italic;
+  color: var(--cyan);
+  background: var(--cyan-dim);
 }
 
 .stages {
