@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T16:52:23Z"
+updated_at: "2026-10-17T16:52:25Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
@@ -24,10 +24,11 @@ Four small items, one open easter-eggs bundle:
 5. The Model routing checkbox 'Ask the decision model whether the task needs a human-only step' hides that the check is for mixed AI and human steps, and that a yes means the task should be split. The copy should say so.
 
 ## Desired UX
-- Item 1: the skipped docs warning reads 'Docs site skipped: no docs shot declared', with a short link that explains how to declare a docs route for the task. The screenshot viewer header shows the shot's check (or cross) and any warning for that shot.
-- Item 2: no change in behaviour; new tests lock in the existing behaviour for the two paths.
-- Item 3: a Settings save changes repoos.toml on disk only, with no commit to main. A repoos.toml change left uncommitted shows in the Move to done dirty-main prompt.
-- Item 4: the timer tooltip shows the median of up to the last 15 SUCCEEDED close-outs with timing data, loaded from the server, so a fresh page shows the same count as a long-open one. Failed and timed-out runs are not counted. The tooltip is wider, with two lines: the median as a chip on line 1, and the click instruction on line 2 in a fainter, italic style.
+- Item 1: the skipped docs warning reads 'Docs site skipped: no docs shot declared', with a link explaining how to declare a docs route. The screenshot viewer header shows the shot's check (or cross) and any warning.
+- Item 2: tests lock in the existing notice behaviour for the spec form and a hand edit.
+- Item 3: a Settings save changes repoos.toml on disk only, with no commit to main. An uncommitted repoos.toml shows in the Move to done dirty-main prompt.
+- Item 4: the timer median uses up to the last 15 succeeded close-outs, loaded from the server, so a fresh page matches a long-open one. The tooltip is wider, with the median chip on line 1 and the click instruction on line 2 in a fainter, italic style.
+- Item 5: the Model routing checkbox reads 'Check for mixed AI and human steps, and suggest splitting the task'. Its help text says a yes means the task should be split into a separate AI task and a human task, and that the keyword check runs if the model is unavailable. Change only the label and help text; the question sent to the model is unchanged.
 
 ## Acceptance criteria
 - Test: a docs-only change with no declared docs shot shows the new warning text and the declare link.
@@ -104,3 +105,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T16:51:49Z · body
 - 2026-10-17T16:52:23Z · body: Problem (added 5, removed 4)
 - 2026-10-17T16:52:23Z · message_queued at 2026-10-17T16:52:23.497Z
+- 2026-10-17T16:52:25Z · body: Desired UX (added 5, removed 4)
