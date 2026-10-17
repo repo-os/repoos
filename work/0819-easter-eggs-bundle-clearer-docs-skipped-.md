@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T16:12:02Z"
+updated_at: "2026-10-17T16:13:20Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -44,16 +44,16 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 ```json
 [
 {
-  "label": "Integration timer chip in the bar (median tooltip is hover-only)",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=\"integration-timer\"]",
-  "steps": [
-    {
-      "waitFor": "[data-test-id=\"integration-timer\"]"
-    }
-  ],
-  "state": "closeOut:active"
+"label": "Integration timer chip in the bar (median tooltip is hover-only)",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"integration-timer\"]",
+"steps": [
+  {
+    "waitFor": "[data-test-id=\"integration-timer\"]"
+  }
+],
+"state": "closeOut:active"
 }
 ]
 ```
@@ -85,3 +85,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T16:10:58Z · note: review pass 1: needs some work
 - 2026-10-17T16:10:59Z · status review→active
 - 2026-10-17T16:12:02Z · body
+- 2026-10-17T16:13:20Z · body
