@@ -2,7 +2,7 @@
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T12:47:26Z"
+updated_at: "2026-10-17T12:48:20Z"
 last_check_failure: "repoos check at 2026-10-17T12:30:07.605Z: repoos check failed: ui verification failed (6 issue(s)): [request] HTTP 404 for http://127.0.0.1:60495/api/tasks/9999 (http://127.0.0.1:60495/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:60495/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:60495/api/tasks/9999 (http://127.0.0.1:60495/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:6… (truncated)"
 review_passes: 3
 review_rounds: 2
@@ -47,7 +47,7 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 "highlight": "[data-test-id=\"update-requirements\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"update-requirements\"]"
+"waitFor": "[data-test-id=\"update-requirements\"]"
 }
 ],
 "state": "drawer:activeRequirements",
@@ -60,7 +60,7 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 "highlight": "[data-test-id=\"update-requirements\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"update-requirements\"]"
+"waitFor": "[data-test-id=\"update-requirements\"]"
 }
 ],
 "state": "drawer:activeRequirements",
@@ -73,13 +73,13 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 "highlight": ".sm-modal",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"update-requirements\"]"
+"waitFor": "[data-test-id=\"update-requirements\"]"
 },
 {
-  "click": "[data-test-id=\"update-requirements\"]"
+"click": "[data-test-id=\"update-requirements\"]"
 },
 {
-  "waitFor": ".sm-modal"
+"waitFor": ".sm-modal"
 }
 ],
 "state": "drawer:activeRequirements",
@@ -92,13 +92,13 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 "highlight": ".sm-modal",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"update-requirements\"]"
+"waitFor": "[data-test-id=\"update-requirements\"]"
 },
 {
-  "click": "[data-test-id=\"update-requirements\"]"
+"click": "[data-test-id=\"update-requirements\"]"
 },
 {
-  "waitFor": ".sm-modal"
+"waitFor": ".sm-modal"
 }
 ],
 "state": "drawer:activeRequirements",
@@ -206,3 +206,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T12:44:43Z · body: section Shots
 - 2026-10-17T12:46:29Z · body
 - 2026-10-17T12:47:26Z · body
+- 2026-10-17T12:48:20Z · status active→review
