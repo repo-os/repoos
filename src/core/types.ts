@@ -132,6 +132,8 @@ export interface TaskFrontmatter {
   /** Exact task-branch commit recorded at successful close-out for ancestry checks. */
   merged_commit?: string;
   assigned_to?: string;
+  /** Explicit reason clearing the `needs-human-step` keyword check (#0815). */
+  human_step_override?: string;
   created_by?: string;
   branch?: string;
   created_at?: string; // ISO-8601 UTC timestamp
@@ -187,6 +189,14 @@ export interface Task {
   humanStepDecision?: "agent" | "human";
   /** Fingerprint of the acceptance-criteria text the decision was made on. */
   humanStepDecisionKey?: string;
+  /**
+   * Explicit human override of the `needs-human-step` keyword check (#0815):
+   * the reason a human cleared the match. Set through `repoos new/update
+   * --human-step-override`, it suppresses the keyword check for the task and
+   * is recorded in the activity log, so a false positive is cleared on
+   * purpose rather than by rewording the criteria.
+   */
+  humanStepOverride?: string;
   /**
    * One-line AI tl;dr for the current failure — root cause + next action,
    * produced by the task's Debugger agent and shown as a callout above the

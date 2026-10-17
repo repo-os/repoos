@@ -24,6 +24,7 @@ const KEY_ORDER = [
   "needs_input_detail",
   "human_step_decision",
   "human_step_decision_key",
+  "human_step_override",
   "debug_tldr",
   "debug_tldr_at",
   "debug_tldr_key",
@@ -348,12 +349,13 @@ function normalizeStatus(raw: unknown, fallback: Status): Status {
   return (STATUSES as readonly string[]).includes(s) ? (s as Status) : fallback;
 }
 
-function resolveAssignee(raw: string): Assignee {
+export function resolveAssignee(raw: string): Assignee {
   const v = raw.toLowerCase().trim();
   if (v === "ai" || v === "agent") return "ai";
   if (v === "" || v === "unassigned" || v === "none") return "unassigned";
   return "human";
 }
+
 
 /**
  * The two area fields (#0583), parsed once from whatever the frontmatter held.
@@ -477,6 +479,10 @@ export function parseTask(args: ParseTaskArgs): Task {
         : undefined,
     humanStepDecisionKey:
       typeof data.human_step_decision_key === "string" ? data.human_step_decision_key : undefined,
+    humanStepOverride:
+      typeof data.human_step_override === "string" && data.human_step_override.trim()
+        ? data.human_step_override
+        : undefined,
     debugTldr: typeof data.debug_tldr === "string" ? data.debug_tldr : undefined,
     debugTldrAt: typeof data.debug_tldr_at === "string" ? data.debug_tldr_at : undefined,
     debugTldrKey: typeof data.debug_tldr_key === "string" ? data.debug_tldr_key : undefined,
@@ -582,6 +588,9 @@ export function serializeTask(task: Task): string {
     data.human_step_decision = task.humanStepDecision;
     if (task.humanStepDecisionKey) data.human_step_decision_key = task.humanStepDecisionKey;
   }
+  // #0815: the explicit human override reason persists independently of the
+  // flag it cleared, so the decision stays legible in the file and activity log.
+  if (task.humanStepOverride) data.human_step_override = task.humanStepOverride;
   if (task.needsMerge) data.needs_merge = true;
   if (task.noSourceChange) data.no_source_change = true;
   // #0657: `is_archived` is orthogonal to status. Only ever write the flag

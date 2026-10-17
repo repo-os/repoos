@@ -175,3 +175,112 @@ describe("repoos new --paths / --hold", () => {
     }
   });
 });
+
+describe("repoos new --assigned-to / --human / --ai (#0815)", () => {
+  /** Run cmdNew in a throwaway repo and read back the file it created. */
+  async function createAndRead(args: string[]): Promise<{ root: string; task: ReturnType<typeof parseTask>; body: string }> {
+    const { root, clean } = makeCliRepo();
+    tmpRoots.push(root);
+    const prevExit = process.exitCode;
+    try {
+      await withCwd(root, () => cmdNew(args));
+      expect(process.exitCode).toBe(prevExit);
+      const file = readdirSync(join(root, "work")).find((f) => f !== "0001-test.md");
+      expect(file, `no task created for ${args.join(" ")}`).toBeTruthy();
+      const absPath = join(root, "work", file!);
+      const body = readFileSync(absPath, "utf8");
+      const task = parseTask({
+        content: body,
+        absPath,
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      return { root, task, body };
+    } finally {
+      process.exitCode = prevExit;
+      clean();
+    }
+  }
+
+  it("creates a held, human-assigned task in one command", async () => {
+    const { task } = await createAndRead(["Flush the DNS cache", "--assigned-to", "human", "--hold", "true"]);
+    expect(task.assignee).toBe("human");
+    expect(task.assignedTo).toBe("human");
+    expect(task.isHeld).toBe(true);
+  });
+
+  it("--human is a shorthand for --assigned-to human", async () => {
+    const { task } = await createAndRead(["A human chore", "--human"]);
+    expect(task.assignee).toBe("human");
+  });
+
+  it("--ai is a shorthand for --assigned-to ai", async () => {
+    const { task } = await createAndRead(["An agent task", "--ai"]);
+    expect(task.assignee).toBe("ai");
+  });
+
+  it("stamps a human task with a note and does not flag it underspecified", async () => {
+    const { task, body } = await createAndRead(["A human chore", "--human"]);
+    expect(body).toContain("## Human task");
+    expect(task.needsInput).toBe(false);
+    expect(task.needsInputReason).toBeUndefined();
+  });
+
+  it("still flags an AI-assigned task with an empty body as underspecified", async () => {
+    const { task } = await createAndRead(["Empty agent task", "--ai"]);
+    expect(task.needsInput).toBe(true);
+    expect(task.needsInputReason).toBe("underspecified");
+  });
+
+  it("rejects an unknown --assigned-to value and lists the allowed ones", async () => {
+    const { root, clean } = makeCliRepo();
+    tmpRoots.push(root);
+    const prevExit = process.exitCode;
+    const errors: string[] = [];
+    const spy = vi
+      .spyOn(console, "error")
+      .mockImplementation((...a: unknown[]) => errors.push(a.map(String).join(" ")));
+    try {
+      await withCwd(root, () => cmdNew(["Bad assignee", "--assigned-to", "robot"]));
+      expect(process.exitCode).toBe(1);
+      expect(errors.join("\n")).toContain("ai, human");
+      expect(readdirSync(join(root, "work"))).toEqual(["0001-test.md"]);
+    } finally {
+      spy.mockRestore();
+      process.exitCode = prevExit;
+      clean();
+    }
+  });
+
+  it("rejects --ai and --human together", async () => {
+    const { root, clean } = makeCliRepo();
+    tmpRoots.push(root);
+    const prevExit = process.exitCode;
+    const errors: string[] = [];
+    const spy = vi
+      .spyOn(console, "error")
+      .mockImplementation((...a: unknown[]) => errors.push(a.map(String).join(" ")));
+    try {
+      await withCwd(root, () => cmdNew(["Conflicting", "--ai", "--human"]));
+      expect(process.exitCode).toBe(1);
+      expect(errors.join("\n")).toMatch(/only one of/i);
+      expect(readdirSync(join(root, "work"))).toEqual(["0001-test.md"]);
+    } finally {
+      spy.mockRestore();
+      process.exitCode = prevExit;
+      clean();
+    }
+  });
+
+  it("--human-step-override stores the reason and records it in the activity log", async () => {
+    const { task, body } = await createAndRead([
+      "Rotate the keys",
+      "--ai",
+      "--human-step-override",
+      "false positive: 'keys' in the docs example",
+    ]);
+    expect(task.humanStepOverride).toBe("false positive: 'keys' in the docs example");
+    expect(body).toContain("human-step override · false positive");
+  });
+});
