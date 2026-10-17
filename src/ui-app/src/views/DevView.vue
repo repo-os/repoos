@@ -115,23 +115,46 @@ function fullLog(log: string[]): string {
 }
 
 /**
- * Targets whose "Last output" body is collapsed (#0777), keyed by target
- * name so the 4s poll replacing the list never resets the reader's choice.
- * Per-view state only — nothing is persisted.
+ * Per-target "Last output" expanded state (#0777/#0814), persisted so leaving
+ * the page and coming back remembers the reader's choice. Only an explicit
+ * toggle is stored: with no saved value a target starts minimised, except a
+ * failed last run, which opens so the error is visible.
  */
-const collapsedLogs = ref<Set<string>>(new Set());
+const OUTPUT_EXPANDED_KEY = "repoos.dev.outputExpanded";
+const MAX_LOG_LINES = 6;
 
-/** Toggle one target's "Last output" body between collapsed and expanded. */
-function toggleLog(name: string): void {
-  const next = new Set(collapsedLogs.value);
-  if (next.has(name)) next.delete(name);
-  else next.add(name);
-  collapsedLogs.value = next;
+function readOutputExpanded(): Record<string, boolean> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(OUTPUT_EXPANDED_KEY) ?? "{}");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter(([, v]) => typeof v === "boolean"),
+    ) as Record<string, boolean>;
+  } catch {
+    return {};
+  }
 }
 
-/** Whether one target's "Last output" body is currently collapsed. */
-function isLogCollapsed(name: string): boolean {
-  return collapsedLogs.value.has(name);
+const outputExpanded = ref<Record<string, boolean>>(readOutputExpanded());
+
+function persistOutputExpanded(): void {
+  try {
+    localStorage.setItem(OUTPUT_EXPANDED_KEY, JSON.stringify(outputExpanded.value));
+  } catch {
+    /* ignore quota / privacy-mode failures */
+  }
+}
+
+/** Whether one target's "Last output" body is open. */
+function isLogExpanded(t: DevTargetView): boolean {
+  const saved = outputExpanded.value[t.name];
+  return typeof saved === "boolean" ? saved : t.status === "failed";
+}
+
+/** Toggle one target's "Last output" body and remember the choice. */
+function toggleLog(t: DevTargetView): void {
+  outputExpanded.value = { ...outputExpanded.value, [t.name]: !isLogExpanded(t) };
+  persistOutputExpanded();
 }
 
 async function load(silent = false): Promise<void> {
@@ -353,7 +376,35 @@ watch(
                   >{{ startedAgo(t) }}</span
                 >
               </div>
-              <code class="dev-card-name">{{ t.name }}</code>
+              <div class="dev-card-side">
+                <code class="dev-card-name">{{ t.name }}</code>
+                <div class="dev-actions">
+                  <Button
+                    variant="accent"
+                    size="sm"
+                    :disabled="busy === t.name || t.status === 'running' || t.status === 'starting'"
+                    @click="act(t.name, 'start')"
+                  >
+                    {{ busy === t.name ? "Working…" : "Start" }}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="busy === t.name || t.status === 'stopped'"
+                    @click="act(t.name, 'stop')"
+                  >
+                    Stop
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    :disabled="busy === t.name"
+                    @click="requestRestart(t)"
+                  >
+                    Restart
+                  </Button>
+                </div>
+              </div>
             </div>
 
             <dl class="kv-rows dev-meta">
@@ -459,59 +510,32 @@ watch(
               </p>
             </section>
 
-            <div class="dev-actions">
-              <Button
-                variant="accent"
-                size="sm"
-                :disabled="busy === t.name || t.status === 'running' || t.status === 'starting'"
-                @click="act(t.name, 'start')"
-              >
-                {{ busy === t.name ? "Working…" : "Start" }}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="busy === t.name || t.status === 'stopped'"
-                @click="act(t.name, 'stop')"
-              >
-                Stop
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                :disabled="busy === t.name"
-                @click="requestRestart(t)"
-              >
-                Restart
-              </Button>
-            </div>
-
             <div v-if="t.log.length" class="dev-log">
-              <div class="dev-log-head" :class="{ collapsed: isLogCollapsed(t.name) }">
+              <div class="dev-log-head" :class="{ collapsed: !isLogExpanded(t) }">
                 <span>Last output</span>
                 <span class="dev-log-meta">
                   <span class="dev-log-count">{{ t.log.length }} lines</span>
                   <button
                     type="button"
                     class="dev-log-toggle"
-                    :title="isLogCollapsed(t.name) ? 'Expand the output' : 'Collapse the output'"
-                    :aria-label="isLogCollapsed(t.name) ? 'Expand output' : 'Collapse output'"
-                    :aria-expanded="!isLogCollapsed(t.name)"
-                    @click="toggleLog(t.name)"
+                    :aria-label="isLogExpanded(t) ? 'Collapse output' : 'Expand output'"
+                    :aria-expanded="isLogExpanded(t)"
+                    @click="toggleLog(t)"
                   >
                     <ChevronDown
                       class="size-3.5 dev-log-chev"
-                      :class="{ open: !isLogCollapsed(t.name) }"
+                      :class="{ open: isLogExpanded(t) }"
                     />
                   </button>
                 </span>
               </div>
               <pre
-                v-show="!isLogCollapsed(t.name)"
+                v-show="isLogExpanded(t)"
                 class="dev-log-body"
                 tabindex="0"
                 role="region"
-                :aria-label="`Full output for ${t.label}`"
+                :data-max-lines="MAX_LOG_LINES"
+                :aria-label="`Last ${MAX_LOG_LINES} output lines for ${t.label} — scroll for the full log`"
               ><code>{{ fullLog(t.log) }}</code></pre>
             </div>
             <p v-else class="dev-log-empty">No output yet.</p>
@@ -645,6 +669,16 @@ watch(
   align-items: center;
   gap: 9px;
   flex-wrap: wrap;
+  min-width: 0;
+}
+/* Right side of the card: the target name with its actions directly below it
+   (#0814), so the controls sit beside the thing they act on. */
+.dev-card-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  margin-left: auto;
   min-width: 0;
 }
 .dev-card-label {
@@ -837,6 +871,7 @@ watch(
 .dev-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 9px;
   flex-wrap: wrap;
 }
@@ -917,7 +952,9 @@ watch(
   color: var(--txt-dim);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  max-height: 320px;
+  /* #0814: six lines at a time (line-height 1.5 + 10px vertical padding),
+     scrolling for the rest, so a long run stays scannable. */
+  max-height: calc(6 * 1.5em + 20px);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -946,8 +983,15 @@ watch(
     flex-direction: column;
     gap: 6px;
   }
+  .dev-card-side {
+    align-items: flex-start;
+    margin-left: 0;
+  }
   .dev-card-name {
     align-self: flex-start;
+  }
+  .dev-actions {
+    justify-content: flex-start;
   }
 }
 </style>

@@ -248,6 +248,16 @@ export const useNoticesStore = defineStore("notices", () => {
     Array<{ id: string; taskId: string | null; message: string; detail: string }>
   >([]);
 
+  /**
+   * Raw close-out outcomes, newest first (#0814). The notices feed keeps only
+   * rendered notices; the integration bar needs the recent run durations to
+   * show a median/countdown timer. Fed by the same durable list + SSE path, so
+   * it backfills after a reload without another request.
+   */
+  const closeOutOutcomes = ref<CloseOutOutcomeEvent[]>([]);
+  /** Enough history for the status bar's last-15 median with headroom. */
+  const CLOSE_OUT_TIMING_LIMIT = 50;
+
   const unreadNotices = computed(() => notices.value.filter((n) => !n.dismissed && !n.read));
 
   /** Non-dismissed notices, newest first — the feed the bell/panel render. */
@@ -327,11 +337,24 @@ export const useNoticesStore = defineStore("notices", () => {
    * run re-fetched after a reload stays dismissed/read, and a later retry with
    * a new finish time becomes its own notice.
    */
+  /** Remember one raw outcome for the status bar's duration history (#0814). */
+  function recordCloseOutOutcome(outcome: CloseOutOutcomeEvent): void {
+    const key = `${outcome.taskId}:${outcome.finishedAt}`;
+    if (closeOutOutcomes.value.some((o) => `${o.taskId}:${o.finishedAt}` === key)) {
+      return;
+    }
+    closeOutOutcomes.value = [outcome, ...closeOutOutcomes.value].slice(0, CLOSE_OUT_TIMING_LIMIT);
+  }
+
   function ingestCloseOutOutcome(outcome: CloseOutOutcomeEvent | null): NoticeItem | null {
     if (!outcome || !outcome.taskId || !outcome.finishedAt) return null;
     const kind = CLOSE_OUT_KIND[outcome.outcome];
     if (!kind) return null;
     const id = `${kind}:${outcome.taskId}:${outcome.finishedAt}`;
+
+    // Record timing even when the notice itself is deduped/dismissed: the
+    // status bar's median is independent of the bell's read state.
+    recordCloseOutOutcome(outcome);
 
     const existing = notices.value.find((n) => n.id === id);
     if (existing) return null; // same finished run — already shown
@@ -535,6 +558,7 @@ export const useNoticesStore = defineStore("notices", () => {
     dismissedCount,
     slowRunItems,
     slowRunByTask,
+    closeOutOutcomes,
     start,
     stop,
     pollReleaseRun,

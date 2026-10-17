@@ -1,8 +1,79 @@
-import type { IntegrationPipelineSnapshot } from "../types";
+import type { CloseOutOutcomeEvent, IntegrationPipelineSnapshot } from "../types";
 import { formatDuration } from "./time";
 
 /** Default stall window when the active close-out reports no stage progress (#0740). */
 export const DEFAULT_INTEGRATION_STALL_MS = 3 * 60 * 1000;
+
+/** How many recent completed runs feed the status bar's median (#0814). */
+export const INTEGRATION_MEDIAN_SAMPLE = 15;
+
+export interface IntegrationDurationHistory {
+  /** Median wall-clock duration of the sampled close-outs, in ms. */
+  medianMs: number;
+  /** Number of runs used (at most {@link INTEGRATION_MEDIAN_SAMPLE}). */
+  count: number;
+}
+
+/**
+ * The most recent completed close-outs that recorded a duration, newest first.
+ * Runs without timing (legacy outcome rows) are skipped rather than counted as
+ * zero. `limit` defaults to the status bar's 15-run window (#0814).
+ */
+export function integrationDurationSamples(
+  outcomes: CloseOutOutcomeEvent[] | null | undefined,
+  limit = INTEGRATION_MEDIAN_SAMPLE,
+): number[] {
+  const max = Math.max(0, Math.floor(limit));
+  if (max === 0) return [];
+  return (outcomes ?? [])
+    .filter(
+      (o): o is CloseOutOutcomeEvent & { durationMs: number } =>
+        typeof o.durationMs === "number" && Number.isFinite(o.durationMs) && o.durationMs >= 0,
+    )
+    .slice()
+    .sort((a, b) => b.finishedAt.localeCompare(a.finishedAt))
+    .slice(0, max)
+    .map((o) => o.durationMs);
+}
+
+/** Median of the last few timed close-outs, or null when none recorded one. */
+export function integrationMedianDuration(
+  outcomes: CloseOutOutcomeEvent[] | null | undefined,
+  limit = INTEGRATION_MEDIAN_SAMPLE,
+): IntegrationDurationHistory | null {
+  const samples = integrationDurationSamples(outcomes, limit);
+  if (samples.length === 0) return null;
+  const sorted = [...samples].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const medianMs =
+    sorted.length % 2 === 1 ? sorted[mid]! : Math.round((sorted[mid - 1]! + sorted[mid]!) / 2);
+  return { medianMs, count: samples.length };
+}
+
+/** Hover/focus copy for the timer chip: the median, and how many runs it used. */
+export function integrationMedianTip(
+  outcomes: CloseOutOutcomeEvent[] | null | undefined,
+  limit = INTEGRATION_MEDIAN_SAMPLE,
+): string {
+  const history = integrationMedianDuration(outcomes, limit);
+  if (!history) {
+    return "No completed integrations with timing yet — the median appears after a close-out finishes.";
+  }
+  const runs = history.count === 1 ? "run" : "runs";
+  return `Median of the last ${history.count} integration ${runs}: ${formatDuration(history.medianMs)}. Click to switch between elapsed time and a countdown.`;
+}
+
+/** `T-01:34` (remaining) or `T+00:12` (over the median) for the countdown mode. */
+export function integrationCountdownLabel(elapsedMs: number, medianMs: number): string {
+  const diffSec = Math.round((medianMs - elapsedMs) / 1000);
+  const abs = Math.abs(diffSec);
+  const h = Math.floor(abs / 3600);
+  const m = Math.floor((abs % 3600) / 60);
+  const s = abs % 60;
+  const pad = (n: number): string => String(n).padStart(2, "0");
+  const body = h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  return diffSec >= 0 ? `T-${body}` : `T+${body}`;
+}
 
 export type IntegrationPipelineRole = "active" | "queued" | null;
 
