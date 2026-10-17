@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-decision-cards-show-respon
 created_at: "2026-10-17T11:25:18Z"
-updated_at: "2026-10-17T11:26:00Z"
+updated_at: "2026-10-17T11:30:33Z"
 ---
 ## Problem
 #0811 was marked done, but only the live test result card landed. The Recent decisions list is still the old layout:
@@ -39,3 +39,4 @@ Start from ModelRoutingPanel.vue (the test card around lines 630-660, the Recent
 - 2026-10-17T11:25:18Z · created · njachowski@gmail.com
 - 2026-10-17T11:25:41Z · status inbox→ready
 - 2026-10-17T11:26:00Z · status ready→active, branch
+- 2026-10-17T11:30:33Z · body
