@@ -2,14 +2,14 @@
 id: "0816"
 title: "Easter eggs bundle: Dev page output and buttons, integration timer, badges, Human list"
 type: feature
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-bundle-dev-page-output-and-b
 created_at: "2026-10-17T08:02:53Z"
-updated_at: "2026-10-17T08:15:27Z"
+updated_at: "2026-10-17T08:15:31Z"
 ---
 ## Problem
 Three small UI items, the one open easter-eggs bundle. Items 1 to 4 of the earlier bundle #0814 (output row limit, output collapse memory, buttons on the right, integration timer median) already landed on main in 3e66d37e9 and are not repeated here.
@@ -37,3 +37,4 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 - 2026-10-17T08:02:53Z · created · njachowski@gmail.com
 - 2026-10-17T08:05:33Z · body
 - 2026-10-17T08:15:27Z · status inbox→ready
+- 2026-10-17T08:15:31Z · status ready→active, branch
