@@ -691,6 +691,10 @@ export interface CloseOutOutcomeEvent {
   /** When the close-out FINISHED (server time, ISO-8601 UTC). */
   finishedAt: string;
   reason: string;
+  /** When the integration job started, when recorded (#0814). */
+  startedAt?: string | null;
+  /** Wall-clock close-out duration in ms, when recorded (#0814). */
+  durationMs?: number | null;
 }
 
 export type RepoEvent =
