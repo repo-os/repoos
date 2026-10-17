@@ -12485,14 +12485,22 @@
   margin-top: 12px;
 }
 
-/* Work queue Archived list (#0657): parked tasks below the board, minimised
-   by default. Offset to the left so it reads as sitting under the Drafts
-   column, not as another board column. */
-.archived-list {
+/* Work queue parked lists — Archived (#0657) and Human (#0816): parked or
+   human-assigned tasks below the board, each minimised by default. Offset to
+   the left so they read as sitting under the Drafts column, not as another
+   board column. */
+.parked-lists {
   margin: 20px 0 0 4px;
   max-width: 640px;
 }
-.archived-toggle {
+.parked-toggles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.archived-toggle,
+.human-toggle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -12505,26 +12513,39 @@
   font-weight: 600;
   cursor: pointer;
 }
-.archived-toggle:hover {
+.archived-toggle:hover,
+.human-toggle:hover {
   color: var(--txt);
   border-color: var(--border-bright);
 }
-.archived-toggle:focus-visible {
+.archived-toggle:focus-visible,
+.human-toggle:focus-visible {
   outline: 2px solid var(--accent, var(--cyan));
   outline-offset: 2px;
 }
-.archived-chevron {
+/* The Human toggle carries the same violet person glyph as the card's human
+   chip, so the list is recognisably "the cards with that chip". */
+.human-toggle-icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--violet);
+}
+.archived-chevron,
+.human-chevron {
   width: 14px;
   height: 14px;
   transition: transform 0.15s ease;
 }
-.archived-chevron.open {
+.archived-chevron.open,
+.human-chevron.open {
   transform: rotate(-90deg);
 }
-/* Desktop: dock the toggle bottom-left on the same row as the pinned
-   integration bar (bottom: 14px), with the task list opening upward from it. */
+/* Desktop: dock the toggle row bottom-left on the same row as the pinned
+   integration bar (bottom: 14px), with the open lists stacking upward from it
+   (column-reverse: the toggle row is first in the DOM, so it sits lowest). */
 @media (min-width: 761px) {
-  .work-page .archived-list {
+  .work-page .parked-lists {
     /* Fixed like .ibar-wrap: the scrolling .main pane has bottom padding, so
        anchoring to the page would land above the pipeline bar's row. */
     position: fixed;
@@ -12537,7 +12558,8 @@
     align-items: flex-start;
     width: min(640px, calc(100vw - 210px - 26px - 520px));
   }
-  .work-page .archived-rows {
+  .work-page .archived-rows,
+  .work-page .human-rows {
     margin: 0 0 8px;
     align-self: stretch;
     background: var(--panel-solid);
@@ -12545,7 +12567,8 @@
     overflow-y: auto;
   }
 }
-.archived-rows {
+.archived-rows,
+.human-rows {
   list-style: none;
   margin: 8px 0 0;
   padding: 0;
@@ -12553,10 +12576,12 @@
   border-radius: 9px;
   overflow: hidden;
 }
-.archived-rows li + li .archived-row {
+.archived-rows li + li .archived-row,
+.human-rows li + li .human-row {
   border-top: 1px solid var(--border);
 }
-.archived-row {
+.archived-row,
+.human-row {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -12569,30 +12594,42 @@
   text-align: left;
   cursor: pointer;
 }
-.archived-row:hover {
+.archived-row:hover,
+.human-row:hover {
   background: color-mix(in srgb, var(--cyan) 6%, transparent);
   color: var(--txt);
 }
-.archived-row:focus-visible {
+.archived-row:focus-visible,
+.human-row:focus-visible {
   outline: 2px solid var(--accent, var(--cyan));
   outline-offset: -2px;
 }
-.archived-id {
+.archived-id,
+.human-id {
   color: var(--txt-faint);
   flex-shrink: 0;
 }
-.archived-title {
+.archived-title,
+.human-title {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.archived-status {
+.archived-status,
+.human-status {
   flex-shrink: 0;
   font-size: 10px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--txt-faint);
+}
+/* Violet person glyph on each Human row, matching the card chip (#0816). */
+.human-row-icon {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  color: var(--violet);
 }
 
 /* Review confirmation (0507). Body-teleported like every other confirm modal
