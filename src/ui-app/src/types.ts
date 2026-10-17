@@ -1496,6 +1496,10 @@ export interface RoutingDecisionView {
   /** The provider's normalized answers (the details view's "answer received"). */
   answers: Record<string, RoutingAnswerView> | null;
   durationMs: number;
+  /** Brief provenance (#0812): size, budget and the decision model's window. */
+  briefBudget?: { chars: number; maxChars: number; contextTokens: number | null };
+  /** Per-candidate facts offered to the decision model (#0812). */
+  facts?: Array<{ key: string; summary: string | null }>;
   handback?: {
     action: "continue" | "switch" | "escalate" | "accept" | "block";
     reason: string;
