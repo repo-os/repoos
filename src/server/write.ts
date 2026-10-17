@@ -123,6 +123,11 @@ export interface TaskPatch {
   humanStepDecision?: "agent" | "human" | null;
   /** Fingerprint of the acceptance criteria the verdict was made on. */
   humanStepDecisionKey?: string | null;
+  /**
+   * Explicit reason clearing the `needs-human-step` keyword check (#0815), or
+   * null to clear the override. Recorded in the task file and activity log.
+   */
+  humanStepOverride?: string | null;
   /** Clear (false) or set (true) the branch-drifted flag. */
   needsMerge?: boolean;
   /**
@@ -324,6 +329,11 @@ export function patchTaskFile(
   }
   if (patch.humanStepDecisionKey !== undefined) {
     current.humanStepDecisionKey = patch.humanStepDecisionKey ?? undefined;
+  }
+  if (patch.humanStepOverride !== undefined) {
+    current.humanStepOverride = patch.humanStepOverride
+      ? String(patch.humanStepOverride)
+      : undefined;
   }
   if (patch.needsMerge !== undefined) {
     if (patch.needsMerge !== current.needsMerge) changes.push("needs_merge");
