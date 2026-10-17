@@ -1,10 +1,10 @@
 ---
-updated_at: "2026-10-17T11:50:29Z"
-review_passes: 3
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-17T11:55:24.478Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 2006998e to 5709c308) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — Server-side diff, activity logging, `LiveIndex` notifier, drawer action, and dialog line up with the spec and are covered by focused tests, but handoff UI evidence does not satisfy the light/dark visual acceptance criteria: PNGs are full-board captures (task #9999/#0817 on the kanban) with no drawer open, no **Update requirements** control, and no `.sm-modal` editor."
@@ -16,7 +16,8 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-last_check_failure: "repoos check at 2026-10-17T11:35:01.530Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 5fee14c7 to 5a922be7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+updated_at: "2026-10-17T11:55:23Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Problem
@@ -173,5 +174,5 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T11:50:21Z · note: highlight .sm-modal matched nothing on /work?task=9999&tab=details
 - 2026-10-17T11:50:29Z · note: review pass 3: needs some work
 - 2026-10-17T11:50:29Z · needs_input
-
+- 2026-10-17T11:55:23Z · status review→active
 
