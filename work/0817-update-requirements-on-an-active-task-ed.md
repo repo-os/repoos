@@ -2,7 +2,7 @@
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -214,4 +214,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T12:52:33Z · message_queued at 2026-10-17T12:52:33.829Z
 - 2026-10-17T12:54:44Z · message_delivered: 2 message(s)
 - 2026-10-17T12:57:00Z · body
-- 2026-10-17T13:04:08Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-17T13:04:08Z · status active→review
