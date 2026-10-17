@@ -93,8 +93,10 @@ describe("patchTaskFile protected body sections", () => {
       expect(updated.body).toContain("not whatever this is in the screenshot");
       expect(updated.body).toContain("- 2026-08-28T15:51:55Z · created · hello@repoos.org");
       // The rewrite is recorded, not the history wiped.
-      const bodyEntries = updated.body.split("\n").filter((l) => l.endsWith("· body"));
+      const bodyEntries = updated.body.split("\n").filter((l) => /· body\b/.test(l));
       expect(bodyEntries.length).toBe(2);
+      // #0817: the new entry names the sections that changed, not a bare `body`.
+      expect(bodyEntries.some((l) => /· body: .*Requirements/.test(l))).toBe(true);
 
       // Canonical trailing order: spec, then original prompt, then screenshots,
       // then activity (always last).
