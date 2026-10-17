@@ -194,6 +194,73 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(conflict?.files?.[0]?.added).toBeGreaterThan(0);
   });
 
+  it("seeds an active task with requirement sections for Update requirements shots (#0817)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "drawer:activeRequirements");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task!.status).toBe("active");
+    expect(task!.body).toContain("## Acceptance criteria");
+    expect(task!.branch).toBe("");
+  });
+
+  it("drawer:activeRequirements seeds #9999 when ?task=9999 is not on the board (#0817)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    window.history.replaceState({}, "", "/work?task=9999&shotState=drawer%3AactiveRequirements");
+    applyShotPreviewFixture(repo, "drawer:activeRequirements");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task!.status).toBe("active");
+    expect(task!.body).toContain("## Acceptance criteria");
+  });
+
+  it("drawer:activeRequirements upgrades the ?task= board task instead of #9999 (#0817)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.tasks.push({
+      id: "0817",
+      title: "Real task",
+      type: "feature",
+      status: "review",
+      priority: "p2",
+      area: "web",
+      assignee: "ai",
+      assignedTo: "ai",
+      createdBy: "",
+      branch: "feat/x",
+      tags: [],
+      needsInput: false,
+      needsMerge: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      path: "work/0817.md",
+      absPath: "/tmp/0817.md",
+      body: "old",
+      extra: {},
+      agentOverride: null,
+      cliOverride: null,
+      modelOverride: null,
+      git: {
+        branchExists: true,
+        worktreeExists: true,
+        lastCommit: null,
+        lastCommitAt: null,
+        worktreePath: null,
+        dirty: false,
+      },
+      preview: null,
+    });
+    window.history.replaceState({}, "", "/work?task=0817&shotState=drawer%3AactiveRequirements");
+    applyShotPreviewFixture(repo, "drawer:activeRequirements");
+    const task = repo.tasks.find((t) => t.id === "0817");
+    expect(task!.status).toBe("active");
+    expect(task!.body).toContain("## Acceptance criteria");
+    expect(repo.tasks.some((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(false);
+  });
+
   it("seeds a multi-area human task with diff stats for card-chip shots (#0776, #0795)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);

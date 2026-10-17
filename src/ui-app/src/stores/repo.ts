@@ -9,7 +9,10 @@ import { useNoticesStore } from "./notices";
 import { describeCloseOutFailure } from "../lib/closeOutFailure";
 import { builtInRunNotice } from "../lib/builtInRunNotice";
 import { retryCountFrom } from "../lib/retryHints";
-import { shotFixturePinnedIntegration } from "../lib/shot-preview-fixtures";
+import {
+  isShotPreviewCaptureActive,
+  shotFixturePinnedIntegration,
+} from "../lib/shot-preview-fixtures";
 import type { StoryListSortOrder } from "../../../core/stories.js";
 import type {
   AgentOutputEntry,
@@ -1729,7 +1732,10 @@ export const useRepoStore = defineStore("repo", () => {
       // `previewTargets` — reflects the new preview config without a restart.
       void refresh();
       const ui = useUiStore();
-      if (ui.active?.id) {
+      if (
+        ui.active?.id &&
+        !(typeof window !== "undefined" && isShotPreviewCaptureActive(window.location))
+      ) {
         void fetchTask(ui.active.id)
           .then((t) => {
             if (ui.active?.id === t.id) ui.syncActive(t);
