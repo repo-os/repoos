@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-configurable-activity-animation-size
 created_at: "2026-10-17T05:02:36Z"
-updated_at: "2026-10-17T05:31:51Z"
+updated_at: "2026-10-17T05:33:39Z"
 ---
 ## Problem
 
@@ -69,3 +69,4 @@ Prefer one global size preference applied across styles rather than per-style sa
 - 2026-10-17T05:15:14Z · body
 - 2026-10-17T05:30:17Z · body: section Shots
 - 2026-10-17T05:31:51Z · body
+- 2026-10-17T05:33:39Z · body
