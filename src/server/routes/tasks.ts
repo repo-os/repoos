@@ -2406,6 +2406,8 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
               handoffSha: handoffSnap.sha,
               attribution: integrity.attribution,
               dirtyFiles: integrity.dirtyFiles,
+              files: integrity.files,
+              filesUnavailable: integrity.filesUnavailable,
               resolutions: ["discard", "send-back"],
             });
           }

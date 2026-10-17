@@ -180,6 +180,20 @@ describe("shot preview board fixtures (#0743)", () => {
     });
   });
 
+  it("seeds a pending handoff conflict for the modal shot (#0810)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "card:handoffConflict");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "card:handoffConflict seeds the fixture task").toBeTruthy();
+    expect(task!.status).toBe("review");
+    const conflict = repo.worktreeHandoffConflictFor(SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(conflict?.files?.length).toBeGreaterThan(2);
+    expect(conflict?.files?.some((f) => f.taskFile)).toBe(true);
+    expect(conflict?.files?.[0]?.added).toBeGreaterThan(0);
+  });
+
   it("seeds a multi-area human task with diff stats for card-chip shots (#0776, #0795)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -218,6 +232,7 @@ describe("shot preview board fixtures (#0743)", () => {
         "board:cardChips",
         "board:activeCoding",
         "closeOut:stalled",
+        "card:handoffConflict",
       ] as const) {
         applyShotPreviewFixture(repo, fixture);
         const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);

@@ -17,8 +17,10 @@ import {
 import { dirname, join } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import {
+  diffNumstat,
   GitDirtyCheckError,
   isAncestor,
+  isGeneratedOrRuntimePath,
   isTaskBookkeepingPath,
   runGit,
   uncommittedWorkFiles,
@@ -53,12 +55,25 @@ export interface FileAttribution {
   mtimeMs: number;
 }
 
+/** A file changed since handoff, with its `+added / -removed` line counts. */
+export interface WorktreeFileChange {
+  path: string;
+  added: number;
+  removed: number;
+  /** Task markdown under the work dir — grouped after the source changes. */
+  taskFile: boolean;
+}
+
 export interface WorktreeHandoffCheckResult {
   ok: boolean;
   reason?: string;
   attribution?: FileAttribution[];
   headMoved?: boolean;
   dirtyFiles?: string[];
+  /** Every file changed since handoff (committed + uncommitted) with counts. */
+  files?: WorktreeFileChange[];
+  /** True when git could not produce the file list; `files` is then absent. */
+  filesUnavailable?: boolean;
 }
 
 function cacheRoot(root: string, cacheDir: string): string {
@@ -354,6 +369,64 @@ async function isMainSyncDrift(
   return true;
 }
 
+/** Cap the untracked-file line scan so a stray huge artifact cannot stall the guard. */
+const MAX_UNTRACKED_LINE_SCAN_BYTES = 2_000_000;
+
+/** Added-line count for an untracked file (git has no blob to diff against). */
+function untrackedAddedLines(worktreePath: string, rel: string): number {
+  try {
+    if (statSync(join(worktreePath, rel)).size > MAX_UNTRACKED_LINE_SCAN_BYTES) return 0;
+    const text = readFileSync(join(worktreePath, rel), "utf8");
+    if (text === "") return 0;
+    return text.split("\n").length - (text.endsWith("\n") ? 1 : 0);
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Every file changed between the handoff commit and the worktree's current
+ * state — committed post-handoff edits AND uncommitted working-tree edits —
+ * each with its `+added / -removed` line counts. `git diff <sha>` already
+ * covers committed, staged and unstaged tracked edits; untracked files are not
+ * in that diff, so their line count is read from disk. Returns null when git
+ * cannot produce the diff, so the caller can say the list is unavailable
+ * rather than show an incomplete one.
+ */
+async function changedFilesSinceHandoff(
+  wt: string,
+  handoffSha: string,
+  filter: WorkFileFilter,
+): Promise<WorktreeFileChange[] | null> {
+  const entries = await diffNumstat(wt, [handoffSha], 15_000);
+  if (entries === null) return null;
+  // Exclude generated `dist/` and the runtime cache dir, but KEEP task files:
+  // they are grouped separately, not dropped.
+  const noiseFilter: WorkFileFilter = { cacheDir: filter.cacheDir };
+  const byPath = new Map<string, WorktreeFileChange>();
+  for (const entry of entries) {
+    if (isGeneratedOrRuntimePath(entry.path, noiseFilter)) continue;
+    byPath.set(entry.path, {
+      path: entry.path,
+      added: entry.added,
+      removed: entry.removed,
+      taskFile: isTaskBookkeepingPath(entry.path, filter),
+    });
+  }
+  const untracked = await runGit(wt, ["ls-files", "--others", "--exclude-standard", "-z"], 15_000);
+  if (untracked.status !== 0) return null;
+  for (const rel of untracked.stdout.split("\0")) {
+    if (!rel || byPath.has(rel) || isGeneratedOrRuntimePath(rel, noiseFilter)) continue;
+    byPath.set(rel, {
+      path: rel,
+      added: untrackedAddedLines(wt, rel),
+      removed: 0,
+      taskFile: isTaskBookkeepingPath(rel, filter),
+    });
+  }
+  return [...byPath.values()];
+}
+
 /**
  * Compare the feature worktree to the SHA recorded at handoff. Missing
  * worktree or unreadable git state fails closed.
@@ -410,6 +483,11 @@ export async function verifyWorktreeHandoffIntegrity(
     }
   }
   const attribution = attributeFiles(wt, dirtyFiles);
+  const files = await changedFilesSinceHandoff(
+    wt,
+    expectedSha,
+    workFileFilter(config as RepoOSConfig),
+  );
   return {
     ok: false,
     reason: formatWorktreeHandoffFailure(
@@ -422,6 +500,7 @@ export async function verifyWorktreeHandoffIntegrity(
     attribution,
     headMoved,
     dirtyFiles,
+    ...(files ? { files } : { filesUnavailable: true }),
   };
 }
 

@@ -1,17 +1,15 @@
 ---
-updated_at: "2026-10-16T15:46:26Z"
-review_passes: 1
 id: "0810"
 title: "Worktree changed after handoff: list the changed files with +/- lines in the modal (scrollable, max 60% height)"
 type: feature
-status: review
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/worktree-changed-after-handoff-list-the-
 created_at: "2026-10-16T12:17:43Z"
-last_check_failure: "repoos check at 2026-10-16T15:33:18.112Z: repoos check failed: ui verification failed (10 issue(s)): [request] HTTP 404 for http://127.0.0.1:57937/api/tasks/9999 (http://127.0.0.1:57937/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:57937/api/tasks/9999); [assertion] Handoff-conflict modal lists changed files with +/- counts (light): selector #handoff-conflict-title matched 0 element(s), expected at least 1 (nothing rendered — the feature state may be absent) (… (truncated)"
+updated_at: "2026-10-16T15:51:50Z"
 ---
 ## Problem
 When a task's worktree changes after handoff, the 'Worktree changed after handoff' modal says what the HEAD moved from and to, but not which files changed. The user has to guess what they're discarding, or open a terminal to check. Example: #0807 was blocked by a repoos.toml commit and two task-file updates, and the modal did not say so.
@@ -31,89 +29,12 @@ When a task's worktree changes after handoff, the 'Worktree changed after handof
 ## Notes for AI
 Start from the worktree-changed-after-handoff modal in src/ui-app (grep for 'Worktree changed after handoff' and 'Discard post-handoff edits'). Build the file list from git diff --numstat between the handoff commit and HEAD on the server side. Use the shared dialog components and the existing modal styles (AGENTS.md). Source: user request 2026-10-16 after #0807.
 
-## Shots
-```json
-[
-{
-"label": "Handoff-conflict modal lists changed files with +/- counts (light)",
-"target": "default",
-"route": "/work",
-"highlight": ".dirty-card--conflict .dirty-list",
-"steps": [
-{
-"waitFor": "#handoff-conflict-title"
-}
-],
-"assert": [
-{
-"selector": "#handoff-conflict-title",
-"label": "the modal is open",
-"text": "Worktree changed after handoff"
-},
-{
-"selector": ".dirty-list .dirty-file",
-"label": "changed files are listed",
-"minCount": 3
-},
-{
-"selector": ".dirty-actions button",
-"label": "the three actions are present",
-"count": 3
-}
-],
-"state": "card:handoffConflict",
-"theme": "light"
-},
-{
-"label": "Handoff-conflict modal lists changed files with +/- counts (dark)",
-"target": "default",
-"route": "/work",
-"highlight": ".dirty-card--conflict .dirty-list",
-"steps": [
-{
-"waitFor": "#handoff-conflict-title"
-}
-],
-"assert": [
-{
-"selector": "#handoff-conflict-title",
-"label": "the modal is open in dark theme",
-"text": "Worktree changed after handoff"
-},
-{
-"selector": ".dirty-list .dirty-file",
-"label": "changed files are listed in dark theme",
-"minCount": 3
-},
-{
-"selector": ".dirty-actions button",
-"label": "the three actions are present in dark theme",
-"count": 3
-}
-],
-"state": "card:handoffConflict",
-"theme": "dark"
-}
-]
-```
-
 ## Activity
 
 - 2026-10-16T12:17:43Z · created · njachowski@gmail.com
 - 2026-10-16T12:23:51Z · status inbox→ready
 - 2026-10-16T12:23:53Z · status ready→active, branch
-- 2026-10-16T12:31:15Z · body
-- 2026-10-16T12:36:44Z · body: section Shots
-- 2026-10-16T12:38:02Z · body
-- 2026-10-16T12:56:12Z · message_queued at 2026-10-16T12:56:12.680Z
-- 2026-10-16T12:56:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-16T15:18:47Z · body
-- 2026-10-16T15:22:00Z · body
-- 2026-10-16T15:33:14Z · note: ui verification failed (10 issue(s)): [request] HTTP 404 for http://127.0.0.1:57937/api/tasks/9999 (http://127.0.0.1:57937/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:57937/api/tasks/9999); [assertion] Handoff-conflict modal lists changed files with +/- counts (light): selector #handoff-conflict-title matched 0 element(s), expected at least 1 (nothing rendered — the feature state may be absent) (captured http://127.0
-- 2026-10-16T15:33:15Z · handoff failed · handoff recovery attempted · finalization failed
-- 2026-10-16T15:35:17Z · body: section Shots
-- 2026-10-16T15:37:55Z · body
 - 2026-10-16T15:45:06Z · status active→review
-- 2026-10-16T15:45:07Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-- 2026-10-16T15:46:26Z · note: review pass 1: good to go
-
+- 2026-10-16T15:45:06Z · note: handoff requested (cli)
+- 2026-10-16T15:45:09Z · handoff failed · task-file handoff failed at commit · task #0810 has no registered worktree for branch feat/worktree-changed-after-handoff-list-the-
+- 2026-10-16T15:51:50Z · watchdog: auto-surfaced stuck task · status active→ready · agent crashed or was interrupted mid-turn — task-file handoff failed at commit · task #0810 has no registered worktree for branch feat/worktree-changed-after-handoff-list-the- · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
