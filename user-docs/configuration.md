@@ -394,6 +394,14 @@ RepoOS also flags `needs_input` / `needs-human-step` when `## Acceptance criteri
 mention real devices, physical hardware, accounts, credentials, or third-party
 registrations — a hint to split that verification into a human-only task.
 
+Both checks are agent-oriented. A task assigned to a human (`--assigned-to
+human`) is the human's own checklist: it skips both, `## Notes for AI` is
+optional for it, and its acceptance criteria are still shown. An AI task that
+trips the `needs-human-step` keyword check by accident can be cleared on purpose
+with a recorded reason — `repoos new/update --human-step-override "<reason>"` —
+which stores the reason on the task and writes it to the activity log. The
+matched keywords stay listed in `needs_input_detail` until that override is set.
+
 Constraints: a label is a string of at most 40 characters; blank labels,
 duplicates of another column's label, or over-length values fall back to that
 column's default. Any column you don't override keeps its default. The default

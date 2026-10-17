@@ -20,6 +20,53 @@ export const NEEDS_HUMAN_STEP_HINT =
 /** Minimum non–original-prompt body length before the short-body heuristic fires. */
 export const UNDERSPECIFIED_MIN_BODY_CHARS = 400;
 
+/** Heading of the note added to a task assigned to a human (#0815). */
+export const HUMAN_TASK_NOTE_HEADING = "## Human task";
+
+/**
+ * Body note added to human-assigned tasks (#0815): the agent-oriented checks
+ * (`underspecified`, `needs-human-step`) and the `## Notes for AI` requirement
+ * do not apply, so the body says so out loud rather than looking like a stub.
+ */
+export const HUMAN_TASK_NOTE = `${HUMAN_TASK_NOTE_HEADING}
+
+_Assigned to a human, not an AI agent. No \`## Notes for AI\` is required here; the acceptance criteria are the human's checklist._`;
+
+/**
+ * Minimal scaffold for a human task created with no body (#0815). It keeps the
+ * card readable without imposing the agent task-body contract on human work.
+ */
+export const HUMAN_TASK_SCAFFOLD = `## Problem
+
+_What needs doing, and why does it matter?_
+
+## Acceptance criteria
+
+- [ ] ...`;
+
+/** Append the human-task note to a body unless it is already present (idempotent). */
+export function withHumanTaskNote(body: string): string {
+  if (body.includes(HUMAN_TASK_NOTE_HEADING)) return body;
+  const trimmed = body.trim();
+  return trimmed ? `${trimmed}\n\n${HUMAN_TASK_NOTE}` : HUMAN_TASK_NOTE;
+}
+
+/** Options shared by the agent-oriented task-spec checks (#0815). */
+export interface TaskSpecCheckOptions {
+  area?: string | null;
+  /**
+   * The task's resolved assignee. A task assigned to a human is not worked by
+   * an agent, so these agent-oriented checks do not apply to it (#0815).
+   * Callers pass `task.assignee`.
+   */
+  assignee?: string | null;
+}
+
+/** True when the resolved assignee is the literal `human` assignee. */
+function isHumanAssigned(assignee: string | null | undefined): boolean {
+  return (assignee ?? "").trim().toLowerCase() === "human";
+}
+
 export const TASK_SPEC_SECTION_HEADINGS = [
   "## Problem",
   "## Desired UX",
@@ -133,8 +180,12 @@ const HUMAN_STEP_ACCEPTANCE_PATTERNS: { re: RegExp; label: string }[] = [
  */
 export function assessTaskNeedsHumanStep(
   body: string,
-  _opts?: { area?: string | null },
+  opts?: TaskSpecCheckOptions,
 ): NeedsHumanStepAssessment {
+  // Human-assigned tasks are the human's own checklist; never flag them (#0815).
+  if (isHumanAssigned(opts?.assignee)) {
+    return { needsHumanStep: false, detail: "", signals: [] };
+  }
   const trimmed = body.trim();
   const acSection = extractSection(trimmed, "## Acceptance criteria");
   const scanText = acSection
@@ -181,8 +232,13 @@ export function needsHumanStepFingerprint(body: string): string {
 
 export function assessTaskUnderspecified(
   body: string,
-  opts?: { area?: string | null },
+  opts?: TaskSpecCheckOptions,
 ): UnderspecifiedAssessment {
+  // A human task's body is the human's to shape; the agent-body contract and
+  // its `## Notes for AI` requirement do not apply (#0815).
+  if (isHumanAssigned(opts?.assignee)) {
+    return { underspecified: false, detail: "", signals: [] };
+  }
   const signals: string[] = [];
   const trimmed = body.trim();
   const headings = specSectionHeadingsForTask(opts?.area);

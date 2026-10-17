@@ -556,6 +556,107 @@ describe("needs-human-step flag (#0698)", () => {
   });
 });
 
+describe("human-assigned tasks skip the agent spec checks (#0815)", () => {
+  const humanOnlyBody = WELL_SPECIFIED_BODY.replace(
+    "- [ ] The flow works end to end",
+    "- [ ] Verify on a real device with production credentials",
+  );
+
+  function humanText(id: string, status: string, body: string, extra = ""): string {
+    return taskFileText(id, status, body, extra).replace("assigned_to: ai", "assigned_to: human");
+  }
+
+  it("does not flag needs-human-step for a human-assigned task", () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(fx.taskPath, humanText("0815", "active", humanOnlyBody));
+      const task = readTaskFile(fx);
+      expect(task.assignee).toBe("human");
+      expect(flagNeedsHumanStepIfNeeded(fx.config, task)).toBeNull();
+      expect(readTaskFile(fx).needsInput).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("does not flag underspecified for a human-assigned stub body", () => {
+    const fx = makeFixture("inbox");
+    try {
+      writeFileSync(fx.taskPath, humanText("0815", "inbox", STUB_BODY));
+      const task = readTaskFile(fx);
+      expect(task.assignee).toBe("human");
+      expect(flagUnderspecifiedIfNeeded(fx.config, task)).toBeNull();
+      expect(readTaskFile(fx).needsInput).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("clears a stale needs-human-step flag when a task is reassigned to a human", () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(
+        fx.taskPath,
+        humanText(
+          "0815",
+          "active",
+          humanOnlyBody,
+          "needs_input: true\nneeds_input_reason: needs-human-step\nneeds_input_detail: device\n",
+        ),
+      );
+      const cleared = flagNeedsHumanStepIfNeeded(fx.config, readTaskFile(fx));
+      expect(cleared).not.toBeNull();
+      expect(cleared!.needsInput).toBe(false);
+      expect(cleared!.needsInputReason).toBeUndefined();
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
+describe("human-step override (#0815)", () => {
+  const humanOnlyBody = WELL_SPECIFIED_BODY.replace(
+    "- [ ] The flow works end to end",
+    "- [ ] Verify on a real device with production credentials",
+  );
+
+  it("suppresses the keyword flag for an AI task that carries an override", () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(
+        fx.taskPath,
+        taskFileText("0815", "active", humanOnlyBody, "human_step_override: false positive\n"),
+      );
+      const task = readTaskFile(fx);
+      expect(task.humanStepOverride).toBe("false positive");
+      expect(flagNeedsHumanStepIfNeeded(fx.config, task)).toBeNull();
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("clears a stale needs-human-step flag when the override is set", () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(
+        fx.taskPath,
+        taskFileText(
+          "0815",
+          "active",
+          humanOnlyBody,
+          "needs_input: true\nneeds_input_reason: needs-human-step\nneeds_input_detail: device\nhuman_step_override: credentials are a documented stand-in\n",
+        ),
+      );
+      const cleared = flagNeedsHumanStepIfNeeded(fx.config, readTaskFile(fx));
+      expect(cleared).not.toBeNull();
+      expect(cleared!.needsInput).toBe(false);
+      expect(cleared!.needsInputReason).toBeUndefined();
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
 describe("underspecified flag on plain create (#0668)", () => {
   it("flags a stub task created through POST /api/tasks", async () => {
     const fx = makeFixture("inbox");
