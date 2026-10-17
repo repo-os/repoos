@@ -2919,7 +2919,7 @@
   gap: 4px;
   flex: none;
   vertical-align: middle;
-  /* Legacy dot row's lift; explicit sizes replace it with a ch-relative jump. */
+  /* Legacy dot row's lift; an explicit size replaces it with a pixel jump. */
   --ai-dot-bounce: -3px;
 }
 .ai-compact {
@@ -2947,11 +2947,11 @@
   background: var(--cyan);
   box-shadow: 0 0 7px var(--cyan);
 }
-/* The mark is a fixed compact slot sized in the label's own font. `--ai-w` is
-   the reserved footprint in `ch`; the height gives the glyph the vertical room
-   it needs to render legibly without growing the surrounding text line. Glyph
-   geometry below is expressed in `em` so every style scales with its context
-   instead of collapsing to a speck inside a 9px task-card hint (#0798). */
+/* The mark's compact slot. `--ai-w` is the per-style fallback footprint in `ch`
+   used only if no explicit size is set; the chosen setting overrides both the
+   width and the mark's font size in pixels (see `.ai-sized` below), so the
+   rendered size no longer reads the surrounding font (#0816). Glyph geometry
+   below is expressed in `em` so every style scales with its own mark font. */
 .ai-mark {
   position: relative;
   flex: none;
@@ -2996,13 +2996,14 @@
 .ai-style-puppy-tracks .ai-mark {
   --ai-w: 2ch;
 }
-/* Explicit size (#0813). The artwork's em-based geometry is scaled by
-   `--ai-scale` (target / the style's Auto slot) so shapes, motion and detail
-   grow together. The per-style `--ai-w` slot then resolves in the mark's larger
-   font, reserving exactly the chosen allocation in the parent label's `ch`.
-   Auto never gets this class, preserving the rules above. */
+/* Explicit size (#0813, fixed pixels #0816). `--ai-size-px` is the reserved
+   width and `--ai-mark-px` the mark's font size (size / the style's natural
+   slot), both in pixels, so the artwork's em-based geometry and detail render
+   at the exact chosen size on every surface — task card, Dev page and the
+   Settings preview. Nothing here resolves against the surrounding font. */
 .ai-sized .ai-mark {
-  font-size: calc(1em * var(--ai-scale));
+  width: var(--ai-size-px);
+  font-size: var(--ai-mark-px, 1em);
   --ai-hairline: 0.125em;
   --ai-ring-dot: 0.25em;
   --ai-glow-sm: 0.33em;
@@ -3028,16 +3029,16 @@
   width: 7px;
   height: 7px;
 }
-/* Legacy dot row at an explicit size: the whole group — dots, gaps and the
-   bounce — is measured in the chosen `ch` allocation. Auto keeps the original
-   px geometry above (#0813). */
+/* Legacy dot row at an explicit size (#0813): the whole group — dots, gaps and
+   the bounce — is measured so three dots and their gaps together reserve the
+   chosen pixel width, at a fixed pixel size everywhere (#0816). */
 .ai-sized.ai-legacy-dots {
-  gap: calc(var(--ai-size-ch) * 0.125ch);
-  --ai-dot-bounce: calc(var(--ai-size-ch) * -0.2ch);
+  gap: calc(var(--ai-size-px) * 0.125);
+  --ai-dot-bounce: calc(var(--ai-size-px) * -0.2);
 }
 .ai-sized .ai-dot {
-  width: calc(var(--ai-size-ch) * 0.25ch);
-  height: calc(var(--ai-size-ch) * 0.25ch);
+  width: calc(var(--ai-size-px) * 0.25);
+  height: calc(var(--ai-size-px) * 0.25);
 }
 /* The check-chip spinner pins the wrapper to 10px. An explicit animation size
    is an intentional larger allocation, so let it size itself rather than
@@ -3551,8 +3552,8 @@
 .activity-animation-preview-line.ai-reviewing-preview {
   color: var(--amber);
 }
-/* Size control beside the animation-style select (#0813). Auto is the
-   documented default; the range stays disabled until it is switched off. */
+/* Size control beside the animation-style select (#0813). One slider, in
+   pixels (#0816) — no Auto toggle; the default is marked with a tick. */
 .activity-size-control {
   display: flex;
   align-items: center;
@@ -3560,14 +3561,23 @@
   flex-wrap: wrap;
   gap: 10px;
 }
-.activity-size-auto {
+.activity-size-range-wrap {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--txt-dim);
-  cursor: pointer;
-  user-select: none;
+}
+/* Marks the default size on the slider (#0816). The default is the middle
+   step, so a same-percentage tick lines up with the thumb. */
+.activity-size-default-tick {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  border-radius: 1px;
+  background: var(--txt-faint);
+  pointer-events: none;
 }
 .activity-size-range {
   width: 150px;
