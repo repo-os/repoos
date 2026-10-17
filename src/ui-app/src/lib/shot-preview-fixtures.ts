@@ -349,8 +349,13 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       const existing = repo.tasks.find((t) => t.id === drawerId);
       if (existing) {
         Object.assign(existing, { status: "active", body: REQUIREMENTS_FIXTURE_BODY });
-      } else if (!params.get("task")) {
-        // Synthetic board card only when the route does not name a real task.
+      } else if (
+        !params.get("task") ||
+        drawerId === SHOT_PREVIEW_FIXTURE_TASK_ID
+      ) {
+        // Seed #9999 when the shot deep-links it but the board has no such task
+        // (avoids /api/tasks/9999 during handoff capture). Real ?task= ids that
+        // are off-board are left alone — WorkView may fetch them once.
         ensureFixtureTask(repo, "active", { body: REQUIREMENTS_FIXTURE_BODY });
       }
       break;
