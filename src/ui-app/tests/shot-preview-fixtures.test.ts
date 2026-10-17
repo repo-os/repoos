@@ -9,6 +9,8 @@ import {
 } from "../src/lib/shot-preview-fixtures";
 import { useConfigStore } from "../src/stores/config";
 import { useRepoStore } from "../src/stores/repo";
+import { shotProblems } from "../src/lib/shot-rows";
+import { isDocsShotSkip, shotVerdict } from "../src/lib/handoff-verification";
 
 describe("shot preview board fixtures (#0743)", () => {
   it("reads shotState from the location query", () => {
@@ -261,6 +263,31 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.tasks.some((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(false);
   });
 
+  it("seeds captured shots, handoff verdicts and a docs-skip note for viewer shots (#0819)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "drawer:shotEvidence");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "drawer:shotEvidence seeds the fixture task").toBeTruthy();
+    expect(task!.branch).toBe("");
+    const shots = repo.shotsFor(SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(shots).toHaveLength(2);
+    // The docs-skip note the Changes tab parses into the warning + its link.
+    const problems = shotProblems(task!.body, shots);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]!.detail).toContain("Docs site skipped: no docs shot declared");
+    expect(isDocsShotSkip(problems[0]!.detail)).toBe(true);
+    // One captured shot carries a warning (a "check"), one is clean (a "match").
+    const evidence = repo.uiVerificationFor(SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(evidence?.captureDetails).toHaveLength(2);
+    expect(evidence?.captureDetails?.[0]?.targetWarnings?.[0]).toContain(
+      "click .fullscreen-toggle",
+    );
+    expect(shotVerdict(evidence!.captureDetails![0]!).verdict).toBe("check");
+    expect(shotVerdict(evidence!.captureDetails![1]!).verdict).toBe("matches");
+  });
+
   it("seeds a multi-area human task with diff stats for card-chip shots (#0776, #0795)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -300,6 +327,7 @@ describe("shot preview board fixtures (#0743)", () => {
         "board:activeCoding",
         "closeOut:stalled",
         "card:handoffConflict",
+        "drawer:shotEvidence",
       ] as const) {
         applyShotPreviewFixture(repo, fixture);
         const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);

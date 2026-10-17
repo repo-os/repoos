@@ -2842,6 +2842,21 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   /**
+   * Seed captured shots and their handoff verification evidence for one task
+   * without a request (#0819). The Changes tab's shot rows, verdict icons and
+   * screenshot viewer header all read these; a capture cannot trigger a real
+   * handoff, so the preview fixture seeds them directly.
+   */
+  function seedShotEvidence(
+    id: string,
+    shotList: ShotMeta[],
+    evidence: UiHandoffVerificationEvidence | null,
+  ): void {
+    shots.value = { ...shots.value, [id]: shotList };
+    uiVerificationEvidence.value = { ...uiVerificationEvidence.value, [id]: evidence };
+  }
+
+  /**
    * Load a task's durable usage totals (time/tokens/cost + role breakdown,
    * 0230). Best-effort — a task with no recorded sessions just yields no data.
    */
@@ -3761,6 +3776,7 @@ export const useRepoStore = defineStore("repo", () => {
     diffStatsFor,
     seedDiffStats,
     seedWorktreeHandoffConflict,
+    seedShotEvidence,
     taskUsage,
     loadTaskUsage,
     taskUsageFor,
