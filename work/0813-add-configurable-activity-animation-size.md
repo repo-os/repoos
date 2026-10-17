@@ -2,14 +2,14 @@
 id: "0813"
 title: Add configurable activity animation size slider with Auto sizing
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-17T05:02:36Z"
-updated_at: "2026-10-17T05:02:36Z"
+updated_at: "2026-10-17T05:02:52Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ Prefer one global size preference applied across styles rather than per-style sa
 ## Activity
 
 - 2026-10-17T05:02:36Z · created · njachowski@gmail.com
+- 2026-10-17T05:02:52Z · status inbox→ready
