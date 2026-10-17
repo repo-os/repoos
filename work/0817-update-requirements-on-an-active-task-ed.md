@@ -11,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T11:36:54Z"
+updated_at: "2026-10-17T11:37:48Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-17T11:35:01.530Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 5fee14c7 to 5a922be7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -42,58 +42,58 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 ```json
 [
 {
-  "label": "Update requirements action on active task (light)",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": "[data-test-id=\"update-requirements\"]",
-  "state": "drawer:activeRequirements",
-  "theme": "light"
+"label": "Update requirements action on active task (light)",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": "[data-test-id=\"update-requirements\"]",
+"state": "drawer:activeRequirements",
+"theme": "light"
 },
 {
-  "label": "Update requirements action on active task (dark)",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": "[data-test-id=\"update-requirements\"]",
-  "state": "drawer:activeRequirements",
-  "theme": "dark"
+"label": "Update requirements action on active task (dark)",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": "[data-test-id=\"update-requirements\"]",
+"state": "drawer:activeRequirements",
+"theme": "dark"
 },
 {
-  "label": "Update requirements editor open (light)",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".sm-modal",
-  "steps": [
-    {
-      "waitFor": "[data-test-id=\"update-requirements\"]"
-    },
-    {
-      "click": "[data-test-id=\"update-requirements\"]"
-    },
-    {
-      "waitMs": 400
-    }
-  ],
-  "state": "drawer:activeRequirements",
-  "theme": "light"
+"label": "Update requirements editor open (light)",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".sm-modal",
+"steps": [
+  {
+    "waitFor": "[data-test-id=\"update-requirements\"]"
+  },
+  {
+    "click": "[data-test-id=\"update-requirements\"]"
+  },
+  {
+    "waitMs": 400
+  }
+],
+"state": "drawer:activeRequirements",
+"theme": "light"
 },
 {
-  "label": "Update requirements editor open (dark)",
-  "target": "default",
-  "route": "/work?task=9999&tab=details",
-  "highlight": ".sm-modal",
-  "steps": [
-    {
-      "waitFor": "[data-test-id=\"update-requirements\"]"
-    },
-    {
-      "click": "[data-test-id=\"update-requirements\"]"
-    },
-    {
-      "waitMs": 400
-    }
-  ],
-  "state": "drawer:activeRequirements",
-  "theme": "dark"
+"label": "Update requirements editor open (dark)",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".sm-modal",
+"steps": [
+  {
+    "waitFor": "[data-test-id=\"update-requirements\"]"
+  },
+  {
+    "click": "[data-test-id=\"update-requirements\"]"
+  },
+  {
+    "waitMs": 400
+  }
+],
+"state": "drawer:activeRequirements",
+"theme": "dark"
 }
 ]
 ```
@@ -155,3 +155,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T11:31:32Z · message_queued at 2026-10-17T11:31:32.394Z
 - 2026-10-17T11:35:01Z · message_delivered: 2 message(s)
 - 2026-10-17T11:36:54Z · body: section Shots
+- 2026-10-17T11:37:48Z · body
