@@ -2,9 +2,9 @@
  * #0792 — Model routing Agents tab: config round-trip, credential display, probe API.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { mount, flushPromises } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
@@ -14,6 +14,7 @@ import { useConfigStore } from "../src/stores/config";
 import { safeConfigForBrowser } from "../../server/routes/config.js";
 import { loadConfig } from "../../core/config.js";
 import type { RepoOSConfig } from "../../core/types.js";
+import type { RoutingDecisionView } from "../src/types.js";
 import { startServer, type ServerHandle } from "../../server/server.js";
 import { buildRoutingProvider, modelRoutingStatus } from "../../core/model-routing/runtime.js";
 import { resolveEffectiveRouting } from "../../core/model-routing/config.js";
@@ -50,6 +51,48 @@ function seedConfig(data: Record<string, unknown> | null): ReturnType<typeof use
 function jsonResponse(body: unknown): { ok: boolean; json: () => Promise<unknown> } {
   return { ok: true, json: async () => body };
 }
+
+/** A complete decision view fixture; override any field for a scenario. */
+function decisionView(over: Partial<RoutingDecisionView> = {}): RoutingDecisionView {
+  return {
+    id: "d1",
+    at: new Date().toISOString(),
+    taskId: "0811",
+    role: "engineer",
+    mode: "automatic",
+    kind: "selected",
+    applied: true,
+    selection: { cli: "codex", model: "gpt-5", reasoning: null },
+    recommendation: { cli: "codex", model: "gpt-5", reasoning: null },
+    actual: { cli: "codex", model: "gpt-5", reasoning: null },
+    fallbackReason: null,
+    blockReason: null,
+    message: null,
+    provider: "jev",
+    providerModel: "jev-latest",
+    providerUsage: { inputTokens: 120, outputTokens: 40 },
+    selectionProbability: 0.92,
+    evidence: { topProbability: 0.92, threshold: 0.5, confidence: 0.9 },
+    brief: "Role: engineer\nTask #0811: clear test results",
+    answers: {
+      suitability: {
+        id: "suitability",
+        type: "choice",
+        choice: "codex\u0000gpt-5\u0000",
+        confidence: 0.9,
+        probabilities: { "codex\u0000gpt-5\u0000": 0.92, "claude code\u0000default\u0000": 0.08 },
+      },
+    },
+    durationMs: 1234,
+    ...over,
+  };
+}
+
+const jevStatus = () =>
+  modelRoutingStatus({
+    root: "/tmp",
+    modelRouting: { mode: "shadow", provider: "jev" },
+  } as RepoOSConfig);
 
 /** Mount the panel with a real router so `router-link` resolves to an href. */
 async function mountPanel() {
@@ -287,6 +330,279 @@ describe("ModelRoutingPanel", () => {
     await flushPromises();
     expect(posts).toHaveLength(1);
     expect(posts[0].body).toEqual({ key: "ts-fake-key" });
+    wrapper.unmount();
+  });
+
+  // ── #0811: clear live test results ────────────────────────────────────
+  it("shows a green live card with the question, answer, model, time and usage", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    const status = jevStatus();
+    const live = {
+      ok: true,
+      message: "Live decision call succeeded.",
+      model: "jev-latest",
+      durationMs: 842,
+      usage: { inputTokens: 428, outputTokens: 73 },
+      prompt: "RepoOS routing connection test.",
+      answers: [
+        {
+          id: "suitability",
+          type: "choice" as const,
+          question: "Which coding-agent configuration is best suited to this work?",
+          chosen: "probe / connection",
+          confidence: 0.9,
+          options: [
+            { key: "probe\u0000connection\u0000", label: "probe / connection", probability: 1 },
+          ],
+        },
+      ],
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(status);
+        if (url.includes("/api/model-routing/decisions")) return jsonResponse({ decisions: [] });
+        if (url.includes("/api/model-routing/probe")) return jsonResponse({ ...status, live });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+    await wrapper.find("[data-testid='routing-probe-live']").trigger("click");
+    await flushPromises();
+
+    const card = wrapper.find("[data-testid='routing-live-card']");
+    expect(card.exists()).toBe(true);
+    expect(card.classes()).toContain("mr-live-card-ok");
+    expect(card.find("[data-testid='routing-live-status']").text()).toContain("Success");
+    expect(card.find("[data-testid='routing-live-model']").text()).toBe("jev-latest");
+    expect(card.find("[data-testid='routing-live-time']").text()).toMatch(/842 ms/);
+    expect(card.find("[data-testid='routing-live-usage']").text()).toContain("428 in");
+    expect(card.find("[data-testid='routing-live-usage']").text()).toContain("73 out");
+    expect(card.find("[data-testid='routing-live-prompt']").text()).toContain(
+      "routing connection test",
+    );
+    const answer = card.find("[data-testid='routing-live-answer']");
+    expect(answer.text()).toContain("probe / connection");
+    expect(answer.text()).toContain("100%");
+    wrapper.unmount();
+  });
+
+  it("shows a red live card with the plain reason and what to check on failure", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    const status = jevStatus();
+    const live = {
+      ok: false,
+      message: "decision provider rejected credentials (HTTP 401)",
+      hint: "Check the API key is saved and still valid for the selected provider.",
+      durationMs: 12,
+      prompt: "RepoOS routing connection test.",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(status);
+        if (url.includes("/api/model-routing/decisions")) return jsonResponse({ decisions: [] });
+        if (url.includes("/api/model-routing/probe")) return jsonResponse({ ...status, live });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+    await wrapper.find("[data-testid='routing-probe-live']").trigger("click");
+    await flushPromises();
+
+    const card = wrapper.find("[data-testid='routing-live-card']");
+    expect(card.classes()).toContain("mr-live-card-fail");
+    expect(card.find("[data-testid='routing-live-status']").text()).toContain("Failed");
+    expect(card.find("[data-testid='routing-live-reason']").text()).toMatch(/credentials/);
+    expect(card.find("[data-testid='routing-live-hint']").text()).toMatch(/API key/);
+    wrapper.unmount();
+  });
+
+  it("shows a waiting state with a spinner while the live call runs", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    const status = jevStatus();
+    let resolveProbe: (v: unknown) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(status);
+        if (url.includes("/api/model-routing/decisions")) return jsonResponse({ decisions: [] });
+        if (url.includes("/api/model-routing/probe")) {
+          return await new Promise((res) => {
+            resolveProbe = res;
+          });
+        }
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+    await wrapper.find("[data-testid='routing-probe-live']").trigger("click");
+    await wrapper.vm.$nextTick();
+    const waiting = wrapper.find("[data-testid='routing-live-waiting']");
+    expect(waiting.exists()).toBe(true);
+    expect(waiting.find(".mr-spinner").exists()).toBe(true);
+
+    resolveProbe(jsonResponse({ ...status, live: { ok: true, message: "ok", durationMs: 5 } }));
+    await flushPromises();
+    expect(wrapper.find("[data-testid='routing-live-waiting']").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("stops the waiting animation under reduced motion", () => {
+    const src = readFileSync(resolve(__dirname, "../src/components/ModelRoutingPanel.vue"), "utf8");
+    const reduced = src.slice(src.indexOf("prefers-reduced-motion"));
+    expect(src).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(reduced).toContain("animation: none");
+  });
+
+  // ── #0811: readable decision cards ────────────────────────────────────
+  it("shows response time, usage and confidence, hiding details until expanded", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(jevStatus());
+        if (url.includes("/api/model-routing/decisions"))
+          return jsonResponse({ decisions: [decisionView()] });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+
+    const card = wrapper.find("[data-testid='routing-decisions'] .mr-decision");
+    expect(card.exists()).toBe(true);
+    expect(card.find("[data-testid='routing-decision-time']").text()).toMatch(/1\.23 s/);
+    expect(card.find("[data-testid='routing-decision-usage']").text()).toContain("120 in");
+    expect(card.find("[data-testid='routing-decision-confidence']").text()).toContain("92%");
+
+    // Collapsed by default.
+    expect(card.find("[data-testid='routing-decision-details']").exists()).toBe(false);
+    await card.find("[data-testid='routing-decision-details-toggle']").trigger("click");
+    const details = card.find("[data-testid='routing-decision-details']");
+    expect(details.exists()).toBe(true);
+    expect(details.text()).toContain("Question sent");
+    expect(details.text()).toContain("Task #0811");
+    expect(details.text()).toContain("Answer received");
+    expect(details.text()).toContain("codex · gpt-5");
+    expect(details.text()).toContain("92%");
+    wrapper.unmount();
+  });
+
+  it("explains an insufficient-evidence fallback in plain words, not as an error", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    const fallback = decisionView({
+      kind: "fallback",
+      applied: false,
+      fallbackReason: "insufficient-evidence",
+      selection: { cli: "claude code", model: "default", reasoning: null },
+      recommendation: { cli: "claude code", model: "default", reasoning: null },
+      actual: { cli: "claude code", model: "default", reasoning: null },
+      selectionProbability: 0.4,
+      evidence: { topProbability: 0.4, threshold: 0.5, confidence: 0.9 },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(jevStatus());
+        if (url.includes("/api/model-routing/decisions"))
+          return jsonResponse({ decisions: [fallback] });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+
+    const note = wrapper.find("[data-testid='routing-decision-fallback']");
+    expect(note.text()).toContain("not confident enough");
+    expect(note.text()).toContain("Top probability 40%");
+    expect(note.text()).toContain("needs at least 50%");
+    // A fallback reads as information, not an error: the muted pill, never blocked/amber.
+    const pill = wrapper.find(".mr-dec-pill");
+    expect(pill.classes()).toContain("mr-dec-fallback");
+    expect(pill.classes()).not.toContain("mr-dec-blocked");
+    wrapper.unmount();
+  });
+
+  it("shows the recommended configuration on a shadow decision", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    const shadow = decisionView({
+      mode: "shadow",
+      applied: false,
+      selection: { cli: "codex", model: "gpt-5", reasoning: null },
+      recommendation: { cli: "codex", model: "gpt-5", reasoning: null },
+      actual: { cli: "claude code", model: "default", reasoning: null },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(jevStatus());
+        if (url.includes("/api/model-routing/decisions"))
+          return jsonResponse({ decisions: [shadow] });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+    const body = wrapper.find("[data-testid='routing-decisions'] .mr-decision-body");
+    expect(body.text()).toContain("Chosen");
+    expect(body.text()).toContain("Recommended");
+    expect(body.text()).toContain("codex · gpt-5");
+    wrapper.unmount();
+  });
+
+  it("shows a provider-reported dollar cost as Cost on a decision card", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    const decision = decisionView({
+      providerUsage: { inputTokens: 120, outputTokens: 40, costUsd: 0.002 },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(jevStatus());
+        if (url.includes("/api/model-routing/decisions"))
+          return jsonResponse({ decisions: [decision] });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+    const body = wrapper.find("[data-testid='routing-decisions'] .mr-decision-body");
+    expect(body.text()).toContain("Cost");
+    expect(wrapper.find("[data-testid='routing-decision-usage']").text()).toContain("$0.0020");
+    wrapper.unmount();
+  });
+
+  it("shows a provider-reported dollar cost as Cost on the live card", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    const status = jevStatus();
+    const live = {
+      ok: true,
+      message: "Live decision call succeeded.",
+      model: "jev-latest",
+      durationMs: 100,
+      usage: { inputTokens: 10, outputTokens: 2, costUsd: 0.0004 },
+      prompt: "RepoOS routing connection test.",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(status);
+        if (url.includes("/api/model-routing/decisions")) return jsonResponse({ decisions: [] });
+        if (url.includes("/api/model-routing/probe")) return jsonResponse({ ...status, live });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+    await wrapper.find("[data-testid='routing-probe-live']").trigger("click");
+    await flushPromises();
+    const card = wrapper.find("[data-testid='routing-live-card']");
+    expect(card.text()).toContain("Cost");
+    expect(card.find("[data-testid='routing-live-usage']").text()).toContain("$0.0004");
     wrapper.unmount();
   });
 });
