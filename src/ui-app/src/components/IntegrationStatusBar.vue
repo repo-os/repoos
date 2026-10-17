@@ -173,7 +173,12 @@ watch(timerHistory, (history) => {
   if (!history) timerCountdown.value = false;
 });
 
-function toggleTimerMode(): void {
+function toggleTimerMode(event?: MouseEvent): void {
+  // A click/tap shows the rich tooltip as well as toggling the countdown
+  // (#0819): touch users get the median explanation, and the handoff capture's
+  // click step is what makes the two-line pane visible in the PNG. Hover and
+  // focus still open it without changing the readout.
+  if (event) showTimerTip(event);
   if (!timerHistory.value) return;
   timerCountdown.value = !timerCountdown.value;
 }
