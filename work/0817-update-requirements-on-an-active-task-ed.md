@@ -3,6 +3,9 @@ id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Server-side diff, activity logging, `LiveIndex` notifier, drawer action, and dialog line up with the spec and are covered by focused tests, but handoff UI evidence does not satisfy the light/dark visual acceptance criteria: PNGs are full-board captures (task #9999/#0817 on the kanban) with no drawer open, no **Update requirements** control, and no `.sm-modal` editor."
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -170,3 +173,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T11:50:21Z · note: click [data-test-id="update-requirements"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=details
 - 2026-10-17T11:50:21Z · note: highlight .sm-modal matched nothing on /work?task=9999&tab=details
 - 2026-10-17T11:50:29Z · note: review pass 3: needs some work
+- 2026-10-17T11:50:29Z · needs_input
