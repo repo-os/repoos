@@ -342,7 +342,10 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
           );
           const override = input.humanStepOverride?.trim();
           if (override) {
-            withActivity = appendActivityEntry(withActivity, `- ${ts} · human-step override · ${override}`);
+            withActivity = appendActivityEntry(
+              withActivity,
+              `- ${ts} · human-step override · ${override}`,
+            );
           }
           return withActivity;
         })(),

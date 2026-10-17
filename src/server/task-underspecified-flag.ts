@@ -33,11 +33,7 @@ export function isPastFleshOutStage(task: Pick<Task, "status">): boolean {
  * also keep the human blocked. Returns the rewritten task, or null when there
  * was nothing of ours to clear.
  */
-function clearOwnedFlag(
-  config: RepoOSConfig,
-  task: Task,
-  reason: string,
-): Task | null {
+function clearOwnedFlag(config: RepoOSConfig, task: Task, reason: string): Task | null {
   if (!task.needsInput || task.needsInputReason !== reason) return null;
   const hasQuestions = (task.questions?.length ?? 0) > 0;
   return patchTaskFile(config, task.absPath, {

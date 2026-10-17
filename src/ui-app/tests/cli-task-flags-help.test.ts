@@ -178,7 +178,9 @@ describe("repoos new --paths / --hold", () => {
 
 describe("repoos new --assigned-to / --human / --ai (#0815)", () => {
   /** Run cmdNew in a throwaway repo and read back the file it created. */
-  async function createAndRead(args: string[]): Promise<{ root: string; task: ReturnType<typeof parseTask>; body: string }> {
+  async function createAndRead(
+    args: string[],
+  ): Promise<{ root: string; task: ReturnType<typeof parseTask>; body: string }> {
     const { root, clean } = makeCliRepo();
     tmpRoots.push(root);
     const prevExit = process.exitCode;
@@ -204,7 +206,13 @@ describe("repoos new --assigned-to / --human / --ai (#0815)", () => {
   }
 
   it("creates a held, human-assigned task in one command", async () => {
-    const { task } = await createAndRead(["Flush the DNS cache", "--assigned-to", "human", "--hold", "true"]);
+    const { task } = await createAndRead([
+      "Flush the DNS cache",
+      "--assigned-to",
+      "human",
+      "--hold",
+      "true",
+    ]);
     expect(task.assignee).toBe("human");
     expect(task.assignedTo).toBe("human");
     expect(task.isHeld).toBe(true);
