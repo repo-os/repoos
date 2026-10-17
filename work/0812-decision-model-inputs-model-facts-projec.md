@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 443122
-last_close_out_gate_at: "2026-10-17T06:38:23.945Z"
 id: "0812"
 title: "Decision model inputs: model facts, project history, task progress, and a clear objective"
 type: feature
-status: review
+status: done
 priority: p2
 area: [server, core]
+merged_commit: 344407a26a446ae18af6fc73011a9df8e263d33c
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/decision-model-inputs-model-facts-projec
 created_at: "2026-10-17T04:33:38Z"
-updated_at: "2026-10-17T06:38:23Z"
+updated_at: "2026-10-17T06:39:10Z"
+last_close_out_gate_ms: 443122
+last_close_out_gate_at: "2026-10-17T06:38:23.945Z"
 review_passes: 2
 ---
 ## Problem
@@ -56,4 +57,4 @@ Start from src/server/model-routing-wiring.ts (buildRoutingBrief, MAX_ROUTING_BR
 - 2026-10-17T06:20:25Z · status active→review
 - 2026-10-17T06:21:29Z · note: review pass 2: good to go
 - 2026-10-17T06:38:23Z · close-out gate completed in 443s
-
+- 2026-10-17T06:39:10Z · status review→done, release:success
