@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-and-b
 created_at: "2026-10-17T08:02:53Z"
-updated_at: "2026-10-17T08:24:13Z"
+updated_at: "2026-10-17T08:26:30Z"
 ---
 ## Problem
 Five small UI items, the one open easter-eggs bundle. Items 1 to 4 of the earlier bundle #0814 already landed on main in 3e66d37e9 and are not repeated here.
@@ -42,63 +42,63 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 ```json
 [
 {
-  "label": "Card badge reads Needs human step after the trim (light)",
-  "target": "default",
-  "route": "/work?status=ready",
-  "highlight": "[data-task-id=\"9999\"] .tc-needs-input",
-  "steps": [
-    {
-      "waitFor": "[data-task-id=\"9999\"] .tc-needs-input"
-    }
-  ],
-  "state": "card:humanStep",
-  "theme": "light"
+"label": "Card badge reads Needs human step after the trim (light)",
+"target": "default",
+"route": "/work?status=ready",
+"highlight": "[data-task-id=\"9999\"] .tc-needs-input",
+"steps": [
+  {
+    "waitFor": "[data-task-id=\"9999\"] .tc-needs-input"
+  }
+],
+"state": "card:humanStep",
+"theme": "light"
 },
 {
-  "label": "Human list open — every human-assigned task, violet person glyph (light)",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".human-toggle, .human-rows",
-  "steps": [
-    {
-      "waitFor": ".human-toggle"
-    },
-    {
-      "click": ".human-toggle"
-    },
-    {
-      "waitMs": 300
-    }
-  ],
-  "state": "board:cardChips",
-  "theme": "light"
+"label": "Human list open — every human-assigned task, violet person glyph (light)",
+"target": "default",
+"route": "/work",
+"highlight": ".human-toggle, .human-rows",
+"steps": [
+  {
+    "waitFor": ".human-toggle"
+  },
+  {
+    "click": ".human-toggle"
+  },
+  {
+    "waitMs": 300
+  }
+],
+"state": "board:cardChips",
+"theme": "light"
 },
 {
-  "label": "Human list open — violet person glyph (dark)",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".human-toggle, .human-rows",
-  "steps": [
-    {
-      "waitFor": ".human-toggle"
-    },
-    {
-      "click": ".human-toggle"
-    },
-    {
-      "waitMs": 300
-    }
-  ],
-  "state": "board:cardChips",
-  "theme": "dark"
+"label": "Human list open — violet person glyph (dark)",
+"target": "default",
+"route": "/work",
+"highlight": ".human-toggle, .human-rows",
+"steps": [
+  {
+    "waitFor": ".human-toggle"
+  },
+  {
+    "click": ".human-toggle"
+  },
+  {
+    "waitMs": 300
+  }
+],
+"state": "board:cardChips",
+"theme": "dark"
 },
 {
-  "label": "Dev URL: stopped target shows grey Click Start, running target is a link",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-open-stopped, .dev-open",
-  "state": "dev:running",
-  "theme": "light"
+"label": "Dev URL: stopped target shows grey Click Start, running target is a link",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-open-stopped, .dev-open",
+"state": "dev:running",
+"theme": "light"
 }
 ]
 ```
@@ -113,3 +113,4 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 - 2026-10-17T08:23:41Z · body
 - 2026-10-17T08:23:42Z · message_queued at 2026-10-17T08:23:42.919Z
 - 2026-10-17T08:24:13Z · body: section Shots
+- 2026-10-17T08:26:30Z · message_queued at 2026-10-17T08:26:30.553Z
