@@ -2,14 +2,14 @@
 id: "0818"
 title: "Model routing: decision cards show response time, cost and details; test card can collapse; relative timestamps"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-17T11:25:18Z"
-updated_at: "2026-10-17T11:25:18Z"
+updated_at: "2026-10-17T11:25:41Z"
 ---
 ## Problem
 #0811 was marked done, but only the live test result card landed. The Recent decisions list is still the old layout:
@@ -37,3 +37,4 @@ Start from ModelRoutingPanel.vue (the test card around lines 630-660, the Recent
 ## Activity
 
 - 2026-10-17T11:25:18Z · created · njachowski@gmail.com
+- 2026-10-17T11:25:41Z · status inbox→ready
