@@ -1,6 +1,4 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-10-17T12:30:07.605Z: repoos check failed: ui verification failed (6 issue(s)): [request] HTTP 404 for http://127.0.0.1:60495/api/tasks/9999 (http://127.0.0.1:60495/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:60495/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:60495/api/tasks/9999 (http://127.0.0.1:60495/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:6… (truncated)"
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T12:30:04Z"
+updated_at: "2026-10-17T12:32:36Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-17T12:30:07.605Z: repoos check failed: ui verification failed (6 issue(s)): [request] HTTP 404 for http://127.0.0.1:60495/api/tasks/9999 (http://127.0.0.1:60495/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:60495/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:60495/api/tasks/9999 (http://127.0.0.1:60495/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:6… (truncated)"
 review_passes: 3
 review_rounds: 2
 ---
@@ -180,4 +180,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T12:20:15Z · body
 - 2026-10-17T12:22:01Z · body
 - 2026-10-17T12:30:04Z · note: ui verification failed (6 issue(s)): [request] HTTP 404 for http://127.0.0.1:60495/api/tasks/9999 (http://127.0.0.1:60495/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:60495/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:60495/api/tasks/9999 (http://127.0.0.1:60495/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:60495/api/tasks/9999);
-
+- 2026-10-17T12:32:36Z · body
