@@ -15,6 +15,7 @@
 import {
   DEFAULT_ROUTING_WEIGHTS,
   ROUTING_QUESTION_IDS,
+  ROUTING_QUESTION_INSTRUCTIONS,
   decideRouting,
   type PolicyOutcome,
   type RoutingWeights,
@@ -34,6 +35,7 @@ import {
   type RoutingDecisionRequest,
   type RoutingQuestion,
   type RoutingRole,
+  type RoutingUsage,
 } from "./types.js";
 
 /**
@@ -61,8 +63,12 @@ export type RoutingDecision =
       rejected: Array<{ candidate: RoutingCandidate; reason: string }>;
       /** Provider model id reported back, when a call was made. */
       providerModel: string | null;
-      /** Token usage from the provider, when reported (#0793 persistence). */
-      providerUsage: { inputTokens: number | null; outputTokens: number | null } | null;
+      /** Provider usage from the call, when reported (#0793 persistence). */
+      providerUsage: RoutingUsage | null;
+      /** The bounded brief text sent to the provider. */
+      brief: string;
+      /** The provider's normalized answers, or null when no call succeeded. */
+      answers: Record<string, RoutingAnswer> | null;
     };
 
 export interface DecideRoutingInput {
@@ -113,23 +119,23 @@ export function buildRoutingQuestions(
     {
       id: ROUTING_QUESTION_IDS.ambiguity,
       type: "noul",
-      instructions: "Is the task specification ambiguous or underspecified?",
+      instructions: ROUTING_QUESTION_INSTRUCTIONS[ROUTING_QUESTION_IDS.ambiguity],
     },
     {
       id: ROUTING_QUESTION_IDS.risk,
       type: "noul",
-      instructions: "Does the change carry high risk (security, data, shared infrastructure)?",
+      instructions: ROUTING_QUESTION_INSTRUCTIONS[ROUTING_QUESTION_IDS.risk],
     },
     {
       id: ROUTING_QUESTION_IDS.scope,
       type: "noul",
-      instructions: "Is the change broad, spanning many files or subsystems?",
+      instructions: ROUTING_QUESTION_INSTRUCTIONS[ROUTING_QUESTION_IDS.scope],
     },
     {
       id: ROUTING_QUESTION_IDS.suitability,
       type: "choice",
       instructions:
-        `Which coding-agent configuration is best suited to this work? ` +
+        `${ROUTING_QUESTION_INSTRUCTIONS[ROUTING_QUESTION_IDS.suitability]} ` +
         `${opts.objective ?? ROUTING_OBJECTIVE}`,
       criteria,
     },
@@ -148,7 +154,7 @@ export async function decideRoutingForRun(input: DecideRoutingInput): Promise<Ro
   let answers: Record<string, RoutingAnswer> | null = null;
   let failure: RoutingProviderError | null = null;
   let providerModel: string | null = null;
-  let providerUsage: { inputTokens: number | null; outputTokens: number | null } | null = null;
+  let providerUsage: RoutingUsage | null = null;
 
   if (eligible.length === 0) {
     // No provider call is needed when nothing is eligible: the policy blocks.
@@ -191,5 +197,7 @@ export async function decideRoutingForRun(input: DecideRoutingInput): Promise<Ro
     rejected: filtered.rejected,
     providerModel,
     providerUsage,
+    brief: input.stateText,
+    answers,
   };
 }

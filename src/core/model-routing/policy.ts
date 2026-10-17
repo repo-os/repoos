@@ -84,6 +84,33 @@ export const ROUTING_QUESTION_IDS = {
   suitability: "suitability",
 } as const;
 
+/**
+ * The human-readable instruction for each question id, shared by the request
+ * builder and the Model routing UI so a recorded decision renders the exact
+ * question that was asked of the provider.
+ */
+export const ROUTING_QUESTION_INSTRUCTIONS: Record<string, string> = {
+  [ROUTING_QUESTION_IDS.ambiguity]: "Is the task specification ambiguous or underspecified?",
+  [ROUTING_QUESTION_IDS.risk]:
+    "Does the change carry high risk (security, data, shared infrastructure)?",
+  [ROUTING_QUESTION_IDS.scope]: "Is the change broad, spanning many files or subsystems?",
+  [ROUTING_QUESTION_IDS.suitability]:
+    "Which coding-agent configuration is best suited to this work?",
+};
+
+/**
+ * A plain, recorded summary of the provider's suitability answer, so the UI can
+ * explain a low-confidence fallback without re-deriving policy.
+ */
+export interface RoutingDecisionEvidence {
+  /** Highest suitability probability among the eligible candidates. */
+  topProbability: number;
+  /** Minimum top probability required to trust the answer. */
+  threshold: number;
+  /** The provider's own confidence on the suitability answer, when reported. */
+  confidence: number | null;
+}
+
 /** Map a failed provider call to a fallback reason. */
 function failureReason(err: RoutingProviderError | null): PolicyFallbackReason {
   return err?.kind === "malformed" || err?.kind === "unsupported"
@@ -189,4 +216,36 @@ export function hasSufficientEvidence(
   if (top < MIN_ANSWER_CONFIDENCE) return false;
   if (suit.confidence !== null && suit.confidence < MIN_ANSWER_CONFIDENCE) return false;
   return true;
+}
+
+/**
+ * The recorded evidence summary for a provider answer, or null when the
+ * provider did not return a suitability choice. Purely descriptive: it never
+ * changes the decision, only explains it.
+ */
+export function evidenceSummary(
+  answers: Record<string, RoutingAnswer> | null,
+  eligibleKeys: readonly string[],
+): RoutingDecisionEvidence | null {
+  if (!answers) return null;
+  const suit = answers[ROUTING_QUESTION_IDS.suitability];
+  if (!suit || suit.type !== "choice") return null;
+  const probs = eligibleKeys.map((k) => suit.probabilities[k] ?? 0);
+  const topProbability = probs.length ? Math.max(0, ...probs) : 0;
+  return {
+    topProbability,
+    threshold: MIN_ANSWER_CONFIDENCE,
+    confidence: suit.confidence,
+  };
+}
+
+/** The provider's suitability probability for one candidate key, or null. */
+export function candidateProbability(
+  answers: Record<string, RoutingAnswer> | null,
+  key: string,
+): number | null {
+  const suit = answers?.[ROUTING_QUESTION_IDS.suitability];
+  if (!suit || suit.type !== "choice") return null;
+  const p = suit.probabilities[key];
+  return typeof p === "number" ? p : null;
 }

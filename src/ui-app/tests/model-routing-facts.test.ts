@@ -424,11 +424,11 @@ describe("resolveRoutedAgent records the brief and facts (#0812)", () => {
       base,
       pinned: false,
     });
-    expect(out.decision?.brief).toBeDefined();
-    expect(out.decision!.brief!.contextTokens).toBe(100_000);
-    expect(out.decision!.brief!.maxChars).toBe(100_000);
-    expect(out.decision!.brief!.chars).toBeGreaterThan(0);
-    expect(out.decision!.brief!.chars).toBeLessThanOrEqual(100_000);
+    expect(out.decision?.briefBudget).toBeDefined();
+    expect(out.decision!.briefBudget!.contextTokens).toBe(100_000);
+    expect(out.decision!.briefBudget!.maxChars).toBe(100_000);
+    expect(out.decision!.briefBudget!.chars).toBeGreaterThan(0);
+    expect(out.decision!.briefBudget!.chars).toBeLessThanOrEqual(100_000);
     expect(out.decision!.facts?.some((f) => f.summary?.includes("history:"))).toBe(true);
   });
 });
