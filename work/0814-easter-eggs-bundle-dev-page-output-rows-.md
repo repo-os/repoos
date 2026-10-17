@@ -2,14 +2,14 @@
 id: "0814"
 title: "Easter eggs bundle: Dev page output rows, output collapse memory, and button layout"
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-17T05:50:02Z"
-updated_at: "2026-10-17T06:13:02Z"
+updated_at: "2026-10-17T06:14:20Z"
 ---
 ## Problem
 Four small Dev page and integration UI issues, bundled into the one open easter-eggs bundle:
@@ -40,3 +40,4 @@ Start from the Dev page view (grep for 'Last output' and 'Restart') and the inte
 
 - 2026-10-17T05:50:02Z · created · njachowski@gmail.com
 - 2026-10-17T06:13:02Z · body
+- 2026-10-17T06:14:20Z · status inbox→ready
