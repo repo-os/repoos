@@ -31,7 +31,9 @@ export interface TaskFlagHelp {
 
 /** Every flag `repoos new` accepts, in help order. */
 export const NEW_FLAG_HELP: Record<string, TaskFlagHelp> = {
-  ai: { desc: "Assign the task to an AI engineer" },
+  ai: { desc: "Assign the task to an AI engineer (shorthand for --assigned-to ai)" },
+  human: { desc: "Assign the task to a human (shorthand for --assigned-to human)" },
+  "assigned-to": { value: "ai|human", desc: "Assignee" },
   type: { value: TYPE_USAGE, desc: "Task type" },
   area: { value: "web,core", desc: "Area(s), comma-separated" },
   story: { value: '"name"', desc: "Tag the task as part of a story (delivery slice)" },
@@ -42,6 +44,10 @@ export const NEW_FLAG_HELP: Record<string, TaskFlagHelp> = {
   hold: { value: "true|false", desc: "Hold the task out of auto-dispatch" },
   paths: { value: "a,b", desc: "Files the task touches, e.g. src/a.ts,src/b.ts" },
   body: { value: '"..."|-', desc: "Task body; `-` reads it from stdin" },
+  "human-step-override": {
+    value: '"reason"',
+    desc: "Clear a needs-human-step keyword match with a reason",
+  },
   shots: { value: '"<JSON list>"|-', desc: "Declare the ## Shots section (validated JSON)" },
   screenshot: {
     value: "path.png",
@@ -64,6 +70,10 @@ export const UPDATE_FLAG_HELP: Record<string, TaskFlagHelp> = {
   body: { value: '"..."|-', desc: "Replace the body; `-` reads it from stdin" },
   branch: { value: "b", desc: "Branch name" },
   "assigned-to": { value: "ai|human", desc: "Assignee" },
+  "human-step-override": {
+    value: '"reason"',
+    desc: "Clear a needs-human-step keyword match with a reason",
+  },
   "needs-input": { value: "true|false", desc: "Flag the task as needing human input" },
   "needs-merge": { value: "true|false", desc: "Flag the task as needing a merge" },
   hold: { value: "true|false", desc: "Hold the task out of auto-dispatch" },

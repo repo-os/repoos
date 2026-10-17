@@ -14,6 +14,7 @@ import {
   recordChange,
   utcTimestamp,
   appendActivityEntry,
+  resolveAssignee,
   ORIGINAL_PROMPT_HEADING,
 } from "./task.js";
 import {
@@ -27,6 +28,7 @@ import { normalizeStoryName } from "./stories.js";
 import { formatTaskAreas, parseTaskAreas } from "./areas.js";
 import { normalizeTaskDependencies, validateTaskDependencies } from "./task-dependencies.js";
 import { validateTaskFields } from "./task-fields.js";
+import { HUMAN_TASK_SCAFFOLD, withHumanTaskNote } from "./task-underspecified.js";
 
 export interface CreateTaskInput {
   title: string;
@@ -49,6 +51,11 @@ export interface CreateTaskInput {
   body?: string;
   needsInput?: boolean;
   questions?: string[];
+  /**
+   * Explicit reason clearing the `needs-human-step` keyword check at creation
+   * (#0815). Stored on the task and recorded in its activity log.
+   */
+  humanStepOverride?: string;
   /** Mark the task held (skipped by the auto-engineering picker) at creation (#0699). */
   hold?: boolean;
   /** Repo-relative files the task touches (#0699). */
@@ -275,6 +282,17 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
       const ts = utcTimestamp();
       const dependsOn = normalizeTaskDependencies(input.dependsOn ?? []);
       validateTaskDependencies(id, dependsOn, idx.tasks);
+      // #0815: resolve the assignee up front so a human task is built (and
+      // written) as human from the first byte, not fixed up by a later re-read.
+      const assignee = resolveAssignee(input.assignedTo ?? "");
+      const isHuman = assignee === "human";
+      // A human task created with no body gets a small scaffold plus a note that
+      // it is human work; an agent task keeps the full spec template below. A
+      // human task created with a body still gets the note appended.
+      let initialBody = input.body ?? "";
+      if (isHuman && !initialBody) initialBody = HUMAN_TASK_SCAFFOLD;
+      initialBody = withOriginalPromptSection(initialBody, input.originalPrompt);
+      if (isHuman) initialBody = withHumanTaskNote(initialBody);
       const task: Task = {
         id,
         title: input.title,
@@ -303,8 +321,9 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
         story: normalizeStoryName(input.story),
         dependsOn,
         mergedCommit: null,
-        assignee: (input.assignedTo ?? "").toLowerCase() === "ai" ? "ai" : "unassigned",
+        assignee,
         assignedTo: input.assignedTo ?? "",
+        humanStepOverride: input.humanStepOverride?.trim() || undefined,
         createdBy: input.createdBy ?? "",
         branch: input.branch ?? "",
         tags: [],
@@ -314,11 +333,22 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
         absPath,
         // Preserve the raw freeform prompt under its own heading (see
         // withOriginalPromptSection) so it survives any later agent rewrite of
-        // the body, then append the creation activity entry.
-        body: appendActivityEntry(
-          withOriginalPromptSection(input.body ?? "", input.originalPrompt),
-          `- ${ts} · created · ${input.createdBy || "unknown"}`,
-        ),
+        // the body, then append the creation activity entry (#0815 adds the
+        // explicit human-step override as its own activity entry too).
+        body: (() => {
+          let withActivity = appendActivityEntry(
+            initialBody,
+            `- ${ts} · created · ${input.createdBy || "unknown"}`,
+          );
+          const override = input.humanStepOverride?.trim();
+          if (override) {
+            withActivity = appendActivityEntry(
+              withActivity,
+              `- ${ts} · human-step override · ${override}`,
+            );
+          }
+          return withActivity;
+        })(),
         extra: {},
         agentOverride: null,
         cliOverride: null,
@@ -332,7 +362,9 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
         git: emptyGitInfo(),
       };
 
-      const content = input.body ? serializeTask(task) : TASK_TEMPLATE(task);
+      // A human task with no body uses its own scaffold body directly; an agent
+      // task keeps the classic spec template.
+      const content = input.body || isHuman ? serializeTask(task) : TASK_TEMPLATE(task);
       writeFileSync(absPath, content);
       try {
         writeIndexCache(config, freshIndex());
