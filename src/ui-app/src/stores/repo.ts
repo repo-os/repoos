@@ -105,9 +105,21 @@ export class WorktreeHandoffConflictError extends Error {
   }
 }
 
+/** One file changed since handoff, with its `+added / -removed` line counts. */
+export interface WorktreeHandoffFile {
+  path: string;
+  added: number;
+  removed: number;
+  /** Task markdown under the work dir — grouped after the source changes. */
+  taskFile: boolean;
+}
+
 export interface WorktreeHandoffConflict {
   message: string;
   dirtyFiles?: string[];
+  files?: WorktreeHandoffFile[];
+  /** True when the server could not compute the diff; `files` is then absent. */
+  filesUnavailable?: boolean;
 }
 
 export class DirtyCheckoutError extends Error {
@@ -2575,6 +2587,8 @@ export const useRepoStore = defineStore("repo", () => {
       dirtyScope?: DirtyScope;
       dirtyCheckFailed?: boolean;
       worktreeChangedAfterHandoff?: boolean;
+      files?: WorktreeHandoffFile[];
+      filesUnavailable?: boolean;
       resolutions?: string[];
     } = {};
     try {
@@ -2584,6 +2598,8 @@ export const useRepoStore = defineStore("repo", () => {
         dirtyScope?: DirtyScope;
         dirtyCheckFailed?: boolean;
         worktreeChangedAfterHandoff?: boolean;
+        files?: WorktreeHandoffFile[];
+        filesUnavailable?: boolean;
         resolutions?: string[];
       };
     } catch {
@@ -2593,7 +2609,12 @@ export const useRepoStore = defineStore("repo", () => {
       const message = body.error ?? "worktree changed after handoff";
       worktreeHandoffConflicts.value = {
         ...worktreeHandoffConflicts.value,
-        [t.id]: { message, dirtyFiles: body.dirtyFiles },
+        [t.id]: {
+          message,
+          dirtyFiles: body.dirtyFiles,
+          files: body.files,
+          filesUnavailable: body.filesUnavailable,
+        },
       };
       throw new WorktreeHandoffConflictError(t.id, message);
     }
@@ -2792,6 +2813,15 @@ export const useRepoStore = defineStore("repo", () => {
     stats: { filesChanged: number; additions: number; deletions: number },
   ): void {
     diffStats.value = { ...diffStats.value, [id]: stats };
+  }
+
+  /**
+   * Seed a pending worktree-handoff conflict without a real 409. Used by the
+   * shot-preview fixture (#0810): the modal only opens from a failed Move to
+   * done, which a capture cannot trigger.
+   */
+  function seedWorktreeHandoffConflict(id: string, conflict: WorktreeHandoffConflict): void {
+    worktreeHandoffConflicts.value = { ...worktreeHandoffConflicts.value, [id]: conflict };
   }
 
   /**
@@ -3712,6 +3742,7 @@ export const useRepoStore = defineStore("repo", () => {
     loadDiffStats,
     diffStatsFor,
     seedDiffStats,
+    seedWorktreeHandoffConflict,
     taskUsage,
     loadTaskUsage,
     taskUsageFor,

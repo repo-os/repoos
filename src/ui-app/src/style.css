@@ -3709,6 +3709,48 @@
   margin-top: 18px;
 }
 
+/* Worktree-changed-after-handoff (#0810): a long file list must not push the
+   card past 60% of the window height. The card is a flex column, the list the
+   only flexible child, so the buttons stay visible while the list scrolls. */
+.dirty-card--conflict {
+  max-height: 60vh;
+}
+.dirty-card--conflict .dirty-file {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dirty-file-path {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
+}
+.dirty-file-counts {
+  flex: 0 0 auto;
+  display: inline-flex;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.dirty-file-add {
+  color: var(--green);
+}
+.dirty-file-del {
+  color: var(--red);
+}
+.dirty-file-group {
+  margin: 8px 0 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+.dirty-unavailable {
+  font-style: italic;
+}
+
 /* Hotfix activation confirmation: teleport above the task drawer so this
      sensitive choice never looks like ordinary inline content. */
 .hotfix-overlay {

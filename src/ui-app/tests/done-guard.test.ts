@@ -399,6 +399,9 @@ describe("move-to-done dirty-WORKTREE guard (#0512)", () => {
       expect(res.statusCode).toBe(409);
       expect(res.body.worktreeChangedAfterHandoff).toBe(true);
       expect(res.body.resolutions).toEqual(["discard", "send-back"]);
+      // #0810: the modal lists what changed, with +N / -M counts.
+      const changed = (res.body.files as Array<{ path: string; added: number }>) ?? [];
+      expect(changed.find((f) => f.path === "src/extra.ts")?.added).toBe(1);
       expect(coordinator.getJob("0211")).toBeNull();
     } finally {
       clean();
