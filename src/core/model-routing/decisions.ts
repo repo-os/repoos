@@ -10,8 +10,8 @@
  * Pure type module: the fs-backed store lives in `decision-store.ts`.
  */
 import type { RoutingCandidate } from "./candidates.js";
-import type { PolicyBlockReason, PolicyFallbackReason } from "./policy.js";
-import type { RoutingProviderId, RoutingRole } from "./types.js";
+import type { PolicyBlockReason, PolicyFallbackReason, RoutingDecisionEvidence } from "./policy.js";
+import type { RoutingAnswer, RoutingProviderId, RoutingRole, RoutingUsage } from "./types.js";
 
 /** How the decision ended. */
 export type RoutingDecisionKind = "selected" | "fallback" | "blocked" | "pinned" | "disabled";
@@ -57,7 +57,18 @@ export interface RoutingDecisionRecord {
   rejected: Array<{ key: string; reason: string }>;
   provider: RoutingProviderId | null;
   providerModel: string | null;
-  providerUsage: { inputTokens: number | null; outputTokens: number | null } | null;
+  providerUsage: RoutingUsage | null;
+  /**
+   * The provider's suitability probability for the selection/recommendation,
+   * when it answered. Null when no answer was recorded.
+   */
+  selectionProbability: number | null;
+  /** Recorded evidence summary from the provider's answer, for a plain explanation. */
+  evidence: RoutingDecisionEvidence | null;
+  /** The bounded context brief sent to the provider (for the expandable details). */
+  brief: string | null;
+  /** The provider's normalized answers (for the expandable details), or null. */
+  answers: Record<string, RoutingAnswer> | null;
   policyVersion: string;
   durationMs: number;
   handback?: HandbackDecisionRecord;
