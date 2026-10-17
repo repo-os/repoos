@@ -2,7 +2,7 @@
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
-status: review
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
