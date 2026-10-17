@@ -3,6 +3,9 @@ id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Server diffing, activity logging, engineer notice (UI/CLI/watcher), dialog, and tests line up with the spec, but handoff UI evidence is **STALE** (capture `27a022d65` vs HEAD `11fed622b`) and the PNGs only show the Work Queue board with no drawer, no **Update requirements** control, and no editor. Six console 404s for `/api/tasks/9999` and failed `waitFor`/click steps mean the light/dark visual acceptance criterion is not met."
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -208,3 +211,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T12:47:26Z · body
 - 2026-10-17T12:48:20Z · status active→review
 - 2026-10-17T12:49:31Z · note: review pass 4: needs some work
+- 2026-10-17T12:49:31Z · needs_input
