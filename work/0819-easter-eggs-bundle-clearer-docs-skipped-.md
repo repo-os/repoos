@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T17:00:30Z"
+updated_at: "2026-10-17T17:01:41Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -116,3 +116,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T17:00:29Z · status active→review
 - 2026-10-17T17:00:29Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cb1944731) during finalization (#0734)
 - 2026-10-17T17:00:30Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cb1944731) during finalization (#0734)
+- 2026-10-17T17:01:41Z · note: review pass 5: needs some work
