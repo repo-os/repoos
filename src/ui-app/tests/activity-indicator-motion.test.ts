@@ -50,11 +50,15 @@ const webFont = `'JetBrains Mono', ui-monospace, monospace`;
 type Motion = "coding" | "reviewing" | "agent";
 
 /** Renders the real component and returns its exact outer HTML. */
-function renderHtml(style: string, motion: Motion): string {
+function renderHtml(style: string, motion: Motion, size?: string): string {
   const pinia = createPinia();
   setActivePinia(pinia);
   const wrapper = mount(ActivityIndicator, {
-    props: { animationStyle: style, activity: motion },
+    props: {
+      animationStyle: style,
+      activity: motion,
+      ...(size ? { animationSize: size } : {}),
+    },
     global: { plugins: [pinia] },
   });
   const html = wrapper.element.outerHTML;
@@ -441,6 +445,185 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
     }
   });
 
+  it("scales artwork, reserved width and the height envelope at every explicit size (#0813)", async () => {
+    const page = await browser!.newPage();
+    try {
+      await page.goto("about:blank", { waitUntil: "load", timeout: 10_000 });
+      await page.evaluate(
+        ({ css }) => {
+          const s = document.createElement("style");
+          s.textContent = css;
+          document.head.appendChild(s);
+        },
+        { css: pageCss },
+      );
+      // One measurable piece of real artwork per family. A width-only
+      // implementation keeps these constant; a correct one scales them with
+      // the slot.
+      const art: Record<
+        string,
+        { selector: string; pseudo: string | null; metric: "width" | "height" | "fontSize" }
+      > = {
+        "orbital-pixel": { selector: ".ai-orbit", pseudo: "::before", metric: "width" },
+        "cursor-scan-pulse": { selector: ".ai-caret", pseudo: "::before", metric: "height" },
+        "breathing-brackets": {
+          selector: ".ai-bracket",
+          pseudo: "::before",
+          metric: "fontSize",
+        },
+        "micro-dot-matrix": { selector: ".ai-matrix i", pseudo: null, metric: "width" },
+        "tiny-signal-bars": { selector: ".ai-bars i", pseudo: null, metric: "height" },
+        "spark-diamond": { selector: ".ai-spark", pseudo: "::before", metric: "fontSize" },
+        "arcade-hopper": { selector: ".ai-hopper i", pseudo: null, metric: "width" },
+        "puppy-tracks": { selector: ".ai-paws i", pseudo: null, metric: "width" },
+      };
+      const sizes = ["1", "1.5", "2", "2.5", "3"];
+      for (const fontPx of [9, 12]) {
+        for (const style of Object.keys(art)) {
+          const htmls = sizes.map((size) => renderHtml(style, "coding", size));
+          const spec = art[style]!;
+          const res = await page.evaluate(
+            ({ htmls, sizes, fontPx, webFont, selector, pseudo, metric, style }) => {
+              return htmls.map((html, index) => {
+                document.body.innerHTML =
+                  `<div style="font-family:${webFont};font-size:${fontPx}px">` +
+                  `${html}<span id="next-label">AGENT</span>` +
+                  `<span id="ch-probe" style="display:inline-block;width:1ch"></span></div>`;
+                const mark = document.querySelector(".ai-mark")!;
+                const ai = document.querySelector(".ai")!;
+                const node = document.querySelector(selector)!;
+                const cs = pseudo ? getComputedStyle(node, pseudo) : getComputedStyle(node);
+                const measured =
+                  metric === "fontSize"
+                    ? parseFloat(cs.fontSize)
+                    : parseFloat(cs[metric as "width" | "height"]);
+                const ch = document.querySelector("#ch-probe")!.getBoundingClientRect().width;
+                const markRect = mark.getBoundingClientRect();
+                const aiRect = ai.getBoundingClientRect();
+                return {
+                  style,
+                  size: sizes[index],
+                  ch,
+                  markW: markRect.width,
+                  markH: markRect.height,
+                  aiH: aiRect.height,
+                  aiRight: aiRect.right,
+                  nextLeft: document.querySelector("#next-label")!.getBoundingClientRect().left,
+                  art: measured,
+                  scrollW: mark.scrollWidth,
+                };
+              });
+            },
+            {
+              htmls,
+              sizes,
+              fontPx,
+              webFont,
+              selector: spec.selector,
+              pseudo: spec.pseudo,
+              metric: spec.metric,
+              style,
+            },
+          );
+          for (const row of res) {
+            const target = Number(row.size);
+            expect(
+              row.markW / row.ch,
+              `${style} @${fontPx}px size ${row.size}: reserved ${row.markW}px for ${row.ch}px/ch`,
+            ).toBeCloseTo(target, 1);
+            // The mark must not grow outside the wrapper's reserved height.
+            expect(
+              row.aiH + 0.5,
+              `${style} size ${row.size}: height envelope`,
+            ).toBeGreaterThanOrEqual(row.markH);
+            // Motion/artwork may overhang the slot by subpixel glyph bearing,
+            // but never enough to hit the following label.
+            expect(row.nextLeft + 0.5, `${style} size ${row.size}: label overlap`).toBeGreaterThan(
+              row.aiRight,
+            );
+            expect(row.scrollW, `${style} size ${row.size}: horizontal clip`).toBeLessThanOrEqual(
+              row.markW + 2,
+            );
+          }
+          const first = res[0]!;
+          const last = res.at(-1)!;
+          // Artwork and vertical envelope grow with the slot (3× between 1ch
+          // and 3ch). A width-only change leaves this ratio at 1.
+          expect(first.art, `${style}: measurable artwork`).toBeGreaterThan(0);
+          expect(last.art / first.art, `${style}: artwork scales with the slot`).toBeGreaterThan(
+            2.7,
+          );
+          expect(last.markH / first.markH, `${style}: mark height scales`).toBeGreaterThan(2.7);
+        }
+      }
+    } finally {
+      await page.close();
+    }
+  });
+
+  it("scales the legacy dot group as one unit and keeps Auto's original size (#0813)", async () => {
+    const page = await browser!.newPage();
+    try {
+      await page.goto("about:blank", { waitUntil: "load", timeout: 10_000 });
+      await page.evaluate(
+        ({ css }) => {
+          const s = document.createElement("style");
+          s.textContent = css;
+          document.head.appendChild(s);
+        },
+        { css: pageCss },
+      );
+      const measure = async (html: string) =>
+        page.evaluate(
+          ({ html, webFont }) => {
+            document.body.innerHTML =
+              `<div style="font-family:${webFont};font-size:12px">${html}` +
+              `<span id="ch-probe" style="display:inline-block;width:1ch"></span></div>`;
+            const ai = document.querySelector(".ai")!;
+            const dot = document.querySelector(".ai-dot")!;
+            const style = getComputedStyle(dot);
+            // Sample the bounce at its 40% keyframe so the jump distance is
+            // measured from the real animation, not a stylesheet declaration.
+            const dotAnim = dot.getAnimations()[0];
+            if (dotAnim) {
+              dotAnim.pause();
+              dotAnim.currentTime = 0.4 * 1200;
+            }
+            const matrix = getComputedStyle(dot).transform;
+            const ty = matrix.startsWith("matrix")
+              ? Number(matrix.split(",").at(-1)?.replace(")", "").trim())
+              : Number.NaN;
+            return {
+              groupW: ai.getBoundingClientRect().width,
+              groupH: ai.getBoundingClientRect().height,
+              dotW: parseFloat(style.width),
+              dotH: parseFloat(style.height),
+              gap: parseFloat(getComputedStyle(ai).columnGap || "0"),
+              ch: document.querySelector("#ch-probe")!.getBoundingClientRect().width,
+              ty,
+            };
+          },
+          { html, webFont },
+        );
+      const auto = await measure(renderHtml("three-dots", "coding"));
+      const one = await measure(renderHtml("three-dots", "coding", "1"));
+      const three = await measure(renderHtml("three-dots", "coding", "3"));
+      // Auto keeps the legacy px row exactly as before.
+      expect(auto.dotW).toBe(5);
+      expect(auto.dotH).toBe(5);
+      expect(auto.gap).toBe(4);
+      // Explicit sizes reserve the chosen ch allocation and scale the whole
+      // group — dots, gaps and jump distance together.
+      expect(one.groupW / one.ch).toBeCloseTo(1, 1);
+      expect(three.groupW / three.ch).toBeCloseTo(3, 1);
+      expect(three.dotW / one.dotW).toBeCloseTo(3, 1);
+      expect(Math.abs(auto.ty), "Auto keeps the −3px legacy lift").toBeCloseTo(3, 1);
+      expect(Math.abs(three.ty) / Math.abs(one.ty), "bounce distance scales").toBeCloseTo(3, 1);
+    } finally {
+      await page.close();
+    }
+  });
+
   it("leaves no animation running for any family under prefers-reduced-motion", async () => {
     const page = await browser!.newPage();
     try {
@@ -479,6 +662,46 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
           expect(running.markW).toBeGreaterThan(0);
           expect(running.markH).toBeGreaterThan(0);
         }
+      }
+    } finally {
+      await page.close();
+    }
+  });
+
+  it("keeps every style static and visible under reduced motion at the largest size (#0813)", async () => {
+    const page = await browser!.newPage();
+    try {
+      await page.goto("about:blank", { waitUntil: "load", timeout: 10_000 });
+      await page.evaluate(
+        ({ css }) => {
+          const s = document.createElement("style");
+          s.textContent = css;
+          document.head.appendChild(s);
+        },
+        { css: pageCss },
+      );
+      await (
+        page as unknown as {
+          emulateMedia(options: { reducedMotion: "reduce" }): Promise<void>;
+        }
+      ).emulateMedia({ reducedMotion: "reduce" });
+      for (const style of [...Object.keys(STYLE_SELECTORS), "three-dots"]) {
+        const running = await page.evaluate(
+          ({ html, webFont }) => {
+            document.body.innerHTML = `<div style="font-family:${webFont};font-size:12px">${html}</div>`;
+            const root = document.querySelector(".ai")!;
+            const rect = root.getBoundingClientRect();
+            return {
+              count: root.getAnimations({ subtree: true }).length,
+              width: rect.width,
+              height: rect.height,
+            };
+          },
+          { html: renderHtml(style, "coding", "3"), webFont },
+        );
+        expect(running.count, `${style} still animating at 3ch`).toBe(0);
+        expect(running.width, `${style} static mark width`).toBeGreaterThan(0);
+        expect(running.height, `${style} static mark height`).toBeGreaterThan(0);
       }
     } finally {
       await page.close();

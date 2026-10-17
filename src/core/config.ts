@@ -48,8 +48,11 @@ import type {
   AreaConfig,
 } from "./types.js";
 import {
+  ACTIVITY_ANIMATION_SIZES,
+  ACTIVITY_ANIMATION_SIZE_LABELS,
   ACTIVITY_ANIMATION_STYLES,
   ACTIVITY_ANIMATION_STYLE_LABELS,
+  normalizeActivityAnimationSize,
 } from "./activity-animation.js";
 import { DEFAULT_MAX_AUTO_SHOTS, STATUSES } from "./types.js";
 import { agentModelAllowRows } from "./budget-allowlist.js";
@@ -201,6 +204,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   uiTheme: "classic",
   defaultTaskMode: "freeform",
   activityAnimationStyle: "orbital-pixel",
+  activityAnimationSize: "auto",
   tunnelEnabled: false,
   ntfyEnabled: false,
   ntfyTopic: "",
@@ -1271,6 +1275,8 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     ) {
       cfg.activityAnimationStyle = activityStyle as (typeof ACTIVITY_ANIMATION_STYLES)[number];
     }
+    const activitySize = normalizeActivityAnimationSize(get("activityAnimationSize"));
+    if (activitySize) cfg.activityAnimationSize = activitySize;
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
     if (typeof get("autoEngineeringMode") === "boolean")
       cfg.autoEngineeringMode = get("autoEngineeringMode") as boolean;
@@ -2122,6 +2128,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       })),
       description:
         "Motion beside coding, reviewing, and other agent-activity labels. Compact styles use about 1–2 character widths; Three dots keeps the legacy row.",
+    },
+    {
+      key: "activityAnimationSize",
+      label: "Animation size",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.activityAnimationSize,
+      options: ACTIVITY_ANIMATION_SIZES.map((value) => ({
+        value,
+        label: ACTIVITY_ANIMATION_SIZE_LABELS[value],
+      })),
+      description:
+        "Inline space for the activity animation, in character widths of the label font. Auto keeps each style's existing compact size.",
     },
     {
       key: "defaultAssignee",
@@ -3057,6 +3077,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "defaultAssignee",
   "defaultTaskMode",
   "activityAnimationStyle",
+  "activityAnimationSize",
   "maxActiveTasks",
   "autoEngineeringMode",
   "autoEngineering.pmVeto",
