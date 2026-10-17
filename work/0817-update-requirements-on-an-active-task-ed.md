@@ -3,9 +3,6 @@ id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Server diffing, activity logging, engineer notice (UI/CLI/watcher), dialog, and tests line up with the spec, but handoff UI evidence is **STALE** (capture `27a022d65` vs HEAD `11fed622b`) and the PNGs only show the Work Queue board with no drawer, no **Update requirements** control, and no editor. Six console 404s for `/api/tasks/9999` and failed `waitFor`/click steps mean the light/dark visual acceptance criterion is not met."
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T12:52:26Z"
+updated_at: "2026-10-17T12:52:33Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-10-17T12:30:07.605Z: repoos check failed: ui verification failed (6 issue(s)): [request] HTTP 404 for http://127.0.0.1:60495/api/tasks/9999 (http://127.0.0.1:60495/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:60495/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:60495/api/tasks/9999 (http://127.0.0.1:60495/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:6… (truncated)"
 review_rounds: 2
@@ -213,3 +210,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T12:49:31Z · note: review pass 4: needs some work
 - 2026-10-17T12:49:31Z · needs_input
 - 2026-10-17T12:52:26Z · status review→active
+- 2026-10-17T12:52:33Z · needs_input
