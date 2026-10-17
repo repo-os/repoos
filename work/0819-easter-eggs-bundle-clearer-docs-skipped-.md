@@ -1,16 +1,18 @@
 ---
-updated_at: "2026-10-17T16:10:58Z"
-review_passes: 1
 id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and bird tracks"
 type: bug
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 created_at: "2026-10-17T12:52:42Z"
+updated_at: "2026-10-17T16:10:59Z"
+review_rounds: 1
+routing_switches: 1
+review_passes: 1
 ---
 ## Problem
 Four small items, one open easter-eggs bundle:
@@ -76,4 +78,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T16:09:50Z · status active→review
 - 2026-10-17T16:09:59Z · note: highlight [data-test-id="integration-timer"] matched nothing on /
 - 2026-10-17T16:10:58Z · note: review pass 1: needs some work
-
+- 2026-10-17T16:10:59Z · status review→active
