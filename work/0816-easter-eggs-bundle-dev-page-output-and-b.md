@@ -2,14 +2,14 @@
 id: "0816"
 title: "Easter eggs bundle: Dev page output and buttons, integration timer, badges, Human list"
 type: feature
-status: active
+status: ready
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-and-b
 created_at: "2026-10-17T08:02:53Z"
-updated_at: "2026-10-17T09:06:15Z"
+updated_at: "2026-10-17T11:29:32Z"
 review_passes: 1
 ---
 ## Problem
@@ -97,3 +97,4 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 - 2026-10-17T09:03:15Z · body
 - 2026-10-17T09:04:13Z · body
 - 2026-10-17T09:06:15Z · body
+- 2026-10-17T11:29:32Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
