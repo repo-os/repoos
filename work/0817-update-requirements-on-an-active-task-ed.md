@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/update-requirements-on-an-active-task-ed
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T09:11:31Z"
+updated_at: "2026-10-17T09:16:43Z"
 ---
 ## Problem
 Requirements (the task body: Problem, Desired UX, Acceptance criteria, Notes) are changed on main while the task is active, but the engineer works from its own copy of the task file in its worktree. A change made on main is not seen by the engineer until someone tells it or it merges main. On #0816 the engineer had to work out what had changed, because the body edits only reached a message.
@@ -37,3 +37,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T09:07:43Z · created · njachowski@gmail.com
 - 2026-10-17T09:11:25Z · status inbox→ready
 - 2026-10-17T09:11:31Z · status ready→active, branch
+- 2026-10-17T09:16:43Z · message_queued at 2026-10-17T09:16:43.896Z
