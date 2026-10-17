@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-17T06:58:27Z"
+review_passes: 1
 id: "0815"
 title: "CLI: --assigned-to for repoos new, and human tasks that do not need AI notes"
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/cli-assigned-to-for-repoos-new-and-human
 created_at: "2026-10-17T05:51:58Z"
-updated_at: "2026-10-17T06:58:27Z"
 ---
 ## Problem
 Creating a task for a human fails from the CLI. `repoos new` only accepts `--ai`, so there is no way to create a human-assigned task in one step (`--assigned-to` is only on `repoos update`). The only workaround is create, then update.
@@ -55,3 +56,4 @@ A human task is then also checked against rules written for AI work. Creating on
 - 2026-10-17T06:57:39Z · status active→review
 - 2026-10-17T06:57:39Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-17T06:58:27Z · note: review pass 1: good to go
+
