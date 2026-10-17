@@ -75,7 +75,7 @@ describe("needsInputPrimaryAction (#0511)", () => {
   });
 
   it("offers Send to PM for needs-human-step tasks (#0698)", () => {
-    expect(needsInputStatusLabel("needs-human-step")).toBe("Needs a human-only verification step");
+    expect(needsInputStatusLabel("needs-human-step")).toBe("Needs human step");
     expect(needsInputSuggestionText("needs-human-step")).toContain("Split the human-only");
     expect(
       needsInputPrimaryAction("needs-human-step", false, {
@@ -86,7 +86,7 @@ describe("needsInputPrimaryAction (#0511)", () => {
   });
 
   it("offers Send to PM for underspecified tasks", () => {
-    expect(needsInputStatusLabel("underspecified")).toBe("Doesn't look fully fleshed out");
+    expect(needsInputStatusLabel("underspecified")).toBe("Not fully fleshed out");
     expect(needsInputBannerText("underspecified")).toContain("doesn't look fully fleshed out");
     expect(needsInputSuggestionText("underspecified")).toContain("PM agent");
     expect(
@@ -98,6 +98,18 @@ describe("needsInputPrimaryAction (#0511)", () => {
       kind: "send-pm",
       label: "Send to PM (fleshes this out)",
     });
+  });
+
+  it("keeps shortened card badges meaningful (#0816)", () => {
+    // The two long badges the bundle trims, plus a lossless trim of dev-error.
+    expect(needsInputStatusLabel("needs-human-step")).toBe("Needs human step");
+    expect(needsInputStatusLabel("underspecified")).toBe("Not fully fleshed out");
+    expect(needsInputStatusLabel("dev-error")).toBe("Agent exited with error");
+    // The full-sentence banners still carry the meaning, so the shorter chip
+    // never has to explain itself alone.
+    expect(needsInputBannerText("needs-human-step")).toContain("human");
+    expect(needsInputBannerText("underspecified")).toContain("fleshed out");
+    expect(needsInputBannerText("dev-error")).toContain("error");
   });
 
   it("hides needs-input detail when it repeats the banner (#0778)", () => {

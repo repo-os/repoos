@@ -417,9 +417,26 @@ watch(
               <div v-if="t.kind === 'server' && t.url">
                 <dt>URL</dt>
                 <dd class="kv-wrap">
-                  <a class="dev-open" :href="t.url" target="_blank" rel="noreferrer">
+                  <!-- #0816: only a running target's URL resolves, so it is the
+                       only one that is a link. A stopped target shows the
+                       action that would make it live, greyed out, rather than a
+                       dead link that opens an unreachable page. -->
+                  <a
+                    v-if="isRunning(t)"
+                    class="dev-open"
+                    :href="t.url"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     Open {{ t.url.replace(/^https?:\/\//, "") }} ↗
                   </a>
+                  <span
+                    v-else
+                    class="dev-open-stopped"
+                    data-test-id="dev-url-stopped"
+                    data-tip="Start the target to open its URL"
+                    >Click Start</span
+                  >
                 </dd>
               </div>
               <div v-if="t.kind === 'server' && t.port !== undefined">
@@ -770,6 +787,13 @@ watch(
 }
 .dev-open:hover {
   text-decoration: underline;
+}
+/* #0816: a stopped target's URL is not reachable. It reads as plain grey text
+   naming the action that makes it live — no dead link to an unreachable page. */
+.dev-open-stopped {
+  color: var(--txt-faint);
+  cursor: default;
+  overflow-wrap: anywhere;
 }
 /* The chosen port (#0802), shown beside the URL so a running target's real
    port is visible at a glance. */

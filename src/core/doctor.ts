@@ -489,7 +489,7 @@ export function findConfigValueProblems(parsed: Record<string, unknown>): string
   const activitySize = get("activityAnimationSize");
   if (activitySize !== undefined && normalizeActivityAnimationSize(activitySize) === undefined) {
     problems.push(
-      `activityAnimationSize = ${JSON.stringify(activitySize)} (expected auto, 1, 1.5, 2, 2.5 or 3)`,
+      `activityAnimationSize = ${JSON.stringify(activitySize)} (expected 8, 12, 16, 20 or 24 pixels)`,
     );
   }
   enumCheck("theme", ["dark", "light", "system"]);
