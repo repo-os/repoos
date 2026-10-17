@@ -13168,6 +13168,106 @@
   margin-top: 8px;
 }
 
+/* ── Requirements-change result (#0817) ─────────────────────────────────────
+ * Shown in the Update-requirements dialog after a save: each changed section
+ * carries a themed accent so the human (and a screenshot) can see what the
+ * engineer was told. Text stays on --txt; only the marker and border carry the
+ * added/removed color, so contrast holds across every theme. */
+.reqs-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.reqs-result-lead {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+}
+.reqs-result-count {
+  color: var(--txt);
+}
+.reqs-diff-section {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-bright);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--txt) 4%, transparent);
+}
+.reqs-diff-section[data-kind="added"] {
+  border-left-color: var(--green);
+  background: color-mix(in srgb, var(--green) 9%, transparent);
+}
+.reqs-diff-section[data-kind="removed"] {
+  border-left-color: var(--red);
+  background: color-mix(in srgb, var(--red) 9%, transparent);
+}
+.reqs-diff-section[data-kind="edited"] {
+  border-left-color: var(--cyan);
+  background: color-mix(in srgb, var(--cyan) 9%, transparent);
+}
+.reqs-diff-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.reqs-diff-heading {
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--txt);
+}
+.reqs-diff-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+.reqs-diff-badge[data-kind="added"] {
+  color: var(--green);
+}
+.reqs-diff-badge[data-kind="removed"] {
+  color: var(--red);
+}
+.reqs-diff-badge[data-kind="edited"] {
+  color: var(--cyan);
+}
+.reqs-diff-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.reqs-diff-item {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--txt);
+  word-break: break-word;
+}
+.reqs-diff-item::before {
+  display: inline-block;
+  width: 1.2em;
+  font-weight: 700;
+}
+.reqs-diff-item[data-marker="+"]::before {
+  content: "+";
+  color: var(--green);
+}
+.reqs-diff-item[data-marker="-"]::before {
+  content: "−";
+  color: var(--red);
+}
+.reqs-error {
+  margin-top: 12px;
+}
+
 /* ── AI chat standard (#0444) ──────────────────────────────────────────────
  * Every AI chat surface (Ross, CTO, Debugger, Task Debugger, Playground, task
  * PM chat) shares these classes so they scroll, space and signal identically.

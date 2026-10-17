@@ -312,9 +312,22 @@ export class LiveIndex {
    */
   private reviewGuard: ((task: Task, prev: Task) => Promise<boolean>) | null = null;
 
+  /**
+   * Notified after the index applies a change whose body differs. #0817: the
+   * server uses it to tell an active task's engineer which requirement
+   * sections changed, regardless of whether the write came from the HTTP
+   * route, the CLI, or a direct file edit the watcher picked up.
+   */
+  private bodyChangeNotifier: ((task: Task, prev: Task) => void) | null = null;
+
   /** Wire the #0210 review-transition guard. The server owns the logic. */
   setReviewGuard(fn: (task: Task, prev: Task) => Promise<boolean>): void {
     this.reviewGuard = fn;
+  }
+
+  /** Wire the #0817 requirements-change notifier. The server owns the logic. */
+  setBodyChangeNotifier(fn: (task: Task, prev: Task) => void): void {
+    this.bodyChangeNotifier = fn;
   }
 
   constructor(config: RepoOSConfig) {
@@ -506,6 +519,17 @@ export class LiveIndex {
       // Only emit if something user-visible actually changed.
       if (Object.keys(prev).length > 0) {
         this.emit({ type: "task.updated", task, prev, at: now() });
+      }
+    }
+    // #0817: after the new state is in the index, let the server tell an active
+    // task's engineer what changed. The notifier owns the active/status and
+    // requirements-sections decisions. Wrapped: a failing subscriber must
+    // never break the index update.
+    if (existing && existing.body !== task.body && this.bodyChangeNotifier) {
+      try {
+        this.bodyChangeNotifier(task, existing);
+      } catch {
+        /* best-effort — the index update already landed */
       }
     }
   }
