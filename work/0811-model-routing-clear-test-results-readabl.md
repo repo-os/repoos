@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-clear-test-results-readabl
 created_at: "2026-10-17T04:20:42Z"
-updated_at: "2026-10-17T05:02:26Z"
+updated_at: "2026-10-17T05:05:31Z"
 ---
 ## Problem
 1. 'Test live connection' only shows one line ('Live decision call succeeded.'). The user can't see what was asked, what came back, which model answered, how long it took, or what it cost. It also gives no feedback while waiting.
@@ -38,3 +38,4 @@ Start from ModelRoutingPanel.vue (Test live connection, Recent decisions) and ru
 - 2026-10-17T04:51:00Z · status inbox→ready
 - 2026-10-17T04:51:03Z · status ready→active, branch
 - 2026-10-17T05:02:26Z · body
+- 2026-10-17T05:05:31Z · body
