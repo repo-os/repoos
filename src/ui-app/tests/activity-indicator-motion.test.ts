@@ -432,10 +432,10 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
           );
           // Fixed pixel width, identical at both font sizes. A 0.5px slack
           // absorbs subpixel rounding.
-          expect(
-            res.markW,
-            `${style} @${fontPx}px (${res.markW}px vs ${target}px)`,
-          ).toBeCloseTo(target, 0);
+          expect(res.markW, `${style} @${fontPx}px (${res.markW}px vs ${target}px)`).toBeCloseTo(
+            target,
+            0,
+          );
           expect(res.nextLeft + 0.5, `${style} @${fontPx}px label overlap`).toBeGreaterThan(
             res.aiRight,
           );
@@ -553,10 +553,9 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
           // Artwork and vertical envelope grow with the setting (3× between the
           // smallest and largest). A width-only change leaves this ratio at 1.
           expect(first.art, `${style}: measurable artwork`).toBeGreaterThan(0);
-          expect(
-            last.art / first.art,
-            `${style}: artwork scales with the setting`,
-          ).toBeGreaterThan(2.7);
+          expect(last.art / first.art, `${style}: artwork scales with the setting`).toBeGreaterThan(
+            2.7,
+          );
           expect(last.markH / first.markH, `${style}: mark height scales`).toBeGreaterThan(2.7);
         }
       }
