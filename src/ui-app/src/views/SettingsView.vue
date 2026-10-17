@@ -54,7 +54,11 @@ import ActivityIndicator from "../components/ActivityIndicator.vue";
 import CtoSafeActionsSettings from "../components/CtoSafeActionsSettings.vue";
 import { CTO_ACTIONS_SETTINGS_ROW_DESC } from "../../../core/cto-actions.js";
 import {
+  activityAnimationSizeCh,
+  activityAnimationSizeOrDefault,
   activityAnimationStyleOrDefault,
+  normalizeActivityAnimationSize,
+  type ActivityAnimationSize,
   type ActivityAnimationStyle,
 } from "../../../core/activity-animation.js";
 import type { ConfigField } from "../types";
@@ -554,6 +558,10 @@ const activityAnimationField = computed(() =>
   config.schema.find((f) => f.key === "activityAnimationStyle"),
 );
 
+const activityAnimationSizeField = computed(() =>
+  config.schema.find((f) => f.key === "activityAnimationSize"),
+);
+
 const ctoActionsField = computed(() => config.schema.find((f) => f.key === "cto.actions"));
 
 function ctoActionsFormValue(): string[] {
@@ -572,6 +580,31 @@ const activityAnimationPreviewStyle = computed((): ActivityAnimationStyle =>
       : undefined,
   ),
 );
+
+const activityAnimationPreviewSize = computed((): ActivityAnimationSize =>
+  activityAnimationSizeOrDefault(normalizeActivityAnimationSize(form.activityAnimationSize)),
+);
+
+const activityAnimationSizeIsAuto = computed(() => activityAnimationPreviewSize.value === "auto");
+
+/** Slider position while Auto is selected: the last explicit size, or 2ch. */
+const activityAnimationSliderValue = computed(
+  () => activityAnimationSizeCh(activityAnimationPreviewSize.value) ?? 2,
+);
+
+const activityAnimationSizeValueText = computed(() =>
+  activityAnimationSizeIsAuto.value
+    ? "Auto (each style's current size)"
+    : `${activityAnimationSliderValue.value}ch`,
+);
+
+function setActivityAnimationSizeAuto(auto: boolean): void {
+  form.activityAnimationSize = auto ? "auto" : String(activityAnimationSliderValue.value);
+}
+
+function setActivityAnimationSizeFromRange(value: string): void {
+  form.activityAnimationSize = normalizeActivityAnimationSize(value) ?? "auto";
+}
 
 // ---- Attachment storage (#0659) ----
 // The choice is a plain schema select, but whether the selected provider is
@@ -1243,10 +1276,52 @@ onUnmounted(() => {
                   </Select>
                 </div>
               </div>
+              <div
+                v-if="activityAnimationSizeField"
+                id="setting-activityAnimationSize"
+                class="setting-row"
+              >
+                <div class="setting-info">
+                  <div class="setting-label">Animation size</div>
+                  <div class="setting-desc">{{ activityAnimationSizeField.description }}</div>
+                </div>
+                <div class="setting-input">
+                  <div class="activity-size-control">
+                    <label class="activity-size-auto">
+                      <Switch
+                        :checked="activityAnimationSizeIsAuto"
+                        :disabled="config.saving"
+                        aria-label="Use each style's automatic animation size"
+                        @update:checked="setActivityAnimationSizeAuto"
+                      />
+                      <span>Auto</span>
+                    </label>
+                    <input
+                      id="setting-activityAnimationSize-range"
+                      class="activity-size-range"
+                      type="range"
+                      min="1"
+                      max="3"
+                      step="0.5"
+                      :value="activityAnimationSliderValue"
+                      :disabled="activityAnimationSizeIsAuto || config.saving"
+                      aria-label="Activity animation size in character widths"
+                      :aria-valuetext="activityAnimationSizeValueText"
+                      @input="
+                        setActivityAnimationSizeFromRange(($event.target as HTMLInputElement).value)
+                      "
+                    />
+                    <span class="activity-size-value" aria-hidden="true">{{
+                      activityAnimationSizeIsAuto ? "Auto" : `${activityAnimationSliderValue}ch`
+                    }}</span>
+                  </div>
+                </div>
+              </div>
               <div class="activity-animation-preview" aria-hidden="true">
                 <div class="activity-animation-preview-line">
                   <ActivityIndicator
                     :animation-style="activityAnimationPreviewStyle"
+                    :animation-size="activityAnimationPreviewSize"
                     activity="coding"
                     label="Coding preview"
                   />
@@ -1255,6 +1330,7 @@ onUnmounted(() => {
                 <div class="activity-animation-preview-line ai-reviewing-preview">
                   <ActivityIndicator
                     :animation-style="activityAnimationPreviewStyle"
+                    :animation-size="activityAnimationPreviewSize"
                     variant="reviewing"
                     activity="reviewing"
                     label="Reviewing preview"
@@ -1264,6 +1340,7 @@ onUnmounted(() => {
                 <div class="activity-animation-preview-line">
                   <ActivityIndicator
                     :animation-style="activityAnimationPreviewStyle"
+                    :animation-size="activityAnimationPreviewSize"
                     activity="agent"
                     label="Agent working preview"
                   />
