@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-17T12:54:45.006Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 11fed622 to 4d3eff03) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
@@ -13,7 +15,6 @@ model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
 updated_at: "2026-10-17T12:54:44Z"
 review_passes: 4
-last_check_failure: "repoos check at 2026-10-17T12:30:07.605Z: repoos check failed: ui verification failed (6 issue(s)): [request] HTTP 404 for http://127.0.0.1:60495/api/tasks/9999 (http://127.0.0.1:60495/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:60495/api/tasks/9999); [request] HTTP 404 for http://127.0.0.1:60495/api/tasks/9999 (http://127.0.0.1:60495/api/tasks/9999); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:6… (truncated)"
 review_rounds: 2
 ---
 ## Problem
@@ -213,3 +214,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T12:52:33Z · needs_input
 - 2026-10-17T12:52:33Z · message_queued at 2026-10-17T12:52:33.829Z
 - 2026-10-17T12:54:44Z · message_delivered: 2 message(s)
+
