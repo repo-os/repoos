@@ -11,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T10:21:57Z"
+updated_at: "2026-10-17T10:33:55Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-17T09:56:09.589Z: repoos check failed: the worktree changed while the gate was running (appeared: src/server/requirements-notice.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -55,13 +55,13 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 "highlight": ".sm-modal",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"update-requirements\"]"
+"waitFor": "[data-test-id=\"update-requirements\"]"
 },
 {
-  "click": "[data-test-id=\"update-requirements\"]"
+"click": "[data-test-id=\"update-requirements\"]"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ],
 "state": "drawer:activeRequirements",
@@ -74,13 +74,13 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 "highlight": ".sm-modal",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"update-requirements\"]"
+"waitFor": "[data-test-id=\"update-requirements\"]"
 },
 {
-  "click": "[data-test-id=\"update-requirements\"]"
+"click": "[data-test-id=\"update-requirements\"]"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ],
 "state": "drawer:activeRequirements",
@@ -123,3 +123,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T10:11:20Z · body: section Shots
 - 2026-10-17T10:12:02Z · message_queued at 2026-10-17T10:12:02.080Z
 - 2026-10-17T10:21:57Z · message_queued at 2026-10-17T10:21:57.954Z
+- 2026-10-17T10:33:55Z · message_queued at 2026-10-17T10:33:55.906Z
