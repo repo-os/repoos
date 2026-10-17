@@ -11,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T09:29:57Z"
+updated_at: "2026-10-17T09:32:05Z"
 ---
 ## Problem
 Requirements (the task body: Problem, Desired UX, Acceptance criteria, Notes) are changed on main while the task is active, but the engineer works from its own copy of the task file in its worktree. A change made on main is not seen by the engineer until someone tells it or it merges main. On #0816 the engineer had to work out what had changed, because the body edits only reached a message.
@@ -34,6 +34,55 @@ Requirements also get removed, not only added, so the action must cover both.
 ## Notes for AI
 Start from the body-update route for tasks (src/server, grep for the task body PATCH and repoos update --body) and the engineer message path (repoos message). The summary is computed by comparing the old and new body by section. Keep the notice short: changed sections and the new text of added items. Use the shared dialog components for the editor (AGENTS.md). Source: user request 2026-10-17 after the #0816 engineer had to work out which requirements had changed.
 
+## Shots
+```json
+[
+{
+  "label": "Update requirements action on the active task's spec header (light)",
+  "target": "default",
+  "route": "/work?task=0817&tab=details",
+  "highlight": "[data-test-id=\"update-requirements\"]",
+  "theme": "light"
+},
+{
+  "label": "Update requirements editor open (light)",
+  "target": "default",
+  "route": "/work?task=0817&tab=details",
+  "highlight": ".sm-modal",
+  "steps": [
+    {
+      "waitFor": "[data-test-id=\"update-requirements\"]"
+    },
+    {
+      "click": "[data-test-id=\"update-requirements\"]"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "theme": "light"
+},
+{
+  "label": "Update requirements editor open (dark)",
+  "target": "default",
+  "route": "/work?task=0817&tab=details",
+  "highlight": ".sm-modal",
+  "steps": [
+    {
+      "waitFor": "[data-test-id=\"update-requirements\"]"
+    },
+    {
+      "click": "[data-test-id=\"update-requirements\"]"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "theme": "dark"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-17T09:07:43Z · created · njachowski@gmail.com
@@ -44,3 +93,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T09:19:08Z · cli_override, model_override
 - 2026-10-17T09:29:00Z · body
 - 2026-10-17T09:29:57Z · body
+- 2026-10-17T09:32:05Z · body: section Shots
