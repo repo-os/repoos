@@ -2,14 +2,14 @@
 id: "0812"
 title: "Decision model inputs: model facts, project history, task progress, and a clear objective"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/decision-model-inputs-model-facts-projec
 created_at: "2026-10-17T04:33:38Z"
-updated_at: "2026-10-17T06:07:15Z"
+updated_at: "2026-10-17T06:20:25Z"
 review_passes: 1
 ---
 ## Problem
@@ -51,3 +51,4 @@ Start from src/server/model-routing-wiring.ts (buildRoutingBrief, MAX_ROUTING_BR
 - 2026-10-17T06:02:19Z · status review→active
 - 2026-10-17T06:02:33Z · message_delivered: 1 message(s)
 - 2026-10-17T06:07:15Z · body
+- 2026-10-17T06:20:25Z · status active→review
