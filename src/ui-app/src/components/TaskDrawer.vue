@@ -973,9 +973,7 @@ const shotsViewerShots = computed<ScreenshotShot[]>(() =>
     return {
       src: s.url,
       name: s.provenance || s.label || s.name,
-      ...(view
-        ? { verdict: view.verdict, ...(view.reason ? { warning: view.reason } : {}) }
-        : {}),
+      ...(view ? { verdict: view.verdict, ...(view.reason ? { warning: view.reason } : {}) } : {}),
     };
   }),
 );
