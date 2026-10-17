@@ -3039,6 +3039,13 @@
   width: calc(var(--ai-size-ch) * 0.25ch);
   height: calc(var(--ai-size-ch) * 0.25ch);
 }
+/* The check-chip spinner pins the wrapper to 10px. An explicit animation size
+   is an intentional larger allocation, so let it size itself rather than
+   overflowing a fixed box (#0813). */
+.ai-sized.ck-chip-spin {
+  width: auto;
+  height: auto;
+}
 /* Orbital pixel. The ring is 1em wide (≈12px at the 12px Settings preview)
    with the dot riding its inner edge; the track stays subordinate via opacity
    so the moving dot reads against any theme background (#0798). */
