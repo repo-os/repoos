@@ -2,10 +2,25 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_INTEGRATION_STALL_MS,
   integrationActiveCopy,
+  integrationCountdownLabel,
+  integrationMedianDuration,
+  integrationMedianTip,
   integrationPipelineStalled,
   integrationQueuedCopy,
 } from "../src/lib/integration-pipeline-ui";
-import type { IntegrationPipelineSnapshot } from "../src/types";
+import type { CloseOutOutcomeEvent, IntegrationPipelineSnapshot } from "../src/types";
+
+function outcome(taskId: string, minutesAgo: number, durationMs?: number): CloseOutOutcomeEvent {
+  return {
+    taskId,
+    outcome: "succeeded",
+    finishedAt: new Date(
+      Date.parse("2026-10-07T13:00:00.000Z") - minutesAgo * 60_000,
+    ).toISOString(),
+    reason: "",
+    durationMs,
+  };
+}
 
 function snap(
   over: Partial<IntegrationPipelineSnapshot> = {},
@@ -98,5 +113,41 @@ describe("integration-pipeline-ui (#0740)", () => {
     const copy = integrationActiveCopy(pipeline, now);
     expect(copy.stalled).toBe(false);
     expect(copy.label).toMatch(/^integrating · uploading bundle 27 MB · 45s/);
+  });
+});
+
+describe("integration median + countdown (#0814)", () => {
+  it("uses the last 15 timed runs, ignoring untimed history", () => {
+    // Newest first, 20 timed runs (1m 00s .. 20m 00s) plus two legacy rows.
+    const outcomes: CloseOutOutcomeEvent[] = [];
+    for (let i = 1; i <= 20; i++) outcomes.push(outcome(`t${i}`, i, i * 60_000));
+    outcomes.push(outcome("legacy1", 30), outcome("legacy2", 31));
+
+    const history = integrationMedianDuration(outcomes);
+    // The newest 15 are 1m..15m; the 8th is 8m. Older runs are excluded.
+    expect(history).toEqual({ medianMs: 8 * 60_000, count: 15 });
+  });
+
+  it("uses fewer runs when fewer have timing data, and says the count", () => {
+    const outcomes = [
+      outcome("a", 1, 60_000),
+      outcome("b", 2, 120_000),
+      outcome("c", 3, 300_000),
+      outcome("legacy", 4),
+    ];
+    expect(integrationMedianDuration(outcomes)).toEqual({ medianMs: 120_000, count: 3 });
+    expect(integrationMedianTip(outcomes)).toContain("last 3 integration runs");
+    expect(integrationMedianTip(outcomes)).toContain("2m 00s");
+  });
+
+  it("has no median when nothing was timed", () => {
+    expect(integrationMedianDuration([outcome("a", 1)])).toBeNull();
+    expect(integrationMedianTip([])).toContain("No completed integrations with timing yet");
+  });
+
+  it("renders T-MM:SS counting down, and T+ when over the median", () => {
+    expect(integrationCountdownLabel(26_000, 120_000)).toBe("T-01:34");
+    expect(integrationCountdownLabel(125_000, 120_000)).toBe("T+00:05");
+    expect(integrationCountdownLabel(0, 3_723_000)).toBe("T-1:02:03");
   });
 });

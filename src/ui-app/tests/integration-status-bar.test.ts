@@ -5,7 +5,8 @@ import { nextTick } from "vue";
 import IntegrationStatusBar from "../src/components/IntegrationStatusBar.vue";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
-import type { IntegrationPipelineSnapshot, Task } from "../src/types";
+import { useNoticesStore } from "../src/stores/notices";
+import type { CloseOutOutcomeEvent, IntegrationPipelineSnapshot, Task } from "../src/types";
 
 const activeSnapshot = (over: Partial<IntegrationPipelineSnapshot["active"]> = {}) =>
   ({
@@ -77,6 +78,64 @@ describe("IntegrationStatusBar", () => {
     vi.advanceTimersByTime(3000);
     await nextTick();
     expect(wrapper.text()).toContain("3m 10s");
+  });
+
+  it("shows the recent-run median and toggles a countdown on click (#0814)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    const notices = useNoticesStore();
+    // Newest first: 20 timed runs, 1m .. 20m. The newest 15 are 1m..15m,
+    // median 8m, so the chip explains that median and counts down from it.
+    notices.closeOutOutcomes = Array.from({ length: 20 }, (_, i) => ({
+      taskId: `0${i}`,
+      outcome: "succeeded",
+      finishedAt: new Date(Date.now() - i * 60_000).toISOString(),
+      reason: "",
+      durationMs: (i + 1) * 60_000,
+    })) as CloseOutOutcomeEvent[];
+    ui.setIntegrationBarCollapsed(false);
+    repo.integration = activeSnapshot();
+    const wrapper = render();
+    await nextTick();
+
+    const chip = wrapper.get('[data-test-id="integration-timer"]');
+    expect(chip.text()).toBe("3m 07s");
+    // A real button, so keyboard focus reaches the same tooltip/toggle.
+    expect(chip.element.tagName).toBe("BUTTON");
+    expect(chip.attributes("data-tip")).toContain("last 15 integration runs");
+    expect(chip.attributes("data-tip")).toContain("8m 00s");
+    expect(chip.attributes("aria-pressed")).toBe("false");
+
+    // Click: counts down from the median in the distinct italic style.
+    await chip.trigger("click");
+    await nextTick();
+    expect(chip.text()).toBe("T-04:53"); // 8m 00s - 3m 07s elapsed
+    expect(chip.classes()).toContain("ibar-chip--countdown");
+    expect(chip.attributes("aria-pressed")).toBe("true");
+
+    // Click again: back to the familiar elapsed stopwatch.
+    await chip.trigger("click");
+    await nextTick();
+    expect(chip.text()).toBe("3m 07s");
+    expect(chip.classes()).not.toContain("ibar-chip--countdown");
+    expect(chip.attributes("aria-pressed")).toBe("false");
+  });
+
+  it("keeps the timer usable with no timing history, explaining why (#0814)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    ui.setIntegrationBarCollapsed(false);
+    repo.integration = activeSnapshot();
+    const wrapper = render();
+    await nextTick();
+
+    const chip = wrapper.get('[data-test-id="integration-timer"]');
+    expect(chip.text()).toBe("3m 07s");
+    expect(chip.attributes("data-tip")).toContain("No completed integrations with timing yet");
+    await chip.trigger("click");
+    await nextTick();
+    // No median — clicking leaves the elapsed readout unchanged.
+    expect(chip.text()).toBe("3m 07s");
   });
 
   it("does not auto-collapse while a job is active", async () => {
