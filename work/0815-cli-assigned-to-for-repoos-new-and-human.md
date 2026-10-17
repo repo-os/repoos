@@ -53,3 +53,4 @@ A human task is then also checked against rules written for AI work. Creating on
 - 2026-10-17T06:47:40Z · body
 - 2026-10-17T06:50:19Z · body
 - 2026-10-17T06:57:39Z · status active→review
+- 2026-10-17T06:57:39Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
