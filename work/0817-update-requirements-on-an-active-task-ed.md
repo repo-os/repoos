@@ -39,7 +39,7 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 {
 "label": "Update requirements action on active task (light)",
 "target": "default",
-"route": "/work?task=9999&tab=details",
+"route": "/work?task=0817&tab=details",
 "highlight": "[data-test-id=\"update-requirements\"]",
 "state": "drawer:activeRequirements",
 "theme": "light",
@@ -52,7 +52,7 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 {
 "label": "Update requirements action on active task (dark)",
 "target": "default",
-"route": "/work?task=9999&tab=details",
+"route": "/work?task=0817&tab=details",
 "highlight": "[data-test-id=\"update-requirements\"]",
 "state": "drawer:activeRequirements",
 "theme": "dark",
@@ -65,10 +65,29 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 {
 "label": "Update requirements editor open (light)",
 "target": "default",
-"route": "/work?task=9999&tab=details",
+"route": "/work?task=0817&tab=details",
 "highlight": ".sm-modal",
 "state": "drawer:activeRequirements",
 "theme": "light",
+"steps": [
+{
+"waitFor": "[data-test-id=\"update-requirements\"]"
+},
+{
+"click": "[data-test-id=\"update-requirements\"]"
+},
+{
+"waitFor": ".sm-modal"
+}
+]
+},
+{
+"label": "Update requirements editor open (dark)",
+"target": "default",
+"route": "/work?task=0817&tab=details",
+"highlight": ".sm-modal",
+"state": "drawer:activeRequirements",
+"theme": "dark",
 "steps": [
 {
 "waitFor": "[data-test-id=\"update-requirements\"]"
