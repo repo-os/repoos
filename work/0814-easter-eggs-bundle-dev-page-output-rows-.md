@@ -72,3 +72,4 @@ Start from the Dev page view (grep for 'Last output' and 'Restart') and the inte
 - 2026-10-17T06:38:34Z · note: review pass 1: good to go
 - 2026-10-17T06:46:16Z · close-out gate completed in 259s
 - 2026-10-17T06:46:17Z · note: handoff requested (cli)
+- 2026-10-17T06:46:18Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
