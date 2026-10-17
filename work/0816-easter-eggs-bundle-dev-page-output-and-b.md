@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-and-b
 created_at: "2026-10-17T08:02:53Z"
-updated_at: "2026-10-17T09:03:15Z"
+updated_at: "2026-10-17T09:04:13Z"
 review_passes: 1
 ---
 ## Problem
@@ -48,12 +48,12 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 "route": "/work",
 "highlight": ".human-toggle, .human-rows",
 "steps": [
-  {
-    "click": ".human-toggle"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": ".human-toggle"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "board:cardChips"
 },
@@ -95,3 +95,4 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 - 2026-10-17T08:50:01Z · message_delivered: 4 message(s)
 - 2026-10-17T09:01:32Z · body: section Shots
 - 2026-10-17T09:03:15Z · body
+- 2026-10-17T09:04:13Z · body
