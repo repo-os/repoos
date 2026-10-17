@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-17T11:35:01.530Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 5fee14c7 to 5a922be7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
@@ -14,7 +16,6 @@ created_at: "2026-10-17T09:07:43Z"
 updated_at: "2026-10-17T11:35:01Z"
 review_rounds: 2
 review_passes: 2
-last_check_failure: "repoos check at 2026-10-17T09:56:09.589Z: repoos check failed: the worktree changed while the gate was running (appeared: src/server/requirements-notice.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 ---
 ## Problem
 Requirements (the task body: Problem, Desired UX, Acceptance criteria, Notes) are changed on main while the task is active, but the engineer works from its own copy of the task file in its worktree. A change made on main is not seen by the engineer until someone tells it or it merges main. On #0816 the engineer had to work out what had changed, because the body edits only reached a message.
@@ -145,3 +146,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T11:29:35Z · status review→active
 - 2026-10-17T11:31:32Z · message_queued at 2026-10-17T11:31:32.394Z
 - 2026-10-17T11:35:01Z · message_delivered: 2 message(s)
+
