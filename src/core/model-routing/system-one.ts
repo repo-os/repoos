@@ -131,9 +131,11 @@ function decodeProbabilities(id: string, raw: unknown): Record<string, number> {
 
 function decodeUsage(raw: unknown): RoutingDecisionResponse["usage"] {
   if (!isRecord(raw)) return null;
+  const cost = raw.cost ?? raw.total_cost ?? raw.cost_usd;
   return {
     inputTokens: typeof raw.input_tokens === "number" ? raw.input_tokens : null,
     outputTokens: typeof raw.output_tokens === "number" ? raw.output_tokens : null,
+    ...(typeof cost === "number" && Number.isFinite(cost) ? { costUsd: cost } : {}),
   };
 }
 

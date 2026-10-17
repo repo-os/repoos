@@ -66,11 +66,22 @@ export type RoutingAnswer =
       probabilities: Record<string, number>;
     };
 
+/** Provider-reported usage for one decision call. */
+export interface RoutingUsage {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  /**
+   * Dollar cost, when the provider reports one. Never estimated from token
+   * counts (#0676) — absent when the provider only reports tokens.
+   */
+  costUsd?: number | null;
+}
+
 /** Provider call result. `usage` is absent when the provider reports none. */
 export interface RoutingDecisionResponse {
   model: string;
   answers: Record<string, RoutingAnswer>;
-  usage: { inputTokens: number | null; outputTokens: number | null } | null;
+  usage: RoutingUsage | null;
 }
 
 /**
