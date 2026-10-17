@@ -2,14 +2,15 @@
 id: "0814"
 title: "Easter eggs bundle: Dev page output rows, output collapse memory, and button layout"
 type: feature
-status: inbox
+status: done
 priority: p3
 area: web
+merged_commit: a281b0368d428cafb8210d0afc1ffbe2a016a5c0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-rows-
 created_at: "2026-10-17T05:50:02Z"
-updated_at: "2026-10-17T06:46:18Z"
+updated_at: "2026-10-17T06:47:06Z"
 last_close_out_gate_ms: 258949
 last_close_out_gate_at: "2026-10-17T06:46:16.801Z"
 review_passes: 1
@@ -73,3 +74,4 @@ Start from the Dev page view (grep for 'Last output' and 'Restart') and the inte
 - 2026-10-17T06:46:16Z · close-out gate completed in 259s
 - 2026-10-17T06:46:17Z · note: handoff requested (cli)
 - 2026-10-17T06:46:18Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-17T06:47:06Z · status inbox→done, release:success
