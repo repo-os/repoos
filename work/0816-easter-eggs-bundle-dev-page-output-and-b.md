@@ -2,14 +2,14 @@
 id: "0816"
 title: "Easter eggs bundle: Dev page output and buttons, integration timer, badges, Human list"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-and-b
 created_at: "2026-10-17T08:02:53Z"
-updated_at: "2026-10-17T09:16:54Z"
+updated_at: "2026-10-17T09:27:41Z"
 review_passes: 1
 ---
 ## Problem
@@ -46,32 +46,32 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 ```json
 [
 {
-  "label": "Work board - Human button opens the human-assigned list; only a human task shows a chip (item 6)",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".human-toggle, .human-rows",
-  "steps": [
-    {
-      "click": ".human-toggle"
-    },
-    {
-      "waitMs": 300
-    }
-  ],
-  "state": "board:cardChips"
+"label": "Work board - Human button opens the human-assigned list; only a human task shows a chip (item 6)",
+"target": "default",
+"route": "/work",
+"highlight": ".human-toggle, .human-rows",
+"steps": [
+  {
+    "click": ".human-toggle"
+  },
+  {
+    "waitMs": 300
+  }
+],
+"state": "board:cardChips"
 },
 {
-  "label": "Dev page - running URL is a link, stopped URL shows greyed Click Start",
-  "target": "default",
-  "route": "/dev",
-  "highlight": ".dev-open, [data-test-id=\"dev-url-stopped\"]",
-  "state": "dev:running"
+"label": "Dev page - running URL is a link, stopped URL shows greyed Click Start",
+"target": "default",
+"route": "/dev",
+"highlight": ".dev-open, [data-test-id=\"dev-url-stopped\"]",
+"state": "dev:running"
 },
 {
-  "label": "Settings - animation size slider in pixels, no Auto toggle, default tick",
-  "target": "default",
-  "route": "/settings?tab=general",
-  "highlight": "#setting-activityAnimationSize, .activity-animation-preview"
+"label": "Settings - animation size slider in pixels, no Auto toggle, default tick",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "#setting-activityAnimationSize, .activity-animation-preview"
 }
 ]
 ```
@@ -103,3 +103,4 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 - 2026-10-17T09:15:07Z · body
 - 2026-10-17T09:15:08Z · message_queued at 2026-10-17T09:15:08.799Z
 - 2026-10-17T09:16:54Z · body: section Shots
+- 2026-10-17T09:27:41Z · status active→review
