@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-17T05:51:58Z"
-updated_at: "2026-10-17T05:52:09Z"
+updated_at: "2026-10-17T05:57:56Z"
 ---
 ## Problem
 Creating a task for a human fails from the CLI. `repoos new` only accepts `--ai`, so there is no way to create a human-assigned task in one step (`--assigned-to` is only on `repoos update`). The only workaround is create, then update.
@@ -27,12 +27,13 @@ A human task is then also checked against rules written for AI work. Creating on
 
 ## Acceptance criteria
 - `repoos new "<title>" --assigned-to human --hold true` creates a held, human-assigned task in one command, with no follow-up update.
-- `--assigned-to ai` and `--ai` create an AI-assigned task. An unknown value fails with a message that lists the allowed values.
-- A human-assigned task with no `## Notes for AI` section does not get `needs_input: underspecified`.
-- A human-assigned task whose criteria are steps a person performs does not get `needs-human-step`.
-- An AI-assigned task with an empty body still gets `underspecified` as before. The rules for AI tasks do not change.
-- Tests cover the three assignees (ai, human, default), the unknown value, and the two checks for human and AI tasks.
-- docs: user-docs/cli.md documents `--assigned-to` on `repoos new`, and the task-spec docs say that the underspecified and needs-human-step checks skip human-assigned tasks.
+- `repoos new --human` is the shorthand for `--assigned-to human`, and `--ai` for `--assigned-to ai`. Passing both `--ai` and `--human` fails with a clear error. An unknown `--assigned-to` value fails with a message that lists the allowed values.
+- A human-assigned task skips the needs-human-step check entirely, and skips the underspecified check (no `## Notes for AI` required).
+- An AI-assigned task that trips the needs-human-step check can be cleared with an explicit override on `repoos new` or `repoos update`, for example `--human-step-override "<reason>"`. The reason is stored in the task and shown in the activity log, so a keyword false positive is cleared on purpose, not by rewording.
+- The override is never silent: the check's match is still listed in the task's needs_input detail until the override is set.
+- An AI-assigned task with an empty body still gets `underspecified` as before.
+- Tests cover `--human`, `--ai`, `--assigned-to`, the unknown value, the skip for human tasks, and the override with its activity entry.
+- docs: user-docs/cli.md documents `--human`, `--ai`, `--assigned-to` and the override flag, and the task-spec docs say human-assigned tasks skip these checks.
 
 ## Notes for AI
 - The new command flags are parsed in src/commands/tasks.ts (around line 956, where `assignedTo` is set from `flags.ai`). The shared task model is in src/core/repoos.ts (around line 306, where assignee is derived).
@@ -44,3 +45,4 @@ A human task is then also checked against rules written for AI work. Creating on
 - 2026-10-17T05:51:58Z · created · njachowski@gmail.com
 - 2026-10-17T05:51:59Z · needs_input
 - 2026-10-17T05:52:09Z · body: section Acceptance criteria
+- 2026-10-17T05:57:56Z · body: section Acceptance criteria
