@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 690939
-last_close_out_gate_at: "2026-10-17T14:08:22.319Z"
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: fa41f96e3078cbbd9903ae14b9ee614ee2e9b2d4
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T14:08:22Z"
+updated_at: "2026-10-17T14:08:41Z"
+last_close_out_gate_ms: 690939
+last_close_out_gate_at: "2026-10-17T14:08:22.319Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-10-17T12:54:45.006Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 11fed622 to 4d3eff03) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -221,4 +222,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T13:05:10Z · note: review pass 5: good to go
 - 2026-10-17T13:25:48Z · close-out gate completed in 367s
 - 2026-10-17T14:08:22Z · close-out gate completed in 691s
-
+- 2026-10-17T14:08:41Z · status review→done, release:success
