@@ -11,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T10:08:57Z"
+updated_at: "2026-10-17T10:09:19Z"
 last_check_failure: "repoos check at 2026-10-17T09:56:09.589Z: repoos check failed: the worktree changed while the gate was running (appeared: src/server/requirements-notice.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 ---
 ## Problem
@@ -110,3 +110,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T10:08:57Z · note: waitFor [data-test-id="update-requirements"]: waitFor: Timeout 5000ms exceeded. on /work?task=0817&tab=details
 - 2026-10-17T10:08:57Z · note: click [data-test-id="update-requirements"]: click: Timeout 5000ms exceeded. on /work?task=0817&tab=details
 - 2026-10-17T10:08:57Z · note: highlight .sm-modal matched nothing on /work?task=0817&tab=details
+- 2026-10-17T10:09:19Z · note: review pass 1: needs some work
