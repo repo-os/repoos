@@ -697,7 +697,11 @@ onMounted(() => {
             <span class="mr-dec-v">
               {{ candLabel(d.actual) }}
               <span
-                v-if="d.selectionProbability != null && sameCandidate(d.actual, d.selection)"
+                v-if="
+                  d.kind === 'selected' &&
+                  d.selectionProbability != null &&
+                  sameCandidate(d.actual, d.selection)
+                "
                 class="mr-dec-conf"
                 data-testid="routing-decision-confidence"
               >
@@ -715,7 +719,11 @@ onMounted(() => {
               <span class="mr-dec-v">
                 {{ candLabel(d.recommendation) }}
                 <span
-                  v-if="d.selectionProbability != null && !sameCandidate(d.actual, d.selection)"
+                  v-if="
+                    d.kind === 'selected' &&
+                    d.selectionProbability != null &&
+                    !sameCandidate(d.actual, d.selection)
+                  "
                   class="mr-dec-conf"
                 >
                   {{ pct(d.selectionProbability) }}
