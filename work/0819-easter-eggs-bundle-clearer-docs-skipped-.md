@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-17T16:55:17Z"
+review_passes: 4
 id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and timer tooltip"
 type: bug
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T16:55:16Z"
-review_passes: 3
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -111,3 +111,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T16:53:13Z · body
 - 2026-10-17T16:53:57Z · status active→review
 - 2026-10-17T16:55:16Z · note: review pass 4: needs some work
+
