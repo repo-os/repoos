@@ -36,6 +36,14 @@ export interface CloseOutOutcomeEvent {
   finishedAt: string;
   /** The failure reason (first line shown by the bell); empty on success. */
   reason: string;
+  /**
+   * When the integration job started (ISO-8601 UTC), or null when the record
+   * predates timing capture. Paired with {@link durationMs}, this gives the
+   * status bar a durable history of how long close-outs usually take (#0814).
+   */
+  startedAt?: string | null;
+  /** Wall-clock close-out duration in ms, or null/absent when it was not timed. */
+  durationMs?: number | null;
 }
 
 export interface CloseOutOutcomeStore {
@@ -56,7 +64,9 @@ function isOutcomeEvent(v: unknown): v is CloseOutOutcomeEvent {
   return (
     typeof e.taskId === "string" &&
     typeof e.finishedAt === "string" &&
-    (e.outcome === "succeeded" || e.outcome === "failed" || e.outcome === "timedOut")
+    (e.outcome === "succeeded" || e.outcome === "failed" || e.outcome === "timedOut") &&
+    (e.startedAt === undefined || e.startedAt === null || typeof e.startedAt === "string") &&
+    (e.durationMs === undefined || e.durationMs === null || typeof e.durationMs === "number")
   );
 }
 

@@ -1002,7 +1002,17 @@ export class CloseOutOrchestrator {
     finishedAt: string,
   ): void {
     try {
-      this.onOutcome?.({ taskId, outcome, finishedAt, reason });
+      // Timing history for the status bar's median/countdown chip (#0814). The
+      // job record still carries its start time in every terminal path; a
+      // legacy/incomplete record simply contributes no sample.
+      const startedAt = this.coordinator.getJob(taskId)?.startedAt ?? null;
+      const startedMs = startedAt ? Date.parse(startedAt) : Number.NaN;
+      const finishedMs = Date.parse(finishedAt);
+      const durationMs =
+        Number.isFinite(startedMs) && Number.isFinite(finishedMs) && finishedMs >= startedMs
+          ? finishedMs - startedMs
+          : null;
+      this.onOutcome?.({ taskId, outcome, finishedAt, reason, startedAt, durationMs });
     } catch {
       /* observing outcomes must never break the close-out itself */
     }
