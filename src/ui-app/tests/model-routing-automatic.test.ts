@@ -306,6 +306,10 @@ describe("decision store (restart-safe)", () => {
       provider: "jev",
       providerModel: "jev-latest",
       providerUsage: null,
+      selectionProbability: null,
+      evidence: null,
+      brief: null,
+      answers: null,
       policyVersion: "2",
       durationMs: 12,
     };
