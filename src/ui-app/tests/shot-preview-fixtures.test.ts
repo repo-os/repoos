@@ -205,6 +205,21 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(task!.branch).toBe("");
   });
 
+  it("drawer:activeRequirements seeds #9999 when ?task=9999 is not on the board (#0817)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    window.history.replaceState(
+      {},
+      "",
+      "/work?task=9999&shotState=drawer%3AactiveRequirements",
+    );
+    applyShotPreviewFixture(repo, "drawer:activeRequirements");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task!.status).toBe("active");
+    expect(task!.body).toContain("## Acceptance criteria");
+  });
+
   it("drawer:activeRequirements upgrades the ?task= board task instead of #9999 (#0817)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
