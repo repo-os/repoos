@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-17T05:51:58Z"
-updated_at: "2026-10-17T05:51:59Z"
+updated_at: "2026-10-17T05:52:09Z"
 ---
 ## Problem
 Creating a task for a human fails from the CLI. `repoos new` only accepts `--ai`, so there is no way to create a human-assigned task in one step (`--assigned-to` is only on `repoos update`). The only workaround is create, then update.
@@ -29,7 +29,7 @@ A human task is then also checked against rules written for AI work. Creating on
 - `repoos new "<title>" --assigned-to human --hold true` creates a held, human-assigned task in one command, with no follow-up update.
 - `--assigned-to ai` and `--ai` create an AI-assigned task. An unknown value fails with a message that lists the allowed values.
 - A human-assigned task with no `## Notes for AI` section does not get `needs_input: underspecified`.
-- A human-assigned task whose acceptance criteria mention a real device or account does not get `needs-human-step`.
+- A human-assigned task whose criteria are steps a person performs does not get `needs-human-step`.
 - An AI-assigned task with an empty body still gets `underspecified` as before. The rules for AI tasks do not change.
 - Tests cover the three assignees (ai, human, default), the unknown value, and the two checks for human and AI tasks.
 - docs: user-docs/cli.md documents `--assigned-to` on `repoos new`, and the task-spec docs say that the underspecified and needs-human-step checks skip human-assigned tasks.
@@ -43,3 +43,4 @@ A human task is then also checked against rules written for AI work. Creating on
 
 - 2026-10-17T05:51:58Z · created · njachowski@gmail.com
 - 2026-10-17T05:51:59Z · needs_input
+- 2026-10-17T05:52:09Z · body: section Acceptance criteria
