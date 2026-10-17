@@ -299,10 +299,13 @@ describe("Work Queue Human list (#0816)", () => {
     expect(rows[0]!.find(".human-row-icon").exists()).toBe(true);
   });
 
-  it("excludes archived tasks and hides when no task is assigned to a human", async () => {
+  it("excludes done and archived tasks, and hides when no human task is waiting", async () => {
     mountWork([
       makeTask({ id: "0001", status: "ready", assignee: "ai" }),
-      makeTask({ id: "0004", status: "done", assignee: "human", isArchived: true }),
+      // Done: the human already handled it — not waiting on one.
+      makeTask({ id: "0005", status: "done", assignee: "human" }),
+      // Archived: parked, so it belongs to the Archived list, not this one.
+      makeTask({ id: "0004", status: "active", assignee: "human", isArchived: true }),
     ]);
     await flush();
     expect(wrapper!.find(".human-toggle").exists()).toBe(false);
