@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T15:56:33Z"
+updated_at: "2026-10-17T15:57:56Z"
 ---
 ## Problem
 Four small items, one open easter-eggs bundle:
@@ -55,3 +55,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T15:33:55Z · status ready→active, branch
 - 2026-10-17T15:47:04Z · body
 - 2026-10-17T15:56:33Z · body
+- 2026-10-17T15:57:56Z · body
