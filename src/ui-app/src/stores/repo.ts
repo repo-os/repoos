@@ -13,6 +13,7 @@ import {
   isShotPreviewCaptureActive,
   shotFixturePinnedIntegration,
 } from "../lib/shot-preview-fixtures";
+import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import type { StoryListSortOrder } from "../../../core/stories.js";
 import type {
   AgentOutputEntry,
@@ -600,6 +601,23 @@ function readNewVersion(): { hash: string; buildAt: string | null } | null {
     /* ignore corrupt/private-mode storage */
   }
   return null;
+}
+
+/**
+ * True while a handoff capture is rendering the client-only shot fixture task
+ * (#0819). The fixture seeds shots, handoff evidence and diff state into the
+ * store, so the drawer must not fetch them from the server: the id does not
+ * exist there and the resulting 404s fail the handoff UI gate.
+ *
+ * Capture-only and id-scoped: a normal session (no `?shotState=`) is never
+ * affected, and a real task id is never skipped.
+ */
+function isSeededShotFixtureTask(id: string): boolean {
+  return (
+    id === SHOT_PREVIEW_FIXTURE_TASK_ID &&
+    typeof window !== "undefined" &&
+    isShotPreviewCaptureActive(window.location)
+  );
 }
 
 export const useRepoStore = defineStore("repo", () => {
@@ -2802,6 +2820,8 @@ export const useRepoStore = defineStore("repo", () => {
    * the board's cards.
    */
   function loadDiffStats(id: string, opts: { priority?: boolean } = {}): Promise<void> {
+    // The shot fixture renders a card for a task the server doesn't know (#0819).
+    if (isSeededShotFixtureTask(id)) return Promise.resolve();
     if (diffStatsQueued.has(id)) {
       const at = diffStatsQueue.indexOf(id);
       if (opts.priority && at > 0) {
@@ -2904,6 +2924,8 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Load the full patch diff for a task. Best-effort. */
   async function loadDiff(id: string): Promise<void> {
+    // The shot fixture seeds just enough client state; a fetch would 404 (#0819).
+    if (isSeededShotFixtureTask(id)) return;
     try {
       const r = await api<{
         ok: boolean;
@@ -2947,6 +2969,8 @@ export const useRepoStore = defineStore("repo", () => {
    * section and its warning, never a blocker.
    */
   async function loadShots(id: string): Promise<void> {
+    // The shot fixture seeds its list client-side; a fetch would 404 (#0819).
+    if (isSeededShotFixtureTask(id)) return;
     try {
       const r = await api<{ ok: boolean; shots: ShotMeta[]; warning?: string }>(
         `/api/tasks/${id}/shots`,
@@ -2962,6 +2986,8 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Handoff UI verification evidence for the Changes tab (#0680). */
   async function loadUiVerification(id: string): Promise<void> {
+    // The shot fixture seeds its evidence client-side; a fetch would 404 (#0819).
+    if (isSeededShotFixtureTask(id)) return;
     try {
       const r = await api<{ ok: boolean; evidence: UiHandoffVerificationEvidence | null }>(
         `/api/tasks/${id}/ui-verification`,

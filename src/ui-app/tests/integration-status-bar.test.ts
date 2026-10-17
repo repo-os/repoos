@@ -108,12 +108,15 @@ describe("IntegrationStatusBar", () => {
     );
     expect(chip.attributes("aria-pressed")).toBe("false");
 
-    // Click: counts down from the median in the distinct italic style.
+    // Click: counts down from the median in the distinct italic style, and
+    // shows the two-line pane too (touch users and the handoff click step).
     await chip.trigger("click");
     await nextTick();
     expect(chip.text()).toBe("T-04:53"); // 8m 00s - 3m 07s elapsed
     expect(chip.classes()).toContain("ibar-chip--countdown");
     expect(chip.attributes("aria-pressed")).toBe("true");
+    const clickTip = wrapper.get('[data-test-id="integration-timer-tip"]');
+    expect(clickTip.get(".timer-tip-chip").text()).toBe("Median 8m 00s · 15 runs");
 
     // Click again: back to the familiar elapsed stopwatch.
     await chip.trigger("click");
