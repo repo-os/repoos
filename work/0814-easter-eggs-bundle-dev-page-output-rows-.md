@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-rows-
 created_at: "2026-10-17T05:50:02Z"
-updated_at: "2026-10-17T06:37:29Z"
+updated_at: "2026-10-17T06:38:34Z"
 ---
 ## Problem
 Four small Dev page and integration UI issues, bundled into the one open easter-eggs bundle:
@@ -66,3 +66,4 @@ Start from the Dev page view (grep for 'Last output' and 'Restart') and the inte
 - 2026-10-17T06:27:22Z · body: section Shots
 - 2026-10-17T06:29:11Z · body
 - 2026-10-17T06:37:29Z · status active→review
+- 2026-10-17T06:38:34Z · note: review pass 1: good to go
