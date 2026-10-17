@@ -52,6 +52,7 @@ import {
   ACTIVITY_ANIMATION_SIZE_LABELS,
   ACTIVITY_ANIMATION_STYLES,
   ACTIVITY_ANIMATION_STYLE_LABELS,
+  DEFAULT_ACTIVITY_ANIMATION_SIZE,
   normalizeActivityAnimationSize,
 } from "./activity-animation.js";
 import { DEFAULT_MAX_AUTO_SHOTS, STATUSES } from "./types.js";
@@ -204,7 +205,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   uiTheme: "classic",
   defaultTaskMode: "freeform",
   activityAnimationStyle: "orbital-pixel",
-  activityAnimationSize: "auto",
+  activityAnimationSize: DEFAULT_ACTIVITY_ANIMATION_SIZE,
   tunnelEnabled: false,
   ntfyEnabled: false,
   ntfyTopic: "",
@@ -2127,7 +2128,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: ACTIVITY_ANIMATION_STYLE_LABELS[value],
       })),
       description:
-        "Motion beside coding, reviewing, and other agent-activity labels. Compact styles use about 1–2 character widths; Three dots keeps the legacy row.",
+        "Motion beside coding, reviewing, and other agent-activity labels. Compact styles use a small fixed footprint; Three dots keeps the legacy row.",
     },
     {
       key: "activityAnimationSize",
@@ -2141,7 +2142,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: ACTIVITY_ANIMATION_SIZE_LABELS[value],
       })),
       description:
-        "Inline space for the activity animation, in character widths of the label font. Auto keeps each style's existing compact size.",
+        "Inline space for the activity animation, in pixels. The same fixed size renders everywhere it appears — task cards, the Dev page and this preview — regardless of the surrounding text size.",
     },
     {
       key: "defaultAssignee",

@@ -1070,11 +1070,6 @@ async function openDebuggerFromError(): Promise<void> {
           <User class="tc-human-chip-icon" aria-hidden="true" />{{ task.assignedTo || "human" }}
         </span>
         <span
-          v-else-if="task.assignee !== 'ai'"
-          class="tc-assignee-chip rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
-          >· open</span
-        >
-        <span
           v-if="diffStats && diffStats.filesChanged > 0"
           class="tc-file-chip"
           :title="`${diffStats.filesChanged} files, +${diffStats.additions} −${diffStats.deletions}`"

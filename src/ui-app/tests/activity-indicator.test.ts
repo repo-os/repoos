@@ -5,13 +5,15 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
+import { defineComponent, h } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import ActivityIndicator from "../src/components/ActivityIndicator.vue";
 import { useConfigStore } from "../src/stores/config";
 import {
   ACTIVITY_ANIMATION_SIZES,
   ACTIVITY_ANIMATION_STYLES,
-  ACTIVITY_ANIMATION_STYLE_SLOT_CH,
+  ACTIVITY_ANIMATION_STYLE_SLOT,
+  DEFAULT_ACTIVITY_ANIMATION_SIZE,
 } from "../../core/activity-animation.js";
 
 function mountIndicator(
@@ -94,32 +96,34 @@ describe("ActivityIndicator (#0787)", () => {
   });
 });
 
-describe("ActivityIndicator size (#0813)", () => {
+describe("ActivityIndicator size (#0813, fixed pixels #0816)", () => {
   beforeEach(() => {
     const pinia = createPinia();
     setActivePinia(pinia);
   });
 
-  it("defaults to Auto and leaves the established geometry untouched", () => {
+  it("defaults to a fixed pixel size, never a font-relative one", () => {
     const wrapper = mountIndicator({ animationStyle: "orbital-pixel" });
-    expect(wrapper.classes()).not.toContain("ai-sized");
-    expect(wrapper.element.getAttribute("style") ?? "").not.toContain("--ai-scale");
-  });
-
-  it("reads activityAnimationSize from the config form", () => {
-    const wrapper = mountIndicator({}, "orbital-pixel", "2.5");
     expect(wrapper.classes()).toContain("ai-sized");
-    expect(wrapper.element.getAttribute("style")).toContain("--ai-size-ch: 2.5");
+    expect(wrapper.element.getAttribute("style")).toContain(
+      `--ai-size-px: ${DEFAULT_ACTIVITY_ANIMATION_SIZE}px`,
+    );
   });
 
-  it("scales every compact style against its own Auto slot", () => {
+  it("reads activityAnimationSize from the config form as pixels", () => {
+    const wrapper = mountIndicator({}, "orbital-pixel", "20");
+    expect(wrapper.classes()).toContain("ai-sized");
+    expect(wrapper.element.getAttribute("style")).toContain("--ai-size-px: 20px");
+  });
+
+  it("fills each compact style's natural slot at the chosen pixel width", () => {
     for (const style of ACTIVITY_ANIMATION_STYLES) {
       if (style === "three-dots") continue;
-      const wrapper = mountIndicator({ animationStyle: style, animationSize: "3" });
+      const wrapper = mountIndicator({ animationStyle: style, animationSize: "24" });
       const styleAttr = wrapper.element.getAttribute("style") ?? "";
-      const expected = 3 / ACTIVITY_ANIMATION_STYLE_SLOT_CH[style];
-      expect(styleAttr, style).toContain("--ai-size-ch: 3");
-      expect(styleAttr, style).toContain(`--ai-scale: ${expected}`);
+      const expected = 24 / ACTIVITY_ANIMATION_STYLE_SLOT[style];
+      expect(styleAttr, style).toContain("--ai-size-px: 24px");
+      expect(styleAttr, style).toContain(`--ai-mark-px: ${expected}px`);
       wrapper.unmount();
     }
   });
@@ -127,7 +131,7 @@ describe("ActivityIndicator size (#0813)", () => {
   it("scales the legacy dot group without changing its style or label", () => {
     const wrapper = mountIndicator({
       animationStyle: "three-dots",
-      animationSize: "1",
+      animationSize: "8",
       label: "Working…",
     });
     expect(wrapper.classes()).toContain("ai-sized");
@@ -136,10 +140,9 @@ describe("ActivityIndicator size (#0813)", () => {
     expect(wrapper.get('[role="status"]').attributes("aria-label")).toBe("Working…");
   });
 
-  it("accepts sm and md contexts at every explicit size", () => {
+  it("accepts sm and md contexts at every size", () => {
     for (const size of ["sm", "md"] as const) {
       for (const step of ACTIVITY_ANIMATION_SIZES) {
-        if (step === "auto") continue;
         const wrapper = mountIndicator({
           size,
           animationStyle: "orbital-pixel",
@@ -149,5 +152,30 @@ describe("ActivityIndicator size (#0813)", () => {
         wrapper.unmount();
       }
     }
+  });
+
+  it("renders the same pixel width whatever the surrounding font is (#0816)", () => {
+    const Host = defineComponent({
+      props: { fontSize: { type: String, default: "12px" } },
+      setup(props) {
+        return () =>
+          h("div", { style: { fontSize: props.fontSize } }, [
+            h(ActivityIndicator, { animationStyle: "orbital-pixel", animationSize: "20" }),
+          ]);
+      },
+    });
+    const small = mount(Host, { props: { fontSize: "9px" } });
+    const large = mount(Host, { props: { fontSize: "22px" } });
+    const styleVar = (w: ReturnType<typeof mount>): string =>
+      w.get(".ai").element.getAttribute("style") ?? "";
+    expect(styleVar(small)).toContain("--ai-size-px: 20px");
+    expect(styleVar(large)).toContain("--ai-size-px: 20px");
+
+    // The stylesheet must resolve the slot in fixed pixels — a regression to
+    // `ch`/`em` here is what made the size change with the surrounding font.
+    const css = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
+    expect(css).toMatch(/\.ai-sized \.ai-mark \{[^}]*width: var\(--ai-size-px\)/);
+    expect(css).toMatch(/\.ai-sized \.ai-mark \{[^}]*font-size: var\(--ai-mark-px/);
+    expect(css).not.toContain("--ai-size-ch");
   });
 });

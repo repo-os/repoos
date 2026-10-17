@@ -13,8 +13,12 @@ import ActivityIndicator from "../src/components/ActivityIndicator.vue";
 import {
   ACTIVITY_ANIMATION_SIZES,
   ACTIVITY_ANIMATION_SIZE_LABELS,
+  ACTIVITY_ANIMATION_SIZE_MAX_PX,
+  ACTIVITY_ANIMATION_SIZE_MIN_PX,
+  ACTIVITY_ANIMATION_SIZE_STEP_PX,
   ACTIVITY_ANIMATION_STYLES,
   ACTIVITY_ANIMATION_STYLE_LABELS,
+  DEFAULT_ACTIVITY_ANIMATION_SIZE,
 } from "../../core/activity-animation.js";
 
 const api = vi.spyOn(apiMod, "api");
@@ -54,7 +58,7 @@ function settingsConfigResponse(): {
   return {
     config: {
       activityAnimationStyle: "orbital-pixel",
-      activityAnimationSize: "auto",
+      activityAnimationSize: DEFAULT_ACTIVITY_ANIMATION_SIZE,
     },
     schema: [
       schemaField("activityAnimationStyle", "select", {
@@ -65,7 +69,7 @@ function settingsConfigResponse(): {
         })),
       }),
       schemaField("activityAnimationSize", "select", {
-        default: "auto",
+        default: DEFAULT_ACTIVITY_ANIMATION_SIZE,
         options: ACTIVITY_ANIMATION_SIZES.map((value) => ({
           value,
           label: ACTIVITY_ANIMATION_SIZE_LABELS[value],
@@ -118,61 +122,67 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-describe("Settings activity animation size (#0813)", () => {
-  it("offers Auto plus a 1–3ch slider that previews and saves the explicit size", async () => {
+describe("Settings activity animation size (#0813, pixels #0816)", () => {
+  it("offers a pixel slider with no Auto toggle and a default tick", async () => {
     const config = useConfigStore();
     const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
 
     const wrapper = await mountSettings();
     const range = wrapper.get("#setting-activityAnimationSize-range");
-    expect(range.attributes("min")).toBe("1");
-    expect(range.attributes("max")).toBe("3");
-    expect(range.attributes("step")).toBe("0.5");
-    expect((range.element as HTMLInputElement).disabled).toBe(true);
-
-    const autoSwitch = wrapper.get("#setting-activityAnimationSize [role='switch']");
-    expect(autoSwitch.attributes("aria-checked")).toBe("true");
-    await autoSwitch.trigger("click");
-    await flushPromises();
+    expect(range.attributes("min")).toBe(String(ACTIVITY_ANIMATION_SIZE_MIN_PX));
+    expect(range.attributes("max")).toBe(String(ACTIVITY_ANIMATION_SIZE_MAX_PX));
+    expect(range.attributes("step")).toBe(String(ACTIVITY_ANIMATION_SIZE_STEP_PX));
     expect((range.element as HTMLInputElement).disabled).toBe(false);
+    expect((range.element as HTMLInputElement).value).toBe(DEFAULT_ACTIVITY_ANIMATION_SIZE);
 
-    await range.setValue("2.5");
+    // No Auto toggle anywhere in the control.
+    expect(wrapper.find("#setting-activityAnimationSize [role='switch']").exists()).toBe(false);
+
+    // The default (the middle step) is marked with a tick.
+    const tick = wrapper.get(
+      "#setting-activityAnimationSize [data-test-id='activity-size-default-tick']",
+    );
+    expect(tick.attributes("style")).toContain("left: 50%");
+
+    expect(wrapper.get("#setting-activityAnimationSize .activity-size-value").text()).toBe(
+      `${DEFAULT_ACTIVITY_ANIMATION_SIZE} px`,
+    );
+
+    await range.setValue("20");
     await flushPromises();
 
+    expect(wrapper.get("#setting-activityAnimationSize .activity-size-value").text()).toBe("20 px");
     for (const indicator of preview(wrapper)) {
       expect(indicator.classes()).toContain("ai-sized");
-      expect(indicator.element.getAttribute("style")).toContain("--ai-size-ch: 2.5");
+      expect(indicator.element.getAttribute("style")).toContain("--ai-size-px: 20px");
     }
-    expect(wrapper.get("#setting-activityAnimationSize .activity-size-value").text()).toBe("2.5ch");
 
     await vi.waitFor(() => expect(saveSpy).toHaveBeenCalled(), { timeout: 3000 });
     const body = saveSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
-    expect(body.activityAnimationSize).toBe("2.5");
+    expect(body.activityAnimationSize).toBe("20");
     saveSpy.mockRestore();
     wrapper.unmount();
   });
 
-  it("returns to Auto, which clears the explicit size for persistence", async () => {
+  it("starts at the saved size and maps a legacy character-width value", async () => {
     const config = useConfigStore();
-    config.form.activityAnimationSize = "3";
-    const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
-
+    config.form.activityAnimationSize = "24";
     const wrapper = await mountSettings();
-    const range = wrapper.get("#setting-activityAnimationSize-range");
-    expect((range.element as HTMLInputElement).disabled).toBe(false);
-
-    await wrapper.get("#setting-activityAnimationSize [role='switch']").trigger("click");
-    await flushPromises();
-    expect((range.element as HTMLInputElement).disabled).toBe(true);
-    for (const indicator of preview(wrapper)) {
-      expect(indicator.classes()).not.toContain("ai-sized");
-      expect(indicator.element.getAttribute("style") ?? "").not.toContain("--ai-scale");
-    }
-
-    await vi.waitFor(() => expect(saveSpy).toHaveBeenCalled(), { timeout: 3000 });
-    const body = saveSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
-    expect(body.activityAnimationSize).toBe("auto");
-    saveSpy.mockRestore();
+    expect(
+      (wrapper.get("#setting-activityAnimationSize-range").element as HTMLInputElement).value,
+    ).toBe("24");
+    expect(wrapper.get("#setting-activityAnimationSize .activity-size-value").text()).toBe("24 px");
     wrapper.unmount();
+
+    // A value saved before the unit change still selects a size, by ordinal.
+    config.form.activityAnimationSize = "2";
+    const legacy = await mountSettings();
+    expect(
+      (legacy.get("#setting-activityAnimationSize-range").element as HTMLInputElement).value,
+    ).toBe("16");
+    for (const indicator of preview(legacy)) {
+      expect(indicator.element.getAttribute("style")).toContain("--ai-size-px: 16px");
+    }
+    legacy.unmount();
   });
 });

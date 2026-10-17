@@ -293,7 +293,7 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
     "automatically refresh stale screenshots evidence review rerun once",
   activityAnimationStyle:
     "activity indicator animation coding reviewing agent working dots orbital compact",
-  activityAnimationSize: "activity indicator animation size larger smaller scale slider char width",
+  activityAnimationSize: "activity indicator animation size larger smaller scale slider pixels px",
   "reviewVerification.guardTestCheck":
     "guard negative test review clamp needs some work check step rejection block disable turn off",
   "reviewVerification.testGlobs":
