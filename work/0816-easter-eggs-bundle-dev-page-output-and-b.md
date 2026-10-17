@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-and-b
 created_at: "2026-10-17T08:02:53Z"
-updated_at: "2026-10-17T08:26:30Z"
+updated_at: "2026-10-17T08:26:43Z"
 ---
 ## Problem
 Five small UI items, the one open easter-eggs bundle. Items 1 to 4 of the earlier bundle #0814 already landed on main in 3e66d37e9 and are not repeated here.
@@ -17,91 +17,26 @@ Five small UI items, the one open easter-eggs bundle. Items 1 to 4 of the earlie
 1. Some card badges are too long: 'doesn't look fully fleshed out' and 'needs a human-only verification step' take a lot of room (src/ui-app/src/lib/needs-input-ui.ts).
 2. There is no quick way to see every task that needs a human. Tasks are only in their status columns.
 3. On a stopped Dev target, the URL line is clickable and opens a dead page. It should be greyed out.
-4. The activity animation looks much bigger in Settings than in the app. Settings says 'Shown at in-app size', but on task cards and the Dev page the same size looks about half as big. Cause: the sizes are set in ch units (src/ui-app/src/components/ActivityIndicator.vue, sizeStyle; src/ui-app/src/style.css, --ai-size-ch). A ch is the width of a character in the container's own font, and the Settings preview sits in a larger font than the card text. The fix is to set the indicator's font size explicitly, so 1ch is the same everywhere, and keep the Settings preview as the reference size.
+4. The activity animation looks much bigger in Settings than in the app. Settings says 'Shown at in-app size', but on task cards and the Dev page the same setting looks about half as big. Cause: the size is set in ch units (src/ui-app/src/components/ActivityIndicator.vue, sizeStyle; src/ui-app/src/style.css, --ai-size-ch). A ch is the width of a character in the container's own font, and the Settings preview sits in a larger font than the card text.
 5. The animation size control has a slider plus an Auto toggle. The user prefers the slider alone. Remove the Auto toggle; the slider's starting value is the size used. Mark the default position on the slider with a small tick instead of an Auto option.
 
 ## Desired UX
 - Item 1: shorten badge text by a word or two where the meaning stays clear: 'doesn't look fully fleshed out' becomes 'not fully fleshed out'; 'needs a human-only verification step' becomes 'Needs human step'. Review the other long badges and shorten any that lose nothing.
 - Item 2: a 'Human' button beside the Archived button. It toggles a list of every task that needs a human, using the same human icon and colour as the human chip on the cards. The list works like the Archived list.
 - Item 3: while the target is stopped, the URL is not a link and shows 'Click Start' in grey, matching the Start button. When running, it is a normal link.
-- Item 4: the activity animation renders at the same physical size on every surface at the same setting. The Settings preview stays the reference size. Existing saved sizes keep their meaning.
+- Item 4: the activity animation has a fixed pixel size per setting, the same on every surface (task card, Dev page, Settings preview). The size no longer depends on the surrounding font. The Settings preview size is the reference, and saved sizes keep their meaning. Do not solve this by pinning font sizes.
 - Item 5: no Auto toggle. The slider is the only control, starting at the saved value (or the default when none is saved). A tick marks the default position. The 'Shown at in-app size' copy is updated to match what is shown.
 
 ## Acceptance criteria
 - Test: the badges read 'not fully fleshed out' and 'Needs human step'; other shortened badges keep their meaning.
 - Test: the Human button lists every task that needs a human, with the human icon and colour, and toggles like Archived.
 - Test: a stopped target's URL is not a link and shows 'Click Start' in grey; a running target's URL is a link.
-- Test: the activity indicator at a given size measures the same width on a task card, the Dev page and the Settings preview.
+- Test: at one setting, the activity indicator renders at the same pixel width on a task card, the Dev page and the Settings preview.
 - Test: the animation size control has no Auto toggle, starts at the saved or default value, and shows a tick at the default.
 - Light and dark themes checked; keyboard operable.
 
 ## Notes for AI
 Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list (grep 'Archived') for the Human button, the human chip styling on task cards, the Dev target URL line in src/ui-app/src/views/DevView.vue, and for items 4 and 5 src/ui-app/src/components/ActivityIndicator.vue, src/ui-app/src/style.css (--ai-size-ch) and the animation size control in src/ui-app/src/views/SettingsView.vue (activityAnimationSizeIsAuto, the Auto toggle). Use the shared tooltip or popover component (AGENTS.md). Source: user requests 2026-10-17.
-
-## Shots
-```json
-[
-{
-"label": "Card badge reads Needs human step after the trim (light)",
-"target": "default",
-"route": "/work?status=ready",
-"highlight": "[data-task-id=\"9999\"] .tc-needs-input",
-"steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] .tc-needs-input"
-  }
-],
-"state": "card:humanStep",
-"theme": "light"
-},
-{
-"label": "Human list open — every human-assigned task, violet person glyph (light)",
-"target": "default",
-"route": "/work",
-"highlight": ".human-toggle, .human-rows",
-"steps": [
-  {
-    "waitFor": ".human-toggle"
-  },
-  {
-    "click": ".human-toggle"
-  },
-  {
-    "waitMs": 300
-  }
-],
-"state": "board:cardChips",
-"theme": "light"
-},
-{
-"label": "Human list open — violet person glyph (dark)",
-"target": "default",
-"route": "/work",
-"highlight": ".human-toggle, .human-rows",
-"steps": [
-  {
-    "waitFor": ".human-toggle"
-  },
-  {
-    "click": ".human-toggle"
-  },
-  {
-    "waitMs": 300
-  }
-],
-"state": "board:cardChips",
-"theme": "dark"
-},
-{
-"label": "Dev URL: stopped target shows grey Click Start, running target is a link",
-"target": "default",
-"route": "/dev",
-"highlight": ".dev-open-stopped, .dev-open",
-"state": "dev:running",
-"theme": "light"
-}
-]
-```
 
 ## Activity
 
@@ -114,3 +49,4 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 - 2026-10-17T08:23:42Z · message_queued at 2026-10-17T08:23:42.919Z
 - 2026-10-17T08:24:13Z · body: section Shots
 - 2026-10-17T08:26:30Z · message_queued at 2026-10-17T08:26:30.553Z
+- 2026-10-17T08:26:43Z · body
