@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-rows-
 created_at: "2026-10-17T05:50:02Z"
-updated_at: "2026-10-17T06:27:22Z"
+updated_at: "2026-10-17T06:29:11Z"
 ---
 ## Problem
 Four small Dev page and integration UI issues, bundled into the one open easter-eggs bundle:
@@ -40,16 +40,16 @@ Start from the Dev page view (grep for 'Last output' and 'Restart') and the inte
 ```json
 [
 {
-  "label": "Dev card: actions sit below the target name, and a failed run opens with six scrollable output lines",
-  "target": "default",
-  "route": "/dev?shotState=dev:failed",
-  "highlight": ".dev-card"
+"label": "Dev card: actions sit below the target name, and a failed run opens with six scrollable output lines",
+"target": "default",
+"route": "/dev?shotState=dev:failed",
+"highlight": ".dev-card"
 },
 {
-  "label": "Dev card: a clean run starts minimised, with Start/Stop/Restart on the right",
-  "target": "default",
-  "route": "/dev?shotState=dev:running",
-  "highlight": ".dev-card"
+"label": "Dev card: a clean run starts minimised, with Start/Stop/Restart on the right",
+"target": "default",
+"route": "/dev?shotState=dev:running",
+"highlight": ".dev-card"
 }
 ]
 ```
@@ -64,3 +64,4 @@ Start from the Dev page view (grep for 'Last output' and 'Restart') and the inte
 - 2026-10-17T06:24:25Z · body
 - 2026-10-17T06:26:29Z · body
 - 2026-10-17T06:27:22Z · body: section Shots
+- 2026-10-17T06:29:11Z · body
