@@ -122,10 +122,7 @@ async function openFromTaskParam(raw: string): Promise<void> {
     // delay clearing the URL (a refresh while the param lingers would
     // re-open the panel).
     void ui.openTask(local);
-  } else if (
-    typeof window !== "undefined" &&
-    isShotPreviewCaptureActive(window.location)
-  ) {
+  } else if (typeof window !== "undefined" && isShotPreviewCaptureActive(window.location)) {
     // Fixture-only id during capture — never request a missing task from the API.
     return;
   } else {
