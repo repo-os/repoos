@@ -21,6 +21,7 @@ import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
 import Input from "./ui/input.vue";
+import { relTime } from "../lib/time";
 import { ROUTING_PROVIDER_CHOICES } from "../../../core/model-routing/config.js";
 import { ROUTING_QUESTION_INSTRUCTIONS } from "../../../core/model-routing/policy.js";
 
@@ -69,6 +70,8 @@ const probeMessage = ref("");
 const probeRunning = ref<"config" | "live" | null>(null);
 /** The structured result of the last live call, rendered as a card. */
 const liveResult = ref<ModelRoutingLiveResultView | null>(null);
+/** The live card's details are collapsed to the summary by default (#0818). */
+const liveExpanded = ref(false);
 /** Decision ids whose details area is expanded (collapsed by default). */
 const expanded = ref<Set<string>>(new Set());
 const keyDraft = ref("");
@@ -113,10 +116,15 @@ function decisionStatus(d: RoutingDecisionView): string {
   return "Recorded";
 }
 
-function shortTime(iso: string): string {
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return iso;
-  return new Date(t).toLocaleString();
+/** Human-readable relative age, e.g. "14 seconds ago" (#0818). */
+function relativeTime(iso: string): string {
+  return relTime(iso);
+}
+
+/** The exact local timestamp, shown in the styled tooltip on hover/focus. */
+function fullTime(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
 }
 
 async function patch(partial: Record<string, unknown>): Promise<void> {
@@ -157,8 +165,10 @@ async function setHumanStepCheck(enabled: boolean): Promise<void> {
 async function runProbe(live: boolean): Promise<void> {
   if (probeRunning.value) return;
   probeRunning.value = live ? "live" : "config";
-  if (live) liveResult.value = null;
-  else probeMessage.value = "";
+  if (live) {
+    liveResult.value = null;
+    liveExpanded.value = false;
+  } else probeMessage.value = "";
   try {
     const res = await api<ModelRoutingStatusResponse>(
       "/api/model-routing/probe",
@@ -220,6 +230,23 @@ function usageText(
 function usageLabel(u: { costUsd?: number | null } | null | undefined): string {
   return u?.costUsd != null ? "Cost" : "Tokens";
 }
+
+/** The live probe's chosen candidate and its probability, for the summary (#0818). */
+function liveChosen(
+  live: ModelRoutingLiveResultView,
+): { label: string; probability: number | null } | null {
+  for (const a of live.answers ?? []) {
+    if (!a.chosen) continue;
+    const opt = a.options?.find((o) => o.label === a.chosen);
+    return { label: a.chosen, probability: opt?.probability ?? a.probability ?? null };
+  }
+  return null;
+}
+
+/** The chosen candidate of the current live result, if the provider named one. */
+const liveChosenCandidate = computed(() =>
+  liveResult.value ? liveChosen(liveResult.value) : null,
+);
 
 /** A stable candidate key, matching the server's `candidateKey`. */
 function candidateKeyOf(
@@ -619,6 +646,15 @@ onMounted(() => {
         <span class="mr-live-title">
           {{ liveResult.ok ? "Live decision call" : "Live decision call failed" }}
         </span>
+        <button
+          type="button"
+          class="mr-dec-toggle-btn mr-live-toggle"
+          :aria-expanded="liveExpanded"
+          data-testid="routing-live-toggle"
+          @click="liveExpanded = !liveExpanded"
+        >
+          {{ liveExpanded ? "Hide details" : "Show details" }}
+        </button>
       </div>
       <p class="mr-live-reason" data-testid="routing-live-reason">
         {{ liveResult.message }}
@@ -636,42 +672,56 @@ onMounted(() => {
           <dt>Model</dt>
           <dd data-testid="routing-live-model">{{ liveResult.model }}</dd>
         </div>
-        <div>
-          <dt>Response time</dt>
-          <dd data-testid="routing-live-time">{{ formatDuration(liveResult.durationMs) }}</dd>
-        </div>
         <div v-if="usageText(liveResult.usage)">
           <dt>{{ usageLabel(liveResult.usage) }}</dt>
           <dd data-testid="routing-live-usage">{{ usageText(liveResult.usage) }}</dd>
         </div>
+        <div v-if="liveChosenCandidate">
+          <dt>Chosen</dt>
+          <dd data-testid="routing-live-chosen">
+            {{ liveChosenCandidate.label }}
+            <span v-if="liveChosenCandidate.probability != null" class="mr-dec-conf">
+              {{ pct(liveChosenCandidate.probability) }}
+            </span>
+          </dd>
+        </div>
       </dl>
 
-      <div v-if="liveResult.prompt" class="mr-live-block">
-        <div class="mr-live-k">Question sent</div>
-        <p class="mr-live-prompt" data-testid="routing-live-prompt">{{ liveResult.prompt }}</p>
-      </div>
+      <div v-if="liveExpanded" class="mr-live-details" data-testid="routing-live-details">
+        <dl class="kv-rows mr-live-facts" style="--kv-label-w: 9rem">
+          <div>
+            <dt>Response time</dt>
+            <dd data-testid="routing-live-time">{{ formatDuration(liveResult.durationMs) }}</dd>
+          </div>
+        </dl>
 
-      <div v-if="liveResult.answers?.length" class="mr-live-block">
-        <div class="mr-live-k">Answer received</div>
-        <div
-          v-for="a in liveResult.answers"
-          :key="a.id"
-          class="mr-live-answer"
-          data-testid="routing-live-answer"
-        >
-          <div class="mr-live-q">{{ a.question }}</div>
-          <ul v-if="a.options?.length" class="mr-live-opts">
-            <li
-              v-for="o in a.options"
-              :key="o.key"
-              :class="{ 'mr-live-opt-chosen': a.chosen === o.label }"
-            >
-              <span class="mr-live-opt-label">{{ o.label }}</span>
-              <span class="mr-live-opt-pct">{{ pct(o.probability) }}</span>
-            </li>
-          </ul>
-          <div v-else-if="a.probability != null" class="mr-live-noul">
-            {{ pct(a.probability) }}
+        <div v-if="liveResult.prompt" class="mr-live-block">
+          <div class="mr-live-k">Question sent</div>
+          <p class="mr-live-prompt" data-testid="routing-live-prompt">{{ liveResult.prompt }}</p>
+        </div>
+
+        <div v-if="liveResult.answers?.length" class="mr-live-block">
+          <div class="mr-live-k">Answer received</div>
+          <div
+            v-for="a in liveResult.answers"
+            :key="a.id"
+            class="mr-live-answer"
+            data-testid="routing-live-answer"
+          >
+            <div class="mr-live-q">{{ a.question }}</div>
+            <ul v-if="a.options?.length" class="mr-live-opts">
+              <li
+                v-for="o in a.options"
+                :key="o.key"
+                :class="{ 'mr-live-opt-chosen': a.chosen === o.label }"
+              >
+                <span class="mr-live-opt-label">{{ o.label }}</span>
+                <span class="mr-live-opt-pct">{{ pct(o.probability) }}</span>
+              </li>
+            </ul>
+            <div v-else-if="a.probability != null" class="mr-live-noul">
+              {{ pct(a.probability) }}
+            </div>
           </div>
         </div>
       </div>
@@ -690,7 +740,14 @@ onMounted(() => {
             <span class="mr-decision-role">{{ d.role }}</span>
             <span class="mr-dec-pill" :class="`mr-dec-${d.kind}`">{{ decisionStatus(d) }}</span>
             <span v-if="d.taskId" class="mr-dec-task">#{{ d.taskId }}</span>
-            <time class="mr-dec-time">{{ shortTime(d.at) }}</time>
+            <time
+              class="mr-dec-time"
+              :datetime="d.at"
+              tabindex="0"
+              :data-tip="fullTime(d.at)"
+              :aria-label="`Recorded ${relativeTime(d.at)} — ${fullTime(d.at)}`"
+              >{{ relativeTime(d.at) }}</time
+            >
           </div>
           <div class="mr-decision-body">
             <span class="mr-dec-k">Chosen</span>
@@ -943,6 +1000,11 @@ onMounted(() => {
   color: var(--txt-dim);
   font-size: 11px;
 }
+.mr-dec-time:focus-visible {
+  outline: 2px solid var(--border-bright);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 .mr-dec-pill {
   display: inline-block;
   padding: 1px 7px;
@@ -1122,6 +1184,14 @@ onMounted(() => {
 .mr-live-title {
   font-size: 13px;
   font-weight: 600;
+}
+.mr-live-toggle {
+  margin-left: auto;
+}
+.mr-live-details {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
 }
 .mr-live-reason {
   margin: 6px 0 0;
