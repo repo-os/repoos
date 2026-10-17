@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T17:50:36Z"
+updated_at: "2026-10-17T18:01:13Z"
 review_passes: 5
 review_rounds: 2
 routing_switches: 1
@@ -56,13 +56,13 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": ".shot-viewer-shot-head",
 "steps": [
 {
-  "waitFor": ".shot-row img"
+"waitFor": ".shot-row img"
 },
 {
-  "click": ".shot-row img"
+"click": ".shot-row img"
 },
 {
-  "waitFor": ".shot-viewer-shot-head"
+"waitFor": ".shot-viewer-shot-head"
 }
 ],
 "state": "drawer:shotEvidence",
@@ -75,13 +75,13 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": ".shot-viewer-shot-head",
 "steps": [
 {
-  "waitFor": ".shot-row img"
+"waitFor": ".shot-row img"
 },
 {
-  "click": ".shot-row img"
+"click": ".shot-row img"
 },
 {
-  "waitFor": ".shot-viewer-shot-head"
+"waitFor": ".shot-viewer-shot-head"
 }
 ],
 "state": "drawer:shotEvidence",
@@ -94,7 +94,7 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": ".shot-problem",
 "steps": [
 {
-  "waitFor": ".shot-problem"
+"waitFor": ".shot-problem"
 }
 ],
 "state": "drawer:shotEvidence",
@@ -107,7 +107,7 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": ".shot-problem",
 "steps": [
 {
-  "waitFor": ".shot-problem"
+"waitFor": ".shot-problem"
 }
 ],
 "state": "drawer:shotEvidence",
@@ -120,13 +120,13 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": "[data-test-id='integration-timer-tip']",
 "steps": [
 {
-  "waitFor": "[data-test-id='integration-timer']"
+"waitFor": "[data-test-id='integration-timer']"
 },
 {
-  "click": "[data-test-id='integration-timer']"
+"click": "[data-test-id='integration-timer']"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "closeOut:active",
@@ -139,13 +139,13 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": "[data-test-id='integration-timer-tip']",
 "steps": [
 {
-  "waitFor": "[data-test-id='integration-timer']"
+"waitFor": "[data-test-id='integration-timer']"
 },
 {
-  "click": "[data-test-id='integration-timer']"
+"click": "[data-test-id='integration-timer']"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "closeOut:active",
@@ -158,7 +158,7 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": "[data-test-id='routing-human-step-row']",
 "steps": [
 {
-  "waitFor": "[data-test-id='routing-human-step-row']"
+"waitFor": "[data-test-id='routing-human-step-row']"
 }
 ],
 "theme": "light"
@@ -170,7 +170,7 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": "[data-test-id='routing-human-step-row']",
 "steps": [
 {
-  "waitFor": "[data-test-id='routing-human-step-row']"
+"waitFor": "[data-test-id='routing-human-step-row']"
 }
 ],
 "theme": "dark"
@@ -240,3 +240,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T17:47:55Z · body
 - 2026-10-17T17:49:10Z · body
 - 2026-10-17T17:50:36Z · body
+- 2026-10-17T18:01:13Z · note: ui verification failed (32 issue(s)): [request] HTTP 404 for http://127.0.0.1:53612/api/tasks/9999/diff-stats (http://127.0.0.1:53612/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:53612/api/tasks/9999/diff-stats); [request] HTTP 404 for http://127.0.0.1:53612/api/tasks/9999/diff (http://127.0.0.1:53612/api/tasks/9999/diff); [request] Failed to load resource: the server responded with a status of 404 (Not Fou
