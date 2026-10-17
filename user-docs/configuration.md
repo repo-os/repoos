@@ -594,18 +594,22 @@ shows, per run, the role, the configuration actually used, the shadow
 recommendation when it differs, the response time, and the provider's token usage
 (or dollar cost when it reports one) — rendered from the recorded factors only.
 Each card expands (collapsed by default) to the question that was sent and the
-answer that came back. A fallback is written in plain words rather than as an
-error: an insufficient-evidence fallback says the model was not confident enough
-and the role default was used, with the top probability and the threshold.
-Compare those recommendations with real outcomes before enabling `automatic`.
+answer that came back. Each card's timestamp reads as a relative time
+("13 hours ago"); hover or focus it for the exact local time. A fallback is
+written in plain words rather than as an error: an insufficient-evidence
+fallback says the model was not confident enough and the role default was used,
+with the top probability and the threshold. Compare those recommendations with
+real outcomes before enabling `automatic`.
 
 The **Test configuration** button checks parsing, provider requirements, and
 whether the required key is set — it does not call the hosted API. **Test live
 connection** issues one real decision call when you are ready; while it runs it
 shows a waiting state, then a result card (green outline on success, red on
-failure) with the test question, the answer and each option's probability, the
-model that answered, the response time, and the provider's usage — a failure adds
-a plain reason and what to check. Use it sparingly and never in automated tests.
+failure) that opens collapsed to the summary — the outcome, the model that
+answered, the cost or token usage, and the chosen candidate with its probability
+— and expands (one click) to the full detail: the test question, the answer and
+each option's probability, and the response time. A failure adds a plain reason
+and what to check. Use it sparingly and never in automated tests.
 
 ### Automatic mode, pins and limits
 
