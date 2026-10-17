@@ -1443,6 +1443,10 @@ export interface RoutingDecisionView {
   provider: string | null;
   providerModel: string | null;
   durationMs: number;
+  /** Brief provenance (#0812): size, budget and the decision model's window. */
+  brief?: { chars: number; maxChars: number; contextTokens: number | null };
+  /** Per-candidate facts offered to the decision model (#0812). */
+  facts?: Array<{ key: string; summary: string | null }>;
   handback?: {
     action: "continue" | "switch" | "escalate" | "accept" | "block";
     reason: string;
