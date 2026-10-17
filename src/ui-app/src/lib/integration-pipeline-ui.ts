@@ -41,7 +41,7 @@ export function integrationDurationSamples(
     .map((o) => o.durationMs);
 }
 
-/** Median of the last few timed close-outs, or null when none recorded one. */
+/** Median of the last few SUCCEEDED timed close-outs, or null when none recorded one. */
 export function integrationMedianDuration(
   outcomes: CloseOutOutcomeEvent[] | null | undefined,
   limit = INTEGRATION_MEDIAN_SAMPLE,
