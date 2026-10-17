@@ -73,7 +73,7 @@ watch(open, async (isOpen) => {
           <!-- #0819: each shot's own header carries the handoff verdict (a green
                check / red cross) and that shot's warning, so the viewer is not a
                bare image with no context. Absent for pending attachments. -->
-          <figcaption
+          <div
             v-if="shot.verdict"
             class="shot-viewer-shot-head"
             :class="{ 'is-check': shot.verdict === 'check' }"
@@ -84,7 +84,7 @@ watch(open, async (isOpen) => {
             <span class="shot-viewer-verdict">
               {{ shot.warning || (shot.verdict === "matches" ? "matches" : "needs a check") }}
             </span>
-          </figcaption>
+          </div>
           <img :src="shot.src" :alt="shot.name" />
           <figcaption class="shot-viewer-caption">{{ shot.name }}</figcaption>
         </figure>
