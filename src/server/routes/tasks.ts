@@ -1038,7 +1038,7 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   const current = index.getTask(updated.id);
   const requirementsNotice =
     body.body !== undefined || body.section !== undefined
-      ? index.consumeRequirementsNotice(updated.id)
+      ? (index.consumeRequirementsNotice?.(updated.id) ?? null)
       : null;
   return json(res, 200, {
     ...current,
