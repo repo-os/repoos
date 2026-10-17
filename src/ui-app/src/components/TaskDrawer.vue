@@ -2051,6 +2051,11 @@ async function saveRequirements(nextBody: string): Promise<void> {
   try {
     const before = task.body ?? "";
     const updated = await repo.patchTask(task.id, { body: nextBody, force: true });
+    const notice = updated.requirementsNotice;
+    if (notice?.summary && !notice.sent) {
+      const why = notice.reason ? `: ${notice.reason}` : "";
+      repo.pushToast(`Requirements saved, but the engineer was not notified${why}`, "error");
+    }
     requirementsResult.value = summarizeRequirementsChange(before, updated.body);
     // The body now matches the board; keep the draft in step without resetting
     // other unsaved field edits.
