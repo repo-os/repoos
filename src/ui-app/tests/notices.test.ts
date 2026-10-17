@@ -409,7 +409,9 @@ describe("timer history hydration on startup (#0819)", () => {
   ): CloseOutOutcomeEvent => ({
     taskId,
     outcome: kind,
-    finishedAt: new Date(Date.parse("2026-10-03T18:00:00.000Z") - minutesAgo * 60_000).toISOString(),
+    finishedAt: new Date(
+      Date.parse("2026-10-03T18:00:00.000Z") - minutesAgo * 60_000,
+    ).toISOString(),
     reason: "",
     durationMs,
   });
