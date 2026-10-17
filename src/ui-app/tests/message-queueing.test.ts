@@ -43,6 +43,20 @@ function withFakePath(fx: Fixture): string {
   return oldPath;
 }
 
+async function waitForRunnerIdle(
+  runner: AgentRunner,
+  taskId: string,
+  timeoutMs = 5000,
+): Promise<void> {
+  const start = Date.now();
+  while (runner.isRunning(taskId)) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error(`runner still running after ${timeoutMs}ms`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+}
+
 function config(root: string): RepoOSConfig {
   return {
     root,
@@ -219,11 +233,9 @@ describe("message queueing", () => {
       const queuedMsgs = runner["queuedMessages"].get(t.id);
       expect(queuedMsgs?.length).toBe(2);
 
-      // Wait for the first turn to complete (fakebin takes 100ms + cleanup)
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Verify the first turn has finished
-      expect(runner.isRunning(t.id)).toBe(false);
+      // Wait for the first turn to complete (fakebin sleeps 100ms; under pool
+      // load a fixed 500ms sleep was flaky — poll until the runner is idle).
+      await waitForRunnerIdle(runner, t.id);
 
       // Now the turn has completed. Call send() to resume with the queued messages.
       // This should drain the queue and include messages in the resumed command.

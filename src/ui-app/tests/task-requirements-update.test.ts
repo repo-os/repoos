@@ -287,6 +287,37 @@ describe("notifyEngineerOfRequirementsChange", () => {
 });
 
 describe("LiveIndex requirements-change hook", () => {
+  it("records one activity entry and sends one engineer message (patch + index hook)", () => {
+    const { root, absPath } = setupTask("active");
+    const cfg = config(root);
+    const index = new LiveIndex(cfg);
+    index.refreshAll();
+    const send = vi.fn((_id: string, text: string) => {
+      void text;
+      return { ok: true };
+    });
+    index.setBodyChangeNotifier((applied, prev) => {
+      notifyEngineerOfRequirementsChange({ config: cfg, runner: { send } }, applied, prev.body);
+    });
+
+    const next = BODY.replace(
+      "- Do not touch the worktree copy\n",
+      "- Do not touch the worktree copy\n- Report the change\n",
+    );
+    patchTaskFile(cfg, absPath, { body: next, force: true });
+    index.applyFileChange(absPath);
+
+    const activity = readFileSync(absPath, "utf8")
+      .split("\n")
+      .filter((l) => l.includes(" · body"));
+    expect(activity).toHaveLength(1);
+    expect(activity[0]).toContain("body: Acceptance criteria (added 1)");
+    expect(send).toHaveBeenCalledTimes(1);
+    const [id, text] = send.mock.calls[0] as [string, string];
+    expect(id).toBe("0817");
+    expect(text).toContain("Acceptance criteria");
+  });
+
   it("fires on a body change applied through a file write (the CLI path)", () => {
     const { root, absPath } = setupTask("active");
     const index = new LiveIndex(config(root));
