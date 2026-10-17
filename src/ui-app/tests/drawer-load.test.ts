@@ -109,4 +109,22 @@ describe("drawer full-task loading flag", () => {
     await opened;
     expect(ui.active).toBeNull();
   });
+
+  it("skips the background refresh when a shot fixture is active (#0817)", async () => {
+    const f = deferredFetch();
+    window.history.replaceState({}, "", "/work?task=0817&shotState=drawer%3AactiveRequirements");
+    const ui = useUiStore();
+    await ui.openTask(task({ id: "0817", status: "active" }));
+    expect(f.pending).toHaveLength(0);
+    expect(ui.active?.status).toBe("active");
+  });
+
+  it("refreshActive skips the API during shot capture (#0817)", async () => {
+    const f = deferredFetch();
+    window.history.replaceState({}, "", "/work?task=9999&shotState=drawer%3AactiveRequirements");
+    const ui = useUiStore();
+    ui.open(task({ id: "9999", status: "active" }));
+    await ui.refreshActive();
+    expect(f.pending).toHaveLength(0);
+  });
 });
