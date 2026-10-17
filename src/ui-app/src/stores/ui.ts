@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import { api } from "../api";
 import { normalizeStoryName } from "../../../core/stories.js";
 import { defaultTaskArea } from "../../../core/areas.js";
+import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures.js";
 import { useConfigStore } from "./config.js";
 import type { Task, TaskCheckKind } from "../types";
 
@@ -438,6 +439,11 @@ export const useUiStore = defineStore("ui", () => {
    */
   async function openTask(t: Task): Promise<void> {
     open(t);
+    // Preview shot fixtures seed client-side drawer state; a background refresh
+    // would 404 for the synthetic id or overwrite active→review (#0817).
+    if (typeof window !== "undefined" && readShotPreviewFixtureFromLocation(window.location)) {
+      return;
+    }
     activeDetailLoading.value = true;
     try {
       const fresh = await api<Task>(`/api/tasks/${t.id}`);

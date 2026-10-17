@@ -118,6 +118,33 @@ export function readShotPreviewFixtureFromLocation(
   return raw;
 }
 
+/** Task id from `?task=` when a drawer shot deep-links a real board task (#0817). */
+export function shotPreviewDrawerTaskIdFromLocation(
+  location: Pick<Location, "search">,
+): string {
+  const raw = new URLSearchParams(location.search).get("task");
+  const id = raw?.replace(/^#/, "") ?? "";
+  return id || SHOT_PREVIEW_FIXTURE_TASK_ID;
+}
+
+const REQUIREMENTS_FIXTURE_BODY = [
+  "## Problem",
+  "",
+  "Requirements change while the engineer works from a worktree copy.",
+  "",
+  "## Desired UX",
+  "",
+  "- Update requirements action on active tasks",
+  "",
+  "## Acceptance criteria",
+  "",
+  "- Activity records which sections changed",
+  "",
+  "## Notes for AI",
+  "",
+  "Fixture body for shot capture.",
+].join("\n");
+
 /**
  * A synthetic failed dev target for the `dev:failed` capture fixture (#0775).
  * Returns null for any other fixture, so DevView keeps its real server data.
@@ -310,29 +337,19 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         deletions: 8,
       });
       break;
-    case "drawer:activeRequirements":
-      // #0817 — active fixture with requirement sections so captures can show
-      // the Update requirements action and editor without keeping #0817 active.
-      ensureFixtureTask(repo, "active", {
-        body: [
-          "## Problem",
-          "",
-          "Requirements change while the engineer works from a worktree copy.",
-          "",
-          "## Desired UX",
-          "",
-          "- Update requirements action on active tasks",
-          "",
-          "## Acceptance criteria",
-          "",
-          "- Activity records which sections changed",
-          "",
-          "## Notes for AI",
-          "",
-          "Fixture body for shot capture.",
-        ].join("\n"),
-      });
+    case "drawer:activeRequirements": {
+      // #0817 — show Update requirements on an active task without mutating
+      // board status on main. Prefer the real task from `?task=` so capture
+      // does not hit /api/tasks/9999 (404 fails the handoff UI gate).
+      const drawerId = shotPreviewDrawerTaskIdFromLocation(window.location);
+      const existing = repo.tasks.find((t) => t.id === drawerId);
+      if (existing) {
+        Object.assign(existing, { status: "active", body: REQUIREMENTS_FIXTURE_BODY });
+      } else {
+        ensureFixtureTask(repo, "active", { body: REQUIREMENTS_FIXTURE_BODY });
+      }
       break;
+    }
     case "card:handoffConflict":
       // #0810 — the "Worktree changed after handoff" modal only opens from a
       // failed Move to done. Seed the pending conflict on a board card so a
