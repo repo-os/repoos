@@ -11,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T09:33:48Z"
+updated_at: "2026-10-17T09:46:45Z"
 ---
 ## Problem
 Requirements (the task body: Problem, Desired UX, Acceptance criteria, Notes) are changed on main while the task is active, but the engineer works from its own copy of the task file in its worktree. A change made on main is not seen by the engineer until someone tells it or it merges main. On #0816 the engineer had to work out what had changed, because the body edits only reached a message.
@@ -50,15 +50,15 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 "route": "/work?task=0817&tab=details",
 "highlight": ".sm-modal",
 "steps": [
-  {
-    "waitFor": "[data-test-id=\"update-requirements\"]"
-  },
-  {
-    "click": "[data-test-id=\"update-requirements\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "waitFor": "[data-test-id=\"update-requirements\"]"
+},
+{
+  "click": "[data-test-id=\"update-requirements\"]"
+},
+{
+  "waitMs": 400
+}
 ],
 "theme": "light"
 },
@@ -68,15 +68,15 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 "route": "/work?task=0817&tab=details",
 "highlight": ".sm-modal",
 "steps": [
-  {
-    "waitFor": "[data-test-id=\"update-requirements\"]"
-  },
-  {
-    "click": "[data-test-id=\"update-requirements\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "waitFor": "[data-test-id=\"update-requirements\"]"
+},
+{
+  "click": "[data-test-id=\"update-requirements\"]"
+},
+{
+  "waitMs": 400
+}
 ],
 "theme": "dark"
 }
@@ -95,3 +95,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T09:29:57Z · body
 - 2026-10-17T09:32:05Z · body: section Shots
 - 2026-10-17T09:33:48Z · body
+- 2026-10-17T09:46:45Z · message_delivered: 1 message(s)
