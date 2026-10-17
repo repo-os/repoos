@@ -5085,7 +5085,7 @@ watch(
               class="page-help-link"
               data-test-id="update-requirements"
               :disabled="ui.saving"
-              title="Edit the requirements the engineer works from; saving records the change and messages the engineer"
+              data-tip="Edit the requirements the engineer works from; saving records the change and messages the engineer"
               @click="openRequirementsEditor"
             >
               Update requirements
