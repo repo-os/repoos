@@ -201,23 +201,17 @@ describe("patchTaskFile requirements activity entry", () => {
 });
 
 describe("notifyEngineerOfRequirementsChange", () => {
-  function makeRunner(hasSession: boolean): {
+  function makeRunner(result: { ok: boolean; queued?: boolean; reason?: string } = { ok: true }): {
     runner: RequirementsNoticeRunner;
     send: ReturnType<typeof vi.fn>;
-    start: ReturnType<typeof vi.fn>;
   } {
-    const send = vi.fn(() => ({ ok: true }));
-    const start = vi.fn(() => ({ ok: true }));
-    return {
-      runner: { output: () => (hasSession ? {} : null), send, start },
-      send,
-      start,
-    };
+    const send = vi.fn(() => result);
+    return { runner: { send }, send };
   }
 
   it("messages the engineer once, with the same summary, for an active task", () => {
     const { root } = setupTask("active");
-    const { runner: r, send, start } = makeRunner(true);
+    const { runner: r, send } = makeRunner();
     const next = BODY.replace(
       "- Do not touch the worktree copy\n",
       "- Do not touch the worktree copy\n- Report the change\n",
@@ -230,7 +224,6 @@ describe("notifyEngineerOfRequirementsChange", () => {
 
     expect(result.sent).toBe(true);
     expect(send).toHaveBeenCalledTimes(1);
-    expect(start).not.toHaveBeenCalled();
     const [id, text] = send.mock.calls[0] as [string, string];
     expect(id).toBe("0817");
     expect(text).toContain(result.summary!);
@@ -238,24 +231,36 @@ describe("notifyEngineerOfRequirementsChange", () => {
     expect(text).toContain("worktree");
   });
 
-  it("starts the engineer when no session exists yet", () => {
+  it("reports a queued delivery when the engineer's turn is live", () => {
     const { root } = setupTask("active");
-    const { runner: r, send, start } = makeRunner(false);
+    const { runner: r } = makeRunner({ ok: true, queued: true });
     const next = BODY.replace("- Keep the notice short\n", "- Keep the notice very short\n");
     const result = notifyEngineerOfRequirementsChange(
       { config: config(root), runner: r },
       task(next),
       BODY,
     );
+    expect(result).toMatchObject({ sent: true, queued: true });
+  });
 
-    expect(result.sent).toBe(true);
-    expect(start).toHaveBeenCalledTimes(1);
-    expect(send).not.toHaveBeenCalled();
+  it("reports (does not start a session) when the runner has no engineer session", () => {
+    const { root } = setupTask("active");
+    const { runner: r, send } = makeRunner({ ok: false, reason: "no session for this task" });
+    const next = BODY.replace("- Keep the notice short\n", "- Keep the notice very short\n");
+    const result = notifyEngineerOfRequirementsChange(
+      { config: config(root), runner: r },
+      task(next),
+      BODY,
+    );
+    // The notice is attempted against the existing session — it never starts one.
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(result.sent).toBe(false);
+    expect(result.reason).toBe("no session for this task");
   });
 
   it("never messages on a task that is not active", () => {
     const { root } = setupTask("review");
-    const { runner: r, send, start } = makeRunner(true);
+    const { runner: r, send } = makeRunner();
     const next = BODY.replace("- Keep the notice short\n", "- Keep the notice very short\n");
     const result = notifyEngineerOfRequirementsChange(
       { config: config(root), runner: r },
@@ -266,12 +271,11 @@ describe("notifyEngineerOfRequirementsChange", () => {
     expect(result.sent).toBe(false);
     expect(result.reason).toBe("task is not active");
     expect(send).not.toHaveBeenCalled();
-    expect(start).not.toHaveBeenCalled();
   });
 
   it("does nothing when no requirement section changed", () => {
     const { root } = setupTask("active");
-    const { runner: r, send, start } = makeRunner(true);
+    const { runner: r, send } = makeRunner();
     const result = notifyEngineerOfRequirementsChange(
       { config: config(root), runner: r },
       task(BODY),
@@ -279,7 +283,6 @@ describe("notifyEngineerOfRequirementsChange", () => {
     );
     expect(result.sent).toBe(false);
     expect(send).not.toHaveBeenCalled();
-    expect(start).not.toHaveBeenCalled();
   });
 });
 
