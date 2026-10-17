@@ -25,6 +25,7 @@ import { readDetectCache } from "../core/detect-cache.js";
 import { resolveEffectiveRouting, routingActiveFor } from "../core/model-routing/config.js";
 import {
   filterCandidates,
+  candidateKey,
   type HarnessAvailability,
   type RoutingCandidate,
 } from "../core/model-routing/candidates.js";
@@ -32,7 +33,11 @@ import { buildCandidateSet, candidateForAgent } from "../core/model-routing/cand
 import { buildHarnessAvailability } from "../core/model-routing/harness.js";
 import { decideRoutingForRun, type RoutingDecision } from "../core/model-routing/decide.js";
 import { buildRoutingProvider } from "../core/model-routing/runtime.js";
-import { ROUTING_POLICY_VERSION } from "../core/model-routing/policy.js";
+import {
+  ROUTING_POLICY_VERSION,
+  candidateProbability,
+  evidenceSummary,
+} from "../core/model-routing/policy.js";
 import {
   MAX_ROUTING_DECISIONS,
   type RoutingDecisionRecord,
@@ -202,6 +207,14 @@ function buildRecord(opts: {
   handback?: HandbackOutcome | null;
 }): RoutingDecisionRecord {
   const { decision } = opts;
+  const decided = decision.kind === "decided";
+  const answers = decided ? decision.answers : null;
+  const selection = decided
+    ? decision.outcome.kind === "blocked"
+      ? null
+      : decision.outcome.candidate
+    : opts.actual;
+  const selectionKey = selection ? candidateKey(selection) : null;
   const base: Omit<
     RoutingDecisionRecord,
     | "kind"
@@ -224,8 +237,12 @@ function buildRecord(opts: {
       reason: r.reason,
     })),
     provider: opts.providerId as RoutingDecisionRecord["provider"],
-    providerModel: decision.kind === "decided" ? decision.providerModel : null,
-    providerUsage: decision.kind === "decided" ? decision.providerUsage : null,
+    providerModel: decided ? decision.providerModel : null,
+    providerUsage: decided ? decision.providerUsage : null,
+    selectionProbability: selectionKey ? candidateProbability(answers, selectionKey) : null,
+    evidence: evidenceSummary(answers, opts.eligible),
+    brief: decided ? decision.brief : null,
+    answers,
     policyVersion: ROUTING_POLICY_VERSION,
     durationMs: opts.durationMs,
     ...(opts.handback
@@ -244,7 +261,7 @@ function buildRecord(opts: {
       : {}),
   };
 
-  if (decision.kind !== "decided") {
+  if (!decided) {
     return {
       ...base,
       kind: decision.kind,
@@ -258,13 +275,13 @@ function buildRecord(opts: {
   }
 
   const outcome = decision.outcome;
-  const selection = outcome.kind === "blocked" ? null : outcome.candidate;
+  const outcomeSelection = outcome.kind === "blocked" ? null : outcome.candidate;
   return {
     ...base,
     kind: outcome.kind,
     applied: decision.applied,
-    selection,
-    recommendation: selection,
+    selection: outcomeSelection,
+    recommendation: outcomeSelection,
     fallbackReason: outcome.kind === "fallback" ? outcome.reason : null,
     blockReason: outcome.kind === "blocked" ? outcome.reason : null,
     message: outcome.kind === "blocked" ? outcome.message : null,
@@ -315,6 +332,10 @@ export async function resolveRoutedAgent(
       provider: null,
       providerModel: null,
       providerUsage: null,
+      selectionProbability: null,
+      evidence: null,
+      brief: null,
+      answers: null,
       policyVersion: ROUTING_POLICY_VERSION,
       durationMs: 0,
     };

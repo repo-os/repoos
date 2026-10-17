@@ -8,7 +8,9 @@ import { useConfigStore } from "../stores/config";
 import { api, JSON_OPTS } from "../api";
 import type {
   ModelRoutingDecisionsResponse,
+  ModelRoutingLiveResultView,
   ModelRoutingStatusResponse,
+  RoutingAnswerView,
   RoutingDecisionView,
 } from "../types";
 import Button from "./ui/button.vue";
@@ -20,6 +22,7 @@ import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
 import Input from "./ui/input.vue";
 import { ROUTING_PROVIDER_CHOICES } from "../../../core/model-routing/config.js";
+import { ROUTING_QUESTION_INSTRUCTIONS } from "../../../core/model-routing/policy.js";
 
 const config = useConfigStore();
 
@@ -62,7 +65,12 @@ const statusLoading = ref(false);
 const decisions = ref<RoutingDecisionView[]>([]);
 const decisionsLoading = ref(false);
 const probeMessage = ref("");
-const probing = ref(false);
+/** Which probe is running: the config check, the live call, or none. */
+const probeRunning = ref<"config" | "live" | null>(null);
+/** The structured result of the last live call, rendered as a card. */
+const liveResult = ref<ModelRoutingLiveResultView | null>(null);
+/** Decision ids whose details area is expanded (collapsed by default). */
+const expanded = ref<Set<string>>(new Set());
 const keyDraft = ref("");
 const keySaving = ref(false);
 const keyError = ref("");
@@ -147,29 +155,163 @@ async function setHumanStepCheck(enabled: boolean): Promise<void> {
 }
 
 async function runProbe(live: boolean): Promise<void> {
-  if (probing.value) return;
-  probing.value = true;
-  probeMessage.value = "";
+  if (probeRunning.value) return;
+  probeRunning.value = live ? "live" : "config";
+  if (live) liveResult.value = null;
+  else probeMessage.value = "";
   try {
-    const res = await api<ModelRoutingStatusResponse & { live?: { ok: boolean; message: string } }>(
+    const res = await api<ModelRoutingStatusResponse>(
       "/api/model-routing/probe",
       JSON_OPTS("POST", { live }),
     );
     status.value = res;
-    if (res.live) {
-      probeMessage.value = res.live.message;
+    if (live) {
+      liveResult.value = res.live ?? null;
     } else if (res.ok) {
-      probeMessage.value = live
-        ? "Configuration looks ready."
-        : "Configuration and credential check passed (no live call).";
+      probeMessage.value = "Configuration and credential check passed (no live call).";
     } else {
       probeMessage.value = res.issues[0] ?? "Routing is not ready yet.";
     }
   } catch (err) {
-    probeMessage.value = err instanceof Error ? err.message : "Probe failed.";
+    const message = err instanceof Error ? err.message : "Probe failed.";
+    if (live) {
+      liveResult.value = { ok: false, message, durationMs: 0 };
+    } else {
+      probeMessage.value = message;
+    }
   } finally {
-    probing.value = false;
+    probeRunning.value = null;
   }
+}
+
+function pct(p: number): string {
+  return `${Math.round(p * 100)}%`;
+}
+
+function formatDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return "—";
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  const s = ms / 1000;
+  return `${s < 10 ? s.toFixed(2) : s.toFixed(1)} s`;
+}
+
+function usd(v: number): string {
+  return v < 0.01 ? `$${v.toFixed(4)}` : `$${v.toFixed(2)}`;
+}
+
+/** A dollar cost when the provider reports one, else its token usage, else "". */
+function usageText(
+  u:
+    | { inputTokens: number | null; outputTokens: number | null; costUsd?: number | null }
+    | null
+    | undefined,
+): string {
+  if (!u) return "";
+  const parts: string[] = [];
+  if (u.inputTokens != null) parts.push(`${u.inputTokens} in`);
+  if (u.outputTokens != null) parts.push(`${u.outputTokens} out`);
+  if (u.costUsd != null) {
+    return parts.length ? `${usd(u.costUsd)} · ${parts.join(" · ")}` : usd(u.costUsd);
+  }
+  return parts.length ? `${parts.join(" · ")} tokens` : "";
+}
+
+/** "Cost" when the provider reports dollars; the token usage otherwise. */
+function usageLabel(u: { costUsd?: number | null } | null | undefined): string {
+  return u?.costUsd != null ? "Cost" : "Tokens";
+}
+
+/** A stable candidate key, matching the server's `candidateKey`. */
+function candidateKeyOf(
+  c: { cli: string; model: string; reasoning: string | null } | null,
+): string | null {
+  if (!c) return null;
+  return `${c.cli}\u0000${c.model}\u0000${c.reasoning ?? ""}`;
+}
+
+function sameCandidate(
+  a: { cli: string; model: string; reasoning: string | null } | null,
+  b: { cli: string; model: string; reasoning: string | null } | null,
+): boolean {
+  const ka = candidateKeyOf(a);
+  const kb = candidateKeyOf(b);
+  return ka !== null && ka === kb;
+}
+
+/** Render a stored candidate key as "cli · model (· reasoning)". */
+function parseCandidateKey(key: string): string {
+  const [cli, model, reasoning] = key.split("\u0000");
+  return reasoning ? `${cli} · ${model} · ${reasoning}` : `${cli} · ${model}`;
+}
+
+/** Plain words for a fallback reason — never styled as an error. */
+function fallbackText(reason: string): string {
+  switch (reason) {
+    case "insufficient-evidence":
+      return "The model was not confident enough, so the role default was used.";
+    case "provider-failure":
+      return "The decision model could not be reached, so the role default was used.";
+    case "malformed-response":
+      return "The decision model's answer could not be used, so the role default was used.";
+    default:
+      return `The role default was used (${reason}).`;
+  }
+}
+
+/** The top probability, threshold, and confidence behind a fallback, when known. */
+function fallbackDetail(d: RoutingDecisionView): string {
+  const e = d.evidence;
+  if (!e || d.fallbackReason !== "insufficient-evidence") return "";
+  const bits = [`Top probability ${pct(e.topProbability)}`, `needs at least ${pct(e.threshold)}`];
+  if (e.confidence != null) bits.push(`model confidence ${pct(e.confidence)}`);
+  return `${bits.join(" · ")}.`;
+}
+
+interface DecisionAnswerDetail {
+  id: string;
+  question: string;
+  chosenKey: string | null;
+  options: Array<{ key: string; label: string; probability: number }>;
+  probability: number | null;
+}
+
+/** The recorded question/answer pairs, for the expandable details area. */
+function decisionAnswers(d: RoutingDecisionView): DecisionAnswerDetail[] {
+  const answers = d.answers;
+  if (!answers) return [];
+  return Object.entries(answers).map(([id, a]) => {
+    const base = {
+      id,
+      question: ROUTING_QUESTION_INSTRUCTIONS[id] ?? id,
+      probability: a.type === "noul" ? a.probability : null,
+    };
+    if (a.type === "noul") {
+      return { ...base, chosenKey: null, options: [] };
+    }
+    const options = Object.entries(a.probabilities)
+      .map(([key, probability]) => ({ key, label: parseCandidateKey(key), probability }))
+      .sort((x, y) => y.probability - x.probability);
+    return {
+      ...base,
+      chosenKey: a.type === "choice" ? a.choice : null,
+      options,
+    };
+  });
+}
+
+function hasDetails(d: RoutingDecisionView): boolean {
+  return Boolean(d.brief) || Boolean(d.answers && Object.keys(d.answers).length);
+}
+
+function isExpanded(id: string): boolean {
+  return expanded.value.has(id);
+}
+
+function toggleDetails(id: string): void {
+  const next = new Set(expanded.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  expanded.value = next;
 }
 
 const keySaveLabel = computed(() => "Save key");
@@ -424,24 +566,116 @@ onMounted(() => {
         type="button"
         class="btn"
         data-testid="routing-probe-config"
-        :disabled="probing || config.saving"
+        :disabled="probeRunning !== null || config.saving"
         @click="runProbe(false)"
       >
-        {{ probing ? "Checking…" : "Test configuration" }}
+        {{ probeRunning === "config" ? "Checking…" : "Test configuration" }}
       </button>
       <button
         type="button"
         class="btn btn-ghost"
         data-testid="routing-probe-live"
-        :disabled="probing || config.saving || mode === 'off'"
+        :disabled="probeRunning !== null || config.saving || mode === 'off'"
         @click="runProbe(true)"
       >
-        Test live connection
+        {{ probeRunning === "live" ? "Testing…" : "Test live connection" }}
       </button>
     </div>
-    <p v-if="probeMessage" class="mr-probe-msg" data-testid="routing-probe-message">
+
+    <div
+      v-if="probeRunning === 'live'"
+      class="mr-live-waiting"
+      data-testid="routing-live-waiting"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="mr-spinner" aria-hidden="true"></span>
+      <span>Asking the decision model…</span>
+    </div>
+
+    <p
+      v-if="probeMessage && probeRunning !== 'live'"
+      class="mr-probe-msg"
+      data-testid="routing-probe-message"
+    >
       {{ probeMessage }}
     </p>
+
+    <div
+      v-if="liveResult"
+      class="mr-live-card"
+      :class="liveResult.ok ? 'mr-live-card-ok' : 'mr-live-card-fail'"
+      data-testid="routing-live-card"
+      role="status"
+    >
+      <div class="mr-live-head">
+        <span
+          class="mr-dec-pill"
+          :class="liveResult.ok ? 'mr-dec-selected' : 'mr-live-fail-pill'"
+          data-testid="routing-live-status"
+        >
+          {{ liveResult.ok ? "Success" : "Failed" }}
+        </span>
+        <span class="mr-live-title">
+          {{ liveResult.ok ? "Live decision call" : "Live decision call failed" }}
+        </span>
+      </div>
+      <p class="mr-live-reason" data-testid="routing-live-reason">
+        {{ liveResult.message }}
+      </p>
+      <p
+        v-if="!liveResult.ok && liveResult.hint"
+        class="mr-live-hint"
+        data-testid="routing-live-hint"
+      >
+        {{ liveResult.hint }}
+      </p>
+
+      <dl class="kv-rows mr-live-facts" style="--kv-label-w: 9rem">
+        <div v-if="liveResult.model">
+          <dt>Model</dt>
+          <dd data-testid="routing-live-model">{{ liveResult.model }}</dd>
+        </div>
+        <div>
+          <dt>Response time</dt>
+          <dd data-testid="routing-live-time">{{ formatDuration(liveResult.durationMs) }}</dd>
+        </div>
+        <div v-if="usageText(liveResult.usage)">
+          <dt>{{ usageLabel(liveResult.usage) }}</dt>
+          <dd data-testid="routing-live-usage">{{ usageText(liveResult.usage) }}</dd>
+        </div>
+      </dl>
+
+      <div v-if="liveResult.prompt" class="mr-live-block">
+        <div class="mr-live-k">Question sent</div>
+        <p class="mr-live-prompt" data-testid="routing-live-prompt">{{ liveResult.prompt }}</p>
+      </div>
+
+      <div v-if="liveResult.answers?.length" class="mr-live-block">
+        <div class="mr-live-k">Answer received</div>
+        <div
+          v-for="a in liveResult.answers"
+          :key="a.id"
+          class="mr-live-answer"
+          data-testid="routing-live-answer"
+        >
+          <div class="mr-live-q">{{ a.question }}</div>
+          <ul v-if="a.options?.length" class="mr-live-opts">
+            <li
+              v-for="o in a.options"
+              :key="o.key"
+              :class="{ 'mr-live-opt-chosen': a.chosen === o.label }"
+            >
+              <span class="mr-live-opt-label">{{ o.label }}</span>
+              <span class="mr-live-opt-pct">{{ pct(o.probability) }}</span>
+            </li>
+          </ul>
+          <div v-else-if="a.probability != null" class="mr-live-noul">
+            {{ pct(a.probability) }}
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="mr-decisions">
       <div class="field-label">Recent decisions</div>
@@ -460,23 +694,115 @@ onMounted(() => {
           </div>
           <div class="mr-decision-body">
             <span class="mr-dec-k">Chosen</span>
-            <span class="mr-dec-v">{{ candLabel(d.actual) }}</span>
-            <template v-if="d.mode === 'shadow' && d.recommendation">
+            <span class="mr-dec-v">
+              {{ candLabel(d.actual) }}
+              <span
+                v-if="
+                  d.kind === 'selected' &&
+                  d.selectionProbability != null &&
+                  sameCandidate(d.actual, d.selection)
+                "
+                class="mr-dec-conf"
+                data-testid="routing-decision-confidence"
+              >
+                {{ pct(d.selectionProbability) }}
+              </span>
+            </span>
+
+            <template
+              v-if="
+                d.recommendation &&
+                (d.mode === 'shadow' || !sameCandidate(d.recommendation, d.actual))
+              "
+            >
               <span class="mr-dec-k">Recommended</span>
-              <span class="mr-dec-v">{{ candLabel(d.recommendation) }}</span>
+              <span class="mr-dec-v">
+                {{ candLabel(d.recommendation) }}
+                <span
+                  v-if="
+                    d.kind === 'selected' &&
+                    d.selectionProbability != null &&
+                    !sameCandidate(d.actual, d.selection)
+                  "
+                  class="mr-dec-conf"
+                >
+                  {{ pct(d.selectionProbability) }}
+                </span>
+              </span>
             </template>
+
+            <span class="mr-dec-k">Response time</span>
+            <span class="mr-dec-v" data-testid="routing-decision-time">
+              {{ formatDuration(d.durationMs) }}
+            </span>
+
+            <template v-if="usageText(d.providerUsage)">
+              <span class="mr-dec-k">{{ usageLabel(d.providerUsage) }}</span>
+              <span class="mr-dec-v" data-testid="routing-decision-usage">
+                {{ usageText(d.providerUsage) }}
+              </span>
+            </template>
+
             <template v-if="d.fallbackReason">
               <span class="mr-dec-k">Fallback</span>
-              <span class="mr-dec-v">{{ d.fallbackReason }}</span>
+              <span class="mr-dec-v mr-dec-fallback-note" data-testid="routing-decision-fallback">
+                {{ fallbackText(d.fallbackReason) }}
+                <span v-if="fallbackDetail(d)" class="mr-dec-fallback-detail">
+                  {{ fallbackDetail(d) }}
+                </span>
+              </span>
             </template>
+
             <template v-if="d.kind === 'blocked'">
               <span class="mr-dec-k">Blocked</span>
               <span class="mr-dec-v">{{ d.message || d.blockReason }}</span>
             </template>
+
             <template v-if="d.handback">
               <span class="mr-dec-k">Handback</span>
               <span class="mr-dec-v">{{ d.handback.action }} — {{ d.handback.reason }}</span>
             </template>
+          </div>
+
+          <div v-if="hasDetails(d)" class="mr-dec-details-toggle">
+            <button
+              type="button"
+              class="mr-dec-toggle-btn"
+              :aria-expanded="isExpanded(d.id)"
+              data-testid="routing-decision-details-toggle"
+              @click="toggleDetails(d.id)"
+            >
+              {{ isExpanded(d.id) ? "Hide details" : "Show details" }}
+            </button>
+          </div>
+          <div
+            v-if="isExpanded(d.id)"
+            class="mr-dec-details"
+            data-testid="routing-decision-details"
+          >
+            <div v-if="d.brief" class="mr-dec-detail-block">
+              <div class="mr-dec-detail-k">Question sent</div>
+              <pre class="mr-dec-pre">{{ d.brief }}</pre>
+            </div>
+            <div v-if="decisionAnswers(d).length" class="mr-dec-detail-block">
+              <div class="mr-dec-detail-k">Answer received</div>
+              <div v-for="a in decisionAnswers(d)" :key="a.id" class="mr-dec-answer">
+                <div class="mr-dec-q">{{ a.question }}</div>
+                <ul v-if="a.options.length" class="mr-dec-opts">
+                  <li
+                    v-for="o in a.options"
+                    :key="o.key"
+                    :class="{ 'mr-dec-opt-chosen': o.key === a.chosenKey }"
+                  >
+                    <span class="mr-dec-opt-label">{{ o.label }}</span>
+                    <span class="mr-dec-pct">{{ pct(o.probability) }}</span>
+                  </li>
+                </ul>
+                <div v-else-if="a.probability != null" class="mr-dec-noul">
+                  {{ pct(a.probability) }}
+                </div>
+              </div>
+            </div>
           </div>
         </li>
       </ul>
@@ -637,8 +963,8 @@ onMounted(() => {
   color: var(--amber);
 }
 .mr-dec-fallback {
-  background: color-mix(in srgb, var(--amber) 16%, transparent);
-  color: var(--amber);
+  background: color-mix(in srgb, var(--txt-dim) 16%, transparent);
+  color: var(--txt-dim);
 }
 .mr-decision-body {
   display: grid;
@@ -652,5 +978,225 @@ onMounted(() => {
 }
 .mr-dec-v {
   overflow-wrap: anywhere;
+}
+.mr-dec-conf {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-foreground) 14%, transparent);
+  color: var(--accent-foreground);
+  font-size: 11px;
+  font-weight: 600;
+}
+.mr-dec-fallback-note {
+  color: var(--txt-dim);
+}
+.mr-dec-fallback-detail {
+  color: var(--txt-faint);
+}
+.mr-dec-details-toggle {
+  margin-top: 6px;
+}
+.mr-dec-toggle-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent-foreground);
+  font-size: 12px;
+  cursor: pointer;
+}
+.mr-dec-toggle-btn:hover {
+  text-decoration: underline;
+}
+.mr-dec-details {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mr-dec-detail-k {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--txt-dim);
+  margin-bottom: 4px;
+}
+.mr-dec-pre {
+  margin: 0;
+  padding: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 240px;
+  overflow: auto;
+}
+.mr-dec-q {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--txt);
+  margin-bottom: 3px;
+}
+.mr-dec-opts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mr-dec-opts li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--txt-dim);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.mr-dec-opt-chosen {
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  color: var(--txt);
+}
+.mr-dec-pct {
+  color: var(--txt-dim);
+  font-variant-numeric: tabular-nums;
+}
+.mr-dec-noul {
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+/* ── Live connection test ────────────────────────────────────────────── */
+.mr-live-waiting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--txt-dim);
+}
+.mr-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent-foreground) 30%, transparent);
+  border-top-color: var(--accent-foreground);
+  animation: mr-spin 0.7s linear infinite;
+}
+@keyframes mr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.mr-live-card {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: var(--panel-solid);
+}
+.mr-live-card-ok {
+  border-color: var(--green-border-tint);
+  border-left-color: var(--green);
+}
+.mr-live-card-fail {
+  border-color: var(--red-border-tint);
+  border-left-color: var(--red);
+}
+.mr-live-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mr-live-fail-pill {
+  background: color-mix(in srgb, var(--red) 18%, transparent);
+  color: var(--red);
+}
+.mr-live-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.mr-live-reason {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+.mr-live-card-fail .mr-live-reason {
+  color: var(--red);
+}
+.mr-live-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+.mr-live-facts {
+  margin: 10px 0 0;
+}
+.mr-live-block {
+  margin-top: 12px;
+}
+.mr-live-k {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--txt-dim);
+  margin-bottom: 4px;
+}
+.mr-live-prompt {
+  margin: 0;
+  font-size: 12px;
+  color: var(--txt);
+  overflow-wrap: anywhere;
+}
+.mr-live-answer + .mr-live-answer {
+  margin-top: 8px;
+}
+.mr-live-q {
+  font-size: 12px;
+  color: var(--txt);
+  margin-bottom: 3px;
+}
+.mr-live-opts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mr-live-opts li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--txt-dim);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.mr-live-opt-chosen {
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  color: var(--txt);
+}
+.mr-live-opt-label {
+  overflow-wrap: anywhere;
+}
+.mr-live-opt-pct {
+  font-variant-numeric: tabular-nums;
+}
+.mr-live-noul {
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mr-spinner {
+    animation: none;
+  }
 }
 </style>
