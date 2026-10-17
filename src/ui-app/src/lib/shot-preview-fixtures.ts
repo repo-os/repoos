@@ -118,6 +118,11 @@ export function readShotPreviewFixtureFromLocation(
   return raw;
 }
 
+/** True while a preview handoff shot URL is loaded (`?shotState=`). */
+export function isShotPreviewCaptureActive(location: Pick<Location, "search">): boolean {
+  return readShotPreviewFixtureFromLocation(location) !== null;
+}
+
 /** Task id from `?task=` when a drawer shot deep-links a real board task (#0817). */
 export function shotPreviewDrawerTaskIdFromLocation(location: Pick<Location, "search">): string {
   const raw = new URLSearchParams(location.search).get("task");
@@ -339,11 +344,13 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       // #0817 — show Update requirements on an active task without mutating
       // board status on main. Prefer the real task from `?task=` so capture
       // does not hit /api/tasks/9999 (404 fails the handoff UI gate).
+      const params = new URLSearchParams(window.location.search);
       const drawerId = shotPreviewDrawerTaskIdFromLocation(window.location);
       const existing = repo.tasks.find((t) => t.id === drawerId);
       if (existing) {
         Object.assign(existing, { status: "active", body: REQUIREMENTS_FIXTURE_BODY });
-      } else {
+      } else if (!params.get("task")) {
+        // Synthetic board card only when the route does not name a real task.
         ensureFixtureTask(repo, "active", { body: REQUIREMENTS_FIXTURE_BODY });
       }
       break;

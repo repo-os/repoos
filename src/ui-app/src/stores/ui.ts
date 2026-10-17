@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 import { api } from "../api";
 import { normalizeStoryName } from "../../../core/stories.js";
 import { defaultTaskArea } from "../../../core/areas.js";
-import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures.js";
+import { isShotPreviewCaptureActive } from "../lib/shot-preview-fixtures.js";
 import { useConfigStore } from "./config.js";
 import type { Task, TaskCheckKind } from "../types";
 
@@ -441,7 +441,7 @@ export const useUiStore = defineStore("ui", () => {
     open(t);
     // Preview shot fixtures seed client-side drawer state; a background refresh
     // would 404 for the synthetic id or overwrite active→review (#0817).
-    if (typeof window !== "undefined" && readShotPreviewFixtureFromLocation(window.location)) {
+    if (typeof window !== "undefined" && isShotPreviewCaptureActive(window.location)) {
       return;
     }
     activeDetailLoading.value = true;
@@ -467,6 +467,9 @@ export const useUiStore = defineStore("ui", () => {
   async function refreshActive(): Promise<void> {
     const id = active.value?.id;
     if (!id || isNew.value) return;
+    if (typeof window !== "undefined" && isShotPreviewCaptureActive(window.location)) {
+      return;
+    }
     try {
       const fresh = await api<Task>(`/api/tasks/${id}`);
       if (active.value?.id === id) active.value = fresh;

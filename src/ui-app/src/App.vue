@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from "vue";
+import { computed, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useRepoStore } from "./stores/repo";
 import { useDocsStore } from "./stores/docs";
@@ -69,10 +69,8 @@ onMounted(async () => {
   // resolves, so it's normally already loaded by the time we mount.
   if (!auth.loaded) await auth.loadMe();
   await repo.init();
+  applyShotFixtureFromLocation();
   const shotFixture = readShotPreviewFixtureFromLocation(window.location);
-  if (shotFixture && repo.health?.isPreviewBuild) {
-    applyShotPreviewFixture(repo, shotFixture);
-  }
   // Release-event notices (#0606): poll /api/release/run from anywhere in the
   // app so the bell badge is live on every page, not just /releases.
   notices.start();
@@ -92,6 +90,22 @@ onMounted(async () => {
   // its request lands.
   void config.loadModels();
 });
+
+function applyShotFixtureFromLocation(): void {
+  const shotFixture = readShotPreviewFixtureFromLocation(window.location);
+  if (shotFixture && repo.health?.isPreviewBuild) {
+    applyShotPreviewFixture(repo, shotFixture);
+  }
+}
+
+// Re-apply after navigation so `?task=` is on the URL before drawer fixtures
+// run (a cold load can mount before the route query is visible to the fixture).
+watch(
+  () => route.fullPath,
+  () => {
+    applyShotFixtureFromLocation();
+  },
+);
 
 onUnmounted(() => {
   window.removeEventListener("focus", checkUiBuild);
