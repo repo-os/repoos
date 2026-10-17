@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { useNoticesStore, type ReleaseRunState } from "../src/stores/notices";
 import { useNotificationsStore } from "../src/stores/notifications";
+import { integrationMedianTip } from "../src/lib/integration-pipeline-ui";
+import type { CloseOutOutcomeEvent } from "../src/types";
 
 /** A Notification stub recording pushes, permission granted by default. */
 class FakeNotification {
@@ -394,6 +396,40 @@ describe("ingestCloseOutOutcome (#0640)", () => {
       ),
     ).toBeNull();
     expect(s.notices).toHaveLength(0);
+  });
+});
+
+describe("timer history hydration on startup (#0819)", () => {
+  it("loads the stored close-out outcomes so a fresh page sees up to 15 runs", async () => {
+    // The server keeps recent outcomes on disk; a fresh page load must hydrate
+    // them, not start with only the live events seen since mount.
+    const outcomes: CloseOutOutcomeEvent[] = Array.from({ length: 15 }, (_, i) => ({
+      taskId: `0${i}`,
+      outcome: "succeeded",
+      finishedAt: new Date(Date.parse("2026-10-03T18:00:00.000Z") - i * 60_000).toISOString(),
+      reason: "",
+      durationMs: (i + 1) * 60_000,
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const path = String(url);
+        if (path.includes("/api/close-out/outcomes"))
+          return { ok: true, status: 200, json: async () => ({ outcomes }) };
+        if (path.includes("/api/attention"))
+          return { ok: true, status: 200, json: async () => ({ items: [] }) };
+        return { ok: true, status: 200, json: async () => ({ state: "idle" }) };
+      }),
+    );
+
+    const s = useNoticesStore();
+    s.start();
+    await flush();
+    await flush();
+    s.stop();
+
+    expect(s.closeOutOutcomes).toHaveLength(15);
+    expect(integrationMedianTip(s.closeOutOutcomes)).toContain("Median 8m 00s · 15 runs");
   });
 });
 

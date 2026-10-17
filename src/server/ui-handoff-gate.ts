@@ -652,7 +652,11 @@ export async function runUiHandoffGate(
     log(task.id, "warn", `ui verification: ${line}`);
   }
   for (const skip of plan.skips) {
-    const line = `declared shot not captured — ${skip}`;
+    // #0819: the skip text is already a complete, actionable sentence
+    // ("Docs site skipped: no docs shot declared"), so it is not wrapped in
+    // the "declared shot not captured" framing — that prefix made a docs-only
+    // skip read as a failed declaration.
+    const line = skip;
     allWarnings.push(line);
     log(task.id, "warn", `ui verification: ${line}`);
   }
