@@ -21,7 +21,10 @@ const Slot = {
 const ButtonStub = {
   inheritAttrs: false,
   setup:
-    (_props: unknown, ctx: { slots: { default?: () => VNode[] }; attrs: Record<string, unknown> }) =>
+    (
+      _props: unknown,
+      ctx: { slots: { default?: () => VNode[] }; attrs: Record<string, unknown> },
+    ) =>
     () =>
       h("button", ctx.attrs, ctx.slots.default?.() ?? []),
 };
