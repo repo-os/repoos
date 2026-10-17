@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-configurable-activity-animation-size
 created_at: "2026-10-17T05:02:36Z"
-updated_at: "2026-10-17T05:15:14Z"
+updated_at: "2026-10-17T05:30:17Z"
 ---
 ## Problem
 
@@ -43,9 +43,28 @@ Prefer one global size preference applied across styles rather than per-style sa
 - Verify representative light/dark themes, reduced motion, accessible range controls and stable visible static marks. Capture Settings and actual card evidence; still screenshots alone do not establish correct motion scaling.
 - Rebuild after UI changes, run focused meaningful tests and scoped repoos check, and hand off through normal RepoOS review.
 
+## Shots
+```json
+[
+{
+  "label": "Animation size control with Auto toggle and 1-3ch slider",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": "#setting-activityAnimationSize"
+},
+{
+  "label": "Live coding/reviewing/agent preview beside the size control",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "selector": ".activity-animation-preview"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-17T05:02:36Z · created · njachowski@gmail.com
 - 2026-10-17T05:02:52Z · status inbox→ready
 - 2026-10-17T05:02:56Z · status ready→active, branch
 - 2026-10-17T05:15:14Z · body
+- 2026-10-17T05:30:17Z · body: section Shots
