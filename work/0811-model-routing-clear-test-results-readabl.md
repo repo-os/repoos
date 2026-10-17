@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-clear-test-results-readabl
 created_at: "2026-10-17T04:20:42Z"
-updated_at: "2026-10-17T05:05:31Z"
+updated_at: "2026-10-17T05:07:05Z"
 ---
 ## Problem
 1. 'Test live connection' only shows one line ('Live decision call succeeded.'). The user can't see what was asked, what came back, which model answered, how long it took, or what it cost. It also gives no feedback while waiting.
@@ -32,6 +32,18 @@ updated_at: "2026-10-17T05:05:31Z"
 ## Notes for AI
 Start from ModelRoutingPanel.vue (Test live connection, Recent decisions) and runtime.ts (the live probe and its result). The fallback reason strings are in policy.ts (failureReason, insufficient-evidence). Keep the probe call minimal and do not change how decisions are made. Source: user questions 2026-10-17 after model routing started working.
 
+## Shots
+```json
+[
+{
+  "label": "Model routing tab: live-test result card area and recent decision cards",
+  "target": "default",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-testid=\"routing-probe-live\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-17T04:20:42Z · created · njachowski@gmail.com
@@ -39,3 +51,4 @@ Start from ModelRoutingPanel.vue (Test live connection, Recent decisions) and ru
 - 2026-10-17T04:51:03Z · status ready→active, branch
 - 2026-10-17T05:02:26Z · body
 - 2026-10-17T05:05:31Z · body
+- 2026-10-17T05:07:05Z · body: section Shots
