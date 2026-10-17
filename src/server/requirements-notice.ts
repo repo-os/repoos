@@ -67,8 +67,7 @@ export function notifyEngineerOfRequirementsChange(
   const cwd = task.branch
     ? (worktreePathForBranch(deps.config.root, task.branch) ?? deps.config.root)
     : undefined;
-  const preamble =
-    task.branch && cwd ? resumePreamble(deps.config, task, task.branch, cwd) : "";
+  const preamble = task.branch && cwd ? resumePreamble(deps.config, task, task.branch, cwd) : "";
   const result = deps.runner.send(task.id, requirementsChangeMessage(task, change), agent, {
     resumePreamble: preamble || undefined,
     skipBoardDivergence: true,
