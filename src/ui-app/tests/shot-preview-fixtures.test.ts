@@ -209,11 +209,7 @@ describe("shot preview board fixtures (#0743)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const repo = useRepoStore();
-    window.history.replaceState(
-      {},
-      "",
-      "/work?task=9999&shotState=drawer%3AactiveRequirements",
-    );
+    window.history.replaceState({}, "", "/work?task=9999&shotState=drawer%3AactiveRequirements");
     applyShotPreviewFixture(repo, "drawer:activeRequirements");
     const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
     expect(task!.status).toBe("active");
