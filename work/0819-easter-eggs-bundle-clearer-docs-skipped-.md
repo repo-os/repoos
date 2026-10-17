@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T16:51:49Z"
+updated_at: "2026-10-17T16:52:23Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
@@ -17,10 +17,11 @@ routing_escalations: 1
 ---
 ## Problem
 Four small items, one open easter-eggs bundle:
-1. When a change touches documentation, the handoff capture tries the Docs site preview target. If no declared shot names a docs route, the target is skipped, and the Changes tab shows '[shot-warning] declared shot not captured — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped'. The wording is hard to act on. The screenshot viewer also shows only the image, not the green check or the warning.
-2. Test coverage for #0817's Update requirements flow is missing for two entry points: saving through the spec form, and editing the task file by hand (the file watcher path). Both must send the engineer the requirements notice.
-3. Settings saves auto-commit repoos.toml to main (src/server/routes/config.ts, commitConfigWrite). Each slider step commits to main, and each commit makes an in-flight close-out restart. Remove the auto-commit: a save writes repoos.toml to disk only, and the Move to done dirty-main prompt covers it. Background: #0682 added the auto-commit so a settings save would not block Move to done silently.
-4. The integration timer tooltip reads 'Median of the last 3 integration runs' when 15 runs exist. The median reads an in-memory list (src/ui-app/src/stores/notices.ts, closeOutOutcomes, CLOSE_OUT_TIMING_LIMIT) that is only filled from live events since the page opened, so a reload starts with a few runs. Load the recent close-out outcomes from the server on startup (the server keeps them on disk, see createCloseOutOutcomeStore), so the median uses up to 15 runs or however many exist. The tooltip is also too narrow: make it wider and lay it out as exactly two lines. Line 1: the median as a chip styled like the timer chip (for example 'Median 2m 25s'). Line 2: the instruction 'Click to switch between elapsed time and a countdown', in a fainter, smaller, italic style.
+1. When a change touches documentation, the handoff capture tries the Docs site preview target. If no declared shot names a docs route, the target is skipped. The warning text is hard to act on, and the screenshot viewer shows only the image, not the check or the warning.
+2. Test coverage for #0817's Update requirements flow is missing for two entry points: saving through the spec form, and editing the task file by hand.
+3. Settings saves auto-commit repoos.toml to main, so each slider step commits to main and restarts an in-flight close-out.
+4. The integration timer tooltip median counts too few runs after a reload, is too narrow, and counts failed runs.
+5. The Model routing checkbox 'Ask the decision model whether the task needs a human-only step' hides that the check is for mixed AI and human steps, and that a yes means the task should be split. The copy should say so.
 
 ## Desired UX
 - Item 1: the skipped docs warning reads 'Docs site skipped: no docs shot declared', with a short link that explains how to declare a docs route for the task. The screenshot viewer header shows the shot's check (or cross) and any warning for that shot.
@@ -101,3 +102,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T16:47:27Z · status review→active
 - 2026-10-17T16:51:04Z · body
 - 2026-10-17T16:51:49Z · body
+- 2026-10-17T16:52:23Z · body: Problem (added 5, removed 4)
