@@ -6,7 +6,7 @@
  * Task *status* is a frontmatter field — files never move between folders.
  */
 
-import type { ActivityAnimationStyle } from "./activity-animation.js";
+import type { ActivityAnimationSize, ActivityAnimationStyle } from "./activity-animation.js";
 
 /** Canonical lifecycle states. Order matters: it defines board column order. */
 export const STATUSES = ["draft", "inbox", "ready", "active", "review", "done"] as const;
@@ -500,6 +500,12 @@ export interface RepoOSConfig {
    * omitted. Use `three-dots` for the legacy pulsing-dot row.
    */
   activityAnimationStyle?: ActivityAnimationStyle;
+  /**
+   * Size of the inline activity animation, in character widths of the
+   * surrounding label font. `auto` (the default) keeps each style's established
+   * footprint; `"1"`–`"3"` scale artwork, motion and reserved space together.
+   */
+  activityAnimationSize?: ActivityAnimationSize;
   /** User-defined agents (defaults are applied at runtime when this is empty). */
   agents?: Agent[];
   /** When true, RepoOS automatically selects and starts ready tasks up to maxActiveTasks. */
