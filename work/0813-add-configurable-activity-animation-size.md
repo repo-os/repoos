@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-17T05:43:38Z"
-review_passes: 1
+last_close_out_gate_ms: 204624
+last_close_out_gate_at: "2026-10-17T06:05:05.497Z"
 id: "0813"
 title: Add configurable activity animation size slider with Auto sizing
 type: feature
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-configurable-activity-animation-size
 created_at: "2026-10-17T05:02:36Z"
+updated_at: "2026-10-17T06:05:05Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -74,4 +76,5 @@ Prefer one global size preference applied across styles rather than per-style sa
 - 2026-10-17T05:35:00Z · body
 - 2026-10-17T05:42:36Z · status active→review
 - 2026-10-17T05:43:38Z · note: review pass 1: good to go
+- 2026-10-17T06:05:05Z · close-out gate completed in 205s
 
