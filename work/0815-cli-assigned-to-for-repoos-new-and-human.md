@@ -3,16 +3,13 @@ id: "0815"
 title: "CLI: --assigned-to for repoos new, and human tasks that do not need AI notes"
 type: feature
 status: ready
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: real device)"
 priority: p1
 area: [core, cli]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-17T05:51:58Z"
-updated_at: "2026-10-17T06:12:52Z"
+updated_at: "2026-10-17T06:13:34Z"
 ---
 ## Problem
 Creating a task for a human fails from the CLI. `repoos new` only accepts `--ai`, so there is no way to create a human-assigned task in one step (`--assigned-to` is only on `repoos update`). The only workaround is create, then update.
@@ -47,3 +44,4 @@ A human task is then also checked against rules written for AI work. Creating on
 - 2026-10-17T05:52:09Z · body: section Acceptance criteria
 - 2026-10-17T05:57:56Z · body: section Acceptance criteria
 - 2026-10-17T06:12:52Z · status inbox→ready
+- 2026-10-17T06:13:34Z · needs_input
