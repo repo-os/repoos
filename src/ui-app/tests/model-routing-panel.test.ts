@@ -334,7 +334,7 @@ describe("ModelRoutingPanel", () => {
   });
 
   // ── #0811: clear live test results ────────────────────────────────────
-  it("shows a green live card with the question, answer, model, time and usage", async () => {
+  it("shows a live card collapsed to the summary, expanding to the full detail", async () => {
     seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
     const status = jevStatus();
     const live = {
@@ -376,15 +376,58 @@ describe("ModelRoutingPanel", () => {
     expect(card.classes()).toContain("mr-live-card-ok");
     expect(card.find("[data-testid='routing-live-status']").text()).toContain("Success");
     expect(card.find("[data-testid='routing-live-model']").text()).toBe("jev-latest");
-    expect(card.find("[data-testid='routing-live-time']").text()).toMatch(/842 ms/);
     expect(card.find("[data-testid='routing-live-usage']").text()).toContain("428 in");
     expect(card.find("[data-testid='routing-live-usage']").text()).toContain("73 out");
-    expect(card.find("[data-testid='routing-live-prompt']").text()).toContain(
+    // The summary carries the chosen candidate with its probability.
+    expect(card.find("[data-testid='routing-live-chosen']").text()).toContain("probe / connection");
+    expect(card.find("[data-testid='routing-live-chosen']").text()).toContain("100%");
+    // Collapsed by default: the question and answer are one click away.
+    expect(card.find("[data-testid='routing-live-details']").exists()).toBe(false);
+    expect(card.find("[data-testid='routing-live-toggle']").attributes("aria-expanded")).toBe(
+      "false",
+    );
+    await card.find("[data-testid='routing-live-toggle']").trigger("click");
+    const details = card.find("[data-testid='routing-live-details']");
+    expect(details.exists()).toBe(true);
+    expect(details.find("[data-testid='routing-live-time']").text()).toMatch(/842 ms/);
+    expect(details.find("[data-testid='routing-live-prompt']").text()).toContain(
       "routing connection test",
     );
-    const answer = card.find("[data-testid='routing-live-answer']");
+    const answer = details.find("[data-testid='routing-live-answer']");
     expect(answer.text()).toContain("probe / connection");
     expect(answer.text()).toContain("100%");
+    wrapper.unmount();
+  });
+
+  it("re-collapses the live card after a new test", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    const status = jevStatus();
+    const live = {
+      ok: true,
+      message: "Live decision call succeeded.",
+      model: "jev-latest",
+      durationMs: 12,
+      prompt: "RepoOS routing connection test.",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(status);
+        if (url.includes("/api/model-routing/decisions")) return jsonResponse({ decisions: [] });
+        if (url.includes("/api/model-routing/probe")) return jsonResponse({ ...status, live });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+    await wrapper.find("[data-testid='routing-probe-live']").trigger("click");
+    await flushPromises();
+    await wrapper.find("[data-testid='routing-live-toggle']").trigger("click");
+    expect(wrapper.find("[data-testid='routing-live-details']").exists()).toBe(true);
+
+    await wrapper.find("[data-testid='routing-probe-live']").trigger("click");
+    await flushPromises();
+    expect(wrapper.find("[data-testid='routing-live-details']").exists()).toBe(false);
     wrapper.unmount();
   });
 
@@ -489,6 +532,31 @@ describe("ModelRoutingPanel", () => {
     expect(details.text()).toContain("Answer received");
     expect(details.text()).toContain("codex · gpt-5");
     expect(details.text()).toContain("92%");
+    wrapper.unmount();
+  });
+
+  it("shows a relative decision timestamp with the exact time in the tooltip", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    const at = new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString();
+    const decision = decisionView({ at });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(jevStatus());
+        if (url.includes("/api/model-routing/decisions"))
+          return jsonResponse({ decisions: [decision] });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+
+    const time = wrapper.find("[data-testid='routing-decisions'] .mr-dec-time");
+    expect(time.text()).toBe("13 hours ago");
+    // The exact local timestamp is the styled tooltip, on hover or keyboard focus.
+    expect(time.attributes("data-tip")).toBe(new Date(at).toLocaleString());
+    expect(time.attributes("tabindex")).toBe("0");
+    expect(time.attributes("datetime")).toBe(at);
     wrapper.unmount();
   });
 
