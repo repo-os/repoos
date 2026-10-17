@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-17T11:49:51Z"
-review_passes: 3
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/update-requirements-on-an-active-task-ed
 created_at: "2026-10-17T09:07:43Z"
+updated_at: "2026-10-17T12:16:17Z"
+review_passes: 3
 ---
 ## Problem
 Requirements (the task body: Problem, Desired UX, Acceptance criteria, Notes) are changed on main while the task is active, but the engineer works from its own copy of the task file in its worktree. A change made on main is not seen by the engineer until someone tells it or it merges main. On #0816 the engineer had to work out what had changed, because the body edits only reached a message.
@@ -33,6 +33,57 @@ Requirements also get removed, not only added, so the action must cover both.
 ## Notes for AI
 Start from the body-update route for tasks (src/server, grep for the task body PATCH and repoos update --body) and the engineer message path (repoos message). The summary is computed by comparing the old and new body by section. Keep the notice short: changed sections and the new text of added items. Use the shared dialog components for the editor (AGENTS.md). Source: user request 2026-10-17 after the #0816 engineer had to work out which requirements had changed.
 
+## Shots
+```json
+[
+{
+"label": "Update requirements action on active task (light)",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": "[data-test-id=\"update-requirements\"]",
+"state": "drawer:activeRequirements",
+"theme": "light",
+"steps": [
+{
+"waitFor": "[data-test-id=\"update-requirements\"]"
+}
+]
+},
+{
+"label": "Update requirements action on active task (dark)",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": "[data-test-id=\"update-requirements\"]",
+"state": "drawer:activeRequirements",
+"theme": "dark",
+"steps": [
+{
+"waitFor": "[data-test-id=\"update-requirements\"]"
+}
+]
+},
+{
+"label": "Update requirements editor open (light)",
+"target": "default",
+"route": "/work?task=9999&tab=details",
+"highlight": ".sm-modal",
+"state": "drawer:activeRequirements",
+"theme": "light",
+"steps": [
+{
+"waitFor": "[data-test-id=\"update-requirements\"]"
+},
+{
+"click": "[data-test-id=\"update-requirements\"]"
+},
+{
+"waitFor": ".sm-modal"
+}
+]
+}
+]
+```
+
 ## Activity
 
 - 2026-10-17T09:07:43Z · created · njachowski@gmail.com
@@ -42,4 +93,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T10:09:18Z · note: review pass 1: good to go
 - 2026-10-17T11:29:12Z · note: review pass 2: good to go
 - 2026-10-17T11:49:51Z · note: review pass 3: good to go
-
+- 2026-10-17T12:16:17Z · note: review pass 4: needs some work
