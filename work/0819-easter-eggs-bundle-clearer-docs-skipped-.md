@@ -2,14 +2,14 @@
 id: "0819"
 title: "Easter eggs bundle: clearer docs-skipped warning, and check status in the screenshot viewer"
 type: bug
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T12:52:42Z"
+updated_at: "2026-10-17T12:52:46Z"
 ---
 ## Problem
 When a change touches documentation, the handoff capture tries the Docs site preview target. If no declared shot names a docs route, the target is skipped, and the Changes tab shows '[shot-warning] declared shot not captured — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped'. The wording is hard to act on. The screenshot viewer also shows only the image, not the green check or the warning, so the status is hidden when you open a shot.
@@ -29,3 +29,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 ## Activity
 
 - 2026-10-17T12:52:42Z · created · njachowski@gmail.com
+- 2026-10-17T12:52:46Z · status inbox→ready
