@@ -171,23 +171,22 @@ describe("TaskCard file-change chip (#0776)", () => {
   });
 });
 
-describe("TaskCard assignee chip (#0776)", () => {
-  it("hides the chip for an AI-assigned task", async () => {
+describe("TaskCard assignee chip (#0776, #0816)", () => {
+  it("shows no assignee chip for an AI-assigned task", async () => {
     const pinia = newPinia();
     const wrapper = await mountCard(pinia, makeTask({ assignee: "ai", assignedTo: "ai" }));
     expect(wrapper.find(".tc-assignee-chip").exists()).toBe(false);
     expect(wrapper.find(".tc-human-chip").exists()).toBe(false);
   });
 
-  it("shows '· open' for a task left unassigned", async () => {
+  it("shows no assignee chip for an unassigned task (#0816)", async () => {
     const pinia = newPinia();
     const wrapper = await mountCard(
       pinia,
       makeTask({ id: "0002", assignee: "unassigned", assignedTo: "" }),
     );
-    const chip = wrapper.find(".tc-assignee-chip");
-    expect(chip.exists()).toBe(true);
-    expect(chip.text()).toContain("· open");
+    expect(wrapper.find(".tc-assignee-chip").exists()).toBe(false);
+    expect(wrapper.find(".tc-human-chip").exists()).toBe(false);
   });
 });
 
