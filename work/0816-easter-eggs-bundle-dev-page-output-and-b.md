@@ -1,16 +1,16 @@
 ---
-updated_at: "2026-10-17T08:47:25Z"
-review_passes: 1
 id: "0816"
 title: "Easter eggs bundle: Dev page output and buttons, integration timer, badges, Human list"
 type: feature
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-and-b
 created_at: "2026-10-17T08:02:53Z"
+updated_at: "2026-10-17T08:49:58Z"
+review_passes: 1
 ---
 ## Problem
 Five small UI items, the one open easter-eggs bundle. Items 1 to 4 of the earlier bundle #0814 already landed on main in 3e66d37e9 and are not repeated here.
@@ -57,4 +57,4 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 - 2026-10-17T08:39:00Z · body
 - 2026-10-17T08:46:34Z · status active→review
 - 2026-10-17T08:47:25Z · note: review pass 1: needs some work
-
+- 2026-10-17T08:49:58Z · status review→active
