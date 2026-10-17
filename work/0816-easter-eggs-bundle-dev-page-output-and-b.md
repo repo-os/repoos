@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-and-b
 created_at: "2026-10-17T08:02:53Z"
-updated_at: "2026-10-17T08:46:34Z"
+updated_at: "2026-10-17T08:47:25Z"
 ---
 ## Problem
 Five small UI items, the one open easter-eggs bundle. Items 1 to 4 of the earlier bundle #0814 already landed on main in 3e66d37e9 and are not repeated here.
@@ -55,3 +55,4 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 - 2026-10-17T08:36:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-17T08:39:00Z · body
 - 2026-10-17T08:46:34Z · status active→review
+- 2026-10-17T08:47:25Z · note: review pass 1: needs some work
