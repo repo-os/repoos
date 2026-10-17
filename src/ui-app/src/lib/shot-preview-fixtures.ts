@@ -119,9 +119,7 @@ export function readShotPreviewFixtureFromLocation(
 }
 
 /** Task id from `?task=` when a drawer shot deep-links a real board task (#0817). */
-export function shotPreviewDrawerTaskIdFromLocation(
-  location: Pick<Location, "search">,
-): string {
+export function shotPreviewDrawerTaskIdFromLocation(location: Pick<Location, "search">): string {
   const raw = new URLSearchParams(location.search).get("task");
   const id = raw?.replace(/^#/, "") ?? "";
   return id || SHOT_PREVIEW_FIXTURE_TASK_ID;
