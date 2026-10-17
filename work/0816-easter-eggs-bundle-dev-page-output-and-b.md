@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 95703
-last_close_out_gate_at: "2026-10-17T10:42:13.171Z"
 id: "0816"
 title: "Easter eggs bundle: Dev page output and buttons, integration timer, badges, Human list"
 type: feature
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 4d172e6f144a2c22b7ef5a5c5cb9c5c647b87c8d
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-and-b
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T08:02:53Z"
-updated_at: "2026-10-17T10:42:13Z"
+updated_at: "2026-10-17T10:42:47Z"
+last_close_out_gate_ms: 95703
+last_close_out_gate_at: "2026-10-17T10:42:13.171Z"
 review_passes: 2
 ---
 ## Problem
@@ -114,4 +115,4 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 - 2026-10-17T09:28:48Z · note: review pass 2: good to go
 - 2026-10-17T10:21:57Z · message_expired: not delivered within timeout
 - 2026-10-17T10:42:13Z · close-out gate completed in 96s
-
+- 2026-10-17T10:42:47Z · status review→done, release:success
