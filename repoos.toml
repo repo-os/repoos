@@ -103,7 +103,7 @@ remoteValidation.engineerSelfCheckRemote = true
 activityAnimationStyle = "puppy-tracks"
 model_routing.mode = "shadow"
 model_routing.provider = "openrouter"
-activityAnimationSize = "20"
+activityAnimationSize = "24"
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
 user = "nick"
