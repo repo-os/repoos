@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 289720
-last_close_out_gate_at: "2026-10-17T07:06:19.716Z"
 id: "0815"
 title: "CLI: --assigned-to for repoos new, and human tasks that do not need AI notes"
 type: feature
-status: review
+status: done
 priority: p1
 area: [core, cli]
+merged_commit: ac39fab5d674489f3ab600a568508c43292d9fb2
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/cli-assigned-to-for-repoos-new-and-human
 created_at: "2026-10-17T05:51:58Z"
-updated_at: "2026-10-17T07:06:19Z"
+updated_at: "2026-10-17T07:06:39Z"
+last_close_out_gate_ms: 289720
+last_close_out_gate_at: "2026-10-17T07:06:19.716Z"
 review_passes: 1
 ---
 ## Problem
@@ -59,4 +60,4 @@ A human task is then also checked against rules written for AI work. Creating on
 - 2026-10-17T06:57:39Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-17T06:58:27Z · note: review pass 1: good to go
 - 2026-10-17T07:06:19Z · close-out gate completed in 290s
-
+- 2026-10-17T07:06:39Z · status review→done, release:success
