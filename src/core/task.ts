@@ -356,7 +356,6 @@ export function resolveAssignee(raw: string): Assignee {
   return "human";
 }
 
-
 /**
  * The two area fields (#0583), parsed once from whatever the frontmatter held.
  * `area` stays the comma-joined display string (historical single-value

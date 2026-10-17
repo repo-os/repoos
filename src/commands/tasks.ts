@@ -880,9 +880,10 @@ function parseQuestions(raw: string): string[] {
  * (#0815). Returns `{ value: undefined }` when none was given (the configured
  * default applies), or `{ error }` for a conflicting or unknown selection.
  */
-function resolveNewAssignee(
-  flags: Record<string, string | boolean>,
-): { value?: string; error?: string } {
+function resolveNewAssignee(flags: Record<string, string | boolean>): {
+  value?: string;
+  error?: string;
+} {
   const selectors = [
     flags.ai ? "--ai" : null,
     flags.human ? "--human" : null,

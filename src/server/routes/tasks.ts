@@ -1992,7 +1992,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     let humanStepOverride: "agent" | "human" | undefined;
     // #0815: human-assigned tasks and tasks carrying an explicit human
     // override never run the agent-oriented keyword/model human-step check.
-    if (existing.status === "ready" && existing.assignee !== "human" && !existing.humanStepOverride) {
+    if (
+      existing.status === "ready" &&
+      existing.assignee !== "human" &&
+      !existing.humanStepOverride
+    ) {
       const check = await runHumanStepDecisionCheck(config, existing);
       if (check.outcome === "shadow") {
         logger.task(id, "info", "Human-step decision recorded (shadow mode)", {
