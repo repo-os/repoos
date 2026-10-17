@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-and-b
 created_at: "2026-10-17T08:02:53Z"
-updated_at: "2026-10-17T09:15:08Z"
+updated_at: "2026-10-17T09:16:54Z"
 review_passes: 1
 ---
 ## Problem
@@ -42,6 +42,40 @@ Five small UI items, the one open easter-eggs bundle. Items 1 to 4 of the earlie
 ## Notes for AI
 Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list (grep 'Archived') for the Human button, the human chip styling on task cards, the Dev target URL line in src/ui-app/src/views/DevView.vue, the assignee chip in src/ui-app/src/components/TaskCard.vue (item 6), and for items 4 and 5 src/ui-app/src/components/ActivityIndicator.vue, src/ui-app/src/style.css (--ai-size-ch) and the animation size control in src/ui-app/src/views/SettingsView.vue. Use the shared tooltip or popover component (AGENTS.md). Source: user requests 2026-10-17.
 
+## Shots
+```json
+[
+{
+  "label": "Work board - Human button opens the human-assigned list; only a human task shows a chip (item 6)",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".human-toggle, .human-rows",
+  "steps": [
+    {
+      "click": ".human-toggle"
+    },
+    {
+      "waitMs": 300
+    }
+  ],
+  "state": "board:cardChips"
+},
+{
+  "label": "Dev page - running URL is a link, stopped URL shows greyed Click Start",
+  "target": "default",
+  "route": "/dev",
+  "highlight": ".dev-open, [data-test-id=\"dev-url-stopped\"]",
+  "state": "dev:running"
+},
+{
+  "label": "Settings - animation size slider in pixels, no Auto toggle, default tick",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": "#setting-activityAnimationSize, .activity-animation-preview"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-17T08:02:53Z · created · njachowski@gmail.com
@@ -68,3 +102,4 @@ Start from src/ui-app/src/lib/needs-input-ui.ts (badge text), the Archived list 
 - 2026-10-17T09:06:15Z · body
 - 2026-10-17T09:15:07Z · body
 - 2026-10-17T09:15:08Z · message_queued at 2026-10-17T09:15:08.799Z
+- 2026-10-17T09:16:54Z · body: section Shots
