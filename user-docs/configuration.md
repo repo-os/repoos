@@ -510,7 +510,9 @@ RepoOS uses the configured role defaults and task overrides exactly as before.
 > `model_routing.*` keys in `getConfigSchema()`, TOML parsing, and the **Model
 > routing** tab on the Agents page (provider, mode, roles, timeout, credential
 > presence, configuration probe, and recent decisions). Routing is now invoked
-> on the PM, engineer and reviewer run paths (including review handback). The
+> on the PM, engineer and reviewer run paths (including review handback). #0812
+> gives the decision model real inputs (a context-budgeted brief, per-candidate
+> model facts and project history, task progress, and a stated objective). The
 > only remaining follow-up is the human-only live credentialed smoke test
 > (**#0794**). A self-hosted Clef-Flash adapter is retained in the code and its
 > fixtures, but it is not a selectable provider (#0809).
@@ -611,6 +613,35 @@ a plain reason and what to check. Use it sparingly and never in automated tests.
   the provider's answers, so a card's details view renders exactly what was asked
   and returned. The decision call's token usage is recorded in the
   Tokens/session accounting under the `routing` session type (never `pm`).
+
+### What the decision model is sent (#0812)
+
+The router used to send a short brief capped at 6,000 characters, three yes/no
+questions and a candidate list labelled only `cli / model / reasoning`. It now
+sends enough to decide:
+
+- **A brief budgeted to the decision model's context window.** The window is
+  looked up from provider metadata and the brief may use a fixed share of it
+  (`DEFAULT_ROUTING_BRIEF_SHARE`, 25%), converted at ~4 characters per token.
+  When the window is unknown, the safe fixed fallback (6,000 characters) applies.
+- **Per-candidate facts.** Each candidate's label carries its price per 1M input
+  and output tokens, context size, whether it is subscription or pay-as-you-go,
+  and this project's own history for the role (runs, pass rate, average tokens,
+  turns, cost and review passes). Unknown fields are omitted rather than shown
+  empty, and a `reasoning` level appears only when the candidate actually has one.
+- **Task progress.** Engineer and review rounds so far, the latest review
+  verdict, diff size, whether UI shots are involved, and time open.
+- **An explicit objective.** The suitability question states what "best" means:
+  complete this kind of task well (the review passes first time) in the fewest
+  rounds, at the lowest cost that still meets that bar.
+
+Prices and context sizes come from a curated, dated snapshot of provider
+metadata (`src/core/model-routing/facts.ts`); project history is read from the
+project's own sessions database (`src/server/candidate-history.ts`), not
+RepoOS's. Each decision record logs the brief size, the budget it was given, the
+decision model's context window and the fact line offered for every candidate,
+so a decision can be explained afterwards. This does not change who may run:
+the budget allowlist, harness checks and human pins are still applied first.
 
 ### Review handback re-evaluation
 
