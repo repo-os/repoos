@@ -2,7 +2,7 @@
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T11:25:43Z"
+updated_at: "2026-10-17T11:25:44Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-17T09:56:09.589Z: repoos check failed: the worktree changed while the gate was running (appeared: src/server/requirements-notice.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -127,3 +127,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T10:42:10Z · message_queued at 2026-10-17T10:42:10.543Z
 - 2026-10-17T11:12:01Z · message_queued at 2026-10-17T11:12:01.568Z
 - 2026-10-17T11:12:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-17T11:25:44Z · status active→review
