@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-17T13:05:10Z"
+review_passes: 5
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
@@ -11,9 +13,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T13:05:10Z"
 last_check_failure: "repoos check at 2026-10-17T12:54:45.006Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 11fed622 to 4d3eff03) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -217,3 +217,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T13:04:08Z · status active→review
 - 2026-10-17T13:04:08Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-17T13:05:10Z · note: review pass 5: good to go
+
