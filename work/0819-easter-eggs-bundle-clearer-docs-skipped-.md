@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-17T15:57:56Z"
+updated_at: "2026-10-17T15:59:20Z"
 ---
 ## Problem
 Four small items, one open easter-eggs bundle:
@@ -41,6 +41,19 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 
 ![Approved bird-track shape reference: tapered central toe, splayed side toes, and short heel](/api/tasks/0819/attachments/screenshot-1.png)
 
+## Shots
+```json
+[
+{
+  "label": "Integration timer chip (median tooltip is hover-only)",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"integration-timer\"]",
+  "state": "closeOut:active"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-17T12:52:42Z · created · njachowski@gmail.com
@@ -56,3 +69,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-17T15:47:04Z · body
 - 2026-10-17T15:56:33Z · body
 - 2026-10-17T15:57:56Z · body
+- 2026-10-17T15:59:20Z · body
