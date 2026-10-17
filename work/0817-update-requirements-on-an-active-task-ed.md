@@ -11,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T11:12:01Z"
+updated_at: "2026-10-17T11:25:43Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-17T09:56:09.589Z: repoos check failed: the worktree changed while the gate was running (appeared: src/server/requirements-notice.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
