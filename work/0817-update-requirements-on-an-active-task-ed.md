@@ -11,7 +11,7 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T11:47:07Z"
+updated_at: "2026-10-17T11:48:30Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-17T11:35:01.530Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 5fee14c7 to 5a922be7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -159,3 +159,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T11:39:10Z · body
 - 2026-10-17T11:45:29Z · handoff failed · remote validation failed: test failure: tests/task-underspecified-flag.test.ts > underspecified flag on body edit (#0613) > raises needs_input when a later body edit leaves spec sections empty on bee — fix it in the feature branch and re-run the gate
 - 2026-10-17T11:47:07Z · body
+- 2026-10-17T11:48:30Z · body
