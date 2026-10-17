@@ -364,7 +364,11 @@ export function candidateFactLine(facts: CandidateFacts): string | null {
   if (inP != null || outP != null) {
     const input = inP != null ? formatPrice(inP) : "?";
     const output = outP != null ? formatPrice(outP) : "?";
-    parts.push(`price ${input}/${output} per 1M`);
+    // The cached-input rate (OpenRouter) is the effective price for a run that
+    // reuses the prompt prefix, so surface it beside the list prices.
+    const cache =
+      facts.cacheReadPricePerM != null ? `, cache ${formatPrice(facts.cacheReadPricePerM)}` : "";
+    parts.push(`price ${input}/${output} per 1M${cache}`);
   }
   if (facts.contextTokens != null) parts.push(`context ${formatTokenCount(facts.contextTokens)}`);
   if (facts.billing === "subscription") parts.push("subscription");

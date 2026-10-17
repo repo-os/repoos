@@ -87,10 +87,13 @@ export const DEFAULT_ROUTING_BRIEF_SHARE = 0.25;
 /** Rough characters per token for budgeting a text brief (conservative). */
 export const BRIEF_CHARS_PER_TOKEN = 4;
 
+/** Lower bound on a computed budget, so a tiny reported window still allows a brief. */
+export const MIN_ROUTING_BRIEF_CHARS = 1000;
+
 /**
  * The brief character budget for a decision model: a fixed share of its context
- * window when known, else the safe fallback. Never below a small floor so a
- * tiny reported window cannot starve the brief.
+ * window when known, else the safe fixed fallback. A very small computed budget
+ * is floored at {@link MIN_ROUTING_BRIEF_CHARS} so the brief is never degenerate.
  */
 export function briefMaxChars(
   contextTokens: number | null | undefined,
@@ -102,7 +105,7 @@ export function briefMaxChars(
   const safeShare =
     Number.isFinite(share) && share > 0 && share < 1 ? share : DEFAULT_ROUTING_BRIEF_SHARE;
   const budget = Math.floor(contextTokens * safeShare * BRIEF_CHARS_PER_TOKEN);
-  return Math.max(MAX_ROUTING_BRIEF_CHARS, budget);
+  return Math.max(MIN_ROUTING_BRIEF_CHARS, budget);
 }
 
 export interface RoutingWiringDeps {
