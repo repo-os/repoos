@@ -553,6 +553,58 @@ describe("ModelRoutingPanel", () => {
     expect(body.text()).toContain("codex · gpt-5");
     wrapper.unmount();
   });
+
+  it("shows a provider-reported dollar cost as Cost on a decision card", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    const decision = decisionView({
+      providerUsage: { inputTokens: 120, outputTokens: 40, costUsd: 0.002 },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(jevStatus());
+        if (url.includes("/api/model-routing/decisions"))
+          return jsonResponse({ decisions: [decision] });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+    const body = wrapper.find("[data-testid='routing-decisions'] .mr-decision-body");
+    expect(body.text()).toContain("Cost");
+    expect(wrapper.find("[data-testid='routing-decision-usage']").text()).toContain("$0.0020");
+    wrapper.unmount();
+  });
+
+  it("shows a provider-reported dollar cost as Cost on the live card", async () => {
+    seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });
+    const status = jevStatus();
+    const live = {
+      ok: true,
+      message: "Live decision call succeeded.",
+      model: "jev-latest",
+      durationMs: 100,
+      usage: { inputTokens: 10, outputTokens: 2, costUsd: 0.0004 },
+      prompt: "RepoOS routing connection test.",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(status);
+        if (url.includes("/api/model-routing/decisions")) return jsonResponse({ decisions: [] });
+        if (url.includes("/api/model-routing/probe")) return jsonResponse({ ...status, live });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+    await wrapper.find("[data-testid='routing-probe-live']").trigger("click");
+    await flushPromises();
+    const card = wrapper.find("[data-testid='routing-live-card']");
+    expect(card.text()).toContain("Cost");
+    expect(card.find("[data-testid='routing-live-usage']").text()).toContain("$0.0004");
+    wrapper.unmount();
+  });
 });
 
 describe("AgentsView model routing tab", () => {
