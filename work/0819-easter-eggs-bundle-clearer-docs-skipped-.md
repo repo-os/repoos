@@ -64,9 +64,13 @@ Use the shared ActivityIndicator and current activity/theme colors via currentCo
 - Inspect the animation over time and compare against the approved quick-trail reference at actual 9–12px label sizes. Verify two distinct tapered, splayed footprints, the fast alternating step rhythm, current light/dark activity colors, size preference support, and no clipping, label overlap or layout shifts.
 - Capture Settings and actual task-card evidence. Commit this item separately from the other bundle items, then run the bundle's scoped repoos check and normal review workflow.
 
+## Screenshots
+
+![Approved bird-track shape reference: tapered central toe, splayed side toes, and short heel](/api/tasks/0819/attachments/screenshot-1.png)
 
 ## Activity
 
 - 2026-10-17T12:52:42Z · created · njachowski@gmail.com
 - 2026-10-17T12:52:46Z · status inbox→ready
 - 2026-10-17T13:17:57Z · title, body: section Bird quick trail animation (third bundle item)
+- 2026-10-17T13:17:57Z · screenshots
