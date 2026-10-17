@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-configurable-activity-animation-size
 created_at: "2026-10-17T05:02:36Z"
-updated_at: "2026-10-17T05:30:17Z"
+updated_at: "2026-10-17T05:31:51Z"
 ---
 ## Problem
 
@@ -47,16 +47,16 @@ Prefer one global size preference applied across styles rather than per-style sa
 ```json
 [
 {
-  "label": "Animation size control with Auto toggle and 1-3ch slider",
-  "target": "default",
-  "route": "/settings?tab=general&section=activity-animation",
-  "highlight": "#setting-activityAnimationSize"
+"label": "Animation size control with Auto toggle and 1-3ch slider",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": "#setting-activityAnimationSize"
 },
 {
-  "label": "Live coding/reviewing/agent preview beside the size control",
-  "target": "default",
-  "route": "/settings?tab=general&section=activity-animation",
-  "selector": ".activity-animation-preview"
+"label": "Live coding/reviewing/agent preview beside the size control",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"selector": ".activity-animation-preview"
 }
 ]
 ```
@@ -68,3 +68,4 @@ Prefer one global size preference applied across styles rather than per-style sa
 - 2026-10-17T05:02:56Z · status ready→active, branch
 - 2026-10-17T05:15:14Z · body
 - 2026-10-17T05:30:17Z · body: section Shots
+- 2026-10-17T05:31:51Z · body
