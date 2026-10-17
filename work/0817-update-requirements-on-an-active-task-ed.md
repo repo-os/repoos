@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-17T12:49:34Z"
+review_passes: 5
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/update-requirements-on-an-active-task-ed
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T12:49:33Z"
-review_passes: 4
 ---
 ## Problem
 Requirements (the task body: Problem, Desired UX, Acceptance criteria, Notes) are changed on main while the task is active, but the engineer works from its own copy of the task file in its worktree. A change made on main is not seen by the engineer until someone tells it or it merges main. On #0816 the engineer had to work out what had changed, because the body edits only reached a message.
@@ -95,3 +95,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T11:49:51Z · note: review pass 3: good to go
 - 2026-10-17T12:16:17Z · note: review pass 4: needs some work
 - 2026-10-17T12:49:33Z · note: review pass 5: needs some work
+
