@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-17T11:50:29Z"
+review_passes: 3
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
@@ -14,11 +16,9 @@ branch: feat/update-requirements-on-an-active-task-ed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T09:07:43Z"
-updated_at: "2026-10-17T11:50:29Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-17T11:35:01.530Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 5fee14c7 to 5a922be7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
-review_passes: 2
 ---
 ## Problem
 Requirements (the task body: Problem, Desired UX, Acceptance criteria, Notes) are changed on main while the task is active, but the engineer works from its own copy of the task file in its worktree. A change made on main is not seen by the engineer until someone tells it or it merges main. On #0816 the engineer had to work out what had changed, because the body edits only reached a message.
@@ -174,3 +174,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T11:50:21Z · note: highlight .sm-modal matched nothing on /work?task=9999&tab=details
 - 2026-10-17T11:50:29Z · note: review pass 3: needs some work
 - 2026-10-17T11:50:29Z · needs_input
+
