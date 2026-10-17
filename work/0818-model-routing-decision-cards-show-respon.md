@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 86989
-last_close_out_gate_at: "2026-10-17T12:17:44.118Z"
 id: "0818"
 title: "Model routing: decision cards show response time, cost and details; test card can collapse; relative timestamps"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 7dd757bbdf4bd2f31dc5d6bc55a67615afe8c8f4
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/model-routing-decision-cards-show-respon
 created_at: "2026-10-17T11:25:18Z"
-updated_at: "2026-10-17T12:17:44Z"
+updated_at: "2026-10-17T12:18:39Z"
+last_close_out_gate_ms: 86989
+last_close_out_gate_at: "2026-10-17T12:17:44.118Z"
 review_passes: 1
 ---
 ## Problem
@@ -60,4 +61,4 @@ Start from ModelRoutingPanel.vue (the test card around lines 630-660, the Recent
 - 2026-10-17T11:40:56Z · status active→review
 - 2026-10-17T11:41:47Z · note: review pass 1: good to go
 - 2026-10-17T12:17:44Z · close-out gate completed in 87s
-
+- 2026-10-17T12:18:39Z · status review→done, release:success
