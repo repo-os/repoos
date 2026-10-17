@@ -20,14 +20,14 @@ export const STALE_REVIEW_DEV_ERROR_BANNER =
 export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
   "review-failed": "Reviewer failed — no report",
   "review-rounds-exhausted": "Review still finding issues",
-  "dev-error": "Agent exited with an error",
+  "dev-error": "Agent exited with error",
   "provider-failure": "Provider or credit error",
   "degenerate-output": "Degenerate agent output",
   "check-failed-after-retries": "Checks failed after retries",
   "cto-escalation": "Agent asked a question",
   "watchdog-stuck": "No agent running",
-  underspecified: "Doesn't look fully fleshed out",
-  "needs-human-step": "Needs a human-only verification step",
+  underspecified: "Not fully fleshed out",
+  "needs-human-step": "Needs human step",
   questions: "Agent asked a question",
 };
 

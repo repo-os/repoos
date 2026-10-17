@@ -54,9 +54,13 @@ import ActivityIndicator from "../components/ActivityIndicator.vue";
 import CtoSafeActionsSettings from "../components/CtoSafeActionsSettings.vue";
 import { CTO_ACTIONS_SETTINGS_ROW_DESC } from "../../../core/cto-actions.js";
 import {
-  activityAnimationSizeCh,
+  ACTIVITY_ANIMATION_SIZE_MAX_PX,
+  ACTIVITY_ANIMATION_SIZE_MIN_PX,
+  ACTIVITY_ANIMATION_SIZE_STEP_PX,
   activityAnimationSizeOrDefault,
+  activityAnimationSizePx,
   activityAnimationStyleOrDefault,
+  DEFAULT_ACTIVITY_ANIMATION_SIZE,
   normalizeActivityAnimationSize,
   type ActivityAnimationSize,
   type ActivityAnimationStyle,
@@ -585,25 +589,29 @@ const activityAnimationPreviewSize = computed((): ActivityAnimationSize =>
   activityAnimationSizeOrDefault(normalizeActivityAnimationSize(form.activityAnimationSize)),
 );
 
-const activityAnimationSizeIsAuto = computed(() => activityAnimationPreviewSize.value === "auto");
+/** Slider bounds and step, in pixels (#0816). */
+const ACTIVITY_SIZE_MIN = ACTIVITY_ANIMATION_SIZE_MIN_PX;
+const ACTIVITY_SIZE_MAX = ACTIVITY_ANIMATION_SIZE_MAX_PX;
+const ACTIVITY_SIZE_STEP = ACTIVITY_ANIMATION_SIZE_STEP_PX;
 
-/** Slider position while Auto is selected: the last explicit size, or 2ch. */
-const activityAnimationSliderValue = computed(
-  () => activityAnimationSizeCh(activityAnimationPreviewSize.value) ?? 2,
+/** The size shown and saved: the slider's own value, no Auto state (#0816). */
+const activityAnimationSliderValue = computed(() =>
+  activityAnimationSizePx(activityAnimationPreviewSize.value),
 );
 
-const activityAnimationSizeValueText = computed(() =>
-  activityAnimationSizeIsAuto.value
-    ? "Auto (each style's current size)"
-    : `${activityAnimationSliderValue.value}ch`,
-);
+const activityAnimationSizeValueText = computed(() => `${activityAnimationSliderValue.value} px`);
 
-function setActivityAnimationSizeAuto(auto: boolean): void {
-  form.activityAnimationSize = auto ? "auto" : String(activityAnimationSliderValue.value);
-}
+/** Where the default size sits on the slider, as a percentage of the track. */
+const activityAnimationDefaultTickPercent = computed(() => {
+  const span = ACTIVITY_SIZE_MAX - ACTIVITY_SIZE_MIN;
+  if (span <= 0) return 0;
+  const def = activityAnimationSizePx(DEFAULT_ACTIVITY_ANIMATION_SIZE);
+  return ((def - ACTIVITY_SIZE_MIN) / span) * 100;
+});
 
 function setActivityAnimationSizeFromRange(value: string): void {
-  form.activityAnimationSize = normalizeActivityAnimationSize(value) ?? "auto";
+  form.activityAnimationSize =
+    normalizeActivityAnimationSize(value) ?? DEFAULT_ACTIVITY_ANIMATION_SIZE;
 }
 
 // ---- Attachment storage (#0659) ----
@@ -1287,32 +1295,33 @@ onUnmounted(() => {
                 </div>
                 <div class="setting-input">
                   <div class="activity-size-control">
-                    <label class="activity-size-auto">
-                      <Switch
-                        :checked="activityAnimationSizeIsAuto"
+                    <div class="activity-size-range-wrap">
+                      <input
+                        id="setting-activityAnimationSize-range"
+                        class="activity-size-range"
+                        type="range"
+                        :min="ACTIVITY_SIZE_MIN"
+                        :max="ACTIVITY_SIZE_MAX"
+                        :step="ACTIVITY_SIZE_STEP"
+                        :value="activityAnimationSliderValue"
                         :disabled="config.saving"
-                        aria-label="Use each style's automatic animation size"
-                        @update:checked="setActivityAnimationSizeAuto"
+                        aria-label="Activity animation size in pixels"
+                        :aria-valuetext="activityAnimationSizeValueText"
+                        @input="
+                          setActivityAnimationSizeFromRange(
+                            ($event.target as HTMLInputElement).value,
+                          )
+                        "
                       />
-                      <span>Auto</span>
-                    </label>
-                    <input
-                      id="setting-activityAnimationSize-range"
-                      class="activity-size-range"
-                      type="range"
-                      min="1"
-                      max="3"
-                      step="0.5"
-                      :value="activityAnimationSliderValue"
-                      :disabled="activityAnimationSizeIsAuto || config.saving"
-                      aria-label="Activity animation size in character widths"
-                      :aria-valuetext="activityAnimationSizeValueText"
-                      @input="
-                        setActivityAnimationSizeFromRange(($event.target as HTMLInputElement).value)
-                      "
-                    />
+                      <span
+                        class="activity-size-default-tick"
+                        :style="{ left: `${activityAnimationDefaultTickPercent}%` }"
+                        data-test-id="activity-size-default-tick"
+                        aria-hidden="true"
+                      ></span>
+                    </div>
                     <span class="activity-size-value" aria-hidden="true">{{
-                      activityAnimationSizeIsAuto ? "Auto" : `${activityAnimationSliderValue}ch`
+                      activityAnimationSizeValueText
                     }}</span>
                   </div>
                 </div>
@@ -1348,7 +1357,7 @@ onUnmounted(() => {
                 </div>
               </div>
               <div class="setting-desc" style="padding: 4px 0 10px">
-                Shown at in-app size — changes save automatically.
+                Previewed at the exact size used in the app — changes save automatically.
               </div>
             </div>
           </Card>
