@@ -12,7 +12,14 @@ import { mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmFixture } from "./helpers";
-import { NEW_FLAGS, UPDATE_FLAGS, NEW_USAGE, UPDATE_USAGE, cmdNew } from "../../commands/tasks";
+import {
+  NEW_FLAGS,
+  UPDATE_FLAGS,
+  NEW_USAGE,
+  UPDATE_USAGE,
+  cmdNew,
+  cmdUpdate,
+} from "../../commands/tasks";
 import { NEW_FLAG_HELP, UPDATE_FLAG_HELP } from "../../cli/task-flags";
 import { printCommandHelp, renderHelp } from "../../cli/help";
 import { parseTask } from "../../core/task";
@@ -290,5 +297,57 @@ describe("repoos new --assigned-to / --human / --ai (#0815)", () => {
     ]);
     expect(task.humanStepOverride).toBe("false positive: 'keys' in the docs example");
     expect(body).toContain("human-step override · false positive");
+  });
+});
+
+describe("repoos update --human-step-override (#0815)", () => {
+  it("clears a needs-human-step flag, stores the reason, and records it in the activity log", async () => {
+    const { root, clean } = makeCliRepo();
+    tmpRoots.push(root);
+    const prevExit = process.exitCode;
+    try {
+      const taskPath = join(root, "work", "0001-test.md");
+      const body = [
+        "## Problem",
+        "",
+        "x".repeat(500),
+        "",
+        "## Acceptance criteria",
+        "",
+        "- [ ] Verify on a real device with production credentials",
+        "",
+        "## Notes for AI",
+        "",
+        "y".repeat(100),
+        "",
+      ].join("\n");
+      writeFileSync(
+        taskPath,
+        `---\nid: "0001"\ntitle: Test task\ntype: feature\nstatus: active\npriority: p2\narea: server\nassigned_to: ai\nneeds_input: true\nneeds_input_reason: needs-human-step\nneeds_input_detail: device\n---\n${body}`,
+      );
+      git(root, ["add", "-A"]);
+      git(root, ["commit", "-q", "-m", "flag the task"]);
+
+      await withCwd(root, () =>
+        cmdUpdate(["0001", "--human-step-override", "keyword false positive"]),
+      );
+      expect(process.exitCode).toBe(prevExit);
+
+      const raw = readFileSync(taskPath, "utf8");
+      const task = parseTask({
+        content: raw,
+        absPath: taskPath,
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      expect(task.humanStepOverride).toBe("keyword false positive");
+      expect(task.needsInput).toBe(false);
+      expect(task.needsInputReason).toBeUndefined();
+      expect(raw).toContain("human-step override: keyword false positive");
+    } finally {
+      process.exitCode = prevExit;
+      clean();
+    }
   });
 });

@@ -775,8 +775,10 @@ export function cmdUpdate(args: string[]): void {
         process.exitCode = 1;
         return;
       }
-      if (!task.needsInput || task.needsInputReason === "needs-human-step") {
-        patch.needsInput = false;
+      if (task.needsInput && task.needsInputReason === "needs-human-step") {
+        // Keep the human blocked if agent questions remain; only drop our reason.
+        const hasQuestions = (task.questions?.length ?? 0) > 0;
+        patch.needsInput = hasQuestions;
         patch.needsInputReason = null;
         patch.needsInputDetail = null;
       }
