@@ -226,6 +226,38 @@ describe("move-to-done dirty-main guard (#0211)", () => {
     }
   });
 
+  it("surfaces an uncommitted repoos.toml instead of silently committing it (#0819)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      // A settings save writes repoos.toml and no longer commits it. The
+      // close-out must pause and hand the list back, not commit it behind the
+      // user's back.
+      writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\n');
+      const headBefore = execSync("git rev-parse HEAD", { cwd: root, encoding: "utf8" }).trim();
+      const enqueue = vi.fn();
+      const res = makeRes();
+
+      await taskAction(makeCtx(root, reviewTask(root), { onEnqueue: enqueue }), makeReq(), res, {
+        param1: "0211",
+        param2: "done",
+      });
+
+      expect(res.statusCode).toBe(409);
+      expect(res.body.needsCommit).toBe(true);
+      expect(res.body.dirtyFiles).toContain("repoos.toml");
+      expect(enqueue).not.toHaveBeenCalled();
+      // Nothing committed it: the config write is still uncommitted.
+      expect(execSync("git rev-parse HEAD", { cwd: root, encoding: "utf8" }).trim()).toBe(
+        headBefore,
+      );
+      expect(execSync("git status --porcelain", { cwd: root, encoding: "utf8" })).toContain(
+        "repoos.toml",
+      );
+    } finally {
+      clean();
+    }
+  });
+
   it("does not block close-out when the only dirty files on main are shot captures (#0713)", async () => {
     const { root, clean } = makeRepo();
     try {

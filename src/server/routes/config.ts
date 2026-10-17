@@ -34,20 +34,7 @@ import { resolveRemoteHosts } from "../../core/remote-hosts.js";
 import { formatTomlError, validateToml } from "../../core/toml-validate.js";
 import { stripTomlComment } from "../../core/toml-line.js";
 import { readTunnelConfig, writeTunnelConfig } from "../../core/tunnel.js";
-import { commitFiles } from "../../core/git.js";
 import { listSkills } from "./helpers.js";
-
-/**
- * Commit `repoos.toml` after a config write, the same way task files are
- * committed by `patchTaskFile`. Config PATCHes used to leave the file dirty on
- * the primary branch, which then blocked the next Move to done until someone
- * committed it by hand (#0682, field report items 8/9). Fail-soft: the write
- * already succeeded on disk; a git failure only means a future merge must
- * commit first — never a 500 out of a successful Settings save.
- */
-function commitConfigWrite(root: string): void {
-  commitFiles(root, [join(root, "repoos.toml")], "chore(config): update repoos.toml");
-}
 
 /**
  * Config as the browser may see it: `whisper.apiKey` is stripped entirely and
@@ -878,22 +865,11 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     writeTunnelConfig(config.root, tunnel);
   }
 
-  // Commit the config write (repoos.toml) so it never sits dirty on the primary
-  // branch and blocks the next close-out (#0682). Covers the patch, the
-  // dropped area/host rows and the tunnel toggle above — all land in the one
-  // file. Runs only when something was actually written, so a pure no-op save
-  // stays a no-op.
-  if (
-    Object.keys(patch).length > 0 ||
-    dropAreaRows ||
-    dropDevTargetRows ||
-    dropBudgetAllowlistRows ||
-    dropRows ||
-    patchRows?.length ||
-    tunnelEnabled !== undefined
-  ) {
-    commitConfigWrite(config.root);
-  }
+  // #0819: a Settings save writes `repoos.toml` to disk only — it no longer
+  // commits to main. The #0682 auto-commit ran on every slider step, and each
+  // commit could restart an in-flight close-out. An uncommitted `repoos.toml`
+  // is now surfaced (and optionally committed) by the Move-to-done dirty-main
+  // prompt, which is where that decision belongs.
 
   const vocabularyBefore = effectiveAreaNames(repoos.config);
   applyLoadedConfig(repoos, loadConfig(config.root));
@@ -1005,9 +981,9 @@ export const writeRawConfig: RouteHandler = async (ctx, req, res) => {
   }
 
   writeFileSync(path, body.content, "utf8");
-  // A raw repoos.toml edit is a config write like any other: commit it so it
-  // never sits dirty on the primary branch and blocks close-out (#0682).
-  commitConfigWrite(config.root);
+  // #0819: like the curated PATCH save, a raw repoos.toml edit writes the file
+  // only. Leaving it uncommitted is deliberate — the Move-to-done dirty-main
+  // prompt owns the commit decision.
 
   // Apply immediately, exactly like a PATCH /api/config save: refresh the
   // in-memory config and reconcile the index (the raw file can change

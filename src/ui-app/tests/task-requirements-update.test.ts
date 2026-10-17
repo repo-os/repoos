@@ -9,14 +9,18 @@
  *    one, and never writes the worktree copy.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { IncomingMessage } from "node:http";
 import { execSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { requirementsChangeMessage, summarizeRequirementsChange } from "../../core/task-body-diff";
 import { patchTaskFile } from "../../server/write";
 import { LiveIndex } from "../../server/live-index";
+import { WorkWatcher } from "../../server/watcher";
+import { patchTask } from "../../server/routes/tasks";
+import type { RouteContext } from "../../server/routes/types";
 import {
   notifyEngineerOfRequirementsChange,
   type RequirementsNoticeRunner,
@@ -376,6 +380,133 @@ describe("LiveIndex requirements-change hook", () => {
     });
 
     expect(readFileSync(worktreeCopy, "utf8")).toBe(original);
+  });
+});
+
+/** A JSON request body as Node's http server hands it to a route. */
+function makeReq(body: unknown = {}): IncomingMessage {
+  const data = Buffer.from(JSON.stringify(body), "utf8");
+  return {
+    [Symbol.asyncIterator]: async function* () {
+      yield data;
+    },
+  } as unknown as IncomingMessage;
+}
+
+/** A response stub capturing the status and decoded JSON body. */
+function makeRes(): { statusCode: number; body: unknown; writeHead: unknown; end: unknown } {
+  const capture = {
+    statusCode: 0,
+    body: undefined as unknown,
+    writeHead(code: number) {
+      capture.statusCode = code;
+      return capture;
+    },
+    end(payload?: string) {
+      capture.body = payload ? JSON.parse(payload) : undefined;
+    },
+  };
+  return capture;
+}
+
+function routeCtx(cfg: RepoOSConfig, index: LiveIndex): RouteContext {
+  return {
+    config: cfg,
+    index,
+    indexReady: Promise.resolve(),
+    reviews: { isRunning: () => false, cancel: vi.fn() } as never,
+    runner: { isRunning: () => false, stop: vi.fn() } as never,
+    previews: { stop: vi.fn(async () => {}) } as never,
+    cto: {} as never,
+    freeformRuns: {} as never,
+    repoos: {} as never,
+    emitEvent: () => {},
+    closeOutLock: {} as never,
+    rootLock: {} as never,
+    jobCoordinator: { enqueue: () => ({}), allJobs: () => [] } as never,
+    reportedStages: {},
+    reportedStageAt: {},
+    triggerJobProcessing: () => {},
+    pendingReview: new Set(),
+    uiDir: null,
+    reload: null,
+    logger: {
+      task: () => {},
+      system: () => {},
+      agent: () => {},
+      getTaskLogs: () => [],
+      getAgentLogs: () => [],
+      getSystemLogs: () => [],
+    } as never,
+    onServerStatusChange: () => {},
+    startUnifiedHandoff: () => ({ started: false, reason: "not wired in this test" }),
+    syncTaskBranch: async () => ({ ok: true, conflicts: [] }),
+  };
+}
+
+describe("spec-form save notifies the engineer (#0819)", () => {
+  it("sends one requirements notice when the body is saved through PATCH", async () => {
+    const { root } = setupTask("active");
+    const cfg = config(root);
+    const index = new LiveIndex(cfg);
+    index.refreshAll();
+    const send = vi.fn((_id: string, _text: string) => ({ ok: true }));
+    index.setBodyChangeNotifier((applied, prev) =>
+      notifyEngineerOfRequirementsChange({ config: cfg, runner: { send } }, applied, prev.body),
+    );
+
+    const next = BODY.replace(
+      "- Do not touch the worktree copy\n",
+      "- Do not touch the worktree copy\n- Report the change\n",
+    );
+    const res = makeRes();
+    await patchTask(routeCtx(cfg, index), makeReq({ body: next }), res as never, {
+      param1: "0817",
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(send).toHaveBeenCalledTimes(1);
+    const [id, text] = send.mock.calls[0] as [string, string];
+    expect(id).toBe("0817");
+    expect(text).toContain("Acceptance criteria (added 1)");
+    // The response carries the notice so the UI can echo what was sent.
+    expect((res.body as { requirementsNotice?: { sent?: boolean } }).requirementsNotice?.sent).toBe(
+      true,
+    );
+  });
+});
+
+describe("hand edit notifies the engineer via the watcher (#0819)", () => {
+  it("sends one requirements notice when the task file is edited by hand", () => {
+    const { root, absPath } = setupTask("active");
+    const cfg = config(root);
+    const index = new LiveIndex(cfg);
+    index.refreshAll();
+    const send = vi.fn((_id: string, _text: string) => ({ ok: true }));
+    index.setBodyChangeNotifier((applied, prev) =>
+      notifyEngineerOfRequirementsChange({ config: cfg, runner: { send } }, applied, prev.body),
+    );
+    const watcher = new WorkWatcher(cfg, index);
+    watcher.start();
+    try {
+      const next = BODY.replace(
+        "- Engine is told what changed\n",
+        "- Engine is told what changed\n- Engine is told quickly\n",
+      );
+      // The edit is made OUTSIDE any RepoOS write path, then the watcher's
+      // reconciliation observes the new mtime and re-applies the file.
+      writeFileSync(absPath, taskFile("active", next));
+      const future = new Date(Date.now() + 5000);
+      utimesSync(absPath, future, future);
+      (watcher as unknown as { reconcile: () => void }).reconcile();
+
+      expect(send).toHaveBeenCalledTimes(1);
+      const [id, text] = send.mock.calls[0] as [string, string];
+      expect(id).toBe("0817");
+      expect(text).toContain("Acceptance criteria");
+    } finally {
+      watcher.stop();
+    }
   });
 });
 

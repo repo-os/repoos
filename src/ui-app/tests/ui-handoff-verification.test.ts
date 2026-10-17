@@ -20,6 +20,11 @@ import {
 import * as shotCapture from "../../server/shot-capture.js";
 import * as shotStore from "../../server/shots.js";
 import {
+  DOCS_SHOT_ROUTE_DOC,
+  isDocsShotSkip,
+  runLevelIssueLines,
+} from "../src/lib/handoff-verification";
+import {
   resetPreviewVerificationSlot,
   withPreviewVerificationSlot,
 } from "../../server/preview-verification-slot.js";
@@ -1118,5 +1123,30 @@ describe("command-target capture evidence (#0765)", () => {
 
     const noneTask = { ...task, id: "0765none", body: "## Problem\n\nprose only" } as Task;
     expect(taskUiVerificationMode(config, noneTask)).toBe("none");
+  });
+});
+
+describe("docs shot skip copy and help link (#0819)", () => {
+  it("recognises the actionable docs skip in a run-level warning", () => {
+    const warning = "Docs site skipped: no docs shot declared";
+    expect(isDocsShotSkip(warning)).toBe(true);
+    expect(isDocsShotSkip("declared shot not captured — step timed out")).toBe(false);
+    expect(DOCS_SHOT_ROUTE_DOC).toBe("/repo?doc=docs/previews.md");
+  });
+
+  it("keeps the skip line as a run-level warning without the failure framing", () => {
+    const lines = runLevelIssueLines({
+      warnings: ["Docs site skipped: no docs shot declared"],
+      issues: [],
+      blankShots: [],
+      captureDetails: [],
+    } as never);
+    expect(lines).toEqual(["[shot-warning] Docs site skipped: no docs shot declared"]);
+  });
+
+  it("renders the docs-route help link beside the skip in the Changes tab", () => {
+    const drawer = readFileSync(join(__dirname, "../src/components/TaskDrawer.vue"), "utf8");
+    expect(drawer).toContain("DOCS_SHOT_ROUTE_DOC");
+    expect(drawer).toContain("How to declare a docs route");
   });
 });

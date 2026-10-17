@@ -233,7 +233,7 @@ describe("buildCapturePlan", () => {
       docsContentOnly: new Set(["Docs site"]),
     });
     expect(entries.map((e) => e.target)).toEqual(["default"]);
-    expect(autoSkips[0]).toMatch(/Docs site matched only documentation content/);
+    expect(autoSkips[0]).toMatch(/Docs site skipped: no docs shot declared/);
   });
 
   it("inherits a caller-requested route into every fallback entry (#0610)", () => {
@@ -319,7 +319,7 @@ describe("buildCapturePlan", () => {
     expect(routeless.entries).toEqual([]);
     // One visible line, not an error plus a near-duplicate skip (#0603 review).
     expect(routeless.errors).toHaveLength(1);
-    expect(routeless.errors[0]).toMatch(/documentation content/);
+    expect(routeless.errors[0]).toMatch(/matched only documentation content/);
     expect(routeless.autoSkips).toEqual([]);
   });
 
@@ -332,7 +332,7 @@ describe("buildCapturePlan", () => {
     expect(mixed.entries.map((e) => e.target)).toEqual(["default"]);
     expect(mixed.errors).toEqual([]);
     expect(mixed.autoSkips).toHaveLength(1);
-    expect(mixed.autoSkips[0]).toMatch(/Docs site matched only documentation content/);
+    expect(mixed.autoSkips[0]).toMatch(/Docs site skipped: no docs shot declared/);
   });
 
   it("keeps multi-entry plans for the same target (one preview, many shots)", () => {
@@ -475,7 +475,7 @@ describe("buildCliShotPlan (#0610)", () => {
       docsContentOnly: new Set(["Docs site"]),
     });
     expect(docs.entries).toEqual([]);
-    expect(docs.skips[0]).toMatch(/Docs site matched only documentation content/);
+    expect(docs.skips[0]).toMatch(/Docs site skipped: no docs shot declared/);
   });
 });
 
