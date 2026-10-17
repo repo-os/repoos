@@ -323,9 +323,9 @@ describe("DevView layout and state (#0748)", () => {
     expect(wrapper.find(".dev-config-errors").text()).toContain('kind must be "server"');
   });
 
-  it("renders an open-URL link for a server target that opens in a new tab", async () => {
+  it("renders an open-URL link for a running server target that opens in a new tab", async () => {
     installFetch({
-      targets: [target({ kind: "server", url: "http://localhost:5173" })],
+      targets: [target({ kind: "server", status: "running", url: "http://localhost:5173" })],
     });
     const wrapper = mountView();
     await flush();
@@ -334,6 +334,30 @@ describe("DevView layout and state (#0748)", () => {
     expect(link.attributes("href")).toBe("http://localhost:5173");
     expect(link.attributes("target")).toBe("_blank");
     expect(link.attributes("rel")).toContain("noreferrer");
+  });
+
+  it("shows a stopped target's URL as grey 'Click Start', not a dead link (#0816)", async () => {
+    installFetch({
+      targets: [
+        target({ name: "web", kind: "server", status: "stopped", url: "http://localhost:5173" }),
+        target({ name: "api", kind: "server", status: "running", url: "http://localhost:4000" }),
+      ],
+    });
+    const wrapper = mountView();
+    await flush();
+
+    const stopped = wrapper.findAll(".dev-card")[0]!;
+    // Not a link while stopped — the bare URL would open an unreachable page.
+    expect(stopped.find("a.dev-open").exists()).toBe(false);
+    const hint = stopped.find(".dev-open-stopped");
+    expect(hint.exists()).toBe(true);
+    expect(hint.text()).toBe("Click Start");
+    expect(hint.attributes("data-test-id")).toBe("dev-url-stopped");
+
+    // The running target's URL stays a normal link.
+    const running = wrapper.findAll(".dev-card")[1]!;
+    expect(running.find("a.dev-open").attributes("href")).toBe("http://localhost:4000");
+    expect(running.find(".dev-open-stopped").exists()).toBe(false);
   });
 
   it("shows an empty state when nothing is declared", async () => {

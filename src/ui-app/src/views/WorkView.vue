@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
+import { User } from "lucide-vue-next";
 import { api } from "../api";
 import {
   COLUMNS,
@@ -211,6 +212,31 @@ function toggleArchived(): void {
 function openArchived(task: Task): void {
   void ui.openTask(task);
 }
+
+// ── #0816 Human list ───────────────────────────────────────────────────
+// Tasks assigned to a person, beside the Archived list and working the same
+// way. The count and rows use the violet person glyph from the card's human
+// chip so the list reads as "the cards with that chip, all in one place".
+const HUMAN_EXPANDED_KEY = "repoos.work.humanExpanded";
+function readHumanExpanded(): boolean {
+  try {
+    return localStorage.getItem(HUMAN_EXPANDED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+const humanExpanded = ref(readHumanExpanded());
+function toggleHuman(): void {
+  humanExpanded.value = !humanExpanded.value;
+  try {
+    localStorage.setItem(HUMAN_EXPANDED_KEY, humanExpanded.value ? "1" : "0");
+  } catch {
+    /* ignore quota / privacy-mode failures */
+  }
+}
+function openHuman(task: Task): void {
+  void ui.openTask(task);
+}
 </script>
 
 <template>
@@ -327,30 +353,71 @@ function openArchived(task: Task): void {
       </template>
     </div>
 
-    <section v-if="!statusFilter && repo.archivedTasks.length" class="archived-list">
-      <button
-        type="button"
-        class="archived-toggle"
-        :aria-expanded="archivedExpanded"
-        @click="toggleArchived"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          class="archived-chevron"
-          :class="{ open: archivedExpanded }"
+    <section
+      v-if="!statusFilter && (repo.humanTasks.length || repo.archivedTasks.length)"
+      class="parked-lists"
+    >
+      <div class="parked-toggles">
+        <button
+          v-if="repo.humanTasks.length"
+          type="button"
+          class="human-toggle"
+          :aria-expanded="humanExpanded"
+          data-tip="Every task assigned to a human"
+          @click="toggleHuman"
         >
-          <path
-            d="m9 6 6 6-6 6"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-        Archived ({{ repo.archivedTasks.length }})
-      </button>
-      <ul v-if="archivedExpanded" class="archived-rows">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            class="human-chevron"
+            :class="{ open: humanExpanded }"
+          >
+            <path
+              d="m9 6 6 6-6 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <User class="human-toggle-icon" aria-hidden="true" />
+          Human ({{ repo.humanTasks.length }})
+        </button>
+        <button
+          v-if="repo.archivedTasks.length"
+          type="button"
+          class="archived-toggle"
+          :aria-expanded="archivedExpanded"
+          @click="toggleArchived"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            class="archived-chevron"
+            :class="{ open: archivedExpanded }"
+          >
+            <path
+              d="m9 6 6 6-6 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Archived ({{ repo.archivedTasks.length }})
+        </button>
+      </div>
+      <ul v-if="humanExpanded && repo.humanTasks.length" class="human-rows">
+        <li v-for="t in repo.humanTasks" :key="t.id">
+          <button type="button" class="human-row" @click="openHuman(t)">
+            <User class="human-row-icon" aria-hidden="true" />
+            <span class="mono human-id">#{{ t.id }}</span>
+            <span class="human-title">{{ t.title }}</span>
+            <span class="human-status">{{ t.status }}</span>
+          </button>
+        </li>
+      </ul>
+      <ul v-if="archivedExpanded && repo.archivedTasks.length" class="archived-rows">
         <li v-for="t in repo.archivedTasks" :key="t.id">
           <button type="button" class="archived-row" @click="openArchived(t)">
             <span class="mono archived-id">#{{ t.id }}</span>

@@ -8,6 +8,8 @@ import { mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createRouter, createMemoryHistory } from "vue-router";
 import { nextTick } from "vue";
+import { readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import ArchiveTaskDialog from "../src/components/ArchiveTaskDialog.vue";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
 import WorkView from "../src/views/WorkView.vue";
@@ -242,5 +244,86 @@ describe("Work Queue Archived list (#0657)", () => {
     mountWork([makeTask({ id: "0001", status: "ready" })]);
     await flush();
     expect(wrapper!.find(".archived-toggle").exists()).toBe(false);
+  });
+});
+
+describe("Work Queue Human list (#0816)", () => {
+  let wrapper: VueWrapper | undefined;
+
+  afterEach(() => {
+    wrapper?.unmount();
+    wrapper = undefined;
+    localStorage.clear();
+    document.body.innerHTML = "";
+  });
+
+  function mountWork(tasks: Task[]): void {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.tasks = tasks;
+    repo.counts = { ...EMPTY_COUNTS };
+    wrapper = mount(WorkView, {
+      global: {
+        plugins: [pinia, makeRouter()],
+        stubs: { BoardColumn: true, IntegrationStatusBar: true },
+      },
+    });
+  }
+
+  it("lists human-assigned tasks, minimised by default, with the human glyph", async () => {
+    mountWork([
+      makeTask({ id: "0001", status: "ready", assignee: "ai" }),
+      makeTask({ id: "0002", status: "active", assignee: "human", assignedTo: "Nick" }),
+      makeTask({ id: "0003", status: "inbox", assignee: "human", assignedTo: "Sam" }),
+    ]);
+    await flush();
+
+    const toggle = wrapper!.find(".human-toggle");
+    expect(toggle.exists()).toBe(true);
+    expect(toggle.text()).toContain("Human (2)");
+    // The same violet person glyph as the card's human chip.
+    expect(toggle.find(".human-toggle-icon").exists()).toBe(true);
+    // Minimised by default, like Archived.
+    expect(wrapper!.find(".human-rows").exists()).toBe(false);
+
+    await toggle.trigger("click");
+    await flush();
+    const rows = wrapper!.findAll(".human-row");
+    expect(rows).toHaveLength(2);
+    const text = wrapper!.find(".human-rows").text();
+    expect(text).toContain("#0002");
+    expect(text).toContain("#0003");
+    expect(text).not.toContain("#0001");
+    // Each row carries the human glyph too.
+    expect(rows[0]!.find(".human-row-icon").exists()).toBe(true);
+  });
+
+  it("excludes archived tasks and hides when no task is assigned to a human", async () => {
+    mountWork([
+      makeTask({ id: "0001", status: "ready", assignee: "ai" }),
+      makeTask({ id: "0004", status: "done", assignee: "human", isArchived: true }),
+    ]);
+    await flush();
+    expect(wrapper!.find(".human-toggle").exists()).toBe(false);
+  });
+
+  it("remembers the open state across a remount, like Archived", async () => {
+    mountWork([makeTask({ id: "0002", status: "active", assignee: "human" })]);
+    await flush();
+    await wrapper!.find(".human-toggle").trigger("click");
+    await flush();
+    expect(wrapper!.find(".human-rows").exists()).toBe(true);
+
+    wrapper!.unmount();
+    mountWork([makeTask({ id: "0002", status: "active", assignee: "human" })]);
+    await flush();
+    expect(wrapper!.find(".human-rows").exists()).toBe(true);
+  });
+
+  it("colours the human glyph with the card chip's violet", () => {
+    const css = readFileSync(join(resolve(__dirname, ".."), "src/style.css"), "utf8");
+    expect(css).toMatch(/\.tc-human-chip\s*\{[^}]*color:\s*var\(--violet\)/);
+    expect(css).toMatch(/\.human-toggle-icon\s*\{[^}]*color:\s*var\(--violet\)/);
   });
 });
