@@ -2,14 +2,14 @@
 id: "0814"
 title: "Easter eggs bundle: Dev page output rows, output collapse memory, and button layout"
 type: feature
-status: review
+status: inbox
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-dev-page-output-rows-
 created_at: "2026-10-17T05:50:02Z"
-updated_at: "2026-10-17T06:46:17Z"
+updated_at: "2026-10-17T06:46:18Z"
 last_close_out_gate_ms: 258949
 last_close_out_gate_at: "2026-10-17T06:46:16.801Z"
 review_passes: 1
