@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-17T09:56:09.589Z: repoos check failed: the worktree changed while the gate was running (appeared: src/server/requirements-notice.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "0817"
 title: "Update requirements on an active task: edit action, and an automatic engineer notice on body changes"
 type: feature
@@ -99,3 +101,4 @@ Start from the body-update route for tasks (src/server, grep for the task body P
 - 2026-10-17T09:46:46Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-10-17T09:47:43Z · body
 - 2026-10-17T09:49:21Z · body: section Shots
+
