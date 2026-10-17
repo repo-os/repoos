@@ -292,6 +292,14 @@ A full `--body` replace that would drop Problem / Desired UX / Acceptance
 criteria / Notes for AI is refused unless `--force` is passed; the error points
 at the `--section` form.
 
+Editing the body of an **active** task — `--body`, `--section`, the API `PATCH`,
+or the drawer's **Update requirements** action — records one activity entry
+naming the changed sections and sends the engineer one message carrying the same
+summary (with the new text of added items). The engineer's worktree copy of the
+task file is deliberately not written: the notice tells it what moved, and
+merging main (or the next handoff) brings the file in line. A body edit on a task
+that is **not** active sends no engineer notice.
+
 ### `repoos note <id> "<text>"`
 
 Appends a free-form note to the task's activity log. Useful for leaving context
