@@ -5,7 +5,9 @@
  * that produced the run, so a later round can reconsider it. The record is
  * deliberately flat and JSON-safe (no Dates, no class instances) so it survives
  * a server restart unchanged and renders directly from recorded factors — the UI
- * never invents an explanation the provider did not produce.
+ * never invents an explanation the provider did not produce. The record also
+ * keeps the bounded brief and the provider's answers, so the UI can show the
+ * exact question and answer behind a decision when the user expands it.
  *
  * Pure type module: the fs-backed store lives in `decision-store.ts`.
  */
