@@ -3,9 +3,6 @@ id: "0794"
 title: Live verification of Jev and Clef-Flash routing (human-only)
 type: chore
 status: ready
-needs_input: true
-needs_input_reason: needs-human-step
-needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (matched: credentials or keys)"
 hold: true
 priority: p2
 area: [agent, server]
@@ -13,7 +10,7 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-15T07:47:48Z"
-updated_at: "2026-10-15T11:02:13Z"
+updated_at: "2026-10-17T07:06:44Z"
 ---
 ## Problem
 Routing for #0791 needs one credentialed smoke check against each real decision backend before anyone relies on it. Automated tests use fixtures only. Those checks require a human because they need third-party accounts, billing, a self-hosted GPU host, and secrets that an agent must never handle.
@@ -51,3 +48,4 @@ Parent/context record: #0791.
 - 2026-10-15T08:23:59Z · body: section Required accounts and setup (human)
 - 2026-10-15T08:24:00Z · body: section Checks to run (human, once the setup above exists)
 - 2026-10-15T11:02:13Z · status inbox→ready
+- 2026-10-17T07:06:44Z · needs_input
