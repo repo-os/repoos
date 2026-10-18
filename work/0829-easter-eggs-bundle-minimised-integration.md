@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-18T12:24:38Z"
-review_passes: 6
+last_close_out_gate_ms: 283669
+last_close_out_gate_at: "2026-10-18T12:49:35.980Z"
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-integration-pill-tool
 created_at: "2026-10-18T06:17:45Z"
+updated_at: "2026-10-18T12:49:35Z"
+review_passes: 6
 close_out_repair_count: 1
 last_check_failure: "repoos check at 2026-10-18T08:29:42.192Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from ddcf9a91 to ae4f932f) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -289,4 +291,5 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T12:23:32Z · status active→review
 - 2026-10-18T12:23:33Z · note: shots: skipped — 30 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-18T12:24:38Z · note: review pass 6: good to go
+- 2026-10-18T12:49:35Z · close-out gate completed in 284s
 
