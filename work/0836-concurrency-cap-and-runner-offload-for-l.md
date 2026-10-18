@@ -11,7 +11,7 @@ branch: feat/concurrency-cap-and-runner-offload-for-l
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:25Z"
-updated_at: "2026-10-18T17:29:51Z"
+updated_at: "2026-10-18T17:31:21Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -73,3 +73,4 @@ Look at src/commands/check.ts, src/server/integration-orchestrator.ts, the shot/
 - 2026-10-18T17:29:32Z · status active→review
 - 2026-10-18T17:29:34Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cebf691f1) during finalization (#0734)
 - 2026-10-18T17:29:51Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cebf691f1) during finalization (#0734)
+- 2026-10-18T17:31:21Z · note: review pass 2: needs some work
