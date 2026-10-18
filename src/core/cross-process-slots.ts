@@ -49,7 +49,11 @@ function isStaleSlot(dir: string): boolean {
   }
 }
 
-function tryTakeSlot(lockRoot: string, slots: number, meta?: Record<string, unknown>): string | null {
+function tryTakeSlot(
+  lockRoot: string,
+  slots: number,
+  meta?: Record<string, unknown>,
+): string | null {
   mkdirSync(lockRoot, { recursive: true });
   for (let i = 0; i < slots; i++) {
     const dir = join(lockRoot, String(i));
@@ -86,9 +90,7 @@ function countActiveSlots(lockRoot: string): number {
  * Portable counting semaphore using atomic `mkdir` (#0521 pattern, #0836).
  * Works across processes on one machine (standalone `repoos check` + server).
  */
-export async function acquireCrossProcessSlot(
-  opts: SlotAcquireOptions,
-): Promise<() => void> {
+export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise<() => void> {
   const slots = Math.max(1, Math.floor(opts.slots));
   if (slots <= 0) {
     throw new Error("local fallback is disabled (remoteValidation.localFallback = off)");

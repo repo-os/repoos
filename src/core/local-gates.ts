@@ -14,11 +14,7 @@ import {
   remoteLocalFallbackMode,
 } from "./resource-limits.js";
 import { waitForPressureRelief } from "./pressure-guard.js";
-import {
-  clearQueueMarker,
-  writeQueueMarker,
-  type LocalQueueKind,
-} from "./local-queue-marker.js";
+import { clearQueueMarker, writeQueueMarker, type LocalQueueKind } from "./local-queue-marker.js";
 import { mainCheckoutRoot } from "./git.js";
 
 export { SlotQueueTimeoutError };
@@ -79,9 +75,7 @@ export interface AcquireLocalCheckSlotOpts {
 /**
  * Wait for pressure relief, then take a cross-process local-check slot (#0836).
  */
-export async function acquireLocalCheckSlot(
-  opts: AcquireLocalCheckSlotOpts,
-): Promise<() => void> {
+export async function acquireLocalCheckSlot(opts: AcquireLocalCheckSlotOpts): Promise<() => void> {
   if (opts.env.REPOOS_LOCAL_CHECK_SLOT_HELD === "1") {
     return () => {};
   }

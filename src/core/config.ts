@@ -1761,7 +1761,11 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       cfg.remoteValidation = { ...cfg.remoteValidation, offloadBrowserSteps: rvOffloadBrowser };
     }
     const rvLocalFallback = parsed["remoteValidation.localFallback"];
-    if (rvLocalFallback === "serialize" || rvLocalFallback === "allow" || rvLocalFallback === "off") {
+    if (
+      rvLocalFallback === "serialize" ||
+      rvLocalFallback === "allow" ||
+      rvLocalFallback === "off"
+    ) {
       cfg.remoteValidation = { ...cfg.remoteValidation, localFallback: rvLocalFallback };
     } else if (rvLocalFallback !== undefined) {
       console.warn(
