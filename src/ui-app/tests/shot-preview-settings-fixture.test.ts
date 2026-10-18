@@ -143,3 +143,29 @@ describe("settings:birdQuickTrail shot fixture (#0828)", () => {
     wrapper.unmount();
   });
 });
+
+describe("settings:rgbKeystorm shot fixture (#0833)", () => {
+  it("seeds the selector and a square artwork preview", async () => {
+    const config = useConfigStore();
+    routeState.query = {
+      tab: "general",
+      section: "activity-animation",
+      shotState: "settings:rgbKeystorm",
+    };
+    applyShotPreviewConfigFixture(config, "settings:rgbKeystorm");
+
+    const wrapper = mount(SettingsView, {
+      attachTo: document.body,
+      global: { plugins: [pinia] },
+    });
+    await flushPromises();
+
+    const trigger = wrapper.get("#setting-activityAnimationStyle [role='combobox']");
+    expect(trigger.text()).toContain("RGB keystorm");
+    for (const indicator of stylePreviews(wrapper)) {
+      expect(indicator.find(".ai-style-rgb-keystorm").exists()).toBe(true);
+      expect(indicator.find("svg.ai-art-svg").exists()).toBe(true);
+    }
+    wrapper.unmount();
+  });
+});

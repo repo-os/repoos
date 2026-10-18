@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
-import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../core/shot-fixtures.js";
+import {
+  SHOT_PREVIEW_FIXTURE_TASK_ID,
+  type ShotPreviewFixtureId,
+} from "../../core/shot-fixtures.js";
 import {
   applyShotPreviewConfigFixture,
   applyShotPreviewFixture,
@@ -40,8 +43,12 @@ describe("shot preview board fixtures (#0743)", () => {
     ).toBe("");
   });
 
-  it("classifies config-touching shot fixtures (#0822)", () => {
+  it("classifies config-touching shot fixtures (#0822, #0833)", () => {
     expect(isShotPreviewConfigFixture("settings:birdQuickTrail")).toBe(true);
+    expect(isShotPreviewConfigFixture("settings:rgbKeystorm")).toBe(true);
+    expect(isShotPreviewConfigFixture("settings:wheelieCourier")).toBe(true);
+    expect(isShotPreviewConfigFixture("settings:booSwoop")).toBe(true);
+    expect(isShotPreviewConfigFixture("settings:pumpkinSpell")).toBe(true);
     expect(isShotPreviewConfigFixture("editor:unconfigured")).toBe(true);
     expect(isShotPreviewConfigFixture("board:startWorkPending")).toBe(false);
   });
@@ -53,6 +60,23 @@ describe("shot preview board fixtures (#0743)", () => {
     config.form.activityAnimationStyle = "arcade-hopper";
     applyShotPreviewConfigFixture(config, "settings:birdQuickTrail");
     expect(config.form.activityAnimationStyle).toBe("bird-quick-trail");
+  });
+
+  it("seeds each #0833 artwork style on the settings form", () => {
+    const fixtures: Partial<Record<ShotPreviewFixtureId, string>> = {
+      "settings:rgbKeystorm": "rgb-keystorm",
+      "settings:wheelieCourier": "wheelie-courier",
+      "settings:booSwoop": "boo-swoop",
+      "settings:pumpkinSpell": "pumpkin-spell",
+    };
+    for (const [fixture, style] of Object.entries(fixtures) as [ShotPreviewFixtureId, string][]) {
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const config = useConfigStore();
+      config.form.activityAnimationStyle = "orbital-pixel";
+      applyShotPreviewConfigFixture(config, fixture);
+      expect(config.form.activityAnimationStyle, fixture).toBe(style);
+    }
   });
 
   it("seeds Start work pending on a ready board card (#0822)", () => {
