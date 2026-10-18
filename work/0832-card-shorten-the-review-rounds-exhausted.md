@@ -2,14 +2,14 @@
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: [web, server]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T08:09:33Z"
+updated_at: "2026-10-18T08:19:03Z"
 ---
 ## Problem
 The task card shows the whole first line of the reviewer's Verdict section as `needs_input_detail` (`src/server/review.ts` ~1749), under the header "REVIEW STILL FINDING ISSUES". It is often a long paragraph and begins with `` `needs some work` — ``, which the header already says.
@@ -30,3 +30,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 ## Activity
 
 - 2026-10-18T08:09:33Z · created · njachowski@gmail.com
+- 2026-10-18T08:19:03Z · status inbox→ready
