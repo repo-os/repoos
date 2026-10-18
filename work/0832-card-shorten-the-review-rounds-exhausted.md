@@ -2,7 +2,7 @@
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
-status: review
+status: active
 priority: p3
 area: [web, server]
 assigned_to: ai
