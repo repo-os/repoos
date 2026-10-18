@@ -161,10 +161,11 @@ describe("task and input attachments use the provider with unchanged behavior", 
       data: PNG_1PX,
     });
     expect("error" in saved).toBe(false);
-    expect(resolveScreenshot(repoos.config, task.id, "screenshot-1.png")).toBe(
-      join(root, "work", ".attachments", task.id, "screenshot-1.png"),
+    const objectName = decodeURIComponent((saved as { url: string }).url.split("/").pop()!);
+    expect(resolveScreenshot(repoos.config, task.id, objectName)).toBe(
+      join(root, "work", ".attachments", task.id, objectName),
     );
-    const served = readAttachment(repoos.config, task.id, "screenshot-1.png");
+    const served = readAttachment(repoos.config, task.id, objectName);
     expect(served?.mime).toBe("image/png");
     expect(served?.data.toString("base64")).toBe(PNG_1PX);
     // Traversal and misses still resolve to null.

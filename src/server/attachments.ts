@@ -8,10 +8,16 @@
  * Dependency-free, mirroring the rest of the server: base64 in JSON in, a
  * small safe writer for storage.
  */
-import { basename, extname, join } from "node:path";
+import { basename, join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { SCREENSHOTS_HEADING, extractSection, removeSection } from "../core/task.js";
-import { createStorageProvider, DEFAULT_STORAGE_PROVIDER_ID } from "../core/storage/index.js";
+import {
+  generateAttachmentObjectName,
+  mimeForAttachmentObjectName,
+  resolveTaskAttachmentReference,
+  taskAttachmentApiPath,
+  taskAttachmentStore,
+} from "../core/attachment-reference.js";
 
 /** One persisted screenshot, as returned to the client. */
 export interface ScreenshotMeta {
@@ -19,7 +25,7 @@ export interface ScreenshotMeta {
   id: string;
   /** Original file name (sanitized). */
   name: string;
-  /** Repo-relative path, e.g. "work/.attachments/0123/screenshot-1.png". */
+  /** Repo-relative path, e.g. "work/.attachments/0123/att_<uuid>.png". */
   path: string;
   /** API URL the UI can load the image from. */
   url: string;
@@ -53,15 +59,12 @@ export function attachmentsDir(root: string, workDir: string, taskId: string): s
  * that isn't ready yet never fails an upload.
  */
 function store(config: RepoOSConfig) {
-  return createStorageProvider(
-    join(config.root, config.workDir),
-    config.storage?.provider ?? DEFAULT_STORAGE_PROVIDER_ID,
-  );
+  return taskAttachmentStore(config);
 }
 
-/** API URL that serves one stored screenshot. */
+/** API URL that serves one stored screenshot (stable attachment reference). */
 export function screenshotUrl(taskId: string, file: string): string {
-  return `/api/tasks/${taskId}/attachments/${encodeURIComponent(file)}`;
+  return taskAttachmentApiPath(taskId, file);
 }
 
 /** Strip directories and hostile characters from an uploaded file name. */
@@ -108,15 +111,12 @@ export function saveScreenshot(
   }
 
   const stored = store(config);
-  const taken = new Set(stored.list(task.id));
-  let next = 1;
-  while (taken.has(`screenshot-${next}${ext}`)) next++;
-  const file = `screenshot-${next}${ext}`;
+  const file = generateAttachmentObjectName(ext);
   const putResult = stored.put(task.id, file, buf);
   if ("error" in putResult) return { error: putResult.error };
 
   return {
-    id: String(next),
+    id: String(stored.list(task.id).length),
     name: sanitizeName(input.name),
     path: `${config.workDir.split("\\").join("/")}/.attachments/${task.id}/${file}`,
     url: screenshotUrl(task.id, file),
@@ -176,9 +176,12 @@ export function readAttachment(
   taskId: string,
   file: string,
 ): { data: Buffer; mime: string } | null {
-  const data = store(config).get(taskId, decodeURIComponent(file));
-  if (!data) return null;
-  return { data, mime: mimeForExtension(file) ?? "application/octet-stream" };
+  const resolved = resolveTaskAttachmentReference(config, taskId, file);
+  if (!resolved) return null;
+  return {
+    data: resolved.data,
+    mime: mimeForExtension(resolved.objectName) ?? "application/octet-stream",
+  };
 }
 
 /** File names in a task's attachment folder (empty when it has none). */
@@ -186,12 +189,7 @@ export function listAttachments(config: RepoOSConfig, taskId: string): string[] 
   return store(config).list(taskId);
 }
 
-/** Reverse of {@link SCREENSHOT_MIME}: file extension -> MIME type. */
-const EXTENSION_MIME: Record<string, string> = Object.fromEntries(
-  Object.entries(SCREENSHOT_MIME).map(([mime, ext]) => [ext, mime]),
-);
-
 /** MIME type for a stored screenshot file by extension, or null when unknown. */
 export function mimeForExtension(file: string): string | null {
-  return EXTENSION_MIME[extname(file).toLowerCase()] ?? null;
+  return mimeForAttachmentObjectName(file);
 }

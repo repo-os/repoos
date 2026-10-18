@@ -178,15 +178,18 @@ describe("createFreeformTask route — input attachment carry-over (#0382)", () 
     expect(body?.id).toBeTruthy();
     expect(body?.pmWorking).toBe(false); // no-pm-agent fallback returns synchronously
     expect(body?.body).toContain("## Screenshots");
-    expect(body?.body).toContain(`![dark](/api/tasks/${body!.id}/attachments/screenshot-1.png)`);
+    expect(body?.body).toContain(`![dark](/api/tasks/${body!.id}/attachments/att_`);
     // Activity log remains the last section.
     expect(body!.body!.indexOf("## Screenshots")).toBeLessThan(body!.body!.indexOf("## Activity"));
 
     // Image bytes are on disk under the task's own attachments dir, not the
     // input's — so deleting the input later does not break the task.
-    const onDisk = join(root, repoos.config.workDir, ".attachments", body!.id!, "screenshot-1.png");
-    expect(existsSync(onDisk)).toBe(true);
-    expect(readFileSync(onDisk, "utf8")).toBe(Buffer.from(PNG_1PX, "base64").toString());
+    const taskDir = join(root, repoos.config.workDir, ".attachments", body!.id!);
+    const [onDisk] = readdirSync(taskDir);
+    expect(onDisk.startsWith("att_")).toBe(true);
+    expect(readFileSync(join(taskDir, onDisk), "utf8")).toBe(
+      Buffer.from(PNG_1PX, "base64").toString(),
+    );
   });
 
   it("carries multiple input attachments, each ending up as a numbered task screenshot", async () => {
@@ -206,7 +209,7 @@ describe("createFreeformTask route — input attachment carry-over (#0382)", () 
     // Filesystem readdir is order-dependent, so the carry order isn't pinned
     // down here. What IS pinned is that every input attachment ends up in
     // ## Screenshots (by its base name) and on disk as a numbered
-    // screenshot-N.png under the task's own folder.
+    // opaque att_<uuid>.<ext> names under the task's own folder.
     const inputNames = ["first.png", "second.png", "third.png"];
     for (const n of inputNames) {
       expect(body.body).toContain(`![${n.replace(/\.png$/, "")}]`);
@@ -214,11 +217,9 @@ describe("createFreeformTask route — input attachment carry-over (#0382)", () 
     expect(body.body!.split("## Screenshots").length - 1).toBe(1);
 
     const taskDir = join(root, repoos.config.workDir, ".attachments", body.id!);
-    expect(readdirSync(taskDir).sort()).toEqual([
-      "screenshot-1.png",
-      "screenshot-2.png",
-      "screenshot-3.png",
-    ]);
+    const stored = readdirSync(taskDir);
+    expect(stored).toHaveLength(3);
+    expect(stored.every((name) => name.startsWith("att_"))).toBe(true);
   });
 
   it("silently ignores an inputId that doesn't match a known input", async () => {
