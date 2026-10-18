@@ -605,5 +605,7 @@ export function applyShotPreviewConfigFixture(
   }
   if (fixture === "settings:birdQuickTrail") {
     config.form.activityAnimationStyle = "bird-quick-trail";
+    if (config.data) config.data.activityAnimationStyle = "bird-quick-trail";
+    config.notifyExternalFormUpdate();
   }
 }

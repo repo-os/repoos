@@ -1,10 +1,10 @@
 ---
-updated_at: "2026-10-18T08:26:02Z"
-review_passes: 4
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-18T08:29:42.192Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from ddcf9a91 to ae4f932f) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -13,6 +13,9 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
+updated_at: "2026-10-18T08:29:42Z"
+review_passes: 4
+review_rounds: 2
 ---
 ## Items
 - [ ] **E1 · Minimised pill shows only the median popup, centered** (web) — remove the extra native title tooltip over it. Source: Nick 2026-10-18.
@@ -86,6 +89,88 @@ In the task drawer Debug tab Logs view, a long message is truncated with an elli
 ### Notes for AI
 Detect truncation at render time (scrollWidth > clientWidth) or always allow expand for messages over a length threshold; pick one and say which. Do not change the data stored in the logs. Source: Nick 2026-10-18, screenshot of #0820 Debug logs.
 
+## Shots
+```json
+[
+{
+"label": "Minimised pill median tooltip (light)",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"integration-timer-tip\"]",
+"steps": [
+{
+"waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
+},
+{
+"click": ".ibar-strip [data-test-id=\"integration-timer\"]"
+},
+{
+"waitFor": "[data-test-id=\"integration-timer-tip\"]"
+}
+],
+"state": "integration:median15",
+"theme": "light"
+},
+{
+"label": "Minimised pill median tooltip (dark)",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"integration-timer-tip\"]",
+"steps": [
+{
+"waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
+},
+{
+"click": ".ibar-strip [data-test-id=\"integration-timer\"]"
+},
+{
+"waitFor": "[data-test-id=\"integration-timer-tip\"]"
+}
+],
+"state": "integration:median15",
+"theme": "dark"
+},
+{
+"label": "Debug log expanded full message (light)",
+"target": "default",
+"route": "/work?task=0820&tab=debug",
+"highlight": ".debug-event-message",
+"steps": [
+{
+"waitFor": ".debug-event-expandable"
+},
+{
+"click": ".debug-event-expandable"
+},
+{
+"waitFor": ".debug-event-message"
+}
+],
+"state": "drawer:debugLogs",
+"theme": "light"
+},
+{
+"label": "Debug log expanded full message (dark)",
+"target": "default",
+"route": "/work?task=0820&tab=debug",
+"highlight": ".debug-event-message",
+"steps": [
+{
+"waitFor": ".debug-event-expandable"
+},
+{
+"click": ".debug-event-expandable"
+},
+{
+"waitFor": ".debug-event-message"
+}
+],
+"state": "drawer:debugLogs",
+"theme": "dark"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-18T06:17:45Z · created · njachowski@gmail.com
@@ -101,9 +186,66 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T06:50:50Z · status inbox→ready
 - 2026-10-18T06:50:53Z · cli_override, model_override
 - 2026-10-18T06:50:55Z · status ready→active, branch
+- 2026-10-18T06:54:01Z · body
+- 2026-10-18T06:54:49Z · body
+- 2026-10-18T06:56:00Z · body
+- 2026-10-18T06:57:02Z · body
+- 2026-10-18T06:58:37Z · body
+- 2026-10-18T06:59:22Z · body
 - 2026-10-18T07:07:00Z · status active→review
-- 2026-10-18T07:30:43Z · note: review pass 1: good to go
-- 2026-10-18T07:31:57Z · note: review pass 2: good to go
-- 2026-10-18T08:23:43Z · note: review pass 3: needs some work
-- 2026-10-18T08:26:02Z · note: review pass 4: needs some work
+- 2026-10-18T07:07:13Z · note: highlight [data-test-id=integration-timer] matched nothing on /
+- 2026-10-18T07:07:27Z · note: click .debug-event-expandable: click: Error: strict mode violation: locator('.debug-event-expandable') resolved to 12 elements: on /work?task=0820&tab=debug
+- 2026-10-18T07:07:28Z · note: highlight .debug-event-message matched nothing on /work?task=0820&tab=debug
+- 2026-10-18T07:08:15Z · note: review pass 1: needs some work
+- 2026-10-18T07:08:15Z · status review→active
+- 2026-10-18T07:09:26Z · body
+- 2026-10-18T07:10:23Z · body
+- 2026-10-18T07:12:13Z · body
+- 2026-10-18T07:20:01Z · status active→review
+- 2026-10-18T07:20:02Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (780f377a6) during finalization (#0734)
+- 2026-10-18T07:20:03Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (780f377a6) during finalization (#0734)
+- 2026-10-18T07:21:02Z · note: review pass 2: needs some work
+- 2026-10-18T07:21:03Z · status review→active
+- 2026-10-18T07:21:43Z · body
+- 2026-10-18T07:22:58Z · body
+- 2026-10-18T07:31:05Z · status active→review
+- 2026-10-18T07:31:31Z · note: waitFor [data-test-id=integration-timer]: waitFor: Timeout 5000ms exceeded. on /
+- 2026-10-18T07:31:32Z · note: click [data-test-id=integration-timer]: click: Timeout 5000ms exceeded. on /
+- 2026-10-18T07:31:32Z · note: waitFor [data-test-id=integration-timer-tip]: waitFor: Timeout 5000ms exceeded. on /
+- 2026-10-18T07:31:32Z · note: highlight [data-test-id=integration-timer-tip] matched nothing on /
+- 2026-10-18T07:31:51Z · note: waitFor [data-test-id=integration-timer]: waitFor: Timeout 5000ms exceeded. on /
+- 2026-10-18T07:31:51Z · note: click [data-test-id=integration-timer]: click: Timeout 5000ms exceeded. on /
+- 2026-10-18T07:31:51Z · note: waitFor [data-test-id=integration-timer-tip]: waitFor: Timeout 5000ms exceeded. on /
+- 2026-10-18T07:31:51Z · note: highlight [data-test-id=integration-timer-tip] matched nothing on /
+- 2026-10-18T07:32:11Z · note: review pass 3: needs some work
+- 2026-10-18T07:32:11Z · needs_input
+- 2026-10-18T07:32:19Z · note: waitFor [data-debug-event*='main advanced']: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T07:32:20Z · note: click [data-debug-event*='main advanced']: click: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T07:32:20Z · note: waitFor .debug-event-message: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T07:32:20Z · note: highlight .debug-event-message matched nothing on /work?task=0820&tab=debug
+- 2026-10-18T08:09:44Z · status review→active
+- 2026-10-18T08:09:55Z · needs_input
+- 2026-10-18T08:09:56Z · message_queued at 2026-10-18T08:09:56.429Z
+- 2026-10-18T08:12:07Z · body
+- 2026-10-18T08:13:33Z · body
+- 2026-10-18T08:14:16Z · body
+- 2026-10-18T08:22:35Z · status active→review
+- 2026-10-18T08:23:19Z · note: waitFor .ibar-strip [data-test-id="integration-timer"]: waitFor: Timeout 5000ms exceeded. on /
+- 2026-10-18T08:23:19Z · note: click .ibar-strip [data-test-id="integration-timer"]: click: Timeout 5000ms exceeded. on /
+- 2026-10-18T08:23:20Z · note: waitFor [data-test-id="integration-timer-tip"]: waitFor: Timeout 5000ms exceeded. on /
+- 2026-10-18T08:23:20Z · note: highlight [data-test-id="integration-timer-tip"] matched nothing on /
+- 2026-10-18T08:23:39Z · note: waitFor .ibar-strip [data-test-id="integration-timer"]: waitFor: Timeout 5000ms exceeded. on /
+- 2026-10-18T08:23:39Z · note: click .ibar-strip [data-test-id="integration-timer"]: click: Timeout 5000ms exceeded. on /
+- 2026-10-18T08:23:39Z · note: waitFor [data-test-id="integration-timer-tip"]: waitFor: Timeout 5000ms exceeded. on /
+- 2026-10-18T08:23:40Z · note: highlight [data-test-id="integration-timer-tip"] matched nothing on /
+- 2026-10-18T08:23:57Z · note: review pass 4: needs some work
+- 2026-10-18T08:23:57Z · needs_input
+- 2026-10-18T08:24:10Z · note: waitFor .debug-event-expandable: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T08:24:11Z · note: click .debug-event-expandable: click: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T08:24:11Z · note: waitFor .debug-event-message: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T08:24:11Z · note: highlight .debug-event-message matched nothing on /work?task=0820&tab=debug
+- 2026-10-18T08:25:41Z · status review→active
+- 2026-10-18T08:25:52Z · needs_input
+- 2026-10-18T08:25:59Z · message_queued at 2026-10-18T08:25:59.955Z
+- 2026-10-18T08:29:42Z · message_delivered: 2 message(s)
 
