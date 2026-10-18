@@ -1,10 +1,8 @@
 ---
-last_close_out_gate_ms: 376013
-last_close_out_gate_at: "2026-10-18T03:52:13.516Z"
 id: "0825"
 title: "Guard: refuse a --body update that drops an easter-egg item"
 type: chore
-status: review
+status: inbox
 priority: p3
 area: core
 assigned_to: ai
@@ -13,7 +11,9 @@ branch: feat/guard-refuse-a-body-update-that-drops-an
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:49:07Z"
-updated_at: "2026-10-18T03:52:13Z"
+updated_at: "2026-10-18T03:52:15Z"
+last_close_out_gate_ms: 376013
+last_close_out_gate_at: "2026-10-18T03:52:13.516Z"
 review_passes: 1
 ---
 ## Problem
@@ -43,4 +43,5 @@ Extend the existing dropped-sections guard rather than adding a parallel one. So
 - 2026-10-18T03:11:06Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-18T03:11:36Z · note: review pass 1: good to go
 - 2026-10-18T03:52:13Z · close-out gate completed in 376s
-
+- 2026-10-18T03:52:15Z · note: handoff requested (cli)
+- 2026-10-18T03:52:15Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
