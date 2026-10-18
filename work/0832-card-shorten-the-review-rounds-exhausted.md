@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-18T08:43:26Z"
-review_passes: 1
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
@@ -13,6 +11,8 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
+updated_at: "2026-10-18T08:51:58Z"
+review_passes: 1
 ---
 ## Problem
 The task card shows the whole first line of the reviewer's Verdict section as `needs_input_detail` (`src/server/review.ts` ~1749), under the header "REVIEW STILL FINDING ISSUES". It is often a long paragraph and begins with `` `needs some work` — ``, which the header already says.
@@ -87,4 +87,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T08:25:04Z · body
 - 2026-10-18T08:42:23Z · status active→review
 - 2026-10-18T08:43:26Z · note: review pass 1: good to go
-
+- 2026-10-18T08:51:58Z · body
