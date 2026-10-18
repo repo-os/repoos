@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 810649
-last_close_out_gate_at: "2026-10-18T11:30:58.140Z"
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
-status: active
+status: done
 priority: p3
 area: [web, server]
+merged_commit: b98cfe2e2c12ec70cc6b4cb4ad5baa143fef64be
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T11:30:58Z"
+updated_at: "2026-10-18T11:32:55Z"
+last_close_out_gate_ms: 810649
+last_close_out_gate_at: "2026-10-18T11:30:58.140Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T11:11:55.921Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 2
@@ -118,4 +119,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T11:26:36Z · body
 - 2026-10-18T11:27:02Z · status review→active
 - 2026-10-18T11:30:58Z · close-out gate completed in 811s
-
+- 2026-10-18T11:32:55Z · status active→done, release:success
