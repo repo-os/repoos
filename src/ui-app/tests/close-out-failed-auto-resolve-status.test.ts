@@ -4,13 +4,7 @@
  */
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { execFileSync } from "node:child_process";
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { rmFixture } from "./helpers";
@@ -146,12 +140,7 @@ describe("close-out auto-resolve failure keeps review (#0838)", () => {
       const realMerge = git.mergeBranch;
       let failPublishOnce = true;
       vi.spyOn(git, "mergeBranch").mockImplementation(async (mergeRoot, mergeBranchName, opts) => {
-        if (
-          failPublishOnce &&
-          mergeRoot === root &&
-          mergeBranchName === branch &&
-          !opts?.dryRun
-        ) {
+        if (failPublishOnce && mergeRoot === root && mergeBranchName === branch && !opts?.dryRun) {
           failPublishOnce = false;
           return {
             merged: false,
@@ -185,10 +174,7 @@ describe("close-out auto-resolve failure keeps review (#0838)", () => {
 
 describe("close-out failure paths never target inbox (#0838)", () => {
   it("failOrReconcile restores review via preserveClosingTaskReviewStatusOnMain", () => {
-    const src = readFileSync(
-      join(process.cwd(), "src/server/integration-orchestrator.ts"),
-      "utf8",
-    );
+    const src = readFileSync(join(process.cwd(), "src/server/integration-orchestrator.ts"), "utf8");
     expect(src).toContain("preserveClosingTaskReviewStatusOnMain");
     const preserveSrc = readFileSync(
       join(process.cwd(), "src/server/close-out-task-status.ts"),
