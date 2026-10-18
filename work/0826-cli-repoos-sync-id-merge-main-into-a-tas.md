@@ -2,7 +2,7 @@
 id: "0826"
 title: "CLI: repoos sync <id> (merge main into a task branch, like the drawer's Sync with main)"
 type: feature
-status: active
+status: review
 priority: p3
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/cli-repoos-sync-id-merge-main-into-a-tas
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T04:31:12Z"
-updated_at: "2026-10-18T06:02:56Z"
+updated_at: "2026-10-18T06:08:39Z"
 ---
 ## Problem
 The task drawer and the Debug tab have a "Sync with main" action (store `syncTaskBranch`, `POST /api/tasks/:id/sync`) that merges main into a task's branch. There is no CLI equivalent, so a driver agent facing a simple close-out merge conflict has to hand-run git in the worktree or send the task back to the engineer for a repair cycle.
@@ -35,3 +35,5 @@ Mirror the existing control-plane commands in src/commands (start/pause/done). R
 - 2026-10-18T05:51:45Z · status ready→active, branch
 - 2026-10-18T05:53:46Z · body
 - 2026-10-18T06:02:56Z · handoff failed · remote validation failed: test failure: tests/serve-reaper.test.ts > orphaned-root sweep classification (#0216) > reaps a real serve-shaped process whose tmpdir root is deleted (#0216) on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-18T06:08:39Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/serve-reaper.test.ts > orphaned-root sweep classification (#0216) > reaps a real serve-shaped process whose tmpdir root is deleted (#0216) on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-18T06:08:39Z · note: handoff requested (cli)
