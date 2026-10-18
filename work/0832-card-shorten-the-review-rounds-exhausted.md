@@ -2,7 +2,7 @@
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
-status: active
+status: review
 priority: p3
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T08:25:04Z"
+updated_at: "2026-10-18T08:36:59Z"
 ---
 ## Problem
 The task card shows the whole first line of the reviewer's Verdict section as `needs_input_detail` (`src/server/review.ts` ~1749), under the header "REVIEW STILL FINDING ISSUES". It is often a long paragraph and begins with `` `needs some work` — ``, which the header already says.
@@ -39,14 +39,14 @@ Bundle-sized: a second small item may be added by the human before start. Source
 "highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
+"waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
 }
 ],
 "assert": [
 {
-  "selector": "[data-task-id=\"9999\"] .tc-needs-detail",
-  "label": "detail omits duplicated verdict label",
-  "text": "contrast audit"
+"selector": "[data-task-id=\"9999\"] .tc-needs-detail",
+"label": "detail omits duplicated verdict label",
+"text": "contrast audit"
 }
 ],
 "state": "card:reviewRoundsExhausted",
@@ -59,14 +59,14 @@ Bundle-sized: a second small item may be added by the human before start. Source
 "highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
+"waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
 }
 ],
 "assert": [
 {
-  "selector": "[data-task-id=\"9999\"] .tc-needs-detail",
-  "label": "detail omits duplicated verdict in dark theme",
-  "text": "contrast audit"
+"selector": "[data-task-id=\"9999\"] .tc-needs-detail",
+"label": "detail omits duplicated verdict in dark theme",
+"text": "contrast audit"
 }
 ],
 "state": "card:reviewRoundsExhausted",
@@ -84,3 +84,5 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T08:22:19Z · body
 - 2026-10-18T08:23:00Z · body
 - 2026-10-18T08:25:04Z · body
+- 2026-10-18T08:36:59Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-18T08:36:59Z · note: handoff requested (cli)
