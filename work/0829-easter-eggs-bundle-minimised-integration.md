@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T08:31:08Z"
+updated_at: "2026-10-18T08:32:42Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T08:29:42.192Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from ddcf9a91 to ae4f932f) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 4
@@ -93,86 +93,86 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 ```json
 [
 {
-  "label": "Minimised pill median tooltip, no native title (light)",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=integration-timer-tip]",
-  "steps": [
-    {
-      "waitFor": "[data-test-id=integration-timer]"
-    },
-    {
-      "click": "[data-test-id=integration-timer]"
-    },
-    {
-      "waitFor": "[data-test-id=integration-timer-tip]"
-    }
-  ],
-  "state": "integration:median15",
-  "theme": "light"
+"label": "Minimised pill median tooltip, no native title (light)",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=integration-timer-tip]",
+"steps": [
+  {
+    "waitFor": "[data-test-id=integration-timer]"
+  },
+  {
+    "click": "[data-test-id=integration-timer]"
+  },
+  {
+    "waitFor": "[data-test-id=integration-timer-tip]"
+  }
+],
+"state": "integration:median15",
+"theme": "light"
 },
 {
-  "label": "Minimised pill median tooltip, no native title (dark)",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=integration-timer-tip]",
-  "steps": [
-    {
-      "waitFor": "[data-test-id=integration-timer]"
-    },
-    {
-      "click": "[data-test-id=integration-timer]"
-    },
-    {
-      "waitFor": "[data-test-id=integration-timer-tip]"
-    }
-  ],
-  "state": "integration:median15",
-  "theme": "dark"
+"label": "Minimised pill median tooltip, no native title (dark)",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=integration-timer-tip]",
+"steps": [
+  {
+    "waitFor": "[data-test-id=integration-timer]"
+  },
+  {
+    "click": "[data-test-id=integration-timer]"
+  },
+  {
+    "waitFor": "[data-test-id=integration-timer-tip]"
+  }
+],
+"state": "integration:median15",
+"theme": "dark"
 },
 {
-  "label": "Debug log expanded full message (light)",
-  "target": "default",
-  "route": "/work?task=0820&tab=debug",
-  "highlight": ".debug-event-message",
-  "steps": [
-    {
-      "waitFor": "[data-debug-event*='main advanced']"
-    },
-    {
-      "click": "[data-debug-event*='main advanced']"
-    },
-    {
-      "waitFor": ".debug-event-message"
-    },
-    {
-      "waitMs": 200
-    }
-  ],
-  "state": "drawer:debugLogs",
-  "theme": "light"
+"label": "Debug log expanded full message (light)",
+"target": "default",
+"route": "/work?task=0820&tab=debug",
+"highlight": ".debug-event-message",
+"steps": [
+  {
+    "waitFor": "[data-debug-event*='main advanced']"
+  },
+  {
+    "click": "[data-debug-event*='main advanced']"
+  },
+  {
+    "waitFor": ".debug-event-message"
+  },
+  {
+    "waitMs": 200
+  }
+],
+"state": "drawer:debugLogs",
+"theme": "light"
 },
 {
-  "label": "Debug log expanded full message (dark)",
-  "target": "default",
-  "route": "/work?task=0820&tab=debug",
-  "highlight": ".debug-event-message",
-  "steps": [
-    {
-      "waitFor": "[data-debug-event*='main advanced']"
-    },
-    {
-      "click": "[data-debug-event*='main advanced']"
-    },
-    {
-      "waitFor": ".debug-event-message"
-    },
-    {
-      "waitMs": 200
-    }
-  ],
-  "state": "drawer:debugLogs",
-  "theme": "dark"
+"label": "Debug log expanded full message (dark)",
+"target": "default",
+"route": "/work?task=0820&tab=debug",
+"highlight": ".debug-event-message",
+"steps": [
+  {
+    "waitFor": "[data-debug-event*='main advanced']"
+  },
+  {
+    "click": "[data-debug-event*='main advanced']"
+  },
+  {
+    "waitFor": ".debug-event-message"
+  },
+  {
+    "waitMs": 200
+  }
+],
+"state": "drawer:debugLogs",
+"theme": "dark"
 }
 ]
 ```
@@ -255,3 +255,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T08:25:59Z · message_queued at 2026-10-18T08:25:59.955Z
 - 2026-10-18T08:29:42Z · message_delivered: 2 message(s)
 - 2026-10-18T08:31:08Z · body
+- 2026-10-18T08:32:42Z · note: waitFor [data-debug-event*='main advanced']: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
