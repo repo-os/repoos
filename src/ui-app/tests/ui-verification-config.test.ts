@@ -301,9 +301,11 @@ describe("evidence-gap-only review stays in review (#0831)", () => {
     };
   }
 
-  function makeManager(
-    onEvidenceRepair: (task: Task) => Promise<boolean> = async () => false,
-  ): { reviews: ReviewManager; sent: () => number; repaired: () => number } {
+  function makeManager(onEvidenceRepair: (task: Task) => Promise<boolean> = async () => false): {
+    reviews: ReviewManager;
+    sent: () => number;
+    repaired: () => number;
+  } {
     let sent = 0;
     let repaired = 0;
     const config = {
