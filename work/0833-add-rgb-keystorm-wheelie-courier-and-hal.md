@@ -105,3 +105,4 @@ path(c,p.purple,g=>{g.moveTo(-30,-18);g.quadraticCurveTo(-14,-29,-8,-61);g.bezie
 - 2026-10-18T09:09:36Z · status inbox→ready
 - 2026-10-18T12:23:20Z · status ready→active, branch
 - 2026-10-18T12:28:41Z · message_queued at 2026-10-18T12:28:41.781Z
+- 2026-10-18T12:28:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
