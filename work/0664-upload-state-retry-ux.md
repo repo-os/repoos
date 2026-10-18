@@ -95,3 +95,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-18T19:28:50Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-18T19:28:50Z · note: handoff requested (cli)
 - 2026-10-18T19:36:32Z · status active→review
+- 2026-10-18T19:36:32Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Notes for AI
