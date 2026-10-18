@@ -2,7 +2,7 @@
 id: "0830"
 title: "Handoff: a shot whose waitFor/click/highlight target is missing fails the handoff (add hover step and fixture list)"
 type: feature
-status: review
+status: active
 priority: p2
 area: core
 assigned_to: ai
