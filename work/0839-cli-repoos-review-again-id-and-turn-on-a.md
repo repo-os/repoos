@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 108426
-last_close_out_gate_at: "2026-10-18T17:20:14.539Z"
 id: "0839"
 title: "CLI: repoos review again <id>, and turn on Auto-refresh stale review evidence by default"
 type: feature
-status: review
+status: done
 priority: p3
 area: [core, web]
+merged_commit: 8cd5b179a55b2c2aab5e7ca45bd5e368135f16d9
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/cli-repoos-review-again-id-and-turn-on-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:59Z"
-updated_at: "2026-10-18T17:20:14Z"
+updated_at: "2026-10-18T17:20:45Z"
+last_close_out_gate_ms: 108426
+last_close_out_gate_at: "2026-10-18T17:20:14.539Z"
 review_passes: 1
 ---
 ## Problem
@@ -43,4 +44,4 @@ Do not bypass the review lock rules (no live engineer/close-out). Source: driver
 - 2026-10-18T17:11:23Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-18T17:12:10Z · note: review pass 1: good to go
 - 2026-10-18T17:20:14Z · close-out gate completed in 108s
-
+- 2026-10-18T17:20:45Z · status review→done, release:success
