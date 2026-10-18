@@ -1,8 +1,10 @@
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createRepoOS } from "../../core/repoos.js";
-import { loadConfig } from "../../core/config.js";
+import { createLogger } from "../../core/logger.js";
+import type { RepoEvent } from "../../server/live-index.js";
 import {
   getSchedules,
   postSchedule,
@@ -13,145 +15,119 @@ import {
   resetScheduleTickStateForTests,
   tryAcquireScheduleOccurrenceLock,
 } from "../../server/schedule-runner.js";
-import type { RouteContext } from "../../server/routes/types.js";
 
-function makeCtx(root: string): RouteContext {
-  const config = loadConfig(root);
-  const repoos = createRepoOS(root);
+function makeCtx(root: string, events: RepoEvent[] = []) {
   return {
-    config,
-    repoos,
-    index: {
-      refreshAll: () => {},
-      applyFileChange: () => {},
-    } as RouteContext["index"],
-    emitEvent: () => {},
-    logger: { system: () => {}, task: () => {}, agent: () => {} } as RouteContext["logger"],
-    runner: {} as RouteContext["runner"],
-  } as RouteContext;
+    config: createRepoOS(root).config,
+    repoos: createRepoOS(root),
+    logger: createLogger(root),
+    emitEvent: (e: RepoEvent) => events.push(e),
+    index: { refreshAll: () => {}, applyFileChange: () => {} },
+  } as never as Parameters<typeof postSchedule>[0];
 }
 
-function jsonRes() {
-  let status = 0;
-  let body = "";
-  const res = {
-    writeHead(code: number) {
-      status = code;
-    },
-    end(chunk: string) {
-      body = chunk;
-    },
-  };
+function makeRes() {
+  const capture = { status: 0, body: undefined as unknown };
   return {
-    res,
-    status: () => status,
-    json: () => JSON.parse(body || "{}"),
+    capture,
+    res: {
+      writeHead: (status: number) => {
+        capture.status = status;
+      },
+      end: (chunk?: string) => {
+        capture.body = JSON.parse(chunk ?? "null");
+      },
+    } as never as Parameters<typeof postSchedule>[2],
   };
+}
+
+function jsonReq(body: unknown) {
+  return {
+    async *[Symbol.asyncIterator]() {
+      yield Buffer.from(JSON.stringify(body));
+    },
+  } as never;
 }
 
 describe("schedules API", () => {
-  const root = join(process.cwd(), ".tmp-schedules-test");
+  let root = "";
   afterEach(() => {
-    rmSync(root, { recursive: true, force: true });
+    if (root) rmSync(root, { recursive: true, force: true });
+    root = "";
     resetScheduleTickStateForTests();
   });
 
   it("creates a schedule and previews next run", async () => {
-    mkdirSync(root, { recursive: true });
+    root = mkdtempSync(join(tmpdir(), "repoos-schedules-"));
     const ctx = makeCtx(root);
-    const created = jsonRes();
+    const created = makeRes();
     await postSchedule(
       ctx,
-      {
-        async *[Symbol.asyncIterator]() {
-          yield Buffer.from(
-            JSON.stringify({
-              title: "Doc audit",
-              cadence: "weekly",
-              timezone: "UTC",
-              timeOfDay: "09:00",
-              dayOfWeek: 1,
-              taskTitle: "Audit docs",
-              body: "## Problem\nDrift\n",
-            }),
-          );
-        },
-      } as never,
-      created.res as never,
-      {},
+      jsonReq({
+        title: "Doc audit",
+        cadence: "weekly",
+        timezone: "UTC",
+        timeOfDay: "09:00",
+        dayOfWeek: 1,
+        taskTitle: "Audit docs",
+        body: "## Problem\nDrift\n",
+      }),
+      created.res,
+      {} as never,
     );
-    expect(created.status()).toBe(201);
-    const list = jsonRes();
-    getSchedules(ctx, {} as never, list.res as never);
-    expect(list.json()).toHaveLength(1);
+    expect(created.capture.status).toBe(201);
 
-    const preview = jsonRes();
+    const list = makeRes();
+    getSchedules(ctx, {} as never, list.res, {} as never);
+    expect((list.capture.body as unknown[]).length).toBe(1);
+
+    const preview = makeRes();
     await postSchedulePreview(
       ctx,
-      {
-        async *[Symbol.asyncIterator]() {
-          yield Buffer.from(
-            JSON.stringify({
-              title: "Doc audit",
-              cadence: "daily",
-              timezone: "UTC",
-              timeOfDay: "09:00",
-              taskTitle: "Audit docs",
-            }),
-          );
-        },
-      } as never,
-      preview.res as never,
-      {},
+      jsonReq({
+        title: "Doc audit",
+        cadence: "daily",
+        timezone: "UTC",
+        timeOfDay: "09:00",
+        taskTitle: "Audit docs",
+      }),
+      preview.res,
+      {} as never,
     );
-    expect(preview.status()).toBe(200);
-    expect(preview.json().preview).toBeTruthy();
+    expect(preview.capture.status).toBe(200);
+    expect((preview.capture.body as { preview: string }).preview).toBeTruthy();
   });
 
   it("prevents duplicate occurrence locks", () => {
-    mkdirSync(root, { recursive: true });
-    const config = loadConfig(root);
+    root = mkdtempSync(join(tmpdir(), "repoos-schedules-"));
+    const config = createRepoOS(root).config;
     expect(tryAcquireScheduleOccurrenceLock(config, "0001", "daily:2026-08-13")).toBe(true);
     expect(tryAcquireScheduleOccurrenceLock(config, "0001", "daily:2026-08-13")).toBe(false);
   });
 
   it("run now creates a work task", async () => {
+    root = mkdtempSync(join(tmpdir(), "repoos-schedules-"));
     mkdirSync(join(root, "work"), { recursive: true });
     const ctx = makeCtx(root);
-    const created = jsonRes();
+    const created = makeRes();
     await postSchedule(
       ctx,
-      {
-        async *[Symbol.asyncIterator]() {
-          yield Buffer.from(
-            JSON.stringify({
-              title: "Weekly chore",
-              cadence: "weekly",
-              timezone: "UTC",
-              timeOfDay: "09:00",
-              dayOfWeek: 1,
-              taskTitle: "Chore task",
-              body: "Do the thing",
-            }),
-          );
-        },
-      } as never,
-      created.res as never,
-      {},
+      jsonReq({
+        title: "Weekly chore",
+        cadence: "weekly",
+        timezone: "UTC",
+        timeOfDay: "09:00",
+        dayOfWeek: 1,
+        taskTitle: "Chore task",
+        body: "Do the thing",
+      }),
+      created.res,
+      {} as never,
     );
-    const id = created.json().id as string;
-    const run = jsonRes();
-    await postScheduleRun(
-      ctx,
-      {
-        async *[Symbol.asyncIterator]() {
-          yield Buffer.from("{}");
-        },
-      } as never,
-      run.res as never,
-      { param1: id },
-    );
-    expect(run.status()).toBe(200);
-    expect(run.json().taskId).toMatch(/^\d{4}$/);
+    const id = (created.capture.body as { id: string }).id;
+    const run = makeRes();
+    await postScheduleRun(ctx, jsonReq({}), run.res, { param1: id } as never);
+    expect(run.capture.status).toBe(200);
+    expect((run.capture.body as { taskId: string }).taskId).toMatch(/^\d{4}$/);
   });
 });
