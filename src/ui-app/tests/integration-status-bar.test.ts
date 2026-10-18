@@ -603,7 +603,7 @@ describe("IntegrationStatusBar", () => {
     expect(label.text()).toContain("#0042");
     expect(label.text()).toContain("3m 07s");
     wrapper.get(".strip-queue-ellipsis");
-    expect(wrapper.get(".ibar-strip").attributes("title")).toContain("Queue: #0455");
+    expect(wrapper.get(".ibar-strip").attributes("aria-label")).toContain("Queue: #0455");
   });
 
   it("shows queued task ids as chips in expanded and minimised views (#0522)", async () => {
@@ -656,7 +656,7 @@ describe("IntegrationStatusBar", () => {
     await nextTick();
 
     expect(wrapper.find(".strip-queue").exists()).toBe(false);
-    expect(wrapper.get(".ibar-strip").attributes("title")).not.toContain("Queue:");
+    expect(wrapper.get(".ibar-strip").attributes("aria-label")).not.toContain("Queue:");
   });
 
   it("includes queued ids in the minimised strip tooltip without an active job (#0522)", async () => {
@@ -672,7 +672,7 @@ describe("IntegrationStatusBar", () => {
     const wrapper = render();
     await nextTick();
 
-    expect(wrapper.get(".ibar-strip").attributes("title")).toContain("Queue: #0455 #0456");
+    expect(wrapper.get(".ibar-strip").attributes("aria-label")).toContain("Queue: #0455 #0456");
     expect(wrapper.find(".strip-queue").exists()).toBe(true);
   });
 });
