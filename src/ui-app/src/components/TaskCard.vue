@@ -548,6 +548,17 @@ const hint = computed<CardHint | null>(() => {
         };
       }
     }
+    // #0834: a post-handoff checkpoint recovery is running — gate + delta
+    // re-review before close-out resumes. More specific than "Reviewing…", so
+    // it wins while the delta review runs; the task is mid-recovery, not idle.
+    if (repo.checkpointRecoveryFor(t.id)) {
+      return {
+        label: "re-reviewing checkpoint…",
+        title:
+          "checkpoint commit(s) landed after handoff — RepoOS is re-running the handoff gate and a delta review, then close-out continues",
+        cls: "tc-reviewing",
+      };
+    }
     if (repo.reviewFor(t.id)?.running) {
       return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
     }
