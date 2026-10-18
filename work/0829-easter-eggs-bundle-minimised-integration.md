@@ -1,6 +1,6 @@
 ---
 id: "0829"
-title: "Easter eggs bundle: minimised integration pill tooltip, and why the median says 10 runs"
+title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
 status: inbox
 priority: p3
@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T06:49:00Z"
+updated_at: "2026-10-18T06:49:05Z"
 ---
 ## Items
 - [ ] **E1 · Minimised pill shows only the median popup, centered** (web) — remove the extra native title tooltip over it. Source: Nick 2026-10-18.
@@ -94,3 +94,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T06:18:32Z · needs_input
 - 2026-10-18T06:48:56Z · body: Items (added 1)
 - 2026-10-18T06:49:00Z · body: E3 · Debug logs: expanded row always shows the full message (added)
+- 2026-10-18T06:49:05Z · title
