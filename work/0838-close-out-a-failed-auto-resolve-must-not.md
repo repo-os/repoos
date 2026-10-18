@@ -2,7 +2,7 @@
 id: "0838"
 title: "Close-out: a failed auto-resolve must not demote the task to inbox"
 type: bug
-status: review
+status: inbox
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-out-a-failed-auto-resolve-must-not
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:48Z"
-updated_at: "2026-10-18T18:44:30Z"
+updated_at: "2026-10-18T18:44:31Z"
 last_close_out_gate_ms: 83050
 last_close_out_gate_at: "2026-10-18T18:44:28.492Z"
 review_passes: 1
