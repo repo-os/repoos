@@ -137,7 +137,7 @@ What to shoot is declarative: a task body may carry a `## Shots` section with
 a fenced JSON list (`src/core/shot-plan.ts`), one entry per capture —
 `target`, `route`, optional `selector`, an optional `highlight` CSS selector
 (outlines the changed element(s) in the capture, #0603), a human `label`, and
-optional ordered `steps` (`click` / `fill`+`text` / `waitFor` / `waitMs`,
+optional ordered `steps` (`click` / `fill`+`text` / `waitFor` / `hover` / `waitMs`,
 plain CSS selectors). Routes and selectors only — no framework knowledge.
 
 ### Evidence shots for non-web targets (#0761)
@@ -309,13 +309,17 @@ record (not a "console log"), and the mechanical console-error check is
 browser console record it cannot produce. A task with no capture plan at all is
 told the same; `shots: skipped` is correct behavior, not a capture failure.
 
-**Shot hygiene (#0613, #0734, #0743).** When a declared `highlight`,
-`selector`, or `waitFor` step target is missing at capture time, the handoff
-gate records a **visible warning**, still saves the screenshot, and does **not**
-block handoff (#0743). Console errors, failed same-origin requests, overflow,
-blank captures, wrong-route redirects, and failed required `assert` entries
-still block. Prefer a `state` fixture (below) or a `?tab=` route over brittle
-`waitFor` steps when the UI only exists in a particular board state. The
+**Shot hygiene (#0613, #0734, #0830).** When a **declared** shot's `highlight`,
+`selector`, or step target (`click`, `fill`, `waitFor`, `hover`) is missing at
+capture time, the handoff gate still saves the screenshot but **blocks handoff**
+with a per-shot `[missing-target]` message (route, step, selector). Tooltip and
+popover shots need a `hover` or `click` step on the trigger plus a `state`
+fixture that seeds the data. **Auto-matched** (undeclared) captures keep the
+lenient behaviour from #0743: a miss is a visible warning only. Console errors,
+failed same-origin requests, overflow, blank captures, wrong-route redirects,
+and failed required `assert` entries still block. Prefer a `state` fixture
+(below) or a `?tab=` route over brittle `waitFor` steps when the UI only exists
+in a particular board state. The
 browser's FINAL route after any
 redirect is also compared to the declared route — a login bounce or a
 client-side guard that lands elsewhere fails the shot rather than passing a
@@ -407,17 +411,7 @@ reusable, since it cannot be tied to the current plan.
 
 While a task is in review, **Refresh evidence** in the Changes tab or
 `repoos verify <id>` re-runs the browser and command capture plan and writes a
-new UI-verification record for the current worktree HEAD.
-
-**Evidence-only review outcomes (#0831).** When the code is fine but shots are
-missing or wrong, the reviewer keeps verdict `good to go` and adds the marker
-`EVIDENCE-GAP-ONLY` in `## Verdict`, with specifics under `## Evidence gaps`.
-That outcome does **not** auto-bounce the engineer or consume a
-`review_rounds` slot. RepoOS re-captures from the declared shot plan instead;
-after two failed automatic captures the task is flagged `needs_input` with
-`evidence-gaps-exhausted` and the missing-shot detail from the report. Stale
-captures at an otherwise-good HEAD still use `STALE-EVIDENCE-ONLY` and the
-opt-in `uiVerification.autoRefreshStaleOnce` path from #0772. The server refuses
+new UI-verification record for the current worktree HEAD. The server refuses
 the action if the worktree is dirty or an agent/close-out is active. Refreshes
 replace prior automatic captures in gitignored storage and do not edit task
 Markdown. When a capture command writes outside `REPOOS_SHOT_DIR`, the refresh
@@ -425,6 +419,12 @@ restores the tracked files and removes the untracked files it created, so the
 worktree stays clean either way; the response lists what was restored. HEAD
 movement that is only `work/*.md` task bookkeeping (status flips, review
 counters) does not make the refreshed record stale.
+
+When a reviewer marks **`EVIDENCE-GAP-ONLY`** (code is fine, shots or
+verification are not), RepoOS runs the same guarded re-capture automatically,
+does not auto-bounce the engineer, and does not increment `review_rounds`. After
+two failed repair attempts it flags `evidence-gap-exhausted` for a human. See
+[`docs/review-evidence-gaps.md`](./review-evidence-gaps.md).
 
 **Whole-window default (#0613).** Declared shots capture the whole visible
 viewport by default (`fullPage: false`) with changed elements outlined via

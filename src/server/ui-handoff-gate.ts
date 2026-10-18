@@ -450,6 +450,25 @@ function routeMatches(declared: string, finalRoute: string): boolean {
 }
 
 /**
+ * #0830: a declared shot whose step, highlight, or selector target is missing
+ * must block handoff with a per-shot message. Auto-matched captures stay
+ * lenient — warnings only (#0743).
+ */
+function declaredShotTargetIssues(
+  entry: CaptureEntry,
+  warnings: string[],
+  finalUrl: string,
+): PageGateIssue[] {
+  if (entry.provenance.kind !== "declared") return [];
+  const shotName = entry.label?.trim() || `${entry.target}${entry.route}`;
+  return warnings.map((msg) => ({
+    kind: "missing-target",
+    message: `${shotName}: ${msg}`,
+    url: finalUrl,
+  }));
+}
+
+/**
  * Capture one entry and collect browser gate issues on the same page session.
  * #0734: the final URL (after redirects) and assertion outcomes are returned so
  * the caller can block on a wrong route or an unmet required assertion.
@@ -786,11 +805,15 @@ export async function runUiHandoffGate(
         // repeating the whole handoff's list on every row.
         const captureIssues: PageGateIssue[] = [...issues];
 
-        // #0743: missing highlight/selector/step targets are visible warnings only.
         for (const msg of warnings) {
           const line = `${msg} (captured ${finalUrl})`;
           allWarnings.push(line);
-          log(task.id, "warn", `ui verification: shot warning — ${msg}`);
+          const level = entry.provenance.kind === "declared" ? "error" : "warn";
+          log(task.id, level, `ui verification: shot warning — ${msg}`);
+        }
+        for (const issue of declaredShotTargetIssues(entry, warnings, finalUrl)) {
+          allIssues.push(issue);
+          captureIssues.push(issue);
         }
 
         // #0734: the browser must have LANDED on the declared route. A login

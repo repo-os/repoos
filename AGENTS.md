@@ -231,6 +231,21 @@ mention, ask about, stage or commit it unless you changed it yourself and need
 to tell the human. If you did, say so plainly. Otherwise leave it alone and say
 nothing.
 
+**Exception: Move to done blocked by `repoos.toml` (human-authorized
+2026-10-18).** `repoos done <id>` refuses with "main has N uncommitted file(s)
+blocking close-out" when the human's settings edit is the only dirty file on
+main (the human picks a setting in the UI; it stays uncommitted). In that case,
+and only then, a driver may commit `repoos.toml` on main itself, with its
+current contents and the message `chore: checkpoint before close-out (#<id>)`,
+then retry `repoos done <id>`. Preconditions: the only dirty path is
+`repoos.toml` (never commit other files, other tasks' work, or an owner's WIP),
+and you stage that one path explicitly (`git add repoos.toml`). Do not edit,
+revert or stash its contents, and do not use `--no-verify`. Say in your report
+that you committed it. RepoOS's own close-out already does this checkpoint
+commit in some paths (#0820), so first check `git status --short`: if it is
+already clean, just retry. Background: #0831 sat blocked for a nap-length
+window on 2026-10-18 because drivers were told never to touch this file.
+
 **Historical caution (2026-09-16):** external CLI status writes raced a live
 reviewer, which later reverted a task from `done` to `review`. The old advice
 to avoid that race by skipping review or reissuing `mv done` is not the current
@@ -598,8 +613,11 @@ cannot tell from the code alone:
   an empty preview board. Every shot is captioned with why it exists
   (`declared: <label>` / `auto: matched <glob>`); a docs-wording-only diff
   captures nothing without a declared route (#0603). **Shot hygiene (#0613,
-  #0743):** a missing `highlight`/`selector`/`waitFor` target records a
-  visible warning and still captures — it does not fail handoff; duplicates with
+  #0830):** on a **declared** shot, a missing `highlight`/`selector`/step
+  target (`click`, `fill`, `waitFor`, `hover`) **fails handoff** with a
+  per-shot message; auto-matched captures still record a miss as a warning only
+  (#0743). Tooltip/hover shots need a `hover` or `click` step plus a `state`
+  fixture. Duplicates with
   the same target/route/steps/selector collapse to one capture. **Loading and
   stale captures (#0755):** reach a populated view with a `route` or `state`
   fixture, not a `steps` click on a placeholder selector (`data-task-id "9999"`

@@ -373,7 +373,7 @@ import {
   getTaskUiVerification,
   refreshTaskEvidence,
   automaticStaleEvidenceRefresh,
-  automaticEvidenceGapRefresh,
+  automaticEvidenceGapRepair,
   getTaskShot,
   uploadTaskShot,
   deleteTaskShot,
@@ -2101,8 +2101,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         },
         task,
       ),
-    (task, report) =>
-      automaticEvidenceGapRefresh(
+    (task) =>
+      automaticEvidenceGapRepair(
         {
           config,
           previews,
@@ -2116,7 +2116,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           isReviewRunning: (id) => reviews.isRunning(id),
         },
         task,
-        report.markdown,
       ),
   );
 

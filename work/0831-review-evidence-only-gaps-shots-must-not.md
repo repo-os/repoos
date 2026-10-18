@@ -2,16 +2,20 @@
 id: "0831"
 title: "Review: evidence-only gaps (shots) must not consume code-review rounds or park the task"
 type: feature
-status: active
+status: done
 priority: p2
 area: core
+merged_commit: e4fbf7c2f4280d8ef29d076dfe138578cd5e835a
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-evidence-only-gaps-shots-must-not
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:30Z"
-updated_at: "2026-10-18T09:25:00Z"
+updated_at: "2026-10-18T09:07:07Z"
+last_close_out_gate_ms: 80216
+last_close_out_gate_at: "2026-10-18T08:49:32.952Z"
+review_passes: 1
 ---
 ## Problem
 The reviewer returns "needs some work" for missing or wrong screenshot evidence even when the code is fine (#0829 pass 3, #0822 passes 1-4). Each such verdict counts as a review round, bounces the engineer, and after MAX_AUTO_REVIEW_ROUNDS raises `review-rounds-exhausted` so the task waits for a human, although the engineer has no code to change.
@@ -39,11 +43,12 @@ Design-heavy: write the decision into docs before coding; keep the reviewer prom
 - 2026-10-18T08:22:37Z · body
 - 2026-10-18T08:24:29Z · body
 - 2026-10-18T08:27:03Z · body
-- 2026-10-18T08:33:00Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
-- 2026-10-18T08:33:00Z · note: handoff requested (cli)
-- 2026-10-18T08:41:00Z · CTO action: restart-stalled-agent (resume) · agent never started — no session exists for this task
-- 2026-10-18T08:55:08Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
-- 2026-10-18T09:00:26Z · message_queued at 2026-10-18T09:00:26.825Z
-- 2026-10-18T09:00:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-18T09:24:58Z · message_delivered: 1 message(s)
-- 2026-10-18T09:25:00Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-10-18T08:34:19Z · status active→review
+- 2026-10-18T08:35:08Z · note: review pass 1: good to go
+- 2026-10-18T08:42:29Z · body
+- 2026-10-18T08:48:10Z · close-out gate completed in 87s
+- 2026-10-18T08:49:32Z · close-out gate completed in 80s
+- 2026-10-18T08:50:09Z · status review→done, release:success
+- 2026-10-18T09:04:34Z · body
+- 2026-10-18T09:05:39Z · body
+- 2026-10-18T09:07:07Z · body

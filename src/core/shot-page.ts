@@ -18,6 +18,7 @@ export const SHOT_SELECTOR_TIMEOUT_MS = 5_000;
 export interface ShotLocator {
   click(options?: { timeout?: number }): Promise<unknown>;
   fill(text: string, options?: { timeout?: number }): Promise<unknown>;
+  hover(options?: { timeout?: number }): Promise<unknown>;
   waitFor(options?: { timeout?: number }): Promise<unknown>;
   /**
    * First match of the locator, when the driver supports it (Playwright does).
@@ -278,7 +279,14 @@ export interface ShotCaptureMissHandlers {
  */
 async function runStep(
   page: ShotDriverPage,
-  step: { click?: string; fill?: string; text?: string; waitFor?: string; waitMs?: number },
+  step: {
+    click?: string;
+    fill?: string;
+    text?: string;
+    waitFor?: string;
+    hover?: string;
+    waitMs?: number;
+  },
   route: string,
   onStepMiss?: (message: string, route: string) => void,
 ): Promise<void> {
@@ -310,6 +318,12 @@ async function runStep(
     const target = typeof base.first === "function" ? base.first() : base;
     await soft(`waitFor ${step.waitFor}`, () =>
       target.waitFor({ timeout: SHOT_SELECTOR_TIMEOUT_MS }),
+    );
+    return;
+  }
+  if (typeof step.hover === "string") {
+    await soft(`hover ${step.hover}`, () =>
+      page.locator(step.hover!).hover({ timeout: SHOT_SELECTOR_TIMEOUT_MS }),
     );
     return;
   }

@@ -41,6 +41,6 @@ export function needsInputClearsOnSuccessfulReview(
   // A fresh review run restarts the episode; if it still finds problems the
   // auto-bounce cap re-raises this flag right after.
   if (task.needsInputReason === "review-rounds-exhausted") return true;
-  if (task.needsInputReason === "evidence-gaps-exhausted") return true;
+  if (task.needsInputReason === "evidence-gap-exhausted") return true;
   return task.needsInputReason === "watchdog-stuck" && task.status === "review";
 }
