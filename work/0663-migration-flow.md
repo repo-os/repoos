@@ -2,7 +2,7 @@
 id: "0663"
 title: Migration flow
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 story: Cloud attachment storage
@@ -66,4 +66,4 @@ Slice 6: Dry run, resumable upload, verification before local originals released
 - 2026-10-18T16:28:40Z · status review→active
 - 2026-10-18T16:30:05Z · body
 - 2026-10-18T16:31:12Z · body
-- 2026-10-18T16:37:37Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-18T16:37:37Z · status active→review
