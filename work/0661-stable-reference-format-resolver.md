@@ -2,7 +2,7 @@
 id: "0661"
 title: Stable reference format + resolver
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 story: Cloud attachment storage
@@ -42,4 +42,4 @@ The reference therefore contains no secrets, no expiring URLs and no storage pat
 - 2026-10-18T11:57:03Z · body
 - 2026-10-18T11:59:59Z · body
 - 2026-10-18T12:01:57Z · body
-- 2026-10-18T12:09:35Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-18T12:09:35Z · status active→review
