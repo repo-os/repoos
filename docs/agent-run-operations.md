@@ -99,13 +99,17 @@ On boot (after `adoptRunningAgents()`):
 
 - A live recorded PID for an **active** task is **re-attached** when its cwd and
   command line positively match that task's worktree and a managed harness.
-- Activity logs `adopted orphaned engineer pid N` when that path runs after the
-  index is ready.
+  Activity logs `adopted orphaned engineer pid N`.
+- When the recorded group is still alive but cannot be positively identified for
+  re-attachment (cwd/cmd probe failed), RepoOS **stops** it via the recorded
+  process-group leader and logs `stopped orphaned engineer pid N` — still only
+  touching PIDs RepoOS recorded, never name-based kills.
 
 Before starting a **new** engineer in a worktree:
 
-- The runner adopts any matching live recorded PID for that task, or refuses when
-  another task's live recorded engineer still holds the same worktree — **one
+- The runner adopts any matching live recorded PID for that task; if adoption is
+  impossible but the recorded group is still live, it stops that group first.
+  Another task's verified live engineer in the same worktree is refused — **one
   writer per worktree**.
 - Stops use the recorded process-group leader (`SIGTERM`, then `SIGKILL`), not
   `pkill` / `killall`.

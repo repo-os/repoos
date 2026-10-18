@@ -74,7 +74,10 @@ import {
   livePidsInRecordedGroup,
   pidAlive,
   sameWorkdirPath,
+  stopRecordedEngineerPid,
+  stoppedActivityNote,
   verifyRecordedHarnessPid,
+  type RecordedEngineerPid,
 } from "./orphan-engineers.js";
 import {
   recoverTruncatedJson,
@@ -5176,6 +5179,22 @@ export class AgentRunner {
       // it and hand completion to the new ReviewManager (0288). By the time the
       // deferred hook fires, the server has built `reviews`.
       if (!alive && !isReview) continue;
+      if (!isReview && alive) {
+        const groupLeader = rec.processGroupLeader ?? rec.pid;
+        if (!verifyRecordedHarnessPid(livePid, rec.workdir)) {
+          this.stopUnattachedRecordedEngineer({
+            taskId: rec.taskId,
+            pid: livePid,
+            processGroupLeader: groupLeader,
+            workdir: rec.workdir,
+            branch: rec.branch,
+            runId: rec.runId,
+            logStem: rec.logStem,
+            source: "registry",
+          });
+          continue;
+        }
+      }
       this.adoptLiveRegistryEntry({ ...rec, pid: livePid }, alive, isReview, live);
     }
     if (live.length > 0) {
@@ -5201,26 +5220,10 @@ export class AgentRunner {
     const candidates = collectRecordedEngineerPids(registry.entries, ownership, activeIds);
     for (const cand of candidates) {
       if (this.entries.has(cand.taskId)) continue;
-      if (!verifyRecordedHarnessPid(cand.pid, cand.workdir)) continue;
-      const fromRegistry = registry.entries.find((e) => e.taskId === cand.taskId);
-      const task = tasks.find((t) => t.id === cand.taskId);
-      const rec: DurableRegistryEntry = fromRegistry
-        ? { ...fromRegistry, pid: cand.pid, processGroupLeader: cand.processGroupLeader }
-        : {
-            taskId: cand.taskId,
-            pid: cand.pid,
-            workdir: cand.workdir,
-            branch: cand.branch || task?.branch || "",
-            runId: cand.runId,
-            logStem: cand.logStem ?? cand.taskId,
-            kind: "engineer",
-            processGroupLeader: cand.processGroupLeader,
-          };
-      const live: DurableRegistryEntry[] = [];
-      if (this.adoptLiveRegistryEntry(rec, true, false, live)) {
-        this.onOrphanEngineerNote?.(cand.taskId, adoptedActivityNote(cand.pid));
+      const adopted = this.adoptOrStopRecordedEngineer(cand, registry, tasks);
+      if (adopted) {
         writeRegistry(this.cacheDir, {
-          entries: [...registry.entries.filter((e) => e.taskId !== cand.taskId), ...live],
+          entries: [...registry.entries.filter((e) => e.taskId !== cand.taskId), ...adopted],
         });
       }
     }
@@ -5305,27 +5308,7 @@ export class AgentRunner {
       new Set([taskId]),
     ).filter((c) => c.taskId === taskId && sameWorkdirPath(c.workdir, cwd));
     for (const cand of candidates) {
-      if (!verifyRecordedHarnessPid(cand.pid, cand.workdir)) continue;
-      const fromRegistry = registry.entries.find((e) => e.taskId === cand.taskId);
-      const rec: DurableRegistryEntry = fromRegistry
-        ? { ...fromRegistry, pid: cand.pid, processGroupLeader: cand.processGroupLeader }
-        : {
-            taskId: cand.taskId,
-            pid: cand.pid,
-            workdir: cand.workdir,
-            branch: "",
-            runId: cand.runId,
-            logStem: cand.logStem ?? cand.taskId,
-            kind: "engineer",
-            processGroupLeader: cand.processGroupLeader,
-          };
-      const live: DurableRegistryEntry[] = [];
-      if (this.adoptLiveRegistryEntry(rec, true, false, live)) {
-        this.onOrphanEngineerNote?.(cand.taskId, adoptedActivityNote(cand.pid));
-        const updated = readRegistry(this.cacheDir);
-        updated.entries = updated.entries.filter((e) => e.taskId !== cand.taskId).concat(live);
-        writeRegistry(this.cacheDir, updated);
-      }
+      this.adoptOrStopRecordedEngineer(cand, registry);
       return;
     }
   }
@@ -5343,10 +5326,62 @@ export class AgentRunner {
       (c) => c.taskId !== taskId && sameWorkdirPath(c.workdir, cwd),
     );
     for (const cand of candidates) {
-      if (!verifyRecordedHarnessPid(cand.pid, cand.workdir)) continue;
-      return `This worktree already has a live engineer for task #${cand.taskId} (pid ${cand.pid})`;
+      if (verifyRecordedHarnessPid(cand.pid, cand.workdir)) {
+        return `This worktree already has a live engineer for task #${cand.taskId} (pid ${cand.pid})`;
+      }
+      if (this.recordedEngineerGroupStillLive(cand)) {
+        this.stopUnattachedRecordedEngineer(cand);
+      }
     }
     return undefined;
+  }
+
+  /** True when any PID from the recorded group is still running. */
+  private recordedEngineerGroupStillLive(cand: RecordedEngineerPid): boolean {
+    return livePidsInRecordedGroup(cand.processGroupLeader).length > 0;
+  }
+
+  /**
+   * Adopt a positively identified recorded engineer, or stop the recorded group
+   * when it is still live but cannot be re-attached (#0837).
+   */
+  private adoptOrStopRecordedEngineer(
+    cand: RecordedEngineerPid,
+    registry: DurableRegistry,
+    tasks?: Task[],
+  ): DurableRegistryEntry[] | null {
+    if (verifyRecordedHarnessPid(cand.pid, cand.workdir)) {
+      const fromRegistry = registry.entries.find((e) => e.taskId === cand.taskId);
+      const task = tasks?.find((t) => t.id === cand.taskId);
+      const rec: DurableRegistryEntry = fromRegistry
+        ? { ...fromRegistry, pid: cand.pid, processGroupLeader: cand.processGroupLeader }
+        : {
+            taskId: cand.taskId,
+            pid: cand.pid,
+            workdir: cand.workdir,
+            branch: cand.branch || task?.branch || "",
+            runId: cand.runId,
+            logStem: cand.logStem ?? cand.taskId,
+            kind: "engineer",
+            processGroupLeader: cand.processGroupLeader,
+          };
+      const live: DurableRegistryEntry[] = [];
+      if (this.adoptLiveRegistryEntry(rec, true, false, live)) {
+        this.onOrphanEngineerNote?.(cand.taskId, adoptedActivityNote(cand.pid));
+        return live;
+      }
+      return null;
+    }
+    if (this.recordedEngineerGroupStillLive(cand)) {
+      this.stopUnattachedRecordedEngineer(cand);
+    }
+    return null;
+  }
+
+  private stopUnattachedRecordedEngineer(cand: RecordedEngineerPid): void {
+    stopRecordedEngineerPid(cand.pid, cand.processGroupLeader);
+    this.removeRegistryEntry(cand.taskId);
+    this.onOrphanEngineerNote?.(cand.taskId, stoppedActivityNote(cand.pid));
   }
 
   /** Replay a durable log into a transcript, optionally decoding the legacy tagged format. */

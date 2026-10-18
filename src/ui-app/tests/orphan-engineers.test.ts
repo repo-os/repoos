@@ -45,7 +45,7 @@ describe("orphan engineer identification (#0837)", () => {
     expect(entries[0].taskId).toBe("0001");
   });
 
-  it("does not adopt when verification fails (unrelated live PID)", async () => {
+  it("stops and records activity when verification fails but the recorded group is live", async () => {
     const { AgentRunner } = await import("../../server/agents.js");
     const root = mkdtempSync(join(tmpdir(), "repoos-orphan-verify-"));
     try {
@@ -100,6 +100,9 @@ branch: feat/orphan
       const verifySpy = vi
         .spyOn(orphanEngineers, "verifyRecordedHarnessPid")
         .mockReturnValue(false);
+      const stopSpy = vi
+        .spyOn(orphanEngineers, "stopRecordedEngineerPid")
+        .mockImplementation(() => {});
       runner.reconcileOrphanedEngineers([
         {
           id: "0001",
@@ -115,8 +118,10 @@ branch: feat/orphan
         } as any,
       ]);
       expect(runner.isRunning("0001")).toBe(false);
-      expect(notes).toHaveLength(0);
+      expect(stopSpy).toHaveBeenCalledWith(process.pid, process.pid);
+      expect(notes).toEqual([`stopped orphaned engineer pid ${process.pid}`]);
       verifySpy.mockRestore();
+      stopSpy.mockRestore();
       runner.dispose();
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -177,6 +182,7 @@ cli_override: opencode
         agents: [{ name: "engineer", cli: "opencode", model: "default", enabled: true }],
       };
       const runner = new AgentRunner(config as any, () => {});
+      vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockReturnValue(true);
       runner.adoptRunningAgents();
       expect(runner.isRunning("0001")).toBe(true);
       expect(pidAlive(process.pid)).toBe(true);
@@ -197,6 +203,7 @@ cli_override: opencode
       const second = runner.start(task as any, "feat/dup", agent!, { cwd: root });
       expect(second.ok).toBe(false);
       if (!second.ok) expect(second.reason).toMatch(/already running/i);
+      vi.restoreAllMocks();
       runner.dispose();
     } finally {
       rmSync(root, { recursive: true, force: true });
