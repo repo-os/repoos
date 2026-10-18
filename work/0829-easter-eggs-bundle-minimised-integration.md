@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
@@ -283,3 +284,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T12:01:11Z · note: review pass 5: good to go
 - 2026-10-18T12:03:45Z · status review→active
 - 2026-10-18T12:03:45Z · note: close-out repair: merge-conflict
+
