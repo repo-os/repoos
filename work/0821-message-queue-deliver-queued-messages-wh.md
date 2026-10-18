@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0821"
 title: "Message queue: deliver queued messages when a turn ends, persist them, and allow queued sends in every AI chat"
 type: bug
@@ -71,3 +72,4 @@ Start from the queue in src/server/agents.ts (queuedMessages, messageQueuedAt, c
 - 2026-10-18T03:32:09Z · note: review pass 1: good to go
 - 2026-10-18T04:31:44Z · status review→active
 - 2026-10-18T04:31:44Z · note: close-out repair: merge-conflict
+
