@@ -18,6 +18,7 @@ import {
   cmdPause,
   cmdPreview,
   cmdReview,
+  cmdReviewAgain,
   cmdRunners,
   cmdStart,
   cmdStats,
@@ -411,6 +412,54 @@ describe("control API CLI", () => {
     const code = await cmdSync(["--json", "0826"]);
     expect(code).toBe(0);
     expect(JSON.parse(String(log.mock.calls[0]?.[0]))).toEqual({ ok: true, conflicts: [] });
+    log.mockRestore();
+    health.mockRestore();
+    request.mockRestore();
+  });
+
+  it("review again posts to the API and prints success", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
+      status: 200,
+      body: { ok: true, task: { id: "0832", status: "review" } },
+    });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const code = await cmdReviewAgain(["0832"]);
+    expect(code).toBe(0);
+    expect(request).toHaveBeenCalledWith("POST", "/api/tasks/0832/review/again", {});
+    expect(log.mock.calls.map((c) => String(c[0])).join("\n")).toMatch(/review started/i);
+    log.mockRestore();
+    health.mockRestore();
+    request.mockRestore();
+  });
+
+  it("review again renders refusal reasons and exits 1", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
+      status: 409,
+      body: { error: "Task #0832 has an agent turn in progress — wait for it to finish" },
+    });
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const code = await cmdReviewAgain(["0832"]);
+    expect(code).toBe(1);
+    expect(err.mock.calls.map((c) => String(c[0])).join("\n")).toMatch(/agent turn in progress/i);
+    err.mockRestore();
+    health.mockRestore();
+    request.mockRestore();
+  });
+
+  it("review again --json prints refusal body", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
+      status: 400,
+      body: { error: "Only review tasks can be re-reviewed (#0832 is active)" },
+    });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const code = await cmdReviewAgain(["--json", "0832"]);
+    expect(code).toBe(1);
+    const parsed = JSON.parse(String(log.mock.calls[0]?.[0])) as { ok: boolean; error: string };
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error).toMatch(/Only review tasks/i);
     log.mockRestore();
     health.mockRestore();
     request.mockRestore();

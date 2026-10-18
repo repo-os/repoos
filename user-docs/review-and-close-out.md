@@ -68,13 +68,14 @@ The one exception is a `needs some work` whose *only* stated blocker is stale
 handoff evidence (the reviewer marks it `STALE-EVIDENCE-ONLY`): the change is
 fine, only the captures are old, so bouncing the engineer would burn a turn on
 nothing. That task **stays in `review`** — never bounced back to engineering.
-With **Auto-refresh stale review evidence once** enabled (Settings → General),
+**Auto-refresh stale review evidence once** is on by default (Settings → General).
 RepoOS re-captures the evidence at the current HEAD and starts one new review
 automatically, and a capture is attempted at most once per reviewed HEAD so a
 stubborn stale marker cannot loop. With the setting off, or when the automatic
 capture cannot run (a live engineer/reviewer, a dirty worktree, or a moved
 HEAD), it simply waits: use **Refresh evidence** in the Changes tab (or
-`repoos verify <id>`) to re-capture on the current HEAD, then review again.
+`repoos verify <id>`) to re-capture on the current HEAD, then **Review again**
+in the UI or `repoos review again <id>`.
 
 A second exception is **`EVIDENCE-GAP-ONLY`**: the code is acceptable but
 handoff shots or verification are missing or unusable (not stale). The task stays
