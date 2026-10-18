@@ -97,7 +97,9 @@ branch: feat/orphan
           onOrphanEngineerNote: (_id, note) => notes.push(note),
         },
       );
-      const verifySpy = vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockReturnValue(false);
+      const verifySpy = vi
+        .spyOn(orphanEngineers, "verifyRecordedHarnessPid")
+        .mockReturnValue(false);
       runner.reconcileOrphanedEngineers([
         {
           id: "0001",
