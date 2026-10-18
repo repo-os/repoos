@@ -10,8 +10,10 @@ depends_on: ["0660", "0661"]
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T08:29:15Z"
-updated_at: "2026-10-18T16:16:32Z"
+updated_at: "2026-10-18T16:16:34Z"
 ---
 Slice 6: Dry run, resumable upload, verification before local originals released. Migration is safely repeatable.
 
@@ -52,3 +54,4 @@ Slice 6: Dry run, resumable upload, verification before local originals released
 - 2026-10-05T12:05:11Z · needs_input
 - 2026-10-05T12:05:54Z · body
 - 2026-10-18T16:16:32Z · status inbox→ready
+- 2026-10-18T16:16:34Z · cli_override, model_override
