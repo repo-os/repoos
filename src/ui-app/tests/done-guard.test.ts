@@ -22,6 +22,7 @@ import { ensureWorktree } from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
 import { taskAction, getWorktreeDirtyForTask } from "../../server/routes/tasks.js";
 import { engineerSelfCheckCheckpointMessage } from "../../core/engineer-checkpoint-commit.js";
+import { readPostHandoffCheckpointRecovery } from "../../server/post-handoff-checkpoint-recovery.js";
 import { readHandoffSnapshot, writeHandoffSnapshot } from "../../server/worktree-handoff-guard.js";
 import type { RouteContext } from "../../server/routes/types.js";
 import type { Task } from "../../core/types.js";
@@ -116,6 +117,7 @@ function makeCtx(
     onEnqueue?: () => void;
     jobCoordinator?: RouteContext["jobCoordinator"];
     reviews?: RouteContext["reviews"];
+    emitEvent?: RouteContext["emitEvent"];
   } = {},
 ): RouteContext {
   const jobCoordinator =
@@ -135,7 +137,7 @@ function makeCtx(
     cto: {} as any,
     freeformRuns: {} as any,
     repoos: {} as any,
-    emitEvent: () => {},
+    emitEvent: opts.emitEvent ?? (() => {}),
     closeOutLock: {} as any,
     rootLock: {} as any,
     jobCoordinator,
@@ -532,7 +534,9 @@ describe("move-to-done dirty-WORKTREE guard (#0512)", () => {
       writeFileSync(join(wt, "src", "wip-fixture.ts"), "export const w = 1;\n");
       gitIn(wt, "add src/wip-fixture.ts");
       gitIn(wt, `commit -m "${engineerSelfCheckCheckpointMessage("0211")}"`);
+      const headSha = gitIn(wt, "rev-parse HEAD");
       const enqueue = vi.fn();
+      const emitEvent = vi.fn();
       const reviews = {
         isRunning: () => false,
         enabled: () => true,
@@ -545,15 +549,33 @@ describe("move-to-done dirty-WORKTREE guard (#0512)", () => {
         makeCtx(root, reviewTask(root), {
           onEnqueue: enqueue,
           reviews: reviews as any,
+          emitEvent,
         }),
         makeReq(),
         res as any,
         { param1: "0211", param2: "done" },
       );
 
+      // 202 + ok:true — recovery is progress both clients can read as success,
+      // never the 409 "worktree changed after handoff" hard error (#0834).
       expect(res.statusCode).toBe(202);
+      expect(res.body.ok).toBe(true);
       expect(res.body.checkpointRecovery).toBe(true);
+      expect(String(res.body.message ?? "")).toMatch(/checkpoint/i);
       expect(enqueue).not.toHaveBeenCalled();
+      // Not silent: a progress event announces recovery to the board…
+      const progress = emitEvent.mock.calls
+        .map((c) => c[0] as { type?: string; step?: string })
+        .find((e) => e.type === "task.progress" && e.step === "checkpoint-recovery");
+      expect(progress).toBeTruthy();
+      // …and the recovery record keeps the ORIGINAL review tied to the commit
+      // it approved: the delta review diffs from there, not from line one.
+      const rec = readPostHandoffCheckpointRecovery(
+        { root, workDir: "work", cacheDir: ".repoos" } as any,
+        "0211",
+      );
+      expect(rec?.approvedSha).toBe(handoffSha);
+      expect(rec?.headSha).toBe(headSha);
     } finally {
       clean();
     }

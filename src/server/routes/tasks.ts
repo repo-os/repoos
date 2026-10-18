@@ -208,6 +208,14 @@ function withPendingHandoff<T extends { id: string }>(
   return { ...task, pendingHandoff: runner.hasPendingHandoff(task.id) };
 }
 
+/** #0834: whether a post-handoff checkpoint recovery is running for the task. */
+function withCheckpointRecovery<T extends { id: string }>(
+  task: T,
+  config: RepoOSConfig,
+): T & { checkpointRecovery: boolean } {
+  return { ...task, checkpointRecovery: isPostHandoffCheckpointRecoveryActive(config, task.id) };
+}
+
 function isSectionPatch(value: unknown): value is { heading: string; content: string } {
   return (
     typeof value === "object" &&
@@ -233,8 +241,11 @@ export const getTasks: RouteHandler = (ctx, req, res) => {
       blockedBy: taskDependencyBlockers(config.root, task, allTasks),
     }))
     .map((task) =>
-      withPmWorking(
-        withPendingHandoff(withReviewStatus(withPreviewTargets(task, config), reviews), runner),
+      withCheckpointRecovery(
+        withPmWorking(
+          withPendingHandoff(withReviewStatus(withPreviewTargets(task, config), reviews), runner),
+        ),
+        config,
       ),
     );
   return json(res, 200, tasks);
@@ -807,8 +818,11 @@ export const getTask: RouteHandler = (ctx, _req, res, params) => {
   const t = index.getTask(id);
   return t
     ? json(res, 200, {
-        ...withPmWorking(
-          withPendingHandoff(withReviewStatus(withPreviewTargets(t, config), reviews), runner),
+        ...withCheckpointRecovery(
+          withPmWorking(
+            withPendingHandoff(withReviewStatus(withPreviewTargets(t, config), reviews), runner),
+          ),
+          config,
         ),
         blockedBy: taskDependencyBlockers(config.root, t, index.getTasks()),
         preview: previews.get(t.id) ?? null,
@@ -2553,15 +2567,17 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
                 integrity.checkpointOnlyDrift.approvedSha,
                 integrity.checkpointOnlyDrift.headSha,
               );
-              if (!started.ok) {
-                return json(res, 409, { error: started.reason });
-              }
+              // `start` only refuses when recovery is already running — both
+              // cases are a 202: something is already recovering the checkpoint,
+              // never a hard error (#0834).
               return json(res, 202, {
+                ok: true,
                 checkpointRecovery: true,
                 approvedSha: integrity.checkpointOnlyDrift.approvedSha,
                 headSha: integrity.checkpointOnlyDrift.headSha,
-                message:
-                  "Engineer checkpoint commit(s) after handoff — re-running the handoff gate and a delta review before close-out continues.",
+                message: started.ok
+                  ? "Engineer checkpoint commit(s) after handoff — re-running the handoff gate and a delta review before close-out continues."
+                  : "Checkpoint recovery is already running — close-out resumes when the delta review is good to go.",
               });
             }
             return json(res, 409, {

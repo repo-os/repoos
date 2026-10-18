@@ -215,6 +215,31 @@ describe("worktree handoff guard (#0598)", () => {
     }
   });
 
+  it("mixing a checkpoint commit with dirty files still hard-fails (#0834)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/dirty-checkpoint";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "impl.txt"), "ok\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      writeFileSync(join(wt.path, "fixture.txt"), "wip\n");
+      git(wt.path, ["add", "fixture.txt"]);
+      git(wt.path, ["commit", "-m", engineerSelfCheckCheckpointMessage("0834")]);
+      // …and the engineer kept editing after that. The dirty tree is checked
+      // first: mixed drift is never recovery material, only a hard refusal.
+      writeFileSync(join(wt.path, "impl.txt"), "ok\n// sneaky edit\n");
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha, { taskId: "0834" });
+      expect(check.ok).toBe(false);
+      expect(check.checkpointOnlyDrift).toBeUndefined();
+      expect(check.reason).toContain(WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX);
+    } finally {
+      clean();
+    }
+  });
+
   it("still fails when source was renamed into work/*.md (#0600 review)", async () => {
     const { root, clean } = makeRepo();
     try {
