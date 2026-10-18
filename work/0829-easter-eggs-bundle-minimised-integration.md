@@ -3,6 +3,9 @@ id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — E1–E3 look implemented with solid unit/component tests and a careful backfill, but handoff UI evidence is **STALE** (capture tree `e961fc9f7` vs reviewed `ddcf9a91b`) and all three PNGs failed their `waitFor`/click/highlight steps, so the required light/dark median-tooltip and expanded Debug log shots are **not** verified."
 priority: p3
 area: web
 assigned_to: ai
@@ -237,3 +240,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T08:23:39Z · note: waitFor [data-test-id="integration-timer-tip"]: waitFor: Timeout 5000ms exceeded. on /
 - 2026-10-18T08:23:40Z · note: highlight [data-test-id="integration-timer-tip"] matched nothing on /
 - 2026-10-18T08:23:57Z · note: review pass 4: needs some work
+- 2026-10-18T08:23:57Z · needs_input
