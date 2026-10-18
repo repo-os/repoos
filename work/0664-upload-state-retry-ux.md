@@ -14,7 +14,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
 updated_at: "2026-10-18T17:40:24Z"
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-18T17:32:06.903Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 review_rounds: 1
 review_passes: 3
@@ -98,3 +97,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-18T17:22:21Z · message_delivered: 1 message(s)
 - 2026-10-18T17:23:29Z · body
 - 2026-10-18T17:40:24Z · body
+
