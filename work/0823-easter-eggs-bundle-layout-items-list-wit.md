@@ -8,8 +8,10 @@ area: docs
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-18T02:48:44Z"
-updated_at: "2026-10-18T02:57:35Z"
+updated_at: "2026-10-18T02:58:31Z"
 ---
 ## Problem
 Bundle tasks (e.g. #0822 before 2026-10-18) grow ad hoc: the first item takes the standard Problem/Desired UX/Acceptance/Notes headings and later items get free-form sections, so you cannot scan a bundle and list its sub-tasks. Repeated whole-body rewrites also left stale text ("third independent item").
@@ -29,3 +31,4 @@ Docs/template only; no parser or format change. Related: #0722, #0808.
 
 - 2026-10-18T02:48:44Z · created · njachowski@gmail.com
 - 2026-10-18T02:57:35Z · status inbox→ready
+- 2026-10-18T02:58:31Z · cli_override, model_override
