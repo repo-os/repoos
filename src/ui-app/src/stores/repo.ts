@@ -2529,7 +2529,7 @@ export const useRepoStore = defineStore("repo", () => {
       clearStartWorkPendingLocal(id);
       pushToast(
         "Start work is taking longer than expected — refresh the board if the task did not move.",
-        "warning",
+        "info",
       );
     }, START_WORK_PENDING_MAX_MS);
   }
