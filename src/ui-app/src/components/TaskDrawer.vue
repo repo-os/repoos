@@ -4374,6 +4374,7 @@ watch(
                 (ui.active.status === 'ready' || ui.active.status === 'active') &&
                 (ui.active.status === 'ready' || !repo.isRunning(ui.active.id))
               "
+              data-test-id="task-drawer-start-work"
               variant="status"
               :style="{ '--tone': statusColor('active') }"
               :disabled="ui.saving || startingWork"

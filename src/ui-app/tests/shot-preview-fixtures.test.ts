@@ -4,6 +4,7 @@ import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../core/shot-fixtures.js";
 import {
   applyShotPreviewConfigFixture,
   applyShotPreviewFixture,
+  isShotPreviewConfigFixture,
   readShotPreviewFixtureFromLocation,
   shotFixturePinnedIntegration,
 } from "../src/lib/shot-preview-fixtures";
@@ -37,6 +38,12 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(
       (config.data?.dev as { inspector?: { editorCommand?: string } }).inspector?.editorCommand,
     ).toBe("");
+  });
+
+  it("classifies config-touching shot fixtures (#0822)", () => {
+    expect(isShotPreviewConfigFixture("settings:birdQuickTrail")).toBe(true);
+    expect(isShotPreviewConfigFixture("editor:unconfigured")).toBe(true);
+    expect(isShotPreviewConfigFixture("board:startWorkPending")).toBe(false);
   });
 
   it("seeds bird quick trail on the settings form (#0822)", () => {
