@@ -1199,9 +1199,7 @@ async function startWork(): Promise<void> {
   await startWorkIn(task, overrideDependencies);
 }
 
-const startingWork = computed(() =>
-  ui.active ? repo.isStartWorkPending(ui.active.id) : false,
-);
+const startingWork = computed(() => (ui.active ? repo.isStartWorkPending(ui.active.id) : false));
 
 async function startWorkIn(t: Task, overrideDependencies = false): Promise<void> {
   if (repo.isStartWorkPending(t.id)) return;

@@ -1268,13 +1268,7 @@ async function openDebuggerFromError(): Promise<void> {
         @click.stop="runAction"
       >
         <ActivityIndicator v-if="startWorkPending && task.status === 'ready'" label="Starting…" />
-        <svg
-          v-else
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          fill="none"
-          class="size-4"
-        >
+        <svg v-else aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
           <path
             :d="action.icon"
             stroke="currentColor"
