@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-18T19:31:53Z"
-review_passes: 1
 id: "0093"
 title: Add recurring and scheduled tasks to the Agents page
 type: feature
-status: review
+status: active
 priority: p2
 area: agent
 assigned_to: ai
@@ -13,6 +11,9 @@ branch: feat/add-recurring-and-scheduled-tasks-to-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-08-11T14:22:06Z"
+updated_at: "2026-10-18T19:31:53Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -127,4 +128,4 @@ dependency constraint.
 - 2026-10-18T19:23:01Z · body
 - 2026-10-18T19:30:49Z · status active→review
 - 2026-10-18T19:31:53Z · note: review pass 1: needs some work
-
+- 2026-10-18T19:31:53Z · status review→active
