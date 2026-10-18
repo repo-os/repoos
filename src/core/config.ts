@@ -196,6 +196,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   docsDir: "docs",
   skillsDir: "skills",
   inputsDir: "inputs",
+  schedulesDir: "schedules",
   storiesDir: "stories",
   taskExtensions: [".md"],
   defaultStatus: "inbox",
@@ -1157,6 +1158,11 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     const inputsDirRaw = get("inputsDir");
     if (inputsDirRaw !== undefined) {
       cfg.inputsDir = normalizeRelativeDir(inputsDirRaw, "inputsDir") ?? DEFAULT_CONFIG.inputsDir;
+    }
+    const schedulesDirRaw = get("schedulesDir");
+    if (schedulesDirRaw !== undefined) {
+      cfg.schedulesDir =
+        normalizeRelativeDir(schedulesDirRaw, "schedulesDir") ?? DEFAULT_CONFIG.schedulesDir;
     }
     const storiesDirRaw = get("storiesDir");
     if (storiesDirRaw !== undefined) {

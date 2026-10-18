@@ -138,6 +138,7 @@ import {
   resolveRemoteHosts,
 } from "../core/remote-hosts.js";
 import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
+import { runScheduleTick } from "./schedule-runner.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { AutoEngineeringOrchestrator } from "./auto-engineering.js";
 import { WorkWatcher } from "./watcher.js";
@@ -318,6 +319,12 @@ import {
   deleteInput,
   uploadInputAttachment,
   getInputAttachment,
+  getSchedules,
+  postSchedule,
+  patchSchedule,
+  deleteSchedule,
+  postScheduleRun,
+  postSchedulePreview,
   getStoryDefinitions,
   createFreeformStory,
   createStoryDefinition,
@@ -2439,6 +2446,22 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   }, BUILT_IN_CHECK_INTERVAL_MS);
 
+  const SCHEDULE_CHECK_INTERVAL_MS = 60_000;
+  const scheduleTimer = setInterval(() => {
+    runScheduleTick({
+      config: repoos.config,
+      repoos,
+      emitEvent: (event) => emitEvent(event),
+    });
+  }, SCHEDULE_CHECK_INTERVAL_MS);
+  void indexReady.then(() => {
+    runScheduleTick({
+      config: repoos.config,
+      repoos,
+      emitEvent: (event) => emitEvent(event),
+    });
+  });
+
   // Periodic worktree dirty-status sweep. Task mutations already refresh a
   // task's worktree status via refreshBranches(); this catches the gap where a
   // worktree goes dirty (or clean) with no task activity at all, and keeps the
@@ -2920,6 +2943,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/docs/freeform", createFreeformDoc);
   router.register("GET", "/api/inputs", getInputs);
   router.register("POST", "/api/inputs", postInput);
+  router.register("GET", "/api/schedules", getSchedules);
+  router.register("POST", "/api/schedules", postSchedule);
+  router.register("POST", "/api/schedules/preview", postSchedulePreview);
+  router.register("PATCH", /^\/api\/schedules\/([^/]+)$/, patchSchedule);
+  router.register("DELETE", /^\/api\/schedules\/([^/]+)$/, deleteSchedule);
+  router.register("POST", /^\/api\/schedules\/([^/]+)\/run$/, postScheduleRun);
   router.register("PATCH", /^\/api\/inputs\/([^/]+)$/, patchInput);
   router.register("DELETE", /^\/api\/inputs\/([^/]+)$/, deleteInput);
   router.register("POST", /^\/api\/inputs\/([^/]+)\/resolve$/, postResolveInput);

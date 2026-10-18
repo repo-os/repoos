@@ -1421,6 +1421,20 @@ export const useRepoStore = defineStore("repo", () => {
       void useNoticesStore().pollAttention();
       return;
     }
+    if (e.type === "schedule.changed") {
+      void refreshSchedules();
+      return;
+    }
+    if (e.type === "schedule.run") {
+      void refreshSchedules();
+      if (e.ok && e.taskId) {
+        pushToast(`Scheduled task created #${e.taskId}`, "info");
+        void refresh();
+      } else if (!e.ok) {
+        pushToast(e.error ?? "Scheduled run failed", "error");
+      }
+      return;
+    }
     if (e.type === "built-in.run") {
       // A built-in agent finished (0439). Scheduled runs are otherwise
       // invisible, so this toast is the only signal the human gets — and it
@@ -2196,6 +2210,8 @@ export const useRepoStore = defineStore("repo", () => {
       "hello",
       "index.rebuilt",
       "input.enriched",
+      "schedule.changed",
+      "schedule.run",
       "task.created",
       "task.updated",
       "task.deleted",
@@ -3522,6 +3538,7 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   const inputs = ref<Input[]>([]);
+  const schedules = ref<import("../../../core/schedule.js").TaskSchedule[]>([]);
 
   /**
    * Inputs created in this tab whose background PM enrichment has not landed
@@ -3581,6 +3598,52 @@ export const useRepoStore = defineStore("repo", () => {
       }
       if (row.enriching === false) markEnriched(id);
     }
+  }
+
+  async function refreshSchedules(): Promise<void> {
+    try {
+      schedules.value = await api<import("../../../core/schedule.js").TaskSchedule[]>("/api/schedules");
+    } catch {
+      /* keep existing */
+    }
+  }
+
+  async function createSchedule(
+    body: Record<string, unknown>,
+  ): Promise<import("../../../core/schedule.js").TaskSchedule> {
+    const created = await api<import("../../../core/schedule.js").TaskSchedule>(
+      "/api/schedules",
+      JSON_OPTS("POST", body),
+    );
+    schedules.value = [...schedules.value.filter((s) => s.id !== created.id), created].sort((a, b) =>
+      a.id.localeCompare(b.id),
+    );
+    return created;
+  }
+
+  async function patchSchedule(
+    id: string,
+    body: Record<string, unknown>,
+  ): Promise<import("../../../core/schedule.js").TaskSchedule> {
+    const updated = await api<import("../../../core/schedule.js").TaskSchedule>(
+      `/api/schedules/${id}`,
+      JSON_OPTS("PATCH", body),
+    );
+    const idx = schedules.value.findIndex((s) => s.id === id);
+    if (idx >= 0) schedules.value[idx] = updated;
+    else schedules.value.push(updated);
+    return updated;
+  }
+
+  async function deleteSchedule(id: string): Promise<void> {
+    await api(`/api/schedules/${id}`, { method: "DELETE" });
+    schedules.value = schedules.value.filter((s) => s.id !== id);
+  }
+
+  async function runSchedule(id: string): Promise<void> {
+    await api(`/api/schedules/${id}/run`, JSON_OPTS("POST", { manual: true }));
+    await refreshSchedules();
+    await refresh();
   }
 
   async function refreshInputs(): Promise<void> {
@@ -3964,6 +4027,12 @@ export const useRepoStore = defineStore("repo", () => {
     deleteTask,
     createDocument,
     inputs,
+    schedules,
+    refreshSchedules,
+    createSchedule,
+    patchSchedule,
+    deleteSchedule,
+    runSchedule,
     enrichingInputs,
     isEnriching: (id: string) => enrichingInputs.has(id),
     /** Exposed for tests (and potential cross-store use): apply a server event. */
