@@ -14,8 +14,10 @@ import ChatAgentModelChip from "./ChatAgentModelChip.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import ChatSendButton from "./ChatSendButton.vue";
+import ChatQueuedNotice from "./ChatQueuedNotice.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
+import { useQueuedSend } from "../composables/useQueuedSend";
 import { useRossChatAgent, CHAT_AGENT_MEMORY_KEYS } from "../composables/useChatAgentModel";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import { insertTextAtCursor } from "../utils/text-insertion";
@@ -67,6 +69,8 @@ const enabled = computed(() => agent.value?.enabled ?? hydratedEnabled.value);
 const busy = computed(() => submitting.value || repo.runningIds.includes(CHAT_ID));
 const lines = computed(() => repo.outputs[CHAT_ID] ?? []);
 const hasConversation = computed(() => lines.value.length > 0);
+/** True while a Ross message queued during a turn waits to be read (#0821). */
+const { queued, markQueued } = useQueuedSend(() => repo.runningIds.includes(CHAT_ID));
 
 // Chat scroll standard (#0444): open on the newest message, remember where the
 // reader was, and offer a jump back down once they scroll away.
@@ -100,7 +104,7 @@ async function hydrate(): Promise<void> {
 
 async function send(): Promise<void> {
   const text = draft.value.trim();
-  if (!text || busy.value || !enabled.value) return;
+  if (!text || !enabled.value) return;
   submitting.value = true;
   const optimistic: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
   const optimisticIndex = lines.value.length;
@@ -108,7 +112,11 @@ async function send(): Promise<void> {
   draft.value = "";
   scrollToLatest("auto");
   try {
-    await api("/api/chat/message", JSON_OPTS("POST", { text }));
+    const res = await api<{ ok: boolean; queued?: boolean }>(
+      "/api/chat/message",
+      JSON_OPTS("POST", { text }),
+    );
+    if (res.queued) markQueued();
   } catch (error) {
     repo.outputs[CHAT_ID] = (repo.outputs[CHAT_ID] ?? []).filter(
       (_entry, index) => index !== optimisticIndex,
@@ -265,6 +273,7 @@ watch(
       </button>
     </div>
 
+    <ChatQueuedNotice :active="queued" />
     <form class="ai-chat-compose" @submit.prevent="send">
       <textarea
         ref="draftTextarea"
@@ -289,7 +298,9 @@ watch(
           <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
         </svg>
       </button>
-      <ChatSendButton v-else :disabled="!draft.trim() || busy || !enabled" />
+      <!-- Send stays usable while busy (#0821): the message is queued and read
+           when the current turn ends. -->
+      <ChatSendButton :disabled="!draft.trim() || !enabled" />
     </form>
   </FloatingHeadPanel>
 </template>
