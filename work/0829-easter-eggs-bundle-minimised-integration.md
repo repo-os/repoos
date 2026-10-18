@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T06:18:17Z"
+updated_at: "2026-10-18T06:18:23Z"
 ---
 ## Items
 
@@ -64,6 +64,9 @@ E1: only the median popup, centered, in the minimised pill. E2: an accurate run 
 ## Acceptance criteria
 See each item's Acceptance criteria (E1, E2); both must hold.
 
+## Notes for AI
+Items are independent; never touch repoos.toml; edit per-item notes in the E1/E2 sections.
+
 ## Activity
 
 - 2026-10-18T06:17:45Z · created · njachowski@gmail.com
@@ -71,3 +74,4 @@ See each item's Acceptance criteria (E1, E2); both must hold.
 - 2026-10-18T06:18:02Z · body: Problem (added)
 - 2026-10-18T06:18:10Z · body: Desired UX (added)
 - 2026-10-18T06:18:17Z · body: Acceptance criteria (added)
+- 2026-10-18T06:18:23Z · body: Notes for AI (added)
