@@ -12,7 +12,7 @@ branch: feat/review-evidence-only-gaps-shots-must-not
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:30Z"
-updated_at: "2026-10-18T08:50:09Z"
+updated_at: "2026-10-18T09:04:34Z"
 last_close_out_gate_ms: 80216
 last_close_out_gate_at: "2026-10-18T08:49:32.952Z"
 review_passes: 1
@@ -49,3 +49,4 @@ Design-heavy: write the decision into docs before coding; keep the reviewer prom
 - 2026-10-18T08:48:10Z · close-out gate completed in 87s
 - 2026-10-18T08:49:32Z · close-out gate completed in 80s
 - 2026-10-18T08:50:09Z · status review→done, release:success
+- 2026-10-18T09:04:34Z · body
