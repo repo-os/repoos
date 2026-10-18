@@ -130,6 +130,54 @@ branch: feat/orphan
 });
 
 describe("AgentRunner orphan reconcile (#0837)", () => {
+  it("records adopted note when adoptRunningAgents re-attaches a verified engineer", async () => {
+    const { AgentRunner } = await import("../../server/agents.js");
+    const root = mkdtempSync(join(tmpdir(), "repoos-orphan-adopt-note-"));
+    try {
+      const cacheDir = ".repoos";
+      const fullCacheDir = join(root, cacheDir);
+      mkdirSync(join(fullCacheDir, "agent-logs"), { recursive: true });
+      writeFileSync(
+        join(fullCacheDir, "agents.json"),
+        JSON.stringify({
+          entries: [
+            {
+              taskId: "0001",
+              pid: process.pid,
+              workdir: root,
+              branch: "feat/reload-adopt",
+              runId: "run-reload",
+              kind: "engineer",
+            },
+          ],
+        }),
+      );
+      const notes: string[] = [];
+      const runner = new AgentRunner(
+        {
+          root,
+          workDir: "work",
+          docsDir: "docs",
+          skillsDir: "skills",
+          taskExtensions: [".md"],
+          defaultStatus: "inbox" as const,
+          defaultAssignee: "unassigned" as const,
+          cacheDir,
+        } as any,
+        () => {},
+        { onOrphanEngineerNote: (_id, note) => notes.push(note) },
+      );
+      vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockReturnValue(true);
+      runner.adoptRunningAgents();
+      expect(runner.isRunning("0001")).toBe(true);
+      expect(notes).toEqual([`adopted orphaned engineer pid ${process.pid}`]);
+      vi.restoreAllMocks();
+      runner.dispose();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("does not start a replacement while a recorded engineer PID is still alive", async () => {
     const { AgentRunner, resolveAgentForTask } = await import("../../server/agents.js");
     const root = mkdtempSync(join(tmpdir(), "repoos-orphan-no-dup-"));
