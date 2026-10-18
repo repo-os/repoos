@@ -10,6 +10,7 @@ import { createPinia, setActivePinia } from "pinia";
 import ActivityIndicator from "../src/components/ActivityIndicator.vue";
 import { useConfigStore } from "../src/stores/config";
 import {
+  ACTIVITY_ANIMATION_ART_STYLES,
   ACTIVITY_ANIMATION_SIZES,
   ACTIVITY_ANIMATION_STYLES,
   ACTIVITY_ANIMATION_STYLE_SLOT,
@@ -80,6 +81,23 @@ describe("ActivityIndicator (#0787)", () => {
       } else {
         expect(wrapper.find(`.ai-style-${style}`).exists()).toBe(true);
       }
+      wrapper.unmount();
+    }
+  });
+
+  it("renders a square multicolor SVG mark for each #0833 artwork style", () => {
+    const subjects: Record<string, string> = {
+      "rgb-keystorm": ".ai-key",
+      "wheelie-courier": ".ai-wheel-spokes",
+      "boo-swoop": ".ai-ghost-bank",
+      "pumpkin-spell": ".ai-pumpkin-bounce",
+    };
+    for (const style of ACTIVITY_ANIMATION_ART_STYLES) {
+      const wrapper = mountIndicator({ animationStyle: style });
+      expect(wrapper.find(`.ai-style-${style}`).exists(), style).toBe(true);
+      expect(wrapper.find(".ai-mark.ai-art").exists(), style).toBe(true);
+      expect(wrapper.find("svg.ai-art-svg").exists(), style).toBe(true);
+      expect(wrapper.find(subjects[style]!).exists(), style).toBe(true);
       wrapper.unmount();
     }
   });

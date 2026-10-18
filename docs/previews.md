@@ -370,6 +370,11 @@ fixture the preview applies before capture (preview builds only, via
   `#9999`
 - `settings:birdQuickTrail` — Settings activity-animation preview seeded to
   **Bird quick trail** (#0822)
+- `settings:rgbKeystorm` — Settings activity-animation preview seeded to
+  **RGB keystorm** (#0833)
+- `settings:wheelieCourier` — seeded to **Wheelie courier** (#0833)
+- `settings:booSwoop` — seeded to **Boo swoop** (#0833)
+- `settings:pumpkinSpell` — seeded to **Pumpkin spell** (#0833)
 - `board:withReviewTask` — board shows a review-column fixture card
 - `board:cardChips` — multi-area human-assigned card with seeded diff stats,
   so the area, human and file chips all render (#0776, #0795)

@@ -7,6 +7,7 @@ import {
   type ShotPreviewFixtureId,
   isShotPreviewFixtureId,
 } from "../../../core/shot-fixtures.js";
+import type { ActivityAnimationStyle } from "../../../core/activity-animation.js";
 import type { useConfigStore } from "../stores/config";
 import type { useRepoStore } from "../stores/repo";
 import { useNoticesStore } from "../stores/notices";
@@ -649,9 +650,22 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
  * dev-inspector override, so `editorConfigured` is false on every surface that
  * shows the hint (TaskDrawer Spec row, Context doc viewer, failed-tests list).
  */
+/**
+ * Settings activity-animation preview fixtures → the style they seed. One entry
+ * per style worth capturing; the Settings select and its live preview then show
+ * that artwork on the shot.
+ */
+const SETTINGS_FIXTURE_STYLE: Partial<Record<ShotPreviewFixtureId, ActivityAnimationStyle>> = {
+  "settings:birdQuickTrail": "bird-quick-trail",
+  "settings:rgbKeystorm": "rgb-keystorm",
+  "settings:wheelieCourier": "wheelie-courier",
+  "settings:booSwoop": "boo-swoop",
+  "settings:pumpkinSpell": "pumpkin-spell",
+};
+
 /** Config-only shot fixtures (applied after `/api/config` loads, #0805). */
 export function isShotPreviewConfigFixture(fixture: ShotPreviewFixtureId): boolean {
-  return fixture === "editor:unconfigured" || fixture === "settings:birdQuickTrail";
+  return fixture === "editor:unconfigured" || fixture in SETTINGS_FIXTURE_STYLE;
 }
 
 export function applyShotPreviewConfigFixture(
@@ -667,9 +681,10 @@ export function applyShotPreviewConfigFixture(
     if (dev?.inspector) dev.inspector.editorCommand = "";
     return;
   }
-  if (fixture === "settings:birdQuickTrail") {
-    config.form.activityAnimationStyle = "bird-quick-trail";
-    if (config.data) config.data.activityAnimationStyle = "bird-quick-trail";
+  const style = SETTINGS_FIXTURE_STYLE[fixture];
+  if (style) {
+    config.form.activityAnimationStyle = style;
+    if (config.data) config.data.activityAnimationStyle = style;
     config.notifyExternalFormUpdate();
   }
 }
