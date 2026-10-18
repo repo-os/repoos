@@ -3,6 +3,12 @@ id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
+debug_tldr: The OpenCode engineer process died mid-turn during a background vitest run—not a failed gate; resume the task and hand off if the branch is still clean.
+debug_tldr_at: "2026-10-18T14:13:13Z"
+debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p2
 area: core
 assigned_to: ai
@@ -10,11 +16,11 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T14:01:15Z"
+updated_at: "2026-10-18T14:13:13Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/review-override.test.ts > review completion > reports the reviewer selected for the turn, not the global default on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 90dd570de19d07048a020e9fc550ae7b969589fb
 handoff_signal_retry_count: 1
-dev_error_count: 5
+dev_error_count: 6
 ---
 ## Problem
 Move to done refuses with "worktree changed after handoff: HEAD is X but handoff recorded Y" whenever the branch HEAD moves after handoff, and the only recovery is a person: discard the edits or send the task back to the engineer (seen on #0832, 2026-10-18). The guard is right in principle (close-out must merge only the reviewed commit; incident #0594), but the common cause is benign: the engineer's own WIP self-check checkpoint commit (a few fixture/test files) landing after the review passed, and the task then sits in review with no engineer and no signal.
@@ -72,3 +78,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T13:32:42Z · message_delivered: 2 message(s)
 - 2026-10-18T13:39:21Z · body
 - 2026-10-18T14:01:15Z · body
+- 2026-10-18T14:12:43Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
