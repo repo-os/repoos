@@ -89,7 +89,7 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "highlight": ".activity-animation-preview .ai-style-bird-quick-trail",
 "steps": [
 {
-  "waitFor": ".activity-animation-preview .ai-style-bird-quick-trail"
+"waitFor": ".activity-animation-preview .ai-style-bird-quick-trail"
 }
 ],
 "state": "settings:birdQuickTrail"
@@ -101,7 +101,7 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 }
 ],
 "state": "board:startWorkPending",
@@ -114,7 +114,7 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 }
 ],
 "state": "board:startWorkPending",
@@ -127,7 +127,7 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "highlight": "[data-test-id=\"task-drawer-start-work\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
+"waitFor": "[data-test-id=\"task-drawer-start-work\"]"
 }
 ],
 "state": "drawer:startWorkPending",
@@ -140,7 +140,7 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "highlight": "[data-test-id=\"task-drawer-start-work\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
+"waitFor": "[data-test-id=\"task-drawer-start-work\"]"
 }
 ],
 "state": "drawer:startWorkPending",
