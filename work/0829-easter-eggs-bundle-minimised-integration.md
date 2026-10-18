@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-integration-pill-tool
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T11:45:32Z"
+updated_at: "2026-10-18T12:00:12Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 7d0b1d7bd240565ff2b14320d6842f4efebc24fc
 last_check_failure: "repoos check at 2026-10-18T08:29:42.192Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from ddcf9a91 to ae4f932f) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -99,13 +99,13 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
 {
-  "waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
+"waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
 },
 {
-  "click": ".ibar-strip [data-test-id=\"integration-timer\"]"
+"click": ".ibar-strip [data-test-id=\"integration-timer\"]"
 },
 {
-  "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+"waitFor": "[data-test-id=\"integration-timer-tip\"]"
 }
 ],
 "state": "integration:median15",
@@ -118,13 +118,13 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
 {
-  "waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
+"waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
 },
 {
-  "click": ".ibar-strip [data-test-id=\"integration-timer\"]"
+"click": ".ibar-strip [data-test-id=\"integration-timer\"]"
 },
 {
-  "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+"waitFor": "[data-test-id=\"integration-timer-tip\"]"
 }
 ],
 "state": "integration:median15",
@@ -137,13 +137,13 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "highlight": ".debug-event-message",
 "steps": [
 {
-  "waitFor": "[data-debug-event*=\"main advanced\"]"
+"waitFor": "[data-debug-event*=\"main advanced\"]"
 },
 {
-  "click": "[data-debug-event*=\"main advanced\"]"
+"click": "[data-debug-event*=\"main advanced\"]"
 },
 {
-  "waitFor": ".debug-event-message"
+"waitFor": ".debug-event-message"
 }
 ],
 "state": "drawer:debugLogs",
@@ -156,13 +156,13 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "highlight": ".debug-event-message",
 "steps": [
 {
-  "waitFor": "[data-debug-event*=\"main advanced\"]"
+"waitFor": "[data-debug-event*=\"main advanced\"]"
 },
 {
-  "click": "[data-debug-event*=\"main advanced\"]"
+"click": "[data-debug-event*=\"main advanced\"]"
 },
 {
-  "waitFor": ".debug-event-message"
+"waitFor": ".debug-event-message"
 }
 ],
 "state": "drawer:debugLogs",
@@ -280,3 +280,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T11:35:32Z · needs_input
 - 2026-10-18T11:43:12Z · body
 - 2026-10-18T11:45:32Z · body
+- 2026-10-18T12:00:12Z · note: shots: skipped — 26 shots already captured — an engineer-made capture pre-empts the automatic one
