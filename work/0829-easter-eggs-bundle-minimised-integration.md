@@ -2,14 +2,14 @@
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
-status: review
+status: inbox
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-integration-pill-tool
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T13:08:20Z"
+updated_at: "2026-10-18T13:08:21Z"
 last_close_out_gate_ms: 350052
 last_close_out_gate_at: "2026-10-18T13:08:19.214Z"
 review_passes: 7
