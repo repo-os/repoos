@@ -77,8 +77,10 @@ import ChatJumpToLatest from "./ChatJumpToLatest.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import ChatSendButton from "./ChatSendButton.vue";
+import ChatQueuedNotice from "./ChatQueuedNotice.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
+import { useQueuedSend } from "../composables/useQueuedSend";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import { confirmDependencyOverride } from "../lib/task-dependencies";
 import DependencyChip from "./DependencyChip.vue";
@@ -2796,6 +2798,11 @@ const pmLines = computed(() => {
 const pmBusy = computed(
   () => pmSubmitting.value || (ui.active && repo.runningIds.includes(pmSessionId(ui.active.id))),
 );
+/** True while a PM message queued during a turn waits to be read (#0821). */
+const pmAgentRunning = computed(
+  () => !!(ui.active && repo.runningIds.includes(pmSessionId(ui.active.id))),
+);
+const { queued: pmQueued, markQueued: markPmQueued } = useQueuedSend(() => pmAgentRunning.value);
 
 // The PM chat's scroll, transcript grouping, compose box, Enter-to-send,
 // auto-grow and canned-prompt behaviour all live in <PmChatSurface> (#0515) —
@@ -2836,7 +2843,7 @@ function pmOpenQuestionsForActive(): string[] {
 
 async function pmSend(): Promise<void> {
   const text = pmDraft.value.trim();
-  if (!text || pmBusy.value || !pmAgentEnabled.value || !ui.active) return;
+  if (!text || !pmAgentEnabled.value || !ui.active) return;
 
   const sendTaskId = ui.active.id;
   pmSubmitting.value = true;
@@ -2862,7 +2869,7 @@ async function pmSend(): Promise<void> {
   // bottom (they just typed). Same rule every other chat follows.
 
   try {
-    await api(
+    const res = await api<{ ok: boolean; queued?: boolean }>(
       `/api/tasks/${sendTaskId}/pm/message`,
       JSON_OPTS("POST", {
         text,
@@ -2873,6 +2880,7 @@ async function pmSend(): Promise<void> {
         images: shots.length ? shots : undefined,
       }),
     );
+    if (res.queued) markPmQueued();
     ui.clearPmScreenshots();
   } catch (error) {
     repo.outputs[sessionId] = (repo.outputs[sessionId] ?? []).filter(
@@ -3170,6 +3178,10 @@ const agentBusy = computed(
     !!ui.active &&
     (ui.active.status === "active" || ui.active.status === "review") &&
     repo.isRunning(ui.active.id),
+);
+/** True while a task follow-up queued during a turn waits to be read (#0821). */
+const { queued: taskMsgQueued, markQueued: markTaskMsgQueued } = useQueuedSend(
+  () => agentBusy.value,
 );
 
 // ---- live run stats: time / tokens / cost / stall (0080) ----
@@ -3535,7 +3547,7 @@ function openFullDiff(file?: DiffFile): void {
 async function sendTurn(): Promise<void> {
   if (!ui.active) return;
   const text = draftMsg.value.trim();
-  if (!text || agentBusy.value) return;
+  if (!text) return;
   // Optimistically render the human message so it appears instantly, in the
   // correct chronological position, without waiting for the server round-trip.
   const prev = repo.outputs[ui.active.id] ?? [];
@@ -3545,7 +3557,10 @@ async function sendTurn(): Promise<void> {
   nextTick(() => scrollToBottom());
   ui.saving = true;
   try {
-    await repo.sendMessage(ui.active.id, text);
+    const res = await repo.sendMessage(ui.active.id, text);
+    // A send during a running turn is queued and read when that turn ends
+    // (#0821) — surface it rather than leaving the human guessing.
+    if (res.queued) markTaskMsgQueued();
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -5305,6 +5320,7 @@ watch(
               Latest
             </button>
           </div>
+          <ChatQueuedNotice :active="taskMsgQueued" />
           <form class="ai-chat-compose agent-compose" @submit.prevent="sendTurn">
             <textarea
               ref="draftMsgTextarea"
@@ -5312,12 +5328,12 @@ watch(
               rows="1"
               placeholder="Send a follow-up to the task's agent session…"
               aria-label="Follow up with the task's agent"
-              :disabled="agentBusy || ui.saving"
+              :disabled="ui.saving"
               @keydown.enter.exact.prevent="sendTurn"
               @input="adjustDraftMsgHeight"
             ></textarea>
-            <VoiceDictate :disabled="agentBusy || ui.saving" @transcribed="onDraftMsgTranscribed" />
-            <ChatSendButton :disabled="agentBusy || ui.saving || !draftMsg.trim()" />
+            <VoiceDictate :disabled="ui.saving" @transcribed="onDraftMsgTranscribed" />
+            <ChatSendButton :disabled="ui.saving || !draftMsg.trim()" />
           </form>
         </div>
         <div v-else-if="ui.activeTab === 'review'" class="drawer-body drawer-session-body">
@@ -6198,6 +6214,7 @@ watch(
             :canned="pmCannedMessages"
             :open-questions="pmOpenQuestionsForActive()"
             :shots="ui.pmScreenshots"
+            :queued="pmQueued"
             @send="pmSend"
             @interrupt="pmInterrupt"
             @attach="onPmShotFiles"
