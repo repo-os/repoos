@@ -3135,14 +3135,16 @@ export const ctoMessage: RouteHandler = async (ctx, req, res) => {
   if (!text) {
     return json(res, 400, { error: "message text is required" });
   }
-  if (cto.isRunning()) {
-    return json(res, 409, { error: "a CTO run is already in progress" });
-  }
   if (!cto.enabled()) {
     return json(res, 400, { error: "the CTO agent is disabled" });
   }
-  void cto.send(text);
-  return json(res, 200, { ok: true });
+  // A message sent while a run is in progress is queued (#0821) and delivered
+  // when the run finishes, rather than refused.
+  const result = cto.send(text);
+  if (!result.ok) {
+    return json(res, 400, { error: result.reason ?? "could not send message to the CTO" });
+  }
+  return json(res, 200, { ok: true, queued: Boolean(result.queued) });
 };
 
 /** Interrupt a running CTO response. Idempotent. */
@@ -3430,7 +3432,11 @@ ${existing.body || "(no description)"}`;
   markPmChatSession(pmSessionId, id);
   emitEvent({ type: "task.pmWorking", id, at: new Date().toISOString() });
 
-  return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });
+  return json(res, 200, {
+    ok: true,
+    queued: Boolean(result.queued),
+    spawn: { ok: true, pid: result.pid },
+  });
 };
 
 /**

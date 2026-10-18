@@ -9,10 +9,10 @@ export const runningAgents: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, { tasks: runner.running() });
 };
 
-/** Tasks/chats waiting for a free maxConcurrentAgents slot — reconciliation source alongside the agent.queued/agent.dequeued SSE events. */
+/** Tasks/chats waiting for a free maxConcurrentAgents slot — reconciliation source alongside the agent.queued/agent.dequeued SSE events. Also carries messages queued while an agent was busy (#0821), so the UI can flag them. */
 export const queuedAgents: RouteHandler = (ctx, _req, res) => {
   const { runner } = ctx;
-  return json(res, 200, { tasks: runner.queued() });
+  return json(res, 200, { tasks: runner.queued(), messages: runner.queuedMessageSummary() });
 };
 
 /**

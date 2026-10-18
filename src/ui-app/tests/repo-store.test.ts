@@ -834,14 +834,16 @@ describe("agent output transcript", () => {
   it("sendMessage posts the follow-up text", async () => {
     const repo = useRepoStore();
     await repo.init();
-    await expect(repo.sendMessage("0001", "keep going")).resolves.toBeUndefined();
+    // Returns whether the server queued the send (busy agent), for the UI's
+    // "Queued — will be read when the current turn ends" state (#0821).
+    await expect(repo.sendMessage("0001", "keep going")).resolves.toEqual({ queued: false });
     const call = vi.mocked(fetch).mock.calls.find((c) => String(c[0]).includes("/message"));
     expect(call).toBeTruthy();
     const opts = call![1] as RequestInit;
     expect(JSON.parse(opts.body as string)).toEqual({ text: "keep going" });
   });
 
-  it("sendMessage throws when the turn is busy", async () => {
+  it("sendMessage surfaces a server error", async () => {
     const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes("/api/health"))
@@ -856,13 +858,13 @@ describe("agent output transcript", () => {
       if (url.includes("/api/board") || url.includes("/api/index"))
         return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
-      if (url.includes("/message")) return json({ ok: false, reason: "busy" });
+      if (url.includes("/message")) return json({ ok: false, reason: "could not send message" });
       throw new Error("unexpected fetch: " + url);
     });
     vi.stubGlobal("fetch", fetchMock);
     const repo = useRepoStore();
     await repo.init();
-    await expect(repo.sendMessage("0001", "go")).rejects.toThrow("busy");
+    await expect(repo.sendMessage("0001", "go")).rejects.toThrow("could not send message");
   });
 });
 

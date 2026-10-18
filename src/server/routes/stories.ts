@@ -363,7 +363,11 @@ export const pmStoryMessage: RouteHandler = async (ctx, req, res, params) => {
   if (story.path) markStoryPmChat(sessionId, story.path);
   emitEvent({ type: "story.definitionsChanged", at: new Date().toISOString() });
 
-  return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });
+  return json(res, 200, {
+    ok: true,
+    queued: Boolean(result.queued),
+    spawn: { ok: true, pid: result.pid },
+  });
 };
 
 /**

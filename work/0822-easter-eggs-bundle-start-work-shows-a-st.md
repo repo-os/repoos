@@ -1,10 +1,9 @@
 ---
-updated_at: "2026-10-18T05:40:09Z"
-review_passes: 5
+close_out_repair_count: 2
 id: "0822"
 title: "Easter eggs bundle: Start work pending state, and Bird quick trail animation"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +12,8 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-close_out_repair_count: 1
+updated_at: "2026-10-18T05:50:00Z"
+review_passes: 4
 review_rounds: 2
 ---
 ## Items
@@ -86,11 +86,14 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 {
 "label": "Bird quick trail activity animation preview",
 "target": "default",
-"route": "/settings?tab=general",
-"highlight": ".activity-animation-preview .ai-style-bird-quick-trail",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": ".activity-animation-preview .ai-bird-quick",
 "steps": [
 {
 "waitFor": ".activity-animation-preview .ai-style-bird-quick-trail"
+},
+{
+"waitMs": 400
 }
 ],
 "state": "settings:birdQuickTrail"
@@ -150,6 +153,18 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 ]
 ```
 
+## Problem
+Bundle of two small, independent web items (E1 Start work pending state; E2 Bird quick trail animation). Per-item detail is under Items and the E1/E2 sections below.
+
+## Desired UX
+E1: Start work shows a Starting… state and cannot be clicked twice. E2: Bird quick trail is a selectable Activity animation. Full UX per item is in the E1 and E2 sections.
+
+## Acceptance criteria
+See each item's Acceptance criteria (E1, E2). Both must hold; handoff shots must show the Starting… state (board and drawer, light and dark) and the Bird quick trail Settings preview.
+
+## Notes for AI
+Items are independent; do not couple them. Never touch repoos.toml. Edit per-item notes in the E1/E2 sections.
+
 ## Activity
 
 - 2026-10-18T02:36:59Z · created · njachowski@gmail.com
@@ -190,7 +205,20 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T03:49:45Z · needs_input
 - 2026-10-18T04:26:12Z · status review→active, needs_input
 - 2026-10-18T04:26:12Z · note: close-out repair: merge-conflict
-- 2026-10-18T04:37:12Z · status active→review
-- 2026-10-18T04:38:22Z · note: review pass 3: needs some work — clamped by automated verification: browser verification: Required UI handoff browser verification has no stored evidence — console errors were not checked.
-- 2026-10-18T05:40:09Z · note: review pass 4: needs some work
+- 2026-10-18T04:28:19Z · body
+- 2026-10-18T04:37:13Z · status active→review
+- 2026-10-18T04:37:13Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
+- 2026-10-18T04:37:33Z · note: waitFor .activity-animation-preview .ai-style-bird-quick-trail: waitFor: Timeout 5000ms exceeded. on /settings?tab=general
+- 2026-10-18T04:37:33Z · note: highlight .activity-animation-preview .ai-style-bird-quick-trail matched nothing on /settings?tab=general
+- 2026-10-18T04:38:51Z · note: review pass 4: needs some work
+- 2026-10-18T04:38:52Z · needs_input
+- 2026-10-18T05:37:09Z · body: Problem (added)
+- 2026-10-18T05:37:13Z · body: Desired UX (added)
+- 2026-10-18T05:37:17Z · body: Acceptance criteria (added)
+- 2026-10-18T05:37:22Z · body: Notes for AI (added)
+- 2026-10-18T05:37:30Z · body
+- 2026-10-18T05:37:54Z · note: waitFor .activity-animation-preview .ai-style-bird-quick-trail: waitFor: Timeout 5000ms exceeded. on /settings?tab=general&section=activity-animation
+- 2026-10-18T05:37:55Z · note: highlight .activity-animation-preview .ai-bird-quick matched nothing on /settings?tab=general&section=activity-animation
+- 2026-10-18T05:50:00Z · status review→active, needs_input
+- 2026-10-18T05:50:00Z · note: close-out repair: merge-conflict
 

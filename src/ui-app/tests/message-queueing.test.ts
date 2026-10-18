@@ -7,6 +7,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AgentRunner } from "../../server/agents";
+import { parseTask } from "../../core/task";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 
 const FAKEBIN = `#!/usr/bin/env node
@@ -43,18 +44,52 @@ function withFakePath(fx: Fixture): string {
   return oldPath;
 }
 
-async function waitForRunnerIdle(
-  runner: AgentRunner,
-  taskId: string,
-  timeoutMs = 5000,
-): Promise<void> {
+/** Poll until `predicate` is true, or throw after `timeoutMs`. */
+async function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
   const start = Date.now();
-  while (runner.isRunning(taskId)) {
-    if (Date.now() - start > timeoutMs) {
-      throw new Error(`runner still running after ${timeoutMs}ms`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 50));
+  while (!predicate()) {
+    if (Date.now() - start > timeoutMs) throw new Error(`condition not met after ${timeoutMs}ms`);
+    await new Promise((resolve) => setTimeout(resolve, 25));
   }
+}
+
+function parseFile(root: string, absPath: string): Task {
+  return parseTask({
+    content: readFileSync(absPath, "utf8"),
+    absPath,
+    root,
+    defaultStatus: "inbox",
+    defaultAssignee: "unassigned",
+  });
+}
+
+/** A real task file so `recordTaskActivity` can append to its Activity log. */
+function setupTaskFile(root: string, id: string, status = "review"): string {
+  const workDir = join(root, "work");
+  mkdirSync(workDir, { recursive: true });
+  const absPath = join(workDir, `${id}-test.md`);
+  writeFileSync(
+    absPath,
+    `---
+id: "${id}"
+title: Test task
+type: feature
+status: ${status}
+priority: p2
+area: web
+assigned_to: ai
+created_by: test
+---
+## Problem
+
+Body.
+
+## Activity
+
+- 2026-01-01T00:00:00Z · created · test
+`,
+  );
+  return absPath;
 }
 
 function config(root: string): RepoOSConfig {
@@ -174,40 +209,39 @@ describe("message queueing", () => {
     }
   });
 
-  it("should expire messages that are not delivered within timeout", () => {
+  it("flags an overdue message instead of dropping it (#0821)", () => {
     const fx = makeFixture();
-    const cwd = fx.bin;
-    const runner = new AgentRunner(config(cwd), () => {}, {
-      stallTimeoutMs: 100,
-      stallCheckIntervalMs: 50,
+    const absPath = setupTaskFile(fx.root, "expire-test", "active");
+    const runner = new AgentRunner(config(fx.root), () => {}, {
+      stallTimeoutMs: 1000,
+      stallCheckIntervalMs: 500,
+      getTask: () => parseFile(fx.root, absPath),
     });
 
     try {
-      const t = task("expire-test");
-      const taskId = t.id;
-
-      // Manually set up a queued message with a very old timestamp
+      const taskId = "expire-test";
       const veryOldTime = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(); // 2 hours ago
-      const messages = [{ text: "Old message", agent, opts: {}, queuedAt: veryOldTime }];
-      runner["queuedMessages"].set(taskId, messages);
+      runner["queuedMessages"].set(taskId, [
+        { text: "Old message", agent, opts: {}, queuedAt: veryOldTime },
+      ]);
       runner["messageQueuedAt"].set(taskId, veryOldTime);
 
-      // Check that the old message is there
-      expect(runner["queuedMessages"].has(taskId)).toBe(true);
-
-      // Call checkExpiredMessages to clean up expired ones
       runner["checkExpiredMessages"]();
 
-      // The old message should be removed
-      expect(runner["queuedMessages"].has(taskId)).toBe(false);
-      expect(runner["messageQueuedAt"].has(taskId)).toBe(false);
+      // Retained, not dropped — and reported overdue so the UI can flag it.
+      expect(runner["queuedMessages"].has(taskId)).toBe(true);
+      const summary = runner.queuedMessageSummary();
+      expect(summary).toHaveLength(1);
+      expect(summary[0]).toMatchObject({ id: taskId, count: 1, overdue: true });
+      // The overdue flag is recorded on the task's activity log.
+      expect(readFileSync(absPath, "utf8")).toContain("message_overdue");
     } finally {
       runner.dispose();
       fx.clean();
     }
   });
 
-  it("should deliver queued messages on resume after turn completes", async () => {
+  it("delivers a message queued during a turn when that turn ends (#0821)", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -215,46 +249,32 @@ describe("message queueing", () => {
     const runner = new AgentRunner(config(cwd), () => {});
 
     try {
-      const t = task("resume-delivery-test");
-
-      // Start first run
-      const startRes = runner.start(t, "feat/resume-delivery-test", agent, { cwd });
+      const t = task("turn-end-delivery-test");
+      const startRes = runner.start(t, "feat/turn-end-delivery-test", agent, { cwd });
       expect(startRes.ok).toBe(true);
-      expect(startRes.pid).toBeDefined();
 
-      // Queue two messages while running
-      const sendRes1 = runner.send(t.id, "Resume with this message", agent);
-      expect(sendRes1.queued).toBe(true);
+      // Queue while the turn runs.
+      expect(runner.send(t.id, "Read me when the turn ends", agent).queued).toBe(true);
+      expect(runner["queuedMessages"].get(t.id)?.length).toBe(1);
 
-      const sendRes2 = runner.send(t.id, "And this one too", agent);
-      expect(sendRes2.queued).toBe(true);
+      // Without another send or start, the end of the turn delivers the message
+      // by starting a fresh turn — the fakebin is spawned a second time.
+      await waitFor(() => {
+        try {
+          const log = readFileSync(fx.log, "utf8").trim().split("\n").filter(Boolean);
+          return log.length >= 2;
+        } catch {
+          return false;
+        }
+      });
 
-      // Verify messages are queued
-      const queuedMsgs = runner["queuedMessages"].get(t.id);
-      expect(queuedMsgs?.length).toBe(2);
-
-      // Wait for the first turn to complete (fakebin sleeps 100ms; under pool
-      // load a fixed 500ms sleep was flaky — poll until the runner is idle).
-      await waitForRunnerIdle(runner, t.id);
-
-      // Now the turn has completed. Call send() to resume with the queued messages.
-      // This should drain the queue and include messages in the resumed command.
-      const resumeRes = runner.send(t.id, "Continue", agent);
-      expect(resumeRes.ok).toBe(true);
-
-      // The queued messages should have been drained from the map
-      // (they were added to the session, not queued again)
-      expect(runner["queuedMessages"].has(t.id)).toBe(false);
-
-      // Verify the session now contains all the messages (queued + current)
+      // The queue is drained and the queued text is in the transcript.
+      await waitFor(() => !runner["queuedMessages"].has(t.id));
       const session = runner["sessions"].get(t.id);
-      if (session) {
-        const humanEntries = session.lines.filter((l) => "text" in l && l.type === "human");
-        const texts = humanEntries.filter((e) => "text" in e).map((e) => (e as any).text);
-        expect(texts).toContain("Resume with this message");
-        expect(texts).toContain("And this one too");
-        expect(texts).toContain("Continue");
-      }
+      const texts = (session?.lines ?? [])
+        .filter((l) => "text" in l && l.type === "human")
+        .map((e) => (e as { text: string }).text);
+      expect(texts).toContain("Read me when the turn ends");
     } finally {
       runner.dispose();
       process.env.PATH = oldPath;
@@ -263,15 +283,91 @@ describe("message queueing", () => {
     }
   });
 
-  it("should track queue expiry from earliest message, not latest", () => {
+  it("persists queued messages across a restart (#0821)", () => {
+    const fx = makeFixture();
+    const cwd = fx.bin;
+    const first = new AgentRunner(config(cwd), () => {});
+    try {
+      const queuedAt = new Date().toISOString();
+      first["queuedMessages"].set("persist-test", [
+        { text: "survive the restart", agent, opts: {}, queuedAt },
+      ]);
+      first["messageQueuedAt"].set("persist-test", queuedAt);
+      first["persistQueuedMessages"]();
+    } finally {
+      first.dispose();
+    }
+
+    const second = new AgentRunner(config(cwd), () => {});
+    try {
+      const restored = second["queuedMessages"].get("persist-test");
+      expect(restored?.length).toBe(1);
+      expect(restored?.[0].text).toBe("survive the restart");
+      expect(second.queuedMessageSummary()[0]).toMatchObject({ id: "persist-test", count: 1 });
+    } finally {
+      second.dispose();
+      fx.clean();
+    }
+  });
+
+  it("delivers a message queued while the task is in review when the engineer next runs (#0821)", () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const absPath = setupTaskFile(fx.root, "0821", "review");
+    const t: Task = { ...task("0821"), status: "review", absPath, path: "work/0821-test.md" };
+    const runner = new AgentRunner(config(fx.root), () => {}, {
+      getTask: () => parseFile(fx.root, absPath),
+    });
+
+    try {
+      const queuedAt = new Date().toISOString();
+      runner["queuedMessages"].set(t.id, [
+        { text: "apply the review fix", agent, opts: {}, queuedAt },
+      ]);
+      runner["messageQueuedAt"].set(t.id, queuedAt);
+
+      // The engineer next runs — the held queue is delivered and recorded.
+      const res = runner.start(t, "feat/0821", agent, { cwd: fx.bin });
+      expect(res.ok).toBe(true);
+      expect(runner["queuedMessages"].has(t.id)).toBe(false);
+      expect(readFileSync(absPath, "utf8")).toContain("message_delivered");
+    } finally {
+      runner.dispose();
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("queues a startChat for a busy chat instead of refusing it (#0821)", () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const cwd = fx.bin;
+    const runner = new AgentRunner(config(cwd), () => {});
+
+    try {
+      const first = runner.startChat("chat-key", "hello", agent, "context");
+      expect(first.ok).toBe(true);
+      const second = runner.startChat("chat-key", "queued follow-up", agent, "context");
+      expect(second.ok).toBe(true);
+      expect(second.queued).toBe(true);
+      expect(runner["queuedMessages"].get("chat-key")?.[0].text).toBe("queued follow-up");
+    } finally {
+      runner.dispose();
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("tracks queue age from the earliest message, not the latest (#0821)", () => {
     const fx = makeFixture();
     const runner = new AgentRunner(config(fx.root), () => {});
 
     try {
-      const t = task("expiry-timing-test");
-      const taskId = t.id;
-
-      // Queue first message more than 1 hour ago
+      const taskId = "expiry-timing-test";
       const baseTime = Date.now() - 70 * 60 * 1000; // 70 minutes ago
       const firstTime = new Date(baseTime).toISOString();
       runner["queuedMessages"].set(taskId, [
@@ -279,17 +375,16 @@ describe("message queueing", () => {
       ]);
       runner["messageQueuedAt"].set(taskId, firstTime);
 
-      // Queue second message later (at time T + 50 minutes, so 20 minutes ago)
       const secondTime = new Date(baseTime + 50 * 60 * 1000).toISOString();
       const messages = runner["queuedMessages"].get(taskId) ?? [];
       messages.push({ text: "Message 2", agent, opts: {}, queuedAt: secondTime });
       runner["queuedMessages"].set(taskId, messages);
-      // messageQueuedAt should still be the first message's time
       expect(runner["messageQueuedAt"].get(taskId)).toBe(firstTime);
 
-      // After 1 hour from the FIRST message, both should expire
+      // Overdue is judged from the FIRST message's age, and both are retained.
       runner["checkExpiredMessages"]();
-      expect(runner["queuedMessages"].has(taskId)).toBe(false);
+      expect(runner["queuedMessages"].has(taskId)).toBe(true);
+      expect(runner.queuedMessageSummary()[0].overdue).toBe(true);
     } finally {
       runner.dispose();
       fx.clean();
