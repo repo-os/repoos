@@ -2,19 +2,22 @@
 id: "0780"
 title: "Release gate: skip the dist/cli/index.js check for projects without a bin target"
 type: bug
-status: done
+status: active
 priority: p0
 area: core
 merged_commit: 6844edf20bd8c9a9f481477423b6549f6bbe3981
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-gate-skip-the-dist-cli-index-js-
-model_override: opencode/muse-spark-1.3-contributor-free
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T08:20:29Z"
-updated_at: "2026-10-14T08:48:47Z"
+updated_at: "2026-10-18T18:29:59Z"
+handoff_signal_retry_count: 1
 last_close_out_gate_ms: 121907
 last_close_out_gate_at: "2026-10-14T08:47:47.001Z"
 review_passes: 1
+dev_error_count: 1
 ---
 ## Problem
 Publishing a release from the Releases page fails for a project that has no CLI. Divot (a Swift app, no package bin) hit this when cutting v0.1.0:
@@ -54,3 +57,12 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 - 2026-10-14T08:43:45Z · note: review pass 1: good to go
 - 2026-10-14T08:47:47Z · close-out gate completed in 122s
 - 2026-10-14T08:48:47Z · status review→done, release:success
+- 2026-10-18T17:27:02Z · status done→ready
+- 2026-10-18T17:27:06Z · cli_override, model_override
+- 2026-10-18T17:27:08Z · status ready→active
+- 2026-10-18T17:30:10Z · agent exited with an error (opencode) · error: Transport
+- 2026-10-18T17:38:41Z · needs_input
+- 2026-10-18T18:27:11Z · message_queued at 2026-10-18T18:27:11.094Z
+- 2026-10-18T18:27:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-18T18:28:29Z · body
+- 2026-10-18T18:29:59Z · body

@@ -2,7 +2,11 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from "node:path";
 import type { RepoOSConfig } from "./types.js";
 import { parseDocument, serializeDocument } from "./frontmatter.js";
-import { createStorageProvider, DEFAULT_STORAGE_PROVIDER_ID } from "./storage/index.js";
+import { DEFAULT_STORAGE_PROVIDER_ID } from "./storage/index.js";
+import {
+  createResilientAttachmentProvider,
+  recordAttachmentCloudPut,
+} from "./attachment-resilience.js";
 
 export type InputStatus = "new" | "reviewing" | "processed";
 /**
@@ -81,7 +85,7 @@ const dir = (c: RepoOSConfig) => join(c.root, inputRoot(c));
  * path as before — and an unknown/unconfigured provider falls back to it.
  */
 const attachments = (c: RepoOSConfig) =>
-  createStorageProvider(dir(c), c.storage?.provider ?? DEFAULT_STORAGE_PROVIDER_ID);
+  createResilientAttachmentProvider(dir(c), c.storage?.provider ?? DEFAULT_STORAGE_PROVIDER_ID);
 
 /**
  * Normalize a raw frontmatter `number` to the canonical zero-padded form.
@@ -305,8 +309,10 @@ export function saveInputAttachment(
 ): InputAttachment {
   if (!listInputs(c).some((i) => i.id === id)) throw new Error("input not found");
   const safe = name.replace(/[^a-zA-Z0-9._-]/g, "-") || "attachment";
-  const result = attachments(c).put(id, safe, Buffer.from(data, "base64"));
+  const buf = Buffer.from(data, "base64");
+  const result = attachments(c).put(id, safe, buf);
   if ("error" in result) throw new Error(`could not store attachment: ${result.error}`);
+  recordAttachmentCloudPut(c, "inputs", id, safe, buf);
   return {
     name: safe,
     mime: mimeForName(safe),

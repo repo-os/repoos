@@ -12,6 +12,7 @@ export function resolvedUiVerification(
   const widths = raw.viewportWidths?.filter((n) => Number.isFinite(n) && n > 0) ?? [];
   return {
     enabled: raw.enabled !== false,
+    autoRefreshStaleOnce: raw.autoRefreshStaleOnce !== false,
     viewportWidths: widths.length
       ? widths.map((n) => Math.floor(n))
       : DEFAULT_UI_VERIFICATION_VIEWPORTS,

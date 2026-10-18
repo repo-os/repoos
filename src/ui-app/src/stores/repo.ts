@@ -10,7 +10,9 @@ import { describeCloseOutFailure } from "../lib/closeOutFailure";
 import { builtInRunNotice } from "../lib/builtInRunNotice";
 import { retryCountFrom } from "../lib/retryHints";
 import {
+  applyShotPreviewFixture,
   isShotPreviewCaptureActive,
+  readShotPreviewFixtureFromLocation,
   seedShotPreviewDebugLogs,
   shotFixturePinnedIntegration,
   shotPreviewSkipsTaskLogsFetch,
@@ -69,6 +71,8 @@ export interface DoneResult {
   conflicts: string[];
   ff: boolean;
   drifted?: boolean;
+  /** #0834: close-out did not start — an automatic checkpoint recovery did. */
+  checkpointRecovery?: boolean;
   check?: {
     ok: boolean;
     detail?: string;
@@ -739,6 +743,22 @@ export const useRepoStore = defineStore("repo", () => {
   const agentStats = ref<Record<string, AgentSessionStats>>({});
   /** Live step of the review→done close-out, keyed by task id. */
   const doneSteps = ref<Record<string, string>>({});
+  /**
+   * #0834: a post-handoff checkpoint recovery is running for this task (the
+   * branch moved after handoff only by WIP self-check commits, and the gate +
+   * delta review are re-running before close-out resumes). Fed by the /done 202
+   * and the server's `checkpoint-recovery*` progress events, so the card can
+   * say what is happening instead of leaving the task silently in review.
+   */
+  const checkpointRecovery = ref<Record<string, boolean>>({});
+  /** Whether an automatic checkpoint recovery is running for this task (#0834). */
+  const checkpointRecoveryFor = (id: string): boolean => checkpointRecovery.value[id] === true;
+  function setCheckpointRecovery(id: string, active: boolean): void {
+    const next = { ...checkpointRecovery.value };
+    if (active) next[id] = true;
+    else delete next[id];
+    checkpointRecovery.value = next;
+  }
   /** Last failed review→done close-out per task id (inline error card). */
   const doneErrors = ref<Record<string, DoneError>>({});
   /**
@@ -1691,13 +1711,21 @@ export const useRepoStore = defineStore("repo", () => {
         } else if (stage === "done") {
           setHandoffError(e.id, null);
         }
+      } else if (e.step.startsWith("checkpoint-recovery")) {
+        // #0834: keep the post-handoff checkpoint recovery vocabulary out of
+        // `doneSteps` (its default label would read "Merging branch…"). Only
+        // the bare step means recovery is running; the terminal `-done`,
+        // `-failed` and `-cancelled` steps clear it.
+        setCheckpointRecovery(e.id, e.step === "checkpoint-recovery");
       } else {
         doneSteps.value = { ...doneSteps.value, [e.id]: e.step };
       }
       // Background close-out failure (0199): the /done POST only enqueues the
       // job, so a later failure arrives here as an SSE event. Surface it as the
-      // inline done error the card/drawer already render.
-      if (e.step === "failed" && e.detail) {
+      // inline done error the card/drawer already render. A failed checkpoint
+      // recovery (#0834) stays in `review`, so it needs the same inline error —
+      // otherwise the task just sits there with no signal.
+      if ((e.step === "failed" || e.step === "checkpoint-recovery-failed") && e.detail) {
         // Background close-out failure (0199, 0215): the /done POST only
         // enqueues the job, so a later failure arrives here as an SSE event.
         // The job's failing `phase` (when known) and its `reason` drive the
@@ -2241,6 +2269,10 @@ export const useRepoStore = defineStore("repo", () => {
     })) as unknown as Task[];
     for (const t of tasks.value) {
       if (t.status !== "ready") clearStartWorkPendingLocal(t.id);
+      // #0834: reconcile the checkpoint-recovery hint with the server — a
+      // recovery started before this (re)load keeps showing, and a finished
+      // one clears, without waiting for an SSE replay.
+      setCheckpointRecovery(t.id, t.checkpointRecovery === true);
     }
     // A close-out error only belongs to a task that is still in review; drop any
     // re-hydrated before the board loaded (the hydration ran ahead of this fetch).
@@ -2291,6 +2323,19 @@ export const useRepoStore = defineStore("repo", () => {
     pmWorkingIds.value = new Set(idx.tasks.filter((t) => t.pmWorking).map((t) => t.id));
     storyDefinitions.value = idx.storyDefinitions ?? [];
     Object.assign(counts, idx.counts);
+    // The rebuild above replaced the whole task list, dropping any client-only
+    // fixture card an active ?shotState capture had seeded (#0782 pins the
+    // pipeline for the same reason). Re-apply at the very end — after the
+    // doneError cleanup above — so the seeded card and its state survive an
+    // SSE-triggered refresh for the whole capture window (#0834).
+    if (
+      typeof window !== "undefined" &&
+      health.value?.isPreviewBuild &&
+      isShotPreviewCaptureActive(window.location)
+    ) {
+      const fixture = readShotPreviewFixtureFromLocation(window.location);
+      if (fixture) applyShotPreviewFixture(useRepoStore(), fixture);
+    }
   }
 
   async function fetchTask(id: string): Promise<Task> {
@@ -2726,6 +2771,7 @@ export const useRepoStore = defineStore("repo", () => {
       files?: WorktreeHandoffFile[];
       filesUnavailable?: boolean;
       resolutions?: string[];
+      message?: string;
     } = {};
     try {
       body = (await raw.json()) as Partial<DoneResult> & {
@@ -2737,9 +2783,30 @@ export const useRepoStore = defineStore("repo", () => {
         files?: WorktreeHandoffFile[];
         filesUnavailable?: boolean;
         resolutions?: string[];
+        message?: string;
       };
     } catch {
       body = {};
+    }
+    // #0834: HEAD moved after handoff only by engineer self-check checkpoint
+    // commits — the server started (or found running) an automatic gate +
+    // delta re-review instead of refusing. That is success, not a failure:
+    // close-out resumes itself once the delta review is good to go.
+    if (raw.status === 202 && body.checkpointRecovery) {
+      setCheckpointRecovery(t.id, true);
+      acknowledgeHumanTaskAction(t.id);
+      setDoneError(t.id, null);
+      pushToast(
+        body.message ?? `#${t.id} — re-running the handoff gate and a delta review`,
+        "info",
+      );
+      return {
+        ok: true,
+        merged: false,
+        conflicts: [],
+        ff: false,
+        checkpointRecovery: true,
+      };
     }
     if (raw.status === 409 && body.worktreeChangedAfterHandoff) {
       const message = body.error ?? "worktree changed after handoff";
@@ -3816,6 +3883,9 @@ export const useRepoStore = defineStore("repo", () => {
     doneSteps,
     doneErrors,
     doneErrorFor,
+    checkpointRecovery,
+    checkpointRecoveryFor,
+    setCheckpointRecovery,
     handoffSteps,
     handoffErrors,
     handoffErrorFor,

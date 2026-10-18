@@ -2573,7 +2573,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       type: "boolean",
       tier: "live",
       restartRequired: false,
-      default: false,
+      default: true,
       description:
         "When a review explicitly reports that stale UI evidence is its only blocker, refresh captures at the current HEAD and run one new review automatically.",
     },
