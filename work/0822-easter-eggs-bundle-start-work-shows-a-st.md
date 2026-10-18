@@ -192,3 +192,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T04:26:12Z · note: close-out repair: merge-conflict
 - 2026-10-18T04:28:19Z · body
 - 2026-10-18T04:37:13Z · status active→review
+- 2026-10-18T04:37:13Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
