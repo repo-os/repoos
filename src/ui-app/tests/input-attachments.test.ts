@@ -61,9 +61,7 @@ describe("input → task attachment carry-over (#0382)", () => {
       });
       expect(updated.body).toContain("## Screenshots");
       expect(updated.body).toContain(`![dark](/api/tasks/${created.id}/attachments/`);
-      const objectName = decodeURIComponent(
-        (meta as { url: string }).url.split("/").pop()!,
-      );
+      const objectName = decodeURIComponent((meta as { url: string }).url.split("/").pop()!);
       // The activity log remains the last section.
       expect(updated.body.indexOf("## Screenshots")).toBeLessThan(
         updated.body.indexOf("## Activity"),

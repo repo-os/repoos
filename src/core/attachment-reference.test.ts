@@ -75,11 +75,7 @@ describe("attachment reference format (#0661)", () => {
         "screenshot-1.png",
         Buffer.from(PNG_1PX, "base64"),
       );
-      const resolved = resolveTaskAttachmentReference(
-        repoos.config,
-        task.id,
-        "screenshot-1.png",
-      );
+      const resolved = resolveTaskAttachmentReference(repoos.config, task.id, "screenshot-1.png");
       expect(resolved?.objectName).toBe("screenshot-1.png");
       expect(resolved?.data.length).toBeGreaterThan(0);
     } finally {

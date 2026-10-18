@@ -22,8 +22,7 @@ export const STABLE_ATTACHMENT_OBJECT_RE =
 /** Pre-#0661 sequential screenshot file names (still resolvable). */
 export const LEGACY_SCREENSHOT_OBJECT_RE = /^screenshot-\d+\.[a-z0-9]+$/i;
 
-const TASK_ATTACHMENT_IMAGE_RE =
-  /!\[[^\]]*\]\(\/api\/tasks\/([^/]+)\/attachments\/([^)]+)\)/g;
+const TASK_ATTACHMENT_IMAGE_RE = /!\[[^\]]*\]\(\/api\/tasks\/([^/]+)\/attachments\/([^)]+)\)/g;
 
 function isSafeObjectSegment(name: string): boolean {
   return (
