@@ -2187,6 +2187,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       });
     } else {
       abandonCheckpointRecoveryAfterFailedDelta(config, task.id, report.markdown.slice(0, 200));
+      // Terminal signal (#0834): auto-bounce carries the findings; this only
+      // tells the UI the automatic recovery is over and the task is back with
+      // the engineer.
+      emitEvent({
+        type: "task.progress",
+        id: task.id,
+        step: "checkpoint-recovery-cancelled",
+        detail: `delta review verdict: ${verdict} — the findings were sent back with the task`,
+        at: new Date().toISOString(),
+      });
     }
   });
 

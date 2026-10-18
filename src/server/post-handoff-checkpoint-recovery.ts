@@ -136,6 +136,15 @@ export async function startPostHandoffCheckpointRecovery(
       detail: message,
     });
     deps.onTaskLog?.(task.id, "error", `checkpoint recovery failed: ${message}`);
+    // Terminal signal (#0834): the task stays in `review`, so surface the
+    // failure through the close-out error channel instead of leaving it silent.
+    deps.emitEvent({
+      type: "task.progress",
+      id: task.id,
+      step: "checkpoint-recovery-failed",
+      detail: `checkpoint recovery failed: ${message} — move to done to retry, or send the task back to the engineer`,
+      at: new Date().toISOString(),
+    });
   });
   return { ok: true };
 }
@@ -221,8 +230,23 @@ export async function resumeCloseOutAfterCheckpointRecovery(
   const job = jobCoordinator.enqueue(task, { handoffSha });
   if (!job || job.cancelled) {
     reload?.releaseCloseOut();
+    deps.emitEvent({
+      type: "task.progress",
+      id: task.id,
+      step: "checkpoint-recovery-failed",
+      detail:
+        "checkpoint recovery finished but close-out could not be resumed — move to done to retry",
+      at: new Date().toISOString(),
+    });
     return;
   }
+  deps.emitEvent({
+    type: "task.progress",
+    id: task.id,
+    step: "checkpoint-recovery-done",
+    detail: "delta review passed — close-out resumed",
+    at: new Date().toISOString(),
+  });
   writeWorktreeReviewLock(config.root, config.cacheDir ?? ".repoos", task.id, {
     status: "closing-out",
     sha: handoffSha,
