@@ -184,6 +184,76 @@ describe("IntegrationStatusBar", () => {
     expect(wrapper.find('[data-test-id="integration-timer-tip"]').exists()).toBe(false);
   });
 
+  it("does not use a native title on the collapsed timer chip (#0829)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    const notices = useNoticesStore();
+    notices.closeOutOutcomes = Array.from({ length: 5 }, (_, i) => ({
+      taskId: `0${i}`,
+      outcome: "succeeded",
+      finishedAt: new Date(Date.now() - i * 60_000).toISOString(),
+      reason: "",
+      durationMs: (i + 1) * 60_000,
+    })) as CloseOutOutcomeEvent[];
+    ui.setIntegrationBarCollapsed(true);
+    repo.integration = activeSnapshot();
+    const wrapper = render();
+    await nextTick();
+
+    const chip = wrapper.get('.ibar-strip [data-test-id="integration-timer"]');
+    expect(chip.attributes("title")).toBeUndefined();
+    await chip.trigger("mouseenter");
+    await nextTick();
+    expect(wrapper.findAll('[data-test-id="integration-timer-tip"]')).toHaveLength(1);
+  });
+
+  it("does not use a native title on the collapsed strip (#0829)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    ui.setIntegrationBarCollapsed(true);
+    repo.integration = activeSnapshot();
+    const wrapper = render();
+    await nextTick();
+
+    const strip = wrapper.get('[data-test-id="integration-strip"]');
+    expect(strip.attributes("title")).toBeUndefined();
+    expect(strip.attributes("aria-label")).toContain("Integration pipeline");
+    expect(strip.attributes("aria-label")).toContain("#0042");
+  });
+
+  it("centers the median tooltip on the timer chip (#0829)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    const notices = useNoticesStore();
+    notices.closeOutOutcomes = Array.from({ length: 5 }, (_, i) => ({
+      taskId: `0${i}`,
+      outcome: "succeeded",
+      finishedAt: new Date(Date.now() - i * 60_000).toISOString(),
+      reason: "",
+      durationMs: (i + 1) * 60_000,
+    })) as CloseOutOutcomeEvent[];
+    ui.setIntegrationBarCollapsed(true);
+    repo.integration = activeSnapshot();
+    const wrapper = render();
+    await nextTick();
+
+    const chip = wrapper.get('.ibar-strip [data-test-id="integration-timer"]');
+    const rect = { left: 200, top: 500, width: 80, height: 24, right: 280, bottom: 524 };
+    chip.element.getBoundingClientRect = () => rect as DOMRect;
+    Object.defineProperty(window, "innerWidth", { value: 1000, configurable: true });
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+
+    await chip.trigger("mouseenter");
+    await nextTick();
+
+    const tip = wrapper.get('[data-test-id="integration-timer-tip"]');
+    const center = rect.left + rect.width / 2;
+    const width = 360;
+    const expectedLeft = Math.max(12, Math.min(center - width / 2, 1000 - width - 12));
+    expect(tip.attributes("style")).toContain(`left: ${expectedLeft}px`);
+    expect(wrapper.findAll('[data-test-id="integration-timer-tip"]')).toHaveLength(1);
+  });
+
   it("mounts the timer in the collapsed strip and opens its tooltip there (#0819)", async () => {
     // The handoff capture lands on the folded strip by default, so the timer
     // and its two-line pane must work in that variant too, not only expanded.
@@ -556,7 +626,7 @@ describe("IntegrationStatusBar", () => {
     expect(label.text()).toContain("#0042");
     expect(label.text()).toContain("3m 07s");
     wrapper.get(".strip-queue-ellipsis");
-    expect(wrapper.get(".ibar-strip").attributes("title")).toContain("Queue: #0455");
+    expect(wrapper.get(".ibar-strip").attributes("aria-label")).toContain("Queue: #0455");
   });
 
   it("shows queued task ids as chips in expanded and minimised views (#0522)", async () => {
@@ -609,7 +679,7 @@ describe("IntegrationStatusBar", () => {
     await nextTick();
 
     expect(wrapper.find(".strip-queue").exists()).toBe(false);
-    expect(wrapper.get(".ibar-strip").attributes("title")).not.toContain("Queue:");
+    expect(wrapper.get(".ibar-strip").attributes("aria-label")).not.toContain("Queue:");
   });
 
   it("includes queued ids in the minimised strip tooltip without an active job (#0522)", async () => {
@@ -625,7 +695,7 @@ describe("IntegrationStatusBar", () => {
     const wrapper = render();
     await nextTick();
 
-    expect(wrapper.get(".ibar-strip").attributes("title")).toContain("Queue: #0455 #0456");
+    expect(wrapper.get(".ibar-strip").attributes("aria-label")).toContain("Queue: #0455 #0456");
     expect(wrapper.find(".strip-queue").exists()).toBe(true);
   });
 });

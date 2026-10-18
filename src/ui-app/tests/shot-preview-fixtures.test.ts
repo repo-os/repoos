@@ -11,6 +11,7 @@ import {
 import { useConfigStore } from "../src/stores/config";
 import { useNoticesStore } from "../src/stores/notices";
 import { useRepoStore } from "../src/stores/repo";
+import { useUiStore } from "../src/stores/ui";
 import { integrationMedianChip } from "../src/lib/integration-pipeline-ui";
 import { shotProblems } from "../src/lib/shot-rows";
 import { isDocsShotSkip, shotVerdict } from "../src/lib/handoff-verification";
@@ -367,15 +368,49 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(shotVerdict(evidence!.captureDetails![1]!).verdict).toBe("matches");
   });
 
+  it("seeds debug log rows for drawer capture on a real task id (#0829)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const drawerId = "0820";
+    vi.stubGlobal("location", { search: `?task=${drawerId}&shotState=drawer:debugLogs` });
+    applyShotPreviewFixture(repo, "drawer:debugLogs");
+    expect(repo.taskLogs[drawerId]).toHaveLength(2);
+    expect(repo.taskLogs[drawerId]![0]!.message).toContain("main advanced with bookkeeping");
+    expect(repo.taskLogs[drawerId]![1]!.message).toBe("close-out complete — published to main");
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps fixture debug logs when the drawer hydrates logs during capture (#0829)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    vi.stubGlobal("location", { search: "?task=0820&tab=debug&shotState=drawer:debugLogs" });
+    applyShotPreviewFixture(repo, "drawer:debugLogs");
+    // DebugPanel's onMounted calls refreshTaskLogs; during a `drawer:debugLogs`
+    // capture that must keep the seeded long row instead of fetching the real
+    // (and differently-shaped) logs, which is why the reviewer saw a truncated
+    // "shots: skipped…" row instead of the declared "main advanced…" expansion.
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    await repo.refreshTaskLogs("0820");
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(repo.taskLogs["0820"]).toHaveLength(2);
+    expect(repo.taskLogs["0820"]![0]!.message).toContain("main advanced with bookkeeping");
+    vi.unstubAllGlobals();
+  });
+
   it("seeds 15 succeeded close-outs for the integration timer tooltip (#0819)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const repo = useRepoStore();
+    const ui = useUiStore();
     applyShotPreviewFixture(repo, "integration:median15");
     const notices = useNoticesStore();
     expect(notices.closeOutOutcomes).toHaveLength(15);
     expect(integrationMedianChip(notices.closeOutOutcomes)).toBe("Median 8m 00s · 15 runs");
     expect(repo.integration?.active?.taskId).toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(ui.integrationBarCollapsed).toBe(true);
   });
 
   it("seeds a multi-area human task with diff stats for card-chip shots (#0776, #0795)", () => {
