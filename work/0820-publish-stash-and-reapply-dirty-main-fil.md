@@ -2,14 +2,14 @@
 id: "0820"
 title: "Publish: stash and reapply dirty main files only when the merge would overwrite them"
 type: feature
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/publish-stash-and-reapply-dirty-main-fil
 created_at: "2026-10-17T15:26:36Z"
-updated_at: "2026-10-17T15:34:53Z"
+updated_at: "2026-10-18T02:34:20Z"
 ---
 ## Problem
 A close-out merges into the live main checkout (publishCandidate, src/server/integration-orchestrator.ts). The Move to done dirty-main check runs only at the start. If a file in main's checkout is dirty when publish runs (for example a settings change to repoos.toml made during the close-out), the outcome depends on the merge:
@@ -38,3 +38,4 @@ Start from publishCandidate in src/server/integration-orchestrator.ts (the publi
 
 - 2026-10-17T15:26:36Z · created · njachowski@gmail.com
 - 2026-10-17T15:34:53Z · status inbox→ready
+- 2026-10-18T02:34:20Z · status ready→active, branch
