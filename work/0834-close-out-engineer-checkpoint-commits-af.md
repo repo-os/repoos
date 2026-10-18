@@ -2,15 +2,16 @@
 id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
-status: inbox
+status: done
 priority: p2
 area: core
+merged_commit: 10516bb252cf3bcfa370b655b36038f15ea0b6cc
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T18:04:00Z"
+updated_at: "2026-10-18T18:05:27Z"
 last_close_out_gate_ms: 375582
 last_close_out_gate_at: "2026-10-18T18:03:56.494Z"
 review_passes: 4
@@ -133,3 +134,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T18:03:56Z · close-out gate completed in 376s
 - 2026-10-18T18:03:59Z · note: handoff requested (cli)
 - 2026-10-18T18:04:00Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-18T18:05:27Z · status inbox→done, release:success
