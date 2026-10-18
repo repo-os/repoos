@@ -2,14 +2,14 @@
 id: "0837"
 title: "Server reload orphans running engineers: adopt or stop them (one writer per worktree)"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T16:14:35Z"
-updated_at: "2026-10-18T16:14:35Z"
+updated_at: "2026-10-18T16:57:53Z"
 ---
 ## Problem
 After a RepoOS server reload, previously running `cursor-agent` engineer processes survive with `ppid=1` (orphaned, 2026-10-18: #0830 and #0832). The new server does not own them, so their handoff and exit signals are lost, the task can sit "active" for an hour with no progress, and a second engineer is started in the same worktree, giving two writers. That caused a post-handoff WIP checkpoint commit on #0832 that blocked its Move to done.
@@ -29,3 +29,4 @@ Related: #0834 (post-handoff checkpoint recovery), watchdog and CTO restart path
 ## Activity
 
 - 2026-10-18T16:14:35Z · created · njachowski@gmail.com
+- 2026-10-18T16:57:53Z · status inbox→ready
