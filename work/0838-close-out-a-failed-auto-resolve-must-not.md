@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 397220
-last_close_out_gate_at: "2026-10-18T19:01:10.572Z"
 id: "0838"
 title: "Close-out: a failed auto-resolve must not demote the task to inbox"
 type: bug
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: 59a89b0371c67b4f427bd89e6c22feeb43190f9f
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-a-failed-auto-resolve-must-not
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:48Z"
-updated_at: "2026-10-18T19:01:10Z"
+updated_at: "2026-10-18T19:01:40Z"
+last_close_out_gate_ms: 397220
+last_close_out_gate_at: "2026-10-18T19:01:10.572Z"
 review_passes: 2
 ---
 ## Problem
@@ -50,4 +51,4 @@ Related: #0835 (NUL byte made task files binary, a likely trigger), #0754 (task-
 - 2026-10-18T18:51:24Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-18T18:51:59Z · note: review pass 2: good to go
 - 2026-10-18T19:01:10Z · close-out gate completed in 397s
-
+- 2026-10-18T19:01:40Z · status review→done, release:success
