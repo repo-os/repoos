@@ -10,9 +10,6 @@ import type { CloseOutOutcomeEvent } from "./close-out-outcome.js";
 
 export const CLOSE_OUT_COMPLETE_LOG = "close-out complete — published to main";
 const PROCESSING_PHASE_PREFIX = "Processing job phase:";
-/** Match `status review→done, release:success` and legacy variants. */
-export const DONE_ACTIVITY_RE =
-  /^- (\d{4}-\d{2}-\d{2}T[^\s]+) · status [a-z]+→done(?:, release:success)?\s*$/;
 
 /** How far a log line's timestamp may drift from the stored `finishedAt`. */
 export const CLOSE_OUT_FINISHED_AT_SKEW_MS = 120_000;
