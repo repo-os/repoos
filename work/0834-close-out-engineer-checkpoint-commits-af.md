@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
@@ -55,3 +56,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T11:53:13Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-18T12:18:27Z · body
 - 2026-10-18T12:24:45Z · message_delivered: 1 message(s)
+
