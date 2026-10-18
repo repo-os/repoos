@@ -80,9 +80,9 @@ describe("stripReviewVerdictPrefix (#0832)", () => {
   });
 
   it("removes a bold-wrapped verdict", () => {
-    expect(
-      stripReviewVerdictPrefix("**needs some work** — contrast audit still fails."),
-    ).toBe("contrast audit still fails.");
+    expect(stripReviewVerdictPrefix("**needs some work** — contrast audit still fails.")).toBe(
+      "contrast audit still fails.",
+    );
   });
 });
 
