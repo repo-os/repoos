@@ -11,11 +11,12 @@ branch: feat/handoff-a-shot-whose-waitfor-click-highl
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:25Z"
-updated_at: "2026-10-18T10:22:31Z"
+updated_at: "2026-10-18T11:12:06Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T10:20:44.294Z: repoos check failed: ◆ Check plan"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/shot-plan-edit.test.ts > parseShotEntry (#0627) > rejects a bad step and an unknown key, like the list parser on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 386dee459445c5b90d91d7d031ca4e8c26a2603d
+dev_error_count: 1
 ---
 ## Problem
 When a declared shot's `waitFor`, `click` or `highlight` target is missing, the capture only records a note ("capture went ahead") and the handoff still passes. A review round then discovers blank or wrong captures, and after 3 rounds the task parks with `review-rounds-exhausted` (#0822, #0829). The step vocabulary also has no `hover`, so tooltip shots (e.g. the integration median tooltip) cannot be declared.
@@ -60,3 +61,8 @@ Related: #0734, #0755, #0613. Do not make a missing Playwright a failure (stays 
 - 2026-10-18T10:20:43Z · message_delivered: 1 message(s)
 - 2026-10-18T10:21:52Z · body
 - 2026-10-18T10:22:31Z · body
+- 2026-10-18T10:49:21Z · message_queued at 2026-10-18T10:49:21.322Z
+- 2026-10-18T10:49:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-18T11:06:40Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-10-18T11:06:40Z · message_delivered: 1 message(s)
+- 2026-10-18T11:12:06Z · needs_input
