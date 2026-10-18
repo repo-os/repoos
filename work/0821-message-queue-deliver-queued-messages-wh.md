@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/message-queue-deliver-queued-messages-wh
 created_at: "2026-10-18T02:12:03Z"
-updated_at: "2026-10-18T03:10:15Z"
+updated_at: "2026-10-18T03:18:25Z"
 ---
 ## Problem
 1. A message sent while an engineer or reviewer is running is queued in memory (src/server/agents.ts, queuedMessages). The queue is only drained when the task is started or sent to again. Nothing drains it when the turn ends, so a message sent during a turn can sit unread while the task moves to review (#0819 was handed off this way). The queue is also lost on a server restart. The 'agent busy — delivers when the turn ends' note is therefore not true.
@@ -55,3 +55,4 @@ Start from the queue in src/server/agents.ts (queuedMessages, messageQueuedAt, c
 - 2026-10-18T03:06:35Z · body
 - 2026-10-18T03:07:25Z · body
 - 2026-10-18T03:10:15Z · body
+- 2026-10-18T03:18:25Z · note: ui verification failed (6 issue(s)): [request] HTTP 404 for http://127.0.0.1:54905/api/tasks/9999/diff-stats (http://127.0.0.1:54905/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54905/api/tasks/9999/diff-stats); [request] HTTP 404 for http://127.0.0.1:54905/api/tasks/9999/shots (http://127.0.0.1:54905/api/tasks/9999/shots); [request] Failed to load resource: the server responded with a status of 404 (Not Fo
