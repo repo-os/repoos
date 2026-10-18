@@ -814,6 +814,9 @@ export const useRepoStore = defineStore("repo", () => {
    *  server for seconds at most, so a page reload reconciles to "not
    *  diagnosing" instead of a stale hint. */
   const tldrDiagnosingIds = ref<Set<string>>(new Set());
+  /** Ready-task ids whose Start work request is in flight or awaiting the
+   *  status flip to `active` (#0822). In-memory only — reconciles on reload. */
+  const startWorkPendingIds = ref<Set<string>>(new Set());
   /** AI-created card ids awaiting the human's acknowledgement (0320). Persisted;
    *  an id here keeps the violet "newly created" highlight across reloads. */
   const aiCreateUnacked = ref<Set<string>>(readIdSet(AI_CREATE_UNACKED_KEY));
@@ -1428,6 +1431,7 @@ export const useRepoStore = defineStore("repo", () => {
       };
       if (i >= 0) tasks.value[i] = merged;
       else tasks.value.push(merged);
+      if (merged.status === "active") clearStartWorkPendingLocal(e.task.id);
       const ui = useUiStore();
       // Sync the drawer's copy without re-deriving the tab: a background
       // update (e.g. the debounced agent+model override save) must not bounce
@@ -1506,6 +1510,7 @@ export const useRepoStore = defineStore("repo", () => {
       if (ui.active && ui.active.id === e.id) ui.close();
       setDoneError(e.id, null);
       clearPmWorkingLocal(e.id);
+      clearStartWorkPendingLocal(e.id);
       recount();
       void refresh().catch(onError);
       pushFeed(`<b>deleted</b> #${e.id}`, "#ff6b7d", "task.deleted");
@@ -1561,6 +1566,7 @@ export const useRepoStore = defineStore("repo", () => {
       }
       runningSince.value = { ...runningSince.value, [e.id]: e.at };
       agentActivityAt.value = { ...agentActivityAt.value, [e.id]: e.at };
+      clearStartWorkPendingLocal(e.id);
       pushFeed(`<b>agent coding</b> on #${e.id}`, "#9d7bff", "agent.running");
     } else if (e.type === "agent.queued") {
       if (!queuedIds.value.includes(e.id)) {
@@ -2199,6 +2205,9 @@ export const useRepoStore = defineStore("repo", () => {
       reviewModelOverride: t.reviewModelOverride ?? null,
       releasedAt: t.releasedAt ?? null,
     })) as unknown as Task[];
+    for (const t of tasks.value) {
+      if (t.status === "active") clearStartWorkPendingLocal(t.id);
+    }
     // A close-out error only belongs to a task that is still in review; drop any
     // re-hydrated before the board loaded (the hydration ran ahead of this fetch).
     for (const id of Object.keys(doneErrors.value)) {
@@ -2486,6 +2495,22 @@ export const useRepoStore = defineStore("repo", () => {
     pmWorkingIds.value = next;
   }
 
+  const isStartWorkPending = (id: string): boolean => startWorkPendingIds.value.has(id);
+
+  function markStartWorkPendingLocal(id: string): void {
+    if (startWorkPendingIds.value.has(id)) return;
+    const next = new Set(startWorkPendingIds.value);
+    next.add(id);
+    startWorkPendingIds.value = next;
+  }
+
+  function clearStartWorkPendingLocal(id: string): void {
+    if (!startWorkPendingIds.value.has(id)) return;
+    const next = new Set(startWorkPendingIds.value);
+    next.delete(id);
+    startWorkPendingIds.value = next;
+  }
+
   /** Start an agent turn; `clean` discards the dirty worktree and restarts fresh. */
   async function startWork(
     t: Task,
@@ -2493,16 +2518,25 @@ export const useRepoStore = defineStore("repo", () => {
     instruction?: string,
     overrideDependencies = false,
   ): Promise<void> {
-    const r = await api<{ ok: boolean; reason?: string }>(
-      `/api/tasks/${t.id}/start`,
-      JSON_OPTS("POST", { mode, instruction, overrideDependencies }),
-    );
-    if (!r.ok) {
-      const message = r.reason ?? "could not start work";
-      pushToast(message, "error");
-      throw new Error(message);
+    if (startWorkPendingIds.value.has(t.id)) return;
+    markStartWorkPendingLocal(t.id);
+    try {
+      const r = await api<{ ok: boolean; reason?: string }>(
+        `/api/tasks/${t.id}/start`,
+        JSON_OPTS("POST", { mode, instruction, overrideDependencies }),
+      );
+      if (!r.ok) {
+        clearStartWorkPendingLocal(t.id);
+        const message = r.reason ?? "could not start work";
+        pushToast(message, "error");
+        throw new Error(message);
+      }
+      acknowledgeHumanTaskAction(t.id);
+      if (t.status === "active") clearStartWorkPendingLocal(t.id);
+    } catch (err) {
+      clearStartWorkPendingLocal(t.id);
+      throw err;
     }
-    acknowledgeHumanTaskAction(t.id);
   }
 
   async function pauseWork(t: Task): Promise<void> {
@@ -3784,6 +3818,7 @@ export const useRepoStore = defineStore("repo", () => {
     isQueued,
     pmWorkingFor,
     debugTldrWorkingFor,
+    isStartWorkPending,
     startWork,
     pauseWork,
     abandonWork,
