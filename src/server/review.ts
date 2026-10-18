@@ -91,6 +91,7 @@ import { getCheckStore } from "../core/check-store.js";
 import type { CommandCaptureEvidence } from "./shot-capture.js";
 import { extractTaskProofCommands } from "../core/task-proof-commands.js";
 import { isEvidenceRefreshActive } from "./evidence-refresh-lock.js";
+import { resolvedUiVerification } from "../core/ui-verification-config.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
 import {
   gatherReviewVerification,
@@ -141,14 +142,14 @@ export function isStaleEvidenceOnlyReview(report: string, verdict: string | null
   );
 }
 
-/** Automatic evidence recovery is opt-in and requires an explicit stale-only reviewer marker. */
+/** Automatic evidence recovery requires an explicit stale-only reviewer marker (#0839: on by default). */
 export function shouldAutoRefreshStaleEvidence(
   config: RepoOSConfig,
   report: string,
   verdict: string | null,
 ): boolean {
   return (
-    config.uiVerification?.autoRefreshStaleOnce === true &&
+    resolvedUiVerification(config).autoRefreshStaleOnce === true &&
     isStaleEvidenceOnlyReview(report, verdict)
   );
 }
