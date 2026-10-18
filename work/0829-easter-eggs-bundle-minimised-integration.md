@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-integration-pill-tool
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T12:49:42Z"
+updated_at: "2026-10-18T12:49:43Z"
 last_close_out_gate_ms: 283669
 last_close_out_gate_at: "2026-10-18T12:49:35.980Z"
 review_passes: 6
@@ -293,3 +293,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T12:24:38Z · note: review pass 6: good to go
 - 2026-10-18T12:49:35Z · close-out gate completed in 284s
 - 2026-10-18T12:49:42Z · note: handoff requested (cli)
+- 2026-10-18T12:49:43Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
