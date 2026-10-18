@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-18T17:51:35Z"
+review_passes: 1
 id: "0837"
 title: "Server reload orphans running engineers: adopt or stop them (one writer per worktree)"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/server-reload-orphans-running-engineers-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:35Z"
-updated_at: "2026-10-18T17:51:34Z"
 last_check_failure: "repoos check at 2026-10-18T17:35:38.265Z: repoos check failed: ◆ Check plan"
 ---
 ## Problem
@@ -47,3 +48,4 @@ Related: #0834 (post-handoff checkpoint recovery), watchdog and CTO restart path
 - 2026-10-18T17:50:26Z · status active→review
 - 2026-10-18T17:50:28Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-18T17:51:34Z · note: review pass 1: needs some work
+
