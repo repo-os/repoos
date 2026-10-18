@@ -14,7 +14,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T05:37:54Z"
+updated_at: "2026-10-18T05:37:55Z"
 review_passes: 4
 close_out_repair_count: 1
 review_rounds: 2
@@ -92,12 +92,12 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "route": "/settings?tab=general&section=activity-animation",
 "highlight": ".activity-animation-preview .ai-bird-quick",
 "steps": [
-  {
-    "waitFor": ".activity-animation-preview .ai-style-bird-quick-trail"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "waitFor": ".activity-animation-preview .ai-style-bird-quick-trail"
+},
+{
+  "waitMs": 400
+}
 ],
 "state": "settings:birdQuickTrail"
 },
@@ -107,9 +107,9 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
 ],
 "state": "board:startWorkPending",
 "theme": "light"
@@ -120,9 +120,9 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
 ],
 "state": "board:startWorkPending",
 "theme": "dark"
@@ -133,9 +133,9 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "route": "/work?task=9999",
 "highlight": "[data-test-id=\"task-drawer-start-work\"]",
 "steps": [
-  {
-    "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
-  }
+{
+  "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
+}
 ],
 "state": "drawer:startWorkPending",
 "theme": "light"
@@ -146,9 +146,9 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "route": "/work?task=9999",
 "highlight": "[data-test-id=\"task-drawer-start-work\"]",
 "steps": [
-  {
-    "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
-  }
+{
+  "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
+}
 ],
 "state": "drawer:startWorkPending",
 "theme": "dark"
@@ -221,3 +221,4 @@ Items are independent; do not couple them. Never touch repoos.toml. Edit per-ite
 - 2026-10-18T05:37:22Z · body: Notes for AI (added)
 - 2026-10-18T05:37:30Z · body
 - 2026-10-18T05:37:54Z · note: waitFor .activity-animation-preview .ai-style-bird-quick-trail: waitFor: Timeout 5000ms exceeded. on /settings?tab=general&section=activity-animation
+- 2026-10-18T05:37:55Z · note: highlight .activity-animation-preview .ai-bird-quick matched nothing on /settings?tab=general&section=activity-animation
