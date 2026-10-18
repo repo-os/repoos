@@ -14,7 +14,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T05:37:17Z"
+updated_at: "2026-10-18T05:37:22Z"
 review_passes: 4
 close_out_repair_count: 1
 review_rounds: 2
@@ -162,6 +162,9 @@ E1: Start work shows a Starting… state and cannot be clicked twice. E2: Bird q
 ## Acceptance criteria
 See each item's Acceptance criteria (E1, E2). Both must hold; handoff shots must show the Starting… state (board and drawer, light and dark) and the Bird quick trail Settings preview.
 
+## Notes for AI
+Items are independent; do not couple them. Never touch repoos.toml. Edit per-item notes in the E1/E2 sections.
+
 ## Activity
 
 - 2026-10-18T02:36:59Z · created · njachowski@gmail.com
@@ -212,3 +215,4 @@ See each item's Acceptance criteria (E1, E2). Both must hold; handoff shots must
 - 2026-10-18T05:37:09Z · body: Problem (added)
 - 2026-10-18T05:37:13Z · body: Desired UX (added)
 - 2026-10-18T05:37:17Z · body: Acceptance criteria (added)
+- 2026-10-18T05:37:22Z · body: Notes for AI (added)
