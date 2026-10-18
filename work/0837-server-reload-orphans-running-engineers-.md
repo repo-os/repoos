@@ -2,7 +2,7 @@
 id: "0837"
 title: "Server reload orphans running engineers: adopt or stop them (one writer per worktree)"
 type: bug
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -44,4 +44,4 @@ Related: #0834 (post-handoff checkpoint recovery), watchdog and CTO restart path
 - 2026-10-18T17:24:27Z · body
 - 2026-10-18T17:35:34Z · message_delivered: 1 message(s)
 - 2026-10-18T17:41:34Z · body
-- 2026-10-18T17:50:26Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-18T17:50:26Z · status active→review
