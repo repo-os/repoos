@@ -1315,7 +1315,11 @@ export class ReviewManager {
       if (refreshed) {
         const current = this.index?.getTask(task.id) ?? task;
         if (current.status === "review" && !current.isArchived) {
-          this.logger.task(task.id, "info", "evidence-gap repair captured; starting one new review");
+          this.logger.task(
+            task.id,
+            "info",
+            "evidence-gap repair captured; starting one new review",
+          );
           void this.run(current);
         }
         return;

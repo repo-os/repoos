@@ -15,10 +15,7 @@ export const EVIDENCE_GAP_ONLY_MARKER = "EVIDENCE-GAP-ONLY";
 /** Automatic re-capture attempts before escalating to a human. */
 export const MAX_EVIDENCE_GAP_REPAIR_ATTEMPTS = 2;
 
-export function isEvidenceGapOnlyReview(
-  report: string,
-  verdict: string | null,
-): boolean {
+export function isEvidenceGapOnlyReview(report: string, verdict: string | null): boolean {
   const section = reviewVerdictSection(report);
   return (
     verdict !== "good to go" &&
@@ -70,18 +67,12 @@ export function readEvidenceGapRepairAttempts(config: RepoOSConfig, taskId: stri
   }
 }
 
-export function incrementEvidenceGapRepairAttempts(
-  config: RepoOSConfig,
-  taskId: string,
-): number {
+export function incrementEvidenceGapRepairAttempts(config: RepoOSConfig, taskId: string): number {
   const path = evidenceGapAttemptsPath(config, taskId);
   const next = readEvidenceGapRepairAttempts(config, taskId) + 1;
   try {
     mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(
-      path,
-      JSON.stringify({ attempts: next, at: new Date().toISOString() }),
-    );
+    writeFileSync(path, JSON.stringify({ attempts: next, at: new Date().toISOString() }));
   } catch {
     /* best-effort */
   }
@@ -91,7 +82,8 @@ export function incrementEvidenceGapRepairAttempts(
 export function clearEvidenceGapRepairAttempts(config: RepoOSConfig, taskId: string): void {
   const path = evidenceGapAttemptsPath(config, taskId);
   try {
-    if (existsSync(path)) writeFileSync(path, JSON.stringify({ attempts: 0, clearedAt: new Date().toISOString() }));
+    if (existsSync(path))
+      writeFileSync(path, JSON.stringify({ attempts: 0, clearedAt: new Date().toISOString() }));
   } catch {
     /* best-effort */
   }
