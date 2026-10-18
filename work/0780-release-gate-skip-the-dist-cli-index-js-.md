@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-18T18:38:03.952Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 id: "0780"
 title: "Release gate: skip the dist/cli/index.js check for projects without a bin target"
 type: bug
@@ -14,7 +12,9 @@ branch: feat/release-gate-skip-the-dist-cli-index-js-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T08:20:29Z"
-updated_at: "2026-10-18T18:38:03Z"
+updated_at: "2026-10-18T18:39:54Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-18T18:38:03.952Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 handoff_signal_retry_count: 1
 last_close_out_gate_ms: 121907
 last_close_out_gate_at: "2026-10-14T08:47:47.001Z"
@@ -69,4 +69,4 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 - 2026-10-18T18:28:29Z · body
 - 2026-10-18T18:29:59Z · body
 - 2026-10-18T18:38:03Z · message_delivered: 1 message(s)
-
+- 2026-10-18T18:39:54Z · body
