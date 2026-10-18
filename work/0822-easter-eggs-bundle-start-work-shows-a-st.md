@@ -2,16 +2,17 @@
 id: "0822"
 title: "Easter eggs bundle: Start work pending state, and Bird quick trail animation"
 type: bug
-status: inbox
+status: done
 priority: p2
 area: web
+merged_commit: f17129ce60ed2112293487416fa852633fde1899
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T06:13:10Z"
+updated_at: "2026-10-18T06:13:44Z"
 last_close_out_gate_ms: 85983
 last_close_out_gate_at: "2026-10-18T06:13:07.691Z"
 review_passes: 5
@@ -230,3 +231,4 @@ Items are independent; do not couple them. Never touch repoos.toml. Edit per-ite
 - 2026-10-18T06:13:07Z · close-out gate completed in 86s
 - 2026-10-18T06:13:09Z · note: handoff requested (cli)
 - 2026-10-18T06:13:10Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-18T06:13:44Z · status inbox→done, release:success
