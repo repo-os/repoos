@@ -5292,10 +5292,46 @@ export class AgentRunner {
   }
 
   /**
-   * Before spawning a new engineer, adopt or stop any positively identified live
-   * harness in this worktree so two writers never run at once (#0837).
+   * Re-attach a recorded live harness for this task/worktree when the human
+   * requests a start after reload (#0837). Boot uses `reconcileOrphanedEngineers`.
    */
-  private reconcileWorktreeBeforeEngineerSpawn(taskId: string, cwd: string): string | undefined {
+  private tryAdoptRecordedOrphanForTask(taskId: string, cwd: string): void {
+    if (this.entries.has(taskId)) return;
+    const registry = readRegistry(this.cacheDir);
+    const ownership = readProcessOwnership(this.cacheDir);
+    const candidates = collectRecordedEngineerPids(
+      registry.entries,
+      ownership,
+      new Set([taskId]),
+    ).filter((c) => c.taskId === taskId && sameWorkdirPath(c.workdir, cwd));
+    for (const cand of candidates) {
+      if (!verifyRecordedHarnessPid(cand.pid, cand.workdir)) continue;
+      const fromRegistry = registry.entries.find((e) => e.taskId === cand.taskId);
+      const rec: DurableRegistryEntry = fromRegistry
+        ? { ...fromRegistry, pid: cand.pid, processGroupLeader: cand.processGroupLeader }
+        : {
+            taskId: cand.taskId,
+            pid: cand.pid,
+            workdir: cand.workdir,
+            branch: "",
+            runId: cand.runId,
+            logStem: cand.logStem ?? cand.taskId,
+            kind: "engineer",
+            processGroupLeader: cand.processGroupLeader,
+          };
+      const live: DurableRegistryEntry[] = [];
+      if (this.adoptLiveRegistryEntry(rec, true, false, live)) {
+        this.onOrphanEngineerNote?.(cand.taskId, adoptedActivityNote(cand.pid));
+        const updated = readRegistry(this.cacheDir);
+        updated.entries = updated.entries.filter((e) => e.taskId !== cand.taskId).concat(live);
+        writeRegistry(this.cacheDir, updated);
+      }
+      return;
+    }
+  }
+
+  /** Block a new engineer when another task's recorded live harness holds this worktree. */
+  private otherTaskLiveEngineerInWorkdir(taskId: string, cwd: string): string | undefined {
     const registry = readRegistry(this.cacheDir);
     const ownership = readProcessOwnership(this.cacheDir);
     const taskIds = new Set<string>();
@@ -5304,40 +5340,11 @@ export class AgentRunner {
     }
     for (const o of ownership) taskIds.add(o.taskId);
     const candidates = collectRecordedEngineerPids(registry.entries, ownership, taskIds).filter(
-      (c) => sameWorkdirPath(c.workdir, cwd),
+      (c) => c.taskId !== taskId && sameWorkdirPath(c.workdir, cwd),
     );
     for (const cand of candidates) {
       if (!verifyRecordedHarnessPid(cand.pid, cand.workdir)) continue;
-      if (this.entries.has(cand.taskId)) {
-        if (cand.taskId !== taskId) {
-          return `This worktree already has a live engineer for task #${cand.taskId} (pid ${cand.pid})`;
-        }
-        continue;
-      }
-      if (cand.taskId === taskId) {
-        const fromRegistry = registry.entries.find((e) => e.taskId === cand.taskId);
-        const rec: DurableRegistryEntry = fromRegistry
-          ? { ...fromRegistry, pid: cand.pid, processGroupLeader: cand.processGroupLeader }
-          : {
-              taskId: cand.taskId,
-              pid: cand.pid,
-              workdir: cand.workdir,
-              branch: "",
-              runId: cand.runId,
-              logStem: cand.logStem ?? cand.taskId,
-              kind: "engineer",
-              processGroupLeader: cand.processGroupLeader,
-            };
-        const live: DurableRegistryEntry[] = [];
-        if (this.adoptLiveRegistryEntry(rec, true, false, live)) {
-          this.onOrphanEngineerNote?.(cand.taskId, adoptedActivityNote(cand.pid));
-        }
-        continue;
-      }
       return `This worktree already has a live engineer for task #${cand.taskId} (pid ${cand.pid})`;
-    }
-    if (this.isRunning(taskId)) {
-      return `Task #${taskId} already has a running agent`;
     }
     return undefined;
   }
@@ -5772,6 +5779,8 @@ export class AgentRunner {
       return { ok: false, reason: unsupportedCliMessage(agent.cli) };
     }
     this.checkExpiredMessages();
+    const cwd = opts.cwd ?? this.config.root;
+    this.tryAdoptRecordedOrphanForTask(task.id, cwd);
     if (
       this.entries.has(task.id) ||
       this.handoffsInFlight.has(task.id) ||
@@ -5779,7 +5788,6 @@ export class AgentRunner {
     ) {
       return { ok: false, reason: "task is already running or finalizing" };
     }
-    const cwd = opts.cwd ?? this.config.root;
     const session = this.sessions.get(task.id) ?? this.loadSession(task.id) ?? this.emptySession();
     this.captureUsageBaseline(session);
     session.workdir = cwd;
@@ -6315,8 +6323,8 @@ export class AgentRunner {
     );
     if (lockRefusal) return { ok: false, reason: lockRefusal };
     if (task && !opts.review) {
-      const orphanRefusal = this.reconcileWorktreeBeforeEngineerSpawn(task.id, cwd);
-      if (orphanRefusal) return { ok: false, reason: orphanRefusal };
+      const worktreeRefusal = this.otherTaskLiveEngineerInWorkdir(task.id, cwd);
+      if (worktreeRefusal) return { ok: false, reason: worktreeRefusal };
     }
     if (this.entries.size < this.maxConcurrentAgents) {
       return this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
