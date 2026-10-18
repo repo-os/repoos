@@ -627,6 +627,33 @@ export async function cutNewRelease(
   // Set once this run commits the bump below; drives the failure-path
   // handling (rollback vs. explain) for every phase after this point.
   let bumpedThisRun = false;
+  // A previous attempt can leave its version-bump commit on the branch — the
+  // Divot case: the release failed after committing the bump and before any
+  // tag, then the operator retried. This run does not create that commit, so
+  // the rollback below must never touch it, but a failure still has to say it
+  // exists rather than returning only the gate error (#0780). Record whether
+  // such a commit is still unpushed (the tag cannot exist for this version —
+  // checked above), and whether it is still HEAD.
+  let preexistingBump: "head" | "older" | null = null;
+  if (status.version === version) {
+    const remoteRef = `${release.remote ?? "origin"}/${status.branch}`;
+    const unpushed = await exec("git", ["log", `${remoteRef}..HEAD`, "--format=%s"], config.root);
+    let unpushedSubjects: string[] | null = null;
+    if (unpushed.code === 0) {
+      unpushedSubjects = unpushed.stdout
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line !== "");
+    } else {
+      // No remote-tracking ref (a local-only branch, or a fresh remote): the
+      // most we can prove is whether the bump is still exactly HEAD.
+      const head = await exec("git", ["log", "-1", "--format=%s"], config.root);
+      if (head.code === 0) unpushedSubjects = [head.stdout.trim()];
+    }
+    const at = unpushedSubjects?.indexOf(bumpSubject) ?? -1;
+    if (at === 0) preexistingBump = "head";
+    else if (at > 0) preexistingBump = "older";
+  }
   // Set once `pushing_main` succeeds — the bump is public from then on, so a
   // later failure must never rewrite it away.
   let mainPushed = false;
@@ -641,7 +668,28 @@ export async function cutNewRelease(
   async function failAfterBump(
     output: string,
   ): Promise<{ ok: boolean; status: ReleaseStatus; output: string }> {
-    if (!bumpedThisRun) return { ok: false, status, output };
+    if (!bumpedThisRun) {
+      // This run did not create a bump, but a previous attempt may have left
+      // one on the branch. Never rewrite it here (it is not ours to reset),
+      // but never return the bare gate error either — the operator must know
+      // the unpushed commit exists and how to undo it.
+      if (!preexistingBump) return { ok: false, status, output };
+      const note =
+        preexistingBump === "head"
+          ? `A version-bump commit ("${bumpSubject}") for this release was already on ` +
+            `${status.branch} before this attempt and is still HEAD; nothing was pushed. ` +
+            `Cut the release again with the same version to resume from the checks, or undo the bump with: ` +
+            `git reset --soft HEAD~1 && git checkout HEAD -- ${relVersionPath}.`
+          : `A version-bump commit ("${bumpSubject}") for this release was already on ` +
+            `${status.branch} before this attempt; nothing was pushed by this run. ` +
+            `Cut the release again with the same version to resume from the checks, or find it with ` +
+            `git log --oneline --grep='^${bumpSubject}$' and reset/revert it deliberately.`;
+      return {
+        ok: false,
+        status: await getReleaseStatus(config, exec),
+        output: `${output}\n\n${note}`,
+      };
+    }
     if (!mainPushed) {
       const head = await exec("git", ["log", "-1", "--format=%s"], config.root);
       if (head.code === 0 && head.stdout.trim() === bumpSubject) {
