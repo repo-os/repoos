@@ -156,9 +156,11 @@ session inherits them.
   viewport widths (`uiVerification.enabled` and `uiVerification.viewportWidths` in
   `repoos.toml`, default on with 1024px and 375px).
   Console errors, failed same-origin requests, overflow, blank captures, wrong-route
-  redirects, and failed required `assert` entries **block handoff**; a missing
-  `highlight`/`selector`/`waitFor` target is a **warning** with the screenshot
-  still saved (#0743). Use `state` fixtures (`closeOut:active`,
+  redirects, failed required `assert` entries, and a missing target on a
+  **declared** shot (`highlight`/`selector`/`click`/`fill`/`waitFor`/`hover`)
+  **block handoff** (#0830). Auto-matched captures still record a target miss as
+  a **warning** only (#0743). Tooltip and hover shots need a `hover` or `click`
+  step plus a `state` fixture. Use `state` fixtures (`closeOut:active`,
   `closeOut:uploading`, `closeOut:remoteTests`, `card:doneError`,
   `board:withReviewTask`, `board:cardChips`, `dev:failed`) when the UI only
   exists in a particular board

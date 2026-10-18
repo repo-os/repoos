@@ -52,11 +52,12 @@ export interface ShotVerdictView {
  * Playwright stack line.
  */
 function plainReasonForWarning(warning: string): string | undefined {
-  const step = /^(click|fill|waitFor)\s+(.+?):\s/.exec(warning);
+  const step = /^(click|fill|waitFor|hover)\s+(.+?):\s/.exec(warning);
   if (step) {
     const [, verb, selector] = step;
     if (verb === "click") return `couldn't find ${selector} to click`;
     if (verb === "fill") return `couldn't find ${selector} to fill`;
+    if (verb === "hover") return `couldn't find ${selector} to hover`;
     return `couldn't find ${selector}`;
   }
   const selectorMiss = /^selector\s+(.+?)\s+matched nothing/.exec(warning);

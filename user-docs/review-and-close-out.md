@@ -379,15 +379,17 @@ or in `review`:
   declared, and legacy untagged shots alike. If several declarations could
   belong to an automatic or legacy shot, all of them are removed and you're
   told how many, so re-add any you still want.
-**Shot hygiene (#0613):** a declared `highlight` or `selector` that matches
-nothing at capture time records a visible warning (for example: highlight `.x` matched
-nothing on /route) — capture still succeeds. Duplicate declarations with the
-same target, route, steps, and selector collapse to one capture with merged
-highlights. A capture that lands on a still-loading page (an `aria-busy`
-region, or text like "Loading changes…") after its steps and settle is recorded
-the same way — a failed step, not a pass — so a placeholder `click`/`waitFor`
-step that timed out and left the view loading cannot be mistaken for real
-evidence (#0755).
+**Shot hygiene (#0613, #0830):** a declared shot whose `highlight`, `selector`,
+or step target is missing **blocks handoff** with a per-shot message; the
+screenshot is still saved so you can see what went wrong. Auto-matched captures
+record a miss as a warning only (#0743). Duplicate declarations with the same
+target, route, steps, and selector collapse to one capture with merged
+highlights. A capture that lands on a still-loading page (an `aria-busy` region,
+or text like "Loading changes…") after its steps and settle blocks handoff for
+declared shots the same way — a failed step, not a pass — so a placeholder
+`click`/`waitFor` step that timed out and left the view loading cannot be
+mistaken for real evidence (#0755). Tooltip and popover shots need a `hover` or
+`click` step plus a `state` fixture.
 **Stale captures (#0755):** each handoff capture stores the tree it ran on, and
 the Changes tab compares that to the branch HEAD the review will use. When they
 differ — a fix landed after the capture — the UI changes sub-tab shows a
