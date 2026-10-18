@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 97205
-last_close_out_gate_at: "2026-10-18T20:20:53.541Z"
 id: "0093"
 title: Add recurring and scheduled tasks to the Agents page
 type: feature
-status: review
+status: done
 priority: p2
 area: agent
+merged_commit: c6ddf9e57fa81a28ebfecd58585a282b178ac67a
 assigned_to: ai
 created_by: ""
 branch: feat/add-recurring-and-scheduled-tasks-to-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-08-11T14:22:06Z"
-updated_at: "2026-10-18T20:20:53Z"
+updated_at: "2026-10-18T20:22:00Z"
+last_close_out_gate_ms: 97205
+last_close_out_gate_at: "2026-10-18T20:20:53.541Z"
 review_passes: 3
 review_rounds: 1
 ---
@@ -147,4 +148,4 @@ dependency constraint.
 - 2026-10-18T20:10:38Z · status active→review
 - 2026-10-18T20:11:29Z · note: review pass 3: good to go
 - 2026-10-18T20:20:53Z · close-out gate completed in 97s
-
+- 2026-10-18T20:22:00Z · status review→done, release:success
