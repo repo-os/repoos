@@ -235,6 +235,12 @@ const GROUPS: readonly CommandGroup[] = [
         desc: "Collect leaked task worktrees and branches",
         flags: "--yes · --dry-run",
       },
+      {
+        name: "migrate",
+        usage: "migrate [--dry-run]",
+        desc: "Move local attachment bytes to the configured cloud provider",
+        flags: "--dry-run",
+      },
     ],
   },
   {
