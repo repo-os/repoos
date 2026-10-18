@@ -2,7 +2,7 @@
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T07:12:13Z"
+updated_at: "2026-10-18T07:20:01Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -97,10 +97,10 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "highlight": "[data-test-id=integration-timer-tip]",
 "steps": [
 {
-  "click": "[data-test-id=integration-timer]"
+"click": "[data-test-id=integration-timer]"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ],
 "state": "integration:median15"
@@ -112,13 +112,13 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "highlight": ".debug-event-message",
 "steps": [
 {
-  "click": ".debug-event-expandable"
+"click": ".debug-event-expandable"
 },
 {
-  "waitFor": ".debug-event-message"
+"waitFor": ".debug-event-message"
 },
 {
-  "waitMs": 200
+"waitMs": 200
 }
 ]
 }
@@ -155,3 +155,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T07:09:26Z · body
 - 2026-10-18T07:10:23Z · body
 - 2026-10-18T07:12:13Z · body
+- 2026-10-18T07:20:01Z · status active→review
