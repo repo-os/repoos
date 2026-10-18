@@ -93,6 +93,7 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   exact("GET", "/api/attention"),
   exact("GET", "/api/decisions"),
   exact("GET", "/api/check-runs"),
+  exact("GET", "/api/resource-queues"),
   (r) => r.pattern.startsWith("/api/integration"),
   exact("GET", "/api/close-out/outcomes"),
   re("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/.source),
