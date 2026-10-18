@@ -11,7 +11,7 @@ branch: feat/handoff-a-shot-whose-waitfor-click-highl
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:25Z"
-updated_at: "2026-10-18T08:55:14Z"
+updated_at: "2026-10-18T08:55:16Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/shot-plan-edit.test.ts > parseShotEntry (#0627) > rejects a bad step and an unknown key, like the list parser on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 386dee459445c5b90d91d7d031ca4e8c26a2603d
 ---
@@ -48,3 +48,4 @@ Related: #0734, #0755, #0613. Do not make a missing Playwright a failure (stays 
 - 2026-10-18T08:45:14Z · message_queued at 2026-10-18T08:45:14.164Z
 - 2026-10-18T08:45:22Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/shot-plan-edit.test.ts > parseShotEntry (#0627) > rejects a bad step and an unknown key, like the list parser on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-18T08:55:14Z · message_delivered: 1 message(s)
+- 2026-10-18T08:55:16Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/shot-plan-edit.test.ts > parseShotEntry (#0627) > rejects a bad step and an unknown key, like the list parser on thinkpad — fix it in the feature branch and re-run the gate
