@@ -254,7 +254,7 @@ function sampleProcesses(pids: number[]): PsRecord[] {
 /**
  * Persist RepoOS process ownership so orphan detection survives a server restart.
  */
-function readOwnership(cacheDir: string): OwnershipRecord[] {
+export function readProcessOwnership(cacheDir: string): OwnershipRecord[] {
   const file = join(cacheDir, OWNERSHIP_FILE);
   if (!existsSync(file)) return [];
   try {
@@ -283,7 +283,7 @@ function syncOwnership(
   running: RunningAgentInfo[],
   livePids: Set<number>,
 ): OwnershipRecord[] {
-  const existing = readOwnership(cacheDir);
+  const existing = readProcessOwnership(cacheDir);
   const byPid = new Map<number, OwnershipRecord>();
   for (const r of existing) byPid.set(r.pid, r);
 
