@@ -15,6 +15,7 @@ import type { CheckRunRow } from "../core/check-store.js";
 import { getCheckStore } from "../core/check-store.js";
 import { loadConfig } from "../core/config.js";
 import { mainCheckoutRoot, runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
+import { REPOOS_TOML_REL } from "../core/repoos-toml-branch-guard.js";
 import { patchTaskFile } from "./write.js";
 import type { RepoOSConfig } from "../core/types.js";
 import { parseTask, recordChange } from "../core/task.js";
@@ -86,7 +87,9 @@ export async function commitWipCheckpointForRemoteGate(
     return "could not read git status before remote self-check";
   }
   if (dirty.length === 0) return null;
-  for (const path of dirty) {
+  const toCommit = dirty.filter((p) => p !== REPOOS_TOML_REL);
+  if (toCommit.length === 0) return null;
+  for (const path of toCommit) {
     const add = await runGit(worktreePath, ["add", "--", path], 60_000);
     if (add.status !== 0) {
       return `could not stage ${path} for remote self-check`;

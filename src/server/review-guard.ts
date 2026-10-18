@@ -30,6 +30,10 @@ import {
   currentBranch,
   agentTouchedFiles,
 } from "../core/git.js";
+import {
+  REPOOS_TOML_REL,
+  taskDeclaresRepoosTomlWork,
+} from "../core/repoos-toml-branch-guard.js";
 
 export interface ReviewGuardResult {
   ok: boolean;
@@ -133,6 +137,20 @@ export async function guardReviewTransition(
       ok: false,
       detail: `could not unstage generated artifacts: ${concise(unstageGenerated)}`,
     };
+  }
+  // Stray Settings/preview autosave must never ride an implement commit (#0827).
+  if (!taskDeclaresRepoosTomlWork(task)) {
+    const unstageToml = await runGit(
+      registered,
+      ["reset", "--quiet", "HEAD", "--", REPOOS_TOML_REL],
+      10_000,
+    );
+    if (unstageToml.status !== 0) {
+      return {
+        ok: false,
+        detail: `could not unstage ${REPOOS_TOML_REL}: ${concise(unstageToml)}`,
+      };
+    }
   }
   // Drop any OTHER task's work/*.md from this commit. A concurrent board write,
   // a `repoos` CLI call, or a stale merge can leave a sibling task file dirty in
