@@ -2,7 +2,7 @@
 id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and timer tooltip"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-18T01:21:28Z"
+updated_at: "2026-10-18T01:21:39Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-10-17T18:01:16.427Z: repoos check failed: ui verification failed (32 issue(s)): [request] HTTP 404 for http://127.0.0.1:53612/api/tasks/9999/diff-stats (http://127.0.0.1:53612/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:53612/api/tasks/9999/diff-stats); [request] HTTP 404 for http://127.0.0.1:53612/api/tasks/9999/diff (http://127.0.0.1:53612/api/tasks/9999/diff); [request] Failed to load resource: the server responded with a s… (truncated)"
 review_rounds: 2
@@ -50,29 +50,29 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 ```json
 [
 {
-  "label": "Docs skip warning and declare link",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": ".ui-changes .shot-problem",
-  "state": "drawer:shotEvidence"
+"label": "Docs skip warning and declare link",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": ".ui-changes .shot-problem",
+"state": "drawer:shotEvidence"
 },
 {
-  "label": "Screenshot viewer header with verdict and warning",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": ".shot-viewer-shot-head",
-  "steps": [
-    {
-      "click": ".ui-changes .shot-row button.shot-expand"
-    }
-  ],
-  "state": "drawer:shotEvidence"
+"label": "Screenshot viewer header with verdict and warning",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": ".shot-viewer-shot-head",
+"steps": [
+  {
+    "click": ".ui-changes .shot-row button.shot-expand"
+  }
+],
+"state": "drawer:shotEvidence"
 },
 {
-  "label": "Mixed AI and human step check copy",
-  "target": "default",
-  "route": "/agents?tab=model-routing",
-  "highlight": "[data-test-id=\"routing-human-step-row\"]"
+"label": "Mixed AI and human step check copy",
+"target": "default",
+"route": "/agents?tab=model-routing",
+"highlight": "[data-test-id=\"routing-human-step-row\"]"
 }
 ]
 ```
@@ -158,3 +158,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T01:19:56Z · message_queued at 2026-10-18T01:19:56.020Z
 - 2026-10-18T01:20:18Z · body
 - 2026-10-18T01:21:28Z · body
+- 2026-10-18T01:21:39Z · status active→review
