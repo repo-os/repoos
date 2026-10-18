@@ -2,7 +2,7 @@
 id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T17:00:43Z"
+updated_at: "2026-10-18T17:05:34Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-18T16:15:03.089Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 47285b26 to 5792761a) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 handoff_signal_retry_count: 1
@@ -108,3 +108,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T16:56:33Z · status review→active
 - 2026-10-18T16:56:39Z · message_queued at 2026-10-18T16:56:39.890Z
 - 2026-10-18T17:00:43Z · body
+- 2026-10-18T17:05:34Z · status active→review
