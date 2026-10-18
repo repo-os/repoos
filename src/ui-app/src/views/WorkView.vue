@@ -30,6 +30,7 @@ import SelectItem from "../components/ui/select/item.vue";
 import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
+import IntegrationStatusBar from "../components/IntegrationStatusBar.vue";
 import {
   applyShotPreviewFixture,
   isShotPreviewCaptureActive,
@@ -444,6 +445,7 @@ function openHuman(task: Task): void {
     </section>
 
     <div class="ibar-spacer" aria-hidden="true"></div>
+    <IntegrationStatusBar class="ibar-outer" />
   </div>
 </template>
 
