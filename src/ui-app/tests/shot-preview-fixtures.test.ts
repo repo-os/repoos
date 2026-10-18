@@ -369,6 +369,25 @@ describe("shot preview board fixtures (#0743)", () => {
     vi.unstubAllGlobals();
   });
 
+  it("keeps fixture debug logs when the drawer hydrates logs during capture (#0829)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    vi.stubGlobal("location", { search: "?task=0820&tab=debug&shotState=drawer:debugLogs" });
+    applyShotPreviewFixture(repo, "drawer:debugLogs");
+    // DebugPanel's onMounted calls refreshTaskLogs; during a `drawer:debugLogs`
+    // capture that must keep the seeded long row instead of fetching the real
+    // (and differently-shaped) logs, which is why the reviewer saw a truncated
+    // "shots: skipped…" row instead of the declared "main advanced…" expansion.
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    await repo.refreshTaskLogs("0820");
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(repo.taskLogs["0820"]).toHaveLength(2);
+    expect(repo.taskLogs["0820"]![0]!.message).toContain("main advanced with bookkeeping");
+    vi.unstubAllGlobals();
+  });
+
   it("seeds 15 succeeded close-outs for the integration timer tooltip (#0819)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
