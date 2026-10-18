@@ -82,6 +82,7 @@ import { getCheckStore } from "../core/check-store.js";
 import type { CommandCaptureEvidence } from "./shot-capture.js";
 import { extractTaskProofCommands } from "../core/task-proof-commands.js";
 import { isEvidenceRefreshActive } from "./evidence-refresh-lock.js";
+import { isEvidenceGapOnlyReview } from "../core/review-evidence-gaps.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
 import {
   gatherReviewVerification,
@@ -444,6 +445,11 @@ export function reviewMission(
     "If and only if the sole blocker is that otherwise usable UI evidence is stale",
     "for the reviewed HEAD, include the exact marker `STALE-EVIDENCE-ONLY` in the",
     "Verdict section. Never use it when code defects or any other blocker exists.",
+    "If and only if the code is correct but screenshot/UI evidence is missing, wrong,",
+    "or does not show the change, use verdict `good to go` and include the exact",
+    "marker `EVIDENCE-GAP-ONLY` in the Verdict section. List what is missing under",
+    "## Evidence gaps. Never use this marker when code defects exist — put those under",
+    "## Bugs instead.",
     "",
     "## Relevance",
     "Open with EXACTLY one of these three labels, then one sentence explaining why.",
@@ -671,6 +677,11 @@ export class ReviewManager {
   private readonly onDiagnosableFailure?: (taskId: string, reason: string) => void;
   /** Server-owned, guarded UI evidence refresh used only for stale-only reports (#0772). */
   private readonly onStaleEvidenceRefresh?: (task: Task) => Promise<boolean>;
+  /** Re-capture shots when the reviewer reports evidence-only gaps (#0831). */
+  private readonly onEvidenceGapRefresh?: (
+    task: Task,
+    report: ReviewReport,
+  ) => Promise<boolean>;
   /** Opt-in approval policy (#0686): fired when a run review finishes `good to go`. */
   private onCleanReviewVerdict?: (task: Task, report: ReviewReport) => void;
 
@@ -681,6 +692,7 @@ export class ReviewManager {
     index?: LiveIndex,
     onDiagnosableFailure?: (taskId: string, reason: string) => void,
     onStaleEvidenceRefresh?: (task: Task) => Promise<boolean>,
+    onEvidenceGapRefresh?: (task: Task, report: ReviewReport) => Promise<boolean>,
   ) {
     this.config = config;
     this.emit = emit;
@@ -688,6 +700,7 @@ export class ReviewManager {
     this.index = index;
     this.onDiagnosableFailure = onDiagnosableFailure;
     this.onStaleEvidenceRefresh = onStaleEvidenceRefresh;
+    this.onEvidenceGapRefresh = onEvidenceGapRefresh;
     this.logger = createLogger(config.root);
     this.db = getRepoOSDb(config.root);
   }
