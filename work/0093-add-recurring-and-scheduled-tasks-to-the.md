@@ -2,7 +2,7 @@
 id: "0093"
 title: Add recurring and scheduled tasks to the Agents page
 type: feature
-status: active
+status: review
 priority: p2
 area: agent
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/add-recurring-and-scheduled-tasks-to-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-08-11T14:22:06Z"
-updated_at: "2026-10-18T19:23:01Z"
+updated_at: "2026-10-18T19:30:49Z"
 ---
 ## Problem
 
@@ -124,3 +124,4 @@ dependency constraint.
 - 2026-10-18T19:15:52Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate
 - 2026-10-18T19:21:10Z · body
 - 2026-10-18T19:23:01Z · body
+- 2026-10-18T19:30:49Z · status active→review
