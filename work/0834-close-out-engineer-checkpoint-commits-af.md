@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 2 on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: d2877b27fd32fff7d7b672017429c769b589dcba
 id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
@@ -56,3 +58,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T12:09:11Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-18T12:09:11Z · note: handoff requested (cli)
 - 2026-10-18T12:09:53Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 2 on bee — fix it in the feature branch and re-run the gate
+
