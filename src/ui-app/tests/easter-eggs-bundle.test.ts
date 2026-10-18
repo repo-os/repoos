@@ -62,11 +62,14 @@ describe("easter-eggs bundle mutations (#0824)", () => {
     expect(after).toContain("**E3 · Third item** (docs) — fix three. Source: #0003.");
     expect(after).toContain("## E3 · Third item");
     expect(after).toContain("- Test: third test");
-    const prefix = before.slice(0, before.indexOf("## Activity"));
-    expect(after.startsWith(prefix)).toBe(true);
+    const e1 = before.match(/## E1 · First item[\s\S]*?(?=\n## E2)/)?.[0] ?? "";
+    const e2 = before.match(/## E2 · Second item[\s\S]*?(?=\n## Activity)/)?.[0] ?? "";
+    expect(after).toContain(e1);
+    expect(after).toContain(e2);
     expect(after.endsWith(before.slice(before.indexOf("## Activity")))).toBe(true);
     expect((after.match(/\*\*E1 ·/g) ?? []).length).toBe(1);
     expect((after.match(/\*\*E2 ·/g) ?? []).length).toBe(1);
+    expect((after.match(/\*\*E3 ·/g) ?? []).length).toBe(1);
   });
 
   it("ids increment and never reuse after E1 is removed from the list only", () => {
