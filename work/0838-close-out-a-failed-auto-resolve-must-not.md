@@ -11,7 +11,7 @@ branch: feat/close-out-a-failed-auto-resolve-must-not
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:48Z"
-updated_at: "2026-10-18T18:32:29Z"
+updated_at: "2026-10-18T18:40:49Z"
 ---
 ## Problem
 When Move to done failed with "auto-resolve failed for work/<id>-*.md" (#0829, 2026-10-18), the task's main-side file ended up `status: inbox`, the board showed it under Inbox, and the next handoff failed with "task must be active or review, but is inbox". A person had to `repoos mv <id> active` and re-run review. The failure path should leave the task where it was (review) with a clear error.
@@ -35,3 +35,4 @@ Related: #0835 (NUL byte made task files binary, a likely trigger), #0754 (task-
 - 2026-10-18T18:27:16Z · status ready→active, branch
 - 2026-10-18T18:31:39Z · body
 - 2026-10-18T18:32:29Z · body
+- 2026-10-18T18:40:49Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
