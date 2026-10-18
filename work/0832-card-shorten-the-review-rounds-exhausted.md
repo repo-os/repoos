@@ -11,7 +11,7 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T08:51:58Z"
+updated_at: "2026-10-18T08:53:27Z"
 review_passes: 1
 ---
 ## Problem
@@ -34,44 +34,44 @@ Bundle-sized: a second small item may be added by the human before start. Source
 ```json
 [
 {
-"label": "Review card: review-rounds-exhausted summary clamped (light)",
-"target": "default",
-"route": "/work?status=review",
-"highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
-"steps": [
-{
-"waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
-}
-],
-"assert": [
-{
-"selector": "[data-task-id=\"9999\"] .tc-needs-detail",
-"label": "detail omits duplicated verdict label",
-"text": "contrast audit"
-}
-],
-"state": "card:reviewRoundsExhausted",
-"theme": "light"
+  "label": "Review card: review-rounds-exhausted summary clamped (light)",
+  "target": "default",
+  "route": "/work?status=review",
+  "highlight": "[data-task-id=\"0832\"] .tc-needs-detail",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"0832\"] .tc-needs-detail"
+    }
+  ],
+  "assert": [
+    {
+      "selector": "[data-task-id=\"0832\"] .tc-needs-detail",
+      "label": "detail omits duplicated verdict label",
+      "text": "contrast audit"
+    }
+  ],
+  "state": "card:reviewRoundsExhausted",
+  "theme": "light"
 },
 {
-"label": "Review card: review-rounds-exhausted summary clamped (dark)",
-"target": "default",
-"route": "/work?status=review",
-"highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
-"steps": [
-{
-"waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
-}
-],
-"assert": [
-{
-"selector": "[data-task-id=\"9999\"] .tc-needs-detail",
-"label": "detail omits duplicated verdict in dark theme",
-"text": "contrast audit"
-}
-],
-"state": "card:reviewRoundsExhausted",
-"theme": "dark"
+  "label": "Review card: review-rounds-exhausted summary clamped (dark)",
+  "target": "default",
+  "route": "/work?status=review",
+  "highlight": "[data-task-id=\"0832\"] .tc-needs-detail",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"0832\"] .tc-needs-detail"
+    }
+  ],
+  "assert": [
+    {
+      "selector": "[data-task-id=\"0832\"] .tc-needs-detail",
+      "label": "detail omits duplicated verdict in dark theme",
+      "text": "contrast audit"
+    }
+  ],
+  "state": "card:reviewRoundsExhausted",
+  "theme": "dark"
 }
 ]
 ```
@@ -88,3 +88,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T08:42:23Z · status active→review
 - 2026-10-18T08:43:26Z · note: review pass 1: good to go
 - 2026-10-18T08:51:58Z · body
+- 2026-10-18T08:53:27Z · body
