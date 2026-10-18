@@ -13,7 +13,7 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-18T18:50:48Z"
+updated_at: "2026-10-18T18:51:57Z"
 last_check_failure: "repoos check at 2026-10-18T17:32:06.903Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 review_rounds: 1
 review_passes: 3
@@ -40,36 +40,18 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 ```json
 [
 {
-"label": "New input: outstanding attachment uploads after Create another input",
-"target": "default",
-"route": "/work",
-"steps": [
-{
-"click": ".new-btn"
+  "label": "New input: outstanding failed attachment upload with retry",
+  "target": "default",
+  "route": "/inputs",
+  "highlight": ".ff-upload-followup .ff-pending-file-retry",
+  "state": "panel:newInputOutstandingUpload"
 },
 {
-"waitFor": ".new-input-trigger"
-},
-{
-"click": ".new-input-trigger"
-},
-{
-"waitMs": 400
-}
-]
-},
-{
-"label": "New task: failed screenshot retry row on freeform form",
-"target": "default",
-"route": "/work",
-"steps": [
-{
-"click": ".new-btn"
-},
-{
-"waitMs": 400
-}
-]
+  "label": "New task: failed screenshot retry row on freeform form",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".ff-upload-followup .ff-pending-file-retry",
+  "state": "panel:freeformFailedScreenshot"
 }
 ]
 ```
@@ -102,3 +84,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-18T18:19:31Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-18T18:19:31Z · note: handoff requested (cli)
 - 2026-10-18T18:50:48Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
+- 2026-10-18T18:51:57Z · body
