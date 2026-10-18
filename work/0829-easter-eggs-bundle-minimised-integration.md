@@ -2,7 +2,7 @@
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -296,4 +296,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T12:49:43Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
 - 2026-10-18T12:50:20Z · status inbox→active
 - 2026-10-18T12:50:24Z · note: handoff requested (ui-review)
-- 2026-10-18T12:58:06Z · note: shots: skipped — 30 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-18T12:58:06Z · status active→review
