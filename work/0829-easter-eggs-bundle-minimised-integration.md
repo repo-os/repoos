@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T07:07:13Z"
+updated_at: "2026-10-18T07:07:27Z"
 ---
 ## Items
 - [ ] **E1 · Minimised pill shows only the median popup, centered** (web) — remove the extra native title tooltip over it. Source: Nick 2026-10-18.
@@ -95,7 +95,7 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "highlight": "[data-test-id=integration-timer]",
 "steps": [
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ],
 "state": "integration:median15"
@@ -107,10 +107,10 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "highlight": ".debug-event-message",
 "steps": [
 {
-  "click": ".debug-event-expandable"
+"click": ".debug-event-expandable"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ]
 }
@@ -140,3 +140,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T06:59:22Z · body
 - 2026-10-18T07:07:00Z · status active→review
 - 2026-10-18T07:07:13Z · note: highlight [data-test-id=integration-timer] matched nothing on /
+- 2026-10-18T07:07:27Z · note: click .debug-event-expandable: click: Error: strict mode violation: locator('.debug-event-expandable') resolved to 12 elements: on /work?task=0820&tab=debug
