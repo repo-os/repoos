@@ -2,10 +2,7 @@
 id: "0822"
 title: "Easter eggs bundle: Start work pending state, and Bird quick trail animation"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — E1 is implemented well (`startWorkPendingIds`, card + drawer guards, watchdog, `start-work-pending.test.ts` covers disable, single POST, failure clear, and drawer). E2 adds `bird-quick-trail` end-to-end (schema, `ActivityIndicator`, CSS keyframes, motion tests). Handoff UI evidence is incomplete: the Settings capture (`default-1.png`) landed on **Themes**, `waitFor`/`highlight` for `.ai-style-bird-quick-trail` timed out, and **drawer** light/dark PNGs (`default-4`/`default-5`) are referenced in verification JSON but **not on disk** (only three PNGs in `work/.attachments/0822/shots`). Board light/dark shots (`default-2`/`default-3`) clearly show disabled **Starting…** on #9999; bird footprints appear on reviewing cards, but that is not a Settings preview sign-off."
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T05:37:55Z"
+updated_at: "2026-10-18T05:50:00Z"
 review_passes: 4
 close_out_repair_count: 1
 review_rounds: 2
@@ -93,10 +90,10 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "highlight": ".activity-animation-preview .ai-bird-quick",
 "steps": [
 {
-  "waitFor": ".activity-animation-preview .ai-style-bird-quick-trail"
+"waitFor": ".activity-animation-preview .ai-style-bird-quick-trail"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ],
 "state": "settings:birdQuickTrail"
@@ -108,7 +105,7 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 }
 ],
 "state": "board:startWorkPending",
@@ -121,7 +118,7 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 }
 ],
 "state": "board:startWorkPending",
@@ -134,7 +131,7 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "highlight": "[data-test-id=\"task-drawer-start-work\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
+"waitFor": "[data-test-id=\"task-drawer-start-work\"]"
 }
 ],
 "state": "drawer:startWorkPending",
@@ -147,7 +144,7 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "highlight": "[data-test-id=\"task-drawer-start-work\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
+"waitFor": "[data-test-id=\"task-drawer-start-work\"]"
 }
 ],
 "state": "drawer:startWorkPending",
@@ -222,3 +219,5 @@ Items are independent; do not couple them. Never touch repoos.toml. Edit per-ite
 - 2026-10-18T05:37:30Z · body
 - 2026-10-18T05:37:54Z · note: waitFor .activity-animation-preview .ai-style-bird-quick-trail: waitFor: Timeout 5000ms exceeded. on /settings?tab=general&section=activity-animation
 - 2026-10-18T05:37:55Z · note: highlight .activity-animation-preview .ai-bird-quick matched nothing on /settings?tab=general&section=activity-animation
+- 2026-10-18T05:50:00Z · status review→active, needs_input
+- 2026-10-18T05:50:00Z · note: close-out repair: merge-conflict
