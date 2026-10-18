@@ -2,7 +2,7 @@
 id: "0093"
 title: Add recurring and scheduled tasks to the Agents page
 type: feature
-status: review
+status: active
 priority: p2
 area: agent
 assigned_to: ai
@@ -11,7 +11,9 @@ branch: feat/add-recurring-and-scheduled-tasks-to-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-08-11T14:22:06Z"
-updated_at: "2026-10-18T19:30:48Z"
+updated_at: "2026-10-18T19:51:33Z"
+review_passes: 2
+review_rounds: 1
 ---
 ## Problem
 
@@ -99,6 +101,19 @@ dependency constraint.
 
 - 0092 — recurring product-documentation audit use case
 
+## Shots
+```json
+[
+{
+"label": "Scheduled Tasks tab on Agents page",
+"target": "default",
+"route": "/agents?tab=scheduled",
+"highlight": ".scheduled-tasks-panel",
+"state": "board:withReviewTask"
+}
+]
+```
+
 ## Activity
 
 - 2026-08-11T14:22:06Z · created · unknown
@@ -106,4 +121,20 @@ dependency constraint.
 - 2026-10-18T19:02:40Z · status inbox→ready
 - 2026-10-18T19:02:43Z · cli_override, model_override
 - 2026-10-18T19:02:46Z · status ready→active, branch
-- 2026-10-18T19:30:48Z · status active→review
+- 2026-10-18T19:08:36Z · body
+- 2026-10-18T19:09:50Z · body
+- 2026-10-18T19:15:52Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate
+- 2026-10-18T19:21:10Z · body
+- 2026-10-18T19:23:01Z · body
+- 2026-10-18T19:30:49Z · status active→review
+- 2026-10-18T19:31:53Z · note: review pass 1: needs some work
+- 2026-10-18T19:31:53Z · status review→active
+- 2026-10-18T19:35:01Z · body
+- 2026-10-18T19:37:54Z · body
+- 2026-10-18T19:40:04Z · body
+- 2026-10-18T19:40:56Z · note: handoff requested (ui-review)
+- 2026-10-18T19:47:49Z · status active→review
+- 2026-10-18T19:48:37Z · note: review pass 2: good to go
+- 2026-10-18T19:51:25Z · status review→active
+- 2026-10-18T19:51:32Z · status active→review
+- 2026-10-18T19:51:33Z · note: handoff requested (cli)
