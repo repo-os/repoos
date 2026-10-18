@@ -64,7 +64,10 @@ export function storageExplanation(
   }
 
   if (status?.available === true && status.effective === selected) {
-    return `${labelFor(options, selected)} is configured and in effect. Attachments are stored there.`;
+    return (
+      `${labelFor(options, selected)} is configured and in effect. ` +
+      "Bytes are mirrored locally until upload is verified; retrieval still requires this RepoOS server or the on-disk file."
+    );
   }
 
   const reason = status?.reason?.trim();

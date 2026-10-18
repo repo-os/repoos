@@ -101,6 +101,7 @@ import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-re
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
+import { taskAttachmentCloudStates } from "../../core/attachment-resilience.js";
 import {
   readUiHandoffGateEvidence,
   effectiveHandoffTreeStatus,
@@ -808,6 +809,7 @@ export const getTask: RouteHandler = (ctx, _req, res, params) => {
         ),
         blockedBy: taskDependencyBlockers(config.root, t, index.getTasks()),
         preview: previews.get(t.id) ?? null,
+        attachmentCloud: taskAttachmentCloudStates(config, t.id, t.body),
       })
     : json(res, 404, { error: `Task #${id} not found` });
 };
