@@ -2,7 +2,7 @@
 id: "0666"
 title: Outage and mode-switch behavior
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: server
 story: Cloud attachment storage
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T08:29:35Z"
-updated_at: "2026-10-05T12:05:06Z"
+updated_at: "2026-10-18T16:58:40Z"
 ---
 ## Problem
 When Neon (cloud storage provider) is unavailable — network outage, provider down, or mode switched off — attachment reads and writes must degrade gracefully. The current behavior isn't defined: it could lose the task record (Markdown reference broken), delete the local original, or claim an upload succeeded when it didn't. This slice ensures outage behavior is explicit: the local original stays intact, the Markdown reference remains resolvable, and upload state shows "pending" rather than false success or lost data.
@@ -45,3 +45,4 @@ When Neon (cloud storage provider) is unavailable — network outage, provider d
 - 2026-10-05T11:15:29Z · needs_input
 - 2026-10-05T12:04:18Z · needs_input
 - 2026-10-05T12:05:06Z · body
+- 2026-10-18T16:58:40Z · status inbox→ready
