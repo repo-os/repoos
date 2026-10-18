@@ -71,10 +71,6 @@ export function parseReviewRelevance(markdown: string | null | undefined): Revie
   return null;
 }
 
-/**
- * Replace the verdict label in a report's `## Verdict` section (#0714 mechanical
- * clamp). Leaves the rest of the section intact.
- */
 /** First non-empty line of a `## Verdict` section body, if any. */
 export function reviewVerdictFirstLine(markdown: string): string | null {
   const section = reviewVerdictSection(markdown);
@@ -123,6 +119,10 @@ export function verdictSummaryForNeedsInput(markdown: string): string | undefine
   return `\`${verdict}\` — ${capped}`;
 }
 
+/**
+ * Replace the verdict label in a report's `## Verdict` section (#0714 mechanical
+ * clamp). Leaves the rest of the section intact.
+ */
 export function replaceReviewVerdict(markdown: string, verdict: ReviewVerdict): string {
   const heading = /^#{1,6}\s+verdict\s*$/im.exec(markdown);
   if (!heading) return markdown;
