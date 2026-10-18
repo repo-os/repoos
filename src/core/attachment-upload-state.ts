@@ -9,12 +9,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { RepoOSConfig } from "./types.js";
 
-export type AttachmentUploadPhase =
-  | "pending"
-  | "uploading"
-  | "uploaded"
-  | "verified"
-  | "failed";
+export type AttachmentUploadPhase = "pending" | "uploading" | "uploaded" | "verified" | "failed";
 
 /** Logical attachment base: task screenshots vs input attachments. */
 export type AttachmentUploadBase = "work" | "inputs";

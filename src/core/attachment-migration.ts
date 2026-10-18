@@ -304,9 +304,7 @@ export function runAttachmentMigration(
       let action: MigrationPlanLine["action"] = "upload";
       if (existing?.phase === "verified") {
         action = "skip-verified";
-      } else if (
-        cloudObjectMatches(cloud, namespace, targetName, contentSha256, byteLength)
-      ) {
+      } else if (cloudObjectMatches(cloud, namespace, targetName, contentSha256, byteLength)) {
         action = "verify-only";
       } else if (existing?.phase === "uploading" || existing?.phase === "failed") {
         action = "resume-upload";

@@ -22,9 +22,7 @@ function printPlan(dryRun: boolean, result: ReturnType<typeof runAttachmentMigra
   for (const line of result.planned) {
     const from = `${line.base}/${line.namespace}/${line.sourceName}`;
     const to =
-      line.targetName === line.sourceName
-        ? line.targetName
-        : `${line.targetName} (rewrite refs)`;
+      line.targetName === line.sourceName ? line.targetName : `${line.targetName} (rewrite refs)`;
     const verb =
       line.action === "skip-verified"
         ? c.dim("skip")
