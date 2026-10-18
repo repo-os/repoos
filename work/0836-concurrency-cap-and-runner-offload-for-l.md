@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-18T18:17:20Z"
+review_passes: 4
 id: "0836"
 title: Concurrency cap and runner offload for local checks and Playwright runs (with Settings controls)
 type: feature
@@ -14,8 +16,6 @@ branch: feat/concurrency-cap-and-runner-offload-for-l
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:25Z"
-updated_at: "2026-10-18T18:17:20Z"
-review_passes: 3
 review_rounds: 2
 ---
 ## Problem
@@ -106,3 +106,4 @@ Look at src/commands/check.ts, src/server/integration-orchestrator.ts, the shot/
 - 2026-10-18T18:16:12Z · status active→review
 - 2026-10-18T18:17:19Z · note: review pass 4: needs some work
 - 2026-10-18T18:17:20Z · needs_input
+
