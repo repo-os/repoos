@@ -2,14 +2,14 @@
 id: "0836"
 title: Concurrency cap and runner offload for local checks and Playwright runs (with Settings controls)
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [core, web]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T16:14:25Z"
-updated_at: "2026-10-18T16:14:25Z"
+updated_at: "2026-10-18T16:16:18Z"
 ---
 ## Problem
 On 2026-10-18 the laptop (24 GB) hit load 60-90 with swap full several times while four tasks were handing off together: 33 `repoos check` processes, 27 bun/vitest processes and 40 Playwright processes at once. Engineers then died with "Connection stalled repeatedly", handoffs were interrupted, and the RepoOS UI showed "Server connection issue". Remote validation already offloads install+build+test to Tailscale runners (docs/remote-validation.md), but the local build, guards, the Playwright UI smoke test, contrast audit, handoff shot capture, UI verification and `repoos shot`/`verify` all run locally, and `remoteValidation.fallbackToLocal = true` fans the full local test suite out when a runner is unreachable.
@@ -33,3 +33,4 @@ Look at src/commands/check.ts, src/server/integration-orchestrator.ts, the shot/
 ## Activity
 
 - 2026-10-18T16:14:25Z · created · njachowski@gmail.com
+- 2026-10-18T16:16:18Z · status inbox→ready
