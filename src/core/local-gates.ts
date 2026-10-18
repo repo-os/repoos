@@ -1,6 +1,7 @@
 import type { RepoOSConfig } from "./types.js";
 import {
   acquireCrossProcessSlot,
+  acquireLocalFallbackSerializeSlot,
   localCheckLockRoot,
   playwrightLockRoot,
   SlotQueueTimeoutError,
@@ -10,6 +11,7 @@ import {
   localChecksQueueTimeoutMs,
   playwrightMaxConcurrent,
   playwrightQueueTimeoutMs,
+  remoteLocalFallbackMode,
 } from "./resource-limits.js";
 import { waitForPressureRelief } from "./pressure-guard.js";
 import { clearQueueMarker, writeQueueMarker, type LocalQueueKind } from "./local-queue-marker.js";
@@ -62,6 +64,16 @@ function unmarkQueue(
   clearQueueMarker(boardRoot(repoRoot), cacheDir, taskId, kind);
 }
 
+function isRemoteLocalFallbackRun(env: NodeJS.ProcessEnv): boolean {
+  return (
+    Boolean(env.REPOOS_REMOTE_FALLBACK_DETAIL?.trim()) || env.REPOOS_LOCAL_FALLBACK_RUN === "1"
+  );
+}
+
+function isSerializeFallbackRun(config: RepoOSConfig, env: NodeJS.ProcessEnv): boolean {
+  return isRemoteLocalFallbackRun(env) && remoteLocalFallbackMode(config) === "serialize";
+}
+
 export interface AcquireLocalCheckSlotOpts {
   repoRoot: string;
   config: RepoOSConfig;
@@ -77,7 +89,9 @@ export async function acquireLocalCheckSlot(opts: AcquireLocalCheckSlotOpts): Pr
   if (opts.env.REPOOS_LOCAL_CHECK_SLOT_HELD === "1") {
     return () => {};
   }
-  const limit = localCheckLimitForRun(opts.config, opts.env);
+  const limit = isSerializeFallbackRun(opts.config, opts.env)
+    ? 1
+    : localCheckLimitForRun(opts.config, opts.env);
   if (limit <= 0) {
     throw new Error(
       "remote validation fell back locally but remoteValidation.localFallback is off — " +
@@ -99,30 +113,49 @@ export async function acquireLocalCheckSlot(opts: AcquireLocalCheckSlotOpts): Pr
     unmarkQueue(board, cacheDir, opts.env, "pressure");
   }
 
-  const releaseCheck = await acquireCrossProcessSlot({
-    slots: limit,
-    lockRoot: localCheckLockRoot(board, cacheDir),
-    waitTimeoutMs: waitMs,
-    meta: {
-      kind: "local-check",
-      pid: process.pid,
-      taskId: taskIdFromEnv(opts.env),
-    },
-    onQueued: (ahead, position) => {
+  let releaseSerialize: (() => void) | null = null;
+  if (isSerializeFallbackRun(opts.config, opts.env)) {
+    releaseSerialize = await acquireLocalFallbackSerializeSlot(board, cacheDir, waitMs, (ahead) => {
+      const position = ahead + 1;
       const msg =
         ahead === 0
-          ? "waiting for a local check slot"
-          : `waiting for a local check slot (${ahead} ahead, position ${position})`;
+          ? "waiting for serialized local fallback slot"
+          : `waiting for serialized local fallback (${ahead} ahead, position ${position})`;
       emit(`[queue] ${msg}`);
       markQueue(board, cacheDir, opts.env, "local-check", ahead, position, msg);
-    },
-  });
+    });
+  }
 
-  unmarkQueue(board, cacheDir, opts.env, "local-check");
+  try {
+    const releaseCheck = await acquireCrossProcessSlot({
+      slots: limit,
+      lockRoot: localCheckLockRoot(board, cacheDir),
+      waitTimeoutMs: waitMs,
+      meta: {
+        kind: "local-check",
+        pid: process.pid,
+        taskId: taskIdFromEnv(opts.env),
+      },
+      onQueued: (ahead, position) => {
+        const msg =
+          ahead === 0
+            ? "waiting for a local check slot"
+            : `waiting for a local check slot (${ahead} ahead, position ${position})`;
+        emit(`[queue] ${msg}`);
+        markQueue(board, cacheDir, opts.env, "local-check", ahead, position, msg);
+      },
+    });
 
-  return () => {
-    releaseCheck();
-  };
+    unmarkQueue(board, cacheDir, opts.env, "local-check");
+
+    return () => {
+      releaseCheck();
+      releaseSerialize?.();
+    };
+  } catch (err) {
+    releaseSerialize?.();
+    throw err;
+  }
 }
 
 export async function acquirePlaywrightSlot(

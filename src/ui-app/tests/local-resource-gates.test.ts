@@ -9,6 +9,7 @@ import type { RepoOSConfig } from "../../core/types.js";
 import {
   acquireCrossProcessSlot,
   localCheckLockRoot,
+  localFallbackSerializeLockRoot,
   playwrightLockRoot,
 } from "../../core/cross-process-slots.js";
 import { ConcurrencyGate } from "../../core/concurrency-gate.js";
@@ -119,6 +120,28 @@ describe("localFallback serialize", () => {
     config.remoteValidation = { localFallback: "serialize" };
     const env = { [REPOOS_REMOTE_FALLBACK_DETAIL]: "no healthy runner" };
     expect(localCheckLimitForRun(config, env)).toBe(1);
+  });
+
+  it("never exceeds one global serialize slot across processes", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-serialize-slots-"));
+    dirs.push(root);
+    const lockRoot = localFallbackSerializeLockRoot(root, ".repoos");
+    let peak = 0;
+    let running = 0;
+    const job = async () => {
+      const release = await acquireCrossProcessSlot({
+        slots: 1,
+        lockRoot,
+        waitTimeoutMs: 30_000,
+      });
+      running++;
+      peak = Math.max(peak, running);
+      await new Promise((r) => setTimeout(r, 30));
+      running--;
+      release();
+    };
+    await Promise.all([job(), job(), job()]);
+    expect(peak).toBe(1);
   });
 });
 
