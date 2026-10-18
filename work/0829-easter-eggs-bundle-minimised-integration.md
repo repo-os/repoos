@@ -3,6 +3,9 @@ id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — E1/E2/E3 look implemented with solid unit tests and a one-time backfill, but handoff UI evidence does not satisfy the visual acceptance criteria (all three captures missed their `waitFor`/click/highlight targets; no median tooltip, no minimised pill, no expanded “main advanced” row). Re-capture after fixing the shot plan before sign-off."
 priority: p3
 area: web
 assigned_to: ai
@@ -198,3 +201,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T07:31:51Z · note: waitFor [data-test-id=integration-timer-tip]: waitFor: Timeout 5000ms exceeded. on /
 - 2026-10-18T07:31:51Z · note: highlight [data-test-id=integration-timer-tip] matched nothing on /
 - 2026-10-18T07:32:11Z · note: review pass 3: needs some work
+- 2026-10-18T07:32:11Z · needs_input
