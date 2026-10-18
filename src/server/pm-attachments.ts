@@ -20,7 +20,7 @@
  * the pending folder never accumulates.
  */
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { generateAttachmentObjectName } from "../core/attachment-reference.js";
