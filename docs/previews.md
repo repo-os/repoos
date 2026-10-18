@@ -137,7 +137,7 @@ What to shoot is declarative: a task body may carry a `## Shots` section with
 a fenced JSON list (`src/core/shot-plan.ts`), one entry per capture —
 `target`, `route`, optional `selector`, an optional `highlight` CSS selector
 (outlines the changed element(s) in the capture, #0603), a human `label`, and
-optional ordered `steps` (`click` / `fill`+`text` / `waitFor` / `waitMs`,
+optional ordered `steps` (`click` / `fill`+`text` / `waitFor` / `hover` / `waitMs`,
 plain CSS selectors). Routes and selectors only — no framework knowledge.
 
 ### Evidence shots for non-web targets (#0761)
@@ -309,13 +309,17 @@ record (not a "console log"), and the mechanical console-error check is
 browser console record it cannot produce. A task with no capture plan at all is
 told the same; `shots: skipped` is correct behavior, not a capture failure.
 
-**Shot hygiene (#0613, #0734, #0743).** When a declared `highlight`,
-`selector`, or `waitFor` step target is missing at capture time, the handoff
-gate records a **visible warning**, still saves the screenshot, and does **not**
-block handoff (#0743). Console errors, failed same-origin requests, overflow,
-blank captures, wrong-route redirects, and failed required `assert` entries
-still block. Prefer a `state` fixture (below) or a `?tab=` route over brittle
-`waitFor` steps when the UI only exists in a particular board state. The
+**Shot hygiene (#0613, #0734, #0830).** When a **declared** shot's `highlight`,
+`selector`, or step target (`click`, `fill`, `waitFor`, `hover`) is missing at
+capture time, the handoff gate still saves the screenshot but **blocks handoff**
+with a per-shot `[missing-target]` message (route, step, selector). Tooltip and
+popover shots need a `hover` or `click` step on the trigger plus a `state`
+fixture that seeds the data. **Auto-matched** (undeclared) captures keep the
+lenient behaviour from #0743: a miss is a visible warning only. Console errors,
+failed same-origin requests, overflow, blank captures, wrong-route redirects,
+and failed required `assert` entries still block. Prefer a `state` fixture
+(below) or a `?tab=` route over brittle `waitFor` steps when the UI only exists
+in a particular board state. The
 browser's FINAL route after any
 redirect is also compared to the declared route — a login bounce or a
 client-side guard that lands elsewhere fails the shot rather than passing a

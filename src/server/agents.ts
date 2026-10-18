@@ -56,6 +56,7 @@ import { parseTaskAreas } from "../core/areas.js";
 import { commitTaskFile, fileCommittedClean, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
+import { SHOT_PREVIEW_FIXTURE_IDS } from "../core/shot-fixtures.js";
 import { buildStoryContext, storyContextSummary } from "../core/story-context.js";
 import { unresolvedReviewFindingsBlock } from "../core/review-findings.js";
 import { needsInputClearsOnNewEngineerRun } from "../core/needs-input.js";
@@ -3844,7 +3845,9 @@ export function missionFor(
     '[{"target": "default", "route": "/", "label": "New-task drawer open", "highlight": "[data-test-id=\\\"new-task\\\"] .drawer", "steps": [{"click": "button[data-test-id=\\\"new-task\\\"]"}, {"waitMs": 300}]}]',
     "```",
     "",
-    'Entries take `target`, `route`, an optional `selector`, a human `label`, an optional `highlight` selector, and ordered `steps` (`click` / `fill`+`text` / `waitFor` / `waitMs`, plain CSS selectors). Pass the raw JSON list to `--shots`; do not add Markdown fences yourself. Plain routes and selectors only — no framework knowledge. Say what changed: give every entry a `label` naming the change ("Task drawer with new title"), and where possible a `highlight` CSS selector — RepoOS outlines the matched element(s) in the capture so the reviewer sees the change, not just the page. Keep it short: the shots a reviewer needs, usually 1–3. Shots are captured automatically only when the task declares them or the diff touches a UI target\'s paths and a route exists to shoot — a tests-only or docs-wording-only diff gets a visible `shots: skipped`, which is correct, not a failure. When the task is handed off to review, RepoOS captures declared shots through the managed preview (`repoos shot` by hand stays available), so writing the list is the whole job.',
+    'Entries take `target`, `route`, an optional `selector`, a human `label`, an optional `highlight` selector, optional `state` (a preview-board fixture — see below), and ordered `steps` (`click` / `fill`+`text` / `waitFor` / `hover` / `waitMs`, plain CSS selectors). Pass the raw JSON list to `--shots`; do not add Markdown fences yourself. Plain routes and selectors only — no framework knowledge. Say what changed: give every entry a `label` naming the change ("Task drawer with new title"), and where possible a `highlight` CSS selector — RepoOS outlines the matched element(s) in the capture so the reviewer sees the change, not just the page. Tooltip, popover, and hover-only UI need a `hover` or `click` step on the trigger plus a `state` fixture that seeds the data the preview board would not show on its own. A declared shot whose step, `highlight`, or `selector` target is missing **fails handoff** with a per-shot message (route, step, selector) — fix the plan before requesting review. Auto-matched (undeclared) captures keep lenient behaviour: a miss is a warning only. Known `state` fixtures: ' +
+      SHOT_PREVIEW_FIXTURE_IDS.map((id) => `\`${id}\``).join(", ") +
+      ". Keep it short: the shots a reviewer needs, usually 1–3. Shots are captured automatically only when the task declares them or the diff touches a UI target's paths and a route exists to shoot — a tests-only or docs-wording-only diff gets a visible `shots: skipped`, which is correct, not a failure. When the task is handed off to review, RepoOS captures declared shots through the managed preview (`repoos shot` by hand stays available), so writing the list is the whole job.",
   );
   return parts.join("\n");
 }
