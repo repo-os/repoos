@@ -2,7 +2,7 @@
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T08:14:16Z"
+updated_at: "2026-10-18T08:22:35Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -91,80 +91,80 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 ```json
 [
 {
-  "label": "Minimised pill median tooltip (light)",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=\"integration-timer-tip\"]",
-  "steps": [
-    {
-      "waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
-    },
-    {
-      "click": ".ibar-strip [data-test-id=\"integration-timer\"]"
-    },
-    {
-      "waitFor": "[data-test-id=\"integration-timer-tip\"]"
-    }
-  ],
-  "state": "integration:median15",
-  "theme": "light"
+"label": "Minimised pill median tooltip (light)",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"integration-timer-tip\"]",
+"steps": [
+  {
+    "waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
+  },
+  {
+    "click": ".ibar-strip [data-test-id=\"integration-timer\"]"
+  },
+  {
+    "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+  }
+],
+"state": "integration:median15",
+"theme": "light"
 },
 {
-  "label": "Minimised pill median tooltip (dark)",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=\"integration-timer-tip\"]",
-  "steps": [
-    {
-      "waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
-    },
-    {
-      "click": ".ibar-strip [data-test-id=\"integration-timer\"]"
-    },
-    {
-      "waitFor": "[data-test-id=\"integration-timer-tip\"]"
-    }
-  ],
-  "state": "integration:median15",
-  "theme": "dark"
+"label": "Minimised pill median tooltip (dark)",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"integration-timer-tip\"]",
+"steps": [
+  {
+    "waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
+  },
+  {
+    "click": ".ibar-strip [data-test-id=\"integration-timer\"]"
+  },
+  {
+    "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+  }
+],
+"state": "integration:median15",
+"theme": "dark"
 },
 {
-  "label": "Debug log expanded full message (light)",
-  "target": "default",
-  "route": "/work?task=0820&tab=debug",
-  "highlight": ".debug-event-message",
-  "steps": [
-    {
-      "waitFor": ".debug-event-expandable"
-    },
-    {
-      "click": ".debug-event-expandable"
-    },
-    {
-      "waitFor": ".debug-event-message"
-    }
-  ],
-  "state": "drawer:debugLogs",
-  "theme": "light"
+"label": "Debug log expanded full message (light)",
+"target": "default",
+"route": "/work?task=0820&tab=debug",
+"highlight": ".debug-event-message",
+"steps": [
+  {
+    "waitFor": ".debug-event-expandable"
+  },
+  {
+    "click": ".debug-event-expandable"
+  },
+  {
+    "waitFor": ".debug-event-message"
+  }
+],
+"state": "drawer:debugLogs",
+"theme": "light"
 },
 {
-  "label": "Debug log expanded full message (dark)",
-  "target": "default",
-  "route": "/work?task=0820&tab=debug",
-  "highlight": ".debug-event-message",
-  "steps": [
-    {
-      "waitFor": ".debug-event-expandable"
-    },
-    {
-      "click": ".debug-event-expandable"
-    },
-    {
-      "waitFor": ".debug-event-message"
-    }
-  ],
-  "state": "drawer:debugLogs",
-  "theme": "dark"
+"label": "Debug log expanded full message (dark)",
+"target": "default",
+"route": "/work?task=0820&tab=debug",
+"highlight": ".debug-event-message",
+"steps": [
+  {
+    "waitFor": ".debug-event-expandable"
+  },
+  {
+    "click": ".debug-event-expandable"
+  },
+  {
+    "waitFor": ".debug-event-message"
+  }
+],
+"state": "drawer:debugLogs",
+"theme": "dark"
 }
 ]
 ```
@@ -227,3 +227,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T08:12:07Z · body
 - 2026-10-18T08:13:33Z · body
 - 2026-10-18T08:14:16Z · body
+- 2026-10-18T08:22:35Z · status active→review
