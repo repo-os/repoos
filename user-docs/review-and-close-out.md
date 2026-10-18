@@ -76,6 +76,12 @@ capture cannot run (a live engineer/reviewer, a dirty worktree, or a moved
 HEAD), it simply waits: use **Refresh evidence** in the Changes tab (or
 `repoos verify <id>`) to re-capture on the current HEAD, then review again.
 
+A second exception is **`EVIDENCE-GAP-ONLY`**: the code is acceptable but
+handoff shots or verification are missing or unusable (not stale). The task stays
+in `review`, automatic re-capture runs without counting a review round, and after
+two failed repairs RepoOS flags **Handoff evidence still missing**
+(`evidence-gap-exhausted`). See `docs/review-evidence-gaps.md`.
+
 This is deliberate self-correction, not a failure. If you move a task to review
 and then find it back in `active`, check its activity log — you'll see the
 review round and the findings that caused it.
