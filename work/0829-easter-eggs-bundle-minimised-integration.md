@@ -3,16 +3,13 @@ id: "0829"
 title: "Easter eggs bundle: minimised integration pill tooltip, and why the median says 10 runs"
 type: bug
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T06:18:23Z"
+updated_at: "2026-10-18T06:18:32Z"
 ---
 ## Items
 
@@ -75,3 +72,4 @@ Items are independent; never touch repoos.toml; edit per-item notes in the E1/E2
 - 2026-10-18T06:18:10Z · body: Desired UX (added)
 - 2026-10-18T06:18:17Z · body: Acceptance criteria (added)
 - 2026-10-18T06:18:23Z · body: Notes for AI (added)
+- 2026-10-18T06:18:32Z · needs_input
