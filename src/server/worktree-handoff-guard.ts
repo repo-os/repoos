@@ -522,10 +522,7 @@ export async function verifyWorktreeHandoffIntegrity(
         return { ok: true };
       }
       const taskId = opts.taskId;
-      if (
-        taskId &&
-        (await isEngineerCheckpointOnlyDrift(wt, expectedSha, actualHead, taskId))
-      ) {
+      if (taskId && (await isEngineerCheckpointOnlyDrift(wt, expectedSha, actualHead, taskId))) {
         return {
           ok: false,
           headMoved: true,
