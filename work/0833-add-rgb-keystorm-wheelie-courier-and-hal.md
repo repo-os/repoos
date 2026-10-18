@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-rgb-keystorm-wheelie-courier-and-hal
 created_at: "2026-10-18T08:58:09Z"
-updated_at: "2026-10-18T13:10:15Z"
+updated_at: "2026-10-18T13:11:13Z"
 ---
 ## Problem
 
@@ -103,32 +103,32 @@ path(c,p.purple,g=>{g.moveTo(-30,-18);g.quadraticCurveTo(-14,-29,-8,-61);g.bezie
 ```json
 [
 {
-  "label": "RGB keystorm in the Settings activity-animation preview",
-  "target": "default",
-  "route": "/settings?tab=general&section=activity-animation",
-  "highlight": ".activity-animation-preview",
-  "state": "settings:rgbKeystorm"
+"label": "RGB keystorm in the Settings activity-animation preview",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": ".activity-animation-preview",
+"state": "settings:rgbKeystorm"
 },
 {
-  "label": "Wheelie courier in the Settings activity-animation preview",
-  "target": "default",
-  "route": "/settings?tab=general&section=activity-animation",
-  "highlight": ".activity-animation-preview",
-  "state": "settings:wheelieCourier"
+"label": "Wheelie courier in the Settings activity-animation preview",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": ".activity-animation-preview",
+"state": "settings:wheelieCourier"
 },
 {
-  "label": "Boo swoop in the Settings activity-animation preview",
-  "target": "default",
-  "route": "/settings?tab=general&section=activity-animation",
-  "highlight": ".activity-animation-preview",
-  "state": "settings:booSwoop"
+"label": "Boo swoop in the Settings activity-animation preview",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": ".activity-animation-preview",
+"state": "settings:booSwoop"
 },
 {
-  "label": "Pumpkin spell in the Settings activity-animation preview",
-  "target": "default",
-  "route": "/settings?tab=general&section=activity-animation",
-  "highlight": ".activity-animation-preview",
-  "state": "settings:pumpkinSpell"
+"label": "Pumpkin spell in the Settings activity-animation preview",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": ".activity-animation-preview",
+"state": "settings:pumpkinSpell"
 }
 ]
 ```
@@ -142,3 +142,4 @@ path(c,p.purple,g=>{g.moveTo(-30,-18);g.quadraticCurveTo(-14,-29,-8,-61);g.bezie
 - 2026-10-18T12:28:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-18T13:00:55Z · body
 - 2026-10-18T13:10:15Z · body
+- 2026-10-18T13:11:13Z · body
