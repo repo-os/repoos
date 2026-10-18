@@ -355,6 +355,71 @@ criteria / Notes for AI is refused unless \`--force\` is passed; the error
 message points at this section form.
 `;
 
+/** Title prefix for easter-eggs bundle tasks (see docs/easter-eggs-bundles.md). */
+export const EASTER_EGGS_BUNDLE_TITLE_PREFIX = "Easter eggs bundle: ";
+
+/** Checklist heading at the top of every easter-eggs bundle body. */
+export const EASTER_EGGS_BUNDLE_ITEMS_HEADING = "## Items";
+
+/** Sub-headings inside each `## E<n> · Title` section. */
+export const EASTER_EGGS_BUNDLE_ITEM_SUBSECTIONS = [
+  "Problem",
+  "Desired UX",
+  "Acceptance criteria",
+  "Notes for AI",
+] as const;
+
+/** One `## Items` checklist line; id is stable for the life of the bundle. */
+export function easterEggsBundleItemsLine(
+  id: number,
+  title: string,
+  area: string,
+  fix: string,
+  source: string,
+  done = false,
+): string {
+  const check = done ? "x" : " ";
+  return `- [${check}] **E${id} · ${title}** (${area}) — ${fix}. Source: ${source}.`;
+}
+
+export function easterEggsBundleItemSectionHeading(id: number, title: string): string {
+  return `## E${id} · ${title}`;
+}
+
+export function easterEggsBundleItemsIntro(): string {
+  return (
+    "Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. " +
+    "Edit one item at a time with `--section`; never resend the whole body."
+  );
+}
+
+/**
+ * Starter body for a new easter-eggs bundle with one item. PM agents and future
+ * `repoos bundle` helpers should match this layout exactly.
+ */
+export function easterEggsBundleStarterBody(opts: {
+  id: number;
+  title: string;
+  area: string;
+  fix: string;
+  source: string;
+}): string {
+  const blocks: string[] = [
+    EASTER_EGGS_BUNDLE_ITEMS_HEADING,
+    "",
+    easterEggsBundleItemsLine(opts.id, opts.title, opts.area, opts.fix, opts.source),
+    "",
+    easterEggsBundleItemsIntro(),
+    "",
+    easterEggsBundleItemSectionHeading(opts.id, opts.title),
+    "",
+  ];
+  for (const name of EASTER_EGGS_BUNDLE_ITEM_SUBSECTIONS) {
+    blocks.push(`### ${name}`, "", "");
+  }
+  return blocks.join("\n");
+}
+
 /** Marker makes the optional existing-repo addition safe to offer repeatedly. */
 export const REPOOS_AGENTS_SECTION_MARKER = "<!-- repoos:managed-instructions -->";
 
