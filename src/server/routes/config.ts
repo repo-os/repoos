@@ -937,9 +937,7 @@ function dropTomlTableArray(tomlPath: string, key: string): void {
 /** Read repoos.toml, tolerating its absence (a repo may have no config file). */
 function readRawToml(root: string, cacheDir?: string): string {
   const path =
-    cacheDir !== undefined
-      ? configTomlReadPath(root, cacheDir)
-      : join(root, "repoos.toml");
+    cacheDir !== undefined ? configTomlReadPath(root, cacheDir) : join(root, "repoos.toml");
   return existsSync(path) ? readFileSync(path, "utf8") : "";
 }
 
