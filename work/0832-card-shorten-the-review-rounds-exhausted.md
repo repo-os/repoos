@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-18T09:01:03Z"
-review_passes: 1
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
@@ -13,6 +11,8 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
+updated_at: "2026-10-18T09:01:04Z"
+review_passes: 1
 ---
 ## Problem
 The task card shows the whole first line of the reviewer's Verdict section as `needs_input_detail` (`src/server/review.ts` ~1749), under the header "REVIEW STILL FINDING ISSUES". It is often a long paragraph and begins with `` `needs some work` — ``, which the header already says.
@@ -91,4 +91,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T08:59:30Z · status active→review
 - 2026-10-18T08:59:40Z · note: shots: failed — preview for target "default" did not start: Preview servers are read-only; only the main RepoOS control plane can start previews
 - 2026-10-18T09:01:03Z · note: review pass 1: needs some work
-
+- 2026-10-18T09:01:04Z · message_queued at 2026-10-18T09:01:04.677Z
