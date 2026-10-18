@@ -202,7 +202,7 @@ export const sendChatMessage: RouteHandler = async (ctx, req, res) => {
   if (!result.ok) {
     return json(res, 400, { error: result.reason ?? "could not send message" });
   }
-  return json(res, 200, { ok: true });
+  return json(res, 200, { ok: true, queued: Boolean((result as any).queued) });
 };
 
 /** Interrupt a running RepoOS guide (Ross) response. Idempotent. */

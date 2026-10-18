@@ -13497,6 +13497,18 @@
   border-radius: 13px;
   background: var(--panel-solid);
 }
+/* "Queued — will be read when the current turn ends" (#0821): shown above a
+ * composer while a message sent during a running turn waits its turn. Built
+ * from shared tokens so it reads identically in every theme (light and dark). */
+.chat-queued-note {
+  margin: 0 12px 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--txt-dim);
+  font: 12px / 1.5 var(--font-sans);
+}
 /* The active/selected state (#0757): a bright accent border and a stronger
  * accent glow, so it is immediately obvious which chat input is focused. The
  * old `--border-bright` border was too subtle to read as "selected". */

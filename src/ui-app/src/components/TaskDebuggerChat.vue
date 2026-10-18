@@ -15,9 +15,11 @@ import AiChatThinking from "./AiChatThinking.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import ChatSendButton from "./ChatSendButton.vue";
+import ChatQueuedNotice from "./ChatQueuedNotice.vue";
 import { ArrowDown } from "lucide-vue-next";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
+import { useQueuedSend } from "../composables/useQueuedSend";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 
 const props = withDefaults(defineProps<{ task: Task; active?: boolean }>(), { active: true });
@@ -37,6 +39,8 @@ const draftTextarea = ref<HTMLTextAreaElement | null>(null);
 
 const enabled = computed(() => evalBuiltInEnabled() || hydratedEnabled.value);
 const busy = computed(() => submitting.value || repo.runningIds.includes(CHAT_ID.value));
+/** True while a task-Debugger message queued during a turn waits to be read (#0821). */
+const { queued, markQueued } = useQueuedSend(() => repo.runningIds.includes(CHAT_ID.value));
 const lines = computed(() => repo.outputs[CHAT_ID.value] ?? []);
 const hasConversation = computed(() => lines.value.length > 0);
 
@@ -89,7 +93,7 @@ async function hydrate(): Promise<void> {
 
 async function send(): Promise<void> {
   const text = draft.value.trim();
-  if (!text || busy.value || !enabled.value) return;
+  if (!text || !enabled.value) return;
   submitting.value = true;
   const optimistic: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
   const optimisticIndex = lines.value.length;
@@ -97,10 +101,11 @@ async function send(): Promise<void> {
   draft.value = "";
   scrollToLatest("auto");
   try {
-    await api(
+    const res = await api<{ ok: boolean; queued?: boolean }>(
       `/api/tasks/${props.task.id}/debugger/message`,
       JSON_OPTS("POST", { text, optimistic: true }),
     );
+    if (res.queued) markQueued();
   } catch (error) {
     repo.outputs[CHAT_ID.value] = (repo.outputs[CHAT_ID.value] ?? []).filter(
       (_entry, index) => index !== optimisticIndex,
@@ -283,6 +288,7 @@ watch(
         <button type="button" :disabled="busy" @click="openDispatch('pm')">Send to PM</button>
       </div>
 
+      <ChatQueuedNotice :active="queued" />
       <form class="ai-chat-compose td-compose" @submit.prevent="send">
         <textarea
           ref="draftTextarea"
@@ -309,7 +315,7 @@ watch(
             <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
           </svg>
         </button>
-        <ChatSendButton v-else :disabled="!draft.trim() || busy || !enabled" />
+        <ChatSendButton :disabled="!draft.trim() || !enabled" />
       </form>
     </template>
 

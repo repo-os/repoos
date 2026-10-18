@@ -157,6 +157,12 @@ export class CTOManager {
   private readonly runs = new Map<string, Run>();
   private readonly sessions = new Map<string, AgentOutputEntry[]>();
   private readonly sessionTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  /**
+   * Human messages sent while a CTO run was in progress (#0821), drained in
+   * order when the run finishes. Mirrors the task/chat message queue so a CTO
+   * send is queued instead of refused with "a CTO run is already in progress".
+   */
+  private readonly queuedMessages: string[] = [];
   private readonly runner?: AgentRunner;
   /** Database for recording CTO sessions (0230). */
   private readonly db: RepoOSDb | null;
@@ -326,10 +332,36 @@ export class CTOManager {
       : { ok: false, reason: result.error ?? "the CTO agent failed", report };
   }
 
-  async send(text: string): Promise<{ ok: boolean; reason?: string }> {
-    if (this.runs.size > 0) {
-      return { ok: false, reason: "a CTO run is already in progress" };
-    }
+  /**
+   * Send a chat message to the CTO. A message sent while a run is in progress
+   * is queued (#0821), not refused: it is delivered, in order, once the current
+   * run finishes, so the human never has to retype it.
+   */
+  send(text: string): { ok: boolean; reason?: string; queued?: boolean } {
+    if (this.runs.size > 0) return this.queueMessage(text);
+    void this.runChat(text).finally(() => {
+      queueMicrotask(() => void this.drainQueuedMessages());
+    });
+    return { ok: true };
+  }
+
+  /** Queue a CTO chat message for delivery after the current run (#0821). */
+  queueMessage(text: string): { ok: true; queued: true } {
+    this.queuedMessages.push(text);
+    return { ok: true, queued: true };
+  }
+
+  /** Deliver queued CTO chat messages in order, one run at a time (#0821). */
+  private async drainQueuedMessages(): Promise<void> {
+    if (this.runs.size > 0) return;
+    const next = this.queuedMessages.shift();
+    if (next === undefined) return;
+    void this.runChat(next).finally(() => {
+      queueMicrotask(() => void this.drainQueuedMessages());
+    });
+  }
+
+  private async runChat(text: string): Promise<{ ok: boolean; reason?: string }> {
     const agent = resolveCto(this.config);
     if (!agent) {
       return { ok: false, reason: "the CTO agent is disabled" };

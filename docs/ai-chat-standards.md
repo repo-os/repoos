@@ -55,6 +55,10 @@ dictation control use the same square-ish outline-button language, so the input,
 upload and submit controls read as one widget instead of three. No helper line
 is printed under a composer: the busy/disabled state is conveyed by the shared
 controls and the working indicator, never by a line of prose under the input.
+The one allowed helper is the queued-send notice **above** the composer
+(`ChatQueuedNotice`, `.chat-queued-note`, #0821): a message sent while a turn is
+running is accepted and read when that turn ends, and saying so beats leaving
+the human to guess whether their send landed.
 
 **One rounded highlight for the active input (#0746, brighter in #0757).** Every
 chat input — the floating-head chats, the PM chat, the Model Playground and the
@@ -68,9 +72,11 @@ the base `outline: 0`, and Tailwind's preflight zeroes the textarea's
 `border-radius`, so without the explicit
 `.ai-chat-compose textarea:focus { outline: none }` guard the input shows a
 *square* ring inside its rounded box. The shared box also owns the one disabled
-treatment (`.ai-chat-compose textarea:disabled`), so a busy chat dims its input
-identically everywhere instead of only on the surface that remembered a bespoke
-rule. `.playground-compose` is the only
+treatment (`.ai-chat-compose textarea:disabled`), so an unavailable chat
+(agent disabled) dims its input identically everywhere instead of only on the
+surface that remembered a bespoke rule. A merely **busy** chat keeps its input
+editable: the send is queued and read when the turn ends (#0821), so the textarea
+is disabled only when the agent itself is unavailable, not while it is working. `.playground-compose` is the only
 remaining `-compose` block, and it carries nothing but a margin reset — if you
 find yourself adding a border, radius, background, or focus ring there, that is
 the drift this rule exists to stop.
@@ -216,7 +222,11 @@ model call with its own `{ role, text }` messages and no tool events at all.
    shared `.ai-chat-compose` class on the composer (never a bespoke `-compose`
    block): it owns the box, focus outline, textarea and icon-button sizing. The
    send control is the shared paperplane button — never a text label of your own
-   — and an attach control uses the shared `.ai-chat-attach` class.
+   — and an attach control uses the shared `.ai-chat-attach` class. Do **not**
+   disable send on `busy` and do not swap it out for a stop button only: a send
+   during a running turn is queued (#0821), so the input and send stay usable.
+   Track that with `useQueuedSend(() => <running>)` and render
+   `<ChatQueuedNotice :active="queued" />` above the composer.
 6. Run the transcript through `toDisplayRows(lines)` and render each row:
    `row.kind === "tools"` goes to `<ChatToolCallRow :calls="row.calls" :at="row.at" />`,
    everything else to your own bubbles (use `bubbleRole(row)` for the speaker and
