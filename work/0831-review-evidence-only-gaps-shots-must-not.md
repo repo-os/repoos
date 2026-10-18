@@ -2,7 +2,7 @@
 id: "0831"
 title: "Review: evidence-only gaps (shots) must not consume code-review rounds or park the task"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/review-evidence-only-gaps-shots-must-not
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:30Z"
-updated_at: "2026-10-18T08:27:03Z"
+updated_at: "2026-10-18T08:33:00Z"
 ---
 ## Problem
 The reviewer returns "needs some work" for missing or wrong screenshot evidence even when the code is fine (#0829 pass 3, #0822 passes 1-4). Each such verdict counts as a review round, bounces the engineer, and after MAX_AUTO_REVIEW_ROUNDS raises `review-rounds-exhausted` so the task waits for a human, although the engineer has no code to change.
@@ -39,3 +39,5 @@ Design-heavy: write the decision into docs before coding; keep the reviewer prom
 - 2026-10-18T08:22:37Z · body
 - 2026-10-18T08:24:29Z · body
 - 2026-10-18T08:27:03Z · body
+- 2026-10-18T08:33:00Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-18T08:33:00Z · note: handoff requested (cli)
