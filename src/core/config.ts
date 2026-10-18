@@ -2674,6 +2674,36 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Block new checks and starts when the 1-minute load average divided by CPU count exceeds this value. Default 4.",
     },
     {
+      key: "pressureGuard.minAvailableMemRatio",
+      label: "Pressure guard: minimum available memory",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 0.08,
+      description:
+        "Block new checks and engineer starts when reclaimable memory falls below this fraction of total RAM. Default 0.08 (8%).",
+    },
+    {
+      key: "localChecks.queueTimeoutMs",
+      label: "Local check queue timeout (ms)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 2_700_000,
+      description:
+        "How long a queued local `repoos check` waits for a slot before failing with an actionable timeout. Default 45 minutes (2_700_000 ms).",
+    },
+    {
+      key: "playwright.queueTimeoutMs",
+      label: "Playwright queue timeout (ms)",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 2_700_000,
+      description:
+        "How long queued Playwright work waits for a browser slot before failing. Default 45 minutes (2_700_000 ms).",
+    },
+    {
       key: "remoteValidation.offloadBrowserSteps",
       label: "Remote validation: offload browser steps",
       type: "boolean",
@@ -2681,7 +2711,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: false,
       description:
-        "When a runner is available, run UI smoke and shot/verification capture on it instead of locally. Off by default; local runs stay under the Playwright cap.",
+        "When remote validation passes on a runner, run ui-smoke and rendered-contrast there (validate.sh) and skip those local gate steps. Requires Playwright on the runner image. Off by default.",
     },
     {
       key: "remoteValidation.localFallback",

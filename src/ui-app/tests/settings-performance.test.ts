@@ -5,8 +5,11 @@ import { generalSectionForKey, isGeneralSchemaFieldKey } from "../src/settings-l
 describe("Settings — performance controls (#0836)", () => {
   const keys = [
     "localChecks.maxConcurrent",
+    "localChecks.queueTimeoutMs",
     "playwright.maxConcurrent",
+    "playwright.queueTimeoutMs",
     "pressureGuard.enabled",
+    "pressureGuard.minAvailableMemRatio",
     "remoteValidation.offloadBrowserSteps",
     "remoteValidation.localFallback",
   ];

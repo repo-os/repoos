@@ -92,6 +92,13 @@ import {
 } from "../server/pre-review-remote-gate.js";
 import { acquireLocalCheckSlot, SlotQueueTimeoutError } from "../core/local-gates.js";
 import { remoteLocalFallbackMode } from "../core/resource-limits.js";
+import {
+  browserGateOffloadSkipDetail,
+  isBrowserGateStepName,
+  localBrowserGateOffloaded,
+  offloadBrowserStepsEnabled,
+  REPOOS_BROWSER_STEPS_REMOTE,
+} from "../core/browser-offload.js";
 
 /**
  * Split a CSS selector list on top-level commas (respecting parentheses,
@@ -1647,6 +1654,9 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
 }
 
 async function stepUiSmoke(ctx: StepContext): Promise<BuiltinOutcome> {
+  if (localBrowserGateOffloaded(process.env)) {
+    return skipped(browserGateOffloadSkipDetail("ui-smoke"));
+  }
   const smoke = resolveSmokeCommand(ctx.cfg.check?.uiSmoke, ctx.scriptPkg.scripts);
   if (!smoke) {
     return skipped(
@@ -1909,6 +1919,17 @@ export async function runCheckPlan(
         name: step.name,
         status: "skipped",
         detail: `skipped — blocked by failed step(s): ${blocked.join(", ")}`,
+        durationMs: 0,
+        required: step.required,
+      });
+      continue;
+    }
+
+    if (localBrowserGateOffloaded(process.env) && isBrowserGateStepName(step.name)) {
+      push({
+        name: step.name,
+        status: "skipped",
+        detail: browserGateOffloadSkipDetail(step.name),
         durationMs: 0,
         required: step.required,
       });
@@ -2210,6 +2231,9 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       }
       if (gate.kind === "local-only" && gate.skipTests) {
         process.env.REPOOS_SKIP_TESTS = "1";
+        if (offloadBrowserStepsEnabled(cfg)) {
+          process.env[REPOOS_BROWSER_STEPS_REMOTE] = "1";
+        }
         console.log(c.green("  ✔ remote gate passed — running local guards only\n"));
       } else if (gate.kind === "local-only") {
         if (remoteLocalFallbackMode(cfg) === "off") {
