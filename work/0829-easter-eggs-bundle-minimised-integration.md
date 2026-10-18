@@ -9,12 +9,12 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T06:18:32Z"
+updated_at: "2026-10-18T06:48:56Z"
 ---
 ## Items
-
 - [ ] **E1 · Minimised pill shows only the median popup, centered** (web) — remove the extra native title tooltip over it. Source: Nick 2026-10-18.
 - [ ] **E2 · Median run count: explain "10 runs" and backfill if possible** (web, server) — the agreed window is the last 15 succeeded full close-outs. Source: Nick 2026-10-18.
+- [ ] **E3 · Debug logs: expanded row always shows the full message** (web) — rows truncated with an ellipsis must expand to the whole message. Source: Nick 2026-10-18.
 
 ## E1 · Minimised pill shows only the median popup, centered
 
@@ -73,3 +73,4 @@ Items are independent; never touch repoos.toml; edit per-item notes in the E1/E2
 - 2026-10-18T06:18:17Z · body: Acceptance criteria (added)
 - 2026-10-18T06:18:23Z · body: Notes for AI (added)
 - 2026-10-18T06:18:32Z · needs_input
+- 2026-10-18T06:48:56Z · body: Items (added 1)
