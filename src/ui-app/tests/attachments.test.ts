@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRepoOS } from "../../core/repoos";
+import { STABLE_ATTACHMENT_OBJECT_RE } from "../../core/attachment-reference";
 import {
   appendScreenshotsSection,
   MAX_SCREENSHOT_BYTES,
@@ -69,9 +70,10 @@ describe("saveScreenshot", () => {
       const meta = result as typeof META;
       expect(meta.id).toBe("1");
       expect(meta.name).toBe("shot");
-      expect(meta.path).toBe(`work/.attachments/${task.id}/screenshot-1.png`);
-      expect(meta.url).toBe(`/api/tasks/${task.id}/attachments/screenshot-1.png`);
-      const abs = resolveScreenshot(repoos.config, task.id, "screenshot-1.png");
+      const objectName = meta.url.split("/").pop()!;
+      expect(STABLE_ATTACHMENT_OBJECT_RE.test(decodeURIComponent(objectName))).toBe(true);
+      expect(meta.path).toBe(`work/.attachments/${task.id}/${decodeURIComponent(objectName)}`);
+      const abs = resolveScreenshot(repoos.config, task.id, objectName);
       expect(abs).not.toBeNull();
       expect(readFileSync(abs!, "utf8")).toBe(Buffer.from(PNG_1PX, "base64").toString());
     } finally {
@@ -92,7 +94,9 @@ describe("saveScreenshot", () => {
       });
       expect("error" in second).toBe(false);
       expect((second as typeof META).id).toBe("2");
-      expect((second as typeof META).path).toBe(`work/.attachments/${task.id}/screenshot-2.png`);
+      const secondObject = (second as typeof META).url.split("/").pop()!;
+      expect(STABLE_ATTACHMENT_OBJECT_RE.test(decodeURIComponent(secondObject))).toBe(true);
+      expect((second as typeof META).id).toBe("2");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

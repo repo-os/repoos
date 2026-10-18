@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { STABLE_ATTACHMENT_OBJECT_RE, taskAttachmentStore } from "../../core/attachment-reference";
 import { createRepoOS } from "../../core/repoos";
 import {
   attachPendingPmImages,
@@ -86,21 +87,23 @@ describe("attachPendingPmImages", () => {
     const updated = attachPendingPmImages(repoos.config, task, (key) => key === SESSION);
     expect(updated).not.toBeNull();
     expect(updated!.body).toContain("## Screenshots");
-    expect(updated!.body).toContain(
-      `![shot-one](/api/tasks/${task.id}/attachments/screenshot-1.png)`,
-    );
-    expect(updated!.body).toContain(
-      `![shot-two](/api/tasks/${task.id}/attachments/screenshot-2.png)`,
-    );
+    expect(updated!.body).toContain(`![shot-one](/api/tasks/${task.id}/attachments/`);
+    expect(updated!.body).toContain(`![shot-two](/api/tasks/${task.id}/attachments/`);
     // Screenshots stay before the append-only Activity section.
     expect(updated!.body.indexOf("## Screenshots")).toBeLessThan(
       updated!.body.indexOf("## Activity"),
     );
     // Files landed in the task's own attachment folder, bytes intact.
-    const abs1 = resolveScreenshot(repoos.config, task.id, "screenshot-1.png");
-    expect(abs1).not.toBeNull();
-    expect(readFileSync(abs1!)).toEqual(Buffer.from(PNG_1PX, "base64"));
-    expect(resolveScreenshot(repoos.config, task.id, "screenshot-2.png")).not.toBeNull();
+    const objects = [...updated!.body.matchAll(/\/attachments\/([^)]+)\)/g)].map((m) =>
+      decodeURIComponent(m[1]),
+    );
+    expect(objects).toHaveLength(2);
+    for (const objectName of objects) {
+      expect(STABLE_ATTACHMENT_OBJECT_RE.test(objectName)).toBe(true);
+      const abs = resolveScreenshot(repoos.config, task.id, objectName);
+      expect(abs).not.toBeNull();
+      expect(readFileSync(abs!)).toEqual(Buffer.from(PNG_1PX, "base64"));
+    }
     // The batch is consumed — a second attach finds nothing.
     expect(attachPendingPmImages(repoos.config, task, () => true)).toBeNull();
   });
@@ -108,6 +111,11 @@ describe("attachPendingPmImages", () => {
   it("merges into an existing Screenshots section instead of stacking headings", () => {
     const repoos = fixture();
     const task = taskWithBody(repoos, "already has one");
+    taskAttachmentStore(repoos.config).put(
+      task.id,
+      "screenshot-1.png",
+      Buffer.from(PNG_1PX, "base64"),
+    );
     patchTaskFile(repoos.config, task.absPath, {
       addScreenshot: {
         id: "1",
@@ -125,6 +133,10 @@ describe("attachPendingPmImages", () => {
     // Exactly one Screenshots heading, both images inside it.
     expect(updated!.body.match(/## Screenshots/g)).toHaveLength(1);
     expect(resolveScreenshot(repoos.config, task.id, "screenshot-1.png")).not.toBeNull();
+    const attached = [...updated!.body.matchAll(/\/attachments\/([^)]+)\)/g)].map((m) =>
+      decodeURIComponent(m[1]),
+    );
+    expect(attached.some((name) => STABLE_ATTACHMENT_OBJECT_RE.test(name))).toBe(true);
   });
 
   it("keeps the batch pending when no matching session is running", () => {
