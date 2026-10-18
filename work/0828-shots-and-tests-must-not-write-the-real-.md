@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T05:51:23Z"
-updated_at: "2026-10-18T05:53:21Z"
+updated_at: "2026-10-18T06:14:20Z"
 ---
 ## Problem
 Selecting a setting in a preview or a shot capture (Settings autosaves "changes save automatically") writes the preview root's real `repoos.toml`, which for a task preview is the task worktree. That dirties the worktree and can leak into the branch (see #0822's repoos.toml conflict). Separately, the `settings:birdQuickTrail` shot fixture does not take effect: `/settings?tab=general&section=activity-animation&shotState=settings:birdQuickTrail` still shows Puppy tracks, so the E2 shot could not be captured without clicking the dropdown, and clicking would trigger the real save.
