@@ -2,17 +2,18 @@
 id: "0824"
 title: "repoos bundle: add, edit and tick one easter-egg item without touching the rest"
 type: feature
-status: inbox
+status: done
 priority: p3
 area: core
 depends_on: ["0823"]
+merged_commit: 9246f82ddd003f8785d31623119147ffcc6b2c18
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-bundle-add-edit-and-tick-one-east
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:48:55Z"
-updated_at: "2026-10-18T06:22:31Z"
+updated_at: "2026-10-18T06:23:49Z"
 last_close_out_gate_ms: 498539
 last_close_out_gate_at: "2026-10-18T06:22:22.497Z"
 review_passes: 1
@@ -50,3 +51,4 @@ Depends on the layout in the "Easter-eggs bundle layout" task; implement against
 - 2026-10-18T06:22:22Z · close-out gate completed in 499s
 - 2026-10-18T06:22:29Z · note: handoff requested (cli)
 - 2026-10-18T06:22:31Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-18T06:23:49Z · status inbox→done, release:success
