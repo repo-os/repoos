@@ -24,6 +24,53 @@ import type {
 const DEBUG_LOGS_FIXTURE_MESSAGE =
   "main advanced with bookkeeping-only commits — publishing without a merge conflict check on the candidate tree";
 
+/** True when preview capture should keep fixture debug logs instead of fetching. */
+export function shotPreviewSkipsTaskLogsFetch(
+  location: Pick<Location, "search">,
+  taskId: string,
+): boolean {
+  if (!isShotPreviewCaptureActive(location)) return false;
+  const fixture = readShotPreviewFixtureFromLocation(location);
+  if (fixture !== "drawer:debugLogs") return false;
+  return taskId === shotPreviewDrawerTaskIdFromLocation(location);
+}
+
+export type ShotPreviewDebugLogsSeed = {
+  tasks: Task[];
+  taskLogs: Record<string, TaskLogEntry[]>;
+};
+
+/** Seed Debug-tab log rows for `drawer:debugLogs` shots (#0829). */
+export function seedShotPreviewDebugLogs(repo: ShotPreviewDebugLogsSeed, drawerId: string): void {
+  const existing = repo.tasks.find((t) => t.id === drawerId);
+  if (existing) {
+    Object.assign(existing, { status: "done" });
+  } else {
+    repo.tasks.push(
+      fixtureTask({
+        id: drawerId,
+        status: "done",
+        path: `work/${drawerId}-debug-shot-fixture.md`,
+        absPath: `/tmp/repo/work/${drawerId}-debug-shot-fixture.md`,
+      }),
+    );
+  }
+  const longLog: TaskLogEntry = {
+    timestamp: "2026-10-18T03:21:00Z",
+    level: "info",
+    component: "task",
+    message: DEBUG_LOGS_FIXTURE_MESSAGE,
+    context: { from: "main", to: "feat/branch" },
+  };
+  const shortLog: TaskLogEntry = {
+    timestamp: "2026-10-18T03:20:00Z",
+    level: "info",
+    component: "task",
+    message: "close-out complete — published to main",
+  };
+  repo.taskLogs[drawerId] = [longLog, shortLog];
+}
+
 type RepoStore = ReturnType<typeof useRepoStore>;
 type ConfigStore = ReturnType<typeof useConfigStore>;
 
@@ -517,31 +564,9 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         SHOT_EVIDENCE_VERIFICATION,
       );
       break;
-    case "drawer:debugLogs": {
-      const drawerId = shotPreviewDrawerTaskIdFromLocation(window.location);
-      const existing = repo.tasks.find((t) => t.id === drawerId);
-      if (existing) {
-        Object.assign(existing, { status: "done" });
-      } else {
-        repo.tasks.push(
-          fixtureTask({
-            id: drawerId,
-            status: "done",
-            path: `work/${drawerId}-debug-shot-fixture.md`,
-            absPath: `/tmp/repo/work/${drawerId}-debug-shot-fixture.md`,
-          }),
-        );
-      }
-      const log: TaskLogEntry = {
-        timestamp: "2026-10-18T03:21:00Z",
-        level: "info",
-        component: "task",
-        message: DEBUG_LOGS_FIXTURE_MESSAGE,
-        context: { from: "main", to: "feat/branch" },
-      };
-      repo.taskLogs[drawerId] = [log];
+    case "drawer:debugLogs":
+      seedShotPreviewDebugLogs(repo, shotPreviewDrawerTaskIdFromLocation(window.location));
       break;
-    }
     case "card:handoffConflict":
       // #0810 — the "Worktree changed after handoff" modal only opens from a
       // failed Move to done. Seed the pending conflict on a board card so a
