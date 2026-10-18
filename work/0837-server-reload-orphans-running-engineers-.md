@@ -11,7 +11,7 @@ branch: feat/server-reload-orphans-running-engineers-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:35Z"
-updated_at: "2026-10-18T17:15:47Z"
+updated_at: "2026-10-18T17:20:50Z"
 ---
 ## Problem
 After a RepoOS server reload, previously running `cursor-agent` engineer processes survive with `ppid=1` (orphaned, 2026-10-18: #0830 and #0832). The new server does not own them, so their handoff and exit signals are lost, the task can sit "active" for an hour with no progress, and a second engineer is started in the same worktree, giving two writers. That caused a post-handoff WIP checkpoint commit on #0832 that blocked its Move to done.
@@ -37,3 +37,4 @@ Related: #0834 (post-handoff checkpoint recovery), watchdog and CTO restart path
 - 2026-10-18T17:04:00Z · body
 - 2026-10-18T17:06:25Z · body
 - 2026-10-18T17:15:47Z · handoff failed · remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-18T17:20:50Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/agent-concurrency.test.ts > agent start concurrency cap > queues starts beyond maxConcurrentAgents and drains them as slots free, tests/agent-concurrency.test.ts > agent start concurrency cap > a queued task cannot be double-started while waiting for a slot on thinkpad — fix it in the feature branch and re-run the gate
