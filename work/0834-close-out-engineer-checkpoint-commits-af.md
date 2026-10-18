@@ -3,16 +3,18 @@ id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
-cli_override: cursor
-model_override: composer-2.5
+model_override: default
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T11:17:29Z"
-dev_error_count: 3
+updated_at: "2026-10-18T11:25:05Z"
+dev_error_count: 4
 ---
 ## Problem
 Move to done refuses with "worktree changed after handoff: HEAD is X but handoff recorded Y" whenever the branch HEAD moves after handoff, and the only recovery is a person: discard the edits or send the task back to the engineer (seen on #0832, 2026-10-18). The guard is right in principle (close-out must merge only the reviewed commit; incident #0594), but the common cause is benign: the engineer's own WIP self-check checkpoint commit (a few fixture/test files) landing after the review passed, and the task then sits in review with no engineer and no signal.
@@ -45,3 +47,5 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T11:11:51Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-10-18T11:11:51Z · message_delivered: 1 message(s)
 - 2026-10-18T11:17:28Z · needs_input
+- 2026-10-18T11:24:39Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-18T11:25:05Z · cli_override, model_override
