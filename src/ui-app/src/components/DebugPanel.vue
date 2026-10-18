@@ -8,6 +8,11 @@ import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
 import { canCopyDebugEvent, copyTextForDebugEvent } from "../lib/debug-event-copy";
+import {
+  debugEventExpandable,
+  debugEventExpandedDetail,
+  debugEventExpandedMessage,
+} from "../lib/debug-event-expand";
 import { shouldCopyMessageOnClick } from "../lib/chat-message-copy";
 import { copyToClipboard } from "../lib/clipboard";
 import { summarizeCheckFailure } from "../../../core/check-failure-summary.js";
@@ -326,7 +331,7 @@ async function onDebugEventClick(e: DebugEvent, event: MouseEvent): Promise<void
   // lands on an interactive control, is the user's, not ours — don't toggle or
   // copy over it.
   if (!shouldCopyMessageOnClick(event)) return;
-  if (e.kind === "check" || e.detail) toggleExpanded(e.key);
+  if (debugEventExpandable(e)) toggleExpanded(e.key);
   const text = copyTextForDebugEvent(copyableDebugEvent(e));
   if (text === null) return;
   if (await copyToClipboard(text)) {
@@ -474,7 +479,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           :data-debug-event="e.key"
           :class="[
             `debug-level-${e.level}`,
-            { 'debug-event-expandable': e.kind === 'check' || e.detail },
+            { 'debug-event-expandable': debugEventExpandable(e) },
             { 'debug-event-copyable': isCopyable(e) },
           ]"
           @click="onDebugEventClick(e, $event)"
@@ -482,7 +487,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           <div class="debug-event-row">
             <component
               :is="
-                e.kind === 'check' || e.detail
+                debugEventExpandable(e)
                   ? expanded.has(e.key)
                     ? ChevronDown
                     : ChevronRight
@@ -521,13 +526,18 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
             <span class="debug-event-time" :title="e.at">{{ relTime(e.at) }}</span>
           </div>
           <p v-if="e.failureSummary" class="debug-event-summary">{{ e.failureSummary }}</p>
-          <pre
-            v-if="expanded.has(e.key) && e.kind === 'check' && e.checkRun"
-            class="debug-log debug-log-inline"
-            >{{ e.checkRun.output || "(no output captured)" }}</pre>
-          <pre v-else-if="expanded.has(e.key) && e.detail" class="debug-log debug-log-inline">{{
-            e.detail
-          }}</pre>
+          <template v-if="expanded.has(e.key)">
+            <p v-if="debugEventExpandedMessage(e)" class="debug-event-message">
+              {{ debugEventExpandedMessage(e) }}
+            </p>
+            <pre
+              v-if="e.kind === 'check' && e.checkRun"
+              class="debug-log debug-log-inline"
+              >{{ e.checkRun.output || "(no output captured)" }}</pre>
+            <pre v-else-if="debugEventExpandedDetail(e)" class="debug-log debug-log-inline">{{
+              debugEventExpandedDetail(e)
+            }}</pre>
+          </template>
         </div>
       </div>
     </template>
@@ -833,6 +843,15 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.debug-event-message {
+  margin: 4px 0 0 1.25rem;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--txt);
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
 }
 .debug-event-remote {
   display: inline-flex;
