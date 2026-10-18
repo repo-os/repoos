@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-18T15:42:19.785Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Board card during post-handoff checkpoint recovery: highlight [data-test-id=\"task-card-agent-hint\"] matched nothing on / (http://127.0.0.1:60485/?shotState=card%3AcheckpointRecovery)"
 id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
@@ -96,3 +98,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T15:42:16Z · note: ui verification failed (1 issue(s)): [missing-target] Board card during post-handoff checkpoint recovery: highlight [data-test-id="task-card-agent-hint"] matched nothing on / (http://127.0.0.1:60485/?shotState=card%3AcheckpointRecovery)
 - 2026-10-18T15:42:19Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-18T15:42:19Z · message_delivered: 1 message(s)
+
