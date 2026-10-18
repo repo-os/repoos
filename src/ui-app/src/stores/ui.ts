@@ -33,6 +33,9 @@ export interface NewSkillForm {
   content: string;
 }
 
+/** Client-side upload lifecycle for a pending attachment (#0664). */
+export type PendingScreenshotUploadPhase = "selected" | "uploading" | "failed";
+
 /** A screenshot picked in the New task panel, held in memory until the task exists. */
 export interface PendingScreenshot {
   name: string;
@@ -40,6 +43,10 @@ export interface PendingScreenshot {
   /** base64 data URL of the image, used for the in-panel thumbnail. */
   dataUrl: string;
   size: number;
+  /** Absent or `selected`: queued locally, not yet on the server. */
+  uploadPhase?: PendingScreenshotUploadPhase;
+  /** Last error when `uploadPhase` is `failed`. */
+  uploadError?: string;
 }
 
 /** The panel only ever holds the latest N, so a huge drop can't pin memory. */

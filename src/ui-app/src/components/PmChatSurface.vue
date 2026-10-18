@@ -37,11 +37,11 @@ import ChatSendButton from "./ChatSendButton.vue";
 import ChatQueuedNotice from "./ChatQueuedNotice.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 
-export interface PendingShot {
-  name: string;
-  mime: string;
-  dataUrl: string;
-}
+import type { PendingScreenshot } from "../stores/ui";
+import { attachmentUploadPhase } from "../lib/attachment-upload-ui";
+import ActivityIndicator from "./ActivityIndicator.vue";
+
+export type PendingShot = PendingScreenshot;
 
 const props = withDefaults(
   defineProps<{
@@ -258,8 +258,29 @@ defineExpose({ focusDraft });
     <!-- 0513: a pending shot opens the full-size viewer. The host owns the
          viewer and the shots it holds; this only asks for an index. -->
     <div v-if="shots.length" class="pm-shots" aria-label="Attached screenshots">
-      <div v-for="(s, i) in shots" :key="s.name + i" class="pm-shot">
+      <div
+        v-for="(s, i) in shots"
+        :key="s.name + i + (s.uploadPhase ?? '')"
+        class="pm-shot"
+        :class="{
+          'pm-shot--uploading': attachmentUploadPhase(s) === 'uploading',
+          'pm-shot--failed': attachmentUploadPhase(s) === 'failed',
+        }"
+      >
         <img :src="s.dataUrl" :alt="s.name" @click="emit('openShot', i)" />
+        <span v-if="attachmentUploadPhase(s) !== 'selected'" class="pm-shot-status" role="status">
+          <ActivityIndicator
+            v-if="attachmentUploadPhase(s) === 'uploading'"
+            size="sm"
+            :dots="3"
+            label=""
+          />
+          {{
+            attachmentUploadPhase(s) === "uploading"
+              ? "Uploading…"
+              : s.uploadError || "Upload failed"
+          }}
+        </span>
         <ScreenshotExpandButton :name="s.name" @click="emit('openShot', i)" />
         <button
           type="button"
