@@ -63,4 +63,10 @@ describe("activity animation config (#0787)", () => {
     expect(ACTIVITY_ANIMATION_STYLE_LABELS["puppy-tracks"]).toBe("Puppy tracks");
     expect(DEFAULT_ACTIVITY_ANIMATION_STYLE).toBe("orbital-pixel");
   });
+
+  it("adds bird-quick-trail without moving the orbital default (#0822)", () => {
+    expect(ACTIVITY_ANIMATION_STYLES).toContain("bird-quick-trail");
+    expect(ACTIVITY_ANIMATION_STYLE_LABELS["bird-quick-trail"]).toBe("Bird quick trail");
+    expect(DEFAULT_ACTIVITY_ANIMATION_STYLE).toBe("orbital-pixel");
+  });
 });
