@@ -61,3 +61,4 @@ Related: #0734, #0755, #0613. Do not make a missing Playwright a failure (stays 
 - 2026-10-18T10:21:52Z · body
 - 2026-10-18T10:22:31Z · body
 - 2026-10-18T10:49:21Z · message_queued at 2026-10-18T10:49:21.322Z
+- 2026-10-18T10:49:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
