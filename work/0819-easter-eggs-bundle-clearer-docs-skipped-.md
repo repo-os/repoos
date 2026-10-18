@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-18T02:16:14Z"
+updated_at: "2026-10-18T02:16:46Z"
 review_passes: 10
 last_check_failure: "repoos check at 2026-10-18T01:43:13.722Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from d6b69a01 to 346573ab) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -50,136 +50,136 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 ```json
 [
 {
-"label": "Docs skip warning and declare link (light)",
-"target": "default",
-"route": "/work?task=9999&tab=changes",
-"highlight": ".ui-changes .shot-problem",
-"steps": [
-{
-"waitFor": ".ui-changes .shot-problem"
-}
-],
-"state": "drawer:shotEvidence",
-"theme": "light"
+  "label": "Docs skip warning and declare link (light)",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": ".ui-changes .shot-problem",
+  "steps": [
+    {
+      "waitFor": ".ui-changes .shot-problem"
+    }
+  ],
+  "state": "drawer:shotEvidence",
+  "theme": "light"
 },
 {
-"label": "Docs skip warning and declare link (dark)",
-"target": "default",
-"route": "/work?task=9999&tab=changes",
-"highlight": ".ui-changes .shot-problem",
-"steps": [
-{
-"waitFor": ".ui-changes .shot-problem"
-}
-],
-"state": "drawer:shotEvidence",
-"theme": "dark"
+  "label": "Docs skip warning and declare link (dark)",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": ".ui-changes .shot-problem",
+  "steps": [
+    {
+      "waitFor": ".ui-changes .shot-problem"
+    }
+  ],
+  "state": "drawer:shotEvidence",
+  "theme": "dark"
 },
 {
-"label": "Screenshot viewer header with verdict and warning (light)",
-"target": "default",
-"route": "/work?task=9999&tab=changes",
-"highlight": ".shot-viewer-shot-head",
-"steps": [
-{
-"waitFor": ".ui-changes .shot-row:first-of-type img"
+  "label": "Screenshot viewer header with verdict and warning (light)",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": ".shot-viewer-shot-head",
+  "steps": [
+    {
+      "waitFor": ".ui-changes .shot-row:first-of-type img"
+    },
+    {
+      "click": ".ui-changes .shot-row:first-of-type img"
+    },
+    {
+      "waitFor": ".shot-viewer-shot-head"
+    }
+  ],
+  "state": "drawer:shotEvidence",
+  "theme": "light"
 },
 {
-"click": ".ui-changes .shot-row:first-of-type img"
+  "label": "Screenshot viewer header with verdict and warning (dark)",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": ".shot-viewer-shot-head",
+  "steps": [
+    {
+      "waitFor": ".ui-changes .shot-row:first-of-type img"
+    },
+    {
+      "click": ".ui-changes .shot-row:first-of-type img"
+    },
+    {
+      "waitFor": ".shot-viewer-shot-head"
+    }
+  ],
+  "state": "drawer:shotEvidence",
+  "theme": "dark"
 },
 {
-"waitFor": ".shot-viewer-shot-head"
-}
-],
-"state": "drawer:shotEvidence",
-"theme": "light"
+  "label": "Integration timer median tooltip (light)",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"integration-timer-tip\"]",
+  "steps": [
+    {
+      "waitFor": "[data-test-id=\"integration-timer\"]"
+    },
+    {
+      "click": "[data-test-id=\"integration-timer\"]"
+    },
+    {
+      "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+    }
+  ],
+  "state": "closeOut:active",
+  "theme": "light"
 },
 {
-"label": "Screenshot viewer header with verdict and warning (dark)",
-"target": "default",
-"route": "/work?task=9999&tab=changes",
-"highlight": ".shot-viewer-shot-head",
-"steps": [
-{
-"waitFor": ".ui-changes .shot-row:first-of-type img"
+  "label": "Integration timer median tooltip (dark)",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"integration-timer-tip\"]",
+  "steps": [
+    {
+      "waitFor": "[data-test-id=\"integration-timer\"]"
+    },
+    {
+      "click": "[data-test-id=\"integration-timer\"]"
+    },
+    {
+      "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+    }
+  ],
+  "state": "closeOut:active",
+  "theme": "dark"
 },
 {
-"click": ".ui-changes .shot-row:first-of-type img"
+  "label": "Mixed AI and human step check copy (light)",
+  "target": "default",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-test-id=\"routing-human-step-row\"]",
+  "steps": [
+    {
+      "waitFor": "[data-testid=\"model-routing-panel\"]"
+    },
+    {
+      "waitFor": "[data-test-id=\"routing-human-step-row\"]"
+    }
+  ],
+  "theme": "light"
 },
 {
-"waitFor": ".shot-viewer-shot-head"
-}
-],
-"state": "drawer:shotEvidence",
-"theme": "dark"
-},
-{
-"label": "Integration timer median tooltip (light)",
-"target": "default",
-"route": "/",
-"highlight": "[data-test-id=\"integration-timer-tip\"]",
-"steps": [
-{
-"waitFor": "[data-test-id=\"integration-timer\"]"
-},
-{
-"click": "[data-test-id=\"integration-timer\"]"
-},
-{
-"waitFor": "[data-test-id=\"integration-timer-tip\"]"
-}
-],
-"state": "closeOut:active",
-"theme": "light"
-},
-{
-"label": "Integration timer median tooltip (dark)",
-"target": "default",
-"route": "/",
-"highlight": "[data-test-id=\"integration-timer-tip\"]",
-"steps": [
-{
-"waitFor": "[data-test-id=\"integration-timer\"]"
-},
-{
-"click": "[data-test-id=\"integration-timer\"]"
-},
-{
-"waitFor": "[data-test-id=\"integration-timer-tip\"]"
-}
-],
-"state": "closeOut:active",
-"theme": "dark"
-},
-{
-"label": "Mixed AI and human step check copy (light)",
-"target": "default",
-"route": "/agents?tab=model-routing",
-"highlight": "[data-test-id=\"routing-human-step-row\"]",
-"steps": [
-{
-"waitFor": "[data-testid=\"model-routing-panel\"]"
-},
-{
-"waitFor": "[data-test-id=\"routing-human-step-row\"]"
-}
-],
-"theme": "light"
-},
-{
-"label": "Mixed AI and human step check copy (dark)",
-"target": "default",
-"route": "/agents?tab=model-routing",
-"highlight": "[data-test-id=\"routing-human-step-row\"]",
-"steps": [
-{
-"waitFor": "[data-testid=\"model-routing-panel\"]"
-},
-{
-"waitFor": "[data-test-id=\"routing-human-step-row\"]"
-}
-],
-"theme": "dark"
+  "label": "Mixed AI and human step check copy (dark)",
+  "target": "default",
+  "route": "/agents?tab=model-routing",
+  "highlight": "[data-test-id=\"routing-human-step-row\"]",
+  "steps": [
+    {
+      "waitFor": "[data-testid=\"model-routing-panel\"]"
+    },
+    {
+      "waitFor": "[data-test-id=\"routing-human-step-row\"]"
+    }
+  ],
+  "theme": "dark"
 }
 ]
 ```
@@ -317,3 +317,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T02:15:31Z · needs_input
 - 2026-10-18T02:15:33Z · message_delivered: 2 message(s)
 - 2026-10-18T02:16:14Z · message_queued at 2026-10-18T02:16:14.532Z
+- 2026-10-18T02:16:46Z · body
