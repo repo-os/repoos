@@ -76,3 +76,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T14:16:50Z · needs_input
 - 2026-10-18T14:22:34Z · body
 - 2026-10-18T14:32:20Z · message_queued at 2026-10-18T14:32:20.216Z
+- 2026-10-18T14:32:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
