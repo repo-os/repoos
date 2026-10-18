@@ -593,13 +593,8 @@ describe("easter-egg bundle item clobber guard (#0825)", () => {
   it("refuses a full body replace that drops an E section, naming the id", () => {
     const { root, absPath, clean } = setupFile(WITH_BUNDLE);
     try {
-      const bodyWithoutE2 = WITH_BUNDLE.replace(
-        /## E2 · Second item[\s\S]*?(?=\n## Activity)/,
-        "",
-      );
-      expect(() => patchTaskFile(config(root), absPath, { body: bodyWithoutE2 })).toThrow(
-        /E2/,
-      );
+      const bodyWithoutE2 = WITH_BUNDLE.replace(/## E2 · Second item[\s\S]*?(?=\n## Activity)/, "");
+      expect(() => patchTaskFile(config(root), absPath, { body: bodyWithoutE2 })).toThrow(/E2/);
       expect(() => patchTaskFile(config(root), absPath, { body: bodyWithoutE2 })).toThrow(
         /repoos bundle/,
       );
@@ -611,10 +606,7 @@ describe("easter-egg bundle item clobber guard (#0825)", () => {
   it("allows the replace with --force", () => {
     const { root, absPath, clean } = setupFile(WITH_BUNDLE);
     try {
-      const bodyWithoutE2 = WITH_BUNDLE.replace(
-        /## E2 · Second item[\s\S]*?(?=\n## Activity)/,
-        "",
-      );
+      const bodyWithoutE2 = WITH_BUNDLE.replace(/## E2 · Second item[\s\S]*?(?=\n## Activity)/, "");
       const updated = patchTaskFile(config(root), absPath, { body: bodyWithoutE2, force: true });
       expect(updated.body).not.toContain("## E2 ·");
       expect(updated.body).toContain("## E1 ·");
