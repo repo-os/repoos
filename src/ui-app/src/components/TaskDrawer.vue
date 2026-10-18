@@ -1513,6 +1513,9 @@ function stopDoneTimer(): void {
 /** Human-readable progress label, driven by server `task.progress` events. */
 const doneLabel = computed(() => {
   const step = ui.active ? repo.doneSteps[ui.active.id] : undefined;
+  // #0834: checkpoint recovery is its own vocabulary — the close-out map's
+  // default would read "Merging branch…" while no merge has been asked yet.
+  if (ui.active && repo.checkpointRecoveryFor(ui.active.id)) return "Re-reviewing checkpoint…";
   switch (step) {
     case "merge":
       return "Merging branch…";

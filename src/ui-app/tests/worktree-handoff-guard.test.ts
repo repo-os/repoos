@@ -12,8 +12,10 @@ import { createJobCoordinator } from "../../server/integration-job.js";
 import { createRepositoryLock, createRootLock } from "../../server/repo-lock.js";
 import { CloseOutOrchestrator } from "../../server/integration-orchestrator.js";
 import type { RepoOSConfig } from "../../core/types.js";
+import { engineerSelfCheckCheckpointMessage } from "../../core/engineer-checkpoint-commit.js";
 import {
   discardWorktreeHandoffChanges,
+  isEngineerCheckpointOnlyDrift,
   readHandoffSnapshot,
   readWorktreeReviewLock,
   recordWorktreeHandoffProtection,
@@ -162,6 +164,77 @@ describe("worktree handoff guard (#0598)", () => {
       git(wt.path, ["commit", "-m", "docs(0599): update task"]);
       const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
       expect(check.ok).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("flags checkpoint-only drift for automatic recovery (#0834)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/checkpoint-drift";
+      const wt = ensureWorktree(root, branch);
+      const taskId = "0834";
+      writeFileSync(join(wt.path, "impl.txt"), "ok\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      writeFileSync(join(wt.path, "fixture.txt"), "wip\n");
+      git(wt.path, ["add", "fixture.txt"]);
+      git(wt.path, ["commit", "-m", engineerSelfCheckCheckpointMessage(taskId)]);
+      const head = git(wt.path, ["rev-parse", "HEAD"]);
+      expect(await isEngineerCheckpointOnlyDrift(wt.path, sha, head, taskId)).toBe(true);
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha, { taskId });
+      expect(check.ok).toBe(false);
+      expect(check.checkpointOnlyDrift).toEqual({ approvedSha: sha, headSha: head });
+    } finally {
+      clean();
+    }
+  });
+
+  it("still hard-fails non-checkpoint commits after handoff (#0834)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/real-drift";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "impl.txt"), "ok\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      writeFileSync(join(wt.path, "impl.txt"), "ok\n// edit\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "real post-handoff edit"]);
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha, { taskId: "0834" });
+      expect(check.ok).toBe(false);
+      expect(check.checkpointOnlyDrift).toBeUndefined();
+      expect(check.reason).toContain(WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX);
+    } finally {
+      clean();
+    }
+  });
+
+  it("mixing a checkpoint commit with dirty files still hard-fails (#0834)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/dirty-checkpoint";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "impl.txt"), "ok\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      writeFileSync(join(wt.path, "fixture.txt"), "wip\n");
+      git(wt.path, ["add", "fixture.txt"]);
+      git(wt.path, ["commit", "-m", engineerSelfCheckCheckpointMessage("0834")]);
+      // …and the engineer kept editing after that. The dirty tree is checked
+      // first: mixed drift is never recovery material, only a hard refusal.
+      writeFileSync(join(wt.path, "impl.txt"), "ok\n// sneaky edit\n");
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha, { taskId: "0834" });
+      expect(check.ok).toBe(false);
+      expect(check.checkpointOnlyDrift).toBeUndefined();
+      expect(check.reason).toContain(WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX);
     } finally {
       clean();
     }
