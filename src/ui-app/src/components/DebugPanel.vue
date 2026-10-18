@@ -530,10 +530,9 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
             <p v-if="debugEventExpandedMessage(e)" class="debug-event-message">
               {{ debugEventExpandedMessage(e) }}
             </p>
-            <pre
-              v-if="e.kind === 'check' && e.checkRun"
-              class="debug-log debug-log-inline"
-              >{{ e.checkRun.output || "(no output captured)" }}</pre>
+            <pre v-if="e.kind === 'check' && e.checkRun" class="debug-log debug-log-inline">{{
+              e.checkRun.output || "(no output captured)"
+            }}</pre>
             <pre v-else-if="debugEventExpandedDetail(e)" class="debug-log debug-log-inline">{{
               debugEventExpandedDetail(e)
             }}</pre>

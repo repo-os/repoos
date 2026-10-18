@@ -21,7 +21,9 @@ function parseTaskLogFile(root: string, taskId: string): LogEntry[] {
   const path = join(root, ".repoos", "logs", "tasks", `${taskId}.log`);
   if (!existsSync(path)) return [];
   try {
-    const lines = readFileSync(path, "utf8").split("\n").filter((l) => l.trim());
+    const lines = readFileSync(path, "utf8")
+      .split("\n")
+      .filter((l) => l.trim());
     const entries: LogEntry[] = [];
     for (const line of lines) {
       try {
