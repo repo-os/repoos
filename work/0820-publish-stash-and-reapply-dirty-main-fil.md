@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 644383
-last_close_out_gate_at: "2026-10-18T03:36:43.510Z"
 id: "0820"
 title: "Publish: stash and reapply dirty main files only when the merge would overwrite them"
 type: feature
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: 3ba30d5af11572da4f467a2d303e0b1439e97163
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/publish-stash-and-reapply-dirty-main-fil
 created_at: "2026-10-17T15:26:36Z"
-updated_at: "2026-10-18T03:36:43Z"
+updated_at: "2026-10-18T03:38:12Z"
+last_close_out_gate_ms: 644383
+last_close_out_gate_at: "2026-10-18T03:36:43.510Z"
 review_passes: 1
 ---
 ## Problem
@@ -50,4 +51,4 @@ Start from publishCandidate in src/server/integration-orchestrator.ts (the publi
 - 2026-10-18T02:57:54Z · note: review pass 1: good to go
 - 2026-10-18T03:21:45Z · close-out gate completed in 364s
 - 2026-10-18T03:36:43Z · close-out gate completed in 644s
-
+- 2026-10-18T03:38:12Z · status review→done, release:success
