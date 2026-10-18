@@ -43,3 +43,4 @@ Related: #0835 (NUL byte made task files binary, a likely trigger), #0754 (task-
 - 2026-10-18T18:41:27Z · note: review pass 1: good to go
 - 2026-10-18T18:44:28Z · close-out gate completed in 83s
 - 2026-10-18T18:44:30Z · note: handoff requested (cli)
+- 2026-10-18T18:44:31Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
