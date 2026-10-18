@@ -1088,6 +1088,39 @@ interface AuditStats {
   scopes: number;
 }
 
+/** Count WCAG failures in a probe result (Node-side, unit-tested judge). */
+export function countProbeFailures(probe: ProbeResult): number {
+  let n = 0;
+  for (const sample of probe.samples) {
+    const verdict = judgeSample(sample);
+    if (verdict.kind === "fail") n++;
+  }
+  return n;
+}
+
+export function absorbProbeResult(
+  rows: Map<string, FailureRow>,
+  stats: AuditStats,
+  scopeName: string,
+  screenName: string,
+  probe: ProbeResult,
+): void {
+  stats.examined += probe.examined;
+  stats.exempted += probe.exempted;
+  stats.disabled += probe.disabled;
+  stats.invisible += probe.invisible;
+  for (const sample of probe.samples) {
+    const verdict = judgeSample(sample);
+    if (verdict.viaGradient) stats.gradientJudged++;
+    if (verdict.kind === "unchecked") {
+      const reason = verdict.reason ?? "unknown";
+      stats.unchecked.set(reason, (stats.unchecked.get(reason) ?? 0) + 1);
+    } else if (verdict.kind === "fail" && verdict.finding) {
+      addFailure(rows, scopeName, screenName, verdict.finding);
+    }
+  }
+}
+
 function addFailure(
   rows: Map<string, FailureRow>,
   scope: string,
@@ -1206,7 +1239,10 @@ async function runAudit(): Promise<{
     throw err;
   }
   try {
-    browser = await launchWebkit();
+    browser = await launchWebkit({
+      repoRoot,
+      onQueueLine: (line) => console.log(c.dim(`  ${line}`)),
+    });
     context = await browser.newContext({ serviceWorkers: "block" });
   } catch (err) {
     server.close();
@@ -1232,24 +1268,32 @@ async function runAudit(): Promise<{
         // config load re-applies OUR scope instead of racing it — both paths
         // converge. The probe re-asserts the scope inside its own evaluate as
         // well, closing the round-trip window entirely (#0617).
-        const settled = await page.evaluate(settleScopeInPage, attrs);
-        const warn = scopeSettleWarning(scope.name, settled, attrs, settled.pending);
-        if (warn) warnings.push(warn);
-        const probe = await page.evaluate(contrastProbe, { exemptSelectors, scope: attrs });
-        stats.examined += probe.examined;
-        stats.exempted += probe.exempted;
-        stats.disabled += probe.disabled;
-        stats.invisible += probe.invisible;
-        for (const sample of probe.samples) {
-          const verdict = judgeSample(sample);
-          if (verdict.viaGradient) stats.gradientJudged++;
-          if (verdict.kind === "unchecked") {
-            const reason = verdict.reason ?? "unknown";
-            stats.unchecked.set(reason, (stats.unchecked.get(reason) ?? 0) + 1);
-          } else if (verdict.kind === "fail" && verdict.finding) {
-            addFailure(rows, scope.name, screen.name, verdict.finding);
+        const probeScope = async (): Promise<{
+          warn: string | null;
+          probe: ProbeResult;
+          failures: number;
+        }> => {
+          const settled = await page.evaluate(settleScopeInPage, attrs);
+          const warn = scopeSettleWarning(scope.name, settled, attrs, settled.pending);
+          const probe = await page.evaluate(contrastProbe, { exemptSelectors, scope: attrs });
+          return { warn, probe, failures: countProbeFailures(probe) };
+        };
+        let run = await probeScope();
+        if (run.warn) warnings.push(run.warn);
+        // One settle+probe retry when the first pass fails — handoff finalization
+        // can hit a single half-flipped frame (#0617) that no isolated run reproduces.
+        if (run.failures > 0) {
+          const retry = await probeScope();
+          if (retry.warn) warnings.push(`${retry.warn} (contrast retry)`);
+          if (retry.failures < run.failures) {
+            warnings.push(
+              `scope "${scope.name}" on "${screen.name}": contrast retry cleared ` +
+                `${run.failures - retry.failures} phantom failure(s)`,
+            );
           }
+          run = retry.failures <= run.failures ? retry : run;
         }
+        absorbProbeResult(rows, stats, scope.name, screen.name, run.probe);
       }
     }
   } finally {

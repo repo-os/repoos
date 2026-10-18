@@ -10,6 +10,10 @@
 import { CLOSEOUT_CHECK_ARGS, planJobCapabilities, resolveCheckPlan } from "../core/check-plan.js";
 import type { CheckRunPhase } from "../core/check-store.js";
 import type { RepoOSConfig } from "../core/types.js";
+import {
+  offloadBrowserStepsEnabled,
+  REPOOS_BROWSER_STEPS_REMOTE,
+} from "../core/browser-offload.js";
 import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
 import type { RemoteValidator, UploadProgressInfo } from "./remote-validation.js";
 
@@ -95,11 +99,15 @@ export function remoteValidationAlreadyAttempted(env: NodeJS.ProcessEnv): boolea
  */
 export function checkEnvAfterRemoteGate(
   outcome: RemotePreReviewOutcome | { kind: "skip" },
+  config?: RepoOSConfig,
 ): NodeJS.ProcessEnv {
   if (outcome.kind === "skip") return {};
   const env: NodeJS.ProcessEnv = { [REPOOS_REMOTE_VALIDATION_DONE]: "1" };
   if (outcome.kind === "local-only" && outcome.skipTests) {
     env.REPOOS_SKIP_TESTS = "1";
+    if (config && offloadBrowserStepsEnabled(config)) {
+      env[REPOOS_BROWSER_STEPS_REMOTE] = "1";
+    }
   }
   if (outcome.kind === "local-only" && !outcome.skipTests && outcome.detail?.trim()) {
     env[REPOOS_REMOTE_FALLBACK_DETAIL] = outcome.detail.trim();

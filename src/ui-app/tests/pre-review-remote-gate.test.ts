@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync, spawnSync } from "node:child_process";
 import type { RepoOSConfig } from "../../core/types.js";
+import { REPOOS_BROWSER_STEPS_REMOTE } from "../../core/browser-offload.js";
 import {
   REPOOS_REMOTE_VALIDATION_DONE,
   REPOOS_REMOTE_FALLBACK_DETAIL,
@@ -252,6 +253,25 @@ describe("checkEnvAfterRemoteGate", () => {
     expect(checkEnvAfterRemoteGate({ kind: "local-only", skipTests: true })).toEqual({
       [REPOOS_REMOTE_VALIDATION_DONE]: "1",
       REPOOS_SKIP_TESTS: "1",
+    });
+  });
+
+  it("marks browser steps offloaded when configured (#0836)", () => {
+    const config: RepoOSConfig = {
+      root: "/tmp",
+      workDir: "work",
+      docsDir: "docs",
+      skillsDir: "skills",
+      taskExtensions: [".md"],
+      defaultStatus: "inbox",
+      defaultAssignee: "unassigned",
+      cacheDir: ".repoos",
+      remoteValidation: { enabled: true, offloadBrowserSteps: true },
+    };
+    expect(checkEnvAfterRemoteGate({ kind: "local-only", skipTests: true }, config)).toEqual({
+      [REPOOS_REMOTE_VALIDATION_DONE]: "1",
+      REPOOS_SKIP_TESTS: "1",
+      [REPOOS_BROWSER_STEPS_REMOTE]: "1",
     });
   });
 });
