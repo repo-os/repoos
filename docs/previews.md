@@ -375,6 +375,12 @@ fixture the preview applies before capture (preview builds only, via
   "Open in editor" button (Task drawer Spec row, Context doc viewer,
   failed-tests list, #0805)
 
+**Preview Settings saves (#0828).** A preview child (`REPOOS_PREVIEW_CHILD=1`)
+applies curated and raw config saves to a gitignored cache-dir overlay only —
+never the worktree's tracked `repoos.toml` — so autosave during shot capture
+cannot dirty a task branch. Config fixtures such as `settings:birdQuickTrail`
+seed the Settings form after `config.load()` via `formSyncGeneration`.
+
 **Light and dark captures (#0782).** A declared entry may set `theme` to
 `"light"` or `"dark"`: the capture pins the page's stored theme before the
 screenshot (the same two values the contrast audit writes —
