@@ -25,6 +25,7 @@ import TaskDebuggerChat from "./TaskDebuggerChat.vue";
 import NoCheckPlanReminder from "./NoCheckPlanReminder.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DiffFileViewer from "./DiffFileViewer.vue";
+import { localQueueHintForTask } from "../lib/local-queue-hint";
 
 const props = defineProps<{ task: Task }>();
 const router = useRouter();
@@ -247,6 +248,10 @@ const filteredEvents = computed(() =>
 
 const runningCheck = computed<TaskCheckRun | undefined>(() =>
   (repo.taskChecks[props.task.id] ?? []).find((c) => c.running),
+);
+
+const resourceQueueNotice = computed(() =>
+  localQueueHintForTask(repo.resourceQueueMarkers, props.task.id),
 );
 
 /**
@@ -504,6 +509,12 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
         <p v-if="worktreeDirty" class="debug-sync-warn">
           This worktree has uncommitted changes — merging main may refuse or merge around your
           in-progress edits. Commit or stash first if you want a clean reconcile.
+        </p>
+      </Card>
+
+      <Card v-if="resourceQueueNotice" class="debug-sync-warn-card">
+        <p class="debug-sync-warn">
+          <strong>{{ resourceQueueNotice.label }}</strong> — {{ resourceQueueNotice.title }}
         </p>
       </Card>
 

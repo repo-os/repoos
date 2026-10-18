@@ -67,6 +67,10 @@ import { redactSecrets, stripAnsi } from "./done.js";
 import { runGit } from "../core/git.js";
 import { formatRemotePoolQueueMessage } from "../core/remote-pool-queue.js";
 import { ConcurrencyGate, QueueDeadlineError } from "../core/concurrency-gate.js";
+import {
+  offloadBrowserStepsEnabled,
+  REPOOS_OFFLOAD_BROWSER_STEPS,
+} from "../core/browser-offload.js";
 
 export type { CheckSummary } from "./done.js";
 export { ConcurrencyGate, QueueDeadlineError } from "../core/concurrency-gate.js";
@@ -4706,9 +4710,11 @@ export class TailscaleRunner implements RemoteValidator {
             message: `running build + test in ${image} on ${host.ip}${changedNote}`,
           },
         );
+        const offloadBrowser = offloadBrowserStepsEnabled(this.config) ? "1" : "0";
         const inner =
           `REPOOS_SLOT="$_rvslot" REPOOS_CONTAINER=${shellQuote(containerName)} ` +
           `REPOOS_CACHE_VOLUME=${shellQuote(CACHE_VOLUME_NAME)} REPOOS_CI_IMAGE=${shellQuote(image)} ` +
+          `${REPOOS_OFFLOAD_BROWSER_STEPS}=${offloadBrowser} ` +
           validateScriptArgs(
             remoteBundle,
             opts.candidateSha,

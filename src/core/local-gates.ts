@@ -1,7 +1,6 @@
 import type { RepoOSConfig } from "./types.js";
 import {
   acquireCrossProcessSlot,
-  acquireLocalFallbackSerializeSlot,
   localCheckLockRoot,
   playwrightLockRoot,
   SlotQueueTimeoutError,
@@ -11,7 +10,6 @@ import {
   localChecksQueueTimeoutMs,
   playwrightMaxConcurrent,
   playwrightQueueTimeoutMs,
-  remoteLocalFallbackMode,
 } from "./resource-limits.js";
 import { waitForPressureRelief } from "./pressure-guard.js";
 import { clearQueueMarker, writeQueueMarker, type LocalQueueKind } from "./local-queue-marker.js";
@@ -101,17 +99,6 @@ export async function acquireLocalCheckSlot(opts: AcquireLocalCheckSlotOpts): Pr
     unmarkQueue(board, cacheDir, opts.env, "pressure");
   }
 
-  const mode = remoteLocalFallbackMode(opts.config);
-  const isFallback = Boolean(opts.env.REPOOS_REMOTE_FALLBACK_DETAIL?.trim());
-  let releaseFallback: (() => void) | undefined;
-  if (isFallback && mode === "serialize") {
-    releaseFallback = await acquireLocalFallbackSerializeSlot(board, cacheDir, waitMs, (ahead) => {
-      const msg = `waiting for local fallback slot (${ahead} ahead) — remoteValidation.localFallback = serialize`;
-      emit(`[queue] ${msg}`);
-      markQueue(board, cacheDir, opts.env, "local-check", ahead, ahead + 1, msg);
-    });
-  }
-
   const releaseCheck = await acquireCrossProcessSlot({
     slots: limit,
     lockRoot: localCheckLockRoot(board, cacheDir),
@@ -135,7 +122,6 @@ export async function acquireLocalCheckSlot(opts: AcquireLocalCheckSlotOpts): Pr
 
   return () => {
     releaseCheck();
-    releaseFallback?.();
   };
 }
 

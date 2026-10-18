@@ -604,7 +604,7 @@ async function runHandoffFinalization(
       workdir,
       config,
       checkHandle?.chunk,
-      checkEnvAfterRemoteGate(remoteOutcome),
+      checkEnvAfterRemoteGate(remoteOutcome, config),
       remoteOutcome,
       task.id,
       changedBase,
