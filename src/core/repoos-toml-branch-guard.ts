@@ -16,7 +16,7 @@ export const STRAY_REPOOS_TOML_ON_BRANCH_PREFIX = "stray repoos.toml on task bra
 
 /** True when the task record says changing `repoos.toml` is in scope. */
 export function taskDeclaresRepoosTomlWork(
-  task: Pick<Task, "title" | "paths" | "area">,
+  task: Pick<Task, "title" | "paths"> & { area?: Task["area"] },
 ): boolean {
   if (
     task.paths?.some((p) => p === REPOOS_TOML_REL || p.replace(/^\.\//, "") === REPOOS_TOML_REL)
@@ -68,7 +68,7 @@ export async function repoosTomlBranchDiffSnippet(
 export async function guardStrayRepoosTomlOnTaskBranch(
   worktree: string,
   mainBranch: string,
-  task: Pick<Task, "title" | "paths" | "area" | "hotfix">,
+  task: Pick<Task, "title" | "paths" | "hotfix"> & { area?: Task["area"] },
 ): Promise<{ ok: true } | { ok: false; detail: string }> {
   if (task.hotfix) return { ok: true };
   if (taskDeclaresRepoosTomlWork(task)) return { ok: true };
