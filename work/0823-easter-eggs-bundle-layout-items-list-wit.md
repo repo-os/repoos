@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-layout-items-list-wit
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:48:44Z"
-updated_at: "2026-10-18T03:01:11Z"
+updated_at: "2026-10-18T03:10:24Z"
 ---
 ## Problem
 Bundle tasks (e.g. #0822 before 2026-10-18) grow ad hoc: the first item takes the standard Problem/Desired UX/Acceptance/Notes headings and later items get free-form sections, so you cannot scan a bundle and list its sub-tasks. Repeated whole-body rewrites also left stale text ("third independent item").
@@ -34,3 +34,4 @@ Docs/template only; no parser or format change. Related: #0722, #0808.
 - 2026-10-18T02:58:31Z · cli_override, model_override
 - 2026-10-18T02:58:33Z · status ready→active, branch
 - 2026-10-18T03:01:11Z · body
+- 2026-10-18T03:10:24Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
