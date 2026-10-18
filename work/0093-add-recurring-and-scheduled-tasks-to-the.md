@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-18T20:11:29Z"
-review_passes: 3
+last_close_out_gate_ms: 97205
+last_close_out_gate_at: "2026-10-18T20:20:53.541Z"
 id: "0093"
 title: Add recurring and scheduled tasks to the Agents page
 type: feature
@@ -13,6 +13,8 @@ branch: feat/add-recurring-and-scheduled-tasks-to-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-08-11T14:22:06Z"
+updated_at: "2026-10-18T20:20:53Z"
+review_passes: 3
 review_rounds: 1
 ---
 ## Problem
@@ -144,4 +146,5 @@ dependency constraint.
 - 2026-10-18T20:03:51Z · note: handoff requested (cli)
 - 2026-10-18T20:10:38Z · status active→review
 - 2026-10-18T20:11:29Z · note: review pass 3: good to go
+- 2026-10-18T20:20:53Z · close-out gate completed in 97s
 
