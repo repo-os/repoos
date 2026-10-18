@@ -3,6 +3,9 @@ id: "0822"
 title: "Easter eggs bundle: Start work pending state, and Bird quick trail animation"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — E1 is implemented well (`startWorkPendingIds`, card + drawer guards, watchdog, `start-work-pending.test.ts` covers disable, single POST, failure clear, and drawer). E2 adds `bird-quick-trail` end-to-end (schema, `ActivityIndicator`, CSS keyframes, motion tests). Handoff UI evidence is incomplete: the Settings capture (`default-1.png`) landed on **Themes**, `waitFor`/`highlight` for `.ai-style-bird-quick-trail` timed out, and **drawer** light/dark PNGs (`default-4`/`default-5`) are referenced in verification JSON but **not on disk** (only three PNGs in `work/.attachments/0822/shots`). Board light/dark shots (`default-2`/`default-3`) clearly show disabled **Starting…** on #9999; bird footprints appear on reviewing cards, but that is not a Settings preview sign-off."
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T04:38:51Z"
+updated_at: "2026-10-18T04:38:52Z"
 close_out_repair_count: 1
 review_passes: 3
 review_rounds: 2
@@ -196,3 +199,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T04:37:33Z · note: waitFor .activity-animation-preview .ai-style-bird-quick-trail: waitFor: Timeout 5000ms exceeded. on /settings?tab=general
 - 2026-10-18T04:37:33Z · note: highlight .activity-animation-preview .ai-style-bird-quick-trail matched nothing on /settings?tab=general
 - 2026-10-18T04:38:51Z · note: review pass 4: needs some work
+- 2026-10-18T04:38:52Z · needs_input
