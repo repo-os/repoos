@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-18T02:03:06Z"
+updated_at: "2026-10-18T02:04:14Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T01:43:13.722Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from d6b69a01 to 346573ab) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 8
@@ -57,7 +57,7 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": ".ui-changes .shot-problem",
 "steps": [
 {
-  "waitFor": ".ui-changes .shot-problem"
+"waitFor": ".ui-changes .shot-problem"
 }
 ],
 "state": "drawer:shotEvidence",
@@ -70,7 +70,7 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": ".ui-changes .shot-problem",
 "steps": [
 {
-  "waitFor": ".ui-changes .shot-problem"
+"waitFor": ".ui-changes .shot-problem"
 }
 ],
 "state": "drawer:shotEvidence",
@@ -83,13 +83,13 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": ".shot-viewer-shot-head",
 "steps": [
 {
-  "waitFor": ".ui-changes .shot-row:first-of-type img"
+"waitFor": ".ui-changes .shot-row:first-of-type img"
 },
 {
-  "click": ".ui-changes .shot-row:first-of-type img"
+"click": ".ui-changes .shot-row:first-of-type img"
 },
 {
-  "waitFor": ".shot-viewer-shot-head"
+"waitFor": ".shot-viewer-shot-head"
 }
 ],
 "state": "drawer:shotEvidence",
@@ -102,13 +102,13 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": ".shot-viewer-shot-head",
 "steps": [
 {
-  "waitFor": ".ui-changes .shot-row:first-of-type img"
+"waitFor": ".ui-changes .shot-row:first-of-type img"
 },
 {
-  "click": ".ui-changes .shot-row:first-of-type img"
+"click": ".ui-changes .shot-row:first-of-type img"
 },
 {
-  "waitFor": ".shot-viewer-shot-head"
+"waitFor": ".shot-viewer-shot-head"
 }
 ],
 "state": "drawer:shotEvidence",
@@ -121,13 +121,13 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"integration-timer\"]"
+"waitFor": "[data-test-id=\"integration-timer\"]"
 },
 {
-  "click": "[data-test-id=\"integration-timer\"]"
+"click": "[data-test-id=\"integration-timer\"]"
 },
 {
-  "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+"waitFor": "[data-test-id=\"integration-timer-tip\"]"
 }
 ],
 "state": "closeOut:active",
@@ -140,13 +140,13 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"integration-timer\"]"
+"waitFor": "[data-test-id=\"integration-timer\"]"
 },
 {
-  "click": "[data-test-id=\"integration-timer\"]"
+"click": "[data-test-id=\"integration-timer\"]"
 },
 {
-  "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+"waitFor": "[data-test-id=\"integration-timer-tip\"]"
 }
 ],
 "state": "closeOut:active",
@@ -159,10 +159,10 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": "[data-test-id=\"routing-human-step-row\"]",
 "steps": [
 {
-  "waitFor": "[data-testid=\"model-routing-panel\"]"
+"waitFor": "[data-testid=\"model-routing-panel\"]"
 },
 {
-  "waitFor": "[data-test-id=\"routing-human-step-row\"]"
+"waitFor": "[data-test-id=\"routing-human-step-row\"]"
 }
 ],
 "theme": "light"
@@ -174,10 +174,10 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": "[data-test-id=\"routing-human-step-row\"]",
 "steps": [
 {
-  "waitFor": "[data-testid=\"model-routing-panel\"]"
+"waitFor": "[data-testid=\"model-routing-panel\"]"
 },
 {
-  "waitFor": "[data-test-id=\"routing-human-step-row\"]"
+"waitFor": "[data-test-id=\"routing-human-step-row\"]"
 }
 ],
 "theme": "dark"
@@ -296,3 +296,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T02:01:52Z · body
 - 2026-10-18T02:02:30Z · body
 - 2026-10-18T02:03:06Z · status active→review
+- 2026-10-18T02:04:14Z · note: review pass 9: needs some work
