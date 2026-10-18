@@ -2,7 +2,7 @@
 id: "0824"
 title: "repoos bundle: add, edit and tick one easter-egg item without touching the rest"
 type: feature
-status: active
+status: review
 priority: p3
 area: core
 depends_on: ["0823"]
@@ -41,4 +41,4 @@ Depends on the layout in the "Easter-eggs bundle layout" task; implement against
 - 2026-10-18T05:51:32Z · status ready→active, branch
 - 2026-10-18T05:56:05Z · body
 - 2026-10-18T05:57:14Z · body
-- 2026-10-18T06:05:10Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-18T06:05:10Z · status active→review
