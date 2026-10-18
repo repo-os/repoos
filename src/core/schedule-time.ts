@@ -253,28 +253,62 @@ export function dueOccurrence(
     return { dueAt: next, key };
   }
 
-  const next = computeNextRun(timing, now, false);
-  if (!next) return null;
-
-  // Walk backward to find the latest slot at or before `now`.
-  let probe = next;
-  let latestDue: Date | null = null;
-  for (let i = 0; i < 400; i++) {
-    if (probe.getTime() > now.getTime()) break;
-    latestDue = probe;
-    const w = wallClockInZone(probe, timing.timezone);
-    const back =
-      timing.cadence === "weekly"
-        ? addDaysLocal(w.year, w.month, w.day, -7)
-        : addDaysLocal(w.year, w.month, w.day, -1);
-    const tod = parseTimeOfDay(timing.timeOfDay)!;
-    probe = zonedLocalToUtc(back.year, back.month, back.day, tod.hour, tod.minute, timing.timezone);
-  }
+  const latestDue = latestScheduledInstantAtOrBefore(timing, now);
   if (!latestDue) return null;
   const key = occurrenceKey(timing, latestDue);
   if (key === lastOccurrenceKey) return null;
-  if (latestDue.getTime() > now.getTime()) return null;
   return { dueAt: latestDue, key };
+}
+
+/** Most recent cadence fire time at or before `now` in the schedule timezone. */
+function latestScheduledInstantAtOrBefore(timing: ScheduleTimingInput, now: Date): Date | null {
+  const tod = parseTimeOfDay(timing.timeOfDay);
+  if (!tod) return null;
+  const w = wallClockInZone(now, timing.timezone);
+
+  if (timing.cadence === "daily") {
+    let candidate = zonedLocalToUtc(w.year, w.month, w.day, tod.hour, tod.minute, timing.timezone);
+    if (candidate.getTime() > now.getTime()) {
+      const back = addDaysLocal(w.year, w.month, w.day, -1);
+      candidate = zonedLocalToUtc(
+        back.year,
+        back.month,
+        back.day,
+        tod.hour,
+        tod.minute,
+        timing.timezone,
+      );
+    }
+    return candidate;
+  }
+
+  if (timing.cadence === "weekly") {
+    const dow = timing.dayOfWeek;
+    if (dow === undefined || dow < 0 || dow > 6) return null;
+    let local = nextWeeklyLocalDate(w, dow);
+    let candidate = zonedLocalToUtc(
+      local.year,
+      local.month,
+      local.day,
+      tod.hour,
+      tod.minute,
+      timing.timezone,
+    );
+    while (candidate.getTime() > now.getTime()) {
+      local = addDaysLocal(local.year, local.month, local.day, -7);
+      candidate = zonedLocalToUtc(
+        local.year,
+        local.month,
+        local.day,
+        tod.hour,
+        tod.minute,
+        timing.timezone,
+      );
+    }
+    return candidate;
+  }
+
+  return null;
 }
 
 export function isScheduleDueNow(
