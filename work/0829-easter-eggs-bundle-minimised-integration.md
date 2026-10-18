@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T07:21:03Z"
+updated_at: "2026-10-18T07:21:43Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -91,36 +91,62 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 ```json
 [
 {
-"label": "Minimised pill median tooltip centered, no native title",
-"target": "default",
-"route": "/",
-"highlight": "[data-test-id=integration-timer-tip]",
-"steps": [
-{
-"click": "[data-test-id=integration-timer]"
+  "label": "Integration median tooltip (light)",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=integration-timer-tip]",
+  "steps": [
+    {
+      "waitFor": "[data-test-id=integration-timer]"
+    },
+    {
+      "click": "[data-test-id=integration-timer]"
+    },
+    {
+      "waitFor": "[data-test-id=integration-timer-tip]"
+    }
+  ],
+  "state": "integration:median15",
+  "theme": "light"
 },
 {
-"waitMs": 400
-}
-],
-"state": "integration:median15"
+  "label": "Integration median tooltip (dark)",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=integration-timer-tip]",
+  "steps": [
+    {
+      "waitFor": "[data-test-id=integration-timer]"
+    },
+    {
+      "click": "[data-test-id=integration-timer]"
+    },
+    {
+      "waitFor": "[data-test-id=integration-timer-tip]"
+    }
+  ],
+  "state": "integration:median15",
+  "theme": "dark"
 },
 {
-"label": "Debug logs expanded main-advanced row shows full message",
-"target": "default",
-"route": "/work?task=0820&tab=debug",
-"highlight": ".debug-event-message",
-"steps": [
-{
-"click": ".debug-event-expandable"
-},
-{
-"waitFor": ".debug-event-message"
-},
-{
-"waitMs": 200
-}
-]
+  "label": "Debug log main-advanced row expanded",
+  "target": "default",
+  "route": "/work?task=0820&tab=debug",
+  "highlight": ".debug-event-message",
+  "steps": [
+    {
+      "waitFor": "[data-debug-event*='main advanced']"
+    },
+    {
+      "click": "[data-debug-event*='main advanced']"
+    },
+    {
+      "waitFor": ".debug-event-message"
+    },
+    {
+      "waitMs": 200
+    }
+  ]
 }
 ]
 ```
@@ -160,3 +186,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T07:20:03Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (780f377a6) during finalization (#0734)
 - 2026-10-18T07:21:02Z · note: review pass 2: needs some work
 - 2026-10-18T07:21:03Z · status review→active
+- 2026-10-18T07:21:43Z · body
