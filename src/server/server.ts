@@ -376,6 +376,7 @@ import {
   getTaskShot,
   uploadTaskShot,
   deleteTaskShot,
+  postTaskBundle,
   // Config routes
   readConfig,
   patchConfig,
@@ -3289,6 +3290,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/ui-verification$/, getTaskUiVerification);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/verify$/, refreshTaskEvidence);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/shots$/, uploadTaskShot);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/bundle$/, postTaskBundle);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/shots\/([^/]+)$/, getTaskShot);
   // Task drawer shot management (#0627): declare-and-capture via POST (the
   // handler dispatches on the body shape — CLI uploads carry `data`), and
