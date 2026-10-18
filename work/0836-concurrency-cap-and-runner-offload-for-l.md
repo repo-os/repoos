@@ -3,9 +3,6 @@ id: "0836"
 title: Concurrency cap and runner offload for local checks and Playwright runs (with Settings controls)
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — declared remote-validation handoff shot doesn’t show the new controls; automated UI verification only exercised Perform…
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/concurrency-cap-and-runner-offload-for-l
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:25Z"
-updated_at: "2026-10-18T18:05:56Z"
+updated_at: "2026-10-18T18:06:06Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -96,3 +93,4 @@ Look at src/commands/check.ts, src/server/integration-orchestrator.ts, the shot/
 - 2026-10-18T17:53:34Z · note: review pass 3: needs some work
 - 2026-10-18T17:53:35Z · needs_input
 - 2026-10-18T18:05:56Z · status review→active
+- 2026-10-18T18:06:06Z · needs_input
