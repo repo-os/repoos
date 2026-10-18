@@ -1,7 +1,7 @@
 # Easter-eggs bundles: landing many small fixes in one task
 
-Written 2026-10-06, out of the first agent-driven project run (opex). #0721 is
-the worked example.
+Written 2026-10-06, out of the first agent-driven project run (opex). #0822 is
+the worked example for the bundle body layout; #0721 is the older landed bundle.
 
 A long agent-driven run keeps turning up small, independent, low-risk fixes:
 a cosmetic glitch, a stale bit of copy, a timing race in a test, a tiny
@@ -62,9 +62,10 @@ once).
 
 ## Adding an item to the open bundle
 
-1. Update the open bundle task's body: add the item to the **Problem** list with
-   its source task id and the one-line fix, and add its test to the **Acceptance
-   criteria**.
+1. Append one line to **`## Items`** and one matching **`## E<n> · Title`**
+   section (next free `E` id). Use `repoos update <id> --section` for each
+   piece — never a full `--body` replace, which has dropped other items' specs in
+   past bundles.
 2. Commit the item separately on the bundle's branch, so the review still reads
    item by item.
 3. When the bundle lands, mark the source task superseded (next section).
@@ -118,28 +119,79 @@ in its own task.
 ## The task template
 
 Create the task with `repoos new` (or the New-task drawer), title it
-`Easter eggs bundle: <themes>`, and shape the body like #0721:
+`Easter eggs bundle: <themes>`, and use this fixed body shape (see #0822 for a
+live bundle):
 
-- **Problem** — one line naming it as a bundle, then a numbered list of the
-  items. Each item: its source task id, the one-line fix, and where the change
-  lives.
-- **Desired UX** — each item behaves as its own source task describes; no
-  behaviour change beyond that.
-- **Acceptance criteria** — one test per item, plus `repoos check` passes, plus
-  the list of source tasks to mark superseded.
-- **Notes for AI** — keep each item small and separate in commits; do not touch
-  the subsystems or tasks the bundle deliberately excludes.
+1. **`## Items`** — a checklist, one line per item, stable ids that never change
+   when you add later items:
 
-## Worked example
+   `- [ ] **E1 · Short title** (area) — one-line fix. Source: #0719 or human report …`
 
-#0721 — "Easter eggs bundle: stuck-timer source, needs_input clear on new run,
-stale provider balance, agent-review test races":
+   Tick `- [x]` as items land (optional; `repoos bundle done` will automate this
+   in a follow-up).
 
-- **Problem** lists four items from the 2026-10-06 run, each with a source task
-  id (#0719, #0716, #0707, and a test-race item) and the fix.
-- **Acceptance criteria** asks for one test per item and says to mark #0719,
-  #0716 and #0707 superseded when done.
-- **Notes for AI** says "keep each item small and separate in commits; do not
-  touch the degenerate detector (#0718) or remote validation (#0717)."
+2. A short note that every item uses the same sub-headings and that edits go
+   through `--section`, not `--body`.
 
-Four fixes, one worktree, one gate run, one review, one close-out.
+3. For each item, **`## E<n> · Short title`** with the same four sub-sections
+   every time:
+
+   - `### Problem`
+   - `### Desired UX`
+   - `### Acceptance criteria` (at least one test per item)
+   - `### Notes for AI`
+
+Do **not** put the first item only under top-level Problem / Desired UX / … and
+later items under ad hoc headings — that was the old shape and it does not scan.
+
+**Editing:** use `repoos update <id> --section "Items" --section-body "…"` or
+`--section "E2 · Title" --section-body "…"` (or `--section "Desired UX"` inside
+an item once section-scoped edits exist). A full `--body` replace is refused
+unless `--force`; it has deleted sibling items before.
+
+The canonical skeleton for tooling and agents lives in
+`easterEggsBundleStarterBody()` in `src/commands/init.ts`.
+
+### Minimal example
+
+```markdown
+## Items
+
+- [ ] **E1 · Hub find bar position** (web) — keep the find bar below the title. Source: #0795.
+
+Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body.
+
+## E1 · Hub find bar position
+
+### Problem
+
+…
+
+### Desired UX
+
+…
+
+### Acceptance criteria
+
+- Test: …
+
+### Notes for AI
+
+…
+```
+
+## Worked examples
+
+**#0822** — "Easter eggs bundle: Start work pending state, and Bird quick trail
+animation" (current layout): `## Items` with **E1** and **E2**, then matching
+`## E1 · …` and `## E2 · …` sections each carrying Problem / Desired UX /
+Acceptance criteria / Notes for AI.
+
+**#0721** — "Easter eggs bundle: stuck-timer source, needs_input clear on new
+run, stale provider balance, agent-review test races" (older layout, pre-2026-10-18):
+four items listed under **Problem**, one shared **Acceptance criteria** block.
+Still a valid landed bundle; new bundles should use the #0822 shape instead.
+
+Four fixes, one worktree, one gate run, one review, one close-out — that payoff
+is unchanged; only the body shape is standardized so you can list sub-tasks at a
+glance.
