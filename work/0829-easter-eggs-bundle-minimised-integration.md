@@ -205,3 +205,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T07:32:19Z · note: waitFor [data-debug-event*='main advanced']: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
 - 2026-10-18T07:32:20Z · note: click [data-debug-event*='main advanced']: click: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
 - 2026-10-18T07:32:20Z · note: waitFor .debug-event-message: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T07:32:20Z · note: highlight .debug-event-message matched nothing on /work?task=0820&tab=debug
