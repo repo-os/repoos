@@ -54,5 +54,5 @@ export function cmdMigrate(argv: string[]): void {
   const { config } = createRepoOS(root);
   const result = runAttachmentMigration(config, { dryRun });
   printPlan(dryRun, result);
-  if (result.errors.length && !dryRun) process.exitCode = 1;
+  if (result.errors.length) process.exitCode = 1;
 }

@@ -4,6 +4,9 @@
  * Migration (#0663) and future UI upload/retry flows share this store so an
  * interrupted transfer can resume without creating duplicate cloud objects: each
  * record tracks the intended object name, content hash, and phase.
+ *
+ * #0664 should extend this module (same file path and record shape) rather than
+ * introduce a parallel store — UI retries key off `uploadRecordKey` + `phase`.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";

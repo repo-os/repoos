@@ -29,7 +29,6 @@ import {
   readAttachmentUploadState,
   uploadRecordKey,
   upsertUploadRecord,
-  writeAttachmentUploadState,
 } from "./attachment-upload-state.js";
 import { localStorageProvider } from "./storage/local.js";
 import {
@@ -270,6 +269,11 @@ export function runAttachmentMigration(
 
   const state = readAttachmentUploadState(config);
 
+  const persistRecord = (record: AttachmentUploadRecord): void => {
+    const saved = upsertUploadRecord(config, record);
+    state.records[uploadRecordKey(record.base, record.namespace, record.sourceName)] = saved;
+  };
+
   for (const base of bases) {
     const local = localStorageProvider(baseDirFor(config, base));
     const cloud = clouds.get(base)!;
@@ -322,6 +326,10 @@ export function runAttachmentMigration(
 
       if (dryRun) continue;
 
+      if (action === "skip-verified") {
+        action = "verify-only";
+      }
+
       const recordBase: AttachmentUploadRecord = {
         base,
         namespace,
@@ -332,13 +340,13 @@ export function runAttachmentMigration(
         byteLength,
         updatedAt: new Date().toISOString(),
       };
-      upsertUploadRecord(config, recordBase);
+      persistRecord(recordBase);
 
-      if (action !== "verify-only" && action !== "skip-verified") {
+      if (action !== "verify-only") {
         if (!cloudObjectMatches(cloud, namespace, targetName, contentSha256, byteLength)) {
           const put = cloud.put(namespace, targetName, localBytes);
           if ("error" in put) {
-            upsertUploadRecord(config, {
+            persistRecord({
               ...recordBase,
               phase: "failed",
               error: put.error,
@@ -348,12 +356,12 @@ export function runAttachmentMigration(
           }
           result.uploaded++;
         }
-        upsertUploadRecord(config, { ...recordBase, phase: "uploaded" });
+        persistRecord({ ...recordBase, phase: "uploaded" });
       }
 
       if (base === "work") {
         if (!verifyThroughResolver(config, namespace, targetName, contentSha256)) {
-          upsertUploadRecord(config, {
+          persistRecord({
             ...recordBase,
             phase: "failed",
             error: "verification failed: resolver could not read cloud object",
@@ -364,7 +372,7 @@ export function runAttachmentMigration(
       } else {
         const remote = cloud.get(namespace, targetName);
         if (!remote || sha256Hex(remote) !== contentSha256) {
-          upsertUploadRecord(config, {
+          persistRecord({
             ...recordBase,
             phase: "failed",
             error: "verification failed: cloud bytes mismatch",
@@ -389,15 +397,32 @@ export function runAttachmentMigration(
         local.remove(namespace, sourceName);
       }
 
-      upsertUploadRecord(config, { ...recordBase, phase: "verified" });
-      state.records[key] = {
-        ...recordBase,
-        phase: "verified",
-        updatedAt: new Date().toISOString(),
-      };
+      persistRecord({ ...recordBase, phase: "verified" });
+    }
+
+    for (const record of Object.values(state.records)) {
+      if (record.base !== base || record.phase !== "verified") continue;
+      const stillLocal = local.get(record.namespace, record.sourceName);
+      if (stillLocal) continue;
+      const seen = result.planned.some(
+        (p) =>
+          p.base === base &&
+          p.namespace === record.namespace &&
+          p.sourceName === record.sourceName,
+      );
+      if (seen) continue;
+      result.skipped++;
+      result.planned.push({
+        base,
+        namespace: record.namespace,
+        sourceName: record.sourceName,
+        targetName: record.targetName,
+        rewriteRefs: false,
+        byteLength: record.byteLength,
+        action: "skip-verified",
+      });
     }
   }
 
-  if (!dryRun) writeAttachmentUploadState(config, state);
   return result;
 }
