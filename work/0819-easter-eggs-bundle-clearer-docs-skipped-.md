@@ -2,7 +2,7 @@
 id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and timer tooltip"
 type: bug
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -249,3 +249,5 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T01:38:39Z · note: highlight [data-test-id="integration-timer-tip"] matched nothing on /
 - 2026-10-18T01:44:07Z · body
 - 2026-10-18T02:00:45Z · needs_input
+- 2026-10-18T02:00:45Z · status review→active
+- 2026-10-18T02:00:45Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
