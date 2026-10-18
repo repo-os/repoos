@@ -12,7 +12,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:25Z"
 updated_at: "2026-10-18T11:39:25Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T10:20:44.294Z: repoos check failed: ◆ Check plan"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/shot-plan-edit.test.ts > parseShotEntry (#0627) > rejects a bad step and an unknown key, like the list parser on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 386dee459445c5b90d91d7d031ca4e8c26a2603d
@@ -69,3 +68,4 @@ Related: #0734, #0755, #0613. Do not make a missing Playwright a failure (stays 
 - 2026-10-18T11:22:56Z · body
 - 2026-10-18T11:25:42Z · body
 - 2026-10-18T11:39:25Z · body
+
