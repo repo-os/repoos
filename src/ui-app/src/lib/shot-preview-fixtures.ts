@@ -537,6 +537,11 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
  * dev-inspector override, so `editorConfigured` is false on every surface that
  * shows the hint (TaskDrawer Spec row, Context doc viewer, failed-tests list).
  */
+/** Config-only shot fixtures (applied after `/api/config` loads, #0805). */
+export function isShotPreviewConfigFixture(fixture: ShotPreviewFixtureId): boolean {
+  return fixture === "editor:unconfigured" || fixture === "settings:birdQuickTrail";
+}
+
 export function applyShotPreviewConfigFixture(
   config: ConfigStore,
   fixture: ShotPreviewFixtureId,

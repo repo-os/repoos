@@ -360,8 +360,8 @@ fixture the preview applies before capture (preview builds only, via
 - `drawer:activeRequirements` — active fixture task with requirement sections
   so the task drawer shows **Update requirements** on the spec header (#0817,
   `#9999` fixture task)
-- `board:startWorkPending` — ready fixture card with Start work in flight
-  (`Starting…` hint and disabled footer, #0822)
+- `board:startWorkPending` — ready fixture card `#9999` on `/work` with Start
+  work in flight (`Starting…` hint and disabled footer, #0822)
 - `drawer:startWorkPending` — same pending state with the task drawer open on
   `#9999`
 - `settings:birdQuickTrail` — Settings activity-animation preview seeded to
