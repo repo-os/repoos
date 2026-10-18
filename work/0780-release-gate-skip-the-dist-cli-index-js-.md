@@ -12,7 +12,7 @@ branch: feat/release-gate-skip-the-dist-cli-index-js-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T08:20:29Z"
-updated_at: "2026-10-18T18:39:54Z"
+updated_at: "2026-10-18T18:41:31Z"
 last_check_failure: "repoos check at 2026-10-18T18:38:03.952Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 handoff_signal_retry_count: 1
 last_close_out_gate_ms: 121907
@@ -69,4 +69,4 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 - 2026-10-18T18:29:59Z · body
 - 2026-10-18T18:38:03Z · message_delivered: 1 message(s)
 - 2026-10-18T18:39:54Z · body
-
+- 2026-10-18T18:41:31Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
