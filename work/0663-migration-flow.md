@@ -2,7 +2,7 @@
 id: "0663"
 title: Migration flow
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: core
 story: Cloud attachment storage
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T08:29:15Z"
-updated_at: "2026-10-05T12:06:02Z"
+updated_at: "2026-10-18T16:16:32Z"
 ---
 Slice 6: Dry run, resumable upload, verification before local originals released. Migration is safely repeatable.
 
@@ -51,3 +51,4 @@ Slice 6: Dry run, resumable upload, verification before local originals released
 - 2026-10-05T11:15:29Z · needs_input
 - 2026-10-05T12:05:11Z · needs_input
 - 2026-10-05T12:05:54Z · body
+- 2026-10-18T16:16:32Z · status inbox→ready
