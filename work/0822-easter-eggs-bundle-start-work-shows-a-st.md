@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-18T04:38:53Z"
-review_passes: 4
 id: "0822"
 title: "Easter eggs bundle: Start work pending state, and Bird quick trail animation"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
+updated_at: "2026-10-18T05:37:09Z"
+review_passes: 4
 close_out_repair_count: 1
 review_rounds: 2
 ---
@@ -153,6 +153,9 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 ]
 ```
 
+## Problem
+Bundle of two small, independent web items (E1 Start work pending state; E2 Bird quick trail animation). Per-item detail is under Items and the E1/E2 sections below.
+
 ## Activity
 
 - 2026-10-18T02:36:59Z · created · njachowski@gmail.com
@@ -200,4 +203,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T04:37:33Z · note: highlight .activity-animation-preview .ai-style-bird-quick-trail matched nothing on /settings?tab=general
 - 2026-10-18T04:38:51Z · note: review pass 4: needs some work
 - 2026-10-18T04:38:52Z · needs_input
-
+- 2026-10-18T05:37:09Z · body: Problem (added)
