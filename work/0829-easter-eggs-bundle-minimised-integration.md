@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-18T07:08:15Z"
+review_passes: 1
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T07:08:15Z"
 ---
 ## Items
 - [ ] **E1 · Minimised pill shows only the median popup, centered** (web) — remove the extra native title tooltip over it. Source: Nick 2026-10-18.
@@ -143,3 +144,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T07:07:27Z · note: click .debug-event-expandable: click: Error: strict mode violation: locator('.debug-event-expandable') resolved to 12 elements: on /work?task=0820&tab=debug
 - 2026-10-18T07:07:28Z · note: highlight .debug-event-message matched nothing on /work?task=0820&tab=debug
 - 2026-10-18T07:08:15Z · note: review pass 1: needs some work
+
