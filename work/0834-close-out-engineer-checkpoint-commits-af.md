@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T20:01:17Z"
+updated_at: "2026-10-18T20:11:14Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-10-18T16:15:03.089Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 47285b26 to 5792761a) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/review-override.test.ts > review completion > reports the reviewer selected for the turn, not the global default on bee — fix it in the feature branch and re-run the gate"
@@ -112,3 +112,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T19:06:13Z · message_queued at 2026-10-18T19:06:13.184Z
 - 2026-10-18T19:06:13Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-18T20:01:17Z · handoff failed · check failed after 2 automatic retries · repoos check failed: rendered-contrast — gruvbox-light (1):
+- 2026-10-18T20:11:14Z · message_overdue: still queued after 60m without being delivered
