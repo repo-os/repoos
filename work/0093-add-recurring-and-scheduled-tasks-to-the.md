@@ -11,7 +11,7 @@ branch: feat/add-recurring-and-scheduled-tasks-to-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-08-11T14:22:06Z"
-updated_at: "2026-10-18T19:09:50Z"
+updated_at: "2026-10-18T19:15:52Z"
 ---
 ## Problem
 
@@ -103,11 +103,11 @@ dependency constraint.
 ```json
 [
 {
-  "label": "Scheduled Tasks tab on Agents page",
-  "target": "default",
-  "route": "/agents?tab=scheduled",
-  "highlight": ".scheduled-tasks-panel",
-  "state": "board:withReviewTask"
+"label": "Scheduled Tasks tab on Agents page",
+"target": "default",
+"route": "/agents?tab=scheduled",
+"highlight": ".scheduled-tasks-panel",
+"state": "board:withReviewTask"
 }
 ]
 ```
@@ -121,3 +121,4 @@ dependency constraint.
 - 2026-10-18T19:02:46Z · status ready→active, branch
 - 2026-10-18T19:08:36Z · body
 - 2026-10-18T19:09:50Z · body
+- 2026-10-18T19:15:52Z · handoff failed · remote validation failed: test failure: tests/api-route-parity.test.ts > API route parity > every /api route is covered by a CLI command or the UI-only allowlist on bee — fix it in the feature branch and re-run the gate
