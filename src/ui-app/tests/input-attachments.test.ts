@@ -60,21 +60,14 @@ describe("input → task attachment carry-over (#0382)", () => {
         addScreenshot: meta as Exclude<typeof meta, { error: string }>,
       });
       expect(updated.body).toContain("## Screenshots");
-      expect(updated.body).toContain(
-        `![dark](/api/tasks/${created.id}/attachments/screenshot-1.png)`,
-      );
+      expect(updated.body).toContain(`![dark](/api/tasks/${created.id}/attachments/`);
+      const objectName = decodeURIComponent((meta as { url: string }).url.split("/").pop()!);
       // The activity log remains the last section.
       expect(updated.body.indexOf("## Screenshots")).toBeLessThan(
         updated.body.indexOf("## Activity"),
       );
       // And the image bytes are on disk under the task's own attachments dir.
-      const onDisk = join(
-        root,
-        repoos.config.workDir,
-        ".attachments",
-        created.id,
-        "screenshot-1.png",
-      );
+      const onDisk = join(root, repoos.config.workDir, ".attachments", created.id, objectName);
       expect(existsSync(onDisk)).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -114,15 +107,9 @@ describe("input → task attachment carry-over (#0382)", () => {
       }
 
       // All three are in the section, in order.
-      expect(current.body).toContain(
-        "![first](/api/tasks/" + current.id + "/attachments/screenshot-1.png)",
-      );
-      expect(current.body).toContain(
-        "![second](/api/tasks/" + current.id + "/attachments/screenshot-2.png)",
-      );
-      expect(current.body).toContain(
-        "![third](/api/tasks/" + current.id + "/attachments/screenshot-3.png)",
-      );
+      for (const label of ["first", "second", "third"]) {
+        expect(current.body).toContain(`![${label}](/api/tasks/${current.id}/attachments/`);
+      }
       expect(current.body.split("## Screenshots").length - 1).toBe(1);
 
       // A subsequent PM-driven body rewrite must keep all three (PROTECTED_SECTIONS).
@@ -195,9 +182,7 @@ describe("input → task attachment carry-over (#0382)", () => {
           addScreenshot: meta as Exclude<typeof meta, { error: string }>,
         });
       }
-      expect(current.body).toContain(
-        `![present](/api/tasks/${current.id}/attachments/screenshot-1.png)`,
-      );
+      expect(current.body).toContain(`![present](/api/tasks/${current.id}/attachments/`);
       expect(current.body.split("## Screenshots").length - 1).toBe(1);
     } finally {
       rmSync(root, { recursive: true, force: true });

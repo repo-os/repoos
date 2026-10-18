@@ -20,9 +20,10 @@
  * the pending folder never accumulates.
  */
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
+import { generateAttachmentObjectName } from "../core/attachment-reference.js";
 import {
   MAX_SCREENSHOT_BYTES,
   SCREENSHOT_MIME,
@@ -180,7 +181,7 @@ export function dropPmImages(batchId: string | null): void {
 /**
  * Attach the oldest pending batch whose PM session is still running to a
  * freshly created task: move the files into the task's attachment folder
- * under the usual `screenshot-N` names, reference them from the task body's
+ * under opaque `att_<uuid>.<ext>` names, reference them from the task body's
  * `## Screenshots` section, and return the re-parsed task for the caller to
  * apply to the index. Returns null when nothing is pending for a running
  * session — the common case — or on any failure (best-effort; a failed
@@ -201,17 +202,13 @@ export function attachPendingPmImages(
   try {
     const dir = attachmentsDir(config.root, config.workDir, task.id);
     mkdirSync(dir, { recursive: true });
-    const taken = new Set(existsSync(dir) ? readdirSync(dir) : []);
     const metas: ScreenshotMeta[] = [];
     for (const img of batch.images) {
       const ext = img.absPath.slice(img.absPath.lastIndexOf("."));
-      let next = 1;
-      while (taken.has(`screenshot-${next}${ext}`)) next++;
-      const file = `screenshot-${next}${ext}`;
+      const file = generateAttachmentObjectName(ext);
       renameSync(img.absPath, join(dir, file));
-      taken.add(file);
       metas.push({
-        id: String(next),
+        id: String(metas.length + 1),
         name: img.name,
         path: `${config.workDir.split("\\").join("/")}/.attachments/${task.id}/${file}`,
         url: screenshotUrl(task.id, file),
