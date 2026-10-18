@@ -11,7 +11,7 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T08:19:11Z"
+updated_at: "2026-10-18T08:22:19Z"
 ---
 ## Problem
 The task card shows the whole first line of the reviewer's Verdict section as `needs_input_detail` (`src/server/review.ts` ~1749), under the header "REVIEW STILL FINDING ISSUES". It is often a long paragraph and begins with `` `needs some work` — ``, which the header already says.
@@ -29,9 +29,56 @@ The task card shows the whole first line of the reviewer's Verdict section as `n
 ## Notes for AI
 Bundle-sized: a second small item may be added by the human before start. Source: driver discussion 2026-10-18.
 
+## Shots
+```json
+[
+{
+  "label": "Review card: review-rounds-exhausted summary clamped (light)",
+  "target": "default",
+  "route": "/work?status=review",
+  "highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
+    }
+  ],
+  "assert": [
+    {
+      "selector": "[data-task-id=\"9999\"] .tc-needs-detail",
+      "label": "detail omits duplicated verdict label",
+      "text": "contrast audit"
+    }
+  ],
+  "state": "card:reviewRoundsExhausted",
+  "theme": "light"
+},
+{
+  "label": "Review card: review-rounds-exhausted summary clamped (dark)",
+  "target": "default",
+  "route": "/work?status=review",
+  "highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] .tc-needs-detail"
+    }
+  ],
+  "assert": [
+    {
+      "selector": "[data-task-id=\"9999\"] .tc-needs-detail",
+      "label": "detail omits duplicated verdict in dark theme",
+      "text": "contrast audit"
+    }
+  ],
+  "state": "card:reviewRoundsExhausted",
+  "theme": "dark"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-18T08:09:33Z · created · njachowski@gmail.com
 - 2026-10-18T08:19:03Z · status inbox→ready
 - 2026-10-18T08:19:08Z · cli_override, model_override
 - 2026-10-18T08:19:11Z · status ready→active, branch
+- 2026-10-18T08:22:19Z · body
