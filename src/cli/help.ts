@@ -230,6 +230,14 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "new/show/update: --body - · list/show: --json",
       },
       {
+        name: "schedule",
+        usage:
+          "schedule list | run <id> | enable|disable <id> | delete <id> --yes | new … | update <id> … | preview …",
+        desc: "Manage task schedules under schedules/ (Agents → Scheduled Tasks)",
+        flags:
+          "new/update: --cadence --timezone --time-of-day --task-title --body - · list/preview: --json · delete: --yes",
+      },
+      {
         name: "index",
         usage: "index [--json]",
         desc: "Rebuild the derived index cache",
@@ -360,6 +368,8 @@ const EXAMPLES: readonly Example[] = [
   },
   { cmd: "repoos story list", comment: "registered stories, with numbers" },
   { cmd: "repoos story show 0007", comment: "definition + member tasks and their statuses" },
+  { cmd: "repoos schedule list", comment: "recurring task templates under schedules/" },
+  { cmd: "repoos schedule run 0001", comment: "create a task from a schedule now" },
   { cmd: "repoos list ready" },
   { cmd: "repoos outline src/server/agents.ts", comment: "then read only the range you need" },
   { cmd: "repoos doctor", comment: "passing checks are hidden; --verbose shows all" },
