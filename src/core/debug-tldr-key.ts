@@ -25,10 +25,7 @@ export function normalizeDebugTldrKey(key: string): string {
   return sanitizeSegment(key.replace(/\u0000/g, DEBUG_TLDR_KEY_SEP));
 }
 
-export function debugTldrKeysEqual(
-  a: string | undefined,
-  b: string | undefined,
-): boolean {
+export function debugTldrKeysEqual(a: string | undefined, b: string | undefined): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
   return normalizeDebugTldrKey(a) === normalizeDebugTldrKey(b);
