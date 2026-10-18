@@ -747,10 +747,9 @@ export function buildCapturePlan(
     for (const skipped of targets.filter(
       (t) => !isCommand(t) && contentOnly.has(t) && !requestedRoute,
     )) {
-      autoSkips.push(
-        `${skipped} matched only documentation content, and no declared shot names a route — ` +
-          "docs captures need a declared route, so this target was skipped",
-      );
+      // #0819: say what to do, not how the matcher works. The Changes tab adds
+      // a link to docs/previews.md for this line.
+      autoSkips.push(`${skipped} skipped: no docs shot declared`);
     }
     if (capturable.length === 0) {
       return { entries: [], errors, autoSkips, collapsed: [] };
@@ -851,10 +850,7 @@ export function buildCapturePlan(
       !entries.some((e) => e.target === target) &&
       !declaredTargeted.has(target)
     ) {
-      autoSkips.push(
-        `${target} matched only documentation content, and no declared shot names a route — ` +
-          "docs captures need a declared route, so this target was skipped",
-      );
+      autoSkips.push(`${target} skipped: no docs shot declared`);
     }
   }
 

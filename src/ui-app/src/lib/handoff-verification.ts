@@ -290,6 +290,18 @@ function baseWarning(warning: string): string {
   return warning.replace(/\s+\(captured .*\)$/, "");
 }
 
+/**
+ * The in-app doc that explains declaring a docs route (#0819). A docs target
+ * matched only by content files cannot infer a route, so the skip must point
+ * the reader at the fix rather than describe the matcher.
+ */
+export const DOCS_SHOT_ROUTE_DOC = "/repo?doc=docs/previews.md";
+
+/** True when a warning/detail line is the docs-target skip that needs a route. */
+export function isDocsShotSkip(line: string): boolean {
+  return /skipped: no docs shot declared/i.test(line);
+}
+
 /** Stable identity for an issue, so a capture's copy is not re-shown run-level. */
 function issueKey(issue: UiHandoffVerificationIssue): string {
   return `${issue.kind}\u0000${issue.message}\u0000${issue.url ?? ""}\u0000${issue.viewportWidth ?? ""}`;

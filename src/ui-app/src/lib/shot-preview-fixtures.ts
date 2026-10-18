@@ -9,7 +9,16 @@ import {
 } from "../../../core/shot-fixtures.js";
 import type { useConfigStore } from "../stores/config";
 import type { useRepoStore } from "../stores/repo";
-import type { DevTargetView, IntegrationPipelineSnapshot, Task } from "../types";
+import { useNoticesStore } from "../stores/notices";
+import { useUiStore } from "../stores/ui";
+import type {
+  CloseOutOutcomeEvent,
+  DevTargetView,
+  IntegrationPipelineSnapshot,
+  ShotMeta,
+  Task,
+  UiHandoffVerificationEvidence,
+} from "../types";
 
 type RepoStore = ReturnType<typeof useRepoStore>;
 type ConfigStore = ReturnType<typeof useConfigStore>;
@@ -227,6 +236,98 @@ export function shotFixtureDevTargets(
   ];
 }
 
+/**
+ * Fixture body for `drawer:shotEvidence` (#0819): the `## Activity` docs-skip
+ * note the Changes tab parses into the "Docs site skipped: no docs shot
+ * declared" warning + its "How to declare a docs route" link.
+ */
+const SHOT_EVIDENCE_FIXTURE_BODY = [
+  "## Problem",
+  "",
+  "A docs change was captured but no declared shot named a docs route.",
+  "",
+  "## Activity",
+  "",
+  "- 2026-06-01T00:00:00Z · note: shots: skipped — Docs site skipped: no docs shot declared",
+].join("\n");
+
+// Tiny inline images so the shot rows and viewer render without a server fetch
+// for a fixture task (a real PNG URL would 404 and log a console error).
+const SHOT_EVIDENCE_PNG =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+const SHOT_EVIDENCE_GIF =
+  "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+
+/**
+ * Captured shots for `drawer:shotEvidence` (#0819): one whose handoff verdict
+ * is "check" with a plain-words warning, one clean "matches". `capturedAt` is
+ * older than the docs-skip activity note so `shotProblems` does not supersede
+ * that warning.
+ */
+const SHOT_EVIDENCE_SHOTS: ShotMeta[] = [
+  {
+    name: "default-1.png",
+    target: "default",
+    route: "/work",
+    label: "Docs route (check)",
+    provenance: "declared: Docs route (check)",
+    path: "shots/default-1.png",
+    url: SHOT_EVIDENCE_PNG,
+    size: 68,
+    mime: "image/png",
+    capturedAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    name: "default-2.png",
+    target: "default",
+    route: "/",
+    label: "Board (matches)",
+    provenance: "declared: Board (matches)",
+    path: "shots/default-2.png",
+    url: SHOT_EVIDENCE_GIF,
+    size: 43,
+    mime: "image/gif",
+    capturedAt: "2026-01-01T00:00:00.000Z",
+  },
+];
+
+/** Handoff verification for `drawer:shotEvidence`: a check with a warning + a clean match. */
+const SHOT_EVIDENCE_VERIFICATION: UiHandoffVerificationEvidence = {
+  at: "2026-01-01T00:00:00.000Z",
+  issues: [],
+  blankShots: [],
+  captures: 2,
+  sourceIdentity: "fixture000",
+  captureDetails: [
+    {
+      target: "default",
+      route: "/work",
+      label: "Docs route (check)",
+      url: SHOT_EVIDENCE_PNG,
+      finalRoute: "/work",
+      routeMatched: true,
+      assertions: [],
+      assertionsPassed: 0,
+      assertionsChecked: 0,
+      shot: { name: "default-1.png", path: "shots/default-1.png", url: SHOT_EVIDENCE_PNG },
+      targetWarnings: ["click .fullscreen-toggle: Timeout 30000ms exceeded"],
+    },
+    {
+      target: "default",
+      route: "/",
+      label: "Board (matches)",
+      url: SHOT_EVIDENCE_GIF,
+      finalRoute: "/",
+      routeMatched: true,
+      assertions: [],
+      assertionsPassed: 0,
+      assertionsChecked: 0,
+      shot: { name: "default-2.png", path: "shots/default-2.png", url: SHOT_EVIDENCE_GIF },
+    },
+  ],
+  warnings: [],
+};
+
 /** Apply a named fixture to the live board (preview builds only). */
 export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFixtureId): void {
   // Reset first: a fixture that seeds no pipeline must not leave a previous
@@ -237,6 +338,22 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID);
       pinnedIntegration = repo.integration;
       break;
+    case "integration:median15": {
+      ensureFixtureTask(repo, "review");
+      const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();
+      repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID, null, startedAt, nowIso());
+      pinnedIntegration = repo.integration;
+      useUiStore().setIntegrationBarCollapsed(false);
+      const outcomes: CloseOutOutcomeEvent[] = Array.from({ length: 15 }, (_, i) => ({
+        taskId: `0${i}`,
+        outcome: "succeeded",
+        finishedAt: new Date(Date.now() - i * 60_000).toISOString(),
+        reason: "",
+        durationMs: (i + 1) * 60_000,
+      }));
+      useNoticesStore().closeOutOutcomes = outcomes;
+      break;
+    }
     case "closeOut:uploading":
       ensureFixtureTask(repo, "review");
       repo.integration = activePipeline(
@@ -357,6 +474,18 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       }
       break;
     }
+    case "drawer:shotEvidence":
+      // #0819 — a review task (no branch, so no diff-stats request for the
+      // fake id) whose Changes tab carries a captured shot with a handoff
+      // verdict + warning and a docs-skip activity note, so a capture can show
+      // the screenshot viewer header and the docs warning + link.
+      ensureFixtureTask(repo, "review", { body: SHOT_EVIDENCE_FIXTURE_BODY });
+      repo.seedShotEvidence(
+        SHOT_PREVIEW_FIXTURE_TASK_ID,
+        SHOT_EVIDENCE_SHOTS,
+        SHOT_EVIDENCE_VERIFICATION,
+      );
+      break;
     case "card:handoffConflict":
       // #0810 — the "Worktree changed after handoff" modal only opens from a
       // failed Move to done. Seed the pending conflict on a board card so a

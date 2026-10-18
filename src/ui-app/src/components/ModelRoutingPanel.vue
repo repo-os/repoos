@@ -488,19 +488,20 @@ onMounted(() => {
 
     <div class="mr-roles">
       <span class="field-label">Before a task starts</span>
-      <label class="mr-role-chip" style="margin-top: 6px">
+      <label class="mr-role-chip" style="margin-top: 6px" data-test-id="routing-human-step-row">
         <input
           type="checkbox"
           :checked="humanStepCheck"
           data-testid="routing-human-step-check"
           @change="(e) => void setHumanStepCheck((e.target as HTMLInputElement).checked)"
         />
-        Ask the decision model whether the task needs a human-only step
+        Check for mixed AI and human steps, and suggest splitting the task
       </label>
       <p class="agent-desc" style="margin: 6px 0 0">
-        Off by default. Uses the provider above. It only blocks a start when Mode is Automatic; in
-        Shadow it records the verdict without blocking, and if the provider is unavailable or fails,
-        the existing keyword check runs instead.
+        Off by default. Uses the provider above. A yes means the task should be split into a
+        separate AI task and a human task. It only blocks a start when Mode is Automatic; in Shadow
+        it records the verdict without blocking, and if the provider is unavailable or fails, the
+        keyword check runs instead.
       </p>
     </div>
 

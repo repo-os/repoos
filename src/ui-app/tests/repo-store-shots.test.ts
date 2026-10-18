@@ -31,6 +31,28 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.history.replaceState({}, "", "/");
+});
+
+describe("shot-preview fixture task avoids server fetches (#0819)", () => {
+  it("skips drawer data requests for #9999 while a capture is active", async () => {
+    window.history.replaceState({}, "", "/work?task=9999&shotState=drawer%3AshotEvidence");
+    const fetchMock = vi.fn(async () => json({ ok: true, shots: [], evidence: null }));
+    vi.stubGlobal("fetch", fetchMock);
+    const repo = useRepoStore();
+
+    await Promise.all([
+      repo.loadShots("9999"),
+      repo.loadUiVerification("9999"),
+      repo.loadDiff("9999"),
+      repo.loadDiffStats("9999"),
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // The fixture seeds this state client-side; any fetch would 404 and fail
+    // the handoff UI gate on a failed same-origin request.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("repo store addShot/deleteShot (#0627)", () => {
