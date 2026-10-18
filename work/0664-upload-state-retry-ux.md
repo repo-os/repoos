@@ -2,7 +2,7 @@
 id: "0664"
 title: Upload state + retry UX
 type: feature
-status: active
+status: review
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -13,7 +13,7 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-18T18:56:14Z"
+updated_at: "2026-10-18T18:56:37Z"
 last_check_failure: "repoos check at 2026-10-18T17:32:06.903Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 review_rounds: 1
 review_passes: 3
@@ -40,18 +40,18 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 ```json
 [
 {
-  "label": "New input: outstanding failed attachment upload with retry",
-  "target": "default",
-  "route": "/inputs",
-  "highlight": ".ff-upload-followup .ff-pending-file-retry",
-  "state": "panel:newInputOutstandingUpload"
+"label": "New input: outstanding failed attachment upload with retry",
+"target": "default",
+"route": "/inputs",
+"highlight": ".ff-upload-followup .ff-pending-file-retry",
+"state": "panel:newInputOutstandingUpload"
 },
 {
-  "label": "New task: failed screenshot retry row on freeform form",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".ff-upload-followup .ff-pending-file-retry",
-  "state": "panel:freeformFailedScreenshot"
+"label": "New task: failed screenshot retry row on freeform form",
+"target": "default",
+"route": "/work",
+"highlight": ".ff-upload-followup .ff-pending-file-retry",
+"state": "panel:freeformFailedScreenshot"
 }
 ]
 ```
@@ -88,3 +88,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-18T18:52:29Z · body
 - 2026-10-18T18:55:19Z · body
 - 2026-10-18T18:56:14Z · body
+- 2026-10-18T18:56:37Z · status active→review
