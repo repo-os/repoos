@@ -12,8 +12,10 @@ depends_on: ["0660"]
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-18T16:16:44Z"
+updated_at: "2026-10-18T16:16:47Z"
 ---
 Slice 7: Uploading / retrying / failed states visible in UI. Attachment never shown as available before upload succeeds. Retry without re-deriving user input.
 
@@ -37,3 +39,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-05T08:29:24Z · created · unknown
 - 2026-10-05T09:16:46Z · needs_input, questions, body
 - 2026-10-18T16:16:44Z · status inbox→ready
+- 2026-10-18T16:16:47Z · cli_override, model_override
