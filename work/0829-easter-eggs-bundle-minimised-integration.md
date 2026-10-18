@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T06:17:50Z"
+updated_at: "2026-10-18T06:18:02Z"
 ---
 ## Items
 
@@ -55,7 +55,11 @@ The tooltip reads "Median 4m 06s · 10 runs", but #0814/#0819 agreed on the last
 ### Notes for AI
 Evidence is in this item; do not change the 15 constant. Related: #0814, #0819.
 
+## Problem
+Bundle of two small web items about the integration pill tooltip; see Items and the E1/E2 sections.
+
 ## Activity
 
 - 2026-10-18T06:17:45Z · created · njachowski@gmail.com
 - 2026-10-18T06:17:50Z · needs_input
+- 2026-10-18T06:18:02Z · body: Problem (added)
