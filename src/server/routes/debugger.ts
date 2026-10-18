@@ -77,7 +77,7 @@ export const sendDebuggerMessage: RouteHandler = async (ctx, req, res) => {
     }
     return json(res, 400, { error: reason });
   }
-  return json(res, 200, { ok: true });
+  return json(res, 200, { ok: true, queued: Boolean((result as any).queued) });
 };
 
 /** Interrupt a running Debugger response. Idempotent. */
@@ -297,7 +297,7 @@ export const sendTaskDebuggerMessage: RouteHandler = async (ctx, req, res, param
     }
     return json(res, 400, { error: result.reason ?? "could not send message" });
   }
-  return json(res, 200, { ok: true });
+  return json(res, 200, { ok: true, queued: Boolean((result as { queued?: boolean }).queued) });
 };
 
 /** Interrupt a running task-scoped Debugger response. Idempotent. */
@@ -421,5 +421,5 @@ ${existing.body || "(no description)"}`;
   if (!result.ok) {
     return json(res, 400, { error: result.reason ?? "could not send message to PM" });
   }
-  return json(res, 200, { ok: true });
+  return json(res, 200, { ok: true, queued: Boolean(result.queued) });
 };

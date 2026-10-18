@@ -15,8 +15,10 @@ import ChatAgentModelChip from "./ChatAgentModelChip.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import ChatSendButton from "./ChatSendButton.vue";
+import ChatQueuedNotice from "./ChatQueuedNotice.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
+import { useQueuedSend } from "../composables/useQueuedSend";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 
 const props = defineProps<{ open: boolean }>();
@@ -38,6 +40,8 @@ const enabled = computed(() => repo.cto.enabled);
 const running = computed(() => repo.cto.running);
 const report = computed(() => repo.cto.report);
 const lines = computed(() => repo.cto.lines);
+/** True while a CTO message queued during a run waits to be read (#0821). */
+const { queued, markQueued } = useQueuedSend(() => repo.cto.running);
 
 // The saved report is folded in as a normal assistant entry (#0732) only when
 // it is not already present in the transcript, so each monitoring run shows its
@@ -108,14 +112,15 @@ function adjustDraftHeight(): void {
 
 async function send(): Promise<void> {
   const text = draft.value.trim();
-  if (!text || busy.value || !enabled.value) return;
+  if (!text || !enabled.value) return;
   submitting.value = true;
   draft.value = "";
   try {
-    await api("/api/cto/message", {
+    const res = await api<{ ok: boolean; queued?: boolean }>("/api/cto/message", {
       method: "POST",
       body: JSON.stringify({ text }),
     });
+    if (res.queued) markQueued();
     await repo.loadCTO();
   } catch (error) {
     repo.onError(error);
@@ -241,12 +246,13 @@ watch(
       </button>
     </div>
 
+    <ChatQueuedNotice :active="queued" />
     <form class="ai-chat-compose" @submit.prevent="send">
       <textarea
         ref="draftTextarea"
         v-model="draft"
         placeholder="Ask the CTO about board health..."
-        :disabled="busy || !enabled"
+        :disabled="!enabled"
         rows="1"
         @keydown="onKeydown"
         @input="adjustDraftHeight"
@@ -263,7 +269,9 @@ watch(
           <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
         </svg>
       </button>
-      <ChatSendButton v-else :disabled="busy || !enabled || !draft.trim()" />
+      <!-- Send stays usable while busy (#0821): the message is queued and read
+           when the current run ends. -->
+      <ChatSendButton :disabled="!enabled || !draft.trim()" />
     </form>
   </FloatingHeadPanel>
 </template>
