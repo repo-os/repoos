@@ -8,7 +8,7 @@ import { RepoOsApi, RepoOsApiError } from "../cli/repoos-api.js";
 
 const USAGE =
   "  Usage:\n" +
-  "    repoos bundle add <id> --title \"…\" --area … --fix \"…\" --source \"…\" [--test \"…\"] [--force] [--json] [--port N]\n" +
+  '    repoos bundle add <id> --title "…" --area … --fix "…" --source "…" [--test "…"] [--force] [--json] [--port N]\n' +
   '    repoos bundle edit <id> <En> --section "Desired UX" --section-body <text|-> [--force] [--json] [--port N]\n' +
   "    repoos bundle done <id> <En> [--json] [--port N]\n" +
   "    repoos bundle undo <id> <En> [--json] [--port N]\n";
@@ -73,7 +73,13 @@ export async function cmdBundle(args: string[]): Promise<number> {
         console.error(c.red(`  Missing value for --${key}`));
         return 1;
       }
-      if (key === "title" || key === "area" || key === "fix" || key === "source" || key === "test") {
+      if (
+        key === "title" ||
+        key === "area" ||
+        key === "fix" ||
+        key === "source" ||
+        key === "test"
+      ) {
         payload[key] = raw;
       } else {
         console.error(c.red(`  Unknown flag --${key}\n${USAGE}`));
