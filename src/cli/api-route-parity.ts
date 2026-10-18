@@ -25,7 +25,7 @@ const re =
 
 /** Routes implemented by the server-backed control CLI (#0723). */
 const CONTROL_API_MATCHERS: Matcher[] = [
-  re("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done)$/.source),
+  re("POST", /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync)$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/.source),
   // `repoos dev …` (#0747): list/status/get and start/stop/restart.
@@ -142,7 +142,7 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   exact("POST", "/api/transcribe"),
   (r) => r.pattern.startsWith("/api/service/"),
   exact("POST", "/api/server/restart"),
-  re("POST", /^\/api\/tasks\/([^/]+)\/(sync|hotfix|abandon|reopen|archive|unarchive)$/.source),
+  re("POST", /^\/api\/tasks\/([^/]+)\/(hotfix|abandon|reopen|archive|unarchive)$/.source),
   exact("POST", "/api/tasks/freeform"),
   exact("POST", "/api/docs/create"),
   exact("POST", "/api/docs/freeform"),

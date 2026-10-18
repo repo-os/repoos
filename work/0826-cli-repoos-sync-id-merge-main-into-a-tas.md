@@ -2,16 +2,20 @@
 id: "0826"
 title: "CLI: repoos sync <id> (merge main into a task branch, like the drawer's Sync with main)"
 type: feature
-status: active
+status: done
 priority: p3
 area: core
+merged_commit: "09ebb4a8a4c91a3a347b503bb931a4645204af74"
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/cli-repoos-sync-id-merge-main-into-a-tas
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T04:31:12Z"
-updated_at: "2026-10-18T06:38:53Z"
+updated_at: "2026-10-18T08:09:47Z"
+last_close_out_gate_ms: 397618
+last_close_out_gate_at: "2026-10-18T07:19:32.615Z"
+review_passes: 2
 ---
 ## Problem
 The task drawer and the Debug tab have a "Sync with main" action (store `syncTaskBranch`, `POST /api/tasks/:id/sync`) that merges main into a task's branch. There is no CLI equivalent, so a driver agent facing a simple close-out merge conflict has to hand-run git in the worktree or send the task back to the engineer for a repair cycle.
@@ -43,3 +47,10 @@ Mirror the existing control-plane commands in src/commands (start/pause/done). R
 - 2026-10-18T06:25:21Z · body
 - 2026-10-18T06:38:52Z · message_queued at 2026-10-18T06:38:52.434Z
 - 2026-10-18T06:38:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-18T06:52:09Z · status active→review
+- 2026-10-18T06:52:10Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-18T06:52:50Z · note: review pass 1: good to go
+- 2026-10-18T06:52:51Z · note: review pass 2: good to go
+- 2026-10-18T07:19:32Z · close-out gate completed in 398s
+- 2026-10-18T07:20:00Z · status review→done, release:success
+- 2026-10-18T08:09:47Z · message_overdue: still queued after 60m without being delivered

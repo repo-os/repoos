@@ -17,8 +17,12 @@ import type {
   IntegrationPipelineSnapshot,
   ShotMeta,
   Task,
+  TaskLogEntry,
   UiHandoffVerificationEvidence,
 } from "../types";
+
+const DEBUG_LOGS_FIXTURE_MESSAGE =
+  "main advanced with bookkeeping-only commits — publishing without a merge conflict check on the candidate tree";
 
 type RepoStore = ReturnType<typeof useRepoStore>;
 type ConfigStore = ReturnType<typeof useConfigStore>;
@@ -343,7 +347,8 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();
       repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID, null, startedAt, nowIso());
       pinnedIntegration = repo.integration;
-      useUiStore().setIntegrationBarCollapsed(false);
+      // Minimised pill is the default for an active job; shots target the median tooltip there (#0829).
+      useUiStore().setIntegrationBarCollapsed(true);
       const outcomes: CloseOutOutcomeEvent[] = Array.from({ length: 15 }, (_, i) => ({
         taskId: `0${i}`,
         outcome: "succeeded",
@@ -512,6 +517,31 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         SHOT_EVIDENCE_VERIFICATION,
       );
       break;
+    case "drawer:debugLogs": {
+      const drawerId = shotPreviewDrawerTaskIdFromLocation(window.location);
+      const existing = repo.tasks.find((t) => t.id === drawerId);
+      if (existing) {
+        Object.assign(existing, { status: "done" });
+      } else {
+        repo.tasks.push(
+          fixtureTask({
+            id: drawerId,
+            status: "done",
+            path: `work/${drawerId}-debug-shot-fixture.md`,
+            absPath: `/tmp/repo/work/${drawerId}-debug-shot-fixture.md`,
+          }),
+        );
+      }
+      const log: TaskLogEntry = {
+        timestamp: "2026-10-18T03:21:00Z",
+        level: "info",
+        component: "task",
+        message: DEBUG_LOGS_FIXTURE_MESSAGE,
+        context: { from: "main", to: "feat/branch" },
+      };
+      repo.taskLogs[drawerId] = [log];
+      break;
+    }
     case "card:handoffConflict":
       // #0810 — the "Worktree changed after handoff" modal only opens from a
       // failed Move to done. Seed the pending conflict on a board card so a
