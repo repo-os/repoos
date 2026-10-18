@@ -1,6 +1,6 @@
 ---
-last_close_out_gate_ms: 363540
-last_close_out_gate_at: "2026-10-18T03:21:45.597Z"
+last_close_out_gate_ms: 644383
+last_close_out_gate_at: "2026-10-18T03:36:43.510Z"
 id: "0820"
 title: "Publish: stash and reapply dirty main files only when the merge would overwrite them"
 type: feature
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/publish-stash-and-reapply-dirty-main-fil
 created_at: "2026-10-17T15:26:36Z"
-updated_at: "2026-10-18T03:21:45Z"
+updated_at: "2026-10-18T03:36:43Z"
 review_passes: 1
 ---
 ## Problem
@@ -49,4 +49,5 @@ Start from publishCandidate in src/server/integration-orchestrator.ts (the publi
 - 2026-10-18T02:57:14Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-18T02:57:54Z · note: review pass 1: good to go
 - 2026-10-18T03:21:45Z · close-out gate completed in 364s
+- 2026-10-18T03:36:43Z · close-out gate completed in 644s
 
