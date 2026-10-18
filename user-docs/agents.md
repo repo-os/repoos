@@ -79,6 +79,8 @@ The page is organised into tabs:
 - **Default Agents** — the lifecycle roles RepoOS ships with.
 - **Custom Agents** — your own roles.
 - **Build Your Team** — built-in agents and chat assistants (see below).
+- **Scheduled Tasks** — recurring or one-time task templates that create ordinary
+  `work/*.md` tasks on a cadence (see `docs/scheduled-tasks.md`).
 - **Detected Coding Agents** — what's installed on this machine.
 - **Model Playground** — try a prompt against a CLI/model and compare output.
 - **Model providers** — live spend where a provider exposes an API (OpenRouter,
