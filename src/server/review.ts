@@ -53,6 +53,7 @@ import {
   parseReviewVerdict as parseVerdictLabel,
   parseReviewRelevance,
   reviewVerdictSection,
+  verdictSummaryForNeedsInput,
 } from "../core/review-verdict.js";
 import { extractReviewReportSections } from "../core/review-report-sections.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
@@ -443,8 +444,8 @@ export function reviewMission(
     "`None found` under Bugs, Edge cases, or Suggestions when genuinely empty:",
     "",
     "## Verdict",
-    "Open the report with EXACTLY one of these three verdict labels, then one or two",
-    "sentences saying what the change does and whether anything blocks sign-off:",
+    "Open with EXACTLY one of these three verdict labels, an em dash, then at most",
+    "120 characters explaining what blocks sign-off (details belong in Bugs below):",
     "",
     "`good to go` — the change is correct and complete.",
     "`needs some work` — the change is close, but has issues worth fixing first.",
@@ -1821,10 +1822,7 @@ export class ReviewManager {
         needsInputClearsOnSuccessfulReview(current) ||
         current.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON
       ) {
-        const verdictDetail = reviewVerdictSection(report.markdown)
-          ?.split(/\r?\n/)
-          .find((line) => line.trim())
-          ?.trim();
+        const verdictDetail = verdictSummaryForNeedsInput(report.markdown);
         try {
           patchTaskFile(this.config, task.absPath, {
             needsInput: true,
