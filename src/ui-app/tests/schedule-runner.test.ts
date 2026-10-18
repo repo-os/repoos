@@ -36,7 +36,7 @@ describe("schedule runner manual vs tick", () => {
       body: "body",
     });
 
-    const now = new Date("2020-01-07T12:00:00Z");
+    const now = new Date("2026-08-15T12:00:00Z");
     const row = getSchedule(config, created.id)!;
     const due = findDueSchedule(row, now);
     expect(due).not.toBeNull();
