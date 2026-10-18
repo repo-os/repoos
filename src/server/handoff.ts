@@ -458,11 +458,7 @@ async function runHandoffFinalization(
   // instead of orphaning it (#0521).
   const handoffDeadlineAt = Date.now() + HANDOFF_DEADLINE_MS;
 
-  if (
-    task.status === "review" &&
-    worktreeTask.status === "review" &&
-    !opts.checkpointRecovery
-  ) {
+  if (task.status === "review" && worktreeTask.status === "review" && !opts.checkpointRecovery) {
     onProgress?.("done");
     return { ok: true, step: "done", detail: "handoff was already finalized" };
   }
