@@ -1,0 +1,31 @@
+---
+id: "0837"
+title: "Server reload orphans running engineers: adopt or stop them (one writer per worktree)"
+type: bug
+status: inbox
+priority: p2
+area: server
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-18T16:14:35Z"
+updated_at: "2026-10-18T16:14:35Z"
+---
+## Problem
+After a RepoOS server reload, previously running `cursor-agent` engineer processes survive with `ppid=1` (orphaned, 2026-10-18: #0830 and #0832). The new server does not own them, so their handoff and exit signals are lost, the task can sit "active" for an hour with no progress, and a second engineer is started in the same worktree, giving two writers. That caused a post-handoff WIP checkpoint commit on #0832 that blocked its Move to done.
+
+## Desired UX
+On startup (and after a reload) the server reconciles agent processes for active tasks: an engineer process it can positively identify for a task worktree is either adopted (re-attached to the runner state so its exit and handoff are tracked) or stopped cleanly before a replacement is started. Never start a second engineer in a worktree that has a live one. Never kill by name; use recorded PIDs/process groups.
+
+## Acceptance criteria
+- Test: orphaned engineer pid recorded for a task is detected after a simulated reload and adopted or stopped; a replacement is not started while it is alive.
+- Test: unrelated processes are never touched.
+- Task activity records "adopted"/"stopped orphaned engineer pid N".
+- docs/agent-run-operations.md updated.
+
+## Notes for AI
+Related: #0834 (post-handoff checkpoint recovery), watchdog and CTO restart paths. Source: driver incident 2026-10-18.
+
+## Activity
+
+- 2026-10-18T16:14:35Z · created · njachowski@gmail.com
