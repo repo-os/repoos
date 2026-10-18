@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 96294
-last_close_out_gate_at: "2026-10-18T18:53:22.143Z"
 id: "0836"
 title: Concurrency cap and runner offload for local checks and Playwright runs (with Settings controls)
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, web]
+merged_commit: 279e499bdcc6202f78a517a005a47d11fc21fe46
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/concurrency-cap-and-runner-offload-for-l
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:25Z"
-updated_at: "2026-10-18T18:53:22Z"
+updated_at: "2026-10-18T18:54:14Z"
+last_close_out_gate_ms: 96294
+last_close_out_gate_at: "2026-10-18T18:53:22.143Z"
 review_passes: 6
 review_rounds: 2
 ---
@@ -117,4 +118,4 @@ Look at src/commands/check.ts, src/server/integration-orchestrator.ts, the shot/
 - 2026-10-18T18:45:18Z · status active→review
 - 2026-10-18T18:46:22Z · note: review pass 6: good to go
 - 2026-10-18T18:53:22Z · close-out gate completed in 96s
-
+- 2026-10-18T18:54:14Z · status review→done, release:success
