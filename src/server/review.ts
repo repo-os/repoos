@@ -219,6 +219,11 @@ export interface ReviewMissionOptions {
    * in tests (and so a caller that already resolved it does not recompute).
    */
   uiVerification?: UiVerificationMode;
+  /**
+   * Review only commits after this SHA on the task branch (#0834). The prior
+   * feature review at `deltaSinceApprovedSha` stays tied to that commit.
+   */
+  deltaSinceApprovedSha?: string;
 }
 
 /** One-line provenance for a command-target capture (#0765), for the mission summary. */
@@ -350,6 +355,17 @@ export function reviewMission(
     `Task #${task.id}: ${task.title}`,
     `Worktree (read-only for you): ${workdir}`,
     `Branch under review: ${task.branch || "(none)"} · base branch: ${baseBranch}`,
+    ...(options.deltaSinceApprovedSha
+      ? [
+          "",
+          "## Delta review scope (#0834)",
+          "",
+          `This is a **delta-only** review: the human already approved the feature at commit \`${options.deltaSinceApprovedSha.slice(0, 12)}\`.`,
+          "Inspect ONLY what changed in engineer self-check checkpoint commit(s) since then.",
+          `Use \`git diff ${options.deltaSinceApprovedSha}..HEAD\` and \`git log ${options.deltaSinceApprovedSha}..HEAD --oneline\`.`,
+          "Do not re-litigate the already-approved work unless the delta clearly breaks it.",
+        ]
+      : []),
     "",
     "## The task spec",
     "",
@@ -562,6 +578,8 @@ interface Run {
   timedOut?: boolean;
   /** The timeout timer, so it can be cleared on completion/cancel. */
   timer?: ReturnType<typeof setTimeout>;
+  /** Post-handoff checkpoint delta review (#0834). */
+  checkpointDelta?: boolean;
 }
 
 /** How long a guard revert stays claimable by the review trigger, in ms. */
@@ -694,6 +712,12 @@ export class ReviewManager {
   private readonly onEvidenceGapRepair?: (task: Task) => Promise<boolean>;
   /** Opt-in approval policy (#0686): fired when a run review finishes `good to go`. */
   private onCleanReviewVerdict?: (task: Task, report: ReviewReport) => void;
+  /** Post-handoff checkpoint recovery (#0834): resume close-out after delta review. */
+  private onCheckpointDeltaReviewVerdict?: (
+    task: Task,
+    report: ReviewReport,
+    verdict: string,
+  ) => void;
 
   constructor(
     config: RepoOSConfig,
@@ -718,6 +742,12 @@ export class ReviewManager {
   /** Wire the approval-policy runner once server dependencies exist (#0686). */
   bindCleanReviewHandler(handler: (task: Task, report: ReviewReport) => void): void {
     this.onCleanReviewVerdict = handler;
+  }
+
+  bindCheckpointDeltaReviewHandler(
+    handler: (task: Task, report: ReviewReport, verdict: string) => void,
+  ): void {
+    this.onCheckpointDeltaReviewVerdict = handler;
   }
 
   /** Whether an enabled review agent exists — the Agents page toggle. */
@@ -921,6 +951,79 @@ export class ReviewManager {
   }
 
   /**
+   * Delta review after post-handoff engineer checkpoint recovery (#0834).
+   * Does not replace the prior feature review at `approvedSha`.
+   */
+  async runCheckpointDelta(task: Task, approvedSha: string): Promise<ReviewRunResult> {
+    if (this.isRunning(task.id)) {
+      return { ok: false, reason: "a review is already running for this task" };
+    }
+    const baseReviewer = resolveReviewerForTask(this.config, task);
+    if (!baseReviewer) {
+      return { ok: false, skipped: true, reason: "the review agent is disabled" };
+    }
+    const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+    if (!workdir) {
+      return { ok: false, skipped: true, reason: "the task has no worktree to review" };
+    }
+    const baseBranch = currentBranch(this.config.root) ?? "main";
+    let agent = baseReviewer;
+    const routed = await resolveRoutedAgent(
+      { config: this.config },
+      {
+        role: "reviewer",
+        task,
+        base: baseReviewer,
+        pinned:
+          !!task.reviewAgentOverride ||
+          !!task.reviewCliOverride ||
+          isModelOverridePinned(task.reviewModelOverride),
+        briefExtra: `Delta review since approved handoff ${approvedSha.slice(0, 12)}.`,
+      },
+    );
+    if (routed.agent) agent = routed.agent;
+
+    this.resetReviewSession(task.id);
+    const run: Run = { cancelled: false, mode: "run", agent, checkpointDelta: true };
+    this.runs.set(task.id, run);
+    this.emit({ type: "review", id: task.id, state: "running", at: now() });
+    this.logger.task(task.id, "info", "checkpoint delta review started", {
+      approvedSha,
+      agent: agent.name,
+    });
+    this.appendMarker(
+      task.id,
+      `checkpoint delta review started — since ${approvedSha.slice(0, 8)}`,
+    );
+
+    const missionBase = reviewMission(task, agent, workdir, baseBranch, this.config, {
+      handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
+      uiVerification: taskUiVerificationMode(this.config, task),
+      deltaSinceApprovedSha: approvedSha,
+    });
+    const uiNote = await this.uiVerificationSummary(task);
+    const mission = uiNote
+      ? `${missionBase}\n\n## Handoff UI verification (recorded at handoff)\n\n${uiNote}\n`
+      : missionBase;
+    if (run.cancelled) {
+      this.runs.delete(task.id);
+      this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
+      return { ok: false, skipped: true, reason: "review cancelled" };
+    }
+    this.spawnDurable(
+      task.id,
+      agent,
+      mission,
+      workdir,
+      run,
+      "run",
+      undefined,
+      `${this.reviewerSessionId(task)}-checkpoint-delta`,
+    );
+    return { ok: true };
+  }
+
+  /**
    * The stable id a fresh review pass runs under (#0639). It includes the pass
    * number so a deliberate "Review again" or a bounce starts a genuinely new
    * pi session (0110: a fresh assessment), while that pass's own chat turns
@@ -1074,6 +1177,7 @@ export class ReviewManager {
     const mode = reviewKind ?? run?.mode ?? "run";
     const cancelled = run?.cancelled ?? this.isCancelled(taskId);
     const timedOut = run?.timedOut ?? false;
+    const checkpointDelta = run?.checkpointDelta ?? false;
     if (run) {
       if (run.timer) clearTimeout(run.timer);
       this.runs.delete(taskId);
@@ -1108,7 +1212,7 @@ export class ReviewManager {
     const lines = session?.lines ?? [];
 
     if (mode === "run") {
-      this.finalizeRun(task, agent, lines, session, timedOut);
+      this.finalizeRun(task, agent, lines, session, timedOut, checkpointDelta);
     } else {
       this.finalizeChat(task, agent, lines, session, timedOut);
     }
@@ -1128,6 +1232,7 @@ export class ReviewManager {
       createdAt?: string;
     } | null,
     timedOut: boolean,
+    checkpointDelta = false,
   ): void {
     const hasOutput = sessionHasUsableOutput(agent.cli, lines);
     const ok = !timedOut && hasOutput;
@@ -1271,6 +1376,9 @@ export class ReviewManager {
     const evidenceGapOnly = isEvidenceGapOnlyReview(reportText, verdict);
     if (state === "ok" && verdict) {
       if (verdict !== "good to go") {
+        if (checkpointDelta) {
+          void this.onCheckpointDeltaReviewVerdict?.(task, report, verdict);
+        }
         if (!isStaleEvidenceOnlyReview(reportText, verdict) && !evidenceGapOnly) {
           this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
             console.error(
@@ -1280,7 +1388,11 @@ export class ReviewManager {
         }
       } else {
         clearEvidenceGapRepairAttempts(this.config, task.id);
-        void this.onCleanReviewVerdict?.(task, report);
+        if (checkpointDelta) {
+          void this.onCheckpointDeltaReviewVerdict?.(task, report, verdict);
+        } else {
+          void this.onCleanReviewVerdict?.(task, report);
+        }
       }
     }
 

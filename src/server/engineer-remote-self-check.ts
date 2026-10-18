@@ -18,6 +18,7 @@ import { mainCheckoutRoot, runGit, uncommittedWorkFiles, workFileFilter } from "
 import { REPOOS_TOML_REL } from "../core/repoos-toml-branch-guard.js";
 import { patchTaskFile } from "./write.js";
 import type { RepoOSConfig } from "../core/types.js";
+import { engineerSelfCheckCheckpointMessage } from "../core/engineer-checkpoint-commit.js";
 import { parseTask, recordChange } from "../core/task.js";
 import type { RemotePreReviewOutcome } from "./pre-review-remote-gate.js";
 import { runRemotePreReviewGate } from "./pre-review-remote-gate.js";
@@ -95,7 +96,7 @@ export async function commitWipCheckpointForRemoteGate(
       return `could not stage ${path} for remote self-check`;
     }
   }
-  const msg = `WIP: engineer self-check checkpoint (#${taskId})`;
+  const msg = engineerSelfCheckCheckpointMessage(taskId);
   const commit = await runGit(worktreePath, ["commit", "-m", msg], 120_000);
   if (commit.status !== 0) {
     return commit.stderr.trim() || "WIP checkpoint commit failed";
