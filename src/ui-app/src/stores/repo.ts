@@ -3602,7 +3602,8 @@ export const useRepoStore = defineStore("repo", () => {
 
   async function refreshSchedules(): Promise<void> {
     try {
-      schedules.value = await api<import("../../../core/schedule.js").TaskSchedule[]>("/api/schedules");
+      schedules.value =
+        await api<import("../../../core/schedule.js").TaskSchedule[]>("/api/schedules");
     } catch {
       /* keep existing */
     }
@@ -3615,8 +3616,8 @@ export const useRepoStore = defineStore("repo", () => {
       "/api/schedules",
       JSON_OPTS("POST", body),
     );
-    schedules.value = [...schedules.value.filter((s) => s.id !== created.id), created].sort((a, b) =>
-      a.id.localeCompare(b.id),
+    schedules.value = [...schedules.value.filter((s) => s.id !== created.id), created].sort(
+      (a, b) => a.id.localeCompare(b.id),
     );
     return created;
   }

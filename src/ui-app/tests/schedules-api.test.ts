@@ -9,7 +9,10 @@ import {
   postSchedulePreview,
   postScheduleRun,
 } from "../../server/routes/schedules.js";
-import { resetScheduleTickStateForTests, tryAcquireScheduleOccurrenceLock } from "../../server/schedule-runner.js";
+import {
+  resetScheduleTickStateForTests,
+  tryAcquireScheduleOccurrenceLock,
+} from "../../server/schedule-runner.js";
 import type { RouteContext } from "../../server/routes/types.js";
 
 function makeCtx(root: string): RouteContext {
@@ -140,7 +143,11 @@ describe("schedules API", () => {
     const run = jsonRes();
     await postScheduleRun(
       ctx,
-      { async *[Symbol.asyncIterator]() { yield Buffer.from("{}"); } } as never,
+      {
+        async *[Symbol.asyncIterator]() {
+          yield Buffer.from("{}");
+        },
+      } as never,
       run.res as never,
       { param1: id },
     );

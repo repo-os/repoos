@@ -71,8 +71,6 @@ export type SchedulePatch = Partial<
   Omit<ScheduleCreateInput, "cadence"> & { cadence: ScheduleCadence; enabled: boolean }
 >;
 
-const q = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
-
 const SCHEDULE_KEY_ORDER = [
   "id",
   "title",
@@ -128,7 +126,12 @@ function cadenceField(v: unknown): ScheduleCadence | null {
   return null;
 }
 
-function enrichSchedule(c: RepoOSConfig, raw: Record<string, unknown>, path: string, body: string): TaskSchedule | null {
+function enrichSchedule(
+  c: RepoOSConfig,
+  raw: Record<string, unknown>,
+  path: string,
+  body: string,
+): TaskSchedule | null {
   if (typeof raw.id !== "string") return null;
   const cadence = cadenceField(raw.cadence);
   if (!cadence) return null;
@@ -210,7 +213,10 @@ export function validateScheduleInput(input: ScheduleCreateInput): string | null
   if (!cadenceField(input.cadence)) return "invalid cadence";
   if (!isValidIanaTimezone(input.timezone)) return "invalid timezone";
   if (!parseTimeOfDay(input.timeOfDay)) return "time_of_day must be HH:MM";
-  if (input.cadence === "weekly" && (input.dayOfWeek == null || input.dayOfWeek < 0 || input.dayOfWeek > 6)) {
+  if (
+    input.cadence === "weekly" &&
+    (input.dayOfWeek == null || input.dayOfWeek < 0 || input.dayOfWeek > 6)
+  ) {
     return "day_of_week is required for weekly schedules (0=Sunday … 6=Saturday)";
   }
   if (input.cadence === "once" && !input.runAt) return "run_at is required for one-time schedules";
@@ -339,10 +345,7 @@ export function recordScheduleRun(
     last_occurrence_key: outcome.occurrenceKey,
     updated_at: now,
   };
-  writeFileSync(
-    file,
-    serializeDocument(data, parsed.body, SCHEDULE_KEY_ORDER),
-  );
+  writeFileSync(file, serializeDocument(data, parsed.body, SCHEDULE_KEY_ORDER));
   return getSchedule(c, id)!;
 }
 
@@ -363,15 +366,6 @@ export function scheduleTimingFromRow(row: TaskSchedule) {
 }
 
 export function taskStatusOrDefault(status: string, fallback: Status): Status {
-  const allowed: Status[] = [
-    "inbox",
-    "ready",
-    "active",
-    "review",
-    "done",
-    "draft",
-    "hold",
-    "cancelled",
-  ];
-  return (allowed.includes(status as Status) ? status : fallback) as Status;
+  const allowed: Status[] = ["inbox", "ready", "active", "review", "done", "draft"];
+  return allowed.includes(status as Status) ? (status as Status) : fallback;
 }

@@ -2,11 +2,7 @@ import { closeSync, mkdirSync, openSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOS } from "../core/repoos.js";
 import type { RepoOSConfig } from "../core/types.js";
-import {
-  dueOccurrence,
-  occurrenceKey,
-  type ScheduleTimingInput,
-} from "../core/schedule-time.js";
+import { dueOccurrence, occurrenceKey, type ScheduleTimingInput } from "../core/schedule-time.js";
 import {
   getSchedule,
   listSchedules,
@@ -23,7 +19,12 @@ export type ScheduleRunOutcome =
 
 function lockPath(config: RepoOSConfig, scheduleId: string, key: string): string {
   const safe = key.replace(/[^a-zA-Z0-9:_-]/g, "_").slice(0, 120);
-  return join(config.root, config.cacheDir ?? ".repoos", "locks", `schedule-${scheduleId}-${safe}.lock`);
+  return join(
+    config.root,
+    config.cacheDir ?? ".repoos",
+    "locks",
+    `schedule-${scheduleId}-${safe}.lock`,
+  );
 }
 
 /** Exclusive lock — returns true when this process owns the occurrence. */
@@ -60,10 +61,7 @@ export function timingForSchedule(row: TaskSchedule): ScheduleTimingInput {
   return scheduleTimingFromRow(row);
 }
 
-export function findDueSchedule(
-  row: TaskSchedule,
-  now: Date,
-): { dueAt: Date; key: string } | null {
+export function findDueSchedule(row: TaskSchedule, now: Date): { dueAt: Date; key: string } | null {
   if (!row.enabled) return null;
   const timing = timingForSchedule(row);
   return dueOccurrence(timing, now, row.lastOccurrenceKey);
@@ -83,13 +81,17 @@ export function executeScheduleRun(
   const row = getSchedule(config, scheduleId);
   if (!row) return { ok: false, scheduleId, occurrenceKey: due.key, error: "schedule not found" };
   if (!row.enabled && !options.manual) {
-    return { ok: false, scheduleId, occurrenceKey: due.key, error: "schedule disabled", skipped: true };
+    return {
+      ok: false,
+      scheduleId,
+      occurrenceKey: due.key,
+      error: "schedule disabled",
+      skipped: true,
+    };
   }
 
   const timing = timingForSchedule(row);
-  const key = options.manual
-    ? `${occurrenceKey(timing, due.dueAt)}:manual:${Date.now()}`
-    : due.key;
+  const key = options.manual ? `${occurrenceKey(timing, due.dueAt)}:manual:${Date.now()}` : due.key;
 
   try {
     const task = repoos.createTask({
@@ -102,7 +104,11 @@ export function executeScheduleRun(
       body: row.body,
       createdBy: "schedule",
     });
-    commitTaskFile(config.root, task.absPath, `docs(${task.id}): scheduled task from #${scheduleId}`);
+    commitTaskFile(
+      config.root,
+      task.absPath,
+      `docs(${task.id}): scheduled task from #${scheduleId}`,
+    );
     recordScheduleRun(config, scheduleId, {
       occurrenceKey: key,
       taskId: task.id,
