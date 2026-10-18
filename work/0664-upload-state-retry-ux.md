@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0664"
 title: Upload state + retry UX
 type: feature
@@ -14,7 +13,8 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-18T16:17:00Z"
+updated_at: "2026-10-18T16:49:58Z"
+handoff_signal_retry_count: 1
 ---
 Slice 7: Uploading / retrying / failed states visible in UI. Attachment never shown as available before upload succeeds. Retry without re-deriving user input.
 
@@ -40,4 +40,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-18T16:16:44Z · status inbox→ready
 - 2026-10-18T16:16:47Z · cli_override, model_override
 - 2026-10-18T16:16:49Z · status ready→active, needs_input, branch
-
+- 2026-10-18T16:49:58Z · body
