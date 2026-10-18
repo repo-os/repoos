@@ -3,9 +3,6 @@ id: "0830"
 title: "Handoff: a shot whose waitFor/click/highlight target is missing fails the handoff (add hover step and fixture list)"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection stalled repeatedly"
 priority: p2
 area: core
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/handoff-a-shot-whose-waitfor-click-highl
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:25Z"
-updated_at: "2026-10-18T11:06:40Z"
+updated_at: "2026-10-18T11:12:06Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T10:20:44.294Z: repoos check failed: ◆ Check plan"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/shot-plan-edit.test.ts > parseShotEntry (#0627) > rejects a bad step and an unknown key, like the list parser on thinkpad — fix it in the feature branch and re-run the gate"
@@ -68,3 +65,4 @@ Related: #0734, #0755, #0613. Do not make a missing Playwright a failure (stays 
 - 2026-10-18T10:49:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-18T11:06:40Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-10-18T11:06:40Z · message_delivered: 1 message(s)
+- 2026-10-18T11:12:06Z · needs_input
