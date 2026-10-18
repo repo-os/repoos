@@ -16,6 +16,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
+import { isEngineerSelfCheckCheckpointMessage } from "../core/engineer-checkpoint-commit.js";
 import {
   diffNumstat,
   GitDirtyCheckError,
@@ -74,6 +75,11 @@ export interface WorktreeHandoffCheckResult {
   files?: WorktreeFileChange[];
   /** True when git could not produce the file list; `files` is then absent. */
   filesUnavailable?: boolean;
+  /**
+   * HEAD moved only by engineer self-check WIP checkpoint commit(s) on this
+   * task (#0834). Callers run automatic gate + delta review instead of hard-failing.
+   */
+  checkpointOnlyDrift?: { approvedSha: string; headSha: string };
 }
 
 function cacheRoot(root: string, cacheDir: string): string {
@@ -236,8 +242,43 @@ export function formatWorktreeHandoffFailure(
     msg += ` File mtimes: ${window}.`;
   }
   msg +=
-    " Discard the post-handoff edits or send the task back to the engineer before Move to done.";
+    " Discard the post-handoff edits, send the task back to the engineer, or wait if a checkpoint recovery is already running.";
   return msg;
+}
+
+/**
+ * True when every commit on the first-parent chain from `actualHead` back to
+ * (but not including) `expectedSha` is a single-parent engineer self-check
+ * WIP checkpoint for `taskId`. Fails closed when git cannot answer.
+ */
+export async function isEngineerCheckpointOnlyDrift(
+  wt: string,
+  expectedSha: string,
+  actualHead: string,
+  taskId: string,
+): Promise<boolean> {
+  if (expectedSha === actualHead) return false;
+  const list = await runGit(
+    wt,
+    ["rev-list", "--first-parent", actualHead, `^${expectedSha}`],
+    15_000,
+  );
+  if (list.status !== 0) return false;
+  const shas = list.stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (shas.length === 0) return false;
+  for (const sha of shas) {
+    const parents = await runGit(wt, ["rev-list", "--parents", "-n", "1", sha], 10_000);
+    if (parents.status !== 0) return false;
+    const parts = parents.stdout.trim().split(/\s+/);
+    if (parts.length !== 2) return false;
+    const subj = await runGit(wt, ["log", "-1", "--format=%s", sha], 10_000);
+    if (subj.status !== 0) return false;
+    if (!isEngineerSelfCheckCheckpointMessage(subj.stdout.trim(), taskId)) return false;
+  }
+  return true;
 }
 
 /** Repo-relative paths a commit (tree diff between two commits) changes. */
@@ -479,6 +520,18 @@ export async function verifyWorktreeHandoffIntegrity(
       // merge.
       if (await isMainSyncDrift(wt, expectedSha, actualHead, filter)) {
         return { ok: true };
+      }
+      const taskId = opts.taskId;
+      if (
+        taskId &&
+        (await isEngineerCheckpointOnlyDrift(wt, expectedSha, actualHead, taskId))
+      ) {
+        return {
+          ok: false,
+          headMoved: true,
+          dirtyFiles: [],
+          checkpointOnlyDrift: { approvedSha: expectedSha, headSha: actualHead },
+        };
       }
     }
   }

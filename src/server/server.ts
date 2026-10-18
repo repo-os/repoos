@@ -204,6 +204,10 @@ import { runAutoShotCapture } from "./shot-capture.js";
 import { ReviewManager } from "./review.js";
 import { notifyEngineerOfRequirementsChange } from "./requirements-notice.js";
 import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
+import {
+  abandonCheckpointRecoveryAfterFailedDelta,
+  resumeCloseOutAfterCheckpointRecovery,
+} from "./post-handoff-checkpoint-recovery.js";
 import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
 import { DebugTldrManager } from "./debug-tldr.js";
 import { TestRunManager } from "./test-run.js";
@@ -2157,6 +2161,33 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         `[repoos] approval policy handler failed for #${task.id}: ${(err as Error).message}`,
       );
     });
+  });
+
+  reviews.bindCheckpointDeltaReviewHandler((task, report, verdict) => {
+    if (verdict === "good to go") {
+      void resumeCloseOutAfterCheckpointRecovery(
+        {
+          config,
+          index,
+          jobCoordinator,
+          reload,
+          emitEvent,
+          triggerJobProcessing,
+          reviews,
+          taskChecks,
+          onTaskCheckEvent,
+          remoteValidator,
+          previews,
+        },
+        task,
+      ).catch((err) => {
+        console.error(
+          `[repoos] could not resume close-out after checkpoint delta review for #${task.id}: ${(err as Error).message}`,
+        );
+      });
+    } else {
+      abandonCheckpointRecoveryAfterFailedDelta(config, task.id, report.markdown.slice(0, 200));
+    }
   });
 
   // Skill suggestions (#0429): only after a task genuinely reaches `done` does

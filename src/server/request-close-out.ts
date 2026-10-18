@@ -29,6 +29,10 @@ import {
   verifyWorktreeHandoffIntegrity,
   writeWorktreeReviewLock,
 } from "./worktree-handoff-guard.js";
+import {
+  isPostHandoffCheckpointRecoveryActive,
+  startPostHandoffCheckpointRecovery,
+} from "./post-handoff-checkpoint-recovery.js";
 
 export interface CloseOutEnqueueDeps {
   config: RepoOSConfig;
@@ -145,6 +149,9 @@ export async function enqueueCloseOutForTask(
   if (reviews.isRunning(id)) {
     return { ok: false, reason: "review still running" };
   }
+  if (isPostHandoffCheckpointRecoveryActive(config, id)) {
+    return { ok: false, reason: "checkpoint recovery in progress" };
+  }
 
   const existingJob = jobCoordinator.getJob(id);
   if (
@@ -205,6 +212,24 @@ export async function enqueueCloseOutForTask(
         taskId: id,
       });
       if (!integrity.ok) {
+        if (integrity.checkpointOnlyDrift) {
+          const started = await startPostHandoffCheckpointRecovery(
+            {
+              config,
+              index,
+              jobCoordinator,
+              reviews,
+              reload,
+              emitEvent,
+              triggerJobProcessing,
+            },
+            task,
+            integrity.checkpointOnlyDrift.approvedSha,
+            integrity.checkpointOnlyDrift.headSha,
+          );
+          if (!started.ok) return { ok: false, reason: started.reason };
+          return { ok: false, reason: "checkpoint recovery in progress" };
+        }
         return { ok: false, reason: integrity.reason ?? "worktree changed after handoff" };
       }
       handoffSha = handoffSnap.sha;
