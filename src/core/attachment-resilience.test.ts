@@ -11,10 +11,7 @@ import {
   taskAttachmentCloudStates,
 } from "./attachment-resilience.js";
 import { localStorageProvider } from "./storage/local.js";
-import {
-  registerStorageProvider,
-  unregisterStorageProvider,
-} from "./storage/index.js";
+import { registerStorageProvider, unregisterStorageProvider } from "./storage/index.js";
 import { resolveTaskAttachmentReference, taskAttachmentApiPath } from "./attachment-reference.js";
 import { readAttachment, saveScreenshot } from "../server/attachments.js";
 import type { StorageProvider } from "./storage/types.js";
