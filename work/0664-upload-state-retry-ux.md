@@ -2,7 +2,7 @@
 id: "0664"
 title: Upload state + retry UX
 type: feature
-status: review
+status: active
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -13,10 +13,10 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-18T18:57:48Z"
+updated_at: "2026-10-18T18:57:49Z"
+review_rounds: 2
 review_passes: 4
 last_check_failure: "repoos check at 2026-10-18T17:32:06.903Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
-review_rounds: 1
 handoff_signal_retry_count: 1
 ---
 Slice 7: Uploading / retrying / failed states visible in UI. Attachment never shown as available before upload succeeds. Retry without re-deriving user input.
@@ -91,3 +91,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-18T18:56:37Z · status active→review
 - 2026-10-18T18:57:47Z · note: review pass 4: needs some work — clamped by automated verification: browser verification: Handoff browser verification recorded 3 blocking issue(s): [missing-target] New input: outstanding attachment uploads after Create another input: waitFor .new-input-trigger: waitFor: Timeout 5000ms exceeded. on /work; [missing-target] New input: outstanding attachment uploads after Create another input: click .new-input-trigger: click: Timeout 5000ms exceeded. on /work; [missing-target] New task: failed screenshot retry row on freeform form: click .new-btn: click: Timeout 5000ms exceeded. on /work
 - 2026-10-18T18:57:48Z · message_queued at 2026-10-18T18:57:48.701Z
+- 2026-10-18T18:57:49Z · status review→active
