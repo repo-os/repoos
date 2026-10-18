@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-18T17:19:20Z"
-review_passes: 1
+last_close_out_gate_ms: 522424
+last_close_out_gate_at: "2026-10-18T17:30:24.190Z"
 id: "0666"
 title: Outage and mode-switch behavior
 type: feature
@@ -15,6 +15,8 @@ branch: feat/outage-and-mode-switch-behavior
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:35Z"
+updated_at: "2026-10-18T17:30:24Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-10-18T17:13:58.117Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Attachment storage outage and retrieval copy: highlight #setting-storage.provider matched nothing on /settings?tab=general&section=attachments (http://127.0.0.1:56978/settings?tab=general&section=attachments)"
 ---
 ## Problem
@@ -72,4 +74,5 @@ When Neon (cloud storage provider) is unavailable — network outage, provider d
 - 2026-10-18T17:15:17Z · body
 - 2026-10-18T17:18:09Z · status active→review
 - 2026-10-18T17:19:19Z · note: review pass 1: good to go
+- 2026-10-18T17:30:24Z · close-out gate completed in 522s
 
