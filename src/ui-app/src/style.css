@@ -88,6 +88,23 @@
   --input: rgba(120, 140, 200, 0.22);
   --ring: #39e0ff;
   --radius: 0.75rem;
+  /* Multicolor activity artwork (#0833). These are the intentional
+     theme-aware artwork colors the RGB keystorm / Wheelie courier / Boo swoop /
+     Pumpkin spell indicators paint with — deliberately NOT the single
+     `currentColor` activity accent, so each subject keeps its palette. */
+  --ai-art-cyan: #65edff;
+  --ai-art-pink: #ff83ca;
+  --ai-art-green: #b4ff96;
+  --ai-art-purple: #bca1ff;
+  --ai-art-orange: #ffad52;
+  /* Pale fills (ghost, helmet, bike accents on dark) — outlined where needed. */
+  --ai-art-pale: #eef4ff;
+  --ai-art-line: #f1f5ff;
+  /* Dark detail that must read on light artwork in every theme: eyes, carved
+     features, ribs, tire wells, keyboard plate. */
+  --ai-art-ink: #0e1b2e;
+  --ai-art-plate: #14263c;
+  --ai-art-edge: #7f93ad;
 }
 [data-theme="light"] {
   --bg: #f4f6fb;
@@ -165,6 +182,17 @@
   --input: rgba(0, 0, 0, 0.12);
   --ring: #066ca0;
   --radius: 0.75rem;
+  /* Multicolor activity artwork (#0833), light appearance — see `:root`. */
+  --ai-art-cyan: #007f9e;
+  --ai-art-pink: #ca247c;
+  --ai-art-green: #2f8449;
+  --ai-art-purple: #7043bc;
+  --ai-art-orange: #db7014;
+  --ai-art-pale: #dde5f8;
+  --ai-art-line: #44506b;
+  --ai-art-ink: #1b2133;
+  --ai-art-plate: #eef2f9;
+  --ai-art-edge: #52647f;
 }
 
 @layer base {
@@ -3627,6 +3655,357 @@
     opacity: 1;
   }
 }
+/* ── Multicolor artwork indicators (#0833) ────────────────────────────────
+   RGB keystorm, Wheelie courier, Boo swoop and Pumpkin spell render a square
+   inline-SVG artwork that fills the whole reserved slot. Geometry is the
+   approved 128×128 prototype; colors are the theme-aware `--ai-art-*` tokens.
+   Motion is layered CSS keyframes — never a per-instance JS loop — and the
+   `--ai-art-mult` envelope slows every layer together: coding ×1, reviewing
+   ×0.78 speed (×1.282 duration), generic agent work ×0.9 (×1.111). */
+.ai-compact {
+  --ai-art-mult: 1;
+}
+.ai-compact.ai-motion-reviewing {
+  --ai-art-mult: 1.282;
+}
+.ai-compact.ai-motion-agent {
+  --ai-art-mult: 1.111;
+}
+.ai-style-rgb-keystorm .ai-mark,
+.ai-style-wheelie-courier .ai-mark,
+.ai-style-boo-swoop .ai-mark,
+.ai-style-pumpkin-spell .ai-mark {
+  --ai-w: 2ch;
+}
+/* The artwork is square: at an explicit size the mark's height becomes the
+   reserved pixel slot, so the whole drawing scales with the chosen size,
+   whatever the surrounding font (#0816). */
+.ai-sized .ai-mark.ai-art {
+  height: var(--ai-size-px);
+}
+.ai-art-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.ai-art-svg .ai-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* Every rotating group pivots on its own local origin — the static
+   `<g transform="translate(...)">` wrappers put that origin where we want it. */
+.ai-art-svg .ai-wheel-spokes,
+.ai-art-svg .ai-bike-wheelie,
+.ai-art-svg .ai-ghost-bank,
+.ai-art-svg .ai-wisp,
+.ai-art-svg .ai-pumpkin-rock,
+.ai-art-svg .ai-exhaust-puff {
+  transform-origin: 0 0;
+}
+/* RGB keystorm */
+.ai-code-glyph {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.35;
+  animation: ai-code-rise calc(1.667s * var(--ai-art-mult)) linear infinite;
+}
+.ai-key {
+  opacity: 0.85;
+  animation: ai-key-wave calc(0.9s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-kbd-underline {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.ai-finger {
+  animation: ai-finger-tap calc(0.571s * var(--ai-art-mult)) ease-in-out infinite;
+}
+@keyframes ai-key-wave {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes ai-finger-tap {
+  0%,
+  100% {
+    transform: translateY(9px);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes ai-code-rise {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  75% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-76px);
+    opacity: 0;
+  }
+}
+/* Wheelie courier */
+.ai-road-mark {
+  stroke-width: 2;
+  stroke-linecap: round;
+  animation: ai-road calc(1.2s * var(--ai-art-mult)) linear infinite;
+}
+.ai-bike-susp {
+  animation: ai-bike-susp calc(0.393s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-bike-wheelie {
+  animation: ai-wheelie calc(1.795s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-wheel-spokes {
+  animation: ai-spokes calc(0.42s * var(--ai-art-mult)) linear infinite;
+}
+.ai-wheel-spokes line {
+  stroke-width: 2;
+}
+.ai-scarf {
+  transform-box: fill-box;
+  transform-origin: 100% 45%;
+  animation: ai-scarf calc(1.4s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-exhaust-puff {
+  opacity: 0;
+  animation: ai-exhaust calc(1s * var(--ai-art-mult)) ease-out infinite;
+}
+@keyframes ai-road {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  78% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateX(-111px);
+    opacity: 0;
+  }
+}
+@keyframes ai-bike-susp {
+  0%,
+  100% {
+    transform: translateY(-1.8px);
+  }
+  50% {
+    transform: translateY(1.8px);
+  }
+}
+@keyframes ai-wheelie {
+  0%,
+  100% {
+    transform: rotate(-7.4deg);
+  }
+  50% {
+    transform: rotate(-21.2deg);
+  }
+}
+@keyframes ai-spokes {
+  from {
+    transform: rotate(0turn);
+  }
+  to {
+    transform: rotate(1turn);
+  }
+}
+@keyframes ai-scarf {
+  0%,
+  100% {
+    transform: rotate(8deg) scaleX(1.05);
+  }
+  50% {
+    transform: rotate(-8deg) scaleX(0.92);
+  }
+}
+@keyframes ai-exhaust {
+  0% {
+    transform: translate(0, 0) scale(0.5);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate(-12px, -12px) scale(3.4);
+    opacity: 0;
+  }
+}
+/* Boo swoop */
+.ai-wisp {
+  animation: ai-wisp-orbit calc(3.142s * var(--ai-art-mult)) linear infinite;
+}
+.ai-ghost-sway-x {
+  animation: ai-ghost-sway-x calc(2.618s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-ghost-sway-y {
+  animation: ai-ghost-sway-y calc(1.963s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-ghost-bank {
+  animation: ai-ghost-bank calc(2.618s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-hem {
+  animation: ai-hem calc(0.898s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-ghost-arm {
+  animation: ai-ghost-arm calc(0.898s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-ghost-arm.right {
+  animation-name: ai-ghost-arm-right;
+}
+@keyframes ai-wisp-orbit {
+  from {
+    transform: rotate(0turn);
+  }
+  to {
+    transform: rotate(1turn);
+  }
+}
+@keyframes ai-ghost-sway-x {
+  0%,
+  100% {
+    transform: translateX(9px);
+  }
+  50% {
+    transform: translateX(-9px);
+  }
+}
+@keyframes ai-ghost-sway-y {
+  0%,
+  100% {
+    transform: translateY(9px);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes ai-ghost-bank {
+  0%,
+  100% {
+    transform: rotate(11.5deg);
+  }
+  50% {
+    transform: rotate(-11.5deg);
+  }
+}
+@keyframes ai-hem {
+  0%,
+  100% {
+    transform: translateY(-3px);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+@keyframes ai-ghost-arm {
+  0%,
+  100% {
+    transform: rotate(6deg);
+  }
+  50% {
+    transform: rotate(-12deg);
+  }
+}
+@keyframes ai-ghost-arm-right {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(12deg);
+  }
+}
+/* Pumpkin spell */
+.ai-spark-sway {
+  animation: ai-spark-sway calc(2.094s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-spark-rise {
+  opacity: 0;
+  animation: ai-spark-rise calc(1.429s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-pumpkin-bounce {
+  animation: ai-pumpkin-bounce calc(1.257s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-pumpkin-rock {
+  animation: ai-pumpkin-rock calc(2.094s * var(--ai-art-mult)) ease-in-out infinite;
+}
+.ai-pumpkin-ribs {
+  fill: none;
+  opacity: 0.35;
+}
+.ai-pumpkin-glow {
+  animation: ai-pumpkin-glow calc(1.047s * var(--ai-art-mult)) ease-in-out infinite;
+}
+@keyframes ai-spark-rise {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-101px);
+    opacity: 0;
+  }
+}
+@keyframes ai-spark-sway {
+  0%,
+  100% {
+    transform: translateX(6px);
+  }
+  50% {
+    transform: translateX(-6px);
+  }
+}
+@keyframes ai-pumpkin-bounce {
+  0%,
+  100% {
+    transform: translateY(5px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes ai-pumpkin-rock {
+  0%,
+  100% {
+    transform: rotate(6.9deg);
+  }
+  50% {
+    transform: rotate(-6.9deg);
+  }
+}
+@keyframes ai-pumpkin-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .ai-compact .ai-mark::before,
   .ai-compact .ai-mark::after,
@@ -3656,6 +4035,30 @@
   .ai-legacy-dots .ai-dot {
     animation: none;
     opacity: 0.85;
+  }
+  /* #0833 artwork: freeze every layer. The base styles keep each subject
+     recognizable — a level bike, a centered ghost, an upright pumpkin. */
+  .ai-compact .ai-art-svg .ai-code-glyph,
+  .ai-compact .ai-art-svg .ai-key,
+  .ai-compact .ai-art-svg .ai-finger,
+  .ai-compact .ai-art-svg .ai-road-mark,
+  .ai-compact .ai-art-svg .ai-bike-susp,
+  .ai-compact .ai-art-svg .ai-bike-wheelie,
+  .ai-compact .ai-art-svg .ai-wheel-spokes,
+  .ai-compact .ai-art-svg .ai-scarf,
+  .ai-compact .ai-art-svg .ai-exhaust-puff,
+  .ai-compact .ai-art-svg .ai-wisp,
+  .ai-compact .ai-art-svg .ai-ghost-sway-x,
+  .ai-compact .ai-art-svg .ai-ghost-sway-y,
+  .ai-compact .ai-art-svg .ai-ghost-bank,
+  .ai-compact .ai-art-svg .ai-hem,
+  .ai-compact .ai-art-svg .ai-ghost-arm,
+  .ai-compact .ai-art-svg .ai-spark-sway,
+  .ai-compact .ai-art-svg .ai-spark-rise,
+  .ai-compact .ai-art-svg .ai-pumpkin-bounce,
+  .ai-compact .ai-art-svg .ai-pumpkin-rock,
+  .ai-compact .ai-art-svg .ai-pumpkin-glow {
+    animation: none !important;
   }
 }
 /* Settings activity-animation preview rows. Deliberately unframed — a single

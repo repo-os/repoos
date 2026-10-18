@@ -9,6 +9,10 @@ export const ACTIVITY_ANIMATION_STYLES = [
   "arcade-hopper",
   "puppy-tracks",
   "bird-quick-trail",
+  "rgb-keystorm",
+  "wheelie-courier",
+  "boo-swoop",
+  "pumpkin-spell",
   "three-dots",
 ] as const;
 
@@ -26,6 +30,10 @@ export const ACTIVITY_ANIMATION_STYLE_LABELS: Record<ActivityAnimationStyle, str
   "arcade-hopper": "Arcade hopper",
   "puppy-tracks": "Puppy tracks",
   "bird-quick-trail": "Bird quick trail",
+  "rgb-keystorm": "RGB keystorm",
+  "wheelie-courier": "Wheelie courier",
+  "boo-swoop": "Boo swoop",
+  "pumpkin-spell": "Pumpkin spell",
   "three-dots": "Three dots (legacy)",
 };
 
@@ -111,9 +119,36 @@ export const ACTIVITY_ANIMATION_STYLE_SLOT: Record<ActivityAnimationStyle, numbe
   "arcade-hopper": 1.2,
   "puppy-tracks": 1.2,
   "bird-quick-trail": 1.2,
+  // The four #0833 artworks render as a square SVG that fills the whole slot,
+  // so the natural glyph width is the full 2ch footprint (#0833).
+  "rgb-keystorm": 1.2,
+  "wheelie-courier": 1.2,
+  "boo-swoop": 1.2,
+  "pumpkin-spell": 1.2,
   // The legacy dot row derives its geometry from the pixel slot in CSS.
   "three-dots": 0,
 };
+
+/**
+ * The four styles from #0833 render as a square, multicolor inline-SVG artwork
+ * that fills the whole reserved slot, rather than the em-based CSS glyphs the
+ * earlier styles use. Named so the component and its tests can branch on the
+ * family without re-listing the ids.
+ */
+export const ACTIVITY_ANIMATION_ART_STYLES = [
+  "rgb-keystorm",
+  "wheelie-courier",
+  "boo-swoop",
+  "pumpkin-spell",
+] as const;
+
+export type ActivityAnimationArtStyle = (typeof ACTIVITY_ANIMATION_ART_STYLES)[number];
+
+export function isActivityAnimationArtStyle(
+  value: ActivityAnimationStyle,
+): value is ActivityAnimationArtStyle {
+  return (ACTIVITY_ANIMATION_ART_STYLES as readonly string[]).includes(value);
+}
 
 export function isActivityAnimationSize(value: unknown): value is ActivityAnimationSize {
   return (
