@@ -1,5 +1,4 @@
 ---
-close_out_repair_count: 2
 id: "0822"
 title: "Easter eggs bundle: Start work pending state, and Bird quick trail animation"
 type: bug
@@ -12,7 +11,8 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T05:50:00Z"
+updated_at: "2026-10-18T05:52:01Z"
+close_out_repair_count: 2
 review_passes: 4
 review_rounds: 2
 ---
@@ -221,4 +221,4 @@ Items are independent; do not couple them. Never touch repoos.toml. Edit per-ite
 - 2026-10-18T05:37:55Z · note: highlight .activity-animation-preview .ai-bird-quick matched nothing on /settings?tab=general&section=activity-animation
 - 2026-10-18T05:50:00Z · status review→active, needs_input
 - 2026-10-18T05:50:00Z · note: close-out repair: merge-conflict
-
+- 2026-10-18T05:52:01Z · body
