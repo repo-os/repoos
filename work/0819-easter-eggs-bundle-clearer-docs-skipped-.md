@@ -3,9 +3,6 @@ id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and timer tooltip"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — The five bundle items are implemented with focused tests (docs skip copy + link, viewer headers, requirements notices, config write without commit, succeeded-only 15-run median, routing copy). Handoff `0819.json` is still tied to `96de36dea` while reviewed HEAD is `d6b69a014`; fresher PNGs on disk cover docs skip and viewer headers (light/dark) but not the integration timer tooltip or model-routing checkbox."
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-18T01:44:07Z"
+updated_at: "2026-10-18T02:00:45Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T01:43:13.722Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from d6b69a01 to 346573ab) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 8
@@ -251,3 +248,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T01:38:39Z · note: waitFor [data-test-id="integration-timer-tip"]: waitFor: Timeout 5000ms exceeded. on /
 - 2026-10-18T01:38:39Z · note: highlight [data-test-id="integration-timer-tip"] matched nothing on /
 - 2026-10-18T01:44:07Z · body
+- 2026-10-18T02:00:45Z · needs_input
