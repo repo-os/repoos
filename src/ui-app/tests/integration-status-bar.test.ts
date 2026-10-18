@@ -184,6 +184,29 @@ describe("IntegrationStatusBar", () => {
     expect(wrapper.find('[data-test-id="integration-timer-tip"]').exists()).toBe(false);
   });
 
+  it("does not use a native title on the collapsed timer chip (#0829)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    const notices = useNoticesStore();
+    notices.closeOutOutcomes = Array.from({ length: 5 }, (_, i) => ({
+      taskId: `0${i}`,
+      outcome: "succeeded",
+      finishedAt: new Date(Date.now() - i * 60_000).toISOString(),
+      reason: "",
+      durationMs: (i + 1) * 60_000,
+    })) as CloseOutOutcomeEvent[];
+    ui.setIntegrationBarCollapsed(true);
+    repo.integration = activeSnapshot();
+    const wrapper = render();
+    await nextTick();
+
+    const chip = wrapper.get('.ibar-strip [data-test-id="integration-timer"]');
+    expect(chip.attributes("title")).toBeUndefined();
+    await chip.trigger("mouseenter");
+    await nextTick();
+    expect(wrapper.findAll('[data-test-id="integration-timer-tip"]')).toHaveLength(1);
+  });
+
   it("does not use a native title on the collapsed strip (#0829)", async () => {
     const repo = useRepoStore();
     const ui = useUiStore();

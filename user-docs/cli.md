@@ -183,7 +183,7 @@ mid-flight.
 `repoos done <id>` (the real close-out pipeline), **Move to done** in the UI,
 or merge the branch yourself first.
 
-For server-backed actions (start, pause, handoff, close-out, previews, config,
+For server-backed actions (start, pause, sync, handoff, close-out, previews, config,
 runners, running agents, board stats), use the **Control plane** commands below
 instead of hand-rolled `curl` — they authenticate once (loopback token or stored
 session, with transparent dev-login re-auth on 401).
@@ -203,6 +203,7 @@ done wait by default in human mode).
 | --- | --- |
 | `repoos start <id> [--fresh]` | `POST /api/tasks/:id/start` |
 | `repoos pause <id>` | `POST /api/tasks/:id/pause` |
+| `repoos sync <id>` | `POST /api/tasks/:id/sync` — merge main into the task branch (lists conflicting paths and exits non-zero on conflict) |
 | `repoos message <id> "…" [--now]` | `POST /api/tasks/:id/message` (`now: true` interrupts a busy agent) |
 | `repoos review <id> [--wait]` | `PATCH /api/tasks/:id` (`status: review`) |
 | `repoos done <id> [--commit-dirty] [--wait]` | `POST /api/tasks/:id/done` |

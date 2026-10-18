@@ -940,6 +940,14 @@ watch(
   { immediate: true },
 );
 
+// Preview shot fixtures seed `config.form` after load (#0828).
+watch(
+  () => config.formSyncGeneration,
+  () => {
+    if (config.loaded) sync();
+  },
+);
+
 // Load the support-bundle preview lazily, the first time its tab is opened.
 watch(
   activeTab,

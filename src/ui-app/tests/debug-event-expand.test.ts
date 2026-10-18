@@ -32,11 +32,19 @@ describe("debugEventExpandable (#0829)", () => {
     expect(debugEventExpandedDetail({ kind: "log", title, detail })).toBe(detail);
   });
 
-  it("shows duplicate activity text once when expanded", () => {
+  it("shows duplicate activity text once when expanded and truncated", () => {
     const text = "status review→done, release:success";
-    expect(debugEventExpandable({ kind: "activity", title: text, detail: text })).toBe(true);
-    expect(debugEventExpandedMessage({ kind: "activity", title: text, detail: text })).toBe(text);
+    const opts = { titleTruncated: true };
+    expect(debugEventExpandable({ kind: "activity", title: text, detail: text }, opts)).toBe(true);
+    expect(debugEventExpandedMessage({ kind: "activity", title: text, detail: text }, opts)).toBe(
+      text,
+    );
     expect(debugEventExpandedDetail({ kind: "activity", title: text, detail: text })).toBeNull();
+  });
+
+  it("does not expand duplicate title/detail when the line fits", () => {
+    const text = "status review→done";
+    expect(debugEventExpandable({ kind: "activity", title: text, detail: text })).toBe(false);
   });
 
   it("relies on layout truncation for title-only rows", () => {

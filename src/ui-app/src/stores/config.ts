@@ -174,6 +174,14 @@ export const useConfigStore = defineStore("config", () => {
   const storageStatus = ref<StorageStatus | null>(null);
   const showAdvanced = ref(false);
   const form = reactive<Record<string, unknown>>({});
+  /**
+   * Bumped when preview shot fixtures mutate `form` outside Settings' own sync
+   * (#0828) so the auto-save form re-pulls seeded values after `config.load()`.
+   */
+  const formSyncGeneration = ref(0);
+  function notifyExternalFormUpdate(): void {
+    formSyncGeneration.value++;
+  }
 
   // ---- Raw repoos.toml editor (#0375) ----
   // `rawContent`/`rawHash` mirror what's on disk as of the last load; `rawDraft`
@@ -808,6 +816,8 @@ export const useConfigStore = defineStore("config", () => {
     data,
     showAdvanced,
     form,
+    formSyncGeneration,
+    notifyExternalFormUpdate,
     visibleFields,
     voiceFields,
     guardedFields,

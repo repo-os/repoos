@@ -37,7 +37,8 @@ export function debugEventExpandable(
   const detail = e.detail?.trim();
   const title = e.title.trim();
   if (detail && detail !== title) return true;
-  if (detail && detail === title) return true;
+  // Same text in title and detail: expand only when the one-line cell is ellipsized.
+  if (detail && detail === title) return Boolean(opts?.titleTruncated);
   if (!detail && opts?.titleTruncated) return true;
   return false;
 }
