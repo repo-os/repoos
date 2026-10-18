@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T14:32:20Z"
+updated_at: "2026-10-18T15:27:09Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/review-override.test.ts > review completion > reports the reviewer selected for the turn, not the global default on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 90dd570de19d07048a020e9fc550ae7b969589fb
 handoff_signal_retry_count: 1
@@ -30,6 +30,19 @@ When the only commits after the recorded handoff sha are RepoOS/engineer checkpo
 
 ## Notes for AI
 Never widen what counts as benign without a test; fail closed. Look at src/core/close-out-failure.ts, src/server/integration-orchestrator.ts, and src/server/conflict-resolution.ts for the existing guard and delta-review path. Source: driver discussion 2026-10-18 (#0832).
+
+## Shots
+```json
+[
+{
+  "label": "Board card during post-handoff checkpoint recovery",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"task-card-agent-hint\"]",
+  "state": "card:checkpointRecovery"
+}
+]
+```
 
 ## Activity
 
@@ -77,3 +90,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T14:22:34Z · body
 - 2026-10-18T14:32:20Z · message_queued at 2026-10-18T14:32:20.216Z
 - 2026-10-18T14:32:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-18T15:27:09Z · body
