@@ -11,7 +11,7 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T10:21:54Z"
+updated_at: "2026-10-18T10:24:36Z"
 last_close_out_gate_ms: 438673
 last_close_out_gate_at: "2026-10-18T08:57:38.574Z"
 review_passes: 1
@@ -41,16 +41,16 @@ Bundle-sized: a second small item may be added by the human before start. Source
 "route": "/work?status=review",
 "highlight": "[data-task-id=\"0832\"] .tc-needs-detail",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"0832\"] .tc-needs-detail"
-  }
+{
+  "waitFor": "[data-task-id=\"0832\"] .tc-needs-detail"
+}
 ],
 "assert": [
-  {
-    "selector": "[data-task-id=\"0832\"] .tc-needs-detail",
-    "label": "detail omits duplicated verdict label",
-    "text": "contrast audit"
-  }
+{
+  "selector": "[data-task-id=\"0832\"] .tc-needs-detail",
+  "label": "detail omits duplicated verdict label",
+  "text": "contrast audit"
+}
 ],
 "state": "card:reviewRoundsExhausted",
 "theme": "light"
@@ -61,16 +61,16 @@ Bundle-sized: a second small item may be added by the human before start. Source
 "route": "/work?status=review",
 "highlight": "[data-task-id=\"0832\"] .tc-needs-detail",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"0832\"] .tc-needs-detail"
-  }
+{
+  "waitFor": "[data-task-id=\"0832\"] .tc-needs-detail"
+}
 ],
 "assert": [
-  {
-    "selector": "[data-task-id=\"0832\"] .tc-needs-detail",
-    "label": "detail omits duplicated verdict in dark theme",
-    "text": "contrast audit"
-  }
+{
+  "selector": "[data-task-id=\"0832\"] .tc-needs-detail",
+  "label": "detail omits duplicated verdict in dark theme",
+  "text": "contrast audit"
+}
 ],
 "state": "card:reviewRoundsExhausted",
 "theme": "dark"
@@ -108,3 +108,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T10:17:03Z · body
 - 2026-10-18T10:21:09Z · body
 - 2026-10-18T10:21:54Z · status active→review
+- 2026-10-18T10:24:36Z · note: review pass 2: needs some work
