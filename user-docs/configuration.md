@@ -1518,6 +1518,19 @@ verified details, limits and pricing: [`docs/neon-object-storage.md`](https://gi
 Until every required variable is set, `neon` reports itself unavailable and
 attachments continue to use local storage.
 
+When `neon` is configured and in effect, attachment bytes are still written to
+the local gitignored `.attachments/` tree first. If Neon is unreachable, reads
+serve the local original (when it exists), embedded task references keep
+working, and the UI labels the attachment **upload pending** until a verified
+cloud copy exists — never as available on faith. Local originals are not deleted
+by outage or provider-mode changes; lifecycle rules apply only after verified
+upload (see the cloud attachment storage story).
+
+**Retrieval:** viewing or downloading an attachment always requires the
+RepoOS server that owns the repository (or the local file on disk). Cloud
+storage is durability for those bytes, not remote access from another machine
+without that server.
+
 ## Notifications
 
 ```toml
