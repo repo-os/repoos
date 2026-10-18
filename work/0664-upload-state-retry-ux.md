@@ -44,16 +44,16 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 "route": "/work",
 "steps": [
 {
-  "click": ".new-btn"
+"click": ".new-btn"
 },
 {
-  "waitFor": ".new-input-trigger"
+"waitFor": ".new-input-trigger"
 },
 {
-  "click": ".new-input-trigger"
+"click": ".new-input-trigger"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ]
 },
@@ -63,10 +63,10 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 "route": "/work",
 "steps": [
 {
-  "click": ".new-btn"
+"click": ".new-btn"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ]
 }
