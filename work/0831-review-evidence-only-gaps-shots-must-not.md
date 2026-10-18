@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 86833
+last_close_out_gate_at: "2026-10-18T08:48:10.168Z"
 id: "0831"
 title: "Review: evidence-only gaps (shots) must not consume code-review rounds or park the task"
 type: feature
@@ -11,7 +13,7 @@ branch: feat/review-evidence-only-gaps-shots-must-not
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:30Z"
-updated_at: "2026-10-18T08:42:29Z"
+updated_at: "2026-10-18T08:48:10Z"
 review_passes: 1
 ---
 ## Problem
@@ -43,3 +45,5 @@ Design-heavy: write the decision into docs before coding; keep the reviewer prom
 - 2026-10-18T08:34:19Z · status active→review
 - 2026-10-18T08:35:08Z · note: review pass 1: good to go
 - 2026-10-18T08:42:29Z · body
+- 2026-10-18T08:48:10Z · close-out gate completed in 87s
+
