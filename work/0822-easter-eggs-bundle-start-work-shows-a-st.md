@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T03:26:45Z"
+updated_at: "2026-10-18T03:29:40Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -83,68 +83,68 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 ```json
 [
 {
-  "label": "Bird quick trail activity animation preview",
-  "target": "default",
-  "route": "/settings?tab=general",
-  "highlight": ".activity-animation-preview .ai-style-bird-quick-trail",
-  "steps": [
-    {
-      "waitFor": ".activity-animation-preview .ai-style-bird-quick-trail"
-    }
-  ],
-  "state": "settings:birdQuickTrail"
+"label": "Bird quick trail activity animation preview",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": ".activity-animation-preview .ai-style-bird-quick-trail",
+"steps": [
+  {
+    "waitFor": ".activity-animation-preview .ai-style-bird-quick-trail"
+  }
+],
+"state": "settings:birdQuickTrail"
 },
 {
-  "label": "Ready card Starting… (light)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
-  "steps": [
-    {
-      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-    }
-  ],
-  "state": "board:startWorkPending",
-  "theme": "light"
+"label": "Ready card Starting… (light)",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
+"steps": [
+  {
+    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+  }
+],
+"state": "board:startWorkPending",
+"theme": "light"
 },
 {
-  "label": "Ready card Starting… (dark)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
-  "steps": [
-    {
-      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-    }
-  ],
-  "state": "board:startWorkPending",
-  "theme": "dark"
+"label": "Ready card Starting… (dark)",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
+"steps": [
+  {
+    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+  }
+],
+"state": "board:startWorkPending",
+"theme": "dark"
 },
 {
-  "label": "Drawer Start work Starting… (light)",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": "[data-test-id=\"task-drawer-start-work\"]",
-  "steps": [
-    {
-      "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
-    }
-  ],
-  "state": "drawer:startWorkPending",
-  "theme": "light"
+"label": "Drawer Start work Starting… (light)",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": "[data-test-id=\"task-drawer-start-work\"]",
+"steps": [
+  {
+    "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
+  }
+],
+"state": "drawer:startWorkPending",
+"theme": "light"
 },
 {
-  "label": "Drawer Start work Starting… (dark)",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": "[data-test-id=\"task-drawer-start-work\"]",
-  "steps": [
-    {
-      "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
-    }
-  ],
-  "state": "drawer:startWorkPending",
-  "theme": "dark"
+"label": "Drawer Start work Starting… (dark)",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": "[data-test-id=\"task-drawer-start-work\"]",
+"steps": [
+  {
+    "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
+  }
+],
+"state": "drawer:startWorkPending",
+"theme": "dark"
 }
 ]
 ```
@@ -179,3 +179,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T03:25:07Z · status review→active
 - 2026-10-18T03:26:17Z · body
 - 2026-10-18T03:26:45Z · body
+- 2026-10-18T03:29:40Z · body
