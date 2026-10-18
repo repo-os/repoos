@@ -12,7 +12,7 @@ branch: feat/release-gate-skip-the-dist-cli-index-js-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T08:20:29Z"
-updated_at: "2026-10-18T18:28:29Z"
+updated_at: "2026-10-18T18:29:59Z"
 handoff_signal_retry_count: 1
 last_close_out_gate_ms: 121907
 last_close_out_gate_at: "2026-10-14T08:47:47.001Z"
@@ -65,3 +65,4 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 - 2026-10-18T18:27:11Z · message_queued at 2026-10-18T18:27:11.094Z
 - 2026-10-18T18:27:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-18T18:28:29Z · body
+- 2026-10-18T18:29:59Z · body
