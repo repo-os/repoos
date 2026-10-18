@@ -11,7 +11,7 @@ branch: feat/review-evidence-only-gaps-shots-must-not
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:30Z"
-updated_at: "2026-10-18T09:24:58Z"
+updated_at: "2026-10-18T09:25:00Z"
 ---
 ## Problem
 The reviewer returns "needs some work" for missing or wrong screenshot evidence even when the code is fine (#0829 pass 3, #0822 passes 1-4). Each such verdict counts as a review round, bounces the engineer, and after MAX_AUTO_REVIEW_ROUNDS raises `review-rounds-exhausted` so the task waits for a human, although the engineer has no code to change.
@@ -46,3 +46,4 @@ Design-heavy: write the decision into docs before coding; keep the reviewer prom
 - 2026-10-18T09:00:26Z · message_queued at 2026-10-18T09:00:26.825Z
 - 2026-10-18T09:00:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-18T09:24:58Z · message_delivered: 1 message(s)
+- 2026-10-18T09:25:00Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
