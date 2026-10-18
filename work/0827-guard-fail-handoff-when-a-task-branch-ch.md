@@ -11,7 +11,7 @@ branch: feat/guard-fail-handoff-when-a-task-branch-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T05:51:14Z"
-updated_at: "2026-10-18T05:52:13Z"
+updated_at: "2026-10-18T05:56:41Z"
 ---
 ## Problem
 #0822's close-out hit a merge conflict on `repoos.toml` (main: `activityAnimationStyle = "puppy-tracks"`, branch: `"bird-quick-trail"`) and bounced back to the engineer, costing a review cycle. The branch should never have changed `repoos.toml`; a settings save during a shot capture or test most likely wrote the preview/worktree config and a WIP checkpoint committed it.
@@ -34,3 +34,4 @@ Do not add auto-resolution of repoos.toml conflicts in this task. Source: driver
 - 2026-10-18T05:51:39Z · cli_override, model_override
 - 2026-10-18T05:52:02Z · status inbox→ready
 - 2026-10-18T05:52:13Z · status ready→active, branch
+- 2026-10-18T05:56:41Z · body
