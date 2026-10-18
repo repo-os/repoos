@@ -95,3 +95,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T15:33:37Z · body
 - 2026-10-18T15:42:16Z · note: ui verification failed (1 issue(s)): [missing-target] Board card during post-handoff checkpoint recovery: highlight [data-test-id="task-card-agent-hint"] matched nothing on / (http://127.0.0.1:60485/?shotState=card%3AcheckpointRecovery)
 - 2026-10-18T15:42:19Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-18T15:42:19Z · message_delivered: 1 message(s)
