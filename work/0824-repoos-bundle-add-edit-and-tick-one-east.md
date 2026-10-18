@@ -12,7 +12,7 @@ branch: feat/repoos-bundle-add-edit-and-tick-one-east
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:48:55Z"
-updated_at: "2026-10-18T06:22:30Z"
+updated_at: "2026-10-18T06:22:31Z"
 last_close_out_gate_ms: 498539
 last_close_out_gate_at: "2026-10-18T06:22:22.497Z"
 review_passes: 1
@@ -49,3 +49,4 @@ Depends on the layout in the "Easter-eggs bundle layout" task; implement against
 - 2026-10-18T06:05:50Z · note: review pass 1: good to go
 - 2026-10-18T06:22:22Z · close-out gate completed in 499s
 - 2026-10-18T06:22:29Z · note: handoff requested (cli)
+- 2026-10-18T06:22:31Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
