@@ -41,12 +41,24 @@ import { CANCEL_REASON } from "./integration-orchestrator.js";
 import { transcriptToText } from "./skill-suggestions.js";
 import { redactSecrets } from "./routes/debugger.js";
 import {
+  debugTldrKeysEqual,
+  doneErrorTldrFingerprint,
+  tldrFingerprint,
+} from "../core/debug-tldr-key.js";
+import {
   extractOneShotReportText,
   debuggerAgent,
   recordOneShotSession,
   runPrompt,
   type PromptResult,
 } from "./agents.js";
+
+export {
+  debugTldrKeysEqual,
+  doneErrorTldrFingerprint,
+  normalizeDebugTldrKey,
+  tldrFingerprint,
+} from "../core/debug-tldr-key.js";
 
 /** The needs-input reasons a Debugger run can actually diagnose. */
 export const DIAGNOSABLE_REASONS = [
@@ -87,20 +99,6 @@ function transcriptSessionIdFor(reason: DiagnosableReason, taskId: string): stri
     case "watchdog-stuck":
       return null;
   }
-}
-
-/** Stable fingerprint of the failure a tl;dr describes, for dedupe. */
-export function tldrFingerprint(reason: string, detail: string | undefined): string {
-  return `${reason}\u0000${detail ?? ""}`;
-}
-
-/** Stable fingerprint for a Move-to-done error card tl;dr (#0595). */
-export function doneErrorTldrFingerprint(
-  step: string,
-  message: string,
-  detail: string | undefined,
-): string {
-  return `done-error\u0000${step}\u0000${message}\u0000${detail ?? ""}`;
 }
 
 const DIAGNOSABLE_CLOSE_OUT_KINDS = new Set(["conflict", "validating"]);
@@ -346,7 +344,9 @@ export class DebugTldrManager {
     }
     const detail = task.needsInputDetail;
     const fingerprint = tldrFingerprint(reason, detail);
-    if (task.debugTldrKey === fingerprint) return { ok: false, reason: "tl;dr already current" };
+    if (debugTldrKeysEqual(task.debugTldrKey, fingerprint)) {
+      return { ok: false, reason: "tl;dr already current" };
+    }
     if (this.inFlight.has(taskId)) return { ok: false, reason: "already running" };
 
     const agent = debuggerAgent(fromPersistedState(this.deps.config));
@@ -405,12 +405,16 @@ export class DebugTldrManager {
       logPath: job.logPath,
     };
     if (
-      doneErrorTldrFingerprint(currentCtx.step, currentCtx.message, currentCtx.detail) !==
-      fingerprint
+      !debugTldrKeysEqual(
+        doneErrorTldrFingerprint(currentCtx.step, currentCtx.message, currentCtx.detail),
+        fingerprint,
+      )
     ) {
       return { ok: false, reason: "failure no longer current" };
     }
-    if (job.debugTldrKey === fingerprint) return { ok: false, reason: "tl;dr already current" };
+    if (debugTldrKeysEqual(job.debugTldrKey, fingerprint)) {
+      return { ok: false, reason: "tl;dr already current" };
+    }
     if (this.inFlight.has(taskId)) return { ok: false, reason: "already running" };
 
     const agent = debuggerAgent(fromPersistedState(this.deps.config));
@@ -463,7 +467,10 @@ export class DebugTldrManager {
     if (
       !current.needsInput ||
       !isDiagnosableReason(current.needsInputReason) ||
-      tldrFingerprint(current.needsInputReason, current.needsInputDetail) !== fingerprint
+      !debugTldrKeysEqual(
+        tldrFingerprint(current.needsInputReason, current.needsInputDetail),
+        fingerprint,
+      )
     ) {
       return { ok: false, reason: "failure cleared while diagnosing" };
     }
@@ -508,7 +515,9 @@ export class DebugTldrManager {
     }
     const mapped = describeCloseOutFailure(job.failedPhase, job.reason!);
     const fp = doneErrorTldrFingerprint(mapped.step, mapped.message, mapped.detail);
-    if (fp !== fingerprint) return { ok: false, reason: "failure cleared while diagnosing" };
+    if (!debugTldrKeysEqual(fp, fingerprint)) {
+      return { ok: false, reason: "failure cleared while diagnosing" };
+    }
 
     const updated = updateJob(
       taskId,
