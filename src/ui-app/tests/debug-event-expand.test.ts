@@ -47,6 +47,15 @@ describe("debugEventExpandable (#0829)", () => {
     );
   });
 
+  it("expands check rows only when output exists or the title is truncated", () => {
+    const short = "merge-gate — passed in 2s";
+    expect(debugEventExpandable({ kind: "check", title: short, checkOutput: "ok\n" })).toBe(true);
+    expect(debugEventExpandable({ kind: "check", title: short })).toBe(false);
+    expect(debugEventExpandable({ kind: "check", title: short }, { titleTruncated: true })).toBe(
+      true,
+    );
+  });
+
   it("detects ellipsis via scrollWidth", () => {
     const truncated = document.createElement("span");
     Object.defineProperty(truncated, "scrollWidth", { value: 200 });

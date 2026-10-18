@@ -9,6 +9,8 @@ export interface ExpandableDebugEvent {
   kind: DebugEventKind;
   title: string;
   detail?: string;
+  failureSummary?: string;
+  checkOutput?: string;
 }
 
 export interface DebugEventExpandOpts {
@@ -21,11 +23,17 @@ export function isTitleVisuallyTruncated(el: HTMLElement): boolean {
   return el.scrollWidth > el.clientWidth + 1;
 }
 
+function checkRowHasExpandableBody(e: ExpandableDebugEvent): boolean {
+  return Boolean(e.failureSummary?.trim() || e.checkOutput?.trim());
+}
+
 export function debugEventExpandable(
   e: ExpandableDebugEvent,
   opts?: DebugEventExpandOpts,
 ): boolean {
-  if (e.kind === "check") return true;
+  if (e.kind === "check") {
+    return checkRowHasExpandableBody(e) || Boolean(opts?.titleTruncated);
+  }
   const detail = e.detail?.trim();
   const title = e.title.trim();
   if (detail && detail !== title) return true;
