@@ -1,6 +1,4 @@
 ---
-last_close_out_gate_ms: 80544
-last_close_out_gate_at: "2026-10-18T11:50:49.768Z"
 id: "0830"
 title: "Handoff: a shot whose waitFor/click/highlight target is missing fails the handoff (add hover step and fixture list)"
 type: feature
@@ -13,9 +11,11 @@ branch: feat/handoff-a-shot-whose-waitfor-click-highl
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:25Z"
-updated_at: "2026-10-18T11:50:49Z"
-review_passes: 1
+updated_at: "2026-10-18T11:47:15Z"
+check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T10:20:44.294Z: repoos check failed: ◆ Check plan"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/shot-plan-edit.test.ts > parseShotEntry (#0627) > rejects a bad step and an unknown key, like the list parser on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 386dee459445c5b90d91d7d031ca4e8c26a2603d
 dev_error_count: 1
 ---
 ## Problem
@@ -68,8 +68,4 @@ Related: #0734, #0755, #0613. Do not make a missing Playwright a failure (stays 
 - 2026-10-18T11:12:06Z · needs_input
 - 2026-10-18T11:22:56Z · body
 - 2026-10-18T11:25:42Z · body
-- 2026-10-18T11:39:25Z · body
-- 2026-10-18T11:47:16Z · status active→review
-- 2026-10-18T11:48:00Z · note: review pass 1: good to go
-- 2026-10-18T11:50:49Z · close-out gate completed in 81s
-
+- 2026-10-18T11:47:15Z · status active→review
