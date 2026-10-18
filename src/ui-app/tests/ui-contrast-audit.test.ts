@@ -8,12 +8,14 @@
 import { describe, expect, it } from "vitest";
 import {
   contrastProbe,
+  countProbeFailures,
   judgeSample,
   parseCssColor,
   requiredRatio,
   scopeAttributes,
   scopeSettleWarning,
   settleScopeInPage,
+  type ProbeResult,
   type ProbeSample,
 } from "../../commands/ui-contrast-audit.js";
 
@@ -53,6 +55,23 @@ describe("scopeAttributes (#0596)", () => {
     expect(scopeAttributes({ selector: ":root", name: "jelly-light" }).mode).toBe("light");
     expect(scopeAttributes({ selector: "html", name: "custom" }).mode).toBe("dark");
     expect(scopeAttributes({ selector: "html", name: "custom" }).uiTheme).toBe("classic");
+  });
+});
+
+describe("countProbeFailures", () => {
+  it("counts only WCAG fail verdicts", () => {
+    const probe: ProbeResult = {
+      samples: [
+        sample({ fg: "rgb(0, 0, 0)", bgLayers: ["rgb(255, 255, 255)"] }),
+        sample({ fg: "rgb(200, 200, 200)", bgLayers: ["rgb(255, 255, 255)"] }),
+      ],
+      examined: 2,
+      exempted: 0,
+      disabled: 0,
+      invisible: 0,
+      roots: 1,
+    };
+    expect(countProbeFailures(probe)).toBe(1);
   });
 });
 
