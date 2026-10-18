@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-18T19:37:29Z"
+review_passes: 5
 id: "0664"
 title: Upload state + retry UX
 type: feature
@@ -13,9 +15,7 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-18T19:37:29Z"
 review_rounds: 2
-review_passes: 4
 last_check_failure: "repoos check at 2026-10-18T17:32:06.903Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 handoff_signal_retry_count: 1
 ---
@@ -99,3 +99,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-18T19:36:32Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (c77a3c7fb) during finalization (#0734)
 - 2026-10-18T19:36:33Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (c77a3c7fb) during finalization (#0734)
 - 2026-10-18T19:37:29Z · note: review pass 5: good to go
+
