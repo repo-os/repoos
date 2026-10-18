@@ -7,6 +7,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import type { LogLevel } from "../core/logger.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { runGit, worktreePathForBranch } from "../core/git.js";
 import type { JobCoordinator } from "./integration-job.js";
@@ -93,7 +94,7 @@ export interface CheckpointRecoveryDeps {
   onTaskCheckEvent?: TaskCheckListener;
   remoteValidator?: RemoteValidator;
   previews?: PreviewManager;
-  onTaskLog?: (taskId: string, level: "info" | "warn" | "error", message: string) => void;
+  onTaskLog?: (taskId: string, level: LogLevel, message: string) => void;
 }
 
 /**

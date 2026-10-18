@@ -536,6 +536,7 @@ describe("move-to-done dirty-WORKTREE guard (#0512)", () => {
       const reviews = {
         isRunning: () => false,
         enabled: () => true,
+        cancel: () => {},
         runCheckpointDelta: vi.fn(),
       };
       const res = makeRes();

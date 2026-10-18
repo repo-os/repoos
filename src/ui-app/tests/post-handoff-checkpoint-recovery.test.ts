@@ -49,8 +49,8 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
     );
     expect(started.ok).toBe(true);
     const rec = readPostHandoffCheckpointRecovery(config, "0834");
-    expect(rec?.phase).toBe("gate");
     expect(rec?.approvedSha).toBe("aaa111");
+    expect(rec?.headSha).toBe("bbb222");
     clearPostHandoffCheckpointRecovery(config, "0834");
     rmFixture(root);
   });
@@ -109,9 +109,16 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
   it("delta review mission scopes git diff to the approved handoff sha", () => {
     const reviewer = { name: "r", cli: "fake", model: "m" } as Agent;
     const task = { id: "1", title: "t", body: "spec", branch: "feat/x" } as Task;
-    const mission = reviewMission(task, reviewer, "/wt", "main", { root: "/r" } as RepoOSConfig, {
-      deltaSinceApprovedSha: "deadbeef00000000000000000000000000000001",
-    });
+    const mission = reviewMission(
+      task,
+      reviewer,
+      "/wt",
+      "main",
+      { root: "/r", workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+      {
+        deltaSinceApprovedSha: "deadbeef00000000000000000000000000000001",
+      },
+    );
     expect(mission).toContain("Delta review scope");
     expect(mission).toContain("deadbeef0000");
     expect(mission).toContain("git diff deadbeef00000000000000000000000000000001..HEAD");
