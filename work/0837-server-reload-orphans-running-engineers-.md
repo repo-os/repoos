@@ -12,7 +12,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:35Z"
 updated_at: "2026-10-18T17:41:34Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T17:35:38.265Z: repoos check failed: ◆ Check plan"
 ---
 ## Problem
@@ -45,3 +44,4 @@ Related: #0834 (post-handoff checkpoint recovery), watchdog and CTO restart path
 - 2026-10-18T17:24:27Z · body
 - 2026-10-18T17:35:34Z · message_delivered: 1 message(s)
 - 2026-10-18T17:41:34Z · body
+
