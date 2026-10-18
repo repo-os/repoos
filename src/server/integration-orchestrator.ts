@@ -37,9 +37,14 @@ import {
   pruneWorktrees,
   isGitRepo,
   commitTaskFile,
-  commitDirtyFiles,
   mergeBranch,
   mainDirtyFilesForCloseOut,
+  dirtyPathsOverwrittenByMerge,
+  stashPublishPaths,
+  popPublishStash,
+  publishStashDiff,
+  PUBLISH_STASH_MESSAGE,
+  commitFiles,
   dirtyFiles,
   uncommittedWorkFiles,
   workFileFilter,
@@ -3468,7 +3473,22 @@ export class CloseOutOrchestrator {
         return { ok: false, reason: handoffGuard.reason };
       }
 
-      if (dirtyOnMain.length > 0) {
+      // #0820: of main's dirty files, only the ones this merge would OVERWRITE
+      // have to move out of the way. git refuses such a merge ("Your local
+      // changes ... would be overwritten by merge") but merges every other
+      // dirty path untouched, so a dirty file the branch does not change needs
+      // no action at all. Decide BEFORE touching anything, with `git merge-tree`
+      // (no working-tree side effect), then handle the two sets differently:
+      //   - untouched dirty files keep the existing policy (routine bookkeeping
+      //     / config churn is checkpoint-committed, anything else fails closed);
+      //   - the overwritten set is stashed immediately before the merge and
+      //     always popped after it, so a merge git would have refused still
+      //     lands and the local edit is reapplied on top.
+      const overwrittenByMerge =
+        dirtyOnMain.length > 0 ? await dirtyPathsOverwrittenByMerge(root, branch, dirtyOnMain) : [];
+      const untouchedDirty = dirtyOnMain.filter((p) => !overwrittenByMerge.includes(p));
+
+      if (untouchedDirty.length > 0) {
         // Auto-checkpoint routine, server-written churn instead of blocking
         // the merge on it (#0271 follow-up, confirmed live: #0293's close-out
         // was refused because an UNRELATED task's `work/*.md` file — an
@@ -3485,14 +3505,15 @@ export class CloseOutOrchestrator {
         // moment there is the same class of routine churn, not a signal of
         // in-progress human work.
         //
-        // Scoped narrowly: only when EVERY dirty path is under one of the
-        // managed bookkeeping dirs (work/, inputs/, stories/) or is exactly
-        // `repoos.toml` — anything else (source, other config, a stray build
-        // artifact) still fails closed exactly as before, since that's
-        // genuinely ambiguous and worth a human's attention rather than a
-        // blind auto-commit. All three dirs are server-written main-owned
-        // bookkeeping, so a dirty moment there is the same routine churn as a
-        // task file (#0726).
+        // Scoped narrowly — and scoped to `untouchedDirty`: only when EVERY
+        // path in this set is under one of the managed bookkeeping dirs
+        // (work/, inputs/, stories/) or is exactly `repoos.toml` — anything
+        // else (source, other config, a stray build artifact) still fails
+        // closed exactly as before, since that's genuinely ambiguous and worth
+        // a human's attention rather than a blind auto-commit. The overwritten
+        // set is deliberately EXCLUDED here: `commitFiles` is scoped to just
+        // these paths, so a blocker is never swept into a checkpoint commit
+        // that the merge then has to reconcile.
         const churnDirs = bookkeepingDirs(this.config);
         const bookkeepingDirsForChurn = [
           churnDirs.workDir,
@@ -3501,20 +3522,23 @@ export class CloseOutOrchestrator {
         ].map(withDirSlash);
         const isSafeChurn = (p: string): boolean =>
           bookkeepingDirsForChurn.some((prefix) => p.startsWith(prefix)) || p === "repoos.toml";
-        const onlySafeChurn = dirtyOnMain.every(isSafeChurn);
+        const onlySafeChurn = untouchedDirty.every(isSafeChurn);
         if (onlySafeChurn) {
-          try {
-            await commitDirtyFiles(root, "chore: checkpoint bookkeeping/config before publish");
-          } catch {
+          const committed = commitFiles(
+            root,
+            untouchedDirty.map((p) => join(root, p)),
+            "chore: checkpoint bookkeeping/config before publish",
+          );
+          if (!committed) {
             return {
               ok: false,
-              reason: `main has ${dirtyOnMain.length} uncommitted file${dirtyOnMain.length === 1 ? "" : "s"} at publish time and the automatic checkpoint commit failed: ${dirtyOnMain.slice(0, 8).join(", ")}${dirtyOnMain.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those on main and retry.`,
+              reason: `main has ${untouchedDirty.length} uncommitted file${untouchedDirty.length === 1 ? "" : "s"} at publish time and the automatic checkpoint commit failed: ${untouchedDirty.slice(0, 8).join(", ")}${untouchedDirty.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those on main and retry.`,
             };
           }
         } else {
           return {
             ok: false,
-            reason: `main has ${dirtyOnMain.length} uncommitted file${dirtyOnMain.length === 1 ? "" : "s"} at publish time, so the merge would abort: ${dirtyOnMain.slice(0, 8).join(", ")}${dirtyOnMain.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those on main (or use "Commit & continue") and retry.`,
+            reason: `main has ${untouchedDirty.length} uncommitted file${untouchedDirty.length === 1 ? "" : "s"} at publish time, so the merge would abort: ${untouchedDirty.slice(0, 8).join(", ")}${untouchedDirty.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those on main (or use "Commit & continue") and retry.`,
           };
         }
       }
@@ -3561,25 +3585,86 @@ export class CloseOutOrchestrator {
         return { ok: false, reason: resolutionCheck.reason };
       }
 
-      const publishMerge = await retryOnGitLock(
-        () =>
-          mergeBranch(root, branch, {
-            autoResolve: [],
-            autoResolveOurs: bookkeepingKeepOursPrefixes(this.config),
-          }),
-        (r) =>
-          !r.merged && isGitLockContention(r.reason ?? "") ? (r.reason ?? "index.lock") : null,
-        {
-          onRetry: (attempt, text) =>
-            this.logger?.integration(
-              job.taskId,
-              "warn",
-              `git lock contention while merging candidate to main — retrying (attempt ${attempt})`,
-              { detail: text },
-            ),
-        },
-      );
-      if (publishMerge.merged) mergedIntoMain = true;
+      // #0820: move the dirty blockers out of the way so a merge git would
+      // otherwise refuse can land. `git stash push` is scoped to exactly these
+      // paths, so a dirty file the merge does not touch is never stashed; a
+      // failure here leaves the tree untouched and the candidate unmerged.
+      let publishStashCreated = false;
+      if (overwrittenByMerge.length > 0) {
+        const stash = await stashPublishPaths(root, overwrittenByMerge, PUBLISH_STASH_MESSAGE);
+        if (!stash.ok) {
+          return {
+            ok: false,
+            reason: `could not set aside main's uncommitted changes to ${overwrittenByMerge.slice(0, 8).join(", ")}${overwrittenByMerge.length > 8 ? ", …" : ""} before merging: ${stash.reason ?? "git stash failed"}. The candidate was NOT merged; commit or stash those on main and retry.`,
+          };
+        }
+        publishStashCreated = stash.created;
+      }
+
+      let publishMerge: MergeBranchResult | undefined = undefined;
+      let mergeError: unknown = undefined;
+      try {
+        publishMerge = await retryOnGitLock(
+          () =>
+            mergeBranch(root, branch, {
+              autoResolve: [],
+              autoResolveOurs: bookkeepingKeepOursPrefixes(this.config),
+            }),
+          (r) =>
+            !r.merged && isGitLockContention(r.reason ?? "") ? (r.reason ?? "index.lock") : null,
+          {
+            onRetry: (attempt, text) =>
+              this.logger?.integration(
+                job.taskId,
+                "warn",
+                `git lock contention while merging candidate to main — retrying (attempt ${attempt})`,
+                { detail: text },
+              ),
+          },
+        );
+      } catch (err) {
+        mergeError = err;
+      }
+      // A merge that landed has mutated main even if the pop below fails, so
+      // record it before anything else: the outer `finally` must not try to
+      // put a hotfix branch back on top of it.
+      if (publishMerge?.merged) mergedIntoMain = true;
+
+      // The stash is ALWAYS popped — merge landed, failed, or was cancelled —
+      // so local edits are never silently stranded in the stash (#0820). On a
+      // pop conflict git keeps the stash on its own; report it, name the
+      // preserved edit, and leave the resolution to the user/debugger.
+      if (publishStashCreated) {
+        const pop = await popPublishStash(root, PUBLISH_STASH_MESSAGE);
+        if (!pop.ok) {
+          const diff = await publishStashDiff(root, PUBLISH_STASH_MESSAGE);
+          const detail = diff
+            ? `\n\nStashed local edits (kept in ${pop.ref}):\n${diff.slice(0, 4000)}`
+            : "";
+          if (pop.conflicts.length > 0) {
+            return {
+              ok: false,
+              reason:
+                `merge conflict in ${pop.conflicts.slice(0, 8).join(", ")}${pop.conflicts.length > 8 ? ", …" : ""} — ` +
+                "main's uncommitted edits were set aside to run the publish merge and could not be reapplied " +
+                `cleanly (publish stash pop conflict). They are kept in ${pop.ref}; nothing was committed or ` +
+                `discarded. Resolve the conflict markers in main, then \`git stash drop ${pop.ref}\`.` +
+                detail,
+            };
+          }
+          return {
+            ok: false,
+            reason:
+              `could not reapply main's local edits after the publish merge (publish stash pop failed: ` +
+              `${pop.reason ?? "unknown error"}). They are kept in ${pop.ref}; nothing was committed or discarded.` +
+              detail,
+          };
+        }
+      }
+      if (mergeError) throw mergeError;
+      if (!publishMerge) {
+        return { ok: false, reason: "publish merge did not run" };
+      }
       if (!publishMerge.merged) {
         if (publishMerge.conflicts.length > 0) {
           return {

@@ -1560,6 +1560,52 @@ export async function preflightMerge(
 }
 
 /**
+ * The subset of `dirty` (repo-relative paths already dirty in `root`'s working
+ * tree) that merging `branch` into the current HEAD would OVERWRITE — exactly
+ * the paths for which `git merge` aborts with "Your local changes to the
+ * following files would be overwritten by merge". A dirty path the merge leaves
+ * untouched is never returned, so a caller can stash only the blockers and let
+ * the merge keep every other local edit (#0820).
+ *
+ * The result tree is computed non-destructively with `git merge-tree
+ * --write-tree` — the same primitive `preflightMerge` uses — and diffed against
+ * HEAD; nothing in the working tree, index, or refs is touched. FAILS CLOSED:
+ * when the analysis cannot be computed the whole `dirty` list is returned,
+ * because stashing a superset is recoverable (the caller always pops the stash)
+ * whereas missing a blocker would still abort the merge.
+ */
+export async function dirtyPathsOverwrittenByMerge(
+  root: string,
+  branch: string,
+  dirty: string[],
+): Promise<string[]> {
+  if (dirty.length === 0) return [];
+  const analyzed = await runGit(root, ["merge-tree", "--write-tree", "HEAD", branch], 30_000);
+  // Exit 0 is a clean merge; exit 1 still writes the merged tree (with conflict
+  // markers where both sides changed a path), which is what we want to diff.
+  // Any other status means the analysis itself failed — fail closed below.
+  if (analyzed.status !== 0 && analyzed.status !== 1) return [...dirty];
+  const tree = analyzed.stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .find((l) => /^[0-9a-f]{40}$|^[0-9a-f]{64}$/.test(l));
+  if (!tree) return [...dirty];
+  const changed = await runGit(
+    root,
+    ["-c", "core.quotepath=false", "diff", "--name-only", "HEAD", tree],
+    15_000,
+  );
+  if (changed.status !== 0) return [...dirty];
+  const touched = new Set(
+    changed.stdout
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean),
+  );
+  return dirty.filter((p) => touched.has(p));
+}
+
+/**
  * Commit a single task file in the main checkout, tracking it first when it is
  * untracked. Task files are the one path that is routinely edited on both sides
  * of a close-out merge: an untracked file aborts `git merge` outright, and a
@@ -2180,6 +2226,119 @@ export async function mergeBranch(
     conflicts: [],
     reason: stderr.trim().split("\n").filter(Boolean).slice(0, 4).join(" ") || "merge failed",
   };
+}
+
+/**
+ * Marker RepoOS tags its own publish-time stash with, so `popPublishStash`
+ * always finds that entry and never touches a stash the human created (#0820).
+ */
+export const PUBLISH_STASH_MESSAGE = "repoos: publish stash";
+
+export interface StashPublishPathsResult {
+  /** True when the stash entry was created (nothing to stash → false). */
+  created: boolean;
+  /** False when `git stash push` itself failed; no entry was created then. */
+  ok: boolean;
+  reason?: string;
+}
+
+/**
+ * Stash exactly `paths` so a subsequent merge may overwrite them, tagging the
+ * entry with `message` so `popPublishStash` finds it again (#0820). Untracked
+ * files are included: a branch that adds a path already present untracked aborts
+ * the merge the same way a modified tracked file does. Fail-soft — `ok` is false
+ * and no entry is created when git refuses.
+ */
+export async function stashPublishPaths(
+  root: string,
+  paths: string[],
+  message: string = PUBLISH_STASH_MESSAGE,
+): Promise<StashPublishPathsResult> {
+  if (paths.length === 0) return { ok: true, created: false };
+  const before = (
+    await runGit(root, ["rev-parse", "-q", "--verify", "refs/stash"], 4000)
+  ).stdout.trim();
+  const run = await runGit(
+    root,
+    ["stash", "push", "--include-untracked", "-m", message, "--", ...paths],
+    60_000,
+  );
+  if (run.status !== 0) {
+    return {
+      ok: false,
+      created: false,
+      reason: run.stderr.trim() || run.stdout.trim() || "git stash failed",
+    };
+  }
+  // `git stash push` exits 0 even when a pathspec matched nothing to save
+  // ("No local changes to save"), so confirm an entry actually landed.
+  const after = (
+    await runGit(root, ["rev-parse", "-q", "--verify", "refs/stash"], 4000)
+  ).stdout.trim();
+  return { ok: true, created: after !== before };
+}
+
+export interface PopPublishStashResult {
+  ok: boolean;
+  /** Unmerged paths left in the working tree when the pop conflicted. */
+  conflicts: string[];
+  /** The stash ref that was popped (or attempted). */
+  ref: string;
+  reason?: string;
+}
+
+/**
+ * Pop RepoOS's publish stash — the topmost entry tagged `message` — reapplying
+ * the local edits on top of the merged tree (#0820). On conflict git KEEPS the
+ * stash on its own; this never drops it on failure, so the user's edit is never
+ * discarded, and `conflicts` names the unmerged paths for the caller to report.
+ */
+export async function popPublishStash(
+  root: string,
+  message: string = PUBLISH_STASH_MESSAGE,
+): Promise<PopPublishStashResult> {
+  const list = await runGit(root, ["stash", "list", "--format=%gd%x09%s"], 10_000);
+  const match = list.stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .find((l) => l.includes(message));
+  const ref = (match?.split("\t")[0] || "stash@{0}").trim();
+  const run = await runGit(root, ["stash", "pop", ref], 60_000);
+  if (run.status === 0) return { ok: true, conflicts: [], ref };
+  const conflicts = (await runGit(root, ["diff", "--name-only", "--diff-filter=U"], 10_000)).stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  return {
+    ok: false,
+    conflicts,
+    ref,
+    reason:
+      `${run.stderr}\n${run.stdout}`.trim().split("\n").filter(Boolean).slice(0, 4).join(" ") ||
+      "git stash pop failed",
+  };
+}
+
+/**
+ * The diff a publish stash holds, for the error card's detail panel so a user
+ * sees exactly what is preserved when the pop conflicts (#0820). Empty when the
+ * stash cannot be found or shown.
+ */
+export async function publishStashDiff(
+  root: string,
+  message: string = PUBLISH_STASH_MESSAGE,
+): Promise<string> {
+  const list = await runGit(root, ["stash", "list", "--format=%gd%x09%s"], 10_000);
+  const match = list.stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .find((l) => l.includes(message));
+  const ref = (match?.split("\t")[0] || "stash@{0}").trim();
+  const run = await runGit(root, ["stash", "show", "-p", "--include-untracked", ref], 10_000);
+  if (run.status !== 0) return "";
+  return run.stdout.trim();
 }
 
 export interface SyncBranchResult {

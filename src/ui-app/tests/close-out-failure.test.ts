@@ -218,6 +218,21 @@ describe("describeCloseOutFailure", () => {
     expect(err.step).toBe("check");
   });
 
+  it("names main's stashed local edits on a publish stash pop conflict (#0820)", () => {
+    const reason =
+      "merge conflict in config.toml, repoos.toml — main's uncommitted edits were set aside to run the " +
+      "publish merge and could not be reapplied cleanly (publish stash pop conflict). They are kept in " +
+      "stash@{0}; nothing was committed or discarded. Resolve the conflict markers in main, then " +
+      "`git stash drop stash@{0}`.";
+    expect(classifyFailure("publishing", reason)).toBe("conflict");
+    const err = describeCloseOutFailure("publishing", reason);
+    expect(err.conflicts).toEqual(["config.toml", "repoos.toml"]);
+    expect(err.message).toMatch(/stashed local edits/i);
+    expect(err.detail).toBe(reason);
+    expect(err.hint).not.toBe(CONFLICT_HINT);
+    expect(err.hint).toMatch(/stash drop/i);
+  });
+
   it("falls back gracefully for an unknown phase and empty reason", () => {
     const err = describeCloseOutFailure(undefined, "");
     expect(err.message).toBe("The close-out failed.");
