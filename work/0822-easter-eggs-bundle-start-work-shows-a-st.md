@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0822"
 title: "Easter eggs bundle: Start work pending state, and Bird quick trail animation"
 type: bug
@@ -189,3 +190,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T03:49:45Z · needs_input
 - 2026-10-18T04:26:12Z · status review→active, needs_input
 - 2026-10-18T04:26:12Z · note: close-out repair: merge-conflict
+
