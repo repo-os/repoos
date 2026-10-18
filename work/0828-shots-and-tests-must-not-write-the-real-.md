@@ -1,10 +1,8 @@
 ---
-last_close_out_gate_ms: 385146
-last_close_out_gate_at: "2026-10-18T06:52:02.354Z"
 id: "0828"
 title: Shots and tests must not write the real repoos.toml (isolate config in preview captures)
 type: bug
-status: review
+status: inbox
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -13,7 +11,9 @@ branch: feat/shots-and-tests-must-not-write-the-real-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T05:51:23Z"
-updated_at: "2026-10-18T06:52:02Z"
+updated_at: "2026-10-18T06:52:05Z"
+last_close_out_gate_ms: 385146
+last_close_out_gate_at: "2026-10-18T06:52:02.354Z"
 review_passes: 1
 ---
 ## Problem
@@ -55,4 +55,5 @@ Start from App.vue applyShotFixturesFromLocation and src/ui-app/src/lib/shot-pre
 - 2026-10-18T06:32:51Z · status active→review
 - 2026-10-18T06:33:43Z · note: review pass 1: good to go
 - 2026-10-18T06:52:02Z · close-out gate completed in 385s
-
+- 2026-10-18T06:52:04Z · note: handoff requested (cli)
+- 2026-10-18T06:52:05Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox

@@ -35,6 +35,11 @@ import { formatTomlError, validateToml } from "../../core/toml-validate.js";
 import { stripTomlComment } from "../../core/toml-line.js";
 import { readTunnelConfig, writeTunnelConfig } from "../../core/tunnel.js";
 import { listSkills } from "./helpers.js";
+import {
+  configTomlMutationPath,
+  configTomlReadPath,
+  loadConfigAfterServerWrite,
+} from "../preview-config-isolation.js";
 
 /**
  * Config as the browser may see it: `whisper.apiKey` is stripped entirely and
@@ -842,20 +847,20 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: "No valid fields to update" });
   }
 
+  const mutationPath = configTomlMutationPath(config.root, config.cacheDir);
   if (Object.keys(patch).length > 0) {
-    patchTomlConfig(join(config.root, "repoos.toml"), patch);
+    patchTomlConfig(mutationPath, patch);
   }
-  if (dropAreaRows) dropTomlTableArray(join(config.root, "repoos.toml"), "areas");
-  if (dropDevTargetRows) dropTomlTableArray(join(config.root, "repoos.toml"), "dev.targets");
-  if (dropBudgetAllowlistRows)
-    dropTomlTableArray(join(config.root, "repoos.toml"), "budget.allowlist");
+  if (dropAreaRows) dropTomlTableArray(mutationPath, "areas");
+  if (dropDevTargetRows) dropTomlTableArray(mutationPath, "dev.targets");
+  if (dropBudgetAllowlistRows) dropTomlTableArray(mutationPath, "budget.allowlist");
   if (dropRows) {
-    dropTomlTableArray(join(config.root, "repoos.toml"), "remoteValidation.tailscaleHosts");
+    dropTomlTableArray(mutationPath, "remoteValidation.tailscaleHosts");
   }
   if (patchRows?.length) {
     // Second pass: replace the [[remoteValidation.tailscaleHosts]] blocks with
     // the surviving rows (same key, table-array form — see patchTomlConfig).
-    patchTomlConfig(join(config.root, "repoos.toml"), {
+    patchTomlConfig(mutationPath, {
       "remoteValidation.tailscaleHosts": patchRows,
     });
   }
@@ -872,7 +877,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   // prompt, which is where that decision belongs.
 
   const vocabularyBefore = effectiveAreaNames(repoos.config);
-  applyLoadedConfig(repoos, loadConfig(config.root));
+  applyLoadedConfig(repoos, loadConfigAfterServerWrite(config.root, config.cacheDir));
   ctx.remoteValidator?.applyConfig?.();
 
   // Advisory drift warning (#0583/#0587): any config write that changes the
@@ -930,8 +935,9 @@ function dropTomlTableArray(tomlPath: string, key: string): void {
 }
 
 /** Read repoos.toml, tolerating its absence (a repo may have no config file). */
-function readRawToml(root: string): string {
-  const path = join(root, "repoos.toml");
+function readRawToml(root: string, cacheDir?: string): string {
+  const path =
+    cacheDir !== undefined ? configTomlReadPath(root, cacheDir) : join(root, "repoos.toml");
   return existsSync(path) ? readFileSync(path, "utf8") : "";
 }
 
@@ -942,7 +948,7 @@ function readRawToml(root: string): string {
  * back. The endpoint is behind the same auth as every other API route.
  */
 export const readRawConfig: RouteHandler = (ctx, _req, res) => {
-  const content = readRawToml(ctx.config.root);
+  const content = readRawToml(ctx.config.root, ctx.config.cacheDir);
   return json(res, 200, { content, hash: hashConfigContent(content) });
 };
 
@@ -967,8 +973,8 @@ export const writeRawConfig: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: formatTomlError(result), line: result.line });
   }
 
-  const path = join(config.root, "repoos.toml");
-  const current = readRawToml(config.root);
+  const path = configTomlMutationPath(config.root, config.cacheDir);
+  const current = readRawToml(config.root, config.cacheDir);
   const currentHash = hashConfigContent(current);
   if (typeof body.baseHash === "string" && body.baseHash !== currentHash) {
     return json(res, 409, {
@@ -989,7 +995,7 @@ export const writeRawConfig: RouteHandler = async (ctx, req, res) => {
   // in-memory config and reconcile the index (the raw file can change
   // workDir/cacheDir/taskExtensions, which a curated save would also refresh).
   const vocabularyBefore = effectiveAreaNames(repoos.config);
-  applyLoadedConfig(repoos, loadConfig(config.root));
+  applyLoadedConfig(repoos, loadConfigAfterServerWrite(config.root, config.cacheDir));
   ctx.remoteValidator?.applyConfig?.();
   index.refreshAll();
 
