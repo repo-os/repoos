@@ -3,9 +3,6 @@ id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — E1–E3 look implemented with solid unit/component tests and a careful backfill, but handoff UI evidence is **STALE** (capture tree `e961fc9f7` vs reviewed `ddcf9a91b`) and all three PNGs failed their `waitFor`/click/highlight steps, so the required light/dark median-tooltip and expanded Debug log shots are **not** verified."
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T08:25:41Z"
+updated_at: "2026-10-18T08:25:52Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -246,3 +243,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T08:24:11Z · note: waitFor .debug-event-message: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
 - 2026-10-18T08:24:11Z · note: highlight .debug-event-message matched nothing on /work?task=0820&tab=debug
 - 2026-10-18T08:25:41Z · status review→active
+- 2026-10-18T08:25:52Z · needs_input
