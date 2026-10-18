@@ -14,7 +14,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T05:37:09Z"
+updated_at: "2026-10-18T05:37:13Z"
 review_passes: 4
 close_out_repair_count: 1
 review_rounds: 2
@@ -156,6 +156,9 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 ## Problem
 Bundle of two small, independent web items (E1 Start work pending state; E2 Bird quick trail animation). Per-item detail is under Items and the E1/E2 sections below.
 
+## Desired UX
+E1: Start work shows a Starting… state and cannot be clicked twice. E2: Bird quick trail is a selectable Activity animation. Full UX per item is in the E1 and E2 sections.
+
 ## Activity
 
 - 2026-10-18T02:36:59Z · created · njachowski@gmail.com
@@ -204,3 +207,4 @@ Bundle of two small, independent web items (E1 Start work pending state; E2 Bird
 - 2026-10-18T04:38:51Z · note: review pass 4: needs some work
 - 2026-10-18T04:38:52Z · needs_input
 - 2026-10-18T05:37:09Z · body: Problem (added)
+- 2026-10-18T05:37:13Z · body: Desired UX (added)
