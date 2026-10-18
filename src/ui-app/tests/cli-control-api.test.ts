@@ -21,6 +21,7 @@ import {
   cmdRunners,
   cmdStart,
   cmdStats,
+  cmdSync,
   cmdVerify,
   controlApiServerDownMessage,
 } from "../../commands/control-api";
@@ -338,6 +339,81 @@ describe("control API CLI", () => {
       await runJsonCmd(port, cmdAgentsRunning, []);
     });
     killSpawns(fx);
+  });
+
+  it("sync --json on an active task with a worktree", async () => {
+    const fx = makeFixture(false);
+    useAgentPath(fx);
+    await withServer(fx.root, async (s) => {
+      const port = Number(new URL(s.url).port);
+      const id = await createReadyTask(s);
+      await runJsonCmd(port, cmdStart, [id]);
+      await runJsonCmd(port, cmdPause, [id]);
+      const synced = await runJsonCmd(port, cmdSync, [id]);
+      expect(synced).toMatchObject({ ok: true });
+    });
+    killSpawns(fx);
+  }, 30_000);
+
+  it("sync exits 1 without throwing when the API reports merge conflicts", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
+      status: 409,
+      body: {
+        ok: false,
+        conflicts: ["src/core/git.ts", "src/foo.ts"],
+        error: "merge conflict",
+      },
+    });
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const code = await cmdSync(["0826"]);
+    expect(code).toBe(1);
+    expect(request).toHaveBeenCalledWith("POST", "/api/tasks/0826/sync", {});
+    const lines = err.mock.calls.map((c) => String(c[0]));
+    expect(lines.some((l) => l.includes("merge conflict"))).toBe(true);
+    expect(lines.some((l) => l.includes("src/core/git.ts"))).toBe(true);
+    err.mockRestore();
+    health.mockRestore();
+    request.mockRestore();
+  });
+
+  it("sync renders API errors (no branch, no worktree) and exits 1", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const request = vi.spyOn(RepoOsApi.prototype, "request");
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    request.mockResolvedValueOnce({
+      status: 400,
+      body: { error: "Task #0826 has no branch to sync" },
+    });
+    expect(await cmdSync(["0826"])).toBe(1);
+    expect(err.mock.calls.map((c) => String(c[0])).join("\n")).toMatch(/no branch to sync/i);
+
+    request.mockResolvedValueOnce({
+      status: 409,
+      body: { ok: false, conflicts: [], error: "no worktree for branch" },
+    });
+    expect(await cmdSync(["0826"])).toBe(1);
+    expect(err.mock.calls.map((c) => String(c[0])).join("\n")).toMatch(/no worktree for branch/i);
+
+    err.mockRestore();
+    health.mockRestore();
+    request.mockRestore();
+  });
+
+  it("sync --json prints success body", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
+      status: 200,
+      body: { ok: true, conflicts: [] },
+    });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const code = await cmdSync(["--json", "0826"]);
+    expect(code).toBe(0);
+    expect(JSON.parse(String(log.mock.calls[0]?.[0]))).toEqual({ ok: true, conflicts: [] });
+    log.mockRestore();
+    health.mockRestore();
+    request.mockRestore();
   });
 
   it("verify exits 1 without throwing when verification issues arrive in a 200 body", async () => {

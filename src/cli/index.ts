@@ -43,6 +43,7 @@ import {
   cmdVerify,
   cmdRunners,
   cmdStart,
+  cmdSync,
   cmdStats,
   cmdDecisions,
 } from "../commands/control-api.js";
@@ -244,6 +245,11 @@ function main(): void {
       break;
     case "pause":
       void cmdPause(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "sync":
+      void cmdSync(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
       });
       break;
