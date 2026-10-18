@@ -13,6 +13,7 @@ import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
+import PendingAttachmentList from "./PendingAttachmentList.vue";
 import { isImageMime, pendingToShots, shotIndex } from "../lib/screenshot-viewer";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 const ui = useUiStore(),
@@ -31,7 +32,8 @@ const ui = useUiStore(),
   inputViewerStart = ref(0),
   inputViewerShots = computed(() =>
     pendingToShots(ui.inputScreenshots.filter((s) => isImageMime(s.mime))),
-  );
+  ),
+  inputUploadJobs = computed(() => repo.inputAttachmentUploads);
 function openInputViewer(src: string): void {
   inputViewerStart.value = shotIndex(inputViewerShots.value, src);
   inputViewerOpen.value = true;
@@ -125,6 +127,13 @@ function done(): void {
             be ready shortly. You can create another input or go do something else — nothing is
             lost.
           </p>
+          <PendingAttachmentList
+            v-if="inputUploadJobs.length"
+            :items="inputUploadJobs.map((j) => j.attachment)"
+            :allow-remove="false"
+            aria-label="Uploading input attachments"
+            @retry="(i) => void repo.retryInputAttachmentUpload(inputUploadJobs[i]!)"
+          />
           <div class="btn-row" style="margin-top: 18px">
             <Button variant="default" @click="createAnotherInput">Create another input</Button>
             <Button variant="outline" @click="done">Done</Button>
@@ -157,40 +166,12 @@ function done(): void {
                 @click.stop
               />
             </div>
-            <div
+            <PendingAttachmentList
               v-if="ui.inputScreenshots.length"
-              class="ff-pending-files"
-              aria-label="Selected attachments"
-            >
-              <div
-                v-for="(file, i) in ui.inputScreenshots"
-                :key="file.name + file.size + i"
-                class="ff-pending-file"
-              >
-                <img
-                  v-if="isImageMime(file.mime)"
-                  :src="file.dataUrl"
-                  :alt="file.name"
-                  @click="openInputViewer(file.dataUrl)"
-                />
-                <div v-else class="ff-pending-file-icon"><Paperclip class="size-4" /></div>
-                <span class="ff-pending-file-name" :title="file.name">{{ file.name }}</span>
-                <ScreenshotExpandButton
-                  v-if="isImageMime(file.mime)"
-                  :name="file.name"
-                  @click="openInputViewer(file.dataUrl)"
-                />
-                <button
-                  type="button"
-                  class="ff-pending-file-remove"
-                  :aria-label="`Remove ${file.name}`"
-                  title="Remove attachment"
-                  @click.stop="ui.removeInputScreenshot(i)"
-                >
-                  <X class="size-3.5" />
-                </button>
-              </div>
-            </div>
+              :items="ui.inputScreenshots"
+              @open-shot="(i) => openInputViewer(ui.inputScreenshots[i]!.dataUrl)"
+              @remove="(i) => ui.removeInputScreenshot(i)"
+            />
           </div>
           <div class="field">
             <div class="field-header">
