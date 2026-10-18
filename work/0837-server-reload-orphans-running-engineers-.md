@@ -11,7 +11,7 @@ branch: feat/server-reload-orphans-running-engineers-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:35Z"
-updated_at: "2026-10-18T18:04:31Z"
+updated_at: "2026-10-18T18:07:02Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-10-18T17:35:38.265Z: repoos check failed: ◆ Check plan"
@@ -55,3 +55,4 @@ Related: #0834 (post-handoff checkpoint recovery), watchdog and CTO restart path
 - 2026-10-18T18:03:36Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-18T18:04:28Z · note: review pass 2: needs some work
 - 2026-10-18T18:04:31Z · status review→active
+- 2026-10-18T18:07:02Z · body
