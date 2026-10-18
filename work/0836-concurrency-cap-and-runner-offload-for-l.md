@@ -12,8 +12,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:25Z"
 updated_at: "2026-10-18T17:29:34Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: cebf691f171c69f45cd89bf9812ea17261ba6b4d
 review_rounds: 1
 review_passes: 1
 ---
@@ -74,3 +72,4 @@ Look at src/commands/check.ts, src/server/integration-orchestrator.ts, the shot/
 - 2026-10-18T17:28:35Z · body
 - 2026-10-18T17:29:32Z · status active→review
 - 2026-10-18T17:29:34Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (cebf691f1) during finalization (#0734)
+
