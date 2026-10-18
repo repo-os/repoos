@@ -2,7 +2,7 @@
 id: "0838"
 title: "Close-out: a failed auto-resolve must not demote the task to inbox"
 type: bug
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -35,4 +35,4 @@ Related: #0835 (NUL byte made task files binary, a likely trigger), #0754 (task-
 - 2026-10-18T18:27:16Z · status ready→active, branch
 - 2026-10-18T18:31:39Z · body
 - 2026-10-18T18:32:29Z · body
-- 2026-10-18T18:40:49Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-18T18:40:49Z · status active→review
