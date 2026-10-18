@@ -373,6 +373,7 @@ import {
   getTaskUiVerification,
   refreshTaskEvidence,
   automaticStaleEvidenceRefresh,
+  automaticEvidenceGapRepair,
   getTaskShot,
   uploadTaskShot,
   deleteTaskShot,
@@ -2086,6 +2087,22 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
     (task) =>
       automaticStaleEvidenceRefresh(
+        {
+          config,
+          previews,
+          rootLock,
+          closingOut: () => closeOutLock.closingOut(),
+          log: (id, level, message) => {
+            logger.task(id, level, message);
+          },
+          getReviewTask: (id) => index.getTask(id) ?? null,
+          isAgentRunning: (id) => runner.isRunning(id),
+          isReviewRunning: (id) => reviews.isRunning(id),
+        },
+        task,
+      ),
+    (task) =>
+      automaticEvidenceGapRepair(
         {
           config,
           previews,

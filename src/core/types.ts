@@ -53,6 +53,7 @@ export type TaskMode = "freeform" | "manual";
 export const NEEDS_INPUT_REASONS = [
   "review-failed",
   "review-rounds-exhausted",
+  "evidence-gap-exhausted",
   "dev-error",
   "check-failed-after-retries",
   "watchdog-stuck",
