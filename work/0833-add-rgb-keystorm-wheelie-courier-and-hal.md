@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-rgb-keystorm-wheelie-courier-and-hal
 created_at: "2026-10-18T08:58:09Z"
-updated_at: "2026-10-18T13:00:55Z"
+updated_at: "2026-10-18T13:10:15Z"
 ---
 ## Problem
 
@@ -99,6 +99,40 @@ path(c,p.purple,g=>{g.moveTo(-30,-18);g.quadraticCurveTo(-14,-29,-8,-61);g.bezie
 - Reduced motion stops all motion and leaves each subject clearly recognizable. Test mount/unmount and offscreen/hidden behavior to prevent leaked animation loops and unnecessary background CPU with many task cards.
 - Capture Settings and real task-card evidence, rebuild after UI changes, run focused meaningful tests and scoped repoos check, and hand off through normal review.
 
+## Shots
+```json
+[
+{
+  "label": "RGB keystorm in the Settings activity-animation preview",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": ".activity-animation-preview",
+  "state": "settings:rgbKeystorm"
+},
+{
+  "label": "Wheelie courier in the Settings activity-animation preview",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": ".activity-animation-preview",
+  "state": "settings:wheelieCourier"
+},
+{
+  "label": "Boo swoop in the Settings activity-animation preview",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": ".activity-animation-preview",
+  "state": "settings:booSwoop"
+},
+{
+  "label": "Pumpkin spell in the Settings activity-animation preview",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": ".activity-animation-preview",
+  "state": "settings:pumpkinSpell"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-18T08:58:09Z · created · njachowski@gmail.com
@@ -107,3 +141,4 @@ path(c,p.purple,g=>{g.moveTo(-30,-18);g.quadraticCurveTo(-14,-29,-8,-61);g.bezie
 - 2026-10-18T12:28:41Z · message_queued at 2026-10-18T12:28:41.781Z
 - 2026-10-18T12:28:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-18T13:00:55Z · body
+- 2026-10-18T13:10:15Z · body
