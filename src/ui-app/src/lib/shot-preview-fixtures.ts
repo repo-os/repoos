@@ -311,24 +311,24 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         [SHOT_PREVIEW_FIXTURE_TASK_ID]: nowIso(),
       };
       break;
-    case "drawer:queuedMessage":
-      // #0821 — a task with a running agent and one message queued for when the
-      // turn ends, so the Dev composer shows its "Queued" notice while the send
-      // control stays usable. A branch keeps the composer's own follow-up flow
-      // intact (same shape as drawer:activeRequirements).
-      ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
-      if (!repo.runningIds.includes(SHOT_PREVIEW_FIXTURE_TASK_ID)) {
-        repo.runningIds = [...repo.runningIds, SHOT_PREVIEW_FIXTURE_TASK_ID];
+    case "drawer:queuedMessage": {
+      // #0821 — the drawer task (the shot's `?task=`) with a running agent and
+      // one message queued for when the turn ends, so the Dev composer shows its
+      // "Queued" notice while send stays usable. No fake task is seeded: the
+      // route deep-links a REAL task id, so the drawer's `/shots`,
+      // `/ui-verification` and `/diff-stats` fetches all resolve — a #9999
+      // fixture would 404 and fail the handoff UI gate.
+      const drawerId = shotPreviewDrawerTaskIdFromLocation(window.location);
+      if (!repo.runningIds.includes(drawerId)) {
+        repo.runningIds = [...repo.runningIds, drawerId];
       }
-      repo.agentActivityAt = {
-        ...repo.agentActivityAt,
-        [SHOT_PREVIEW_FIXTURE_TASK_ID]: nowIso(),
-      };
+      repo.agentActivityAt = { ...repo.agentActivityAt, [drawerId]: nowIso() };
       repo.queuedMessages = {
         ...repo.queuedMessages,
-        [SHOT_PREVIEW_FIXTURE_TASK_ID]: { count: 1, queuedAt: nowIso(), overdue: false },
+        [drawerId]: { count: 1, queuedAt: nowIso(), overdue: false },
       };
       break;
+    }
     case "board:cardChips":
       // A multi-area task assigned to a human with seeded diff stats, so the
       // combined area chip, the human chip and the file-count chip all render

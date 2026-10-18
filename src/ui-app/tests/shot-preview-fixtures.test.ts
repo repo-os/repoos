@@ -265,12 +265,18 @@ describe("shot preview board fixtures (#0743)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const repo = useRepoStore();
+    // Deep-links a real task id, so the drawer's per-task fetches resolve
+    // (a fake #9999 fixture would 404 and fail the handoff UI gate).
+    window.history.replaceState(
+      {},
+      "",
+      "/work?task=0821&tab=agent&shotState=drawer%3AqueuedMessage",
+    );
     applyShotPreviewFixture(repo, "drawer:queuedMessage");
-    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
-    expect(task, "drawer:queuedMessage seeds the fixture task").toBeTruthy();
-    expect(task!.status).toBe("active");
-    expect(repo.isRunning(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
-    expect(repo.queuedMessages[SHOT_PREVIEW_FIXTURE_TASK_ID]?.count).toBe(1);
+    expect(repo.isRunning("0821")).toBe(true);
+    expect(repo.queuedMessages["0821"]?.count).toBe(1);
+    // No fake board task is seeded.
+    expect(repo.tasks.some((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(false);
   });
 
   it("seeds a multi-area human task with diff stats for card-chip shots (#0776, #0795)", () => {
