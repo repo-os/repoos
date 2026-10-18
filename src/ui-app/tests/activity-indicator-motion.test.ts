@@ -317,6 +317,30 @@ const EXPECTATIONS: Expectation[] = [
     name: "ai-paw-step",
     duration: "1.2s",
   },
+  {
+    style: "bird-quick-trail",
+    motion: "coding",
+    selector: ".ai-bird-quick .foot",
+    pseudo: null,
+    name: "ai-br-quick",
+    duration: "0.7s",
+  },
+  {
+    style: "bird-quick-trail",
+    motion: "reviewing",
+    selector: ".ai-bird-quick .foot",
+    pseudo: null,
+    name: "ai-br-careful",
+    duration: "1.755s",
+  },
+  {
+    style: "bird-quick-trail",
+    motion: "agent",
+    selector: ".ai-bird-quick .foot",
+    pseudo: null,
+    name: "ai-br-quick",
+    duration: "0.84s",
+  },
 ];
 
 const STYLE_SELECTORS: Record<string, { selector: string; pseudo: string | null }> = {
@@ -328,6 +352,7 @@ const STYLE_SELECTORS: Record<string, { selector: string; pseudo: string | null 
   "spark-diamond": { selector: ".ai-spark", pseudo: "::before" },
   "arcade-hopper": { selector: ".ai-hopper i", pseudo: null },
   "puppy-tracks": { selector: ".ai-paws i", pseudo: null },
+  "bird-quick-trail": { selector: ".ai-bird-quick .foot", pseudo: null },
 };
 
 describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
@@ -477,6 +502,7 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
         "spark-diamond": { selector: ".ai-spark", pseudo: "::before", metric: "fontSize" },
         "arcade-hopper": { selector: ".ai-hopper i", pseudo: null, metric: "width" },
         "puppy-tracks": { selector: ".ai-paws i", pseudo: null, metric: "width" },
+        "bird-quick-trail": { selector: ".ai-bird-quick .foot", pseudo: null, metric: "width" },
       };
       const sizes = ACTIVITY_ANIMATION_SIZES;
       for (const fontPx of [9, 12]) {

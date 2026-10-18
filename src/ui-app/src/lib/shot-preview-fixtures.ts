@@ -428,6 +428,14 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         [SHOT_PREVIEW_FIXTURE_TASK_ID]: nowIso(),
       };
       break;
+    case "board:startWorkPending":
+      ensureFixtureTask(repo, "ready");
+      repo.seedStartWorkPending(SHOT_PREVIEW_FIXTURE_TASK_ID);
+      break;
+    case "drawer:startWorkPending":
+      ensureFixtureTask(repo, "ready");
+      repo.seedStartWorkPending(SHOT_PREVIEW_FIXTURE_TASK_ID);
+      break;
     case "drawer:queuedMessage": {
       // #0821 — the drawer task (the shot's `?task=`) with a running agent and
       // one message queued for when the turn ends, so the Dev composer shows its
@@ -547,15 +555,25 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
  * dev-inspector override, so `editorConfigured` is false on every surface that
  * shows the hint (TaskDrawer Spec row, Context doc viewer, failed-tests list).
  */
+/** Config-only shot fixtures (applied after `/api/config` loads, #0805). */
+export function isShotPreviewConfigFixture(fixture: ShotPreviewFixtureId): boolean {
+  return fixture === "editor:unconfigured" || fixture === "settings:birdQuickTrail";
+}
+
 export function applyShotPreviewConfigFixture(
   config: ConfigStore,
   fixture: ShotPreviewFixtureId,
 ): void {
-  if (fixture !== "editor:unconfigured") return;
-  const data = config.data;
-  if (!data) return;
-  const editor = data.editor as { command?: string } | undefined;
-  if (editor) editor.command = "";
-  const dev = data.dev as { inspector?: { editorCommand?: string } } | undefined;
-  if (dev?.inspector) dev.inspector.editorCommand = "";
+  if (fixture === "editor:unconfigured") {
+    const data = config.data;
+    if (!data) return;
+    const editor = data.editor as { command?: string } | undefined;
+    if (editor) editor.command = "";
+    const dev = data.dev as { inspector?: { editorCommand?: string } } | undefined;
+    if (dev?.inspector) dev.inspector.editorCommand = "";
+    return;
+  }
+  if (fixture === "settings:birdQuickTrail") {
+    config.form.activityAnimationStyle = "bird-quick-trail";
+  }
 }
