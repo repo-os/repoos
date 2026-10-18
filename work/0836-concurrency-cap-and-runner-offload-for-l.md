@@ -2,7 +2,7 @@
 id: "0836"
 title: Concurrency cap and runner offload for local checks and Playwright runs (with Settings controls)
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, web]
 assigned_to: ai
