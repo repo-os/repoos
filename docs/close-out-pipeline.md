@@ -50,6 +50,12 @@ release soak), a few patterns recur. Full CLI table and incident notes:
   [`agent-run-operations.md`](agent-run-operations.md#remote-runner-slot-starvation-0694-0705-0706).
 - **Task previews** rooted in a worktree can commit bookkeeping onto that branch
   and break handoff; stop previews when done.
+- **Stray `repoos.toml` on the feature branch** (#0827): handoff and Move to done
+  both fail fast when the branch diff against `main` touches `repoos.toml` and
+  the task did not declare that file in its title, `paths`, or `config` area —
+  the error names the offending diff lines and tells the engineer to run
+  `git checkout main -- repoos.toml`. Implement commits and engineer WIP checkpoints
+  never stage `repoos.toml` unless the task explicitly scoped config work.
 
 ## Running the control-plane server: choose one owner
 

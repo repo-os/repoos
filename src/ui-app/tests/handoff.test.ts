@@ -158,18 +158,20 @@ describe("trusted server-side handoff", { timeout: 15_000 }, () => {
     const oldPath = process.env.PATH ?? "";
     process.env.PATH = `${fx.bin}:${oldPath}`;
     try {
-      writeFileSync(
-        join(fx.worktree, "repoos.toml"),
-        '[check]\nversion = 1\n\n[[check.steps]]\nname = "check-fmt:check"\nkind = "format"\n',
-      );
-      writeFileSync(
-        join(fx.worktree, "package.json"),
-        JSON.stringify({
-          name: "x",
-          scripts: { fmt: "format-me", "fmt:check": "format-me --check" },
-        }),
-      );
-      writeFileSync(join(fx.worktree, "bun.lock"), "");
+      const toml =
+        '[check]\nversion = 1\n\n[[check.steps]]\nname = "check-fmt:check"\nkind = "format"\n';
+      const pkg = JSON.stringify({
+        name: "x",
+        scripts: { fmt: "format-me", "fmt:check": "format-me --check" },
+      });
+      // Check config lives on main so the branch does not carry a stray
+      // repoos.toml diff (#0827) while still giving format-fix a real plan.
+      writeFileSync(join(fx.root, "repoos.toml"), toml);
+      writeFileSync(join(fx.root, "package.json"), pkg);
+      writeFileSync(join(fx.root, "bun.lock"), "");
+      git(fx.root, ["add", "repoos.toml", "package.json", "bun.lock"]);
+      git(fx.root, ["commit", "-qm", "check config on main"]);
+      git(fx.worktree, ["merge", "-q", "main", "-m", "sync check config"]);
       fx.config.check = { steps: [{ name: "check-fmt:check", kind: "format" }] };
       // A fixer that leaves a visible artifact, so the assertion proves the
       // formatted tree was what got committed.

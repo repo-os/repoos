@@ -46,6 +46,7 @@ import { resolveAgentForTask } from "./agents.js";
 import { patchTaskFile } from "./write.js";
 import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
 import { guardReviewTransition } from "./review-guard.js";
+import { guardStrayRepoosTomlOnTaskBranch } from "../core/repoos-toml-branch-guard.js";
 import { runFormatFixes } from "../core/check-format.js";
 import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
 import { clearHandoffFailureLoopMetadata } from "./handoff-failure-loop.js";
@@ -495,6 +496,15 @@ async function runHandoffFinalization(
   const gate = await guardReviewTransition(config, { ...worktreeTask, branch: task.branch });
   if (!gate.ok) {
     return fail("commit", gate.detail ?? "the commit/vacuity gate rejected the transition");
+  }
+
+  const tomlGuard = await guardStrayRepoosTomlOnTaskBranch(
+    workdir,
+    currentBranch(config.root) ?? "main",
+    task,
+  );
+  if (!tomlGuard.ok) {
+    return fail("commit", tomlGuard.detail);
   }
 
   // #0734: cheap evidence preflight BEFORE the expensive suite. It resolves the
