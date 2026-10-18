@@ -2,7 +2,7 @@
 id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T12:18:27Z"
+updated_at: "2026-10-18T13:40:05Z"
 dev_error_count: 5
 ---
 ## Problem
@@ -54,3 +54,5 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T11:53:11Z · message_queued at 2026-10-18T11:53:11.767Z
 - 2026-10-18T11:53:13Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-18T12:18:27Z · body
+- 2026-10-18T13:40:04Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-18T13:40:05Z · note: handoff requested (cli)
