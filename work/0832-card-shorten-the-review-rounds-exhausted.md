@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 810649
+last_close_out_gate_at: "2026-10-18T11:30:58.140Z"
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
@@ -11,12 +13,10 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T11:27:02Z"
+updated_at: "2026-10-18T11:30:58Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T11:11:55.921Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 2
-last_close_out_gate_ms: 438673
-last_close_out_gate_at: "2026-10-18T08:57:38.574Z"
 ---
 ## Problem
 The task card shows the whole first line of the reviewer's Verdict section as `needs_input_detail` (`src/server/review.ts` ~1749), under the header "REVIEW STILL FINDING ISSUES". It is often a long paragraph and begins with `` `needs some work` — ``, which the header already says.
@@ -117,3 +117,5 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T11:26:06Z · body
 - 2026-10-18T11:26:36Z · body
 - 2026-10-18T11:27:02Z · status review→active
+- 2026-10-18T11:30:58Z · close-out gate completed in 811s
+
