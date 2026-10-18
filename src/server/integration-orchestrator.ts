@@ -96,6 +96,7 @@ import {
   type CloseOutGatePlan,
 } from "../core/close-out-gate.js";
 import { detectRepoMarkers } from "../core/check-runner.js";
+import { guardStrayRepoosTomlOnTaskBranch } from "../core/repoos-toml-branch-guard.js";
 import { DEFAULT_CONFIG, bookkeepingDirs, loadConfig } from "../core/config.js";
 import type { BookkeepingDirs } from "../core/config.js";
 import {
@@ -2143,6 +2144,20 @@ export class CloseOutOrchestrator {
     // Resolve the repository's actual default branch
     const mainBranch = await resolveDefaultBranch(root);
 
+    const taskRecord = this.getTask?.(job.taskId);
+    const featureBranch = job.branch ?? job.taskId;
+    const featureWtForToml = worktreePathForBranch(root, featureBranch);
+    if (taskRecord && featureWtForToml) {
+      const tomlGuard = await guardStrayRepoosTomlOnTaskBranch(
+        featureWtForToml,
+        mainBranch,
+        taskRecord,
+      );
+      if (!tomlGuard.ok) {
+        return { ok: false, reason: tomlGuard.detail };
+      }
+    }
+
     // Record main SHA at validation start.
     const mainShaRes = await runGit(root, ["rev-parse", `${mainBranch}^{commit}`], 4000);
     if (mainShaRes.status !== 0) {
@@ -3471,6 +3486,20 @@ export class CloseOutOrchestrator {
       const handoffGuard = await this.assertHandoffWorktreeUnchanged(job);
       if (!handoffGuard.ok) {
         return { ok: false, reason: handoffGuard.reason };
+      }
+      const publishTask = this.getTask?.(job.taskId);
+      const publishFeatureBranch = job.branch ?? job.taskId;
+      const publishFeatureWt = worktreePathForBranch(root, publishFeatureBranch);
+      if (publishTask && publishFeatureWt) {
+        const mainBranchAtPublish = await resolveDefaultBranch(root);
+        const tomlGuard = await guardStrayRepoosTomlOnTaskBranch(
+          publishFeatureWt,
+          mainBranchAtPublish,
+          publishTask,
+        );
+        if (!tomlGuard.ok) {
+          return { ok: false, reason: tomlGuard.detail };
+        }
       }
 
       // #0820: of main's dirty files, only the ones this merge would OVERWRITE
