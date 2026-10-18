@@ -414,7 +414,7 @@ async function onStageClick(stage: string): Promise<void> {
   if (stage === "check") ui.focusDebugCheck(job.taskId, "merge-gate");
 }
 
-/** Native tooltip for the collapsed strip (active task + queued ids). */
+/** Accessible name for the collapsed strip (active task + queued ids); not a native title. */
 const stripTooltip = computed(() => {
   let t = "Integration pipeline — ";
   if (idle.value) return t + "idle";

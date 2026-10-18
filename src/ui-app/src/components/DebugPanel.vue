@@ -272,8 +272,35 @@ function expandOpts(e: DebugEvent): DebugEventExpandOpts {
   return { titleTruncated: truncatedTitleKeys.value.has(e.key) };
 }
 
+function expandableDebugEvent(e: DebugEvent) {
+  return {
+    kind: e.kind,
+    title: e.title,
+    detail: e.detail,
+    failureSummary: e.failureSummary,
+    checkOutput: e.checkRun?.output,
+  };
+}
+
 function isEventExpandable(e: DebugEvent): boolean {
-  return debugEventExpandable(e, expandOpts(e));
+  return debugEventExpandable(expandableDebugEvent(e), expandOpts(e));
+}
+
+function expandedMessage(e: DebugEvent): string | null {
+  return debugEventExpandedMessage(expandableDebugEvent(e), expandOpts(e));
+}
+
+function expandedDetail(e: DebugEvent): string | null {
+  return debugEventExpandedDetail(expandableDebugEvent(e));
+}
+
+function scheduleTruncationMeasure(): void {
+  nextTick(() => {
+    measureTruncatedTitles();
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => measureTruncatedTitles());
+    }
+  });
 }
 
 function measureTruncatedTitles(): void {
@@ -303,7 +330,7 @@ onMounted(() => {
     now.value = Date.now();
   }, 1000);
   if (typeof ResizeObserver !== "undefined") {
-    truncateObserver = new ResizeObserver(() => measureTruncatedTitles());
+    truncateObserver = new ResizeObserver(() => scheduleTruncationMeasure());
     if (debugEventsEl.value) truncateObserver.observe(debugEventsEl.value);
   }
 });
@@ -316,16 +343,10 @@ watch(debugEventsEl, (el, prev) => {
   if (prev) truncateObserver.unobserve(prev);
   if (el) {
     truncateObserver.observe(el);
-    nextTick(measureTruncatedTitles);
+    scheduleTruncationMeasure();
   }
 });
-watch(
-  filteredEvents,
-  () => {
-    nextTick(measureTruncatedTitles);
-  },
-  { flush: "post" },
-);
+watch(filteredEvents, scheduleTruncationMeasure, { flush: "post" });
 const runningElapsed = computed(() => {
   if (!runningCheck.value) return "";
   return fmtDuration(Math.max(0, now.value - Date.parse(runningCheck.value.startedAt)));
@@ -576,14 +597,14 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           </div>
           <p v-if="e.failureSummary" class="debug-event-summary">{{ e.failureSummary }}</p>
           <template v-if="expanded.has(e.key)">
-            <p v-if="debugEventExpandedMessage(e, expandOpts(e))" class="debug-event-message">
-              {{ debugEventExpandedMessage(e, expandOpts(e)) }}
+            <p v-if="expandedMessage(e)" class="debug-event-message">
+              {{ expandedMessage(e) }}
             </p>
             <pre v-if="e.kind === 'check' && e.checkRun" class="debug-log debug-log-inline">{{
               e.checkRun.output || "(no output captured)"
             }}</pre>
-            <pre v-else-if="debugEventExpandedDetail(e)" class="debug-log debug-log-inline">{{
-              debugEventExpandedDetail(e)
+            <pre v-else-if="expandedDetail(e)" class="debug-log debug-log-inline">{{
+              expandedDetail(e)
             }}</pre>
           </template>
         </div>
