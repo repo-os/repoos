@@ -11,7 +11,7 @@ branch: feat/shots-and-tests-must-not-write-the-real-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T05:51:23Z"
-updated_at: "2026-10-18T06:24:23Z"
+updated_at: "2026-10-18T06:25:07Z"
 ---
 ## Problem
 Selecting a setting in a preview or a shot capture (Settings autosaves "changes save automatically") writes the preview root's real `repoos.toml`, which for a task preview is the task worktree. That dirties the worktree and can leak into the branch (see #0822's repoos.toml conflict). Separately, the `settings:birdQuickTrail` shot fixture does not take effect: `/settings?tab=general&section=activity-animation&shotState=settings:birdQuickTrail` still shows Puppy tracks, so the E2 shot could not be captured without clicking the dropdown, and clicking would trigger the real save.
@@ -27,6 +27,18 @@ In preview-build captures, config saves are held in memory or written to a temp 
 ## Notes for AI
 Start from App.vue applyShotFixturesFromLocation and src/ui-app/src/lib/shot-preview-fixtures.ts. Land after #0822, which is editing the same fixture files; if it has not landed, wait. Source: driver investigation 2026-10-18.
 
+## Shots
+```json
+[
+{
+  "label": "Bird quick trail activity animation in Settings",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation&shotState=settings:birdQuickTrail",
+  "highlight": "#setting-activityAnimationStyle"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-18T05:51:23Z · created · njachowski@gmail.com
@@ -36,3 +48,4 @@ Start from App.vue applyShotFixturesFromLocation and src/ui-app/src/lib/shot-pre
 - 2026-10-18T06:20:42Z · body
 - 2026-10-18T06:21:32Z · body
 - 2026-10-18T06:24:23Z · body
+- 2026-10-18T06:25:07Z · body
