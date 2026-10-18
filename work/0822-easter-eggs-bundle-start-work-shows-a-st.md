@@ -147,3 +147,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T03:15:31Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-10-18T03:15:32Z · note: handoff requested (cli)
 - 2026-10-18T03:23:49Z · status active→review
+- 2026-10-18T03:23:49Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
