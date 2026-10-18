@@ -2,7 +2,7 @@
 id: "0824"
 title: "repoos bundle: add, edit and tick one easter-egg item without touching the rest"
 type: feature
-status: review
+status: inbox
 priority: p3
 area: core
 depends_on: ["0823"]
@@ -12,7 +12,7 @@ branch: feat/repoos-bundle-add-edit-and-tick-one-east
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:48:55Z"
-updated_at: "2026-10-18T06:22:29Z"
+updated_at: "2026-10-18T06:22:30Z"
 last_close_out_gate_ms: 498539
 last_close_out_gate_at: "2026-10-18T06:22:22.497Z"
 review_passes: 1
