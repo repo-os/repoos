@@ -1084,6 +1084,11 @@ export interface LoadConfigOptions {
    * unset and resolves the base configuration unchanged.
    */
   previewOverrides?: boolean;
+  /**
+   * Parse a specific TOML file while keeping `root` on the repo (#0828). Used
+   * when a preview child accumulates Settings saves in a cache-dir overlay.
+   */
+  tomlPath?: string;
 }
 
 export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): RepoOSConfig {
@@ -1095,7 +1100,7 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
   loadDotEnv(root);
   const cfg: RepoOSConfig = { root, ...DEFAULT_CONFIG };
 
-  const tomlPath = join(root, "repoos.toml");
+  const tomlPath = options.tomlPath ?? join(root, "repoos.toml");
   if (existsSync(tomlPath)) {
     const parsed = parseFlatToml(readFileSync(tomlPath, "utf8"));
     // Preview-only overlay (#0464): re-apply the `[preview.*]` keys over the
