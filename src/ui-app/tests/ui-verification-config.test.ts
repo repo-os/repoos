@@ -16,7 +16,7 @@ import {
   isStaleEvidenceOnlyReview,
   shouldAutoRefreshStaleEvidence,
 } from "../../server/review.js";
-import { EVIDENCE_GAP_ONLY_MARKER } from "../../core/review-evidence-gaps.js";
+import { isEvidenceGapOnlyReview } from "../../core/review-evidence-gaps.js";
 
 describe("uiVerification config (#0680)", () => {
   it("defaults to enabled with standard viewports", () => {
@@ -152,11 +152,17 @@ describe("stale-only review stays in review (#0766)", () => {
     opts: {
       autoRefresh?: boolean;
       onRefresh?: (task: Task) => Promise<boolean>;
-      onEvidenceGapRefresh?: (task: Task) => Promise<boolean>;
+      onEvidenceRepair?: (task: Task) => Promise<boolean>;
     } = {},
-  ): { reviews: ReviewManager; sent: () => number; refreshed: () => number } {
+  ): {
+    reviews: ReviewManager;
+    sent: () => number;
+    refreshed: () => number;
+    repaired: () => number;
+  } {
     let sent = 0;
     let refreshed = 0;
+    let repaired = 0;
     const config = {
       root,
       workDir: "work",
@@ -184,9 +190,9 @@ describe("stale-only review stays in review (#0766)", () => {
       refreshed += 1;
       return opts.onRefresh ? opts.onRefresh(task) : false;
     };
-    const onEvidenceGap = async (t: Task): Promise<boolean> => {
-      refreshed += 1;
-      return opts.onEvidenceGapRefresh ? opts.onEvidenceGapRefresh(t) : false;
+    const onEvidenceRepair = async (task: Task): Promise<boolean> => {
+      repaired += 1;
+      return opts.onEvidenceRepair ? opts.onEvidenceRepair(task) : false;
     };
     return {
       reviews: new ReviewManager(
@@ -196,10 +202,11 @@ describe("stale-only review stays in review (#0766)", () => {
         undefined,
         undefined,
         opts.autoRefresh ? onRefresh : undefined,
-        onEvidenceGap,
+        onEvidenceRepair,
       ),
       sent: () => sent,
       refreshed: () => refreshed,
+      repaired: () => repaired,
     };
   }
 
@@ -263,11 +270,11 @@ describe("stale-only review stays in review (#0766)", () => {
   });
 });
 
-describe("evidence-gap-only review (#0831)", () => {
+describe("evidence-gap-only review stays in review (#0831)", () => {
   let root: string;
 
   beforeEach(() => {
-    root = mkdtempSync(join(tmpdir(), "repoos-evidence-gap-"));
+    root = mkdtempSync(join(tmpdir(), "repoos-ev-gap-"));
     mkdirSync(join(root, "work"), { recursive: true });
     mkdirSync(join(root, ".repoos", "reviews"), { recursive: true });
   });
@@ -276,11 +283,11 @@ describe("evidence-gap-only review (#0831)", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  function writeTask(reviewRounds = 2): { task: Task; absPath: string } {
+  function writeTask(extra = ""): { task: Task; absPath: string } {
     const absPath = join(root, "work", "0831-gap.md");
     writeFileSync(
       absPath,
-      `---\nid: "0831"\ntitle: gap\ntype: feature\nstatus: review\npriority: p2\narea: server\nreview_rounds: ${reviewRounds}\n---\n\nbody\n`,
+      `---\nid: "0831"\ntitle: gap\ntype: feature\nstatus: review\npriority: p2\narea: server\n${extra}---\n\nbody\n`,
     );
     return {
       task: {
@@ -289,15 +296,18 @@ describe("evidence-gap-only review (#0831)", () => {
         status: "review",
         path: "work/0831-gap.md",
         absPath,
-        extra: { review_rounds: reviewRounds },
-        branch: undefined,
-      } as unknown as Task,
+      } as Task,
       absPath,
     };
   }
 
-  function makeManager(): { reviews: ReviewManager; sent: () => number } {
+  function makeManager(onEvidenceRepair: (task: Task) => Promise<boolean> = async () => false): {
+    reviews: ReviewManager;
+    sent: () => number;
+    repaired: () => number;
+  } {
     let sent = 0;
+    let repaired = 0;
     const config = {
       root,
       workDir: "work",
@@ -320,6 +330,10 @@ describe("evidence-gap-only review (#0831)", () => {
       },
       system: () => {},
     };
+    const repair = async (task: Task): Promise<boolean> => {
+      repaired += 1;
+      return onEvidenceRepair(task);
+    };
     return {
       reviews: new ReviewManager(
         config,
@@ -328,9 +342,10 @@ describe("evidence-gap-only review (#0831)", () => {
         undefined,
         undefined,
         undefined,
-        async () => false,
+        repair,
       ),
       sent: () => sent,
+      repaired: () => repaired,
     };
   }
 
@@ -347,41 +362,53 @@ describe("evidence-gap-only review (#0831)", () => {
 
   const gapReport = [
     "## Verdict",
-    `\`good to go\` — evidence missing. ${EVIDENCE_GAP_ONLY_MARKER}`,
+    "`needs some work` — EVIDENCE-GAP-ONLY",
     "",
-    "## Evidence gaps",
-    "- Board card shot missing declared highlight",
+    "## Evidence",
+    "- `/settings?tab=general` — missing capture",
     "",
     "## Bugs",
     "None found",
   ].join("\n");
 
-  it("does not auto-bounce or increment review_rounds at the cap", async () => {
+  it("recognizes the marker", () => {
+    expect(isEvidenceGapOnlyReview(gapReport, "needs some work")).toBe(true);
+  });
+
+  it("does not bounce or increment review_rounds at the cap", async () => {
     const { reviews, sent } = makeManager();
-    const { task, absPath } = writeTask(2);
+    const { task, absPath } = writeTask("review_rounds: 2\n");
     finalize(reviews, task, gapReport);
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 150));
     expect(sent()).toBe(0);
     const content = readFileSync(absPath, "utf8");
     expect(content).toContain("status: review");
     expect(content).not.toContain("status: active");
-    expect(content).not.toMatch(/needs_input:\s*true/);
-    expect(content).not.toContain("review-rounds-exhausted");
+    expect(content).not.toMatch(/^needs_input_reason: review-rounds-exhausted$/m);
     expect(content).toMatch(/^review_rounds: 2$/m);
   });
 
-  it("still auto-bounces an ordinary code finding", async () => {
+  it("still bounces an ordinary code finding", async () => {
     const { reviews, sent } = makeManager();
-    const { task, absPath } = writeTask(0);
-    finalize(
-      reviews,
-      task,
-      "## Verdict\n`needs some work` — fix the null deref.\n\n## Bugs\n- src/x.ts: crashes\n",
-    );
+    const { task, absPath } = writeTask();
+    finalize(reviews, task, "## Verdict\n`needs some work` — fix the bug.\n");
     await vi.waitFor(() => {
       expect(readFileSync(absPath, "utf8")).toContain("status: active");
     });
     expect(sent()).toBe(1);
-    expect(readFileSync(absPath, "utf8")).toMatch(/^review_rounds: 1$/m);
+  });
+
+  it("flags needs_input after two failed repair attempts with shot detail", async () => {
+    const { reviews, repaired } = makeManager(async () => false);
+    const { task, absPath } = writeTask();
+    finalize(reviews, task, gapReport);
+    await vi.waitFor(() => expect(repaired()).toBe(1));
+    finalize(reviews, task, gapReport);
+    await vi.waitFor(() => expect(repaired()).toBe(2));
+    await vi.waitFor(() => {
+      const content = readFileSync(absPath, "utf8");
+      expect(content).toMatch(/^needs_input_reason: evidence-gap-exhausted$/m);
+      expect(content).toContain("/settings?tab=general");
+    });
   });
 });

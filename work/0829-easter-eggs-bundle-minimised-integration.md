@@ -2,20 +2,19 @@
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-integration-pill-tool
-cli_override: cursor
-model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T12:00:12Z"
-check_retry_count: 1
+updated_at: "2026-10-18T12:03:58Z"
+close_out_repair_count: 1
+review_passes: 5
 last_check_failure: "repoos check at 2026-10-18T08:29:42.192Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from ddcf9a91 to ae4f932f) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-review_passes: 4
 review_rounds: 2
+dev_error_count: 3
 ---
 ## Items
 - [ ] **E1 · Minimised pill shows only the median popup, centered** (web) — remove the extra native title tooltip over it. Source: Nick 2026-10-18.
@@ -93,9 +92,9 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 ```json
 [
 {
-"label": "Minimised pill median tooltip (light)",
+"label": "Minimised pill: median tooltip only, centered (light)",
 "target": "default",
-"route": "/",
+"route": "/work",
 "highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
 {
@@ -112,9 +111,9 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "theme": "light"
 },
 {
-"label": "Minimised pill median tooltip (dark)",
+"label": "Minimised pill: median tooltip only, centered (dark)",
 "target": "default",
-"route": "/",
+"route": "/work",
 "highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
 {
@@ -131,16 +130,16 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "theme": "dark"
 },
 {
-"label": "Debug log expanded full message (light)",
+"label": "Debug log: long row expands to the full message (light)",
 "target": "default",
 "route": "/work?task=0820&tab=debug",
 "highlight": ".debug-event-message",
 "steps": [
 {
-"waitFor": ".debug-event-expandable"
+"waitFor": "[data-debug-event*=\"main advanced\"]"
 },
 {
-"click": ".debug-event-expandable"
+"click": "[data-debug-event*=\"main advanced\"]"
 },
 {
 "waitFor": ".debug-event-message"
@@ -150,16 +149,16 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "theme": "light"
 },
 {
-"label": "Debug log expanded full message (dark)",
+"label": "Debug log: long row expands to the full message (dark)",
 "target": "default",
 "route": "/work?task=0820&tab=debug",
 "highlight": ".debug-event-message",
 "steps": [
 {
-"waitFor": ".debug-event-expandable"
+"waitFor": "[data-debug-event*=\"main advanced\"]"
 },
 {
-"click": ".debug-event-expandable"
+"click": "[data-debug-event*=\"main advanced\"]"
 },
 {
 "waitFor": ".debug-event-message"
@@ -248,4 +247,41 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T08:25:52Z · needs_input
 - 2026-10-18T08:25:59Z · message_queued at 2026-10-18T08:25:59.955Z
 - 2026-10-18T08:29:42Z · message_delivered: 2 message(s)
-- 2026-10-18T12:00:12Z · status active→review
+- 2026-10-18T08:31:08Z · body
+- 2026-10-18T08:32:42Z · note: waitFor [data-debug-event*='main advanced']: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T08:32:43Z · note: click [data-debug-event*='main advanced']: click: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T08:32:44Z · note: waitFor .debug-event-message: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T08:32:44Z · note: highlight .debug-event-message matched nothing on /work?task=0820&tab=debug
+- 2026-10-18T08:33:17Z · note: waitFor [data-debug-event*='main advanced']: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T08:33:17Z · note: click [data-debug-event*='main advanced']: click: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T08:33:18Z · note: waitFor .debug-event-message: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
+- 2026-10-18T08:33:19Z · note: highlight .debug-event-message matched nothing on /work?task=0820&tab=debug
+- 2026-10-18T08:41:58Z · body
+- 2026-10-18T08:44:11Z · body
+- 2026-10-18T08:45:58Z · note: handoff requested (ui-review)
+- 2026-10-18T08:53:16Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 4894fdc9 to 97fb8c6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-10-18T08:54:18Z · body
+- 2026-10-18T08:56:30Z · note: handoff requested (ui-review)
+- 2026-10-18T09:04:20Z · handoff failed · ui-review handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
+- 2026-10-18T09:07:44Z · body
+- 2026-10-18T09:09:55Z · note: handoff requested (ui-review)
+- 2026-10-18T09:24:23Z · agent exited with an error (cursor) · handoff finalization was interrupted (server reload) — restart work to hand off again
+- 2026-10-18T09:35:26Z · needs_input
+- 2026-10-18T09:55:25Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-18T10:19:06Z · cli_override, model_override
+- 2026-10-18T10:20:36Z · model_override
+- 2026-10-18T10:49:22Z · message_queued at 2026-10-18T10:49:22.530Z
+- 2026-10-18T11:06:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-18T11:26:17Z · body
+- 2026-10-18T11:28:11Z · agent exited with an error (opencode) · RetriableError: Connection stalled repeatedly
+- 2026-10-18T11:28:11Z · message_delivered: 1 message(s)
+- 2026-10-18T11:28:42Z · model_override
+- 2026-10-18T11:35:32Z · needs_input
+- 2026-10-18T11:43:12Z · body
+- 2026-10-18T11:45:32Z · body
+- 2026-10-18T12:00:13Z · status active→review
+- 2026-10-18T12:00:14Z · note: shots: skipped — 26 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-18T12:01:11Z · note: review pass 5: good to go
+- 2026-10-18T12:03:45Z · status review→active
+- 2026-10-18T12:03:45Z · note: close-out repair: merge-conflict
+- 2026-10-18T12:03:58Z · message_queued at 2026-10-18T12:03:58.445Z

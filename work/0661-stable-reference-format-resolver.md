@@ -2,19 +2,18 @@
 id: "0661"
 title: Stable reference format + resolver
 type: feature
-status: ready
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI"
+status: active
 priority: p1
 area: core
 story: Cloud attachment storage
 depends_on: ["0658"]
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/stable-reference-format-resolver
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T08:29:04Z"
-updated_at: "2026-10-13T18:48:23Z"
+updated_at: "2026-10-18T12:01:57Z"
 ---
 Slice 4 (part of 'Cloud attachment storage' story): define a stable, opaque reference format used in Markdown for attachments, plus a resolver that maps that reference back to the actual storage resource at serve time. The reference must contain no secrets or expiring URLs, survive storage-mode switches (local/file/cloud), repo renames, and moving to another machine. Resolver runs server-side at serve/render time.
 
@@ -37,3 +36,9 @@ The reference therefore contains no secrets, no expiring URLs and no storage pat
 - 2026-10-13T18:21:30Z · needs_input, body: section Design decision
 - 2026-10-13T18:24:15Z · body
 - 2026-10-13T18:48:23Z · needs_input
+- 2026-10-18T11:53:24Z · cli_override, model_override
+- 2026-10-18T11:53:30Z · status ready→active, needs_input, branch
+- 2026-10-18T11:56:10Z · body
+- 2026-10-18T11:57:03Z · body
+- 2026-10-18T11:59:59Z · body
+- 2026-10-18T12:01:57Z · body

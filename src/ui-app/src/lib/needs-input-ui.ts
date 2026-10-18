@@ -1,5 +1,6 @@
 import type { Task } from "../../../core/types.js";
 import { MAX_AUTO_REVIEW_ROUNDS, needsInputSuppressedOnReview } from "../../../core/needs-input.js";
+import { stripReviewVerdictPrefix } from "../../../core/review-verdict.js";
 
 /**
  * Copy and labels for `needs_input` on board cards and the task drawer (#0511).
@@ -20,7 +21,7 @@ export const STALE_REVIEW_DEV_ERROR_BANNER =
 export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
   "review-failed": "Reviewer failed — no report",
   "review-rounds-exhausted": "Review still finding issues",
-  "evidence-gaps-exhausted": "UI evidence still missing",
+  "evidence-gap-exhausted": "Handoff evidence still missing",
   "dev-error": "Agent exited with error",
   "provider-failure": "Provider or credit error",
   "degenerate-output": "Degenerate agent output",
@@ -35,8 +36,8 @@ export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
 export const NEEDS_INPUT_BANNER_LABELS: Record<string, string> = {
   "review-failed": "The reviewer crashed or timed out without producing a report.",
   "review-rounds-exhausted": `The reviewer has sent this back to the engineer ${MAX_AUTO_REVIEW_ROUNDS} times and still found issues. No review is running now.`,
-  "evidence-gaps-exhausted":
-    "Automatic shot re-capture failed twice. The code may be fine — fix or declare the missing screenshots, then use Refresh evidence or Review again.",
+  "evidence-gap-exhausted":
+    "Automatic re-capture still could not produce usable handoff shots. Fix the shot plan or refresh evidence, then review again.",
   "dev-error": "The agent exited with an error.",
   "provider-failure": "The model provider returned a credit, auth, or availability error.",
   "degenerate-output": "The agent looped on repetitive or runaway output and was stopped.",
@@ -55,6 +56,8 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
     "Try Review again from the Review tab (or Restart work if the task is back in active). If it keeps failing, check the CLI/model picker there — an invalid pairing (e.g. after switching CLI) causes exactly this.",
   "review-rounds-exhausted":
     "Read the latest review report, then send it to the engineer, fix it yourself, or move to done if the remaining findings are acceptable. A review already finished with findings, so re-reviewing the same code would just repeat it — review again after the fixes.",
+  "evidence-gap-exhausted":
+    "Open the review report's Evidence section, update `## Shots` on the task if needed, use Refresh evidence on the Changes tab (or `repoos verify <id>`), then Review again. Only send to the engineer if the shot plan itself needs editing.",
   "dev-error":
     "Restart work to resume the agent, or reply below with more context first. If it keeps failing on the same error, check the coding agent/model picker above — a CLI switch without a matching model pin causes exactly this.",
   "provider-failure":
@@ -163,6 +166,25 @@ export function needsInputDetailVisible(
   return detail.trim() !== needsInputBannerText(reason, hasQuestions).trim();
 }
 
+/** Card and drawer detail under the needs-input banner (#0832). */
+export function formatNeedsInputDetailForDisplay(
+  reason: string | undefined,
+  detail: string | undefined,
+  hasQuestions = false,
+): string | null {
+  if (!needsInputDetailVisible(reason, detail, hasQuestions)) return null;
+  const raw = detail!.trim();
+  if (reason === "review-rounds-exhausted") {
+    const withoutVerdict = stripReviewVerdictPrefix(raw);
+    return withoutVerdict || null;
+  }
+  return raw;
+}
+
+export function needsInputDetailUsesLineClamp(reason: string | undefined): boolean {
+  return reason === "review-rounds-exhausted";
+}
+
 export function needsInputSuggestionText(
   reason: string | undefined,
   hasQuestions = false,
@@ -185,6 +207,8 @@ export function needsInputPrimaryAction(
       // A review already finished with findings: the next step is acting on
       // them, not paying for another review of the same code.
       return ctx.status === "review" ? SEND_ENGINEER_ACTION : null;
+    case "evidence-gap-exhausted":
+      return ctx.status === "review" ? REVIEW_AGAIN_ACTION : null;
     case "watchdog-stuck":
       if (ctx.status === "review") return REVIEW_AGAIN_ACTION;
       return canRestartWork(ctx) ? RESTART_ACTION : null;
