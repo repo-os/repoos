@@ -20,6 +20,7 @@ export const STALE_REVIEW_DEV_ERROR_BANNER =
 export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
   "review-failed": "Reviewer failed — no report",
   "review-rounds-exhausted": "Review still finding issues",
+  "evidence-gaps-exhausted": "UI evidence still missing",
   "dev-error": "Agent exited with error",
   "provider-failure": "Provider or credit error",
   "degenerate-output": "Degenerate agent output",
@@ -34,6 +35,8 @@ export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
 export const NEEDS_INPUT_BANNER_LABELS: Record<string, string> = {
   "review-failed": "The reviewer crashed or timed out without producing a report.",
   "review-rounds-exhausted": `The reviewer has sent this back to the engineer ${MAX_AUTO_REVIEW_ROUNDS} times and still found issues. No review is running now.`,
+  "evidence-gaps-exhausted":
+    "Automatic shot re-capture failed twice. The code may be fine — fix or declare the missing screenshots, then use Refresh evidence or Review again.",
   "dev-error": "The agent exited with an error.",
   "provider-failure": "The model provider returned a credit, auth, or availability error.",
   "degenerate-output": "The agent looped on repetitive or runaway output and was stopped.",

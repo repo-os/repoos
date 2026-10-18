@@ -16,6 +16,7 @@ import {
   isStaleEvidenceOnlyReview,
   shouldAutoRefreshStaleEvidence,
 } from "../../server/review.js";
+import { EVIDENCE_GAP_ONLY_MARKER } from "../../core/review-evidence-gaps.js";
 
 describe("uiVerification config (#0680)", () => {
   it("defaults to enabled with standard viewports", () => {
@@ -151,6 +152,7 @@ describe("stale-only review stays in review (#0766)", () => {
     opts: {
       autoRefresh?: boolean;
       onRefresh?: (task: Task) => Promise<boolean>;
+      onEvidenceGapRefresh?: (task: Task) => Promise<boolean>;
     } = {},
   ): { reviews: ReviewManager; sent: () => number; refreshed: () => number } {
     let sent = 0;
@@ -182,6 +184,10 @@ describe("stale-only review stays in review (#0766)", () => {
       refreshed += 1;
       return opts.onRefresh ? opts.onRefresh(task) : false;
     };
+    const onEvidenceGap = async (t: Task): Promise<boolean> => {
+      refreshed += 1;
+      return opts.onEvidenceGapRefresh ? opts.onEvidenceGapRefresh(t) : false;
+    };
     return {
       reviews: new ReviewManager(
         config,
@@ -190,6 +196,7 @@ describe("stale-only review stays in review (#0766)", () => {
         undefined,
         undefined,
         opts.autoRefresh ? onRefresh : undefined,
+        onEvidenceGap,
       ),
       sent: () => sent,
       refreshed: () => refreshed,
@@ -253,5 +260,128 @@ describe("stale-only review stays in review (#0766)", () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(sent()).toBe(0);
     expect(refreshed()).toBe(0);
+  });
+});
+
+describe("evidence-gap-only review (#0831)", () => {
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "repoos-evidence-gap-"));
+    mkdirSync(join(root, "work"), { recursive: true });
+    mkdirSync(join(root, ".repoos", "reviews"), { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  function writeTask(reviewRounds = 2): { task: Task; absPath: string } {
+    const absPath = join(root, "work", "0831-gap.md");
+    writeFileSync(
+      absPath,
+      `---\nid: "0831"\ntitle: gap\ntype: feature\nstatus: review\npriority: p2\narea: server\nreview_rounds: ${reviewRounds}\n---\n\nbody\n`,
+    );
+    return {
+      task: {
+        id: "0831",
+        title: "gap",
+        status: "review",
+        path: "work/0831-gap.md",
+        absPath,
+        extra: { review_rounds: reviewRounds },
+        branch: undefined,
+      } as unknown as Task,
+      absPath,
+    };
+  }
+
+  function makeManager(): { reviews: ReviewManager; sent: () => number } {
+    let sent = 0;
+    const config = {
+      root,
+      workDir: "work",
+      docsDir: "docs",
+      skillsDir: "skills",
+      taskExtensions: [".md"],
+      defaultStatus: "inbox",
+      defaultAssignee: "unassigned",
+      cacheDir: ".repoos",
+      agents: [
+        { name: "reviewer", cli: "fake", model: "m", enabled: true },
+        { name: "engineer", cli: "fake", model: "m", enabled: true },
+      ],
+    } as RepoOSConfig;
+    const runner = {
+      output: () => [{ type: "text", text: "engineer session" }],
+      send: () => {
+        sent += 1;
+        return { ok: true };
+      },
+      system: () => {},
+    };
+    return {
+      reviews: new ReviewManager(
+        config,
+        () => {},
+        runner as never,
+        undefined,
+        undefined,
+        undefined,
+        async () => false,
+      ),
+      sent: () => sent,
+    };
+  }
+
+  function finalize(reviews: ReviewManager, task: Task, report: string): void {
+    const agent = { name: "reviewer", cli: "fake", model: "m", enabled: true } as Agent;
+    (reviews as unknown as { finalizeRun: (...args: unknown[]) => void }).finalizeRun(
+      task,
+      agent,
+      [{ type: "text", text: report }],
+      { accumulatedMs: 1 },
+      false,
+    );
+  }
+
+  const gapReport = [
+    "## Verdict",
+    `\`good to go\` — evidence missing. ${EVIDENCE_GAP_ONLY_MARKER}`,
+    "",
+    "## Evidence gaps",
+    "- Board card shot missing declared highlight",
+    "",
+    "## Bugs",
+    "None found",
+  ].join("\n");
+
+  it("does not auto-bounce or increment review_rounds at the cap", async () => {
+    const { reviews, sent } = makeManager();
+    const { task, absPath } = writeTask(2);
+    finalize(reviews, task, gapReport);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(sent()).toBe(0);
+    const content = readFileSync(absPath, "utf8");
+    expect(content).toContain("status: review");
+    expect(content).not.toContain("status: active");
+    expect(content).not.toMatch(/needs_input:\s*true/);
+    expect(content).not.toContain("review-rounds-exhausted");
+    expect(content).toMatch(/^review_rounds: 2$/m);
+  });
+
+  it("still auto-bounces an ordinary code finding", async () => {
+    const { reviews, sent } = makeManager();
+    const { task, absPath } = writeTask(0);
+    finalize(
+      reviews,
+      task,
+      "## Verdict\n`needs some work` — fix the null deref.\n\n## Bugs\n- src/x.ts: crashes\n",
+    );
+    await vi.waitFor(() => {
+      expect(readFileSync(absPath, "utf8")).toContain("status: active");
+    });
+    expect(sent()).toBe(1);
+    expect(readFileSync(absPath, "utf8")).toMatch(/^review_rounds: 1$/m);
   });
 });

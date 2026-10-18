@@ -407,7 +407,17 @@ reusable, since it cannot be tied to the current plan.
 
 While a task is in review, **Refresh evidence** in the Changes tab or
 `repoos verify <id>` re-runs the browser and command capture plan and writes a
-new UI-verification record for the current worktree HEAD. The server refuses
+new UI-verification record for the current worktree HEAD.
+
+**Evidence-only review outcomes (#0831).** When the code is fine but shots are
+missing or wrong, the reviewer keeps verdict `good to go` and adds the marker
+`EVIDENCE-GAP-ONLY` in `## Verdict`, with specifics under `## Evidence gaps`.
+That outcome does **not** auto-bounce the engineer or consume a
+`review_rounds` slot. RepoOS re-captures from the declared shot plan instead;
+after two failed automatic captures the task is flagged `needs_input` with
+`evidence-gaps-exhausted` and the missing-shot detail from the report. Stale
+captures at an otherwise-good HEAD still use `STALE-EVIDENCE-ONLY` and the
+opt-in `uiVerification.autoRefreshStaleOnce` path from #0772. The server refuses
 the action if the worktree is dirty or an agent/close-out is active. Refreshes
 replace prior automatic captures in gitignored storage and do not edit task
 Markdown. When a capture command writes outside `REPOOS_SHOT_DIR`, the refresh

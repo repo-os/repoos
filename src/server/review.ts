@@ -82,7 +82,10 @@ import { getCheckStore } from "../core/check-store.js";
 import type { CommandCaptureEvidence } from "./shot-capture.js";
 import { extractTaskProofCommands } from "../core/task-proof-commands.js";
 import { isEvidenceRefreshActive } from "./evidence-refresh-lock.js";
-import { isEvidenceGapOnlyReview } from "../core/review-evidence-gaps.js";
+import {
+  EVIDENCE_GAP_ONLY_MARKER,
+  isEvidenceGapOnlyReview,
+} from "../core/review-evidence-gaps.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
 import {
   gatherReviewVerification,
@@ -1142,18 +1145,23 @@ export class ReviewManager {
     let clampReason: string | undefined;
     const hasReport = ok && reportText;
     if (hasReport) {
-      const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
-      const verification = workdir
-        ? gatherReviewVerification(
-            this.config,
-            task,
-            workdir,
-            currentBranch(this.config.root) ?? "main",
-          )
-        : gatherReviewVerificationWithoutWorktree(this.config, task);
-      const applied = applyMechanicalReviewVerification(reportText, verification);
-      reportText = applied.markdown;
-      clampReason = applied.clampReason;
+      const evidenceGapIntent =
+        reportText.includes(EVIDENCE_GAP_ONLY_MARKER) &&
+        parseVerdictLabel(reportText) === "good to go";
+      if (!evidenceGapIntent) {
+        const workdir = task.branch ? worktreePathForBranch(this.config.root, task.branch) : null;
+        const verification = workdir
+          ? gatherReviewVerification(
+              this.config,
+              task,
+              workdir,
+              currentBranch(this.config.root) ?? "main",
+            )
+          : gatherReviewVerificationWithoutWorktree(this.config, task);
+        const applied = applyMechanicalReviewVerification(reportText, verification);
+        reportText = applied.markdown;
+        clampReason = applied.clampReason;
+      }
     }
     const verdict = hasReport ? parseVerdict(reportText) : null;
     const state: ReviewReport["state"] = !hasReport ? "failed" : verdict ? "ok" : "incomplete";
@@ -1255,20 +1263,26 @@ export class ReviewManager {
     // Every other non-good verdict still bounces exactly as before, and this is
     // independent of the auto-refresh setting: a stale-only failure never
     // bounces.
+    const evidenceGapOnly =
+      state === "ok" && verdict !== null && isEvidenceGapOnlyReview(reportText, verdict);
     const autoRefreshStaleEvidence =
       shouldAutoRefreshStaleEvidence(this.config, reportText, verdict) &&
       !!this.onStaleEvidenceRefresh;
+    const autoRefreshEvidenceGap = evidenceGapOnly && !!this.onEvidenceGapRefresh;
     if (state === "ok" && verdict) {
-      if (verdict !== "good to go") {
-        if (!isStaleEvidenceOnlyReview(reportText, verdict)) {
+      if (verdict === "good to go" && !evidenceGapOnly) {
+        void this.onCleanReviewVerdict?.(task, report);
+      } else if (verdict !== "good to go") {
+        if (
+          !isStaleEvidenceOnlyReview(reportText, verdict) &&
+          !isEvidenceGapOnlyReview(reportText, verdict)
+        ) {
           this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
             console.error(
               `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
             );
           });
         }
-      } else {
-        void this.onCleanReviewVerdict?.(task, report);
       }
     }
 
@@ -1287,10 +1301,40 @@ export class ReviewManager {
     // live runs under its own locks anyway. The refresh callback itself takes
     // the same locks every engineer/review start takes, so a task that moved on
     // in the meantime is left alone.
-    if (autoRefreshStaleEvidence) {
+    if (autoRefreshEvidenceGap) {
+      setTimeout(() => {
+        void this.refreshEvidenceGapAndRereview(task, report);
+      }, 0).unref?.();
+    } else if (autoRefreshStaleEvidence) {
       setTimeout(() => {
         void this.refreshStaleEvidenceAndRereview(task);
       }, 0).unref?.();
+    }
+  }
+
+  /**
+   * Re-capture evidence for an evidence-gap-only review and start a new review
+   * when the refresh succeeds (#0831).
+   */
+  private async refreshEvidenceGapAndRereview(task: Task, report: ReviewReport): Promise<void> {
+    try {
+      const refreshed = await this.onEvidenceGapRefresh?.(task, report);
+      if (!refreshed) return;
+      const current = this.index?.getTask(task.id) ?? task;
+      if (current.status === "review" && !current.isArchived) {
+        this.logger.task(
+          task.id,
+          "info",
+          "evidence-gap refresh succeeded; starting a new review",
+        );
+        void this.run(current);
+      }
+    } catch (err) {
+      this.logger.task(
+        task.id,
+        "warn",
+        `automatic evidence-gap refresh failed: ${(err as Error).message}`,
+      );
     }
   }
 
