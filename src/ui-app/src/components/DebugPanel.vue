@@ -8,6 +8,13 @@ import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
 import { canCopyDebugEvent, copyTextForDebugEvent } from "../lib/debug-event-copy";
+import {
+  debugEventExpandable,
+  debugEventExpandedDetail,
+  debugEventExpandedMessage,
+  isTitleVisuallyTruncated,
+  type DebugEventExpandOpts,
+} from "../lib/debug-event-expand";
 import { shouldCopyMessageOnClick } from "../lib/chat-message-copy";
 import { copyToClipboard } from "../lib/clipboard";
 import { summarizeCheckFailure } from "../../../core/check-failure-summary.js";
@@ -256,6 +263,63 @@ const skippedLatestCheck = computed<boolean>(() => {
   return last.passed === true && (last.skipped === true || checkRunSkipped(last.output));
 });
 
+const expanded = ref<Set<string>>(new Set());
+/** Keys whose `.debug-event-title` is ellipsized in the current layout (#0829). */
+const truncatedTitleKeys = ref<Set<string>>(new Set());
+const debugEventsEl = ref<HTMLElement | null>(null);
+
+function expandOpts(e: DebugEvent): DebugEventExpandOpts {
+  return { titleTruncated: truncatedTitleKeys.value.has(e.key) };
+}
+
+function expandableDebugEvent(e: DebugEvent) {
+  return {
+    kind: e.kind,
+    title: e.title,
+    detail: e.detail,
+    failureSummary: e.failureSummary,
+    checkOutput: e.checkRun?.output,
+  };
+}
+
+function isEventExpandable(e: DebugEvent): boolean {
+  return debugEventExpandable(expandableDebugEvent(e), expandOpts(e));
+}
+
+function expandedMessage(e: DebugEvent): string | null {
+  return debugEventExpandedMessage(expandableDebugEvent(e), expandOpts(e));
+}
+
+function expandedDetail(e: DebugEvent): string | null {
+  return debugEventExpandedDetail(expandableDebugEvent(e));
+}
+
+function scheduleTruncationMeasure(): void {
+  nextTick(() => {
+    measureTruncatedTitles();
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => measureTruncatedTitles());
+    }
+  });
+}
+
+function measureTruncatedTitles(): void {
+  const root = debugEventsEl.value;
+  if (!root) {
+    truncatedTitleKeys.value = new Set();
+    return;
+  }
+  const next = new Set<string>();
+  for (const row of root.querySelectorAll<HTMLElement>("[data-debug-event]")) {
+    const key = row.getAttribute("data-debug-event");
+    const title = row.querySelector<HTMLElement>(".debug-event-title");
+    if (key && title && isTitleVisuallyTruncated(title)) next.add(key);
+  }
+  truncatedTitleKeys.value = next;
+}
+
+let truncateObserver: ResizeObserver | undefined;
+
 /** Ticks once a second while a check is running, so its elapsed timer counts
  *  up live instead of freezing until the next output chunk (mirrors
  *  TestRunPanel's own timer). */
@@ -265,8 +329,24 @@ onMounted(() => {
   nowTimer = setInterval(() => {
     now.value = Date.now();
   }, 1000);
+  if (typeof ResizeObserver !== "undefined") {
+    truncateObserver = new ResizeObserver(() => scheduleTruncationMeasure());
+    if (debugEventsEl.value) truncateObserver.observe(debugEventsEl.value);
+  }
 });
-onUnmounted(() => clearInterval(nowTimer));
+onUnmounted(() => {
+  clearInterval(nowTimer);
+  truncateObserver?.disconnect();
+});
+watch(debugEventsEl, (el, prev) => {
+  if (!truncateObserver) return;
+  if (prev) truncateObserver.unobserve(prev);
+  if (el) {
+    truncateObserver.observe(el);
+    scheduleTruncationMeasure();
+  }
+});
+watch(filteredEvents, scheduleTruncationMeasure, { flush: "post" });
 const runningElapsed = computed(() => {
   if (!runningCheck.value) return "";
   return fmtDuration(Math.max(0, now.value - Date.parse(runningCheck.value.startedAt)));
@@ -290,7 +370,6 @@ watch(
   },
 );
 
-const expanded = ref<Set<string>>(new Set());
 function toggleExpanded(key: string): void {
   const next = new Set(expanded.value);
   if (next.has(key)) next.delete(key);
@@ -326,7 +405,7 @@ async function onDebugEventClick(e: DebugEvent, event: MouseEvent): Promise<void
   // lands on an interactive control, is the user's, not ours — don't toggle or
   // copy over it.
   if (!shouldCopyMessageOnClick(event)) return;
-  if (e.kind === "check" || e.detail) toggleExpanded(e.key);
+  if (isEventExpandable(e)) toggleExpanded(e.key);
   const text = copyTextForDebugEvent(copyableDebugEvent(e));
   if (text === null) return;
   if (await copyToClipboard(text)) {
@@ -466,7 +545,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
       <div v-if="filteredEvents.length === 0" class="agent-empty">
         <p>No debug events yet.</p>
       </div>
-      <div v-else class="debug-events">
+      <div v-else ref="debugEventsEl" class="debug-events">
         <div
           v-for="e in filteredEvents"
           :key="e.key"
@@ -474,7 +553,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           :data-debug-event="e.key"
           :class="[
             `debug-level-${e.level}`,
-            { 'debug-event-expandable': e.kind === 'check' || e.detail },
+            { 'debug-event-expandable': isEventExpandable(e) },
             { 'debug-event-copyable': isCopyable(e) },
           ]"
           @click="onDebugEventClick(e, $event)"
@@ -482,11 +561,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           <div class="debug-event-row">
             <component
               :is="
-                e.kind === 'check' || e.detail
-                  ? expanded.has(e.key)
-                    ? ChevronDown
-                    : ChevronRight
-                  : 'span'
+                isEventExpandable(e) ? (expanded.has(e.key) ? ChevronDown : ChevronRight) : 'span'
               "
               class="debug-event-chevron"
             />
@@ -521,13 +596,17 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
             <span class="debug-event-time" :title="e.at">{{ relTime(e.at) }}</span>
           </div>
           <p v-if="e.failureSummary" class="debug-event-summary">{{ e.failureSummary }}</p>
-          <pre
-            v-if="expanded.has(e.key) && e.kind === 'check' && e.checkRun"
-            class="debug-log debug-log-inline"
-            >{{ e.checkRun.output || "(no output captured)" }}</pre>
-          <pre v-else-if="expanded.has(e.key) && e.detail" class="debug-log debug-log-inline">{{
-            e.detail
-          }}</pre>
+          <template v-if="expanded.has(e.key)">
+            <p v-if="expandedMessage(e)" class="debug-event-message">
+              {{ expandedMessage(e) }}
+            </p>
+            <pre v-if="e.kind === 'check' && e.checkRun" class="debug-log debug-log-inline">{{
+              e.checkRun.output || "(no output captured)"
+            }}</pre>
+            <pre v-else-if="expandedDetail(e)" class="debug-log debug-log-inline">{{
+              expandedDetail(e)
+            }}</pre>
+          </template>
         </div>
       </div>
     </template>
@@ -833,6 +912,15 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.debug-event-message {
+  margin: 4px 0 0 1.25rem;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--txt);
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
 }
 .debug-event-remote {
   display: inline-flex;
