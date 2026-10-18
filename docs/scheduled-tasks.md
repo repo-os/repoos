@@ -6,8 +6,14 @@ live as markdown files under `schedules/` (configurable via `schedulesDir` in
 priority, assignee, initial status) with **timing** (one-time, daily, or weekly,
 plus an IANA timezone and local time of day).
 
-The scheduler runs inside `repoos serve`. Derived state (locks under
-`.repoos/locks/`) is disposable; the schedule files are the source of truth.
+The scheduler runs only on the **main control-plane** `repoos serve` instance
+when **Scheduled task automation** is enabled in Settings (off by default).
+It does not run on preview servers (`REPOOS_PREVIEW_CHILD`), task worktrees,
+ephemeral test servers (port `0`), or while `[preview.*]` overrides are
+active — so merely serving a branch cannot create tasks.
+
+Derived state (locks under `.repoos/locks/`) is disposable; the schedule files
+are the source of truth.
 
 ## Catch-up after restart
 

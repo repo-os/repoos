@@ -139,6 +139,7 @@ import {
 } from "../core/remote-hosts.js";
 import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
 import { runScheduleTick } from "./schedule-runner.js";
+import { shouldRunScheduledTaskAutomation } from "./schedule-automation.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { AutoEngineeringOrchestrator } from "./auto-engineering.js";
 import { WorkWatcher } from "./watcher.js";
@@ -2549,17 +2550,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     logger,
     onServerStatusChange,
   };
-  const runScheduleTickNow = (): void => {
-    runScheduleTick({
-      config: repoos.config,
-      repoos,
-      autoStart: scheduleAutoStart,
-      emitEvent: (event) => emitEvent(event),
-    });
-  };
-  const SCHEDULE_CHECK_INTERVAL_MS = 60_000;
-  const scheduleTimer = setInterval(runScheduleTickNow, SCHEDULE_CHECK_INTERVAL_MS);
-  void indexReady.then(runScheduleTickNow);
+  if (shouldRunScheduledTaskAutomation(config, process.env, requestedPort)) {
+    const runScheduleTickNow = (): void => {
+      runScheduleTick({
+        config: repoos.config,
+        repoos,
+        autoStart: scheduleAutoStart,
+        emitEvent: (event) => emitEvent(event),
+      });
+    };
+    const SCHEDULE_CHECK_INTERVAL_MS = 60_000;
+    const scheduleTimer = setInterval(runScheduleTickNow, SCHEDULE_CHECK_INTERVAL_MS);
+    scheduleTimer.unref?.();
+    void indexReady.then(runScheduleTickNow);
+  }
 
   // Durable freeform PM runs (#0403): the freeform-create route spawns the PM
   // agent through this manager instead of a fire-and-forget closure, so the
@@ -3743,6 +3747,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Create the route context with all necessary dependencies
       const routeContext: RouteContext = {
         config,
+        servePort: actualPort,
         index,
         indexReady,
         runner,

@@ -30,6 +30,7 @@ import {
   releaseScheduleOccurrenceLock,
   tryAcquireScheduleOccurrenceLock,
 } from "../server/schedule-runner.js";
+import { scheduleHostileReason, scheduleRunRefusalMessage } from "../server/schedule-automation.js";
 import { deleteScheduleDataFile } from "../server/write.js";
 
 export const SCHEDULE_LIST_USAGE = "  Usage: repoos schedule list [--json]";
@@ -378,6 +379,12 @@ export function cmdScheduleRun(args: string[]): void {
     return;
   }
   const config = boardConfig();
+  const hostile = scheduleHostileReason(config, process.env);
+  if (hostile) {
+    console.error(c.red(`  ${scheduleRunRefusalMessage(hostile)}`));
+    process.exitCode = 1;
+    return;
+  }
   const existing = resolveSchedule(config, id.replace(/^#/, "").padStart(4, "0"));
   if (!existing) {
     console.error(c.red(`  schedule not found: ${id}`));

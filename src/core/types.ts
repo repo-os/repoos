@@ -482,6 +482,11 @@ export interface RepoOSConfig {
   inputsDir?: string;
   /** Git-tracked task schedule definitions (`schedules/*.md`). */
   schedulesDir?: string;
+  /**
+   * Automatic schedule ticks (boot catch-up and minute loop). Off by default so
+   * serving a checkout never creates tasks until explicitly enabled in Settings.
+   */
+  scheduledTasks?: ScheduledTasksConfig;
   /** Directory holding story definitions, relative to root. Default "stories". */
   storiesDir?: string;
   /** Glob-ish: file extensions treated as tasks. Default [".md"]. */
@@ -1719,6 +1724,12 @@ export interface BuiltInAgentConfig {
   cli?: string;
   /** Model to use for this built-in agent. */
   model?: string;
+}
+
+/** Automatic schedule ticks on the control-plane server (#0093). */
+export interface ScheduledTasksConfig {
+  /** When true, enabled schedules fire on boot catch-up and each minute tick. */
+  enabled?: boolean;
 }
 
 /** Task watchdog configuration (#0180). */

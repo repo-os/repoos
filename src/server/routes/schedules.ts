@@ -21,6 +21,7 @@ import {
   releaseScheduleOccurrenceLock,
 } from "../schedule-runner.js";
 import { maybeAutoStartScheduledTask } from "../schedule-auto-start.js";
+import { scheduleHostileReason, scheduleRunRefusalMessage } from "../schedule-automation.js";
 
 function commitSchedule(root: string, relPath: string, verb: string, id: string): void {
   commitTaskFile(root, join(root, relPath), `schedules(${id}): ${verb}`);
@@ -87,6 +88,10 @@ export const deleteSchedule: RouteHandler = (ctx, _req, res, p) => {
 export const postScheduleRun: RouteHandler = async (ctx, req, res, p) => {
   const id = p.param1;
   if (!id) return json(res, 400, { error: "id required" });
+  const hostile = scheduleHostileReason(ctx.config, process.env, ctx.servePort);
+  if (hostile) {
+    return json(res, 403, { error: scheduleRunRefusalMessage(hostile) });
+  }
   const row = getSchedule(ctx.config, id);
   if (!row) return json(res, 404, { error: "schedule not found" });
   const now = new Date();
