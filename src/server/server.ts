@@ -2446,22 +2446,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   }, BUILT_IN_CHECK_INTERVAL_MS);
 
-  const SCHEDULE_CHECK_INTERVAL_MS = 60_000;
-  const scheduleTimer = setInterval(() => {
-    runScheduleTick({
-      config: repoos.config,
-      repoos,
-      emitEvent: (event) => emitEvent(event),
-    });
-  }, SCHEDULE_CHECK_INTERVAL_MS);
-  void indexReady.then(() => {
-    runScheduleTick({
-      config: repoos.config,
-      repoos,
-      emitEvent: (event) => emitEvent(event),
-    });
-  });
-
   // Periodic worktree dirty-status sweep. Task mutations already refresh a
   // task's worktree status via refreshBranches(); this catches the gap where a
   // worktree goes dirty (or clean) with no task activity at all, and keeps the
@@ -2557,6 +2541,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       reviews.cancel(task.id);
     }
   };
+
+  const scheduleAutoStart = {
+    config: repoos.config,
+    index,
+    runner,
+    logger,
+    onServerStatusChange,
+  };
+  const runScheduleTickNow = (): void => {
+    runScheduleTick({
+      config: repoos.config,
+      repoos,
+      autoStart: scheduleAutoStart,
+      emitEvent: (event) => emitEvent(event),
+    });
+  };
+  const SCHEDULE_CHECK_INTERVAL_MS = 60_000;
+  const scheduleTimer = setInterval(runScheduleTickNow, SCHEDULE_CHECK_INTERVAL_MS);
+  void indexReady.then(runScheduleTickNow);
 
   // Durable freeform PM runs (#0403): the freeform-create route spawns the PM
   // agent through this manager instead of a fire-and-forget closure, so the

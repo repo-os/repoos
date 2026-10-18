@@ -2282,6 +2282,15 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description: "Directory holding human-submitted inputs (relative to repo root)",
     },
     {
+      key: "schedulesDir",
+      label: "Schedules directory",
+      type: "string",
+      tier: "guarded",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.schedulesDir,
+      description: "Directory holding scheduled task definitions (relative to repo root)",
+    },
+    {
       key: "taskExtensions",
       label: "Task extensions",
       type: "array",
@@ -3243,6 +3252,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "docsDir",
   "skillsDir",
   "inputsDir",
+  "schedulesDir",
   "storiesDir",
   "cacheDir",
   "taskExtensions",

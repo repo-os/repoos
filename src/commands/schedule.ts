@@ -26,6 +26,7 @@ import {
 } from "../core/schedule.js";
 import {
   executeScheduleRun,
+  findDueSchedule,
   releaseScheduleOccurrenceLock,
   tryAcquireScheduleOccurrenceLock,
 } from "../server/schedule-runner.js";
@@ -385,22 +386,18 @@ export function cmdScheduleRun(args: string[]): void {
   }
   const repoos = createRepoOS(config.root);
   const now = new Date();
-  const lockKey = `manual:${now.toISOString()}`;
+  const due = findDueSchedule(existing, now) ?? {
+    dueAt: now,
+    key: `manual:${now.toISOString()}`,
+  };
+  const lockKey = due.key;
   if (!tryAcquireScheduleOccurrenceLock(config, existing.id, lockKey)) {
     console.error(c.red("  This schedule occurrence is already running"));
     process.exitCode = 1;
     return;
   }
   try {
-    const outcome = executeScheduleRun(
-      repoos,
-      config,
-      existing.id,
-      { dueAt: now, key: lockKey },
-      {
-        manual: true,
-      },
-    );
+    const outcome = executeScheduleRun(repoos, config, existing.id, due, { manual: true });
     if (!outcome.ok) {
       console.error(c.red(`  ${outcome.error}`));
       process.exitCode = 1;
