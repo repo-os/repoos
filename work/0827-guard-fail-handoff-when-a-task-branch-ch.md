@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 422270
-last_close_out_gate_at: "2026-10-18T06:44:35.980Z"
 id: "0827"
 title: "Guard: fail handoff when a task branch changes repoos.toml (stray settings writes)"
 type: bug
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: 497d9f80fe343a44779ff8e6aa178857ae4e1877
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-fail-handoff-when-a-task-branch-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T05:51:14Z"
-updated_at: "2026-10-18T06:44:35Z"
+updated_at: "2026-10-18T06:45:13Z"
+last_close_out_gate_ms: 422270
+last_close_out_gate_at: "2026-10-18T06:44:35.980Z"
 review_passes: 1
 ---
 ## Problem
@@ -49,4 +50,4 @@ Do not add auto-resolution of repoos.toml conflicts in this task. Source: driver
 - 2026-10-18T06:31:12Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-18T06:32:12Z · note: review pass 1: good to go
 - 2026-10-18T06:44:35Z · close-out gate completed in 422s
-
+- 2026-10-18T06:45:13Z · status review→done, release:success
