@@ -2,7 +2,7 @@
 id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
-status: review
+status: active
 priority: p2
 area: core
 assigned_to: ai
