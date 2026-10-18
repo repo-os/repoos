@@ -484,6 +484,7 @@ export function findConfigValueProblems(parsed: Record<string, unknown>): string
     "spark-diamond",
     "arcade-hopper",
     "puppy-tracks",
+    "bird-quick-trail",
     "three-dots",
   ]);
   const activitySize = get("activityAnimationSize");

@@ -23,6 +23,7 @@ import { configureUiRecovery, checkUiBuild, showOffline } from "./lib/uiRecovery
 import {
   applyShotPreviewConfigFixture,
   applyShotPreviewFixture,
+  isShotPreviewConfigFixture,
   readShotPreviewFixtureFromLocation,
 } from "./lib/shot-preview-fixtures";
 import { useUiStore } from "./stores/ui";
@@ -69,19 +70,13 @@ onMounted(async () => {
   // resolves, so it's normally already loaded by the time we mount.
   if (!auth.loaded) await auth.loadMe();
   await repo.init();
-  applyShotFixtureFromLocation();
-  const shotFixture = readShotPreviewFixtureFromLocation(window.location);
   // Release-event notices (#0606): poll /api/release/run from anywhere in the
   // app so the bell badge is live on every page, not just /releases.
   notices.start();
   await docs.loadDocs();
   await docs.loadSkills();
   await config.load();
-  // Config-touching fixtures run AFTER the load, so the real /api/config
-  // response cannot overwrite the seeded state (#0805).
-  if (shotFixture && repo.health?.isPreviewBuild) {
-    applyShotPreviewConfigFixture(config, shotFixture);
-  }
+  applyShotFixturesFromLocation();
   // The per-task pickers in the drawer need the live model list too, not just
   // the Agents page — without this they fall back to the static list and can
   // offer models the selected CLI doesn't support (0064). Fire-and-forget:
@@ -91,10 +86,14 @@ onMounted(async () => {
   void config.loadModels();
 });
 
-function applyShotFixtureFromLocation(): void {
+function applyShotFixturesFromLocation(): void {
   const shotFixture = readShotPreviewFixtureFromLocation(window.location);
-  if (shotFixture && repo.health?.isPreviewBuild) {
-    applyShotPreviewFixture(repo, shotFixture);
+  if (!shotFixture || !repo.health?.isPreviewBuild) return;
+  applyShotPreviewFixture(repo, shotFixture);
+  // Config-touching fixtures run AFTER config.load(), and again on navigation
+  // so capture navigations cannot miss bird-trail / editor seeds (#0822).
+  if (isShotPreviewConfigFixture(shotFixture)) {
+    applyShotPreviewConfigFixture(config, shotFixture);
   }
 }
 
@@ -103,7 +102,7 @@ function applyShotFixtureFromLocation(): void {
 watch(
   () => route.fullPath,
   () => {
-    applyShotFixtureFromLocation();
+    applyShotFixturesFromLocation();
   },
 );
 
