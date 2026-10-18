@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/publish-stash-and-reapply-dirty-main-fil
 created_at: "2026-10-17T15:26:36Z"
-updated_at: "2026-10-18T02:57:14Z"
+updated_at: "2026-10-18T02:57:54Z"
 ---
 ## Problem
 A close-out merges into the live main checkout (publishCandidate, src/server/integration-orchestrator.ts). The Move to done dirty-main check runs only at the start. If a file in main's checkout is dirty when publish runs (for example a settings change to repoos.toml made during the close-out), the outcome depends on the merge:
@@ -44,3 +44,4 @@ Start from publishCandidate in src/server/integration-orchestrator.ts (the publi
 - 2026-10-18T02:48:37Z · body
 - 2026-10-18T02:57:13Z · status active→review
 - 2026-10-18T02:57:14Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-18T02:57:54Z · note: review pass 1: good to go
