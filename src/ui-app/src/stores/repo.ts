@@ -13,7 +13,9 @@ import {
   applyShotPreviewFixture,
   isShotPreviewCaptureActive,
   readShotPreviewFixtureFromLocation,
+  seedShotPreviewDebugLogs,
   shotFixturePinnedIntegration,
+  shotPreviewSkipsTaskLogsFetch,
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import type { StoryListSortOrder } from "../../../core/stories.js";
@@ -1983,6 +1985,10 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Hydrate a task's log entries (Debug tab, 0310). */
   async function refreshTaskLogs(taskId: string): Promise<void> {
+    if (typeof window !== "undefined" && shotPreviewSkipsTaskLogsFetch(window.location, taskId)) {
+      seedShotPreviewDebugLogs({ tasks: tasks.value, taskLogs: taskLogs.value }, taskId);
+      return;
+    }
     try {
       const r = await api<{ ok: boolean; logs: TaskLogEntry[] }>(`/api/tasks/${taskId}/logs`);
       taskLogs.value[taskId] = r.logs;

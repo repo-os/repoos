@@ -3,6 +3,8 @@ import {
   parseReviewRelevance,
   parseReviewVerdict,
   replaceReviewVerdict,
+  stripReviewVerdictPrefix,
+  verdictSummaryForNeedsInput,
 } from "./review-verdict.js";
 
 describe("parseReviewVerdict", () => {
@@ -67,6 +69,31 @@ describe("parseReviewVerdict", () => {
         "## Summary\nStill reviewing.\n\n## Outcome\ngood to go — ship it when ready.",
       ),
     ).toBe("good to go");
+  });
+});
+
+describe("stripReviewVerdictPrefix (#0832)", () => {
+  it("removes a backtick-wrapped verdict and em dash", () => {
+    expect(stripReviewVerdictPrefix("`needs some work` — three defects remain.")).toBe(
+      "three defects remain.",
+    );
+  });
+
+  it("removes a bold-wrapped verdict", () => {
+    expect(stripReviewVerdictPrefix("**needs some work** — contrast audit still fails.")).toBe(
+      "contrast audit still fails.",
+    );
+  });
+});
+
+describe("verdictSummaryForNeedsInput (#0832)", () => {
+  it("caps the why portion at 120 characters", () => {
+    const why = "x".repeat(200);
+    const md = `## Verdict\n\`needs some work\` — ${why}\n`;
+    const summary = verdictSummaryForNeedsInput(md);
+    expect(summary).toMatch(/^`needs some work` — /);
+    expect(summary!.length).toBeLessThanOrEqual("`needs some work` — ".length + 120);
+    expect(summary).toContain("…");
   });
 });
 

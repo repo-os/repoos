@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
-import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../core/shot-fixtures.js";
+import {
+  SHOT_PREVIEW_FIXTURE_TASK_ID,
+  type ShotPreviewFixtureId,
+} from "../../core/shot-fixtures.js";
 import {
   applyShotPreviewConfigFixture,
   applyShotPreviewFixture,
@@ -11,6 +14,7 @@ import {
 import { useConfigStore } from "../src/stores/config";
 import { useNoticesStore } from "../src/stores/notices";
 import { useRepoStore } from "../src/stores/repo";
+import { useUiStore } from "../src/stores/ui";
 import { integrationMedianChip } from "../src/lib/integration-pipeline-ui";
 import { shotProblems } from "../src/lib/shot-rows";
 import { isDocsShotSkip, shotVerdict } from "../src/lib/handoff-verification";
@@ -40,8 +44,12 @@ describe("shot preview board fixtures (#0743)", () => {
     ).toBe("");
   });
 
-  it("classifies config-touching shot fixtures (#0822)", () => {
+  it("classifies config-touching shot fixtures (#0822, #0833)", () => {
     expect(isShotPreviewConfigFixture("settings:birdQuickTrail")).toBe(true);
+    expect(isShotPreviewConfigFixture("settings:rgbKeystorm")).toBe(true);
+    expect(isShotPreviewConfigFixture("settings:wheelieCourier")).toBe(true);
+    expect(isShotPreviewConfigFixture("settings:booSwoop")).toBe(true);
+    expect(isShotPreviewConfigFixture("settings:pumpkinSpell")).toBe(true);
     expect(isShotPreviewConfigFixture("editor:unconfigured")).toBe(true);
     expect(isShotPreviewConfigFixture("board:startWorkPending")).toBe(false);
   });
@@ -53,6 +61,23 @@ describe("shot preview board fixtures (#0743)", () => {
     config.form.activityAnimationStyle = "arcade-hopper";
     applyShotPreviewConfigFixture(config, "settings:birdQuickTrail");
     expect(config.form.activityAnimationStyle).toBe("bird-quick-trail");
+  });
+
+  it("seeds each #0833 artwork style on the settings form", () => {
+    const fixtures: Partial<Record<ShotPreviewFixtureId, string>> = {
+      "settings:rgbKeystorm": "rgb-keystorm",
+      "settings:wheelieCourier": "wheelie-courier",
+      "settings:booSwoop": "boo-swoop",
+      "settings:pumpkinSpell": "pumpkin-spell",
+    };
+    for (const [fixture, style] of Object.entries(fixtures) as [ShotPreviewFixtureId, string][]) {
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const config = useConfigStore();
+      config.form.activityAnimationStyle = "orbital-pixel";
+      applyShotPreviewConfigFixture(config, fixture);
+      expect(config.form.activityAnimationStyle, fixture).toBe(style);
+    }
   });
 
   it("seeds Start work pending on a ready board card (#0822)", () => {
@@ -103,6 +128,18 @@ describe("shot preview board fixtures (#0743)", () => {
     applyShotPreviewFixture(repo, "card:doneError");
     expect(repo.tasks.some((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
     expect(repo.doneErrors[SHOT_PREVIEW_FIXTURE_TASK_ID]?.step).toBe("check");
+  });
+
+  it("seeds a review card with review-rounds-exhausted detail (#0832)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "card:reviewRoundsExhausted");
+    const task = repo.tasks.find((t) => t.id === "0832");
+    expect(task, "card:reviewRoundsExhausted seeds the #0832 fixture task").toBeTruthy();
+    expect(task!.needsInputReason).toBe("review-rounds-exhausted");
+    expect(task!.needsInputDetail).toContain("needs some work");
+    expect(repo.reviews["0832"]?.report?.markdown).toContain("contrast audit");
   });
 
   it("seeds a ready card flagged by the decision-model human-step check (#0804)", () => {
@@ -407,15 +444,49 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(shotVerdict(evidence!.captureDetails![1]!).verdict).toBe("matches");
   });
 
+  it("seeds debug log rows for drawer capture on a real task id (#0829)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const drawerId = "0820";
+    vi.stubGlobal("location", { search: `?task=${drawerId}&shotState=drawer:debugLogs` });
+    applyShotPreviewFixture(repo, "drawer:debugLogs");
+    expect(repo.taskLogs[drawerId]).toHaveLength(2);
+    expect(repo.taskLogs[drawerId]![0]!.message).toContain("main advanced with bookkeeping");
+    expect(repo.taskLogs[drawerId]![1]!.message).toBe("close-out complete — published to main");
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps fixture debug logs when the drawer hydrates logs during capture (#0829)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    vi.stubGlobal("location", { search: "?task=0820&tab=debug&shotState=drawer:debugLogs" });
+    applyShotPreviewFixture(repo, "drawer:debugLogs");
+    // DebugPanel's onMounted calls refreshTaskLogs; during a `drawer:debugLogs`
+    // capture that must keep the seeded long row instead of fetching the real
+    // (and differently-shaped) logs, which is why the reviewer saw a truncated
+    // "shots: skipped…" row instead of the declared "main advanced…" expansion.
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    await repo.refreshTaskLogs("0820");
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(repo.taskLogs["0820"]).toHaveLength(2);
+    expect(repo.taskLogs["0820"]![0]!.message).toContain("main advanced with bookkeeping");
+    vi.unstubAllGlobals();
+  });
+
   it("seeds 15 succeeded close-outs for the integration timer tooltip (#0819)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const repo = useRepoStore();
+    const ui = useUiStore();
     applyShotPreviewFixture(repo, "integration:median15");
     const notices = useNoticesStore();
     expect(notices.closeOutOutcomes).toHaveLength(15);
     expect(integrationMedianChip(notices.closeOutOutcomes)).toBe("Median 8m 00s · 15 runs");
     expect(repo.integration?.active?.taskId).toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(ui.integrationBarCollapsed).toBe(true);
   });
 
   it("seeds a multi-area human task with diff stats for card-chip shots (#0776, #0795)", () => {

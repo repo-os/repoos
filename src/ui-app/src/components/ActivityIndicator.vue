@@ -8,11 +8,16 @@ import {
   activityAnimationSizeOrDefault,
   activityAnimationSizePx,
   activityAnimationStyleOrDefault,
+  isActivityAnimationArtStyle,
   normalizeActivityAnimationSize,
   type ActivityAnimationSize,
   type ActivityAnimationStyle,
 } from "../../../core/activity-animation.js";
 import { useConfigStore } from "../stores/config";
+import BooSwoopArt from "./activity-art/BooSwoopArt.vue";
+import PumpkinSpellArt from "./activity-art/PumpkinSpellArt.vue";
+import RgbKeystormArt from "./activity-art/RgbKeystormArt.vue";
+import WheelieCourierArt from "./activity-art/WheelieCourierArt.vue";
 
 export type ActivityMotion = "coding" | "reviewing" | "agent";
 
@@ -84,6 +89,13 @@ const motion = computed((): ActivityMotion => {
 
 const legacyDots = computed(() => style.value === "three-dots");
 
+/**
+ * The four #0833 styles render a square multicolor inline-SVG artwork that
+ * fills the whole reserved slot, rather than the em-based CSS glyphs. The mark
+ * therefore becomes square (`ai-art`) instead of the default 1.1em tall slot.
+ */
+const artStyle = computed(() => (isActivityAnimationArtStyle(style.value) ? style.value : null));
+
 const matrixPositions = [
   { x: "15%", y: "0%", d: "0s" },
   { x: "65%", y: "0%", d: "0.12s" },
@@ -117,6 +129,12 @@ const matrixPositions = [
         :style="{ animationDelay: `${(n - 1) * 0.16}s` }"
       ></span>
     </template>
+    <span v-else-if="artStyle" class="ai-mark ai-art" aria-hidden="true">
+      <RgbKeystormArt v-if="artStyle === 'rgb-keystorm'" />
+      <WheelieCourierArt v-else-if="artStyle === 'wheelie-courier'" />
+      <BooSwoopArt v-else-if="artStyle === 'boo-swoop'" />
+      <PumpkinSpellArt v-else />
+    </span>
     <span v-else-if="style === 'orbital-pixel'" class="ai-mark ai-orbit" aria-hidden="true"></span>
     <span
       v-else-if="style === 'cursor-scan-pulse'"

@@ -2,18 +2,22 @@
 id: "0830"
 title: "Handoff: a shot whose waitFor/click/highlight target is missing fails the handoff (add hover step and fixture list)"
 type: feature
-status: active
+status: done
 priority: p2
 area: core
+merged_commit: 5a6981489abc31fc18b5531a38f8753bd416beff
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-a-shot-whose-waitfor-click-highl
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:25Z"
-updated_at: "2026-10-18T16:18:08Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/shot-plan-edit.test.ts > parseShotEntry (#0627) > rejects a bad step and an unknown key, like the list parser on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 386dee459445c5b90d91d7d031ca4e8c26a2603d
+updated_at: "2026-10-18T16:19:15Z"
+last_close_out_gate_ms: 87581
+last_close_out_gate_at: "2026-10-18T11:52:33.132Z"
+review_passes: 1
+last_check_failure: "repoos check at 2026-10-18T10:20:44.294Z: repoos check failed: ◆ Check plan"
+dev_error_count: 1
 ---
 ## Problem
 When a declared shot's `waitFor`, `click` or `highlight` target is missing, the capture only records a note ("capture went ahead") and the handoff still passes. A review round then discovers blank or wrong captures, and after 3 rounds the task parks with `review-rounds-exhausted` (#0822, #0829). The step vocabulary also has no `hover`, so tooltip shots (e.g. the integration median tooltip) cannot be declared.
@@ -53,6 +57,25 @@ Related: #0734, #0755, #0613. Do not make a missing Playwright a failure (stays 
 - 2026-10-18T09:01:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-18T09:02:58Z · body
 - 2026-10-18T09:05:06Z · body
-- 2026-10-18T15:52:33Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/shot-plan-edit.test.ts > parseShotEntry (#0627) > rejects a bad step and an unknown key, like the list parser on thinkpad — fix it in the feature branch and re-run the gate
-- 2026-10-18T16:08:09Z · CTO action: restart-stalled-agent (fresh) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/shot-plan-edit.test.ts > parseShotEntry (#0627) > rejects a bad step and an unknown key, like the list parser on thinkpad — fix it in the feature branch and re-run the gate
-- 2026-10-18T16:18:08Z · CTO action: restart-stalled-agent (fresh) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/shot-plan-edit.test.ts > parseShotEntry (#0627) > rejects a bad step and an unknown key, like the list parser on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-10-18T09:59:27Z · body
+- 2026-10-18T10:20:23Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-18T10:20:43Z · message_delivered: 1 message(s)
+- 2026-10-18T10:21:52Z · body
+- 2026-10-18T10:22:31Z · body
+- 2026-10-18T10:49:21Z · message_queued at 2026-10-18T10:49:21.322Z
+- 2026-10-18T10:49:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-18T11:06:40Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-10-18T11:06:40Z · message_delivered: 1 message(s)
+- 2026-10-18T11:12:06Z · needs_input
+- 2026-10-18T11:22:56Z · body
+- 2026-10-18T11:25:42Z · body
+- 2026-10-18T11:39:25Z · body
+- 2026-10-18T11:47:16Z · status active→review
+- 2026-10-18T11:48:00Z · note: review pass 1: good to go
+- 2026-10-18T11:50:49Z · close-out gate completed in 81s
+- 2026-10-18T11:52:33Z · close-out gate completed in 88s
+- 2026-10-18T11:53:10Z · status review→done, release:success
+- 2026-10-18T15:54:12Z · body
+- 2026-10-18T15:56:17Z · body
+- 2026-10-18T16:09:23Z · body
+- 2026-10-18T16:19:15Z · body

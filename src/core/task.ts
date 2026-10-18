@@ -11,6 +11,7 @@ import { emptyGitInfo } from "./git.js";
 import { normalizeStoryName } from "./stories.js";
 import { formatTaskAreas, parseTaskAreas } from "./areas.js";
 import { parseTaskDependencies } from "./task-dependencies.js";
+import { normalizeDebugTldrKey } from "./debug-tldr-key.js";
 
 /** Canonical frontmatter key order, so writes produce tidy, stable diffs. */
 const KEY_ORDER = [
@@ -484,7 +485,10 @@ export function parseTask(args: ParseTaskArgs): Task {
         : undefined,
     debugTldr: typeof data.debug_tldr === "string" ? data.debug_tldr : undefined,
     debugTldrAt: typeof data.debug_tldr_at === "string" ? data.debug_tldr_at : undefined,
-    debugTldrKey: typeof data.debug_tldr_key === "string" ? data.debug_tldr_key : undefined,
+    debugTldrKey:
+      typeof data.debug_tldr_key === "string"
+        ? normalizeDebugTldrKey(data.debug_tldr_key)
+        : undefined,
     needsMerge: data.needs_merge === true,
     noSourceChange: data.no_source_change === true,
     isArchived: data.is_archived === true,
@@ -576,7 +580,7 @@ export function serializeTask(task: Task): string {
     if (task.debugTldr) {
       data.debug_tldr = task.debugTldr;
       if (task.debugTldrAt) data.debug_tldr_at = task.debugTldrAt;
-      if (task.debugTldrKey) data.debug_tldr_key = task.debugTldrKey;
+      if (task.debugTldrKey) data.debug_tldr_key = normalizeDebugTldrKey(task.debugTldrKey);
     }
   }
   if (task.questions && task.questions.length > 0) data.questions = task.questions;

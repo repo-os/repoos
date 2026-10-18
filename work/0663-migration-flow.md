@@ -2,16 +2,23 @@
 id: "0663"
 title: Migration flow
 type: feature
-status: inbox
+status: done
 priority: p1
 area: core
 story: Cloud attachment storage
 depends_on: ["0660", "0661"]
+merged_commit: cf4e6b2044405c375e8d8088ce860bd4545ed14e
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/migration-flow
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T08:29:15Z"
-updated_at: "2026-10-05T12:06:02Z"
+updated_at: "2026-10-18T16:42:39Z"
+last_close_out_gate_ms: 75109
+last_close_out_gate_at: "2026-10-18T16:42:03.742Z"
+review_passes: 2
+review_rounds: 1
 ---
 Slice 6: Dry run, resumable upload, verification before local originals released. Migration is safely repeatable.
 
@@ -51,3 +58,19 @@ Slice 6: Dry run, resumable upload, verification before local originals released
 - 2026-10-05T11:15:29Z · needs_input
 - 2026-10-05T12:05:11Z · needs_input
 - 2026-10-05T12:05:54Z · body
+- 2026-10-18T16:16:32Z · status inbox→ready
+- 2026-10-18T16:16:34Z · cli_override, model_override
+- 2026-10-18T16:16:36Z · status ready→active, branch
+- 2026-10-18T16:20:03Z · body
+- 2026-10-18T16:20:53Z · body
+- 2026-10-18T16:27:58Z · status active→review
+- 2026-10-18T16:27:59Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-18T16:28:40Z · note: review pass 1: needs some work
+- 2026-10-18T16:28:40Z · status review→active
+- 2026-10-18T16:30:05Z · body
+- 2026-10-18T16:31:12Z · body
+- 2026-10-18T16:37:37Z · status active→review
+- 2026-10-18T16:37:39Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-18T16:38:26Z · note: review pass 2: good to go
+- 2026-10-18T16:42:03Z · close-out gate completed in 75s
+- 2026-10-18T16:42:39Z · status review→done, release:success

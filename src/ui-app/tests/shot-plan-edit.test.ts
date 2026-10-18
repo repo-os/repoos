@@ -40,7 +40,7 @@ describe("parseShotEntry (#0627)", () => {
   it("rejects a bad step and an unknown key, like the list parser", () => {
     expect(parseShotEntry({ steps: [{ click: 1 }] }).error).toContain("step #1");
     expect(parseShotEntry({ steps: [{ wrong: "x" }] }).error).toContain(
-      "click/fill/waitFor/waitMs",
+      "click/fill/waitFor/hover/waitMs",
     );
     expect(parseShotEntry({ label: 5 }).error).toContain('"label" expects a non-empty string');
     expect(parseShotEntry("nope").error).toContain("each entry must be an object");

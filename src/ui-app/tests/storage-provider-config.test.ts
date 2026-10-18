@@ -168,8 +168,9 @@ describe("configured provider is actually used, with a local fallback (#0659)", 
       data: PNG_1PX,
     });
     expect("error" in saved).toBe(false);
-    expect(resolveScreenshot(repoos.config, task.id, "screenshot-1.png")).toBe(
-      join(root, "work", ".attachments", task.id, "screenshot-1.png"),
+    const objectName = decodeURIComponent((saved as { url: string }).url.split("/").pop()!);
+    expect(resolveScreenshot(repoos.config, task.id, objectName)).toBe(
+      join(root, "work", ".attachments", task.id, objectName),
     );
     expect(describeStorage("neon", join(root, "work"))).toMatchObject({
       effective: "local",

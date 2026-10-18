@@ -3,10 +3,12 @@ import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  ACTIVITY_ANIMATION_ART_STYLES,
   ACTIVITY_ANIMATION_STYLES,
   ACTIVITY_ANIMATION_STYLE_LABELS,
   DEFAULT_ACTIVITY_ANIMATION_STYLE,
   activityAnimationStyleOrDefault,
+  isActivityAnimationArtStyle,
   normalizeActivityAnimationStyle,
 } from "./activity-animation.js";
 import { getConfigSchema, loadConfig, SUPPORTED_TOML_KEYS } from "./config.js";
@@ -68,5 +70,28 @@ describe("activity animation config (#0787)", () => {
     expect(ACTIVITY_ANIMATION_STYLES).toContain("bird-quick-trail");
     expect(ACTIVITY_ANIMATION_STYLE_LABELS["bird-quick-trail"]).toBe("Bird quick trail");
     expect(DEFAULT_ACTIVITY_ANIMATION_STYLE).toBe("orbital-pixel");
+  });
+
+  it("adds the four #0833 artwork styles without moving the orbital default", () => {
+    const added: Record<string, string> = {
+      "rgb-keystorm": "RGB keystorm",
+      "wheelie-courier": "Wheelie courier",
+      "boo-swoop": "Boo swoop",
+      "pumpkin-spell": "Pumpkin spell",
+    };
+    for (const value of ACTIVITY_ANIMATION_ART_STYLES) {
+      expect(ACTIVITY_ANIMATION_STYLES).toContain(value);
+      expect(ACTIVITY_ANIMATION_STYLE_LABELS[value]).toBe(added[value]);
+      expect(normalizeActivityAnimationStyle(value)).toBe(value);
+      expect(isActivityAnimationArtStyle(value)).toBe(true);
+    }
+    expect([...ACTIVITY_ANIMATION_ART_STYLES].sort()).toEqual(Object.keys(added).sort());
+    // The legacy dots style is not part of the art family.
+    expect(isActivityAnimationArtStyle("three-dots")).toBe(false);
+    expect(DEFAULT_ACTIVITY_ANIMATION_STYLE).toBe("orbital-pixel");
+  });
+
+  it("keeps three-dots last in the serialized order", () => {
+    expect(ACTIVITY_ANIMATION_STYLES.at(-1)).toBe("three-dots");
   });
 });
