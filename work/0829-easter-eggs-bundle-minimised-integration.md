@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 4894fdc9 to 97fb8c6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 4894fdc9ba768cce40f87fb1010bb88baa113cd1
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
@@ -266,3 +268,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T08:44:11Z · body
 - 2026-10-18T08:45:58Z · note: handoff requested (ui-review)
 - 2026-10-18T08:53:16Z · handoff failed · ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 4894fdc9 to 97fb8c6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
