@@ -4,10 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRepoOS } from "./repoos.js";
 import { localStorageProvider } from "./storage/local.js";
-import {
-  registerStorageProvider,
-  unregisterStorageProvider,
-} from "./storage/registry.js";
+import { registerStorageProvider, unregisterStorageProvider } from "./storage/registry.js";
 import type { StorageProvider } from "./storage/types.js";
 import { taskAttachmentApiPath, taskAttachmentStore } from "./attachment-reference.js";
 import { runAttachmentMigration } from "./attachment-migration.js";
@@ -115,9 +112,7 @@ describe("attachment migration (#0663)", () => {
     expect(cloud.get(task.id)?.size).toBe(1);
     const targetName = [...(cloud.get(task.id)?.keys() ?? [])][0]!;
     expect(targetName).toMatch(/^att_/);
-    expect(taskAttachmentStore(repoos.config).get(task.id, targetName)?.length).toBeGreaterThan(
-      0,
-    );
+    expect(taskAttachmentStore(repoos.config).get(task.id, targetName)?.length).toBeGreaterThan(0);
 
     const taskFile = readFileSync(join(root, task.path), "utf8");
     expect(taskFile).toContain(taskAttachmentApiPath(task.id, targetName));
