@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T03:03:29Z"
+updated_at: "2026-10-18T03:04:45Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -83,24 +83,43 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 ```json
 [
 {
-"label": "Bird quick trail in Activity animation selector",
-"target": "default",
-"route": "/settings?tab=general",
-"highlight": "#setting-activityAnimationStyle",
-"steps": [
-{
-"click": "#setting-activityAnimationStyle [role=\"combobox\"]"
+  "label": "Bird quick trail activity animation preview",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": ".activity-animation-preview",
+  "state": "settings:birdQuickTrail"
 },
 {
-"waitMs": 200
-}
-]
+  "label": "Ready card Starting… (light)",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"task-card-action-footer\"]",
+  "state": "board:startWorkPending",
+  "theme": "light"
 },
 {
-"label": "Activity animation preview with bird quick trail",
-"target": "default",
-"route": "/settings?tab=general",
-"highlight": ".activity-animation-preview"
+  "label": "Ready card Starting… (dark)",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"task-card-action-footer\"]",
+  "state": "board:startWorkPending",
+  "theme": "dark"
+},
+{
+  "label": "Drawer Start work Starting… (light)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": "[data-test-id=\"task-drawer\"] button",
+  "state": "drawer:startWorkPending",
+  "theme": "light"
+},
+{
+  "label": "Drawer Start work Starting… (dark)",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": "[data-test-id=\"task-drawer\"] button",
+  "state": "drawer:startWorkPending",
+  "theme": "dark"
 }
 ]
 ```
@@ -121,3 +140,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T03:02:17Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
 - 2026-10-18T03:03:27Z · note: review pass 1: needs some work
 - 2026-10-18T03:03:29Z · status review→active
+- 2026-10-18T03:04:45Z · body
