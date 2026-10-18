@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-18T17:12:11Z"
-review_passes: 1
+last_close_out_gate_ms: 108426
+last_close_out_gate_at: "2026-10-18T17:20:14.539Z"
 id: "0839"
 title: "CLI: repoos review again <id>, and turn on Auto-refresh stale review evidence by default"
 type: feature
@@ -13,6 +13,8 @@ branch: feat/cli-repoos-review-again-id-and-turn-on-a
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:59Z"
+updated_at: "2026-10-18T17:20:14Z"
+review_passes: 1
 ---
 ## Problem
 After `repoos verify <id>` refreshes stale evidence, nothing re-runs the review unless a person clicks **Review again** in the UI (`POST /api/tasks/:id/review/again`); `repoos review <id>` fails with "handoff request failed (200)" on a task already in review. With Settings -> General "Auto-refresh stale review evidence once" off (the default), a stale-evidence-only verdict waits indefinitely (#0832 sat for hours).
@@ -40,4 +42,5 @@ Do not bypass the review lock rules (no live engineer/close-out). Source: driver
 - 2026-10-18T17:11:21Z · status active→review
 - 2026-10-18T17:11:23Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-18T17:12:10Z · note: review pass 1: good to go
+- 2026-10-18T17:20:14Z · close-out gate completed in 108s
 
