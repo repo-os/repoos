@@ -98,6 +98,8 @@ import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screens
 import { shotProblems, shotRows, uncapturedDeclared } from "../lib/shot-rows";
 import {
   captureIssueLines,
+  DOCS_SHOT_ROUTE_DOC,
+  isDocsShotSkip,
   orphanHandoffSentence,
   runLevelIssueLines,
   shotVerdict,
@@ -964,7 +966,16 @@ const shotsViewerStart = ref(0);
 const shotsViewerShots = computed<ScreenshotShot[]>(() =>
   // #0603: the viewer's caption carries the provenance ("declared: …" /
   // "auto: matched …"), not the raw filename.
-  taskShots.value.map((s) => ({ src: s.url, name: s.provenance || s.label || s.name })),
+  taskShots.value.map((s) => {
+    // #0819: carry the same handoff verdict the Changes-tab row shows, so the
+    // enlarged viewer's shot header is not a bare image.
+    const view = handoffVerdictFor(s.url);
+    return {
+      src: s.url,
+      name: s.provenance || s.label || s.name,
+      ...(view ? { verdict: view.verdict, ...(view.reason ? { warning: view.reason } : {}) } : {}),
+    };
+  }),
 );
 function openShotsViewer(index: number): void {
   shotsViewerStart.value = index;
@@ -5744,6 +5755,13 @@ watch(
               role="alert"
             >
               <strong>Shots {{ problem.status }}:</strong> {{ problem.detail }}
+              <router-link
+                v-if="isDocsShotSkip(problem.detail)"
+                class="shot-warning-link"
+                :to="DOCS_SHOT_ROUTE_DOC"
+              >
+                How to declare a docs route
+              </router-link>
             </div>
             <div
               v-if="uiMissingShots.length"
@@ -5870,6 +5888,13 @@ watch(
             >
               <li v-for="(line, idx) in uiHandoffRunLevelLines" :key="'hf' + idx" class="mono">
                 {{ line }}
+                <router-link
+                  v-if="isDocsShotSkip(line)"
+                  class="shot-warning-link"
+                  :to="DOCS_SHOT_ROUTE_DOC"
+                >
+                  How to declare a docs route
+                </router-link>
               </li>
             </ul>
           </section>
