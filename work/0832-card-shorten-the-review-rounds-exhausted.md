@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
@@ -95,3 +96,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T09:01:04Z · message_queued at 2026-10-18T09:01:04.677Z
 - 2026-10-18T09:01:05Z · status review→active
 - 2026-10-18T09:09:43Z · message_delivered: 1 message(s)
+
