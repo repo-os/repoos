@@ -57,3 +57,4 @@ Related: #0834 (post-handoff checkpoint recovery), watchdog and CTO restart path
 - 2026-10-18T18:04:31Z · status review→active
 - 2026-10-18T18:07:02Z · body
 - 2026-10-18T18:14:43Z · status active→review
+- 2026-10-18T18:14:43Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
