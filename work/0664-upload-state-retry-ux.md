@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-18T17:22:22.247Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 89998058 to 91987c43) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "0664"
 title: Upload state + retry UX
 type: feature
@@ -94,3 +96,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-18T17:13:18Z · body
 - 2026-10-18T17:22:18Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-18T17:22:21Z · message_delivered: 1 message(s)
+
