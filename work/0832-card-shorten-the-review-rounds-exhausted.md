@@ -2,7 +2,7 @@
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
-status: review
+status: active
 priority: p3
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,8 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T09:01:04Z"
+updated_at: "2026-10-18T09:01:05Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -92,3 +93,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T08:59:40Z · note: shots: failed — preview for target "default" did not start: Preview servers are read-only; only the main RepoOS control plane can start previews
 - 2026-10-18T09:01:03Z · note: review pass 1: needs some work
 - 2026-10-18T09:01:04Z · message_queued at 2026-10-18T09:01:04.677Z
+- 2026-10-18T09:01:05Z · status review→active
