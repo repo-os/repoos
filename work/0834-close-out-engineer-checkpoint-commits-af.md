@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T15:51:34Z"
+updated_at: "2026-10-18T16:02:55Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T15:42:19.785Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Board card during post-handoff checkpoint recovery: highlight [data-test-id=\"task-card-agent-hint\"] matched nothing on / (http://127.0.0.1:60485/?shotState=card%3AcheckpointRecovery)"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/review-override.test.ts > review completion > reports the reviewer selected for the turn, not the global default on bee — fix it in the feature branch and re-run the gate"
@@ -37,11 +37,11 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 ```json
 [
 {
-"label": "Board card during post-handoff checkpoint recovery",
-"target": "default",
-"route": "/",
-"highlight": "[data-test-id=\"task-card-agent-hint\"]",
-"state": "card:checkpointRecovery"
+  "label": "Board card during post-handoff checkpoint recovery",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"task-card-agent-hint\"]",
+  "state": "card:checkpointRecovery"
 }
 ]
 ```
@@ -100,3 +100,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T15:42:19Z · message_delivered: 1 message(s)
 - 2026-10-18T15:48:42Z · message_queued at 2026-10-18T15:48:42.742Z
 - 2026-10-18T15:51:34Z · note: highlight [data-test-id="task-card-agent-hint"] matched nothing on /
+- 2026-10-18T16:02:55Z · body
