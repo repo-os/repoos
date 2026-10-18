@@ -196,5 +196,59 @@ describe("attachment migration (#0663)", () => {
     expect(
       localStorageProvider(join(root, repoos.config.workDir)).get(task.id, "keep.png"),
     ).not.toBeNull();
+    const key = uploadRecordKey("work", task.id, "keep.png");
+    expect(readAttachmentUploadState(repoos.config).records[key]?.phase).toBe("failed");
+  });
+
+  it("second run is a no-op for already-verified objects", () => {
+    const root = tempRoot();
+    const cloud = new Map<string, Map<string, Buffer>>();
+    let putCalls = 0;
+    registerStorageProvider("mem-cloud", () => {
+      const inner = memCloudProvider(cloud);
+      return {
+        ...inner,
+        put(namespace, name, data) {
+          putCalls++;
+          return inner.put(namespace, name, data);
+        },
+      };
+    });
+
+    const repoos = createRepoOS(root);
+    const task = repoos.createTask({ title: "noop rerun" });
+    repoos.config.storage = { provider: "mem-cloud" };
+    localStorageProvider(join(root, repoos.config.workDir)).put(
+      task.id,
+      "done.png",
+      Buffer.from(PNG_1PX, "base64"),
+    );
+
+    const first = runAttachmentMigration(repoos.config);
+    expect(first.errors).toEqual([]);
+    expect(first.verified).toBe(1);
+    expect(putCalls).toBe(1);
+
+    putCalls = 0;
+    const second = runAttachmentMigration(repoos.config);
+    expect(second.errors).toEqual([]);
+    expect(second.planned).toHaveLength(1);
+    expect(second.planned[0]?.action).toBe("skip-verified");
+    expect(second.uploaded).toBe(0);
+    expect(putCalls).toBe(0);
+  });
+
+  it("dry-run exits with errors when the provider is still local", () => {
+    const root = tempRoot();
+    const repoos = createRepoOS(root);
+    const task = repoos.createTask({ title: "local only" });
+    localStorageProvider(join(root, repoos.config.workDir)).put(
+      task.id,
+      "x.png",
+      Buffer.from(PNG_1PX, "base64"),
+    );
+    const result = runAttachmentMigration(repoos.config, { dryRun: true });
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.planned).toHaveLength(0);
   });
 });
