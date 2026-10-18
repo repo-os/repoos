@@ -39,12 +39,21 @@ import {
   worktreePathForBranch,
 } from "../core/git.js";
 import { MAX_AUTO_REVIEW_ROUNDS, needsInputClearsOnSuccessfulReview } from "../core/needs-input.js";
+import {
+  EVIDENCE_GAP_ONLY_MARKER,
+  MAX_EVIDENCE_GAP_REPAIR_ATTEMPTS,
+  clearEvidenceGapRepairAttempts,
+  evidenceGapSummary,
+  incrementEvidenceGapRepairAttempts,
+  isEvidenceGapOnlyReview,
+} from "../core/review-evidence-gaps.js";
 import { parseTask, recordChange, serializeTask, utcTimestamp } from "../core/task.js";
 import { buildStoryContext } from "../core/story-context.js";
 import {
   parseReviewVerdict as parseVerdictLabel,
   parseReviewRelevance,
   reviewVerdictSection,
+  verdictSummaryForNeedsInput,
 } from "../core/review-verdict.js";
 import { extractReviewReportSections } from "../core/review-report-sections.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
@@ -435,8 +444,8 @@ export function reviewMission(
     "`None found` under Bugs, Edge cases, or Suggestions when genuinely empty:",
     "",
     "## Verdict",
-    "Open the report with EXACTLY one of these three verdict labels, then one or two",
-    "sentences saying what the change does and whether anything blocks sign-off:",
+    "Open with EXACTLY one of these three verdict labels, an em dash, then at most",
+    "120 characters explaining what blocks sign-off (details belong in Bugs below):",
     "",
     "`good to go` — the change is correct and complete.",
     "`needs some work` — the change is close, but has issues worth fixing first.",
@@ -444,6 +453,11 @@ export function reviewMission(
     "If and only if the sole blocker is that otherwise usable UI evidence is stale",
     "for the reviewed HEAD, include the exact marker `STALE-EVIDENCE-ONLY` in the",
     "Verdict section. Never use it when code defects or any other blocker exists.",
+    "If and only if the code is correct but handoff shots or verification evidence",
+    "is missing or unusable (not stale — use `STALE-EVIDENCE-ONLY` for stale",
+    `captures), include the exact marker \`${EVIDENCE_GAP_ONLY_MARKER}\` in the`,
+    "Verdict section and list each missing or bad shot under ## Evidence. Never",
+    "use it when code defects or any other blocker exists.",
     "",
     "## Relevance",
     "Open with EXACTLY one of these three labels, then one sentence explaining why.",
@@ -455,6 +469,10 @@ export function reviewMission(
     "`needs rescoping` — the premise partly holds, but the task description or",
     "acceptance criteria are stale given what's shipped since; a human should update",
     "the task before this is merged as-is.",
+    "",
+    "## Evidence",
+    "When `EVIDENCE-GAP-ONLY` applies: each missing, blank, or wrong handoff shot",
+    "(route/label) on its own line. Write `None` when not applicable.",
     "",
     "## Bugs",
     "Concrete defects, each with the file and what goes wrong.",
@@ -671,6 +689,8 @@ export class ReviewManager {
   private readonly onDiagnosableFailure?: (taskId: string, reason: string) => void;
   /** Server-owned, guarded UI evidence refresh used only for stale-only reports (#0772). */
   private readonly onStaleEvidenceRefresh?: (task: Task) => Promise<boolean>;
+  /** Re-capture after `EVIDENCE-GAP-ONLY` reviews (#0831). */
+  private readonly onEvidenceGapRepair?: (task: Task) => Promise<boolean>;
   /** Opt-in approval policy (#0686): fired when a run review finishes `good to go`. */
   private onCleanReviewVerdict?: (task: Task, report: ReviewReport) => void;
 
@@ -681,6 +701,7 @@ export class ReviewManager {
     index?: LiveIndex,
     onDiagnosableFailure?: (taskId: string, reason: string) => void,
     onStaleEvidenceRefresh?: (task: Task) => Promise<boolean>,
+    onEvidenceGapRepair?: (task: Task) => Promise<boolean>,
   ) {
     this.config = config;
     this.emit = emit;
@@ -688,6 +709,7 @@ export class ReviewManager {
     this.index = index;
     this.onDiagnosableFailure = onDiagnosableFailure;
     this.onStaleEvidenceRefresh = onStaleEvidenceRefresh;
+    this.onEvidenceGapRepair = onEvidenceGapRepair;
     this.logger = createLogger(config.root);
     this.db = getRepoOSDb(config.root);
   }
@@ -1245,9 +1267,10 @@ export class ReviewManager {
     const autoRefreshStaleEvidence =
       shouldAutoRefreshStaleEvidence(this.config, reportText, verdict) &&
       !!this.onStaleEvidenceRefresh;
+    const evidenceGapOnly = isEvidenceGapOnlyReview(reportText, verdict);
     if (state === "ok" && verdict) {
       if (verdict !== "good to go") {
-        if (!isStaleEvidenceOnlyReview(reportText, verdict)) {
+        if (!isStaleEvidenceOnlyReview(reportText, verdict) && !evidenceGapOnly) {
           this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
             console.error(
               `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
@@ -1255,6 +1278,7 @@ export class ReviewManager {
           });
         }
       } else {
+        clearEvidenceGapRepairAttempts(this.config, task.id);
         void this.onCleanReviewVerdict?.(task, report);
       }
     }
@@ -1278,6 +1302,58 @@ export class ReviewManager {
       setTimeout(() => {
         void this.refreshStaleEvidenceAndRereview(task);
       }, 0).unref?.();
+    }
+    if (evidenceGapOnly && state === "ok" && this.onEvidenceGapRepair) {
+      setTimeout(() => {
+        void this.repairEvidenceGapAndMaybeRereview(task, reportText);
+      }, 0).unref?.();
+    }
+  }
+
+  private async repairEvidenceGapAndMaybeRereview(task: Task, reportText: string): Promise<void> {
+    try {
+      const refreshed = await this.onEvidenceGapRepair?.(task);
+      if (refreshed) {
+        const current = this.index?.getTask(task.id) ?? task;
+        if (current.status === "review" && !current.isArchived) {
+          this.logger.task(
+            task.id,
+            "info",
+            "evidence-gap repair captured; starting one new review",
+          );
+          void this.run(current);
+        }
+        return;
+      }
+      const attempts = incrementEvidenceGapRepairAttempts(this.config, task.id);
+      if (attempts < MAX_EVIDENCE_GAP_REPAIR_ATTEMPTS) return;
+      const current = this.index?.getTask(task.id) ?? task;
+      if (current.needsInput && current.needsInputReason === "evidence-gap-exhausted") return;
+      const detail = evidenceGapSummary(reportText);
+      try {
+        patchTaskFile(this.config, task.absPath, {
+          needsInput: true,
+          needsInputReason: "evidence-gap-exhausted",
+          needsInputDetail: detail,
+        });
+      } catch (err) {
+        console.error(
+          `[repoos] could not flag evidence-gap exhaustion for #${task.id}: ${(err as Error).message}`,
+        );
+      }
+      this.emit({
+        type: "task.corrected",
+        id: task.id,
+        path: task.path,
+        note: `Handoff evidence is still missing after ${MAX_EVIDENCE_GAP_REPAIR_ATTEMPTS} automatic re-captures — human needed.`,
+        at: now(),
+      });
+    } catch (err) {
+      this.logger.task(
+        task.id,
+        "warn",
+        `automatic evidence-gap repair failed: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -1746,10 +1822,7 @@ export class ReviewManager {
         needsInputClearsOnSuccessfulReview(current) ||
         current.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON
       ) {
-        const verdictDetail = reviewVerdictSection(report.markdown)
-          ?.split(/\r?\n/)
-          .find((line) => line.trim())
-          ?.trim();
+        const verdictDetail = verdictSummaryForNeedsInput(report.markdown);
         try {
           patchTaskFile(this.config, task.absPath, {
             needsInput: true,

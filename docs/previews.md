@@ -420,6 +420,12 @@ worktree stays clean either way; the response lists what was restored. HEAD
 movement that is only `work/*.md` task bookkeeping (status flips, review
 counters) does not make the refreshed record stale.
 
+When a reviewer marks **`EVIDENCE-GAP-ONLY`** (code is fine, shots or
+verification are not), RepoOS runs the same guarded re-capture automatically,
+does not auto-bounce the engineer, and does not increment `review_rounds`. After
+two failed repair attempts it flags `evidence-gap-exhausted` for a human. See
+[`docs/review-evidence-gaps.md`](./review-evidence-gaps.md).
+
 **Whole-window default (#0613).** Declared shots capture the whole visible
 viewport by default (`fullPage: false`) with changed elements outlined via
 `highlight`. `selector` (element crop) is the only exception; `fullPage`
