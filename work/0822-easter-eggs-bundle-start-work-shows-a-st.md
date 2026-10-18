@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T03:26:17Z"
+updated_at: "2026-10-18T03:26:45Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -124,10 +124,10 @@ Independent of E1; do not couple the two. Keep the default animation and every e
   "label": "Drawer Start work Starting… (light)",
   "target": "default",
   "route": "/work?task=9999",
-  "highlight": "[data-task-id=\"task-drawer\"] button",
+  "highlight": "[data-test-id=\"task-drawer-start-work\"]",
   "steps": [
     {
-      "waitFor": "[data-task-id=\"task-drawer\"] button:has-text(\"Starting work\")"
+      "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
     }
   ],
   "state": "drawer:startWorkPending",
@@ -137,10 +137,10 @@ Independent of E1; do not couple the two. Keep the default animation and every e
   "label": "Drawer Start work Starting… (dark)",
   "target": "default",
   "route": "/work?task=9999",
-  "highlight": "[data-task-id=\"task-drawer\"] button",
+  "highlight": "[data-test-id=\"task-drawer-start-work\"]",
   "steps": [
     {
-      "waitFor": "[data-task-id=\"task-drawer\"] button:has-text(\"Starting work\")"
+      "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
     }
   ],
   "state": "drawer:startWorkPending",
@@ -178,3 +178,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T03:25:06Z · note: review pass 2: needs some work
 - 2026-10-18T03:25:07Z · status review→active
 - 2026-10-18T03:26:17Z · body
+- 2026-10-18T03:26:45Z · body
