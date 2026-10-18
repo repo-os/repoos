@@ -108,7 +108,7 @@ describe("repoos.toml branch guard (#0827)", () => {
     cleanups.push(root, wt);
     initRepo(root);
     mkdirSync(join(root, "work"), { recursive: true });
-    writeFileSync(join(root, "work", "0827-task.md"), "---\nid: \"0827\"\n---\n");
+    writeFileSync(join(root, "work", "0827-task.md"), '---\nid: "0827"\n---\n');
     git(root, ["add", "work"]);
     git(root, ["commit", "-qm", "task file"]);
     git(root, ["branch", "feat/0827"]);

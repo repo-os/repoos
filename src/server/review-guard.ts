@@ -30,10 +30,7 @@ import {
   currentBranch,
   agentTouchedFiles,
 } from "../core/git.js";
-import {
-  REPOOS_TOML_REL,
-  taskDeclaresRepoosTomlWork,
-} from "../core/repoos-toml-branch-guard.js";
+import { REPOOS_TOML_REL, taskDeclaresRepoosTomlWork } from "../core/repoos-toml-branch-guard.js";
 
 export interface ReviewGuardResult {
   ok: boolean;
