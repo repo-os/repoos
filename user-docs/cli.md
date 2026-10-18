@@ -639,7 +639,8 @@ element), a human `label` shown as the shot's caption in the Changes tab, an
 optional `highlight` CSS selector — every element it matches is outlined in
 the capture, pointing the reviewer at what changed — and optional ordered
 `steps` — `{ "click": "<selector>" }`, `{ "fill": "<selector>", "text":
-"..." }`, `{ "waitFor": "<selector>" }` or `{ "waitMs": 300 }` — using plain
+"..." }`, `{ "waitFor": "<selector>" }`, `{ "hover": "<selector>" }` or
+`{ "waitMs": 300 }` — using plain
 CSS selectors or test ids, no framework knowledge. Say what changed: a label
 naming the change and a highlight on the changed element are the difference
 between a reviewer reading "New-task drawer open" and squinting at a full

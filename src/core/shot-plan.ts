@@ -38,6 +38,7 @@ export type DeclaredStep =
   | { click: string }
   | { fill: string; text: string }
   | { waitFor: string }
+  | { hover: string }
   | { waitMs: number };
 
 /**
@@ -253,7 +254,7 @@ function firstFencedBlock(text: string): string | null {
   return null;
 }
 
-const STEP_KEYS = ["click", "fill", "waitFor", "waitMs"] as const;
+const STEP_KEYS = ["click", "fill", "waitFor", "hover", "waitMs"] as const;
 
 /** Validate one raw JSON step; returns the typed step or an error message. */
 function parseStep(raw: unknown, where: string): { step?: DeclaredStep; error?: string } {
@@ -265,13 +266,13 @@ function parseStep(raw: unknown, where: string): { step?: DeclaredStep; error?: 
   if (keys.length !== 1 || !STEP_KEYS.includes(keys[0] as (typeof STEP_KEYS)[number])) {
     return {
       error:
-        `${where}: a step needs exactly one of click/fill/waitFor/waitMs (` +
+        `${where}: a step needs exactly one of click/fill/waitFor/hover/waitMs (` +
         (keys.join(", ") || "none") +
         ")",
     };
   }
   const key = keys[0];
-  if (key === "click" || key === "waitFor") {
+  if (key === "click" || key === "waitFor" || key === "hover") {
     if (typeof r[key] !== "string" || !r[key]) {
       return { error: `${where}: "${key}" expects a CSS selector string` };
     }

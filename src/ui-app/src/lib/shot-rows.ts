@@ -55,6 +55,7 @@ function clip(text: string, limit: number): string {
 export function describeStep(step: DeclaredStep): string {
   if ("click" in step) return `click ${step.click}`;
   if ("waitFor" in step) return `wait for ${step.waitFor}`;
+  if ("hover" in step) return `hover ${step.hover}`;
   if ("fill" in step) return `fill ${step.fill} = "${clip(step.text, STEP_TEXT_LIMIT)}"`;
   return `wait ${step.waitMs}ms`;
 }

@@ -335,7 +335,7 @@ describe("UI handoff verification gate (#0680)", () => {
     vi.restoreAllMocks();
   });
 
-  it("passes handoff with warnings when a declared highlight matches nothing (#0743)", async () => {
+  it("fails handoff when a declared highlight matches nothing (#0830)", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-uigate-"));
     temps.push(root);
     mkdirSync(join(root, "work"), { recursive: true });
@@ -387,10 +387,142 @@ describe("UI handoff verification gate (#0680)", () => {
         assertions: [],
       }),
     });
-    expect(result.ok).toBe(true);
-    expect(result.detail).toContain("shot warning");
+    expect(result.ok).toBe(false);
+    expect(result.detail).toContain("missing-target");
+    expect(result.detail).toContain("Agents");
+    expect(result.detail).toContain(".agent-row");
     const evidence = readUiHandoffGateEvidence(config, task.id);
     expect(evidence?.warnings?.some((w) => w.includes(".agent-row"))).toBe(true);
+    vi.restoreAllMocks();
+  });
+
+  it("fails handoff when a declared waitFor step times out, and passes when fixed (#0830)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      workDir: "work",
+      uiVerification: { enabled: true },
+      preview: { targets: [{ name: "web", paths: ["src/ui-app/**"], command: "echo" }] },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "0830wait",
+      title: "t",
+      path: "work/0830wait.md",
+      absPath: join(root, "work/0830wait.md"),
+      status: "active",
+      branch: "feat/x",
+      area: "web",
+      body: "",
+    } as Task;
+    const entry = {
+      target: "web",
+      route: "/agents",
+      label: "Agents tab",
+      steps: [{ waitFor: ".agent-row" }],
+      provenance: { kind: "declared", label: "Agents tab" },
+    };
+    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+      entries: [entry],
+      errors: [],
+      skips: [],
+      collapsed: [],
+    });
+    const mockBrowser: NonNullable<UiHandoffGateDeps["launchBrowser"]> = async () =>
+      ({
+        browser: { close: async () => {}, newPage: async () => ({}), newContext: async () => ({}) },
+        context: { newPage: async () => ({}), close: async () => {} },
+      }) as unknown as Awaited<ReturnType<NonNullable<UiHandoffGateDeps["launchBrowser"]>>>;
+    const failCapture = async () => ({
+      png: Buffer.alloc(5000),
+      issues: [],
+      blank: false,
+      warnings: ["waitFor .agent-row: Timeout 5000ms exceeded on /agents"],
+      finalUrl: "http://127.0.0.1:9/agents",
+      assertions: [],
+    });
+    const passCapture = async () => ({
+      png: Buffer.alloc(5000),
+      issues: [],
+      blank: false,
+      warnings: [],
+      finalUrl: "http://127.0.0.1:9/agents",
+      assertions: [],
+    });
+    const gateDeps = {
+      startPreview: async () => ({ url: "http://127.0.0.1:9" }),
+      launchBrowser: mockBrowser,
+      captureEntry: failCapture,
+    };
+    const failed = await runUiHandoffGate(config, task, undefined, () => {}, gateDeps);
+    expect(failed.ok).toBe(false);
+    expect(failed.detail).toContain("Agents tab");
+    expect(failed.detail).toContain("waitFor .agent-row");
+
+    const passed = await runUiHandoffGate(config, task, undefined, () => {}, {
+      ...gateDeps,
+      captureEntry: passCapture,
+    });
+    expect(passed.ok).toBe(true);
+    vi.restoreAllMocks();
+  });
+
+  it("passes handoff with warnings when an auto capture misses a target (#0830)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-uigate-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      workDir: "work",
+      uiVerification: { enabled: true },
+      preview: { targets: [{ name: "web", paths: ["src/ui-app/**"], command: "echo" }] },
+    } as unknown as RepoOSConfig;
+    const task = {
+      id: "0830auto",
+      title: "t",
+      path: "work/0830auto.md",
+      absPath: join(root, "work/0830auto.md"),
+      status: "active",
+      branch: "feat/x",
+      area: "web",
+      body: "",
+    } as Task;
+    vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
+      entries: [
+        {
+          target: "web",
+          route: "/",
+          label: "Board",
+          highlight: ".missing",
+          provenance: { kind: "auto", globs: ["src/ui-app/**"] },
+        },
+      ],
+      errors: [],
+      skips: [],
+      collapsed: [],
+    });
+    const mockBrowser: NonNullable<UiHandoffGateDeps["launchBrowser"]> = async () =>
+      ({
+        browser: { close: async () => {}, newPage: async () => ({}), newContext: async () => ({}) },
+        context: { newPage: async () => ({}), close: async () => {} },
+      }) as unknown as Awaited<ReturnType<NonNullable<UiHandoffGateDeps["launchBrowser"]>>>;
+    const result = await runUiHandoffGate(config, task, undefined, () => {}, {
+      startPreview: async () => ({ url: "http://127.0.0.1:9" }),
+      launchBrowser: mockBrowser,
+      captureEntry: async () => ({
+        png: Buffer.alloc(5000),
+        issues: [],
+        blank: false,
+        warnings: ["highlight .missing matched nothing on /"],
+        finalUrl: "http://127.0.0.1:9/",
+        assertions: [],
+      }),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.detail).toContain("shot warning");
     vi.restoreAllMocks();
   });
 
@@ -1012,10 +1144,10 @@ describe("handoff tree identity (#0755)", () => {
         assertions: [],
       }),
     });
-    // A loading-state capture is a warning (a failed step), not a hard block, so
-    // the handoff still completes — but the shot is never presented as a match.
-    expect(result.ok).toBe(true);
-    expect(result.detail).toContain("shot warning");
+    // A loading-state capture is a failed step — declared shots block handoff (#0830).
+    expect(result.ok).toBe(false);
+    expect(result.detail).toContain("missing-target");
+    expect(result.detail).toContain("Commit diff");
     const evidence = readUiHandoffGateEvidence(config, task.id);
     const cap = evidence?.captureDetails?.[0];
     expect(cap?.routeMatched).toBe(true);
