@@ -17,6 +17,7 @@ import {
 import { cmdDocs, cmdNewDoc } from "../commands/docs.js";
 import { cmdStory } from "../commands/stories.js";
 import { cmdGc } from "../commands/gc.js";
+import { cmdMigrate } from "../commands/migrate.js";
 import { cmdOutline } from "../commands/outline.js";
 import { cmdCheck } from "../commands/check.js";
 import { cmdShot } from "../commands/shot.js";
@@ -221,6 +222,9 @@ function main(): void {
       break;
     case "gc":
       cmdGc(rest);
+      break;
+    case "migrate":
+      cmdMigrate(rest);
       break;
     case "outline":
       cmdOutline(rest);
