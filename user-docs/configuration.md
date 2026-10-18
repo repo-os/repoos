@@ -850,7 +850,9 @@ provider = "none"
 | --- | --- | --- | --- | --- |
 | `maxConcurrentAgents` | number | derived from CPU count | yes | How many agent CLI processes (start/send/chat) may run at once; extras queue. Must be 1–16. The default is computed from this machine's CPU count and capped sensibly. |
 | `localChecks.maxConcurrent` | select (1–8) | `2` | yes | Cross-process cap on local `repoos check` runs on this machine; extras queue with a visible position (#0836). |
+| `localChecks.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long a queued local check may wait for a slot before failing with an actionable timeout (minimum 60000). |
 | `playwright.maxConcurrent` | select (1–4) | `1` | yes | Shared cap on headless Playwright work (smoke, contrast audit, shots, UI verification). |
+| `playwright.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long queued Playwright work may wait for the shared browser slot before timing out (minimum 60000). |
 | `pressureGuard.enabled` | boolean | `true` | yes | When on, delay new local checks and engineer starts while load or memory pressure is high. |
 | `pressureGuard.maxLoadPerCpu` | number | `4` | yes | Block starts when the 1-minute load average per CPU exceeds this value. |
 | `pressureGuard.minAvailableMemRatio` | number | `0.08` | yes | Block starts when reclaimable memory falls below this fraction of total RAM. |
