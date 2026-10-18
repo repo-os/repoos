@@ -24,6 +24,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { backfillCloseOutOutcomeDurations } from "./close-out-outcome-backfill.js";
 
 /** How a close-out ended. Timeout stays separate so the UI can advise differently. */
 export type CloseOutOutcome = "succeeded" | "failed" | "timedOut";
@@ -81,23 +82,44 @@ export function createCloseOutOutcomeStore(
   let events: CloseOutOutcomeEvent[] | null = null;
   /** True when the on-disk file existed but could not be read or parsed. */
   let unreadable = false;
+  /** Legacy duration backfill (#0829) runs once per store instance. */
+  let backfillApplied = false;
+
+  function persistEvents(next: CloseOutOutcomeEvent[]): void {
+    if (!preserveUnreadable()) return;
+    unreadable = false;
+    try {
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, JSON.stringify(next, null, 2));
+    } catch (error) {
+      onPersistError?.(error);
+    }
+  }
 
   function load(): CloseOutOutcomeEvent[] {
     if (events) return events;
     if (!existsSync(path)) {
       events = [];
-      return events;
+    } else {
+      try {
+        const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
+        events = Array.isArray(parsed) ? parsed.filter(isOutcomeEvent) : [];
+      } catch (error) {
+        // An unreadable/corrupt file must not be treated as authoritative
+        // emptiness and then clobbered by the next write: report the read
+        // failure and preserve the bytes (renamed aside) before overwriting.
+        unreadable = true;
+        onPersistError?.(error);
+        events = [];
+      }
     }
-    try {
-      const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
-      events = Array.isArray(parsed) ? parsed.filter(isOutcomeEvent) : [];
-    } catch (error) {
-      // An unreadable/corrupt file must not be treated as authoritative
-      // emptiness and then clobbered by the next write: report the read
-      // failure and preserve the bytes (renamed aside) before overwriting.
-      unreadable = true;
-      onPersistError?.(error);
-      events = [];
+    if (!backfillApplied) {
+      backfillApplied = true;
+      const filled = backfillCloseOutOutcomeDurations(root, events);
+      if (filled !== events) {
+        events = filled;
+        persistEvents(events);
+      }
     }
     return events;
   }
@@ -126,18 +148,7 @@ export function createCloseOutOutcomeStore(
       );
       next.push(event);
       events = next.slice(-MAX_EVENTS);
-      // Preserve a corrupt/unreadable file before overwriting it; if it cannot
-      // be preserved, skip the write rather than destroying the history.
-      if (!preserveUnreadable()) return event;
-      unreadable = false;
-      try {
-        mkdirSync(dirname(path), { recursive: true });
-        writeFileSync(path, JSON.stringify(events, null, 2));
-      } catch (error) {
-        // Keep the in-memory copy and report the failure; the close-out itself
-        // must never fail because a notice could not be written to disk.
-        onPersistError?.(error);
-      }
+      persistEvents(events);
       return event;
     },
     list() {
