@@ -2,7 +2,7 @@
 id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
-status: review
+status: active
 priority: p2
 area: core
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T13:40:05Z"
+updated_at: "2026-10-18T13:40:07Z"
 dev_error_count: 5
 ---
 ## Problem
