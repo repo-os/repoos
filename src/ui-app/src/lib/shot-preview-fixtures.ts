@@ -634,6 +634,37 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         ],
       });
       break;
+    case "panel:newInputOutstandingUpload": {
+      const ui = useUiStore();
+      ui.openNewInput();
+      repo.inputAttachmentUploads.push({
+        batchId: "fixture-batch",
+        inputId: "0664",
+        attachment: {
+          name: "sketch.png",
+          mime: "image/png",
+          dataUrl: "data:image/png;base64,QUJD",
+          size: 3,
+          uploadPhase: "failed",
+          uploadError: "Network error while uploading",
+        },
+      });
+      break;
+    }
+    case "panel:freeformFailedScreenshot": {
+      const ui = useUiStore();
+      ui.openNewTask();
+      ui.pendingScreenshots.push({
+        name: "bug.png",
+        mime: "image/png",
+        dataUrl: "data:image/png;base64,QUJD",
+        size: 3,
+        uploadPhase: "failed",
+        uploadError: "Upload failed — try again",
+        uploadTaskId: "0664",
+      });
+      break;
+    }
     default:
       break;
   }
