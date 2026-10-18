@@ -43,3 +43,4 @@ The reference therefore contains no secrets, no expiring URLs and no storage pat
 - 2026-10-18T11:59:59Z · body
 - 2026-10-18T12:01:57Z · body
 - 2026-10-18T12:09:35Z · status active→review
+- 2026-10-18T12:09:35Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria, Notes for AI
