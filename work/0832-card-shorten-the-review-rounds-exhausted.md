@@ -2,7 +2,7 @@
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
-status: active
+status: ready
 priority: p3
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T09:09:31Z"
+updated_at: "2026-10-18T15:52:27Z"
 last_close_out_gate_ms: 438673
 last_close_out_gate_at: "2026-10-18T08:57:38.574Z"
 review_passes: 1
@@ -98,3 +98,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T09:01:12Z · status review→active
 - 2026-10-18T09:01:18Z · note: handoff requested (ui-review)
 - 2026-10-18T09:09:31Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-10-18T15:52:27Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
