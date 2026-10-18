@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-18T11:48:00Z"
+review_passes: 1
 id: "0830"
 title: "Handoff: a shot whose waitFor/click/highlight target is missing fails the handoff (add hover step and fixture list)"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/handoff-a-shot-whose-waitfor-click-highl
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:25Z"
-updated_at: "2026-10-18T11:48:00Z"
 last_check_failure: "repoos check at 2026-10-18T10:20:44.294Z: repoos check failed: ◆ Check plan"
 dev_error_count: 1
 ---
@@ -68,3 +69,4 @@ Related: #0734, #0755, #0613. Do not make a missing Playwright a failure (stays 
 - 2026-10-18T11:39:25Z · body
 - 2026-10-18T11:47:16Z · status active→review
 - 2026-10-18T11:48:00Z · note: review pass 1: good to go
+
