@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-18T02:06:03Z"
+updated_at: "2026-10-18T02:06:45Z"
 review_passes: 9
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T01:43:13.722Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from d6b69a01 to 346573ab) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -308,3 +308,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T02:04:37Z · note: highlight [data-test-id="integration-timer-tip"] matched nothing on /
 - 2026-10-18T02:06:00Z · status review→active
 - 2026-10-18T02:06:02Z · needs_input
+- 2026-10-18T02:06:45Z · message_queued at 2026-10-18T02:06:45.766Z
