@@ -124,6 +124,7 @@ export async function enqueueCloseOutForTask(
 ): Promise<CloseOutEnqueueResult> {
   const {
     config,
+    index,
     jobCoordinator,
     reload,
     emitEvent,
