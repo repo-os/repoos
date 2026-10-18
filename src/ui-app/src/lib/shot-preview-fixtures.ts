@@ -428,6 +428,14 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         [SHOT_PREVIEW_FIXTURE_TASK_ID]: nowIso(),
       };
       break;
+    case "board:startWorkPending":
+      ensureFixtureTask(repo, "ready");
+      repo.seedStartWorkPending(SHOT_PREVIEW_FIXTURE_TASK_ID);
+      break;
+    case "drawer:startWorkPending":
+      ensureFixtureTask(repo, "ready");
+      repo.seedStartWorkPending(SHOT_PREVIEW_FIXTURE_TASK_ID);
+      break;
     case "board:cardChips":
       // A multi-area task assigned to a human with seeded diff stats, so the
       // combined area chip, the human chip and the file-count chip all render
@@ -533,11 +541,16 @@ export function applyShotPreviewConfigFixture(
   config: ConfigStore,
   fixture: ShotPreviewFixtureId,
 ): void {
-  if (fixture !== "editor:unconfigured") return;
-  const data = config.data;
-  if (!data) return;
-  const editor = data.editor as { command?: string } | undefined;
-  if (editor) editor.command = "";
-  const dev = data.dev as { inspector?: { editorCommand?: string } } | undefined;
-  if (dev?.inspector) dev.inspector.editorCommand = "";
+  if (fixture === "editor:unconfigured") {
+    const data = config.data;
+    if (!data) return;
+    const editor = data.editor as { command?: string } | undefined;
+    if (editor) editor.command = "";
+    const dev = data.dev as { inspector?: { editorCommand?: string } } | undefined;
+    if (dev?.inspector) dev.inspector.editorCommand = "";
+    return;
+  }
+  if (fixture === "settings:birdQuickTrail") {
+    config.form.activityAnimationStyle = "bird-quick-trail";
+  }
 }

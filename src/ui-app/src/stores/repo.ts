@@ -817,6 +817,8 @@ export const useRepoStore = defineStore("repo", () => {
   /** Ready-task ids whose Start work request is in flight or awaiting the
    *  status flip to `active` (#0822). In-memory only — reconciles on reload. */
   const startWorkPendingIds = ref<Set<string>>(new Set());
+  const startWorkPendingTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+  const START_WORK_PENDING_MAX_MS = 45_000;
   /** AI-created card ids awaiting the human's acknowledgement (0320). Persisted;
    *  an id here keeps the violet "newly created" highlight across reloads. */
   const aiCreateUnacked = ref<Set<string>>(readIdSet(AI_CREATE_UNACKED_KEY));
@@ -1431,7 +1433,7 @@ export const useRepoStore = defineStore("repo", () => {
       };
       if (i >= 0) tasks.value[i] = merged;
       else tasks.value.push(merged);
-      if (merged.status === "active") clearStartWorkPendingLocal(e.task.id);
+      if (merged.status !== "ready") clearStartWorkPendingLocal(e.task.id);
       const ui = useUiStore();
       // Sync the drawer's copy without re-deriving the tab: a background
       // update (e.g. the debounced agent+model override save) must not bounce
@@ -1569,6 +1571,7 @@ export const useRepoStore = defineStore("repo", () => {
       clearStartWorkPendingLocal(e.id);
       pushFeed(`<b>agent coding</b> on #${e.id}`, "#9d7bff", "agent.running");
     } else if (e.type === "agent.queued") {
+      clearStartWorkPendingLocal(e.id);
       if (!queuedIds.value.includes(e.id)) {
         queuedIds.value = [...queuedIds.value, e.id];
       }
@@ -2206,7 +2209,7 @@ export const useRepoStore = defineStore("repo", () => {
       releasedAt: t.releasedAt ?? null,
     })) as unknown as Task[];
     for (const t of tasks.value) {
-      if (t.status === "active") clearStartWorkPendingLocal(t.id);
+      if (t.status !== "ready") clearStartWorkPendingLocal(t.id);
     }
     // A close-out error only belongs to a task that is still in review; drop any
     // re-hydrated before the board loaded (the hydration ran ahead of this fetch).
@@ -2504,11 +2507,43 @@ export const useRepoStore = defineStore("repo", () => {
     startWorkPendingIds.value = next;
   }
 
+  function clearStartWorkPendingWatchdog(id: string): void {
+    const timer = startWorkPendingTimers[id];
+    if (!timer) return;
+    clearTimeout(timer);
+    delete startWorkPendingTimers[id];
+  }
+
   function clearStartWorkPendingLocal(id: string): void {
+    clearStartWorkPendingWatchdog(id);
     if (!startWorkPendingIds.value.has(id)) return;
     const next = new Set(startWorkPendingIds.value);
     next.delete(id);
     startWorkPendingIds.value = next;
+  }
+
+  function scheduleStartWorkPendingWatchdog(id: string): void {
+    clearStartWorkPendingWatchdog(id);
+    startWorkPendingTimers[id] = setTimeout(() => {
+      if (!startWorkPendingIds.value.has(id)) return;
+      clearStartWorkPendingLocal(id);
+      pushToast(
+        "Start work is taking longer than expected — refresh the board if the task did not move.",
+        "warning",
+      );
+    }, START_WORK_PENDING_MAX_MS);
+  }
+
+  /** Returns false when a start is already pending for this id (#0822). */
+  function tryAcquireStartWorkPending(id: string): boolean {
+    if (startWorkPendingIds.value.has(id)) return false;
+    markStartWorkPendingLocal(id);
+    return true;
+  }
+
+  /** Preview shots and unit tests — seeds the Starting… card/drawer state (#0822). */
+  function seedStartWorkPending(id: string): void {
+    markStartWorkPendingLocal(id);
   }
 
   /** Start an agent turn; `clean` discards the dirty worktree and restarts fresh. */
@@ -2518,8 +2553,8 @@ export const useRepoStore = defineStore("repo", () => {
     instruction?: string,
     overrideDependencies = false,
   ): Promise<void> {
-    if (startWorkPendingIds.value.has(t.id)) return;
-    markStartWorkPendingLocal(t.id);
+    if (!tryAcquireStartWorkPending(t.id)) return;
+    const fromReady = t.status === "ready";
     try {
       const r = await api<{ ok: boolean; reason?: string }>(
         `/api/tasks/${t.id}/start`,
@@ -2533,6 +2568,7 @@ export const useRepoStore = defineStore("repo", () => {
       }
       acknowledgeHumanTaskAction(t.id);
       if (t.status === "active") clearStartWorkPendingLocal(t.id);
+      else if (fromReady) scheduleStartWorkPendingWatchdog(t.id);
     } catch (err) {
       clearStartWorkPendingLocal(t.id);
       throw err;
@@ -3819,6 +3855,7 @@ export const useRepoStore = defineStore("repo", () => {
     pmWorkingFor,
     debugTldrWorkingFor,
     isStartWorkPending,
+    seedStartWorkPending,
     startWork,
     pauseWork,
     abandonWork,
