@@ -2,7 +2,7 @@
 id: "0836"
 title: Concurrency cap and runner offload for local checks and Playwright runs (with Settings controls)
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/concurrency-cap-and-runner-offload-for-l
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:25Z"
-updated_at: "2026-10-18T17:45:05Z"
+updated_at: "2026-10-18T17:52:06Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -38,16 +38,16 @@ Look at src/commands/check.ts, src/server/integration-orchestrator.ts, the shot/
 ```json
 [
 {
-  "label": "Performance caps and pressure guard",
-  "target": "default",
-  "route": "/settings?tab=general&section=performance",
-  "highlight": "[data-settings-section=\"performance\"]"
+"label": "Performance caps and pressure guard",
+"target": "default",
+"route": "/settings?tab=general&section=performance",
+"highlight": "[data-settings-section=\"performance\"]"
 },
 {
-  "label": "Offload browser steps and local fallback",
-  "target": "default",
-  "route": "/settings?tab=general&section=remote-validation",
-  "highlight": "[data-settings-section=\"remote-validation\"]"
+"label": "Offload browser steps and local fallback",
+"target": "default",
+"route": "/settings?tab=general&section=remote-validation",
+"highlight": "[data-settings-section=\"remote-validation\"]"
 }
 ]
 ```
@@ -87,3 +87,4 @@ Look at src/commands/check.ts, src/server/integration-orchestrator.ts, the shot/
 - 2026-10-18T17:43:55Z · body
 - 2026-10-18T17:44:56Z · note: handoff requested (ui-review)
 - 2026-10-18T17:45:05Z · body
+- 2026-10-18T17:52:06Z · status active→review
