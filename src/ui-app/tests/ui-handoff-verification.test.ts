@@ -422,7 +422,7 @@ describe("UI handoff verification gate (#0680)", () => {
       route: "/agents",
       label: "Agents tab",
       steps: [{ waitFor: ".agent-row" }],
-      provenance: { kind: "declared", label: "Agents tab" },
+      provenance: { kind: "declared" as const, label: "Agents tab" },
     };
     vi.spyOn(shotCapture, "planAutoCapture").mockReturnValue({
       entries: [entry],
