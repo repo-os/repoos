@@ -126,6 +126,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--wait · --json · --port",
       },
       {
+        name: "sync",
+        usage: "sync <id> [--json] [--port N]",
+        desc: "Merge main into the task branch (POST /api/tasks/:id/sync)",
+        flags: "--json · --port",
+      },
+      {
         name: "verify",
         usage: "verify <id> [--json] [--port N]",
         desc: "Refresh task shots and UI verification at the current branch HEAD",
