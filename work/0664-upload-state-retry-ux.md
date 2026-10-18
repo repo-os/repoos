@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0664"
 title: Upload state + retry UX
 type: feature
@@ -39,3 +40,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-18T16:16:44Z · status inbox→ready
 - 2026-10-18T16:16:47Z · cli_override, model_override
 - 2026-10-18T16:16:49Z · status ready→active, needs_input, branch
+
