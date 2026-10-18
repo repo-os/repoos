@@ -63,7 +63,7 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": ".shot-viewer-shot-head",
 "steps": [
 {
-  "click": ".ui-changes .shot-row button.shot-expand"
+"click": ".ui-changes .shot-row button.shot-expand"
 }
 ],
 "state": "drawer:shotEvidence"
@@ -160,3 +160,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T01:21:28Z · body
 - 2026-10-18T01:21:39Z · status active→review
 - 2026-10-18T01:22:08Z · note: click .ui-changes .shot-row button.shot-expand: click: Error: strict mode violation: locator('.ui-changes .shot-row button.shot-expand') resolved to 2 elements: on /work?task=9999&tab=changes
+- 2026-10-18T01:22:08Z · note: highlight .shot-viewer-shot-head matched nothing on /work?task=9999&tab=changes
