@@ -1,0 +1,94 @@
+[
+  {
+    "label": "Docs skip warning and declare link (light)",
+    "target": "default",
+    "route": "/work?task=9999&tab=changes",
+    "state": "drawer:shotEvidence",
+    "theme": "light",
+    "highlight": ".ui-changes .shot-problem",
+    "steps": [{ "waitFor": ".ui-changes .shot-problem" }]
+  },
+  {
+    "label": "Docs skip warning and declare link (dark)",
+    "target": "default",
+    "route": "/work?task=9999&tab=changes",
+    "state": "drawer:shotEvidence",
+    "theme": "dark",
+    "highlight": ".ui-changes .shot-problem",
+    "steps": [{ "waitFor": ".ui-changes .shot-problem" }]
+  },
+  {
+    "label": "Screenshot viewer header with verdict and warning (light)",
+    "target": "default",
+    "route": "/work?task=9999&tab=changes",
+    "state": "drawer:shotEvidence",
+    "theme": "light",
+    "highlight": ".shot-viewer-shot-head",
+    "steps": [
+      { "waitFor": ".ui-changes .shot-row:first-of-type img" },
+      { "click": ".ui-changes .shot-row:first-of-type img" },
+      { "waitFor": ".shot-viewer-shot-head" }
+    ]
+  },
+  {
+    "label": "Screenshot viewer header with verdict and warning (dark)",
+    "target": "default",
+    "route": "/work?task=9999&tab=changes",
+    "state": "drawer:shotEvidence",
+    "theme": "dark",
+    "highlight": ".shot-viewer-shot-head",
+    "steps": [
+      { "waitFor": ".ui-changes .shot-row:first-of-type img" },
+      { "click": ".ui-changes .shot-row:first-of-type img" },
+      { "waitFor": ".shot-viewer-shot-head" }
+    ]
+  },
+  {
+    "label": "Integration timer median tooltip (light)",
+    "target": "default",
+    "route": "/",
+    "state": "closeOut:active",
+    "theme": "light",
+    "highlight": "[data-test-id=\"integration-timer-tip\"]",
+    "steps": [
+      { "waitFor": "[data-test-id=\"integration-timer\"]" },
+      { "click": "[data-test-id=\"integration-timer\"]" },
+      { "waitFor": "[data-test-id=\"integration-timer-tip\"]" }
+    ]
+  },
+  {
+    "label": "Integration timer median tooltip (dark)",
+    "target": "default",
+    "route": "/",
+    "state": "closeOut:active",
+    "theme": "dark",
+    "highlight": "[data-test-id=\"integration-timer-tip\"]",
+    "steps": [
+      { "waitFor": "[data-test-id=\"integration-timer\"]" },
+      { "click": "[data-test-id=\"integration-timer\"]" },
+      { "waitFor": "[data-test-id=\"integration-timer-tip\"]" }
+    ]
+  },
+  {
+    "label": "Mixed AI and human step check copy (light)",
+    "target": "default",
+    "route": "/agents?tab=model-routing",
+    "theme": "light",
+    "highlight": "[data-test-id=\"routing-human-step-row\"]",
+    "steps": [
+      { "waitFor": "[data-testid=\"model-routing-panel\"]" },
+      { "waitFor": "[data-test-id=\"routing-human-step-row\"]" }
+    ]
+  },
+  {
+    "label": "Mixed AI and human step check copy (dark)",
+    "target": "default",
+    "route": "/agents?tab=model-routing",
+    "theme": "dark",
+    "highlight": "[data-test-id=\"routing-human-step-row\"]",
+    "steps": [
+      { "waitFor": "[data-testid=\"model-routing-panel\"]" },
+      { "waitFor": "[data-test-id=\"routing-human-step-row\"]" }
+    ]
+  }
+]

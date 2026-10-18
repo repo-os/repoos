@@ -3028,16 +3028,17 @@ export function getConfigSchema(): ConfigFieldMeta[] {
     },
     {
       key: "model_routing.humanStepCheck",
-      label: "Check for human-only steps before starting",
+      label: "Check for mixed AI and human steps, and suggest splitting the task",
       type: "boolean",
       tier: "live",
       restartRequired: false,
       default: false,
       description:
-        "Before a ready task starts, ask the decision model whether it needs steps only a human can do " +
-        "and should be split into an AI task and a human task. Off by default. Uses the provider above; " +
-        "it only blocks a start when Model routing mode is Automatic (Shadow records the verdict without " +
-        "blocking), and if the provider is off, missing, or fails, the existing keyword check runs instead.",
+        "Before a ready task starts, ask the decision model whether it mixes AI steps with steps only " +
+        "a human can do; a yes means the task should be split into a separate AI task and a human task. " +
+        "Off by default. Uses the provider above; it only blocks a start when Model routing mode is " +
+        "Automatic (Shadow records the verdict without blocking), and if the provider is off, missing, " +
+        "or fails, the keyword check runs instead.",
     },
     // [board.columns] — display-only label overrides (#0396).
     ...STATUSES.map((status) => ({
