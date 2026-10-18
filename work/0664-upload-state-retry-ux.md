@@ -2,7 +2,7 @@
 id: "0664"
 title: Upload state + retry UX
 type: feature
-status: inbox
+status: ready
 needs_input: true
 questions: ["1. Retry endpoint: same or dedicated? 2. Auto-retry once? 3. Max retry count?"]
 priority: p1
@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-05T09:16:46Z"
+updated_at: "2026-10-18T16:16:44Z"
 ---
 Slice 7: Uploading / retrying / failed states visible in UI. Attachment never shown as available before upload succeeds. Retry without re-deriving user input.
 
@@ -36,3 +36,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 
 - 2026-10-05T08:29:24Z · created · unknown
 - 2026-10-05T09:16:46Z · needs_input, questions, body
+- 2026-10-18T16:16:44Z · status inbox→ready
