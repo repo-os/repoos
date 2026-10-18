@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-18T16:38:26Z"
-review_passes: 2
+last_close_out_gate_ms: 75109
+last_close_out_gate_at: "2026-10-18T16:42:03.742Z"
 id: "0663"
 title: Migration flow
 type: feature
@@ -15,6 +15,8 @@ branch: feat/migration-flow
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:15Z"
+updated_at: "2026-10-18T16:42:03Z"
+review_passes: 2
 review_rounds: 1
 ---
 Slice 6: Dry run, resumable upload, verification before local originals released. Migration is safely repeatable.
@@ -69,4 +71,5 @@ Slice 6: Dry run, resumable upload, verification before local originals released
 - 2026-10-18T16:37:37Z · status active→review
 - 2026-10-18T16:37:39Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-18T16:38:26Z · note: review pass 2: good to go
+- 2026-10-18T16:42:03Z · close-out gate completed in 75s
 
