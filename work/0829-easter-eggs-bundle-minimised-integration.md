@@ -191,3 +191,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T07:31:05Z · status active→review
 - 2026-10-18T07:31:31Z · note: waitFor [data-test-id=integration-timer]: waitFor: Timeout 5000ms exceeded. on /
 - 2026-10-18T07:31:32Z · note: click [data-test-id=integration-timer]: click: Timeout 5000ms exceeded. on /
+- 2026-10-18T07:31:32Z · note: waitFor [data-test-id=integration-timer-tip]: waitFor: Timeout 5000ms exceeded. on /
