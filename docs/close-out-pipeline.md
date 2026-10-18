@@ -677,6 +677,16 @@ publish-time dirty-main guard treats a dirty file under any of the three (plus
 `repoos.toml`) as routine, server-written churn it may auto-checkpoint — a dirty
 file anywhere else still fails closed.
 
+Before that classification, publish asks `git merge-tree` which of main's dirty
+paths the merge would actually overwrite (#0820). Only those are stashed — a
+`git stash push` scoped to exactly that set, immediately before the merge — and
+always popped back on top afterwards, so a merge git would otherwise refuse
+("Your local changes … would be overwritten by merge") still lands and the local
+edit is reapplied. Dirty files the merge does not touch are never stashed. A pop
+that conflicts keeps the stash (git does not drop it on failure), reports the
+conflict with the preserved edit in the error card, and hands the task to the
+Debugger — the edit is never committed or discarded to make the merge fit.
+
 **Only if the human explicitly authorizes manual recovery outside the normal
 pipeline:** when hand-landing a stale branch, do this check yourself; the guards
 only run inside the pipeline:

@@ -1,10 +1,9 @@
 ---
-updated_at: "2026-10-18T03:48:47Z"
-review_passes: 2
+close_out_repair_count: 1
 id: "0822"
 title: "Easter eggs bundle: Start work pending state, and Bird quick trail animation"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -13,6 +12,9 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
+updated_at: "2026-10-18T04:26:12Z"
+review_passes: 3
+review_rounds: 2
 ---
 ## Items
 
@@ -78,6 +80,76 @@ Use the shared ActivityIndicator and current activity/theme colors via currentCo
 ### Notes for AI
 Independent of E1; do not couple the two. Keep the default animation and every existing style unchanged.
 
+## Shots
+```json
+[
+{
+"label": "Bird quick trail activity animation preview",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": ".activity-animation-preview .ai-style-bird-quick-trail",
+"steps": [
+{
+"waitFor": ".activity-animation-preview .ai-style-bird-quick-trail"
+}
+],
+"state": "settings:birdQuickTrail"
+},
+{
+"label": "Ready card Starting… (light)",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
+"steps": [
+{
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
+],
+"state": "board:startWorkPending",
+"theme": "light"
+},
+{
+"label": "Ready card Starting… (dark)",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
+"steps": [
+{
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
+],
+"state": "board:startWorkPending",
+"theme": "dark"
+},
+{
+"label": "Drawer Start work Starting… (light)",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": "[data-test-id=\"task-drawer-start-work\"]",
+"steps": [
+{
+"waitFor": "[data-test-id=\"task-drawer-start-work\"]"
+}
+],
+"state": "drawer:startWorkPending",
+"theme": "light"
+},
+{
+"label": "Drawer Start work Starting… (dark)",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": "[data-test-id=\"task-drawer-start-work\"]",
+"steps": [
+{
+"waitFor": "[data-test-id=\"task-drawer-start-work\"]"
+}
+],
+"state": "drawer:startWorkPending",
+"theme": "dark"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-18T02:36:59Z · created · njachowski@gmail.com
@@ -87,7 +159,35 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T02:48:06Z · body: Items (added); E1 · Start work pending state (added); E2 · Bird quick trail animation (added); Problem (removed); Desired UX (removed); Acceptance criteria (removed); Notes for AI (removed); Bird quick trail animation (second item) (removed)
 - 2026-10-18T02:48:14Z · cli_override, model_override
 - 2026-10-18T02:48:17Z · status ready→active, branch
-- 2026-10-18T03:02:15Z · status active→review
-- 2026-10-18T03:47:22Z · note: review pass 1: good to go
-- 2026-10-18T03:48:47Z · note: review pass 2: good to go
+- 2026-10-18T02:51:45Z · body
+- 2026-10-18T02:52:51Z · body
+- 2026-10-18T02:54:16Z · body
+- 2026-10-18T03:02:16Z · status active→review
+- 2026-10-18T03:02:17Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
+- 2026-10-18T03:03:27Z · note: review pass 1: needs some work
+- 2026-10-18T03:03:29Z · status review→active
+- 2026-10-18T03:04:45Z · body
+- 2026-10-18T03:06:25Z · body
+- 2026-10-18T03:08:23Z · body
+- 2026-10-18T03:09:43Z · handoff failed · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
+- 2026-10-18T03:15:31Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-10-18T03:15:32Z · note: handoff requested (cli)
+- 2026-10-18T03:23:49Z · status active→review
+- 2026-10-18T03:23:49Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
+- 2026-10-18T03:23:49Z · note: shots: skipped — 5 handoff shots already captured for this exact plan (2f5c5bc1d) during finalization (#0734)
+- 2026-10-18T03:23:51Z · note: shots: skipped — 5 handoff shots already captured for this exact plan (2f5c5bc1d) during finalization (#0734)
+- 2026-10-18T03:25:06Z · note: review pass 2: needs some work
+- 2026-10-18T03:25:07Z · status review→active
+- 2026-10-18T03:26:17Z · body
+- 2026-10-18T03:26:45Z · body
+- 2026-10-18T03:29:40Z · body
+- 2026-10-18T03:36:48Z · body
+- 2026-10-18T03:47:54Z · status active→review
+- 2026-10-18T03:47:54Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
+- 2026-10-18T03:48:12Z · note: waitFor .activity-animation-preview .ai-style-bird-quick-trail: waitFor: Timeout 5000ms exceeded. on /settings?tab=general
+- 2026-10-18T03:48:12Z · note: highlight .activity-animation-preview .ai-style-bird-quick-trail matched nothing on /settings?tab=general
+- 2026-10-18T03:49:45Z · note: review pass 3: needs some work
+- 2026-10-18T03:49:45Z · needs_input
+- 2026-10-18T04:26:12Z · status review→active, needs_input
+- 2026-10-18T04:26:12Z · note: close-out repair: merge-conflict
 
