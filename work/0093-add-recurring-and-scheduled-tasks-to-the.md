@@ -8,8 +8,10 @@ area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-08-11T14:22:06Z"
-updated_at: "2026-10-18T19:02:40Z"
+updated_at: "2026-10-18T19:02:43Z"
 ---
 ## Problem
 
@@ -102,3 +104,4 @@ dependency constraint.
 - 2026-08-11T14:22:06Z · created · unknown
 - 2026-08-11T15:37:46Z · updated · narrow the first release to one-time, daily, and weekly schedules
 - 2026-10-18T19:02:40Z · status inbox→ready
+- 2026-10-18T19:02:43Z · cli_override, model_override
