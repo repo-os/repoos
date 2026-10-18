@@ -3,9 +3,6 @@ id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and timer tooltip"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — The five bundle items are implemented with solid unit/route coverage, but handoff UI evidence is stale (tree `96de36dea` vs reviewed `346573abc`) and only three of eight declared theme shots landed; timer tooltip and viewer dark theme are not visually verified."
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-18T02:06:00Z"
+updated_at: "2026-10-18T02:06:02Z"
 review_passes: 9
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T01:43:13.722Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from d6b69a01 to 346573ab) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -310,3 +307,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T02:04:36Z · note: waitFor [data-test-id="integration-timer-tip"]: waitFor: Timeout 5000ms exceeded. on /
 - 2026-10-18T02:04:37Z · note: highlight [data-test-id="integration-timer-tip"] matched nothing on /
 - 2026-10-18T02:06:00Z · status review→active
+- 2026-10-18T02:06:02Z · needs_input
