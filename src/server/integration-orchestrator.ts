@@ -2154,7 +2154,7 @@ export class CloseOutOrchestrator {
         taskRecord,
       );
       if (!tomlGuard.ok) {
-        return { ok: false, reason: tomlGuard.detail, retryable: false };
+        return { ok: false, reason: tomlGuard.detail };
       }
     }
 
@@ -3498,7 +3498,7 @@ export class CloseOutOrchestrator {
           publishTask,
         );
         if (!tomlGuard.ok) {
-          return { ok: false, reason: tomlGuard.detail, retryable: false };
+          return { ok: false, reason: tomlGuard.detail };
         }
       }
 
