@@ -90,6 +90,28 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.isStartWorkPending(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
   });
 
+  it("seeds failed input attachment uploads for New input panel shots (#0664)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    applyShotPreviewFixture(repo, "panel:newInputOutstandingUpload");
+    expect(ui.isNewInput).toBe(true);
+    expect(repo.outstandingInputAttachmentUploads()).toHaveLength(1);
+    expect(repo.outstandingInputAttachmentUploads()[0]?.attachment.uploadPhase).toBe("failed");
+  });
+
+  it("seeds failed freeform screenshots for New task panel shots (#0664)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    applyShotPreviewFixture(repo, "panel:freeformFailedScreenshot");
+    expect(ui.isNew).toBe(true);
+    expect(ui.hasFailedPendingScreenshots()).toBe(true);
+    expect(ui.pendingScreenshots[0]?.uploadError).toContain("Upload failed");
+  });
+
   it("leaves other config fixtures untouched (#0805)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
