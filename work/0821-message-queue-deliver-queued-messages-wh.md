@@ -2,14 +2,14 @@
 id: "0821"
 title: "Message queue: deliver queued messages when a turn ends, persist them, and allow queued sends in every AI chat"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: [server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T02:12:03Z"
-updated_at: "2026-10-18T02:12:03Z"
+updated_at: "2026-10-18T02:33:36Z"
 ---
 ## Problem
 1. A message sent while an engineer or reviewer is running is queued in memory (src/server/agents.ts, queuedMessages). The queue is only drained when the task is started or sent to again. Nothing drains it when the turn ends, so a message sent during a turn can sit unread while the task moves to review (#0819 was handed off this way). The queue is also lost on a server restart. The 'agent busy — delivers when the turn ends' note is therefore not true.
@@ -35,3 +35,4 @@ Start from the queue in src/server/agents.ts (queuedMessages, messageQueuedAt, c
 ## Activity
 
 - 2026-10-18T02:12:03Z · created · njachowski@gmail.com
+- 2026-10-18T02:33:36Z · status inbox→ready
