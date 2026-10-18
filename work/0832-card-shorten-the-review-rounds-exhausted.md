@@ -1,6 +1,4 @@
 ---
-last_close_out_gate_ms: 438673
-last_close_out_gate_at: "2026-10-18T08:57:38.574Z"
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
@@ -13,7 +11,9 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T08:57:38Z"
+updated_at: "2026-10-18T08:58:14Z"
+last_close_out_gate_ms: 438673
+last_close_out_gate_at: "2026-10-18T08:57:38.574Z"
 review_passes: 1
 ---
 ## Problem
@@ -42,14 +42,14 @@ Bundle-sized: a second small item may be added by the human before start. Source
 "highlight": "[data-task-id=\"0832\"] .tc-needs-detail",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"0832\"] .tc-needs-detail"
+"waitFor": "[data-task-id=\"0832\"] .tc-needs-detail"
 }
 ],
 "assert": [
 {
-  "selector": "[data-task-id=\"0832\"] .tc-needs-detail",
-  "label": "detail omits duplicated verdict label",
-  "text": "contrast audit"
+"selector": "[data-task-id=\"0832\"] .tc-needs-detail",
+"label": "detail omits duplicated verdict label",
+"text": "contrast audit"
 }
 ],
 "state": "card:reviewRoundsExhausted",
@@ -62,14 +62,14 @@ Bundle-sized: a second small item may be added by the human before start. Source
 "highlight": "[data-task-id=\"0832\"] .tc-needs-detail",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"0832\"] .tc-needs-detail"
+"waitFor": "[data-task-id=\"0832\"] .tc-needs-detail"
 }
 ],
 "assert": [
 {
-  "selector": "[data-task-id=\"0832\"] .tc-needs-detail",
-  "label": "detail omits duplicated verdict in dark theme",
-  "text": "contrast audit"
+"selector": "[data-task-id=\"0832\"] .tc-needs-detail",
+"label": "detail omits duplicated verdict in dark theme",
+"text": "contrast audit"
 }
 ],
 "state": "card:reviewRoundsExhausted",
@@ -94,4 +94,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T08:53:56Z · body
 - 2026-10-18T08:54:53Z · body
 - 2026-10-18T08:57:38Z · close-out gate completed in 439s
-
+- 2026-10-18T08:58:14Z · body
