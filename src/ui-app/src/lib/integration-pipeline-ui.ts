@@ -15,9 +15,11 @@ export interface IntegrationDurationHistory {
 }
 
 /**
- * The most recent completed close-outs that recorded a duration, newest first.
- * Runs without timing (legacy outcome rows) are skipped rather than counted as
- * zero. `limit` defaults to the status bar's 15-run window (#0814).
+ * The most recent SUCCEEDED close-outs that recorded a duration, newest first.
+ * A failed or timed-out run is not a run a reviewer should measure a normal
+ * close-out against, so it is excluded (#0819). Runs without timing (legacy
+ * outcome rows) are skipped rather than counted as zero. `limit` defaults to
+ * the status bar's 15-run window (#0814).
  */
 export function integrationDurationSamples(
   outcomes: CloseOutOutcomeEvent[] | null | undefined,
@@ -28,7 +30,10 @@ export function integrationDurationSamples(
   return (outcomes ?? [])
     .filter(
       (o): o is CloseOutOutcomeEvent & { durationMs: number } =>
-        typeof o.durationMs === "number" && Number.isFinite(o.durationMs) && o.durationMs >= 0,
+        o.outcome === "succeeded" &&
+        typeof o.durationMs === "number" &&
+        Number.isFinite(o.durationMs) &&
+        o.durationMs >= 0,
     )
     .slice()
     .sort((a, b) => b.finishedAt.localeCompare(a.finishedAt))
@@ -36,7 +41,7 @@ export function integrationDurationSamples(
     .map((o) => o.durationMs);
 }
 
-/** Median of the last few timed close-outs, or null when none recorded one. */
+/** Median of the last few SUCCEEDED timed close-outs, or null when none recorded one. */
 export function integrationMedianDuration(
   outcomes: CloseOutOutcomeEvent[] | null | undefined,
   limit = INTEGRATION_MEDIAN_SAMPLE,
@@ -50,17 +55,41 @@ export function integrationMedianDuration(
   return { medianMs, count: samples.length };
 }
 
-/** Hover/focus copy for the timer chip: the median, and how many runs it used. */
+/** The line-2 instruction shown under the median in the timer tooltip (#0819). */
+export const INTEGRATION_TIMER_INSTRUCTION = "Click to switch between elapsed time and a countdown";
+
+/** Copy shown when no succeeded, timed close-out has been recorded yet. */
+export const INTEGRATION_NO_MEDIAN_COPY =
+  "No completed integrations with timing yet — the median appears after a close-out finishes.";
+
+/**
+ * The tooltip's first line as a chip label (#0819): `Median 2m 25s · 15 runs`.
+ * The run count is kept because the median of 3 runs is a much weaker claim
+ * than the median of 15, and the chip is the only place that distinction shows.
+ */
+export function integrationMedianChip(
+  outcomes: CloseOutOutcomeEvent[] | null | undefined,
+  limit = INTEGRATION_MEDIAN_SAMPLE,
+): string {
+  const history = integrationMedianDuration(outcomes, limit);
+  if (!history) return "No median yet";
+  const runs = history.count === 1 ? "run" : "runs";
+  return `Median ${formatDuration(history.medianMs)} · ${history.count} ${runs}`;
+}
+
+/**
+ * The two-line tooltip text: the median chip, then the instruction (or, with no
+ * history, why the median is missing). Kept as a plain string for the button's
+ * `aria-label`; the rich two-line pane renders {@link integrationMedianChip}
+ * and this second line separately.
+ */
 export function integrationMedianTip(
   outcomes: CloseOutOutcomeEvent[] | null | undefined,
   limit = INTEGRATION_MEDIAN_SAMPLE,
 ): string {
   const history = integrationMedianDuration(outcomes, limit);
-  if (!history) {
-    return "No completed integrations with timing yet — the median appears after a close-out finishes.";
-  }
-  const runs = history.count === 1 ? "run" : "runs";
-  return `Median of the last ${history.count} integration ${runs}: ${formatDuration(history.medianMs)}. Click to switch between elapsed time and a countdown.`;
+  const instruction = history ? INTEGRATION_TIMER_INSTRUCTION : INTEGRATION_NO_MEDIAN_COPY;
+  return `${integrationMedianChip(outcomes, limit)}\n${instruction}`;
 }
 
 /** `T-01:34` (remaining) or `T+00:12` (over the median) for the countdown mode. */

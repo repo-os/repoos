@@ -10,10 +10,12 @@ import {
   integrationActiveCopy,
   integrationBarActiveTitle,
   integrationCountdownLabel,
+  integrationMedianChip,
   integrationMedianDuration,
-  integrationMedianTip,
   integrationPipelineStalled,
   integrationStageLabel,
+  INTEGRATION_NO_MEDIAN_COPY,
+  INTEGRATION_TIMER_INSTRUCTION,
 } from "../lib/integration-pipeline-ui";
 import { fileCheckSetupTask, isGenuinelyEmptyPlan } from "../lib/check-setup";
 import { api } from "../api";
@@ -96,7 +98,10 @@ function onWindowResize(): void {
 // The stage row can unmount (pipeline drains, bar folds) without emitting a
 // mouseleave, which would leave a stale pane pinned to the screen.
 watch([active, collapsed], () => {
-  if (!active.value || collapsed.value) hoveredStage.value = null;
+  if (!active.value || collapsed.value) {
+    hoveredStage.value = null;
+    timerTipOpen.value = false;
+  }
 });
 
 // ── Live stopwatch ─────────────────────────────────────────────────────────
@@ -130,14 +135,50 @@ const elapsed = computed(() => {
 // median (clearly italic and prefixed T-), so "how long is normal?" is one
 // glance away without changing the default elapsed readout.
 const timerHistory = computed(() => integrationMedianDuration(notices.closeOutOutcomes));
-const timerTip = computed(() => integrationMedianTip(notices.closeOutOutcomes));
+/** Line 1 of the tooltip, as a chip: `Median 2m 25s · 15 runs`. */
+const timerTipChip = computed(() => integrationMedianChip(notices.closeOutOutcomes));
+/** Line 2: the click instruction, or why there is no median yet (#0819). */
+const timerTipLine = computed(() =>
+  timerHistory.value ? INTEGRATION_TIMER_INSTRUCTION : INTEGRATION_NO_MEDIAN_COPY,
+);
+/** Screen-reader text: the rich pane's two lines flattened into one string. */
+const timerTipAria = computed(() => `${timerTipChip.value}. ${timerTipLine.value}`);
 const timerCountdown = ref(false);
+
+// ── Timer tooltip (#0819) ──────────────────────────────────────────────────
+// The global plain-text `data-tip` cannot render the chip + fainter italic
+// instruction the timer deserves, so this is a small teleported pane anchored
+// above the chip itself (the bar's stacking context would trap a fixed child).
+const timerTipOpen = ref(false);
+const timerTipStyle = ref<Record<string, string>>({});
+
+function showTimerTip(event: MouseEvent | FocusEvent): void {
+  const el = event.currentTarget as HTMLElement | null;
+  const rect = el?.getBoundingClientRect();
+  if (!rect || typeof window === "undefined") return;
+  const width = 360;
+  const left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12));
+  timerTipStyle.value = {
+    left: `${left}px`,
+    bottom: `${window.innerHeight - rect.top + 10}px`,
+  };
+  timerTipOpen.value = true;
+}
+
+function hideTimerTip(): void {
+  timerTipOpen.value = false;
+}
 
 watch(timerHistory, (history) => {
   if (!history) timerCountdown.value = false;
 });
 
-function toggleTimerMode(): void {
+function toggleTimerMode(event?: MouseEvent): void {
+  // A click/tap shows the rich tooltip as well as toggling the countdown
+  // (#0819): touch users get the median explanation, and the handoff capture's
+  // click step is what makes the two-line pane visible in the PNG. Hover and
+  // focus still open it without changing the readout.
+  if (event) showTimerTip(event);
   if (!timerHistory.value) return;
   timerCountdown.value = !timerCountdown.value;
 }
@@ -457,10 +498,14 @@ async function fileSetupTask(): Promise<void> {
                 type="button"
                 class="ibar-chip ibar-chip--timer mono"
                 :class="{ 'ibar-chip--countdown': timerCountdown && timerHistory }"
-                :data-tip="timerTip"
-                :aria-label="timerTip"
+                :aria-label="timerTipAria"
+                aria-describedby="integration-timer-tip"
                 :aria-pressed="timerHistory ? timerCountdown : undefined"
                 data-test-id="integration-timer"
+                @mouseenter="showTimerTip"
+                @focus="showTimerTip"
+                @mouseleave="hideTimerTip"
+                @blur="hideTimerTip"
                 @click.stop="toggleTimerMode"
                 @keydown.enter.stop
                 @keydown.space.stop
@@ -510,10 +555,14 @@ async function fileSetupTask(): Promise<void> {
               type="button"
               class="ibar-chip ibar-chip--timer mono"
               :class="{ 'ibar-chip--countdown': timerCountdown && timerHistory }"
-              :data-tip="timerTip"
-              :aria-label="timerTip"
+              :aria-label="timerTipAria"
+              aria-describedby="integration-timer-tip"
               :aria-pressed="timerHistory ? timerCountdown : undefined"
               data-test-id="integration-timer"
+              @mouseenter="showTimerTip"
+              @focus="showTimerTip"
+              @mouseleave="hideTimerTip"
+              @blur="hideTimerTip"
               @click="toggleTimerMode"
             >
               {{ timerText }}
@@ -636,6 +685,27 @@ async function fileSetupTask(): Promise<void> {
         :style="paneStyle"
       >
         <p class="stage-pane-text">{{ stageTitle(hoveredStage) }}</p>
+      </div>
+    </Teleport>
+
+    <!-- Timer tooltip (#0819). The global plain-text tooltip cannot style a
+         chip or a fainter italic instruction, so this two-line pane is
+         teleported to <body> (the bar's stacking context would trap it),
+         anchored above the chip, and pointer-transparent. It deliberately does
+         NOT set `data-overlay-layer`: per #0575 that attribute is for
+         interactive floating layers, never a click-through tooltip, and
+         `pointer-events: none` is what keeps it inert while a modal is open. -->
+    <Teleport to="body">
+      <div
+        v-if="timerTipOpen"
+        id="integration-timer-tip"
+        class="timer-tip"
+        role="tooltip"
+        data-test-id="integration-timer-tip"
+        :style="timerTipStyle"
+      >
+        <span class="timer-tip-chip mono">{{ timerTipChip }}</span>
+        <span class="timer-tip-line">{{ timerTipLine }}</span>
       </div>
     </Teleport>
   </div>

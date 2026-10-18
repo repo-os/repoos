@@ -207,6 +207,29 @@ describe("ModelRoutingPanel", () => {
     wrapper.unmount();
   });
 
+  // #0819 item 5 — the checkbox names mixed AI/human steps and the split, and
+  // the help says a yes means a split with the keyword check as the fallback.
+  it("labels the human-step check as mixed AI and human steps that should be split", async () => {
+    seedConfig({ "model_routing.mode": "shadow" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/model-routing/status")) return jsonResponse(jevStatus());
+        if (url.includes("/api/model-routing/decisions")) return jsonResponse({ decisions: [] });
+        throw new Error(url);
+      }),
+    );
+    const wrapper = await mountPanel();
+    await flushPromises();
+    const label = wrapper.find("[data-testid='routing-human-step-check']").element.closest("label");
+    expect(label?.textContent).toContain(
+      "Check for mixed AI and human steps, and suggest splitting the task",
+    );
+    expect(wrapper.text()).toContain("split into a separate AI task and a human task");
+    expect(wrapper.text()).toContain("keyword check runs instead");
+    wrapper.unmount();
+  });
+
   // #0809 — Clef-Flash must not appear anywhere on the routing page.
   it("shows no Clef-Flash option, server URL, or token text", async () => {
     seedConfig({ "model_routing.mode": "shadow", "model_routing.provider": "jev" });

@@ -91,6 +91,50 @@ function bodyDropsSpecSections(currentBody: string, newBody: string): boolean {
   );
 }
 
+/** `## E<n> · …` item section ids in a bundle body (empty when not a bundle). */
+function bundleItemSectionIds(body: string): Set<string> {
+  const ids = new Set<string>();
+  for (const line of body.split("\n")) {
+    const m = line.trim().match(/^## E(\d+)\s*·/);
+    if (m) ids.add(`E${m[1]}`);
+  }
+  return ids;
+}
+
+/** `**E<n> ·` ids listed under `## Items` (empty when that section is absent). */
+function bundleItemsListIds(body: string): Set<string> {
+  const itemsSection = extractSection(body, "## Items");
+  if (itemsSection === null) return new Set();
+  const ids = new Set<string>();
+  for (const line of itemsSection.split("\n")) {
+    const m = line.match(/\*\*E(\d+)\s*·/);
+    if (m) ids.add(`E${m[1]}`);
+  }
+  return ids;
+}
+
+/**
+ * Easter-egg ids that a full `--body` replace would drop from section headings
+ * or the Items checklist. Only applies when the current body already has bundle
+ * item sections (`## E<n> ·`); non-bundle tasks return an empty list (#0825).
+ */
+function droppedBundleItemIds(currentBody: string, newBody: string): string[] {
+  const sectionIds = bundleItemSectionIds(currentBody);
+  if (sectionIds.size === 0) return [];
+
+  const missing = new Set<string>();
+  const newSectionIds = bundleItemSectionIds(newBody);
+  for (const id of sectionIds) {
+    if (!newSectionIds.has(id)) missing.add(id);
+  }
+  const oldListIds = bundleItemsListIds(currentBody);
+  const newListIds = bundleItemsListIds(newBody);
+  for (const id of oldListIds) {
+    if (!newListIds.has(id)) missing.add(id);
+  }
+  return [...missing].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
+}
+
 /**
  * The activity entry recorded for a body edit. #0817: when the edit changes
  * requirement sections, name them (added/edited/removed) so the Activity log
@@ -446,12 +490,21 @@ export function patchTaskFile(
     if (nextBody !== current.body) changes.push(bodyChangeEntry(current.body, nextBody));
     current.body = nextBody;
   } else if (patch.body !== undefined) {
-    if (!patch.force && bodyDropsSpecSections(current.body, patch.body)) {
-      throw new WriteError(
-        "a full --body replace would drop spec sections (Problem / Desired UX / " +
-          'Acceptance criteria / Notes for AI) — use --section "<heading>" to edit ' +
-          "one section, or pass --force to override this guard",
-      );
+    if (!patch.force) {
+      if (bodyDropsSpecSections(current.body, patch.body)) {
+        throw new WriteError(
+          "a full --body replace would drop spec sections (Problem / Desired UX / " +
+            'Acceptance criteria / Notes for AI) — use --section "<heading>" to edit ' +
+            "one section, or pass --force to override this guard",
+        );
+      }
+      const droppedBundle = droppedBundleItemIds(current.body, patch.body);
+      if (droppedBundle.length > 0) {
+        throw new WriteError(
+          `a full --body replace would drop easter-egg bundle item(s) (${droppedBundle.join(", ")}) — ` +
+            "use --section or repoos bundle to edit one item, or pass --force to override this guard",
+        );
+      }
     }
     // Carry user-owned / append-only sections over from the on-disk copy so a
     // caller that replaced the whole body (freeform PM rewrites do) can't drop

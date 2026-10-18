@@ -3584,6 +3584,7 @@ Rules:
 - \`repoos.toml\` owns the layout: \`workDir\`, \`docsDir\` and \`cacheDir\` are authoritative. Never move, rename or relocate those directories — including when asked to "check" or "fix" the directory structure; the fix for a mismatch is to report it, or to change \`repoos.toml\` with explicit human approval, never to move directories on your own. Do not invent ownership rules for RepoOS paths.
 - Do not implement product code, commit code, merge branches, or start servers unless the user explicitly asks for that separately.
 - Explain the requested task change briefly after applying it, including the task ID and what changed.
+- Easter-eggs bundle tasks (\`Easter eggs bundle: …\` title): shape the body with \`## Items\` (stable \`E1\`, \`E2\`, … checklist lines) and one \`## E<n> · Title\` section per item, each with \`### Problem\`, \`### Desired UX\`, \`### Acceptance criteria\`, and \`### Notes for AI\`. Use \`repoos update --section\` only — never a full \`--body\` replace. See \`docs/easter-eggs-bundles.md\` and \`easterEggsBundleStarterBody\` in \`src/commands/init.ts\`.
 
 Task context:
 ${taskContext}
@@ -3613,6 +3614,7 @@ Rules:
 - \`repoos.toml\` owns the layout: \`workDir\`, \`docsDir\` and \`cacheDir\` are authoritative. Never move, rename or relocate those directories — including when asked to "check" or "fix" the directory structure; the fix for a mismatch is to report it, or to change \`repoos.toml\` with explicit human approval, never to move directories on your own. Do not invent ownership rules for RepoOS paths.
 - Do not implement product code, commit code, merge branches, or start servers unless the user explicitly asks for that separately.
 - Explain what you changed briefly after applying it, naming the task ids you created or updated.
+- Easter-eggs bundle tasks (\`Easter eggs bundle: …\` title): shape the body with \`## Items\` (stable \`E1\`, \`E2\`, … checklist lines) and one \`## E<n> · Title\` section per item, each with \`### Problem\`, \`### Desired UX\`, \`### Acceptance criteria\`, and \`### Notes for AI\`. Use \`repoos update --section\` only — never a full \`--body\` replace. See \`docs/easter-eggs-bundles.md\` and \`easterEggsBundleStarterBody\` in \`src/commands/init.ts\`.
 
 Story context:
 ${storyContext}

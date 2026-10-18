@@ -2,19 +2,19 @@
 id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and timer tooltip"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — The bundle delivers all five items with solid unit/integration tests and green handoff captures for docs skip (light/dark), screenshot viewer header (light/dark), and model-routing copy (light/dark). Integration timer tooltip shots (default-5/6) failed every step: they used `closeOut:active`, which does not expand the bar or seed 15 outcomes; the branch adds `integration:median15` for exactly that, but declared shots were not updated, so light/dark tooltip styling is unverified despite passing `notices.test.ts` / component tests."
+status: done
 priority: p3
 area: web
+merged_commit: 2c17f025bd7669dc43f9c02981e2e8e9fef848a3
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-18T02:28:01Z"
+updated_at: "2026-10-18T02:36:19Z"
+last_close_out_gate_ms: 131841
+last_close_out_gate_at: "2026-10-18T02:35:33.046Z"
 review_passes: 11
 last_check_failure: "repoos check at 2026-10-18T01:43:13.722Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from d6b69a01 to 346573ab) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -334,3 +334,7 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T02:28:01Z · note: click [data-test-id="integration-timer"]: click: Timeout 5000ms exceeded. on /
 - 2026-10-18T02:28:01Z · note: waitFor [data-test-id="integration-timer-tip"]: waitFor: Timeout 5000ms exceeded. on /
 - 2026-10-18T02:28:01Z · note: highlight [data-test-id="integration-timer-tip"] matched nothing on /
+- 2026-10-18T02:35:33Z · close-out gate completed in 132s
+- 2026-10-18T02:35:35Z · note: handoff requested (cli)
+- 2026-10-18T02:35:36Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-18T02:36:19Z · status inbox→done, release:success

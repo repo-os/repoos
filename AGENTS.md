@@ -454,8 +454,10 @@ cannot tell from the code alone:
   it while big tasks soak or wait. A bundle is an ordinary task: it still
   runs the gate and goes to review — it just pays that overhead once for several
   fixes. When the human explicitly asks for a hotfix on `main`, the direct-commit
-  exception above still applies. See `docs/easter-eggs-bundles.md`; #0721 is the
-  worked example.
+  exception above still applies. See `docs/easter-eggs-bundles.md` for the full
+  workflow and the fixed bundle body shape (`## Items` with stable E-ids,
+  then one `## E<n> · Title` section per item with the usual four sub-headings);
+  #0822 is the worked example.
 - **Explicitly authorized manual recovery only:** if the human directs you to
   hand-land a stale branch outside the normal pipeline, check other tasks' files —
   `git diff main...HEAD --name-only | grep -E '^(work|inputs|stories)/'` — and

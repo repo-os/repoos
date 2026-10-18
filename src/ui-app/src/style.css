@@ -6477,6 +6477,20 @@
   font-size: 11px;
   margin-top: 2px;
 }
+/* #0819: the actionable fix for a docs-only shot skip — the skip text says
+   what was skipped, this points at how to declare the missing route. */
+.shot-warning-link {
+  margin-left: 6px;
+  color: var(--cyan);
+  font-size: 11.5px;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.shot-warning-link:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
 .shot-warning-preview {
   margin-top: 6px;
   color: var(--amber);
@@ -6692,6 +6706,26 @@
   border: 1px solid var(--border);
   border-radius: 2px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+/* #0819: a captured shot's own header in the viewer — the handoff verdict
+ * (reusing the Changes-tab `.shot-row-verdict` icon) plus its plain-words
+ * warning. Full width and left-aligned so a wrapping warning reads as a line,
+ * not a centred caption. */
+.shot-viewer-shot-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+}
+.shot-viewer-verdict {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--txt-dim);
+  overflow-wrap: anywhere;
+}
+.shot-viewer-shot-head.is-check .shot-viewer-verdict {
+  color: var(--amber);
 }
 .shot-viewer-caption {
   font-family: "JetBrains Mono", monospace;
@@ -13992,6 +14026,61 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .stage-pane {
+    animation: none;
+  }
+}
+
+/* Timer tooltip (#0819). A rich two-line pane: line 1 is the median as a chip
+ * styled like the timer chip, line 2 is the click instruction in a fainter,
+ * smaller italic. Teleported to <body> by IntegrationStatusBar.vue and
+ * anchored above the chip; pointer-events: none so it never blocks a click. */
+.timer-tip {
+  position: fixed;
+  z-index: 66;
+  pointer-events: none;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  animation: timer-tip-in 0.12s ease-out;
+}
+@keyframes timer-tip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.timer-tip-chip {
+  align-self: flex-start;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--txt-dim);
+  background: var(--chip-bg);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.timer-tip-line {
+  font-size: 11px;
+  line-height: 1.4;
+  font-style: italic;
+  color: var(--txt-dim);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .timer-tip {
     animation: none;
   }
 }

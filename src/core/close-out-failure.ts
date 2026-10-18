@@ -146,8 +146,15 @@ export function describeCloseOutFailure(
 
   switch (kind) {
     case "conflict": {
+      // #0820: a stash-pop conflict is a conflict of main's own local edits
+      // reapplied on top of the just-merged tree, not a branch-vs-main one —
+      // the fix is resolving markers in the main checkout and dropping the
+      // kept stash, not merging main into the branch.
+      const stashPop = /publish stash pop conflict/i.test(clean);
       const summary = conflicts.length
-        ? `Merge conflict in ${conflicts.length} file${conflicts.length === 1 ? "" : "s"}.`
+        ? stashPop
+          ? `Main's stashed local edits could not be reapplied — ${conflicts.length} file${conflicts.length === 1 ? "" : "s"} conflicted.`
+          : `Merge conflict in ${conflicts.length} file${conflicts.length === 1 ? "" : "s"}.`
         : clean
           ? headline(clean)
           : CONFLICT_HINT;
@@ -156,7 +163,9 @@ export function describeCloseOutFailure(
         conflicts,
         step: "merge",
         detail: clean || undefined,
-        hint: CONFLICT_HINT,
+        hint: stashPop
+          ? "Main is still on main with the merge landed, but its local uncommitted edits were set aside and could not be reapplied cleanly. Resolve the conflict markers in the main checkout, then drop the kept stash (`git stash drop`). The edits were never committed or discarded."
+          : CONFLICT_HINT,
       };
     }
     case "environment": {
