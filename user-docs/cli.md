@@ -285,7 +285,8 @@ chat, for example — pass each one to `--screenshot` (repeatable) on `repoos ne
 or `repoos update`. The command validates the file against the same allowlist
 and size limit the UI upload uses (`.png`, `.jpg`/`.jpeg`, `.gif`, `.webp`,
 `.avif`, `.bmp`; max 10 MB), stores it under the gitignored
-`work/.attachments/<id>/`, assigns the next `screenshot-N` name, and writes or
+`work/.attachments/<id>/`, assigns an opaque `att_<uuid>.<ext>` storage name
+(stable in committed Markdown), and writes or
 extends the task's `## Screenshots` section (kept before `## Activity`). It
 prints the resulting attachment URLs:
 

@@ -24,6 +24,11 @@ import { join } from "node:path";
 import { rmFixture } from "./helpers";
 import { cmdNew, cmdUpdate } from "../../commands/tasks";
 import { parseTask } from "../../core/task";
+import { STABLE_ATTACHMENT_OBJECT_RE } from "../../core/attachment-reference";
+
+function attachmentObjectsInBody(body: string): string[] {
+  return [...body.matchAll(/\/attachments\/([^)]+)\)/g)].map((m) => decodeURIComponent(m[1]));
+}
 
 /** A 1x1 transparent PNG, base64-encoded. */
 const PNG_1PX =
@@ -137,11 +142,14 @@ describe("repoos new --screenshot", () => {
       const activityIdx = task.body.indexOf("## Activity");
       expect(shotsIdx).toBeGreaterThan(-1);
       expect(shotsIdx).toBeLessThan(activityIdx);
-      expect(task.body).toContain(`![a](/api/tasks/${id}/attachments/screenshot-1.png)`);
-      expect(task.body).toContain(`![b](/api/tasks/${id}/attachments/screenshot-2.png)`);
+      expect(task.body).toContain(`![a](/api/tasks/${id}/attachments/`);
+      expect(task.body).toContain(`![b](/api/tasks/${id}/attachments/`);
 
       const dir = join(root, "work", ".attachments", id);
-      expect(readdirSync(dir).sort()).toEqual(["screenshot-1.png", "screenshot-2.png"]);
+      const objects = attachmentObjectsInBody(task.body);
+      expect(objects).toHaveLength(2);
+      expect(readdirSync(dir).sort()).toEqual(objects.sort());
+      expect(objects.every((o) => STABLE_ATTACHMENT_OBJECT_RE.test(o))).toBe(true);
 
       // Nothing under work/ is staged — the task .md and the gitignored pixels
       // are not `git add`ed by the command (the helper commits the .md only,
@@ -169,9 +177,9 @@ describe("repoos new --screenshot", () => {
       );
       expect(code).toBe(0);
       const id = latestTaskId(root);
-      expect(loadTask(root, id).body).toContain(
-        `![the crash](/api/tasks/${id}/attachments/screenshot-1.png)`,
-      );
+      const captioned = loadTask(root, id).body;
+      expect(captioned).toContain(`![the crash](/api/tasks/${id}/attachments/att_`);
+      expect(STABLE_ATTACHMENT_OBJECT_RE.test(attachmentObjectsInBody(captioned)[0])).toBe(true);
 
       const b = writePng(root, "b.png");
       const bad = await runCli(() =>
@@ -261,13 +269,11 @@ describe("repoos update --screenshot", () => {
       expect(code).toBe(0);
 
       const task = loadTask(root, id);
-      expect(task.body).toContain(`![c](/api/tasks/${id}/attachments/screenshot-3.png)`);
+      expect(task.body).toContain(`![c](/api/tasks/${id}/attachments/att_`);
       expect(task.body.indexOf("## Screenshots")).toBeLessThan(task.body.indexOf("## Activity"));
-      expect(readdirSync(join(root, "work", ".attachments", id)).sort()).toEqual([
-        "screenshot-1.png",
-        "screenshot-2.png",
-        "screenshot-3.png",
-      ]);
+      const objects = attachmentObjectsInBody(task.body);
+      expect(objects).toHaveLength(3);
+      expect(readdirSync(join(root, "work", ".attachments", id)).sort()).toEqual(objects.sort());
       // Only one ## Screenshots heading — the update merged into the existing one.
       expect(task.body.match(/## Screenshots/g)?.length).toBe(1);
     } finally {
@@ -293,7 +299,7 @@ describe("repoos update --screenshot", () => {
       expect(code).toBe(0);
       const task = loadTask(root, "0001");
       expect(task.priority).toBe("p0");
-      expect(task.body).toContain("screenshot-1.png");
+      expect(attachmentObjectsInBody(task.body)[0]?.startsWith("att_")).toBe(true);
 
       // A missing image is reported and the metadata patch is not applied.
       const bad = await runCli(() =>
