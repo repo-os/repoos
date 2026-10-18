@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 19ea7cf5 to 0c8d57f7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 95c8d249f47ee95fb7c879c18a530a79ac06c20e
 id: "0093"
 title: Add recurring and scheduled tasks to the Agents page
 type: feature
@@ -140,3 +142,4 @@ dependency constraint.
 - 2026-10-18T19:51:33Z · note: handoff requested (cli)
 - 2026-10-18T19:54:40Z · body
 - 2026-10-18T19:58:28Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 19ea7cf5 to 0c8d57f7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
