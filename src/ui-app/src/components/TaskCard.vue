@@ -42,6 +42,7 @@ import {
   integrationQueuedCopy,
 } from "../lib/integration-pipeline-ui";
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
+import { localQueueHintForTask } from "../lib/local-queue-hint";
 
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
@@ -398,6 +399,10 @@ async function retryStalledPipeline(): Promise<void> {
 /** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
  *  normal "coding" hint when it's still producing output. */
 function codingOrStuckHint(taskId: string): CardHint {
+  const localQueued = localQueueHintForTask(repo.resourceQueueMarkers, taskId);
+  if (localQueued) {
+    return { label: localQueued.label, title: localQueued.title, cls: "tc-queued" };
+  }
   const queued = remotePoolQueueHintForTaskChecks(repo.taskChecks[taskId]);
   if (queued) {
     return { label: queued.label, title: queued.title, cls: "tc-queued" };

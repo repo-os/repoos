@@ -43,6 +43,7 @@ import {
   defaultMaxConcurrentAgents,
   loadConfig,
 } from "../core/config.js";
+import { pressureReason } from "../core/pressure-guard.js";
 import { isProviderFailureReason } from "../core/attention.js";
 import {
   creditIdleMs,
@@ -6197,6 +6198,19 @@ export class AgentRunner {
       branch ?? task?.branch,
     );
     if (lockRefusal) return { ok: false, reason: lockRefusal };
+    const pressure = pressureReason(this.config);
+    if (pressure) {
+      this.queuedIds.set(id, now());
+      this.startQueue.push(() => {
+        this.queuedIds.delete(id);
+        this.emit({ type: "agent.dequeued", id, at: now() });
+        this.spawnOrQueue(id, cmd, args, cwd, task, branch, opts);
+      });
+      this.logger?.agent(id, "info", pressure);
+      this.emit({ type: "agent.queued", id, at: now() });
+      this.schedulePressureRetry();
+      return { ok: true, queued: true };
+    }
     if (this.entries.size < this.maxConcurrentAgents) {
       return this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
     }
@@ -6341,9 +6355,26 @@ export class AgentRunner {
     }
   }
 
+  private pressureRetryTimer?: ReturnType<typeof setInterval>;
+
+  /** Re-try queued starts when pressure guard clears (#0836). */
+  private schedulePressureRetry(): void {
+    if (this.pressureRetryTimer) return;
+    this.pressureRetryTimer = setInterval(() => {
+      if (pressureReason(this.config)) return;
+      this.drainQueue();
+      if (this.startQueue.length === 0 && this.pressureRetryTimer) {
+        clearInterval(this.pressureRetryTimer);
+        this.pressureRetryTimer = undefined;
+      }
+    }, 3000);
+    this.pressureRetryTimer.unref?.();
+  }
+
   /** Start the next queued spawn once a slot is free (called from cleanup() on every exit). */
   private drainQueue(): void {
     while (this.startQueue.length > 0 && this.entries.size < this.maxConcurrentAgents) {
+      if (pressureReason(this.config)) break;
       const next = this.startQueue.shift();
       next?.();
     }

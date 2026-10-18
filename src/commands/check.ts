@@ -90,6 +90,8 @@ import {
   REPOOS_REMOTE_FALLBACK_DETAIL,
   REPOOS_CHECK_GATE_NOTE,
 } from "../server/pre-review-remote-gate.js";
+import { acquireLocalCheckSlot, SlotQueueTimeoutError } from "../core/local-gates.js";
+import { remoteLocalFallbackMode } from "../core/resource-limits.js";
 
 /**
  * Split a CSS selector list on top-level commas (respecting parentheses,
@@ -2210,6 +2212,18 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         process.env.REPOOS_SKIP_TESTS = "1";
         console.log(c.green("  ✔ remote gate passed — running local guards only\n"));
       } else if (gate.kind === "local-only") {
+        if (remoteLocalFallbackMode(cfg) === "off") {
+          const detail =
+            gate.detail?.trim() ||
+            "remote validation unavailable and remoteValidation.localFallback is off";
+          console.log(c.red(`\n  ✗ ${detail}\n`));
+          persistRemoteFailure(detail, remoteOutput, remoteStartedAt);
+          process.exit(1);
+        }
+        process.env.REPOOS_LOCAL_FALLBACK_RUN = "1";
+        if (gate.detail?.trim()) {
+          process.env[REPOOS_REMOTE_FALLBACK_DETAIL] = gate.detail.trim();
+        }
         console.log(c.yellow("  ⚠ remote unavailable — running the full local gate\n"));
       }
     };
@@ -2285,6 +2299,25 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     }
   }
 
+  let releaseLocalCheck: (() => void) | undefined;
+  try {
+    releaseLocalCheck = await acquireLocalCheckSlot({
+      repoRoot,
+      config: cfg,
+      env: process.env,
+      onStatusLine: (line) => console.log(c.dim(`  ${line}`)),
+    });
+  } catch (e) {
+    const msg =
+      e instanceof SlotQueueTimeoutError
+        ? e.message
+        : e instanceof Error
+          ? e.message
+          : String(e);
+    console.log(c.red(`\n  ✗ ${msg}\n`));
+    process.exit(1);
+  }
+
   const runStartedAt = new Date();
   // Failed-first ordering (#0655): only interactive/CLI and pre-review runs
   // reorder. Close-out and release always run the full suite from a clean
@@ -2347,6 +2380,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       detail: `check crashed before completing: ${(e as Error).message}`,
     });
     throw e;
+  } finally {
+    releaseLocalCheck?.();
   }
 
   // ── Summary ─────────────────────────────────────────────────────────

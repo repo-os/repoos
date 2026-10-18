@@ -53,6 +53,7 @@ describe("General settings sections (#0800)", () => {
   });
 
   it("falls back to the General section for an unmapped key", () => {
+    expect(generalSectionForKey("localChecks.maxConcurrent")).toBe("performance");
     expect(generalSectionForKey("maxActiveTasks")).toBe("general");
     expect(generalSectionForKey("totally-unknown-key")).toBe("general");
   });
