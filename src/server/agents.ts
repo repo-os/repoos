@@ -5295,10 +5295,7 @@ export class AgentRunner {
    * Before spawning a new engineer, adopt or stop any positively identified live
    * harness in this worktree so two writers never run at once (#0837).
    */
-  private reconcileWorktreeBeforeEngineerSpawn(
-    taskId: string,
-    cwd: string,
-  ): string | undefined {
+  private reconcileWorktreeBeforeEngineerSpawn(taskId: string, cwd: string): string | undefined {
     const registry = readRegistry(this.cacheDir);
     const ownership = readProcessOwnership(this.cacheDir);
     const taskIds = new Set<string>();
