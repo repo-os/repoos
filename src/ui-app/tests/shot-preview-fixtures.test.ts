@@ -8,7 +8,9 @@ import {
   shotFixturePinnedIntegration,
 } from "../src/lib/shot-preview-fixtures";
 import { useConfigStore } from "../src/stores/config";
+import { useNoticesStore } from "../src/stores/notices";
 import { useRepoStore } from "../src/stores/repo";
+import { integrationMedianChip } from "../src/lib/integration-pipeline-ui";
 import { shotProblems } from "../src/lib/shot-rows";
 import { isDocsShotSkip, shotVerdict } from "../src/lib/handoff-verification";
 
@@ -288,6 +290,17 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(shotVerdict(evidence!.captureDetails![1]!).verdict).toBe("matches");
   });
 
+  it("seeds 15 succeeded close-outs for the integration timer tooltip (#0819)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "integration:median15");
+    const notices = useNoticesStore();
+    expect(notices.closeOutOutcomes).toHaveLength(15);
+    expect(integrationMedianChip(notices.closeOutOutcomes)).toBe("Median 8m 00s · 15 runs");
+    expect(repo.integration?.active?.taskId).toBe(SHOT_PREVIEW_FIXTURE_TASK_ID);
+  });
+
   it("seeds a multi-area human task with diff stats for card-chip shots (#0776, #0795)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -328,6 +341,7 @@ describe("shot preview board fixtures (#0743)", () => {
         "closeOut:stalled",
         "card:handoffConflict",
         "drawer:shotEvidence",
+        "integration:median15",
       ] as const) {
         applyShotPreviewFixture(repo, fixture);
         const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
