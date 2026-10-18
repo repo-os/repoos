@@ -8,6 +8,7 @@ import {
   guardedForceRefreshCapture,
   postCaptureWorktreeGuard,
   automaticStaleEvidenceRefresh,
+  automaticEvidenceGapRefresh,
   taskAction,
 } from "../../server/routes/tasks.js";
 import type { AutomaticStaleEvidenceRefreshDeps } from "../../server/routes/tasks.js";
@@ -780,5 +781,38 @@ describe("POST /api/tasks/:id/verify capture flows", () => {
     gateSpy.mockRestore();
     expect(refreshed).toBe(false);
     expect(captured).toBe(false);
+  });
+
+  it("flags needs_input after two failed evidence-gap refreshes (#0831)", async () => {
+    const { root, config, task } = commandRepo("exit 1");
+    writeFileSync(
+      task.absPath,
+      `---\nid: "0766"\ntitle: test\nstatus: review\nbranch: ${task.branch}\n---\n\n${DECLARED_BODY}`,
+    );
+    execSync(`git -C ${root} add work/0766.md`, { stdio: "ignore" });
+    execSync(`git -C ${root} commit -q -m "task file"`, { stdio: "ignore" });
+    const report = [
+      "## Evidence gaps",
+      "- Board card shot missing highlight",
+      "",
+      "## Verdict",
+      "`good to go` — EVIDENCE-GAP-ONLY",
+    ].join("\n");
+    const deps = automaticDeps(root, task, {
+      config: {
+        ...config,
+        uiVerification: { enabled: true },
+        defaultStatus: "inbox",
+        defaultAssignee: "ai",
+        taskExtensions: [".md"],
+      },
+    });
+    await automaticEvidenceGapRefresh(deps, task, report);
+    await automaticEvidenceGapRefresh(deps, task, report);
+    const body = readFileSync(task.absPath, "utf8");
+    expect(body).toMatch(/needs_input:\s*true/);
+    expect(body).toContain("evidence-gaps-exhausted");
+    expect(body).toContain("Board card shot missing highlight");
+    expect(body).toMatch(/evidence_gap_attempts: 2/);
   });
 });

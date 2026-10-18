@@ -50,6 +50,12 @@ import { resolveApiCreator } from "../../core/record-creator.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
 import { needsInputClearsOnNewEngineerRun } from "../../core/needs-input.js";
 import {
+  EVIDENCE_GAPS_EXHAUSTED_REASON,
+  evidenceGapsNeedsInputDetail,
+  MAX_EVIDENCE_GAP_RECOVERY_ATTEMPTS,
+} from "../../core/review-evidence-gaps.js";
+import { parseDocument, serializeDocument } from "../../core/frontmatter.js";
+import {
   flagTaskSpecFlagsIfNeeded,
   isUnderspecifiedSweepEligible,
   needsInputClearsOnPmMessage,
@@ -1368,6 +1374,101 @@ export async function automaticStaleEvidenceRefresh(
       return (
         !captured.skipped && !captured.error && captured.gateOk && captured.headIdentity === head
       );
+    } finally {
+      rootLock.release(task.id);
+    }
+  });
+  return locked.ok && locked.value;
+}
+
+function readEvidenceGapAttempts(absPath: string): number {
+  try {
+    const doc = parseDocument(readFileSync(absPath, "utf8"));
+    const current = doc.data.evidence_gap_attempts as number | undefined;
+    return typeof current === "number" && Number.isFinite(current)
+      ? Math.max(0, Math.floor(current))
+      : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeEvidenceGapAttempts(config: RepoOSConfig, absPath: string, attempts: number): void {
+  const raw = readFileSync(absPath, "utf8");
+  const doc = parseDocument(raw);
+  if (attempts <= 0) {
+    delete doc.data.evidence_gap_attempts;
+  } else {
+    doc.data.evidence_gap_attempts = attempts;
+  }
+  const rest = Object.keys(doc.data).filter((k) => k !== "evidence_gap_attempts");
+  const keys = attempts > 0 ? ["evidence_gap_attempts", ...rest] : rest;
+  writeFileSync(absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+  commitTaskFile(config.root, absPath, `docs: evidence gap attempt counter`);
+}
+
+/**
+ * Automatic re-capture when a review reports evidence-only gaps (#0831). Does
+ * not count as an auto-bounce round; after {@link MAX_EVIDENCE_GAP_RECOVERY_ATTEMPTS}
+ * failed captures the task is flagged for a human with the missing-shot detail.
+ */
+export async function automaticEvidenceGapRefresh(
+  deps: AutomaticStaleEvidenceRefreshDeps,
+  task: Task,
+  reportMarkdown: string,
+): Promise<boolean> {
+  const { config, previews, rootLock, closingOut, log } = deps;
+  if (!task.branch) return false;
+  const worktree = worktreePathForBranch(config.root, task.branch);
+  if (!worktree) return false;
+
+  const locked = await withEvidenceRefreshLock(task.id, async () => {
+    if (closingOut()) return false;
+    if (!rootLock.acquire(task.id, "close-out")) return false;
+    try {
+      const current = deps.getReviewTask(task.id) ?? task;
+      if (current.status !== "review" || current.isArchived) return false;
+      if (deps.isAgentRunning(task.id) || deps.isReviewRunning(task.id)) return false;
+      if (closingOut()) return false;
+
+      const headResult = await runGit(worktree, ["rev-parse", "--short", "HEAD"], 10_000);
+      const head = headResult.status === 0 ? headResult.stdout.trim() : "";
+      if (!head) return false;
+      const dirty = await runGit(worktree, ["status", "--porcelain"], 10_000);
+      if (dirty.status !== 0 || dirty.stdout.trim()) return false;
+
+      const captured = await guardedForceRefreshCapture(config, current, worktree, previews, log);
+      const ok =
+        !captured.skipped &&
+        !captured.error &&
+        captured.gateOk &&
+        captured.headIdentity === head;
+      const taskPath = current.absPath;
+      if (ok) {
+        writeEvidenceGapAttempts(config, taskPath, 0);
+        return true;
+      }
+      if (captured.error) {
+        log(task.id, "warn", `automatic evidence-gap refresh failed: ${captured.error}`);
+      }
+      const nextAttempts = readEvidenceGapAttempts(taskPath) + 1;
+      writeEvidenceGapAttempts(config, taskPath, nextAttempts);
+      if (nextAttempts >= MAX_EVIDENCE_GAP_RECOVERY_ATTEMPTS) {
+        try {
+          patchTaskFile(config, taskPath, {
+            needsInput: true,
+            needsInputReason: EVIDENCE_GAPS_EXHAUSTED_REASON,
+            needsInputDetail: evidenceGapsNeedsInputDetail(reportMarkdown),
+          });
+        } catch (err) {
+          log(
+            task.id,
+            "warn",
+            `could not flag exhausted evidence-gap recovery: ${(err as Error).message}`,
+          );
+        }
+      }
+      return false;
     } finally {
       rootLock.release(task.id);
     }
