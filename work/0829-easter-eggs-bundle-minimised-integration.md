@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-integration-pill-tool
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T12:50:24Z"
+updated_at: "2026-10-18T12:58:06Z"
 last_close_out_gate_ms: 283669
 last_close_out_gate_at: "2026-10-18T12:49:35.980Z"
 review_passes: 6
@@ -296,3 +296,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T12:49:43Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
 - 2026-10-18T12:50:20Z · status inbox→active
 - 2026-10-18T12:50:24Z · note: handoff requested (ui-review)
+- 2026-10-18T12:58:06Z · note: shots: skipped — 30 shots already captured — an engineer-made capture pre-empts the automatic one
