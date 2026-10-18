@@ -11,7 +11,8 @@ branch: feat/close-out-engineer-checkpoint-commits-af
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T09:09:42Z"
+updated_at: "2026-10-18T09:35:33Z"
+dev_error_count: 1
 ---
 ## Problem
 Move to done refuses with "worktree changed after handoff: HEAD is X but handoff recorded Y" whenever the branch HEAD moves after handoff, and the only recovery is a person: discard the edits or send the task back to the engineer (seen on #0832, 2026-10-18). The guard is right in principle (close-out must merge only the reviewed commit; incident #0594), but the common cause is benign: the engineer's own WIP self-check checkpoint commit (a few fixture/test files) landing after the review passed, and the task then sits in review with no engineer and no signal.
@@ -34,3 +35,5 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T09:09:22Z · status inbox→ready
 - 2026-10-18T09:09:37Z · cli_override, model_override
 - 2026-10-18T09:09:42Z · status ready→active, branch
+- 2026-10-18T09:10:15Z · agent exited with an error (cursor) · Error: [unavailable] read ETIMEDOUT
+- 2026-10-18T09:35:33Z · needs_input
