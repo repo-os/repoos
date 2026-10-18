@@ -2,7 +2,7 @@
 id: "0664"
 title: Upload state + retry UX
 type: feature
-status: review
+status: active
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -13,7 +13,7 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-18T19:28:50Z"
+updated_at: "2026-10-18T19:28:51Z"
 review_rounds: 2
 review_passes: 4
 last_check_failure: "repoos check at 2026-10-18T17:32:06.903Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
