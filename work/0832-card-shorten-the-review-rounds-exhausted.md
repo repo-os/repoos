@@ -11,7 +11,7 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T08:36:59Z"
+updated_at: "2026-10-18T08:49:58Z"
 ---
 ## Problem
 The task card shows the whole first line of the reviewer's Verdict section as `needs_input_detail` (`src/server/review.ts` ~1749), under the header "REVIEW STILL FINDING ISSUES". It is often a long paragraph and begins with `` `needs some work` — ``, which the header already says.
@@ -86,3 +86,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T08:25:04Z · body
 - 2026-10-18T08:36:59Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-18T08:36:59Z · note: handoff requested (cli)
+- 2026-10-18T08:49:58Z · CTO action: restart-stalled-agent (resume) · agent never started — no session exists for this task
