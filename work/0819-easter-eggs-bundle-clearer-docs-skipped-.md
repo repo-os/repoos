@@ -3,6 +3,9 @@ id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and timer tooltip"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — The five bundle items are implemented with matching tests and `repoos check` passed, but handoff UI evidence does not fully cover the visual acceptance criteria: the screenshot-viewer header shots never opened the viewer (Playwright strict-mode on `.shot-row img`), and the saved PNGs show only the Changes list; the integration-timer captures show the empty “No median yet” tooltip, not the populated 15-run median chip layout."
 priority: p3
 area: web
 assigned_to: ai
@@ -162,3 +165,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T01:22:08Z · note: click .ui-changes .shot-row button.shot-expand: click: Error: strict mode violation: locator('.ui-changes .shot-row button.shot-expand') resolved to 2 elements: on /work?task=9999&tab=changes
 - 2026-10-18T01:22:08Z · note: highlight .shot-viewer-shot-head matched nothing on /work?task=9999&tab=changes
 - 2026-10-18T01:22:44Z · note: review pass 7: needs some work
+- 2026-10-18T01:22:44Z · needs_input
