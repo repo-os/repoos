@@ -670,6 +670,13 @@ const hint = computed<CardHint | null>(() => {
   // #0804: a ready/inbox task the start check (keyword or decision model)
   // flagged must show that on the card — the board otherwise looks idle and
   // the explanation the model produced is invisible.
+  if (t.status === "ready" && repo.isStartWorkPending(t.id)) {
+    return {
+      label: "Starting…",
+      title: "moving this task to active and launching the engineer",
+      cls: "tc-starting",
+    };
+  }
   if (needsInputSurfaces(t)) return needsInputHint(t);
   // 0381: a PM chat run can touch a task in ANY status — ready, inbox,
   // even done. Without this the card would look idle while the PM works.
@@ -818,8 +825,10 @@ function acknowledgeCreate(): void {
   repo.acknowledgeCreate(props.task.id);
 }
 
+const startWorkPending = computed(() => repo.isStartWorkPending(props.task.id));
+
 async function runAction(): Promise<void> {
-  if (busy.value || !action.value) return;
+  if (busy.value || startWorkPending.value || !action.value) return;
   if (props.task.status === "review" && repo.reviewFor(props.task.id)?.running) return;
   const overrideDependencies = isLaunchAction.value
     ? await confirmDependencyOverride(props.task.blockedBy)
@@ -1169,6 +1178,7 @@ async function openDebuggerFromError(): Promise<void> {
             aria-hidden="true"
             >!</span
           >
+          <ActivityIndicator v-else-if="hint.cls === 'tc-starting'" label="Starting…" />
           <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Integrating…" />
           {{ hint.label }}
           <span
@@ -1241,6 +1251,7 @@ async function openDebuggerFromError(): Promise<void> {
         :class="[actionFooterClass, reviewReady ? 'review-ready' : '']"
         :disabled="
           busy ||
+          startWorkPending ||
           inPipeline ||
           (task.status === 'review' &&
             (repo.reviewFor(task.id)?.running || repo.isRunning(task.id)))
@@ -1256,7 +1267,14 @@ async function openDebuggerFromError(): Promise<void> {
         "
         @click.stop="runAction"
       >
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4">
+        <ActivityIndicator v-if="startWorkPending && task.status === 'ready'" label="Starting…" />
+        <svg
+          v-else
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="none"
+          class="size-4"
+        >
           <path
             :d="action.icon"
             stroke="currentColor"
@@ -1265,7 +1283,13 @@ async function openDebuggerFromError(): Promise<void> {
             stroke-linejoin="round"
           />
         </svg>
-        {{ busy ? "Working…" : action?.label }}
+        {{
+          startWorkPending && task.status === "ready"
+            ? "Starting…"
+            : busy
+              ? "Working…"
+              : action?.label
+        }}
       </button>
       <div v-if="staleEvidenceOnly" class="w-full border-t border-[var(--border)] p-2">
         <p class="px-2 pb-2 text-center font-mono text-[10px] text-[var(--txt-dim)]">

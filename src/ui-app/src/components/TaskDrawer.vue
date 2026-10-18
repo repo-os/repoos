@@ -1199,19 +1199,19 @@ async function startWork(): Promise<void> {
   await startWorkIn(task, overrideDependencies);
 }
 
-/** True while the Start-work request (engineer agent launch) is in flight. */
-const startingWork = ref(false);
+const startingWork = computed(() =>
+  ui.active ? repo.isStartWorkPending(ui.active.id) : false,
+);
 
 async function startWorkIn(t: Task, overrideDependencies = false): Promise<void> {
+  if (repo.isStartWorkPending(t.id)) return;
   ui.saving = true;
-  startingWork.value = true;
   try {
     await repo.startWork(t, "resume", undefined, overrideDependencies);
     ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
   } finally {
-    startingWork.value = false;
     ui.saving = false;
   }
 }
@@ -4378,7 +4378,7 @@ watch(
               "
               variant="status"
               :style="{ '--tone': statusColor('active') }"
-              :disabled="ui.saving"
+              :disabled="ui.saving || startingWork"
               @click="startWork"
             >
               <Play v-if="!startingWork" class="size-3.5" />

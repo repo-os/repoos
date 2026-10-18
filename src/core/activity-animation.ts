@@ -8,6 +8,7 @@ export const ACTIVITY_ANIMATION_STYLES = [
   "spark-diamond",
   "arcade-hopper",
   "puppy-tracks",
+  "bird-quick-trail",
   "three-dots",
 ] as const;
 
@@ -24,6 +25,7 @@ export const ACTIVITY_ANIMATION_STYLE_LABELS: Record<ActivityAnimationStyle, str
   "spark-diamond": "Spark / diamond",
   "arcade-hopper": "Arcade hopper",
   "puppy-tracks": "Puppy tracks",
+  "bird-quick-trail": "Bird quick trail",
   "three-dots": "Three dots (legacy)",
 };
 
@@ -108,6 +110,7 @@ export const ACTIVITY_ANIMATION_STYLE_SLOT: Record<ActivityAnimationStyle, numbe
   "spark-diamond": 1.2,
   "arcade-hopper": 1.2,
   "puppy-tracks": 1.2,
+  "bird-quick-trail": 1.2,
   // The legacy dot row derives its geometry from the pixel slot in CSS.
   "three-dots": 0,
 };
