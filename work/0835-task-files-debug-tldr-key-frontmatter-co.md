@@ -2,7 +2,7 @@
 id: "0835"
 title: "Task files: debug_tldr_key frontmatter contains a NUL byte (git treats the task file as binary)"
 type: bug
-status: active
+status: review
 priority: p3
 area: core
 assigned_to: ai
@@ -36,4 +36,4 @@ Find where `debug_tldr_key` is built (grep `debug_tldr`). Do not hand-edit work/
 - 2026-10-18T12:23:50Z · status ready→active, branch
 - 2026-10-18T12:26:07Z · body
 - 2026-10-18T12:26:51Z · body
-- 2026-10-18T12:51:21Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-18T12:51:21Z · status active→review
