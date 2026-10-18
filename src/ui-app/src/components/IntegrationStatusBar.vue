@@ -157,10 +157,12 @@ function showTimerTip(event: MouseEvent | FocusEvent): void {
   const rect = el?.getBoundingClientRect();
   if (!rect || typeof window === "undefined") return;
   const width = 360;
-  const left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12));
+  const center = rect.left + rect.width / 2;
+  const left = Math.max(12, Math.min(center - width / 2, window.innerWidth - width - 12));
   timerTipStyle.value = {
     left: `${left}px`,
     bottom: `${window.innerHeight - rect.top + 10}px`,
+    width: `${width}px`,
   };
   timerTipOpen.value = true;
 }
@@ -412,7 +414,7 @@ async function onStageClick(stage: string): Promise<void> {
   if (stage === "check") ui.focusDebugCheck(job.taskId, "merge-gate");
 }
 
-/** Native tooltip for the collapsed strip (active task + queued ids). */
+/** Accessible name for the collapsed strip (active task + queued ids); not a native title. */
 const stripTooltip = computed(() => {
   let t = "Integration pipeline — ";
   if (idle.value) return t + "idle";
@@ -474,7 +476,8 @@ async function fileSetupTask(): Promise<void> {
       class="ibar-strip"
       role="button"
       tabindex="0"
-      :title="stripTooltip"
+      data-test-id="integration-strip"
+      :aria-label="stripTooltip"
       @click="collapsed = false"
       @keydown.enter.prevent="collapsed = false"
       @keydown.space.prevent="collapsed = false"
