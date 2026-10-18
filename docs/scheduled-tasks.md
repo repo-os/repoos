@@ -11,8 +11,9 @@ The scheduler runs inside `repoos serve`. Derived state (locks under
 
 ## Catch-up after restart
 
-When the server starts, or on each minute tick, it looks for **at most one**
-missed occurrence per enabled schedule:
+When the server starts, or on each minute tick, it looks for missed
+occurrences per enabled schedule (every due schedule runs once that tick,
+sequentially):
 
 - **Daily / weekly:** the latest slot whose local fire time is at or before now,
   and whose **occurrence key** differs from `last_occurrence_key` in the file.
@@ -40,6 +41,14 @@ Schedule create/update/delete and each run emit SSE events (`schedule.changed`,
 
 ## Auto-start
 
-`auto_start_agent: true` records intent to start an engineer after task creation.
-Assigning a generated task to `ai` alone does **not** start an agent; only the
-explicit flag does (wiring may still require auto-engineering or a manual Start).
+`auto_start_agent: true` starts the configured engineer on a generated task when
+its initial status is `ready` and the assignee is not `human` — the same
+outcome as **Start work** on the board. Assigning a generated task to `ai`
+alone does **not** start an agent; only this flag does.
+
+## Manual Run now
+
+When a schedule slot is already due, **Run now** records the same
+`last_occurrence_key` as the automatic tick would, so the two paths cannot
+create duplicate tasks for one occurrence. Ad-hoc runs when nothing is due use a
+`manual:…` key that does not consume a cadence slot.

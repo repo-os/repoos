@@ -20,6 +20,7 @@ import {
   tryAcquireScheduleOccurrenceLock,
   releaseScheduleOccurrenceLock,
 } from "../schedule-runner.js";
+import { maybeAutoStartScheduledTask } from "../schedule-auto-start.js";
 
 function commitSchedule(root: string, relPath: string, verb: string, id: string): void {
   commitTaskFile(root, join(root, relPath), `schedules(${id}): ${verb}`);
@@ -95,7 +96,7 @@ export const postScheduleRun: RouteHandler = async (ctx, req, res, p) => {
   };
   const body = (await readBody(req)) as Record<string, unknown>;
   const manual = body?.manual !== false;
-  const lockKey = manual ? `${due.key}:run-now` : due.key;
+  const lockKey = due.key;
   if (!tryAcquireScheduleOccurrenceLock(ctx.config, id, lockKey)) {
     return json(res, 409, { error: "This schedule occurrence is already running" });
   }
@@ -103,6 +104,19 @@ export const postScheduleRun: RouteHandler = async (ctx, req, res, p) => {
     const outcome = executeScheduleRun(ctx.repoos, ctx.config, id, due, { manual });
     if (!outcome.ok) {
       return json(res, outcome.skipped ? 400 : 500, { error: outcome.error, outcome });
+    }
+    if (outcome.ok) {
+      await maybeAutoStartScheduledTask(
+        {
+          config: ctx.config,
+          index: ctx.index,
+          runner: ctx.runner,
+          logger: ctx.logger,
+          onServerStatusChange: ctx.onServerStatusChange,
+        },
+        id,
+        outcome.taskId,
+      );
     }
     ctx.index.refreshAll();
     ctx.emitEvent({

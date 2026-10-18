@@ -2,7 +2,9 @@ import { closeSync, mkdirSync, openSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOS } from "../core/repoos.js";
 import type { RepoOSConfig } from "../core/types.js";
-import { dueOccurrence, occurrenceKey, type ScheduleTimingInput } from "../core/schedule-time.js";
+import { dueOccurrence, type ScheduleTimingInput } from "../core/schedule-time.js";
+import type { ScheduleAutoStartDeps } from "./schedule-auto-start.js";
+import { maybeAutoStartScheduledTask } from "./schedule-auto-start.js";
 import {
   getSchedule,
   listSchedules,
@@ -90,8 +92,10 @@ export function executeScheduleRun(
     };
   }
 
-  const timing = timingForSchedule(row);
-  const key = options.manual ? `${occurrenceKey(timing, due.dueAt)}:manual:${Date.now()}` : due.key;
+  // Always persist `due.key` so a manual Run now while a slot is due consumes
+  // the same occurrence the minute tick would fire (keys like `manual:…` are
+  // only used when nothing is due).
+  const key = due.key;
 
   try {
     const task = repoos.createTask({
@@ -133,6 +137,7 @@ export function listDueSchedules(config: RepoOSConfig, now = new Date()): TaskSc
 export type ScheduleTickDeps = {
   config: RepoOSConfig;
   repoos: RepoOS;
+  autoStart?: ScheduleAutoStartDeps;
   emitEvent: (event: {
     type: "schedule.run";
     scheduleId: string;
@@ -145,19 +150,29 @@ export type ScheduleTickDeps = {
 
 const scheduleTickState = { inFlight: false };
 
-/** One due schedule per tick; guarded against overlap and duplicate occurrences. */
+/** Runs every due schedule once per tick (sequential); overlap guarded globally. */
 export function runScheduleTick(deps: ScheduleTickDeps, now = new Date()): void {
   if (scheduleTickState.inFlight) return;
   const dueRows = listDueSchedules(deps.config, now);
   if (!dueRows.length) return;
-  const row = dueRows[0];
-  const due = findDueSchedule(row, now);
-  if (!due) return;
-  if (!tryAcquireScheduleOccurrenceLock(deps.config, row.id, due.key)) return;
   scheduleTickState.inFlight = true;
-  void Promise.resolve()
-    .then(() => executeScheduleRun(deps.repoos, deps.config, row.id, due))
-    .then((outcome) => {
+
+  const runAt = async (index: number): Promise<void> => {
+    if (index >= dueRows.length) {
+      scheduleTickState.inFlight = false;
+      return;
+    }
+    const row = dueRows[index];
+    const due = findDueSchedule(row, now);
+    if (!due || !tryAcquireScheduleOccurrenceLock(deps.config, row.id, due.key)) {
+      await runAt(index + 1);
+      return;
+    }
+    try {
+      const outcome = executeScheduleRun(deps.repoos, deps.config, row.id, due);
+      if (outcome.ok && deps.autoStart) {
+        await maybeAutoStartScheduledTask(deps.autoStart, row.id, outcome.taskId);
+      }
       deps.emitEvent({
         type: "schedule.run",
         scheduleId: outcome.scheduleId,
@@ -169,11 +184,13 @@ export function runScheduleTick(deps: ScheduleTickDeps, now = new Date()): void 
       if (!outcome.ok && !outcome.skipped) {
         console.error(`[schedules] run of #${row.id} failed: ${outcome.error}`);
       }
-    })
-    .finally(() => {
+    } finally {
       releaseScheduleOccurrenceLock(deps.config, row.id, due.key);
-      scheduleTickState.inFlight = false;
-    });
+      await runAt(index + 1);
+    }
+  };
+
+  void runAt(0);
 }
 
 /** Test-only reset of the in-flight guard. */
