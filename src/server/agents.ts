@@ -5195,7 +5195,13 @@ export class AgentRunner {
           continue;
         }
       }
-      this.adoptLiveRegistryEntry({ ...rec, pid: livePid }, alive, isReview, live);
+      if (
+        this.adoptLiveRegistryEntry({ ...rec, pid: livePid }, alive, isReview, live) &&
+        !isReview &&
+        alive
+      ) {
+        this.onOrphanEngineerNote?.(rec.taskId, adoptedActivityNote(livePid));
+      }
     }
     if (live.length > 0) {
       writeRegistry(this.cacheDir, { entries: live });
@@ -5215,17 +5221,21 @@ export class AgentRunner {
       tasks.filter((t) => t.status === "active" && !t.isArchived).map((t) => t.id),
     );
     if (activeIds.size === 0) return;
-    const registry = readRegistry(this.cacheDir);
     const ownership = readProcessOwnership(this.cacheDir);
-    const candidates = collectRecordedEngineerPids(registry.entries, ownership, activeIds);
+    const candidates = collectRecordedEngineerPids(
+      readRegistry(this.cacheDir).entries,
+      ownership,
+      activeIds,
+    );
     for (const cand of candidates) {
       if (this.entries.has(cand.taskId)) continue;
+      const registry = readRegistry(this.cacheDir);
       const adopted = this.adoptOrStopRecordedEngineer(cand, registry, tasks);
-      if (adopted) {
-        writeRegistry(this.cacheDir, {
-          entries: [...registry.entries.filter((e) => e.taskId !== cand.taskId), ...adopted],
-        });
-      }
+      if (!adopted) continue;
+      const fresh = readRegistry(this.cacheDir);
+      writeRegistry(this.cacheDir, {
+        entries: [...fresh.entries.filter((e) => e.taskId !== cand.taskId), ...adopted],
+      });
     }
   }
 
