@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-18T11:11:55.921Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
@@ -111,3 +113,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T10:24:36Z · note: review pass 2: needs some work
 - 2026-10-18T10:49:21Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-18T11:11:53Z · message_delivered: 1 message(s)
+
