@@ -2,7 +2,7 @@
 id: "0822"
 title: "Easter eggs bundle: Start work pending state, and Bird quick trail animation"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -222,4 +222,4 @@ Items are independent; do not couple them. Never touch repoos.toml. Edit per-ite
 - 2026-10-18T05:50:00Z · status review→active, needs_input
 - 2026-10-18T05:50:00Z · note: close-out repair: merge-conflict
 - 2026-10-18T05:52:01Z · body
-- 2026-10-18T06:00:56Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-18T06:00:56Z · status active→review
