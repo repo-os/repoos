@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T15:42:16Z"
+updated_at: "2026-10-18T15:42:19Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/review-override.test.ts > review completion > reports the reviewer selected for the turn, not the global default on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 90dd570de19d07048a020e9fc550ae7b969589fb
 handoff_signal_retry_count: 1
@@ -94,3 +94,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T15:31:59Z · body
 - 2026-10-18T15:33:37Z · body
 - 2026-10-18T15:42:16Z · note: ui verification failed (1 issue(s)): [missing-target] Board card during post-handoff checkpoint recovery: highlight [data-test-id="task-card-agent-hint"] matched nothing on / (http://127.0.0.1:60485/?shotState=card%3AcheckpointRecovery)
+- 2026-10-18T15:42:19Z · message_overdue: still queued after 60m without being delivered
