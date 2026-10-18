@@ -11,7 +11,7 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T09:01:05Z"
+updated_at: "2026-10-18T09:09:43Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -94,3 +94,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T09:01:03Z · note: review pass 1: needs some work
 - 2026-10-18T09:01:04Z · message_queued at 2026-10-18T09:01:04.677Z
 - 2026-10-18T09:01:05Z · status review→active
+- 2026-10-18T09:09:43Z · message_delivered: 1 message(s)
