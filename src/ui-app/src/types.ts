@@ -176,6 +176,11 @@ export interface Task {
   handoffSignalRetryCount?: number;
   /** Present on PATCH when a requirements body edit ran the #0817 engineer notice. */
   requirementsNotice?: RequirementsNotice;
+  /**
+   * Cloud upload delivery for embedded task attachment images (#0666).
+   * Keys are object names; values are `pending` until the cloud copy is verified.
+   */
+  attachmentCloud?: Record<string, "pending" | "available">;
 }
 
 /** Result of the automatic engineer notice after a requirements edit (#0817). */
@@ -203,6 +208,8 @@ export interface ScreenshotMeta {
   url: string;
   size: number;
   mime: string;
+  /** Cloud sync state when a cloud provider is configured (#0666). */
+  cloudUpload?: "pending" | "available";
 }
 
 /**

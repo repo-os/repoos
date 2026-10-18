@@ -18,6 +18,11 @@ import {
   taskAttachmentApiPath,
   taskAttachmentStore,
 } from "../core/attachment-reference.js";
+import {
+  type AttachmentCloudDelivery,
+  attachmentCloudDelivery,
+  recordAttachmentCloudPut,
+} from "../core/attachment-resilience.js";
 
 /** One persisted screenshot, as returned to the client. */
 export interface ScreenshotMeta {
@@ -31,6 +36,11 @@ export interface ScreenshotMeta {
   url: string;
   size: number;
   mime: string;
+  /**
+   * When cloud storage is configured: `pending` until the cloud copy is
+   * verified, `available` once it is. Omitted for local-only storage (#0666).
+   */
+  cloudUpload?: AttachmentCloudDelivery;
 }
 
 /** Image MIME types treated as screenshots, mapped to their file extension. */
@@ -114,6 +124,9 @@ export function saveScreenshot(
   const file = generateAttachmentObjectName(ext);
   const putResult = stored.put(task.id, file, buf);
   if ("error" in putResult) return { error: putResult.error };
+  recordAttachmentCloudPut(config, "work", task.id, file, buf);
+
+  const cloudUpload = attachmentCloudDelivery(config, "work", task.id, file) ?? undefined;
 
   return {
     id: String(stored.list(task.id).length),
@@ -122,6 +135,7 @@ export function saveScreenshot(
     url: screenshotUrl(task.id, file),
     size: buf.length,
     mime: input.mime,
+    ...(cloudUpload ? { cloudUpload } : {}),
   };
 }
 

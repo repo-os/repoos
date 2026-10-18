@@ -13,7 +13,8 @@
 import { randomUUID } from "node:crypto";
 import { extname, join } from "node:path";
 import type { RepoOSConfig } from "./types.js";
-import { createStorageProvider, DEFAULT_STORAGE_PROVIDER_ID } from "./storage/index.js";
+import { DEFAULT_STORAGE_PROVIDER_ID } from "./storage/index.js";
+import { createResilientAttachmentProvider } from "./attachment-resilience.js";
 
 /** Object names for new attachments: `att_<uuid>.<ext>`. */
 export const STABLE_ATTACHMENT_OBJECT_RE =
@@ -70,7 +71,7 @@ export function taskAttachmentApiPath(taskId: string, objectName: string): strin
 
 /** Storage provider for task attachment bytes under the configured work dir. */
 export function taskAttachmentStore(config: RepoOSConfig) {
-  return createStorageProvider(
+  return createResilientAttachmentProvider(
     join(config.root, config.workDir),
     config.storage?.provider ?? DEFAULT_STORAGE_PROVIDER_ID,
   );
