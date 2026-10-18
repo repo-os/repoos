@@ -50,3 +50,4 @@ Related: #0734, #0755, #0613. Do not make a missing Playwright a failure (stays 
 - 2026-10-18T08:55:14Z · message_delivered: 1 message(s)
 - 2026-10-18T08:55:16Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/shot-plan-edit.test.ts > parseShotEntry (#0627) > rejects a bad step and an unknown key, like the list parser on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-10-18T09:01:14Z · message_queued at 2026-10-18T09:01:14.383Z
+- 2026-10-18T09:01:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
