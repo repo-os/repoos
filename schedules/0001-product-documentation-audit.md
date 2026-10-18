@@ -14,13 +14,13 @@ task_priority: p2
 task_assigned_to: ai
 task_status: ready
 auto_start_agent: false
-last_run_at: ""
-last_result: ""
-last_task_id: ""
+last_run_at: "2026-10-18T19:47:42.973Z"
+last_result: success
+last_task_id: "0840"
 last_error: ""
-last_occurrence_key: ""
+last_occurrence_key: "weekly:2026-10-12"
 created_at: "2026-10-18T12:00:00Z"
-updated_at: "2026-10-18T12:00:00Z"
+updated_at: "2026-10-18T19:47:42.973Z"
 ---
 ## Problem
 
