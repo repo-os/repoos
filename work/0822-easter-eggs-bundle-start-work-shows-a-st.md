@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-10-18T03:49:45Z"
-review_passes: 3
 id: "0822"
 title: "Easter eggs bundle: Start work pending state, and Bird quick trail animation"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — E1 (store `tryAcquireStartWorkPending`, card/drawer UI, SSE/index cleanup, watchdog, `start-work-pending.test.ts`) matches the spec and handoff board/drawer shots look right. E2 is wired through core enum, Settings schema, markup/CSS, doctor, and WebKit motion tests, but the declared **Bird quick trail** settings capture did not show the preview (`waitFor`/highlight on `.ai-style-bird-quick-trail` timed out; `default-1.png` is Themes-only). Re-capture after opening **Activity animation** (or scroll) with `settings:birdQuickTrail` before sign-off on the visual."
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -16,6 +11,8 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
+updated_at: "2026-10-18T04:26:12Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Items
@@ -190,4 +187,5 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T03:48:12Z · note: highlight .activity-animation-preview .ai-style-bird-quick-trail matched nothing on /settings?tab=general
 - 2026-10-18T03:49:45Z · note: review pass 3: needs some work
 - 2026-10-18T03:49:45Z · needs_input
-
+- 2026-10-18T04:26:12Z · status review→active, needs_input
+- 2026-10-18T04:26:12Z · note: close-out repair: merge-conflict
