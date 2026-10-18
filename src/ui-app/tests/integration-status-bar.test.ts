@@ -102,16 +102,21 @@ describe("IntegrationStatusBar", () => {
     expect(chip.text()).toBe("3m 07s");
     // A real button, so keyboard focus reaches the same tooltip/toggle.
     expect(chip.element.tagName).toBe("BUTTON");
-    expect(chip.attributes("data-tip")).toContain("last 15 integration runs");
-    expect(chip.attributes("data-tip")).toContain("8m 00s");
+    expect(chip.attributes("aria-label")).toContain("Median 8m 00s · 15 runs");
+    expect(chip.attributes("aria-label")).toContain(
+      "Click to switch between elapsed time and a countdown",
+    );
     expect(chip.attributes("aria-pressed")).toBe("false");
 
-    // Click: counts down from the median in the distinct italic style.
+    // Click: counts down from the median in the distinct italic style, and
+    // shows the two-line pane too (touch users and the handoff click step).
     await chip.trigger("click");
     await nextTick();
     expect(chip.text()).toBe("T-04:53"); // 8m 00s - 3m 07s elapsed
     expect(chip.classes()).toContain("ibar-chip--countdown");
     expect(chip.attributes("aria-pressed")).toBe("true");
+    const clickTip = wrapper.get('[data-test-id="integration-timer-tip"]');
+    expect(clickTip.get(".timer-tip-chip").text()).toBe("Median 8m 00s · 15 runs");
 
     // Click again: back to the familiar elapsed stopwatch.
     await chip.trigger("click");
@@ -131,11 +136,81 @@ describe("IntegrationStatusBar", () => {
 
     const chip = wrapper.get('[data-test-id="integration-timer"]');
     expect(chip.text()).toBe("3m 07s");
-    expect(chip.attributes("data-tip")).toContain("No completed integrations with timing yet");
+    expect(chip.attributes("aria-label")).toContain("No completed integrations with timing yet");
+
+    // Hovering opens the two-line pane: a "No median yet" chip and the reason.
+    await chip.trigger("mouseenter");
+    await nextTick();
+    const tip = wrapper.get('[data-test-id="integration-timer-tip"]');
+    expect(tip.get(".timer-tip-chip").text()).toBe("No median yet");
+    expect(tip.get(".timer-tip-line").text()).toContain(
+      "No completed integrations with timing yet",
+    );
+
     await chip.trigger("click");
     await nextTick();
     // No median — clicking leaves the elapsed readout unchanged.
     expect(chip.text()).toBe("3m 07s");
+  });
+
+  it("shows the median as a chip and the instruction on line 2 (#0819)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    const notices = useNoticesStore();
+    notices.closeOutOutcomes = Array.from({ length: 15 }, (_, i) => ({
+      taskId: `0${i}`,
+      outcome: "succeeded",
+      finishedAt: new Date(Date.now() - i * 60_000).toISOString(),
+      reason: "",
+      durationMs: (i + 1) * 60_000,
+    })) as CloseOutOutcomeEvent[];
+    ui.setIntegrationBarCollapsed(false);
+    repo.integration = activeSnapshot();
+    const wrapper = render();
+    await nextTick();
+
+    const chip = wrapper.get('[data-test-id="integration-timer"]');
+    await chip.trigger("mouseenter");
+    await nextTick();
+    const tip = wrapper.get('[data-test-id="integration-timer-tip"]');
+    expect(tip.get(".timer-tip-chip").text()).toBe("Median 8m 00s · 15 runs");
+    const line = tip.get(".timer-tip-line");
+    expect(line.text()).toBe("Click to switch between elapsed time and a countdown");
+    // The instruction is deliberately fainter and italic.
+    expect(line.classes()).toContain("timer-tip-line");
+
+    await chip.trigger("mouseleave");
+    await nextTick();
+    expect(wrapper.find('[data-test-id="integration-timer-tip"]').exists()).toBe(false);
+  });
+
+  it("mounts the timer in the collapsed strip and opens its tooltip there (#0819)", async () => {
+    // The handoff capture lands on the folded strip by default, so the timer
+    // and its two-line pane must work in that variant too, not only expanded.
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    const notices = useNoticesStore();
+    notices.closeOutOutcomes = Array.from({ length: 5 }, (_, i) => ({
+      taskId: `0${i}`,
+      outcome: "succeeded",
+      finishedAt: new Date(Date.now() - i * 60_000).toISOString(),
+      reason: "",
+      durationMs: (i + 1) * 60_000,
+    })) as CloseOutOutcomeEvent[];
+    ui.setIntegrationBarCollapsed(true);
+    repo.integration = activeSnapshot();
+    const wrapper = render();
+    await nextTick();
+
+    const chip = wrapper.get('.ibar-strip [data-test-id="integration-timer"]');
+    expect(chip.text()).toBe("3m 07s");
+    await chip.trigger("mouseenter");
+    await nextTick();
+    const tip = wrapper.get('[data-test-id="integration-timer-tip"]');
+    expect(tip.get(".timer-tip-chip").text()).toBe("Median 3m 00s · 5 runs");
+    expect(tip.get(".timer-tip-line").text()).toBe(
+      "Click to switch between elapsed time and a countdown",
+    );
   });
 
   it("does not auto-collapse while a job is active", async () => {

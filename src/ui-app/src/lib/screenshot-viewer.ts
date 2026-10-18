@@ -2,6 +2,14 @@
 export interface ScreenshotShot {
   src: string;
   name: string;
+  /**
+   * The handoff verdict for a captured shot (#0819), when one was recorded:
+   * `matches` renders a green check, `check` a red cross. Pending/attachment
+   * shots have no verdict and render no status line.
+   */
+  verdict?: "matches" | "check";
+  /** Plain-words warning for a `check` shot, shown beside the cross (#0819). */
+  warning?: string;
 }
 
 export function isImageMime(mime: string | undefined | null): boolean {

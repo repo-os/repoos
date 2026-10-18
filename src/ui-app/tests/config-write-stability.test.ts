@@ -2,8 +2,9 @@
  * Config and git hygiene (#0682, field report 2026-10-05 items 8/9): a one-key
  * `PATCH /api/config` must (a) not relocate an unrelated `[[table]]` section —
  * the old writer dropped and re-appended `[[agents]]` at the end of the file,
- * a whole-section diff for a one-line change — and (b) commit `repoos.toml`
- * so the primary branch never sits dirty and blocks the next Move to done.
+ * a whole-section diff for a one-line change — and (b) as of #0819 write
+ * `repoos.toml` to disk only: the settings save no longer auto-commits, so an
+ * uncommitted config is surfaced by the Move-to-done dirty-main prompt instead.
  */
 import { describe, expect, it, afterEach } from "vitest";
 import { execFileSync } from "node:child_process";
@@ -116,10 +117,11 @@ describe("patchTomlConfig keeps [[table]] position (#0682)", () => {
   });
 });
 
-describe("PATCH /api/config commits repoos.toml and preserves order (#0682)", () => {
-  it("changes only the patched line, keeps sections in place, and commits", async () => {
+describe("PATCH /api/config writes repoos.toml without committing (#0819)", () => {
+  it("changes only the patched line, keeps sections in place, and makes no commit", async () => {
     const root = gitRepo(REORDERABLE);
     const before = readFileSync(join(root, "repoos.toml"), "utf8");
+    const headBefore = git(root, ["rev-parse", "HEAD"]);
 
     const res = await patch(root, { maxActiveTasks: "2" });
     expect(res.status).toBe(200);
@@ -139,24 +141,22 @@ describe("PATCH /api/config commits repoos.toml and preserves order (#0682)", ()
     );
     expect(agentsBlockAfter).toBe(agentsBlockBefore);
 
-    // The config write is committed: main is clean and the commit names config.
-    expect(git(root, ["status", "--porcelain"])).toBe("");
-    const log = git(root, ["log", "--oneline", "-1"]);
-    expect(log).toContain("repoos.toml");
+    // #0819: the write lands on disk, main's log is unchanged, and the file is
+    // left dirty for the Move-to-done prompt to surface.
+    expect(git(root, ["rev-parse", "HEAD"])).toBe(headBefore);
+    expect(git(root, ["status", "--porcelain"])).toContain("repoos.toml");
   });
 
-  it("does not create a commit for a no-op save", async () => {
+  it("does not create a commit for a no-op save either", async () => {
     const root = gitRepo(REORDERABLE);
     const headBefore = git(root, ["rev-parse", "HEAD"]);
     const res = await patch(root, { maxActiveTasks: "3" });
     expect(res.status).toBe(200);
-    // Adding the key is a real change, so it commits.
-    expect(git(root, ["rev-parse", "HEAD"])).not.toBe(headBefore);
+    expect(git(root, ["rev-parse", "HEAD"])).toBe(headBefore);
 
-    const headAfter = git(root, ["rev-parse", "HEAD"]);
     const noop = await patch(root, { maxActiveTasks: "3" });
     expect(noop.status).toBe(200);
-    // Repeating the same value writes nothing new — no second commit.
-    expect(git(root, ["rev-parse", "HEAD"])).toBe(headAfter);
+    // Repeating the same value writes nothing new and never commits.
+    expect(git(root, ["rev-parse", "HEAD"])).toBe(headBefore);
   });
 });
