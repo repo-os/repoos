@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T06:50:50Z"
+updated_at: "2026-10-18T06:50:53Z"
 ---
 ## Items
 - [ ] **E1 · Minimised pill shows only the median popup, centered** (web) — remove the extra native title tooltip over it. Source: Nick 2026-10-18.
@@ -96,3 +98,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T06:49:00Z · body: E3 · Debug logs: expanded row always shows the full message (added)
 - 2026-10-18T06:49:05Z · title
 - 2026-10-18T06:50:50Z · status inbox→ready
+- 2026-10-18T06:50:53Z · cli_override, model_override
