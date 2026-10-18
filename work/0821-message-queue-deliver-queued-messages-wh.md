@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/message-queue-deliver-queued-messages-wh
 created_at: "2026-10-18T02:12:03Z"
-updated_at: "2026-10-18T04:34:02Z"
+updated_at: "2026-10-18T04:37:41Z"
 close_out_repair_count: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-18T03:18:28.872Z: repoos check failed: ui verification failed (6 issue(s)): [request] HTTP 404 for http://127.0.0.1:54905/api/tasks/9999/diff-stats (http://127.0.0.1:54905/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54905/api/tasks/9999/diff-stats); [request] HTTP 404 for http://127.0.0.1:54905/api/tasks/9999/shots (http://127.0.0.1:54905/api/tasks/9999/shots); [request] Failed to load resource: the server responded with a … (truncated)"
@@ -73,3 +73,4 @@ Start from the queue in src/server/agents.ts (queuedMessages, messageQueuedAt, c
 - 2026-10-18T04:31:44Z · status review→active
 - 2026-10-18T04:31:44Z · note: close-out repair: merge-conflict
 - 2026-10-18T04:34:02Z · body
+- 2026-10-18T04:37:41Z · body
