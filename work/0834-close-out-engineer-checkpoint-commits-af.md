@@ -2,7 +2,7 @@
 id: "0834"
 title: "Close-out: engineer checkpoint commits after handoff trigger an automatic re-review of the delta, not a hard error"
 type: feature
-status: ready
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-out-engineer-checkpoint-commits-af
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T16:31:49Z"
+updated_at: "2026-10-18T16:49:28Z"
 ---
 ## Problem
 Move to done refuses with "worktree changed after handoff: HEAD is X but handoff recorded Y" whenever the branch HEAD moves after handoff, and the only recovery is a person: discard the edits or send the task back to the engineer (seen on #0832, 2026-10-18). The guard is right in principle (close-out must merge only the reviewed commit; incident #0594), but the common cause is benign: the engineer's own WIP self-check checkpoint commit (a few fixture/test files) landing after the review passed, and the task then sits in review with no engineer and no signal.
@@ -35,3 +35,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T09:09:37Z · cli_override, model_override
 - 2026-10-18T09:09:42Z · status ready→active, branch
 - 2026-10-18T16:31:49Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-18T16:49:28Z · status ready→review
