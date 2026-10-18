@@ -2,14 +2,14 @@
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
-status: inbox
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-integration-pill-tool
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T12:49:43Z"
+updated_at: "2026-10-18T12:50:20Z"
 last_close_out_gate_ms: 283669
 last_close_out_gate_at: "2026-10-18T12:49:35.980Z"
 review_passes: 6
@@ -294,3 +294,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T12:49:35Z · close-out gate completed in 284s
 - 2026-10-18T12:49:42Z · note: handoff requested (cli)
 - 2026-10-18T12:49:43Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-18T12:50:20Z · status inbox→active
