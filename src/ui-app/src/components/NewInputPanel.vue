@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import { X, Paperclip, ImagePlus } from "lucide-vue-next";
+import { X, ImagePlus } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
-import { useRepoStore } from "../stores/repo";
+import { useRepoStore, type InputAttachmentUploadJob } from "../stores/repo";
+import { randomId } from "../lib/random-id";
 import Button from "./ui/button.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import Dialog from "./ui/dialog/root.vue";
@@ -12,7 +13,6 @@ import DialogDescription from "./ui/dialog/description.vue";
 import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
-import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 import PendingAttachmentList from "./PendingAttachmentList.vue";
 import { isImageMime, pendingToShots, shotIndex } from "../lib/screenshot-viewer";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
@@ -26,6 +26,8 @@ const ui = useUiStore(),
    * the background (0325) — mirroring the freeform new-task flow (0311).
    */
   submitted = ref(false),
+  /** Upload batch for the latest submit — scopes the ack panel (#0664 r2). */
+  activeSubmitBatchId = ref<string | null>(null),
   /** Depth counter: dragenter/leave fire once per element boundary. */
   dragDepth = ref(0),
   inputViewerOpen = ref(false),
@@ -33,7 +35,10 @@ const ui = useUiStore(),
   inputViewerShots = computed(() =>
     pendingToShots(ui.inputScreenshots.filter((s) => isImageMime(s.mime))),
   ),
-  inputUploadJobs = computed(() => repo.inputAttachmentUploads);
+  currentBatchJobs = computed(() =>
+    activeSubmitBatchId.value ? repo.inputAttachmentUploadsForBatch(activeSubmitBatchId.value) : [],
+  ),
+  outstandingInputUploadJobs = computed(() => repo.outstandingInputAttachmentUploads());
 function openInputViewer(src: string): void {
   inputViewerStart.value = shotIndex(inputViewerShots.value, src);
   inputViewerOpen.value = true;
@@ -44,6 +49,7 @@ function setOpen(v: boolean): void {
 watch(open, (v) => {
   if (!v) return;
   submitted.value = false;
+  activeSubmitBatchId.value = null;
   // The panel reuses the draft, so size its remounted textarea immediately.
   void nextTick(adjustInputHeight);
 });
@@ -81,9 +87,17 @@ function submit(): void {
   const text = ui.inputText.trim();
   if (!text || submitted.value) return;
   const attachments = [...ui.inputScreenshots];
+  const batchId = randomId();
+  activeSubmitBatchId.value = batchId;
   ui.clearInputDraft();
   submitted.value = true;
-  void repo.submitInput(text, attachments);
+  void repo.submitInput(text, attachments, batchId);
+}
+function retryInputJob(job: InputAttachmentUploadJob): void {
+  void repo.retryInputAttachmentUpload(job);
+}
+function dismissInputJob(job: InputAttachmentUploadJob): void {
+  repo.dismissInputAttachmentUpload(job);
 }
 /** Reset to a fresh form; the in-flight input keeps creating in the background. */
 function createAnotherInput(): void {
@@ -95,6 +109,7 @@ function createAnotherInput(): void {
 /** Acknowledge the in-flight creation and leave the new-input pane. */
 function done(): void {
   submitted.value = false;
+  activeSubmitBatchId.value = null;
   ui.close();
 }
 </script>
@@ -117,6 +132,36 @@ function done(): void {
         <DialogClose class="close-x"><X class="size-[15px]" /></DialogClose>
       </div>
       <div class="drawer-body">
+        <div
+          v-if="outstandingInputUploadJobs.length"
+          class="field ff-upload-followup"
+          role="region"
+          aria-label="Attachment uploads in progress"
+        >
+          <label>Attachment uploads</label>
+          <p class="ff-notice">
+            These uploads belong to earlier inputs. Retry or dismiss each one when it fails.
+          </p>
+          <PendingAttachmentList
+            :items="outstandingInputUploadJobs.map((j) => j.attachment)"
+            :allow-remove="false"
+            aria-label="Outstanding input attachment uploads"
+            @retry="(i) => retryInputJob(outstandingInputUploadJobs[i]!)"
+          />
+          <div class="btn-row" style="margin-top: 8px">
+            <Button
+              v-for="(job, i) in outstandingInputUploadJobs.filter(
+                (j) => j.attachment.uploadPhase === 'failed',
+              )"
+              :key="job.inputId + job.attachment.name + i"
+              variant="ghost"
+              size="sm"
+              @click="dismissInputJob(job)"
+            >
+              Dismiss {{ job.attachment.name }}
+            </Button>
+          </div>
+        </div>
         <div v-if="submitted" class="ff-done">
           <div class="ff-done-head">
             <ActivityIndicator activity="agent" />
@@ -128,11 +173,11 @@ function done(): void {
             lost.
           </p>
           <PendingAttachmentList
-            v-if="inputUploadJobs.length"
-            :items="inputUploadJobs.map((j) => j.attachment)"
+            v-if="currentBatchJobs.length"
+            :items="currentBatchJobs.map((j) => j.attachment)"
             :allow-remove="false"
-            aria-label="Uploading input attachments"
-            @retry="(i) => void repo.retryInputAttachmentUpload(inputUploadJobs[i]!)"
+            aria-label="Uploading input attachments for this submit"
+            @retry="(i) => retryInputJob(currentBatchJobs[i]!)"
           />
           <div class="btn-row" style="margin-top: 18px">
             <Button variant="default" @click="createAnotherInput">Create another input</Button>

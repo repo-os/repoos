@@ -47,6 +47,8 @@ export interface PendingScreenshot {
   uploadPhase?: PendingScreenshotUploadPhase;
   /** Last error when `uploadPhase` is `failed`. */
   uploadError?: string;
+  /** Task id when an upload was attempted (retry after freeform ack, #0664). */
+  uploadTaskId?: string;
 }
 
 /** The panel only ever holds the latest N, so a huge drop can't pin memory. */
@@ -348,6 +350,17 @@ export const useUiStore = defineStore("ui", () => {
     pendingScreenshots.splice(0);
   }
 
+  /** Drop succeeded/queued picks; keep failed uploads for retry (#0664). */
+  function clearResolvedScreenshots(): void {
+    for (let i = pendingScreenshots.length - 1; i >= 0; i--) {
+      if (pendingScreenshots[i]?.uploadPhase !== "failed") pendingScreenshots.splice(i, 1);
+    }
+  }
+
+  function hasFailedPendingScreenshots(): boolean {
+    return pendingScreenshots.some((s) => s.uploadPhase === "failed");
+  }
+
   /** Read each image file into memory as a data URL and queue it for New input. */
   function addInputScreenshots(files: File[]): void {
     for (const file of files) {
@@ -558,6 +571,8 @@ export const useUiStore = defineStore("ui", () => {
     addScreenshots,
     removeScreenshot,
     clearScreenshots,
+    clearResolvedScreenshots,
+    hasFailedPendingScreenshots,
     inputScreenshots,
     addInputScreenshots,
     removeInputScreenshot,
