@@ -123,7 +123,10 @@ describe("backfillCloseOutOutcomeDurations (#0829)", () => {
       expect(first.find((e) => e.taskId === taskId)?.durationMs).toBe(13 * 60_000 + 12_000);
       expect(first.find((e) => e.taskId === "9999")?.durationMs).toBeUndefined();
 
-      const onDisk = JSON.parse(readFileSync(path, "utf8")) as { taskId: string; durationMs?: number }[];
+      const onDisk = JSON.parse(readFileSync(path, "utf8")) as {
+        taskId: string;
+        durationMs?: number;
+      }[];
       expect(onDisk.find((e) => e.taskId === taskId)?.durationMs).toBe(13 * 60_000 + 12_000);
 
       const again = createCloseOutOutcomeStore(root);
