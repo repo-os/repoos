@@ -39,6 +39,25 @@ describe("shot preview board fixtures (#0743)", () => {
     ).toBe("");
   });
 
+  it("seeds bird quick trail on the settings form (#0822)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    config.form.activityAnimationStyle = "arcade-hopper";
+    applyShotPreviewConfigFixture(config, "settings:birdQuickTrail");
+    expect(config.form.activityAnimationStyle).toBe("bird-quick-trail");
+  });
+
+  it("seeds Start work pending on a ready board card (#0822)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "board:startWorkPending");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task!.status).toBe("ready");
+    expect(repo.isStartWorkPending(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
+  });
+
   it("leaves other config fixtures untouched (#0805)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);

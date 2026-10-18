@@ -43,6 +43,12 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0787 — active engineer run on the board so captures can show the compact
   // coding indicator on a task card.
   "board:activeCoding",
+  // #0822 — ready task with Start work in flight so the card shows Starting….
+  "board:startWorkPending",
+  // #0822 — same pending state with the task drawer open on the fixture card.
+  "drawer:startWorkPending",
+  // #0822 — Settings activity-animation preview seeded to bird quick trail.
+  "settings:birdQuickTrail",
   // #0775 — a failed dev target on the Dev page, so a capture can show the
   // plain-language failure summary, its port holder and the Stop action.
   "dev:failed",

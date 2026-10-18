@@ -156,6 +156,73 @@ describe("Start work pending (#0822)", () => {
     expect(repo.isStartWorkPending(task.id)).toBe(false);
   });
 
+  it("clears pending when the task leaves ready without a second click", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const task = makeTask({ status: "ready" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [task], counts: { ...EMPTY_COUNTS, ready: 1 }, taskCount: 1 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/start")) return json({ ok: true });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+    const repo = useRepoStore();
+    await repo.init();
+    await repo.startWork(task);
+    expect(repo.isStartWorkPending(task.id)).toBe(true);
+
+    const es = FakeEventSource.instances[0];
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: { ...task, status: "active" },
+      prev: { status: "ready" },
+    });
+    await flush();
+    expect(repo.isStartWorkPending(task.id)).toBe(false);
+  });
+
+  it("ignores a second startWork while pending", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const task = makeTask({ status: "ready" });
+    let resolveStart: (() => void) | undefined;
+    const startPromise = new Promise<void>((resolve) => {
+      resolveStart = resolve;
+    });
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes("/api/health"))
+        return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+      if (url.includes("/api/index"))
+        return json({ tasks: [task], counts: { ...EMPTY_COUNTS, ready: 1 }, taskCount: 1 });
+      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/start")) {
+        await startPromise;
+        return json({ ok: true });
+      }
+      throw new Error("unexpected fetch: " + url);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const repo = useRepoStore();
+    await repo.init();
+    void repo.startWork(task);
+    await flush();
+    await repo.startWork(task);
+    await flush();
+    expect(fetchMock.mock.calls.filter((c) => String(c[0]).includes("/start"))).toHaveLength(1);
+    resolveStart!();
+    await flush();
+  });
+
   it("clears pending and surfaces the error when start fails", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
