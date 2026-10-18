@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 397618
-last_close_out_gate_at: "2026-10-18T07:19:32.615Z"
 id: "0826"
 title: "CLI: repoos sync <id> (merge main into a task branch, like the drawer's Sync with main)"
 type: feature
-status: review
+status: done
 priority: p3
 area: core
+merged_commit: "09ebb4a8a4c91a3a347b503bb931a4645204af74"
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/cli-repoos-sync-id-merge-main-into-a-tas
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T04:31:12Z"
-updated_at: "2026-10-18T07:19:32Z"
+updated_at: "2026-10-18T07:20:00Z"
+last_close_out_gate_ms: 397618
+last_close_out_gate_at: "2026-10-18T07:19:32.615Z"
 review_passes: 2
 ---
 ## Problem
@@ -51,4 +52,4 @@ Mirror the existing control-plane commands in src/commands (start/pause/done). R
 - 2026-10-18T06:52:50Z · note: review pass 1: good to go
 - 2026-10-18T06:52:51Z · note: review pass 2: good to go
 - 2026-10-18T07:19:32Z · close-out gate completed in 398s
-
+- 2026-10-18T07:20:00Z · status review→done, release:success
