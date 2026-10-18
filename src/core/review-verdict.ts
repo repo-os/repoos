@@ -71,6 +71,54 @@ export function parseReviewRelevance(markdown: string | null | undefined): Revie
   return null;
 }
 
+/** First non-empty line of a `## Verdict` section body, if any. */
+export function reviewVerdictFirstLine(markdown: string): string | null {
+  const section = reviewVerdictSection(markdown);
+  if (!section) return null;
+  const line = section.split(/\r?\n/).find((value) => value.trim());
+  return line?.trim() ?? null;
+}
+
+/**
+ * Drop a leading verdict label and separator from a verdict summary line so
+ * card/drawer copy does not repeat the status chip ("Review still finding issues").
+ */
+export function stripReviewVerdictPrefix(line: string): string {
+  const trimmed = line.trim();
+  if (!trimmed) return "";
+  const verdict = verdictFromText(trimmed);
+  if (!verdict) return trimmed;
+  const escaped = verdict.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const patterns = [
+    new RegExp(`^\`${escaped}\`\\s*[—–-]\\s*`, "i"),
+    new RegExp(`^\\*\\*${escaped}\\*\\*\\s*[—–-]\\s*`, "i"),
+    new RegExp(`^${escaped}\\s*[—–-]\\s*`, "i"),
+    new RegExp(`^${escaped}[.!]?\\s*`, "i"),
+  ];
+  for (const re of patterns) {
+    if (re.test(trimmed)) return trimmed.replace(re, "").trim();
+  }
+  return trimmed;
+}
+
+const VERDICT_SUMMARY_WHY_MAX = 120;
+
+/**
+ * One-line `needs_input_detail` for review-rounds-exhausted: keep the verdict
+ * label plus a bounded "why" (full detail stays in the stored review report).
+ */
+export function verdictSummaryForNeedsInput(markdown: string): string | undefined {
+  const line = reviewVerdictFirstLine(markdown);
+  if (!line) return undefined;
+  const verdict = verdictFromText(line);
+  if (!verdict) return line.length > VERDICT_SUMMARY_WHY_MAX + 40 ? line.slice(0, 160) : line;
+  const why = stripReviewVerdictPrefix(line);
+  if (!why) return `\`${verdict}\``;
+  const capped =
+    why.length > VERDICT_SUMMARY_WHY_MAX ? `${why.slice(0, VERDICT_SUMMARY_WHY_MAX - 1)}…` : why;
+  return `\`${verdict}\` — ${capped}`;
+}
+
 /**
  * Replace the verdict label in a report's `## Verdict` section (#0714 mechanical
  * clamp). Leaves the rest of the section intact.
