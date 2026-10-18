@@ -231,7 +231,7 @@ describe("buildCapturePlan with command targets (#0761)", () => {
       docsContentOnly: new Set(["docs"]),
     });
     expect(built.entries).toEqual([]);
-    expect(built.autoSkips[0]).toMatch(/documentation content/);
+    expect(built.autoSkips[0]).toMatch(/skipped: no docs shot declared/);
   });
 
   it("drops page-only fields (highlight/selector/steps) from a declared command shot", () => {

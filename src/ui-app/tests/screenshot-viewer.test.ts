@@ -93,6 +93,32 @@ describe("ScreenshotViewer", () => {
     expect(wrapper.text()).toMatch(/scale down to fit/i);
   });
 
+  it("shows each captured shot's verdict and warning in its header (#0819)", () => {
+    const wrapper = mount(ScreenshotViewer, {
+      props: {
+        open: true,
+        shots: [
+          {
+            src: "/api/a.png",
+            name: "declared: Board",
+            verdict: "check",
+            warning: "couldn't find .fullscreen-toggle to click",
+          },
+          { src: "/api/b.png", name: "declared: Agents", verdict: "matches" },
+          { src: "data:image/png;base64,zzz", name: "pending.png" },
+        ],
+      },
+      global: { stubs: dialogStubs },
+    });
+    const headers = wrapper.findAll(".shot-viewer-shot-head");
+    // Only the two captured shots carry a verdict; the pending attachment does not.
+    expect(headers).toHaveLength(2);
+    expect(headers[0].find('[data-verdict="check"]').exists()).toBe(true);
+    expect(headers[0].text()).toContain("couldn't find .fullscreen-toggle to click");
+    expect(headers[1].find('[data-verdict="matches"]').exists()).toBe(true);
+    expect(headers[1].text()).toContain("matches");
+  });
+
   it("closes from the viewer [x], distinct from a remove control", async () => {
     const wrapper = mount(ScreenshotViewer, {
       props: { open: true, shots },

@@ -3,6 +3,7 @@ import {
   DEFAULT_INTEGRATION_STALL_MS,
   integrationActiveCopy,
   integrationCountdownLabel,
+  integrationMedianChip,
   integrationMedianDuration,
   integrationMedianTip,
   integrationPipelineStalled,
@@ -136,8 +137,25 @@ describe("integration median + countdown (#0814)", () => {
       outcome("legacy", 4),
     ];
     expect(integrationMedianDuration(outcomes)).toEqual({ medianMs: 120_000, count: 3 });
-    expect(integrationMedianTip(outcomes)).toContain("last 3 integration runs");
-    expect(integrationMedianTip(outcomes)).toContain("2m 00s");
+    expect(integrationMedianChip(outcomes)).toBe("Median 2m 00s · 3 runs");
+    expect(integrationMedianTip(outcomes).split("\n")).toEqual([
+      "Median 2m 00s · 3 runs",
+      "Click to switch between elapsed time and a countdown",
+    ]);
+  });
+
+  it("excludes failed and timed-out runs from the median (#0819)", () => {
+    const outcomes: CloseOutOutcomeEvent[] = [
+      outcome("ok1", 1, 60_000),
+      { ...outcome("bad1", 2, 30_000), outcome: "failed" },
+      { ...outcome("bad2", 3, 20_000), outcome: "timedOut" },
+      outcome("ok2", 4, 180_000),
+      outcome("ok3", 5, 300_000),
+    ];
+    // Only the three succeeded runs count; the two failures are ignored even
+    // though they recorded a duration.
+    expect(integrationMedianDuration(outcomes)).toEqual({ medianMs: 180_000, count: 3 });
+    expect(integrationMedianChip(outcomes)).toContain("3 runs");
   });
 
   it("has no median when nothing was timed", () => {

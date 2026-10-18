@@ -469,7 +469,11 @@ export const useNoticesStore = defineStore("notices", () => {
 
   async function pollAttention(): Promise<void> {
     try {
-      const res = await api<{ items: AttentionFeedItem[] }>("/api/attention");
+      const res = await api<{
+        items: AttentionFeedItem[];
+        /** Raw durable close-out outcomes, newest first (#0819). */
+        closeOutOutcomes?: CloseOutOutcomeEvent[];
+      }>("/api/attention");
       const items = res.items ?? [];
       // A snapshot of what is slow right now (#0720): rebuild every poll so a
       // finished run's badge clears without any dismiss action.
@@ -482,6 +486,14 @@ export const useNoticesStore = defineStore("notices", () => {
           detail: i.detail,
         }));
       for (const item of [...items].reverse()) ingestAttentionItem(item);
+      // #0819: seed the timer's duration history from the durable outcomes the
+      // attention feed carries, so a FRESH page shows the same up-to-15-run
+      // median a long-open one does. Oldest-first so the newest lands at the
+      // head; `recordCloseOutOutcome` de-dupes by taskId+finishedAt and the
+      // live `/api/close-out/outcomes` poll keeps appending new runs.
+      for (const outcome of [...(res.closeOutOutcomes ?? [])].reverse()) {
+        recordCloseOutOutcome(outcome);
+      }
     } catch {
       /* server restarting */
     }

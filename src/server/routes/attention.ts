@@ -29,5 +29,15 @@ export const getAttention: RouteHandler = async (ctx, _req, res) => {
     previewTargetAreas,
     ctoHeartbeat: ctx.ctoHeartbeat,
   });
-  return json(res, 200, { ok: true, ...feed });
+  // #0819: the durable close-out outcomes ride along as RAW events (newest
+  // first), not only folded into `items`. The item shape drops `startedAt`/
+  // `durationMs`, and the UI's integration timer needs those to build its
+  // recent-run median on a fresh page load — the attention fetch it already
+  // makes at startup is the natural carrier. The separate
+  // `GET /api/close-out/outcomes` route stays for the notice-backfill path.
+  return json(res, 200, {
+    ok: true,
+    ...feed,
+    closeOutOutcomes: ctx.closeOutOutcomes?.list() ?? [],
+  });
 };
