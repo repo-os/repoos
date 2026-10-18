@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { STABLE_ATTACHMENT_OBJECT_RE } from "../../core/attachment-reference";
+import { STABLE_ATTACHMENT_OBJECT_RE, taskAttachmentStore } from "../../core/attachment-reference";
 import { createRepoOS } from "../../core/repoos";
 import {
   attachPendingPmImages,
@@ -111,6 +111,11 @@ describe("attachPendingPmImages", () => {
   it("merges into an existing Screenshots section instead of stacking headings", () => {
     const repoos = fixture();
     const task = taskWithBody(repoos, "already has one");
+    taskAttachmentStore(repoos.config).put(
+      task.id,
+      "screenshot-1.png",
+      Buffer.from(PNG_1PX, "base64"),
+    );
     patchTaskFile(repoos.config, task.absPath, {
       addScreenshot: {
         id: "1",
@@ -128,6 +133,10 @@ describe("attachPendingPmImages", () => {
     // Exactly one Screenshots heading, both images inside it.
     expect(updated!.body.match(/## Screenshots/g)).toHaveLength(1);
     expect(resolveScreenshot(repoos.config, task.id, "screenshot-1.png")).not.toBeNull();
+    const attached = [...updated!.body.matchAll(/\/attachments\/([^)]+)\)/g)].map((m) =>
+      decodeURIComponent(m[1]),
+    );
+    expect(attached.some((name) => STABLE_ATTACHMENT_OBJECT_RE.test(name))).toBe(true);
   });
 
   it("keeps the batch pending when no matching session is running", () => {
