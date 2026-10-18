@@ -858,6 +858,15 @@ export type RepoEvent =
       taskId: string | null;
       runDoc: string | null;
       at: string;
+    }
+  | { type: "schedule.changed"; at: string }
+  | {
+      type: "schedule.run";
+      scheduleId: string;
+      taskId: string | null;
+      ok: boolean;
+      error?: string;
+      at: string;
     };
 
 /** A server-run `repoos check` for a task (0310 Debug tab) — either the
