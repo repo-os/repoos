@@ -170,6 +170,10 @@ import {
   verifyWorktreeHandoffIntegrity,
   writeWorktreeReviewLock,
 } from "../worktree-handoff-guard.js";
+import {
+  isPostHandoffCheckpointRecoveryActive,
+  startPostHandoffCheckpointRecovery,
+} from "../post-handoff-checkpoint-recovery.js";
 
 // Helper to add review status to tasks
 function withReviewStatus<T extends { id: string }>(
@@ -2531,6 +2535,35 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
             taskId: id,
           });
           if (!integrity.ok) {
+            if (integrity.checkpointOnlyDrift) {
+              const started = await startPostHandoffCheckpointRecovery(
+                {
+                  config,
+                  index: ctx.index,
+                  jobCoordinator: ctx.jobCoordinator,
+                  reviews: ctx.reviews,
+                  reload: ctx.reload,
+                  emitEvent: ctx.emitEvent,
+                  triggerJobProcessing: ctx.triggerJobProcessing,
+                  taskChecks: ctx.taskChecks,
+                  remoteValidator: ctx.remoteValidator,
+                  previews: ctx.previews,
+                },
+                taskStillExists,
+                integrity.checkpointOnlyDrift.approvedSha,
+                integrity.checkpointOnlyDrift.headSha,
+              );
+              if (!started.ok) {
+                return json(res, 409, { error: started.reason });
+              }
+              return json(res, 202, {
+                checkpointRecovery: true,
+                approvedSha: integrity.checkpointOnlyDrift.approvedSha,
+                headSha: integrity.checkpointOnlyDrift.headSha,
+                message:
+                  "Engineer checkpoint commit(s) after handoff — re-running the handoff gate and a delta review before close-out continues.",
+              });
+            }
             return json(res, 409, {
               error: integrity.reason,
               worktreeChangedAfterHandoff: true,

@@ -234,6 +234,15 @@ through the same commit path a handoff uses, so the close-out's own build and
 check then validate the result. **Cancel** changes nothing: the task stays in
 `review` with every file exactly where it was.
 
+**Engineer checkpoint after handoff (#0834):** if the only new commits on the
+branch since handoff are automatic `WIP: engineer self-check checkpoint` commits
+(from a scoped `repoos check` while the task sat in `review`), Move to done
+starts **checkpoint recovery** instead of showing "Worktree changed after
+handoff": the handoff gate runs again on the new HEAD, a delta-only review
+covers just those commits, and close-out continues when that review is
+`good to go`. Any real source edit or a dirty tree still blocks with the usual
+dialog (discard or send back to the engineer).
+
 RepoOS never deletes a worktree that has uncommitted work on its own. If one is
 left over (for example a close-out that raced a new edit), it is kept, named in
 the task's `needs_input` detail, and reported by `repoos gc` until you deal with

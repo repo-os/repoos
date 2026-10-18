@@ -21,6 +21,7 @@ import { rmFixture } from "./helpers";
 import { ensureWorktree } from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
 import { taskAction, getWorktreeDirtyForTask } from "../../server/routes/tasks.js";
+import { engineerSelfCheckCheckpointMessage } from "../../core/engineer-checkpoint-commit.js";
 import { readHandoffSnapshot, writeHandoffSnapshot } from "../../server/worktree-handoff-guard.js";
 import type { RouteContext } from "../../server/routes/types.js";
 import type { Task } from "../../core/types.js";
@@ -111,7 +112,11 @@ function makeRepo(): { root: string; clean: () => void } {
 function makeCtx(
   root: string,
   task: Task,
-  opts: { onEnqueue?: () => void; jobCoordinator?: RouteContext["jobCoordinator"] } = {},
+  opts: {
+    onEnqueue?: () => void;
+    jobCoordinator?: RouteContext["jobCoordinator"];
+    reviews?: RouteContext["reviews"];
+  } = {},
 ): RouteContext {
   const jobCoordinator =
     opts.jobCoordinator ??
@@ -126,7 +131,7 @@ function makeCtx(
     indexReady: Promise.resolve(),
     runner: { isRunning: () => false, stop: () => {} } as any,
     previews: { stop: async () => {} } as any,
-    reviews: { isRunning: () => false, cancel: () => {} } as any,
+    reviews: opts.reviews ?? ({ isRunning: () => false, cancel: () => {} } as any),
     cto: {} as any,
     freeformRuns: {} as any,
     repoos: {} as any,
@@ -507,6 +512,47 @@ describe("move-to-done dirty-WORKTREE guard (#0512)", () => {
 
       expect(res.statusCode).toBe(200);
       expect(enqueue).toHaveBeenCalledTimes(1);
+    } finally {
+      clean();
+    }
+  });
+
+  it("queues checkpoint recovery instead of 409 when HEAD moved only by WIP checkpoint (#0834)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = makeFeatureWorktree(root);
+      const handoffSha = gitIn(wt, "rev-parse HEAD");
+      writeHandoffSnapshot(root, ".repoos", {
+        taskId: "0211",
+        branch: "feat/0211",
+        sha: handoffSha,
+        at: "2026-09-30T00:00:00Z",
+        clean: true,
+      });
+      writeFileSync(join(wt, "src", "wip-fixture.ts"), "export const w = 1;\n");
+      gitIn(wt, "add src/wip-fixture.ts");
+      gitIn(wt, `commit -m "${engineerSelfCheckCheckpointMessage("0211")}"`);
+      const enqueue = vi.fn();
+      const reviews = {
+        isRunning: () => false,
+        enabled: () => true,
+        runCheckpointDelta: vi.fn(),
+      };
+      const res = makeRes();
+
+      await taskAction(
+        makeCtx(root, reviewTask(root), {
+          onEnqueue: enqueue,
+          reviews: reviews as any,
+        }),
+        makeReq(),
+        res as any,
+        { param1: "0211", param2: "done" },
+      );
+
+      expect(res.statusCode).toBe(202);
+      expect(res.body.checkpointRecovery).toBe(true);
+      expect(enqueue).not.toHaveBeenCalled();
     } finally {
       clean();
     }
