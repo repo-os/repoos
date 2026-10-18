@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-18T08:23:58Z"
-review_passes: 4
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
+updated_at: "2026-10-18T08:24:10Z"
+review_passes: 4
 review_rounds: 2
 ---
 ## Items
@@ -241,4 +241,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T08:23:40Z · note: highlight [data-test-id="integration-timer-tip"] matched nothing on /
 - 2026-10-18T08:23:57Z · note: review pass 4: needs some work
 - 2026-10-18T08:23:57Z · needs_input
-
+- 2026-10-18T08:24:10Z · note: waitFor .debug-event-expandable: waitFor: Timeout 5000ms exceeded. on /work?task=0820&tab=debug
