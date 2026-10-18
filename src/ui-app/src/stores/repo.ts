@@ -68,6 +68,8 @@ export interface ToastItem {
 
 /** One in-flight or failed input attachment upload (#0664). */
 export interface InputAttachmentUploadJob {
+  /** Groups uploads from one New input submit. */
+  batchId: string;
   inputId: string;
   attachment: PendingScreenshot;
 }
@@ -3590,6 +3592,21 @@ export const useRepoStore = defineStore("repo", () => {
     await runInputAttachmentUpload(job);
   }
 
+  function dismissInputAttachmentUpload(job: InputAttachmentUploadJob): void {
+    removeInputAttachmentUploadJob(job);
+    clearAttachmentUploadState(job.attachment);
+  }
+
+  function inputAttachmentUploadsForBatch(batchId: string): InputAttachmentUploadJob[] {
+    return inputAttachmentUploads.filter((j) => j.batchId === batchId);
+  }
+
+  function outstandingInputAttachmentUploads(): InputAttachmentUploadJob[] {
+    return inputAttachmentUploads.filter(
+      (j) => j.attachment.uploadPhase === "uploading" || j.attachment.uploadPhase === "failed",
+    );
+  }
+
   /**
    * Upload one task screenshot with visible uploading / failed state (#0664).
    * Returns true when the server accepted the attachment.
@@ -3616,7 +3633,11 @@ export const useRepoStore = defineStore("repo", () => {
    * been created, the capture is restored for retry (only if the user has not
    * started a new one); once created, a retry would duplicate it.
    */
-  async function submitInput(text: string, attachments: PendingScreenshot[]): Promise<void> {
+  async function submitInput(
+    text: string,
+    attachments: PendingScreenshot[],
+    batchId = `input-${Date.now()}`,
+  ): Promise<void> {
     const ui = useUiStore();
     let created = false;
     try {
@@ -3633,7 +3654,7 @@ export const useRepoStore = defineStore("repo", () => {
       // always arrives as an `input.enriched` event, success or failure.
       if (input.enriching) markEnriching(input.id);
       for (const s of attachments) {
-        const job: InputAttachmentUploadJob = { inputId: input.id, attachment: s };
+        const job: InputAttachmentUploadJob = { batchId, inputId: input.id, attachment: s };
         inputAttachmentUploads.push(job);
         await runInputAttachmentUpload(job);
       }
@@ -3914,7 +3935,10 @@ export const useRepoStore = defineStore("repo", () => {
     uploadScreenshot,
     uploadTaskScreenshot,
     inputAttachmentUploads,
+    inputAttachmentUploadsForBatch,
+    outstandingInputAttachmentUploads,
     retryInputAttachmentUpload,
+    dismissInputAttachmentUpload,
     createFreeformTask,
     deleteTask,
     createDocument,

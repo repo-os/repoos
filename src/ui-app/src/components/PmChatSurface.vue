@@ -21,7 +21,8 @@
  * each host re-deriving it.
  */
 import { computed, nextTick, ref, watch } from "vue";
-import { ImagePlus, X } from "lucide-vue-next";
+import { ImagePlus, RotateCcw, X } from "lucide-vue-next";
+import Button from "./ui/button.vue";
 import type { AgentOutputEntry } from "../types";
 import { renderChatMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
@@ -97,6 +98,7 @@ const emit = defineEmits<{
   attach: [files: File[]];
   removeShot: [index: number];
   openShot: [index: number];
+  retryShot: [index: number];
 }>();
 
 const draft = defineModel<string>("draft", { default: "" });
@@ -282,6 +284,17 @@ defineExpose({ focusDraft });
           }}
         </span>
         <ScreenshotExpandButton :name="s.name" @click="emit('openShot', i)" />
+        <Button
+          v-if="attachmentUploadPhase(s) === 'failed'"
+          type="button"
+          variant="outline"
+          size="sm"
+          class="pm-shot-retry"
+          :aria-label="`Retry upload for ${s.name}`"
+          @click.stop="emit('retryShot', i)"
+        >
+          <RotateCcw class="size-3" />
+        </Button>
         <button
           type="button"
           class="pm-shot-remove"

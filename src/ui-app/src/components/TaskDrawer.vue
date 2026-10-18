@@ -97,7 +97,12 @@ import UpdateRequirementsDialog from "./UpdateRequirementsDialog.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 import PendingAttachmentList from "./PendingAttachmentList.vue";
-import { markAttachmentUploadFailed, markAttachmentUploading } from "../lib/attachment-upload-ui";
+import {
+  attachmentUploadPhase,
+  clearAttachmentUploadState,
+  markAttachmentUploadFailed,
+  markAttachmentUploading,
+} from "../lib/attachment-upload-ui";
 import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
 import { shotProblems, shotRows, uncapturedDeclared } from "../lib/shot-rows";
 import {
@@ -600,7 +605,7 @@ watch(freeformText, adjustFreeformHeight, { flush: "post" });
 
 function clearFreeformDraft(): void {
   freeformText.value = "";
-  ui.clearScreenshots();
+  ui.clearResolvedScreenshots();
 }
 
 function onDraftMsgTranscribed(text: string): void {
@@ -712,11 +717,11 @@ async function createFreeform(): Promise<void> {
 /** Reset the form + acknowledgment state to queue up another freeform task. */
 function createAnotherTask(): void {
   freeformSubmitted.value = false;
-  submittedTask.value = null;
+  if (!ui.hasFailedPendingScreenshots()) submittedTask.value = null;
   freeformError.value = "";
   if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
   freeformRunId.value = null;
-  ui.clearScreenshots();
+  ui.clearResolvedScreenshots();
   requestAnimationFrame(() => {
     document.getElementById("nt-freeform")?.focus();
   });
@@ -874,6 +879,7 @@ async function createTask(): Promise<void> {
 /** Upload the in-panel screenshots to a just-created task. Clears each on success (#0664). */
 async function uploadPendingScreenshots(taskId: string): Promise<void> {
   for (const s of [...ui.pendingScreenshots]) {
+    s.uploadTaskId = taskId;
     const ok = await repo.uploadTaskScreenshot(taskId, s);
     if (!ok) continue;
     const idx = ui.pendingScreenshots.indexOf(s);
@@ -881,11 +887,9 @@ async function uploadPendingScreenshots(taskId: string): Promise<void> {
   }
 }
 
-const pendingUploadTaskId = computed(() => submittedTask.value?.id ?? ui.active?.id ?? "");
-
 async function retryPendingScreenshot(index: number): Promise<void> {
-  const taskId = pendingUploadTaskId.value;
   const s = ui.pendingScreenshots[index];
+  const taskId = s?.uploadTaskId ?? submittedTask.value?.id ?? ui.active?.id ?? "";
   if (!taskId || !s) return;
   const ok = await repo.uploadTaskScreenshot(taskId, s);
   if (ok) ui.removeScreenshot(index);
@@ -2947,6 +2951,17 @@ async function pmSend(): Promise<void> {
   }
 }
 
+function pmRetryShot(index: number): void {
+  const s = ui.pmScreenshots[index];
+  if (!s || attachmentUploadPhase(s) !== "failed") return;
+  clearAttachmentUploadState(s);
+  if (!pmDraft.value.trim()) {
+    repo.pushToast("Add a message, then send or tap Retry again.", "info");
+    return;
+  }
+  void pmSend();
+}
+
 /**
  * Interrupt the PM's in-flight response. The server stops the running agent
  * turn and appends a "response interrupted" marker to the conversation.
@@ -4049,6 +4064,24 @@ watch(
               </div>
             </div>
             <template v-else>
+              <div
+                v-if="ui.hasFailedPendingScreenshots()"
+                class="field ff-upload-followup"
+                role="region"
+                aria-label="Failed task screenshot uploads"
+              >
+                <label>Screenshot uploads</label>
+                <p class="ff-notice">
+                  These screenshots did not upload. Retry them for the task above.
+                </p>
+                <PendingAttachmentList
+                  :items="ui.pendingScreenshots"
+                  :allow-remove="false"
+                  aria-label="Failed task screenshot uploads"
+                  @open-shot="openPendingViewer"
+                  @retry="(i) => void retryPendingScreenshot(i)"
+                />
+              </div>
               <div class="field">
                 <div class="field-header">
                   <label for="nt-freeform">Describe the task</label>
@@ -6260,6 +6293,7 @@ watch(
             @attach="onPmShotFiles"
             @remove-shot="ui.removePmScreenshot"
             @open-shot="openPmViewer"
+            @retry-shot="pmRetryShot"
           >
             <template #header>
               <div v-if="ui.active" class="agent-override-bar">

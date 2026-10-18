@@ -12,6 +12,7 @@ import {
   markAttachmentUploading,
 } from "../src/lib/attachment-upload-ui";
 import { useRepoStore } from "../src/stores/repo";
+import { useUiStore } from "../src/stores/ui";
 import type { PendingScreenshot } from "../src/stores/ui";
 
 const sample: PendingScreenshot = {
@@ -28,12 +29,13 @@ afterEach(() => {
 
 describe("attachment-upload-ui helpers", () => {
   it("tracks uploading and failed phases on the same object", () => {
-    expect(attachmentUploadPhase(sample)).toBe("selected");
-    markAttachmentUploading(sample);
-    expect(attachmentUploadPhase(sample)).toBe("uploading");
-    markAttachmentUploadFailed(sample, new Error("network"));
-    expect(attachmentUploadPhase(sample)).toBe("failed");
-    expect(sample.uploadError).toBe("network");
+    const shot = { ...sample };
+    expect(attachmentUploadPhase(shot)).toBe("selected");
+    markAttachmentUploading(shot);
+    expect(attachmentUploadPhase(shot)).toBe("uploading");
+    markAttachmentUploadFailed(shot, new Error("network"));
+    expect(attachmentUploadPhase(shot)).toBe("failed");
+    expect(shot.uploadError).toBe("network");
   });
 });
 
@@ -78,7 +80,7 @@ describe("repo upload helpers", () => {
     setActivePinia(createPinia());
     const repo = useRepoStore();
     const attachment: PendingScreenshot = { ...sample };
-    const job = { inputId: "0042", attachment };
+    const job = { batchId: "batch-a", inputId: "0042", attachment };
     repo.inputAttachmentUploads.push(job);
     await repo.retryInputAttachmentUpload(job);
     await nextTick();
@@ -89,5 +91,57 @@ describe("repo upload helpers", () => {
     await nextTick();
     expect(repo.inputAttachmentUploads).toHaveLength(0);
     expect(calls.filter((c) => c.includes("/attachments"))).toHaveLength(2);
+  });
+
+  it("scopes input upload jobs to their submit batch", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    const a: PendingScreenshot = { ...sample, name: "a.png" };
+    const b: PendingScreenshot = { ...sample, name: "b.png" };
+    repo.inputAttachmentUploads.push(
+      { batchId: "one", inputId: "1", attachment: a },
+      { batchId: "two", inputId: "2", attachment: b },
+    );
+    expect(repo.inputAttachmentUploadsForBatch("one")).toHaveLength(1);
+    expect(repo.inputAttachmentUploadsForBatch("one")[0]?.attachment.name).toBe("a.png");
+  });
+
+  it("uploadTaskScreenshot records failure without throwing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          status: 500,
+          json: async () => ({ error: "boom" }),
+        }),
+      ),
+    );
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    const shot: PendingScreenshot = { ...sample };
+    const ok = await repo.uploadTaskScreenshot("0099", shot);
+    expect(ok).toBe(false);
+    expect(shot.uploadPhase).toBe("failed");
+  });
+});
+
+describe("ui pending screenshot retention", () => {
+  it("clearResolvedScreenshots keeps failed picks for retry", () => {
+    setActivePinia(createPinia());
+    const ui = useUiStore();
+    const ok: PendingScreenshot = { ...sample, name: "ok.png" };
+    const bad: PendingScreenshot = {
+      ...sample,
+      name: "bad.png",
+      uploadPhase: "failed",
+      uploadError: "nope",
+      uploadTaskId: "0001",
+    };
+    ui.pendingScreenshots.push(ok, bad);
+    ui.clearResolvedScreenshots();
+    expect(ui.pendingScreenshots).toHaveLength(1);
+    expect(ui.pendingScreenshots[0]?.name).toBe("bad.png");
+    expect(ui.hasFailedPendingScreenshots()).toBe(true);
   });
 });
