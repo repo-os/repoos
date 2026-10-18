@@ -2,21 +2,15 @@
 id: "0093"
 title: Add recurring and scheduled tasks to the Agents page
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-11T14:22:06Z"
-updated_at: "2026-08-11T15:37:46Z"
+updated_at: "2026-10-18T19:02:40Z"
 ---
-## Activity
-
-- 2026-08-11T14:22:06Z · created · unknown
-- 2026-08-11T15:37:46Z · updated · narrow the first release to one-time, daily, and weekly schedules
-
-
 ## Problem
 
 RepoOS tasks can only be created or started manually. Repeated maintenance work
@@ -102,3 +96,9 @@ dependency constraint.
 ## Related
 
 - 0092 — recurring product-documentation audit use case
+
+## Activity
+
+- 2026-08-11T14:22:06Z · created · unknown
+- 2026-08-11T15:37:46Z · updated · narrow the first release to one-time, daily, and weekly schedules
+- 2026-10-18T19:02:40Z · status inbox→ready
