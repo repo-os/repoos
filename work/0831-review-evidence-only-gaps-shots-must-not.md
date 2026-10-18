@@ -2,14 +2,14 @@
 id: "0831"
 title: "Review: evidence-only gaps (shots) must not consume code-review rounds or park the task"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T08:09:30Z"
-updated_at: "2026-10-18T08:09:30Z"
+updated_at: "2026-10-18T08:18:44Z"
 ---
 ## Problem
 The reviewer returns "needs some work" for missing or wrong screenshot evidence even when the code is fine (#0829 pass 3, #0822 passes 1-4). Each such verdict counts as a review round, bounces the engineer, and after MAX_AUTO_REVIEW_ROUNDS raises `review-rounds-exhausted` so the task waits for a human, although the engineer has no code to change.
@@ -31,3 +31,4 @@ Design-heavy: write the decision into docs before coding; keep the reviewer prom
 ## Activity
 
 - 2026-10-18T08:09:30Z · created · njachowski@gmail.com
+- 2026-10-18T08:18:44Z · status inbox→ready
