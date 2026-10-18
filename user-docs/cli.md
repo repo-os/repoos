@@ -371,6 +371,34 @@ repoos story show 0007                                  # definition + member ta
 repoos story show "Project updates email" --json
 repoos story update 0007 --body "Rewritten scope."      # keeps the stable number
 repoos story update 0007 --name "Project update emails" # rename keeps the number
+
+### `repoos schedule list|run|enable|disable|new|update|preview|delete`
+
+Manage **scheduled tasks** — markdown definitions under `schedules/` that create
+ordinary `work/*.md` tasks on a cadence (the same files the Agents → Scheduled
+Tasks UI edits). Writes land on the board root and commit when git tracks the
+file.
+
+```bash
+repoos schedule list
+repoos schedule list --json
+repoos schedule preview --cadence weekly --timezone UTC --time-of-day 09:00 --day-of-week 1 --title "Doc audit" --task-title "Audit docs"
+repoos schedule new --title "Doc audit" --task-title "Audit docs" --cadence weekly --timezone UTC --time-of-day 09:00 --day-of-week 1 --body -
+repoos schedule update 0001 --enabled false
+repoos schedule enable 0001
+repoos schedule disable 0001
+repoos schedule run 0001
+repoos schedule delete 0001 --yes
+```
+
+| Subcommand | API equivalent |
+| --- | --- |
+| `list` | `GET /api/schedules` |
+| `new` | `POST /api/schedules` |
+| `update`, `enable`, `disable` | `PATCH /api/schedules/:id` |
+| `delete` | `DELETE /api/schedules/:id` |
+| `run` | `POST /api/schedules/:id/run` |
+| `preview` | `POST /api/schedules/preview` |
 ```
 
 `new` and `update` write and commit the definition under `storiesDir`, exactly

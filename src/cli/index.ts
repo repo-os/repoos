@@ -16,6 +16,7 @@ import {
 } from "../commands/tasks.js";
 import { cmdDocs, cmdNewDoc } from "../commands/docs.js";
 import { cmdStory } from "../commands/stories.js";
+import { cmdSchedule } from "../commands/schedule.js";
 import { cmdGc } from "../commands/gc.js";
 import { cmdMigrate } from "../commands/migrate.js";
 import { cmdOutline } from "../commands/outline.js";
@@ -215,6 +216,10 @@ function main(): void {
     case "story":
     case "stories":
       cmdStory(rest);
+      break;
+    case "schedule":
+    case "schedules":
+      cmdSchedule(rest);
       break;
     case "index":
     case "reindex":
