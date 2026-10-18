@@ -2,14 +2,14 @@
 id: "0833"
 title: "Add RGB keystorm, Wheelie courier, and Halloween activity animations"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-rgb-keystorm-wheelie-courier-and-hal
 created_at: "2026-10-18T08:58:09Z"
-updated_at: "2026-10-18T13:14:27Z"
+updated_at: "2026-10-18T13:26:19Z"
 ---
 ## Problem
 
@@ -144,3 +144,4 @@ path(c,p.purple,g=>{g.moveTo(-30,-18);g.quadraticCurveTo(-14,-29,-8,-61);g.bezie
 - 2026-10-18T13:10:15Z · body
 - 2026-10-18T13:11:13Z · body
 - 2026-10-18T13:14:27Z · body
+- 2026-10-18T13:26:19Z · status active→review
