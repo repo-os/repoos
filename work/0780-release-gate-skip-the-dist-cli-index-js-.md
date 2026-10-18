@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0780"
 title: "Release gate: skip the dist/cli/index.js check for projects without a bin target"
 type: bug
@@ -61,3 +62,4 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 - 2026-10-18T17:27:08Z · status ready→active
 - 2026-10-18T17:30:10Z · agent exited with an error (opencode) · error: Transport
 - 2026-10-18T17:38:41Z · needs_input
+
