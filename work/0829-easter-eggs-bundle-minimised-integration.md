@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T06:18:10Z"
+updated_at: "2026-10-18T06:18:17Z"
 ---
 ## Items
 
@@ -61,9 +61,13 @@ Bundle of two small web items about the integration pill tooltip; see Items and 
 ## Desired UX
 E1: only the median popup, centered, in the minimised pill. E2: an accurate run count (15 succeeded full close-outs when available). Detail per item below.
 
+## Acceptance criteria
+See each item's Acceptance criteria (E1, E2); both must hold.
+
 ## Activity
 
 - 2026-10-18T06:17:45Z · created · njachowski@gmail.com
 - 2026-10-18T06:17:50Z · needs_input
 - 2026-10-18T06:18:02Z · body: Problem (added)
 - 2026-10-18T06:18:10Z · body: Desired UX (added)
+- 2026-10-18T06:18:17Z · body: Acceptance criteria (added)
