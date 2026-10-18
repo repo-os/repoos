@@ -2,7 +2,7 @@
 id: "0820"
 title: "Publish: stash and reapply dirty main files only when the merge would overwrite them"
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -42,4 +42,4 @@ Start from publishCandidate in src/server/integration-orchestrator.ts (the publi
 - 2026-10-18T02:44:00Z · body
 - 2026-10-18T02:46:09Z · body
 - 2026-10-18T02:48:37Z · body
-- 2026-10-18T02:57:13Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-18T02:57:13Z · status active→review
