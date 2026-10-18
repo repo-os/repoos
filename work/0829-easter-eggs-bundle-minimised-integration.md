@@ -2,7 +2,7 @@
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -286,4 +286,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T12:03:45Z · note: close-out repair: merge-conflict
 - 2026-10-18T12:03:58Z · message_queued at 2026-10-18T12:03:58.445Z
 - 2026-10-18T12:07:18Z · body
-- 2026-10-18T12:23:32Z · note: shots: skipped — 30 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-18T12:23:32Z · status active→review
