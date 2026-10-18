@@ -3655,7 +3655,7 @@ export class CloseOutOrchestrator {
           return {
             ok: false,
             reason:
-              `could not reapply main's uncommitted edits after the publish merge (publish stash pop failed: ` +
+              `could not reapply main's local edits after the publish merge (publish stash pop failed: ` +
               `${pop.reason ?? "unknown error"}). They are kept in ${pop.ref}; nothing was committed or discarded.` +
               detail,
           };
