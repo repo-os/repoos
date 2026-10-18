@@ -174,6 +174,12 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   "model_routing.baseUrl",
 ]);
 
+/** Remote-validation keys with General-tab rows beside the runner card (#0836). */
+export const REMOTE_VALIDATION_GENERAL_FIELD_KEYS = new Set([
+  "remoteValidation.offloadBrowserSteps",
+  "remoteValidation.localFallback",
+]);
+
 /** Mirrors `isFieldVisible` in SettingsView.vue */
 function isInspectorFieldVisible(key: string, ctx: SettingLocationContext): boolean {
   if (key === "dev.inspector.enabled" || key === "dev.inspector.editorCommand") {
@@ -185,6 +191,7 @@ function isInspectorFieldVisible(key: string, ctx: SettingLocationContext): bool
 /** Mirrors `generalFields` in SettingsView.vue — schema keys rendered in the General group. */
 export function isGeneralSchemaFieldKey(key: string): boolean {
   if (GENERAL_EXCLUDED_KEYS.has(key)) return false;
+  if (REMOTE_VALIDATION_GENERAL_FIELD_KEYS.has(key)) return true;
   if (key.startsWith("remoteValidation.")) return false;
   if (key.startsWith("board.columns.")) return false;
   return true;
@@ -200,6 +207,9 @@ export function resolveSettingLocation(
   ctx: SettingLocationContext,
 ): SettingLocation | null {
   if (key === "tunnelEnabled" || key === "remoteValidation.enabled") {
+    return { tab: "general", hasUiRow: true };
+  }
+  if (REMOTE_VALIDATION_GENERAL_FIELD_KEYS.has(key)) {
     return { tab: "general", hasUiRow: true };
   }
   if (key.startsWith("remoteValidation.")) {
