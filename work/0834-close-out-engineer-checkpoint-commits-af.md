@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T17:21:16Z"
+updated_at: "2026-10-18T17:21:17Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-18T16:15:03.089Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 47285b26 to 5792761a) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 handoff_signal_retry_count: 1
@@ -118,3 +118,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T17:21:06Z · status review→active
 - 2026-10-18T17:21:14Z · message_delivered: 1 message(s)
 - 2026-10-18T17:21:16Z · status active→review
+- 2026-10-18T17:21:17Z · note: handoff requested (cli)
