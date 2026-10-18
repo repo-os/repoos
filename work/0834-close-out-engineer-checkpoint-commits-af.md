@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T12:09:11Z"
+updated_at: "2026-10-18T12:09:53Z"
 dev_error_count: 5
 ---
 ## Problem
@@ -55,3 +55,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T11:53:13Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-18T12:09:11Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-18T12:09:11Z · note: handoff requested (cli)
+- 2026-10-18T12:09:53Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 2 on bee — fix it in the feature branch and re-run the gate
