@@ -9,30 +9,40 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T02:41:29Z"
+updated_at: "2026-10-18T02:48:06Z"
 ---
-## Problem
+## Items
+
+- [ ] **E1 · Start work pending state** (web) — Start work shows a "Starting…" state and cannot be clicked twice. Source: user report 2026-10-18.
+- [ ] **E2 · Bird quick trail animation** (web, settings) — new `bird-quick-trail` Activity animation option. Source: human request 2026-10-17.
+
+Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body.
+
+## E1 · Start work pending state
+
+### Problem
 Clicking 'Start work' on a ready task does nothing visible until the server's status update reaches the browser and the card moves to Active. The button stays enabled in the meantime, so a second click is sent to the server and returns a red 'already working' warning. The UI has no pending state for the start (src/ui-app/src/stores/repo.ts, startWork, which just awaits the API call; the button is TaskCard.vue 'Start work').
 
-## Desired UX
+### Desired UX
 - On click, the card immediately shows a 'Starting…' or 'Moving to work' state with a small animation, and 'Start work' is disabled.
 - The pending state clears when the task reaches Active, or when the request fails (then show the error and re-enable the button).
 - The same applies to the drawer's start action.
 
-## Acceptance criteria
+### Acceptance criteria
 - Test: clicking Start work once disables the button and shows the starting state until the task status changes to active.
 - Test: a second click during the starting state does not send a second request.
 - Test: a failed start clears the starting state and shows the error.
 - Light and dark themes checked on the starting state; the animation respects reduced motion.
 
-## Notes for AI
+### Notes for AI
 Start from startWork in src/ui-app/src/stores/repo.ts and the Start work button in src/ui-app/src/components/TaskCard.vue (and the drawer's start action). Keep a per-task pending set in the store. Source: user report 2026-10-18.
 
-## Bird quick trail animation (second item)
-Source: human request in this chat, 2026-10-17. Add this as the third independent item in the bundle, alongside the existing docs-skipped warning and screenshot-viewer status fixes. The human selected only **Bird · quick trail**; do not add mouse, rabbit or other animal concepts. Related animation work: #0787, #0798, #0807 and size configuration #0813.
+## E2 · Bird quick trail animation
 
-### Fix
+### Problem
+The Activity animation choices have no bird-footprint option. The human selected only **Bird · quick trail**; do not add mouse, rabbit or other animal concepts. Related animation work: #0787, #0798, #0807 and size configuration #0813.
 
+### Desired UX
 Add **Bird quick trail** (`bird-quick-trail`) to the existing Activity animation choices in Settings and repoos.toml. Match the approved preview: two alternating three-toed bird footprints on a diagonal, with long tapered central toes, shorter splayed side toes, and short rounded heels. Prints angle outward; a whole footprint lifts, plants, and fades before the other print, producing a fast walking trail. The attached bird-track drawing is the shape reference; do not copy the watermark or use the reference bitmap as the UI asset.
 
 Approved preview: /Users/nick/.codex/visualizations/2026/10/15/01a13ddd-613e-7170-8b22-eeb1a3ef9857/mouse-bird-motion.html, first variant (Bird · quick trail). It is also unchanged in /Users/nick/.codex/visualizations/2026/10/15/01a13ddd-613e-7170-8b22-eeb1a3ef9857/bird-rabbit-motion.html. Local preview files may not exist on remote runners; the geometry and keyframes below are the durable source.
@@ -59,9 +69,11 @@ At Auto size the footprint is 2ch × 1.15em in the label's font. Each foot uses 
 
 Use the shared ActivityIndicator and current activity/theme colors via currentColor. Keep the default animation and every existing style unchanged. Integrate with the current size preference if #0813 has landed; explicit sizes must scale the complete bird artwork and movement together using the existing shared approach. Preserve reduced-motion behavior (two static readable footprints, second dimmer), accessible status labels, Settings preview, config validation/persistence and user-facing option documentation. No new runtime dependencies.
 
-### Test and verification for this item
-
+### Acceptance criteria
 - Config round-trip accepts `bird-quick-trail`; the option appears in the styled Settings selector and persists after reload without changing the existing default.
+
+### Notes for AI
+Independent of E1; do not couple the two. Keep the default animation and every existing style unchanged.
 
 ## Activity
 
@@ -69,3 +81,4 @@ Use the shared ActivityIndicator and current activity/theme colors via currentCo
 - 2026-10-18T02:38:49Z · body: Bird quick trail animation (second item) (added)
 - 2026-10-18T02:38:56Z · title
 - 2026-10-18T02:41:29Z · status inbox→ready
+- 2026-10-18T02:48:06Z · body: Items (added); E1 · Start work pending state (added); E2 · Bird quick trail animation (added); Problem (removed); Desired UX (removed); Acceptance criteria (removed); Notes for AI (removed); Bird quick trail animation (second item) (removed)
