@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-18T09:55:21.276Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0830"
 title: "Handoff: a shot whose waitFor/click/highlight target is missing fails the handoff (add hover step and fixture list)"
 type: feature
@@ -40,3 +42,4 @@ Related: #0734, #0755, #0613. Do not make a missing Playwright a failure (stays 
 - 2026-10-18T08:22:30Z · body
 - 2026-10-18T08:30:56Z · CTO action: restart-stalled-agent (resume) · agent never started — no session exists for this task
 - 2026-10-18T09:53:07Z · handoff failed · handoff recovery attempted · finalization failed
+
