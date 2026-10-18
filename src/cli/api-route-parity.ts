@@ -55,6 +55,13 @@ const FILE_CLI_MATCHERS: Matcher[] = [
   exact("POST", "/api/tasks"),
   re("DELETE", /^\/api\/tasks\/([^/]+)$/.source),
   exact("GET", "/api/check-plan"),
+  // `repoos schedule …` (#0093): task schedule definitions under schedules/.
+  exact("GET", "/api/schedules"),
+  exact("POST", "/api/schedules"),
+  exact("POST", "/api/schedules/preview"),
+  re("PATCH", /^\/api\/schedules\/([^/]+)$/.source),
+  re("DELETE", /^\/api\/schedules\/([^/]+)$/.source),
+  re("POST", /^\/api\/schedules\/([^/]+)\/run$/.source),
 ];
 
 /** UI-only, SSE/hub, auth, or internal routes — no CLI required. */

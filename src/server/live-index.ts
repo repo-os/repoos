@@ -278,6 +278,15 @@ export type RepoEvent =
       runDoc: string | null;
       at: string;
     }
+  | { type: "schedule.changed"; at: string }
+  | {
+      type: "schedule.run";
+      scheduleId: string;
+      taskId: string | null;
+      ok: boolean;
+      error?: string;
+      at: string;
+    }
   /**
    * Lifecycle of the server-tracked AI release-notes draft run (#0605):
    * emitted on start and when the draft lands or fails, so a notice feed
