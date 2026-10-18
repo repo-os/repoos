@@ -36,9 +36,7 @@ export class ConcurrencyGate {
       onQueued?.(this.pending);
       await new Promise<void>((resolve, reject) => {
         if (opts.deadlineAt !== undefined && opts.deadlineAt <= Date.now()) {
-          reject(
-            new QueueDeadlineError("the caller's deadline passed before a slot was free"),
-          );
+          reject(new QueueDeadlineError("the caller's deadline passed before a slot was free"));
           return;
         }
         const waiter: GateWaiter = { resolve };

@@ -2309,11 +2309,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     });
   } catch (e) {
     const msg =
-      e instanceof SlotQueueTimeoutError
-        ? e.message
-        : e instanceof Error
-          ? e.message
-          : String(e);
+      e instanceof SlotQueueTimeoutError ? e.message : e instanceof Error ? e.message : String(e);
     console.log(c.red(`\n  ✗ ${msg}\n`));
     process.exit(1);
   }

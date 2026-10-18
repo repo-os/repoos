@@ -34,13 +34,9 @@ export function remoteLocalFallbackMode(config: RepoOSConfig): LocalFallbackMode
 }
 
 /** Effective local-check cap when this run is a remote-validation local fallback. */
-export function localCheckLimitForRun(
-  config: RepoOSConfig,
-  env: NodeJS.ProcessEnv,
-): number {
+export function localCheckLimitForRun(config: RepoOSConfig, env: NodeJS.ProcessEnv): number {
   const isFallback =
-    env.REPOOS_REMOTE_FALLBACK_DETAIL?.trim() ||
-    (env.REPOOS_LOCAL_FALLBACK_RUN === "1" ? "1" : "");
+    env.REPOOS_REMOTE_FALLBACK_DETAIL?.trim() || (env.REPOOS_LOCAL_FALLBACK_RUN === "1" ? "1" : "");
   if (isFallback && remoteLocalFallbackMode(config) === "serialize") {
     return 1;
   }

@@ -132,12 +132,7 @@ export async function launchWebkit(opts: LaunchWebkitOptions = {}): Promise<Smok
   let releaseSlot: (() => void) | undefined;
   if (opts.repoRoot) {
     const cfg = loadConfig(opts.repoRoot);
-    releaseSlot = await acquirePlaywrightSlot(
-      opts.repoRoot,
-      cfg,
-      process.env,
-      opts.onQueueLine,
-    );
+    releaseSlot = await acquirePlaywrightSlot(opts.repoRoot, cfg, process.env, opts.onQueueLine);
   }
   // @playwright/test is a CJS package. Bun's ESM `import()` of it resolves the
   // named browser exports to `undefined` (root cause of #0200), so load it via
