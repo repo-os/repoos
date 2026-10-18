@@ -13,7 +13,7 @@ branch: feat/outage-and-mode-switch-behavior
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:35Z"
-updated_at: "2026-10-18T17:14:33Z"
+updated_at: "2026-10-18T17:15:17Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-18T17:13:58.117Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Attachment storage outage and retrieval copy: highlight #setting-storage.provider matched nothing on /settings?tab=general&section=attachments (http://127.0.0.1:56978/settings?tab=general&section=attachments)"
 ---
@@ -47,10 +47,10 @@ When Neon (cloud storage provider) is unavailable — network outage, provider d
 ```json
 [
 {
-  "label": "Attachment storage outage and retrieval copy",
-  "target": "default",
-  "route": "/settings?tab=general&section=attachments",
-  "highlight": "[id=\"setting-storage.provider\"]"
+"label": "Attachment storage outage and retrieval copy",
+"target": "default",
+"route": "/settings?tab=general&section=attachments",
+"highlight": "[id=\"setting-storage.provider\"]"
 }
 ]
 ```
@@ -69,3 +69,4 @@ When Neon (cloud storage provider) is unavailable — network outage, provider d
 - 2026-10-18T17:07:05Z · body
 - 2026-10-18T17:13:53Z · note: ui verification failed (1 issue(s)): [missing-target] Attachment storage outage and retrieval copy: highlight #setting-storage.provider matched nothing on /settings?tab=general&section=attachments (http://127.0.0.1:56978/settings?tab=general&section=attachments)
 - 2026-10-18T17:14:33Z · body
+- 2026-10-18T17:15:17Z · body
