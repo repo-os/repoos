@@ -1,6 +1,6 @@
 ---
 id: "0822"
-title: "Easter eggs bundle: Start work shows a starting state and cannot be clicked twice"
+title: "Easter eggs bundle: Start work pending state, and Bird quick trail animation"
 type: bug
 status: inbox
 priority: p2
@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T02:38:49Z"
+updated_at: "2026-10-18T02:38:56Z"
 ---
 ## Problem
 Clicking 'Start work' on a ready task does nothing visible until the server's status update reaches the browser and the card moves to Active. The button stays enabled in the meantime, so a second click is sent to the server and returns a red 'already working' warning. The UI has no pending state for the start (src/ui-app/src/stores/repo.ts, startWork, which just awaits the API call; the button is TaskCard.vue 'Start work').
@@ -67,3 +67,4 @@ Use the shared ActivityIndicator and current activity/theme colors via currentCo
 
 - 2026-10-18T02:36:59Z · created · njachowski@gmail.com
 - 2026-10-18T02:38:49Z · body: Bird quick trail animation (second item) (added)
+- 2026-10-18T02:38:56Z · title
