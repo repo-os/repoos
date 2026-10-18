@@ -328,3 +328,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T02:27:21Z · needs_input
 - 2026-10-18T02:27:36Z · note: waitFor [data-test-id="integration-timer"]: waitFor: Timeout 5000ms exceeded. on /
 - 2026-10-18T02:27:37Z · note: click [data-test-id="integration-timer"]: click: Timeout 5000ms exceeded. on /
+- 2026-10-18T02:27:37Z · note: waitFor [data-test-id="integration-timer-tip"]: waitFor: Timeout 5000ms exceeded. on /
