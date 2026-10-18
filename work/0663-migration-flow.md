@@ -13,7 +13,7 @@ branch: feat/migration-flow
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:15Z"
-updated_at: "2026-10-18T16:37:37Z"
+updated_at: "2026-10-18T16:37:39Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -67,3 +67,4 @@ Slice 6: Dry run, resumable upload, verification before local originals released
 - 2026-10-18T16:30:05Z · body
 - 2026-10-18T16:31:12Z · body
 - 2026-10-18T16:37:37Z · status active→review
+- 2026-10-18T16:37:39Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
