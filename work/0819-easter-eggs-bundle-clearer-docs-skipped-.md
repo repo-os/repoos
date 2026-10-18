@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-18T01:36:58Z"
+updated_at: "2026-10-18T01:38:17Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-10-17T18:01:16.427Z: repoos check failed: ui verification failed (32 issue(s)): [request] HTTP 404 for http://127.0.0.1:53612/api/tasks/9999/diff-stats (http://127.0.0.1:53612/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:53612/api/tasks/9999/diff-stats); [request] HTTP 404 for http://127.0.0.1:53612/api/tasks/9999/diff (http://127.0.0.1:53612/api/tasks/9999/diff); [request] Failed to load resource: the server responded with a s… (truncated)"
 review_rounds: 2
@@ -72,13 +72,13 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": ".shot-viewer-shot-head",
 "steps": [
 {
-  "waitFor": ".ui-changes .shot-row:first-of-type img"
+"waitFor": ".ui-changes .shot-row:first-of-type img"
 },
 {
-  "click": ".ui-changes .shot-row:first-of-type img"
+"click": ".ui-changes .shot-row:first-of-type img"
 },
 {
-  "waitFor": ".shot-viewer-shot-head"
+"waitFor": ".shot-viewer-shot-head"
 }
 ],
 "state": "drawer:shotEvidence",
@@ -91,13 +91,13 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": ".shot-viewer-shot-head",
 "steps": [
 {
-  "waitFor": ".ui-changes .shot-row:first-of-type img"
+"waitFor": ".ui-changes .shot-row:first-of-type img"
 },
 {
-  "click": ".ui-changes .shot-row:first-of-type img"
+"click": ".ui-changes .shot-row:first-of-type img"
 },
 {
-  "waitFor": ".shot-viewer-shot-head"
+"waitFor": ".shot-viewer-shot-head"
 }
 ],
 "state": "drawer:shotEvidence",
@@ -110,13 +110,13 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"integration-timer\"]"
+"waitFor": "[data-test-id=\"integration-timer\"]"
 },
 {
-  "click": "[data-test-id=\"integration-timer\"]"
+"click": "[data-test-id=\"integration-timer\"]"
 },
 {
-  "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+"waitFor": "[data-test-id=\"integration-timer-tip\"]"
 }
 ],
 "state": "integration:median15",
@@ -129,13 +129,13 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 "highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"integration-timer\"]"
+"waitFor": "[data-test-id=\"integration-timer\"]"
 },
 {
-  "click": "[data-test-id=\"integration-timer\"]"
+"click": "[data-test-id=\"integration-timer\"]"
 },
 {
-  "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+"waitFor": "[data-test-id=\"integration-timer-tip\"]"
 }
 ],
 "state": "integration:median15",
@@ -236,3 +236,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T01:35:34Z · body
 - 2026-10-18T01:36:25Z · body
 - 2026-10-18T01:36:58Z · status active→review
+- 2026-10-18T01:38:17Z · note: waitFor [data-test-id="integration-timer"]: waitFor: Timeout 5000ms exceeded. on /
