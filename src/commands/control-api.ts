@@ -1,5 +1,5 @@
 /**
- * Server-backed CLI commands (#0723) — start, pause, review, done, message, etc.
+ * Server-backed CLI commands (#0723) — start, pause, sync, review, done, message, etc.
  */
 import { c } from "../cli/colors.js";
 import {
@@ -240,6 +240,51 @@ export async function cmdReview(args: string[]): Promise<number> {
     if (opts.json) printJson({ ok: true, task: result });
     else console.log(c.green("  ✓ ") + c.dim(`#${id} is in review`));
     return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+/** Merge main into the task branch (drawer "Sync with main"). */
+export async function cmdSync(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const id = rest[0];
+  if (!id) {
+    printErr("Usage: repoos sync <id> [--json] [--port N]");
+    return 1;
+  }
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const res = await api.request("POST", `/api/tasks/${id}/sync`, {});
+    const body = res.body;
+    const ok = body.ok === true && res.status === 200;
+    if (ok) {
+      if (opts.json) printJson(body);
+      else console.log(c.green("  ✓ ") + c.dim(`synced #${id} with main`));
+      return 0;
+    }
+    if (opts.json) {
+      printJson(body);
+    } else {
+      const conflicts = Array.isArray(body.conflicts)
+        ? body.conflicts.filter((p): p is string => typeof p === "string")
+        : [];
+      const errText =
+        typeof body.error === "string" && body.error.trim()
+          ? body.error.trim()
+          : conflicts.length
+            ? `merge conflict in ${conflicts.join(", ")}`
+            : `sync refused (HTTP ${res.status})`;
+      printErr(errText);
+      for (const path of conflicts) console.error(c.dim(`    · ${path}`));
+    }
+    return 1;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
     return 1;
