@@ -25,7 +25,8 @@ function commitSchedule(root: string, relPath: string, verb: string, id: string)
   commitTaskFile(root, join(root, relPath), `schedules(${id}): ${verb}`);
 }
 
-export const getSchedules: RouteHandler = (ctx, _req, res) => json(res, 200, listSchedules(ctx.config));
+export const getSchedules: RouteHandler = (ctx, _req, res) =>
+  json(res, 200, listSchedules(ctx.config));
 
 export const postSchedule: RouteHandler = async (ctx, req, res) => {
   const body = (await readBody(req)) as Record<string, unknown>;
@@ -144,7 +145,12 @@ function bodyFromRequest(body: Record<string, unknown>): ScheduleCreateInput {
     cadence: body.cadence as ScheduleCreateInput["cadence"],
     timezone: String(body.timezone ?? "UTC"),
     timeOfDay: String(body.timeOfDay ?? body.time_of_day ?? "09:00"),
-    runAt: typeof body.runAt === "string" ? body.runAt : typeof body.run_at === "string" ? body.run_at : undefined,
+    runAt:
+      typeof body.runAt === "string"
+        ? body.runAt
+        : typeof body.run_at === "string"
+          ? body.run_at
+          : undefined,
     dayOfWeek:
       typeof body.dayOfWeek === "number"
         ? body.dayOfWeek
@@ -152,8 +158,18 @@ function bodyFromRequest(body: Record<string, unknown>): ScheduleCreateInput {
           ? body.day_of_week
           : null,
     taskTitle: String(body.taskTitle ?? body.task_title ?? body.title ?? ""),
-    taskType: typeof body.taskType === "string" ? body.taskType : typeof body.task_type === "string" ? body.task_type : undefined,
-    taskArea: typeof body.taskArea === "string" ? body.taskArea : typeof body.task_area === "string" ? body.task_area : undefined,
+    taskType:
+      typeof body.taskType === "string"
+        ? body.taskType
+        : typeof body.task_type === "string"
+          ? body.task_type
+          : undefined,
+    taskArea:
+      typeof body.taskArea === "string"
+        ? body.taskArea
+        : typeof body.task_area === "string"
+          ? body.task_area
+          : undefined,
     taskPriority:
       typeof body.taskPriority === "string"
         ? body.taskPriority
@@ -173,7 +189,12 @@ function bodyFromRequest(body: Record<string, unknown>): ScheduleCreateInput {
           ? body.task_status
           : undefined,
     autoStartAgent: body.autoStartAgent === true || body.auto_start_agent === true,
-    body: typeof body.body === "string" ? body.body : typeof body.spec === "string" ? body.spec : undefined,
+    body:
+      typeof body.body === "string"
+        ? body.body
+        : typeof body.spec === "string"
+          ? body.spec
+          : undefined,
   };
 }
 
@@ -184,17 +205,21 @@ function patchFromRequest(body: Record<string, unknown>): SchedulePatch {
   if (body.enabled !== undefined) patch.enabled = full.enabled ?? true;
   if (body.cadence !== undefined) patch.cadence = full.cadence;
   if (body.timezone !== undefined) patch.timezone = full.timezone;
-  if (body.timeOfDay !== undefined || body.time_of_day !== undefined) patch.timeOfDay = full.timeOfDay;
+  if (body.timeOfDay !== undefined || body.time_of_day !== undefined)
+    patch.timeOfDay = full.timeOfDay;
   if (body.runAt !== undefined || body.run_at !== undefined) patch.runAt = full.runAt;
-  if (body.dayOfWeek !== undefined || body.day_of_week !== undefined) patch.dayOfWeek = full.dayOfWeek;
-  if (body.taskTitle !== undefined || body.task_title !== undefined) patch.taskTitle = full.taskTitle;
+  if (body.dayOfWeek !== undefined || body.day_of_week !== undefined)
+    patch.dayOfWeek = full.dayOfWeek;
+  if (body.taskTitle !== undefined || body.task_title !== undefined)
+    patch.taskTitle = full.taskTitle;
   if (body.taskType !== undefined || body.task_type !== undefined) patch.taskType = full.taskType;
   if (body.taskArea !== undefined || body.task_area !== undefined) patch.taskArea = full.taskArea;
   if (body.taskPriority !== undefined || body.task_priority !== undefined)
     patch.taskPriority = full.taskPriority;
   if (body.taskAssignedTo !== undefined || body.task_assigned_to !== undefined)
     patch.taskAssignedTo = full.taskAssignedTo;
-  if (body.taskStatus !== undefined || body.task_status !== undefined) patch.taskStatus = full.taskStatus;
+  if (body.taskStatus !== undefined || body.task_status !== undefined)
+    patch.taskStatus = full.taskStatus;
   if (body.autoStartAgent !== undefined || body.auto_start_agent !== undefined)
     patch.autoStartAgent = full.autoStartAgent;
   if (body.body !== undefined || body.spec !== undefined) patch.body = full.body;

@@ -268,14 +268,7 @@ export function dueOccurrence(
         ? addDaysLocal(w.year, w.month, w.day, -7)
         : addDaysLocal(w.year, w.month, w.day, -1);
     const tod = parseTimeOfDay(timing.timeOfDay)!;
-    probe = zonedLocalToUtc(
-      back.year,
-      back.month,
-      back.day,
-      tod.hour,
-      tod.minute,
-      timing.timezone,
-    );
+    probe = zonedLocalToUtc(back.year, back.month, back.day, tod.hour, tod.minute, timing.timezone);
   }
   if (!latestDue) return null;
   const key = occurrenceKey(timing, latestDue);

@@ -105,7 +105,10 @@ function openEdit(row: TaskSchedule): void {
 async function refreshPreview(): Promise<void> {
   previewLoading.value = true;
   try {
-    const data = await api<{ preview: string }>("/api/schedules/preview", JSON_OPTS("POST", payload()));
+    const data = await api<{ preview: string }>(
+      "/api/schedules/preview",
+      JSON_OPTS("POST", payload()),
+    );
     preview.value = data.preview || "—";
   } catch {
     preview.value = "Could not preview";
@@ -223,7 +226,12 @@ onMounted(() => {
       maintenance work.
     </p>
     <div v-else class="schedule-list">
-      <article v-for="row in schedules" :key="row.id" class="schedule-card" :class="{ off: !row.enabled }">
+      <article
+        v-for="row in schedules"
+        :key="row.id"
+        class="schedule-card"
+        :class="{ off: !row.enabled }"
+      >
         <div class="schedule-card-head">
           <div>
             <strong>{{ row.title }}</strong>
@@ -242,7 +250,12 @@ onMounted(() => {
           <dd class="kv-wrap">{{ lastResultLabel(row) }}</dd>
           <dt>Latest task</dt>
           <dd>
-            <button v-if="row.lastTaskId" type="button" class="linkish" @click="openTask(row.lastTaskId)">
+            <button
+              v-if="row.lastTaskId"
+              type="button"
+              class="linkish"
+              @click="openTask(row.lastTaskId)"
+            >
               #{{ row.lastTaskId }}
             </button>
             <span v-else>—</span>
@@ -289,7 +302,12 @@ onMounted(() => {
         </div>
         <div v-if="form.cadence === 'once'" class="field">
           <label>Run at (ISO)</label>
-          <input v-model="form.runAt" class="ff-textarea" type="text" placeholder="2026-10-20T09:00:00Z" />
+          <input
+            v-model="form.runAt"
+            class="ff-textarea"
+            type="text"
+            placeholder="2026-10-20T09:00:00Z"
+          />
         </div>
         <div v-if="form.cadence === 'weekly'" class="field">
           <label>Day of week</label>
@@ -339,7 +357,12 @@ onMounted(() => {
           </div>
           <div class="field">
             <label>Assignee</label>
-            <input v-model="form.taskAssignedTo" class="ff-textarea" type="text" placeholder="ai or human" />
+            <input
+              v-model="form.taskAssignedTo"
+              class="ff-textarea"
+              type="text"
+              placeholder="ai or human"
+            />
           </div>
         </div>
         <div class="field">
@@ -362,7 +385,11 @@ onMounted(() => {
       :open="!!deleteTarget"
       title="Delete schedule"
       confirm-label="Delete schedule"
-      @update:open="(v) => { if (!v) deleteTarget = null; }"
+      @update:open="
+        (v) => {
+          if (!v) deleteTarget = null;
+        }
+      "
       @confirm="
         async () => {
           if (!deleteTarget) return;
