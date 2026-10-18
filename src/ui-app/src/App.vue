@@ -19,6 +19,7 @@ import UiRecoveryBanner from "./components/UiRecoveryBanner.vue";
 import CopyInspectorOverlay from "./components/CopyInspectorOverlay.vue";
 import ReleaseUpdateNotification from "./components/ReleaseUpdateNotification.vue";
 import DependencyOverrideDialog from "./components/DependencyOverrideDialog.vue";
+import IntegrationStatusBar from "./components/IntegrationStatusBar.vue";
 import { configureUiRecovery, checkUiBuild, showOffline } from "./lib/uiRecovery";
 import {
   applyShotPreviewConfigFixture,
@@ -139,6 +140,7 @@ onUnmounted(() => {
       <FloatingHeads />
       <NewInputPanel />
       <DependencyOverrideDialog />
+      <IntegrationStatusBar />
     </template>
   </div>
 </template>

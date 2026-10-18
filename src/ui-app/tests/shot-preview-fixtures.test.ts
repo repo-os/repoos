@@ -356,6 +356,19 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(shotVerdict(evidence!.captureDetails![1]!).verdict).toBe("matches");
   });
 
+  it("seeds debug log rows for drawer capture on a real task id (#0829)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const drawerId = "0820";
+    vi.stubGlobal("location", { search: `?task=${drawerId}&shotState=drawer:debugLogs` });
+    applyShotPreviewFixture(repo, "drawer:debugLogs");
+    expect(repo.taskLogs[drawerId]).toHaveLength(2);
+    expect(repo.taskLogs[drawerId]![0]!.message).toContain("main advanced with bookkeeping");
+    expect(repo.taskLogs[drawerId]![1]!.message).toBe("close-out complete — published to main");
+    vi.unstubAllGlobals();
+  });
+
   it("seeds 15 succeeded close-outs for the integration timer tooltip (#0819)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
