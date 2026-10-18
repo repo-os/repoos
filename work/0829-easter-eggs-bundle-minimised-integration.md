@@ -231,3 +231,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T08:23:19Z · note: waitFor .ibar-strip [data-test-id="integration-timer"]: waitFor: Timeout 5000ms exceeded. on /
 - 2026-10-18T08:23:19Z · note: click .ibar-strip [data-test-id="integration-timer"]: click: Timeout 5000ms exceeded. on /
 - 2026-10-18T08:23:20Z · note: waitFor [data-test-id="integration-timer-tip"]: waitFor: Timeout 5000ms exceeded. on /
+- 2026-10-18T08:23:20Z · note: highlight [data-test-id="integration-timer-tip"] matched nothing on /
