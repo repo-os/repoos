@@ -79,15 +79,13 @@ describe("activity animation config (#0787)", () => {
       "boo-swoop": "Boo swoop",
       "pumpkin-spell": "Pumpkin spell",
     };
-    for (const [value, label] of Object.entries(added)) {
-      expect(ACTIVITY_ANIMATION_STYLES).toContain(value);
-      expect(ACTIVITY_ANIMATION_STYLE_LABELS[value]).toBe(label);
-      expect(normalizeActivityAnimationStyle(value)).toBe(value);
-    }
-    expect([...ACTIVITY_ANIMATION_ART_STYLES].sort()).toEqual(Object.keys(added).sort());
     for (const value of ACTIVITY_ANIMATION_ART_STYLES) {
+      expect(ACTIVITY_ANIMATION_STYLES).toContain(value);
+      expect(ACTIVITY_ANIMATION_STYLE_LABELS[value]).toBe(added[value]);
+      expect(normalizeActivityAnimationStyle(value)).toBe(value);
       expect(isActivityAnimationArtStyle(value)).toBe(true);
     }
+    expect([...ACTIVITY_ANIMATION_ART_STYLES].sort()).toEqual(Object.keys(added).sort());
     // The legacy dots style is not part of the art family.
     expect(isActivityAnimationArtStyle("three-dots")).toBe(false);
     expect(DEFAULT_ACTIVITY_ANIMATION_STYLE).toBe("orbital-pixel");
