@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-18T06:52:50Z"
+review_passes: 1
 id: "0826"
 title: "CLI: repoos sync <id> (merge main into a task branch, like the drawer's Sync with main)"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/cli-repoos-sync-id-merge-main-into-a-tas
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T04:31:12Z"
-updated_at: "2026-10-18T06:52:50Z"
 ---
 ## Problem
 The task drawer and the Debug tab have a "Sync with main" action (store `syncTaskBranch`, `POST /api/tasks/:id/sync`) that merges main into a task's branch. There is no CLI equivalent, so a driver agent facing a simple close-out merge conflict has to hand-run git in the worktree or send the task back to the engineer for a repair cycle.
@@ -46,3 +47,4 @@ Mirror the existing control-plane commands in src/commands (start/pause/done). R
 - 2026-10-18T06:52:09Z · status active→review
 - 2026-10-18T06:52:10Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-18T06:52:50Z · note: review pass 1: good to go
+
