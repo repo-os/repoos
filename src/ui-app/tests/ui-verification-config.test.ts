@@ -181,9 +181,7 @@ describe("stale-only review stays in review (#0766)", () => {
       defaultStatus: "inbox",
       defaultAssignee: "unassigned",
       cacheDir: ".repoos",
-      ...(opts.autoRefresh === false
-        ? { uiVerification: { autoRefreshStaleOnce: false } }
-        : {}),
+      ...(opts.autoRefresh === false ? { uiVerification: { autoRefreshStaleOnce: false } } : {}),
       agents: [
         { name: "reviewer", cli: "fake", model: "m", enabled: true },
         { name: "engineer", cli: "fake", model: "m", enabled: true },
