@@ -1,8 +1,10 @@
 ---
+updated_at: "2026-10-18T19:37:29Z"
+review_passes: 5
 id: "0664"
 title: Upload state + retry UX
 type: feature
-status: active
+status: review
 priority: p1
 area: ui
 story: Cloud attachment storage
@@ -13,9 +15,7 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-18T18:57:49Z"
 review_rounds: 2
-review_passes: 4
 last_check_failure: "repoos check at 2026-10-18T17:32:06.903Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 handoff_signal_retry_count: 1
 ---
@@ -92,3 +92,11 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-18T18:57:47Z · note: review pass 4: needs some work — clamped by automated verification: browser verification: Handoff browser verification recorded 3 blocking issue(s): [missing-target] New input: outstanding attachment uploads after Create another input: waitFor .new-input-trigger: waitFor: Timeout 5000ms exceeded. on /work; [missing-target] New input: outstanding attachment uploads after Create another input: click .new-input-trigger: click: Timeout 5000ms exceeded. on /work; [missing-target] New task: failed screenshot retry row on freeform form: click .new-btn: click: Timeout 5000ms exceeded. on /work
 - 2026-10-18T18:57:48Z · message_queued at 2026-10-18T18:57:48.701Z
 - 2026-10-18T18:57:49Z · status review→active
+- 2026-10-18T19:28:50Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-18T19:28:50Z · note: handoff requested (cli)
+- 2026-10-18T19:36:32Z · status active→review
+- 2026-10-18T19:36:32Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Notes for AI
+- 2026-10-18T19:36:32Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (c77a3c7fb) during finalization (#0734)
+- 2026-10-18T19:36:33Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (c77a3c7fb) during finalization (#0734)
+- 2026-10-18T19:37:29Z · note: review pass 5: good to go
+
