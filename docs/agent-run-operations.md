@@ -88,6 +88,37 @@ commit or revert them on purpose first.
 Bookkeeping-only drift on a **task branch** during close-out is handled inside
 the pipeline (#0637); that is separate from the `commitDirty` escape on `main`.
 
+### Server reload and orphaned engineers (#0837)
+
+After a control-plane reload, an in-flight **engineer** harness (`cursor-agent`,
+`opencode`, …) can survive with `ppid=1` while the new server process starts
+fresh. RepoOS reconciles **only PIDs it already recorded** in
+`.repoos/agents.json` or `.repoos/repoos-ownership.json` — never by process name.
+
+On boot (after `adoptRunningAgents()`):
+
+- A live recorded PID for an **active** task is **re-attached** when its cwd and
+  command line positively match that task's worktree and a managed harness.
+  Activity logs `adopted orphaned engineer pid N`.
+- When the recorded group is still alive but cannot be positively identified for
+  re-attachment (cwd/cmd probe failed), RepoOS **stops** it via the recorded
+  process-group leader and logs `stopped orphaned engineer pid N` — still only
+  touching PIDs RepoOS recorded, never name-based kills.
+
+Before starting a **new** engineer in a worktree:
+
+- The runner adopts any matching live recorded PID for that task; if adoption is
+  impossible but the recorded group is still live, it stops that group first.
+  Another task's verified live engineer in the same worktree is refused — **one
+  writer per worktree**.
+- Stops use the recorded process-group leader (`SIGTERM`, then `SIGKILL`), not
+  `pkill` / `killall`.
+
+If a task sits `active` with no visible agent after a reload, check Activity for
+an adopt/stop line, then `repoos agents` and the task transcript before
+`repoos start` — a second start while the orphan is still alive used to create
+two writers and WIP checkpoint commits that blocked Move to done (#0832).
+
 ### Previews and second servers
 
 **Current operating rules** (see `AGENTS.md`): one **control-plane** `repoos

@@ -52,6 +52,7 @@ import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
 import { useNoticesStore } from "../stores/notices";
 import { renderMarkdown } from "../lib/markdown";
+import { annotateAttachmentCloudUploads } from "../lib/attachment-cloud-markdown";
 import { fmtTime, formatDuration, relTime } from "../lib/time";
 import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
@@ -1518,6 +1519,9 @@ function stopDoneTimer(): void {
 /** Human-readable progress label, driven by server `task.progress` events. */
 const doneLabel = computed(() => {
   const step = ui.active ? repo.doneSteps[ui.active.id] : undefined;
+  // #0834: checkpoint recovery is its own vocabulary — the close-out map's
+  // default would read "Merging branch…" while no merge has been asked yet.
+  if (ui.active && repo.checkpointRecoveryFor(ui.active.id)) return "Re-reviewing checkpoint…";
   switch (step) {
     case "merge":
       return "Merging branch…";
@@ -2010,7 +2014,12 @@ const specExpanded = ref(true);
 const specModalOpen = ref(false);
 
 /** Rendered (safe) Markdown for the read-mode spec card. */
-const specHtml = computed(() => renderMarkdown(draft.body));
+const specHtml = computed(() => {
+  const html = renderMarkdown(draft.body);
+  const taskId = ui.active?.id;
+  if (!taskId) return html;
+  return annotateAttachmentCloudUploads(html, taskId, ui.active?.attachmentCloud);
+});
 
 function openSpecModal(): void {
   specModalOpen.value = true;

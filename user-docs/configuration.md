@@ -742,13 +742,13 @@ not transferred — only the host list is.
 ```toml
 uiVerification.enabled = true
 uiVerification.viewportWidths = [1024, 375]
-uiVerification.autoRefreshStaleOnce = false
+uiVerification.autoRefreshStaleOnce = true
 ```
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `uiVerification.enabled` | boolean | `true` | yes | When enabled, tasks with a shot capture plan run browser checks at handoff (console errors, failed same-origin requests, horizontal overflow, blank captures) before review. It also blocks on missing or wrong visual evidence: a declared `highlight`/`selector` that matched nothing, a login/redirect that landed away from the declared route, or a declared `assert` condition (element count/text) that failed. Missing Playwright skips with a visible note. |
-| `uiVerification.autoRefreshStaleOnce` | boolean | `false` | yes | When enabled, a reviewer must explicitly mark stale UI evidence as the only blocker. RepoOS then refreshes it at the current HEAD once and starts one new review; if the evidence still cannot be refreshed (or the task moved on), it stays in review for a human. |
+| `uiVerification.autoRefreshStaleOnce` | boolean | `true` | yes | When enabled (default), a reviewer must explicitly mark stale UI evidence as the only blocker. RepoOS then refreshes it at the current HEAD once and starts one new review; if the evidence still cannot be refreshed (or the task moved on), it stays in review for a human. Set `false` to wait for a manual refresh and **Review again**. |
 | `uiVerification.viewportWidths` | number[] | `[1024, 375]` | yes | Viewport widths (px) used for horizontal overflow checks during handoff verification. |
 
 Edit all three keys in **Settings → General**. Evidence is written under `.repoos/ui-verification/<task-id>.json` and surfaced on the task drawer **Changes** tab; it records the exact captured URL, whether the declared route matched, every assertion's outcome, and the tested tree/plan identity. Each capture also carries **its own** console errors, failed same-origin requests, overflow and blank-capture issues, so the Changes tab can show a green check or red cross per shot: hover, focus or tap the icon for that shot's plain-words verdict and its own issues, while an issue tied to no single shot appears once under the list. The record shape therefore includes a per-capture `issues` array (added in #0753) alongside the handoff-wide `issues` — capture behaviour and gating are unchanged. Captured PNGs live under `work/.attachments/<task-id>/shots/` in the **main checkout** (not the task worktree), which is where a reviewer looks.
@@ -1526,6 +1526,19 @@ and secret come from a storage-scoped credential
 verified details, limits and pricing: [`docs/neon-object-storage.md`](https://github.com/repoos/repoos/blob/main/docs/neon-object-storage.md).
 Until every required variable is set, `neon` reports itself unavailable and
 attachments continue to use local storage.
+
+When `neon` is configured and in effect, attachment bytes are still written to
+the local gitignored `.attachments/` tree first. If Neon is unreachable, reads
+serve the local original (when it exists), embedded task references keep
+working, and the UI labels the attachment **upload pending** until a verified
+cloud copy exists — never as available on faith. Local originals are not deleted
+by outage or provider-mode changes; lifecycle rules apply only after verified
+upload (see the cloud attachment storage story).
+
+**Retrieval:** viewing or downloading an attachment always requires the
+RepoOS server that owns the repository (or the local file on disk). Cloud
+storage is durability for those bytes, not remote access from another machine
+without that server.
 
 ## Notifications
 

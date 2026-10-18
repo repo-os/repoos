@@ -126,6 +126,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--wait · --json · --port",
       },
       {
+        name: "review again",
+        usage: "review again <id> [--json] [--port N]",
+        desc: "Start a fresh review run on a task already in review (POST /api/tasks/:id/review/again)",
+        flags: "--json · --port",
+      },
+      {
         name: "sync",
         usage: "sync <id> [--json] [--port N]",
         desc: "Merge main into the task branch (POST /api/tasks/:id/sync)",
@@ -234,6 +240,12 @@ const GROUPS: readonly CommandGroup[] = [
         usage: "gc [--yes|--dry-run]",
         desc: "Collect leaked task worktrees and branches",
         flags: "--yes · --dry-run",
+      },
+      {
+        name: "migrate",
+        usage: "migrate [--dry-run]",
+        desc: "Move local attachment bytes to the configured cloud provider",
+        flags: "--dry-run",
       },
     ],
   },

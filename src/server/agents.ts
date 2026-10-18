@@ -69,6 +69,18 @@ import { getRepoOSDb, type RepoOSDb, type UsageRange } from "../core/db.js";
 import { listSkills } from "./routes/helpers.js";
 import { readHandoffRequest, clearHandoffRequest } from "./handoff-request.js";
 import { worktreeReviewLockRefusal } from "./worktree-handoff-guard.js";
+import { readProcessOwnership } from "./system.js";
+import {
+  adoptedActivityNote,
+  collectRecordedEngineerPids,
+  livePidsInRecordedGroup,
+  pidAlive,
+  sameWorkdirPath,
+  stopRecordedEngineerPid,
+  stoppedActivityNote,
+  verifyRecordedHarnessPid,
+  type RecordedEngineerPid,
+} from "./orphan-engineers.js";
 import {
   recoverTruncatedJson,
   TRUNCATION_NOTICE_PREFIX,
@@ -362,6 +374,8 @@ interface DurableRegistryEntry {
   kind?: "engineer" | "review";
   /** Which review variant the turn is (run vs chat), for completion handling. */
   reviewKind?: "run" | "chat";
+  /** Spawn PID used as the POSIX process-group leader (#0675, #0837). */
+  processGroupLeader?: number;
 }
 
 interface DurableRegistry {
@@ -5074,6 +5088,8 @@ export class AgentRunner {
   /** Resolve a task from the repo task index by ID. Used to populate task/branch on resume turns. */
   private readonly getTask?: (taskId: string) => Task | null;
   private readonly onTaskFilePatched?: (absPath: string) => void;
+  /** Activity log hook for orphan engineer adopt/stop (#0837). */
+  private readonly onOrphanEngineerNote?: (taskId: string, note: string) => void;
 
   /**
    * `opts.stallTimeoutMs` overrides the 90s default (tests use a small value
@@ -5099,6 +5115,8 @@ export class AgentRunner {
        * this. Fire-and-forget; the escalation itself never waits on it.
        */
       onDiagnosableFailure?: (taskId: string, reason: string) => void;
+      /** Records `adopted` / `stopped orphaned engineer pid N` on the task (#0837). */
+      onOrphanEngineerNote?: (taskId: string, note: string) => void;
       logger?: Logger;
     } & AgentRunnerOptions = {},
   ) {
@@ -5112,6 +5130,7 @@ export class AgentRunner {
     this.onDiagnosableFailure = opts.onDiagnosableFailure;
     this.getTask = opts.getTask;
     this.onTaskFilePatched = opts.onTaskFilePatched;
+    this.onOrphanEngineerNote = opts.onOrphanEngineerNote;
     this.db = getRepoOSDb(config.root);
     this.cacheDir = join(config.root, config.cacheDir);
     this.sessionsDir = join(this.cacheDir, "sessions");
@@ -5151,14 +5170,17 @@ export class AgentRunner {
     const live: DurableRegistryEntry[] = [];
     for (const rec of registry.entries) {
       if (this.entries.has(rec.taskId)) continue;
-      let alive = false;
-      try {
-        process.kill(rec.pid, 0);
-        alive = true;
-      } catch {
-        /* PID is dead — drop it */
-      }
       const isReview = rec.kind === "review";
+      let livePid = rec.pid;
+      let alive = pidAlive(livePid);
+      if (!alive && !isReview) {
+        const leader = rec.processGroupLeader ?? rec.pid;
+        const survivors = livePidsInRecordedGroup(leader);
+        if (survivors.length > 0) {
+          livePid = survivors[0];
+          alive = true;
+        }
+      }
       // A dead non-review entry is stale — drop it (must not resurrect dead
       // sessions). A DEAD REVIEW entry, however, means the review process
       // finished sometime during the reload handoff before this process could
@@ -5166,73 +5188,219 @@ export class AgentRunner {
       // it and hand completion to the new ReviewManager (0288). By the time the
       // deferred hook fires, the server has built `reviews`.
       if (!alive && !isReview) continue;
-      const logStem = rec.logStem ?? rec.taskId;
-      const outLog = join(this.logDir, `${logStem}.out.log`);
-      const errLog = join(this.logDir, `${logStem}.err.log`);
-      // Restore the session so the transcript is pre-loaded for the task.
-      let session = this.sessions.get(rec.taskId) ?? this.loadSession(rec.taskId);
-      if (!session) {
-        session = this.emptySession();
-        session.workdir = rec.workdir;
-        session.engine = "plain";
+      if (!isReview && alive) {
+        const groupLeader = rec.processGroupLeader ?? rec.pid;
+        if (!verifyRecordedHarnessPid(livePid, rec.workdir)) {
+          this.stopUnattachedRecordedEngineer({
+            taskId: rec.taskId,
+            pid: livePid,
+            processGroupLeader: groupLeader,
+            workdir: rec.workdir,
+            branch: rec.branch,
+            runId: rec.runId,
+            logStem: rec.logStem,
+            source: "registry",
+          });
+          continue;
+        }
       }
-      session.workdir = rec.workdir;
-      session.turnStartedAt = session.turnStartedAt ?? now();
-      session.lastOutputAt = session.lastOutputAt ?? now();
-      this.sessions.set(rec.taskId, session);
-      // Tail-catch: read any log output written during the handoff gap and
-      // replay it into the session so the transcript isn't missing a chunk.
-      // Separate logs preserve stdout/stderr type during the handoff gap.
-      try {
-        this.replayLog(rec.taskId, outLog, "out");
-        this.replayLog(rec.taskId, errLog, "err");
-        // Compatibility with an early 0214 build that used one tagged log.
-        this.replayLog(rec.taskId, join(this.logDir, `${rec.taskId}.log`), "out", true);
-      } catch {
-        /* best-effort */
+      if (
+        this.adoptLiveRegistryEntry({ ...rec, pid: livePid }, alive, isReview, live) &&
+        !isReview &&
+        alive
+      ) {
+        this.onOrphanEngineerNote?.(rec.taskId, adoptedActivityNote(livePid));
       }
-      if (!alive && isReview) {
-        // The reviewer already finished: finalize its report and drop the entry.
-        this.removeRegistryEntry(rec.taskId);
-        session.accumulatedMs = Date.now() - Date.parse(session.turnStartedAt ?? now());
-        // Defer so `reviews` (and safe handler wiring) exists before we finalize.
-        setTimeout(() => {
-          try {
-            this.onReviewDone?.(rec.taskId, false, rec.reviewKind);
-          } catch {
-            /* best-effort */
-          }
-        }, 0);
-        continue;
-      }
-      live.push(rec);
-      // Start tailing the log file for live output, and register a fake Entry
-      // so isRunning() is true and the task reads as in-flight. The real ChildProcess
-      // is referenced by PID, not held directly — we poll for aliveness instead.
-      const tailers = [
-        this.tailLog(rec.taskId, outLog, "out", true),
-        this.tailLog(rec.taskId, errLog, "err", true),
-      ];
-      this.entries.set(rec.taskId, {
-        startedAt: now(),
-        workdir: rec.workdir,
-        task: undefined,
-        branch: rec.branch,
-        runId: rec.runId,
-        handoffRequested: false,
-        previewRequested: false,
-        adoptedPid: rec.pid,
-        processGroupLeader: rec.pid,
-        review: isReview,
-        reviewKind: rec.kind === "review" ? rec.reviewKind : undefined,
-        tailers,
-      });
     }
     if (live.length > 0) {
       writeRegistry(this.cacheDir, { entries: live });
     } else {
       this.clearRegistry();
     }
+  }
+
+  /**
+   * After `adoptRunningAgents()`, reconcile engineers recorded on disk (registry
+   * or ownership) that are still alive in the worktree but not yet tracked —
+   * typical after a reload when the registry leader PID died but the harness
+   * survived, or when only ownership survived a registry rewrite (#0837).
+   */
+  reconcileOrphanedEngineers(tasks: Task[]): void {
+    const activeIds = new Set(
+      tasks.filter((t) => t.status === "active" && !t.isArchived).map((t) => t.id),
+    );
+    if (activeIds.size === 0) return;
+    const ownership = readProcessOwnership(this.cacheDir);
+    const candidates = collectRecordedEngineerPids(
+      readRegistry(this.cacheDir).entries,
+      ownership,
+      activeIds,
+    );
+    for (const cand of candidates) {
+      if (this.entries.has(cand.taskId)) continue;
+      const registry = readRegistry(this.cacheDir);
+      const adopted = this.adoptOrStopRecordedEngineer(cand, registry, tasks);
+      if (!adopted) continue;
+      const fresh = readRegistry(this.cacheDir);
+      writeRegistry(this.cacheDir, {
+        entries: [...fresh.entries.filter((e) => e.taskId !== cand.taskId), ...adopted],
+      });
+    }
+  }
+
+  /**
+   * Restore one durable registry row as a live (or finished-review) runner entry.
+   * Returns false when the entry was a dead review finalized asynchronously.
+   */
+  private adoptLiveRegistryEntry(
+    rec: DurableRegistryEntry,
+    alive: boolean,
+    isReview: boolean,
+    liveOut: DurableRegistryEntry[],
+  ): boolean {
+    const logStem = rec.logStem ?? rec.taskId;
+    const outLog = join(this.logDir, `${logStem}.out.log`);
+    const errLog = join(this.logDir, `${logStem}.err.log`);
+    let session = this.sessions.get(rec.taskId) ?? this.loadSession(rec.taskId);
+    if (!session) {
+      session = this.emptySession();
+      session.workdir = rec.workdir;
+      session.engine = "plain";
+    }
+    session.workdir = rec.workdir;
+    session.turnStartedAt = session.turnStartedAt ?? now();
+    session.lastOutputAt = session.lastOutputAt ?? now();
+    this.sessions.set(rec.taskId, session);
+    try {
+      this.replayLog(rec.taskId, outLog, "out");
+      this.replayLog(rec.taskId, errLog, "err");
+      this.replayLog(rec.taskId, join(this.logDir, `${rec.taskId}.log`), "out", true);
+    } catch {
+      /* best-effort */
+    }
+    if (!alive && isReview) {
+      this.removeRegistryEntry(rec.taskId);
+      session.accumulatedMs = Date.now() - Date.parse(session.turnStartedAt ?? now());
+      setTimeout(() => {
+        try {
+          this.onReviewDone?.(rec.taskId, false, rec.reviewKind);
+        } catch {
+          /* best-effort */
+        }
+      }, 0);
+      return false;
+    }
+    const groupLeader = rec.processGroupLeader ?? rec.pid;
+    liveOut.push({ ...rec, processGroupLeader: groupLeader });
+    const tailers = [
+      this.tailLog(rec.taskId, outLog, "out", true),
+      this.tailLog(rec.taskId, errLog, "err", true),
+    ];
+    this.entries.set(rec.taskId, {
+      startedAt: now(),
+      workdir: rec.workdir,
+      task: undefined,
+      branch: rec.branch,
+      runId: rec.runId,
+      handoffRequested: false,
+      previewRequested: false,
+      adoptedPid: rec.pid,
+      processGroupLeader: groupLeader,
+      review: isReview,
+      reviewKind: rec.kind === "review" ? rec.reviewKind : undefined,
+      tailers,
+    });
+    return true;
+  }
+
+  /**
+   * Re-attach a recorded live harness for this task/worktree when the human
+   * requests a start after reload (#0837). Boot uses `reconcileOrphanedEngineers`.
+   */
+  private tryAdoptRecordedOrphanForTask(taskId: string, cwd: string): void {
+    if (this.entries.has(taskId)) return;
+    const registry = readRegistry(this.cacheDir);
+    const ownership = readProcessOwnership(this.cacheDir);
+    const candidates = collectRecordedEngineerPids(
+      registry.entries,
+      ownership,
+      new Set([taskId]),
+    ).filter((c) => c.taskId === taskId && sameWorkdirPath(c.workdir, cwd));
+    for (const cand of candidates) {
+      this.adoptOrStopRecordedEngineer(cand, registry);
+      return;
+    }
+  }
+
+  /** Block a new engineer when another task's recorded live harness holds this worktree. */
+  private otherTaskLiveEngineerInWorkdir(taskId: string, cwd: string): string | undefined {
+    const registry = readRegistry(this.cacheDir);
+    const ownership = readProcessOwnership(this.cacheDir);
+    const taskIds = new Set<string>();
+    for (const e of registry.entries) {
+      if (e.kind !== "review") taskIds.add(e.taskId);
+    }
+    for (const o of ownership) taskIds.add(o.taskId);
+    const candidates = collectRecordedEngineerPids(registry.entries, ownership, taskIds).filter(
+      (c) => c.taskId !== taskId && sameWorkdirPath(c.workdir, cwd),
+    );
+    for (const cand of candidates) {
+      if (verifyRecordedHarnessPid(cand.pid, cand.workdir)) {
+        return `This worktree already has a live engineer for task #${cand.taskId} (pid ${cand.pid})`;
+      }
+      if (this.recordedEngineerGroupStillLive(cand)) {
+        this.stopUnattachedRecordedEngineer(cand);
+      }
+    }
+    return undefined;
+  }
+
+  /** True when any PID from the recorded group is still running. */
+  private recordedEngineerGroupStillLive(cand: RecordedEngineerPid): boolean {
+    return livePidsInRecordedGroup(cand.processGroupLeader).length > 0;
+  }
+
+  /**
+   * Adopt a positively identified recorded engineer, or stop the recorded group
+   * when it is still live but cannot be re-attached (#0837).
+   */
+  private adoptOrStopRecordedEngineer(
+    cand: RecordedEngineerPid,
+    registry: DurableRegistry,
+    tasks?: Task[],
+  ): DurableRegistryEntry[] | null {
+    if (verifyRecordedHarnessPid(cand.pid, cand.workdir)) {
+      const fromRegistry = registry.entries.find((e) => e.taskId === cand.taskId);
+      const task = tasks?.find((t) => t.id === cand.taskId);
+      const rec: DurableRegistryEntry = fromRegistry
+        ? { ...fromRegistry, pid: cand.pid, processGroupLeader: cand.processGroupLeader }
+        : {
+            taskId: cand.taskId,
+            pid: cand.pid,
+            workdir: cand.workdir,
+            branch: cand.branch || task?.branch || "",
+            runId: cand.runId,
+            logStem: cand.logStem ?? cand.taskId,
+            kind: "engineer",
+            processGroupLeader: cand.processGroupLeader,
+          };
+      const live: DurableRegistryEntry[] = [];
+      if (this.adoptLiveRegistryEntry(rec, true, false, live)) {
+        this.onOrphanEngineerNote?.(cand.taskId, adoptedActivityNote(cand.pid));
+        return live;
+      }
+      return null;
+    }
+    if (this.recordedEngineerGroupStillLive(cand)) {
+      this.stopUnattachedRecordedEngineer(cand);
+    }
+    return null;
+  }
+
+  private stopUnattachedRecordedEngineer(cand: RecordedEngineerPid): void {
+    stopRecordedEngineerPid(cand.pid, cand.processGroupLeader);
+    this.removeRegistryEntry(cand.taskId);
+    this.onOrphanEngineerNote?.(cand.taskId, stoppedActivityNote(cand.pid));
   }
 
   /** Replay a durable log into a transcript, optionally decoding the legacy tagged format. */
@@ -5344,6 +5512,7 @@ export class AgentRunner {
       logStem,
       kind,
       reviewKind,
+      processGroupLeader: pid,
     };
     if (existing >= 0) {
       registry.entries[existing] = entry;
@@ -5664,6 +5833,8 @@ export class AgentRunner {
       return { ok: false, reason: unsupportedCliMessage(agent.cli) };
     }
     this.checkExpiredMessages();
+    const cwd = opts.cwd ?? this.config.root;
+    this.tryAdoptRecordedOrphanForTask(task.id, cwd);
     if (
       this.entries.has(task.id) ||
       this.handoffsInFlight.has(task.id) ||
@@ -5671,7 +5842,6 @@ export class AgentRunner {
     ) {
       return { ok: false, reason: "task is already running or finalizing" };
     }
-    const cwd = opts.cwd ?? this.config.root;
     const session = this.sessions.get(task.id) ?? this.loadSession(task.id) ?? this.emptySession();
     this.captureUsageBaseline(session);
     session.workdir = cwd;
@@ -6193,7 +6363,7 @@ export class AgentRunner {
     cwd: string,
     task?: Task,
     branch?: string,
-    opts: { skipBoardDivergence?: boolean } = {},
+    opts: { skipBoardDivergence?: boolean; review?: boolean; reviewKind?: "run" | "chat" } = {},
   ): StartResult {
     const refusal = antigravityWorktreeRefusal(cmd, args, cwd, task);
     if (refusal) return { ok: false, reason: refusal };
@@ -6206,6 +6376,10 @@ export class AgentRunner {
       branch ?? task?.branch,
     );
     if (lockRefusal) return { ok: false, reason: lockRefusal };
+    if (task && !opts.review) {
+      const worktreeRefusal = this.otherTaskLiveEngineerInWorkdir(task.id, cwd);
+      if (worktreeRefusal) return { ok: false, reason: worktreeRefusal };
+    }
     const pressure = pressureReason(this.config);
     if (pressure) {
       this.queuedIds.set(id, now());

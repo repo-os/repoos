@@ -6600,6 +6600,22 @@
   border-top: 1px solid var(--border);
   margin: 14px 0;
 }
+.md-rendered .attachment-cloud-figure {
+  display: inline-block;
+  margin: 0 0 10px;
+  max-width: 100%;
+}
+.md-rendered .attachment-cloud-figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.md-rendered .attachment-cloud-badge {
+  margin-top: 4px;
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--txt-dim);
+  font-style: normal;
+}
 .md-rendered .md-task {
   display: flex;
   gap: 8px;
