@@ -13,7 +13,7 @@ branch: feat/migration-flow
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:15Z"
-updated_at: "2026-10-18T16:27:58Z"
+updated_at: "2026-10-18T16:27:59Z"
 ---
 Slice 6: Dry run, resumable upload, verification before local originals released. Migration is safely repeatable.
 
@@ -59,3 +59,4 @@ Slice 6: Dry run, resumable upload, verification before local originals released
 - 2026-10-18T16:20:03Z · body
 - 2026-10-18T16:20:53Z · body
 - 2026-10-18T16:27:58Z · status active→review
+- 2026-10-18T16:27:59Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
