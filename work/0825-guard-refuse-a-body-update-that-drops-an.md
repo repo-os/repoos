@@ -2,16 +2,17 @@
 id: "0825"
 title: "Guard: refuse a --body update that drops an easter-egg item"
 type: chore
-status: inbox
+status: done
 priority: p3
 area: core
+merged_commit: c7f5b2f440782aab5765074d9a0b692ed7618bfa
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-refuse-a-body-update-that-drops-an
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:49:07Z"
-updated_at: "2026-10-18T03:52:15Z"
+updated_at: "2026-10-18T03:52:41Z"
 last_close_out_gate_ms: 376013
 last_close_out_gate_at: "2026-10-18T03:52:13.516Z"
 review_passes: 1
@@ -45,3 +46,4 @@ Extend the existing dropped-sections guard rather than adding a parallel one. So
 - 2026-10-18T03:52:13Z · close-out gate completed in 376s
 - 2026-10-18T03:52:15Z · note: handoff requested (cli)
 - 2026-10-18T03:52:15Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-18T03:52:41Z · status inbox→done, release:success
