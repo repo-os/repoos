@@ -6148,7 +6148,10 @@ export class AgentRunner {
     const store = readQueuedMessages(this.cacheDir);
     for (const entry of store.entries) {
       if (entry.messages.length === 0 || this.queuedMessages.has(entry.id)) continue;
-      this.queuedMessages.set(entry.id, entry.messages.map((m) => ({ ...m, opts: { ...m.opts } })));
+      this.queuedMessages.set(
+        entry.id,
+        entry.messages.map((m) => ({ ...m, opts: { ...m.opts } })),
+      );
       this.messageQueuedAt.set(entry.id, entry.messages[0].queuedAt);
     }
   }
