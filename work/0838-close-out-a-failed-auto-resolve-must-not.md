@@ -11,7 +11,7 @@ branch: feat/close-out-a-failed-auto-resolve-must-not
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:48Z"
-updated_at: "2026-10-18T18:44:51Z"
+updated_at: "2026-10-18T18:51:23Z"
 last_close_out_gate_ms: 83050
 last_close_out_gate_at: "2026-10-18T18:44:28.492Z"
 review_passes: 1
@@ -46,3 +46,4 @@ Related: #0835 (NUL byte made task files binary, a likely trigger), #0754 (task-
 - 2026-10-18T18:44:31Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
 - 2026-10-18T18:44:46Z · status inbox→active
 - 2026-10-18T18:44:51Z · note: handoff requested (ui-review)
+- 2026-10-18T18:51:23Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
