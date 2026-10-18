@@ -9,9 +9,10 @@ merged_commit: 6844edf20bd8c9a9f481477423b6549f6bbe3981
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-gate-skip-the-dist-cli-index-js-
-model_override: opencode/muse-spark-1.3-contributor-free
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-14T08:20:29Z"
-updated_at: "2026-10-18T17:27:02Z"
+updated_at: "2026-10-18T17:27:06Z"
 last_close_out_gate_ms: 121907
 last_close_out_gate_at: "2026-10-14T08:47:47.001Z"
 review_passes: 1
@@ -55,3 +56,4 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 - 2026-10-14T08:47:47Z · close-out gate completed in 122s
 - 2026-10-14T08:48:47Z · status review→done, release:success
 - 2026-10-18T17:27:02Z · status done→ready
+- 2026-10-18T17:27:06Z · cli_override, model_override
