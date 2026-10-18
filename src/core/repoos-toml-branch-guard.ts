@@ -22,7 +22,7 @@ function bodyDeclaresRepoosTomlWork(body: string): boolean {
 
 /** True when the task record says changing `repoos.toml` is in scope. */
 export function taskDeclaresRepoosTomlWork(
-  task: Pick<Task, "title" | "paths" | "body"> & { area?: Task["area"] },
+  task: Pick<Task, "title" | "paths"> & { area?: Task["area"]; body?: string },
 ): boolean {
   if (
     task.paths?.some((p) => p === REPOOS_TOML_REL || p.replace(/^\.\//, "") === REPOOS_TOML_REL)
@@ -75,7 +75,7 @@ export async function repoosTomlBranchDiffSnippet(
 export async function guardStrayRepoosTomlOnTaskBranch(
   worktree: string,
   mainBranch: string,
-  task: Pick<Task, "title" | "paths" | "body" | "hotfix"> & { area?: Task["area"] },
+  task: Pick<Task, "title" | "paths" | "hotfix"> & { area?: Task["area"]; body?: string },
 ): Promise<{ ok: true } | { ok: false; detail: string }> {
   if (task.hotfix) return { ok: true };
   if (taskDeclaresRepoosTomlWork(task)) return { ok: true };
