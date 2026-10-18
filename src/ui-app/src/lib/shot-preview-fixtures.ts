@@ -43,9 +43,9 @@ export function shotFixturePinnedIntegration(): IntegrationPipelineSnapshot | nu
   return pinnedIntegration;
 }
 
-function fixtureTask(over: Partial<Task> = {}): Task {
+function fixtureTask(over: Partial<Task> = {}, taskId = SHOT_PREVIEW_FIXTURE_TASK_ID): Task {
   return {
-    id: SHOT_PREVIEW_FIXTURE_TASK_ID,
+    id: taskId,
     title: "Shot preview fixture task",
     type: "feature",
     status: "review",
@@ -64,8 +64,8 @@ function fixtureTask(over: Partial<Task> = {}): Task {
     needsMerge: false,
     created_at: nowIso(),
     updated_at: nowIso(),
-    path: `work/${SHOT_PREVIEW_FIXTURE_TASK_ID}-shot-preview-fixture.md`,
-    absPath: `/tmp/repo/work/${SHOT_PREVIEW_FIXTURE_TASK_ID}-shot-preview-fixture.md`,
+    path: `work/${taskId}-shot-preview-fixture.md`,
+    absPath: `/tmp/repo/work/${taskId}-shot-preview-fixture.md`,
     body: "",
     extra: {},
     agentOverride: null,
@@ -109,9 +109,10 @@ function ensureFixtureTask(
   repo: RepoStore,
   status: Task["status"] = "review",
   overrides: Partial<Task> = {},
+  taskId = SHOT_PREVIEW_FIXTURE_TASK_ID,
 ): void {
-  const existing = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
-  const task = fixtureTask({ status, ...overrides });
+  const existing = repo.tasks.find((t) => t.id === taskId);
+  const task = fixtureTask({ status, ...overrides }, taskId);
   if (existing) {
     Object.assign(existing, task);
   } else {
@@ -420,23 +421,30 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       break;
     case "card:reviewRoundsExhausted": {
       // #0832 — exhausted review rounds: card shows stripped/clamped summary only.
+      const fixtureTaskId = "0832";
       const longWhy =
         "Three UI regressions remain in the task drawer and the contrast audit still fails on the settings page; also re-check the handoff shots before the next review round.";
       const verdictLine = `\`needs some work\` — ${longWhy}`;
-      ensureFixtureTask(repo, "review", {
-        needsInput: true,
-        needsInputReason: "review-rounds-exhausted",
-        needsInputDetail: verdictLine,
-        extra: { review_rounds: 2 },
-      });
+      ensureFixtureTask(
+        repo,
+        "review",
+        {
+          title: "Review rounds exhausted fixture",
+          needsInput: true,
+          needsInputReason: "review-rounds-exhausted",
+          needsInputDetail: verdictLine,
+          extra: { review_rounds: 2 },
+        },
+        fixtureTaskId,
+      );
       repo.reviews = {
         ...repo.reviews,
-        [SHOT_PREVIEW_FIXTURE_TASK_ID]: {
+        [fixtureTaskId]: {
           running: false,
           enabled: true,
           lines: [],
           report: {
-            id: SHOT_PREVIEW_FIXTURE_TASK_ID,
+            id: fixtureTaskId,
             at: new Date().toISOString(),
             agent: "reviewer",
             cli: "opencode",
