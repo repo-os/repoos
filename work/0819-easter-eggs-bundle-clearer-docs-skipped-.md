@@ -2,7 +2,7 @@
 id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and timer tooltip"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — The five bundle items are implemented with matching tests and `repoos check` passed, but handoff UI evidence does not fully cover the visual acceptance criteria: the screenshot-viewer header shots never opened the viewer (Playwright strict-mode on `.shot-row img`), and the saved PNGs show only the Changes list; the integration-timer captures show the empty “No median yet” tooltip, not the populated 15-run median chip layout."
@@ -14,7 +14,7 @@ branch: feat/easter-eggs-bundle-shot-warnings-viewer-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-17T12:52:42Z"
-updated_at: "2026-10-18T01:28:21Z"
+updated_at: "2026-10-18T01:33:37Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-10-17T18:01:16.427Z: repoos check failed: ui verification failed (32 issue(s)): [request] HTTP 404 for http://127.0.0.1:53612/api/tasks/9999/diff-stats (http://127.0.0.1:53612/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:53612/api/tasks/9999/diff-stats); [request] HTTP 404 for http://127.0.0.1:53612/api/tasks/9999/diff (http://127.0.0.1:53612/api/tasks/9999/diff); [request] Failed to load resource: the server responded with a s… (truncated)"
 review_rounds: 2
@@ -166,4 +166,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T01:22:08Z · note: highlight .shot-viewer-shot-head matched nothing on /work?task=9999&tab=changes
 - 2026-10-18T01:22:44Z · note: review pass 7: needs some work
 - 2026-10-18T01:22:44Z · needs_input
-
+- 2026-10-18T01:33:37Z · status review→active
