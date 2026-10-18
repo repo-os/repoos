@@ -98,15 +98,15 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "route": "/work",
 "highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
-  {
-    "waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
-  },
-  {
-    "click": ".ibar-strip [data-test-id=\"integration-timer\"]"
-  },
-  {
-    "waitFor": "[data-test-id=\"integration-timer-tip\"]"
-  }
+{
+  "waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
+},
+{
+  "click": ".ibar-strip [data-test-id=\"integration-timer\"]"
+},
+{
+  "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+}
 ],
 "state": "integration:median15",
 "theme": "light"
@@ -117,15 +117,15 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "route": "/work",
 "highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
-  {
-    "waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
-  },
-  {
-    "click": ".ibar-strip [data-test-id=\"integration-timer\"]"
-  },
-  {
-    "waitFor": "[data-test-id=\"integration-timer-tip\"]"
-  }
+{
+  "waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
+},
+{
+  "click": ".ibar-strip [data-test-id=\"integration-timer\"]"
+},
+{
+  "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+}
 ],
 "state": "integration:median15",
 "theme": "dark"
@@ -136,15 +136,15 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "route": "/work?task=0820&tab=debug",
 "highlight": ".debug-event-message",
 "steps": [
-  {
-    "waitFor": "[data-debug-event*=\"main advanced\"]"
-  },
-  {
-    "click": "[data-debug-event*=\"main advanced\"]"
-  },
-  {
-    "waitFor": ".debug-event-message"
-  }
+{
+  "waitFor": "[data-debug-event*=\"main advanced\"]"
+},
+{
+  "click": "[data-debug-event*=\"main advanced\"]"
+},
+{
+  "waitFor": ".debug-event-message"
+}
 ],
 "state": "drawer:debugLogs",
 "theme": "light"
@@ -155,15 +155,15 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "route": "/work?task=0820&tab=debug",
 "highlight": ".debug-event-message",
 "steps": [
-  {
-    "waitFor": "[data-debug-event*=\"main advanced\"]"
-  },
-  {
-    "click": "[data-debug-event*=\"main advanced\"]"
-  },
-  {
-    "waitFor": ".debug-event-message"
-  }
+{
+  "waitFor": "[data-debug-event*=\"main advanced\"]"
+},
+{
+  "click": "[data-debug-event*=\"main advanced\"]"
+},
+{
+  "waitFor": ".debug-event-message"
+}
 ],
 "state": "drawer:debugLogs",
 "theme": "dark"
