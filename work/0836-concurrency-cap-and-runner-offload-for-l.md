@@ -11,7 +11,7 @@ branch: feat/concurrency-cap-and-runner-offload-for-l
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:25Z"
-updated_at: "2026-10-18T17:52:06Z"
+updated_at: "2026-10-18T17:52:33Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -88,3 +88,4 @@ Look at src/commands/check.ts, src/server/integration-orchestrator.ts, the shot/
 - 2026-10-18T17:44:56Z · note: handoff requested (ui-review)
 - 2026-10-18T17:45:05Z · body
 - 2026-10-18T17:52:06Z · status active→review
+- 2026-10-18T17:52:33Z · note: highlight [data-settings-section="performance"] matched nothing on /settings?tab=general&section=performance
