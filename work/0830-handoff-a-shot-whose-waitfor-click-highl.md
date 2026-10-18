@@ -1,19 +1,20 @@
 ---
-last_close_out_gate_ms: 87581
-last_close_out_gate_at: "2026-10-18T11:52:33.132Z"
 id: "0830"
 title: "Handoff: a shot whose waitFor/click/highlight target is missing fails the handoff (add hover step and fixture list)"
 type: feature
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: 5a6981489abc31fc18b5531a38f8753bd416beff
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-a-shot-whose-waitfor-click-highl
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:25Z"
-updated_at: "2026-10-18T11:52:33Z"
+updated_at: "2026-10-18T11:53:10Z"
+last_close_out_gate_ms: 87581
+last_close_out_gate_at: "2026-10-18T11:52:33.132Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-10-18T10:20:44.294Z: repoos check failed: ◆ Check plan"
 dev_error_count: 1
@@ -73,4 +74,4 @@ Related: #0734, #0755, #0613. Do not make a missing Playwright a failure (stays 
 - 2026-10-18T11:48:00Z · note: review pass 1: good to go
 - 2026-10-18T11:50:49Z · close-out gate completed in 81s
 - 2026-10-18T11:52:33Z · close-out gate completed in 88s
-
+- 2026-10-18T11:53:10Z · status review→done, release:success
