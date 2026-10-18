@@ -11,12 +11,13 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T09:09:55Z"
+updated_at: "2026-10-18T09:35:26Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: b27c9ec7f5394ee6702c33999ed40bcf09718959
 last_check_failure: "repoos check at 2026-10-18T08:29:42.192Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from ddcf9a91 to ae4f932f) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 4
 review_rounds: 2
+dev_error_count: 1
 ---
 ## Items
 - [ ] **E1 · Minimised pill shows only the median popup, centered** (web) — remove the extra native title tooltip over it. Source: Nick 2026-10-18.
@@ -273,3 +274,5 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T09:04:20Z · handoff failed · ui-review handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
 - 2026-10-18T09:07:44Z · body
 - 2026-10-18T09:09:55Z · note: handoff requested (ui-review)
+- 2026-10-18T09:24:23Z · agent exited with an error (cursor) · handoff finalization was interrupted (server reload) — restart work to hand off again
+- 2026-10-18T09:35:26Z · needs_input
