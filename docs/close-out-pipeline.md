@@ -592,6 +592,22 @@ version wins," silently discarding whatever you hand-edited on main. **Don't han
 task frontmatter. Use the API** (`PATCH /api/tasks/:id`, the `message`/`review/message`
 routes, or the CLI) **so the change is tracked, logged, and synced correctly.**
 
+### Failed close-out must not demote the task to `inbox` (#0838)
+
+Move to done only runs from `review`. When publish-time merge auto-resolve fails
+(for example `auto-resolve failed for work/<id>-*.md` after a corrupt or
+binary task file, #0835), main's canonical `work/<id>-*.md` must stay in
+`review` with the failure recorded on the integration job — never fall back to
+`inbox` (which blocks the next handoff with "task must be active or review, but
+is inbox").
+
+`failOrReconcile` now calls `preserveClosingTaskReviewStatusOnMain`
+(`src/server/close-out-task-status.ts`): discard any half-applied merge debris
+on the task file (`git checkout HEAD -- <file>`), then patch back to `review`
+when the on-disk status is anything other than `review` or `done`. A failed job
+is re-enqueued normally on the next Move to done; no `repoos mv … active` repair
+step.
+
 ## Known failure classes and their guards
 
 Written 2026-09-13. Four classes of close-out bug have bitten this repo hard
