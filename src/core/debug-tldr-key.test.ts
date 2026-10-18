@@ -78,7 +78,7 @@ Body.
     });
     expect(parsed.debugTldrKey).toBe(tldrFingerprint("dev-error", "RetriableError: stale"));
 
-    patchTaskFile(cfg, absPath, { updated_at: "2026-10-18T12:01:00Z" });
+    patchTaskFile(cfg, absPath, { needsInputDetail: "RetriableError: stale" });
     const onDisk = readFileSync(absPath, "utf8");
     expect(onDisk.includes("\0")).toBe(false);
     expect(onDisk).toContain(
