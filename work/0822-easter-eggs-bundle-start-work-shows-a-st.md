@@ -184,3 +184,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T03:47:54Z · status active→review
 - 2026-10-18T03:47:54Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
 - 2026-10-18T03:48:12Z · note: waitFor .activity-animation-preview .ai-style-bird-quick-trail: waitFor: Timeout 5000ms exceeded. on /settings?tab=general
+- 2026-10-18T03:48:12Z · note: highlight .activity-animation-preview .ai-style-bird-quick-trail matched nothing on /settings?tab=general
