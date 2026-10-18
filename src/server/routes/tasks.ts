@@ -1439,10 +1439,7 @@ export async function automaticEvidenceGapRefresh(
 
       const captured = await guardedForceRefreshCapture(config, current, worktree, previews, log);
       const ok =
-        !captured.skipped &&
-        !captured.error &&
-        captured.gateOk &&
-        captured.headIdentity === head;
+        !captured.skipped && !captured.error && captured.gateOk && captured.headIdentity === head;
       const taskPath = current.absPath;
       if (ok) {
         writeEvidenceGapAttempts(config, taskPath, 0);

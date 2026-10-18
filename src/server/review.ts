@@ -82,10 +82,7 @@ import { getCheckStore } from "../core/check-store.js";
 import type { CommandCaptureEvidence } from "./shot-capture.js";
 import { extractTaskProofCommands } from "../core/task-proof-commands.js";
 import { isEvidenceRefreshActive } from "./evidence-refresh-lock.js";
-import {
-  EVIDENCE_GAP_ONLY_MARKER,
-  isEvidenceGapOnlyReview,
-} from "../core/review-evidence-gaps.js";
+import { EVIDENCE_GAP_ONLY_MARKER, isEvidenceGapOnlyReview } from "../core/review-evidence-gaps.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
 import {
   gatherReviewVerification,
@@ -681,10 +678,7 @@ export class ReviewManager {
   /** Server-owned, guarded UI evidence refresh used only for stale-only reports (#0772). */
   private readonly onStaleEvidenceRefresh?: (task: Task) => Promise<boolean>;
   /** Re-capture shots when the reviewer reports evidence-only gaps (#0831). */
-  private readonly onEvidenceGapRefresh?: (
-    task: Task,
-    report: ReviewReport,
-  ) => Promise<boolean>;
+  private readonly onEvidenceGapRefresh?: (task: Task, report: ReviewReport) => Promise<boolean>;
   /** Opt-in approval policy (#0686): fired when a run review finishes `good to go`. */
   private onCleanReviewVerdict?: (task: Task, report: ReviewReport) => void;
 
@@ -1322,11 +1316,7 @@ export class ReviewManager {
       if (!refreshed) return;
       const current = this.index?.getTask(task.id) ?? task;
       if (current.status === "review" && !current.isArchived) {
-        this.logger.task(
-          task.id,
-          "info",
-          "evidence-gap refresh succeeded; starting a new review",
-        );
+        this.logger.task(task.id, "info", "evidence-gap refresh succeeded; starting a new review");
         void this.run(current);
       }
     } catch (err) {
