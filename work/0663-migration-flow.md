@@ -2,7 +2,7 @@
 id: "0663"
 title: Migration flow
 type: feature
-status: active
+status: review
 priority: p1
 area: core
 story: Cloud attachment storage
@@ -13,7 +13,7 @@ branch: feat/migration-flow
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:15Z"
-updated_at: "2026-10-18T16:16:36Z"
+updated_at: "2026-10-18T16:27:57Z"
 ---
 Slice 6: Dry run, resumable upload, verification before local originals released. Migration is safely repeatable.
 
@@ -56,3 +56,4 @@ Slice 6: Dry run, resumable upload, verification before local originals released
 - 2026-10-18T16:16:32Z · status inbox→ready
 - 2026-10-18T16:16:34Z · cli_override, model_override
 - 2026-10-18T16:16:36Z · status ready→active, branch
+- 2026-10-18T16:27:57Z · status active→review
