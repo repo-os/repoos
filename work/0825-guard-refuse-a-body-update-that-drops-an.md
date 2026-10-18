@@ -37,3 +37,4 @@ Extend the existing dropped-sections guard rather than adding a parallel one. So
 - 2026-10-18T03:00:38Z · body
 - 2026-10-18T03:01:40Z · body
 - 2026-10-18T03:11:06Z · status active→review
+- 2026-10-18T03:11:06Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
