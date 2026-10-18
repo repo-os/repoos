@@ -100,10 +100,10 @@ remoteValidation.containerImage = "repoos-ci"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
 remoteValidation.engineerSelfCheckRemote = true
-activityAnimationStyle = "bird-quick-trail"
+activityAnimationStyle = "cursor-scan-pulse"
 model_routing.mode = "shadow"
 model_routing.provider = "openrouter"
-activityAnimationSize = "24"
+activityAnimationSize = "16"
 model_routing.humanStepCheck = true
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
