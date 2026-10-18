@@ -21,3 +21,489 @@
       telegram-manager-test: bun run test (in telegram-manager) · when telegram-manager/** changes
       macos-hub-icon-transparency: bash macos/scripts/verify-dock-icon-transparency.sh · when macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh changes
   · Changed-path mode: 12 path(s) differ from main (fast pre-review pass — close-out still runs the full plan)
+  · uncommitted work committed as a WIP checkpoint so the remote runner tests this tree
+
+
+  ◆ Remote validation
+
+── remote validation (tailscale) for #0833 @ ceec53de9d03 ──
+[runner nick@bee]
+[uploading bundle 29 MB … 5s elapsed]
+[uploading bundle 29 MB … 10s elapsed]
+[uploaded bundle 29 MB (full history — host had no usable base) in 14.2s]
+[running build + test in repoos-ci on bee (tests scoped to changed vs main)]
+[lock] slot 1 acquired after 0s
+[validate] cloning mirror ~/.repoos-cache/repoos-746fff46.git at ceec53de9d03668cbabebfe038ea20af4a96d9bb
+warning: remote HEAD refers to nonexistent ref, unable to checkout
+[validate] HEAD verified at ceec53de9d03668cbabebfe038ea20af4a96d9bb
+bun install v1.4.2 (744846f84)
+
+$ git config core.hooksPath .githooks 2>/dev/null || true
+
++ @playwright/test@1.63.0
++ @tailwindcss/vite@4.3.3
++ @types/jsdom@30.0.0
++ @types/node@26.2.0
++ @vitejs/plugin-vue@6.0.8
++ @vitest/coverage-v8@4.1.10
++ @vue/test-utils@2.4.11
++ class-variance-authority@0.7.1
++ clsx@2.1.1
++ jsdom@30.0.1
++ lucide-vue-next@1.0.0
++ mermaid@11.17.2
++ oxfmt@0.62.0
++ oxlint@1.77.0
++ pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+
+422 packages installed [1056.00ms]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+vite v8.2.0 building client environment for production...
+[2Ktransforming...[plugin rolldown:vite-resolve] Module "node:child_process" has been externalized for browser compatibility, imported by "/repo/src/core/dependency-install.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:fs" has been externalized for browser compatibility, imported by "/repo/src/core/dependency-install.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/repo/src/core/dependency-install.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/repo/src/core/task.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:child_process" has been externalized for browser compatibility, imported by "/repo/src/core/git.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/repo/src/core/git.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:fs" has been externalized for browser compatibility, imported by "/repo/src/core/git.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:crypto" has been externalized for browser compatibility, imported by "/repo/src/core/git.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/repo/src/core/lockfile-conflict.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:child_process" has been externalized for browser compatibility, imported by "/repo/src/core/lockfile-conflict.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:os" has been externalized for browser compatibility, imported by "/repo/src/core/config.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:fs" has been externalized for browser compatibility, imported by "/repo/src/core/config.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/repo/src/core/config.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/repo/src/core/storage/local.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:fs" has been externalized for browser compatibility, imported by "/repo/src/core/storage/local.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:crypto" has been externalized for browser compatibility, imported by "/repo/src/core/storage/neon.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:child_process" has been externalized for browser compatibility, imported by "/repo/src/core/storage/sync-http.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:crypto" has been externalized for browser compatibility, imported by "/repo/src/core/storage/sigv4.ts". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+✓ 4379 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/ui/sw.js                                              3.03 kB
+dist/ui/index.html                                         4.87 kB │ gzip:   1.50 kB
+dist/ui/assets/FailedTestsList-ChES8eZe.css                0.70 kB │ gzip:   0.33 kB
+dist/ui/assets/VoiceDictate-CS-9Kmsa.css                   1.07 kB │ gzip:   0.43 kB
+dist/ui/assets/StoriesView-P9kwIvao.css                    4.84 kB │ gzip:   1.26 kB
+dist/ui/assets/LoginView-6QlGg6cx.css                      4.86 kB │ gzip:   1.41 kB
+dist/ui/assets/DiffView-CcApcT6t.css                       4.96 kB │ gzip:   1.16 kB
+dist/ui/assets/DeploymentsView-BEhIaXyw.css                6.32 kB │ gzip:   1.43 kB
+dist/ui/assets/InputsView-sgbtt2tl.css                     7.12 kB │ gzip:   1.63 kB
+dist/ui/assets/DevView-JvbNwPSM.css                        7.51 kB │ gzip:   1.69 kB
+dist/ui/assets/WorkView-KPBZEGlj.css                       7.78 kB │ gzip:   1.83 kB
+dist/ui/assets/ReleasesView-mnqYjYlB.css                  10.18 kB │ gzip:   1.95 kB
+dist/ui/assets/SettingsView-C5VqEGb2.css                  10.18 kB │ gzip:   2.14 kB
+dist/ui/assets/ContextView-5__6cyLK.css                   12.68 kB │ gzip:   2.60 kB
+dist/ui/assets/DashboardView-DtXleA5o.css                 15.05 kB │ gzip:   3.17 kB
+dist/ui/assets/ChecksView-Ch-6y6lN.css                    18.70 kB │ gzip:   3.50 kB
+dist/ui/assets/AgentsView-CxoJbtIn.css                    22.64 kB │ gzip:   4.10 kB
+dist/ui/assets/index-BBYdsX1Z.css                        319.69 kB │ gzip:  56.16 kB
+dist/ui/assets/types-D6qo-egS.js                           0.08 kB │ gzip:   0.09 kB
+dist/ui/assets/_plugin-vue_export-helper-BDNMzG2s.js       0.08 kB │ gzip:   0.09 kB
+dist/ui/assets/array-BifhSqXX.js                           0.10 kB │ gzip:   0.11 kB
+dist/ui/assets/channel-KLbUuTb5.js                         0.11 kB │ gzip:   0.12 kB
+dist/ui/assets/pie-WAS4IAKB-D5QrUC2g.js                    0.11 kB │ gzip:   0.11 kB
+dist/ui/assets/info-A6RAGUB7-AZ8VcEaY.js                   0.11 kB │ gzip:   0.12 kB
+dist/ui/assets/radar-RG4KPBEZ-BuYYKOJl.js                  0.11 kB │ gzip:   0.12 kB
+dist/ui/assets/packet-AYTQ26CC-Bdg2essy.js                 0.12 kB │ gzip:   0.12 kB
+dist/ui/assets/cynefin-OW5HDTMX-Bxpgy9Q-.js                0.12 kB │ gzip:   0.12 kB
+dist/ui/assets/treemap-WGGIJYW6-dx7qI3mD.js                0.12 kB │ gzip:   0.12 kB
+dist/ui/assets/wardley-WFR3VGLG-Dexzwvt6.js                0.12 kB │ gzip:   0.12 kB
+dist/ui/assets/gitGraph-4MIJSDKK-DBRsV9Fh.js               0.12 kB │ gzip:   0.12 kB
+dist/ui/assets/railroad-74A4TZTK-Nkuw4fzg.js               0.12 kB │ gzip:   0.12 kB
+dist/ui/assets/treeView-Q6P3EWNA-DVwK8Kqr.js               0.12 kB │ gzip:   0.12 kB
+dist/ui/assets/railroad-peg-WCYAUIDC-CrrHZFIz.js           0.12 kB │ gzip:   0.12 kB
+dist/ui/assets/architecture-7GRP2DOG-BHZiePHg.js           0.12 kB │ gzip:   0.12 kB
+dist/ui/assets/railroad-abnf-HS5TGJTU-gAPZoBfp.js          0.12 kB │ gzip:   0.12 kB
+dist/ui/assets/railroad-ebnf-LZEXJU2U-DvwkawHG.js          0.12 kB │ gzip:   0.12 kB
+dist/ui/assets/eventmodeling-NTZA5JFV-CKBX3xli.js          0.12 kB │ gzip:   0.12 kB
+dist/ui/assets/init-C-OQMol4.js                            0.14 kB │ gzip:   0.12 kB
+dist/ui/assets/chunk-Y2CYZVJY-DsF7k-Jl.js                  0.15 kB │ gzip:   0.14 kB
+dist/ui/assets/chunk-2Q5K7J3B-C1jixKkw.js                  0.19 kB │ gzip:   0.16 kB
+dist/ui/assets/format-B31EJAKm.js                          0.19 kB │ gzip:   0.14 kB
+dist/ui/assets/chunk-JWPE2WC7-DVXcaiue.js                  0.22 kB │ gzip:   0.17 kB
+dist/ui/assets/text-insertion-sXVs8rKF.js                  0.23 kB │ gzip:   0.16 kB
+dist/ui/assets/chunk-XXDRQBXY-DqAYeljN.js                  0.26 kB │ gzip:   0.22 kB
+dist/ui/assets/chunk-CLGD4ZFX-D8_eiDh_.js                  0.32 kB │ gzip:   0.25 kB
+dist/ui/assets/releases-B0WNV-SY.js                        0.35 kB │ gzip:   0.24 kB
+dist/ui/assets/chunk-5VM5RSS4-ZNzvKenW.js                  0.36 kB │ gzip:   0.27 kB
+dist/ui/assets/chunk-UY3FDG6J-XZwQOzbF.js                  0.45 kB │ gzip:   0.31 kB
+dist/ui/assets/chunk-I5DQTOEV-Cux5OBYe.js                  0.45 kB │ gzip:   0.31 kB
+dist/ui/assets/chunk-5V3GS4D5-B6UpbGCn.js                  0.46 kB │ gzip:   0.31 kB
+dist/ui/assets/chunk-KI3K4JFJ-bgHYJH0f.js                  0.46 kB │ gzip:   0.31 kB
+dist/ui/assets/chunk-6TQVIW2G-kn-138pS.js                  0.46 kB │ gzip:   0.31 kB
+dist/ui/assets/chunk-ICYGCRZG-BSFpafu0.js                  0.50 kB │ gzip:   0.35 kB
+dist/ui/assets/value-BxnuPYy1.js                           0.52 kB │ gzip:   0.36 kB
+dist/ui/assets/card-Bc5SQBwq.js                            0.52 kB │ gzip:   0.38 kB
+dist/ui/assets/chunk-POPQ4Y6H-Dz3ql-4n.js                  0.57 kB │ gzip:   0.40 kB
+dist/ui/assets/auth-Bnn5UIX7.js                            0.57 kB │ gzip:   0.33 kB
+dist/ui/assets/chunk-3Z5EZCMW-BBL48ahF.js                  0.60 kB │ gzip:   0.39 kB
+dist/ui/assets/flowDiagram-HODETNUW-B-SKrlfx.js            0.61 kB │ gzip:   0.32 kB
+dist/ui/assets/infoDiagram-27XIBGKW-DHS2zdAh.js            0.65 kB │ gzip:   0.42 kB
+dist/ui/assets/rolldown-runtime-hePW80VL.js                0.71 kB │ gzip:   0.42 kB
+dist/ui/assets/classDiagram-ZZMXUADV-CP5N_gbD.js           0.78 kB │ gzip:   0.45 kB
+dist/ui/assets/classDiagram-v2-VYDZK3BY-CP5N_gbD.js        0.78 kB │ gzip:   0.45 kB
+dist/ui/assets/ChatAgentModelChip-D_E-oz5P.js              0.78 kB │ gzip:   0.44 kB
+dist/ui/assets/stateDiagram-v2-MP3YSRHH-DYmamX4f.js        0.78 kB │ gzip:   0.45 kB
+dist/ui/assets/chunk-XHIXRSVI-Bu6LAW6p.js                  0.83 kB │ gzip:   0.47 kB
+dist/ui/assets/input-MXFI6ozv.js                           0.84 kB │ gzip:   0.53 kB
+dist/ui/assets/swimlanesDiagram-VR7AAH4N-Dvz4o4Hu.js       0.87 kB │ gzip:   0.49 kB
+dist/ui/assets/sizeCapture-INFHLROL-B0uUizjq.js            0.87 kB │ gzip:   0.51 kB
+dist/ui/assets/clipboard-CkhTprDX.js                       0.87 kB │ gzip:   0.45 kB
+dist/ui/assets/chunk-6AZGARVD-CYyHPsEW.js                  0.90 kB │ gzip:   0.49 kB
+dist/ui/assets/chunk-IH6LHLGP-D3gp9iPn.js                  0.92 kB │ gzip:   0.49 kB
+dist/ui/assets/line-B36GDsn8.js                            0.94 kB │ gzip:   0.47 kB
+dist/ui/assets/checkbox-B3l459tM.js                        1.00 kB │ gzip:   0.56 kB
+dist/ui/assets/chunk-OUJLGHUK-CYjUPErt.js                  1.04 kB │ gzip:   0.58 kB
+dist/ui/assets/chunk-747NJXEK-ZQ1az0_F.js                  1.06 kB │ gzip:   0.59 kB
+dist/ui/assets/time-CKklpdEK.js                            1.06 kB │ gzip:   0.49 kB
+dist/ui/assets/chunk-2ZTRR5NV-Cr-_ry_6.js                  1.13 kB │ gzip:   0.62 kB
+dist/ui/assets/cto-actions-CPPEMXro.js                     1.13 kB │ gzip:   0.55 kB
+dist/ui/assets/ordinal-BDEzSJ7C.js                         1.17 kB │ gzip:   0.56 kB
+dist/ui/assets/switch-52ZLyupr.js                          1.19 kB │ gzip:   0.62 kB
+dist/ui/assets/ConfirmDialog-BGH91YG8.js                   1.26 kB │ gzip:   0.63 kB
+dist/ui/assets/AgentModelControl-Ctb_jM8o.js               1.33 kB │ gzip:   0.66 kB
+dist/ui/assets/chunk-GVQU2GXP-CjeJ_c0N.js                  1.41 kB │ gzip:   0.79 kB
+dist/ui/assets/api-BXg3t-A6.js                             1.45 kB │ gzip:   0.81 kB
+dist/ui/assets/chunk-6K3QC6MW-8lwas69x.js                  1.46 kB │ gzip:   0.78 kB
+dist/ui/assets/DeleteConfirmDialog-CMaAcIaT.js             1.46 kB │ gzip:   0.68 kB
+dist/ui/assets/chunk-6EIED4P4-DLcrKSZa.js                  1.67 kB │ gzip:   0.74 kB
+dist/ui/assets/railroadDiagram-O6MQD6OU-DchwJChZ.js        1.71 kB │ gzip:   0.79 kB
+dist/ui/assets/docs-CYe7Hs-V.js                            1.78 kB │ gzip:   0.83 kB
+dist/ui/assets/check-setup-Bfqp1ySB.js                     1.82 kB │ gzip:   0.95 kB
+dist/ui/assets/abnfDiagram-VCTEODGH-DisSJVU7.js            1.90 kB │ gzip:   0.91 kB
+dist/ui/assets/chunk-P2QGCYS3-A-kvuzBx.js                  1.94 kB │ gzip:   0.95 kB
+dist/ui/assets/chunk-F27PBJKO-DU0ODt4x.js                  1.97 kB │ gzip:   0.88 kB
+dist/ui/assets/pegDiagram-XKGWAZYB-CDHFXLaj.js             2.06 kB │ gzip:   0.96 kB
+dist/ui/assets/ebnfDiagram-PWID7BFC-SN42Qi-c.js            2.11 kB │ gzip:   0.91 kB
+dist/ui/assets/dist-v5Q1xZ2K.js                            2.17 kB │ gzip:   0.98 kB
+dist/ui/assets/path-COt_16Va.js                            2.27 kB │ gzip:   0.98 kB
+dist/ui/assets/FailedTestsList-BEfW7XIp.js                 2.33 kB │ gzip:   1.08 kB
+dist/ui/assets/title-DkMrmvNN.js                           2.49 kB │ gzip:   0.89 kB
+dist/ui/assets/json-qhed-kSA.js                            2.81 kB │ gzip:   0.77 kB
+dist/ui/assets/jsonc-CYpm1nAK.js                           3.10 kB │ gzip:   0.78 kB
+dist/ui/assets/arc-DMqT1Ve5.js                             3.47 kB │ gzip:   1.46 kB
+dist/ui/assets/viewport-Bge_hytm.js                        3.50 kB │ gzip:   1.30 kB
+dist/ui/assets/useChatScroll-CX7HvYlj.js                   3.75 kB │ gzip:   1.52 kB
+dist/ui/assets/screenshot-viewer-BlemqtvM.js               3.82 kB │ gzip:   1.52 kB
+dist/ui/assets/diagram-Z3DM3KII-CRQmQf9e.js                4.28 kB │ gzip:   1.85 kB
+dist/ui/assets/defaultLocale-BFoDCU3G.js                   4.63 kB │ gzip:   2.12 kB
+dist/ui/assets/chunk-TLUHSLCS-I6CgABam.js                  4.90 kB │ gzip:   2.07 kB
+dist/ui/assets/linear-C7gIVo4m.js                          5.51 kB │ gzip:   2.25 kB
+dist/ui/assets/chunk-PWAF6VOD-B1ovItNs.js                  5.83 kB │ gzip:   2.68 kB
+dist/ui/assets/diagram-UQ7AKVKN-DxLj6gZH.js                6.07 kB │ gzip:   2.57 kB
+dist/ui/assets/pieDiagram-E7YTZNPT-WW21nsZE.js             6.22 kB │ gzip:   2.60 kB
+dist/ui/assets/toml-CcmNWLt0.js                            6.41 kB │ gzip:   1.28 kB
+dist/ui/assets/mermaid-parser.core-BCLcRaDU.js             6.70 kB │ gzip:   1.85 kB
+dist/ui/assets/diagram-S7CK7UJ4-BYNBp_0c.js                8.19 kB │ gzip:   3.66 kB
+dist/ui/assets/kotlin-DhhofPvG.js                          8.77 kB │ gzip:   2.12 kB
+dist/ui/assets/VoiceDictate-Cw--14vq.js                    9.03 kB │ gzip:   3.42 kB
+dist/ui/assets/chunk-L3NEJ4N5-BRbQnzP6.js                  9.68 kB │ gzip:   2.93 kB
+dist/ui/assets/cynefinDiagram-5FMLGOSQ-CcAQ0Ha3.js         9.94 kB │ gzip:   3.51 kB
+dist/ui/assets/chunk-2E4U76K2-B6X5IbrT.js                 10.40 kB │ gzip:   4.16 kB
+dist/ui/assets/LoginView-TO55VX34.js                      10.47 kB │ gzip:   2.92 kB
+dist/ui/assets/yaml-rwi0_p6S.js                           10.49 kB │ gzip:   2.26 kB
+dist/ui/assets/stateDiagram-D77RDMKH-D6JFZThS.js          10.64 kB │ gzip:   3.74 kB
+dist/ui/assets/diagram-VSXAHHWV-D3ph8jq5.js               10.66 kB │ gzip:   4.13 kB
+dist/ui/assets/dagre-GXQ25YYZ-B37Tn9gc.js                 10.97 kB │ gzip:   4.15 kB
+dist/ui/assets/AgentModelModal-DUYzLubU.js                11.79 kB │ gzip:   3.31 kB
+dist/ui/assets/github-light-default-BXViO-2h.js           14.15 kB │ gzip:   3.02 kB
+dist/ui/assets/github-dark-default-DXG-b-1a.js            14.43 kB │ gzip:   3.12 kB
+dist/ui/assets/rust-Cfkwpbl8.js                           15.06 kB │ gzip:   2.71 kB
+dist/ui/assets/chunk-SVP7TREG-C_J0mjMf.js                 15.64 kB │ gzip:   4.35 kB
+dist/ui/assets/diagram-VX7I27RA-BWzp0ZqJ.js               15.75 kB │ gzip:   5.52 kB
+dist/ui/assets/ishikawaDiagram-5VMMS53U-Bs5xyEL5.js       17.31 kB │ gzip:   6.53 kB
+dist/ui/assets/DeploymentsView-Bi4lb8QA.js                18.31 kB │ gzip:   4.72 kB
+dist/ui/assets/DevView-Dww4QHl3.js                        18.92 kB │ gzip:   4.84 kB
+dist/ui/assets/groovy-CacY0gHj.js                         19.17 kB │ gzip:   3.59 kB
+dist/ui/assets/DiffView-xdd_CNsh.js                       19.43 kB │ gzip:   6.20 kB
+dist/ui/assets/DependencyChip-B_gRvJcU.js                 20.26 kB │ gzip:   7.82 kB
+dist/ui/assets/kanban-definition-UXKFOSKX-vBpWBuBb.js     20.31 kB │ gzip:   7.16 kB
+dist/ui/assets/SearchOverlay-DG7QU0zi.js                  20.36 kB │ gzip:   6.88 kB
+dist/ui/assets/sankeyDiagram-P5KCCOFB-7CTe4XIV.js         22.79 kB │ gzip:   8.25 kB
+dist/ui/assets/journeyDiagram-3NMN7TZE-CCdP4GVY.js        23.17 kB │ gzip:   8.16 kB
+dist/ui/assets/sql-BsFa4tDR.js                            23.42 kB │ gzip:   7.45 kB
+dist/ui/assets/mindmap-definition-YA3MSWOX-FUNIhiuo.js    23.44 kB │ gzip:   8.01 kB
+dist/ui/assets/ActivityIndicator-ChA8M2dl.js              23.59 kB │ gzip:   4.72 kB
+dist/ui/assets/graphlib-DS17s2tU.js                       23.90 kB │ gzip:   8.31 kB
+dist/ui/assets/wardleyDiagram-VM6X3IG4-6wVMPyPr.js        25.23 kB │ gzip:   6.55 kB
+dist/ui/assets/vue-BaXc62bQ.js                            25.67 kB │ gzip:   3.20 kB
+dist/ui/assets/rough.esm-By172zw-.js                      27.10 kB │ gzip:   8.85 kB
+dist/ui/assets/java-BXcb2rRD.js                           27.21 kB │ gzip:   4.25 kB
+dist/ui/assets/InputsView-Ca_-mkQx.js                     27.86 kB │ gzip:   7.78 kB
+dist/ui/assets/gitGraphDiagram-WWUBYQGX-B1rBYr6H.js       29.01 kB │ gzip:   8.57 kB
+dist/ui/assets/button-CVswidNR.js                         29.79 kB │ gzip:   9.68 kB
+dist/ui/assets/timeline-definition-24CTP7MA-CDlpuKuF.js   30.38 kB │ gzip:   9.98 kB
+dist/ui/assets/erDiagram-RLTQ6QDP-ovGojAZF.js             30.69 kB │ gzip:  10.57 kB
+dist/ui/assets/chunk-75Z2AOVW-D79DlMWl.js                 30.75 kB │ gzip:   8.51 kB
+dist/ui/assets/requirementDiagram-BXWQKSXE-BnR7Uxhi.js    31.00 kB │ gzip:   9.77 kB
+dist/ui/assets/quadrantDiagram-AXDQQJYC-rFPkWP_i.js       33.51 kB │ gzip:   9.74 kB
+dist/ui/assets/chunk-OSK3NFVY-dCUBC4fr.js                 36.46 kB │ gzip:   7.96 kB
+dist/ui/assets/dagre-PrKaheQc.js                          36.85 kB │ gzip:  13.22 kB
+dist/ui/assets/chunk-IMKFNOWR-DwiOq3lm.js                 37.64 kB │ gzip:  12.26 kB
+dist/ui/assets/StoriesView-df7IH7fn.js                    38.54 kB │ gzip:  10.44 kB
+dist/ui/assets/mermaid.core-DwNYn0BH.js                   41.09 kB │ gzip:  12.81 kB
+dist/ui/assets/vennDiagram-4TSXK5OY-CfU5FwFQ.js           41.16 kB │ gzip:  15.11 kB
+dist/ui/assets/blockDiagram-I7D4REHJ-Dl1FOUIV.js          41.44 kB │ gzip:  13.36 kB
+dist/ui/assets/shellscript-CLZ0U2zV.js                    41.47 kB │ gzip:   6.07 kB
+dist/ui/assets/ReleasesView-Cs8VF0VK.js                   41.68 kB │ gzip:  10.42 kB
+dist/ui/assets/xychartDiagram-S5SC5T6Z-Duj1ZXrf.js        44.14 kB │ gzip:  12.21 kB
+dist/ui/assets/src-B6xuSHsQ.js                            45.68 kB │ gzip:  16.00 kB
+dist/ui/assets/chunk-LNGE3PJU-p78rraeW.js                 46.38 kB │ gzip:  15.54 kB
+dist/ui/assets/go-rLFTqkRN.js                             46.81 kB │ gzip:   5.14 kB
+dist/ui/assets/chunk-TICWLB2K-CV-URnRh.js                 48.78 kB │ gzip:  15.75 kB
+dist/ui/assets/css-BsVw1vtW.js                            49.03 kB │ gzip:  11.90 kB
+dist/ui/assets/catppuccin-mocha-DjuaAJKi.js               50.84 kB │ gzip:   8.47 kB
+dist/ui/assets/catppuccin-latte-CtsyrtPq.js               50.84 kB │ gzip:   8.48 kB
+dist/ui/assets/chunk-GMAD6QVW-p4vyLpAl.js                 51.84 kB │ gzip:  16.69 kB
+dist/ui/assets/html-BY76lXLH.js                           57.24 kB │ gzip:  11.74 kB
+dist/ui/assets/dist-CMahQVbr.js                           57.62 kB │ gzip:  20.17 kB
+dist/ui/assets/ChecksView-6hPMBpZ8.js                     58.15 kB │ gzip:  13.75 kB
+dist/ui/assets/DashboardView-CRo8eIpm.js                  58.62 kB │ gzip:  12.03 kB
+dist/ui/assets/markdown-BYOwaDjH.js                       59.32 kB │ gzip:   5.66 kB
+dist/ui/assets/ContextView-qnhUEKSE.js                    59.53 kB │ gzip:  14.39 kB
+dist/ui/assets/chunk-SHT3W25Y-Bo48kZFF.js                 61.24 kB │ gzip:  19.84 kB
+dist/ui/assets/c4Diagram-7LVT6UL2-DiK8Eoj5.js             64.72 kB │ gzip:  18.52 kB
+dist/ui/assets/ganttDiagram-EL5Y4UJY-BahEIkOc.js          69.35 kB │ gzip:  22.74 kB
+dist/ui/assets/python-gzcpVVnB.js                         69.94 kB │ gzip:   9.09 kB
+dist/ui/assets/WorkView-D6ngMYI9.js                       73.45 kB │ gzip:  20.76 kB
+dist/ui/assets/cose-bilkent-JH36ORCC-Cju1UDLh.js          81.25 kB │ gzip:  21.55 kB
+dist/ui/assets/repo-CWQZ-3Y7.js                          104.76 kB │ gzip:  33.58 kB
+dist/ui/assets/chunk-4HAMMTFA-1HjSgIMP.js                104.85 kB │ gzip:  25.62 kB
+dist/ui/assets/vendor-vue-CQ0VGVRu.js                    109.14 kB │ gzip:  42.37 kB
+dist/ui/assets/swimlanes-42K2YHIH-BaiFvjtv.js            111.16 kB │ gzip:  38.02 kB
+dist/ui/assets/dist-DoRUjfaQ.js                          111.88 kB │ gzip:  35.79 kB
+dist/ui/assets/vendor-ui-DH65IucY.js                     113.05 kB │ gzip:  37.12 kB
+dist/ui/assets/sequenceDiagram-WJ2MYXX4-D1pw-WPI.js      115.75 kB │ gzip:  30.58 kB
+dist/ui/assets/AgentsView-Ih65aM-m.js                    123.32 kB │ gzip:  28.26 kB
+dist/ui/assets/architectureDiagram-5GKGNRK7-uE2h9tKK.js  148.90 kB │ gzip:  41.13 kB
+dist/ui/assets/SettingsView-Do7gH6mq.js                  171.38 kB │ gzip:  37.26 kB
+dist/ui/assets/javascript-BgS3c2Ky.js                    174.82 kB │ gzip:  16.62 kB
+dist/ui/assets/tsx-udAQXfEw.js                           175.52 kB │ gzip:  16.62 kB
+dist/ui/assets/jsx-Bz0zcwM4.js                           177.78 kB │ gzip:  16.71 kB
+dist/ui/assets/typescript-bsJCZSQ-.js                    181.07 kB │ gzip:  16.23 kB
+dist/ui/assets/chunk-DU6HZSFF-D9j8Gn7w.js                235.49 kB │ gzip:  38.21 kB
+dist/ui/assets/katex-DolUETbr.js                         258.68 kB │ gzip:  77.44 kB
+dist/ui/assets/cytoscape.esm-FBntH-9t.js                 434.90 kB │ gzip: 137.82 kB
+dist/ui/assets/index-DDwdrJuW.js                         458.41 kB │ gzip: 107.46 kB
+dist/ui/assets/chunk-FOHPRMQF-l2z4K2jD.js                662.10 kB │ gzip: 143.15 kB
+
+✓ built in 2.29s
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+copy-assets: copied 1 JSON data file(s) into dist/
+copy-assets: dist/.build-info.json → 44ac9cc7c60a…
+$ node scripts/run-tests.mjs --changed main
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/repo/src/ui-app[39m
+
+No test files found, exiting with code 0
+
+[2minclude: [22m[33mtests/**/*.test.ts[39m
+[2mexclude:  [22m[33m**/node_modules/**[2m, [22m**/.git/**[2m, [22m**/boot-timing.test.ts[39m
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/repo/src/ui-app[39m
+
+No test files found, exiting with code 0
+
+[2mfilter: [22m[33mboot-timing.test.ts[39m
+[2minclude: [22m[33mtests/**/*.test.ts[39m
+[2mexclude:  [22m[33m**/node_modules/**[2m, [22m**/.git/**[39m
+
+[validate] gate exit 0
+
+[remote validation PASSED in 53s on bee]
+  ✔ remote gate passed — running local guards only
+
+
+  ◆ staleness
+  · kind: staleness
+  ✔ staleness
+
+  ◆ lockfile-sync
+  · kind: lockfile-sync
+  ⏭ lockfile-sync — skipped — no changed path matches package.json, bun.lock
+
+  ◆ zero-runtime-deps
+  · kind: zero-runtime-deps
+  ⏭ zero-runtime-deps — skipped — no changed path matches package.json
+
+  ◆ check-fmt:check
+  · kind: format
+  ✔ check-fmt:check (7.4s)
+
+  ◆ check-lint
+  · kind: lint
+  ✔ check-lint (1.3s)
+
+  ◆ build
+  · kind: build
+$ bun scripts/build.mjs
+build: up to date (src/ unchanged) — skipping rebuild. Use --force or REPOOS_FORCE_BUILD=1 to rebuild anyway.
+  ✔ build
+
+  ◆ css-layers
+  · kind: css-layers
+  ✔ css-layers
+
+  ◆ theme-contrast
+  · kind: theme-contrast
+  ✔ theme-contrast
+
+  ◆ hardcoded-colors
+  · kind: hardcoded-colors
+  ✔ hardcoded-colors — scanned 136 file(s)
+
+  ◆ rendered-contrast
+  · bun run contrast:audit
+$ bun scripts/ui-contrast-audit.mjs
+  · contrast audit runtime: Bun 1.4.2
+  · 16 theme scope(s) × 14 screen state(s) · 12467 visible text run(s) examined
+  · 256 text run(s) exempt (contrastExempts / data-contrast-ok)
+  · 64 disabled-component run(s) + 0 invisible run(s) skipped (WCAG-exempt)
+  · 6557 text run(s) judged against a gradient's worst stop
+  · 14 text run(s) unchecked: background-clip: text (gradient logo) (14)
+  ✔ no text below the WCAG floor in any theme scope
+  ✔ rendered contrast audit passed (35.6s)
+  ✔ rendered-contrast (35.8s) — $ bun scripts/ui-contrast-audit.mjs
+  · contrast audit runtime: Bun 1.4.2
+  · 16 theme scope(s) × 14 screen state(s) · 12467 visible text run(s) examined
+  · 256 text run(s) exempt (contrastExempts / data-contrast-ok)
+  · 64 disabled-component run(s) + 0 invisible run(s) skipped (WCAG-exempt)
+  · 6557 text run(s) judged against a gradient's worst stop
+  · 14 text run(s) unchecked: background-clip: text (gradient logo) (14)
+  ✔ no text below the WCAG floor in any theme scope
+  ✔ rendered contrast audit passed (35.6s)
+
+  ◆ bare-require
+  · kind: bare-require
+  ✔ bare-require — scanned [check] bareRequireDirs
+
+  ◆ task-assets
+  · kind: task-assets
+  ⏭ task-assets — skipped — no changed path matches work/**, inputs/**
+
+  ◆ tests
+  · kind: tests
+  ⏭ tests — skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)
+
+  ◆ ui-smoke
+  · kind: ui-smoke
+$ bun scripts/ui-smoke.mjs
+  · UI smoke runtime: Bun 1.4.2
+  ✔ UI smoke test passed
+  ✔ ui-smoke (11.2s) — ran package.json smoke script
+
+  ◆ user-docs-build
+  · bun install --frozen-lockfile && bun run build (in user-docs)
+bun install v1.4.2 (50a8a8387)
+
++ esbuild@0.25.12
++ vitepress@1.6.4
+
+128 packages installed [256.00ms]
+$ vitepress build
+
+  vitepress v1.6.4
+
+- building client + server bundles...
+[32m✓[0m building client + server bundles...
+- rendering pages...
+[32m✓[0m rendering pages...
+build complete in 7.99s.
+  ✔ user-docs-build (9.6s) — bun install v1.4.2 (50a8a8387)
+
++ esbuild@0.25.12
++ vitepress@1.6.4
+
+128 packages installed [256.00ms]
+$ vitepress build
+
+  vitepress v1.6.4
+
+- building client + server bundles...
+[32m✓[0m building client + server bundles...
+- rendering pages...
+[32m✓[0m rendering pages...
+build complete in 7.99s.
+
+  ◆ landing-build
+  · bun install --frozen-lockfile && bun run build (in landing)
+  ⏭ landing-build — skipped — no changed path matches landing/**
+
+  ◆ telegram-manager-build
+  · bun install --frozen-lockfile && bun run build (in telegram-manager)
+  ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/**
+
+  ◆ telegram-manager-test
+  · bun run test (in telegram-manager)
+  ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/**
+
+  ◆ macos-hub-icon-transparency
+  · bash macos/scripts/verify-dock-icon-transparency.sh
+  ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh
+
+  ── Results ──
+  ✔ staleness
+  ⏭ lockfile-sync  — skipped — no changed path matches package.json, bun.lock
+  ⏭ zero-runtime-deps  — skipped — no changed path matches package.json
+  ✔ check-fmt:check
+  ✔ check-lint
+  ✔ build
+  ✔ css-layers
+  ✔ theme-contrast
+  ✔ hardcoded-colors  — scanned 136 file(s)
+  ✔ rendered-contrast  — $ bun scripts/ui-contrast-audit.mjs
+  · contrast audit runtime: Bun 1.4.2
+  · 16 theme scope(s) × 14 screen state(s) · 12467 visible text run(s) examined
+  · 256 text run(s) exempt (contrastExempts / data-contrast-ok)
+  · 64 disabled-component run(s) + 0 invisible run(s) skipped (WCAG-exempt)
+  · 6557 text run(s) judged against a gradient's worst stop
+  · 14 text run(s) unchecked: background-clip: text (gradient logo) (14)
+  ✔ no text below the WCAG floor in any theme scope
+  ✔ rendered contrast audit passed (35.6s)
+  ✔ bare-require  — scanned [check] bareRequireDirs
+  ⏭ task-assets  — skipped — no changed path matches work/**, inputs/**
+  ⏭ tests  — skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)
+  ✔ ui-smoke  — ran package.json smoke script
+  ✔ user-docs-build  — bun install v1.4.2 (50a8a8387)
+
++ esbuild@0.25.12
++ vitepress@1.6.4
+
+128 packages installed [256.00ms]
+$ vitepress build
+
+  vitepress v1.6.4
+
+- building client + server bundles...
+[32m✓[0m building client + server bundles...
+- rendering pages...
+[32m✓[0m rendering pages...
+build complete in 7.99s.
+  ⏭ landing-build  — skipped — no changed path matches landing/**
+  ⏭ telegram-manager-build  — skipped — no changed path matches telegram-manager/**
+  ⏭ telegram-manager-test  — skipped — no changed path matches telegram-manager/**
+  ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh
+
+  All checks passed.
+
+
+  ── Failed steps ──
+  ✔ none

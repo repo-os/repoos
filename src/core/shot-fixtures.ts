@@ -51,6 +51,13 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "drawer:startWorkPending",
   // #0822 — Settings activity-animation preview seeded to bird quick trail.
   "settings:birdQuickTrail",
+  // #0833 — Settings activity-animation preview seeded to each multicolor
+  // artwork style, so the four new choices can be captured from the real
+  // Settings select.
+  "settings:rgbKeystorm",
+  "settings:wheelieCourier",
+  "settings:booSwoop",
+  "settings:pumpkinSpell",
   // #0821 — a task with a running agent and a message queued for when the turn
   // ends, so a capture can show the composer's "Queued — will be read when the
   // current turn ends" notice (and a still-usable send control).
