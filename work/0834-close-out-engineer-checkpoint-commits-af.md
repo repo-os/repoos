@@ -114,3 +114,4 @@ Never widen what counts as benign without a test; fail closed. Look at src/core/
 - 2026-10-18T20:01:17Z · handoff failed · check failed after 2 automatic retries · repoos check failed: rendered-contrast — gruvbox-light (1):
 - 2026-10-18T20:11:14Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-18T20:11:15Z · message_delivered: 1 message(s)
+- 2026-10-18T20:11:15Z · CTO action: restart-stalled-agent (fresh) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/review-override.test.ts > review completion > reports the reviewer selected for the turn, not the global default on mini — fix it in the feature branch and re-run the gate
