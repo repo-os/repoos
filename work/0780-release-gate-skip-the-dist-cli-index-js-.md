@@ -2,7 +2,7 @@
 id: "0780"
 title: "Release gate: skip the dist/cli/index.js check for projects without a bin target"
 type: bug
-status: active
+status: review
 priority: p0
 area: core
 merged_commit: 6844edf20bd8c9a9f481477423b6549f6bbe3981
@@ -69,4 +69,4 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 - 2026-10-18T18:29:59Z · body
 - 2026-10-18T18:38:03Z · message_delivered: 1 message(s)
 - 2026-10-18T18:39:54Z · body
-- 2026-10-18T18:41:31Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-18T18:41:31Z · status active→review
