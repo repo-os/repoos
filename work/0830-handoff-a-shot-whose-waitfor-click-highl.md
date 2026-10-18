@@ -11,7 +11,7 @@ branch: feat/handoff-a-shot-whose-waitfor-click-highl
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:25Z"
-updated_at: "2026-10-18T08:38:09Z"
+updated_at: "2026-10-18T08:45:10Z"
 ---
 ## Problem
 When a declared shot's `waitFor`, `click` or `highlight` target is missing, the capture only records a note ("capture went ahead") and the handoff still passes. A review round then discovers blank or wrong captures, and after 3 rounds the task parks with `review-rounds-exhausted` (#0822, #0829). The step vocabulary also has no `hover`, so tooltip shots (e.g. the integration median tooltip) cannot be declared.
