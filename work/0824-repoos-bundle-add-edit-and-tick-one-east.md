@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p3
 area: core
-assigned_to: ""
+depends_on: ["0823"]
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T02:48:55Z"
-updated_at: "2026-10-18T02:48:55Z"
+updated_at: "2026-10-18T02:49:29Z"
 ---
 ## Problem
 Adding or changing an item in an easter-eggs bundle means editing the body. `repoos update --body` replaces the whole body, and full rewrites have deleted other items' specs (the #0819 bird spec had to be recovered from git history).
@@ -32,3 +33,4 @@ Depends on the layout in the "Easter-eggs bundle layout" task; implement against
 ## Activity
 
 - 2026-10-18T02:48:55Z · created · njachowski@gmail.com
+- 2026-10-18T02:49:29Z · depends_on
