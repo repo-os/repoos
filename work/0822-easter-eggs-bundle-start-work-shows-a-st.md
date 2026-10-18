@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T03:48:12Z"
+updated_at: "2026-10-18T03:49:45Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -185,3 +185,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T03:47:54Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
 - 2026-10-18T03:48:12Z · note: waitFor .activity-animation-preview .ai-style-bird-quick-trail: waitFor: Timeout 5000ms exceeded. on /settings?tab=general
 - 2026-10-18T03:48:12Z · note: highlight .activity-animation-preview .ai-style-bird-quick-trail matched nothing on /settings?tab=general
+- 2026-10-18T03:49:45Z · note: review pass 3: needs some work
