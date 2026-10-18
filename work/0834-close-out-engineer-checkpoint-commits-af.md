@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/close-out-engineer-checkpoint-commits-af
 model_override: deepinfra/XiaomiMiMo/MiMo-V2.6-Flash
 created_at: "2026-10-18T09:09:05Z"
-updated_at: "2026-10-18T14:16:50Z"
+updated_at: "2026-10-18T14:16:52Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/review-override.test.ts > review completion > reports the reviewer selected for the turn, not the global default on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 90dd570de19d07048a020e9fc550ae7b969589fb
 handoff_signal_retry_count: 1
