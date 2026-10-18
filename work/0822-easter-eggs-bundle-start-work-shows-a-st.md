@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T02:48:06Z"
+updated_at: "2026-10-18T02:48:14Z"
 ---
 ## Items
 
@@ -82,3 +84,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T02:38:56Z · title
 - 2026-10-18T02:41:29Z · status inbox→ready
 - 2026-10-18T02:48:06Z · body: Items (added); E1 · Start work pending state (added); E2 · Bird quick trail animation (added); Problem (removed); Desired UX (removed); Acceptance criteria (removed); Notes for AI (removed); Bird quick trail animation (second item) (removed)
+- 2026-10-18T02:48:14Z · cli_override, model_override
