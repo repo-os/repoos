@@ -17,10 +17,7 @@ import {
 } from "./attachment-upload-state.js";
 import { parseTaskAttachmentReferences } from "./attachment-reference.js";
 import { localStorageProvider } from "./storage/local.js";
-import {
-  DEFAULT_STORAGE_PROVIDER_ID,
-  resolveStorageProvider,
-} from "./storage/index.js";
+import { DEFAULT_STORAGE_PROVIDER_ID, resolveStorageProvider } from "./storage/index.js";
 import type { StorageProvider } from "./storage/types.js";
 import type { RepoOSConfig } from "./types.js";
 
