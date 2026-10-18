@@ -3,6 +3,9 @@ id: "0819"
 title: "Easter eggs bundle: shot warnings, viewer status, and timer tooltip"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — The five bundle items are implemented with solid unit/route coverage, but handoff UI evidence is stale (tree `96de36dea` vs reviewed `346573abc`) and only three of eight declared theme shots landed; timer tooltip and viewer dark theme are not visually verified."
 priority: p3
 area: web
 assigned_to: ai
@@ -297,3 +300,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T02:02:30Z · body
 - 2026-10-18T02:03:06Z · status active→review
 - 2026-10-18T02:04:14Z · note: review pass 9: needs some work
+- 2026-10-18T02:04:14Z · needs_input
