@@ -291,6 +291,7 @@ import {
   installRegistry,
   getSystem,
   getSystemLogs,
+  getResourceQueues,
   getTunnelStatus,
   getChat,
   sendChatMessage,
@@ -2946,6 +2947,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/stories\/([^/]+)\/pm\/interrupt$/, pmStoryInterrupt);
   router.register("GET", "/api/system", getSystem);
   router.register("GET", "/api/system/logs", getSystemLogs);
+  router.register("GET", "/api/resource-queues", getResourceQueues);
   router.register("GET", "/api/support/bundle", getSupportBundlePreview);
   router.register("POST", "/api/support/bundle", createSupportBundle);
   router.register("POST", "/api/support/bundle/open", revealSupportBundle);

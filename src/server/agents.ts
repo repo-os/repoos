@@ -43,6 +43,8 @@ import {
   defaultMaxConcurrentAgents,
   loadConfig,
 } from "../core/config.js";
+import { pressureReason } from "../core/pressure-guard.js";
+import { clearQueueMarker, writeQueueMarker } from "../core/local-queue-marker.js";
 import { isProviderFailureReason } from "../core/attention.js";
 import {
   creditIdleMs,
@@ -110,7 +112,13 @@ export type AgentEvent =
       at: string;
     }
   /** A start/send/chat was accepted but held for a free maxConcurrentAgents slot. */
-  | { type: "agent.queued"; id: string; at: string }
+  | {
+      type: "agent.queued";
+      id: string;
+      at: string;
+      reason?: "pressure" | "slot";
+      detail?: string;
+    }
   /** A queued id left the queue — about to spawn (an agent.running follows immediately). */
   | { type: "agent.dequeued"; id: string; at: string }
   | {
@@ -4991,6 +4999,7 @@ export class AgentRunner {
   private readonly maxConcurrentAgents: number;
   /** Ids (taskId or chat sessionId) with a queued start/send waiting for a free slot, mapped to when they were queued. */
   private readonly queuedIds = new Map<string, string>();
+  private readonly queuedMeta = new Map<string, { reason: "pressure" | "slot"; detail: string }>();
   /** FIFO of deferred spawns, drained as running agents exit (see cleanup()). */
   private readonly startQueue: (() => void)[] = [];
   /** Queued messages for tasks whose agent is currently busy. Mapped by taskId to list of messages. */
@@ -6371,27 +6380,80 @@ export class AgentRunner {
       const worktreeRefusal = this.otherTaskLiveEngineerInWorkdir(task.id, cwd);
       if (worktreeRefusal) return { ok: false, reason: worktreeRefusal };
     }
+    const pressure = pressureReason(this.config);
+    if (pressure) {
+      this.queuedIds.set(id, now());
+      this.queuedMeta.set(id, { reason: "pressure", detail: pressure });
+      this.writeAgentPressureMarker(id, pressure);
+      this.startQueue.push(() => {
+        this.finishAgentQueued(id);
+        this.spawnOrQueue(id, cmd, args, cwd, task, branch, opts);
+      });
+      this.logger?.agent(id, "info", pressure);
+      this.emit({
+        type: "agent.queued",
+        id,
+        at: now(),
+        reason: "pressure",
+        detail: pressure,
+      });
+      this.schedulePressureRetry();
+      return { ok: true, queued: true };
+    }
     if (this.entries.size < this.maxConcurrentAgents) {
       return this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
     }
+    const slotDetail = `${this.entries.size}/${this.maxConcurrentAgents} agent processes already running`;
     this.queuedIds.set(id, now());
+    this.queuedMeta.set(id, {
+      reason: "slot",
+      detail: `Waiting for a free agent slot (${slotDetail})`,
+    });
     this.startQueue.push(() => {
-      this.queuedIds.delete(id);
-      this.emit({ type: "agent.dequeued", id, at: now() });
+      this.finishAgentQueued(id);
       this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
     });
-    this.logger?.agent(
+    this.logger?.agent(id, "info", `Queued — ${slotDetail}.`);
+    this.emit({
+      type: "agent.queued",
       id,
-      "info",
-      `Queued — ${this.entries.size}/${this.maxConcurrentAgents} agent processes already running.`,
-    );
-    this.emit({ type: "agent.queued", id, at: now() });
+      at: now(),
+      reason: "slot",
+      detail: this.queuedMeta.get(id)!.detail,
+    });
     return { ok: true, queued: true };
   }
 
+  private finishAgentQueued(id: string): void {
+    this.queuedIds.delete(id);
+    this.queuedMeta.delete(id);
+    this.clearAgentPressureMarker(id);
+    this.emit({ type: "agent.dequeued", id, at: now() });
+  }
+
+  private writeAgentPressureMarker(taskId: string, message: string): void {
+    if (!/^\d+$/.test(taskId)) return;
+    writeQueueMarker(this.config.root, this.cacheDir, {
+      taskId,
+      kind: "pressure",
+      ahead: 0,
+      position: 0,
+      message,
+      since: new Date().toISOString(),
+    });
+  }
+
+  private clearAgentPressureMarker(taskId: string): void {
+    if (!/^\d+$/.test(taskId)) return;
+    clearQueueMarker(this.config.root, this.cacheDir, taskId, "pressure");
+  }
+
   /** Tasks/chats currently waiting for a free maxConcurrentAgents slot. */
-  queued(): { id: string; queuedAt: string }[] {
-    return Array.from(this.queuedIds.entries()).map(([id, queuedAt]) => ({ id, queuedAt }));
+  queued(): { id: string; queuedAt: string; reason?: "pressure" | "slot"; detail?: string }[] {
+    return Array.from(this.queuedIds.entries()).map(([id, queuedAt]) => {
+      const meta = this.queuedMeta.get(id);
+      return { id, queuedAt, reason: meta?.reason, detail: meta?.detail };
+    });
   }
 
   /**
@@ -6515,9 +6577,26 @@ export class AgentRunner {
     }
   }
 
+  private pressureRetryTimer?: ReturnType<typeof setInterval>;
+
+  /** Re-try queued starts when pressure guard clears (#0836). */
+  private schedulePressureRetry(): void {
+    if (this.pressureRetryTimer) return;
+    this.pressureRetryTimer = setInterval(() => {
+      if (pressureReason(this.config)) return;
+      this.drainQueue();
+      if (this.startQueue.length === 0 && this.pressureRetryTimer) {
+        clearInterval(this.pressureRetryTimer);
+        this.pressureRetryTimer = undefined;
+      }
+    }, 3000);
+    this.pressureRetryTimer.unref?.();
+  }
+
   /** Start the next queued spawn once a slot is free (called from cleanup() on every exit). */
   private drainQueue(): void {
     while (this.startQueue.length > 0 && this.entries.size < this.maxConcurrentAgents) {
+      if (pressureReason(this.config)) break;
       const next = this.startQueue.shift();
       next?.();
     }

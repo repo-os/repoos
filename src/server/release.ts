@@ -772,7 +772,7 @@ export async function cutNewRelease(
     // The rebuild above already refreshed dist/ (and its build marker), and
     // `bun run build` is staleness-aware now (#0377), so check's own "Full
     // build" step skips itself — no private skip env flag needed.
-    ...checkEnvAfterRemoteGate(remoteGateOutcome),
+    ...checkEnvAfterRemoteGate(remoteGateOutcome, config),
     // Identify the caller to the check-run history (#0564): a release-phase
     // run, no task attached.
     REPOOS_CHECK_PHASE: "release",
