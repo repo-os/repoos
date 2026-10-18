@@ -2508,6 +2508,13 @@
   line-height: 1.4;
   color: var(--txt-dim);
 }
+/* #0832 — long stored review summaries stay readable on the card without repeating the verdict chip. */
+.tc-needs-detail--clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
 .tc-review-warn {
   color: var(--amber);
 }

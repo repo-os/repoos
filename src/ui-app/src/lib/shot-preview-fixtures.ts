@@ -418,6 +418,37 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           "Decision model (91%): split this into an AI task and a human task — it needs a real account, credential, or API key.",
       });
       break;
+    case "card:reviewRoundsExhausted": {
+      // #0832 — exhausted review rounds: card shows stripped/clamped summary only.
+      const longWhy =
+        "Three UI regressions remain in the task drawer and the contrast audit still fails on the settings page; also re-check the handoff shots before the next review round.";
+      const verdictLine = `\`needs some work\` — ${longWhy}`;
+      ensureFixtureTask(repo, "review", {
+        needsInput: true,
+        needsInputReason: "review-rounds-exhausted",
+        needsInputDetail: verdictLine,
+        extra: { review_rounds: 2 },
+      });
+      repo.reviews = {
+        ...repo.reviews,
+        [SHOT_PREVIEW_FIXTURE_TASK_ID]: {
+          running: false,
+          enabled: true,
+          lines: [],
+          report: {
+            id: SHOT_PREVIEW_FIXTURE_TASK_ID,
+            at: new Date().toISOString(),
+            agent: "reviewer",
+            cli: "opencode",
+            model: "default",
+            branch: "feat/shot-preview-fixture",
+            state: "ok",
+            markdown: `## Verdict\n${verdictLine}\n\n## Bugs\n- Contrast failure on settings.\n`,
+          },
+        },
+      };
+      break;
+    }
     case "board:activeCoding":
       ensureFixtureTask(repo, "active");
       if (!repo.runningIds.includes(SHOT_PREVIEW_FIXTURE_TASK_ID)) {

@@ -1,5 +1,6 @@
 import type { Task } from "../../../core/types.js";
 import { MAX_AUTO_REVIEW_ROUNDS, needsInputSuppressedOnReview } from "../../../core/needs-input.js";
+import { stripReviewVerdictPrefix } from "../../../core/review-verdict.js";
 
 /**
  * Copy and labels for `needs_input` on board cards and the task drawer (#0511).
@@ -158,6 +159,25 @@ export function needsInputDetailVisible(
 ): boolean {
   if (!detail?.trim() || reason === "dev-error") return false;
   return detail.trim() !== needsInputBannerText(reason, hasQuestions).trim();
+}
+
+/** Card and drawer detail under the needs-input banner (#0832). */
+export function formatNeedsInputDetailForDisplay(
+  reason: string | undefined,
+  detail: string | undefined,
+  hasQuestions = false,
+): string | null {
+  if (!needsInputDetailVisible(reason, detail, hasQuestions)) return null;
+  const raw = detail!.trim();
+  if (reason === "review-rounds-exhausted") {
+    const withoutVerdict = stripReviewVerdictPrefix(raw);
+    return withoutVerdict || null;
+  }
+  return raw;
+}
+
+export function needsInputDetailUsesLineClamp(reason: string | undefined): boolean {
+  return reason === "review-rounds-exhausted";
 }
 
 export function needsInputSuggestionText(

@@ -3,7 +3,9 @@ import { MAX_AUTO_REVIEW_ROUNDS } from "../../core/needs-input.js";
 import {
   needsInputPrimaryAction,
   needsInputBannerText,
+  formatNeedsInputDetailForDisplay,
   needsInputDetailVisible,
+  needsInputDetailUsesLineClamp,
   needsInputStatusLabel,
   needsInputSuggestionText,
 } from "../src/lib/needs-input-ui";
@@ -118,6 +120,19 @@ describe("needsInputPrimaryAction (#0511)", () => {
     expect(
       needsInputDetailVisible("review-rounds-exhausted", "`needs some work` — one defect remains."),
     ).toBe(true);
+  });
+
+  it("strips the verdict label from review-rounds-exhausted detail (#0832)", () => {
+    const long =
+      "`needs some work` — " + "Regression in the drawer and missing contrast coverage. ".repeat(8);
+    expect(formatNeedsInputDetailForDisplay("review-rounds-exhausted", long)).not.toContain(
+      "needs some work",
+    );
+    expect(formatNeedsInputDetailForDisplay("review-rounds-exhausted", long)).toContain(
+      "Regression in the drawer",
+    );
+    expect(needsInputDetailUsesLineClamp("review-rounds-exhausted")).toBe(true);
+    expect(needsInputDetailUsesLineClamp("review-failed")).toBe(false);
   });
 
   it("names review-rounds-exhausted and offers Send to engineer (not Review again) on a review task", () => {
