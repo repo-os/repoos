@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-18T11:11:55.921Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
@@ -13,7 +11,9 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T11:11:53Z"
+updated_at: "2026-10-18T11:25:57Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-18T11:11:55.921Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 2
 last_close_out_gate_ms: 438673
 last_close_out_gate_at: "2026-10-18T08:57:38.574Z"
@@ -113,4 +113,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T10:24:36Z · note: review pass 2: needs some work
 - 2026-10-18T10:49:21Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-18T11:11:53Z · message_delivered: 1 message(s)
-
+- 2026-10-18T11:25:57Z · body
