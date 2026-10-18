@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T07:08:15Z"
+updated_at: "2026-10-18T07:09:26Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -91,30 +91,36 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 ```json
 [
 {
-"label": "Minimised integration pill median tooltip centered",
-"target": "default",
-"route": "/",
-"highlight": "[data-test-id=integration-timer]",
-"steps": [
-{
-"waitMs": 500
-}
-],
-"state": "integration:median15"
+  "label": "Minimised pill median tooltip centered, no native title",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=integration-timer-tip]",
+  "steps": [
+    {
+      "click": "[data-test-id=integration-timer]"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "state": "integration:median15"
 },
 {
-"label": "Debug logs expanded long main-advanced row",
-"target": "default",
-"route": "/work?task=0820&tab=debug",
-"highlight": ".debug-event-message",
-"steps": [
-{
-"click": ".debug-event-expandable"
-},
-{
-"waitMs": 300
-}
-]
+  "label": "Debug logs expanded main-advanced row shows full message",
+  "target": "default",
+  "route": "/work?task=0820&tab=debug",
+  "highlight": ".debug-event-message",
+  "steps": [
+    {
+      "click": ".debug-event-expandable"
+    },
+    {
+      "waitFor": ".debug-event-message"
+    },
+    {
+      "waitMs": 200
+    }
+  ]
 }
 ]
 ```
@@ -146,3 +152,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T07:07:28Z · note: highlight .debug-event-message matched nothing on /work?task=0820&tab=debug
 - 2026-10-18T07:08:15Z · note: review pass 1: needs some work
 - 2026-10-18T07:08:15Z · status review→active
+- 2026-10-18T07:09:26Z · body
