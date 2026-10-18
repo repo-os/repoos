@@ -97,13 +97,13 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
 {
-  "waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
+"waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
 },
 {
-  "click": ".ibar-strip [data-test-id=\"integration-timer\"]"
+"click": ".ibar-strip [data-test-id=\"integration-timer\"]"
 },
 {
-  "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+"waitFor": "[data-test-id=\"integration-timer-tip\"]"
 }
 ],
 "state": "integration:median15",
@@ -116,13 +116,13 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
 {
-  "waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
+"waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
 },
 {
-  "click": ".ibar-strip [data-test-id=\"integration-timer\"]"
+"click": ".ibar-strip [data-test-id=\"integration-timer\"]"
 },
 {
-  "waitFor": "[data-test-id=\"integration-timer-tip\"]"
+"waitFor": "[data-test-id=\"integration-timer-tip\"]"
 }
 ],
 "state": "integration:median15",
@@ -135,13 +135,13 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "highlight": ".debug-event-message",
 "steps": [
 {
-  "waitFor": ".debug-event-expandable"
+"waitFor": ".debug-event-expandable"
 },
 {
-  "click": ".debug-event-expandable"
+"click": ".debug-event-expandable"
 },
 {
-  "waitFor": ".debug-event-message"
+"waitFor": ".debug-event-message"
 }
 ],
 "state": "drawer:debugLogs",
@@ -154,13 +154,13 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 "highlight": ".debug-event-message",
 "steps": [
 {
-  "waitFor": ".debug-event-expandable"
+"waitFor": ".debug-event-expandable"
 },
 {
-  "click": ".debug-event-expandable"
+"click": ".debug-event-expandable"
 },
 {
-  "waitFor": ".debug-event-message"
+"waitFor": ".debug-event-message"
 }
 ],
 "state": "drawer:debugLogs",
@@ -229,3 +229,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T08:14:16Z · body
 - 2026-10-18T08:22:35Z · status active→review
 - 2026-10-18T08:23:19Z · note: waitFor .ibar-strip [data-test-id="integration-timer"]: waitFor: Timeout 5000ms exceeded. on /
+- 2026-10-18T08:23:19Z · note: click .ibar-strip [data-test-id="integration-timer"]: click: Timeout 5000ms exceeded. on /
