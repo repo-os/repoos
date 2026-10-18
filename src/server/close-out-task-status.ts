@@ -34,8 +34,7 @@ export function preserveClosingTaskReviewStatusOnMain(
   getTask?: (id: string) => Task | null,
 ): void {
   const workDir = config.workDir ?? "work";
-  const absPath =
-    getTask?.(taskId)?.absPath ?? findTaskFileById(config.root, workDir, taskId);
+  const absPath = getTask?.(taskId)?.absPath ?? findTaskFileById(config.root, workDir, taskId);
   if (!absPath || !existsSync(absPath)) return;
 
   const rel = relative(config.root, absPath).split("\\").join("/");
