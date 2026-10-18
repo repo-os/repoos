@@ -11,7 +11,7 @@ branch: feat/close-out-a-failed-auto-resolve-must-not
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:48Z"
-updated_at: "2026-10-18T18:51:24Z"
+updated_at: "2026-10-18T18:51:59Z"
 last_close_out_gate_ms: 83050
 last_close_out_gate_at: "2026-10-18T18:44:28.492Z"
 review_passes: 1
@@ -48,3 +48,4 @@ Related: #0835 (NUL byte made task files binary, a likely trigger), #0754 (task-
 - 2026-10-18T18:44:51Z · note: handoff requested (ui-review)
 - 2026-10-18T18:51:23Z · status active→review
 - 2026-10-18T18:51:24Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-18T18:51:59Z · note: review pass 2: good to go
