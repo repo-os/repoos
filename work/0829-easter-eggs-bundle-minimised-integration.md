@@ -2,7 +2,7 @@
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
-status: review
+status: inbox
 priority: p3
 area: web
 assigned_to: ai
