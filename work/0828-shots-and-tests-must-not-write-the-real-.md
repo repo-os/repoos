@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-18T06:33:43Z"
-review_passes: 1
 id: "0828"
 title: Shots and tests must not write the real repoos.toml (isolate config in preview captures)
 type: bug
@@ -13,6 +11,8 @@ branch: feat/shots-and-tests-must-not-write-the-real-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T05:51:23Z"
+updated_at: "2026-10-18T07:30:57Z"
+review_passes: 1
 ---
 ## Problem
 Selecting a setting in a preview or a shot capture (Settings autosaves "changes save automatically") writes the preview root's real `repoos.toml`, which for a task preview is the task worktree. That dirties the worktree and can leak into the branch (see #0822's repoos.toml conflict). Separately, the `settings:birdQuickTrail` shot fixture does not take effect: `/settings?tab=general&section=activity-animation&shotState=settings:birdQuickTrail` still shows Puppy tracks, so the E2 shot could not be captured without clicking the dropdown, and clicking would trigger the real save.
@@ -52,4 +52,4 @@ Start from App.vue applyShotFixturesFromLocation and src/ui-app/src/lib/shot-pre
 - 2026-10-18T06:25:07Z · body
 - 2026-10-18T06:32:51Z · status active→review
 - 2026-10-18T06:33:43Z · note: review pass 1: good to go
-
+- 2026-10-18T07:30:57Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
