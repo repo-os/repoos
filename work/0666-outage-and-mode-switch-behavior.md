@@ -13,7 +13,7 @@ branch: feat/outage-and-mode-switch-behavior
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:35Z"
-updated_at: "2026-10-18T17:07:05Z"
+updated_at: "2026-10-18T17:13:53Z"
 ---
 ## Problem
 When Neon (cloud storage provider) is unavailable — network outage, provider down, or mode switched off — attachment reads and writes must degrade gracefully. The current behavior isn't defined: it could lose the task record (Markdown reference broken), delete the local original, or claim an upload succeeded when it didn't. This slice ensures outage behavior is explicit: the local original stays intact, the Markdown reference remains resolvable, and upload state shows "pending" rather than false success or lost data.
@@ -45,10 +45,10 @@ When Neon (cloud storage provider) is unavailable — network outage, provider d
 ```json
 [
 {
-  "label": "Attachment storage outage and retrieval copy",
-  "target": "default",
-  "route": "/settings?tab=general&section=attachments",
-  "highlight": "#setting-storage.provider"
+"label": "Attachment storage outage and retrieval copy",
+"target": "default",
+"route": "/settings?tab=general&section=attachments",
+"highlight": "#setting-storage.provider"
 }
 ]
 ```
@@ -65,3 +65,4 @@ When Neon (cloud storage provider) is unavailable — network outage, provider d
 - 2026-10-18T17:02:25Z · body
 - 2026-10-18T17:03:37Z · body
 - 2026-10-18T17:07:05Z · body
+- 2026-10-18T17:13:53Z · note: ui verification failed (1 issue(s)): [missing-target] Attachment storage outage and retrieval copy: highlight #setting-storage.provider matched nothing on /settings?tab=general&section=attachments (http://127.0.0.1:56978/settings?tab=general&section=attachments)
