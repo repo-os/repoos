@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-18T18:08:17.321Z: repoos check failed: rendered-contrast — gruvbox-light (1):"
 updated_at: "2026-10-18T17:56:26Z"
 review_passes: 1
 id: "0836"
@@ -62,4 +64,5 @@ Look at src/commands/check.ts, src/server/integration-orchestrator.ts, the shot/
 - 2026-10-18T17:54:46Z · status active→review
 - 2026-10-18T17:54:54Z · note: shots: failed — preview for target "default" did not start: Preview servers are read-only; only the main RepoOS control plane can start previews
 - 2026-10-18T17:56:26Z · note: review pass 1: needs some work
+
 
