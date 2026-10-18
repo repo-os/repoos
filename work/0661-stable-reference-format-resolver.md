@@ -13,7 +13,7 @@ branch: feat/stable-reference-format-resolver
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:04Z"
-updated_at: "2026-10-18T12:09:35Z"
+updated_at: "2026-10-18T12:09:36Z"
 ---
 Slice 4 (part of 'Cloud attachment storage' story): define a stable, opaque reference format used in Markdown for attachments, plus a resolver that maps that reference back to the actual storage resource at serve time. The reference must contain no secrets or expiring URLs, survive storage-mode switches (local/file/cloud), repo renames, and moving to another machine. Resolver runs server-side at serve/render time.
 
@@ -44,3 +44,4 @@ The reference therefore contains no secrets, no expiring URLs and no storage pat
 - 2026-10-18T12:01:57Z · body
 - 2026-10-18T12:09:35Z · status active→review
 - 2026-10-18T12:09:35Z · note: Task body is underspecified: missing sections: Problem, Acceptance criteria, Notes for AI
+- 2026-10-18T12:09:36Z · note: shots: skipped — Docs site skipped: no docs shot declared
