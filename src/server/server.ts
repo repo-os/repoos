@@ -3747,7 +3747,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Create the route context with all necessary dependencies
       const routeContext: RouteContext = {
         config,
-        servePort: actualPort,
+        servePort: requestedPort,
         index,
         indexReady,
         runner,
