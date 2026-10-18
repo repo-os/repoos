@@ -32,6 +32,7 @@ import {
   ORIGINAL_PROMPT_HEADING,
 } from "../core/task.js";
 import { formatTaskAreas, parseTaskAreas } from "../core/areas.js";
+import { bundleItemSectionIds, bundleItemsListIds } from "../core/easter-eggs-bundle.js";
 import { normalizeStoryName } from "../core/stories.js";
 import { branchCommit, commitTaskFile, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
@@ -89,28 +90,6 @@ function bodyDropsSpecSections(currentBody: string, newBody: string): boolean {
   return SPEC_SECTION_HEADINGS.some(
     (h) => extractSection(currentBody, h) !== null && extractSection(newBody, h) === null,
   );
-}
-
-/** `## E<n> · …` item section ids in a bundle body (empty when not a bundle). */
-function bundleItemSectionIds(body: string): Set<string> {
-  const ids = new Set<string>();
-  for (const line of body.split("\n")) {
-    const m = line.trim().match(/^## E(\d+)\s*·/);
-    if (m) ids.add(`E${m[1]}`);
-  }
-  return ids;
-}
-
-/** `**E<n> ·` ids listed under `## Items` (empty when that section is absent). */
-function bundleItemsListIds(body: string): Set<string> {
-  const itemsSection = extractSection(body, "## Items");
-  if (itemsSection === null) return new Set();
-  const ids = new Set<string>();
-  for (const line of itemsSection.split("\n")) {
-    const m = line.match(/\*\*E(\d+)\s*·/);
-    if (m) ids.add(`E${m[1]}`);
-  }
-  return ids;
 }
 
 /**

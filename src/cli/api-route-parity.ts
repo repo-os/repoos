@@ -43,6 +43,7 @@ const CONTROL_API_MATCHERS: Matcher[] = [
   exact("POST", "/api/cto/heartbeat"),
   // `repoos review` → PATCH status=review; `repoos override` → PATCH overrides
   re("PATCH", /^\/api\/tasks\/([^/]+)$/.source),
+  re("POST", /^\/api\/tasks\/([^/]+)\/bundle$/.source),
 ];
 
 /** Routes covered by existing file-level CLI commands (not HTTP). */
