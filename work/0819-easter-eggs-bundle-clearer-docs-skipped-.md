@@ -165,3 +165,4 @@ Start from the shot-warning text in the handoff capture code (grep for 'docs cap
 - 2026-10-18T01:22:44Z · needs_input
 - 2026-10-18T01:33:37Z · status review→active
 - 2026-10-18T01:33:45Z · needs_input
+- 2026-10-18T01:33:45Z · message_delivered: 1 message(s)
