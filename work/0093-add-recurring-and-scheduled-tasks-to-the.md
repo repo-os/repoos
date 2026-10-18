@@ -11,7 +11,7 @@ branch: feat/add-recurring-and-scheduled-tasks-to-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-08-11T14:22:06Z"
-updated_at: "2026-10-18T19:54:40Z"
+updated_at: "2026-10-18T19:58:28Z"
 review_passes: 2
 review_rounds: 1
 ---
@@ -139,3 +139,4 @@ dependency constraint.
 - 2026-10-18T19:51:32Z · status active→review
 - 2026-10-18T19:51:33Z · note: handoff requested (cli)
 - 2026-10-18T19:54:40Z · body
+- 2026-10-18T19:58:28Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 19ea7cf5 to 0c8d57f7) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
