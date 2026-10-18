@@ -70,3 +70,4 @@ Repro: Divot at ~/code/nick/divot, the Releases page, version 0.1.0, publish. Th
 - 2026-10-18T18:38:03Z · message_delivered: 1 message(s)
 - 2026-10-18T18:39:54Z · body
 - 2026-10-18T18:41:31Z · status active→review
+- 2026-10-18T18:41:31Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
