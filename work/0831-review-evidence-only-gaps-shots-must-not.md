@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-18T08:35:08Z"
-review_passes: 1
 id: "0831"
 title: "Review: evidence-only gaps (shots) must not consume code-review rounds or park the task"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/review-evidence-only-gaps-shots-must-not
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:30Z"
+updated_at: "2026-10-18T08:42:29Z"
+review_passes: 1
 ---
 ## Problem
 The reviewer returns "needs some work" for missing or wrong screenshot evidence even when the code is fine (#0829 pass 3, #0822 passes 1-4). Each such verdict counts as a review round, bounces the engineer, and after MAX_AUTO_REVIEW_ROUNDS raises `review-rounds-exhausted` so the task waits for a human, although the engineer has no code to change.
@@ -42,4 +42,4 @@ Design-heavy: write the decision into docs before coding; keep the reviewer prom
 - 2026-10-18T08:27:03Z · body
 - 2026-10-18T08:34:19Z · status active→review
 - 2026-10-18T08:35:08Z · note: review pass 1: good to go
-
+- 2026-10-18T08:42:29Z · body
