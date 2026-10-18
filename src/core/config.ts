@@ -197,6 +197,9 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   skillsDir: "skills",
   inputsDir: "inputs",
   schedulesDir: "schedules",
+  scheduledTasks: {
+    enabled: false,
+  },
   storiesDir: "stories",
   taskExtensions: [".md"],
   defaultStatus: "inbox",
@@ -1163,6 +1166,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (schedulesDirRaw !== undefined) {
       cfg.schedulesDir =
         normalizeRelativeDir(schedulesDirRaw, "schedulesDir") ?? DEFAULT_CONFIG.schedulesDir;
+    }
+    const scheduledTasksEnabled = parsed["scheduledTasks.enabled"];
+    if (typeof scheduledTasksEnabled === "boolean") {
+      cfg.scheduledTasks = { ...cfg.scheduledTasks, enabled: scheduledTasksEnabled };
     }
     const storiesDirRaw = get("storiesDir");
     if (storiesDirRaw !== undefined) {
@@ -2291,6 +2298,17 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description: "Directory holding scheduled task definitions (relative to repo root)",
     },
     {
+      key: "scheduledTasks.enabled",
+      label: "Scheduled task automation",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.scheduledTasks?.enabled ?? false,
+      description:
+        "When on, the control-plane server creates tasks from enabled schedules on a cadence. " +
+        "Off by default — previews and task worktrees never run schedules.",
+    },
+    {
       key: "taskExtensions",
       label: "Task extensions",
       type: "array",
@@ -3253,6 +3271,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "skillsDir",
   "inputsDir",
   "schedulesDir",
+  "scheduledTasks.enabled",
   "storiesDir",
   "cacheDir",
   "taskExtensions",

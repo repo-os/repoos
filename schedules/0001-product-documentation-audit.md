@@ -1,7 +1,7 @@
 ---
 id: "0001"
 title: Product documentation audit
-enabled: true
+enabled: false
 cadence: weekly
 timezone: America/New_York
 time_of_day: "09:00"
@@ -14,13 +14,13 @@ task_priority: p2
 task_assigned_to: ai
 task_status: ready
 auto_start_agent: false
-last_run_at: "2026-10-18T19:47:42.973Z"
-last_result: success
-last_task_id: "0840"
+last_run_at: ""
+last_result: ""
+last_task_id: ""
 last_error: ""
-last_occurrence_key: "weekly:2026-10-12"
+last_occurrence_key: ""
 created_at: "2026-10-18T12:00:00Z"
-updated_at: "2026-10-18T19:47:42.973Z"
+updated_at: "2026-10-18T12:00:00Z"
 ---
 ## Problem
 
@@ -43,5 +43,6 @@ separated.
 
 ## Notes for AI
 
-This schedule recreates the maintenance intent of task #0092 on a weekly cadence.
-See `docs/scheduled-tasks.md` for catch-up and deduplication behavior.
+Example schedule (disabled by default). Enable **Scheduled task automation** in
+Settings before turning this schedule on. See `docs/scheduled-tasks.md` for
+catch-up and deduplication behavior.
