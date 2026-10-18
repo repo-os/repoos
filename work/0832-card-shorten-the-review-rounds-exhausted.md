@@ -2,7 +2,7 @@
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
-status: review
+status: active
 priority: p3
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T08:58:14Z"
+updated_at: "2026-10-18T09:01:12Z"
 last_close_out_gate_ms: 438673
 last_close_out_gate_at: "2026-10-18T08:57:38.574Z"
 review_passes: 1
@@ -95,3 +95,4 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T08:54:53Z · body
 - 2026-10-18T08:57:38Z · close-out gate completed in 439s
 - 2026-10-18T08:58:14Z · body
+- 2026-10-18T09:01:12Z · status review→active
