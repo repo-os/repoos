@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T03:02:16Z"
+updated_at: "2026-10-18T03:02:17Z"
 ---
 ## Items
 
@@ -86,12 +86,12 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 "route": "/settings?tab=general",
 "highlight": "#setting-activityAnimationStyle",
 "steps": [
-  {
-    "click": "#setting-activityAnimationStyle [role=\"combobox\"]"
-  },
-  {
-    "waitMs": 200
-  }
+{
+  "click": "#setting-activityAnimationStyle [role=\"combobox\"]"
+},
+{
+  "waitMs": 200
+}
 ]
 },
 {
@@ -116,3 +116,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T02:52:51Z · body
 - 2026-10-18T02:54:16Z · body
 - 2026-10-18T03:02:16Z · status active→review
+- 2026-10-18T03:02:17Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
