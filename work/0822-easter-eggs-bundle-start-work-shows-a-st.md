@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T02:52:51Z"
+updated_at: "2026-10-18T02:54:16Z"
 ---
 ## Items
 
@@ -77,6 +77,32 @@ Use the shared ActivityIndicator and current activity/theme colors via currentCo
 ### Notes for AI
 Independent of E1; do not couple the two. Keep the default animation and every existing style unchanged.
 
+## Shots
+```json
+[
+{
+  "label": "Bird quick trail in Activity animation selector",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": "#setting-activityAnimationStyle",
+  "steps": [
+    {
+      "click": "#setting-activityAnimationStyle [role=\"combobox\"]"
+    },
+    {
+      "waitMs": 200
+    }
+  ]
+},
+{
+  "label": "Activity animation preview with bird quick trail",
+  "target": "default",
+  "route": "/settings?tab=general",
+  "highlight": ".activity-animation-preview"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-18T02:36:59Z · created · njachowski@gmail.com
@@ -88,3 +114,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T02:48:17Z · status ready→active, branch
 - 2026-10-18T02:51:45Z · body
 - 2026-10-18T02:52:51Z · body
+- 2026-10-18T02:54:16Z · body
