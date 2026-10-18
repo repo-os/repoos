@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-18T03:32:09Z"
+review_passes: 1
 id: "0821"
 title: "Message queue: deliver queued messages when a turn ends, persist them, and allow queued sends in every AI chat"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/message-queue-deliver-queued-messages-wh
 created_at: "2026-10-18T02:12:03Z"
-updated_at: "2026-10-18T03:32:09Z"
 last_check_failure: "repoos check at 2026-10-18T03:18:28.872Z: repoos check failed: ui verification failed (6 issue(s)): [request] HTTP 404 for http://127.0.0.1:54905/api/tasks/9999/diff-stats (http://127.0.0.1:54905/api/tasks/9999/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54905/api/tasks/9999/diff-stats); [request] HTTP 404 for http://127.0.0.1:54905/api/tasks/9999/shots (http://127.0.0.1:54905/api/tasks/9999/shots); [request] Failed to load resource: the server responded with a … (truncated)"
 ---
 ## Problem
@@ -68,3 +69,4 @@ Start from the queue in src/server/agents.ts (queuedMessages, messageQueuedAt, c
 - 2026-10-18T03:31:26Z · note: waitFor [data-test-id="chat-queued-note"]: waitFor: Timeout 5000ms exceeded. on /work?task=0821&tab=agent
 - 2026-10-18T03:31:29Z · note: highlight [data-test-id="chat-queued-note"] matched nothing on /work?task=0821&tab=agent
 - 2026-10-18T03:32:09Z · note: review pass 1: good to go
+
