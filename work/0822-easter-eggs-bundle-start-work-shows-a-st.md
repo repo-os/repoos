@@ -14,7 +14,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T05:37:30Z"
+updated_at: "2026-10-18T05:37:54Z"
 review_passes: 4
 close_out_repair_count: 1
 review_rounds: 2
@@ -87,71 +87,71 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 ```json
 [
 {
-  "label": "Bird quick trail activity animation preview",
-  "target": "default",
-  "route": "/settings?tab=general&section=activity-animation",
-  "highlight": ".activity-animation-preview .ai-bird-quick",
-  "steps": [
-    {
-      "waitFor": ".activity-animation-preview .ai-style-bird-quick-trail"
-    },
-    {
-      "waitMs": 400
-    }
-  ],
-  "state": "settings:birdQuickTrail"
+"label": "Bird quick trail activity animation preview",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": ".activity-animation-preview .ai-bird-quick",
+"steps": [
+  {
+    "waitFor": ".activity-animation-preview .ai-style-bird-quick-trail"
+  },
+  {
+    "waitMs": 400
+  }
+],
+"state": "settings:birdQuickTrail"
 },
 {
-  "label": "Ready card Starting… (light)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
-  "steps": [
-    {
-      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-    }
-  ],
-  "state": "board:startWorkPending",
-  "theme": "light"
+"label": "Ready card Starting… (light)",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
+"steps": [
+  {
+    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+  }
+],
+"state": "board:startWorkPending",
+"theme": "light"
 },
 {
-  "label": "Ready card Starting… (dark)",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
-  "steps": [
-    {
-      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-    }
-  ],
-  "state": "board:startWorkPending",
-  "theme": "dark"
+"label": "Ready card Starting… (dark)",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]",
+"steps": [
+  {
+    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+  }
+],
+"state": "board:startWorkPending",
+"theme": "dark"
 },
 {
-  "label": "Drawer Start work Starting… (light)",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": "[data-test-id=\"task-drawer-start-work\"]",
-  "steps": [
-    {
-      "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
-    }
-  ],
-  "state": "drawer:startWorkPending",
-  "theme": "light"
+"label": "Drawer Start work Starting… (light)",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": "[data-test-id=\"task-drawer-start-work\"]",
+"steps": [
+  {
+    "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
+  }
+],
+"state": "drawer:startWorkPending",
+"theme": "light"
 },
 {
-  "label": "Drawer Start work Starting… (dark)",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": "[data-test-id=\"task-drawer-start-work\"]",
-  "steps": [
-    {
-      "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
-    }
-  ],
-  "state": "drawer:startWorkPending",
-  "theme": "dark"
+"label": "Drawer Start work Starting… (dark)",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": "[data-test-id=\"task-drawer-start-work\"]",
+"steps": [
+  {
+    "waitFor": "[data-test-id=\"task-drawer-start-work\"]"
+  }
+],
+"state": "drawer:startWorkPending",
+"theme": "dark"
 }
 ]
 ```
@@ -220,3 +220,4 @@ Items are independent; do not couple them. Never touch repoos.toml. Edit per-ite
 - 2026-10-18T05:37:17Z · body: Acceptance criteria (added)
 - 2026-10-18T05:37:22Z · body: Notes for AI (added)
 - 2026-10-18T05:37:30Z · body
+- 2026-10-18T05:37:54Z · note: waitFor .activity-animation-preview .ai-style-bird-quick-trail: waitFor: Timeout 5000ms exceeded. on /settings?tab=general&section=activity-animation
