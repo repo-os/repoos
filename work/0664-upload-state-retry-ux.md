@@ -13,7 +13,7 @@ branch: feat/upload-state-retry-ux
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-05T08:29:24Z"
-updated_at: "2026-10-18T18:19:32Z"
+updated_at: "2026-10-18T18:50:48Z"
 last_check_failure: "repoos check at 2026-10-18T17:32:06.903Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 review_rounds: 1
 review_passes: 3
@@ -101,3 +101,4 @@ Slice 7 of cloud attachment storage (depends_on: 0660). Purely UI/UX state rende
 - 2026-10-18T17:49:32Z · handoff failed · check failed after 2 automatic retries · ui verification failed (3 issue(s)): [missing-target] New input: outstanding attachment uploads after Create another input: waitFor .new-input-trigger: waitFor: Timeout 5000ms exceeded. on /work (http://127.0.0.1:49344/work); [missing-target] New input: outstanding attachment uploads after Create another input: click .new-input-trigger: click: Timeout 5000ms exceeded. on /work (http://127.0.0.1:49344/work); [missing-target] New task: failed screenshot retry row on freeform form: click .new-btn: click: Timeout 5000ms exceeded. on /work (http://127.0.0.1:49344/work)
 - 2026-10-18T18:19:31Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-18T18:19:31Z · note: handoff requested (cli)
+- 2026-10-18T18:50:48Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
