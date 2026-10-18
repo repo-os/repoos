@@ -2,7 +2,7 @@
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T06:59:22Z"
+updated_at: "2026-10-18T07:07:00Z"
 ---
 ## Items
 - [ ] **E1 · Minimised pill shows only the median popup, centered** (web) — remove the extra native title tooltip over it. Source: Nick 2026-10-18.
@@ -89,30 +89,30 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 ```json
 [
 {
-  "label": "Minimised integration pill median tooltip centered",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=integration-timer]",
-  "steps": [
-    {
-      "waitMs": 500
-    }
-  ],
-  "state": "integration:median15"
+"label": "Minimised integration pill median tooltip centered",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=integration-timer]",
+"steps": [
+  {
+    "waitMs": 500
+  }
+],
+"state": "integration:median15"
 },
 {
-  "label": "Debug logs expanded long main-advanced row",
-  "target": "default",
-  "route": "/work?task=0820&tab=debug",
-  "highlight": ".debug-event-message",
-  "steps": [
-    {
-      "click": ".debug-event-expandable"
-    },
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "Debug logs expanded long main-advanced row",
+"target": "default",
+"route": "/work?task=0820&tab=debug",
+"highlight": ".debug-event-message",
+"steps": [
+  {
+    "click": ".debug-event-expandable"
+  },
+  {
+    "waitMs": 300
+  }
+]
 }
 ]
 ```
@@ -138,3 +138,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T06:57:02Z · body
 - 2026-10-18T06:58:37Z · body
 - 2026-10-18T06:59:22Z · body
+- 2026-10-18T07:07:00Z · status active→review
