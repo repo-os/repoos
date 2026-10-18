@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-integration-pill-tool
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T08:23:19Z"
+updated_at: "2026-10-18T08:23:20Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -230,3 +230,4 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T08:22:35Z · status active→review
 - 2026-10-18T08:23:19Z · note: waitFor .ibar-strip [data-test-id="integration-timer"]: waitFor: Timeout 5000ms exceeded. on /
 - 2026-10-18T08:23:19Z · note: click .ibar-strip [data-test-id="integration-timer"]: click: Timeout 5000ms exceeded. on /
+- 2026-10-18T08:23:20Z · note: waitFor [data-test-id="integration-timer-tip"]: waitFor: Timeout 5000ms exceeded. on /
