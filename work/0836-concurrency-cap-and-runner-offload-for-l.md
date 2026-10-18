@@ -12,8 +12,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:25Z"
 updated_at: "2026-10-18T18:45:18Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from e08a43f1 to 65cdd130) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: e08a43f118cbe4763cb770ab9b2b29f64e30c6be
 review_passes: 5
 review_rounds: 2
 ---
@@ -115,3 +113,4 @@ Look at src/commands/check.ts, src/server/integration-orchestrator.ts, the shot/
 - 2026-10-18T18:37:24Z · body
 - 2026-10-18T18:38:13Z · note: handoff requested (ui-review)
 - 2026-10-18T18:45:18Z · status active→review
+
