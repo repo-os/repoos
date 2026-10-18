@@ -702,6 +702,14 @@ export const useRepoStore = defineStore("repo", () => {
   const runningIds = ref<string[]>([]);
   /** Ids waiting for a free maxConcurrentAgents slot — will spawn automatically. */
   const queuedIds = ref<string[]>([]);
+  /**
+   * Messages waiting to be read when a busy task/chat's turn ends (#0821),
+   * keyed by task id or chat session key. Hydrated from `/api/agents/queued` so
+   * a queued send that outlives the turn it was waiting on stays visible.
+   */
+  const queuedMessages = ref<Record<string, { count: number; queuedAt: string; overdue: boolean }>>(
+    {},
+  );
   /** Server-authoritative start time for a live agent turn, keyed by task id. */
   const runningSince = ref<Record<string, string>>({});
   /** Most recent streamed agent output, keyed by task id (a useful "really active" cue). */
@@ -3191,8 +3199,8 @@ export const useRepoStore = defineStore("repo", () => {
     outputs.value = next;
   }
 
-  async function sendMessage(id: string, text: string): Promise<void> {
-    const r = await api<{ ok: boolean; reason?: string }>(
+  async function sendMessage(id: string, text: string): Promise<{ queued: boolean }> {
+    const r = await api<{ ok: boolean; reason?: string; queued?: boolean }>(
       `/api/tasks/${id}/message`,
       JSON_OPTS("POST", { text }),
     );
@@ -3201,6 +3209,7 @@ export const useRepoStore = defineStore("repo", () => {
       pushToast(message, "error");
       throw new Error(message);
     }
+    return { queued: Boolean(r.queued) };
   }
 
   /** Start a fresh review run against the task's current worktree state. */
@@ -3275,9 +3284,22 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Hydrate the queued marker on reload — mirrors fetchRunning() above. */
   async function fetchQueued(): Promise<void> {
+    // A handoff capture keeps the fixture-seeded queue: the SSE reconnect
+    // fires this right after the fixture applies, and a real (empty) queue
+    // would wipe the state the shot exists to show (#0821).
+    if (typeof window !== "undefined" && isShotPreviewCaptureActive(window.location)) return;
     try {
-      const r = await api<{ tasks: { id: string; queuedAt: string }[] }>("/api/agents/queued");
+      const r = await api<{
+        tasks: { id: string; queuedAt: string }[];
+        messages?: { id: string; count: number; queuedAt: string; overdue: boolean }[];
+      }>("/api/agents/queued");
       queuedIds.value = r.tasks.map((t) => t.id);
+      queuedMessages.value = Object.fromEntries(
+        (r.messages ?? []).map((m) => [
+          m.id,
+          { count: m.count, queuedAt: m.queuedAt, overdue: m.overdue },
+        ]),
+      );
     } catch {
       /* endpoint unavailable — queued state is best-effort */
     }
@@ -3746,6 +3768,7 @@ export const useRepoStore = defineStore("repo", () => {
     setDraggingTask,
     runningIds,
     queuedIds,
+    queuedMessages,
     runningSince,
     agentActivityAt,
     agentExitedAt,

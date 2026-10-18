@@ -34,6 +34,7 @@ import ChatJumpToLatest from "./ChatJumpToLatest.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import ChatSendButton from "./ChatSendButton.vue";
+import ChatQueuedNotice from "./ChatQueuedNotice.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 
 export interface PendingShot {
@@ -72,6 +73,8 @@ const props = withDefaults(
     shots?: PendingShot[];
     /** Hide the attach control (hosts with no attachment path). */
     canAttach?: boolean;
+    /** True while a message sent during a running turn waits to be read (#0821). */
+    queued?: boolean;
     title?: string;
   }>(),
   {
@@ -83,6 +86,7 @@ const props = withDefaults(
     openQuestions: () => [],
     shots: () => [],
     canAttach: true,
+    queued: false,
     title: undefined,
   },
 );
@@ -269,6 +273,8 @@ defineExpose({ focusDraft });
       </div>
     </div>
 
+    <ChatQueuedNotice :active="queued" />
+
     <form class="ai-chat-compose" @submit.prevent="emit('send')">
       <input
         ref="shotInput"
@@ -314,7 +320,9 @@ defineExpose({ focusDraft });
           <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
         </svg>
       </button>
-      <ChatSendButton v-else :disabled="!draft.trim() || busy || disabled" />
+      <!-- Send stays usable while busy (#0821): the message is queued and read
+           when the current turn ends, so the human never has to wait. -->
+      <ChatSendButton :disabled="!draft.trim() || disabled" />
     </form>
   </div>
 </template>

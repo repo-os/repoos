@@ -291,6 +291,45 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.tasks.some((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(false);
   });
 
+  it("seeds a running task with a queued message for the composer notice (#0821)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    // Deep-links a real task id, so the drawer's per-task fetches resolve
+    // (a fake #9999 fixture would 404 and fail the handoff UI gate).
+    window.history.replaceState(
+      {},
+      "",
+      "/work?task=0821&tab=agent&shotState=drawer%3AqueuedMessage",
+    );
+    applyShotPreviewFixture(repo, "drawer:queuedMessage");
+    expect(repo.isRunning("0821")).toBe(true);
+    expect(repo.queuedMessages["0821"]?.count).toBe(1);
+    // No fake board task is seeded.
+    expect(repo.tasks.some((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(false);
+  });
+
+  it("keeps a fixture-seeded queue when fetchQueued runs during a capture (#0821)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    window.history.replaceState({}, "", "/work?task=0821&shotState=drawer%3AqueuedMessage");
+    applyShotPreviewFixture(repo, "drawer:queuedMessage");
+    // The SSE reconnect re-fetches the queue; during a capture it must not wipe
+    // the seeded state the shot exists to show.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ tasks: [], messages: [] }),
+      })),
+    );
+    await repo.fetchQueued();
+    expect(repo.queuedMessages["0821"]?.count).toBe(1);
+    vi.unstubAllGlobals();
+  });
+
   it("seeds captured shots, handoff verdicts and a docs-skip note for viewer shots (#0819)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
