@@ -2,7 +2,7 @@
 id: "0836"
 title: Concurrency cap and runner offload for local checks and Playwright runs (with Settings controls)
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/concurrency-cap-and-runner-offload-for-l
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:25Z"
-updated_at: "2026-10-18T17:28:35Z"
+updated_at: "2026-10-18T17:29:32Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: cebf691f171c69f45cd89bf9812ea17261ba6b4d
 review_rounds: 1
@@ -72,3 +72,4 @@ Look at src/commands/check.ts, src/server/integration-orchestrator.ts, the shot/
 - 2026-10-18T17:13:49Z · handoff failed · ui-review handoff failed at check · remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails on bee — fix it in the feature branch and re-run the gate
 - 2026-10-18T17:21:27Z · message_queued at 2026-10-18T17:21:27.508Z
 - 2026-10-18T17:28:35Z · body
+- 2026-10-18T17:29:32Z · status active→review
