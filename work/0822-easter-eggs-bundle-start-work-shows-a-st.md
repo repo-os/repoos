@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-start-work-pending-st
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T02:36:59Z"
-updated_at: "2026-10-18T03:08:23Z"
+updated_at: "2026-10-18T03:09:43Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -143,3 +143,4 @@ Independent of E1; do not couple the two. Keep the default animation and every e
 - 2026-10-18T03:04:45Z · body
 - 2026-10-18T03:06:25Z · body
 - 2026-10-18T03:08:23Z · body
+- 2026-10-18T03:09:43Z · handoff failed · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
