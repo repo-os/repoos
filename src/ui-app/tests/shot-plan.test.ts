@@ -150,15 +150,23 @@ describe("parseShotPlan", () => {
   it("reports step shape errors with (none) or the extra keys listed", () => {
     const zeroKeys = parseShotPlan(bodyWithShots('[{"route":"/","steps":[{}]}]'));
     expect(zeroKeys.errors).toEqual([
-      "shot #1 step #1: a step needs exactly one of click/fill/waitFor/waitMs (none)",
+      "shot #1 step #1: a step needs exactly one of click/fill/waitFor/hover/waitMs (none)",
     ]);
 
     const multi = parseShotPlan(
       bodyWithShots('[{"route":"/","steps":[{"click":"button","waitMs":100}]}]'),
     );
     expect(multi.errors).toEqual([
-      "shot #1 step #1: a step needs exactly one of click/fill/waitFor/waitMs (click, waitMs)",
+      "shot #1 step #1: a step needs exactly one of click/fill/waitFor/hover/waitMs (click, waitMs)",
     ]);
+  });
+
+  it("accepts a hover step (#0830)", () => {
+    const { shots, errors } = parseShotPlan(
+      bodyWithShots('[{"route":"/agents","steps":[{"hover":".median-bar"}]}]'),
+    );
+    expect(errors).toEqual([]);
+    expect(shots[0]?.steps).toEqual([{ hover: ".median-bar" }]);
   });
 
   it("reports a contentful section with no fenced list", () => {

@@ -2,19 +2,22 @@
 id: "0832"
 title: "Card: shorten the review-rounds-exhausted summary (one short line, no duplicated verdict)"
 type: chore
-status: ready
+status: done
 priority: p3
 area: [web, server]
+merged_commit: b98cfe2e2c12ec70cc6b4cb4ad5baa143fef64be
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/card-shorten-the-review-rounds-exhausted
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T08:09:33Z"
-updated_at: "2026-10-18T15:52:27Z"
-last_close_out_gate_ms: 438673
-last_close_out_gate_at: "2026-10-18T08:57:38.574Z"
-review_passes: 1
+updated_at: "2026-10-18T11:32:55Z"
+last_close_out_gate_ms: 810649
+last_close_out_gate_at: "2026-10-18T11:30:58.140Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-18T11:11:55.921Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
+review_passes: 2
 ---
 ## Problem
 The task card shows the whole first line of the reviewer's Verdict section as `needs_input_detail` (`src/server/review.ts` ~1749), under the header "REVIEW STILL FINDING ISSUES". It is often a long paragraph and begins with `` `needs some work` — ``, which the header already says.
@@ -98,4 +101,22 @@ Bundle-sized: a second small item may be added by the human before start. Source
 - 2026-10-18T09:01:12Z · status review→active
 - 2026-10-18T09:01:18Z · note: handoff requested (ui-review)
 - 2026-10-18T09:09:31Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
-- 2026-10-18T15:52:27Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-18T09:24:31Z · message_queued at 2026-10-18T09:24:31.583Z
+- 2026-10-18T09:24:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-18T09:34:07Z · body
+- 2026-10-18T09:34:50Z · body
+- 2026-10-18T09:35:57Z · body
+- 2026-10-18T09:36:31Z · body
+- 2026-10-18T10:16:34Z · body
+- 2026-10-18T10:17:03Z · body
+- 2026-10-18T10:21:09Z · body
+- 2026-10-18T10:21:54Z · status active→review
+- 2026-10-18T10:24:36Z · note: review pass 2: needs some work
+- 2026-10-18T10:49:21Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-18T11:11:53Z · message_delivered: 1 message(s)
+- 2026-10-18T11:25:57Z · body
+- 2026-10-18T11:26:06Z · body
+- 2026-10-18T11:26:36Z · body
+- 2026-10-18T11:27:02Z · status review→active
+- 2026-10-18T11:30:58Z · close-out gate completed in 811s
+- 2026-10-18T11:32:55Z · status active→done, release:success

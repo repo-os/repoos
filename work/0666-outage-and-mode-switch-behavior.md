@@ -1,17 +1,21 @@
 ---
+updated_at: "2026-10-18T17:19:20Z"
+review_passes: 1
 id: "0666"
 title: Outage and mode-switch behavior
 type: feature
-status: inbox
+status: review
 priority: p1
 area: server
 story: Cloud attachment storage
 depends_on: ["0660", "0663"]
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/outage-and-mode-switch-behavior
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-05T08:29:35Z"
-updated_at: "2026-10-05T12:05:06Z"
+last_check_failure: "repoos check at 2026-10-18T17:13:58.117Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Attachment storage outage and retrieval copy: highlight #setting-storage.provider matched nothing on /settings?tab=general&section=attachments (http://127.0.0.1:56978/settings?tab=general&section=attachments)"
 ---
 ## Problem
 When Neon (cloud storage provider) is unavailable — network outage, provider down, or mode switched off — attachment reads and writes must degrade gracefully. The current behavior isn't defined: it could lose the task record (Markdown reference broken), delete the local original, or claim an upload succeeded when it didn't. This slice ensures outage behavior is explicit: the local original stays intact, the Markdown reference remains resolvable, and upload state shows "pending" rather than false success or lost data.
@@ -39,9 +43,33 @@ When Neon (cloud storage provider) is unavailable — network outage, provider d
 - The "local original still here, upload pending" state is the only allowed degraded state; never invent a new state like "offline" or "cached".
 - All behavior must be covered by a test that fails if the check is removed (negative-test pattern from the story's acceptance criteria).
 
+## Shots
+```json
+[
+{
+"label": "Attachment storage outage and retrieval copy",
+"target": "default",
+"route": "/settings?tab=general&section=attachments",
+"highlight": "[id=\"setting-storage.provider\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-05T08:29:35Z · created · unknown
 - 2026-10-05T11:15:29Z · needs_input
 - 2026-10-05T12:04:18Z · needs_input
 - 2026-10-05T12:05:06Z · body
+- 2026-10-18T16:58:40Z · status inbox→ready
+- 2026-10-18T16:58:47Z · cli_override, model_override
+- 2026-10-18T16:58:50Z · status ready→active, branch
+- 2026-10-18T17:02:25Z · body
+- 2026-10-18T17:03:37Z · body
+- 2026-10-18T17:07:05Z · body
+- 2026-10-18T17:13:53Z · note: ui verification failed (1 issue(s)): [missing-target] Attachment storage outage and retrieval copy: highlight #setting-storage.provider matched nothing on /settings?tab=general&section=attachments (http://127.0.0.1:56978/settings?tab=general&section=attachments)
+- 2026-10-18T17:14:33Z · body
+- 2026-10-18T17:15:17Z · body
+- 2026-10-18T17:18:09Z · status active→review
+- 2026-10-18T17:19:19Z · note: review pass 1: good to go
+

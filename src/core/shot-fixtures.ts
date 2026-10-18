@@ -29,9 +29,13 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // verdict and warning) plus a docs-target skip note, so a capture can show the
   // screenshot viewer header and the "no docs shot declared" warning + link.
   "drawer:shotEvidence",
+  // #0829 — task drawer Debug tab with a long log row for expand-to-full-message shots.
+  "drawer:debugLogs",
   // #0804 — a ready task flagged by the decision-model human-step check, so a
   // capture can show the flag's explanation on the card.
   "card:humanStep",
+  // #0832 — review task with review-rounds-exhausted and a long verdict summary.
+  "card:reviewRoundsExhausted",
   // #0810 — a card whose task has a pending worktree-handoff conflict, so a
   // capture can show the "Worktree changed after handoff" modal listing the
   // changed files. Board-only: no drawer, so no fake-id task fetch.
@@ -53,6 +57,13 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "drawer:startWorkPending",
   // #0822 — Settings activity-animation preview seeded to bird quick trail.
   "settings:birdQuickTrail",
+  // #0833 — Settings activity-animation preview seeded to each multicolor
+  // artwork style, so the four new choices can be captured from the real
+  // Settings select.
+  "settings:rgbKeystorm",
+  "settings:wheelieCourier",
+  "settings:booSwoop",
+  "settings:pumpkinSpell",
   // #0821 — a task with a running agent and a message queued for when the turn
   // ends, so a capture can show the composer's "Queued — will be read when the
   // current turn ends" notice (and a still-usable send control).

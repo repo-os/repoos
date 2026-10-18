@@ -206,6 +206,7 @@ done wait by default in human mode).
 | `repoos sync <id>` | `POST /api/tasks/:id/sync` — merge main into the task branch (lists conflicting paths and exits non-zero on conflict) |
 | `repoos message <id> "…" [--now]` | `POST /api/tasks/:id/message` (`now: true` interrupts a busy agent) |
 | `repoos review <id> [--wait]` | `PATCH /api/tasks/:id` (`status: review`) |
+| `repoos review again <id>` | `POST /api/tasks/:id/review/again` |
 | `repoos done <id> [--commit-dirty] [--wait]` | `POST /api/tasks/:id/done` |
 | `repoos override <id> --cli X --model Y` | `PATCH /api/tasks/:id` |
 | `repoos preview <id> [--stop]` | `POST /api/tasks/:id/preview` (+ `/stop`) |
@@ -285,7 +286,8 @@ chat, for example — pass each one to `--screenshot` (repeatable) on `repoos ne
 or `repoos update`. The command validates the file against the same allowlist
 and size limit the UI upload uses (`.png`, `.jpg`/`.jpeg`, `.gif`, `.webp`,
 `.avif`, `.bmp`; max 10 MB), stores it under the gitignored
-`work/.attachments/<id>/`, assigns the next `screenshot-N` name, and writes or
+`work/.attachments/<id>/`, assigns an opaque `att_<uuid>.<ext>` storage name
+(stable in committed Markdown), and writes or
 extends the task's `## Screenshots` section (kept before `## Activity`). It
 prints the resulting attachment URLs:
 
@@ -562,6 +564,19 @@ repoos shot https://example.test/x   # capture an arbitrary URL
 repoos shot --target "macOS app"     # run a command capture target (non-web app)
 ```
 
+### `repoos review again`
+
+Start a fresh reviewer run on a task that is already in `review` — the same
+action as **Review again** in the task drawer. Use this after
+`repoos verify <id>` refreshes stale evidence, or whenever you want another
+review pass without moving the task back to `active`. Refuses when an engineer
+turn, close-out, or another review is already in progress.
+
+```bash
+repoos review again 0832
+repoos review again 0832 --json
+```
+
 ### `repoos verify`
 
 Refresh the current review evidence without starting an engineer turn. This
@@ -639,7 +654,8 @@ element), a human `label` shown as the shot's caption in the Changes tab, an
 optional `highlight` CSS selector — every element it matches is outlined in
 the capture, pointing the reviewer at what changed — and optional ordered
 `steps` — `{ "click": "<selector>" }`, `{ "fill": "<selector>", "text":
-"..." }`, `{ "waitFor": "<selector>" }` or `{ "waitMs": 300 }` — using plain
+"..." }`, `{ "waitFor": "<selector>" }`, `{ "hover": "<selector>" }` or
+`{ "waitMs": 300 }` — using plain
 CSS selectors or test ids, no framework knowledge. Say what changed: a label
 naming the change and a highlight on the changed element are the difference
 between a reviewer reading "New-task drawer open" and squinting at a full

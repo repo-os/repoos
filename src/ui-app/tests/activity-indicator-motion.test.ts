@@ -353,6 +353,19 @@ const STYLE_SELECTORS: Record<string, { selector: string; pseudo: string | null 
   "arcade-hopper": { selector: ".ai-hopper i", pseudo: null },
   "puppy-tracks": { selector: ".ai-paws i", pseudo: null },
   "bird-quick-trail": { selector: ".ai-bird-quick .foot", pseudo: null },
+  // #0833 artwork: one animated subject node per style.
+  "rgb-keystorm": { selector: ".ai-key", pseudo: null },
+  "wheelie-courier": { selector: ".ai-wheel-spokes", pseudo: null },
+  "boo-swoop": { selector: ".ai-ghost-bank", pseudo: null },
+  "pumpkin-spell": { selector: ".ai-pumpkin-bounce", pseudo: null },
+};
+
+/** Primary animated node + expected animation name per #0833 artwork style. */
+const ART_SUBJECTS: Record<string, { selector: string; name: string }> = {
+  "rgb-keystorm": { selector: ".ai-key", name: "ai-key-wave" },
+  "wheelie-courier": { selector: ".ai-wheel-spokes", name: "ai-spokes" },
+  "boo-swoop": { selector: ".ai-ghost-bank", name: "ai-ghost-bank" },
+  "pumpkin-spell": { selector: ".ai-pumpkin-bounce", name: "ai-pumpkin-bounce" },
 };
 
 describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
@@ -503,6 +516,11 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
         "arcade-hopper": { selector: ".ai-hopper i", pseudo: null, metric: "width" },
         "puppy-tracks": { selector: ".ai-paws i", pseudo: null, metric: "width" },
         "bird-quick-trail": { selector: ".ai-bird-quick .foot", pseudo: null, metric: "width" },
+        // #0833 artwork measures its SVG, which fills the whole square slot.
+        "rgb-keystorm": { selector: ".ai-art-svg", pseudo: null, metric: "width" },
+        "wheelie-courier": { selector: ".ai-art-svg", pseudo: null, metric: "width" },
+        "boo-swoop": { selector: ".ai-art-svg", pseudo: null, metric: "width" },
+        "pumpkin-spell": { selector: ".ai-art-svg", pseudo: null, metric: "width" },
       };
       const sizes = ACTIVITY_ANIMATION_SIZES;
       for (const fontPx of [9, 12]) {
@@ -788,6 +806,50 @@ describeBrowser("ActivityIndicator motion is real in WebKit (#0798)", () => {
         solid.equals(surfaceBehindSolid),
         "the solid silhouette should paint over the surface",
       ).toBe(false);
+    } finally {
+      await page.close();
+    }
+  });
+
+  it("#0833 artwork animates its subject and slows for reviewing/agent", async () => {
+    const page = await browser!.newPage();
+    try {
+      await page.goto("about:blank", { waitUntil: "load", timeout: 10_000 });
+      await page.evaluate(
+        ({ css }) => {
+          const s = document.createElement("style");
+          s.textContent = css;
+          document.head.appendChild(s);
+        },
+        { css: pageCss },
+      );
+      for (const [style, subject] of Object.entries(ART_SUBJECTS)) {
+        const read = (motion: Motion) =>
+          page.evaluate(
+            ({ html, webFont, selector }) => {
+              document.body.innerHTML = `<div style="font-family:${webFont};font-size:12px">${html}</div>`;
+              const node = document.querySelector(selector)!;
+              const cs = getComputedStyle(node);
+              return {
+                name: cs.animationName,
+                duration: parseFloat(cs.animationDuration),
+                count: node.getAnimations().length,
+              };
+            },
+            { html: renderHtml(style, motion), webFont, selector: subject.selector },
+          );
+        const coding = await read("coding");
+        const reviewing = await read("reviewing");
+        const agent = await read("agent");
+        expect(coding.name, style).toBe(subject.name);
+        expect(coding.count, style).toBeGreaterThan(0);
+        // The 0.78× / 0.9× speed envelope means a LONGER duration than coding.
+        expect(reviewing.duration, `${style} reviewing`).toBeGreaterThan(coding.duration);
+        expect(agent.duration, `${style} agent`).toBeGreaterThan(coding.duration);
+        expect(reviewing.duration - coding.duration, `${style} reviewing delta`).toBeGreaterThan(
+          0.1,
+        );
+      }
     } finally {
       await page.close();
     }

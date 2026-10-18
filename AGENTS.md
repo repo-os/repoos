@@ -617,8 +617,11 @@ cannot tell from the code alone:
   an empty preview board. Every shot is captioned with why it exists
   (`declared: <label>` / `auto: matched <glob>`); a docs-wording-only diff
   captures nothing without a declared route (#0603). **Shot hygiene (#0613,
-  #0743):** a missing `highlight`/`selector`/`waitFor` target records a
-  visible warning and still captures — it does not fail handoff; duplicates with
+  #0830):** on a **declared** shot, a missing `highlight`/`selector`/step
+  target (`click`, `fill`, `waitFor`, `hover`) **fails handoff** with a
+  per-shot message; auto-matched captures still record a miss as a warning only
+  (#0743). Tooltip/hover shots need a `hover` or `click` step plus a `state`
+  fixture. Duplicates with
   the same target/route/steps/selector collapse to one capture. **Loading and
   stale captures (#0755):** reach a populated view with a `route` or `state`
   fixture, not a `steps` click on a placeholder selector (`data-task-id "9999"`

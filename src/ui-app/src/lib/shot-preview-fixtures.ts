@@ -7,6 +7,7 @@ import {
   type ShotPreviewFixtureId,
   isShotPreviewFixtureId,
 } from "../../../core/shot-fixtures.js";
+import type { ActivityAnimationStyle } from "../../../core/activity-animation.js";
 import type { useConfigStore } from "../stores/config";
 import type { useRepoStore } from "../stores/repo";
 import { useNoticesStore } from "../stores/notices";
@@ -17,8 +18,59 @@ import type {
   IntegrationPipelineSnapshot,
   ShotMeta,
   Task,
+  TaskLogEntry,
   UiHandoffVerificationEvidence,
 } from "../types";
+
+const DEBUG_LOGS_FIXTURE_MESSAGE =
+  "main advanced with bookkeeping-only commits — publishing without a merge conflict check on the candidate tree";
+
+/** True when preview capture should keep fixture debug logs instead of fetching. */
+export function shotPreviewSkipsTaskLogsFetch(
+  location: Pick<Location, "search">,
+  taskId: string,
+): boolean {
+  if (!isShotPreviewCaptureActive(location)) return false;
+  const fixture = readShotPreviewFixtureFromLocation(location);
+  if (fixture !== "drawer:debugLogs") return false;
+  return taskId === shotPreviewDrawerTaskIdFromLocation(location);
+}
+
+export type ShotPreviewDebugLogsSeed = {
+  tasks: Task[];
+  taskLogs: Record<string, TaskLogEntry[]>;
+};
+
+/** Seed Debug-tab log rows for `drawer:debugLogs` shots (#0829). */
+export function seedShotPreviewDebugLogs(repo: ShotPreviewDebugLogsSeed, drawerId: string): void {
+  const existing = repo.tasks.find((t) => t.id === drawerId);
+  if (existing) {
+    Object.assign(existing, { status: "done" });
+  } else {
+    repo.tasks.push(
+      fixtureTask({
+        id: drawerId,
+        status: "done",
+        path: `work/${drawerId}-debug-shot-fixture.md`,
+        absPath: `/tmp/repo/work/${drawerId}-debug-shot-fixture.md`,
+      }),
+    );
+  }
+  const longLog: TaskLogEntry = {
+    timestamp: "2026-10-18T03:21:00Z",
+    level: "info",
+    component: "task",
+    message: DEBUG_LOGS_FIXTURE_MESSAGE,
+    context: { from: "main", to: "feat/branch" },
+  };
+  const shortLog: TaskLogEntry = {
+    timestamp: "2026-10-18T03:20:00Z",
+    level: "info",
+    component: "task",
+    message: "close-out complete — published to main",
+  };
+  repo.taskLogs[drawerId] = [longLog, shortLog];
+}
 
 type RepoStore = ReturnType<typeof useRepoStore>;
 type ConfigStore = ReturnType<typeof useConfigStore>;
@@ -43,9 +95,9 @@ export function shotFixturePinnedIntegration(): IntegrationPipelineSnapshot | nu
   return pinnedIntegration;
 }
 
-function fixtureTask(over: Partial<Task> = {}): Task {
+function fixtureTask(over: Partial<Task> = {}, taskId = SHOT_PREVIEW_FIXTURE_TASK_ID): Task {
   return {
-    id: SHOT_PREVIEW_FIXTURE_TASK_ID,
+    id: taskId,
     title: "Shot preview fixture task",
     type: "feature",
     status: "review",
@@ -64,8 +116,8 @@ function fixtureTask(over: Partial<Task> = {}): Task {
     needsMerge: false,
     created_at: nowIso(),
     updated_at: nowIso(),
-    path: `work/${SHOT_PREVIEW_FIXTURE_TASK_ID}-shot-preview-fixture.md`,
-    absPath: `/tmp/repo/work/${SHOT_PREVIEW_FIXTURE_TASK_ID}-shot-preview-fixture.md`,
+    path: `work/${taskId}-shot-preview-fixture.md`,
+    absPath: `/tmp/repo/work/${taskId}-shot-preview-fixture.md`,
     body: "",
     extra: {},
     agentOverride: null,
@@ -109,9 +161,10 @@ function ensureFixtureTask(
   repo: RepoStore,
   status: Task["status"] = "review",
   overrides: Partial<Task> = {},
+  taskId = SHOT_PREVIEW_FIXTURE_TASK_ID,
 ): void {
-  const existing = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
-  const task = fixtureTask({ status, ...overrides });
+  const existing = repo.tasks.find((t) => t.id === taskId);
+  const task = fixtureTask({ status, ...overrides }, taskId);
   if (existing) {
     Object.assign(existing, task);
   } else {
@@ -343,7 +396,8 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();
       repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID, null, startedAt, nowIso());
       pinnedIntegration = repo.integration;
-      useUiStore().setIntegrationBarCollapsed(false);
+      // Minimised pill is the default for an active job; shots target the median tooltip there (#0829).
+      useUiStore().setIntegrationBarCollapsed(true);
       const outcomes: CloseOutOutcomeEvent[] = Array.from({ length: 15 }, (_, i) => ({
         taskId: `0${i}`,
         outcome: "succeeded",
@@ -418,6 +472,44 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           "Decision model (91%): split this into an AI task and a human task — it needs a real account, credential, or API key.",
       });
       break;
+    case "card:reviewRoundsExhausted": {
+      // #0832 — exhausted review rounds: card shows stripped/clamped summary only.
+      const fixtureTaskId = "0832";
+      const longWhy =
+        "Three UI regressions remain in the task drawer and the contrast audit still fails on the settings page; also re-check the handoff shots before the next review round.";
+      const verdictLine = `\`needs some work\` — ${longWhy}`;
+      ensureFixtureTask(
+        repo,
+        "review",
+        {
+          title: "Review rounds exhausted fixture",
+          needsInput: true,
+          needsInputReason: "review-rounds-exhausted",
+          needsInputDetail: verdictLine,
+          extra: { review_rounds: 2 },
+        },
+        fixtureTaskId,
+      );
+      repo.reviews = {
+        ...repo.reviews,
+        [fixtureTaskId]: {
+          running: false,
+          enabled: true,
+          lines: [],
+          report: {
+            id: fixtureTaskId,
+            at: new Date().toISOString(),
+            agent: "reviewer",
+            cli: "opencode",
+            model: "default",
+            branch: "feat/shot-preview-fixture",
+            state: "ok",
+            markdown: `## Verdict\n${verdictLine}\n\n## Bugs\n- Contrast failure on settings.\n`,
+          },
+        },
+      };
+      break;
+    }
     case "board:activeCoding":
       ensureFixtureTask(repo, "active");
       if (!repo.runningIds.includes(SHOT_PREVIEW_FIXTURE_TASK_ID)) {
@@ -512,6 +604,9 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         SHOT_EVIDENCE_VERIFICATION,
       );
       break;
+    case "drawer:debugLogs":
+      seedShotPreviewDebugLogs(repo, shotPreviewDrawerTaskIdFromLocation(window.location));
+      break;
     case "card:handoffConflict":
       // #0810 — the "Worktree changed after handoff" modal only opens from a
       // failed Move to done. Seed the pending conflict on a board card so a
@@ -563,9 +658,22 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
  * dev-inspector override, so `editorConfigured` is false on every surface that
  * shows the hint (TaskDrawer Spec row, Context doc viewer, failed-tests list).
  */
+/**
+ * Settings activity-animation preview fixtures → the style they seed. One entry
+ * per style worth capturing; the Settings select and its live preview then show
+ * that artwork on the shot.
+ */
+const SETTINGS_FIXTURE_STYLE: Partial<Record<ShotPreviewFixtureId, ActivityAnimationStyle>> = {
+  "settings:birdQuickTrail": "bird-quick-trail",
+  "settings:rgbKeystorm": "rgb-keystorm",
+  "settings:wheelieCourier": "wheelie-courier",
+  "settings:booSwoop": "boo-swoop",
+  "settings:pumpkinSpell": "pumpkin-spell",
+};
+
 /** Config-only shot fixtures (applied after `/api/config` loads, #0805). */
 export function isShotPreviewConfigFixture(fixture: ShotPreviewFixtureId): boolean {
-  return fixture === "editor:unconfigured" || fixture === "settings:birdQuickTrail";
+  return fixture === "editor:unconfigured" || fixture in SETTINGS_FIXTURE_STYLE;
 }
 
 export function applyShotPreviewConfigFixture(
@@ -581,9 +689,10 @@ export function applyShotPreviewConfigFixture(
     if (dev?.inspector) dev.inspector.editorCommand = "";
     return;
   }
-  if (fixture === "settings:birdQuickTrail") {
-    config.form.activityAnimationStyle = "bird-quick-trail";
-    if (config.data) config.data.activityAnimationStyle = "bird-quick-trail";
+  const style = SETTINGS_FIXTURE_STYLE[fixture];
+  if (style) {
+    config.form.activityAnimationStyle = style;
+    if (config.data) config.data.activityAnimationStyle = style;
     config.notifyExternalFormUpdate();
   }
 }

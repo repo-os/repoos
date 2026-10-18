@@ -20,7 +20,8 @@ import {
   needsInputBannerText,
   needsInputStatusLabel,
   needsInputSurfaces,
-  needsInputDetailVisible,
+  formatNeedsInputDetailForDisplay,
+  needsInputDetailUsesLineClamp,
 } from "../lib/needs-input-ui";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
@@ -459,9 +460,11 @@ const needsInputDetailLine = computed<string | null>(() => {
   const t = props.task;
   if (!needsInputSurfaces(t)) return null;
   const hasQuestions = (t.questions?.length ?? 0) > 0;
-  if (!needsInputDetailVisible(t.needsInputReason, t.needsInputDetail, hasQuestions)) return null;
-  return t.needsInputDetail?.trim() || null;
+  return formatNeedsInputDetailForDisplay(t.needsInputReason, t.needsInputDetail, hasQuestions);
 });
+const needsInputDetailClamp = computed(() =>
+  needsInputDetailUsesLineClamp(props.task.needsInputReason),
+);
 
 /** The last automatic review's actual outcome for this task, when one
  *  exists — null while no report has landed yet, or its state is
@@ -1226,7 +1229,12 @@ async function openDebuggerFromError(): Promise<void> {
             slow
           </span>
         </span>
-        <p v-if="needsInputDetailLine" class="tc-needs-detail" :title="needsInputDetailLine">
+        <p
+          v-if="needsInputDetailLine"
+          class="tc-needs-detail"
+          :class="{ 'tc-needs-detail--clamp': needsInputDetailClamp }"
+          :title="needsInputDetailLine"
+        >
           {{ needsInputDetailLine }}
         </p>
       </div>

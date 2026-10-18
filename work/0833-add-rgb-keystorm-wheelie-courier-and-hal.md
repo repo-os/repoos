@@ -2,14 +2,18 @@
 id: "0833"
 title: "Add RGB keystorm, Wheelie courier, and Halloween activity animations"
 type: feature
-status: ready
+status: done
 priority: p2
 area: [web, core]
+merged_commit: aff1b21cce0249f78d14415853df4ff89ffb0f1c
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/add-rgb-keystorm-wheelie-courier-and-hal
 created_at: "2026-10-18T08:58:09Z"
-updated_at: "2026-10-18T09:09:36Z"
+updated_at: "2026-10-18T17:21:14Z"
+last_close_out_gate_ms: 352245
+last_close_out_gate_at: "2026-10-18T13:47:21.769Z"
+review_passes: 2
 ---
 ## Problem
 
@@ -99,7 +103,57 @@ path(c,p.purple,g=>{g.moveTo(-30,-18);g.quadraticCurveTo(-14,-29,-8,-61);g.bezie
 - Reduced motion stops all motion and leaves each subject clearly recognizable. Test mount/unmount and offscreen/hidden behavior to prevent leaked animation loops and unnecessary background CPU with many task cards.
 - Capture Settings and real task-card evidence, rebuild after UI changes, run focused meaningful tests and scoped repoos check, and hand off through normal review.
 
+## Shots
+```json
+[
+{
+"label": "RGB keystorm in the Settings activity-animation preview",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": ".activity-animation-preview",
+"state": "settings:rgbKeystorm"
+},
+{
+"label": "Wheelie courier in the Settings activity-animation preview",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": ".activity-animation-preview",
+"state": "settings:wheelieCourier"
+},
+{
+"label": "Boo swoop in the Settings activity-animation preview",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": ".activity-animation-preview",
+"state": "settings:booSwoop"
+},
+{
+"label": "Pumpkin spell in the Settings activity-animation preview",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": ".activity-animation-preview",
+"state": "settings:pumpkinSpell"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-18T08:58:09Z · created · njachowski@gmail.com
 - 2026-10-18T09:09:36Z · status inbox→ready
+- 2026-10-18T12:23:20Z · status ready→active, branch
+- 2026-10-18T12:28:41Z · message_queued at 2026-10-18T12:28:41.781Z
+- 2026-10-18T12:28:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-18T13:00:55Z · body
+- 2026-10-18T13:10:15Z · body
+- 2026-10-18T13:11:13Z · body
+- 2026-10-18T13:14:27Z · body
+- 2026-10-18T13:26:19Z · status active→review
+- 2026-10-18T13:27:19Z · note: review pass 1: needs some work
+- 2026-10-18T13:28:39Z · note: review pass 2: good to go
+- 2026-10-18T13:32:41Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-18T13:47:21Z · close-out gate completed in 352s
+- 2026-10-18T13:47:57Z · status review→done, release:success
+- 2026-10-18T14:16:58Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-18T16:43:48Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-18T17:21:14Z · message_overdue: still queued after 60m without being delivered

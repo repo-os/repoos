@@ -8,9 +8,9 @@ priority: p2
 area: [agent, server]
 assigned_to: human
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/live-verification-of-jev-and-clef-flash-
 created_at: "2026-10-15T07:47:48Z"
-updated_at: "2026-10-17T07:06:44Z"
+updated_at: "2026-10-18T15:21:36Z"
 ---
 ## Problem
 Routing for #0791 needs one credentialed smoke check against each real decision backend before anyone relies on it. Automated tests use fixtures only. Those checks require a human because they need third-party accounts, billing, a self-hosted GPU host, and secrets that an agent must never handle.
@@ -49,3 +49,6 @@ Parent/context record: #0791.
 - 2026-10-15T08:24:00Z · body: section Checks to run (human, once the setup above exists)
 - 2026-10-15T11:02:13Z · status inbox→ready
 - 2026-10-17T07:06:44Z · needs_input
+- 2026-10-18T15:21:13Z · status ready→active, branch
+- 2026-10-18T15:21:36Z · status active→ready
+- 2026-10-18T15:21:36Z · note: task abandoned

@@ -53,6 +53,7 @@ import {
   parseReviewVerdict as parseVerdictLabel,
   parseReviewRelevance,
   reviewVerdictSection,
+  verdictSummaryForNeedsInput,
 } from "../core/review-verdict.js";
 import { extractReviewReportSections } from "../core/review-report-sections.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
@@ -90,6 +91,7 @@ import { getCheckStore } from "../core/check-store.js";
 import type { CommandCaptureEvidence } from "./shot-capture.js";
 import { extractTaskProofCommands } from "../core/task-proof-commands.js";
 import { isEvidenceRefreshActive } from "./evidence-refresh-lock.js";
+import { resolvedUiVerification } from "../core/ui-verification-config.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
 import {
   gatherReviewVerification,
@@ -140,14 +142,14 @@ export function isStaleEvidenceOnlyReview(report: string, verdict: string | null
   );
 }
 
-/** Automatic evidence recovery is opt-in and requires an explicit stale-only reviewer marker. */
+/** Automatic evidence recovery requires an explicit stale-only reviewer marker (#0839: on by default). */
 export function shouldAutoRefreshStaleEvidence(
   config: RepoOSConfig,
   report: string,
   verdict: string | null,
 ): boolean {
   return (
-    config.uiVerification?.autoRefreshStaleOnce === true &&
+    resolvedUiVerification(config).autoRefreshStaleOnce === true &&
     isStaleEvidenceOnlyReview(report, verdict)
   );
 }
@@ -459,8 +461,8 @@ export function reviewMission(
     "`None found` under Bugs, Edge cases, or Suggestions when genuinely empty:",
     "",
     "## Verdict",
-    "Open the report with EXACTLY one of these three verdict labels, then one or two",
-    "sentences saying what the change does and whether anything blocks sign-off:",
+    "Open with EXACTLY one of these three verdict labels, an em dash, then at most",
+    "120 characters explaining what blocks sign-off (details belong in Bugs below):",
     "",
     "`good to go` — the change is correct and complete.",
     "`needs some work` — the change is close, but has issues worth fixing first.",
@@ -1933,10 +1935,7 @@ export class ReviewManager {
         needsInputClearsOnSuccessfulReview(current) ||
         current.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON
       ) {
-        const verdictDetail = reviewVerdictSection(report.markdown)
-          ?.split(/\r?\n/)
-          .find((line) => line.trim())
-          ?.trim();
+        const verdictDetail = verdictSummaryForNeedsInput(report.markdown);
         try {
           patchTaskFile(this.config, task.absPath, {
             needsInput: true,

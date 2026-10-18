@@ -59,7 +59,7 @@ import { checkRunSkipped } from "../../../core/check-skip.js";
 import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
 import {
   needsInputBannerText,
-  needsInputDetailVisible,
+  formatNeedsInputDetailForDisplay,
   needsInputPrimaryAction,
   needsInputStatusLabel,
   needsInputSuggestionText,
@@ -2406,6 +2406,14 @@ function openSkillSuggestion(): void {
  * or nothing when the review passed (good to go) and no chip is warranted.
  */
 const activeNeedsInputQuestions = computed(() => (ui.active?.questions?.length ?? 0) > 0);
+const activeNeedsInputDetailLine = computed(() => {
+  if (!ui.active) return null;
+  return formatNeedsInputDetailForDisplay(
+    ui.active.needsInputReason,
+    ui.active.needsInputDetail,
+    activeNeedsInputQuestions.value,
+  );
+});
 
 /**
  * The Debugger's one-line tl;dr for the current failure (#0570), rendered as a
@@ -4780,17 +4788,8 @@ watch(
               </div>
               <!-- needsInputDetail for dev-error is internal skill-routing
                    metadata — not meaningful to users, so we hide it. -->
-              <div
-                v-if="
-                  needsInputDetailVisible(
-                    ui.active.needsInputReason,
-                    ui.active.needsInputDetail,
-                    activeNeedsInputQuestions,
-                  )
-                "
-                class="agent-waiting-detail"
-              >
-                {{ ui.active.needsInputDetail }}
+              <div v-if="activeNeedsInputDetailLine" class="agent-waiting-detail">
+                {{ activeNeedsInputDetailLine }}
               </div>
               <div
                 v-if="

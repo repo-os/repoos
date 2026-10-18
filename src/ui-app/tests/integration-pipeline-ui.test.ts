@@ -144,6 +144,16 @@ describe("integration median + countdown (#0814)", () => {
     ]);
   });
 
+  it("counts fifteen timed succeeded runs when failures and legacy rows are mixed (#0829)", () => {
+    const outcomes: CloseOutOutcomeEvent[] = [];
+    for (let i = 1; i <= 15; i++) outcomes.push(outcome(`timed-${i}`, i, i * 60_000));
+    for (let i = 0; i < 5; i++) outcomes.push(outcome(`legacy-${i}`, 20 + i));
+    outcomes.push({ ...outcome("failed", 30, 999_000), outcome: "failed" });
+    outcomes.push({ ...outcome("timeout", 31, 888_000), outcome: "timedOut" });
+
+    expect(integrationMedianChip(outcomes)).toBe("Median 8m 00s · 15 runs");
+  });
+
   it("excludes failed and timed-out runs from the median (#0819)", () => {
     const outcomes: CloseOutOutcomeEvent[] = [
       outcome("ok1", 1, 60_000),

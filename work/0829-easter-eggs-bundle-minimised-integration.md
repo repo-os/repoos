@@ -2,21 +2,22 @@
 id: "0829"
 title: "Easter eggs bundle: integration pill tooltip, median run count, and full Debug log messages"
 type: bug
-status: ready
+status: done
 priority: p3
 area: web
+merged_commit: e5980724eeff9777b867774e0b5b74c50905d877
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-integration-pill-tool
-cli_override: cursor
-model_override: composer-2.5
 created_at: "2026-10-18T06:17:45Z"
-updated_at: "2026-10-18T15:52:27Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
-last_handoff_failure_sha: b27c9ec7f5394ee6702c33999ed40bcf09718959
+updated_at: "2026-10-18T17:21:14Z"
+last_close_out_gate_ms: 350052
+last_close_out_gate_at: "2026-10-18T13:08:19.214Z"
+review_passes: 7
+close_out_repair_count: 1
 last_check_failure: "repoos check at 2026-10-18T08:29:42.192Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from ddcf9a91 to ae4f932f) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-review_passes: 4
 review_rounds: 2
+dev_error_count: 3
 ---
 ## Items
 - [ ] **E1 · Minimised pill shows only the median popup, centered** (web) — remove the extra native title tooltip over it. Source: Nick 2026-10-18.
@@ -94,82 +95,76 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 ```json
 [
 {
-"label": "Minimised pill median tooltip, no native title (light)",
+"label": "Minimised pill: median tooltip only, centered (light)",
 "target": "default",
-"route": "/",
-"highlight": "[data-test-id=integration-timer-tip]",
+"route": "/work",
+"highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
 {
-"waitFor": "[data-test-id=integration-timer]"
+"waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
 },
 {
-"click": "[data-test-id=integration-timer]"
+"click": ".ibar-strip [data-test-id=\"integration-timer\"]"
 },
 {
-"waitFor": "[data-test-id=integration-timer-tip]"
+"waitFor": "[data-test-id=\"integration-timer-tip\"]"
 }
 ],
 "state": "integration:median15",
 "theme": "light"
 },
 {
-"label": "Minimised pill median tooltip, no native title (dark)",
+"label": "Minimised pill: median tooltip only, centered (dark)",
 "target": "default",
-"route": "/",
-"highlight": "[data-test-id=integration-timer-tip]",
+"route": "/work",
+"highlight": "[data-test-id=\"integration-timer-tip\"]",
 "steps": [
 {
-"waitFor": "[data-test-id=integration-timer]"
+"waitFor": ".ibar-strip [data-test-id=\"integration-timer\"]"
 },
 {
-"click": "[data-test-id=integration-timer]"
+"click": ".ibar-strip [data-test-id=\"integration-timer\"]"
 },
 {
-"waitFor": "[data-test-id=integration-timer-tip]"
+"waitFor": "[data-test-id=\"integration-timer-tip\"]"
 }
 ],
 "state": "integration:median15",
 "theme": "dark"
 },
 {
-"label": "Debug log expanded full message (light)",
+"label": "Debug log: long row expands to the full message (light)",
 "target": "default",
 "route": "/work?task=0820&tab=debug",
 "highlight": ".debug-event-message",
 "steps": [
 {
-"waitFor": "[data-debug-event*='main advanced']"
+"waitFor": "[data-debug-event*=\"main advanced\"]"
 },
 {
-"click": "[data-debug-event*='main advanced']"
+"click": "[data-debug-event*=\"main advanced\"]"
 },
 {
 "waitFor": ".debug-event-message"
-},
-{
-"waitMs": 200
 }
 ],
 "state": "drawer:debugLogs",
 "theme": "light"
 },
 {
-"label": "Debug log expanded full message (dark)",
+"label": "Debug log: long row expands to the full message (dark)",
 "target": "default",
 "route": "/work?task=0820&tab=debug",
 "highlight": ".debug-event-message",
 "steps": [
 {
-"waitFor": "[data-debug-event*='main advanced']"
+"waitFor": "[data-debug-event*=\"main advanced\"]"
 },
 {
-"click": "[data-debug-event*='main advanced']"
+"click": "[data-debug-event*=\"main advanced\"]"
 },
 {
 "waitFor": ".debug-event-message"
-},
-{
-"waitMs": 200
 }
 ],
 "state": "drawer:debugLogs",
@@ -272,4 +267,44 @@ Detect truncation at render time (scrollWidth > clientWidth) or always allow exp
 - 2026-10-18T08:56:30Z · note: handoff requested (ui-review)
 - 2026-10-18T09:04:20Z · handoff failed · ui-review handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
 - 2026-10-18T09:07:44Z · body
-- 2026-10-18T15:52:27Z · watchdog: auto-surfaced stuck task · status active→ready · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · the worktree changed while the gate was running (HEAD moved from 4894fdc9 to 97fb8c6e) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-18T09:09:55Z · note: handoff requested (ui-review)
+- 2026-10-18T09:24:23Z · agent exited with an error (cursor) · handoff finalization was interrupted (server reload) — restart work to hand off again
+- 2026-10-18T09:35:26Z · needs_input
+- 2026-10-18T09:55:25Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-18T10:19:06Z · cli_override, model_override
+- 2026-10-18T10:20:36Z · model_override
+- 2026-10-18T10:49:22Z · message_queued at 2026-10-18T10:49:22.530Z
+- 2026-10-18T11:06:34Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-18T11:26:17Z · body
+- 2026-10-18T11:28:11Z · agent exited with an error (opencode) · RetriableError: Connection stalled repeatedly
+- 2026-10-18T11:28:11Z · message_delivered: 1 message(s)
+- 2026-10-18T11:28:42Z · model_override
+- 2026-10-18T11:35:32Z · needs_input
+- 2026-10-18T11:43:12Z · body
+- 2026-10-18T11:45:32Z · body
+- 2026-10-18T12:00:13Z · status active→review
+- 2026-10-18T12:00:14Z · note: shots: skipped — 26 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-18T12:01:11Z · note: review pass 5: good to go
+- 2026-10-18T12:03:45Z · status review→active
+- 2026-10-18T12:03:45Z · note: close-out repair: merge-conflict
+- 2026-10-18T12:03:58Z · message_queued at 2026-10-18T12:03:58.445Z
+- 2026-10-18T12:07:18Z · body
+- 2026-10-18T12:23:32Z · status active→review
+- 2026-10-18T12:23:33Z · note: shots: skipped — 30 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-18T12:24:38Z · note: review pass 6: good to go
+- 2026-10-18T12:49:35Z · close-out gate completed in 284s
+- 2026-10-18T12:49:42Z · note: handoff requested (cli)
+- 2026-10-18T12:49:43Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-18T12:50:20Z · status inbox→active
+- 2026-10-18T12:50:24Z · note: handoff requested (ui-review)
+- 2026-10-18T12:58:06Z · status active→review
+- 2026-10-18T12:58:07Z · note: shots: skipped — 30 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-18T12:59:18Z · note: review pass 7: good to go
+- 2026-10-18T13:07:17Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-18T13:08:19Z · close-out gate completed in 350s
+- 2026-10-18T13:08:20Z · note: handoff requested (cli)
+- 2026-10-18T13:08:22Z · handoff failed · task-file handoff failed at validate · task must be active or review, but is inbox
+- 2026-10-18T13:09:31Z · status inbox→done, release:success
+- 2026-10-18T14:16:57Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-18T16:43:48Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-18T17:21:14Z · message_overdue: still queued after 60m without being delivered
