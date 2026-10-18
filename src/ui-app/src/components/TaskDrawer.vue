@@ -2803,6 +2803,10 @@ const pmAgentRunning = computed(
   () => !!(ui.active && repo.runningIds.includes(pmSessionId(ui.active.id))),
 );
 const { queued: pmQueued, markQueued: markPmQueued } = useQueuedSend(() => pmAgentRunning.value);
+/** Includes a queue the server still holds for this PM session (#0821). */
+const pmQueuedVisible = computed(
+  () => pmQueued.value || !!(ui.active && repo.queuedMessages[pmSessionId(ui.active.id)]),
+);
 
 // The PM chat's scroll, transcript grouping, compose box, Enter-to-send,
 // auto-grow and canned-prompt behaviour all live in <PmChatSurface> (#0515) —
@@ -3182,6 +3186,14 @@ const agentBusy = computed(
 /** True while a task follow-up queued during a turn waits to be read (#0821). */
 const { queued: taskMsgQueued, markQueued: markTaskMsgQueued } = useQueuedSend(
   () => agentBusy.value,
+);
+/**
+ * The queued notice also reflects a queue the server still holds for this task
+ * (delivery was held by a handoff, or survived a reload) so a queued message is
+ * always visible, not just immediately after it was sent (#0821).
+ */
+const taskMsgQueuedVisible = computed(
+  () => taskMsgQueued.value || !!(ui.active && repo.queuedMessages[ui.active.id]),
 );
 
 // ---- live run stats: time / tokens / cost / stall (0080) ----
@@ -5320,7 +5332,7 @@ watch(
               Latest
             </button>
           </div>
-          <ChatQueuedNotice :active="taskMsgQueued" />
+          <ChatQueuedNotice :active="taskMsgQueuedVisible" />
           <form class="ai-chat-compose agent-compose" @submit.prevent="sendTurn">
             <textarea
               ref="draftMsgTextarea"
@@ -6214,7 +6226,7 @@ watch(
             :canned="pmCannedMessages"
             :open-questions="pmOpenQuestionsForActive()"
             :shots="ui.pmScreenshots"
-            :queued="pmQueued"
+            :queued="pmQueuedVisible"
             @send="pmSend"
             @interrupt="pmInterrupt"
             @attach="onPmShotFiles"
