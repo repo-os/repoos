@@ -11,7 +11,7 @@ branch: feat/add-recurring-and-scheduled-tasks-to-the
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-08-11T14:22:06Z"
-updated_at: "2026-10-18T19:08:36Z"
+updated_at: "2026-10-18T19:09:50Z"
 ---
 ## Problem
 
@@ -99,6 +99,19 @@ dependency constraint.
 
 - 0092 — recurring product-documentation audit use case
 
+## Shots
+```json
+[
+{
+  "label": "Scheduled Tasks tab on Agents page",
+  "target": "default",
+  "route": "/agents?tab=scheduled",
+  "highlight": ".scheduled-tasks-panel",
+  "state": "board:withReviewTask"
+}
+]
+```
+
 ## Activity
 
 - 2026-08-11T14:22:06Z · created · unknown
@@ -107,3 +120,4 @@ dependency constraint.
 - 2026-10-18T19:02:43Z · cli_override, model_override
 - 2026-10-18T19:02:46Z · status ready→active, branch
 - 2026-10-18T19:08:36Z · body
+- 2026-10-18T19:09:50Z · body
