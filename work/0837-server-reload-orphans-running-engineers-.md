@@ -11,7 +11,7 @@ branch: feat/server-reload-orphans-running-engineers-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-18T16:14:35Z"
-updated_at: "2026-10-18T17:24:27Z"
+updated_at: "2026-10-18T17:35:34Z"
 ---
 ## Problem
 After a RepoOS server reload, previously running `cursor-agent` engineer processes survive with `ppid=1` (orphaned, 2026-10-18: #0830 and #0832). The new server does not own them, so their handoff and exit signals are lost, the task can sit "active" for an hour with no progress, and a second engineer is started in the same worktree, giving two writers. That caused a post-handoff WIP checkpoint commit on #0832 that blocked its Move to done.
@@ -41,3 +41,4 @@ Related: #0834 (post-handoff checkpoint recovery), watchdog and CTO restart path
 - 2026-10-18T17:21:29Z · message_queued at 2026-10-18T17:21:29.526Z
 - 2026-10-18T17:22:22Z · body
 - 2026-10-18T17:24:27Z · body
+- 2026-10-18T17:35:34Z · message_delivered: 1 message(s)
