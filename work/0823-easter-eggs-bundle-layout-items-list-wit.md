@@ -2,14 +2,14 @@
 id: "0823"
 title: "Easter-eggs bundle layout: Items list with stable E-ids and one fixed section set per item"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: docs
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T02:48:44Z"
-updated_at: "2026-10-18T02:48:44Z"
+updated_at: "2026-10-18T02:57:35Z"
 ---
 ## Problem
 Bundle tasks (e.g. #0822 before 2026-10-18) grow ad hoc: the first item takes the standard Problem/Desired UX/Acceptance/Notes headings and later items get free-form sections, so you cannot scan a bundle and list its sub-tasks. Repeated whole-body rewrites also left stale text ("third independent item").
@@ -28,3 +28,4 @@ Docs/template only; no parser or format change. Related: #0722, #0808.
 ## Activity
 
 - 2026-10-18T02:48:44Z · created · njachowski@gmail.com
+- 2026-10-18T02:57:35Z · status inbox→ready
