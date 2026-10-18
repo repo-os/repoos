@@ -28,9 +28,9 @@ describe("isEvidenceGapOnlyReview (#0831)", () => {
   });
 
   it("rejects without the marker", () => {
-    expect(
-      isEvidenceGapOnlyReview("## Verdict\n`good to go` — ship it.\n", "good to go"),
-    ).toBe(false);
+    expect(isEvidenceGapOnlyReview("## Verdict\n`good to go` — ship it.\n", "good to go")).toBe(
+      false,
+    );
   });
 
   it("extracts evidence gap detail for needs_input", () => {
