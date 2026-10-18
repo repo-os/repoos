@@ -406,9 +406,7 @@ export function runAttachmentMigration(
       if (stillLocal) continue;
       const seen = result.planned.some(
         (p) =>
-          p.base === base &&
-          p.namespace === record.namespace &&
-          p.sourceName === record.sourceName,
+          p.base === base && p.namespace === record.namespace && p.sourceName === record.sourceName,
       );
       if (seen) continue;
       result.skipped++;
