@@ -181,6 +181,45 @@ describe("shot preview board fixtures (#0743)", () => {
     vi.unstubAllGlobals();
   });
 
+  /**
+   * #0834: the SSE handler calls refresh() to rebuild the whole task list,
+   * which dropped the client-only fixture card mid-capture — the shot's
+   * highlight then matched an unrelated card (or nothing). Re-apply the active
+   * fixture at the end of refresh, like the #0782 pipeline pin above.
+   */
+  it("keeps the seeded fixture card against a live board refresh (#0834)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.health = { ok: true, isPreviewBuild: true } as typeof repo.health;
+    window.history.replaceState({}, "", "/work?shotState=card%3AcheckpointRecovery");
+    try {
+      applyShotPreviewFixture(repo, "card:checkpointRecovery");
+      expect(repo.tasks.some((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
+
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string) => {
+          if (url.includes("/api/board"))
+            return {
+              ok: true,
+              status: 200,
+              json: async () => ({ tasks: [], counts: {}, taskCount: 0 }),
+            };
+          throw new Error("unexpected fetch: " + url);
+        }),
+      );
+      await repo.refresh();
+
+      const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+      expect(task, "the fixture card survives a board refresh mid-capture").toBeTruthy();
+      expect(repo.checkpointRecoveryFor(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+      window.history.replaceState({}, "", "/");
+    }
+  });
+
   it("seeds a stalled close-out so the card renders Cancel/Retry (#0778)", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

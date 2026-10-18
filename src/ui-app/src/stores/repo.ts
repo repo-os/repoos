@@ -10,7 +10,9 @@ import { describeCloseOutFailure } from "../lib/closeOutFailure";
 import { builtInRunNotice } from "../lib/builtInRunNotice";
 import { retryCountFrom } from "../lib/retryHints";
 import {
+  applyShotPreviewFixture,
   isShotPreviewCaptureActive,
+  readShotPreviewFixtureFromLocation,
   shotFixturePinnedIntegration,
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
@@ -2298,6 +2300,19 @@ export const useRepoStore = defineStore("repo", () => {
     pmWorkingIds.value = new Set(idx.tasks.filter((t) => t.pmWorking).map((t) => t.id));
     storyDefinitions.value = idx.storyDefinitions ?? [];
     Object.assign(counts, idx.counts);
+    // The rebuild above replaced the whole task list, dropping any client-only
+    // fixture card an active ?shotState capture had seeded (#0782 pins the
+    // pipeline for the same reason). Re-apply at the very end — after the
+    // doneError cleanup above — so the seeded card and its state survive an
+    // SSE-triggered refresh for the whole capture window (#0834).
+    if (
+      typeof window !== "undefined" &&
+      health.value?.isPreviewBuild &&
+      isShotPreviewCaptureActive(window.location)
+    ) {
+      const fixture = readShotPreviewFixtureFromLocation(window.location);
+      if (fixture) applyShotPreviewFixture(useRepoStore(), fixture);
+    }
   }
 
   async function fetchTask(id: string): Promise<Task> {
