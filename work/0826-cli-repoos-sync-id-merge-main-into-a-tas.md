@@ -2,14 +2,14 @@
 id: "0826"
 title: "CLI: repoos sync <id> (merge main into a task branch, like the drawer's Sync with main)"
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-18T04:31:12Z"
-updated_at: "2026-10-18T04:31:12Z"
+updated_at: "2026-10-18T05:37:02Z"
 ---
 ## Problem
 The task drawer and the Debug tab have a "Sync with main" action (store `syncTaskBranch`, `POST /api/tasks/:id/sync`) that merges main into a task's branch. There is no CLI equivalent, so a driver agent facing a simple close-out merge conflict has to hand-run git in the worktree or send the task back to the engineer for a repair cycle.
@@ -28,3 +28,4 @@ Mirror the existing control-plane commands in src/commands (start/pause/done). R
 ## Activity
 
 - 2026-10-18T04:31:12Z · created · njachowski@gmail.com
+- 2026-10-18T05:37:02Z · status inbox→ready
